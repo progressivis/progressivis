@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<link rel="stylesheet" type="text/css" href="../css/mds.css">
+<body>
+<script src="http://d3js.org/d3.v3.min.js"></script>
+<script src="../js/mds.js"></script>
+<script>
+var dataset = ["../data/mds1.tsv",
+                "../data/mds2.tsv" ],
+	selected = 0;
+
+var margin = {top: 20, right: 20, bottom: 30, left: 40},
+    width = 960 - margin.left - margin.right,
+    height = 660 - margin.top - margin.bottom;
+
+var x = d3.scale.linear()
+    .range([0, width]);
+
+var y = d3.scale.linear()
+    .range([height, 0]);
+
+var color = d3.scale.category10();
+
+var xAxis = d3.svg.axis()
+    .scale(x)
+    .orient("bottom");
+
+var yAxis = d3.svg.axis()
+    .scale(y)
+    .orient("left");
+
+var svg = d3.select("body").append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+  .append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+d3.tsv(dataset[selected], function(error,data) {
+	dataset[selected] = data;
+	mds(error, data);
+});
+
+function update() {
+	selected = selected + 1;
+	if (selected == dataset.length)
+		selected = 0;
+	if ("string" == typeof dataset[selected]) 
+		d3.tsv(dataset[selected], function(error,data) {
+			dataset[selected] = data;
+			update_mds(error, data);
+		});
+	else
+		update_mds(null, dataset[selected]);
+}
+</script>
+<button onClick="update()">Click me</button>
+	
+
+</body>
