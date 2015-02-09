@@ -10,10 +10,18 @@
   <script type="text/javascript" src="static/js/mds.js"></script>
 </head>
 <body>
+<p>
+  <input id="range" type="range" name="version" min="0" max="2" value="0">
+  <input id="value" type="text" name="value" size="4" pattern="[0-9]*"
+</p>
   <script>
-var dataset = ["/data/mds/1",
-	       "/data/mds/2" ],
-	selected = 0;
+var url = "/data/mds/";
+    selected = 0;
+
+function geturl() {
+    return url + selected;
+}
+
 
 var margin = {top: 20, right: 20, bottom: 30, left: 40},
     width = 960 - margin.left - margin.right,
@@ -41,26 +49,33 @@ var svg = d3.select("body").append("svg")
   .append("g")
     .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
-d3.tsv(dataset[selected], function(error,data) {
-	dataset[selected] = data;
-	mds(error, data);
-});
 
-function update() {
-	selected = selected + 1;
-	if (selected == dataset.length)
-		selected = 0;
-	if ("string" == typeof dataset[selected]) 
-		d3.tsv(dataset[selected], function(error,data) {
-			dataset[selected] = data;
-			update_mds(error, data);
-		});
-	else
-		update_mds(null, dataset[selected]);
+var dataset = [];
+
+function update(n) {
+    if (n >= dataset.length)
+	n = dataset.length;
+    selected = n;
+    if (selected == dataset.length) {
+	d3.tsv(geturl(), function(error,data) {
+	    console.log('Dataset '+selected+' loaded');
+	    dataset.push(data);
+	    update_mds(error, data);
+	});
+	$('#range').attr('max', selected+1);
+    }
+    else
+	update_mds(null, dataset[selected]);
+    $('#range').attr('value', selected);
+    $('#value').attr('value', selected);
 }
+
+  $('#range').on("change", function(){ update(this.value)});
+
+  update(1);
+
   </script>
 
-<button onClick="update()">Click me</button>
 
 </body>
 </html>

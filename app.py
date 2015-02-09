@@ -40,7 +40,7 @@ def data(seed):
                     index=True,
                     index_label="id",
                     encoding="utf-8")
-    print csv
+    #print csv
     return Response(csv, "Content-type: text/plain")
 
 
