@@ -3,7 +3,9 @@
 import pandas as pd
 import numpy as np
 
-def random_mds(n):
+def random_mds(n, seed=None):
+    if seed:
+        np.random.seed(seed)
     x = np.random.rand(n)
     y = np.random.rand(n)
     label = ["i%d" % i for i in range(n)]

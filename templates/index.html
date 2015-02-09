@@ -1,12 +1,18 @@
 <!DOCTYPE html>
-<meta charset="utf-8">
-<link rel="stylesheet" type="text/css" href="../css/mds.css">
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Progressive MDS</title>
+  <link rel="stylesheet" type="text/css" href="static/css/mds.css">
+  <script type="text/javascript" src="static/js/lib/jquery/jquery-1.11.2.min.js"></script>
+  <script type="text/javascript" src="static/js/lib/socket-io/socket.io.min.js"></script>
+  <script type="text/javascript" src="static/js/lib/d3/d3.min.js"></script>
+  <script type="text/javascript" src="static/js/mds.js"></script>
+</head>
 <body>
-<script src="http://d3js.org/d3.v3.min.js"></script>
-<script src="../js/mds.js"></script>
-<script>
-var dataset = ["../data/mds1.tsv",
-                "../data/mds2.tsv" ],
+  <script>
+var dataset = ["/data/mds/1",
+	       "/data/mds/2" ],
 	selected = 0;
 
 var margin = {top: 20, right: 20, bottom: 30, left: 40},
@@ -52,8 +58,9 @@ function update() {
 	else
 		update_mds(null, dataset[selected]);
 }
-</script>
+  </script>
+
 <button onClick="update()">Click me</button>
-	
 
 </body>
+</html>
