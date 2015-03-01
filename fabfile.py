@@ -30,7 +30,7 @@ def setup():
     if os.getenv('VIRTUAL_ENV') or hasattr(sys, 'real_prefix'):
         abort(red('Deactivate any virtual environments before continuing.'))
     make_virtual_env()
-    install_node_packages()
+    #install_node_packages()
     symlink_packages()
     print ('\nDevelopment environment successfully created.')
 
