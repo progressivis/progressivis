@@ -12,7 +12,7 @@ setup(
     version = "0.0.1.dev0",
     author = "Jean-Daniel Fekete",
     author_email = "Jean-Daniel.Fekete@inria.fr",
-    url="http://www.aviz.fr/~fekete",
+    url="http://progressive.gforge.inria.fr/",
     description = "A Progressive Steerable Analytics Toolkit",
     license = "BSD",
     keywords = "Progressive analytics visualization",
