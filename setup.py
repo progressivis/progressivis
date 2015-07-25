@@ -1,4 +1,5 @@
 import os
+import pkg_resources
 from setuptools import setup, find_packages
 
 with open('requirements.txt') as f:
@@ -9,7 +10,7 @@ def read(fname):
 
 setup(
     name = "Progressive",
-    version = "0.0.1.dev0",
+    version = pkg_resources.require("progressive")[0].version,
     author = "Jean-Daniel Fekete",
     author_email = "Jean-Daniel.Fekete@inria.fr",
     url="http://progressive.gforge.inria.fr/",
