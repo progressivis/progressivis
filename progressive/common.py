@@ -1,0 +1,4 @@
+
+class ProgressiveError(Exception):
+    pass
+
