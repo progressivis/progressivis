@@ -65,9 +65,9 @@ class Percentiles(DataFrameModule):
             return self._return_run_step(self.state_blocked, steps_run=steps)
         x = input_df.loc[indices, self._column]
         self.tdigest.batch_update(x)
-        desc = self._df['description']
+        df = self._df
         for p in self._percentiles:
-            desc[_pretty_name(p)] = self.tdigest.percentile(p*100)
+            df.loc[_pretty_name(p),'description'] = self.tdigest.percentile(p*100)
         self._df[self.UPDATE_COLUMN] = np.nan  # to update time stamps
         return self._return_run_step(self.state_ready, steps_run=steps, reads=steps, updates=len(self._df))
 
