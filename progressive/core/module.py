@@ -6,11 +6,11 @@ import pandas as pd
 import numpy as np
 import random
 
-from progressive.common import ProgressiveError
-from progressive.scheduler import *
-from progressive.slot import *
-from progressive.tracer import *
-from progressive.time_predictor import *
+from progressive.core.common import ProgressiveError
+from progressive.core.scheduler import *
+from progressive.core.slot import *
+from progressive.core.tracer import *
+from progressive.core.time_predictor import *
 
 default_quantum = 1
 

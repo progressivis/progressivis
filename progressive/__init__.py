@@ -1,16 +1,12 @@
 
 __all__ = ["ProgressiveError", "Scheduler", "default_scheduler", "Slot",
-           "Module", "connect", "DataFrameModule", "Print",
-           "CSVLoader", "VECLoader", "Percentiles", "LinearRegression" ]
+           "Module", "connect", "DataFrameModule", "Print" ]
 
-from progressive.version import version as __version__
+from progressive.core.version import version as __version__
 
-from progressive.common import *
-from progressive.scheduler import *
-from progressive.slot import *
-from progressive.module import *
-from progressive.dataframe import *
-from progressive.csv_loader import *
-from progressive.vec_loader import *
-from progressive.percentiles import *
-from progressive.linear_regression import *
+from progressive.core.common import ProgressiveError
+from progressive.core.scheduler import Scheduler, default_scheduler
+from progressive.core.slot import Slot
+from progressive.core.module import Module, connect, Print
+from progressive.core.dataframe import DataFrameModule
+

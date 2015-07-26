@@ -1,4 +1,4 @@
-from progressive.common import ProgressiveError
+from progressive.core.common import ProgressiveError
 
 class SlotDescriptor(object):
     def __init__(self, name, type=None, required=True, doc=None):

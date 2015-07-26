@@ -31,8 +31,8 @@ setup(
     test_suite='tests',
 
     package_data = {
-        # If any package contains *.txt or *.rst files, include them:
-        '': ['*.txt', '*.rst'],
+        # If any package contains *.md, *.txt or *.rst files, include them:
+        '': ['*.md', '*.rst'],
     },
 
 )

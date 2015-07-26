@@ -7,7 +7,7 @@ import numpy as np
 from pprint import pprint
 
 from progressive import *
-from progressive.changemanager import ChangeManager, NIL
+from progressive.core.changemanager import ChangeManager, NIL
 
 class TestChangeManager(unittest.TestCase):
     def test_changemanager(self):

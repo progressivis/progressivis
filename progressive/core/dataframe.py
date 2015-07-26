@@ -1,7 +1,7 @@
-from progressive.module import *
+from progressive.core.module import *
 import pandas as pd
 
-from progressive.changemanager import ChangeManager, NIL
+from progressive.core.changemanager import ChangeManager, NIL
 
 class DataFrameSlot(Slot):
     def __init__(self, output_module, output_name, input_module, input_name):
