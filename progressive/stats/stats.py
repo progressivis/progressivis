@@ -14,7 +14,7 @@ class Stats(DataFrameModule):
         self.default_step_size = 10000
 
         index = ['count', 'sum', 'mean', 'min', 'max']
-        self._df = pd.DataFrame({'description': [np.nan]
+        self._df = pd.DataFrame({'description': [np.nan],
                                  self.UPDATE_COLUMN: [self.EMPTY_TIMESTAMP]},
                                  index=index)
 
