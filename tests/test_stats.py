@@ -11,27 +11,27 @@ import pandas as pd
 from pprint import pprint
 
 class TestStats(unittest.TestCase):
-    rows = 30000
-    cols = 10
-    filename='data/smallfile.csv'
+    filename='data/bigfile.csv'
+    rows = 1000000
+    cols = 30
     def setUp(self):
         self.scheduler = Scheduler()
-        if not os.path.exists(self.filename):
-            print "Generating %s for testing" % self.filename
-            with open(self.filename, 'w') as csvfile:
-                writer = csv.writer(csvfile)
-                for r in range(0,self.rows):
-                    row=list(np.random.rand(self.cols))
-                    writer.writerow(row)
-        self.csv_module = CSVLoader(self.filename,id='test_read_csv',
-                                    index_col=False,header=None,chunksize=3000,
-                                    scheduler=self.scheduler)
+        if os.path.exists(self.filename):
+            return
+        print "Generating %s for testing" % self.filename
+        with open(self.filename, 'w') as csvfile:
+            writer = csv.writer(csvfile)
+            for r in range(0,self.rows):
+                row=list(np.random.rand(self.cols))
+                writer.writerow(row)
 
     def test_stats(self):
+        csv_module = CSVLoader(self.filename,id='test_read_csv',
+                               index_col=False,header=None,chunksize=3000,
+                               scheduler=self.scheduler)
         module=Stats(1,id='test_stats', scheduler=self.scheduler)
         module.describe()
-        self.csv_module.describe()
-        connect(self.csv_module, 'df', module, 'df')
+        connect(csv_module, 'df', module, 'df')
         connect(module, 'stats',
                 Print(id='print', scheduler=self.scheduler), 'in')
         self.scheduler.run()
