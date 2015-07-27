@@ -15,6 +15,14 @@ class ChangeManager(object):
         self.deleted = NIL
         self.buffer = NIL
 
+    def reset(self):
+        self.last_time = last_time
+        self.index = pd.Index([])
+        self.updated = NIL
+        self.created = NIL
+        self.deleted = NIL
+        self.buffer = NIL
+
     def update(self, time, df):
         if time <= self.last_time:
             return

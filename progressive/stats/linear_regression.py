@@ -14,10 +14,10 @@ class LinearRegression(DataFrameModule):
         super(LinearRegression, self).__init__(dataframe_slot='in', **kwds)
         self.default_step_size = 10000
 
-        index = ['coef', 'intercept', 'sum_x', 'sum_x_sqr', 'sum_y', 'sum_xy']
-        self._df = pd.DataFrame({'description': [np.nan, np.nan, 0, 0, 0, 0, 0],
-                                 self.UPDATE_COLUMN: [self.EMPTY_TIMESTAMP]},
-                                 index=index)
+        columns = ['coef', 'intercept', 'sum_x', 'sum_x_sqr', 'sum_y', 'sum_xy'] + [self.UPDATE_COLUMN]
+        dtypes = [np.dtype(float)] * len(columns)
+        values = [np.nan] * len(columns)
+        self._df = typed_dataframe(columns, dtypes, values)
 
     def is_ready(self):
         if not self.get_input_slot('df').is_buffer_empty():
@@ -38,20 +38,15 @@ class LinearRegression(DataFrameModule):
             return self._return_run_step(self.state_blocked, steps_run=steps)
         x = input_df.loc[indices, self._x]
         y = input_df.loc[indices, self._y]
-        desc = self._df['description']
-        sum_x     = desc['sum_x']     + x.sum() 
-        sum_x_sqr = desc['sum_x_sqr'] + (x*x).sum()
-        sum_y     = desc['sum_y']     + y.sum()
-        sum_xy    = desc['sum_xy']    + (x*y).sum()
+        df = self._df
+        sum_x     = df.at[0, 'sum_x']     + x.sum() 
+        sum_x_sqr = df.at[0, 'sum_x_sqr'] + (x*x).sum()
+        sum_y     = df.at[0, 'sum_y']     + y.sum()
+        sum_xy    = df.at[0, 'sum_xy']    + (x*y).sum()
         denom = len(x) * sum_x_sqr - sum_x*sum_x
         coef = (sum_y*sum_x_sqr - sum_x*sum_xy) / denom
         intercept = (len(x)*sum_xy - sum_x*sum_y) / denom
-        desc['sum_x'] = sum_x
-        desc['sum_x_sqr'] = sum_x_sqr
-        desc['sum_y'] = sum_y
-        desc['sum_xy'] = sum_xy
-        desc['coef'] = coef
-        desc['intercept'] = intercept
-        self._df[self.UPDATE_COLUMN] = np.nan # to update time stamps
+        ['coef', 'intercept', 'sum_x', 'sum_x_sqr', 'sum_y', 'sum_xy']
+        df.loc[0] = [coef, intercept, sum_x, sum_x_sqr, sum_y, sum_xy, np.nan]
         return self._return_run_step(self.state_ready, steps_run=steps, reads=steps, updates=len(desc))
         

@@ -346,7 +346,7 @@ class Module(TracerProxy):
         self._end_time = self._start_time + self.quantum
         self.start_run(now, step_size=self.default_step_size, quantum=self.quantum)
         next_state = None
-        step_size = self.default_step_size
+        step_size = np.ceil(self.default_step_size*self.quantum)
         #TODO Forcing 4 steps, but I am not sure, maybe change when the predictor improves
         max_time = self.quantum / 4.0
         
