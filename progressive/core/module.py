@@ -17,11 +17,28 @@ default_quantum = 1
 def connect(output_module, output_name, input_module, input_name):
     return output_module.connect_output(output_name, input_module, input_name)
 
+class ModuleMeta(type):
+    """Module metaclass is needed to collect the input parameter list in all_parameters.
+    """
+    def __init__(cls, name, bases, attrs):
+        if not "parameters" in attrs:
+            cls.parameters = []
+        all_props = list(cls.parameters)
+        for base in bases:
+            all_props += getattr(base, "all_parameters", [])
+        cls.all_parameters = all_props
+        super(ModuleMeta, cls).__init__(name, bases, attrs)
+
 class Module(TracerProxy):
+    __metaclass__ = ModuleMeta
+    
+    parameters = [('quantum', np.dtype(float), 1.0)]
+        
     EMPTY_COLUMN = pd.Series([],index=[],name='empty')
     EMPTY_TIMESTAMP = np.nan # pd.to_datetime(np.nan)
     UPDATE_COLUMN = '_update'
     TRACE_SLOT = '_trace'
+    PARAMETERS_SLOT = '_params'
 
     state_created = 0
     state_ready = 1
@@ -62,6 +79,7 @@ class Module(TracerProxy):
         # always present
         output_descriptors = output_descriptors + [SlotDescriptor(Module.TRACE_SLOT, type=pd.DataFrame, required=False)]
         
+        input_descriptors = input_descriptors # + [SlotDescriptor(Module.PARAMETERS_SLOT, type=pd.DataFrame, required=False)]
         self._id = id
         self.quantum = quantum
         self._scheduler = scheduler
@@ -329,6 +347,7 @@ class Module(TracerProxy):
         self.start_run(now, step_size=self.default_step_size, quantum=self.quantum)
         next_state = None
         step_size = self.default_step_size
+        #TODO Forcing 4 steps, but I am not sure, maybe change when the predictor improves
         max_time = self.quantum / 4.0
         
         while self._start_time <= self._end_time:
@@ -375,15 +394,9 @@ class Module(TracerProxy):
 class Print(Module):
     def __init__(self, columns=None, **kwds):
         self._add_slots(kwds,'input_descriptors', [SlotDescriptor('in')])
-        super(Print, self).__init__(quantum=0, **kwds)
+        super(Print, self).__init__(quantum=0.1, **kwds)
         self._columns = columns
 
-    def set_state(self, s):
-        if s==Module.state_terminated:
-            self._state = Module.state_blocked
-        else:
-            self._state = s
-            
     def run_step(self, step_size, howlong):
         df = self.get_input_slot('in').data()
         steps=len(df)

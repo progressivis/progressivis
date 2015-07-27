@@ -1,4 +1,4 @@
-from progressive.core.common import ProgressiveError
+from progressive.core.common import ProgressiveError, typed_dataframe
 from progressive.core.dataframe import DataFrameModule
 from progressive.core.slot import SlotDescriptor
 
@@ -15,6 +15,8 @@ def _pretty_name(x):
         return '%.1f%%' % x
 
 class Percentiles(DataFrameModule):
+    parameters = [('percentiles', object, [0.25, 0.5, 0.75])]
+                  
     def __init__(self, column, percentiles=None, **kwds):
         if not column:
             raise ProgressiveError('Need a column name')
@@ -25,7 +27,9 @@ class Percentiles(DataFrameModule):
         self.default_step_size = 1000
         self.tdigest = TDigest()
 
-        if percentiles is not None:
+        if percentiles is None:
+            percentiles = np.array([0.25, 0.5, 0.75])
+        else:
             # get them all to be in [0, 1]
             percentiles = np.asarray(percentiles)
             if (percentiles > 1).any():
@@ -37,14 +41,13 @@ class Percentiles(DataFrameModule):
                 lh = percentiles[percentiles < .5]
                 uh = percentiles[percentiles > .5]
                 percentiles = np.hstack([lh, 0.5, uh])
-        else:
-            percentiles = np.array([0.25, 0.5, 0.75])
 
         self._percentiles = percentiles
-        index = [_pretty_name(x) for x in self._percentiles] 
-        self._df = pd.DataFrame({'description': [np.nan],
-                                 self.UPDATE_COLUMN: [self.EMPTY_TIMESTAMP]},
-                                 index=index)
+        #self._df = pd.DataFrame({'description': [np.nan], self.UPDATE_COLUMN: [self.EMPTY_TIMESTAMP]}, index=index)
+        columns = [_pretty_name(x) for x in self._percentiles] + [self.UPDATE_COLUMN]
+        dtypes = [np.dtype(float)] * len(columns)
+        values = [np.nan] * len(columns)
+        self._df = typed_dataframe(columns, dtypes, values)
 
     def is_ready(self):
         if not self.get_input_slot('df').is_buffer_empty():
@@ -56,6 +59,7 @@ class Percentiles(DataFrameModule):
         input_df = dfslot.data()
         dfslot.update(self._start_time, input_df)
         if len(dfslot.deleted) or len(dfslot.updated) > len(dfslot.created):
+            # should restart from time 0
             raise ProgressiveError('Percentile module does not manage updates or deletes')
         dfslot.buffer_created()
 
@@ -66,8 +70,10 @@ class Percentiles(DataFrameModule):
         x = input_df.loc[indices, self._column]
         self.tdigest.batch_update(x)
         df = self._df
+        values = []
         for p in self._percentiles:
-            df.loc[_pretty_name(p),'description'] = self.tdigest.percentile(p*100)
-        self._df[self.UPDATE_COLUMN] = np.nan  # to update time stamps
+            values.append(self.tdigest.percentile(p*100))
+        values.append(np.nan)
+        df.loc[0] = values
         return self._return_run_step(self.state_ready, steps_run=steps, reads=steps, updates=len(self._df))
 

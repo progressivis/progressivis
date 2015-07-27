@@ -33,7 +33,6 @@ class DataFrameSlot(Slot):
         else:
             return True
 
-
     @property
     def last_time(self):
         if self.changes:

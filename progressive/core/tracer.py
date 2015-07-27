@@ -65,18 +65,20 @@ class DataFrameTracer(Tracer):
         self.last_run_step_details = []
         self.last_run_start = None
         self.last_run_details = []
+        self.columns = [ name for (name, dtype, dflt) in self.df_columns() ]
+        self.columns[self.columns.index('end')] = '_update'
 
     def df_columns(self):
         return self.TRACE_COLUMNS
         
     def create_df(self):
         if self.dataframe is None:
-            columns = {}
+            d = {}
             for (name, dtype, dflt) in self.df_columns():
-                columns[name] = pd.Series([], dtype=dtype)
-            columns['_update'] = columns['end'] # 'end' time becomes '_update' time logically
-            del columns['end']
-            self.dataframe = pd.DataFrame(columns)
+                d[name] = pd.Series([], dtype=dtype)
+            d['_update'] = d['end'] # 'end' time becomes '_update' time
+            del d['end']
+            self.dataframe = pd.DataFrame(d, columns=self.columns)
         return self.dataframe
 
     def df(self):
@@ -92,7 +94,7 @@ class DataFrameTracer(Tracer):
                 d[name] = pd.Series(d[name], dtype=dtype)
             d['_update'] = d['end'] # 'end' time becomes '_update' time logically
             del d['end']
-            df = pd.DataFrame(d)
+            df = pd.DataFrame(d, columns=self.columns)
             self.dataframe = self.dataframe.append(df, ignore_index=True)
             self.buffer = []
         return self.dataframe
