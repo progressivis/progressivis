@@ -235,7 +235,7 @@ class Module(TracerProxy):
 
     def validate(self):
         self.validate_inouts()
-        self.state=Module.state_ready
+        self.state=Module.state_blocked
 
     def get_data(self, name):
         if name==Module.TRACE_SLOT:
