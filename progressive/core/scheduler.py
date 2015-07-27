@@ -25,7 +25,12 @@ class Scheduler(object):
         return default_timer()-self._start
 
     def collect_dependencies(self):
-        return {mid: set(map((lambda m : m.output_module.id()), module.input_slot_values())) for (mid,module) in self._modules.iteritems()}
+        dependencies = {}
+        for (mid, module) in self._modules.iteritems:
+            outs = [m.output_module.id() for m in module.input_slot_values() if m.output_module]
+            if outs:
+                dependencies[mid] = set(outs)
+        return dependencies
 
     def validate(self):
         if not self._valid:
