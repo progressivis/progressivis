@@ -26,8 +26,8 @@ class Scheduler(object):
 
     def collect_dependencies(self):
         dependencies = {}
-        for (mid, module) in self._modules.iteritems:
-            outs = [m.output_module.id() for m in module.input_slot_values() if m.output_module]
+        for (mid, module) in self._modules.iteritems():
+            outs = [m.output_module.id() for m in module.input_slot_values() if m]
             if outs:
                 dependencies[mid] = set(outs)
         return dependencies

@@ -45,8 +45,8 @@ class Slot(object):
         scheduler.invalidate()
 
     def validate_types(self):
-        output_type = self.output_module.get_output_type(self.output_name)
-        input_type = self.input_module.get_input_type(self.input_name)
+        output_type = self.output_module.output_slot_type(self.output_name)
+        input_type = self.input_module.input_slot_type(self.input_name)
         if output_type is None or input_type is None:
             return True
         if output_type == input_type:

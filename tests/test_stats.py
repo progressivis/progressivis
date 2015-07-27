@@ -3,6 +3,7 @@ import unittest
 from progressive import *
 from progressive.stats import Stats
 from progressive.io import CSVLoader
+from progressive.core.wait import Wait
 
 import os
 import csv
@@ -30,6 +31,9 @@ class TestStats(unittest.TestCase):
                                index_col=False,header=None,chunksize=3000,
                                scheduler=self.scheduler)
         module=Stats(1,id='test_stats', scheduler=self.scheduler)
+        wait=Wait(id='wait', delay=3, scheduler=self.scheduler)
+        connect(csv_module, 'df', wait, 'in')
+        connect(wait, 'out', module, '_params')
         module.describe()
         connect(csv_module, 'df', module, 'df')
         connect(module, 'stats',

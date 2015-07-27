@@ -79,7 +79,7 @@ class Module(TracerProxy):
         # always present
         output_descriptors = output_descriptors + [SlotDescriptor(Module.TRACE_SLOT, type=pd.DataFrame, required=False)]
         
-        input_descriptors = input_descriptors # + [SlotDescriptor(Module.PARAMETERS_SLOT, type=pd.DataFrame, required=False)]
+        input_descriptors = input_descriptors + [SlotDescriptor(Module.PARAMETERS_SLOT, type=pd.DataFrame, required=False)]
         self._id = id
         self.quantum = quantum
         self._scheduler = scheduler
@@ -170,11 +170,11 @@ class Module(TracerProxy):
     def get_input_module(self,name):
         return self.get_input_slot(name).output_module
 
-    def get_input_type(self,name):
-        return self._input_types[name]
-
     def input_slot_values(self):
         return self._input_slots.values()
+
+    def input_slot_type(self,name):
+        return self._input_types[name]
 
     def input_slot_names(self):
         return self._input_slots.keys()
@@ -210,12 +210,13 @@ class Module(TracerProxy):
 
     def validate_outputs(self):
         for sd in self.output_descriptors:
-            slot = self._output_slots[sd.name]
-            if sd.required and slot is None:
+            slots = self._output_slots[sd.name]
+            if sd.required and len(slots)==0:
                 raise ProgressiveError('Missing output slot %s in %s',
                                        sd.name, self._id)
-            if slot:
-                slot.validate_types()
+            if slots:
+                for slot in slots:
+                    slot.validate_types()
 
     def _connect_output(self, slot):
         slot_list = self.get_output_slot(slot.output_name)
@@ -284,21 +285,24 @@ class Module(TracerProxy):
             return True
 
         if self.state == Module.state_blocked:
-#            import pdb
-#            pdb.set_trace()
             zombie=True
+            ready = True
             for slot in self.input_slot_values():
-                inmod = slot.output_module
-                ints = inmod.last_update()
+                if slot is None: # not required slot
+                    continue
+                in_module = slot.output_module
+                in_ts = in_module.last_update()
                 ts = self.last_update()
-                if (ints is not None and ts is None) or \
-                  (ints > ts):
-                    return True
-                if inmod.state!=Module.state_terminated:
+                if in_ts is None:
+                    ready = False
+                elif (ts is not None) and (in_ts <= ts):
+                    ready = False
+                
+                if in_module.state!=Module.state_terminated:
                     zombie = False
-
             if zombie:
                 self.state = Module.state_terminated
+            return ready
         return False
 
     def is_terminated(self):
