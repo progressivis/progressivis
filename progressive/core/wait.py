@@ -20,6 +20,8 @@ class Wait(Module):
         trace = inslot.output_module.tracer.df() 
         if self.delay:
             return trace[Module.UPDATE_COLUMN].irow(-1) >= self.delay
+        elif self.reads:
+            return trace['reads'].irow(-1) >= self.reads
         return False
 
     def predict_step_size(self, duration):
