@@ -24,9 +24,9 @@ class Histogram2d(DataFrameModule):
         self.y_column = y_column
         self.default_step_size = 10000
 
-        columns = ['sum', 'histogram2d'] + [self.UPDATE_COLUMN]
-        dtypes = [np.dtype(float), np.dtype(object)]
-        values = [0, None, np.nan]
+        columns = ['histogram2d', 'cmin', 'cmax'] + [self.UPDATE_COLUMN]
+        dtypes = [np.dtype(object), np.dtype(float), np.dtype(float), np.dtype(float)]
+        values = [None, 0, np.nan, np.nan]
 
         self._df = typed_dataframe(columns, dtypes, values)
 
@@ -54,15 +54,15 @@ class Histogram2d(DataFrameModule):
                                                bins=[p.xbins, p.ybins],
                                                range=[[p.xmin, p.xmax],[p.ymin, p.ymax]],
                                                normed=False)
-        sum = histo.sum()
         df = self._df
         old_histo = df.at[0, 'histogram2d']
         if old_histo is None:
             df.at[0, 'histogram2d'] = histo
-            df.at[0, 'sum'] = sum
+            old_histo = histo
         else:
             old_histo += histo
-            df.at[0, 'sum'] += sum
+        cmax = old_histo.max()
+        df.at[0, 'max'] = max
         df.at[0, self.UPDATE_COLUMN] = np.nan  # to update time stamps
         next_state = self.state_blocked if dfslot.is_buffer_empty() else self.state_ready
         print "Next state is %s" % next_state
