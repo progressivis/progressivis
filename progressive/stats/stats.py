@@ -9,7 +9,7 @@ import pandas as pd
 class Stats(DataFrameModule):
     def __init__(self, column, min_column=None, max_column=None, **kwds):
         self._add_slots(kwds,'input_descriptors',
-                        [SlotDescriptor('df', type=pd.DataFrame)])
+                        [SlotDescriptor('df', type=pd.DataFrame, required=True)])
         super(Stats, self).__init__(dataframe_slot='stats', **kwds)
         self._column = column
         self.default_step_size = 10000
