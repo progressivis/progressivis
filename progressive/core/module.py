@@ -13,8 +13,6 @@ from progressive.core.slot import *
 from progressive.core.tracer import *
 from progressive.core.time_predictor import *
 
-default_quantum = 1
-
 def connect(output_module, output_name, input_module, input_name):
     return output_module.connect_output(output_name, input_module, input_name)
 
@@ -58,7 +56,6 @@ class Module(TracerProxy):
 
     def __init__(self,
                  id=None,
-                 quantum=None,
                  scheduler=None,
                  tracer=None,
                  predictor=None,
@@ -67,8 +64,6 @@ class Module(TracerProxy):
                  **kwds):
         if id is None:
             id = uuid4()
-        if quantum is None:
-            quantum = default_quantum
         if scheduler is None:
             scheduler = default_scheduler
         if tracer is None:
@@ -83,9 +78,7 @@ class Module(TracerProxy):
         
         input_descriptors = input_descriptors + [SlotDescriptor(Module.PARAMETERS_SLOT, type=pd.DataFrame, required=False)]
         self._id = id
-        self._params = typed_dataframe(self.all_parameters + [self.UPDATE_COLUMN_DESC])
-        self.params = DataFrameAsDict(self._params)
-        self.params.quantum = quantum
+        self._parse_parameters(kwds)
         self._scheduler = scheduler
         if self._scheduler.exists(id):
             raise ProgressiveError('module already exists in scheduler, delete it first')
@@ -130,6 +123,13 @@ class Module(TracerProxy):
     @property
     def paramameters(self):
         return self._params
+
+    def _parse_parameters(self, kwds):
+        self._params = typed_dataframe(self.all_parameters + [self.UPDATE_COLUMN_DESC])
+        self.params = DataFrameAsDict(self._params)
+        for (name,dtype,dflt) in self.all_parameters:
+            if name in kwds:
+                self.params[name] = kwds[name]
 
     def timer(self):
         return self._scheduler.timer()

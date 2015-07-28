@@ -7,7 +7,16 @@ import numpy as np
 import pandas as pd
 
 class Histogram2d(DataFrameModule):
-    def __init__(self, x_column, y_column, bins, xmin, ymin, xmax, ymax, **kwds):
+    parameter = [('xbins', dtype(int), 1024),
+                 ('ybins', dtype(int), 1024),
+                 ('xmin', dtype(float), 0),
+                 ('xmax', dtype(float), 1),
+                 ('ymin', dtype(float), 0),
+                 ('ymax', dtype(float), 1),
+                 ('xdelta', dtype(float), 0),
+                 ('ydelta', dtype(float), 0)]
+                 
+    def __init__(self, **kwds):
         self._add_slots(kwds,'input_descriptors',
                         [SlotDescriptor('df', type=pd.DataFrame)])
         super(Histogram2d, self).__init__(dataframe_slot='histogram', **kwds)

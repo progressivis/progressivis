@@ -24,8 +24,15 @@ class DataFrameAsDict(object):
     def __init__(self, df):
         super(DataFrameAsDict, self).__setattr__('df', df)
         
+    def __getitem__(self, key):
+        return super(DataFrameAsDict, self).__getattribute__('df').at[0, key]
+
+    def __setitem__(self, key, value):
+        super(DataFrameAsDict, self).__getattribute__('df').at[0, key] = value
+
     def __getattr__(self, attr):
-        return super(DataFrameAsDict, self).__getattribute__('df').at[0, attr]
+        return self[attr]
     
     def __setattr__(self, attr, value):
-        super(DataFrameAsDict, self).__getattribute__('df').at[0, attr] = value
+        self[attr] = value
+
