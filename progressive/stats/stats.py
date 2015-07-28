@@ -14,7 +14,9 @@ class Stats(DataFrameModule):
         self._column = column
         self.default_step_size = 10000
 
-        columns = ['min', 'max'] + [self.UPDATE_COLUMN]
+        self.min_column = str(column) + '.min'
+        self.max_column = str(column) + '.max'
+        columns = [self.min_column, self.max_column] + [self.UPDATE_COLUMN]
         dtypes = [np.dtype(float)] * len(columns)
         values = [np.nan] * len(columns)
         self._df = typed_dataframe(columns, dtypes, values)
@@ -38,7 +40,7 @@ class Stats(DataFrameModule):
             return self._return_run_step(self.state_blocked, steps_run=steps)
         x = input_df.loc[indices, self._column]
         df = self._df
-        df.loc[0] = [np.nanmin([df.at[0, 'min'], x.min()]),
-                     np.nanmax([df.at[0, 'max'], x.max()]),
+        df.loc[0] = [np.nanmin([df.at[0, self.min_column], x.min()]),
+                     np.nanmax([df.at[0, self.max_column], x.max()]),
                      np.nan]
         return self._return_run_step(self.state_ready, steps_run=steps, reads=steps, updates=len(self._df))

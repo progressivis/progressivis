@@ -144,3 +144,17 @@ class DataFrameModule(Module):
         if self._df is not None:
             now=self._end_time # pd.to_datetime(self._end_time, unit='s')
             self._df[Module.UPDATE_COLUMN].fillna(now,inplace=True)
+
+class Constant(DataFrameModule):
+    def __init__(self, df, **kwds):        
+        super(Constant, self).__init__(**kwds)
+        self._df = df
+
+    def is_ready(self):
+        return True
+
+    def predict_step_size(self, duration):
+        return 1
+    
+    def run_step(self, step_size, howlong):
+        raise StopIteration()

@@ -251,6 +251,8 @@ class Module(TracerProxy):
     def get_data(self, name):
         if name==Module.TRACE_SLOT:
             return self.tracer.df()
+        elif name==Module.PARAMETERS_SLOT:
+            return self._params
         return None
 
     def update_timestamps(self):
