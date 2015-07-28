@@ -5,6 +5,8 @@ import numpy as np
 
 
 class CSVLoader(DataFrameModule):
+    parameters = [('chunksize', np.dtype(int), 1000)]
+
     def __init__(self, filepath_or_buffer, **kwds):
         super(CSVLoader, self).__init__(**kwds)
         self.default_step_size = kwds.get('chunksize', 1000)  # initial guess

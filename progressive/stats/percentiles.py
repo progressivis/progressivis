@@ -1,4 +1,5 @@
-from progressive.core.common import ProgressiveError, typed_dataframe
+from progressive.core.common import ProgressiveError
+from progressive.core.utils import typed_dataframe
 from progressive.core.dataframe import DataFrameModule
 from progressive.core.slot import SlotDescriptor
 

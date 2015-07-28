@@ -1,7 +1,12 @@
 from progressive.core.common import ProgressiveError
 from progressive import Module, SlotDescriptor
 
+import numpy as np
+
 class Wait(Module):
+    parameters = [('delay', np.dtype(float), np.nan),
+                  ('reads', np.dtype(int), 0)]
+
     def __init__(self, delay=None, reads=None, **kwds):        
         if delay is None and reads is None:
             raise ProgressiveError('Module %s needs a delay or a number of reads', self.__class__.name)

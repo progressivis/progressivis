@@ -42,7 +42,8 @@ Loads a file and returns a scipy sparse matrix of document features.
 
 class VECLoader(DataFrameModule):
     pattern = re.compile(r"\(([0-9]+),([-+.0-9]+)\)[ ]*")
-
+    parameters = [('chunksize', np.dtype(int), 1000)]
+    
     def __init__(self, filename, dtype=np.float64, **kwds):
         super(VECLoader, self).__init__(**kwds)
         self._dtype = dtype
