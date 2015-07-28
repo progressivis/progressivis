@@ -330,7 +330,7 @@ class Module(TracerProxy):
         self.set_state(s)
 
     def set_state(self, s):
-        assert s>=Module.state_created and s<=Module.state_terminated
+        assert s>=Module.state_created and s<=Module.state_terminated, "State %s invalid in module %s"%(s, self.id())
         self._state = s
 
     def predict_step_size(self, duration):

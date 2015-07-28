@@ -49,7 +49,7 @@ class Scheduler(object):
         self._running = True
         self.validate()
         self._runorder = toposort_flatten(self.collect_dependencies())
-        print "Scheduler run order: %s" % self._runorder
+        print "Scheduler run order: %s" % (self._runorder)
         done = False
 
         modules = map(self.module, self._runorder)
