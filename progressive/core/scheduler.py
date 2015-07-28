@@ -51,6 +51,7 @@ class Scheduler(object):
         self._runorder = toposort_flatten(self.collect_dependencies())
         print "Scheduler run order: %s" % (self._runorder)
         done = False
+        run_number = 0
 
         modules = map(self.module, self._runorder)
         for module in modules:
@@ -65,7 +66,8 @@ class Scheduler(object):
                         print "Module %s not ready" % (module.id())
                     continue
                 print "Running module %s" % (module.id())
-                module.run()
+                module.run(run_number)
+                run_number += 1
                 print "Module %s returned" % (module.id())
                 if not module.is_terminated():
                     done = False

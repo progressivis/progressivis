@@ -24,7 +24,7 @@ class Histogram2d(DataFrameModule):
         self.y_column = y_column
         self.default_step_size = 10000
 
-        columns = ['histogram2d', 'cmin', 'cmax'] + [self.UPDATE_COLUMN]
+        columns = ['array', 'cmin', 'cmax'] + [self.UPDATE_COLUMN]
         dtypes = [np.dtype(object), np.dtype(float), np.dtype(float), np.dtype(float)]
         values = [None, 0, np.nan, np.nan]
 
@@ -35,7 +35,7 @@ class Histogram2d(DataFrameModule):
             return True
         return super(Histogram2d, self).is_ready()
 
-    def run_step(self, step_size, howlong):
+    def run_step(self,run_number,step_size,howlong):
         dfslot = self.get_input_slot('df')
         input_df = dfslot.data()
         dfslot.update(self._start_time, input_df)
@@ -55,9 +55,9 @@ class Histogram2d(DataFrameModule):
                                                range=[[p.xmin, p.xmax],[p.ymin, p.ymax]],
                                                normed=False)
         df = self._df
-        old_histo = df.at[0, 'histogram2d']
+        old_histo = df.at[0, 'array']
         if old_histo is None:
-            df.at[0, 'histogram2d'] = histo
+            df.at[0, 'array'] = histo
             old_histo = histo
         else:
             old_histo += histo

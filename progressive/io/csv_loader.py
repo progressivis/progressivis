@@ -20,7 +20,7 @@ class CSVLoader(DataFrameModule):
     def rows_read():
         return self._rows_read
 
-    def run_step(self,step_size, howlong):
+    def run_step(self,run_number,step_size, howlong):
         df = self.parser.read(step_size)
         creates = len(df)
         self._rows_read += creates

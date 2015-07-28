@@ -30,8 +30,7 @@ class Merge(DataFrameModule):
         self._input_slots[slot.input_name] = slot
         return ret
     
-    def run_step(self, step_size, howlong):
-        
+    def run_step(self,run_number,step_size,howlong):
         frames = []
         for name in self.inputs:
             df = self.get_input_slot(name).data()

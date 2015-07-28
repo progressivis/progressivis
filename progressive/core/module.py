@@ -258,7 +258,7 @@ class Module(TracerProxy):
     def update_timestamps(self):
         return EMPTY_COLUMN
 
-    def run_step(self,step_size,howlong):
+    def run_step(self,run_number,step_size,howlong):
         """Run one step of the module, with a duration up to the 'howlong' parameter.
 
         Returns a dictionary with at least 5 pieces of information: 1)
@@ -354,7 +354,7 @@ class Module(TracerProxy):
     def collect_stats(self, ts):
         return {}
 
-    def run(self):
+    def run(self, run_number):
         if self.is_running():
             raise ProgressiveError('Module already running')
         self.state = Module.state_running
@@ -377,7 +377,7 @@ class Module(TracerProxy):
             run_step_ret = {'reads': 0, 'updates': 0, 'creates': 0}
             try:
                 self.before_run_step(now, step_size=step_size, quantum=self.params.quantum)
-                run_step_ret = self.run_step(step_size, remaining_time)
+                run_step_ret = self.run_step(run_number, step_size, remaining_time)
                 next_state = run_step_ret['next_state']
             except StopIteration:
                 next_state = Module.state_terminated
@@ -414,7 +414,7 @@ class Print(Module):
         super(Print, self).__init__(quantum=0.1, **kwds)
         self._columns = columns
 
-    def run_step(self, step_size, howlong):
+    def run_step(self,run_number,step_size,howlong):
         df = self.get_input_slot('in').data()
         steps=len(df)
         print df

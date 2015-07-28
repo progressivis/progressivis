@@ -156,5 +156,5 @@ class Constant(DataFrameModule):
     def predict_step_size(self, duration):
         return 1
     
-    def run_step(self, step_size, howlong):
+    def run_step(self,run_number,step_size,howlong):
         raise StopIteration()

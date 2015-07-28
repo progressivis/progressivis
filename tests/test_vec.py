@@ -14,7 +14,7 @@ class TestProgressiveLoadVEC(unittest.TestCase):
     def test_read_vec(self):
         module=VECLoader(self.filename,id='test_read_vec')
         self.assertTrue(module.df() is None)
-        module.run()
+        module.run(0)
         s = module.trace_stats(max_runs=1)
         df = module.df()
         self.assertFalse(df is None)
@@ -23,8 +23,8 @@ class TestProgressiveLoadVEC(unittest.TestCase):
         cnt = 1
         
         while not module.is_terminated():
+            module.run(cnt)
             cnt += 1
-            module.run()
             s = module.trace_stats(max_runs=1)
             df = module.df()
             ln = len(df)

@@ -55,7 +55,7 @@ class Percentiles(DataFrameModule):
             return True
         return super(Percentiles, self).is_ready()
 
-    def run_step(self, step_size, howlong):
+    def run_step(self,run_number,step_size,howlong):
         dfslot = self.get_input_slot('df')
         input_df = dfslot.data()
         dfslot.update(self._start_time, input_df)

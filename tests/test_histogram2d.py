@@ -1,8 +1,9 @@
 import unittest
 
 from progressive import *
-from progressive.stats import Histogram2d
 from progressive.io import CSVLoader
+from progressive.stats import Histogram2d
+from progressive.vis import Heatmap
 
 import os
 import csv
@@ -25,7 +26,7 @@ class TestHistogram2d(unittest.TestCase):
                 row=list(np.random.rand(self.cols))
                 writer.writerow(row)
 
-    def test_percentile(self):
+    def test_histogram2d(self):
         csv_module = CSVLoader(self.filename,id='csv',
                                index_col=False,header=None,chunksize=3000,
                                scheduler=self.scheduler)
@@ -35,6 +36,9 @@ class TestHistogram2d(unittest.TestCase):
         connect(csv_module, 'df', module, 'df')
         connect(module, 'histogram2d',
                 Print(id='print', scheduler=self.scheduler), 'in')
+        heatmap=Heatmap(id='heatmap', filename='histo.png',
+                       scheduler=self.scheduler)
+        connect(module, 'histogram2d', heatmap, 'array')
         self.scheduler.run()
         s = module.trace_stats(max_runs=1)
         #print "Done. Run time: %gs, loaded %d rows" % (s['duration'].irow(-1), len(module.df()))
