@@ -7,15 +7,19 @@ import numpy as np
 import pandas as pd
 
 class Stats(DataFrameModule):
-    def __init__(self, column, **kwds):
+    def __init__(self, column, min_column=None, max_column=None, **kwds):
         self._add_slots(kwds,'input_descriptors',
                         [SlotDescriptor('df', type=pd.DataFrame)])
         super(Stats, self).__init__(dataframe_slot='stats', **kwds)
         self._column = column
         self.default_step_size = 10000
 
-        self.min_column = str(column) + '.min'
-        self.max_column = str(column) + '.max'
+        if min_column is None:
+            min_column = str(column) + '.min'
+        if max_column is None:
+            max_column = str(column) + '.max'
+        self.min_column = min_column
+        self.max_column = max_column
         columns = [self.min_column, self.max_column] + [self.UPDATE_COLUMN]
         dtypes = [np.dtype(float)] * len(columns)
         values = [np.nan] * len(columns)

@@ -175,7 +175,7 @@ class Module(TracerProxy):
         return slot
 
     def get_input_slot(self,name):
-         # raise error is the slot is not declared
+         # raises error is the slot is not declared
         return self._input_slots[name]
 
     def get_input_module(self,name):
