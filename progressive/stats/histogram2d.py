@@ -15,7 +15,12 @@ class Histogram2d(DataFrameModule):
                   ('ymax',   np.dtype(float), 1),
                   ('xdelta', np.dtype(float), 0),
                   ('ydelta', np.dtype(float), 0)]
-                 
+
+    schema = [('array', np.dtype(object), None),
+              ('cmin', np.dtype(float), np.nan),
+              ('cmax', np.dtype(float), np.nan),
+              DataFrameModule.UPDATE_COLUMN_DESC]
+
     def __init__(self, x_column, y_column, **kwds):
         self._add_slots(kwds,'input_descriptors',
                         [SlotDescriptor('df', type=pd.DataFrame)])
@@ -24,11 +29,7 @@ class Histogram2d(DataFrameModule):
         self.y_column = y_column
         self.default_step_size = 10000
 
-        columns = ['array', 'cmin', 'cmax'] + [self.UPDATE_COLUMN]
-        dtypes = [np.dtype(object), np.dtype(float), np.dtype(float), np.dtype(float)]
-        values = [None, 0, np.nan, np.nan]
-
-        self._df = typed_dataframe(columns, dtypes, values)
+        self._df = typed_dataframe(Histogram2d.schema)
 
     def is_ready(self):
         if not self.get_input_slot('df').is_buffer_empty():
@@ -38,9 +39,9 @@ class Histogram2d(DataFrameModule):
     def run_step(self,run_number,step_size,howlong):
         dfslot = self.get_input_slot('df')
         input_df = dfslot.data()
-        dfslot.update(self._start_time, input_df)
+        dfslot.update(run_number, input_df)
         if len(dfslot.deleted) or len(dfslot.updated) > len(dfslot.created):
-            raise ProgressiveError('%s module does not manage updates or deletes', self.__class__.name)
+            raise ProgressiveError('%s module does not manage updates or deletes', self.__class__.__name__)
         dfslot.buffer_created()
 
         indices = dfslot.next_buffered(step_size)
@@ -63,9 +64,9 @@ class Histogram2d(DataFrameModule):
             old_histo += histo
         cmax = old_histo.max()
         df.at[0, 'max'] = cmax
-        df.at[0, self.UPDATE_COLUMN] = np.nan  # to update time stamps
+        df.at[0, self.UPDATE_COLUMN] = run_number
         next_state = self.state_blocked if dfslot.is_buffer_empty() else self.state_ready
-        print "Next state is %s" % next_state
+        print "Next state is %s" % self.state_name[next_state]
         return self._return_run_step(next_state,
                                      steps_run=steps,
                                      reads=steps,

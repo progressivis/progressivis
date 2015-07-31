@@ -87,7 +87,8 @@ class VECLoader(DataFrameModule):
             raise StopIteration()
 
 
-        df = pd.DataFrame({'document': dataset, self.UPDATE_COLUMN: np.nan})
+        df = pd.DataFrame({'document': dataset,
+                           self.UPDATE_COLUMN: self.EMPTY_TIMESTAMP})
         self._rows_read += creates
         if self._df is not None:
             self._df = self._df.append(df,ignore_index=True)

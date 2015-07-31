@@ -24,7 +24,7 @@ class CSVLoader(DataFrameModule):
         df = self.parser.read(step_size)
         creates = len(df)
         self._rows_read += creates
-        df[self.UPDATE_COLUMN] = np.nan
+        df[self.UPDATE_COLUMN] = run_number
         if self._df is not None:
             self._df = self._df.append(df,ignore_index=True)
         else:

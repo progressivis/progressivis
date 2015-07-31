@@ -25,8 +25,8 @@ class LinearTimePredictor(TimePredictor):
             return
         if n > 7:
             # limit memory of fit
-            last_run = trace_df['run'].irow(-1)
-            set_traces = step_traces[step_traces['run'] >= (last_run-1)]
+            last_run = trace_df['_update'].irow(-1)
+            set_traces = step_traces[step_traces['_update'] >= (last_run-1)]
         durations = step_traces['duration']
         operations = step_traces.reads + step_traces.updates
         if n == 1: # be reactive in case default is not conservative enough

@@ -7,8 +7,8 @@ NIL = np.array([])
 class ChangeManager(object):
     """Manage changes that accured in a DataFrame between runs.
     """
-    def __init__(self, last_time=None):
-        self.last_time = last_time
+    def __init__(self, last_run=None):
+        self.last_run = last_run
         self.index = pd.Index([])
         self.updated = NIL
         self.created = NIL
@@ -16,28 +16,28 @@ class ChangeManager(object):
         self.buffer = NIL
 
     def reset(self):
-        self.last_time = last_time
+        self.last_run = None
         self.index = pd.Index([])
         self.updated = NIL
         self.created = NIL
         self.deleted = NIL
         self.buffer = NIL
 
-    def update(self, time, df):
-        if time <= self.last_time:
+    def update(self, run_number, df):
+        if run_number <= self.last_run:
             return
         uc = df[Module.UPDATE_COLUMN]
-        if self.last_time is None:
+        if self.last_run is None:
             self.index = df.index
             self.updated = self.index.values
             self.created = self.updated
             self.deleted = NIL
         else:
-            self.updated = np.where(uc > self.last_time)[0]
+            self.updated = np.where(uc > self.last_run)[0]
             self.created = df.index.difference(self.index).values
             self.deleted = self.index.difference(df.index).values
             self.index = df.index
-        self.last_time = time
+        self.last_run = run_number
 
     def buffer_updated(self):
         self.buffer = np.hstack([self.buffer, self.updated])

@@ -34,8 +34,8 @@ class Merge(DataFrameModule):
         frames = []
         for name in self.inputs:
             df = self.get_input_slot(name).data()
-            df = df[df.columns.diff([self.UPDATE_COLUMN])]
+            df = df[df.columns.difference([self.UPDATE_COLUMN])]
             frames.append(df)
         self._df = pd.concat(frames, axis=1, join_axes=[frames[0].index])
-        self._df[self.UPDATE_COLUMN] = np.nan
+        self._df[self.UPDATE_COLUMN] = run_number
         return self._return_run_step(self.state_blocked, steps_run=1, reads=len(self._df), updates=len(self._df))

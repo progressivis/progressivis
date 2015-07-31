@@ -70,8 +70,6 @@ class DataFrameSlot(Slot):
 
 
 class DataFrameModule(Module):
-    dataframe_module_kwds = Module.module_kwds.union({'dataframe_slot'})
-    
     def __init__(self, dataframe_slot='df', **kwds):
         self._add_slots(kwds,'output_descriptors',
                         [SlotDescriptor(dataframe_slot, type=pd.DataFrame)])
@@ -122,28 +120,21 @@ class DataFrameModule(Module):
             return self._df[Module.UPDATE_COLUMN]
         return EMPTY_COLUMN
 
-    def updated_after(self, timestamp=None):
+    def updated_after(self, run_number=None):
         df = self.df()
-        if timestamp is None:
+        if run_number is None:
             return list(df.index)
         else:
-            return list(df.index[df[Module.UPDATE_COLUMN] > timestamp])
+            return list(df.index[df[Module.UPDATE_COLUMN] > run_number])
 
-    def add_timestamp(self,time, selection=None):
+    def add_timestamp(self, run_number, selection=None):
         if self._df is None:
             return
-        #ts=pd.to_datetime(time, unit='s')
         if not selection:
-            self._df[Module.UPDATE_COLUMN] = time
-            #self._df.set_index([self.ts_column], inplace=True) # don't mess with user indexes
+            self._df[Module.UPDATE_COLUMN] = run_number
         else:
-            self._df.loc[selection,Module.UPDATE_COLUMN] = time
+            self._df.loc[selection,Module.UPDATE_COLUMN] = run_number
 
-    def _stop(self):
-        super(DataFrameModule, self)._stop()
-        if self._df is not None:
-            now=self._end_time # pd.to_datetime(self._end_time, unit='s')
-            self._df[Module.UPDATE_COLUMN].fillna(now,inplace=True)
 
 class Constant(DataFrameModule):
     def __init__(self, df, **kwds):        

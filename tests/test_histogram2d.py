@@ -35,7 +35,7 @@ class TestHistogram2d(unittest.TestCase):
                            scheduler=self.scheduler)
         connect(csv_module, 'df', module, 'df')
         connect(module, 'histogram2d',
-                Print(id='print', scheduler=self.scheduler), 'in')
+                Print(id='print', scheduler=self.scheduler), 'inp')
         heatmap=Heatmap(id='heatmap', filename='histo.png',
                        scheduler=self.scheduler)
         connect(module, 'histogram2d', heatmap, 'array')

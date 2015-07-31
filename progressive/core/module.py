@@ -1,6 +1,7 @@
 from enum import Enum
 from uuid import uuid4
 from inspect import getargspec
+from traceback import print_exc
 
 import pandas as pd
 import numpy as np
@@ -34,9 +35,10 @@ class Module(TracerProxy):
     parameters = [('quantum', np.dtype(float), 1.0)]
         
     EMPTY_COLUMN = pd.Series([],index=[],name='empty')
-    EMPTY_TIMESTAMP = np.nan # pd.to_datetime(np.nan)
+    EMPTY_TIMESTAMP = 0
     UPDATE_COLUMN = '_update'
-    UPDATE_COLUMN_DESC = (UPDATE_COLUMN, np.dtype(float), EMPTY_TIMESTAMP)
+    UPDATE_COLUMN_TYPE = np.dtype(int)
+    UPDATE_COLUMN_DESC = (UPDATE_COLUMN, UPDATE_COLUMN_TYPE, EMPTY_TIMESTAMP)
     TRACE_SLOT = '_trace'
     PARAMETERS_SLOT = '_params'
 
@@ -45,14 +47,7 @@ class Module(TracerProxy):
     state_running = 2
     state_blocked = 3
     state_terminated = 4
-    module_kwds = {
-        'id',
-        'quantum',
-        'scheduler',
-        'tracer',
-        'predictor',
-        'input_descriptors',
-        'output_descriptors'}
+    state_name = ['created', 'ready', 'running', 'blocked', 'terminated']
 
     def __init__(self,
                  id=None,
@@ -142,7 +137,7 @@ class Module(TracerProxy):
         print 'start_time: %s' % self._start_time
         print 'end_time: %s' % self._end_time
         print 'last_update: %s' % self._last_update
-        print 'state: %s' % self._state
+        print 'state: %s(%d)' % (self.state_name[self._state], self._state)
         print 'input_slots: %s' % self._input_slots
         print 'outpus_slots: %s' % self._output_slots
         print 'default_step_size: %f' % self.default_step_size
@@ -321,7 +316,7 @@ class Module(TracerProxy):
             if zombie:
                 self.state = Module.state_terminated
             return ready
-        print "Not ready %s because in a weird state %d" % (self.id(), self.state)
+        print "Not ready %s because in a weird state %d" % (self.id(), self.state_name[self.state])
         return False
 
     def is_terminated(self):
@@ -346,9 +341,9 @@ class Module(TracerProxy):
     def start(self):
         pass
 
-    def _stop(self):
+    def _stop(self, run):
         self._end_time = self._start_time
-        self._last_update = self._end_time
+        self._last_update = run
         self._start_time = None
         assert self.state != self.state_running
 
@@ -358,8 +353,8 @@ class Module(TracerProxy):
     def last_update(self):
         return self._last_update
 
-    def collect_stats(self, ts):
-        return {}
+    def last_time(self):
+        return self._end_time
 
     def run(self, run_number):
         if self.is_running():
@@ -369,7 +364,7 @@ class Module(TracerProxy):
         now=self.timer()
         self._start_time = now
         self._end_time = self._start_time + self.params.quantum
-        self.start_run(now, step_size=self.default_step_size, quantum=self.params.quantum)
+        self.start_run(now,run_number,step_size=self.default_step_size, quantum=self.params.quantum)
         step_size = np.ceil(self.default_step_size*self.params.quantum)
         #TODO Forcing 4 steps, but I am not sure, maybe change when the predictor improves
         max_time = self.params.quantum / 4.0
@@ -383,7 +378,7 @@ class Module(TracerProxy):
                 break
             run_step_ret = {'reads': 0, 'updates': 0, 'creates': 0}
             try:
-                self.before_run_step(now, step_size=step_size, quantum=self.params.quantum)
+                self.before_run_step(now,run_number,step_size=step_size, quantum=self.params.quantum)
                 run_step_ret = self.run_step(run_number, step_size, remaining_time)
                 next_state = run_step_ret['next_state']
             except StopIteration:
@@ -393,28 +388,29 @@ class Module(TracerProxy):
             except Exception as e:
                 print "Exception in %s" % self.id()
                 now = self.timer()
-                self.exception(now, step_size=step_size, quantum=self.params.quantum)
+                self.exception(now,run_number,step_size=step_size, quantum=self.params.quantum)
                 self._start_time = now
                 next_state = Module.state_terminated
                 run_step_ret['next_state'] = next_state
                 self.state = next_state
-                self._stop()
+                self._stop(run_number)
                 self._had_error = True
+                print_exc()
                 raise e
             finally:
                 now = self.timer()
-                self.after_run_step(now, step_size=step_size, quantum=self.params.quantum,
+                self.after_run_step(now,run_number, step_size=step_size, quantum=self.params.quantum,
                                     **run_step_ret)
                 self.state = next_state
             if self._start_time is None or self.state != Module.state_ready:
-                self.run_stopped(now, step_size=step_size, quantum=self.params.quantum)
+                self.run_stopped(now,run_number, step_size=step_size, quantum=self.params.quantum)
                 break
             self._start_time = now
         self.state=next_state
         if self.state==Module.state_terminated:
-            self.terminated(now, step_size=step_size, quantum=self.params.quantum)
-        self.end_run(now, step_size=step_size, quantum=self.params.quantum)
-        self._stop()
+            self.terminated(now,run_number, step_size=step_size, quantum=self.params.quantum)
+        self.end_run(now,run_number, step_size=step_size, quantum=self.params.quantum)
+        self._stop(run_number)
 
 
 class Print(Module):

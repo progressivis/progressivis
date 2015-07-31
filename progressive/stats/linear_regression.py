@@ -6,6 +6,13 @@ import numpy as np
 import pandas as pd
 
 class LinearRegression(DataFrameModule):
+    schema = [('coef',      np.dtype(float), np.nan),
+              ('intercept', np.dtype(float), np.nan),
+              ('sum_x',     np.dtype(float), np.nan),
+              ('sum_x_sqr', np.dtype(float), np.nan),
+              ('sum_y',     np.dtype(float), np.nan),
+              ('sum_xy',    np.dtype(float), np.nan),
+              DataFrameModule.UPDATE_COLUMN_DESC]
     def __init__(self, x_column, y_column, **kwds):
         self._x = x_column
         self._y = y_column
@@ -14,10 +21,7 @@ class LinearRegression(DataFrameModule):
         super(LinearRegression, self).__init__(dataframe_slot='inp', **kwds)
         self.default_step_size = 10000
 
-        columns = ['coef', 'intercept', 'sum_x', 'sum_x_sqr', 'sum_y', 'sum_xy'] + [self.UPDATE_COLUMN]
-        dtypes = [np.dtype(float)] * len(columns)
-        values = [np.nan] * len(columns)
-        self._df = typed_dataframe(columns, dtypes, values)
+        self._df = typed_dataframe(LinearRegression.schema)
 
     def is_ready(self):
         if not self.get_input_slot('df').is_buffer_empty():
@@ -27,9 +31,9 @@ class LinearRegression(DataFrameModule):
     def run_step(self,run_number,step_size,howlong):
         dfslot = self.get_input_slot('df')
         input_df = dfslot.data()
-        dfslot.update(self._start_time, input_df)
+        dfslot.update(run_number, input_df)
         if len(dfslot.deleted) or len(dfslot.updated) > len(dfslot.created):
-            raise ProgressiveError('%s module does not manage updates or deletes', self.__class__.name)
+            raise ProgressiveError('%s module does not manage updates or deletes', self.__class__.__name__)
         dfslot.buffer_created()
 
         indices = dfslot.next_buffered(step_size)
@@ -46,7 +50,6 @@ class LinearRegression(DataFrameModule):
         denom = len(x) * sum_x_sqr - sum_x*sum_x
         coef = (sum_y*sum_x_sqr - sum_x*sum_xy) / denom
         intercept = (len(x)*sum_xy - sum_x*sum_y) / denom
-        ['coef', 'intercept', 'sum_x', 'sum_x_sqr', 'sum_y', 'sum_xy']
-        df.loc[0] = [coef, intercept, sum_x, sum_x_sqr, sum_y, sum_xy, np.nan]
+        df.loc[0] = [coef, intercept, sum_x, sum_x_sqr, sum_y, sum_xy, run_number]
         return self._return_run_step(self.state_ready, steps_run=steps, reads=steps, updates=len(desc))
         

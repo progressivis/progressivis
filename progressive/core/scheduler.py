@@ -57,6 +57,7 @@ class Scheduler(object):
         for module in modules:
             module.start()
         while not done and not self._stopped:
+            run_number += 1
             done = True
             for module in modules:
                 if not module.is_ready():
@@ -67,7 +68,6 @@ class Scheduler(object):
                     continue
                 print "Running module %s" % (module.id())
                 module.run(run_number)
-                run_number += 1
                 print "Module %s returned" % (module.id())
                 if not module.is_terminated():
                     done = False

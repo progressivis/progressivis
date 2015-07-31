@@ -18,13 +18,13 @@ class Wait(Module):
         if delay==np.nan and reads==0:
             return False
         if delay!=np.nan and reads != 0:
-            raise ProgressiveError('Module %s needs either a delay or a number of reads, not both', self.__class__.name)
+            raise ProgressiveError('Module %s needs either a delay or a number of reads, not both', self.__class__.__name__)
         inslot = self.get_input_slot('inp')
         if inslot.output_module is None:
             return False
         trace = inslot.output_module.tracer.df() 
         if delay != np.nan:
-            return trace[Module.UPDATE_COLUMN].irow(-1) >= delay
+            return trace['end'].irow(-1) >= delay
         elif reads:
             return trace['reads'].irow(-1) >= reads
         return False

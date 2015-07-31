@@ -44,11 +44,10 @@ class Percentiles(DataFrameModule):
                 percentiles = np.hstack([lh, 0.5, uh])
 
         self._percentiles = percentiles
-        #self._df = pd.DataFrame({'description': [np.nan], self.UPDATE_COLUMN: [self.EMPTY_TIMESTAMP]}, index=index)
-        columns = [_pretty_name(x) for x in self._percentiles] + [self.UPDATE_COLUMN]
-        dtypes = [np.dtype(float)] * len(columns)
-        values = [np.nan] * len(columns)
-        self._df = typed_dataframe(columns, dtypes, values)
+        
+        self.schema = [(_pretty_name(x), np.dtype(float), np.nan) for x in self._percentiles]
+        self.schema.append(DataFrameModule.UPDATE_COLUMN_DESC)
+        self._df = typed_dataframe(self.schema)
 
     def is_ready(self):
         if not self.get_input_slot('df').is_buffer_empty():
@@ -58,7 +57,7 @@ class Percentiles(DataFrameModule):
     def run_step(self,run_number,step_size,howlong):
         dfslot = self.get_input_slot('df')
         input_df = dfslot.data()
-        dfslot.update(self._start_time, input_df)
+        dfslot.update(run_number, input_df)
         if len(dfslot.deleted) or len(dfslot.updated) > len(dfslot.created):
             # should restart from time 0
             raise ProgressiveError('Percentile module does not manage updates or deletes')
@@ -74,7 +73,7 @@ class Percentiles(DataFrameModule):
         values = []
         for p in self._percentiles:
             values.append(self.tdigest.percentile(p*100))
-        values.append(np.nan)
+        values.append(run_number)
         df.loc[0] = values
         return self._return_run_step(self.state_ready, steps_run=steps, reads=steps, updates=len(self._df))
 

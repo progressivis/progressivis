@@ -11,7 +11,7 @@ import numpy as np
 import pandas as pd
 from pprint import pprint
 
-class TestStats(unittest.TestCase):
+class TestMerge(unittest.TestCase):
     filename='data/bigfile.csv'
     rows = 1000000
     cols = 30
@@ -38,7 +38,7 @@ class TestStats(unittest.TestCase):
         connect(module1, 'stats', merge, 'df')
         connect(module2, 'stats', merge, 'df')
         connect(merge, 'df',
-                Print(id='print', scheduler=self.scheduler), 'in')
+                Print(id='print', scheduler=self.scheduler), 'inp')
         self.scheduler.run()
         s = merge.trace_stats(max_runs=1)
         pd.set_option('display.expand_frame_repr', False)

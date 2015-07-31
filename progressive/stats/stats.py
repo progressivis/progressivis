@@ -20,10 +20,10 @@ class Stats(DataFrameModule):
             max_column = str(column) + '.max'
         self.min_column = min_column
         self.max_column = max_column
-        columns = [self.min_column, self.max_column] + [self.UPDATE_COLUMN]
-        dtypes = [np.dtype(float)] * len(columns)
-        values = [np.nan] * len(columns)
-        self._df = typed_dataframe(columns, dtypes, values)
+        self.schema = [(self.min_column, np.dtype(float), np.nan),
+                       (self.max_column, np.dtype(float), np.nan),
+                       DataFrameModule.UPDATE_COLUMN_DESC]
+        self._df = typed_dataframe(self.schema)
 
     def is_ready(self):
         if not self.get_input_slot('df').is_buffer_empty():
@@ -33,9 +33,11 @@ class Stats(DataFrameModule):
     def run_step(self,run_number,step_size,howlong):
         dfslot = self.get_input_slot('df')
         input_df = dfslot.data()
-        dfslot.update(self._start_time, input_df)
+        dfslot.update(run_number, input_df)
         if len(dfslot.deleted) or len(dfslot.updated) > len(dfslot.created):
-            raise ProgressiveError('%s module does not manage updates or deletes', self.__class__.name)
+            import pdb
+            pdb.set_trace()
+            raise ProgressiveError('%s module does not manage updates or deletes', self.__class__.__name__)
         dfslot.buffer_created()
 
         indices = dfslot.next_buffered(step_size)
@@ -46,5 +48,5 @@ class Stats(DataFrameModule):
         df = self._df
         df.loc[0] = [np.nanmin([df.at[0, self.min_column], x.min()]),
                      np.nanmax([df.at[0, self.max_column], x.max()]),
-                     np.nan]
+                     run_number]
         return self._return_run_step(self.state_ready, steps_run=steps, reads=steps, updates=len(self._df))

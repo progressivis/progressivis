@@ -14,6 +14,9 @@ class Heatmap(DataFrameModule):
                   ('high', np.dtype(int),   255),
                   ('low',  np.dtype(int),   0),
                   ('filename', np.dtype(object), None)]
+
+    schema = [('image', np.dtype(object), None),
+              DataFrameModule.UPDATE_COLUMN_DESC]
                  
     def __init__(self, colormap=None, **kwds):
         self._add_slots(kwds,'input_descriptors',
@@ -22,16 +25,12 @@ class Heatmap(DataFrameModule):
         self.colormap = colormap
         self.default_step_size = 1
 
-        columns = ['image'] + [self.UPDATE_COLUMN]
-        dtypes = [np.dtype(object), np.dtype(float)]
-        values = [None, np.nan]
-
-        self._df = typed_dataframe(columns, dtypes, values)
+        self._df = typed_dataframe(Heatmap.schema)
 
     def run_step(self,run_number,step_size,howlong):
         dfslot = self.get_input_slot('array')
         input_df = dfslot.data()
-        dfslot.update(self._start_time, input_df)
+        dfslot.update(run_number, input_df)
         histo = input_df.at[0, 'array']
         p = self.params
         cmax = p.cmax
@@ -45,7 +44,7 @@ class Heatmap(DataFrameModule):
         image = sp.misc.toimage(histo, cmin=cmin, cmax=cmax, high=high, low=low)
         df = self._df
         df.at[0, 'image'] = image
-        df.at[0, self.UPDATE_COLUMN] = np.nan  # to update time stamps
+        df.at[0, self.UPDATE_COLUMN] = run_number
         if p.filename is not None:
             try:
                 image.save(p.filename)
