@@ -35,10 +35,10 @@ class Heatmap(DataFrameModule):
         histo = input_df.at[0, 'array']
         p = self.params
         cmax = p.cmax
-        if cmax == np.nan:
+        if np.isnan(cmax):
             cmax = None
         cmin = p.cmin
-        if cmin == np.nan:
+        if np.isnan(cmin):
             cmin = None
         high = p.high
         low = p.low

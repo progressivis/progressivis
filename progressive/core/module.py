@@ -95,6 +95,8 @@ class Module(TracerProxy):
         self._output_slots = self._validate_descriptors(self.output_descriptors)
         self._output_types = {d.name: d.type for d in self.output_descriptors}
         self.default_step_size = 1
+        self.input = InputSlots(self)
+        self.output = OutputSlots(self)
         self._scheduler.add(self)
 
     @staticmethod
@@ -288,6 +290,7 @@ class Module(TracerProxy):
 
     def is_ready(self):
         if self.state == Module.state_terminated:
+            print "%s Not ready because terminated" % self.id()
             return False
         # source modules can be generators that
         # cannot run out of input, unless they decide so.
@@ -307,8 +310,10 @@ class Module(TracerProxy):
                 in_ts = in_module.last_update()
                 ts = self.last_update()
                 if in_ts is None:
+                    print "Not ready because %s has not started" % in_module.id()
                     ready = False
                 elif (ts is not None) and (in_ts <= ts):
+                    print "Not ready because %s is not newer than us (%s)" % (in_module.id(), self.id())
                     ready = False
                 
                 if in_module.state!=Module.state_terminated:
@@ -316,6 +321,7 @@ class Module(TracerProxy):
             if zombie:
                 self.state = Module.state_terminated
             return ready
+        print "Not ready %s because in a weird state %d" % (self.id(), self.state)
         return False
 
     def is_terminated(self):
@@ -344,6 +350,7 @@ class Module(TracerProxy):
         self._end_time = self._start_time
         self._last_update = self._end_time
         self._start_time = None
+        assert self.state != self.state_running
 
     def end(self):
         pass
@@ -357,12 +364,12 @@ class Module(TracerProxy):
     def run(self, run_number):
         if self.is_running():
             raise ProgressiveError('Module already running')
+        next_state = self.state
         self.state = Module.state_running
         now=self.timer()
         self._start_time = now
         self._end_time = self._start_time + self.params.quantum
         self.start_run(now, step_size=self.default_step_size, quantum=self.params.quantum)
-        next_state = None
         step_size = np.ceil(self.default_step_size*self.params.quantum)
         #TODO Forcing 4 steps, but I am not sure, maybe change when the predictor improves
         max_time = self.params.quantum / 4.0
@@ -388,9 +395,10 @@ class Module(TracerProxy):
                 now = self.timer()
                 self.exception(now, step_size=step_size, quantum=self.params.quantum)
                 self._start_time = now
-                self._stop()
                 next_state = Module.state_terminated
                 run_step_ret['next_state'] = next_state
+                self.state = next_state
+                self._stop()
                 self._had_error = True
                 raise e
             finally:
@@ -402,6 +410,7 @@ class Module(TracerProxy):
                 self.run_stopped(now, step_size=step_size, quantum=self.params.quantum)
                 break
             self._start_time = now
+        self.state=next_state
         if self.state==Module.state_terminated:
             self.terminated(now, step_size=step_size, quantum=self.params.quantum)
         self.end_run(now, step_size=step_size, quantum=self.params.quantum)
@@ -410,12 +419,12 @@ class Module(TracerProxy):
 
 class Print(Module):
     def __init__(self, columns=None, **kwds):
-        self._add_slots(kwds,'input_descriptors', [SlotDescriptor('in')])
+        self._add_slots(kwds,'input_descriptors', [SlotDescriptor('inp')])
         super(Print, self).__init__(quantum=0.1, **kwds)
         self._columns = columns
 
     def run_step(self,run_number,step_size,howlong):
-        df = self.get_input_slot('in').data()
+        df = self.get_input_slot('inp').data()
         steps=len(df)
         print df
         #print df.info()

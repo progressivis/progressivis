@@ -51,5 +51,42 @@ class Slot(object):
             return True
         if output_type == input_type:
             return True
-        #TODO: more compatibility comes here
-        return False
+        return False #TODO: more compatibility comes here
+
+class InputSlots(object):
+    def __init__(self, module):
+        self.__dict__['module'] = module
+
+    def __setattr__(self, name, slot):
+        if not isinstance(slot, Slot):
+            raise ProgressiveError('Assignment to input slot %s should be a Slot', name)
+        if slot.output_module is None or slot.output_name is None:
+            raise ProgressiveError('Assignment to input slot %s invalid, missing slot output specs', name)
+        slot.input_module = self.__dict__['module']
+        slot.input_name = name
+        slot.connect()
+
+    def __getattr__(self, name):
+        return Slot(None, None, self.__dict__['module'], name)
+
+    def __dir__(self):
+        return self.__dict__['module'].input_slot_names()
+
+class OutputSlots(object):
+    def __init__(self, module):
+        self.__dict__['module'] = module
+
+    def __setattr__(self, name, slot):
+        if not isinstance(slot, Slot):
+            raise ProgressiveError('Assignment to output slot %s should be a Slot', name)
+        if slot.input_module is None or slot.input_name is None:
+            raise ProgressiveError('Assignment to output slot %s invalid, missing slot input specs', name)
+        slot.output_module = self.__dict__['module']
+        slot.output_name = name
+        slot.connect()
+
+    def __getattr__(self, name):
+        return Slot(self.__dict__['module'], name, None, None)
+
+    def __dir__(self):
+        return self.__dict__['module'].output_slot_names()

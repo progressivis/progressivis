@@ -10,8 +10,8 @@ class LinearRegression(DataFrameModule):
         self._x = x_column
         self._y = y_column
         self._add_slots(kwds,'input_descriptors',
-                        [SlotDescriptor('in', type=pd.DataFrame)])
-        super(LinearRegression, self).__init__(dataframe_slot='in', **kwds)
+                        [SlotDescriptor('inp', type=pd.DataFrame)])
+        super(LinearRegression, self).__init__(dataframe_slot='inp', **kwds)
         self.default_step_size = 10000
 
         columns = ['coef', 'intercept', 'sum_x', 'sum_x_sqr', 'sum_y', 'sum_xy'] + [self.UPDATE_COLUMN]

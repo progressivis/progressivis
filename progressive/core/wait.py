@@ -9,7 +9,7 @@ class Wait(Module):
 
     def __init__(self, **kwds):
         self._add_slots(kwds,'output_descriptors', [SlotDescriptor('out')])
-        self._add_slots(kwds,'input_descriptors', [SlotDescriptor('in')])
+        self._add_slots(kwds,'input_descriptors', [SlotDescriptor('inp')])
         super(Wait, self).__init__(**kwds)
         
     def is_ready(self):
@@ -19,7 +19,7 @@ class Wait(Module):
             return False
         if delay!=np.nan and reads != 0:
             raise ProgressiveError('Module %s needs either a delay or a number of reads, not both', self.__class__.name)
-        inslot = self.get_input_slot('in')
+        inslot = self.get_input_slot('inp')
         if inslot.output_module is None:
             return False
         trace = inslot.output_module.tracer.df() 

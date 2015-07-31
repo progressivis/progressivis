@@ -62,7 +62,7 @@ class Histogram2d(DataFrameModule):
         else:
             old_histo += histo
         cmax = old_histo.max()
-        df.at[0, 'max'] = max
+        df.at[0, 'max'] = cmax
         df.at[0, self.UPDATE_COLUMN] = np.nan  # to update time stamps
         next_state = self.state_blocked if dfslot.is_buffer_empty() else self.state_ready
         print "Next state is %s" % next_state
