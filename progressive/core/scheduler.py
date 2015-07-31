@@ -4,7 +4,6 @@ from timeit import default_timer
 from toposort import toposort_flatten
 
 import logging
-
 logger = logging.getLogger(__name__)
 
 __all__ = ['Scheduler', 'default_scheduler']
@@ -49,7 +48,7 @@ class Scheduler(object):
         self._running = True
         self.validate()
         self._runorder = toposort_flatten(self.collect_dependencies())
-        print "Scheduler run order: %s" % (self._runorder)
+        logger.info("Scheduler run order: %s", self._runorder)
         done = False
         run_number = 0
 
@@ -62,17 +61,17 @@ class Scheduler(object):
             for module in modules:
                 if not module.is_ready():
                     if module.is_terminated():
-                        print "Module %s terminated" % (module.id())
+                        logger.info("Module %s terminated", module.id())
                     else:
-                        print "Module %s not ready" % (module.id())
+                        logger.info("Module %s not ready", module.id())
                     continue
-                print "Running module %s" % (module.id())
+                logger.info("Running module %s", module.id())
                 module.run(run_number)
-                print "Module %s returned" % (module.id())
+                logger.info("Module %s returned", module.id())
                 if not module.is_terminated():
                     done = False
                 else:
-                    print "Module %s terminated" % (module.id())
+                    logger.info("Module %s terminated", module.id())
                     
         for module in reversed(modules):
             module.end()

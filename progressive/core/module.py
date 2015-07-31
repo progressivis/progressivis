@@ -7,6 +7,9 @@ import pandas as pd
 import numpy as np
 import random
 
+import logging
+logger = logging.getLogger(__name__)
+
 from progressive.core.common import ProgressiveError
 from progressive.core.utils import typed_dataframe, DataFrameAsDict
 from progressive.core.scheduler import *
@@ -66,8 +69,6 @@ class Module(TracerProxy):
         if predictor is None:
             predictor = default_predictor()
 
-        TracerProxy.__init__(self, tracer)
-
         # always present
         output_descriptors = output_descriptors + [SlotDescriptor(Module.TRACE_SLOT, type=pd.DataFrame, required=False)]
         
@@ -77,7 +78,8 @@ class Module(TracerProxy):
         self._scheduler = scheduler
         if self._scheduler.exists(id):
             raise ProgressiveError('module already exists in scheduler, delete it first')
-        self.predictor = predictor
+        self.tracer = tracer
+        self.predictor = predictor        
         self._start_time = None
         self._end_time = None
         self._last_update = None
@@ -140,7 +142,7 @@ class Module(TracerProxy):
         print 'state: %s(%d)' % (self.state_name[self._state], self._state)
         print 'input_slots: %s' % self._input_slots
         print 'outpus_slots: %s' % self._output_slots
-        print 'default_step_size: %f' % self.default_step_size
+        print 'default_step_size: %d' % self.default_step_size
         if len(self._params):
             print 'parameters: '
             print self._params
@@ -285,7 +287,7 @@ class Module(TracerProxy):
 
     def is_ready(self):
         if self.state == Module.state_terminated:
-            print "%s Not ready because terminated" % self.id()
+            logger.error("%s Not ready because it terminated", self.id())
             return False
         # source modules can be generators that
         # cannot run out of input, unless they decide so.
@@ -305,10 +307,10 @@ class Module(TracerProxy):
                 in_ts = in_module.last_update()
                 ts = self.last_update()
                 if in_ts is None:
-                    print "Not ready because %s has not started" % in_module.id()
+                    logger.info("%s Not ready because %s has not started", self.id(), in_module.id())
                     ready = False
                 elif (ts is not None) and (in_ts <= ts):
-                    print "Not ready because %s is not newer than us (%s)" % (in_module.id(), self.id())
+                    logger.info("%s Not ready because %s is not newer", self.id(), in_module.id())
                     ready = False
                 
                 if in_module.state!=Module.state_terminated:
@@ -316,7 +318,7 @@ class Module(TracerProxy):
             if zombie:
                 self.state = Module.state_terminated
             return ready
-        print "Not ready %s because in a weird state %d" % (self.id(), self.state_name[self.state])
+        logger.info("%s Not ready because is in weird state %s", self.id(), self.state_name[self.state])
         return False
 
     def is_terminated(self):
@@ -341,9 +343,9 @@ class Module(TracerProxy):
     def start(self):
         pass
 
-    def _stop(self, run):
+    def _stop(self, run_number):
         self._end_time = self._start_time
-        self._last_update = run
+        self._last_update = run_number
         self._start_time = None
         assert self.state != self.state_running
 
@@ -360,25 +362,29 @@ class Module(TracerProxy):
         if self.is_running():
             raise ProgressiveError('Module already running')
         next_state = self.state
-        self.state = Module.state_running
         now=self.timer()
+        quantum=self.params.quantum
+        tracer=self.tracer
+        if quantum==0:
+            quantum=0.1
+            logger.error('Quantum is 0 in %s, setting it to a reasonable value', self.id())
+        self.state = Module.state_running
         self._start_time = now
-        self._end_time = self._start_time + self.params.quantum
-        self.start_run(now,run_number,step_size=self.default_step_size, quantum=self.params.quantum)
-        step_size = np.ceil(self.default_step_size*self.params.quantum)
+        self._end_time = self._start_time + quantum
+        step_size = np.ceil(self.default_step_size*quantum)
         #TODO Forcing 4 steps, but I am not sure, maybe change when the predictor improves
-        max_time = self.params.quantum / 4.0
+        max_time = quantum / 4.0
         
-        while self._start_time <= self._end_time:
+        tracer.start_run(now,run_number,step_size=self.default_step_size, quantum=quantum)
+        while self._start_time < self._end_time:
             remaining_time = self._end_time-self._start_time
-            # choose a step size around 25% of the quantum to allow the predictor to adjust
             step_size = self.predict_step_size(np.min([max_time, remaining_time]))
-            #print 'Step_size: %d' % step_size
-            if step_size == 0:
-                break
+            # Not sure...
+            #if step_size == 0: 
+            #    break
             run_step_ret = {'reads': 0, 'updates': 0, 'creates': 0}
             try:
-                self.before_run_step(now,run_number,step_size=step_size, quantum=self.params.quantum)
+                tracer.before_run_step(now,run_number,step_size=step_size, quantum=quantum)
                 run_step_ret = self.run_step(run_number, step_size, remaining_time)
                 next_state = run_step_ret['next_state']
             except StopIteration:
@@ -386,9 +392,9 @@ class Module(TracerProxy):
                 run_step_ret['next_state'] = next_state
                 break
             except Exception as e:
-                print "Exception in %s" % self.id()
+                logger.debug("Exception in %s", self.id())
                 now = self.timer()
-                self.exception(now,run_number,step_size=step_size, quantum=self.params.quantum)
+                tracer.exception(now,run_number,step_size=step_size, quantum=quantum)
                 self._start_time = now
                 next_state = Module.state_terminated
                 run_step_ret['next_state'] = next_state
@@ -399,17 +405,17 @@ class Module(TracerProxy):
                 raise e
             finally:
                 now = self.timer()
-                self.after_run_step(now,run_number, step_size=step_size, quantum=self.params.quantum,
+                tracer.after_run_step(now,run_number, step_size=step_size, quantum=quantum,
                                     **run_step_ret)
                 self.state = next_state
             if self._start_time is None or self.state != Module.state_ready:
-                self.run_stopped(now,run_number, step_size=step_size, quantum=self.params.quantum)
+                tracer.run_stopped(now,run_number, step_size=step_size, quantum=quantum)
                 break
             self._start_time = now
         self.state=next_state
         if self.state==Module.state_terminated:
-            self.terminated(now,run_number, step_size=step_size, quantum=self.params.quantum)
-        self.end_run(now,run_number, step_size=step_size, quantum=self.params.quantum)
+            tracer.terminated(now,run_number, step_size=step_size, quantum=quantum)
+        tracer.end_run(now,run_number, step_size=step_size, quantum=quantum)
         self._stop(run_number)
 
 

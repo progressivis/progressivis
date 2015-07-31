@@ -45,6 +45,7 @@ class TestHistogram2d(unittest.TestCase):
         pd.set_option('display.expand_frame_repr', False)
         print s
 
+suite = unittest.TestLoader().loadTestsFromTestCase(TestHistogram2d)
 
 if __name__ == '__main__':
     unittest.main()

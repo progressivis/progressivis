@@ -42,6 +42,7 @@ class TestPercentiles(unittest.TestCase):
         pd.set_option('display.expand_frame_repr', False)
         print s
 
+suite = unittest.TestLoader().loadTestsFromTestCase(TestPercentiles)
 
 if __name__ == '__main__':
     unittest.main()

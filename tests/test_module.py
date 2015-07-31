@@ -14,5 +14,7 @@ class TestProgressiveModule(unittest.TestCase):
         self.assertEqual(module.id(), 'a')
         self.assertEqual(self.scheduler.exists('a'), True)
 
+suite = unittest.TestLoader().loadTestsFromTestCase(TestProgressiveModule)
+
 if __name__ == '__main__':
     unittest.main()

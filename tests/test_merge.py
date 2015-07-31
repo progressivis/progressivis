@@ -44,6 +44,7 @@ class TestMerge(unittest.TestCase):
         pd.set_option('display.expand_frame_repr', False)
         print s
 
+suite = unittest.TestLoader().loadTestsFromTestCase(TestMerge)
 
 if __name__ == '__main__':
     unittest.main()

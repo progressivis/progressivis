@@ -8,10 +8,10 @@ class DataFrameSlot(Slot):
         super(DataFrameSlot, self).__init__(output_module, output_name, input_module, input_name)
         self.changes = None
 
-    def update(self, time, df):
+    def update(self, run_number, df):
         if self.changes is None:
             self.changes = ChangeManager()
-        self.changes.update(time,df)
+        self.changes.update(run_number,df)
 
     def buffer_updated(self):
         if self.changes:

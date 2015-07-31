@@ -54,6 +54,7 @@ class TestProgressiveLoadCSV(unittest.TestCase):
         df2 = module.df().groupby([Module.UPDATE_COLUMN])
         self.assertEqual(cnt, len(df2))
 
+suite = unittest.TestLoader().loadTestsFromTestCase(TestProgressiveLoadCSV)
 
 if __name__ == '__main__':
     unittest.main()
