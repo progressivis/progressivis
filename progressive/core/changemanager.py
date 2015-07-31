@@ -53,3 +53,8 @@ class ChangeManager(object):
 
     def is_buffer_empty(self):
         return len(self.buffer)==0
+
+    def next_state(self):
+        if self.is_buffer_empty():
+            return Module.state_blocked
+        return Module.state_ready

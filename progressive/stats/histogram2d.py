@@ -1,5 +1,4 @@
 from progressive.core.common import ProgressiveError
-from progressive.core.utils import typed_dataframe
 from progressive.core.dataframe import DataFrameModule
 from progressive.core.slot import SlotDescriptor
 
@@ -14,7 +13,8 @@ class Histogram2d(DataFrameModule):
                   ('ymin',   np.dtype(float), 0),
                   ('ymax',   np.dtype(float), 1),
                   ('xdelta', np.dtype(float), 0),
-                  ('ydelta', np.dtype(float), 0)]
+                  ('ydelta', np.dtype(float), 0),
+                  ('history',np.dtype(int),   3) ]
 
     schema = [('array', np.dtype(object), None),
               ('cmin', np.dtype(float), np.nan),
@@ -29,7 +29,7 @@ class Histogram2d(DataFrameModule):
         self.y_column = y_column
         self.default_step_size = 10000
 
-        self._df = typed_dataframe(Histogram2d.schema)
+        self._df = self.create_dataframe(Histogram2d.schema)
 
     def is_ready(self):
         if not self.get_input_slot('df').is_buffer_empty():
@@ -56,18 +56,15 @@ class Histogram2d(DataFrameModule):
                                                range=[[p.xmin, p.xmax],[p.ymin, p.ymax]],
                                                normed=False)
         df = self._df
-        old_histo = df.at[0, 'array']
+        old_histo = df.at[df.index[-1], 'array']
         if old_histo is None:
-            df.at[0, 'array'] = histo
             old_histo = histo
         else:
             old_histo += histo
         cmax = old_histo.max()
-        df.at[0, 'max'] = cmax
-        df.at[0, self.UPDATE_COLUMN] = run_number
-        next_state = self.state_blocked if dfslot.is_buffer_empty() else self.state_ready
-        print "Next state is %s" % self.state_name[next_state]
-        return self._return_run_step(next_state,
-                                     steps_run=steps,
-                                     reads=steps,
-                                     updates=len(self._df))
+        values = [old_histo, 0, cmax, run_number]
+        df.loc[run_number] = values
+        if len(df) > p.history:
+            self._df = df.loc[df.index[-p.history:]]
+        return self._return_run_step(dfslot.next_state(),
+                                     steps_run=steps, reads=steps, updates=len(self._df))

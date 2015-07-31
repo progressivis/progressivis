@@ -11,7 +11,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 from progressive.core.common import ProgressiveError
-from progressive.core.utils import typed_dataframe, DataFrameAsDict
+from progressive.core.utils import empty_typed_dataframe, typed_dataframe, DataFrameAsDict
 from progressive.core.scheduler import *
 from progressive.core.slot import *
 from progressive.core.tracer import *
@@ -119,12 +119,18 @@ class Module(TracerProxy):
             slots[desc.name] = None
         return slots
 
+    @staticmethod
+    def create_dataframe(columns, types=None, values=None):
+        if values is None and types is not None:
+            return empty_typed_dataframe(columns, types)
+        return typed_dataframe(columns, types, values)
+
     @property
     def paramameters(self):
         return self._params
 
     def _parse_parameters(self, kwds):
-        self._params = typed_dataframe(self.all_parameters + [self.UPDATE_COLUMN_DESC])
+        self._params = self.create_dataframe(self.all_parameters + [self.UPDATE_COLUMN_DESC])
         self.params = DataFrameAsDict(self._params)
         for (name,dtype,dflt) in self.all_parameters:
             if name in kwds:

@@ -1,4 +1,5 @@
 from progressive.core.module import *
+
 import pandas as pd
 
 from progressive.core.changemanager import ChangeManager, NIL
@@ -32,6 +33,12 @@ class DataFrameSlot(Slot):
             return self.changes.is_buffer_empty()
         else:
             return True
+
+    def next_state(self):
+        if self.changes:
+            return self.changes.next_state()
+        else:
+            return Module.state_blocked
 
     @property
     def last_time(self):
@@ -102,18 +109,6 @@ class DataFrameModule(Module):
             self._stats[name] += value
         else:
             self._stats[name] = value
-
-    def collect_stats(self, ts):
-        stats = super(DataFrameModule, self).collect_stats(ts)
-        df = self.df()
-        if df is not None:
-            stats['rows'] = len(df)
-            stats['cols'] = len(df.columns)
-        if len(self._stats) != 0:
-            for k,v in self._stats.iteritems():
-                stats[k] = v
-            self._stats = {}
-        return stats
 
     def update_timestamps(self):
         if self._df is not None:

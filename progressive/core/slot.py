@@ -67,7 +67,7 @@ class InputSlots(object):
         slot.connect()
 
     def __getattr__(self, name):
-        return Slot(None, None, self.__dict__['module'], name)
+        raise ProgressiveError('Input slots cannot be read, only assigned to')
 
     def __dir__(self):
         return self.__dict__['module'].input_slot_names()
@@ -77,16 +77,10 @@ class OutputSlots(object):
         self.__dict__['module'] = module
 
     def __setattr__(self, name, slot):
-        if not isinstance(slot, Slot):
-            raise ProgressiveError('Assignment to output slot %s should be a Slot', name)
-        if slot.input_module is None or slot.input_name is None:
-            raise ProgressiveError('Assignment to output slot %s invalid, missing slot input specs', name)
-        slot.output_module = self.__dict__['module']
-        slot.output_name = name
-        slot.connect()
+        raise ProgressiveError('Output slots cannot be assigned, only read')
 
     def __getattr__(self, name):
-        return Slot(self.__dict__['module'], name, None, None)
+        return self.__dict__['module'].create_slot(name, None, None)
 
     def __dir__(self):
         return self.__dict__['module'].output_slot_names()

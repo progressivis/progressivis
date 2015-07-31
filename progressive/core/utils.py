@@ -1,11 +1,15 @@
 import pandas as pd
 
-def empty_typed_dataframe(columns, types):
+def empty_typed_dataframe(columns, types=None):
     d = {}
     cols = []
-    for (name, dtype) in zip(columns, types):
-        d[name] = pd.Series([], dtype=dtype)
-        cols.append(name)
+    if types is None:
+        itr = columns
+    else:
+        itr = zip(columns, types)
+    for vals in itr: # cannot unpack since columns can have 3 values
+        d[vals[0]] = pd.Series([], dtype=vals[1])
+        cols.append(vals[0])
     return pd.DataFrame(d, columns=cols)
 
 def typed_dataframe(columns, types=None, values=None):
@@ -36,3 +40,5 @@ class DataFrameAsDict(object):
     def __setattr__(self, attr, value):
         self[attr] = value
 
+    def __dir__(self):
+        return list(self.__dict__['df'].columns)

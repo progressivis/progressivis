@@ -1,3 +1,5 @@
+import logging
+logging.getLogger('progressive').addHandler(logging.NullHandler())
 
 __all__ = ["ProgressiveError", "Scheduler", "default_scheduler", "Slot",
            "SlotDescriptor", "Module", "connect", "DataFrameModule",

@@ -1,5 +1,4 @@
 from progressive.core.common import ProgressiveError
-from progressive.core.utils import typed_dataframe
 from progressive.core.dataframe import DataFrameModule
 from progressive.core.slot import SlotDescriptor
 
@@ -16,7 +15,8 @@ def _pretty_name(x):
         return '%.1f%%' % x
 
 class Percentiles(DataFrameModule):
-    parameters = [('percentiles', object, [0.25, 0.5, 0.75])]
+    parameters = [('percentiles', object, [0.25, 0.5, 0.75]),
+                  ('history', np.dtype(int), 3)]
                   
     def __init__(self, column, percentiles=None, **kwds):
         if not column:
@@ -47,7 +47,7 @@ class Percentiles(DataFrameModule):
         
         self.schema = [(_pretty_name(x), np.dtype(float), np.nan) for x in self._percentiles]
         self.schema.append(DataFrameModule.UPDATE_COLUMN_DESC)
-        self._df = typed_dataframe(self.schema)
+        self._df = self.create_dataframe(self.schema)
 
     def is_ready(self):
         if not self.get_input_slot('df').is_buffer_empty():
@@ -74,6 +74,9 @@ class Percentiles(DataFrameModule):
         for p in self._percentiles:
             values.append(self.tdigest.percentile(p*100))
         values.append(run_number)
-        df.loc[0] = values
-        return self._return_run_step(self.state_ready, steps_run=steps, reads=steps, updates=len(self._df))
+        df.loc[run_number] = values
+        if len(df) > self.params.history:
+            self._df = df.loc[df.index[-self.params.history:]]
+        return self._return_run_step(dfslot.next_state(),
+                                     steps_run=steps, reads=steps, updates=len(self._df))
 

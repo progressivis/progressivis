@@ -21,7 +21,7 @@ class LinearRegression(DataFrameModule):
         super(LinearRegression, self).__init__(dataframe_slot='inp', **kwds)
         self.default_step_size = 10000
 
-        self._df = typed_dataframe(LinearRegression.schema)
+        self._df = self.create_dataframe(LinearRegression.schema)
 
     def is_ready(self):
         if not self.get_input_slot('df').is_buffer_empty():
@@ -51,5 +51,6 @@ class LinearRegression(DataFrameModule):
         coef = (sum_y*sum_x_sqr - sum_x*sum_xy) / denom
         intercept = (len(x)*sum_xy - sum_x*sum_y) / denom
         df.loc[0] = [coef, intercept, sum_x, sum_x_sqr, sum_y, sum_xy, run_number]
-        return self._return_run_step(self.state_ready, steps_run=steps, reads=steps, updates=len(desc))
+        return self._return_run_step(dfslot.next_state(),
+                                     steps_run=steps, reads=steps, updates=len(desc))
         
