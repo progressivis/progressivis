@@ -371,6 +371,7 @@ class Module(object):
         if self.is_running():
             raise ProgressiveError('Module already running')
         next_state = self.state
+        exception = None
         now=self.timer()
         quantum=self.params.quantum
         tracer=self.tracer
@@ -380,6 +381,7 @@ class Module(object):
         self.state = Module.state_running
         self._start_time = now
         self._end_time = self._start_time + quantum
+
         step_size = np.ceil(self.default_step_size*quantum)
         #TODO Forcing 4 steps, but I am not sure, maybe change when the predictor improves
         max_time = quantum / 4.0
@@ -396,24 +398,23 @@ class Module(object):
                 tracer.before_run_step(now,run_number)
                 run_step_ret = self.run_step(run_number, step_size, remaining_time)
                 next_state = run_step_ret['next_state']
+                now = self.timer()
             except StopIteration:
                 next_state = Module.state_terminated
                 run_step_ret['next_state'] = next_state
+                now = self.timer()
                 break
             except Exception as e:
-                logger.debug("Exception in %s", self.id())
-                now = self.timer()
-                tracer.exception(now,run_number)
-                self._start_time = now
                 next_state = Module.state_terminated
                 run_step_ret['next_state'] = next_state
-                self.state = next_state
-                self._stop(run_number)
-                self._had_error = True
-                print_exc()
-                raise e
-            finally:
                 now = self.timer()
+                logger.debug("Exception in %s", self.id())
+                tracer.exception(now,run_number)
+                exception = e
+                self._had_error = True
+                self._start_time = now
+                break
+            finally:
                 tracer.after_run_step(now,run_number,**run_step_ret)
                 self.state = next_state
             if self._start_time is None or self.state != Module.state_ready:
@@ -425,6 +426,10 @@ class Module(object):
             tracer.terminated(now,run_number)
         tracer.end_run(now,run_number)
         self._stop(run_number)
+        if exception:
+            print_exc()
+            raise exception
+
 
 
 class Print(Module):
