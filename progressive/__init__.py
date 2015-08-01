@@ -1,4 +1,5 @@
 import logging
+# Magic spell to avoid the message 'No handlers could be found for logger X.Y.Z'
 logging.getLogger('progressive').addHandler(logging.NullHandler())
 
 __all__ = ["ProgressiveError", "Scheduler", "default_scheduler", "Slot",
