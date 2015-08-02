@@ -50,6 +50,8 @@ class Heatmap(DataFrameModule):
                 if re.search(r'%(0[\d])?d', filename):
                     filename = filename % (run_number)
                 image.save(filename)
+                image.destroy()  # don't keep the image in memory then
+                image = None
             except:
                 pass # discard error for now
         values = [image, filename, run_number]

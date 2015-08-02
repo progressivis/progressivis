@@ -14,6 +14,10 @@ class DataFrameSlot(Slot):
             self.changes = ChangeManager()
         self.changes.update(run_number,df)
 
+    def reset(self):
+        if self.changes is not None:
+            self.changes.reset()
+
     def buffer_updated(self):
         if self.changes:
             self.changes.buffer_updated()

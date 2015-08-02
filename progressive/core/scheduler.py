@@ -43,6 +43,12 @@ class Scheduler(object):
     def invalidate(self):
         self._valid = False
 
+    def _before_run(self, run_number):
+        pass
+
+    def _after_run(self, run_number):
+        pass
+
     def run(self):
         self._stopped = False
         self._running = True
@@ -58,6 +64,7 @@ class Scheduler(object):
         while not done and not self._stopped:
             run_number += 1
             done = True
+            self._before_run(run_number)
             for module in modules:
                 if not module.is_ready():
                     if module.is_terminated():
@@ -72,7 +79,7 @@ class Scheduler(object):
                     done = False
                 else:
                     logger.info("Module %s terminated", module.id())
-                    
+            self._after_run(run_number)
         for module in reversed(modules):
             module.end()
         self._running = False
@@ -101,5 +108,8 @@ class Scheduler(object):
         self.stop()
         module._stop()
         del self._modules[module.id()]
+
+    def modules(self):
+        return self._modules
 
 default_scheduler = Scheduler()

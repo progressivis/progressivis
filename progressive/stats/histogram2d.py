@@ -39,9 +39,13 @@ class Histogram2d(DataFrameModule):
     def run_step(self,run_number,step_size,howlong):
         dfslot = self.get_input_slot('df')
         input_df = dfslot.data()
+        df = self._df
+        old_histo = df.at[df.index[-1], 'array']
         dfslot.update(run_number, input_df)
         if len(dfslot.deleted) or len(dfslot.updated) > len(dfslot.created):
-            raise ProgressiveError('%s module does not manage updates or deletes', self.__class__.__name__)
+            dfslot.reset()
+            old_histo = None
+            #raise ProgressiveError('%s module does not manage updates or deletes', self.__class__.__name__)
         dfslot.buffer_created()
 
         indices = dfslot.next_buffered(step_size)
@@ -55,8 +59,6 @@ class Histogram2d(DataFrameModule):
                                                bins=[p.xbins, p.ybins],
                                                range=[[p.xmin, p.xmax],[p.ymin, p.ymax]],
                                                normed=False)
-        df = self._df
-        old_histo = df.at[df.index[-1], 'array']
         if old_histo is None:
             old_histo = histo
         else:

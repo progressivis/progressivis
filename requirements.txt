@@ -8,3 +8,4 @@ pandas==0.16.2
 scikit-learn==0.16.1
 toposort==1.4
 tdigest==0.3.0
+tornado=4.0.2
