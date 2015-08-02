@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 from progressive.server.protocol import *
+from progressive.server.scheduler_server import run_scheduler_server
 
 import tornado.httpserver
 import tornado.ioloop
@@ -17,8 +18,9 @@ class ProgressiveRequestHandler(tornado.web.RequestHandler):
     @tornado.web.asynchronous
     def get(self):
         path = self.request.path
+        print "Sending a request for %s"%path
         req = Request(path)
-        self.hub(send, req, self._finish)
+        self.hub.send(req, self._finish)
     
     def _finish(self, res):
         print "Entering ProgressiveRequestHandler._finish"
@@ -39,15 +41,20 @@ class Hub(object):
     def send(self, req, callback):
         self.serial += 1
         req.serial = self.serial
-        self.reqs[serial] = callback
-        pipe.send(req)
+        self.reqs[self.serial] = callback
+        print "Sending serial %d for %s to pipe"%(self.serial, req.path)
+        self.pipe.send(req)
 
     def recv(self, fd, event):
         res = self.pipe.recv()
-        callack = self.reqs[res.serial]
-        del self.reques[res.serial]
+        print "Receiving serial %d for %s from pipe"%(res.serial, res.path)
+        callback = self.reqs[res.serial]
+        del self.reqs[res.serial]
+        if res.path==Messages.WORKFLOW_STOP:
+            tornado.ioloop.IOLoop.instance().remove_handler(self.pipe.fileno())
+            tornado.ioloop.IOLoop.instance().stop()
         callback(res)
-    
+
 
 def server():
     fd1, fd2 = multiprocessing.Pipe()
@@ -56,7 +63,7 @@ def server():
     # Create a process for the sleepy function. Provide one pipe end.
     p = multiprocessing.Process(target=run_scheduler_server, args=(fd2,))
     p.start()
-    hub = Hub(fd2)
+    hub = Hub(pipe)
     iol = tornado.ioloop.IOLoop.instance()
     iol.add_handler(fno, hub.recv, iol.READ)
     
@@ -67,7 +74,9 @@ def server():
     http_server = tornado.httpserver.HTTPServer(application)
     http_server.listen(8888)
     print 'The HTTP server is listening on port 8888.'
-    tornado.ioloop.IOLoop.instance().start()
+    iol.start()
+    http_server.stop()
+    p.join()
     
 
 if __name__ == '__main__':

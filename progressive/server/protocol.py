@@ -6,15 +6,18 @@ class Request(object):
         self.params = params
 
 class Response(object):
-    def __init__(self, serial, path, value):
+    def __init__(self, serial, path, done, value):
         self.serial = serial
         self.path = path
+        self.done = done
         self.value = value
 
 class Messages(object):
     ERROR = "/error"
-    WORKFLOW = "/scheduler/workflow"
     ECHO = "/echo"
-    TERMINATE = "/terminate"
+    WORKFLOW_LOAD = "/workflow/load"
+    WORKFLOW_STATUS = "/workflow/status"
+    WORKFLOW_RUN = "/workflow/run"
+    WORKFLOW_STOP = "/workflow/stop"
 
-    ALL = [ ECHO, WORKFLOW, TERMINATE ]
+    ALL = [ ECHO, WORKFLOW_LOAD, WORKFLOW_STATUS, WORKFLOW_RUN, WORKFLOW_STOP ]

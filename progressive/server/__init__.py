@@ -1,6 +1,6 @@
 
 __all__ = ["Request", "Response",
-           "Messages", "SchedulerServer"]
+           "Messages", "SchedulerServer", "server"]
 
 from progressive.server.protocol import *
 from progressive.server.server import *
