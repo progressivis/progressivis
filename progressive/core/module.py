@@ -1,4 +1,3 @@
-from enum import Enum
 from uuid import uuid4
 from inspect import getargspec
 from traceback import print_exc
