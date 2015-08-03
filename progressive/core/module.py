@@ -62,7 +62,7 @@ class Module(object):
         if id is None:
             id = uuid4()
         if scheduler is None:
-            scheduler = default_scheduler
+            scheduler = Scheduler.default
         if tracer is None:
             tracer = default_tracer()
         if predictor is None:

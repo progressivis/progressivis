@@ -1,9 +1,9 @@
 
 class Request(object):
-    def __init__(self, path, serial=None, **params):
+    def __init__(self, path, serial=None, value=None):
         self.serial = serial
         self.path = path
-        self.params = params
+        self.value = value
 
 class Response(object):
     def __init__(self, serial, path, done, value):

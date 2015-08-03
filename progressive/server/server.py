@@ -19,7 +19,13 @@ class ProgressiveRequestHandler(tornado.web.RequestHandler):
     def get(self):
         path = self.request.path
         print "Sending a request for %s"%path
-        req = Request(path)
+        arg = self.get_query_arguments('arg')
+        if arg:
+            arg = arg[0]
+            print "Argument is '%s'"%(arg)
+        else:
+            arg = None
+        req = Request(path, value=arg)
         self.hub.send(req, self._finish)
     
     def _finish(self, res):

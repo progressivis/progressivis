@@ -6,7 +6,7 @@ from toposort import toposort_flatten
 import logging
 logger = logging.getLogger(__name__)
 
-__all__ = ['Scheduler', 'default_scheduler']
+__all__ = ['Scheduler']
 
 class Scheduler(object):
     def __init__(self):
@@ -112,4 +112,7 @@ class Scheduler(object):
     def modules(self):
         return self._modules
 
-default_scheduler = Scheduler()
+
+if not hasattr(Scheduler,'default'):
+    Scheduler.default = Scheduler()
+

@@ -1,4 +1,4 @@
-from progressive.core.scheduler import Scheduler, default_scheduler
+from progressive.core.scheduler import Scheduler
 from progressive.server.protocol import Request, Response, Messages
 
 class SchedulerServer(Scheduler):
@@ -39,21 +39,25 @@ class SchedulerServer(Scheduler):
         nodes = []
         links = []
         for (mid,module) in self.modules().iteritems():
-            node = {'id': mid, 'type': module.__class__.__name__, 'state': module.state }
+            node = {'id': mid, 'type': module.__class__.__name__, 'state': module.state_name[module.state] }
             nodes.append(node)
             for slot in module.input_slot_values():
                 if slot is None:
                     continue
                 l = {'source': slot.output_module.id(), 'target': mid,
                      'source_slot': slot.output_name, 'target_slot': slot.input_name}
-                links.add(l)
+                links.append(l)
         return {'nodes': nodes, 'links': links}
 
     def load(self, workflow):
+        print "Trying to load %s" % workflow
+        variables={}
         try:
-            execfile(workflow)
+            execfile('workflows/'+workflow,variables)
         except Exception as e:
-            return (False, e.message)
+            print "Failed to load %s: %s"%(workflow,e.message)
+            return (False, 'Error: %s'%e.message)
+        print "Succeeded to load %s"%workflow
         return (True, "Done")
 
     def serve_once(self):
@@ -65,9 +69,10 @@ class SchedulerServer(Scheduler):
         return res.path != Messages.WORKFLOW_STOP
 
 def run_scheduler_server(pipe):
-    global default_scheduler
-    default_scheduler = SchedulerServer(pipe)
-    while default_scheduler.serve_once():
+    assert isinstance(Scheduler.default, Scheduler)
+    Scheduler.default = SchedulerServer(pipe)
+    assert isinstance(Scheduler.default, SchedulerServer)
+    while Scheduler.default.serve_once():
         pass
 
 
