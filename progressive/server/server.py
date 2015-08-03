@@ -6,12 +6,15 @@ from progressive.server.scheduler_server import run_scheduler_server
 import tornado.httpserver
 import tornado.ioloop
 import tornado.web
+from tornado.template import Template
+from tornado.template import Loader
 import functools
 import multiprocessing
 import random
 import time
 
 class ProgressiveRequestHandler(tornado.web.RequestHandler):
+    loader = Loader('templates')
     def initialize(self, hub):
         self.hub = hub
 
