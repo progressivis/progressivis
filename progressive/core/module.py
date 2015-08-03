@@ -144,6 +144,7 @@ class Module(object):
         return self._scheduler.timer()
 
     def describe(self):
+        print 'type: %s' % type(self)
         print 'id: %s' % self.id()
         print 'quantum: %f' % self.params.quantum
         print 'start_time: %s' % self._start_time

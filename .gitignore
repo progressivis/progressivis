@@ -7,6 +7,8 @@
 *.so
 *.c
 *.db
+*.ipynb
+*.out
 
 .DS_Store
 .Python
@@ -27,4 +29,5 @@
 /media
 /upload
 /data
+/dist
 *.egg-info
