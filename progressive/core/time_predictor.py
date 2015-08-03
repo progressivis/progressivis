@@ -45,8 +45,6 @@ class LinearTimePredictor(TimePredictor):
         #TODO account for the confidence interval and take min of the 95% CI
         return np.floor(np.max([0, (duration - self.b) / self.a]))
     
-def default_predictor():
-    if TimePredictor.default is None:
-        TimePredictor.default = LinearTimePredictor()
-    return TimePredictor.default
+if TimePredictor.default is None:
+    TimePredictor.default = LinearTimePredictor()
 

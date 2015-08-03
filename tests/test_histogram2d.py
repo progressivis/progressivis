@@ -28,13 +28,7 @@ class TestHistogram2d(unittest.TestCase):
                 writer.writerow(row)
 
     def tearDown(self):
-        try:
-            images=glog.glob('histo_*.png')
-            for i in images:
-                os.remove(i)
-        except:
-            print 'Problem cleaning up images'
-            pass
+        StorageManager.default.end()
 
     def test_histogram2d(self):
         csv = CSVLoader(self.filename,id='csv',
@@ -50,8 +44,8 @@ class TestHistogram2d(unittest.TestCase):
                        scheduler=self.scheduler)
         heatmap.input.array = histogram2d.output.histogram2d
         pr = Print(id='print', scheduler=self.scheduler)
-        #pr.input.inp = heatmap.output.heatmap
-        pr.input.inp = histogram2d.output.histogram2d
+        pr.input.inp = heatmap.output.heatmap
+        #pr.input.inp = histogram2d.output.histogram2d
         self.scheduler.run()
         s = histogram2d.trace_stats(max_runs=1)
         #print "Done. Run time: %gs, loaded %d rows" % (s['duration'].irow(-1), len(module.df()))

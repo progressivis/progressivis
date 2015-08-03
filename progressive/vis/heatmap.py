@@ -49,11 +49,12 @@ class Heatmap(DataFrameModule):
             try:
                 if re.search(r'%(0[\d])?d', filename):
                     filename = filename % (run_number)
+                filename = self.storage.fullname(self, filename)
                 image.save(filename)
-                image.destroy()  # don't keep the image in memory then
                 image = None
             except:
-                pass # discard error for now
+                raise
+
         values = [image, filename, run_number]
         df = self._df
         df.loc[run_number] = values

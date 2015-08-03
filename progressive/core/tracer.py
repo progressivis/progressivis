@@ -158,8 +158,7 @@ class DataFrameTracer(Tracer):
     def terminated(self,ts,run_number,**kwds):
         self.last_run_details.append('terminated')
 
-def default_tracer():
-    if Tracer.default is None:
-        Tracer.default = DataFrameTracer()
-    return Tracer.default
+if Tracer.default is None:
+    Tracer.default = DataFrameTracer()
+
 

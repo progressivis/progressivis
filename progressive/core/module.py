@@ -13,8 +13,9 @@ from progressive.core.common import ProgressiveError
 from progressive.core.utils import empty_typed_dataframe, typed_dataframe, DataFrameAsDict
 from progressive.core.scheduler import *
 from progressive.core.slot import *
-from progressive.core.tracer import *
-from progressive.core.time_predictor import *
+from progressive.core.tracer import Tracer
+from progressive.core.time_predictor import TimePredictor
+from progressive.core.storagemanager import StorageManager
 
 def connect(output_module, output_name, input_module, input_name):
     return output_module.connect_output(output_name, input_module, input_name)
@@ -56,6 +57,7 @@ class Module(object):
                  scheduler=None,
                  tracer=None,
                  predictor=None,
+                 storage=None,
                  input_descriptors=[],
                  output_descriptors=[],
                  **kwds):
@@ -64,9 +66,11 @@ class Module(object):
         if scheduler is None:
             scheduler = Scheduler.default
         if tracer is None:
-            tracer = default_tracer()
+            tracer = Tracer.default
         if predictor is None:
-            predictor = default_predictor()
+            predictor = TimePredictor.default
+        if storage is None:
+            storage = StorageManager.default
 
         # always present
         output_descriptors = output_descriptors + [SlotDescriptor(Module.TRACE_SLOT, type=pd.DataFrame, required=False)]
@@ -78,7 +82,8 @@ class Module(object):
         if self._scheduler.exists(id):
             raise ProgressiveError('module already exists in scheduler, delete it first')
         self.tracer = tracer
-        self.predictor = predictor        
+        self.predictor = predictor
+        self.storage = storage
         self._start_time = None
         self._end_time = None
         self._last_update = None

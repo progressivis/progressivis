@@ -9,6 +9,8 @@ logger = logging.getLogger(__name__)
 __all__ = ['Scheduler']
 
 class Scheduler(object):
+    default = None
+    
     def __init__(self):
         self._modules = dict()
         self._running = False
@@ -113,6 +115,6 @@ class Scheduler(object):
         return self._modules
 
 
-if not hasattr(Scheduler,'default'):
+if Scheduler.default is None:
     Scheduler.default = Scheduler()
 
