@@ -173,6 +173,7 @@ class Module(object):
     def id(self):
         return self._id
 
+
     def scheduler(self):
         return self._scheduler
 

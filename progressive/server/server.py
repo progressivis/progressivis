@@ -12,6 +12,7 @@ import functools
 import multiprocessing
 import random
 import time
+import webbrowser
 
 class ProgressiveRequestHandler(tornado.web.RequestHandler):
     loader = Loader('templates')
@@ -65,7 +66,7 @@ class Hub(object):
         callback(res)
 
 
-def server():
+def server(openbrowser=False):
     fd1, fd2 = multiprocessing.Pipe()
     pipe = fd1
     fno = fd1.fileno()
@@ -83,18 +84,12 @@ def server():
     http_server = tornado.httpserver.HTTPServer(application)
     http_server.listen(8888)
     print 'The HTTP server is listening on port 8888.'
+    if openbrowser:
+        webbrowser.open('http://localhost:8888/')
     iol.start()
     http_server.stop()
     p.join()
     
 
 if __name__ == '__main__':
-    application = tornado.web.Application([
-        (r"/", MainHandler),
-        (r"/async", AsyncHandler),
-    ])
-    http_server = tornado.httpserver.HTTPServer(application)
-    http_server.listen(8888)
-    print 'The HTTP server is listening on port 8888.'
-    tornado.ioloop.IOLoop.instance().start()
-    
+    server()
