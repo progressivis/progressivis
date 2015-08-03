@@ -4,6 +4,8 @@ import numpy as np
 from sklearn import linear_model
 
 class TimePredictor(object):
+    default = None
+
     def fit(self, trace_df):
         pass
 
@@ -44,4 +46,7 @@ class LinearTimePredictor(TimePredictor):
         return np.floor(np.max([0, (duration - self.b) / self.a]))
     
 def default_predictor():
-    return LinearTimePredictor()
+    if TimePredictor.default is None:
+        TimePredictor.default = LinearTimePredictor()
+    return TimePredictor.default
+

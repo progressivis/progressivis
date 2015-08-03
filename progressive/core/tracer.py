@@ -3,6 +3,8 @@ import numpy as np
 import os
 
 class Tracer(object):
+    default = None
+
     def start_run(self,ts,run_number,**kwds):
         pass
     def end_run(self,ts,run_number,**kwds):
@@ -157,5 +159,7 @@ class DataFrameTracer(Tracer):
         self.last_run_details.append('terminated')
 
 def default_tracer():
-    return DataFrameTracer()
+    if Tracer.default is None:
+        Tracer.default = DataFrameTracer()
+    return Tracer.default
 
