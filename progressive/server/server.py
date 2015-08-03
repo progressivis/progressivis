@@ -13,6 +13,7 @@ import multiprocessing
 import random
 import time
 import webbrowser
+import os
 
 class ProgressiveRequestHandler(tornado.web.RequestHandler):
     loader = Loader('templates')
@@ -40,7 +41,7 @@ class ProgressiveRequestHandler(tornado.web.RequestHandler):
 
 class MainHandler(tornado.web.RequestHandler):    
     def get(self):
-        self.write("Welcome to the Progressive server")
+        self.render("index.html")
 
 class Hub(object):
     def __init__(self, pipe):
@@ -65,6 +66,9 @@ class Hub(object):
             tornado.ioloop.IOLoop.instance().stop()
         callback(res)
 
+server_dir = os.path.dirname(__file__)
+static_path = os.path.join(server_dir, 'static')
+template_path = os.path.join(server_dir, 'templates')
 
 def server(openbrowser=False):
     fd1, fd2 = multiprocessing.Pipe()
@@ -80,7 +84,10 @@ def server(openbrowser=False):
     handlers = [(req, ProgressiveRequestHandler, {'hub': hub}) for req in Messages.ALL]
     application = tornado.web.Application([
         (r"/", MainHandler),
-    ] + handlers)
+        (r"/static/(.*)", tornado.web.StaticFileHandler, dict(path=static_path)),
+        ] + handlers,
+        template_path=template_path,
+        static_path=static_path)
     http_server = tornado.httpserver.HTTPServer(application)
     http_server.listen(8888)
     print 'The HTTP server is listening on port 8888.'
