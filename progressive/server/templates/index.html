@@ -42,7 +42,7 @@
               <ul class="dropdown-menu" aria-labelledby="workflows">
 		{% for workflow in workflows %}
 		<li class="active">Select...</li>
-                <li><a href="{{reverse_url('api:workflow:load')}}?param={{escape(workflow)}}">{{escape(workflow) }}</a></li>
+                <li><a href="#" alt="{{escape(workflow)}}">{{escape(workflow) }}</a></li>
 		{% end %}
               </ul>
             </li>
@@ -68,14 +68,31 @@
     ================================================== -->
     <!-- Placed at the end of the document so the pages load faster -->
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+    <script src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.11.4/jquery-ui.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
 <script>
+function highlight_ok(li) {
+      $(li).css("background-color", "green");
+      $('#workflow-menu').effect("highlight", {color: 'green'});
+}
+function highlight_nok(li) {
+      $(li).css("background-color", "red");
+      $('#workflow-menu').effect("highlight", {color: 'red'});
+}
 $(window).load(function() {
       $(function(){
 	  $(".dropdown-menu").on("click", "li", function(event){
-	      console.log("You clicked the drop downs", event)
+	      event.preventDefault();
+	      console.log("You clicked the drop downs", event);
+	      if (this.firstChild.tagName!='A') return;
+	      var li = this;
+	      $.ajax({url: "{{reverse_url('api:workflow:load')}}",
+		      method: 'POST',
+		      data: {param: li.firstChild.getAttribute("alt")}})
+		  .done(function(res) { highlight_ok(li); })
+		  .fail(function(xhr,status,error) { highlight_nok(li); });
 	  })
-      })
+      });
       });
 </script>
   </body>

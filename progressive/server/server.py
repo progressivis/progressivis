@@ -25,20 +25,37 @@ class ProgressiveRequestHandler(tornado.web.RequestHandler):
     def get(self):
         path = self.request.path
         print "Sending a request for %s"%path
-        param = self.get_query_arguments('param')
+        param = self.get_argument('param')
         if param:
-            param = param[0]
             print "Argument is '%s'"%(param)
         else:
+            print "No argument, error"
             param = None
         req = Request(path, value=param)
         self.hub.send(req, self._finish)
-    
+
+    @tornado.web.asynchronous
+    def post(self):
+        path = self.request.path
+        print "POST received with args %s" % self.request.arguments
+        print "Sending a request from POST for %s"%path
+        param = self.get_argument('param')
+        if param:
+            print "Argument is '%s'"%(param)
+        else:
+            print "No argument, error"
+            param = None
+        req = Request(path, value=param)
+        self.hub.send(req, self._finish)
+        
     def _finish(self, res):
         print "Entering ProgressiveRequestHandler._finish"
-        self.write(res.value)
-        print "Finishing the request."
-        self.finish()
+        if not res.done:
+            self.set_status(400)
+            self.finish(res.value)
+        else:
+            self.write(res.value)
+            self.finish()
 
 class MainHandler(tornado.web.RequestHandler):    
     def get(self):

@@ -54,6 +54,8 @@ class SchedulerServer(Scheduler):
 
     def load(self, workflow):
         print "Trying to load %s" % workflow
+        if workflow is None:
+            return (False, 'Error: no workflow specified')
         variables={}
         try:
             execfile('workflows/'+workflow,variables)
