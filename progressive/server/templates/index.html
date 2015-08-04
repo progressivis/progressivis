@@ -50,6 +50,7 @@
             <li><a href="#about">About</a></li>
             <li><a href="#contact">Contact</a></li>
           </ul>
+	  <p id='workflow-name' class="navbar-text navbar-right">No workflow loaded</p>
         </div><!--/.nav-collapse -->
       </div>
     </nav>
@@ -71,9 +72,10 @@
     <script src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.11.4/jquery-ui.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
 <script>
-function highlight_ok(li) {
+function highlight_ok(li, w) {
       $(li).css("background-color", "green");
       $('#workflow-menu').effect("highlight", {color: 'green'});
+      $('#workflow-name').text('Loaded workflow: '+w);
 }
 function highlight_nok(li) {
       $(li).css("background-color", "red");
@@ -85,12 +87,12 @@ $(window).load(function() {
 	      event.preventDefault();
 	      console.log("You clicked the drop downs", event);
 	      if (this.firstChild.tagName!='A') return;
-	      var li = this;
+	      var li = this, w = li.firstChild.getAttribute("alt");
 	      $.ajax({url: "{{reverse_url('api:workflow:load')}}",
 		      method: 'POST',
-		      data: {param: li.firstChild.getAttribute("alt")}})
-		  .done(function(res) { highlight_ok(li); })
-		  .fail(function(xhr,status,error) { highlight_nok(li); });
+		      data: {param: w}})
+		  .done(function(res) { highlight_ok(li, w); })
+		  .fail(function(xhr,status,error) { highlight_nok(li, w); });
 	  })
       });
       });
