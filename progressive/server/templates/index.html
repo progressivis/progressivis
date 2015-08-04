@@ -34,14 +34,15 @@
         <div id="navbar" class="collapse navbar-collapse">
           <ul class="nav navbar-nav">
             <li class="active"><a href="#">Home</a></li>
-	    <li class="dropdown">
+	    <li class="dropdown" id="workflow-menu">
               <a id="worflows" href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">
                 Workflows
                 <span class="caret"></span>
               </a>
               <ul class="dropdown-menu" aria-labelledby="workflows">
 		{% for workflow in workflows %}
-                <li><a href="#">{{ escape(workflow) }}</a></li>
+		<li class="active">Select...</li>
+                <li><a href="{{reverse_url('api:workflow:load')}}?param={{escape(workflow)}}">{{escape(workflow) }}</a></li>
 		{% end %}
               </ul>
             </li>
@@ -68,5 +69,14 @@
     <!-- Placed at the end of the document so the pages load faster -->
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+<script>
+$(window).load(function() {
+      $(function(){
+	  $(".dropdown-menu").on("click", "li", function(event){
+	      console.log("You clicked the drop downs", event)
+	  })
+      })
+      });
+</script>
   </body>
 </html>
