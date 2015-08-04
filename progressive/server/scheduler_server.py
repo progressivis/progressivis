@@ -7,6 +7,7 @@ class SchedulerServer(Scheduler):
         super(SchedulerServer, self).__init__()
         self.pipe = fd
         self._current_run = 0
+        self.file = None
 
     def _before_run(self, run_number):
         self._current_run = run_number
@@ -22,8 +23,10 @@ class SchedulerServer(Scheduler):
         elif req.path == Messages.WORKFLOW_LOAD:
             (ok, msg) = self.load(req.value)
             return Response(req.serial, req.path, ok, msg) 
-        elif req.path == Messages.WORKFLOW_STATUS:
+        elif req.path == Messages.WORKFLOW_NETWORK:
             return Response(req.serial, req.path, True, self.get_workflow())
+        elif req.path == Messages.WORKFLOW_STATUS:
+            return Response(req.serial, req.path, True, self.get_status())
         elif req.path == Messages.WORKFLOW_RUN:
             if len(self.modules()) == 0:
                 return Response(req.serial, req.path, False, "Nothing to run")
@@ -58,7 +61,11 @@ class SchedulerServer(Scheduler):
             print "Failed to load %s: %s"%(workflow,e.message)
             return (False, 'Error: %s'%e.message)
         print "Succeeded to load %s"%workflow
+        self.file = workflow
         return (True, "Done")
+
+    def get_status(self):
+        return {'file': this.file }
 
     def serve_once(self):
         print "Ready to receive in SchedulerServer"

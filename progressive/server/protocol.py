@@ -15,9 +15,11 @@ class Response(object):
 class Messages(object):
     ERROR = "/error"
     ECHO = "/echo"
-    WORKFLOW_LOAD = "/workflow/load"
-    WORKFLOW_STATUS = "/workflow/status"
-    WORKFLOW_RUN = "/workflow/run"
-    WORKFLOW_STOP = "/workflow/stop"
+    WORKFLOW_LOAD = "/api/workflow/load"
+    WORKFLOW_STATUS = "/api/workflow/status"
+    WORKFLOW_NETWORK = "/api/workflow/network"
+    WORKFLOW_RUN = "/api/workflow/run"
+    WORKFLOW_STOP = "/api/workflow/stop"
 
-    ALL = [ ECHO, WORKFLOW_LOAD, WORKFLOW_STATUS, WORKFLOW_RUN, WORKFLOW_STOP ]
+    ALL = [ ECHO, WORKFLOW_LOAD, WORKFLOW_STATUS, WORKFLOW_NETWORK, WORKFLOW_RUN, WORKFLOW_STOP ]
+

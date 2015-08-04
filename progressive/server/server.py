@@ -14,6 +14,7 @@ import random
 import time
 import webbrowser
 import os
+import glob
 
 class ProgressiveRequestHandler(tornado.web.RequestHandler):
     loader = Loader('templates')
@@ -41,7 +42,12 @@ class ProgressiveRequestHandler(tornado.web.RequestHandler):
 
 class MainHandler(tornado.web.RequestHandler):    
     def get(self):
-        self.render("index.html")
+        workflows = map(lambda x : x.replace('workflows/',''), glob.glob('workflows/*.py'))
+        self.render("index.html", workflows=workflows)
+
+class WorkflowStatusRequestHandler(tornado.web.RequestHandler):    
+    def get(self):
+        self.render("workflow-status.html")
 
 class Hub(object):
     def __init__(self, pipe):
@@ -81,10 +87,11 @@ def server(openbrowser=False):
     iol = tornado.ioloop.IOLoop.instance()
     iol.add_handler(fno, hub.recv, iol.READ)
     
-    handlers = [(req, ProgressiveRequestHandler, {'hub': hub}) for req in Messages.ALL]
+    handlers = [(req, ProgressiveRequestHandler, {'hub': hub}, req[1:].replace('/',':')) for req in Messages.ALL]
     application = tornado.web.Application([
         (r"/", MainHandler),
         (r"/static/(.*)", tornado.web.StaticFileHandler, dict(path=static_path)),
+        (r"/workflow/status", WorkflowStatusRequestHandler, {}, "workflow:status"),
         ] + handlers,
         template_path=template_path,
         static_path=static_path)
