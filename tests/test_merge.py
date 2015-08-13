@@ -26,7 +26,7 @@ class TestMerge(unittest.TestCase):
                 row=list(np.random.rand(self.cols))
                 writer.writerow(row)
 
-    def test_stats(self):
+    def test_merge(self):
         csv_module = CSVLoader(self.filename,id='test_read_csv',
                                index_col=False,header=None,chunksize=3000,
                                scheduler=self.scheduler)
@@ -39,7 +39,7 @@ class TestMerge(unittest.TestCase):
         connect(module2, 'stats', merge, 'df')
         connect(merge, 'df',
                 Print(id='print', scheduler=self.scheduler), 'inp')
-        self.scheduler.run()
+        self.scheduler.start()
         s = merge.trace_stats(max_runs=1)
         pd.set_option('display.expand_frame_repr', False)
         print s

@@ -50,7 +50,8 @@ class Module(object):
     state_running = 2
     state_blocked = 3
     state_terminated = 4
-    state_name = ['created', 'ready', 'running', 'blocked', 'terminated']
+    state_invalid = 5
+    state_name = ['created', 'ready', 'running', 'blocked', 'terminated', 'invalid']
 
     def __init__(self,
                  id=None,
@@ -89,16 +90,17 @@ class Module(object):
         self._last_update = None
         self._state = Module.state_created
         self._had_error = False
-        self.input_descriptors = input_descriptors
-        self.output_descriptors = output_descriptors
-        self._input_slots = self._validate_descriptors(self.input_descriptors)
-        self._input_types = {d.name: d.type for d in self.input_descriptors}
-        self._output_slots = self._validate_descriptors(self.output_descriptors)
-        self._output_types = {d.name: d.type for d in self.output_descriptors}
+        self.input_descriptors = {d.name: d for d in input_descriptors}
+        self._output_slots = self._validate_descriptors(output_descriptors)
+        self.output_descriptors = {d.name: d for d in output_descriptors}
+        self._input_slots = self._validate_descriptors(input_descriptors)
         self.default_step_size = 1
         self.input = InputSlots(self)
         self.output = OutputSlots(self)
         self._scheduler.add(self)
+
+    def destroy(self):
+        self.scheduler().remove(self)
 
     @staticmethod
     def _filter_kwds(kwds, function_or_method):
@@ -177,6 +179,9 @@ class Module(object):
     def scheduler(self):
         return self._scheduler
 
+    def start(self):
+        self.scheduler().start()
+
     def create_slot(self, output_name, input_module, input_name):
         return Slot(self, output_name, input_module, input_name)
 
@@ -196,7 +201,10 @@ class Module(object):
         return self._input_slots.values()
 
     def input_slot_type(self,name):
-        return self._input_types[name]
+        return self.input_descriptors[name].type
+
+    def input_slot_required(self,name):
+        return self.input_descriptors[name].required
 
     def input_slot_names(self):
         return self._input_slots.keys()
@@ -211,18 +219,20 @@ class Module(object):
 
     def validate_inputs(self):
         # Only validate existence, the output code will test types
-        for sd in self.input_descriptors:
+        valid = True
+        for sd in self.input_descriptors.values():
             slot = self._input_slots[sd.name]
             if sd.required and slot is None:
-                raise ProgressiveError('Missing inputs slot %s in %s',
-                                       sd.name, self._id)
+                logger.error('Missing inputs slot %s in %s', sd.name, self._id)
+                valid = False
+        return valid
 
     def get_output_slot(self,name):
          # raise error is the slot is not declared
         return self._output_slots[name]
 
     def output_slot_type(self,name):
-        return self._output_types[name]
+        return self.output_descriptors[name].type
 
     def output_slot_values(self):
         return self._output_slots.values()
@@ -231,14 +241,17 @@ class Module(object):
         return self._output_slots.keys()
 
     def validate_outputs(self):
-        for sd in self.output_descriptors:
+        valid = True
+        for sd in self.output_descriptors.values():
             slots = self._output_slots[sd.name]
             if sd.required and len(slots)==0:
-                raise ProgressiveError('Missing output slot %s in %s',
-                                       sd.name, self._id)
+                logger.error('Missing required output slot %s in %s', sd.name, self._id)
+                valid = False
             if slots:
                 for slot in slots:
-                    slot.validate_types()
+                    if not slot.validate_types():
+                        valid = False
+        return valid
 
     def _connect_output(self, slot):
         slot_list = self.get_output_slot(slot.output_name)
@@ -252,12 +265,15 @@ class Module(object):
         pass
 
     def validate_inouts(self):
-        self.validate_inputs()
-        self.validate_outputs()
+        return self.validate_inputs() and self.validate_outputs()
 
     def validate(self):
-        self.validate_inouts()
-        self.state=Module.state_blocked
+        if self.validate_inouts():
+            self.state=Module.state_blocked
+            return True
+        else:
+            self.state=Module.state_invalid
+            return False
 
     def get_data(self, name):
         if name==Module.TRACE_SLOT:
@@ -301,6 +317,9 @@ class Module(object):
         if self.state == Module.state_terminated:
             logger.error("%s Not ready because it terminated", self.id())
             return False
+        if self.state == Module.state_invalid:
+            logger.error("%s Not ready because it is invalid", self.id())
+            return False
         # source modules can be generators that
         # cannot run out of input, unless they decide so.
         if len(self._input_slots)==0:
@@ -325,7 +344,7 @@ class Module(object):
                     logger.info("%s Not ready because %s is not newer", self.id(), in_module.id())
                     ready = False
                 
-                if in_module.state!=Module.state_terminated:
+                if in_module.state!=Module.state_terminated and in_module.state!=Module.state_invalid:
                     zombie = False
             if zombie:
                 self.state = Module.state_terminated
@@ -336,6 +355,9 @@ class Module(object):
     def is_terminated(self):
         return self._state==Module.state_terminated
 
+    def is_valid(self):
+        return self._state!=Module.state_invalid
+
     @property
     def state(self):
         return self._state
@@ -345,7 +367,7 @@ class Module(object):
         self.set_state(s)
 
     def set_state(self, s):
-        assert s>=Module.state_created and s<=Module.state_terminated, "State %s invalid in module %s"%(s, self.id())
+        assert s>=Module.state_created and s<=Module.state_invalid, "State %s invalid in module %s"%(s, self.id())
         self._state = s
 
     def trace_stats(self, max_runs=None):
@@ -355,7 +377,7 @@ class Module(object):
         self.predictor.fit(self.trace_stats())
         return self.predictor.predict(duration, self.default_step_size)
 
-    def start(self):
+    def starting(self):
         pass
 
     def _stop(self, run_number):
@@ -364,7 +386,7 @@ class Module(object):
         self._start_time = None
         assert self.state != self.state_running
 
-    def end(self):
+    def ending(self):
         pass
 
     def last_update(self):

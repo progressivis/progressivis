@@ -18,6 +18,7 @@ class Scheduler(object):
         self._stopped = False
         self._valid = False
         self._start = None
+        self._run_number = 0
 
     def timer(self):
         if self._start is None:
@@ -25,19 +26,35 @@ class Scheduler(object):
             return 0
         return default_timer()-self._start
 
-    def collect_dependencies(self):
+    def collect_dependencies(self, only_required=False):
         dependencies = {}
         for (mid, module) in self._modules.iteritems():
-            outs = [m.output_module.id() for m in module.input_slot_values() if m]
-            if outs:
-                dependencies[mid] = set(outs)
+            if not module.is_valid(): # ignore invalid modules
+                continue
+            outs = [m.output_module.id() for m in module.input_slot_values() \
+                    if m and (not only_required or module.input_slot_required(m.input_name)) ]
+            dependencies[mid] = set(outs)
         return dependencies
+
+    def order_modules(self):
+        runorder = None
+        try:
+            runorder = toposort_flatten(self.collect_dependencies())
+        except ValueError: # cycle, try to break it then
+            # if there's still a cycle, we cannot run the first cycle
+            logger.info('Cycle in module dependencies, trying to drop optional fields')
+            runorder = toposort_flatten(self.collect_dependencies(), only_required=True)
+        return runorder
 
     def validate(self):
         if not self._valid:
+            valid = True
             for module in self._modules.values():
-                module.validate()
-            self._valid = True
+                if not module.validate():
+                    valid = False
+                    
+            self._valid = valid
+        return self._valid
 
     def is_valid(self):
         return self._valid
@@ -45,28 +62,30 @@ class Scheduler(object):
     def invalidate(self):
         self._valid = False
 
-    def _before_run(self, run_number):
+    def _before_run(self):
         pass
 
-    def _after_run(self, run_number):
+    def _after_run(self):
         pass
+
+    def start(self):
+        self.run()
 
     def run(self):
         self._stopped = False
         self._running = True
         self.validate()
-        self._runorder = toposort_flatten(self.collect_dependencies())
-        logger.info("Scheduler run order: %s", self._runorder)
         done = False
-        run_number = 0
 
+        self._runorder = self.order_modules()
+        logger.info("Scheduler run order: %s", self._runorder)
         modules = map(self.module, self._runorder)
         for module in modules:
-            module.start()
+            module.starting()
         while not done and not self._stopped:
-            run_number += 1
+            self._run_number += 1
             done = True
-            self._before_run(run_number)
+            self._before_run()
             for module in modules:
                 if not module.is_ready():
                     if module.is_terminated():
@@ -75,22 +94,27 @@ class Scheduler(object):
                         logger.info("Module %s not ready", module.id())
                     continue
                 logger.info("Running module %s", module.id())
-                module.run(run_number)
+                module.run(self._run_number)
                 logger.info("Module %s returned", module.id())
                 if not module.is_terminated():
                     done = False
                 else:
                     logger.info("Module %s terminated", module.id())
-            self._after_run(run_number)
+            self._after_run()
         for module in reversed(modules):
-            module.end()
+            module.ending()
         self._running = False
+        self._stopped = True
+        self.done()
 
     def stop(self):
         self._stopped = True
 
     def is_running(self):
         return self._running
+
+    def done(self):
+        pass
 
     def __len__(self):
         return len(self._modules)
@@ -111,8 +135,8 @@ class Scheduler(object):
 
     def remove(self, module):
         self.stop()
-        module._stop()
-        self._remove_module(self, module)
+        module._stop(self._run_number)
+        self._remove_module(module)
 
     def _remove_module(self, module):
         del self._modules[module.id()]

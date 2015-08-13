@@ -38,7 +38,7 @@ class TestStats(unittest.TestCase):
         connect(csv_module, 'df', module, 'df')
         connect(module, 'stats',
                 Print(id='print', scheduler=self.scheduler), 'inp')
-        self.scheduler.run()
+        self.scheduler.start()
         s = module.trace_stats(max_runs=1)
         pd.set_option('display.expand_frame_repr', False)
         print s

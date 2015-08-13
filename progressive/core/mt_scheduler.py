@@ -6,16 +6,17 @@ class MTScheduler(Scheduler):
     def __init__(self):
         super(MTScheduler,self).__init__()
         self.lock = threading.RLock()
-        self.thread = threading.Thread(target=self.run, name="Progressive Scheduler")
+        self.thread = None
+        self.debug = False
 
     @staticmethod
     def install():
         if not isinstance(Scheduler.default, MTScheduler):
             Scheduler.default = MTScheduler()
 
-    def collect_dependencies(self):
+    def collect_dependencies(self, only_required=False):
         with self.lock:
-            super(MTScheduler,self).collect_dependencies()
+            return super(MTScheduler,self).collect_dependencies(only_required)
 
     def validate(self):
         with self.lock:
@@ -24,18 +25,28 @@ class MTScheduler(Scheduler):
     def invalidate(self):
         with self.lock:
             super(MTScheduler,self).invalidate()
-    
-    def run(self):
-        if threading.current_thread()!=self.thread:
-            if self.thread.is_alive():
-                raise ProgressiveError('Scheduler already running')
-            else:
-                self.thread.start()
+
+    def _before_run(self):
+        if self.debug:
+            print "Before run %d" % self._run_number
+
+
+    def start(self):
+        if self.thread is None:
+            self.thread = threading.Thread(target=self.run, name="Progressive Scheduler")
+            self.thread.start()
         else:
-            super(MTScheduler,self).run()
+            raise ProgressiveError('Trying to start scheduler thread inside scheduler thread')
+
+    def _after_run(self):
+        if self.debug:
+            print "After run %d" % self._run_number
 
     def stop(self):
         super(MTScheduler,self).stop()
+
+    def done(self):
+        self.thread = None
 
     def _add_module(self, module):
         with self.lock:

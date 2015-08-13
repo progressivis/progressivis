@@ -46,7 +46,7 @@ class TestHistogram2d(unittest.TestCase):
         pr = Print(id='print', scheduler=self.scheduler)
         pr.input.inp = heatmap.output.heatmap
         #pr.input.inp = histogram2d.output.histogram2d
-        self.scheduler.run()
+        self.scheduler.start()
         s = histogram2d.trace_stats(max_runs=1)
         #print "Done. Run time: %gs, loaded %d rows" % (s['duration'].irow(-1), len(module.df()))
         pd.set_option('display.expand_frame_repr', False)

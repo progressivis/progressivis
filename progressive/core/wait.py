@@ -22,7 +22,9 @@ class Wait(Module):
         inslot = self.get_input_slot('inp')
         if inslot.output_module is None:
             return False
-        trace = inslot.output_module.tracer.df() 
+        trace = inslot.output_module.tracer.df()
+        if len(trace) == 0:
+            return False
         if delay != np.nan:
             return trace['end'].irow(-1) >= delay
         elif reads:

@@ -36,7 +36,7 @@ class TestPercentiles(unittest.TestCase):
         connect(self.csv_module, 'df', module, 'df')
         connect(module, 'percentiles',
                 Print(id='print', scheduler=self.scheduler), 'inp')
-        self.scheduler.run()
+        self.scheduler.start()
         s = module.trace_stats(max_runs=1)
         #print "Done. Run time: %gs, loaded %d rows" % (s['duration'].irow(-1), len(module.df()))
         pd.set_option('display.expand_frame_repr', False)

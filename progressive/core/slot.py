@@ -1,5 +1,8 @@
 from progressive.core.common import ProgressiveError
 
+import logging
+logger = logging.getLogger(__name__)
+
 class SlotDescriptor(object):
     def __init__(self, name, type=None, required=True, doc=None):
         self.name = name
@@ -51,6 +54,7 @@ class Slot(object):
             return True
         if output_type == input_type:
             return True
+        logger.error('Incompatible types for slot (%s,%s) in %s', input_type, output_type, str(self))
         return False #TODO: more compatibility comes here
 
 class InputSlots(object):
