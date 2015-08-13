@@ -90,10 +90,10 @@ class Module(object):
         self._last_update = None
         self._state = Module.state_created
         self._had_error = False
+        self._input_slots = self._validate_descriptors(input_descriptors)
         self.input_descriptors = {d.name: d for d in input_descriptors}
         self._output_slots = self._validate_descriptors(output_descriptors)
         self.output_descriptors = {d.name: d for d in output_descriptors}
-        self._input_slots = self._validate_descriptors(input_descriptors)
         self.default_step_size = 1
         self.input = InputSlots(self)
         self.output = OutputSlots(self)
@@ -244,7 +244,7 @@ class Module(object):
         valid = True
         for sd in self.output_descriptors.values():
             slots = self._output_slots[sd.name]
-            if sd.required and len(slots)==0:
+            if sd.required and slots and len(slots):
                 logger.error('Missing required output slot %s in %s', sd.name, self._id)
                 valid = False
             if slots:
@@ -315,10 +315,10 @@ class Module(object):
 
     def is_ready(self):
         if self.state == Module.state_terminated:
-            logger.error("%s Not ready because it terminated", self.id())
+            logger.info("%s Not ready because it terminated", self.id())
             return False
         if self.state == Module.state_invalid:
-            logger.error("%s Not ready because it is invalid", self.id())
+            logger.info("%s Not ready because it is invalid", self.id())
             return False
         # source modules can be generators that
         # cannot run out of input, unless they decide so.

@@ -22,11 +22,13 @@ class ChangeManager(object):
         self.created = NIL
         self.deleted = NIL
         self.buffer = NIL
+        self.buffered = False
 
     def update(self, run_number, df):
         if run_number <= self.last_run:
             return
         uc = df[Module.UPDATE_COLUMN]
+        self.buffered = False
         if self.last_run is None:
             self.index = df.index
             self.updated = self.index.values
@@ -40,15 +42,23 @@ class ChangeManager(object):
         self.last_run = run_number
 
     def buffer_updated(self):
-        self.buffer = np.hstack([self.buffer, self.updated])
+        if not self.buffered and len(self.updated) != 0:
+            self.buffered = True
+            self.buffer = np.hstack([self.buffer, self.updated])
 
     def buffer_created(self):
-        self.buffer = np.hstack([self.buffer, self.updated])
+        if  not self.buffered and len(self.created) != 0:
+            self.buffered = True
+            self.buffer = np.hstack([self.buffer, self.created])
 
     def next_buffered(self, n):
         if len(self.buffer)==0:
             return NIL
-        ret, self.buffer = np.split(self.buffer, [n])
+        if n >= len(self.buffer):
+            ret = self.buffer
+            self.buffer = NIL
+        else:
+            ret, self.buffer = np.split(self.buffer, [n])
         return ret
 
     def is_buffer_empty(self):

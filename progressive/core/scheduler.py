@@ -52,7 +52,6 @@ class Scheduler(object):
             for module in self._modules.values():
                 if not module.validate():
                     valid = False
-                    
             self._valid = valid
         return self._valid
 

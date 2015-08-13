@@ -83,14 +83,11 @@ class DataFrameSlot(Slot):
 class DataFrameModule(Module):
     def __init__(self, dataframe_slot='df', **kwds):
         self._add_slots(kwds,'output_descriptors',
-                        [SlotDescriptor(dataframe_slot, type=pd.DataFrame)])
+                        [SlotDescriptor(dataframe_slot, type=pd.DataFrame, required=False)])
         super(DataFrameModule, self).__init__(**kwds)
         self._dataframe_slot = dataframe_slot
         self._df = None
         self._stats = {}
-
-    def validate_outputs(self):
-        self.get_output_slot(self._dataframe_slot)
 
     def create_slot(self, output_name, input_module, input_name):
         if output_name==self._dataframe_slot:

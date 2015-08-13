@@ -17,6 +17,7 @@ class TestHistogram2d(unittest.TestCase):
     rows = 1000000
     cols = 30
     def setUp(self):
+        log_level()
         self.scheduler = Scheduler()
         if os.path.exists(self.filename):
             return
@@ -44,8 +45,8 @@ class TestHistogram2d(unittest.TestCase):
                        scheduler=self.scheduler)
         heatmap.input.array = histogram2d.output.histogram2d
         pr = Print(id='print', scheduler=self.scheduler)
-        pr.input.inp = heatmap.output.heatmap
-        #pr.input.inp = histogram2d.output.histogram2d
+        #pr.input.inp = heatmap.output.heatmap
+        pr.input.inp = histogram2d.output.histogram2d
         self.scheduler.start()
         s = histogram2d.trace_stats(max_runs=1)
         #print "Done. Run time: %gs, loaded %d rows" % (s['duration'].irow(-1), len(module.df()))

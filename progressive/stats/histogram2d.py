@@ -5,6 +5,9 @@ from progressive.core.slot import SlotDescriptor
 import numpy as np
 import pandas as pd
 
+import logging
+logger = logging.getLogger(__name__)
+
 class Histogram2d(DataFrameModule):
     parameters = [('xbins',  np.dtype(int),   1024),
                   ('ybins',  np.dtype(int),   1024),
@@ -28,7 +31,7 @@ class Histogram2d(DataFrameModule):
         self.x_column = x_column
         self.y_column = y_column
         self.default_step_size = 10000
-
+        self.total_read = 0
         self._df = self.create_dataframe(Histogram2d.schema)
 
     def is_ready(self):
@@ -45,13 +48,19 @@ class Histogram2d(DataFrameModule):
         if len(dfslot.deleted) or len(dfslot.updated) > len(dfslot.created):
             dfslot.reset()
             old_histo = None
+            self.total_read = 0
+            logger.info('Reseting history because of changes in the input')
             #raise ProgressiveError('%s module does not manage updates or deletes', self.__class__.__name__)
+
         dfslot.buffer_created()
 
         indices = dfslot.next_buffered(step_size)
         steps = len(indices)
         if steps == 0:
+            logger.info('Index buffer empty')
             return self._return_run_step(self.state_blocked, steps_run=steps)
+        else:
+            self.total_read += steps
         x = input_df.loc[indices, self.x_column]
         y = input_df.loc[indices, self.y_column]
         p = self.params
