@@ -101,6 +101,9 @@ class Scheduler(object):
     def add(self, module):
         if not module.is_created():
             raise ProgressiveError('Cannot add running module %s', module.id())
+        self._add_module(module)
+
+    def _add_module(self, module):
         self._modules[module.id()] = module
 
     def module(self, id):
@@ -109,6 +112,9 @@ class Scheduler(object):
     def remove(self, module):
         self.stop()
         module._stop()
+        self._remove_module(self, module)
+
+    def _remove_module(self, module):
         del self._modules[module.id()]
 
     def modules(self):
