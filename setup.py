@@ -2,6 +2,8 @@ import os
 import pkg_resources
 from setuptools import setup, find_packages
 
+execfile('progressivis/core/version.py')
+
 with open('requirements.txt') as f:
     required = f.read().splitlines()
 
@@ -10,7 +12,7 @@ def read(fname):
 
 setup(
     name = "progressivis",
-    version = pkg_resources.require("progressivis")[0].version, # '0.0.2.dev0'
+    version = __version__,
     author = "Jean-Daniel Fekete",
     author_email = "Jean-Daniel.Fekete@inria.fr",
     url="http://progressive.gforge.inria.fr/",
