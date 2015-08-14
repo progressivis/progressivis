@@ -1,10 +1,7 @@
 import unittest
-import pandas as pd
-from timeit import default_timer
 
-import os
+import pandas as pd
 import numpy as np
-from pprint import pprint
 
 from progressivis import *
 from progressivis.core.changemanager import ChangeManager, NIL
@@ -47,7 +44,6 @@ class TestChangeManager(unittest.TestCase):
         self.assertEqual(len(cm.created), 0)
         self.assertTrue((cm.deleted==np.array([2])).all())
 
-suite = unittest.TestLoader().loadTestsFromTestCase(TestChangeManager)
 
 if __name__ == '__main__':
     unittest.main()

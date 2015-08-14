@@ -4,6 +4,7 @@ from progressivis import *
 from progressivis.io import CSVLoader
 from progressivis.stats import Histogram2d
 from progressivis.vis import Heatmap
+from progressivis.datasets import get_dataset
 
 import os
 import glob
@@ -13,27 +14,17 @@ import pandas as pd
 from pprint import pprint
 
 class TestHistogram2d(unittest.TestCase):
-    filename='data/bigfile.csv'
-    rows = 1000000
-    cols = 30
     def setUp(self):
         log_level()
         self.scheduler = Scheduler()
-        if os.path.exists(self.filename):
-            return
-        print "Generating %s for testing" % self.filename
-        with open(self.filename, 'w') as csvfile:
-            writer = csv.writer(csvfile)
-            for r in range(0,self.rows):
-                row=list(np.random.rand(self.cols))
-                writer.writerow(row)
 
     def tearDown(self):
         StorageManager.default.end()
 
     def test_histogram2d(self):
-        csv = CSVLoader(self.filename,id='csv',
-                        index_col=False,header=None,chunksize=3000,
+        csv = CSVLoader(get_dataset('bigfile'),
+                        id='csv',
+                        index_col=False,header=None,
                         scheduler=self.scheduler)
         histogram2d=Histogram2d(1, 2, # columns are called 1..30
                                 id='histogram2d',
@@ -52,8 +43,6 @@ class TestHistogram2d(unittest.TestCase):
         #print "Done. Run time: %gs, loaded %d rows" % (s['duration'].irow(-1), len(module.df()))
         pd.set_option('display.expand_frame_repr', False)
         print s
-
-suite = unittest.TestLoader().loadTestsFromTestCase(TestHistogram2d)
 
 if __name__ == '__main__':
     unittest.main()

@@ -4,30 +4,18 @@ from progressivis import *
 from progressivis.stats import Stats
 from progressivis.io import CSVLoader
 from progressivis.core.merge import Merge
+from progressivis.datasets import get_dataset
 
-import os
-import csv
-import numpy as np
 import pandas as pd
 from pprint import pprint
 
 class TestMerge(unittest.TestCase):
-    filename='data/bigfile.csv'
-    rows = 1000000
-    cols = 30
     def setUp(self):
         self.scheduler = Scheduler()
-        if os.path.exists(self.filename):
-            return
-        print "Generating %s for testing" % self.filename
-        with open(self.filename, 'w') as csvfile:
-            writer = csv.writer(csvfile)
-            for r in range(0,self.rows):
-                row=list(np.random.rand(self.cols))
-                writer.writerow(row)
 
     def test_merge(self):
-        csv_module = CSVLoader(self.filename,id='test_read_csv',
+        csv_module = CSVLoader(get_dataset('bigfile'),
+                               id='test_read_csv',
                                index_col=False,header=None,chunksize=3000,
                                scheduler=self.scheduler)
         module1=Stats(1,id='test_stats_1', scheduler=self.scheduler)
@@ -43,8 +31,6 @@ class TestMerge(unittest.TestCase):
         s = merge.trace_stats(max_runs=1)
         pd.set_option('display.expand_frame_repr', False)
         print s
-
-suite = unittest.TestLoader().loadTestsFromTestCase(TestMerge)
 
 if __name__ == '__main__':
     unittest.main()
