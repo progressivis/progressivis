@@ -9,15 +9,15 @@ def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
 setup(
-    name = "ProgressiVis",
-    version = pkg_resources.require("progressivis")[0].version,
+    name = "progressivis",
+    version = '0.0.2.dev0', # pkg_resources.require("progressivis")[0].version,
     author = "Jean-Daniel Fekete",
     author_email = "Jean-Daniel.Fekete@inria.fr",
     url="http://progressive.gforge.inria.fr/",
     description = "A Progressive Steerable Analytics Toolkit",
     license = "BSD",
     keywords = "Progressive analytics visualization",
-    packages = ['progressive'],
+    packages = ['progressivis'],
     long_description = read('README.md'),
     classifiers=[
         "Development Status :: 2 - PRe-Alpha",

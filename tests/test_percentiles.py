@@ -1,6 +1,6 @@
 import unittest
 
-from progressive import *
+from progressivis import *
 from progressivis.stats import Percentiles
 from progressivis.io import CSVLoader
 

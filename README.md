@@ -1,6 +1,6 @@
-# Progressive
+# Progressivis
 
-Progressive is a toolkit to build scientific workflows that perform in
+Progressivis is a toolkit to build scientific workflows that perform in
 a progressive manner, delivering some results in a continuous way,
 improving them with time.
 

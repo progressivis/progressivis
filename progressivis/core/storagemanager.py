@@ -24,7 +24,7 @@ class StorageManager(object):
 
     def start(self):
         if self.directory is None:
-            self.directory = tempfile.mkdtemp(prefix='progressive_')
+            self.directory = tempfile.mkdtemp(prefix='progressivis_')
             logger.debug('StorageManager creating directory %s' % self.directory)
         return self.directory
         

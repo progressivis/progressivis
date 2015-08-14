@@ -1,6 +1,6 @@
 import unittest
 
-from progressive import *
+from progressivis import *
 
 class TestProgressiveModule(unittest.TestCase):
     def setUp(self):
