@@ -4,7 +4,7 @@ def wget_file(filename, url):
     attempts = 0
     while attempts < 3:
         try:
-            response = urllib2.urlopen("http://example.com", timeout = 5)
+            response = urllib2.urlopen(url, timeout = 5)
             content = response.read()
             with open(filename, 'w' ) as f:
                 f.write( content )

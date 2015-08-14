@@ -7,12 +7,14 @@ from progressivis.datasets import get_dataset
 
 import pandas as pd
 
+log_level()
+
 class TestPercentiles(unittest.TestCase):
     def setUp(self):
         self.scheduler = Scheduler()
 
     def test_percentile(self):
-        csv_module = CSVLoader(get_dataset('bigfile'),
+        csv_module = CSVLoader(get_dataset('smallfile'),
                                id='test_read_csv',
                                index_col=False,header=None,
                                scheduler=self.scheduler)

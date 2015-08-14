@@ -10,7 +10,7 @@ class TestProgressiveLoadVEC(unittest.TestCase):
         self.scheduler = Scheduler()
 
     def test_read_vec(self):
-        module=VECLoader(get_dataset('waglogs'),
+        module=VECLoader(get_dataset('warlogs'),
                          id='test_read_vec')
         self.assertTrue(module.df() is None)
         module.run(0)
