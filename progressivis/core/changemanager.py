@@ -1,4 +1,4 @@
-from progressive.core.module import Module
+from progressivis.core.module import Module
 import pandas as pd
 import numpy as np
 

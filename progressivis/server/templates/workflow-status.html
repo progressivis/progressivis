@@ -7,14 +7,27 @@
     <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
     <meta name="description" content="Index page for Progresssive">
     <meta name="author" content="Jean-Daniel Fekete">
+<style>
+
+.node {
+  stroke: #fff;
+  stroke-width: 1.5px;
+}
+
+.link {
+  stroke: #999;
+  stroke-opacity: .6;
+}
+
+</style>
     <!-- <link rel="icon" href="../../favicon.ico"> -->
 
-    <title>Progressive</title>
+    <title>Progressive Workflow</title>
 
     <!-- Bootstrap core CSS -->
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
     <!-- Custom styles for this template -->
-    <link href="{{ static_url('progressive.css')}}" rel="stylesheet">
+    <link href="{{ static_url('progressivis.css')}}" rel="stylesheet">
 
   </head>
 
@@ -29,38 +42,80 @@
             <span class="icon-bar"></span>
             <span class="icon-bar"></span>
           </button>
-          <a class="navbar-brand" href="#">Progressive</a>
+          <a class="navbar-brand" href="#">ProgressiVis</a>
         </div>
         <div id="navbar" class="collapse navbar-collapse">
           <ul class="nav navbar-nav">
-            <li class="active"><a href="#">Home</a></li>
-	    <li class="dropdown" id="workflow-menu">
-              <a id="worflows" href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">
-                Workflows
-                <span class="caret"></span>
-              </a>
-              <ul class="dropdown-menu" aria-labelledby="workflows">
-		{% for workflow in workflows %}
-		<li class="active">Select...</li>
-                <li><a href="#" alt="{{escape(workflow)}}">{{escape(workflow) }}</a></li>
-		{% end %}
-              </ul>
-            </li>
-            <li><a href="{{reverse_url('workflow:status')}}">Workflow</a></li>
+            <li><a href="#">Home</a></li>
+            <li><a  class="active" href="{{reverse_url('workflow:status')}}">Workflow</a></li>
             <li><a href="#about">About</a></li>
             <li><a href="#contact">Contact</a></li>
           </ul>
-	  <p id='workflow-name' class="navbar-text navbar-right">No workflow loaded</p>
         </div><!--/.nav-collapse -->
       </div>
     </nav>
 
     <div class="container">
 
-      <div class="progressive">
-        <h1>Progressive Analytics and Visualization</h1>
+      <div class="progressiVis">
+        <h1>Status of the Progressive Workflow</h1>
         <p class="lead">Analyze, explore, and visualize your large and complex data in a progressive way.</p>
       </div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js"></script>
+<script>
+
+var width = 960,
+    height = 500;
+
+var color = d3.scale.category20();
+
+var force = d3.layout.force()
+    .charge(-120)
+    .linkDistance(30)
+    .size([width, height]);
+
+var svg = d3.select("body").append("svg")
+    .attr("width", width)
+    .attr("height", height);
+
+d3.json("{{reverse_url('api:workflow:status')}}", function(error, graph) {
+  if (error) throw error;
+
+  force
+      .nodes(graph.nodes)
+      .links(graph.links)
+      .start();
+
+  var link = svg.selectAll(".link")
+      .data(graph.links)
+    .enter().append("line")
+      .attr("class", "link")
+      .style("stroke-width", function(d) { return Math.sqrt(d.value); });
+
+  var node = svg.selectAll(".node")
+      .data(graph.nodes)
+    .enter().append("circle")
+      .attr("class", "node")
+      .attr("r", 5)
+      .style("fill", function(d) { return color(d.group); })
+      .call(force.drag);
+
+  node.append("title")
+      .text(function(d) { return d.name; });
+
+  force.on("tick", function() {
+    link.attr("x1", function(d) { return d.source.x; })
+        .attr("y1", function(d) { return d.source.y; })
+        .attr("x2", function(d) { return d.target.x; })
+        .attr("y2", function(d) { return d.target.y; });
+
+    node.attr("cx", function(d) { return d.x; })
+        .attr("cy", function(d) { return d.y; });
+  });
+});
+
+</script>
 
     </div><!-- /.container -->
 
@@ -69,33 +124,7 @@
     ================================================== -->
     <!-- Placed at the end of the document so the pages load faster -->
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
-    <script src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.11.4/jquery-ui.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
-<script>
-function highlight_ok(li, w) {
-      $(li).css("background-color", "green");
-      $('#workflow-menu').effect("highlight", {color: 'green'});
-      $('#workflow-name').text('Loaded workflow: '+w);
-}
-function highlight_nok(li) {
-      $(li).css("background-color", "red");
-      $('#workflow-menu').effect("highlight", {color: 'red'});
-}
-$(window).load(function() {
-      $(function(){
-	  $(".dropdown-menu").on("click", "li", function(event){
-	      event.preventDefault();
-	      console.log("You clicked the drop downs", event);
-	      if (this.firstChild.tagName!='A') return;
-	      var li = this, w = li.firstChild.getAttribute("alt");
-	      $.ajax({url: "{{reverse_url('api:workflow:load')}}",
-		      method: 'POST',
-		      data: {param: w}})
-		  .done(function(res) { highlight_ok(li, w); })
-		  .fail(function(xhr,status,error) { highlight_nok(li, w); });
-	  })
-      });
-      });
-</script>
+    <script src="http://marvl.infotech.monash.edu/webcola/cola.v3.min.js"></script>
   </body>
 </html>

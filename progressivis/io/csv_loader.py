@@ -1,4 +1,4 @@
-from progressive.core.dataframe import DataFrameModule
+from progressivis.core.dataframe import DataFrameModule
 
 import pandas as pd
 import numpy as np

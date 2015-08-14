@@ -1,5 +1,0 @@
-#!/usr/bin/env python2
-import progressive.server
-
-if __name__ == "__main__":
-    progressive.server.server(True)

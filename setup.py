@@ -9,8 +9,8 @@ def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
 setup(
-    name = "Progressive",
-    version = pkg_resources.require("progressive")[0].version,
+    name = "ProgressiVis",
+    version = pkg_resources.require("progressivis")[0].version,
     author = "Jean-Daniel Fekete",
     author_email = "Jean-Daniel.Fekete@inria.fr",
     url="http://progressive.gforge.inria.fr/",

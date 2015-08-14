@@ -1,8 +1,8 @@
 import unittest
 
 from progressive import *
-from progressive.stats import Percentiles
-from progressive.io import CSVLoader
+from progressivis.stats import Percentiles
+from progressivis.io import CSVLoader
 
 import os
 import csv

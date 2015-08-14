@@ -1,9 +1,9 @@
 import unittest
 
-from progressive import *
-from progressive.io import CSVLoader
-from progressive.stats import Histogram2d
-from progressive.vis import Heatmap
+from progressivis import *
+from progressivis.io import CSVLoader
+from progressivis.stats import Histogram2d
+from progressivis.vis import Heatmap
 
 import os
 import glob

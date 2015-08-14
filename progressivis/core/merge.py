@@ -1,5 +1,5 @@
-from progressive.core.common import ProgressiveError
-from progressive import DataFrameModule, SlotDescriptor
+from progressivis.core.common import ProgressiveError
+from progressivis import DataFrameModule, SlotDescriptor
 
 import pandas as pd
 import numpy as np

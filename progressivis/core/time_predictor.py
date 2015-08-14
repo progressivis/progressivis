@@ -1,4 +1,4 @@
-from progressive.core.common import ProgressiveError
+from progressivis.core.common import ProgressiveError
 
 import numpy as np
 from sklearn import linear_model

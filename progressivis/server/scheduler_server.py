@@ -1,5 +1,5 @@
-from progressive.core.scheduler import Scheduler
-from progressive.server.protocol import Request, Response, Messages
+from progressivis.core.scheduler import Scheduler
+from progressivis.server.protocol import Request, Response, Messages
 
 class SchedulerServer(Scheduler):
     def __init__(self, fd):

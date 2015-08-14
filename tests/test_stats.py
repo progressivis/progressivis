@@ -1,9 +1,9 @@
 import unittest
 
-from progressive import *
-from progressive.stats import Stats
-from progressive.io import CSVLoader
-from progressive.core.wait import Wait
+from progressivis import *
+from progressivis.stats import Stats
+from progressivis.io import CSVLoader
+from progressivis.core.wait import Wait
 
 import os
 import csv

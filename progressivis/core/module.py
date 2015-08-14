@@ -9,13 +9,13 @@ import random
 import logging
 logger = logging.getLogger(__name__)
 
-from progressive.core.common import ProgressiveError
-from progressive.core.utils import empty_typed_dataframe, typed_dataframe, DataFrameAsDict
-from progressive.core.scheduler import *
-from progressive.core.slot import *
-from progressive.core.tracer import Tracer
-from progressive.core.time_predictor import TimePredictor
-from progressive.core.storagemanager import StorageManager
+from progressivis.core.common import ProgressiveError
+from progressivis.core.utils import empty_typed_dataframe, typed_dataframe, DataFrameAsDict
+from progressivis.core.scheduler import *
+from progressivis.core.slot import *
+from progressivis.core.tracer import Tracer
+from progressivis.core.time_predictor import TimePredictor
+from progressivis.core.storagemanager import StorageManager
 
 def connect(output_module, output_name, input_module, input_name):
     return output_module.connect_output(output_name, input_module, input_name)

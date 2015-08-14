@@ -1,7 +1,7 @@
 import unittest
 
-from progressive import *
-from progressive.io.vec_loader import *
+from progressivis import *
+from progressivis.io.vec_loader import *
 
 import os
 import numpy as np

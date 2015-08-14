@@ -1,7 +1,7 @@
 import unittest
 
-from progressive import *
-from progressive.io import CSVLoader
+from progressivis import *
+from progressivis.io import CSVLoader
 
 import os
 import csv

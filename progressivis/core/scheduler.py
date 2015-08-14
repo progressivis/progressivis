@@ -1,4 +1,4 @@
-from progressive.core.common import ProgressiveError
+from progressivis.core.common import ProgressiveError
 
 from timeit import default_timer
 from toposort import toposort_flatten

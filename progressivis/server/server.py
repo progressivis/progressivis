@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
-from progressive.server.protocol import *
-from progressive.server.scheduler_server import run_scheduler_server
+from progressivis.server.protocol import *
+from progressivis.server.scheduler_server import run_scheduler_server
 
 import tornado.httpserver
 import tornado.ioloop

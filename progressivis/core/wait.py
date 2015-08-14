@@ -1,5 +1,5 @@
-from progressive.core.common import ProgressiveError
-from progressive import Module, SlotDescriptor
+from progressivis.core.common import ProgressiveError
+from progressivis import Module, SlotDescriptor
 
 import numpy as np
 

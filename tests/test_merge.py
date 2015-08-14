@@ -1,9 +1,9 @@
 import unittest
 
-from progressive import *
-from progressive.stats import Stats
-from progressive.io import CSVLoader
-from progressive.core.merge import Merge
+from progressivis import *
+from progressivis.stats import Stats
+from progressivis.io import CSVLoader
+from progressivis.core.merge import Merge
 
 import os
 import csv
