@@ -4,7 +4,7 @@ from progressivis import ProgressiveError
 
 def get_dataset(name):
     if not os.path.isdir('data'):
-        mkdir('data')
+        os.mkdir('data')
     if name=='bigfile':
         return generate_random_csv('data/bigfile.csv', 1000000, 30)
     if name=='smallfile':
