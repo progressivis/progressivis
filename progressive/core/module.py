@@ -62,6 +62,8 @@ class Module(object):
                  input_descriptors=[],
                  output_descriptors=[],
                  **kwds):
+        """Module(id=None,scheduler=None,tracer=None,predictor=None,storage=None,input_descriptors=[],output_descriptors=[])
+        """
         if id is None:
             id = uuid4()
         if scheduler is None:
@@ -244,7 +246,7 @@ class Module(object):
         valid = True
         for sd in self.output_descriptors.values():
             slots = self._output_slots[sd.name]
-            if sd.required and slots and len(slots):
+            if sd.required and (slots is None or len(slots)==0):
                 logger.error('Missing required output slot %s in %s', sd.name, self._id)
                 valid = False
             if slots:

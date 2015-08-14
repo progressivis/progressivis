@@ -35,5 +35,5 @@ class Wait(Module):
         return 1
     
     def run_step(self,run_number,step_size,howlong):
-        print 'running wait'
+        #print 'running wait'
         raise StopIteration()

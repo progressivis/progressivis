@@ -73,7 +73,8 @@ class Scheduler(object):
     def run(self):
         self._stopped = False
         self._running = True
-        self.validate()
+        if not self.validate():
+            raise ProgressiveError('Cannot validate progressive workflow')
         done = False
 
         self._runorder = self.order_modules()
