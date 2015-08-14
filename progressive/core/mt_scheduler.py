@@ -20,7 +20,7 @@ class MTScheduler(Scheduler):
 
     def validate(self):
         with self.lock:
-            super(MTScheduler,self).validate()
+            return super(MTScheduler,self).validate()
 
     def invalidate(self):
         with self.lock:

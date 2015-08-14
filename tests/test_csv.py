@@ -8,6 +8,7 @@ import csv
 import numpy as np
 from pprint import pprint
 
+log_level()
     
 class TestProgressiveLoadCSV(unittest.TestCase):
     filename='data/bigfile.csv'
@@ -51,6 +52,7 @@ class TestProgressiveLoadCSV(unittest.TestCase):
             l =  ln
         s = module.trace_stats(max_runs=1)
         print "Done. Run time: %gs, loaded %d rows" % (s['duration'].irow(-1), len(module.df()))
+        self.assertEqual(len(module.df()), self.rows)
         df2 = module.df().groupby([Module.UPDATE_COLUMN])
         self.assertEqual(cnt, len(df2))
 

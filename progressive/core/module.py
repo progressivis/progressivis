@@ -387,6 +387,10 @@ class Module(object):
         self._last_update = run_number
         self._start_time = None
         assert self.state != self.state_running
+        self.end_run(run_number)
+
+    def end_run(self, run_number):
+        pass
 
     def ending(self):
         pass
@@ -420,16 +424,17 @@ class Module(object):
         while self._start_time < self._end_time:
             remaining_time = self._end_time-self._start_time
             step_size = self.predict_step_size(np.min([max_time, remaining_time]))
-            # Not sure...
-            #if step_size == 0: 
-            #    break
+            if step_size == 0:
+                break
             run_step_ret = {'reads': 0, 'updates': 0, 'creates': 0}
             try:
                 tracer.before_run_step(now,run_number)
                 run_step_ret = self.run_step(run_number, step_size, remaining_time)
                 next_state = run_step_ret['next_state']
                 now = self.timer()
-            except StopIteration:
+            except StopIteration as e:
+                #print_exc()
+                logger.info('In Module.run(): Received a StopIteration exception')
                 next_state = Module.state_terminated
                 run_step_ret['next_state'] = next_state
                 now = self.timer()
