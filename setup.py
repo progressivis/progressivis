@@ -10,7 +10,7 @@ def read(fname):
 
 setup(
     name = "progressivis",
-    version = '0.0.2.dev0', # pkg_resources.require("progressivis")[0].version,
+    version = pkg_resources.require("progressivis")[0].version, # '0.0.2.dev0'
     author = "Jean-Daniel Fekete",
     author_email = "Jean-Daniel.Fekete@inria.fr",
     url="http://progressive.gforge.inria.fr/",
