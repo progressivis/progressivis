@@ -1,7 +1,9 @@
 from progressivis.core.common import ProgressiveError
+from progressivis.core.utils import AttributeDict
 
 from timeit import default_timer
 from toposort import toposort_flatten
+from contextlib import contextmanager
 
 import logging
 logger = logging.getLogger(__name__)
@@ -13,12 +15,14 @@ class Scheduler(object):
     
     def __init__(self):
         self._modules = dict()
+        self._module = AttributeDict(self._modules)
         self._running = False
         self._runorder = None
         self._stopped = False
         self._valid = False
         self._start = None
         self._run_number = 0
+        self._run_number_time =  {}
 
     def timer(self):
         if self._start is None:
@@ -31,7 +35,7 @@ class Scheduler(object):
         for (mid, module) in self._modules.iteritems():
             if not module.is_valid(): # ignore invalid modules
                 continue
-            outs = [m.output_module.id() for m in module.input_slot_values() \
+            outs = [m.output_module.id for m in module.input_slot_values() \
                     if m and (not only_required or module.input_slot_required(m.input_name)) ]
             dependencies[mid] = set(outs)
         return dependencies
@@ -79,7 +83,9 @@ class Scheduler(object):
 
         self._runorder = self.order_modules()
         logger.info("Scheduler run order: %s", self._runorder)
-        modules = map(self.module, self._runorder)
+        modules = [self.module[m] for m in self._runorder]
+
+        self._run_number_time[self._run_number] = self.timer()
         for module in modules:
             module.starting()
         while not done and not self._stopped:
@@ -89,18 +95,21 @@ class Scheduler(object):
             for module in modules:
                 if not module.is_ready():
                     if module.is_terminated():
-                        logger.info("Module %s terminated", module.id())
+                        logger.info("Module %s terminated", module.id)
                     else:
-                        logger.info("Module %s not ready", module.id())
+                        logger.info("Module %s not ready", module.id)
                     continue
-                logger.info("Running module %s", module.id())
+                logger.info("Running module %s", module.id)
+                
                 module.run(self._run_number)
-                logger.info("Module %s returned", module.id())
+                logger.info("Module %s returned", module.id)
                 if not module.is_terminated():
                     done = False
                 else:
-                    logger.info("Module %s terminated", module.id())
+                    logger.info("Module %s terminated", module.id)
             self._after_run()
+            self._run_number_time[self._run_number] = self.timer()
+
         for module in reversed(modules):
             module.ending()
         self._running = False
@@ -122,27 +131,46 @@ class Scheduler(object):
     def exists(self, id):
         return id in self._modules
 
-    def add(self, module):
+    def generate_id(self, prefix):
+        # Try to be nice
+        for i in range(1,10):
+            mid = '%s_%d' % (prefix, i)
+            if mid not in self._modules:
+                return mid
+        return '%s_%s' % (prefix, uuid4())
+
+    def run_number_time(self, run_number):
+        return self._run_number_time[run_number]
+
+    def add_module(self, module):
         if not module.is_created():
-            raise ProgressiveError('Cannot add running module %s', module.id())
+            raise ProgressiveError('Cannot add running module %s', module.id)
+        if module.id is None:
+            module._id = self.generate_id(module.pretty_typename())
         self._add_module(module)
 
     def _add_module(self, module):
-        self._modules[module.id()] = module
+        self._modules[module.id] = module
 
-    def module(self, id):
-        return self._modules.get(id, None)
+    @property
+    def module(self):
+        return self._module
 
-    def remove(self, module):
+    def remove_module(self, module):
         self.stop()
         module._stop(self._run_number)
         self._remove_module(module)
 
     def _remove_module(self, module):
-        del self._modules[module.id()]
+        del self._modules[module.id]
 
     def modules(self):
         return self._modules
+
+    @contextmanager
+    def stdout_parent(self):
+        yield
+
 
 
 if Scheduler.default is None:

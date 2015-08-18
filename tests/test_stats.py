@@ -24,7 +24,6 @@ class TestStats(unittest.TestCase):
         #connect(csv_module, 'df', wait, 'inp')
         stats.input._params = wait.output.out
         #connect(wait, 'out', stats, '_params')
-        import pdb
         #connect(csv_module, 'df', stats, 'df')
         stats.input.df = csv_module.output.df
         pr = Print(id='print', scheduler=self.scheduler)

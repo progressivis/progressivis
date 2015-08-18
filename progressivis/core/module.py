@@ -1,6 +1,6 @@
-from uuid import uuid4
 from inspect import getargspec
 from traceback import print_exc
+import re
 
 import pandas as pd
 import numpy as np
@@ -55,6 +55,7 @@ class Module(object):
 
     def __init__(self,
                  id=None,
+                 group=None,
                  scheduler=None,
                  tracer=None,
                  predictor=None,
@@ -64,8 +65,6 @@ class Module(object):
                  **kwds):
         """Module(id=None,scheduler=None,tracer=None,predictor=None,storage=None,input_descriptors=[],output_descriptors=[])
         """
-        if id is None:
-            id = uuid4()
         if scheduler is None:
             scheduler = Scheduler.default
         if tracer is None:
@@ -74,12 +73,15 @@ class Module(object):
             predictor = TimePredictor.default
         if storage is None:
             storage = StorageManager.default
+        if id is None:
+            id = scheduler.generate_id(self.pretty_typename())
 
         # always present
         output_descriptors = output_descriptors + [SlotDescriptor(Module.TRACE_SLOT, type=pd.DataFrame, required=False)]
         
         input_descriptors = input_descriptors + [SlotDescriptor(Module.PARAMETERS_SLOT, type=pd.DataFrame, required=False)]
         self._id = id
+        self._group = group
         self._parse_parameters(kwds)
         self._scheduler = scheduler
         if self._scheduler.exists(id):
@@ -99,10 +101,10 @@ class Module(object):
         self.default_step_size = 1
         self.input = InputSlots(self)
         self.output = OutputSlots(self)
-        self._scheduler.add(self)
+        self._scheduler.add_module(self)
 
     def destroy(self):
-        self.scheduler().remove(self)
+        self.scheduler().remove_module(self)
 
     @staticmethod
     def _filter_kwds(kwds, function_or_method):
@@ -148,7 +150,7 @@ class Module(object):
         return self._scheduler.timer()
 
     def describe(self):
-        print 'id: %s' % self.id()
+        print 'id: %s' % self.id
         print 'quantum: %f' % self.params.quantum
         print 'start_time: %s' % self._start_time
         print 'end_time: %s' % self._end_time
@@ -160,12 +162,19 @@ class Module(object):
         if len(self._params):
             print 'parameters: '
             print self._params
+    
+    def pretty_typename(self):
+        name = self.__class__.__name__
+        s1 = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
+        s1 = re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
+        s1 = re.sub('_module$', '', s1)
+        return s1
 
     def __str__(self):
         return unicode(self).encode('utf-8')
 
     def __unicode__(self):
-        return u'Module %s: %s' % (self.__class__.__name__, self.id())
+        return u'Module %s: %s' % (self.__class__.__name__, self.id)
 
     def __repr__(self):
         return self.__unicode__()
@@ -173,9 +182,13 @@ class Module(object):
     def __hash__(self):
         return self._id.__hash__()
 
+    @property
     def id(self):
         return self._id
 
+    @property
+    def group(self):
+        return self._group
 
     def scheduler(self):
         return self._scheduler
@@ -316,10 +329,10 @@ class Module(object):
 
     def is_ready(self):
         if self.state == Module.state_terminated:
-            logger.info("%s Not ready because it terminated", self.id())
+            logger.info("%s Not ready because it terminated", self.id)
             return False
         if self.state == Module.state_invalid:
-            logger.info("%s Not ready because it is invalid", self.id())
+            logger.info("%s Not ready because it is invalid", self.id)
             return False
         # source modules can be generators that
         # cannot run out of input, unless they decide so.
@@ -339,10 +352,10 @@ class Module(object):
                 in_ts = in_module.last_update()
                 ts = self.last_update()
                 if in_ts is None:
-                    logger.info("%s Not ready because %s has not started", self.id(), in_module.id())
+                    logger.info("%s Not ready because %s has not started", self.id, in_module.id)
                     ready = False
                 elif (ts is not None) and (in_ts <= ts):
-                    logger.info("%s Not ready because %s is not newer", self.id(), in_module.id())
+                    logger.info("%s Not ready because %s is not newer", self.id, in_module.id)
                     ready = False
                 
                 if in_module.state!=Module.state_terminated and in_module.state!=Module.state_invalid:
@@ -350,7 +363,7 @@ class Module(object):
             if zombie:
                 self.state = Module.state_terminated
             return ready
-        logger.info("%s Not ready because is in weird state %s", self.id(), self.state_name[self.state])
+        logger.info("%s Not ready because is in weird state %s", self.id, self.state_name[self.state])
         return False
 
     def is_terminated(self):
@@ -368,7 +381,7 @@ class Module(object):
         self.set_state(s)
 
     def set_state(self, s):
-        assert s>=Module.state_created and s<=Module.state_invalid, "State %s invalid in module %s"%(s, self.id())
+        assert s>=Module.state_created and s<=Module.state_invalid, "State %s invalid in module %s"%(s, self.id)
         self._state = s
 
     def trace_stats(self, max_runs=None):
@@ -410,7 +423,7 @@ class Module(object):
         tracer=self.tracer
         if quantum==0:
             quantum=0.1
-            logger.error('Quantum is 0 in %s, setting it to a reasonable value', self.id())
+            logger.error('Quantum is 0 in %s, setting it to a reasonable value', self.id)
         self.state = Module.state_running
         self._start_time = now
         self._end_time = self._start_time + quantum
@@ -442,7 +455,7 @@ class Module(object):
                 next_state = Module.state_terminated
                 run_step_ret['next_state'] = next_state
                 now = self.timer()
-                logger.debug("Exception in %s", self.id())
+                logger.debug("Exception in %s", self.id)
                 tracer.exception(now,run_number)
                 exception = e
                 self._had_error = True
@@ -475,6 +488,7 @@ class Print(Module):
     def run_step(self,run_number,step_size,howlong):
         df = self.get_input_slot('inp').data()
         steps=len(df)
-        print df
+        with self.scheduler().stdout_parent():
+            print df
         #print df.info()
         return self._return_run_step(Module.state_blocked, steps_run=len(df), reads=steps)

@@ -1,5 +1,7 @@
 import pandas as pd
 
+
+
 def empty_typed_dataframe(columns, types=None):
     d = {}
     cols = []
@@ -23,6 +25,19 @@ def typed_dataframe(columns, types=None, values=None):
         d[name] = pd.Series([val], dtype=dtype)
         cols.append(name)
     return pd.DataFrame(d, columns=cols)
+
+class AttributeDict(object):
+    def __init__(self, d):
+        self.d = d
+        
+    def __getattr__(self, attr):
+        return self.__dict__['d'][attr]
+
+    def __getitem__(self, key):
+        return self.__getattribute__('d')[key]
+
+    def __dir__(self):
+        return self.__getattribute__('d').keys()
 
 class DataFrameAsDict(object):
     def __init__(self, df):

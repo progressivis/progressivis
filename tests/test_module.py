@@ -11,7 +11,7 @@ class TestProgressiveModule(unittest.TestCase):
 
     def test_module(self):
         module = Module(id='a', scheduler=self.scheduler)
-        self.assertEqual(module.id(), 'a')
+        self.assertEqual(module.id, 'a')
         self.assertEqual(self.scheduler.exists('a'), True)
 
 if __name__ == '__main__':

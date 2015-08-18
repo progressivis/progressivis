@@ -25,9 +25,9 @@ class Slot(object):
 
     def __unicode__(self):
         return u'%s(%s[%s]->%s[%s])' % (self.__class__.__name__,
-                                        self.output_module.id(),
+                                        self.output_module.id,
                                          self.output_name,
-                                         self.input_module.id(),
+                                         self.input_module.id,
                                          self.input_name)
     
     def __repr__(self):

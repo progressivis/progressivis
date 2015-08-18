@@ -32,7 +32,7 @@ class StorageManager(object):
         return self.start()
 
     def module_directory(self, module):
-        id = unicode(module.id())
+        id = unicode(module.id)
         if id in self.moduledir:
             return self.moduledir[id]
         dirname = os.path.join(self.start(), id)

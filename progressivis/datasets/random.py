@@ -12,7 +12,7 @@ def generate_random_csv(filename, rows, cols):
             writer = csv.writer(csvfile)
             np.random.seed(seed=1234)
             for r in range(0,rows):
-                row=list(np.random.rand(cols))
+                row=list(np.random.normal(loc=0.5, scale=0.8, size=cols))
                 writer.writerow(row)
     return filename
 

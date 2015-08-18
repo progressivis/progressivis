@@ -47,7 +47,7 @@ class SchedulerServer(Scheduler):
             for slot in module.input_slot_values():
                 if slot is None:
                     continue
-                l = {'source': slot.output_module.id(), 'target': mid,
+                l = {'source': slot.output_module.id, 'target': mid,
                      'source_slot': slot.output_name, 'target_slot': slot.input_name}
                 links.append(l)
         return {'nodes': nodes, 'links': links}
