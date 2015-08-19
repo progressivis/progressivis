@@ -1,17 +1,17 @@
 from progressivis.core.common import ProgressiveError
-from progressivis.core.module import Module
+from progressivis.core.dataframe import DataFrameModule
 from progressivis.core.slot import SlotDescriptor
 
 import numpy as np
+import pandas as pd
 
-class Wait(Module):
+class Wait(DataFrameModule):
     parameters = [('delay', np.dtype(float), np.nan),
                   ('reads', np.dtype(int), 0)]
 
     def __init__(self, **kwds):
-        self._add_slots(kwds,'output_descriptors', [SlotDescriptor('out')])
-        self._add_slots(kwds,'input_descriptors', [SlotDescriptor('inp')])
-        super(Wait, self).__init__(**kwds)
+        self._add_slots(kwds,'input_descriptors', [SlotDescriptor('inp', type=pd.DataFrame)])
+        super(Wait, self).__init__(dataframe_slot='out', **kwds)
         
     def is_ready(self):
         delay = self.params.delay
@@ -27,7 +27,7 @@ class Wait(Module):
         if len(trace) == 0:
             return False
         if delay != np.nan:
-            return trace['end'].irow(-1) >= delay
+            return len(trace) >= delay
         elif reads:
             return trace['reads'].irow(-1) >= reads
         return False

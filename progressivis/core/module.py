@@ -432,13 +432,13 @@ class Module(object):
         #TODO Forcing 4 steps, but I am not sure, maybe change when the predictor improves
         max_time = quantum / 4.0
         
+        run_step_ret = {'reads': 0, 'updates': 0, 'creates': 0}
         tracer.start_run(now,run_number)
         while self._start_time < self._end_time:
             remaining_time = self._end_time-self._start_time
             step_size = self.predict_step_size(np.min([max_time, remaining_time]))
             if step_size == 0:
                 break
-            run_step_ret = {'reads': 0, 'updates': 0, 'creates': 0}
             try:
                 tracer.before_run_step(now,run_number)
                 run_step_ret = self.run_step(run_number, step_size, remaining_time)
@@ -462,6 +462,7 @@ class Module(object):
                 self._start_time = now
                 break
             finally:
+                assert run_step_ret is not None, "Error: %s run_step_ret not returning a dict" % self.pretty_typename()
                 tracer.after_run_step(now,run_number,**run_step_ret)
                 self.state = next_state
             if self._start_time is None or self.state != Module.state_ready:

@@ -12,7 +12,7 @@ class MTScheduler(Scheduler):
         self._thread_parent = None
 
     @staticmethod
-    def install():
+    def set_default():
         if not isinstance(Scheduler.default, MTScheduler):
             Scheduler.default = MTScheduler()
 
@@ -36,7 +36,7 @@ class MTScheduler(Scheduler):
     def start(self):
         if self.thread is None:
             self.thread = threading.Thread(target=self.run, name="Progressive Scheduler")
-            if sys.stdout.hasattr('thread_parent'):
+            if hasattr(sys.stdout, 'thread_parent'):
                 self._thread_parent = sys.stdout.thread_parent # capture notebook context
             else:
                 self._thread_parent = None

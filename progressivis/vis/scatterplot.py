@@ -16,6 +16,7 @@ from IPython.display import display
 #output_notebook()
 
 import numpy as np
+import pandas as pd
 
 class ScatterPlot(DataFrameModule):
     parameters = [('xmin',   np.dtype(float), 0),
@@ -25,7 +26,7 @@ class ScatterPlot(DataFrameModule):
         
     def __init__(self, x_column, y_column, **kwds):
         self._add_slots(kwds,'input_descriptors',
-                        [SlotDescriptor('histograph2d', type=pd.DataFrame),
+                        [SlotDescriptor('histogram2d', type=pd.DataFrame),
                          SlotDescriptor('df', type=pd.DataFrame) ])
         super(ScatterPlot, self).__init__(quantum=0.1, **kwds)
         self.x_column = x_column
@@ -33,11 +34,12 @@ class ScatterPlot(DataFrameModule):
 
     def create_scatterplot_modules(self):
         wait = Wait(delay=2,group=self.id)
-        #wait.input.inp = df_slot
         x_stats = Stats(self.x_column, min_column='xmin', max_column='xmax',group=self.id)
         x_stats.input._params = wait.output.out
+        x_stats.input.df = wait.output.out
         y_stats = Stats(self.y_column, min_column='ymin', max_column='ymax',group=self.id)
         y_stats.input._params = wait.output.out
+        y_stats.input.df = wait.output.out
         merge = Merge(group=self.id)
         merge.input.df = x_stats.output.stats
         merge.input.df = y_stats.output.stats # magic input df slot
@@ -49,7 +51,7 @@ class ScatterPlot(DataFrameModule):
         return wait
 
     def run_step(self,run_number,step_size,howlong):
-        pass
+        return self._return_run_step(self.state_blocked, steps_run=1)
 
 
     x = np.array([0, 10, 50, 90, 100], np.dtype(float))
@@ -68,7 +70,7 @@ class ScatterPlot(DataFrameModule):
         display(button)
         button.on_click(self.update)
 
-    def update(self):
+    def update(self, b):
         histo_df = self.input.histogram2d.data()
         if histo_df is not None:
             self.image_source.data['image'] = [histo_df.at[histo_df.index[-1],'array']]
