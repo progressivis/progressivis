@@ -8,7 +8,7 @@ import pandas as pd
 import logging
 logger = logging.getLogger(__name__)
 
-class Histogram2d(DataFrameModule):
+class Histogram2D(DataFrameModule):
     parameters = [('xbins',  np.dtype(int),   1024),
                   ('ybins',  np.dtype(int),   1024),
                   ('xmin',   np.dtype(float), 0),
@@ -27,17 +27,17 @@ class Histogram2d(DataFrameModule):
     def __init__(self, x_column, y_column, **kwds):
         self._add_slots(kwds,'input_descriptors',
                         [SlotDescriptor('df', type=pd.DataFrame)])
-        super(Histogram2d, self).__init__(dataframe_slot='histogram2d', **kwds)
+        super(Histogram2D, self).__init__(dataframe_slot='histogram2d', **kwds)
         self.x_column = x_column
         self.y_column = y_column
         self.default_step_size = 10000
         self.total_read = 0
-        self._df = self.create_dataframe(Histogram2d.schema)
+        self._df = self.create_dataframe(Histogram2D.schema)
 
     def is_ready(self):
         if not self.get_input_slot('df').is_buffer_empty():
             return True
-        return super(Histogram2d, self).is_ready()
+        return super(Histogram2D, self).is_ready()
 
     def run_step(self,run_number,step_size,howlong):
         dfslot = self.get_input_slot('df')

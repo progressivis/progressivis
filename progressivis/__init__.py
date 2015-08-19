@@ -1,4 +1,12 @@
+from progressivis.core import *
+
 import logging
+
+__all__ = ["log_level", "ProgressiveError","Scheduler", "MTScheduler", 
+           "Slot", "SlotDescriptor", "Module", "connect", "StorageManager",
+           "DataFrameModule", "Constant", "Print", "Wait", "Merge" ]
+
+
 # Magic spell to avoid the message 'No handlers could be found for logger X.Y.Z'
 logging.getLogger('progressivis').addHandler(logging.NullHandler())
 
@@ -9,16 +17,3 @@ def log_level(level=logging.DEBUG):
     ch.setFormatter(formatter)
     logging.getLogger('progressivis').addHandler(ch)
 
-__all__ = ["log_level", "ProgressiveError", "Scheduler", "Slot",
-           "SlotDescriptor", "Module", "connect", "DataFrameModule",
-           "StorageManager", "Constant", "Print", "Wait", "Merge" ]
-
-from progressivis.core.version import version as __version__
-from progressivis.core.common import ProgressiveError
-from progressivis.core.scheduler import Scheduler
-from progressivis.core.slot import Slot, SlotDescriptor
-from progressivis.core.storagemanager import StorageManager
-from progressivis.core.module import Module, connect, Print
-from progressivis.core.dataframe import DataFrameModule, Constant
-from progressivis.core.wait import Wait
-from progressivis.core.merge import Merge

@@ -13,3 +13,4 @@ ipython==4.0.0
 jsonschema==2.5.1
 notebook==4.0.1
 bokeh==0.9.2
+ipywidgets==4.0.2

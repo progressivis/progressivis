@@ -2,7 +2,7 @@ import unittest
 
 from progressivis import *
 from progressivis.io import CSVLoader
-from progressivis.stats import Histogram2d
+from progressivis.stats import Histogram2D
 from progressivis.vis import Heatmap
 from progressivis.datasets import get_dataset
 
@@ -13,7 +13,7 @@ import numpy as np
 import pandas as pd
 from pprint import pprint
 
-class TestHistogram2d(unittest.TestCase):
+class TestHistogram2D(unittest.TestCase):
     def setUp(self):
         log_level()
         self.scheduler = Scheduler()
@@ -26,7 +26,7 @@ class TestHistogram2d(unittest.TestCase):
                         id='csv',
                         index_col=False,header=None,
                         scheduler=self.scheduler)
-        histogram2d=Histogram2d(1, 2, # columns are called 1..30
+        histogram2d=Histogram2D(1, 2, # columns are called 1..30
                                 id='histogram2d',
                                 xbins=100,
                                 ybins=100,
