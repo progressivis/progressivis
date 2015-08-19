@@ -31,6 +31,13 @@ class Wait(Module):
             return trace['reads'].irow(-1) >= reads
         return False
 
+    def get_data(self, name):
+        if name=='out': # passes input slot through
+            inslot = self.get_input_slot('inp')
+            if inslot:
+                return inslot.data()
+        return super(Wait, self).get_data(name)
+
     def predict_step_size(self, duration):
         return 1
     

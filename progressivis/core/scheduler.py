@@ -157,6 +157,8 @@ class Scheduler(object):
         return self._module
 
     def remove_module(self, module):
+        if isinstance(module,str) or isinstance(module,unicode):
+            module = self.module[module]
         self.stop()
         module._stop(self._run_number)
         self._remove_module(module)

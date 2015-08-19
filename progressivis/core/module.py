@@ -136,7 +136,7 @@ class Module(object):
         return typed_dataframe(columns, types, values)
 
     @property
-    def paramameters(self):
+    def parameter(self):
         return self._params
 
     def _parse_parameters(self, kwds):
