@@ -3,7 +3,7 @@ from __future__ import print_function
 
 from progressivis import *
 from progressivis.core.dataframe import DataFrameModule
-from progressivis.stats import Histogram2D, Stats
+from progressivis.stats import Histogram2D, Stats, Sample
 
 from bokeh.plotting import figure, show
 from bokeh.io import output_notebook
@@ -46,8 +46,10 @@ class ScatterPlot(DataFrameModule):
         histogram2d = Histogram2D(self.x_column, self.y_column,group=self.id);
         histogram2d.input.df = wait.output.out
         histogram2d.input._params = merge.output.df
+        sample = Sample(n=500,group=self.id)
+        sample.input.df = wait.output.out
         self.input.histogram2d = histogram2d.output.histogram2d
-        self.input.df = wait.output.out
+        self.input.df = sample.output.sample
         return wait
 
     def run_step(self,run_number,step_size,howlong):

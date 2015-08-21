@@ -27,6 +27,7 @@ class Sample(DataFrameModule):
             raise ProgressiveError('Invalid stickiness (%f) should be [0,1]', stickiness)
         self._df = None
         self._sample = self.create_dataframe(Sample.schema)
+        self._cache = None
 
     def get_data(self, name):
         if name=='sample':
@@ -38,14 +39,14 @@ class Sample(DataFrameModule):
         input_df = dfslot.data()
         if input_df is None:
             return None
-        #TODO cache the results
-        return input_df[self._sample['selected']]
+        if self._cache is None:
+            self._cache = input_df[self._sample['selected']]
+        return self._cache
 
     def run_step(self,run_number,step_size,howlong):
         dfslot = self.get_input_slot('df')
         input_df = dfslot.data()
         l = len(input_df) if input_df is not None else 0
-        print 'Len=%d'%l
 
         if (l == 0):
             if self.df_ is not None and len(self._df) != 0:
@@ -66,6 +67,7 @@ class Sample(DataFrameModule):
             self._sample = pd.Dataframe({'selected': True,
                                          self.UPDATE_COLUMN: run_number},
                                          index=input_df.index);
+            self._cache = None
             return self._return_run_step(self.state_blocked, steps_run=1, reads=l, updates=l)
 
         #import pdb
@@ -84,10 +86,10 @@ class Sample(DataFrameModule):
         weights = weights / weights.sum() # normalize weights
         locs = np.random.choice(l, size=size, replace=False, p=weights)
         locs.sort()
-        print locs
         # now, change the timestamp for values that changed
         new_selected = pd.Series(False,index=input_df.index)
         new_selected[locs] = True
         self._sample.loc[selected != new_selected, self.UPDATE_COLUMN] = run_number
         self._sample['selected'] = new_selected
+        self._cache = None
         return self._return_run_step(self.state_blocked, steps_run=1, reads=l, updates=l)

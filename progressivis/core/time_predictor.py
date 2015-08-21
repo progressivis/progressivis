@@ -32,7 +32,11 @@ class LinearTimePredictor(TimePredictor):
         durations = step_traces['duration']
         operations = step_traces.reads + step_traces.updates
         if n == 1: # be reactive in case default is not conservative enough
-            self.a = durations.irow(-1) / operations.irow(-1)
+            num = operations.irow(-1)
+            time = durations.irow(-1)
+            if num == 0:
+                return
+            self.a = time / num
             self.b = 0
         else:
             self.lm.fit(operations[:, np.newaxis], durations)
