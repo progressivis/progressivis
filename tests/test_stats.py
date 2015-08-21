@@ -10,7 +10,6 @@ import pandas as pd
 
 class TestStats(unittest.TestCase):
     def setUp(self):
-        log_level()
         self.scheduler = Scheduler()
 
     def test_stats(self):

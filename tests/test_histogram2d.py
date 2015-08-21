@@ -15,7 +15,6 @@ from pprint import pprint
 
 class TestHistogram2D(unittest.TestCase):
     def setUp(self):
-        log_level()
         self.scheduler = Scheduler()
 
     def tearDown(self):

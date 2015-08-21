@@ -7,8 +7,6 @@ from progressivis.datasets import get_dataset
 
 import pandas as pd
 
-log_level()
-
 class TestPercentiles(unittest.TestCase):
     def setUp(self):
         self.scheduler = Scheduler()
