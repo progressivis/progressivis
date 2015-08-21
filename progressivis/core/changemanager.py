@@ -1,8 +1,7 @@
 from progressivis.core.module import Module
+from progressivis.core.common import NIL
 import pandas as pd
 import numpy as np
-
-NIL = np.array([])
 
 class ChangeManager(object):
     """Manage changes that accured in a DataFrame between runs.

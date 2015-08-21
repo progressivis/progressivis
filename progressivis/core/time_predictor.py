@@ -46,5 +46,5 @@ class LinearTimePredictor(TimePredictor):
         return np.floor(np.max([0, (duration - self.b) / self.a]))
     
 if TimePredictor.default is None:
-    TimePredictor.default = LinearTimePredictor()
+    TimePredictor.default = LinearTimePredictor
 

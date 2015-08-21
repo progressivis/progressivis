@@ -3,6 +3,8 @@ from progressivis.core.dataframe import DataFrameModule
 import pandas as pd
 import numpy as np
 
+import logging
+logger = logging.getLogger(__name__)
 
 
 class CSVLoader(DataFrameModule):
@@ -23,9 +25,13 @@ class CSVLoader(DataFrameModule):
 
     def run_step(self,run_number,step_size, howlong):
         if step_size==0: # bug
+            logger.error('Received a step_size of 0')
             return self._return_run_step(self.state_ready, steps_run=0, creates=0)
-        df = self.parser.read(step_size)
+        logger.info('loading %d lines', step_size)
+        df = self.parser.read(step_size) # raises StopIteration at EOF
         creates = len(df)
+        if creates == 0: # should not happen
+            raise StopIteration
         self._rows_read += creates
         df[self.UPDATE_COLUMN] = run_number
         if self._df is not None:

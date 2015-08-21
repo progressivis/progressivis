@@ -6,9 +6,6 @@ import pandas as pd
 import numpy as np
 import random
 
-import logging
-logger = logging.getLogger(__name__)
-
 from progressivis.core.common import ProgressiveError
 from progressivis.core.utils import empty_typed_dataframe, typed_dataframe, DataFrameAsDict
 from progressivis.core.scheduler import *
@@ -16,6 +13,10 @@ from progressivis.core.slot import *
 from progressivis.core.tracer import Tracer
 from progressivis.core.time_predictor import TimePredictor
 from progressivis.core.storagemanager import StorageManager
+
+import logging
+logger = logging.getLogger(__name__)
+
 
 def connect(output_module, output_name, input_module, input_name):
     return output_module.connect_output(output_name, input_module, input_name)
@@ -68,9 +69,9 @@ class Module(object):
         if scheduler is None:
             scheduler = Scheduler.default
         if tracer is None:
-            tracer = Tracer.default
+            tracer = Tracer.default()
         if predictor is None:
-            predictor = TimePredictor.default
+            predictor = TimePredictor.default()
         if storage is None:
             storage = StorageManager.default
         if id is None:
@@ -343,7 +344,7 @@ class Module(object):
             return True
 
         if self.state == Module.state_blocked:
-            zombie=True
+            zombie=False
             ready = True
             for slot in self.input_slot_values():
                 if slot is None: # not required slot
@@ -358,8 +359,8 @@ class Module(object):
                     logger.info("%s Not ready because %s is not newer", self.id, in_module.id)
                     ready = False
                 
-                if in_module.state!=Module.state_terminated and in_module.state!=Module.state_invalid:
-                    zombie = False
+                if in_module.state==Module.state_terminated or in_module.state==Module.state_invalid:
+                    zombie = True
             if zombie:
                 self.state = Module.state_terminated
             return ready
@@ -437,7 +438,9 @@ class Module(object):
         while self._start_time < self._end_time:
             remaining_time = self._end_time-self._start_time
             step_size = self.predict_step_size(np.min([max_time, remaining_time]))
+            logger.info('step_size=%d in module %s', step_size, self.pretty_typename())
             if step_size == 0:
+                logger.info('step_size of 0 in module %s', self.pretty_typename())
                 break
             try:
                 tracer.before_run_step(now,run_number)
@@ -471,6 +474,7 @@ class Module(object):
             self._start_time = now
         self.state=next_state
         if self.state==Module.state_terminated:
+            logger.info('Module %s terminated', self.pretty_typename())
             tracer.terminated(now,run_number)
         tracer.end_run(now,run_number)
         self._stop(run_number)

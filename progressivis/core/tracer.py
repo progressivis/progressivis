@@ -159,6 +159,6 @@ class DataFrameTracer(Tracer):
         self.last_run_details.append('terminated')
 
 if Tracer.default is None:
-    Tracer.default = DataFrameTracer()
+    Tracer.default = DataFrameTracer
 
 

@@ -2,7 +2,7 @@ from progressivis.core.module import *
 
 import pandas as pd
 
-from progressivis.core.changemanager import ChangeManager, NIL
+from progressivis.core.changemanager import ChangeManager
 
 class DataFrameSlot(Slot):
     def __init__(self, output_module, output_name, input_module, input_name):

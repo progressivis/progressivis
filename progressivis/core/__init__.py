@@ -1,8 +1,8 @@
 __all__ = [ "ProgressiveError","Scheduler", "MTScheduler", 
            "Slot", "SlotDescriptor", "Module", "connect", "StorageManager",
-           "DataFrameModule", "Constant", "Print", "Wait", "Merge" ]
+           "DataFrameModule", "Constant", "Print", "Wait", "Merge", "NIL" ]
 
-from .common import ProgressiveError
+from .common import ProgressiveError, NIL
 from .scheduler import Scheduler
 from .mt_scheduler import MTScheduler
 from .slot import Slot, SlotDescriptor

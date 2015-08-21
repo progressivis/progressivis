@@ -71,11 +71,17 @@ class ScatterPlot(DataFrameModule):
         button.on_click(self.update)
 
     def update(self, b):
-        histo_df = self.input.histogram2d.data()
-        if histo_df is not None:
-            self.image_source.data['image'] = [histo_df.at[histo_df.index[-1],'array']]
+        histo_df = self.get_input_slot('histogram2d').data()
+        if histo_df is not None and histo_df.index[-1] is not None:
+            idx = histo_df.index[-1]
+            row = histo_df.loc[idx]
+            self.image_source.data['image'] = [row.array]
+            self.image_source.data['x'] = [row.xmin]
+            self.image_source.data['y'] = [row.ymin]
+            self.image_source.data['dw'] = [row.xmax-row.xmin]
+            self.image_source.data['dh'] = [row.ymax-row.ymin]
             self.image_source.push_notebook()
-        df = self.df()
+        df = self.get_input_slot('df').data()
         if df is not None:
             # TODO sample
             self.scatter_source.data['x'] = df[self.x_column]

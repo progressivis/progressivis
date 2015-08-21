@@ -22,6 +22,10 @@ class Histogram2D(DataFrameModule):
     schema = [('array', np.dtype(object), None),
               ('cmin', np.dtype(float), np.nan),
               ('cmax', np.dtype(float), np.nan),
+              ('xmin',   np.dtype(float), np.nan),
+              ('xmax',   np.dtype(float), np.nan),
+              ('ymin',   np.dtype(float), np.nan),
+              ('ymax',   np.dtype(float), np.nan),
               DataFrameModule.UPDATE_COLUMN_DESC]
 
     def __init__(self, x_column, y_column, **kwds):
@@ -64,16 +68,20 @@ class Histogram2D(DataFrameModule):
         x = input_df.loc[indices, self.x_column]
         y = input_df.loc[indices, self.y_column]
         p = self.params
+        xmin = p.xmin - p.xdelta
+        xmax = p.xmax + p.xdelta
+        ymin = p.ymin - p.ydelta
+        ymax = p.ymax + p.ydelta
         histo, xedges, yedges = np.histogram2d(y, x,
                                                bins=[p.xbins, p.ybins],
-                                               range=[[p.xmin, p.xmax],[p.ymin, p.ymax]],
+                                               range=[[xmin, xmax],[ymin, ymax]],
                                                normed=False)
         if old_histo is None:
             old_histo = histo
         else:
             old_histo += histo
         cmax = old_histo.max()
-        values = [old_histo, 0, cmax, run_number]
+        values = [old_histo, 0, cmax, xmin, xmax, ymin, ymax, run_number]
         df.loc[run_number] = values
         if len(df) > p.history:
             self._df = df.loc[df.index[-p.history:]]
