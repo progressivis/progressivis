@@ -48,6 +48,14 @@ class ScatterPlot(DataFrameModule):
         histogram2d.input._params = merge.output.df
         sample = Sample(n=500,group=self.id)
         sample.input.df = wait.output.out
+        
+        self.wait = wait
+        self.x_stats = x_stats
+        self.y_stats = y_stats
+        self.merge = merge
+        self.histogram2d = histogram2d
+        self.sample = sample
+        
         self.input.histogram2d = histogram2d.output.histogram2d
         self.input.df = sample.output.sample
         return wait

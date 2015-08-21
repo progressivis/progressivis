@@ -4,7 +4,7 @@ import logging
 
 __all__ = ["log_level", "ProgressiveError","Scheduler", "MTScheduler", 
            "Slot", "SlotDescriptor", "Module", "connect", "StorageManager",
-           "DataFrameModule", "Constant", "Print", "Wait", "Merge", "NIL" ]
+           "DataFrameModule", "Constant", "Every", "Print", "Wait", "Merge", "NIL" ]
 
 
 # Magic spell to avoid the message 'No handlers could be found for logger X.Y.Z'

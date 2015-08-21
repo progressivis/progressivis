@@ -482,18 +482,22 @@ class Module(object):
             print_exc()
             raise exception
 
-
-
-class Print(Module):
-    def __init__(self, columns=None, **kwds):
+class Every(Module):
+    def __init__(self, proc, **kwds):
         self._add_slots(kwds,'input_descriptors', [SlotDescriptor('inp')])
-        super(Print, self).__init__(quantum=0.1, **kwds)
-        self._columns = columns
+        super(Every, self).__init__(**kwds)
+        self._proc = proc
 
     def run_step(self,run_number,step_size,howlong):
         df = self.get_input_slot('inp').data()
-        steps=len(df)
+        steps=len(df) # don't know what the function will do
         with self.scheduler().stdout_parent():
-            print df
-        #print df.info()
+            self._proc(df)
         return self._return_run_step(Module.state_blocked, steps_run=len(df), reads=steps)
+
+def prt(x):
+    print x
+
+class Print(Every):
+    def __init__(self, **kwds):
+        super(Print, self).__init__(quantum=0.1, proc=prt, **kwds)
