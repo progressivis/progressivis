@@ -3,6 +3,9 @@ from progressivis.core.common import NIL
 import pandas as pd
 import numpy as np
 
+import logging
+logger = logging.getLogger(__name__)
+
 class ChangeManager(object):
     """Manage changes that accured in a DataFrame between runs.
     """
@@ -13,6 +16,7 @@ class ChangeManager(object):
         self.created = NIL
         self.deleted = NIL
         self.buffer = NIL
+        self.buffered = False
 
     def reset(self):
         self.last_run = None
@@ -39,25 +43,33 @@ class ChangeManager(object):
             self.deleted = self.index.difference(df.index).values
             self.index = df.index
         self.last_run = run_number
+        logger.info('Updating for run_number %d: updated:%d/created:%d/deleted:%d',
+                    run_number, len(self.updated), len(self.created), len(self.deleted))
 
     def buffer_updated(self):
-        if not self.buffered and len(self.updated) != 0:
+        if not self.buffered:
+            logger.info('Filling-up buffer for updated')
             self.buffered = True
-            self.buffer = np.hstack([self.buffer, self.updated])
+            if len(self.updated)!=0:
+                self.buffer = np.hstack([self.buffer, self.updated])
 
     def buffer_created(self):
-        if  not self.buffered and len(self.created) != 0:
+        if not self.buffered:
+            logger.info('Filling-up buffer for created')
             self.buffered = True
-            self.buffer = np.hstack([self.buffer, self.created])
+            if len(self.created) != 0:
+                self.buffer = np.hstack([self.buffer, self.created])
 
     def next_buffered(self, n):
         if len(self.buffer)==0:
+            logger.info('Returning null buffer')
             return NIL
         if n >= len(self.buffer):
             ret = self.buffer
             self.buffer = NIL
         else:
             ret, self.buffer = np.split(self.buffer, [n])
+        logger.info('Returning buffer of %d/%d', len(ret), len(self.buffer))
         return ret
 
     def is_buffer_empty(self):

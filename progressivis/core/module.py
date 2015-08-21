@@ -362,7 +362,9 @@ class Module(object):
                 if in_module.state==Module.state_terminated or in_module.state==Module.state_invalid:
                     zombie = True
             if zombie:
+                logger.info('%s terminated', self.id)
                 self.state = Module.state_terminated
+                ready = False
             return ready
         logger.info("%s Not ready because is in weird state %s", self.id, self.state_name[self.state])
         return False
@@ -483,10 +485,16 @@ class Module(object):
             raise exception
 
 class Every(Module):
-    def __init__(self, proc, **kwds):
+    def __init__(self, proc, constant_time=False, **kwds):
         self._add_slots(kwds,'input_descriptors', [SlotDescriptor('inp')])
         super(Every, self).__init__(**kwds)
         self._proc = proc
+        self._constant_time = constant_time
+
+    def predict_step_size(self, duration):
+        if self._constant_time:
+            return 1
+        return self(Every, self).predict_step_size(duration)
 
     def run_step(self,run_number,step_size,howlong):
         df = self.get_input_slot('inp').data()
@@ -500,4 +508,4 @@ def prt(x):
 
 class Print(Every):
     def __init__(self, **kwds):
-        super(Print, self).__init__(quantum=0.1, proc=prt, **kwds)
+        super(Print, self).__init__(quantum=0.1, proc=prt, constant_time=True, **kwds)

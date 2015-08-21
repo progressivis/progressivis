@@ -15,15 +15,15 @@ def print_len(x):
         print len(x)
 
 class TestScatterPlot(unittest.TestCase):
-#    def setUp(self):
-#        log_level(logging.INFO)
+    def setUp(self):
+        log_level(logging.INFO,'progressivis.core')
 
     def test_scatterplot(self):
         csv    = CSVLoader(get_dataset('bigfile'),index_col=False,header=None)
         sp = ScatterPlot(x_column=1, y_column=2)
         wait = sp.create_scatterplot_modules()
         wait.input.inp = csv.output.df
-        prt = Every(proc=print_len)
+        prt = Every(proc=print_len,constant_time=True)
         prt.input.inp = csv.output.df
         csv.scheduler().start()
 

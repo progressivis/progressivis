@@ -55,7 +55,6 @@ class Histogram2D(DataFrameModule):
             self.total_read = 0
             logger.info('Reseting history because of changes in the input')
             #raise ProgressiveError('%s module does not manage updates or deletes', self.__class__.__name__)
-
         dfslot.buffer_created()
 
         indices = dfslot.next_buffered(step_size)

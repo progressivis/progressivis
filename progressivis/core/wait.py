@@ -14,6 +14,8 @@ class Wait(DataFrameModule):
         super(Wait, self).__init__(dataframe_slot='out', **kwds)
         
     def is_ready(self):
+        if not super(Wait, self).is_ready():
+            return False
         delay = self.params.delay
         reads = self.params.reads
         if delay==np.nan and reads==0:
@@ -43,5 +45,4 @@ class Wait(DataFrameModule):
         return 1
     
     def run_step(self,run_number,step_size,howlong):
-        #print 'running wait'
-        raise StopIteration()
+        return self._return_run_step(self.state_blocked, steps_run=1)

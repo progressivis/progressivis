@@ -10,11 +10,11 @@ __all__ = ["log_level", "ProgressiveError","Scheduler", "MTScheduler",
 # Magic spell to avoid the message 'No handlers could be found for logger X.Y.Z'
 logging.getLogger('progressivis').addHandler(logging.NullHandler())
 
-def log_level(level=logging.DEBUG):
+def log_level(level=logging.DEBUG, package='progressivis'):
     ch = logging.StreamHandler()
     ch.setLevel(level)
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     ch.setFormatter(formatter)
-    logging.getLogger('progressivis').addHandler(ch)
-    logging.getLogger('progressivis').setLevel(level)
+    logging.getLogger(package).addHandler(ch)
+    logging.getLogger(package).setLevel(level)
 

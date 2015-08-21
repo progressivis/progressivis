@@ -29,6 +29,10 @@ class Sample(DataFrameModule):
         self._sample = self.create_dataframe(Sample.schema)
         self._cache = None
 
+    def predict_step_size(self, duration):
+        # Module sample is constant time (supposedly)
+        return 1
+
     def get_data(self, name):
         if name=='sample':
             return self.sample()
