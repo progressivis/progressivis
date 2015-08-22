@@ -23,8 +23,10 @@ class TestScatterPlot(unittest.TestCase):
         sp = ScatterPlot(x_column=1, y_column=2)
         wait = sp.create_scatterplot_modules()
         wait.input.inp = csv.output.df
-        prt = Every(proc=print_len,constant_time=True)
-        prt.input.inp = csv.output.df
+        cnt = Every(proc=print_len,constant_time=True)
+        cnt.input.inp = csv.output.df
+        prt = Print()
+        prt.input.inp = sp.merge.output.df
         csv.scheduler().start()
 
 

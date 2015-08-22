@@ -416,6 +416,19 @@ class Module(object):
     def last_time(self):
         return self._end_time
 
+    def _update_params(self, run_number):
+        pslot = self.get_input_slot(self.PARAMETERS_SLOT)
+        if pslot is None or pslot.output_module is None: # optional slot
+            return
+        df = pslot.data()
+        if df is None:
+            return
+        s2 = df.loc[df.index[-1]]
+        s1 = self._params.loc[self._params.index[-1]]
+        s3 = s2.combine_first(s1)
+        logger.info('Changing params of %s for:\n%s', self.id, s3)
+        self._params.loc[self._params.index[-1]+1] = s3
+
     def run(self, run_number):
         if self.is_running():
             raise ProgressiveError('Module already running')
@@ -430,6 +443,8 @@ class Module(object):
         self.state = Module.state_running
         self._start_time = now
         self._end_time = self._start_time + quantum
+
+        self._update_params(run_number)
 
         step_size = np.ceil(self.default_step_size*quantum)
         #TODO Forcing 4 steps, but I am not sure, maybe change when the predictor improves

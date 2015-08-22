@@ -36,6 +36,10 @@ class Histogram2D(DataFrameModule):
         self.y_column = y_column
         self.default_step_size = 10000
         self.total_read = 0
+        self._xmin = None
+        self._xmax = None
+        self._ymin = None
+        self._ymax = None
         self._df = self.create_dataframe(Histogram2D.schema)
 
     def is_ready(self):
@@ -67,6 +71,7 @@ class Histogram2D(DataFrameModule):
         x = input_df.loc[indices, self.x_column]
         y = input_df.loc[indices, self.y_column]
         p = self.params
+        # TODO fix with params updated
         xmin = p.xmin - p.xdelta
         xmax = p.xmax + p.xdelta
         ymin = p.ymin - p.ydelta

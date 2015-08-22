@@ -5,7 +5,7 @@ import pandas as pd
 def empty_typed_dataframe(columns, types=None):
     d = {}
     cols = []
-    if types is None:
+    if not isinstance(types,list):
         itr = columns
     else:
         itr = zip(columns, types)
@@ -44,10 +44,12 @@ class DataFrameAsDict(object):
         super(DataFrameAsDict, self).__setattr__('df', df)
         
     def __getitem__(self, key):
-        return super(DataFrameAsDict, self).__getattribute__('df').at[0, key]
+        df = super(DataFrameAsDict, self).__getattribute__('df')
+        return df.at[df.index[-1], key]
 
     def __setitem__(self, key, value):
-        super(DataFrameAsDict, self).__getattribute__('df').at[0, key] = value
+        df = super(DataFrameAsDict, self).__getattribute__('df')
+        df.at[df.index[-1], key] = value
 
     def __getattr__(self, attr):
         return self[attr]

@@ -35,10 +35,8 @@ class ScatterPlot(DataFrameModule):
     def create_scatterplot_modules(self):
         wait = Wait(delay=2,group=self.id)
         x_stats = Stats(self.x_column, min_column='xmin', max_column='xmax',group=self.id)
-        x_stats.input._params = wait.output.out
         x_stats.input.df = wait.output.out
         y_stats = Stats(self.y_column, min_column='ymin', max_column='ymax',group=self.id)
-        y_stats.input._params = wait.output.out
         y_stats.input.df = wait.output.out
         merge = Merge(group=self.id)
         merge.input.df = x_stats.output.stats
