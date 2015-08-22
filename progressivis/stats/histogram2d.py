@@ -36,10 +36,8 @@ class Histogram2D(DataFrameModule):
         self.y_column = y_column
         self.default_step_size = 10000
         self.total_read = 0
-        self._xmin = None
-        self._xmax = None
-        self._ymin = None
-        self._ymax = None
+        self._old_histo = None
+        self._bounds = None
         self._df = self.create_dataframe(Histogram2D.schema)
 
     def is_ready(self):
@@ -51,31 +49,44 @@ class Histogram2D(DataFrameModule):
         dfslot = self.get_input_slot('df')
         input_df = dfslot.data()
         df = self._df
-        old_histo = df.at[df.index[-1], 'array']
+        old_histo = self._old_histo
+        p = self.params
+        bounds_changed = False
+        if self._bounds is None:
+            xmin = p.xmin - p.xdelta
+            xmax = p.xmax + p.xdelta
+            ymin = p.ymin - p.ydelta
+            ymax = p.ymax + p.ydelta
+            self._bounds = (xmin, xmax, ymin, ymax)
+        else:
+            xmin, xmax, ymin, ymax = self._bounds
+            # If new bounds extend new ones including deltas, invalidate
+            if p.xmin < xmin or p.xmax > xmax or p.ymin < ymin or p.ymax > ymax:
+                bounds_changed = True
+                xmin = p.xmin - p.xdelta
+                xmax = p.xmax + p.xdelta
+                ymin = p.ymin - p.ydelta
+                ymax = p.ymax + p.ydelta
+                self._bounds = (xmin, xmax, ymin, ymax)
+        
         dfslot.update(run_number, input_df)
-        if len(dfslot.deleted) or len(dfslot.updated) > len(dfslot.created):
+        if bounds_changed or len(dfslot.deleted) or len(dfslot.updated) > len(dfslot.created):
             dfslot.reset()
-            old_histo = None
             self.total_read = 0
             logger.info('Reseting history because of changes in the input')
-            #raise ProgressiveError('%s module does not manage updates or deletes', self.__class__.__name__)
+
         dfslot.buffer_created()
 
         indices = dfslot.next_buffered(step_size)
         steps = len(indices)
         if steps == 0:
+            self._old_histo = old_histo = None # should store the old histo now
             logger.info('Index buffer empty')
             return self._return_run_step(self.state_blocked, steps_run=steps)
-        else:
-            self.total_read += steps
+
+        self.total_read += steps
         x = input_df.loc[indices, self.x_column]
         y = input_df.loc[indices, self.y_column]
-        p = self.params
-        # TODO fix with params updated
-        xmin = p.xmin - p.xdelta
-        xmax = p.xmax + p.xdelta
-        ymin = p.ymin - p.ydelta
-        ymax = p.ymax + p.ydelta
         histo, xedges, yedges = np.histogram2d(y, x,
                                                bins=[p.xbins, p.ybins],
                                                range=[[xmin, xmax],[ymin, ymax]],
@@ -89,5 +100,6 @@ class Histogram2D(DataFrameModule):
         df.loc[run_number] = values
         if len(df) > p.history:
             self._df = df.loc[df.index[-p.history:]]
+        self._old_histo = old_histo
         return self._return_run_step(dfslot.next_state(),
                                      steps_run=steps, reads=steps, updates=len(self._df))

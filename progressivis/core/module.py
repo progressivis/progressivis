@@ -426,8 +426,9 @@ class Module(object):
         s2 = df.loc[df.index[-1]]
         s1 = self._params.loc[self._params.index[-1]]
         s3 = s2.combine_first(s1)
+        s3[self.UPDATE_COLUMN] = run_number
         logger.info('Changing params of %s for:\n%s', self.id, s3)
-        self._params.loc[self._params.index[-1]+1] = s3
+        self._params.loc[self._params.index[-1]+1] = s3 # seems to drop undeclared columns
 
     def run(self, run_number):
         if self.is_running():

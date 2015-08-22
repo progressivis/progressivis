@@ -32,6 +32,7 @@ class ChangeManager(object):
             return
         uc = df[Module.UPDATE_COLUMN]
         self.buffered = False
+        #TODO flush buffer containing data invalidated since the last run.
         if self.last_run is None:
             self.index = df.index
             self.updated = self.index.values
