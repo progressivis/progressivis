@@ -32,21 +32,27 @@ class ScatterPlot(DataFrameModule):
         self.x_column = x_column
         self.y_column = y_column
 
-    def create_scatterplot_modules(self):
-        wait = Wait(delay=2,group=self.id)
-        x_stats = Stats(self.x_column, min_column='xmin', max_column='xmax',group=self.id)
+    def create_scatterplot_modules(self, wait=None, x_stats=None, y_stats=None, sample=None, merge=None, histogram2d=None):
+        if wait is None:
+            wait = Wait(delay=2,group=self.id)
+        if x_stats is None:
+            x_stats = Stats(self.x_column, min_column='xmin', max_column='xmax',group=self.id)
         x_stats.input.df = wait.output.out
-        y_stats = Stats(self.y_column, min_column='ymin', max_column='ymax',group=self.id)
+        if y_stats is None:
+            y_stats = Stats(self.y_column, min_column='ymin', max_column='ymax',group=self.id)
         y_stats.input.df = wait.output.out
-        merge = Merge(group=self.id)
+        if merge is None:
+            merge = Merge(group=self.id)
         merge.input.df = x_stats.output.stats
         merge.input.df = y_stats.output.stats # magic input df slot
-        histogram2d = Histogram2D(self.x_column, self.y_column,group=self.id);
+        if histogram2d is None:
+            histogram2d = Histogram2D(self.x_column, self.y_column,group=self.id);
         histogram2d.input.df = wait.output.out
         histogram2d.input._params = merge.output.df
-        sample = Sample(n=500,group=self.id)
+        if sample is None:
+            sample = Sample(n=500,group=self.id)
         sample.input.df = wait.output.out
-        
+
         self.wait = wait
         self.x_stats = x_stats
         self.y_stats = y_stats
