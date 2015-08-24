@@ -2,13 +2,17 @@
 from scheduler import Scheduler
 import threading
 import sys
+from contextlib import contextmanager
+
+import logging
+logger = logging.getLogger(__name__)
+
 
 class MTScheduler(Scheduler):
     def __init__(self):
         super(MTScheduler,self).__init__()
         self.lock = threading.RLock()
         self.thread = None
-        self.debug = False
         self._thread_parent = None
 
     @staticmethod
@@ -29,8 +33,7 @@ class MTScheduler(Scheduler):
             super(MTScheduler,self).invalidate()
 
     def _before_run(self):
-        if self.debug:
-            print "Before run %d" % self._run_number
+        logger.debug("Before run %d" % self._run_number)
 
 
     def start(self):
@@ -41,12 +44,13 @@ class MTScheduler(Scheduler):
             else:
                 self._thread_parent = None
             self.thread.start()
+            logger.debug('starting thread')
         else:
             raise ProgressiveError('Trying to start scheduler thread inside scheduler thread')
 
     def _after_run(self):
-        if self.debug:
-            print "After run %d" % self._run_number
+        print "After run %d" % self._run_number
+        logger.debug("After run %d" % self._run_number)
 
     def stop(self):
         super(MTScheduler,self).stop()
@@ -59,6 +63,7 @@ class MTScheduler(Scheduler):
     def thread_parent(self):
         return self._thread_parent
 
+    @contextmanager
     def stdout_parent(self):
         if self._thread_parent:
             saved_parent = sys.stdout.parent_header

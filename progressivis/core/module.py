@@ -50,9 +50,10 @@ class Module(object):
     state_ready = 1
     state_running = 2
     state_blocked = 3
-    state_terminated = 4
-    state_invalid = 5
-    state_name = ['created', 'ready', 'running', 'blocked', 'terminated', 'invalid']
+    state_defunct = 4
+    state_terminated = 5
+    state_invalid = 6
+    state_name = ['created', 'ready', 'running', 'blocked', 'defunct', 'terminated', 'invalid']
 
     def __init__(self,
                  id=None,
@@ -304,7 +305,7 @@ class Module(object):
         """Run one step of the module, with a duration up to the 'howlong' parameter.
 
         Returns a dictionary with at least 5 pieces of information: 1)
-        the new state among (ready, blocked, terminated),2) a number
+        the new state among (ready, blocked, defunct),2) a number
         of read items, 3) a number of updated items (written), 4) a
         number of created items, and 5) the effective number of steps run.
         """
@@ -362,12 +363,23 @@ class Module(object):
                 if in_module.state==Module.state_terminated or in_module.state==Module.state_invalid:
                     zombie = True
             if zombie:
-                logger.info('%s terminated', self.id)
-                self.state = Module.state_terminated
+                logger.info('%s defunct', self.id)
+                self.state = Module.state_defunct
                 ready = False
             return ready
         logger.info("%s Not ready because is in weird state %s", self.id, self.state_name[self.state])
         return False
+
+    def cleanup_run(self, run_number):
+        """Perform operations such as switching state from defunct to terminated.
+
+        Resources could also be released for terminated modules.
+        """
+        if self.is_defunct(): # terminate modules that died in the previous run
+            self.state = Module.state_terminated
+
+    def is_defunct(self):
+        return self._state==Module.state_defunct
 
     def is_terminated(self):
         return self._state==Module.state_terminated
@@ -468,12 +480,12 @@ class Module(object):
             except StopIteration as e:
                 #print_exc()
                 logger.info('In Module.run(): Received a StopIteration exception')
-                next_state = Module.state_terminated
+                next_state = Module.state_defunct
                 run_step_ret['next_state'] = next_state
                 now = self.timer()
                 break
             except Exception as e:
-                next_state = Module.state_terminated
+                next_state = Module.state_defunct
                 run_step_ret['next_state'] = next_state
                 now = self.timer()
                 logger.debug("Exception in %s", self.id)
@@ -491,8 +503,8 @@ class Module(object):
                 break
             self._start_time = now
         self.state=next_state
-        if self.state==Module.state_terminated:
-            logger.info('Module %s terminated', self.pretty_typename())
+        if self.state==Module.state_defunct:
+            logger.info('Module %s defunct', self.pretty_typename())
             tracer.terminated(now,run_number)
         tracer.end_run(now,run_number)
         self._stop(run_number)

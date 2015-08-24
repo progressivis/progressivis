@@ -107,6 +107,8 @@ class Scheduler(object):
                     done = False
                 else:
                     logger.info("Module %s terminated", module.id)
+            for module in modules:
+                module.cleanup_run(self._run_number)
             self._after_run()
             self._run_number_time[self._run_number] = self.timer()
 

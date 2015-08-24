@@ -19,7 +19,16 @@ setup(
     description = "A Progressive Steerable Analytics Toolkit",
     license = "BSD",
     keywords = "Progressive analytics visualization",
-    packages = ['progressivis'],
+    packages = ['progressivis',
+                'progressivis.core',
+                'progressivis.io',
+                'progressivis.stats',
+                'progressivis.datasets',
+                'progressivis.vis',
+                'progressivis.cluster',
+                'progressivis.manifold',
+                'progressivis.metrics',
+                ],
     long_description = read('README.md'),
     classifiers=[
         "Development Status :: 2 - PRe-Alpha",
@@ -27,6 +36,7 @@ setup(
         "Topic :: Scientific/Engineering :: Information Analysis",
         "License :: OSI Approved :: BSD License",
     ],
+    platforms='any',
     # Project uses reStructuredText, so ensure that the docutils get
     # installed or upgraded on the target machine
     install_requires = required,

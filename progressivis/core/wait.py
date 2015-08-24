@@ -7,24 +7,27 @@ import pandas as pd
 
 class Wait(DataFrameModule):
     parameters = [('delay', np.dtype(float), np.nan),
-                  ('reads', np.dtype(int), 0)]
+                  ('reads', np.dtype(int), -1)]
 
     def __init__(self, **kwds):
         self._add_slots(kwds,'input_descriptors', [SlotDescriptor('inp', type=pd.DataFrame)])
         super(Wait, self).__init__(dataframe_slot='out', **kwds)
+        if self.params.delay==np.nan and self.params.reads == -1:
+            raise ProgressiveError('Module %s needs either a delay or a number of reads, not both',
+                                   self.pretty_typename())
         
     def is_ready(self):
         if not super(Wait, self).is_ready():
             return False
         delay = self.params.delay
         reads = self.params.reads
-        if delay==np.nan and reads==0:
+        if delay==np.nan and reads<0:
             return False
-        if delay!=np.nan and reads != 0:
-            raise ProgressiveError('Module %s needs either a delay or a number of reads, not both', self.__class__.__name__)
         inslot = self.get_input_slot('inp')
-        if inslot.output_module is None:
-            return False
+        #if inslot.output_module is None: # should not happen, the slot is mandatory
+        #    return False
+        if inslot.output_module.is_terminated():
+            return True # should leave a chance for the other modules anyway
         trace = inslot.output_module.tracer.df()
         if len(trace) == 0:
             return False

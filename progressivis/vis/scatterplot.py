@@ -32,9 +32,12 @@ class ScatterPlot(DataFrameModule):
         self.x_column = x_column
         self.y_column = y_column
 
+    def df(self):
+        return self.get_input_slot('df').data()
+
     def create_scatterplot_modules(self, wait=None, x_stats=None, y_stats=None, sample=None, merge=None, histogram2d=None):
         if wait is None:
-            wait = Wait(delay=2,group=self.id)
+            wait = Wait(reads=10000,group=self.id)
         if x_stats is None:
             x_stats = Stats(self.x_column, min_column='xmin', max_column='xmax',group=self.id)
         x_stats.input.df = wait.output.out
@@ -70,7 +73,7 @@ class ScatterPlot(DataFrameModule):
 
     x = np.array([0, 10, 50, 90, 100], np.dtype(float))
     y = np.array([0, 50, 90, 10, 100], np.dtype(float))
-    img = np.empty((3, 3), np.float)
+    img = np.zeros((3, 3), np.float)
 
     def show(self, p):
         self.figure = p
@@ -78,7 +81,7 @@ class ScatterPlot(DataFrameModule):
         self.palette = YlOrRd9[::-1]
         p.image(image=[self.img], x=[0], y=[0], dw=[100], dh=[100], color_mapper=LinearColorMapper(self.palette), source=self.image_source)
         self.scatter_source = ColumnDataSource(data={'x': self.x, 'y': self.y})
-        p.circle(x='x',y='y',source=self.scatter_source)
+        p.scatter('x','y',source=self.scatter_source)
         show(self.figure)
         button = widgets.Button(description="Refresh!")
         display(button)
@@ -86,18 +89,21 @@ class ScatterPlot(DataFrameModule):
 
     def update(self, b):
         histo_df = self.get_input_slot('histogram2d').data()
+        row = None
         if histo_df is not None and histo_df.index[-1] is not None:
             idx = histo_df.index[-1]
             row = histo_df.loc[idx]
-            self.image_source.data['image'] = [row.array]
-            self.image_source.data['x'] = [row.xmin]
-            self.image_source.data['y'] = [row.ymin]
-            self.image_source.data['dw'] = [row.xmax-row.xmin]
-            self.image_source.data['dh'] = [row.ymax-row.ymin]
-            self.image_source.push_notebook()
-        df = self.get_input_slot('df').data()
+            if not (np.isnan(row.xmin) or np.isnan(row.xmax)
+                    or np.isnan(row.ymin) or np.isnan(row.ymax)
+                    or row.image == None):
+                self.image_source.data['image'] = [row.array]
+                self.image_source.data['x'] = [row.xmin]
+                self.image_source.data['y'] = [row.ymin]
+                self.image_source.data['dw'] = [row.xmax-row.xmin]
+                self.image_source.data['dh'] = [row.ymax-row.ymin]
+                self.image_source.push_notebook()
+        df = self.df()
         if df is not None:
-            # TODO sample
             self.scatter_source.data['x'] = df[self.x_column]
             self.scatter_source.data['y'] = df[self.y_column]
             self.scatter_source.push_notebook()

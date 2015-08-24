@@ -15,6 +15,7 @@ from pprint import pprint
 
 class TestHistogram2D(unittest.TestCase):
     def setUp(self):
+        #self.scheduler = MTScheduler()
         self.scheduler = Scheduler()
 
     def tearDown(self):
@@ -38,10 +39,13 @@ class TestHistogram2D(unittest.TestCase):
         #pr.input.inp = heatmap.output.heatmap
         pr.input.inp = histogram2d.output.histogram2d
         self.scheduler.start()
-        s = histogram2d.trace_stats(max_runs=1)
+        #self.scheduler.thread.join()
+        s = histogram2d.trace_stats()
         #print "Done. Run time: %gs, loaded %d rows" % (s['duration'].irow(-1), len(module.df()))
         pd.set_option('display.expand_frame_repr', False)
         print s
 
 if __name__ == '__main__':
+    #import cProfile
+    #cProfile.run("unittest.main()", 'prof')
     unittest.main()

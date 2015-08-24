@@ -21,7 +21,7 @@ class TestProgressiveLoadVEC(unittest.TestCase):
         self.assertEqual(l, len(df[module.update_timestamps()==module.last_update()]))
         cnt = 1
         
-        while not module.is_terminated():
+        while not module.is_defunct():
             module.run(cnt)
             cnt += 1
             s = module.trace_stats(max_runs=1)
