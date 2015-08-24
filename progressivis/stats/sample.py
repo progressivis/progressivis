@@ -42,9 +42,6 @@ class Sample(DataFrameModule):
         return self.get_input_slot('df').data()
 
     def sample(self):
-        input_df = self.df()
-        if self._cache is None:
-            self._cache = input_df[self._sample['selected']]
         return self._cache
 
     def run_step(self,run_number,step_size,howlong):
@@ -71,7 +68,7 @@ class Sample(DataFrameModule):
             self._sample = pd.Dataframe({'selected': True,
                                          self.UPDATE_COLUMN: run_number},
                                          index=input_df.index);
-            self._cache = None
+            self._cache = input_df[self._sample['selected']]
             return self._return_run_step(self.state_blocked, steps_run=1, reads=l, updates=l)
 
         #import pdb
@@ -95,5 +92,5 @@ class Sample(DataFrameModule):
         new_selected[locs] = True
         self._sample.loc[selected != new_selected, self.UPDATE_COLUMN] = run_number
         self._sample['selected'] = new_selected
-        self._cache = None
+        self._cache = input_df[self._sample['selected']]
         return self._return_run_step(self.state_blocked, steps_run=1, reads=l, updates=l)

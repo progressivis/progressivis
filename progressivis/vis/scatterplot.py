@@ -88,6 +88,7 @@ class ScatterPlot(DataFrameModule):
         button.on_click(self.update)
 
     def update(self, b):
+        #TODO use data from the same run
         histo_df = self.get_input_slot('histogram2d').data()
         row = None
         if histo_df is not None and histo_df.index[-1] is not None:

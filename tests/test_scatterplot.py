@@ -19,7 +19,7 @@ class TestScatterPlot(unittest.TestCase):
 #        log_level(logging.INFO,'progressivis.core')
 
     def test_scatterplot(self):
-        csv    = CSVLoader(get_dataset('smallfile'),index_col=False,header=None)
+        csv    = CSVLoader(get_dataset('bigfile'),index_col=False,header=None)
         sp = ScatterPlot(x_column=1, y_column=2)
         wait = sp.create_scatterplot_modules()
         wait.input.inp = csv.output.df
