@@ -9,8 +9,8 @@ import logging
 logger = logging.getLogger(__name__)
 
 class Histogram2D(DataFrameModule):
-    parameters = [('xbins',  np.dtype(int),   1024),
-                  ('ybins',  np.dtype(int),   1024),
+    parameters = [('xbins',  np.dtype(int),   512),
+                  ('ybins',  np.dtype(int),   512),
                   ('xmin',   np.dtype(float), 0),
                   ('xmax',   np.dtype(float), 1),
                   ('ymin',   np.dtype(float), 0),

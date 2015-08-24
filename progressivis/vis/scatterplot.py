@@ -95,7 +95,7 @@ class ScatterPlot(DataFrameModule):
             row = histo_df.loc[idx]
             if not (np.isnan(row.xmin) or np.isnan(row.xmax)
                     or np.isnan(row.ymin) or np.isnan(row.ymax)
-                    or row.image == None):
+                    or row.array is None):
                 self.image_source.data['image'] = [row.array]
                 self.image_source.data['x'] = [row.xmin]
                 self.image_source.data['y'] = [row.ymin]

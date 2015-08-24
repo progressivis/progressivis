@@ -12,37 +12,33 @@ class Wait(DataFrameModule):
     def __init__(self, **kwds):
         self._add_slots(kwds,'input_descriptors', [SlotDescriptor('inp', type=pd.DataFrame)])
         super(Wait, self).__init__(dataframe_slot='out', **kwds)
-        if self.params.delay==np.nan and self.params.reads == -1:
+        if np.isnan(self.params.delay) and self.params.reads == -1:
             raise ProgressiveError('Module %s needs either a delay or a number of reads, not both',
                                    self.pretty_typename())
         
     def is_ready(self):
         if not super(Wait, self).is_ready():
             return False
+        if self.is_defunct():
+            return True # give it a chance to run before it dies
         delay = self.params.delay
         reads = self.params.reads
-        if delay==np.nan and reads<0:
+        if np.isnan(delay) and reads<0:
             return False
         inslot = self.get_input_slot('inp')
         #if inslot.output_module is None: # should not happen, the slot is mandatory
         #    return False
-        if inslot.output_module.is_terminated():
-            return True # should leave a chance for the other modules anyway
         trace = inslot.output_module.tracer.df()
         if len(trace) == 0:
             return False
-        if delay != np.nan:
+        if not np.isnan(delay):
             return len(trace) >= delay
-        elif reads:
-            return trace['reads'].irow(-1) >= reads
+        elif reads >= 0:
+            return len(inslot.data()) >= reads
         return False
 
-    def get_data(self, name):
-        if name=='out': # passes input slot through
-            inslot = self.get_input_slot('inp')
-            if inslot:
-                return inslot.data()
-        return super(Wait, self).get_data(name)
+    def df(self):
+        return self.get_input_slot('inp').data()
 
     def predict_step_size(self, duration):
         return 1

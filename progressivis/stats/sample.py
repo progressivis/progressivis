@@ -12,7 +12,7 @@ class Sample(DataFrameModule):
                   ('frac',   np.dtype(float), np.nan),
                   ('stickiness',   np.dtype(float), 0.9)] # probability of a sample to remain
 
-    schema = [('selected', np.dtype(object), None),
+    schema = [('selected', np.dtype(bool), False),
               DataFrameModule.UPDATE_COLUMN_DESC]              
 
     def __init__(self, **kwds):
@@ -38,11 +38,11 @@ class Sample(DataFrameModule):
             return self.sample()
         return super(Sample,self).get_data(name)
 
+    def df(self):
+        return self.get_input_slot('df').data()
+
     def sample(self):
-        dfslot = self.get_input_slot('df')
-        input_df = dfslot.data()
-        if input_df is None:
-            return None
+        input_df = self.df()
         if self._cache is None:
             self._cache = input_df[self._sample['selected']]
         return self._cache
