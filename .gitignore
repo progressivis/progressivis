@@ -7,7 +7,6 @@
 *.so
 *.c
 *.db
-*.ipynb
 *.out
 
 .DS_Store
