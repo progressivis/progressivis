@@ -79,7 +79,6 @@ class Scheduler(object):
         self._running = True
         if not self.validate():
             raise ProgressiveError('Cannot validate progressive workflow')
-        done = False
 
         self._runorder = self.order_modules()
         logger.info("Scheduler run order: %s", self._runorder)
@@ -88,30 +87,25 @@ class Scheduler(object):
         self._run_number_time[self._run_number] = self.timer()
         for module in modules:
             module.starting()
-        while not done and not self._stopped:
+        while len(modules)!=0 and not self._stopped:
             self._run_number += 1
-            done = True
             self._before_run()
             for module in modules:
                 if not module.is_ready():
-                    if module.is_terminated():
-                        logger.info("Module %s terminated", module.id)
-                    else:
-                        logger.info("Module %s not ready", module.id)
+                    logger.info("Module %s not ready", module.id)
                     continue
                 logger.info("Running module %s", module.id)
-                
                 module.run(self._run_number)
                 logger.info("Module %s returned", module.id)
-                if not module.is_terminated():
-                    done = False
-                else:
-                    logger.info("Module %s terminated", module.id)
             for module in modules:
                 module.cleanup_run(self._run_number)
+            # remove terminated modules from the run queue
+            modules = [m for m in modules if not m.is_terminated()]
             self._after_run()
             self._run_number_time[self._run_number] = self.timer()
 
+        # get back all the modules
+        modules = [self.module[m] for m in self._runorder]
         for module in reversed(modules):
             module.ending()
         self._running = False

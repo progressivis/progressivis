@@ -16,7 +16,7 @@ def print_len(x):
 
 class TestScatterPlot(unittest.TestCase):
 #    def setUp(self):
-#        log_level(logging.INFO,'progressivis.core')
+#        log_level(logging.INFO,'progressivis')
 
     def test_scatterplot(self):
         csv    = CSVLoader(get_dataset('bigfile'),index_col=False,header=None)

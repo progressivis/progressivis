@@ -45,10 +45,11 @@ class PairwiseDistances(DataFrameModule):
         if len(dfslot.deleted) or len(dfslot.updated) > len(dfslot.created):
             dfslot.reset()
             logger.info('Reseting history because of changes in the input df')
+            #TODO: be smarter with changed values
         dfslot.buffer_created()
 
         len_b = len(dfslot.created)
-        len_a = len(df)-len_b
+        n = len(df)-len_b
 
         if self.columns is None:
             self.columns = df.columns.delete(np.where(df.columns==DataFrameModule.UPDATE_COLUMN))
@@ -62,16 +63,13 @@ class PairwiseDistances(DataFrameModule):
             logger.error('While extracting columns', e)
             raise
 
-        # We have the old matrix Si, we want to complete it with
-        # two sub matrices, Sij and Sj.
-        # We are given a "budget" of step_size operations
+        # We have the old matrix Si of size (n), we want to complete it with
+        # two sub matrices, Sij and Sj of length (m).
+        # We are given a "budget" of step_size (s)operations
         # See how many new rows fit. These will be the (j) new rows
 
-        if len_a == 0:
-            steps = len_b*(len_b-1)/2
-            if steps <= step_size:
-                self._df['distance'] = pdist(rows)
-                self._df[DataFrameModule.UPDATE_COLUMN] = run_number
-            
-        else:
-            
+        m = (-n + math.sqrt(n*n + 4*step_size)) / 2
+
+        indices = dfslot.next_buffered(m)
+        j = rows[indices]
+        Sj = pairwise_distances(j, metric=self.metric, n_jobs=self.n_jobs)

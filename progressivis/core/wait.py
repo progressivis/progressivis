@@ -19,7 +19,7 @@ class Wait(DataFrameModule):
     def is_ready(self):
         if not super(Wait, self).is_ready():
             return False
-        if self.is_defunct():
+        if self.is_zombie():
             return True # give it a chance to run before it dies
         delay = self.params.delay
         reads = self.params.reads

@@ -19,6 +19,7 @@ class ChangeManager(object):
         self.buffered = False
 
     def reset(self):
+        logger.info('Reseting history')
         self.last_run = None
         self.index = pd.Index([])
         self.updated = NIL

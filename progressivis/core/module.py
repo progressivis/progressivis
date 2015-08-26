@@ -341,33 +341,42 @@ class Module(object):
         if len(self._input_slots)==0:
             return True
 
+        # Module is either a source or has buffered data to process
         if self.state == Module.state_ready:
             return True
 
+        # Module is waiting for some input, test if some is available
+        # to let it run. If all the input modules are terminated,
+        # the module is blocked, cannot run any more, so it is terminated
+        # too.
         if self.state == Module.state_blocked:
-            zombie=False
+            slots = self.input_slot_values()
+            in_count = 0
+            term_count = 0
             ready = True
-            for slot in self.input_slot_values():
+            for slot in slots:
                 if slot is None: # not required slot
                     continue
+                in_count += 1
                 in_module = slot.output_module
                 in_ts = in_module.last_update()
                 ts = self.last_update()
-                if in_ts is None:
+
+                if in_module.state==Module.state_terminated or in_module.state==Module.state_invalid:
+                    term_count += 1
+                elif in_ts is None:
                     logger.info("%s Not ready because %s has not started", self.id, in_module.id)
                     ready = False
                 elif (ts is not None) and (in_ts <= ts):
                     logger.info("%s Not ready because %s is not newer", self.id, in_module.id)
                     ready = False
                 
-                if in_module.state==Module.state_terminated or in_module.state==Module.state_invalid:
-                    zombie = True
-            if zombie:
+            if in_count != 0 and term_count==in_count: # if all the input slot modules are terminated or invalid
                 logger.info('%s zombie', self.id)
                 self.state = Module.state_zombie
                 ready = False
             return ready
-        logger.info("%s Not ready because is in weird state %s", self.id, self.state_name[self.state])
+        logger.error("%s Not ready because is in weird state %s", self.id, self.state_name[self.state])
         return False
 
     def cleanup_run(self, run_number):
@@ -437,6 +446,9 @@ class Module(object):
             return
         s2 = df.loc[df.index[-1]]
         s1 = self._params.loc[self._params.index[-1]]
+        if s2[Module.UPDATE_COLUMN] <= s1[Module.UPDATE_COLUMN]:
+            # no need to update
+            return
         s3 = s2.combine_first(s1)
         s3[self.UPDATE_COLUMN] = run_number
         logger.info('Changing params of %s for:\n%s', self.id, s3)
