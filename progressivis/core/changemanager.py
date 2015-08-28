@@ -34,7 +34,6 @@ class ChangeManager(object):
     def __init__(self, last_run=None):
         self.last_run = last_run
         self.index = pd.Index([])
-        self.processed = NIL
         self.updated = NIL
         self.created = NIL
         self.deleted = NIL
@@ -45,7 +44,6 @@ class ChangeManager(object):
         logger.info('Reseting history')
         self.last_run = None
         self.index = pd.Index([])
-        self.processed = NIL
         self.updated = NIL
         self.created = NIL
         self.deleted = NIL
@@ -60,12 +58,10 @@ class ChangeManager(object):
         #TODO flush buffer containing data invalidated since the last run.
         if self.last_run is None:
             self.index = df.index
-            self.processed = NIL            
             self.updated = self.index.values
             self.created = self.updated
             self.deleted = NIL
         else:
-            self.processed = np.where(uc <= self.last_run)[0]
             self.updated = np.where(uc > self.last_run)[0]
             self.created = df.index.difference(self.index).values
             self.deleted = self.index.difference(df.index).values

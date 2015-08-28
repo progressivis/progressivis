@@ -59,22 +59,21 @@ class PairwiseDistances(DataFrameModule):
             m = int(np.sqrt(step_size))
         else:
             m = (-n + np.sqrt(n*n + 4*step_size)) / 2.0
-            m = int(np.min([1.0, m]))
-
-        import pdb
-        pdb.set_trace()
+            m = int(np.max([1.0, m]))
 
         indices = dfslot.next_buffered(m)
         i = None
+        j = None
         Si = self._df
 
         arrayslot = self.get_input_slot('array')
         if arrayslot is not None and arrayslot.data() is not None:
             array = arrayslot.data()
             logger.info('Using array instead of DataFrame columns')
-            i = array[dfslot.processed]
+            if Si is not None:
+                i = array[Si.index]
             j = array[indices]
-        if i is None:
+        if j is None:
             if self.columns is None:
                 self.columns = df.columns.delete(np.where(df.columns==DataFrameModule.UPDATE_COLUMN))
             elif not isinstance(self.columns, pd.Index):
@@ -85,7 +84,8 @@ class PairwiseDistances(DataFrameModule):
             except Exception as e:
                 logger.error('While extracting columns', e)
                 raise
-            i = df[Si.index]
+            if Si is not None:
+                i = df[Si.index]
             j = rows.loc[indices]
 
         Sj = pairwise_distances(j, metric=self._metric, n_jobs=self._n_jobs)
@@ -98,7 +98,7 @@ class PairwiseDistances(DataFrameModule):
             S1 = np.hstack((Si, Sij))
             S2 = np.hstack((Sji, Sj))
             S = np.vstack((S1, S2))
-            index = Si.index + df.index[indices]
+            index = Si.index.append(df.index[indices])
         self._df = pd.DataFrame(S,index=index)
         return self._return_run_step(dfslot.next_state(),
                                      steps_run=step_size, reads=m+n, updates=m)

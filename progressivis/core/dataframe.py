@@ -78,13 +78,6 @@ class DataFrameSlot(Slot):
             return self.changes.deleted
         else:
             return None
-
-    @property
-    def processed(self):
-        if self.changes:
-            return self.changes.processed
-        else:
-            return None
  
 
 class DataFrameModule(Module):
