@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
-from progressivis.core.dataframe import DataFrameModule
+from progressivis import DataFrameModule, SlotDescriptor
+from progressivis.metrics.pairwise import normalize
 
 import pandas as pd
 import numpy as np
+from scipy.sparse import csr_matrix
 
 from sklearn.feature_extraction import DictVectorizer
 import re
-import numpy as np
 
 from bz2 import BZ2File
 from gzip import GzipFile
@@ -44,9 +45,11 @@ class VECLoader(DataFrameModule):
     pattern = re.compile(r"\(([0-9]+),([-+.0-9]+)\)[ ]*")
     
     def __init__(self, filename, dtype=np.float64, **kwds):
+        self._add_slots(kwds,'output_descriptors',
+                        [SlotDescriptor('array', type=csr_matrix, required=False)])
         super(VECLoader, self).__init__(**kwds)
         self._dtype = dtype
-        self.default_step_size = kwds.get('chunksize', 1000)  # initial guess
+        self.default_step_size = kwds.get('chunksize', 100)  # initial guess
         openf=open
         if filename.endswith('.bz2'):
             openf=BZ2File
@@ -55,9 +58,28 @@ class VECLoader(DataFrameModule):
         self.f = openf(filename)
         # When created with a specified chunksize, it returns the parser
         self._rows_read = 0
+        self._csr_matrix = None
 
     def rows_read():
         return self._rows_read
+
+    def csr_matrix(self):
+        if self._csr_matrix is None:
+            docs = self.df()['document']
+            dv=DictVectorizer()
+            #TODO: race condition when using threads, cleanup_run can reset between
+            #setting the value here and returning it at the next instruction
+            self._csr_matrix = dv.fit_transform(docs)
+        return self._csr_matrix
+
+    def cleanup_run(self, run_number):
+        self._csr_matrix = None
+        super(VECLoader, self).cleanup_run(self, run_number)
+
+    def get_data(self, name):
+        if name=='csr_matrix':
+            return csr_matrix()
+        return super(VECLoader, this).get_data(name)
 
     def run_step(self,run_number,step_size, howlong):
         if self.f is None:
@@ -76,7 +98,7 @@ class VECLoader(DataFrameModule):
                     termfrx = self._dtype(match.group(2))
                     doc[termidx] = termfrx
                 if len(doc)!=0:
-                    dataset.append(pd.Series(doc) )
+                    dataset.append(doc)
         except StopIteration:
             self.f.close()
             self.f = None
@@ -85,9 +107,9 @@ class VECLoader(DataFrameModule):
         if creates==0:
             raise StopIteration()
 
-
         df = pd.DataFrame({'document': dataset,
                            self.UPDATE_COLUMN: self.EMPTY_TIMESTAMP})
+        
         self._rows_read += creates
         if self._df is not None:
             self._df = self._df.append(df,ignore_index=True)

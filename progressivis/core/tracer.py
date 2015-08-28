@@ -1,3 +1,5 @@
+from __future__ import with_statement
+
 import pandas as pd
 import numpy as np
 import os
