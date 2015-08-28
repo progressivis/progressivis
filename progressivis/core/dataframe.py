@@ -26,9 +26,9 @@ class DataFrameSlot(Slot):
         if self.changes:
             self.changes.buffer_created()
 
-    def next_buffered(self, n):
+    def next_buffered(self, n, as_ranges=False):
         if self.changes:
-            return self.changes.next_buffered(n)
+            return self.changes.next_buffered(n, as_ranges)
         else:
             return NIL
 
@@ -79,6 +79,13 @@ class DataFrameSlot(Slot):
         else:
             return None
 
+    @property
+    def processed(self):
+        if self.changes:
+            return self.changes.processed
+        else:
+            return None
+ 
 
 class DataFrameModule(Module):
     def __init__(self, dataframe_slot='df', **kwds):

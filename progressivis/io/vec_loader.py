@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from progressivis import DataFrameModule, SlotDescriptor
-from progressivis.metrics.pairwise import normalize
+from progressivis.core.changemanager import ranges
 
 import pandas as pd
 import numpy as np
@@ -63,7 +63,7 @@ class VECLoader(DataFrameModule):
     def rows_read():
         return self._rows_read
 
-    def csr_matrix(self):
+    def toarray(self):
         if self._csr_matrix is None:
             docs = self.df()['document']
             dv=DictVectorizer()
@@ -74,12 +74,12 @@ class VECLoader(DataFrameModule):
 
     def cleanup_run(self, run_number):
         self._csr_matrix = None
-        super(VECLoader, self).cleanup_run(self, run_number)
+        super(VECLoader, self).cleanup_run(run_number)
 
     def get_data(self, name):
-        if name=='csr_matrix':
-            return csr_matrix()
-        return super(VECLoader, this).get_data(name)
+        if name=='array':
+            return self.toarray()
+        return super(VECLoader, self).get_data(name)
 
     def run_step(self,run_number,step_size, howlong):
         if self.f is None:

@@ -6,12 +6,35 @@ import numpy as np
 import logging
 logger = logging.getLogger(__name__)
 
+def ranges(array):
+    """Convert an array of indices into a list of ranges (pairs).
+
+>>> lst = [1, 5, 6, 7, 12, 15, 16, 17, 18, 30]
+>>> print repr(ranges(lst))
+[(1, 1), (5, 7), (12, 12), (15, 18), (30, 30)]
+    """
+    s = e = None
+    r = []
+    array.sort()
+    for i in array:
+        if s is None:
+            s = e = i
+        elif i == e or i == e + 1:
+            e = i
+        else:
+            r.append((s, e))
+            s = e = i
+    if s is not None:
+        r.append((s, e))
+    return r
+
 class ChangeManager(object):
     """Manage changes that accured in a DataFrame between runs.
     """
     def __init__(self, last_run=None):
         self.last_run = last_run
         self.index = pd.Index([])
+        self.processed = NIL
         self.updated = NIL
         self.created = NIL
         self.deleted = NIL
@@ -22,6 +45,7 @@ class ChangeManager(object):
         logger.info('Reseting history')
         self.last_run = None
         self.index = pd.Index([])
+        self.processed = NIL
         self.updated = NIL
         self.created = NIL
         self.deleted = NIL
@@ -36,10 +60,12 @@ class ChangeManager(object):
         #TODO flush buffer containing data invalidated since the last run.
         if self.last_run is None:
             self.index = df.index
+            self.processed = NIL            
             self.updated = self.index.values
             self.created = self.updated
             self.deleted = NIL
         else:
+            self.processed = np.where(uc <= self.last_run)[0]
             self.updated = np.where(uc > self.last_run)[0]
             self.created = df.index.difference(self.index).values
             self.deleted = self.index.difference(df.index).values
@@ -62,7 +88,7 @@ class ChangeManager(object):
             if len(self.created) != 0:
                 self.buffer = np.hstack([self.buffer, self.created])
 
-    def next_buffered(self, n):
+    def next_buffered(self, n, as_ranges=False):
         if len(self.buffer)==0:
             logger.info('Returning null buffer')
             return NIL
@@ -72,6 +98,8 @@ class ChangeManager(object):
         else:
             ret, self.buffer = np.split(self.buffer, [n])
         logger.info('Returning buffer of %d/%d', len(ret), len(self.buffer))
+        if as_ranges:
+            return ranges(ret)
         return ret
 
     def is_buffer_empty(self):
