@@ -15,6 +15,7 @@
 .pydevproject
 .settings
 .tmp*
+.ipynb_checkpoints
 
 /bin
 /build
@@ -30,3 +31,4 @@
 /data
 /dist
 *.egg-info
+/*.ipynb
