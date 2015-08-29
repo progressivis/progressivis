@@ -477,9 +477,12 @@ class Module(object):
         
         run_step_ret = {'reads': 0, 'updates': 0, 'creates': 0}
         tracer.start_run(now,run_number)
+        step = 0
         while self._start_time < self._end_time:
             remaining_time = self._end_time-self._start_time
             step_size = self.predict_step_size(np.min([max_time, remaining_time]))
+            if step_size==0 and step==0:
+                step_size=1
             logger.info('step_size=%d in module %s', step_size, self.pretty_typename())
             if step_size == 0:
                 logger.info('step_size of 0 in module %s', self.pretty_typename())
@@ -514,6 +517,7 @@ class Module(object):
                 tracer.run_stopped(now,run_number)
                 break
             self._start_time = now
+            step += 1
         self.state=next_state
         if self.state==Module.state_zombie:
             logger.info('Module %s zombie', self.pretty_typename())

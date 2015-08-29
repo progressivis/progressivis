@@ -61,14 +61,14 @@ class PairwiseDistances(DataFrameModule):
             m = (-n + np.sqrt(n*n + 4*step_size)) / 2.0
             m = int(np.max([1.0, m]))
 
-        if m<=1:
-            import pdb
-            pdb.set_trace()
-        else:
-            print 'm=%d'%m
-
         indices = dfslot.next_buffered(m)
         m = len(indices)
+        # if step_size==1:
+        #     import pdb
+        #     pdb.set_trace()
+        # else:
+        #     print 'm=%d'%m
+        
         i = None
         j = None
         Si = self._df
@@ -79,6 +79,7 @@ class PairwiseDistances(DataFrameModule):
             logger.info('Using array instead of DataFrame columns')
             if Si is not None:
                 i = array[Si.index]
+                assert len(i)==array.shape[0]
             j = array[indices]
         if j is None:
             if self.columns is None:
@@ -93,7 +94,9 @@ class PairwiseDistances(DataFrameModule):
                 raise
             if Si is not None:
                 i = rows.loc[Si.index]
+                assert len(i)==len(Si.index)
             j = rows.loc[indices]
+            assert len(j)==len(indices)
 
         Sj = pairwise_distances(j, metric=self._metric, n_jobs=self._n_jobs)
         if Si is None:
@@ -108,4 +111,4 @@ class PairwiseDistances(DataFrameModule):
             index = Si.index.append(df.index[indices])
         self._df = pd.DataFrame(S,index=index)
         return self._return_run_step(dfslot.next_state(),
-                                     steps_run=step_size, reads=n+m, updates=m)
+                                     steps_run=step_size, reads=step_size, updates=step_size)
