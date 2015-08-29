@@ -31,13 +31,16 @@ class ScatterPlot(DataFrameModule):
         super(ScatterPlot, self).__init__(quantum=0.1, **kwds)
         self.x_column = x_column
         self.y_column = y_column
+        self._auto_update = False
+        self.image_source = None
+        self.scatter_source = None
 
     def df(self):
         return self.get_input_slot('df').data()
 
     def create_scatterplot_modules(self, wait=None, x_stats=None, y_stats=None, sample=None, merge=None, histogram2d=None):
         if wait is None:
-            wait = Wait(reads=10000,group=self.id)
+            wait = Wait(reads=0,group=self.id)
         if x_stats is None:
             x_stats = Stats(self.x_column, min_column='xmin', max_column='xmax',group=self.id)
         x_stats.input.df = wait.output.out
@@ -88,6 +91,8 @@ class ScatterPlot(DataFrameModule):
         button.on_click(self.update)
 
     def update(self, b):
+        if self.image_source is None:
+            return
         #TODO use data from the same run
         histo_df = self.get_input_slot('histogram2d').data()
         row = None
@@ -108,3 +113,16 @@ class ScatterPlot(DataFrameModule):
             self.scatter_source.data['x'] = df[self.x_column]
             self.scatter_source.data['y'] = df[self.y_column]
             self.scatter_source.push_notebook()
+
+    @property
+    def auto_update(self):
+        return self._auto_update
+
+    @auto_update.setter
+    def auto_update(self, value):
+        self._auto_update = value
+
+    def cleanup_run(self, run_number):
+        super(ScatterPlot, self).cleanup_run(run_number)
+        if self._auto_update:
+            self.update(None)

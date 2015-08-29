@@ -49,7 +49,7 @@ class MTScheduler(Scheduler):
             raise ProgressiveError('Trying to start scheduler thread inside scheduler thread')
 
     def _after_run(self):
-        print "After run %d" % self._run_number
+        #print "After run %d" % self._run_number
         logger.debug("After run %d" % self._run_number)
 
     def stop(self):
