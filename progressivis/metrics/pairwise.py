@@ -61,6 +61,9 @@ class PairwiseDistances(DataFrameModule):
             m = (-n + np.sqrt(n*n + 4*step_size)) / 2.0
             m = int(np.max([1.0, m]))
 
+        #import pdb
+        #pdb.set_trace()
+
         indices = dfslot.next_buffered(m)
         i = None
         j = None
