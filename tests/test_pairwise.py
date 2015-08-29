@@ -13,17 +13,17 @@ def print_len(x):
         print len(x)
 
 class TestPairwiseDistances(unittest.TestCase):
-    def setUp(self):
-        log_level(logging.INFO,'progressivis')
+#    def setUp(self):
+#        log_level(logging.INFO,'progressivis')
 
-# def test_vec_distances(self):
-    #     vec=VECLoader(get_dataset('warlogs'))
-    #     dis=PairwiseDistances(metric='cosine')
-    #     dis.input.df = vec.output.df
-    #     dis.input.array = vec.output.array
-    #     cnt = Every(proc=print_len,constant_time=True)
-    #     cnt.input.inp = dis.output.df
-    #     vec.start()
+    def test_vec_distances(self):
+        vec=VECLoader(get_dataset('warlogs'))
+        dis=PairwiseDistances(metric='cosine')
+        dis.input.df = vec.output.df
+        dis.input.array = vec.output.array
+        cnt = Every(proc=print_len,constant_time=True)
+        cnt.input.inp = dis.output.df
+        vec.start()
 
     def test_csv_distances(self):
         scheduler=Scheduler()
