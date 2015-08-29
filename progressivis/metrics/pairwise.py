@@ -85,7 +85,7 @@ class PairwiseDistances(DataFrameModule):
                 logger.error('While extracting columns', e)
                 raise
             if Si is not None:
-                i = df[Si.index]
+                i = rows.loc[Si.index]
             j = rows.loc[indices]
 
         Sj = pairwise_distances(j, metric=self._metric, n_jobs=self._n_jobs)
