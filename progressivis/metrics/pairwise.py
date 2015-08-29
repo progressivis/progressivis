@@ -19,7 +19,7 @@ class PairwiseDistances(DataFrameModule):
                         [SlotDescriptor('df', type=pd.DataFrame),
                          SlotDescriptor('array', required=False)])
         super(PairwiseDistances, self).__init__(**kwds)
-        self.default_step_size = kwds.get('step_Size', 100)  # initial guess        
+        self.default_step_size = kwds.get('step_Size', 100)  # initial guess
         self._metric = metric
         self._n_jobs = n_jobs
         if (metric not in _VALID_METRICS and
@@ -61,10 +61,14 @@ class PairwiseDistances(DataFrameModule):
             m = (-n + np.sqrt(n*n + 4*step_size)) / 2.0
             m = int(np.max([1.0, m]))
 
-        #import pdb
-        #pdb.set_trace()
+        if m<=1:
+            import pdb
+            pdb.set_trace()
+        else:
+            print 'm=%d'%m
 
         indices = dfslot.next_buffered(m)
+        m = len(indices)
         i = None
         j = None
         Si = self._df
@@ -104,4 +108,4 @@ class PairwiseDistances(DataFrameModule):
             index = Si.index.append(df.index[indices])
         self._df = pd.DataFrame(S,index=index)
         return self._return_run_step(dfslot.next_state(),
-                                     steps_run=step_size, reads=m+n, updates=m)
+                                     steps_run=step_size, reads=n+m, updates=m)
