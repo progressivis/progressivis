@@ -18,7 +18,7 @@ class PairwiseDistances(DataFrameModule):
         self._add_slots(kwds,'input_descriptors',
                         [SlotDescriptor('df', type=pd.DataFrame),
                          SlotDescriptor('array', required=False)])
-        super(PairwiseDistances, self).__init__(**kwds)
+        super(PairwiseDistances, self).__init__(dataframe_slot='distance', **kwds)
         self.default_step_size = kwds.get('step_Size', 100)  # initial guess
         self._metric = metric
         self._n_jobs = n_jobs
