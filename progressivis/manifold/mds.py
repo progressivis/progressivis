@@ -81,9 +81,8 @@ class MDS(DataFrameModule):
             S = df.loc[index,index]
             
             new_df = barycenter(self.df_, S[self._df.index, new_index], 5)
-            #new_df = df.DataFrame(new_points, index=new_index)
             new_df[self.UPDATE_COLUMN] = run_number
-            self.df_ = self._df.concat(new_df) # don't ignore index
+            self.df_ = self._df.append(new_df, ignore_index=True) 
             mds = MDS(2, max_iter=p.max_iter, dissimilarity="precomputed", n_init=1)
             Y, stress = mds.fit_transform(S, init=self.df_[['x','y']])
             self._df['x'] = Y[0]

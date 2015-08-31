@@ -14,17 +14,17 @@ def print_len(x):
         print len(x)
 
 class TestMDS(unittest.TestCase):
-#    def setUp(self):
-#        log_level(logging.INFO,'progressivis')
+    def setUp(self):
+        log_level(logging.INFO,'progressivis')
 
-    def test_MDS_vec(self):
-        vec=VECLoader(get_dataset('warlogs'))
-        dis=PairwiseDistances(metric='cosine')
-        dis.input.df = vec.output.df
-        dis.input.array = vec.output.array
-        cnt = Every(proc=print_len,constant_time=True)
-        cnt.input.inp = dis.output.df
-        vec.start()
+    # def test_MDS_vec(self):
+    #     vec=VECLoader(get_dataset('warlogs'))
+    #     dis=PairwiseDistances(metric='cosine')
+    #     dis.input.df = vec.output.df
+    #     dis.input.array = vec.output.array
+    #     cnt = Every(proc=print_len,constant_time=True)
+    #     cnt.input.inp = dis.output.df
+    #     vec.start()
 
     def test_MDS_csv(self):
         scheduler=Scheduler()
