@@ -10,6 +10,22 @@ from sklearn.manifold.mds import *
 import logging
 logger = logging.getLogger(__name__)
 
+def barycenter(df, Pij, p):
+    """Return m points at the barycenter of their p closest neighbors."""
+    import pdb
+    pdb.set_trace()
+    n, m = Pij.shape
+    closest = Pij.argsort()[:,:p] # Take the p closest
+    w = Pij[np.arange(Pij.shape[0])[:,np.newaxis],closest]
+    w /= w.sum(axis=0)
+    x = df['x']
+    y = df['y']
+    Y = pd.DataFrame({'x': [0.0]*m, 'y': [0.0]*m})
+    for k in range(0,m):
+        Y.at[k,'x'] = np.dot(x[c[k]],w[k])
+        Y.at[k,'y'] = np.dot(y[c[k]],w[k])
+    return Y
+
 class MDS(DataFrameModule):
     schema = [('x', np.dtype(float), np.nan),
               ('y', np.dtype(float), np.nan),
@@ -55,12 +71,17 @@ class MDS(DataFrameModule):
         else:
             m = len(self._df)
             if (m+step_size) >= n:
+                old_index = self._df.index
                 index=df.index
+                new_index = df.index[m:]
+                m = len(new_index)
             else:
                 index=df.index[:m+step_size]
+                new_index = df.index[m:m+step_size]
             S = df.loc[index,index]
-            new_points = self.barycenter(self.df_, S, index)
-            new_df = df.DataFrame(new_points, index=df.index[m:step_size])
+            
+            new_df = barycenter(self.df_, S[self._df.index, new_index], 5)
+            #new_df = df.DataFrame(new_points, index=new_index)
             new_df[self.UPDATE_COLUMN] = run_number
             self.df_ = self._df.concat(new_df) # don't ignore index
             mds = MDS(2, max_iter=p.max_iter, dissimilarity="precomputed", n_init=1)
@@ -70,4 +91,5 @@ class MDS(DataFrameModule):
         next_state = state_ready if (len(self._df) < n) else state_blocked
         return self._return_run_step(next_state,
                                      steps_run=len(index), reads=len(index), updates=len(self._df))
-            
+
+    
