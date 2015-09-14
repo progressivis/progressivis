@@ -9,28 +9,30 @@ from progressivis.datasets import get_dataset
 import pandas as pd
 from pprint import pprint
 
-class TestMerge(unittest.TestCase):
-    def setUp(self):
-        self.scheduler = Scheduler()
+def print_len(x):
+    if x is not None:
+        print len(x)
 
+
+class TestMerge(unittest.TestCase):
     def test_merge(self):
-        csv_module = CSVLoader(get_dataset('bigfile'),
-                               id='test_read_csv',
-                               index_col=False,header=None,chunksize=3000,
-                               scheduler=self.scheduler)
-        module1=Stats(1,id='test_stats_1', scheduler=self.scheduler)
-        connect(csv_module, 'df', module1, 'df')
-        module2=Stats(2,id='test_stats_2', scheduler=self.scheduler)
-        connect(csv_module, 'df', module2, 'df')
-        merge=Merge(id='merge', scheduler=self.scheduler)
-        connect(module1, 'stats', merge, 'df')
-        connect(module2, 'stats', merge, 'df')
-        connect(merge, 'df',
-                Print(id='print', scheduler=self.scheduler), 'inp')
-        self.scheduler.start()
-        s = merge.trace_stats(max_runs=1)
+        s=Scheduler()
+        csv = CSVLoader(get_dataset('bigfile'), index_col=False,header=None,scheduler=s)
+        stat1=Stats(1, scheduler=s)
+        stat1.input.df = csv.output.df
+        stat2=Stats(2, scheduler=s)
+        stat2.input.df = csv.output.df
+        merge=Merge(scheduler=s)
+        merge.input.df = stat1.output.stats
+        merge.input.df = stat2.output.stats
+        pr=Print(scheduler=s)
+        pr.input.inp = merge.output.df
+        prlen = Every(proc=print_len, constant_time=True, scheduler=s)
+        prlen.input.inp = csv.output.df
+        s.start()
+        res = merge.trace_stats(max_runs=1)
         pd.set_option('display.expand_frame_repr', False)
-        print s
+        print res
 
 if __name__ == '__main__':
     unittest.main()

@@ -23,6 +23,19 @@ class Scheduler(object):
         self._start = None
         self._run_number = 0
         self._run_number_time =  {}
+        self._tick_proc = None
+
+    def clear(self):
+        self._modules = dict()
+        self._module = AttributeDict(self._modules)
+        self._running = False
+        self._runorder = None
+        self._stopped = False
+        self._valid = False
+        self._start = None
+        self._run_number = 0
+        self._run_number_time =  {}
+        self._tick_proc = None
 
     def timer(self):
         if self._start is None:
@@ -71,7 +84,8 @@ class Scheduler(object):
     def _after_run(self):
         pass
 
-    def start(self):
+    def start(self, tick_proc=None):
+        self._tick_proc = tick_proc
         self.run()
 
     def run(self):
@@ -89,6 +103,8 @@ class Scheduler(object):
             module.starting()
         while len(modules)!=0 and not self._stopped:
             self._run_number += 1
+            if self._tick_proc:
+                self._tick_proc(self, self._run_number)
             self._before_run()
             for module in modules:
                 if not module.is_ready():

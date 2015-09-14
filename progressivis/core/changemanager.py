@@ -28,80 +28,152 @@ def ranges(array):
         r.append((s, e))
     return r
 
-class ChangeManager(object):
-    """Manage changes that accured in a DataFrame between runs.
-    """
-    def __init__(self, last_run=None):
-        self.last_run = last_run
-        self.index = pd.Index([])
-        self.updated = NIL
-        self.created = NIL
-        self.deleted = NIL
-        self.buffer = NIL
-        self.buffered = False
+class ChangeManagerBase(object):
+    def __init__(self):
+        self.reset()
 
     def reset(self):
         logger.info('Reseting history')
         self.last_run = None
         self.index = pd.Index([])
-        self.updated = NIL
-        self.created = NIL
-        self.deleted = NIL
-        self.buffer = NIL
-        self.buffered = False
+        self._buffer = None
+        self._buffered = False
+        self._created = None
 
     def update(self, run_number, df):
-        if run_number <= self.last_run:
-            return
-        uc = df[Module.UPDATE_COLUMN]
-        self.buffered = False
-        #TODO flush buffer containing data invalidated since the last run.
-        if self.last_run is None:
-            self.index = df.index
-            self.updated = self.index.values
-            self.created = self.updated
-            self.deleted = NIL
-        else:
-            self.updated = np.where(uc > self.last_run)[0]
-            self.created = df.index.difference(self.index).values
-            self.deleted = self.index.difference(df.index).values
-            self.index = df.index
-        self.last_run = run_number
-        logger.info('Updating for run_number %d: updated:%d/created:%d/deleted:%d',
-                    run_number, len(self.updated), len(self.created), len(self.deleted))
+        raise ProgressiveError('Update not implemented')
 
-    def buffer_updated(self):
-        if not self.buffered:
-            logger.info('Filling-up buffer for updated')
-            self.buffered = True
-            if len(self.updated)!=0:
-                self.buffer = np.hstack([self.buffer, self.updated])
+    def buffer(self):
+        raise ProgressiveError('buffer not implemented')
 
-    def buffer_created(self):
-        if not self.buffered:
-            logger.info('Filling-up buffer for created')
-            self.buffered = True
-            if len(self.created) != 0:
-                self.buffer = np.hstack([self.buffer, self.created])
-
-    def next_buffered(self, n, as_ranges=False):
-        if len(self.buffer)==0:
-            logger.info('Returning null buffer')
-            return NIL
-        if n >= len(self.buffer):
-            ret = self.buffer
-            self.buffer = NIL
-        else:
-            ret, self.buffer = np.split(self.buffer, [n])
-        logger.info('Returning buffer of %d/%d', len(ret), len(self.buffer))
-        if as_ranges:
-            return ranges(ret)
-        return ret
-
+    def next_buffered(self, n, as_ranges=True):
+        raise ProgressiveError('next_buffered not implemented')
+        
     def is_buffer_empty(self):
-        return len(self.buffer)==0
+        raise ProgressiveError('is_buffer_empty not implemented')
+
+    def next_state(self):
+        raise ProgressiveError('next_state not implemented')
 
     def next_state(self):
         if self.is_buffer_empty():
             return Module.state_blocked
         return Module.state_ready
+
+class SimpleChangeManager(ChangeManagerBase):
+    def __init__(self):
+        super(SimpleChangeManager,self).__init__()
+    
+    def reset(self):
+        super(SimpleChangeManager,self).reset()
+        self._buffer = slice(0, 0)
+
+    def update(self, run_number, df):
+        if self.last_run is not None and run_number <= self.last_run:
+            return True
+        uc = df[Module.UPDATE_COLUMN]
+        self._buffered = False
+
+        nlen = len(df)
+        if self.last_run is None:
+            self._created = slice(0, nlen)
+        else:
+            olen = len(self.index)
+            end = slice(olen,olen+nlen)
+            if not (uc[end] > self.last_run).all():
+                return False # something else happened
+            self._created = slice(self._created.start, end.stop)
+        self.index = df.index
+        self.last_run = run_number
+        logger.info('Updating for run_number %d: created:%s',
+                    run_number, self._created)
+        self.buffer()
+        return True
+
+    def buffer(self):
+        if self._buffered:
+            return
+        self._buffered = True
+        if self._created is None or self._created.start==self._created.stop:
+            return
+        self._buffer = slice(self._buffer.start, self._created.stop)
+
+    def next_buffered(self, n, as_ranges=False):
+        if (self._buffer.start+n) >= self._buffer.stop:
+           ret = self._buffer
+        else:
+            ret = slice(self._buffer.start, self._buffer.start+n)
+        self._buffer = slice(ret.stop, self._buffer.stop)
+        return ret
+
+    def is_buffer_empty(self):
+        return self._buffer.start >= self._buffer.stop
+    
+
+class ChangeManager(ChangeManagerBase):
+    """Manage changes that accured in a DataFrame between runs.
+    """
+    def __init__(self):
+        super(ChangeManager,self).__init__() # calls reset()
+
+    def reset(self):
+        super(ChangeManager,self).reset()
+        self._updated = NIL
+        self._created = NIL
+        self._deleted = NIL
+        self._buffer = NIL
+
+    def update(self, run_number, df):
+        if self.last_run is not None and run_number <= self.last_run:
+            return True
+        uc = df[Module.UPDATE_COLUMN]
+        self._buffered = False
+        #TODO flush buffer containing data invalidated since the last run.
+        if self.last_run is None:
+            self.index = df.index
+            self._updated = self.index.values
+            self._created = self._updated
+            self._deleted = NIL
+        else:
+            self._updated = np.where(uc > self.last_run)[0]
+            self._created = df.index.difference(self.index).values
+            self._deleted = self.index.difference(df.index).values
+            self.index = df.index
+        self.last_run = run_number
+        logger.info('Updating for run_number %d: updated:%d/created:%d/deleted:%d',
+                    run_number, len(self._updated), len(self._created), len(self._deleted))
+        return True
+
+    def buffer_updated(self):
+        if self._buffered:
+            return
+        logger.info('Filling-up buffer for updated')
+        self._buffered = True
+        if len(self._updated)!=0:
+            self._buffer = np.hstack([self._buffer, self._updated])
+
+    def buffer(self):
+        if self._buffered:
+            return
+        logger.info('Filling-up buffer for created')
+        self._buffered = True
+        if len(self._created) != 0:
+            self._buffer = np.hstack([self._buffer, self._created])
+
+    def next_buffered(self, n, as_ranges=False):
+        if len(self._buffer)==0:
+            logger.info('Returning null buffer')
+            return NIL
+        if n >= len(self._buffer):
+            ret = self._buffer
+            self._buffer = NIL
+        else:
+            ret, self._buffer = np.split(self._buffer, [n])
+        logger.info('Returning buffer of %d/%d', len(ret), len(self._buffer))
+        if as_ranges:
+            return ranges(ret)
+        return ret
+
+    def is_buffer_empty(self):
+        return len(self._buffer)==0
+

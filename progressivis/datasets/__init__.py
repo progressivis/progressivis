@@ -2,7 +2,7 @@ import os
 
 from progressivis import ProgressiveError
 
-def get_dataset(name):
+def get_dataset(name, **kwds):
     if not os.path.isdir('data'):
         os.mkdir('data')
     if name=='bigfile':

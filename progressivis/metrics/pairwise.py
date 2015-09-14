@@ -35,40 +35,21 @@ class PairwiseDistances(DataFrameModule):
     def run_step(self,run_number,step_size,howlong):
         dfslot = self.get_input_slot('df')
         df = dfslot.data()
-        dfslot.update(run_number, df)
-        if len(dfslot.deleted) or len(dfslot.updated) > len(dfslot.created):
+        if not dfslot.update(run_number, df):
             dfslot.reset()
             logger.info('Reseting history because of changes in the input df')
+            if not dfslot.update(run_number, df):
+                raise ProgressiveError('Problem updating changemanager')
             #TODO: be smarter with changed values
-        dfslot.buffer_created()
 
-        len_b = len(dfslot.created)
+        len_b = (dfslot.last_index)
         n = len(df)-len_b
 
-        # We have the old matrix Si of size (n), we want to complete it with
-        # two sub matrices, Sij and Sj of length (m).
-        # We are given a "budget" of step_size (s) operations
-        # See how many new rows we can compute with our budget.
-        # These will be the (j) new rows
-        # We need to comput Sij, which will take n*m operations
-        # and Sj which will take m*m, so we search m for n*m + m*m = s
-        # m^2 + n*m -s = 0, a=1, b=n, c=-s, solution is -b +- sqrt(b^2-4ac)/2a
-        # The only positive solution is -n + sqrt(n^2+4s) / 2
-
-        if n==0:
-            m = int(np.sqrt(step_size))
-        else:
-            m = (-n + np.sqrt(n*n + 4*step_size)) / 2.0
-            m = int(np.max([1.0, m]))
-
-        indices = dfslot.next_buffered(m)
-        m = len(indices)
-        # if step_size==1:
-        #     import pdb
-        #     pdb.set_trace()
-        # else:
-        #     print 'm=%d'%m
+        m = step_size
         
+        indices = dfslot.next_buffered(m)
+        m = (indices.stop-indices.start)
+
         i = None
         j = None
         Si = self._df
@@ -79,7 +60,6 @@ class PairwiseDistances(DataFrameModule):
             logger.info('Using array instead of DataFrame columns')
             if Si is not None:
                 i = array[Si.index]
-                assert len(i)==array.shape[0]
             j = array[indices]
         if j is None:
             if self.columns is None:
@@ -95,8 +75,8 @@ class PairwiseDistances(DataFrameModule):
             if Si is not None:
                 i = rows.loc[Si.index]
                 assert len(i)==len(Si.index)
-            j = rows.loc[indices]
-            assert len(j)==len(indices)
+            j = rows.iloc[indices]
+            assert len(j)==(indices.stop-indices.start)
 
         Sj = pairwise_distances(j, metric=self._metric, n_jobs=self._n_jobs)
         if Si is None:

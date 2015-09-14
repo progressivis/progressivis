@@ -19,13 +19,14 @@ class TestScatterPlot(unittest.TestCase):
 #        log_level(logging.INFO,'progressivis')
 
     def test_scatterplot(self):
-        csv    = CSVLoader(get_dataset('bigfile'),index_col=False,header=None)
-        sp = ScatterPlot(x_column=1, y_column=2)
+        s=Scheduler()
+        csv = CSVLoader(get_dataset('bigfile'),index_col=False,header=None,scheduler=s)
+        sp = ScatterPlot(x_column=1, y_column=2, scheduler=s)
         wait = sp.create_scatterplot_modules()
         wait.input.inp = csv.output.df
-        cnt = Every(proc=print_len,constant_time=True)
+        cnt = Every(proc=print_len,constant_time=True,scheduler=s)
         cnt.input.inp = csv.output.df
-        prt = Print()
+        prt = Print(scheduler=s)
         prt.input.inp = sp.merge.output.df
         csv.scheduler().start()
 

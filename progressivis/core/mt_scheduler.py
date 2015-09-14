@@ -1,7 +1,9 @@
 """Multi-Thread Scheduler, meant to run in its own thread."""
 from scheduler import Scheduler
 import threading
-import sys
+import sys, io
+from tempfile import mkstemp
+
 from contextlib import contextmanager
 
 import logging
@@ -20,6 +22,18 @@ class MTScheduler(Scheduler):
         if not isinstance(Scheduler.default, MTScheduler):
             Scheduler.default = MTScheduler()
 
+    @staticmethod
+    def log_level(level=logging.DEBUG, package='progressivis'):
+        logging.getLogger('progressivis').addHandler(logging.NullHandler())
+        fd, filename = mkstemp(prefix='progressive', suffix='.log')
+        stream = io.FileIO(fd, mode='w')
+        ch = logging.StreamHandler(stream=stream)
+        ch.setLevel(level)
+        l=logging.getLogger(package)
+        l.addHandler(ch)
+        l.setLevel(level)
+        l.propagate = False
+
     def collect_dependencies(self, only_required=False):
         with self.lock:
             return super(MTScheduler,self).collect_dependencies(only_required)
@@ -36,13 +50,14 @@ class MTScheduler(Scheduler):
         logger.debug("Before run %d" % self._run_number)
 
 
-    def start(self):
+    def start(self, tick_proc=None):
         if self.thread is None:
             self.thread = threading.Thread(target=self.run, name="Progressive Scheduler")
             if hasattr(sys.stdout, 'thread_parent'):
                 self._thread_parent = sys.stdout.thread_parent # capture notebook context
             else:
                 self._thread_parent = None
+            self._tick_proc = tick_proc
             self.thread.start()
             logger.debug('starting thread')
         else:

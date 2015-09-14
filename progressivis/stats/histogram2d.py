@@ -87,24 +87,24 @@ class Histogram2D(DataFrameModule):
                 bounds_changed = True
                 self._bounds = self.update_bounds()
                 xmin, xmax, ymin, ymax = self._bounds
+                logger.info('Updated bounds: %s', self._bounds)
         
-        dfslot.update(run_number, input_df)
-        if bounds_changed or len(dfslot.deleted) or len(dfslot.updated) > len(dfslot.created):
+        if not dfslot.update(run_number, input_df):
             dfslot.reset()
+            if not dfslot.update(run_number, input_df):
+                raise ProgressiveError('Cannot update changemanager')
             self.total_read = 0
 
-        dfslot.buffer_created()
-
         indices = dfslot.next_buffered(step_size)
-        steps = len(indices)
+        steps = (indices.stop-indices.start)
         if steps == 0:
             self._old_histo = old_histo = None # should store the old histo now
             logger.info('Index buffer empty')
-            return self._return_run_step(self.state_blocked, steps_run=steps)
-
+            return self._return_run_step(self.state_blocked, steps_run=steps, reads=steps, updates=steps)
+        logger.info('Read %d rows', steps)
         self.total_read += steps
-        x = input_df.loc[indices, self.x_column]
-        y = input_df.loc[indices, self.y_column]
+        x = input_df.iloc[indices, self.x_column]
+        y = input_df.iloc[indices, self.y_column]
         histo, xedges, yedges = np.histogram2d(y, x,
                                                bins=[p.xbins, p.ybins],
                                                range=[[xmin, xmax],[ymin, ymax]],

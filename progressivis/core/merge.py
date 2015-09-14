@@ -17,7 +17,7 @@ class Merge(DataFrameModule):
 
     def _add_input_slot(self, name):
         self.inputs.append(name)
-        self.input_descriptors[name] = SlotDescriptor(name, type=pd.DataFrame, required=False)
+        self.input_descriptors[name] = SlotDescriptor(name, type=pd.DataFrame, required=True)
         self._input_slots[name] = None
 
     # Magic input slot created 

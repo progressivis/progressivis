@@ -29,6 +29,10 @@ class Heatmap(DataFrameModule):
 
         self._df = self.create_dataframe(Heatmap.schema)
 
+    def predict_step_size(self, duration):
+        # Module sample is constant time (supposedly)
+        return 1
+
     def run_step(self,run_number,step_size,howlong):
         dfslot = self.get_input_slot('array')
         input_df = dfslot.data()

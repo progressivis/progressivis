@@ -2,35 +2,34 @@ from progressivis.core.module import *
 
 import pandas as pd
 
-from progressivis.core.changemanager import ChangeManager
+from progressivis.core.changemanager import SimpleChangeManager, ChangeManager
 
 class DataFrameSlot(Slot):
     def __init__(self, output_module, output_name, input_module, input_name):
         super(DataFrameSlot, self).__init__(output_module, output_name, input_module, input_name)
         self.changes = None
 
-    def update(self, run_number, df):
+    def update(self, run_number, df, simple=True):
         if self.changes is None:
-            self.changes = ChangeManager()
-        self.changes.update(run_number,df)
+            if simple:
+                self.changes = SimpleChangeManager()
+            else:
+                self.changes = ChangeManager()
+        return self.changes.update(run_number,df)
 
     def reset(self):
         if self.changes is not None:
             self.changes.reset()
 
-    def buffer_updated(self):
+    def buffer(self):
         if self.changes:
-            self.changes.buffer_updated()
-
-    def buffer_created(self):
-        if self.changes:
-            self.changes.buffer_created()
+            self.changes.buffer()
 
     def next_buffered(self, n, as_ranges=False):
         if self.changes:
             return self.changes.next_buffered(n, as_ranges)
         else:
-            return NIL
+            return None
 
     def is_buffer_empty(self):
         if self.changes:
@@ -56,28 +55,11 @@ class DataFrameSlot(Slot):
         if self.changes:
             return self.changes.index
         else:
-            return None
+            return []
 
     @property
-    def updated(self):
-        if self.changes:
-            return self.changes.updated
-        else:
-            return None
-
-    @property
-    def created(self):
-        if self.changes:
-            return self.changes.created
-        else:
-            return None
-
-    @property
-    def deleted(self):
-        if self.changes:
-            return self.changes.deleted
-        else:
-            return None
+    def changemanager(self):
+        return self.changes
  
 
 class DataFrameModule(Module):
@@ -136,9 +118,7 @@ class Constant(DataFrameModule):
     def __init__(self, df, **kwds):        
         super(Constant, self).__init__(**kwds)
         self._df = df
-
-    def is_ready(self):
-        return True
+        self.df_[self.UPDATE_COLUMN] = 0
 
     def predict_step_size(self, duration):
         return 1

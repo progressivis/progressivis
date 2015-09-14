@@ -31,17 +31,15 @@ class LinearRegression(DataFrameModule):
     def run_step(self,run_number,step_size,howlong):
         dfslot = self.get_input_slot('df')
         input_df = dfslot.data()
-        dfslot.update(run_number, input_df)
-        if len(dfslot.deleted) or len(dfslot.updated) > len(dfslot.created):
+        if not dfslot.update(run_number, input_df):
             raise ProgressiveError('%s module does not manage updates or deletes', self.__class__.__name__)
-        dfslot.buffer_created()
 
         indices = dfslot.next_buffered(step_size)
-        steps = len(indices)
+        steps = (indices.stop-indices.start)
         if steps == 0:
             return self._return_run_step(self.state_blocked, steps_run=steps)
-        x = input_df.loc[indices, self._x]
-        y = input_df.loc[indices, self._y]
+        x = input_df.iloc[indices, self._x]
+        y = input_df.iloc[indices, self._y]
         df = self._df
         sum_x     = df.at[0, 'sum_x']     + x.sum() 
         sum_x_sqr = df.at[0, 'sum_x_sqr'] + (x*x).sum()

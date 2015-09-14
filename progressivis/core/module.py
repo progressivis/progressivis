@@ -78,6 +78,8 @@ class Module(object):
         if id is None:
             id = scheduler.generate_id(self.pretty_typename())
 
+        predictor.id = id
+
         # always present
         output_descriptors = output_descriptors + [SlotDescriptor(Module.TRACE_SLOT, type=pd.DataFrame, required=False)]
         
@@ -471,21 +473,22 @@ class Module(object):
 
         self._update_params(run_number)
 
-        step_size = np.ceil(self.default_step_size*quantum)
+        #step_size = np.ceil(self.default_step_size*quantum)
         #TODO Forcing 4 steps, but I am not sure, maybe change when the predictor improves
         max_time = quantum / 4.0
         
         run_step_ret = {'reads': 0, 'updates': 0, 'creates': 0}
         tracer.start_run(now,run_number)
-        step = 0
         while self._start_time < self._end_time:
             remaining_time = self._end_time-self._start_time
+            if remaining_time <=0:
+                logger.info('Late by %d s in module %s', remaining_time, self.pretty_typename())
+                break # no need to try to squeeze anything
+            logger.debug('Time remaining: %f in module %s', remaining_time, self.pretty_typename())
             step_size = self.predict_step_size(np.min([max_time, remaining_time]))
-            if step_size==0 and step==0:
-                step_size=1
-            logger.info('step_size=%d in module %s', step_size, self.pretty_typename())
+            logger.debug('step_size=%d in module %s', step_size, self.pretty_typename())
             if step_size == 0:
-                logger.info('step_size of 0 in module %s', self.pretty_typename())
+                logger.debug('step_size of 0 in module %s', self.pretty_typename())
                 break
             try:
                 tracer.before_run_step(now,run_number)
@@ -513,14 +516,14 @@ class Module(object):
                 assert run_step_ret is not None, "Error: %s run_step_ret not returning a dict" % self.pretty_typename()
                 tracer.after_run_step(now,run_number,**run_step_ret)
                 self.state = next_state
+                logger.debug('Next step is %s in module %s', self.state_name[next_state], self.pretty_typename())
             if self._start_time is None or self.state != Module.state_ready:
                 tracer.run_stopped(now,run_number)
                 break
             self._start_time = now
-            step += 1
         self.state=next_state
         if self.state==Module.state_zombie:
-            logger.info('Module %s zombie', self.pretty_typename())
+            logger.debug('Module %s zombie', self.pretty_typename())
             tracer.terminated(now,run_number)
         tracer.end_run(now,run_number)
         self._stop(run_number)
@@ -542,10 +545,12 @@ class Every(Module):
 
     def run_step(self,run_number,step_size,howlong):
         df = self.get_input_slot('inp').data()
-        steps=len(df) # don't know what the function will do
-        with self.scheduler().stdout_parent():
-            self._proc(df)
-        return self._return_run_step(Module.state_blocked, steps_run=len(df), reads=steps)
+        reads = 0
+        if df is not None:
+            reads=len(df)            
+            with self.scheduler().stdout_parent():
+                self._proc(df)
+        return self._return_run_step(Module.state_blocked, steps_run=1, reads=reads)
 
 def prt(x):
     print x

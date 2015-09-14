@@ -39,24 +39,25 @@ class ScatterPlot(DataFrameModule):
         return self.get_input_slot('df').data()
 
     def create_scatterplot_modules(self, wait=None, x_stats=None, y_stats=None, sample=None, merge=None, histogram2d=None):
+        s=self._scheduler
         if wait is None:
-            wait = Wait(reads=0,group=self.id)
+            wait = Wait(reads=0,group=self.id,scheduler=s)
         if x_stats is None:
-            x_stats = Stats(self.x_column, min_column='xmin', max_column='xmax',group=self.id)
+            x_stats = Stats(self.x_column, min_column='xmin', max_column='xmax',group=self.id,scheduler=s)
         x_stats.input.df = wait.output.out
         if y_stats is None:
-            y_stats = Stats(self.y_column, min_column='ymin', max_column='ymax',group=self.id)
+            y_stats = Stats(self.y_column, min_column='ymin', max_column='ymax',group=self.id,scheduler=s)
         y_stats.input.df = wait.output.out
         if merge is None:
-            merge = Merge(group=self.id)
+            merge = Merge(group=self.id,scheduler=s)
         merge.input.df = x_stats.output.stats
         merge.input.df = y_stats.output.stats # magic input df slot
         if histogram2d is None:
-            histogram2d = Histogram2D(self.x_column, self.y_column,group=self.id);
+            histogram2d = Histogram2D(self.x_column, self.y_column,group=self.id,scheduler=s);
         histogram2d.input.df = wait.output.out
         histogram2d.input._params = merge.output.df
         if sample is None:
-            sample = Sample(n=500,group=self.id)
+            sample = Sample(n=500,group=self.id,scheduler=s)
         sample.input.df = wait.output.out
 
         self.wait = wait
@@ -70,8 +71,11 @@ class ScatterPlot(DataFrameModule):
         self.input.df = sample.output.sample
         return wait
 
+    def predict_step_size(self, duration):
+        return 1
+
     def run_step(self,run_number,step_size,howlong):
-        return self._return_run_step(self.state_blocked, steps_run=1)
+        return self._return_run_step(self.state_blocked, steps_run=1, reads=1, updates=1)
 
 
     x = np.array([0, 10, 50, 90, 100], np.dtype(float))

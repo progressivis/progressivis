@@ -22,6 +22,14 @@ ProgressiVis relies on well known Python libraries, such as
 [Scikit-Learn](http://scikit-learn.org/), and
 [Bokeh](http://bokeh.pydata.org/). 
 
+For now, ProgressiVis is mostly a proof of concept. It has bugs, but
+more importantly, the standard Python libraries are not well-suited to
+progressive execution. In particular, Numpy/SciPy/Pandas are not good
+at growing arrays/DataFrames dynamically, they require the whole array
+to be reconstructructed from scratch. This reconstruction is extremely
+costly currently, but could become almost acceptable with some
+internal changes.
+
 ## Installation
 
 ProgressiVis can be installed with pip with or without virtualenv.

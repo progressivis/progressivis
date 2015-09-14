@@ -57,17 +57,15 @@ class Percentiles(DataFrameModule):
     def run_step(self,run_number,step_size,howlong):
         dfslot = self.get_input_slot('df')
         input_df = dfslot.data()
-        dfslot.update(run_number, input_df)
-        if len(dfslot.deleted) or len(dfslot.updated) > len(dfslot.created):
+        if not dfslot.update(run_number, input_df):
             # should restart from time 0
             raise ProgressiveError('Percentile module does not manage updates or deletes')
-        dfslot.buffer_created()
 
         indices = dfslot.next_buffered(step_size)
-        steps = len(indices)
+        steps = (indices.stop-indices.start)
         if steps == 0:
             return self._return_run_step(self.state_blocked, steps_run=steps)
-        x = input_df.loc[indices, self._column]
+        x = input_df.iloc[indices, self._column]
         self.tdigest.batch_update(x)
         df = self._df
         values = []

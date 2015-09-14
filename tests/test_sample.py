@@ -7,6 +7,7 @@ from progressivis.stats import Sample
 from progressivis.datasets import get_dataset
 
 import pandas as pd
+import numpy as np
 from pprint import pprint
 import logging
 
@@ -17,10 +18,11 @@ class TestSample(unittest.TestCase):
 #        log_level(logging.INFO)
 
     def test_sample(self):
-        csv    = CSVLoader(get_dataset('bigfile'),index_col=False,header=None)
-        smp = Sample(n=10)
+        s = Scheduler()
+        csv = CSVLoader(get_dataset('bigfile'),index_col=False,header=None,scheduler=s)
+        smp = Sample(n=10,scheduler=s)
         smp.input.df = csv.output.df
-        prt = Print()
+        prt = Print(scheduler=s)
         prt.input.inp = smp.output.sample
         csv.scheduler().start()
 

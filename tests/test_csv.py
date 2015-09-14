@@ -4,15 +4,22 @@ from progressivis import *
 from progressivis.io import CSVLoader
 from progressivis.datasets import get_dataset
 
+import logging, sys
+
 class TestProgressiveLoadCSV(unittest.TestCase):
     def setUp(self):
-        self.scheduler = Scheduler()
+        self.logger=logging.getLogger('progressivis.core')
+        self.saved=self.logger.getEffectiveLevel()
+        self.logger.setLevel(logging.DEBUG)
+        ch = logging.StreamHandler(stream=sys.stdout)
+        self.logger.addHandler(ch)
+
+    def tearDown(self):
+        self.logger.setLevel(self.saved)
 
     def test_read_csv(self):
-        module=CSVLoader(get_dataset('bigfile'),
-                         id='test_read_csv',
-                         scheduler=self.scheduler,
-                         index_col=False, header=None)
+        s=Scheduler()
+        module=CSVLoader(get_dataset('bigfile'), index_col=False, header=None, scheduler=s)
         self.assertTrue(module.df() is None)
         module.run(0)
         df = module.df()

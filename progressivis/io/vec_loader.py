@@ -108,7 +108,7 @@ class VECLoader(DataFrameModule):
             raise StopIteration()
 
         df = pd.DataFrame({'document': dataset,
-                           self.UPDATE_COLUMN: self.EMPTY_TIMESTAMP})
+                           self.UPDATE_COLUMN: run_number})
         
         self._rows_read += creates
         if self._df is not None:

@@ -44,7 +44,7 @@ setup(
 
     package_data = {
         # If any package contains *.md, *.txt or *.rst files, include them:
-        '': ['*.md', '*.rst'],
+        'doc': ['*.md', '*.rst'],
     },
 
 )

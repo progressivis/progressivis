@@ -5,6 +5,10 @@ from progressivis.core.slot import SlotDescriptor
 import numpy as np
 import pandas as pd
 
+import logging
+logger = logging.getLogger(__name__)
+
+
 class Stats(DataFrameModule):
     parameters = [('history', np.dtype(int), 3)]
 
@@ -34,22 +38,24 @@ class Stats(DataFrameModule):
     def run_step(self,run_number,step_size,howlong):
         dfslot = self.get_input_slot('df')
         input_df = dfslot.data()
-        dfslot.update(run_number, input_df)
-        if len(dfslot.deleted) or len(dfslot.updated) > len(dfslot.created):
-            raise ProgressiveError('%s module does not manage updates or deletes', self.__class__.__name__)
-        dfslot.buffer_created()
-
-        indices = dfslot.next_buffered(step_size)
-        steps = len(indices)
-        if steps == 0:
-            return self._return_run_step(self.state_blocked, steps_run=steps)
-        x = input_df.loc[indices, self._column]
         df = self._df
         prev = df.index[-1]
-        df.loc[run_number] = [np.nanmin([df.at[prev, self.min_column], x.min()]),
-                              np.nanmax([df.at[prev, self.max_column], x.max()]),
-                              run_number]
-        if len(df) > self.params.history:
-            self._df = df.loc[df.index[-self.params.history:]]
+        prev_max = df.at[prev, self.max_column]
+        prev_min = df.at[prev, self.min_column]
+        if not dfslot.update(run_number, input_df):
+            dfslot.reset()
+            prev_min = prev_max = np.nan
+            if not dfslot.update(run_number, input_df):
+                raise ProgressiveError('%s module cannot update', self.__class__.__name__)
+        indices = dfslot.next_buffered(step_size) # returns a slice
+        logger.debug('next_buffered returned %s', indices)
+        steps = indices.stop - indices.start
+        if steps > 0:
+            x = input_df[self._column].iloc[indices]
+            df.loc[run_number] = [np.nanmin([prev_min, x.min()]),
+                                  np.nanmax([prev_max, x.max()]),
+                                  run_number]
+            if len(df) > self.params.history:
+                self._df = df.loc[df.index[-self.params.history:]]
         return self._return_run_step(dfslot.next_state(),
                                      steps_run=steps, reads=steps, updates=len(self._df))

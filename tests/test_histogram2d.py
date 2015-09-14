@@ -13,6 +13,10 @@ import numpy as np
 import pandas as pd
 from pprint import pprint
 
+def print_len(x):
+    if x is not None:
+        print len(x)
+
 class TestHistogram2D(unittest.TestCase):
 #    def setUp(self):
 #        self.scheduler = MTScheduler()
@@ -23,14 +27,17 @@ class TestHistogram2D(unittest.TestCase):
         StorageManager.default.end()
 
     def test_histogram2d(self):
-        csv = CSVLoader(get_dataset('bigfile'), index_col=False,header=None)
-        histogram2d=Histogram2D(1, 2, xbins=100, ybins=100) # columns are called 1..30
+        s=Scheduler()
+        csv = CSVLoader(get_dataset('bigfile'), index_col=False,header=None,scheduler=s)
+        histogram2d=Histogram2D(1, 2, xbins=100, ybins=100,scheduler=s) # columns are called 1..30
         histogram2d.input.df = csv.output.df
-        heatmap=Heatmap(filename='histo_%03d.png')
+        heatmap=Heatmap(filename='histo_%03d.png',scheduler=s)
         heatmap.input.array = histogram2d.output.histogram2d
-        pr = Print()
+        #pr = Print(scheduler=s)
+        pr = Every(proc=print_len, constant_time=True, scheduler=s)
         #pr.input.inp = heatmap.output.heatmap
-        pr.input.inp = histogram2d.output.histogram2d
+        #pr.input.inp = histogram2d.output.histogram2d
+        pr.input.inp = csv.output.df
         csv.scheduler().start()
         #self.scheduler.thread.join()
         s = histogram2d.trace_stats()

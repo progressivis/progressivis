@@ -53,7 +53,9 @@ class MDS(DataFrameModule):
     def run_step(self,run_number,step_size,howlong):
         dfslot = self.get_input_slot('distance')
         df = dfslot.data()
-        dfslot.update(run_number, df)
+        if not dfslot.update(run_number, df):
+            # don't know what to do
+            raise ProgressiveError('TODO')
         p = self.parameter
         n = len(df)
 

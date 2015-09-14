@@ -8,7 +8,7 @@ __all__ = ["log_level", "ProgressiveError","Scheduler", "MTScheduler",
 
 
 # Magic spell to avoid the message 'No handlers could be found for logger X.Y.Z'
-logging.getLogger('progressivis').addHandler(logging.NullHandler())
+#logging.getLogger('progressivis').addHandler(logging.NullHandler())
 
 def log_level(level=logging.DEBUG, package='progressivis'):
     ch = logging.StreamHandler()
