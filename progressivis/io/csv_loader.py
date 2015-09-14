@@ -23,7 +23,7 @@ class CSVLoader(DataFrameModule):
             raise ProgressiveException('filter parameter should be callable or None')
         self._filter = filter
 
-    def rows_read():
+    def rows_read(self):
         return self._rows_read
 
     def run_step(self,run_number,step_size, howlong):
@@ -43,6 +43,7 @@ class CSVLoader(DataFrameModule):
             logger.info('frame has been filtered out')
         else:
             self._rows_read += creates
+            logger.info('Loaded %d lines', self._rows_read)
             df[self.UPDATE_COLUMN] = run_number
             if self._df is not None:
                 self._df = self._df.append(df,ignore_index=True)
