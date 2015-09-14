@@ -103,8 +103,8 @@ class Histogram2D(DataFrameModule):
             return self._return_run_step(self.state_blocked, steps_run=steps, reads=steps, updates=steps)
         logger.info('Read %d rows', steps)
         self.total_read += steps
-        x = input_df.iloc[indices, self.x_column]
-        y = input_df.iloc[indices, self.y_column]
+        x = input_df.iloc[indices][self.x_column]
+        y = input_df.iloc[indices][self.y_column]
         histo, xedges, yedges = np.histogram2d(y, x,
                                                bins=[p.xbins, p.ybins],
                                                range=[[xmin, xmax],[ymin, ymax]],

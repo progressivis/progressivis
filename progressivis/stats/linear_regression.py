@@ -38,8 +38,8 @@ class LinearRegression(DataFrameModule):
         steps = (indices.stop-indices.start)
         if steps == 0:
             return self._return_run_step(self.state_blocked, steps_run=steps)
-        x = input_df.iloc[indices, self._x]
-        y = input_df.iloc[indices, self._y]
+        x = input_df.iloc[indices][self._x]
+        y = input_df.iloc[indices][self._y]
         df = self._df
         sum_x     = df.at[0, 'sum_x']     + x.sum() 
         sum_x_sqr = df.at[0, 'sum_x_sqr'] + (x*x).sum()

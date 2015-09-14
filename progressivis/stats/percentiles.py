@@ -65,7 +65,7 @@ class Percentiles(DataFrameModule):
         steps = (indices.stop-indices.start)
         if steps == 0:
             return self._return_run_step(self.state_blocked, steps_run=steps)
-        x = input_df.iloc[indices, self._column]
+        x = input_df.iloc[indices][self._column]
         self.tdigest.batch_update(x)
         df = self._df
         values = []
