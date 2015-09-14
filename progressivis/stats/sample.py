@@ -58,5 +58,5 @@ class Sample(DataFrameModule):
             size = np.max(0, math.floor(l*frac))
 
         self._df = input_df.sample(n=size)
-        self._df[self.UPDATE_COLUMN] = run_number
+        self._df.loc[:,self.UPDATE_COLUMN] = pd.Series(run_number, index=self._df.index)
         return self._return_run_step(self.state_blocked, steps_run=1, reads=l, updates=l)
