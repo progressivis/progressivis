@@ -13,10 +13,6 @@ import numpy as np
 import pandas as pd
 from pprint import pprint
 
-def print_len(x):
-    if x is not None:
-        print len(x)
-
 class TestHistogram2D(unittest.TestCase):
 #    def setUp(self):
 #        self.scheduler = MTScheduler()
@@ -34,7 +30,7 @@ class TestHistogram2D(unittest.TestCase):
         heatmap=Heatmap(filename='histo_%03d.png',scheduler=s)
         heatmap.input.array = histogram2d.output.histogram2d
         #pr = Print(scheduler=s)
-        pr = Every(proc=print_len, constant_time=True, scheduler=s)
+        pr = Every(scheduler=s)
         #pr.input.inp = heatmap.output.heatmap
         #pr.input.inp = histogram2d.output.histogram2d
         pr.input.inp = csv.output.df

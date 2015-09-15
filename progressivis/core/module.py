@@ -531,8 +531,12 @@ class Module(object):
             print_exc()
             raise exception
 
+def print_len(x):
+    if x is not None:
+        print len(x)
+
 class Every(Module):
-    def __init__(self, proc, constant_time=False, **kwds):
+    def __init__(self, proc=print_len, constant_time=True, **kwds):
         self._add_slots(kwds,'input_descriptors', [SlotDescriptor('inp')])
         super(Every, self).__init__(**kwds)
         self._proc = proc
@@ -558,3 +562,5 @@ def prt(x):
 class Print(Every):
     def __init__(self, **kwds):
         super(Print, self).__init__(quantum=0.1, proc=prt, constant_time=True, **kwds)
+
+
