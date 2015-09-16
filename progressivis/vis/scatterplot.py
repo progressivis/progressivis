@@ -34,6 +34,7 @@ class ScatterPlot(DataFrameModule):
         self._auto_update = False
         self.image_source = None
         self.scatter_source = None
+#        self.bounds_source = None
 
     def df(self):
         return self.get_input_slot('df').data()
@@ -86,10 +87,14 @@ class ScatterPlot(DataFrameModule):
         self.figure = p
         self.image_source = ColumnDataSource(data=dict(image=self.img))
         self.palette = YlOrRd9[::-1]
-        p.image(image=[self.img], x=[0], y=[0], dw=[100], dh=[100], color_mapper=LinearColorMapper(self.palette), source=self.image_source)
+        p.image(image=[self.img], x=[0], y=[0], dw=[100], dh=[100],
+                color_mapper=LinearColorMapper(self.palette), source=self.image_source)
         self.scatter_source = ColumnDataSource(data={'x': self.x, 'y': self.y})
         p.scatter('x','y',source=self.scatter_source)
         show(self.figure)
+#        self.bounds_source = ColumnDataSource(data={'bx': [0, 0, 100, 100],
+#                                                    'by': [0, 0, 100, 100]})
+#        p.scatter('bx', 'by', source=self.bounds_source)
         button = widgets.Button(description="Refresh!")
         display(button)
         button.on_click(self.update)
@@ -112,11 +117,15 @@ class ScatterPlot(DataFrameModule):
                 self.image_source.data['dw'] = [row.xmax-row.xmin]
                 self.image_source.data['dh'] = [row.ymax-row.ymin]
                 self.image_source.push_notebook()
+#                self.bounds_source.data['bx'] = np.array([row.xmin, row.xmin, row.xmax, row.xmax])
+#                self.bounds_source.data['by'] = np.array([row.ymin, row.ymax, row.ymin, row.ymax])
+#                self.bounds_source.push_notebook()
         df = self.df()
         if df is not None:
             self.scatter_source.data['x'] = df[self.x_column]
             self.scatter_source.data['y'] = df[self.y_column]
             self.scatter_source.push_notebook()
+
 
     @property
     def auto_update(self):
