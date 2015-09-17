@@ -9,7 +9,7 @@ from bokeh.plotting import figure, show
 from bokeh.io import output_notebook
 from bokeh.models.mappers import LinearColorMapper
 from bokeh.palettes import Blues4, YlOrRd9
-from bokeh.models import ColumnDataSource
+from bokeh.models import ColumnDataSource, Range1d
 
 from ipywidgets import widgets
 from IPython.display import display
@@ -17,6 +17,10 @@ from IPython.display import display
 
 import numpy as np
 import pandas as pd
+
+import logging
+logger = logging.getLogger(__name__)
+
 
 class ScatterPlot(DataFrameModule):
     parameters = [('xmin',   np.dtype(float), 0),
@@ -93,7 +97,7 @@ class ScatterPlot(DataFrameModule):
         p.scatter('x','y',source=self.scatter_source)
         show(self.figure)
 #        self.bounds_source = ColumnDataSource(data={'bx': [0, 0, 100, 100],
-#                                                    'by': [0, 0, 100, 100]})
+#                                                    'by': [0, 100, 0, 100]})
 #        p.scatter('bx', 'by', source=self.bounds_source)
         button = widgets.Button(description="Refresh!")
         display(button)
@@ -102,6 +106,7 @@ class ScatterPlot(DataFrameModule):
     def update(self, b):
         if self.image_source is None:
             return
+        logger.info("Updating module '%s.%s'", self.pretty_typename(), self.id)
         #TODO use data from the same run
         histo_df = self.get_input_slot('histogram2d').data()
         row = None
@@ -111,6 +116,9 @@ class ScatterPlot(DataFrameModule):
             if not (np.isnan(row.xmin) or np.isnan(row.xmax)
                     or np.isnan(row.ymin) or np.isnan(row.ymax)
                     or row.array is None):
+                self.figure.x_range = Range1d(row.xmin, row.xmax)
+                self.figure.y_range = Range1d(row.ymin, row.ymax)
+                logger.debug('Bounds: %g,%g,%g,%g', row.xmin, row.xmax, row.ymin, row.ymax)
                 self.image_source.data['image'] = [row.array]
                 self.image_source.data['x'] = [row.xmin]
                 self.image_source.data['y'] = [row.ymin]
