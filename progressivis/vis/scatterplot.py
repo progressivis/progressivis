@@ -89,16 +89,18 @@ class ScatterPlot(DataFrameModule):
 
     def show(self, p):
         self.figure = p
-        self.image_source = ColumnDataSource(data=dict(image=self.img))
+        self.image_source = ColumnDataSource(data={
+            'image': [self.img],
+            'x': [0],
+            'y': [0],
+            'dw': [100],
+            'dh': [100]})
         self.palette = YlOrRd9[::-1]
-        p.image(image=[self.img], x=[0], y=[0], dw=[100], dh=[100],
+        p.image(image='image', x='x', y='y', dw='dw', dh='dh',
                 color_mapper=LinearColorMapper(self.palette), source=self.image_source)
         self.scatter_source = ColumnDataSource(data={'x': self.x, 'y': self.y})
         p.scatter('x','y',source=self.scatter_source)
         show(self.figure)
-#        self.bounds_source = ColumnDataSource(data={'bx': [0, 0, 100, 100],
-#                                                    'by': [0, 100, 0, 100]})
-#        p.scatter('bx', 'by', source=self.bounds_source)
         button = widgets.Button(description="Refresh!")
         display(button)
         button.on_click(self.update)
@@ -110,30 +112,29 @@ class ScatterPlot(DataFrameModule):
         #TODO use data from the same run
         histo_df = self.get_input_slot('histogram2d').data()
         row = None
-        if histo_df is not None and histo_df.index[-1] is not None:
-            idx = histo_df.index[-1]
-            row = histo_df.loc[idx]
-            if not (np.isnan(row.xmin) or np.isnan(row.xmax)
-                    or np.isnan(row.ymin) or np.isnan(row.ymax)
-                    or row.array is None):
-                self.figure.x_range = Range1d(row.xmin, row.xmax)
-                self.figure.y_range = Range1d(row.ymin, row.ymax)
-                logger.debug('Bounds: %g,%g,%g,%g', row.xmin, row.xmax, row.ymin, row.ymax)
-                self.image_source.data['image'] = [row.array]
-                self.image_source.data['x'] = [row.xmin]
-                self.image_source.data['y'] = [row.ymin]
-                self.image_source.data['dw'] = [row.xmax-row.xmin]
-                self.image_source.data['dh'] = [row.ymax-row.ymin]
-                self.image_source.push_notebook()
-#                self.bounds_source.data['bx'] = np.array([row.xmin, row.xmin, row.xmax, row.xmax])
-#                self.bounds_source.data['by'] = np.array([row.ymin, row.ymax, row.ymin, row.ymax])
-#                self.bounds_source.push_notebook()
         df = self.df()
         if df is not None:
             self.scatter_source.data['x'] = df[self.x_column]
             self.scatter_source.data['y'] = df[self.y_column]
             self.scatter_source.push_notebook()
 
+        if histo_df is not None and histo_df.index[-1] is not None:
+            idx = histo_df.index[-1]
+            row = histo_df.loc[idx]
+            if not (np.isnan(row.xmin) or np.isnan(row.xmax)
+                    or np.isnan(row.ymin) or np.isnan(row.ymax)
+                    or row.array is None):
+                self.image_source.data['image'] = [row.array]
+                self.image_source.data['x'] = [row.xmin]
+                self.image_source.data['y'] = [row.ymin]
+                self.image_source.data['dw'] = [row.xmax-row.xmin]
+                self.image_source.data['dh'] = [row.ymax-row.ymin]
+                self.image_source.push_notebook()
+                self.figure.set(x_range=Range1d(row.xmin, row.xmax),
+                                y_range=Range1d(row.ymin, row.ymax))
+                logger.debug('Bounds: %g,%g,%g,%g', row.xmin, row.xmax, row.ymin, row.ymax)
+            else:
+                logger.debug('Cannot compute bounds from image')
 
     @property
     def auto_update(self):
