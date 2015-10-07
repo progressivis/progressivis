@@ -32,6 +32,12 @@ class Slot(object):
     
     def __repr__(self):
         return self.__unicode__()
+
+    def to_json(self):
+        return {'output_name': self.output_name,
+                'output_module': self.output_module.id,
+                'input_name': self.input_name,
+                'input_module': self.input_module.id}
     
     def connect(self):
         scheduler = self.output_module.scheduler()

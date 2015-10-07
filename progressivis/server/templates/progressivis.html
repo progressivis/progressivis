@@ -10,11 +10,69 @@ Progressivis Server
 {% endblock %}
 
 {% block script %}
+var last_status = null;
+function update_scheduler(data) {
+  last_status = data;
+  if (data.is_running) {
+    $('#start').addClass('disabled');
+    $('#stop').removeClass('disabled');
+  }
+  else {
+    $('#start').removeClass('disabled');
+    $('#stop').addClass('disabled');
+  }
+  contents = '<h2 class="sub-header">Modules</h2>'+
+  '<div class="table-responsive">'+
+  '  <table class="table table-striped">'+
+'    <thead>'+
+'      <tr><th>Id</th><th>State</th><th>Last Update</th></tr>'+
+'    </thead>'+
+'    <tbody>';
+  for (var mod in data.modules) {
+      var module = data.modules[mod];
+	contents += '<tr><td>'+mod+'</td><td>'+module.state+'</td><td>'+module.last_update+'</tr>';
+  }
+  contents += ''+
+'  </table>'+
+'</div>';
+
+  $('#scheduler').html(contents);
+}
+
+function error_scheduler(ev) {
+  contents = '<div class="alert alert-danger" role="alert">Error</div>';
+  $('#scheduler').html(contents);
+}
+
+function refresh() {
+  ProgressiVis.get_scheduler(update_scheduler, error_scheduler);
+}
+
+$(document).ready(function() {
+  $('#start').click(function() { ProgressiVis.scheduler_start(refresh, error_scheduler); });
+  $('#stop').click(function() { ProgressiVis.scheduler_stop(refresh, error_scheduler); });
+  refresh();
+});
 {% endblock %}
 
 {% block content %}
- <div class="starter-template">
-   <h1>Progressive Modules</h1>
-   <p class="lead">Use this document as a way to quickly start any new project.<br> All you get is this text and a mostly barebones HTML document.</p>
+<ol class="breadcrumb">
+  <li><a href="#">Home</a></li>
+</ol>
+
+<div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
+  <h1 class='page-header'>Progressive Modules</h1>
+
+  <button id='start' type="button" class="btn btn-default btn-lg disabled" aria-label="Left Align">
+    <span class="glyphicon glyphicon-play" aria-hidden="true"></span>
+  </button>
+  
+  <button id='stop' type="button" class="btn btn-default btn-lg disabled">
+    <span class="glyphicon glyphicon-stop" aria-hidden="true"></span>
+  </button>
+
+  <div id='error'></div>
+
+   <div id='scheduler'></div>
  </div>
 {% endblock %}

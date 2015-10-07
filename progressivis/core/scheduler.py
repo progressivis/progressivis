@@ -182,6 +182,9 @@ class Scheduler(object):
     def modules(self):
         return self._modules
 
+    def run_number(self):
+        return self._run_number
+
     @contextmanager
     def stdout_parent(self):
         yield

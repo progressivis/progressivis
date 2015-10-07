@@ -13,4 +13,6 @@ histogram2d=Histogram2D(1, 2, xbins=100, ybins=100)
 histogram2d.input.df = csv.output.df
 pr = Print(id='print')
 pr.input.inp = histogram2d.output.histogram2d
-csv.start()
+
+if __name__=='__main__':
+    csv.start()

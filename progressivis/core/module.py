@@ -32,6 +32,13 @@ class ModuleMeta(type):
         cls.all_parameters = all_props
         super(ModuleMeta, cls).__init__(name, bases, attrs)
 
+def slot_to_json(slot):
+    if slot is None:
+        return None
+    if isinstance(slot, list):
+        return [ slot_to_json(s) for s in slot]
+    return slot.to_json()
+
 class Module(object):
     __metaclass__ = ModuleMeta
     
@@ -151,6 +158,19 @@ class Module(object):
 
     def timer(self):
         return self._scheduler.timer()
+
+    def to_json(self):
+        return {
+            'id': self.id,
+            'start_time': self._start_time,
+            'end_time': self._end_time,
+            'last_update': self._last_update,
+            'state': self.state_name[self._state],
+            'input_slots': { k: slot_to_json(s) for (k, s) in self._input_slots.iteritems() },
+            'output_slots': { k: slot_to_json(s) for (k, s) in self._output_slots.iteritems() },
+            'default_step_size': self.default_step_size,
+            'parameters': self._params.to_dict()
+        }
 
     def describe(self):
         print 'id: %s' % self.id
