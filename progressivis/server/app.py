@@ -1,11 +1,18 @@
 import logging
 log = logging.getLogger(__name__)
 
-import flask
+from flask import (
+    Flask, Blueprint,
+    render_template, request, send_from_directory,
+    abort, jsonify, Response, redirect, url_for
+)
+
+import sys
+from os.path import join, dirname, abspath, normpath, realpath, isdir
 
 from progressivis.core.scheduler import Scheduler
 
-class ProgressivisBlueprint(flask.Blueprint):
+class ProgressivisBlueprint(Blueprint):
     def __init__(self, *args, **kwargs):
         super(ProgressivisBlueprint, self).__init__(*args, **kwargs)
 
@@ -13,14 +20,17 @@ class ProgressivisBlueprint(flask.Blueprint):
         self.scheduler = scheduler
 
 #    
-progressivis_bp = ProgressivisBlueprint('progressivis',
+progressivis_bp = ProgressivisBlueprint('progressivis.server',
                                         'progressivis.server',
                                         static_folder='static',
                                         static_url_path='/progressivis/static',
                                         template_folder='templates')
 
+import views
+
+
 def create_app(config="settings.py", scheduler=Scheduler.default):
-    app = flask.Flask('progressivis.server')
+    app = Flask('progressivis.server')
     if isinstance(config, str):
         app.config.from_pyfile(config)
     elif isinstance(config, dict):
@@ -30,3 +40,4 @@ def create_app(config="settings.py", scheduler=Scheduler.default):
     progressivis_bp.setup(scheduler)
 
     return app
+

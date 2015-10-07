@@ -1,0 +1,26 @@
+{% extends "_base.html" %}
+
+{% block head %}
+  <link href="{{ url_for('progressivis.server.progressivis_file', filename='css/progressivis.css') }}" rel="stylesheet">
+  {% block extra_scripts %}
+  {% endblock %}
+  <script src="{{ url_for('progressivis.server.progressivis_file', filename='js/progressivis.js') }}"></script>
+  <script type="text/javascript">
+    {{ self.script() }}
+  </script>
+{% endblock %}
+
+{% block body %}
+  <div class="container">
+    {% from "_navbar.html" import navbar %}
+    {% call navbar(title) %}
+    <li class="active"><a href="{{ url_for('progressivis.server.index') }}">Home</a></li>
+    <li><a href="{{ url_for('progressivis.server.about') }}">About</a></li>
+    <li><a href="{{ url_for('progressivis.server.contact') }}">Contact</a></li>
+    {% endcall %}
+    <div class="row">
+      {% block content %}
+      {% endblock %}
+    </div>
+  </div>
+{% endblock %}
