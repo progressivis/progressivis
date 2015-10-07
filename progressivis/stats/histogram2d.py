@@ -76,7 +76,6 @@ class Histogram2D(DataFrameModule):
         df = self._df
         old_histo = self._old_histo
         p = self.params # TODO: check if params have changed
-        bounds_changed = False
         if self._bounds is None:
             self._bounds = self.update_bounds()
             xmin, xmax, ymin, ymax = self._bounds
@@ -84,7 +83,6 @@ class Histogram2D(DataFrameModule):
             xmin, xmax, ymin, ymax = self._bounds
             # If new bounds extend new ones including deltas, invalidate
             if p.xmin < xmin or p.xmax > xmax or p.ymin < ymin or p.ymax > ymax:
-                bounds_changed = True
                 self._bounds = self.update_bounds()
                 xmin, xmax, ymin, ymax = self._bounds
                 logger.info('Updated bounds: %s', self._bounds)

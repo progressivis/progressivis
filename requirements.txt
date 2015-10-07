@@ -13,5 +13,5 @@ jsonschema==2.5.1
 notebook==4.0.5
 bokeh==0.10.0
 ipywidgets==4.0.3
-cherrypy==3.8.0
-ws4py==0.3.4
+flask==0.10.1
+tornado>=4.0.1

@@ -4,12 +4,11 @@ import re
 
 import pandas as pd
 import numpy as np
-import random
 
 from progressivis.core.common import ProgressiveError
 from progressivis.core.utils import empty_typed_dataframe, typed_dataframe, DataFrameAsDict
-from progressivis.core.scheduler import *
-from progressivis.core.slot import *
+from progressivis.core.scheduler import Scheduler
+from progressivis.core.slot import Slot, SlotDescriptor, InputSlots, OutputSlots
 from progressivis.core.tracer import Tracer
 from progressivis.core.time_predictor import TimePredictor
 from progressivis.core.storagemanager import StorageManager
@@ -301,7 +300,7 @@ class Module(object):
         return None
 
     def update_timestamps(self):
-        return EMPTY_COLUMN
+        return Module.EMPTY_COLUMN
 
     def run_step(self,run_number,step_size,howlong):
         """Run one step of the module, with a duration up to the 'howlong' parameter.

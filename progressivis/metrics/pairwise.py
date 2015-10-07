@@ -7,7 +7,6 @@ from progressivis.core.slot import SlotDescriptor
 
 import numpy as np
 import pandas as pd
-from scipy.spatial.distance import pdist
 from sklearn.metrics.pairwise import _VALID_METRICS, pairwise_distances
 
 import logging
@@ -42,8 +41,8 @@ class PairwiseDistances(DataFrameModule):
                 raise ProgressiveError('Problem updating changemanager')
             #TODO: be smarter with changed values
 
-        len_b = (dfslot.last_index)
-        n = len(df)-len_b
+        #len_b = (dfslot.last_index)
+        #n = len(df)-len_b
 
         m = step_size
         
@@ -66,7 +65,7 @@ class PairwiseDistances(DataFrameModule):
                 self.columns = df.columns.delete(np.where(df.columns==DataFrameModule.UPDATE_COLUMN))
             elif not isinstance(self.columns, pd.Index):
                 self.columns = pd.Index(self.columns)
-            row = None
+            #row = None
             try:
                 rows = df[self.columns]
             except Exception as e:

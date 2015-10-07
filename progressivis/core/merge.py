@@ -1,9 +1,7 @@
-from progressivis.core.common import ProgressiveError
 from progressivis.core.dataframe import DataFrameModule
 from progressivis.core.slot import SlotDescriptor
 
 import pandas as pd
-import numpy as np
 
 class Merge(DataFrameModule):
     def __init__(self, **kwds):

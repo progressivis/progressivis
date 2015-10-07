@@ -1,4 +1,4 @@
-from progressivis.core.module import *
+from . import Slot, Module, SlotDescriptor
 
 import pandas as pd
 
@@ -96,7 +96,7 @@ class DataFrameModule(Module):
     def update_timestamps(self):
         if self._df is not None:
             return self._df[Module.UPDATE_COLUMN]
-        return EMPTY_COLUMN
+        return Module.EMPTY_COLUMN
 
     def updated_after(self, run_number=None):
         df = self.df()

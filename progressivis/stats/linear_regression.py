@@ -50,5 +50,5 @@ class LinearRegression(DataFrameModule):
         intercept = (len(x)*sum_xy - sum_x*sum_y) / denom
         df.loc[0] = [coef, intercept, sum_x, sum_x_sqr, sum_y, sum_xy, run_number]
         return self._return_run_step(dfslot.next_state(),
-                                     steps_run=steps, reads=steps, updates=len(desc))
+                                     steps_run=steps, reads=steps, updates=1)
         

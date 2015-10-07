@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 from progressivis import DataFrameModule, SlotDescriptor
-from progressivis.core.changemanager import ranges
 
 import pandas as pd
 import numpy as np
@@ -60,7 +59,7 @@ class VECLoader(DataFrameModule):
         self._rows_read = 0
         self._csr_matrix = None
 
-    def rows_read():
+    def rows_read(self):
         return self._rows_read
 
     def toarray(self):

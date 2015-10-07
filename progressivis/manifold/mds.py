@@ -5,7 +5,7 @@ from progressivis.core.slot import SlotDescriptor
 import numpy as np
 import pandas as pd
 
-from sklearn.manifold.mds import *
+#from sklearn.manifold.mds import *
 
 import logging
 logger = logging.getLogger(__name__)

@@ -3,8 +3,8 @@ import tempfile
 import unicodedata
 import re
 import shutil
-from urllib import pathname2url
 from urlparse import urljoin
+from urllib import pathname2url
 
 import logging
 logger = logging.getLogger(__name__)
@@ -50,7 +50,7 @@ class StorageManager(object):
         return os.path.join(self.module_directory(module), filename)
 
     def url(self, module, filename):
-        return urljoin('file:', urllib.pathname2url(self.fullname(module, filename)))
+        return urljoin('file:', pathname2url(self.fullname(module, filename)))
 
     def end(self):
         if self.directory is None:

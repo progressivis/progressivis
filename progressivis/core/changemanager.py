@@ -1,5 +1,4 @@
-from progressivis.core.module import Module
-from progressivis.core.common import NIL
+from . import Module, NIL, ProgressiveError
 import pandas as pd
 import numpy as np
 
@@ -51,9 +50,6 @@ class ChangeManagerBase(object):
         
     def is_buffer_empty(self):
         raise ProgressiveError('is_buffer_empty not implemented')
-
-    def next_state(self):
-        raise ProgressiveError('next_state not implemented')
 
     def next_state(self):
         if self.is_buffer_empty():

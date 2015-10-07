@@ -1,8 +1,9 @@
 """Simple and naive module to sample a progressive dataframe."""
-from progressivis import *
+from progressivis import DataFrameModule, SlotDescriptor, ProgressiveError
 
 import numpy as np
 import pandas as pd
+
 
 import logging
 logger = logging.getLogger(__name__)
@@ -55,7 +56,7 @@ class Sample(DataFrameModule):
         if n > 0:
             size = n
         elif not np.isnan(frac):
-            size = np.max(0, math.floor(l*frac))
+            size = np.max(0, np.floor(l*frac))
 
         self._df = input_df.sample(n=size)
         self._df.loc[:,self.UPDATE_COLUMN] = pd.Series(run_number, index=self._df.index)

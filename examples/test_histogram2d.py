@@ -1,7 +1,6 @@
-from progressivis import *
+from progressivis import Scheduler, Every, Print
 from progressivis.io import CSVLoader
 from progressivis.stats import Histogram2D
-from progressivis.vis import Heatmap
 from progressivis.datasets import get_dataset
 
 print "Loading test_histogram2d"

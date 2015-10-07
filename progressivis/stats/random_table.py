@@ -1,4 +1,5 @@
-from progressivis.core.dataframe import DataFrameModule
+from progressivis.core import DataFrameModule, ProgressiveError
+
 
 import pandas as pd
 import numpy as np

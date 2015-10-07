@@ -1,5 +1,3 @@
-from progressivis.core.common import ProgressiveError
-
 import numpy as np
 
 import logging

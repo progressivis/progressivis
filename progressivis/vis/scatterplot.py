@@ -1,14 +1,13 @@
 """Visualize DataFrame columns x,y on the notebook, allowing refreshing."""
 from __future__ import print_function
 
-from progressivis import *
+from progressivis import SlotDescriptor, Wait, Merge
 from progressivis.core.dataframe import DataFrameModule
 from progressivis.stats import Histogram2D, Stats, Sample
 
-from bokeh.plotting import figure, show
-from bokeh.io import output_notebook
+from bokeh.plotting import show
 from bokeh.models.mappers import LinearColorMapper
-from bokeh.palettes import Blues4, YlOrRd9
+from bokeh.palettes import YlOrRd9
 from bokeh.models import ColumnDataSource, Range1d
 
 from ipywidgets import widgets

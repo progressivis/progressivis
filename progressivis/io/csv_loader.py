@@ -1,7 +1,6 @@
-from progressivis.core.dataframe import DataFrameModule
+from progressivis import ProgressiveException, DataFrameModule
 
 import pandas as pd
-import numpy as np
 
 import logging
 logger = logging.getLogger(__name__)

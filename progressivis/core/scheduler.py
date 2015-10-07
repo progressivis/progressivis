@@ -4,6 +4,7 @@ from progressivis.core.utils import AttributeDict
 from timeit import default_timer
 from toposort import toposort_flatten
 from contextlib import contextmanager
+from uuid import uuid4
 
 import logging
 logger = logging.getLogger(__name__)
