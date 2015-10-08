@@ -64,12 +64,21 @@ class Scheduler(object):
             runorder = toposort_flatten(self.collect_dependencies(), only_required=True)
         return runorder
 
+    @staticmethod
+    def module_order(x,y):
+        if 'order' in x:
+            if 'order' in y:
+                return x['order']-y['order']
+            return 1
+        if 'order' in y:
+            return -1
+        return 0
+
     def to_json(self):
         msg = {}
         mods = {}
         for (name,module) in self.modules().iteritems():
             mods[name] = module.to_json()
-        modules = []
         if self._runorder:
             i = 0
             for m in self._runorder:
@@ -78,13 +87,13 @@ class Scheduler(object):
                 else:
                     logger.error("module '%s' not in module list", m)
                     mods[m] = {'module': None, 'order': i }
-                    modules.append(mods[m])
-                    i += 1
-        else:
-            modules = mods.values()
+                i += 1
+        mods = mods.values()
+        modules = sorted(mods, self.module_order)
         msg['modules'] = modules
         msg['is_valid'] = self.is_valid()
         msg['is_running'] = self.is_running()
+        msg['is_terminated'] = self.is_terminated()
         msg['run_number'] = self.run_number()
         msg['status'] = 'success'
         return msg
@@ -160,6 +169,12 @@ class Scheduler(object):
     def is_running(self):
         return self._running
 
+    def is_terminated(self):
+        for m in self.modules().values():
+            if not m.is_terminated():
+                return False
+        return True
+
     def done(self):
         pass
 
@@ -213,7 +228,6 @@ class Scheduler(object):
     @contextmanager
     def stdout_parent(self):
         yield
-
 
 
 if Scheduler.default is None:

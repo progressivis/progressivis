@@ -1,0 +1,61 @@
+{% extends "_page_base.html" %}
+
+{% block title %}
+Progressivis Server
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{{ url_for('static', filename='jquery.min.js') }}"></script>
+<script src="{{ url_for('static', filename='bootstrap/js/bootstrap.min.js') }}"></script>
+<script src="{{ url_for('static', filename='d3.min.js') }}"></script>
+<script src="{{ url_for('progressivis.server.progressivis_file', filename='js/scheduler.js') }}"></script>
+{% endblock %}
+
+{% block script %}
+$(document).ready(scheduler_ready);
+{% endblock %}
+
+{% block content %}
+<ol class="breadcrumb">
+  <li><a href="#">Home</a></li>
+</ol>
+
+<div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
+  <h1 class='page-header'>Progressive Modules</h1>
+
+  <button id='start' type="button" class="btn btn-default btn-lg disabled" aria-label="Left Align">
+    <span class="glyphicon glyphicon-play" aria-hidden="true"></span>
+  </button>
+  
+  <button id='stop' type="button" class="btn btn-default btn-lg disabled">
+    <span class="glyphicon glyphicon-stop" aria-hidden="true"></span>
+  </button>
+
+  <div id='error'></div>
+
+<div>
+  <!-- Nav tabs -->
+  <ul id='module-tabs' class="nav nav-tabs" role="tablist">
+    <li role="presentation" class="active"><a href="#scheduler" aria-controls="scheduler" role="tab" data-toggle="tab">Scheduler</a></li>
+  </ul>
+
+  <!-- Tab panes -->
+  <div id="module-tabs-contents" class="tab-content">
+    <div role="tabpanel" class="tab-pane active static" id="scheduler">
+      <div id='scheduler'>
+	<div class="table-responsive">
+	  <table id='scheduler-modules' class="table table-striped">
+	    <thead>
+	      <tr><th>Id</th><th>Class</th><th>State</th><th>Last Update</th><th>Order</th></tr>
+	    </thead>
+	    <tbody>
+	    </tbody>
+	  </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+
+{% endblock %}
