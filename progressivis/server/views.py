@@ -50,6 +50,7 @@ def scheduler():
     scheduler = progressivis_bp.scheduler
     for (name,module) in scheduler.modules().iteritems():
         mods[name] = module.to_json()
+    modules = []
     if scheduler._runorder:
         i = 0
         for m in scheduler._runorder:
@@ -58,8 +59,11 @@ def scheduler():
             else:
                 logger.error("module '%s' not in module list", m)
                 mods[m] = {'module': None, 'order': i }
+            modules.append(mods[m])
             i += 1
-    msg['modules'] = mods
+    else:
+        modules = mods.values()
+    msg['modules'] = modules
     msg['is_running'] = scheduler.is_running()
     msg['run_number'] = scheduler.run_number()
     msg['status'] = 'success'

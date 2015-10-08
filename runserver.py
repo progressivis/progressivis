@@ -1,7 +1,11 @@
 from progressivis.server.app import create_app
 from progressivis.core.scheduler import Scheduler
+from progressivis.core.mt_scheduler import MTScheduler
 
 import sys
+
+MTScheduler.set_default()
+
 
 env = {'scheduler': Scheduler.default }
 

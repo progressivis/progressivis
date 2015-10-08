@@ -11,6 +11,12 @@ Progressivis Server
 
 {% block script %}
 var last_status = null;
+function cmp_order(mod1, mod2) {
+  if (mod1.order == mod2.order) return 0;
+  if (mod1.order == undefined) return -1;
+  return 1;
+}
+
 function update_scheduler(data) {
   last_status = data;
   if (data.is_running) {
@@ -25,12 +31,17 @@ function update_scheduler(data) {
   '<div class="table-responsive">'+
   '  <table class="table table-striped">'+
 '    <thead>'+
-'      <tr><th>Id</th><th>State</th><th>Last Update</th></tr>'+
+'      <tr><th>Id</th><th>State</th><th>Last Update</th><th>Order</th></tr>'+
 '    </thead>'+
 '    <tbody>';
-  for (var mod in data.modules) {
-      var module = data.modules[mod];
-	contents += '<tr><td>'+mod+'</td><td>'+module.state+'</td><td>'+module.last_update+'</tr>';
+  for (var i = 0; i <  data.modules.length; i++) {
+      var module = data.modules[i];
+      contents += '<tr>';
+      contents += '<td>'+module.id+'</td>';
+      contents += '<td>'+module.state+'</td>';
+      contents += '<td>'+module.last_update+'</td>';
+      contents += '<td>'+module.order+'</td>';
+      contents += '</tr>';
   }
   contents += ''+
 '  </table>'+

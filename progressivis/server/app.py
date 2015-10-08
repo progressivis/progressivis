@@ -29,7 +29,9 @@ progressivis_bp = ProgressivisBlueprint('progressivis.server',
 import views
 
 
-def create_app(config="settings.py", scheduler=Scheduler.default):
+def create_app(config="settings.py", scheduler=None):
+    if scheduler is None:
+        scheduler = Scheduler.default
     app = Flask('progressivis.server')
     if isinstance(config, str):
         app.config.from_pyfile(config)
