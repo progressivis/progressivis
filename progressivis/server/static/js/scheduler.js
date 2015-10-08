@@ -36,7 +36,7 @@ function cmp_order(mod1, mod2) {
 function scheduler_update(data) {
     var module, i;
 
-    console.log('scheduler update');
+    //console.log('scheduler update');
 
     scheduler_status = data;
     if (data.is_running) {
@@ -51,11 +51,59 @@ function scheduler_update(data) {
 	$('#start').removeClass('disabled');
 	$('#stop').addClass('disabled');
     }
+    scheduler_update_table(data);
+    scheduler_update_tabs(data);
+
+    $('#module-tabs-contents .dynamic').remove();
+    for (i = 0; i <  data.modules.length; i++) {
+	module = data.modules[i];
+	
+    }    
+}
+
+function scheduler_update_tabs(data) {
+    var modules = data.modules;
+    var tabs = d3
+	    .select("#module-tabs")
+	    .selectAll("div[role='presentation']")
+	    .data(modules, function(d) { return d.id; });
+
+    tabs.enter()
+	.append("li")
+	.attr("role", "presentation")
+	.append("a")
+	.attr("role", "tab")
+	.attr("data-toggle", "tab")
+	.attr("href", function(d) { return "#"+d.id; })
+	.attr("aria-controls", function(d) { return d.id; })
+	.text(function(d) { return d.id;});
+
+    tabs.exit().remove();
+
+    var panel = d3.select("#module-tabs-contents")
+	    .selectAll("div[role='tabpanel']")
+	    .data(modules, function(d) { return d ? d.id : 'Scheduler'; });
+    var tab_content = panel.enter()
+	.append("div")
+	.attr("role", "tabpanel")
+	.attr("class", "tab-pane")
+	.attr("id", function(d) { return d.id; });
+    tab_content
+	.append("h2").text(function(d) { return "Module "+d.id; });
+    
+    tab_content
+	.append("div")
+	.attr("id", function(d) { return "tab-contents-"+d.id; });
+}
+
+function scheduler_update_table(data) {
     var columns = ['id', 'classname', 'state', 'last_update', 'order'];
     var tr = d3
 	    .select("tbody")
 	    .selectAll("tr")
 	    .data(data.modules, function(d) { return d.id; });
+
+    // Enter function
     var rows = tr.enter()
 	    .append("tr");
 
@@ -69,6 +117,7 @@ function scheduler_update(data) {
 	    .append("td")
 	    .text(function(d) { return d.value; });
 
+    // Update function
     tr.selectAll("td")
 	.data(function(row) {
 	    return columns.map(function(column) {
@@ -77,15 +126,8 @@ function scheduler_update(data) {
 	})
 	.text(function(d) { return d.value; });
 
-
+    // Exit function
     tr.exit().remove();
-
-    $('#module-tabs-contents .dynamic').remove();
-    for (i = 0; i <  data.modules.length; i++) {
-	module = data.modules[i];
-	
-    }
-    
 }
 
 function scheduler_error(ev) {
