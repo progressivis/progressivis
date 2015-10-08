@@ -26,8 +26,9 @@ def progressivis_file(filename):
 
 @progressivis_bp.route('/')
 @progressivis_bp.route('/progressivis/')
+@progressivis_bp.route('/progressivis/scheduler.html')
 def index(*unused_all, **kwargs):
-    return render_template('progressivis.html',
+    return render_template('scheduler.html',
                            title="ProgressiVis Modules")
 
 @progressivis_bp.route('/favicon.ico')
@@ -43,31 +44,11 @@ def about(*unused_all, **kwargs):
 def contact(*unused_all, **kwargs):
     return render_template('contact.html')
 
-@progressivis_bp.route('/progressivis/scheduler')
+@progressivis_bp.route('/progressivis/scheduler/')
 def scheduler():
-    msg = {}
-    mods = {}
     scheduler = progressivis_bp.scheduler
-    for (name,module) in scheduler.modules().iteritems():
-        mods[name] = module.to_json()
-    modules = []
-    if scheduler._runorder:
-        i = 0
-        for m in scheduler._runorder:
-            if m in mods:
-                mods[m]['order'] = i
-            else:
-                logger.error("module '%s' not in module list", m)
-                mods[m] = {'module': None, 'order': i }
-            modules.append(mods[m])
-            i += 1
-    else:
-        modules = mods.values()
-    msg['modules'] = modules
-    msg['is_running'] = scheduler.is_running()
-    msg['run_number'] = scheduler.run_number()
-    msg['status'] = 'success'
-    return jsonify(msg)
+    print "Scheduler is %s" % str(scheduler)
+    return jsonify(scheduler.to_json())
         
 @progressivis_bp.route('/progressivis/scheduler/start')
 def scheduler_start():

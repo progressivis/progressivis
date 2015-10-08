@@ -1,4 +1,4 @@
-from progressivis import ProgressiveException, DataFrameModule
+from progressivis import ProgressiveError, DataFrameModule
 
 import pandas as pd
 

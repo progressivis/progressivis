@@ -64,6 +64,31 @@ class Scheduler(object):
             runorder = toposort_flatten(self.collect_dependencies(), only_required=True)
         return runorder
 
+    def to_json(self):
+        msg = {}
+        mods = {}
+        for (name,module) in self.modules().iteritems():
+            mods[name] = module.to_json()
+        modules = []
+        if self._runorder:
+            i = 0
+            for m in self._runorder:
+                if m in mods:
+                    mods[m]['order'] = i
+                else:
+                    logger.error("module '%s' not in module list", m)
+                    mods[m] = {'module': None, 'order': i }
+                    modules.append(mods[m])
+                    i += 1
+        else:
+            modules = mods.values()
+        msg['modules'] = modules
+        msg['is_valid'] = self.is_valid()
+        msg['is_running'] = self.is_running()
+        msg['run_number'] = self.run_number()
+        msg['status'] = 'success'
+        return msg
+
     def validate(self):
         if not self._valid:
             valid = True

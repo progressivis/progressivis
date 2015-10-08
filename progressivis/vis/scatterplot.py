@@ -42,6 +42,9 @@ class ScatterPlot(DataFrameModule):
     def df(self):
         return self.get_input_slot('df').data()
 
+    def is_visualization(self):
+        return True
+
     def create_scatterplot_modules(self, wait=None, x_stats=None, y_stats=None, sample=None, merge=None, histogram2d=None):
         s=self._scheduler
         if wait is None:

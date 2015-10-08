@@ -5,7 +5,7 @@ import re
 import pandas as pd
 import numpy as np
 
-from progressivis.core.common import ProgressiveError
+from progressivis.core.common import ProgressiveError, type_fullname
 from progressivis.core.utils import empty_typed_dataframe, typed_dataframe, DataFrameAsDict
 from progressivis.core.scheduler import Scheduler
 from progressivis.core.slot import Slot, SlotDescriptor, InputSlots, OutputSlots
@@ -162,6 +162,8 @@ class Module(object):
     def to_json(self):
         return {
             'id': self.id,
+            'classname': self.pretty_typename(),
+            'is_visualization': self.is_visualization(),
             'start_time': self._start_time,
             'end_time': self._end_time,
             'last_update': self._last_update,
@@ -174,6 +176,7 @@ class Module(object):
 
     def describe(self):
         print 'id: %s' % self.id
+        print 'class: %s' % type_fullname(self)
         print 'quantum: %f' % self.params.quantum
         print 'start_time: %s' % self._start_time
         print 'end_time: %s' % self._end_time
@@ -343,6 +346,12 @@ class Module(object):
                 'reads': reads,
                 'updates': updates,
                 'creates': creates}
+
+    def is_visualization(self):
+        return False
+
+    def get_visualization(self):
+        return None
 
     def is_created(self):
         return self._state==Module.state_created

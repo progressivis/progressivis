@@ -14,5 +14,6 @@ for fn in sys.argv[1:]:
     execfile(fn, env, env)
 
 if __name__=='__main__':
-    app = create_app()
+    print 'Scheduler has %d modules' % len(Scheduler.default)
+    app = create_app(Scheduler.default)
     app.run(debug=True)
