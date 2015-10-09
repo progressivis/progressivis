@@ -19,13 +19,22 @@ from progressivis.core.scheduler import Scheduler
 class WebSocket(WebSocketHandler):
     def open(self):
         print("Socket opened.")
+        self.handshake = False
 
     def on_message(self, message):
-        self.write_message("Received: " + message)
+        #self.write_message("Received: " + message)
+        if not self.handshake and message=='ping':
+            self.write_message('pong')
+            handshake = True
+            return
         print("Received message: " + message)
 
-def on_close(self):
-    print("Socket closed.")
+    def on_close(self):
+        print("Socket closed.")
+
+    def select_subprotocol(self, subprotocols):
+        # for now, don't implement any subprotocol
+        return None
 
 
 class ProgressivisBlueprint(Blueprint):

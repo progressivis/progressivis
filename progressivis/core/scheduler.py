@@ -78,7 +78,8 @@ class Scheduler(object):
         msg = {}
         mods = {}
         for (name,module) in self.modules().iteritems():
-            mods[name] = module.to_json()
+            mods[name] = module.to_json(short=True)
+                           
         if self._runorder:
             i = 0
             for m in self._runorder:

@@ -44,13 +44,12 @@ def about(*unused_all, **kwargs):
 def contact(*unused_all, **kwargs):
     return render_template('contact.html')
 
-@progressivis_bp.route('/progressivis/scheduler/')
+@progressivis_bp.route('/progressivis/scheduler/', methods=['POST'])
 def scheduler():
     scheduler = progressivis_bp.scheduler
-    print "Scheduler is %s" % str(scheduler)
     return jsonify(scheduler.to_json())
         
-@progressivis_bp.route('/progressivis/scheduler/start')
+@progressivis_bp.route('/progressivis/scheduler/start', methods=['POST'])
 def scheduler_start():
     scheduler = progressivis_bp.scheduler
     if scheduler.is_running():
@@ -58,10 +57,19 @@ def scheduler_start():
     scheduler.start()
     return jsonify({'status': 'success'})
 
-@progressivis_bp.route('/progressivis/scheduler/stop')
+@progressivis_bp.route('/progressivis/scheduler/stop', methods=['POST'])
 def scheduler_stop():
     scheduler = progressivis_bp.scheduler
     if not scheduler.is_running():
         return jsonify({'status': 'failed', 'reason': 'scheduler is not is_running'})
     scheduler.stop()
     return jsonify({'status': 'success'})
+
+@progressivis_bp.route('/progressivis/module/<id>', methods=['GET', 'POST'])
+def module(id):
+    print 'Requested module %s'%id
+    if request.method == 'POST':
+        scheduler = progressivis_bp.scheduler
+        module = scheduler.module[id]
+        return jsonify(module.to_json())
+    return render_template('module.html', title="Module "+id, id=id)

@@ -19,6 +19,15 @@
     <li><a href="{{ url_for('progressivis.server.about') }}">About</a></li>
     <li><a href="{{ url_for('progressivis.server.contact') }}">Contact</a></li>
     {% endcall %}
+    {% with messages = get_flashed_messages() %}
+    {% if messages %}
+    <ul class=flashes>
+      {% for message in messages %}
+      <li>{{ message }}</li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+    {% endwith %}
     <div class="row">
       {% block content %}
       {% endblock %}

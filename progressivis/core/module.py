@@ -159,20 +159,29 @@ class Module(object):
     def timer(self):
         return self._scheduler.timer()
 
-    def to_json(self):
-        return {
-            'id': self.id,
-            'classname': self.pretty_typename(),
-            'is_visualization': self.is_visualization(),
-            'start_time': self._start_time,
-            'end_time': self._end_time,
-            'last_update': self._last_update,
-            'state': self.state_name[self._state],
-            'input_slots': { k: slot_to_json(s) for (k, s) in self._input_slots.iteritems() },
-            'output_slots': { k: slot_to_json(s) for (k, s) in self._output_slots.iteritems() },
-            'default_step_size': self.default_step_size,
-            'parameters': self._params.to_dict()
-        }
+    def to_json(self, short=False):
+        if short:
+            return {
+                'id': self.id,
+                'classname': self.pretty_typename(),
+                'is_visualization': self.is_visualization(),
+                'last_update': self._last_update,
+                'state': self.state_name[self._state]
+            }
+        else:
+            return {
+                'id': self.id,
+                'classname': self.pretty_typename(),
+                'is_visualization': self.is_visualization(),
+                'last_update': self._last_update,
+                'state': self.state_name[self._state],
+                'start_time': self._start_time,
+                'end_time': self._end_time,
+                'input_slots': { k: slot_to_json(s) for (k, s) in self._input_slots.iteritems() },
+                'output_slots': { k: slot_to_json(s) for (k, s) in self._output_slots.iteritems() },
+                'default_step_size': self.default_step_size,
+                'parameters': self._params.to_dict()
+            }
 
     def describe(self):
         print 'id: %s' % self.id
