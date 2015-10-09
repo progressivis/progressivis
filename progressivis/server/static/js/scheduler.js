@@ -155,4 +155,5 @@ function scheduler_ready() {
 	e.preventDefault();
 	$(this).tab('show');
     });
+    websocket_open();
 }

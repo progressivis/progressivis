@@ -1,4 +1,4 @@
-from progressivis.server.app import create_app
+from progressivis.server.app import app_create, app_run
 from progressivis.core.scheduler import Scheduler
 from progressivis.core.mt_scheduler import MTScheduler
 
@@ -15,5 +15,6 @@ for fn in sys.argv[1:]:
 
 if __name__=='__main__':
     print 'Scheduler has %d modules' % len(Scheduler.default)
-    app = create_app(Scheduler.default)
-    app.run(debug=True)
+    app = app_create(Scheduler.default)
+    app_run(app)
+
