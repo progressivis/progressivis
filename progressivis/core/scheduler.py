@@ -124,6 +124,12 @@ class Scheduler(object):
         self._tick_proc = tick_proc
         self.run()
 
+    def set_tick_proc(self, tick_proc):
+        if tick_proc is None or callable(tick_proc):
+            self._tick_proc = tick_proc
+        else:
+            raise ProgressiveError('value should be callable or None', tick_proc)
+
     def run(self):
         self._stopped = False
         self._running = True

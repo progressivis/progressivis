@@ -112,6 +112,8 @@ class Module(object):
         self.input = InputSlots(self)
         self.output = OutputSlots(self)
         self._scheduler.add_module(self)
+        self._start_run = None
+        self._end_run = None
 
     def destroy(self):
         self.scheduler().remove_module(self)
@@ -464,8 +466,25 @@ class Module(object):
         assert self.state != self.state_running
         self.end_run(run_number)
 
+    def set_start_run(self, start_run):
+        if start_run is None or callable(start_run):
+            self._start_run = start_run
+        else:
+            raise ProgressiveError('value should be callable or None', start_run)
+
+    def start_run(self, run_number):
+        if self._start_run:
+            self._start_run(self, run_number)
+
+    def set_end_run(self, end_run):
+        if end_run is None or callable(end_run):
+            self._end_run = end_run
+        else:
+            raise ProgressiveError('value should be callable or None', end_run)
+
     def end_run(self, run_number):
-        pass
+        if self._end_run:
+            self._end_run(self, run_number)
 
     def ending(self):
         pass
@@ -515,6 +534,7 @@ class Module(object):
         max_time = quantum / 4.0
         
         run_step_ret = {'reads': 0, 'updates': 0, 'creates': 0}
+        self.start_run(run_number)
         tracer.start_run(now,run_number)
         while self._start_time < self._end_time:
             remaining_time = self._end_time-self._start_time
@@ -563,6 +583,7 @@ class Module(object):
             logger.debug('Module %s zombie', self.pretty_typename())
             tracer.terminated(now,run_number)
         tracer.end_run(now,run_number)
+        self.end_run(run_number)
         self._stop(run_number)
         if exception:
             print_exc()

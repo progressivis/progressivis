@@ -43,6 +43,7 @@ def contact(*unused_all, **kwargs):
 @progressivis_bp.route('/progressivis/scheduler/', methods=['POST'])
 def scheduler():
     scheduler = progressivis_bp.scheduler
+    scheduler.set_tick_proc(progressivis_bp.tick_scheduler) # setting it multiple times is ok
     return jsonify(scheduler.to_json())
         
 @progressivis_bp.route('/progressivis/scheduler/start', methods=['POST'])
@@ -67,5 +68,6 @@ def module(id):
     if request.method == 'POST':
         scheduler = progressivis_bp.scheduler
         module = scheduler.module[id]
+        module.set_end_run(progressivis_bp.tick_module) # setting it multiple time is ok
         return jsonify(module.to_json())
     return render_template('module.html', title="Module "+id, id=id)

@@ -77,8 +77,9 @@ function module_refresh() {
 
 function module_socketmsg(message) {
     var txt = message.data;
-    if (txt == "reload")
+    if (txt.startsWith("tick ")) {
 	module_refresh();
+    }
     else 
 	console.log('Module '+module_id+' received unexpected socket message: '+txt);
 }

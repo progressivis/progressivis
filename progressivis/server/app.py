@@ -74,8 +74,16 @@ class ProgressivisBlueprint(Blueprint):
 
     def setup(self, scheduler):
         self.scheduler = scheduler
+        self.scheduler._tick_proc = self.tick_scheduler
 
-#    
+    def tick_scheduler(self, scheduler, run_number):
+        ProgressiveWebSocket.write_to_path('scheduler', 'tick %d'%run_number)
+
+    def tick_module(self, module, run_number):
+        ProgressiveWebSocket.write_to_path('module %s'%module.id, 'tick %d'%run_number)
+
+
+
 progressivis_bp = ProgressivisBlueprint('progressivis.server',
                                         'progressivis.server',
                                         static_folder='static',
