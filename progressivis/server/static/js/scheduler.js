@@ -1,5 +1,5 @@
 var scheduler_status = null,
-    run_number = 0;
+    scheduler_run_number = -1;
 
 function scheduler_get(success, error) {
     $.ajax({
@@ -43,7 +43,7 @@ function scheduler_update(data) {
     //console.log('scheduler update');
 
     scheduler_status = data;
-    run_number = data['run_number'];
+    scheduler_run_number = data['run_number'];
     if (data.is_running) {
 	$('#start').addClass('disabled');
 	$('#stop').removeClass('disabled');
@@ -111,9 +111,11 @@ function scheduler_show_module(module) {
 }
 
 function scheduler_socketmsg(message) {
-    var txt = message.data;
+    var txt = message.data, run_number;
     if (txt.startsWith("tick ")) {
-	scheduler_refresh();
+	run_number = Number(txt.substr(5));
+	if (run_number > scheduler_run_number)
+	    scheduler_refresh();
     }
     else 
 	console.log('Scheduler received unexpected socket message: '+txt);

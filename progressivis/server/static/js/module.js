@@ -1,5 +1,6 @@
 var module_status = null,
-    module_id = null;
+    module_id = null,
+    module_run_number = -1;
 
 function module_get(success, error) {
     $.ajax({
@@ -13,6 +14,7 @@ function module_get(success, error) {
 
 function module_update(data) {
     module_status = data;
+    module_run_number = data.last_update;
     module_update_table(data);
 }
 
@@ -76,9 +78,11 @@ function module_refresh() {
 }
 
 function module_socketmsg(message) {
-    var txt = message.data;
+    var txt = message.data, run_number;
     if (txt.startsWith("tick ")) {
-	module_refresh();
+	run_number = txt.substring(5);
+	if (run_number > module_run_number)
+	    module_refresh();
     }
     else 
 	console.log('Module '+module_id+' received unexpected socket message: '+txt);
