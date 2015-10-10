@@ -1,40 +1,71 @@
 from __future__ import print_function
 
 import logging
-log = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
-from flask import (
-    Flask, Blueprint,
-    render_template, request, send_from_directory,
-    abort, jsonify, Response, redirect, url_for
-)
+from flask import Flask, Blueprint
 
 from tornado.wsgi import WSGIContainer
 from tornado.web import Application, FallbackHandler
 from tornado.websocket import WebSocketHandler
 from tornado.ioloop import IOLoop
 
-from progressivis.core.scheduler import Scheduler
+from progressivis import ProgressiveError, Scheduler
 
-class WebSocket(WebSocketHandler):
+class ProgressiveWebSocket(WebSocketHandler):
+    sockets_for_path = {}
+    def __init__(self, application, request, **kwargs):
+        super(ProgressiveWebSocket, self).__init__(application, request, **kwargs)
+        self.handshake = False
+        self.path = None
+
+    def register(self):
+        if self.path is None:
+            logger.error('Trying to register a websocket without path')
+            raise ProgressiveError('Trying to register a websocket without path')
+        if self.path not in self.sockets_for_path:
+            self.sockets_for_path[self.path] = [self]
+        else:
+            self.sockets_for_path[self.path].append(self)
+
+    def unregister(self):
+        if self.path is None or self.path not in self.sockets_for_path:
+            return
+        self.sockets_for_path[self.path].remove(self)
+
     def open(self):
-        print("Socket opened.")
+        logger.info("Socket opened.")
         self.handshake = False
 
     def on_message(self, message):
         #self.write_message("Received: " + message)
-        if not self.handshake and message=='ping':
-            self.write_message('pong')
-            handshake = True
+        if not self.handshake:
+            if message.startswith('ping '):
+                self.path = message[5:]
+                self.register()
+                self.write_message('pong')
+                self.handshake = True
+                logger.debug("Handshake received for path: '%s'", self.path)
+            else:
+                logger.error("Received msg before handshake: '%s'", message)
             return
-        print("Received message: " + message)
+        logger.warn("Received message '%s' from '%s'", message, self.path)
 
     def on_close(self):
-        print("Socket closed.")
+        self.unregister()
+        logger.info("Socket for '%s' closed.", self.path)
 
     def select_subprotocol(self, subprotocols):
         # for now, don't implement any subprotocol
         return None
+
+    @staticmethod
+    def write_to_path(path, msg):
+        sockets = ProgressiveWebSocket.sockets_for_path.get(path)
+        if not sockets:
+            return
+        for s in sockets:
+            s.write_message(msg)
 
 
 class ProgressivisBlueprint(Blueprint):
@@ -52,7 +83,7 @@ progressivis_bp = ProgressivisBlueprint('progressivis.server',
                                         template_folder='templates')
 
 import views
-
+views # to shut up pyflakes
 
 def app_create(config="settings.py", scheduler=None):
     if scheduler is None:
@@ -68,7 +99,7 @@ def app_create(config="settings.py", scheduler=None):
 
     container = WSGIContainer(app)
     server = Application([
-        (r'/websocket/', WebSocket),
+        (r'/websocket/', ProgressiveWebSocket),
         (r'.*', FallbackHandler, dict(fallback=container))
     ])
     server.listen(5000)

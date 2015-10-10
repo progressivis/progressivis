@@ -1,4 +1,4 @@
-__all__ = [ "ProgressiveError","Scheduler", "MTScheduler", 
+__all__ = [ "ProgressiveError", "type_fullname", "Scheduler", "MTScheduler", 
            "Slot", "SlotDescriptor", "Module", "connect", "StorageManager",
            "DataFrameModule", "Constant", "Every", "Print", "Wait", "Merge", "NIL" ]
 

@@ -3,13 +3,9 @@ from __future__ import absolute_import
 import logging
 logger = logging.getLogger(__name__)
 
-from flask import (
-    render_template, request, send_from_directory,
-    abort, jsonify, Response, redirect, url_for
-)
+from flask import render_template, request, send_from_directory, jsonify
 
-import sys
-from os.path import join, dirname, abspath, normpath, realpath, isdir
+from os.path import join, dirname, abspath
 
 from .app import progressivis_bp
 
@@ -22,7 +18,7 @@ def ping():
 
 @progressivis_bp.route('/progressivis/static/<path:filename>')
 def progressivis_file(filename):
-    return flask.send_from_directory(JS_DIR, filename)
+    return send_from_directory(JS_DIR, filename)
 
 @progressivis_bp.route('/')
 @progressivis_bp.route('/progressivis/')

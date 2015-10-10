@@ -7,16 +7,15 @@ function websocket_open(msg, handler) {
     socket = new WebSocket("ws://" + document.domain + ":5000/websocket/");
 
     socket.onopen = function() {
-        socket.send("ping");
+        socket.send("ping "+msg);
 	handshake = false;
-	if (msg) socket.send(msg);
     };
 
     socket.onmessage = function(message) {
         var txt = message.data;
 	if (txt == 'pong' && !handshake) {
 	    handshake = true;
-	    console.log('Received handshake');
+	    //console.log('Received handshake');
 	    return;
 	}
 	if (handler) handler(message);

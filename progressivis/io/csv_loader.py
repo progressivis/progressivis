@@ -19,7 +19,7 @@ class CSVLoader(DataFrameModule):
         self.parser = pd.read_csv(filepath_or_buffer, **csv_kwds)
         self._rows_read = 0
         if filter is not None and not callable(filter):
-            raise ProgressiveException('filter parameter should be callable or None')
+            raise ProgressiveError('filter parameter should be callable or None')
         self._filter = filter
 
     def rows_read(self):
