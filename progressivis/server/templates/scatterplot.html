@@ -1,0 +1,37 @@
+{% extends "_page_base.html" %}
+
+{% block title %}
+Scatterplot for module {{id}}
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{{ url_for('static', filename='jquery.min.js') }}"></script>
+<script src="{{ url_for('static', filename='bootstrap/js/bootstrap.min.js') }}"></script>
+<script src="{{ url_for('static', filename='d3.min.js') }}"></script>
+<script src="{{ url_for('progressivis.server.progressivis_file', filename='js/module.js') }}"></script>
+<script src="{{ url_for('progressivis.server.progressivis_file', filename='js/scatterplot.js') }}"></script>
+{% endblock %}
+
+{% block script %}
+var module_id = "{{id}}";
+$(document).ready(scatterplot_ready);
+{% endblock %}
+
+{% block content %}
+<ol class="breadcrumb">
+  <li><a href="#">Home</a></li>
+  <li><a href="#">Scatterplot {{id}}</a></li>
+</ol>
+
+<div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
+  <h1 class='page-header'>Scatterplot for Module {{id}}</h1>
+
+  <div id='error'></div>
+
+<div>
+  <div id='scatterplot'>
+  </div>
+</div>
+
+
+{% endblock %}

@@ -3,10 +3,9 @@ from __future__ import absolute_import
 import logging
 logger = logging.getLogger(__name__)
 
+from StringIO import StringIO
 from flask import render_template, request, send_from_directory, jsonify
-
 from os.path import join, dirname, abspath
-
 from .app import progressivis_bp
 
 SERVER_DIR = dirname(dirname(abspath(__file__)))
@@ -65,9 +64,20 @@ def scheduler_stop():
 @progressivis_bp.route('/progressivis/module/<id>', methods=['GET', 'POST'])
 def module(id):
     print 'Requested module %s'%id
+    scheduler = progressivis_bp.scheduler
+    module = scheduler.module[id]
+    module.set_end_run(progressivis_bp.tick_module) # setting it multiple time is ok
     if request.method == 'POST':
-        scheduler = progressivis_bp.scheduler
-        module = scheduler.module[id]
-        module.set_end_run(progressivis_bp.tick_module) # setting it multiple time is ok
         return jsonify(module.to_json())
+    if module.is_visualization():
+        vis = module.get_visualization()
+        return render_template(vis+'.html', title="%s %d"%(vis,id), id=id)
     return render_template('module.html', title="Module "+id, id=id)
+
+
+def serve_pil_image(pil_img):
+    img_io = StringIO()
+    pil_img.save(img_io, 'JPEG', quality=70)
+    img_io.seek(0)
+    return send_file(img_io, mimetype='image/jpeg')
+

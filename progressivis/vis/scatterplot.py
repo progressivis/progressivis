@@ -45,6 +45,9 @@ class ScatterPlot(DataFrameModule):
     def is_visualization(self):
         return True
 
+    def get_visualization(self):
+        return "scatterplot";
+
     def create_scatterplot_modules(self, wait=None, x_stats=None, y_stats=None, sample=None, merge=None, histogram2d=None):
         s=self._scheduler
         if wait is None:
@@ -150,3 +153,34 @@ class ScatterPlot(DataFrameModule):
         super(ScatterPlot, self).cleanup_run(run_number)
         if self._auto_update:
             self.update(None)
+
+    def to_json(self, short=False):
+        json = super(ScatterPlot, self).to_json(short)
+        if short:
+            return json
+
+        df = self.df()
+        if df is not None:
+            json['scatterplot'] = {
+                'x': df[self.x_column].to_json(orient='records'),
+                'y': df[self.y_column].to_json(orient='records')
+            }
+        histo_df = self.get_input_slot('histogram2d').data()
+        if histo_df is not None and histo_df.index[-1] is not None:
+            idx = histo_df.index[-1]
+            row = histo_df.loc[idx]
+            if not (np.isnan(row.xmin) or np.isnan(row.xmax)
+                    or np.isnan(row.ymin) or np.isnan(row.ymax)
+                    or row.array is None):
+                json['bounds'] = {
+                    'xmin': row.xmin,
+                    'ymin': row.ymin,
+                    'xmax': row.xmax,
+                    'ymax': row.ymax
+                }
+            
+        
+
+        json.update({
+            'image': self.img,
+        })
