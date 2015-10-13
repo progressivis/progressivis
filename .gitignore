@@ -8,6 +8,7 @@
 *.c
 *.db
 *.out
+*.swp
 
 .DS_Store
 .Python
