@@ -74,11 +74,11 @@ class Scheduler(object):
             return -1
         return 0
 
-    def to_json(self):
+    def to_json(self, short=True):
         msg = {}
         mods = {}
         for (name,module) in self.modules().iteritems():
-            mods[name] = module.to_json(short=True)
+            mods[name] = module.to_json(short=short)
                            
         if self._runorder:
             i = 0
