@@ -39,6 +39,10 @@ def about(*unused_all, **kwargs):
 def contact(*unused_all, **kwargs):
     return render_template('contact.html')
 
+@progressivis_bp.route('/progressivis/module-graph.html')
+def module_graph(*unused_all, **kwargs):
+    return render_template('module_graph.html')
+
 @progressivis_bp.route('/progressivis/scheduler/', methods=['POST'])
 def scheduler():
     short = request.values.get('short', 'True').lower() != 'false'
