@@ -4,7 +4,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 from StringIO import StringIO
-from flask import render_template, request, send_from_directory, jsonify, abort
+from flask import render_template, request, send_from_directory, jsonify, abort, send_file
 from os.path import join, dirname, abspath
 from .app import progressivis_bp
 
@@ -76,13 +76,13 @@ def module(id):
 
 @progressivis_bp.route('/progressivis/module/<id>/image', methods=['GET'])
 def module_image(id):
-    print 'Requested module %s'%id
+    print 'Requested module image for %s'%id
     scheduler = progressivis_bp.scheduler
     module = scheduler.module[id]
     if module is None:
         abort(404)
     img = module.get_image()
-    if image is None:
+    if img is None:
         abort(404)
     return serve_pil_image(img)
 

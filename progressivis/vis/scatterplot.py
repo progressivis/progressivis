@@ -164,10 +164,7 @@ class ScatterPlot(DataFrameModule):
 
         df = self.df()
         if df is not None:
-            json['scatterplot'] = {
-                'x': df[self.x_column].to_json(orient='records'),
-                'y': df[self.y_column].to_json(orient='records')
-            }
+            json['scatterplot'] = df[[self.x_column,self.y_column]].to_dict(orient='split')
         histo_df = self.get_input_slot('histogram2d').data()
         if histo_df is not None and histo_df.index[-1] is not None:
             idx = histo_df.index[-1]
@@ -182,7 +179,7 @@ class ScatterPlot(DataFrameModule):
                     'ymax': row.ymax
                 }
                 self.image = sp.misc.toimage(row.array)
-                json['image'] = "modules/%s/image"%self.id
+                json['image'] = "%s/image?run_number=%d"%(self.id,self._last_update)
         return json
 
     def get_image(self, name=None):
