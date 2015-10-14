@@ -41,9 +41,10 @@ def contact(*unused_all, **kwargs):
 
 @progressivis_bp.route('/progressivis/scheduler/', methods=['POST'])
 def scheduler():
+    short = request.values.get('short', 'True').lower() != 'false'
     scheduler = progressivis_bp.scheduler
     scheduler.set_tick_proc(progressivis_bp.tick_scheduler) # setting it multiple times is ok
-    return jsonify(scheduler.to_json())
+    return jsonify(scheduler.to_json(short))
         
 @progressivis_bp.route('/progressivis/scheduler/start', methods=['POST'])
 def scheduler_start():
