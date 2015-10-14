@@ -185,6 +185,9 @@ class Module(object):
                 'parameters': self._params.to_dict()
             }
 
+    def get_image(self, name=None):
+        return None
+
     def describe(self):
         print 'id: %s' % self.id
         print 'class: %s' % type_fullname(self)

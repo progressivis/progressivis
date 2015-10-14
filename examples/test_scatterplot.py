@@ -13,9 +13,11 @@ def print_len(x):
 
 #log_level()
 
-MTScheduler.set_default()
+try:
+    s = scheduler
+except:
+    s = Scheduler()
 
-s=MTScheduler()
 #csv = CSVLoader('../nyc-taxi/yellow_tripdata_2014-10.csv', index_col=False,skipinitialspace=True,usecols=['pickup_longitude', 'pickup_latitude'], filter=filter, scheduler=s)
 csv = CSVLoader(get_dataset('bigfile'),header=None,index_col=False,scheduler=s)
 pr = Every(scheduler=s)

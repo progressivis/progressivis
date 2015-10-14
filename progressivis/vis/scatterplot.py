@@ -15,6 +15,7 @@ from IPython.display import display
 #output_notebook()
 
 import numpy as np
+import scipy as sp
 import pandas as pd
 
 import logging
@@ -37,6 +38,7 @@ class ScatterPlot(DataFrameModule):
         self._auto_update = False
         self.image_source = None
         self.scatter_source = None
+        self.image = None
 #        self.bounds_source = None
 
     def df(self):
@@ -155,6 +157,7 @@ class ScatterPlot(DataFrameModule):
             self.update(None)
 
     def to_json(self, short=False):
+        self.image = None
         json = super(ScatterPlot, self).to_json(short)
         if short:
             return json
@@ -178,9 +181,9 @@ class ScatterPlot(DataFrameModule):
                     'xmax': row.xmax,
                     'ymax': row.ymax
                 }
-            
-        
+                self.image = sp.misc.toimage(row.array)
+                json['image'] = "modules/%s/image"%self.id
+        return json
 
-        json.update({
-            'image': self.img,
-        })
+    def get_image(self, name=None):
+        return self.image
