@@ -1,0 +1,84 @@
+{% extends "_page_base.html" %}
+
+{% block title %}
+Progressivis Server
+{% endblock %}
+
+{% block head %}
+  {{ super() }}
+<style type="text/css">
+.background{
+    stroke: white;
+    stroke-width: 1px;
+    fill: white;
+    cursor: move;
+}
+
+.node {
+    stroke: black;
+    stroke-width: 1.5px;
+    fill: lightcoral;
+}
+
+.created {
+    fill: lightblue;
+}
+
+.running {
+    fill: lightgreen;
+}
+
+.terminated {
+    fill: lightgrey;
+}
+
+.link {
+    fill: none;
+    stroke: #000;
+    stroke-width: 3px;
+    opacity: 0.7;
+    marker-end: url(#end-arrow);
+}
+
+.label {
+    fill: black;
+    font-size: 25px;
+    text-anchor: middle;
+}
+
+#module-graph{
+  border: 1px solid grey;
+}
+</style>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{{ url_for('static', filename='jquery.min.js') }}"></script>
+<script src="{{ url_for('static', filename='bootstrap/js/bootstrap.min.js') }}"></script>
+<script src="{{ url_for('static', filename='d3.min.js') }}"></script>
+<script src="{{ url_for('static', filename='cola.min.js') }}"></script>
+<script src="{{ url_for('static', filename='lodash.min.js') }}"></script>
+<script src="{{ url_for('progressivis.server.progressivis_file', filename='js/module_graph.js') }}"></script>
+{% endblock %}
+
+{% block script %}
+$(document).ready(graph_ready);
+{% endblock %}
+
+{% block content %}
+<ol class="breadcrumb">
+  <li><a href="#">Home</a></li>
+</ol>
+
+<div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
+  <h1 class='page-header'>Module graph</h1>
+
+  <div id='error'></div>
+
+<div>
+  <svg id="module-graph" width="960" height="500">
+  </svg>
+</div>
+
+
+{% endblock %}
