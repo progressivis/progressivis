@@ -14,10 +14,8 @@ function cmp_order(mod1, mod2) {
 
 function scheduler_update(data) {
     progressivis_update(data);
-    if (firstTime) {
-        graph_update_vis(data.modules);
-        firstTime = false;
-    }
+    graph_update_vis(data.modules, firstTime);
+    firstTime = false;
     scheduler_update_table(data);
 }
 
