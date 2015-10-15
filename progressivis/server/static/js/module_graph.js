@@ -83,7 +83,6 @@ function collect_edges(modules, name2id){
 }
 
 function graph_update_vis(modules){
-  console.log("graph_update_vis");
   var nodes = _.map(modules, function(module, index){
     return { 
       id: index, 
