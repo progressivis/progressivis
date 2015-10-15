@@ -52,7 +52,7 @@ function deep_uniq(coll){
 }
 
 function graph_update(data) {
-    run_number = data['run_number'];
+    module_update(data);
     graph_update_vis(data.modules);
 }
 
@@ -159,7 +159,7 @@ function graph_update_vis(modules){
 }
 
 function graph_refresh() {
-  graph_get(graph_update, module_error);
+  graph_get(graph_update, error);
 }
 
 function graph_ready() {
