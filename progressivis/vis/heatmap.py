@@ -5,6 +5,8 @@ import numpy as np
 import pandas as pd
 import scipy as sp
 
+from PIL import Image
+
 import re
 
 class Heatmap(DataFrameModule):
@@ -47,6 +49,7 @@ class Heatmap(DataFrameModule):
         high = p.high
         low = p.low
         image = sp.misc.toimage(histo, cmin=cmin, cmax=cmax, high=high, low=low)
+        image.transpose(Image.FLIP_TOP_BOTTOM)
         filename = p.filename
         if filename is not None:
             try:
