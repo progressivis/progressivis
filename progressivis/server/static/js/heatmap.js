@@ -20,24 +20,23 @@ var yAxis = d3.svg.axis()
     .orient("left");
 
 
-function scatterplot_update(data) {
+function heatmap_update(data) {
     module_update(data);
-    scatterplot_update_vis(data);
+    heatmap_update_vis(data);
 }
 
-function scatterplot_update_vis(rawdata) {
-    var data = rawdata['scatterplot'],
-        bounds = rawdata['bounds'];
+function heatmap_update_vis(data) {
+    var image = data['image'],
+        bounds = data['bounds'];
 
-    if (!data || !bounds) return;
-    var index = data['index'];
-    x.domain([bounds['xmin'], bounds['xmax']]).nice();
-    y.domain([bounds['ymin'], bounds['ymax']]).nice();
+    if (!image || !bounds) return;
+    x.domain([bounds['xmin'], bounds['xmax']]);
+    y.domain([bounds['ymin'], bounds['ymax']]);
 
     if (firstTime) {
         svg.append("image")
             .attr("class", "heatmap")
-            .attr("xlink:href", rawdata['image'])
+            .attr("xlink:href", image)
             .attr("preserveAspectRatio", "none")
             .attr("x", 0)
             .attr("y", 0)
@@ -53,7 +52,7 @@ function scatterplot_update_vis(rawdata) {
             .attr("x", width)
             .attr("y", -6)
             .style("text-anchor", "end")
-            .text([0]);
+            .text(data['columns'][0]);
 
         svg.append("g")
             .attr("class", "y axis")
@@ -69,7 +68,7 @@ function scatterplot_update_vis(rawdata) {
     }
     else { // not firstTime
         svg.select(".heatmap")
-            .attr("xlink:href", rawdata['image']);
+            .attr("xlink:href", image);
 
         svg.select(".x.axis")
             .transition()
@@ -81,31 +80,14 @@ function scatterplot_update_vis(rawdata) {
             .duration(100)
             .call(yAxis);
     }
-
-    var dots = svg.selectAll(".dot")
-            .data(data['data'], function(d, i) { return index[i]; });
-    
-    dots.enter().append("circle")
-         .attr("class", "dot")
-         .attr("r", 3.5)
-         .attr("cx", function(d) { return x(d[0]); })
-         .attr("cy", function(d) { return y(d[1]); })
-         .style("fill", "blue") //function(d) { return color(d.species); });
-        .append("title")
-        .text(function(d, i) { return index[i]; });
-    dots.transition()  // Transition from old to new
-        .duration(500)  // Length of animation
-         .attr("cx", function(d) { return x(d[0]); })
-         .attr("cy", function(d) { return y(d[1]); });    
-    dots.exit().remove();
 }
 
-function scatterplot_refresh() {
-  module_get(scatterplot_update, error);
+function heatmap_refresh() {
+  module_get(heatmap_update, error);
 }
 
-function scatterplot_ready() {
-    svg = d3.select("#scatterplot")
+function heatmap_ready() {
+    svg = d3.select("#heatmap")
         .append("svg")
          .attr("width", width + margin.left + margin.right)
          .attr("height", height + margin.top + margin.bottom)
@@ -116,6 +98,6 @@ function scatterplot_ready() {
         e.preventDefault();
         $(this).tab('show');
     });
-    refresh = scatterplot_refresh; // function to call to refresh
+    refresh = heatmap_refresh;
     module_ready();
 }

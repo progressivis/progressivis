@@ -1,9 +1,12 @@
 var ProgressiVis = {};
 
 var socket = null,
-    handshake = false;
+    handshake = false,
+    progressivis_run_number,
+    progressivis_data,
+    refresh, error;
 
-function websocket_open(msg, handler) {
+function progressivis_websocket_open(msg, handler) {
     socket = new WebSocket("ws://" + document.domain + ":5000/websocket/");
 
     socket.onopen = function() {
@@ -22,7 +25,25 @@ function websocket_open(msg, handler) {
     };
 }
 
-function websocket_submit(text) {
+function progressivis_update(data) {
+    progressivis_data = data;
+    progressivis_run_number = data['run_number'];
+    $('#run_number').text(progressivis_run_number);
+    if (data.is_running) {
+        $('#start').addClass('disabled');
+        $('#stop').removeClass('disabled');
+    }
+    else if (data.is_terminated) {
+        $('#start').removeClass('disabled');
+        $('#stop').removeClass('disabled');
+    }
+    else {
+        $('#start').removeClass('disabled');
+        $('#stop').addClass('disabled');
+    }
+}
+
+function progressivis_websocket_submit(text) {
     socket.send(text);
 }
 
@@ -62,4 +83,52 @@ function layout_value(v) {
 	return layout_dict(v, keys.sort());
     }
     return v.toString();
+}
+
+function progressivis_start(success, error) {
+    $.post($SCRIPT_ROOT+'/progressivis/scheduler/start')
+        .done(success)
+        .fail(error);
+};
+
+function progressivis_stop(success, error) {
+    $.post($SCRIPT_ROOT+'/progressivis/scheduler/stop')
+        .done(success)
+        .fail(error);
+};
+
+function progressivis_error(ev) {
+  var contents = '<div class="alert alert-danger" role="alert">Error</div>';
+  $('#error').html(contents);
+}
+
+function progressivis_socketmsg(message) {
+    var txt = message.data,
+        run_number;
+    if (txt.startsWith("tick ")) {
+        run_number = Number(txt.substr(5));
+        //console.log('Reveived netsocket tick '+run_number);
+        if (run_number > progressivis_run_number) {
+            if (refresh == null) {
+                console.log('ERROR: refresh is not defined');
+            }
+            else
+                refresh();
+        }
+    }
+    else 
+        console.log('Received unexpected socket message: '+txt);
+}
+
+function progressivis_ready(socket_name) {
+    if (error === null) 
+        error = progressivis_error;
+    if (refresh === null) {
+        console.log('ERROR: refresh is not defined');
+    }
+    else
+        refresh();
+    $('#start').click(function() { progressivis_start(refresh, error); });
+    $('#stop').click(function() { progressivis_stop(refresh, error); });
+    progressivis_websocket_open(socket_name, progressivis_socketmsg);
 }

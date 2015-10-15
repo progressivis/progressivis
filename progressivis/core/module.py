@@ -6,7 +6,7 @@ import pandas as pd
 import numpy as np
 
 from progressivis.core.common import ProgressiveError, type_fullname
-from progressivis.core.utils import empty_typed_dataframe, typed_dataframe, DataFrameAsDict
+from progressivis.core.utils import empty_typed_dataframe, typed_dataframe, DataFrameAsDict, remove_nan
 from progressivis.core.scheduler import Scheduler
 from progressivis.core.slot import Slot, SlotDescriptor, InputSlots, OutputSlots
 from progressivis.core.tracer import Tracer
@@ -162,30 +162,34 @@ class Module(object):
         return self._scheduler.timer()
 
     def to_json(self, short=False):
+        s = self.scheduler()
+        json = {
+            'is_running': s.is_running(),
+            'is_terminated': s.is_terminated(),
+            'run_number': s.run_number(),
+            'id': self.id,
+            'classname': self.pretty_typename(),
+            'is_visualization': self.is_visualization(),
+            'last_update': self._last_update,
+            'state': self.state_name[self._state]
+        }
         if short:
-            return {
-                'id': self.id,
-                'classname': self.pretty_typename(),
-                'is_visualization': self.is_visualization(),
-                'last_update': self._last_update,
-                'state': self.state_name[self._state]
-            }
-        else:
-            return {
-                'id': self.id,
-                'classname': self.pretty_typename(),
-                'is_visualization': self.is_visualization(),
-                'last_update': self._last_update,
-                'state': self.state_name[self._state],
-                'start_time': self._start_time,
-                'end_time': self._end_time,
-                'input_slots': { k: slot_to_json(s) for (k, s) in self._input_slots.iteritems() },
-                'output_slots': { k: slot_to_json(s) for (k, s) in self._output_slots.iteritems() },
-                'default_step_size': self.default_step_size,
-                'parameters': self._params.to_dict()
-            }
+            return json
+        json.update({
+            'start_time': self._start_time,
+            'end_time': self._end_time,
+            'input_slots': { k: slot_to_json(s) for (k, s) in self._input_slots.iteritems() },
+            'output_slots': { k: slot_to_json(s) for (k, s) in self._output_slots.iteritems() },
+            'default_step_size': self.default_step_size,
+            'parameters': self.remove_nan(self._params.to_dict())
+        })
+        return json
 
-    def get_image(self, name=None):
+    @staticmethod
+    def remove_nan(d):
+        return remove_nan(d)
+
+    def get_image(self, run_number=None):
         return None
 
     def describe(self):

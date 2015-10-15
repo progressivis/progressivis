@@ -21,3 +21,7 @@ svg {
 .dot {
   stroke: #000;
 }
+
+#run_number {
+    width: 78px !important;
+}

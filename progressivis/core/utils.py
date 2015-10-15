@@ -1,6 +1,22 @@
 import pandas as pd
+import numpy as np
 
-
+def remove_nan(d):
+    if isinstance(d,float) and np.isnan(d):
+        return None
+    if isinstance(d, list):
+        for i, v in enumerate(d):
+            if isinstance(v,float) and np.isnan(v):
+                d[i] = None
+            else:
+                remove_nan(v)
+    elif isinstance(d, dict):
+        for k, v in d.iteritems():
+            if isinstance(v,float) and np.isnan(v):
+                d[k] = None
+            else:
+                remove_nan(v)
+    return d
 
 def empty_typed_dataframe(columns, types=None):
     d = {}

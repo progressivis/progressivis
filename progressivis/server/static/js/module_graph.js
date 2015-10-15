@@ -1,18 +1,12 @@
 "use strict";
 
-var scheduler_run_number = -1;
-
 const width=960, height=500;
 const margin=10, pad=12;
 
-function scheduler_get(success, error) {
-    $.ajax({
-	url: $SCRIPT_ROOT+'/progressivis/scheduler/?short=False',
-	dataType: 'json',
-	method: 'POST'
-    })
-	.done(success)
-	.fail(error);
+function graph_get(success, error) {
+    $.post($SCRIPT_ROOT+'/progressivis/scheduler/?short=False')
+        .done(success)
+        .fail(error);
 };
 
 function graph_setup(){
@@ -20,7 +14,7 @@ function graph_setup(){
     .attr({width: width, height: height, "pointer-events": "all"});
 
   outer.append('rect')
-    .attr({ class: 'background', width: "100%", height: "100%"})
+    .attr({ 'class': 'background', width: "100%", height: "100%"})
     .call(d3.behavior.zoom().on("zoom", zoom));
 
   outer.append('svg:defs').append('svg:marker')
@@ -57,8 +51,8 @@ function deep_uniq(coll){
   }, []);
 }
 
-function scheduler_update(data) {
-    scheduler_run_number = data['run_number'];
+function graph_update(data) {
+    run_number = data['run_number'];
     graph_update_vis(data.modules);
 }
 
@@ -146,7 +140,7 @@ function graph_update_vis(modules){
     var routeEdges = function(){
       d3cola.prepareEdgeRouting();
       link.attr("d", function(d){ return lineFunction(d3cola.routeEdge(d)); });
-    }
+    };
 
     d3cola.start(50, 100, 200).on("tick", function () {
       node.each(function (d) { d.innerBounds = d.bounds.inflate(-margin); })
@@ -164,28 +158,12 @@ function graph_update_vis(modules){
 
 }
 
-function graph_error(ev) {
-  var contents = '<div class="alert alert-danger" role="alert">Server Error</div>';
-  $('#error').html(contents);
-}
-
 function graph_refresh() {
-  scheduler_get(scheduler_update, graph_error);
-}
-
-function scheduler_socketmsg(message) {
-  var txt = message.data, run_number;
-  if (txt.startsWith("tick ")) {
-	run_number = Number(txt.substr(5));
-	if (run_number > scheduler_run_number)
-	  graph_refresh();
-  } else { 
-	  console.log('Scheduler received unexpected socket message: '+txt);
-  }
+  graph_get(graph_update, module_error);
 }
 
 function graph_ready() {
-  graph_setup();
-  graph_refresh();
-  websocket_open("scheduler", scheduler_socketmsg);
+    refresh = graph_refresh; // function to call to refresh
+    graph_setup();
+    module_ready();
 }

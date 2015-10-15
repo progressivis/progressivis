@@ -11,6 +11,7 @@ from .app import progressivis_bp
 SERVER_DIR = dirname(dirname(abspath(__file__)))
 JS_DIR = join(SERVER_DIR, 'server/static')
 
+
 @progressivis_bp.route('/progressivis/ping')
 def ping():
     return "pong"
@@ -46,10 +47,11 @@ def module_graph(*unused_all, **kwargs):
 @progressivis_bp.route('/progressivis/scheduler/', methods=['POST'])
 def scheduler():
     short = request.values.get('short', 'True').lower() != 'false'
+    print "scheduler short="+str(short)
     scheduler = progressivis_bp.scheduler
     scheduler.set_tick_proc(progressivis_bp.tick_scheduler) # setting it multiple times is ok
     return jsonify(scheduler.to_json(short))
-        
+
 @progressivis_bp.route('/progressivis/scheduler/start', methods=['POST'])
 def scheduler_start():
     scheduler = progressivis_bp.scheduler
@@ -68,12 +70,13 @@ def scheduler_stop():
 
 @progressivis_bp.route('/progressivis/module/<id>', methods=['GET', 'POST'])
 def module(id):
-    print 'Requested module %s'%id
     scheduler = progressivis_bp.scheduler
     module = scheduler.module[id]
     module.set_end_run(progressivis_bp.tick_module) # setting it multiple time is ok
     if request.method == 'POST':
+        print 'POST module %s'%id
         return jsonify(module.to_json())
+    print 'GET module %s'%id
     if module.is_visualization():
         vis = module.get_visualization()
         return render_template(vis+'.html', title="%s %s"%(vis,id), id=id)
@@ -89,6 +92,8 @@ def module_image(id):
     img = module.get_image()
     if img is None:
         abort(404)
+    if isinstance(img, (str, unicode)):
+        return send_from_directory(self.storage.directory(), img)
     return serve_pil_image(img)
 
 def serve_pil_image(pil_img):

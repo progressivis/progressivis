@@ -12,6 +12,7 @@ from tornado.ioloop import IOLoop
 
 from progressivis import ProgressiveError, Scheduler
 
+
 class ProgressiveWebSocket(WebSocketHandler):
     sockets_for_path = {}
     def __init__(self, application, request, **kwargs):

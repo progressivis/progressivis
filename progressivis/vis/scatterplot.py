@@ -4,6 +4,7 @@ from __future__ import print_function
 from progressivis import SlotDescriptor, Wait, Merge
 from progressivis.core.dataframe import DataFrameModule
 from progressivis.stats import Histogram2D, Stats, Sample
+from progressivis.vis import Heatmap
 
 from bokeh.plotting import show
 from bokeh.models.mappers import LinearColorMapper
@@ -30,7 +31,7 @@ class ScatterPlot(DataFrameModule):
         
     def __init__(self, x_column, y_column, **kwds):
         self._add_slots(kwds,'input_descriptors',
-                        [SlotDescriptor('histogram2d', type=pd.DataFrame),
+                        [SlotDescriptor('heatmap', type=pd.DataFrame),
                          SlotDescriptor('df', type=pd.DataFrame) ])
         super(ScatterPlot, self).__init__(quantum=0.1, **kwds)
         self.x_column = x_column
@@ -68,6 +69,8 @@ class ScatterPlot(DataFrameModule):
             histogram2d = Histogram2D(self.x_column, self.y_column,group=self.id,scheduler=s);
         histogram2d.input.df = wait.output.out
         histogram2d.input._params = merge.output.df
+        heatmap = Heatmap(group=self.id,scheduler=s)
+        heatmap.input.array = histogram2d.output.histogram2d
         if sample is None:
             sample = Sample(n=500,group=self.id,scheduler=s)
         sample.input.df = wait.output.out
@@ -77,9 +80,10 @@ class ScatterPlot(DataFrameModule):
         self.y_stats = y_stats
         self.merge = merge
         self.histogram2d = histogram2d
+        self.heatmap = heatmap
         self.sample = sample
         
-        self.input.histogram2d = histogram2d.output.histogram2d
+        self.input.heatmap = heatmap.output.heatmap
         self.input.df = sample.output.sample
         return wait
 
@@ -161,26 +165,18 @@ class ScatterPlot(DataFrameModule):
         json = super(ScatterPlot, self).to_json(short)
         if short:
             return json
+        return self.scatterplot_to_json(json, short)
 
+    def scatterplot_to_json(self, json, short):
         df = self.df()
         if df is not None:
-            json['scatterplot'] = df[[self.x_column,self.y_column]].to_dict(orient='split')
-        histo_df = self.get_input_slot('histogram2d').data()
-        if histo_df is not None and histo_df.index[-1] is not None:
-            idx = histo_df.index[-1]
-            row = histo_df.loc[idx]
-            if not (np.isnan(row.xmin) or np.isnan(row.xmax)
-                    or np.isnan(row.ymin) or np.isnan(row.ymax)
-                    or row.array is None):
-                json['bounds'] = {
-                    'xmin': row.xmin,
-                    'ymin': row.ymin,
-                    'xmax': row.xmax,
-                    'ymax': row.ymax
-                }
-                self.image = sp.misc.toimage(row.array)
-                json['image'] = "%s/image?run_number=%d"%(self.id,self._last_update)
-        return json
+            json['scatterplot'] = self.remove_nan(df[[self.x_column,self.y_column]]
+                                                  .to_dict(orient='split'))
 
-    def get_image(self, name=None):
-        return self.image
+        heatmap = self.get_input_module('heatmap')
+        return heatmap.heatmap_to_json(json, short)
+
+    def get_image(self, run_number=None):
+        heatmap = self.get_input_module('heatmap')
+        return heatmap.get_image(run_number)
+

@@ -67,3 +67,47 @@ class Heatmap(DataFrameModule):
                                      steps_run=1,
                                      reads=1,
                                      updates=1)
+
+    def is_visualization(self):
+        return True
+
+    def get_visualization(self):
+        return "heatmap";
+
+    def to_json(self, short=False):
+        json = super(Heatmap, self).to_json(short)
+        if short:
+            return json
+        return self.heatmap_to_json(json, short)
+
+    def heatmap_to_json(self, json, short):
+        dfslot = self.get_input_slot('array')
+        histo = dfslot.output_module
+        json['columns'] = [histo.x_column, histo.y_column]
+        histo_df = dfslot.data()
+        if histo_df is not None and histo_df.index[-1] is not None:
+            idx = histo_df.index[-1]
+            row = histo_df.loc[idx]
+            if not (np.isnan(row.xmin) or np.isnan(row.xmax)
+                    or np.isnan(row.ymin) or np.isnan(row.ymax)):
+                json['bounds'] = {
+                    'xmin': row.xmin,
+                    'ymin': row.ymin,
+                    'xmax': row.xmax,
+                    'ymax': row.ymax
+                }
+        df = self._df
+        if df is not None and self._last_update is not None:
+            json['image'] = "%s/image?run_number=%d"%(self.id,self._last_update)
+        return json
+
+    def get_image(self, run_number=None):
+        if self._df is None:
+            return None
+        if run_number is None:
+            run_number = self._df.index[-1]
+        if run_number is None:
+            return None
+
+        (image, filename, run_number) = self._df.loc[run_number]
+        return filename if filename is not None else image

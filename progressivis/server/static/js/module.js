@@ -1,20 +1,13 @@
-var module_status = null,
-    module_id = null,
-    module_run_number = -1;
+var module_id = null;
 
 function module_get(success, error) {
-    $.ajax({
-        url: $SCRIPT_ROOT+'/progressivis/module/'+module_id,
-        dataType: 'json',
-        method: 'POST'
-    })
+    $.post($SCRIPT_ROOT+'/progressivis/module/'+module_id)
         .done(success)
         .fail(error);
 };
 
 function module_update(data) {
-    module_status = data;
-    module_run_number = data.last_update;
+    progressivis_update(data);
     module_update_table(data);
 }
 
@@ -68,28 +61,13 @@ function module_update_table(data) {
     tr.exit().remove();
 }
 
-function module_error(ev) {
-  var contents = '<div class="alert alert-danger" role="alert">Error</div>';
-  $('#error').html(contents);
-}
-
 function module_refresh() {
-  module_get(module_update, module_error);
+  module_get(module_update, error);
 }
-
-function module_socketmsg(message) {
-    var txt = message.data, run_number;
-    if (txt.startsWith("tick ")) {
-        run_number = txt.substring(5);
-        if (run_number > module_run_number)
-            module_refresh();
-    }
-    else 
-        console.log('Module '+module_id+' received unexpected socket message: '+txt);
-}
-
 
 function module_ready() {
-    module_refresh();
-    websocket_open("module "+module_id, module_socketmsg);
+    if (refresh == null) {
+        refresh = module_refresh;
+    }
+    progressivis_ready("module "+module_id);
 }

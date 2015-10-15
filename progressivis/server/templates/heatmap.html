@@ -1,0 +1,46 @@
+{% extends "_page_base.html" %}
+
+{% block title %}
+Heatmap for module {{id}}
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{{ url_for('static', filename='jquery.min.js') }}"></script>
+<script src="{{ url_for('static', filename='bootstrap/js/bootstrap.min.js') }}"></script>
+<script src="{{ url_for('static', filename='d3.min.js') }}"></script>
+<script src="{{ url_for('progressivis.server.progressivis_file', filename='js/module.js') }}"></script>
+<script src="{{ url_for('progressivis.server.progressivis_file', filename='js/heatmap.js') }}"></script>
+{% endblock %}
+
+{% block script %}
+var module_id = "{{id}}";
+$(document).ready(heatmap_ready);
+{% endblock %}
+
+{% block content %}
+<ol class="breadcrumb">
+  <li><a href="#">Home</a></li>
+  <li><a href="#">Heatmap {{id}}</a></li>
+</ol>
+
+<div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
+  <h1 class='page-header'>Heatmap for Module {{id}}</h1>
+
+  <div id='error'></div>
+
+<!-- Nav tabs -->
+  <ul id='nav-tabs' class="nav nav-tabs" role="tablist">
+    <li role="presentation" class="active"><a href="#heatmap" aria-controls="heatmap" role="tab" data-toggle="tab">Heatmap</a></li>
+    <li role="presentation"><a href="#module" aria-controls="module" role="tab" data-toggle="tab">Module</a></li>
+  </ul>
+
+  <!-- Tab panes -->
+  <div class="tab-content">
+    <div role="tabpanel" class="tab-pane active" id="heatmap"><div id='heatmap'></div></div>
+    <div role="tabpanel" class="tab-pane" id="module"><div id='module'></div></div>
+  </div>
+<div>
+</div>
+
+
+{% endblock %}
