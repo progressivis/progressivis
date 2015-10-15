@@ -1,5 +1,7 @@
+var firstTime = true;
+
 function scheduler_get(success, error) {
-    $.post($SCRIPT_ROOT+'/progressivis/scheduler/')
+    $.post($SCRIPT_ROOT+'/progressivis/scheduler/?short=False')
         .done(success)
         .fail(error);
 };
@@ -12,6 +14,10 @@ function cmp_order(mod1, mod2) {
 
 function scheduler_update(data) {
     progressivis_update(data);
+    if (firstTime) {
+        graph_update_vis(data.modules);
+        firstTime = false;
+    }
     scheduler_update_table(data);
 }
 
@@ -66,6 +72,7 @@ function scheduler_ready() {
         e.preventDefault();
         $(this).tab('show');
     });
+    graph_setup();
     refresh = scheduler_refresh;
     progressivis_ready("scheduler");
 }
