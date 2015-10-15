@@ -113,10 +113,14 @@ function graph_update_vis(modules){
   var vis = d3.select("#module-graph g");
 
   var node = vis.selectAll(".node")
-    .data(nodes, function(d){ return d.id; })
+    .data(nodes)
     .enter().append("rect")
     .attr("class", function(d){ return "node " + d.state; })
     .attr({ rx: 5, ry: 5 });
+
+  vis.selectAll(".node")
+    .data(nodes)
+    .attr("class", function(d){ return "node " + d.state; });
 
     var label = vis.selectAll(".label")
     .data(nodes)
