@@ -19,7 +19,7 @@ function module_update_table(data) {
                                    "default_step_size",
                                    "start_time",
                                    "end_time",
-                                   //"parameters",
+                                   "parameters",
                                    "input_slots",
                                    "output_slots"]));
     return;

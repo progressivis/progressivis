@@ -69,7 +69,7 @@ class ScatterPlot(DataFrameModule):
             histogram2d = Histogram2D(self.x_column, self.y_column,group=self.id,scheduler=s);
         histogram2d.input.df = wait.output.out
         histogram2d.input._params = merge.output.df
-        heatmap = Heatmap(group=self.id,scheduler=s)
+        heatmap = Heatmap(group=self.id,filename='heatmap%d.png', history=100, scheduler=s)
         heatmap.input.array = histogram2d.output.histogram2d
         if sample is None:
             sample = Sample(n=500,group=self.id,scheduler=s)

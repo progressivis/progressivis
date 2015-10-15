@@ -112,5 +112,8 @@ class Heatmap(DataFrameModule):
         if run_number is None:
             return None
 
-        (image, filename, run_number) = self._df.loc[run_number]
-        return filename if filename is not None else image
+        if run_number in self._df.index:
+            (image, filename, run_number) = self._df.loc[run_number]
+            return filename if filename is not None else image
+        else:
+            return None

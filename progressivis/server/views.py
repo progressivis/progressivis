@@ -84,21 +84,26 @@ def module(id):
 
 @progressivis_bp.route('/progressivis/module/<id>/image', methods=['GET'])
 def module_image(id):
-    print 'Requested module image for %s'%id
+    run_number = request.values.get('run_number', None)
+    try:
+        run_number = int(run_number)
+    except:
+        run_number = None
+    print 'Requested module image for %s?run_number=%s'%(id,run_number)
     scheduler = progressivis_bp.scheduler
     module = scheduler.module[id]
     if module is None:
         abort(404)
-    img = module.get_image()
+    img = module.get_image(run_number)
     if img is None:
         abort(404)
     if isinstance(img, (str, unicode)):
-        return send_from_directory(self.storage.directory(), img)
+        return send_file(img, cache_timeout=0)
     return serve_pil_image(img)
 
 def serve_pil_image(pil_img):
     img_io = StringIO()
     pil_img.save(img_io, 'PNG', compress_level=1)
     img_io.seek(0)
-    return send_file(img_io, mimetype='image/png')
+    return send_file(img_io, mimetype='image/png', cache_timeout=0)
 

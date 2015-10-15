@@ -175,13 +175,14 @@ class Module(object):
         }
         if short:
             return json
+        
         json.update({
             'start_time': self._start_time,
             'end_time': self._end_time,
             'input_slots': { k: slot_to_json(s) for (k, s) in self._input_slots.iteritems() },
             'output_slots': { k: slot_to_json(s) for (k, s) in self._output_slots.iteritems() },
             'default_step_size': self.default_step_size,
-            'parameters': self.remove_nan(self._params.to_dict())
+            'parameters': self.remove_nan(self.current_params().to_dict())
         })
         return json
 
@@ -518,6 +519,9 @@ class Module(object):
         s3[self.UPDATE_COLUMN] = run_number
         logger.info('Changing params of %s for:\n%s', self.id, s3)
         self._params.loc[self._params.index[-1]+1] = s3 # seems to drop undeclared columns
+
+    def current_params(self):
+        return self._params.loc[self._params.index[-1]]
 
     def run(self, run_number):
         if self.is_running():
