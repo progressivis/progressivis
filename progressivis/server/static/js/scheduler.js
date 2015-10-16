@@ -24,7 +24,7 @@ function cmp_order(mod1, mod2) {
 
 function scheduler_update(data) {
     progressivis_update(data);
-    graph_update_vis(data.modules, firstTime);
+    module_graph.update_vis(data.modules, firstTime);
     firstTime = false;
     scheduler_update_table(data);
 }
@@ -80,7 +80,7 @@ function scheduler_ready() {
         e.preventDefault();
         $(this).tab('show');
     });
-    graph_setup();
+    module_graph.setup();
     refresh = scheduler_refresh;
     progressivis_ready("scheduler");
 }
