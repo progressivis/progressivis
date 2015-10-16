@@ -1,9 +1,19 @@
 var firstTime = true;
 
+var current_xhr = null;
+
+function clear_current_xhr(){
+    current_xhr = null;
+}
+
 function scheduler_get(success, error) {
-    $.post($SCRIPT_ROOT+'/progressivis/scheduler/?short=False')
+    if(current_xhr){
+        return;
+    }
+    current_xhr = $.post($SCRIPT_ROOT+'/progressivis/scheduler/?short=False')
         .done(success)
-        .fail(error);
+        .fail(error)
+        .done(clear_current_xhr);
 };
 
 function cmp_order(mod1, mod2) {
