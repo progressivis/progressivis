@@ -9,6 +9,10 @@ from PIL import Image
 
 import re
 
+import logging
+logger = logging.getLogger(__name__)
+
+
 class Heatmap(DataFrameModule):
     parameters = [('cmax', np.dtype(float), np.nan),
                   ('cmin', np.dtype(float), np.nan),
@@ -57,8 +61,10 @@ class Heatmap(DataFrameModule):
                     filename = filename % (run_number)
                 filename = self.storage.fullname(self, filename)
                 image.save(filename)
+                logger.debug('Saved image %s', filename)
                 image = None
             except:
+                logger.error('Cannot save image %s', filename)
                 raise
 
         values = [image, filename, run_number]
@@ -117,3 +123,4 @@ class Heatmap(DataFrameModule):
             return filename if filename is not None else image
         else:
             return None
+

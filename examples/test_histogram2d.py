@@ -9,7 +9,7 @@ print "Type of default_scheduler is %s" % type(Scheduler.default)
 csv = CSVLoader(get_dataset('bigfile'),index_col=False,header=None,engine='c')
 pr = Every()
 pr.input.inp = csv.output.df
-histogram2d=Histogram2D(1, 2, xbins=100, ybins=100)
+histogram2d=Histogram2D(1, 2, xbins=128, ybins=128)
 histogram2d.input.df = csv.output.df
 pr = Print(id='print')
 pr.input.inp = histogram2d.output.histogram2d

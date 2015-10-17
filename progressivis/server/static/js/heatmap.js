@@ -36,7 +36,7 @@ function heatmap_update_vis(data) {
     if (firstTime) {
         svg.append("image")
             .attr("class", "heatmap")
-            .attr("xlink:href", image)
+            .attr("xlink:href", function() { return image+"&ts="+new Date().getTime(); })
             .attr("preserveAspectRatio", "none")
             .attr("x", 0)
             .attr("y", 0)
@@ -68,7 +68,7 @@ function heatmap_update_vis(data) {
     }
     else { // not firstTime
         svg.select(".heatmap")
-            .attr("xlink:href", image);
+            .attr("xlink:href", function() { return image+"&ts="+new Date().getTime(); });
 
         svg.select(".x.axis")
             .transition()
