@@ -13,7 +13,7 @@ function scheduler_get(success, error) {
     current_xhr = $.post($SCRIPT_ROOT+'/progressivis/scheduler/?short=False')
         .done(success)
         .fail(error)
-        .done(clear_current_xhr);
+        .always(clear_current_xhr);
 };
 
 function cmp_order(mod1, mod2) {
