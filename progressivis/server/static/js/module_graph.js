@@ -66,6 +66,7 @@ var module_graph = function(){
   }
   
   function graph_update(data) {
+      progressivis_update(data);
       graph_update_vis(data.modules, firstTime);
       firstTime = false;
   }
