@@ -3,14 +3,23 @@
 var module_graph = function(){
   var d3cola;
   var firstTime = true;
+  var current_request = null;
   
   const width=960, height=500;
   const margin=10, pad=12;
+
+  function clear_current_request(){
+    current_request = null;
+  }
   
   function graph_get(success, error) {
-      $.post($SCRIPT_ROOT+'/progressivis/scheduler/?short=False')
+      if(current_request){
+          return;
+      }
+      current_request = $.post($SCRIPT_ROOT+'/progressivis/scheduler/?short=False')
           .done(success)
-          .fail(error);
+          .fail(error)
+          .always(clear_current_request);
   };
   
   function graph_setup() {
@@ -175,9 +184,9 @@ var module_graph = function(){
   }
   
   function graph_ready() {
-      refresh = graph_refresh; // function to call to refresh
       graph_setup();
-      progressivis_ready("module_graph");
+      refresh = graph_refresh; // function to call to refresh
+      progressivis_ready("scheduler");
   }
 
   return {
