@@ -6,50 +6,7 @@ Progressivis Server
 
 {% block head %}
   {{ super() }}
-<style type="text/css">
-.background{
-    stroke: white;
-    stroke-width: 1px;
-    fill: white;
-    cursor: move;
-}
-
-.node {
-    stroke: black;
-    stroke-width: 1.5px;
-    fill: lightcoral;
-}
-
-.created {
-    fill: lightblue;
-}
-
-.running {
-    fill: lightgreen;
-}
-
-.terminated {
-    fill: lightgrey;
-}
-
-.link {
-    fill: none;
-    stroke: #000;
-    stroke-width: 3px;
-    opacity: 0.7;
-    marker-end: url(#end-arrow);
-}
-
-.label {
-    fill: black;
-    font-size: 25px;
-    text-anchor: middle;
-}
-
-#module-graph{
-  border: 1px solid grey;
-}
-</style>
+  <link href="{{ url_for('progressivis.server.progressivis_file', filename='css/module-graph.css') }}" rel="stylesheet">
 {% endblock %}
 
 {% block extra_scripts %}
