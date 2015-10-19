@@ -15,12 +15,28 @@
     fill: lightblue;
 }
 
+.ready {
+    fill: lightseagreen;
+}
+
 .running {
     fill: lightgreen;
 }
 
+.blocked {
+    fill: orchid; 
+}
+
+.zombie {
+    fill: goldenrod;
+}
+
 .terminated {
     fill: lightgrey;
+}
+
+.invalid {
+    fill: orangered;
 }
 
 .link {
