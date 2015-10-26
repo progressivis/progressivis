@@ -42,7 +42,8 @@ function scatterplot_update_vis(rawdata) {
             .attr("x", 0)
             .attr("y", 0)
             .attr("width", width)
-            .attr("height", height);
+            .attr("height", height)
+            .attr("filter", "url(#gaussianBlur)");
 
         svg.append("g")
             .attr("class", "x axis")
@@ -105,8 +106,7 @@ function scatterplot_refresh() {
 }
 
 function scatterplot_ready() {
-    svg = d3.select("#scatterplot")
-        .append("svg")
+    svg = d3.select("#scatterplot svg")
          .attr("width", width + margin.left + margin.right)
          .attr("height", height + margin.top + margin.bottom)
         .append("g")
@@ -115,6 +115,11 @@ function scatterplot_ready() {
     $('#nav-tabs a').click(function (e) {
         e.preventDefault();
         $(this).tab('show');
+    });
+
+    $("#filterSlider").change(function(){
+      var gaussianBlur = document.getElementById("gaussianBlurElement");
+      gaussianBlur.setStdDeviation(this.value, this.value);
     });
     refresh = scatterplot_refresh; // function to call to refresh
     module_ready();
