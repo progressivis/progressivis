@@ -35,6 +35,13 @@ function scatterplot_update_vis(rawdata) {
     y.domain([bounds['ymin'], bounds['ymax']]).nice();
 
     if (firstTime) {
+        svg.append("rect")
+            .attr("x", 0)
+            .attr("y", 0)
+            .attr("width", width)
+            .attr("height", height)
+            .attr("fill", "black");
+
         svg.append("image")
             .attr("class", "heatmap")
             .attr("xlink:href", rawdata['image'])
