@@ -19,6 +19,8 @@ var yAxis = d3.svg.axis()
     .scale(y)
     .orient("left");
 
+const DEFAULT_SIGMA = 2;
+
 
 function scatterplot_update(data) {
     module_update(data);
@@ -124,10 +126,14 @@ function scatterplot_ready() {
         $(this).tab('show');
     });
 
-    $("#filterSlider").change(function(){
-      var gaussianBlur = document.getElementById("gaussianBlurElement");
+    var gaussianBlur = document.getElementById("gaussianBlurElement");
+    var filterSlider = $("#filterSlider");
+    filterSlider.change(function(){
       gaussianBlur.setStdDeviation(this.value, this.value);
     });
+    filterSlider.get(0).value = DEFAULT_SIGMA;
+    gaussianBlur.setStdDeviation(DEFAULT_SIGMA, DEFAULT_SIGMA);
+    
     refresh = scatterplot_refresh; // function to call to refresh
     module_ready();
 }
