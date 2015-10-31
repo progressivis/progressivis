@@ -82,13 +82,13 @@ function scatterplot_update_vis(rawdata) {
             .attr("xlink:href", rawdata['image']);
 
         svg.select(".x.axis")
-            .transition()
-            .duration(1000)
+            //.transition()
+            //.duration(1000)
             .call(xAxis);
 
         svg.select(".y.axis")
-            .transition()
-            .duration(100)
+            //.transition()
+            //.duration(100)
             .call(yAxis);
     }
 

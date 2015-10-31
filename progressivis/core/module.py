@@ -141,12 +141,6 @@ class Module(object):
             slots[desc.name] = None
         return slots
 
-    @staticmethod
-    def create_dataframe(columns, types=None, values=None):
-        if values is None and types is not None:
-            return empty_typed_dataframe(columns, types)
-        return typed_dataframe(columns, types, values)
-
     @property
     def parameter(self):
         return self._params
@@ -599,6 +593,23 @@ class Module(object):
         if exception:
             print_exc()
             raise exception
+
+    # Convenience methods
+    @staticmethod
+    def create_dataframe(columns, types=None, values=None):
+        if values is None and types is not None:
+            return empty_typed_dataframe(columns, types)
+        return typed_dataframe(columns, types, values)
+
+    @staticmethod
+    def last_row(df):
+        if df is None:
+            return None
+        index = df.index
+        if len(index)==0:
+            return None
+        idx = index[-1]
+        return df.loc[idx]
 
 def print_len(x):
     if x is not None:

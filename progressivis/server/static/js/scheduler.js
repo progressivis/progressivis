@@ -42,6 +42,8 @@ function scheduler_update_table(data) {
             .attr("class", "module")
             .on("click", scheduler_show_module);
 
+    tr.order();
+
     var cells = rows.selectAll("td")
             .data(function(row) {
                 return columns.map(function(column) {

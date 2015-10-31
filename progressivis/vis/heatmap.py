@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 class Heatmap(DataFrameModule):
     parameters = [('cmax', np.dtype(float), np.nan),
                   ('cmin', np.dtype(float), np.nan),
-                  ('high', np.dtype(int),   255),
+                  ('high', np.dtype(int),   65536),
                   ('low',  np.dtype(int),   0),
                   ('filename', np.dtype(object), None),
                   ('history', np.dtype(int), 3) ]
@@ -52,7 +52,7 @@ class Heatmap(DataFrameModule):
             cmin = None
         high = p.high
         low = p.low
-        image = sp.misc.toimage(histo, cmin=cmin, cmax=cmax, high=high, low=low)
+        image = sp.misc.toimage(sp.special.cbrt(histo), cmin=cmin, cmax=cmax, high=high, low=low, mode='I')
         image.transpose(Image.FLIP_TOP_BOTTOM)
         filename = p.filename
         if filename is not None:
@@ -60,7 +60,7 @@ class Heatmap(DataFrameModule):
                 if re.search(r'%(0[\d])?d', filename):
                     filename = filename % (run_number)
                 filename = self.storage.fullname(self, filename)
-                image.save(filename)
+                image.save(filename, format='PNG', bits=16)
                 logger.debug('Saved image %s', filename)
                 image = None
             except:

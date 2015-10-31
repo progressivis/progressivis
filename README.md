@@ -5,7 +5,8 @@ implements a new [programming
 paradigm](https://en.wikipedia.org/wiki/Programming_paradigm) that we
 call _Progressive Analytics_ aimed at performing analytics in a
 progressive way.  It allows analysts to see the progress of their
-analysis and to steer it while the computation is being done.
+analysis and to steer it while the computation is being done. See the
+[[https://hal.inria.fr/hal-01202901|workshop paper]].
 
 Instead of running algorithms to completion one after the other, as
 done in all existing scientific analysis systems, ProgressiVis modules

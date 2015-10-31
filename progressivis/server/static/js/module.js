@@ -38,6 +38,8 @@ function module_update_table(data) {
             .append("tr")
             .attr("class", "module-property");
 
+    tr.order();
+
     var cells = rows.selectAll("td")
             .data(function(row) {
                 return columns.map(function(column) {
