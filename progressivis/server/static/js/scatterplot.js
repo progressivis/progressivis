@@ -104,8 +104,8 @@ function scatterplot_update_vis(rawdata) {
          .style("fill", "blue") //function(d) { return color(d.species); });
         .append("title")
         .text(function(d, i) { return index[i]; });
-    dots.transition()  // Transition from old to new
-        .duration(500)  // Length of animation
+    dots//.transition()  // Transition from old to new
+        //.duration(500)  // Length of animation
          .attr("cx", function(d) { return x(d[0]); })
          .attr("cy", function(d) { return y(d[1]); });    
     dots.exit().remove();
