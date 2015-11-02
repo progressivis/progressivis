@@ -47,12 +47,12 @@ var colormaps = function(){
   function makeTableFilter(xfer, name){
     if(!xfer){
       console.warn("makeTableFilter requires an existing feComponentTransfer element");
-      return;
+      return null;
     }
     var table = tables[name];
     if(!table){
       console.warn("unknown table: " + name);
-      return;
+      return null;
     }
     //remove all feComponentTransfer children
     while(xfer.firstChild){
