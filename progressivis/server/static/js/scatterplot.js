@@ -20,6 +20,7 @@ var yAxis = d3.svg.axis()
     .orient("left");
 
 const DEFAULT_SIGMA = 2;
+const DEFAULT_FILTER = "default";
 
 
 function scatterplot_update(data) {
@@ -114,6 +115,24 @@ function scatterplot_refresh() {
   module_get(scatterplot_update, error);
 }
 
+
+/**
+ * @param select - a select element that will be mutated 
+ * @param names - list of option names (the value of an option is set to its name)
+ */
+function makeOptions(select, names){
+  if(!select){
+    console.warn("makeOptions requires an existing select element");
+    return;
+  }
+  names.forEach(function(name){
+    var option = document.createElement("option");
+    option.setAttribute("value", name);
+    option.innerHTML = name;
+    select.appendChild(option);
+  });
+}
+
 function scatterplot_ready() {
     svg = d3.select("#scatterplot svg")
          .attr("width", width + margin.left + margin.right)
@@ -126,13 +145,22 @@ function scatterplot_ready() {
         $(this).tab('show');
     });
 
-    var gaussianBlur = document.getElementById("gaussianBlurElement");
-    var filterSlider = $("#filterSlider");
+    const gaussianBlur = document.getElementById("gaussianBlurElement");
+    const filterSlider = $("#filterSlider");
     filterSlider.change(function(){
       gaussianBlur.setStdDeviation(this.value, this.value);
     });
     filterSlider.get(0).value = DEFAULT_SIGMA;
     gaussianBlur.setStdDeviation(DEFAULT_SIGMA, DEFAULT_SIGMA);
+
+    const colorMap = document.getElementById("colorMap");
+    const colorMapSelect = $("#colorMapSelect");
+    colorMapSelect.change(function(){
+      console.log("setting color map to " + this.value);
+      colormaps.makeTableFilter(colorMap, this.value);
+    });
+    colorMapSelect.get(0).value = DEFAULT_FILTER;
+    makeOptions(colorMapSelect.get(0), colormaps.getTableNames());
     
     refresh = scatterplot_refresh; // function to call to refresh
     module_ready();

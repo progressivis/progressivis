@@ -10,6 +10,7 @@ Scatterplot for module {{id}}
 <script src="{{ url_for('static', filename='d3.min.js') }}"></script>
 <script src="{{ url_for('progressivis.server.progressivis_file', filename='js/module.js') }}"></script>
 <script src="{{ url_for('progressivis.server.progressivis_file', filename='js/scatterplot.js') }}"></script>
+<script src="{{ url_for('progressivis.server.progressivis_file', filename='js/colormaps.js') }}"></script>
 {% endblock %}
 
 {% block script %}
@@ -41,7 +42,7 @@ $(document).ready(scatterplot_ready);
         <svg>
           <filter id="gaussianBlur" width="100%" height="100%" x="0" y="0">
             <feGaussianBlur id="gaussianBlurElement" in="SourceGraphic" stdDeviation="0" />
-            <feComponentTransfer>
+            <feComponentTransfer id="colorMap">
               <feFuncR type="table" tableValues="1 1 1"/>
               <feFuncG type="table" tableValues="0.93 0.001 0"/>
               <feFuncB type="table" tableValues="0.63 0.001 0"/>
@@ -49,6 +50,7 @@ $(document).ready(scatterplot_ready);
           </filter>          
         </svg>
         <label>Sigma <input id="filterSlider" type="range" value="0" min="0" max="5" step="0.1" /></label>
+        <select id="colorMapSelect"></select>
       </div>
     </div>
     <div role="tabpanel" class="tab-pane" id="module"><div id='module'></div></div>
