@@ -8,13 +8,15 @@ var colormaps = function(){
   const svgNS = "http://www.w3.org/2000/svg";
   
   var tables = {
-    default: [[1,1,1],[0.93,0.001,0],[0.63,0.001,0]],
+    Default: [[1,1,1],[0.93,0.001,0],[0.63,0.001,0]],
     OrRd: tableFromChroma(chroma.brewer.OrRd),
     PuBu: tableFromChroma(chroma.brewer.PuBu),
     Oranges: tableFromChroma(chroma.brewer.Oranges),
     Dark2: tableFromChroma(chroma.brewer.Dark2),
-    grays: [[1,0.01,0],[1,0.01,0],[1,0.01,0]],
-    identity: [[0,1],[0,1],[0,1]]
+    Accent: tableFromChroma(chroma.brewer.Accent),
+    Greens:  tableFromChroma(chroma.brewer.Greens),
+    InvertedGrayscale: [[1,0.01,0],[1,0.01,0],[1,0.01,0]],
+    Identity: [[0,1],[0,1],[0,1]]
   };
 
   function tableFromChroma(chromaTable){
