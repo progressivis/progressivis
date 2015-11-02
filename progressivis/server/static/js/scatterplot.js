@@ -156,7 +156,6 @@ function scatterplot_ready() {
     const colorMap = document.getElementById("colorMap");
     const colorMapSelect = $("#colorMapSelect");
     colorMapSelect.change(function(){
-      console.log("setting color map to " + this.value);
       colormaps.makeTableFilter(colorMap, this.value);
     });
     colorMapSelect.get(0).value = DEFAULT_FILTER;

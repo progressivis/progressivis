@@ -1,14 +1,35 @@
 "use strict";
 
+/**
+ * Requires chroma.js
+ */
 var colormaps = function(){
   const svgNS = "http://www.w3.org/2000/svg";
   
   var tables = {
     default: [[1,1,1],[0.93,0.001,0],[0.63,0.001,0]],
-    reds: [[1,0.75,0.5],[0.75,0.3,0],[0.75,0.3,0]],
-    blues: [[0.75,0.3,0],[0.75,0.3,0],[1,0.75,0.5]],
-    grays: [[1,0],[1,0],[1,0]]
+    OrRd: tableFromChroma(chroma.brewer.OrRd),
+    PuBu: tableFromChroma(chroma.brewer.PuBu),
+    Oranges: tableFromChroma(chroma.brewer.Oranges),
+    Dark2: tableFromChroma(chroma.brewer.Dark2),
+    grays: [[1,0.01,0],[1,0.01,0],[1,0.01,0]]
   };
+  console.log(tables);
+
+  function tableFromChroma(chromaTable){
+    var rtab = [];
+    var gtab = [];
+    var btab = [];
+    
+    chromaTable.forEach(function(chromaElt){
+      var rgb = chroma(chromaElt).get('rgb');
+      rtab.push(rgb[0]/255);
+      gtab.push(rgb[1]/255);
+      btab.push(rgb[2]/255);
+    });
+
+    return [rtab, gtab, btab];
+  }
 
   function createAndAddTransferNode(parent, name, tableValues){
     var node =  document.createElementNS(svgNS, name);
