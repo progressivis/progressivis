@@ -10,6 +10,12 @@ var colormaps = function(){
     grays: [[1,0],[1,0],[1,0]]
   };
 
+  function createAndAddTransferNode(parent, name, tableValues){
+    var node =  document.createElementNS(svgNS, name);
+    node.setAttribute("type", "table");
+    node.setAttribute("tableValues", tableString(tableValues));
+    parent.appendChild(node);
+  }
   /**
    * @param xfer - a feComponentTransfer element that will be mutated.
    * @param name - a table name (use <pre>getTableNames</pre> to retrieve a list)
@@ -28,19 +34,11 @@ var colormaps = function(){
     while(xfer.firstChild){
       xfer.removeChild(xfer.firstChild);
     }
-    var rx = document.createElementNS(svgNS, "feFuncR");
-    rx.setAttribute("type", "table");
-    rx.setAttribute("tableValues", tableString(table[0]));
-    var gx = document.createElementNS(svgNS, "feFuncG");
-    gx.setAttribute("type", "table");
-    gx.setAttribute("tableValues", tableString(table[1]));
-    var bx = document.createElementNS(svgNS, "feFuncB");
-    bx.setAttribute("type", "table");
-    bx.setAttribute("tableValues", tableString(table[2]));
+    createAndAddTransferNode(xfer, "feFuncR", table[0]);
+    createAndAddTransferNode(xfer, "feFuncG", table[1]);
+    createAndAddTransferNode(xfer, "feFuncB", table[2]);
 
-    xfer.appendChild(rx);
-    xfer.appendChild(gx);
-    xfer.appendChild(bx);
+    return xfer;
   }
 
   function tableString(table){
