@@ -1,6 +1,7 @@
 "use strict";
 
 /**
+ * Color function transfer management.
  * Requires chroma.js
  */
 var colormaps = function(){
@@ -12,9 +13,9 @@ var colormaps = function(){
     PuBu: tableFromChroma(chroma.brewer.PuBu),
     Oranges: tableFromChroma(chroma.brewer.Oranges),
     Dark2: tableFromChroma(chroma.brewer.Dark2),
-    grays: [[1,0.01,0],[1,0.01,0],[1,0.01,0]]
+    grays: [[1,0.01,0],[1,0.01,0],[1,0.01,0]],
+    identity: [[0,1],[0,1],[0,1]]
   };
-  console.log(tables);
 
   function tableFromChroma(chromaTable){
     var rtab = [];
