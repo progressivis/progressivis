@@ -15,6 +15,7 @@ var colormaps = function(){
     Dark2: tableFromChroma(chroma.brewer.Dark2),
     Accent: tableFromChroma(chroma.brewer.Accent),
     Greens:  tableFromChroma(chroma.brewer.Greens),
+    CubeHelix: tableFromChroma(chroma.cubehelix().scale().correctLightness().colors(9)),
     InvertedGrayscale: [[1,0.01,0],[1,0.01,0],[1,0.01,0]],
     Identity: [[0,1],[0,1],[0,1]]
   };
