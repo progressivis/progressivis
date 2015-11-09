@@ -33,7 +33,7 @@ class ChangeManagerBase(object):
 
     def reset(self):
         logger.info('Reseting history')
-        self.last_run = None
+        self.last_run = 0
         self.index = pd.Index([])
         self._buffer = None
         self._buffered = False
@@ -65,13 +65,13 @@ class SimpleChangeManager(ChangeManagerBase):
         self._buffer = slice(0, 0)
 
     def update(self, run_number, df):
-        if self.last_run is not None and run_number <= self.last_run:
+        if run_number <= self.last_run:
             return True
         uc = df[Module.UPDATE_COLUMN]
         self._buffered = False
 
         nlen = len(df)
-        if self.last_run is None:
+        if self.last_run==0:
             self._created = slice(0, nlen)
         else:
             olen = len(self.index)
@@ -120,12 +120,12 @@ class ChangeManager(ChangeManagerBase):
         self._buffer = NIL
 
     def update(self, run_number, df):
-        if self.last_run is not None and run_number <= self.last_run:
+        if run_number <= self.last_run:
             return True
         uc = df[Module.UPDATE_COLUMN]
         self._buffered = False
         #TODO flush buffer containing data invalidated since the last run.
-        if self.last_run is None:
+        if self.last_run==0:
             self.index = df.index
             self._updated = self.index.values
             self._created = self._updated

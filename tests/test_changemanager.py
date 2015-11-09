@@ -9,7 +9,7 @@ from progressivis.core.changemanager import ChangeManager, NIL
 class TestChangeManager(unittest.TestCase):
     def test_changemanager(self):
         cm = ChangeManager()
-        self.assertEqual(cm.last_run, None)
+        self.assertEqual(cm.last_run, 0)
         self.assertEqual(len(cm._created), 0)
         self.assertEqual(len(cm._deleted), 0)
 
