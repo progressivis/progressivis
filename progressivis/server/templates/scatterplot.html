@@ -4,6 +4,11 @@
 Scatterplot for module {{id}}
 {% endblock %}
 
+{% block head %}
+  {{ super() }}
+  <link href="{{ url_for('progressivis.server.progressivis_file', filename='css/scatterplot.css') }}" rel="stylesheet">
+{% endblock %}
+
 {% block extra_scripts %}
 <script src="{{ url_for('static', filename='jquery.min.js') }}"></script>
 <script src="{{ url_for('static', filename='bootstrap/js/bootstrap.min.js') }}"></script>
@@ -53,6 +58,7 @@ $(document).ready(scatterplot_ready);
         <label>Sigma <input id="filterSlider" type="range" value="0" min="0" max="5" step="0.1" /></label>
         <br/>
         <label>Color map <select id="colorMapSelect"></select></label>
+        <div id="prevImages"></div>
       </div>
     </div>
     <div role="tabpanel" class="tab-pane" id="module"><div id='module'></div></div>

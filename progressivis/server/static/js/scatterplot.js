@@ -22,6 +22,21 @@ var yAxis = d3.svg.axis()
 const DEFAULT_SIGMA = 2;
 const DEFAULT_FILTER = "default";
 
+const MAX_PREV_IMAGES = 4;
+var prevImages = []; //keeps references to previous images for comparison
+
+/**
+ * Enqueues an image in the prevImages array.
+ * Invariant: prevImages contains at most MAX_PREV_IMAGES + 1 elements
+ * (we store the current image as well as the previous ones)
+ */
+function enqueue(elem){
+  if(prevImages.length === MAX_PREV_IMAGES + 1){
+    prevImages = prevImages.slice(1);
+  }
+  prevImages.push(elem);
+}
+
 
 function scatterplot_update(data) {
     module_update(data);
@@ -54,6 +69,15 @@ function scatterplot_update_vis(rawdata) {
             .attr("width", width)
             .attr("height", height)
             .attr("filter", "url(#gaussianBlur)");
+
+        svg.append("image")
+           .attr("class", "heatmapCompare")
+           .attr("preserveAspectRatio", "none")
+           .attr("opacity", 0.5)
+           .attr("x", 0)
+           .attr("y", 0)
+           .attr("width", width)
+           .attr("height", height);
 
         svg.append("g")
             .attr("class", "x axis")
@@ -92,6 +116,29 @@ function scatterplot_update_vis(rawdata) {
             //.duration(100)
             .call(yAxis);
     }
+    var imgSrc = rawdata['image'];
+    if(prevImages.indexOf(imgSrc) === -1){
+      enqueue(imgSrc);
+    }
+
+    var prevImgElements = d3.select("#prevImages").selectAll("img")
+      .data(prevImages.slice(0,-1)); //we omit the last element (current image)
+
+      prevImgElements.enter()
+      .append("img")
+      .attr("width", 100)
+      .attr("height", 100)
+      .on("mouseover", function(d){
+        d3.select(".heatmapCompare")
+          .attr("xlink:href", d)
+          .attr("visibility", "inherit");
+      })
+      .on("mouseout", function(d){
+        d3.select(".heatmapCompare")
+          .attr("visibility", "hidden");
+      });
+
+      prevImgElements.attr("src", function(d){ return d; })
 
     var dots = svg.selectAll(".dot")
             .data(data['data'], function(d, i) { return index[i]; });
