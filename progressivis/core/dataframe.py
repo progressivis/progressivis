@@ -135,7 +135,7 @@ class Constant(DataFrameModule):
     def __init__(self, df, **kwds):        
         super(Constant, self).__init__(**kwds)
         self._df = df
-        self.df_[self.UPDATE_COLUMN] = 0
+        self._df[self.UPDATE_COLUMN] = 0
 
     def predict_step_size(self, duration):
         return 1

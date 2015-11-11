@@ -16,7 +16,6 @@ from IPython.display import display
 #output_notebook()
 
 import numpy as np
-import scipy as sp
 import pandas as pd
 
 import logging

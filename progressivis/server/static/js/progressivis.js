@@ -30,16 +30,22 @@ function progressivis_update(data) {
     progressivis_run_number = data['run_number'];
     $('#run_number').text(progressivis_run_number);
     if (data.is_running) {
-        $('#start').addClass('disabled');
-        $('#stop').removeClass('disabled');
+        $('#start')//.addClass('disabled')
+            .prop('disabled', true);
+        $('#stop')//.removeClass('disabled')
+            .prop('disabled', false);
     }
     else if (data.is_terminated) {
-        $('#start').removeClass('disabled');
-        $('#stop').removeClass('disabled');
+        $('#start')//.removeClass('disabled')
+            .prop('disabled', false);
+        $('#stop')//.removeClass('disabled')
+            .prop('disabled', true);
     }
     else {
-        $('#start').removeClass('disabled');
-        $('#stop').addClass('disabled');
+        $('#start')//.removeClass('disabled')
+            .prop('disabled', false);
+        $('#stop')//.addClass('disabled')
+            .prop('disabled', true);
     }
 }
 

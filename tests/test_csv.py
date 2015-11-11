@@ -1,8 +1,10 @@
 import unittest
 
-from progressivis import *
+from progressivis import Constant, Scheduler
 from progressivis.io import CSVLoader
 from progressivis.datasets import get_dataset
+
+import pandas as pd
 
 import logging, sys
 
@@ -17,10 +19,7 @@ class TestProgressiveLoadCSV(unittest.TestCase):
     def tearDown(self):
         self.logger.setLevel(self.saved)
 
-    def test_read_csv(self):
-        s=Scheduler()
-        module=CSVLoader(get_dataset('bigfile'), index_col=False, header=None, scheduler=s)
-        self.assertTrue(module.df() is None)
+    def runit(self, module):
         module.run(0)
         df = module.df()
         self.assertFalse(df is None)
@@ -39,9 +38,25 @@ class TestProgressiveLoadCSV(unittest.TestCase):
             l =  ln
         s = module.trace_stats(max_runs=1)
         print "Done. Run time: %gs, loaded %d rows" % (s['duration'].irow(-1), len(module.df()))
+        return cnt
+
+    def test_read_csv(self):
+        s=Scheduler()
+        module=CSVLoader(get_dataset('bigfile'), index_col=False, header=None, scheduler=s)
+        self.assertTrue(module.df() is None)
+        cnt = self.runit(module)
         self.assertEqual(len(module.df()), 1000000)
-        df2 = module.df().groupby([Module.UPDATE_COLUMN])
+        df2 = module.df().groupby([module.UPDATE_COLUMN])
         self.assertEqual(cnt, len(df2))
+
+    def test_read_multiple_csv(self):
+        s=Scheduler()
+        filenames = pd.DataFrame({'filename': [get_dataset('smallfile'), get_dataset('smallfile')]})
+        cst = Constant(df=filenames, scheduler=s)
+        csv = CSVLoader(index_col=False, header=None, scheduler=s)
+        csv.input.filenames = cst.output.df
+        self.runit(csv)
+
 
 if __name__ == '__main__':
     unittest.main()
