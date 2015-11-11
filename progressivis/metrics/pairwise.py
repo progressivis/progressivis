@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """ Computes the distance matrix from each row of a data frame.
 """
-from progressivis.core.common import ProgressiveError
+from progressivis.core.common import ProgressiveError, indices_len
 from progressivis.core.dataframe import DataFrameModule
 from progressivis.core.slot import SlotDescriptor
 
@@ -27,18 +27,18 @@ class PairwiseDistances(DataFrameModule):
         self.columns = columns
 
     def is_ready(self):
-        if not (self.get_input_slot('df').is_buffer_empty()):
+        if self.get_input_slot('df').has_created():
             return True
         return super(PairwiseDistances, self).is_ready()
 
     def run_step(self,run_number,step_size,howlong):
         dfslot = self.get_input_slot('df')
         df = dfslot.data()
-        if not dfslot.update(run_number, df):
+        dfslot.update(run_number, df)
+        if dfslot.has_updated() or dfslot.has_deleted():        
             dfslot.reset()
             logger.info('Reseting history because of changes in the input df')
-            if not dfslot.update(run_number, df):
-                raise ProgressiveError('Problem updating changemanager')
+            dfslot.update(run_number, df)
             #TODO: be smarter with changed values
 
         #len_b = (dfslot.last_index)
@@ -46,8 +46,8 @@ class PairwiseDistances(DataFrameModule):
 
         m = step_size
         
-        indices = dfslot.next_buffered(m)
-        m = (indices.stop-indices.start)
+        indices = dfslot.next_created(m)
+        m = indices_len(indices)
 
         i = None
         j = None
@@ -75,7 +75,7 @@ class PairwiseDistances(DataFrameModule):
                 i = rows.loc[Si.index]
                 assert len(i)==len(Si.index)
             j = rows.iloc[indices]
-            assert len(j)==(indices.stop-indices.start)
+            assert len(j)==indices_len(indices)
 
         Sj = pairwise_distances(j, metric=self._metric, n_jobs=self._n_jobs)
         if Si is None:

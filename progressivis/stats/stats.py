@@ -1,4 +1,4 @@
-from progressivis.core.common import ProgressiveError
+from progressivis.core.common import ProgressiveError, indices_len
 from progressivis.core.dataframe import DataFrameModule
 from progressivis.core.slot import SlotDescriptor
 
@@ -31,7 +31,7 @@ class Stats(DataFrameModule):
         self._df = self.create_dataframe(self.schema)
 
     def is_ready(self):
-        if not self.get_input_slot('df').is_buffer_empty():
+        if self.get_input_slot('df').has_created():
             return True
         return super(Stats, self).is_ready()
 
@@ -42,14 +42,14 @@ class Stats(DataFrameModule):
         prev = df.index[-1]
         prev_max = df.at[prev, self.max_column]
         prev_min = df.at[prev, self.min_column]
-        if not dfslot.update(run_number, input_df):
+        dfslot.update(run_number, input_df)
+        if dfslot.has_updated() or dfslot.has_deleted():        
             dfslot.reset()
             prev_min = prev_max = np.nan
-            if not dfslot.update(run_number, input_df):
-                raise ProgressiveError('%s module cannot update', self.__class__.__name__)
-        indices = dfslot.next_buffered(step_size) # returns a slice
-        logger.debug('next_buffered returned %s', indices)
-        steps = indices.stop - indices.start
+            dfslot.update(run_number, input_df)
+        indices = dfslot.next_created(step_size) # returns a slice
+        logger.debug('next_created returned %s', indices)
+        steps = indices_len(indices)
         if steps > 0:
             x = input_df.iloc[indices][self._column]
             df.loc[run_number] = [np.nanmin([prev_min, x.min()]),

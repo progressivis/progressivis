@@ -1,4 +1,4 @@
-from progressivis.core.common import ProgressiveError
+from progressivis.core.common import ProgressiveError, indices_len
 from progressivis.core.dataframe import DataFrameModule
 from progressivis.core.slot import SlotDescriptor
 
@@ -66,7 +66,7 @@ class Histogram2D(DataFrameModule):
         return (xmin-xdelta, xmax+xdelta, ymin-ydelta, ymax+ydelta)
 
     def is_ready(self):
-        if not self.get_input_slot('df').is_buffer_empty():
+        if self.get_input_slot('df').has_created():
             return True
         return super(Histogram2D, self).is_ready()
 
@@ -87,22 +87,23 @@ class Histogram2D(DataFrameModule):
                 xmin, xmax, ymin, ymax = self._bounds
                 logger.info('Updated bounds: %s', self._bounds)
         
-        if not dfslot.update(run_number, input_df):
+        dfslot.update(run_number, input_df)
+        if dfslot.has_updated() or dfslot.has_deleted():        
             dfslot.reset()
-            if not dfslot.update(run_number, input_df):
-                raise ProgressiveError('Cannot update changemanager')
+            dfslot.update(run_number, input_df)
             self.total_read = 0
 
-        indices = dfslot.next_buffered(step_size)
-        steps = (indices.stop-indices.start)
+        indices = dfslot.next_created(step_size)
+        steps = indices_len(indices)
         if steps == 0:
             self._old_histo = old_histo = None # should store the old histo now
             logger.info('Index buffer empty')
             return self._return_run_step(self.state_blocked, steps_run=steps, reads=steps, updates=steps)
         logger.info('Read %d rows', steps)
         self.total_read += steps
-        x = input_df.iloc[indices][self.x_column]
-        y = input_df.iloc[indices][self.y_column]
+        filtered_df = input_df.iloc[indices]
+        x = filtered_df[self.x_column]
+        y = filtered_df[self.y_column]
         histo, xedges, yedges = np.histogram2d(y, x,
                                                bins=[p.xbins, p.ybins],
                                                range=[[xmin, xmax],[ymin, ymax]],

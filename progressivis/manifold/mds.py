@@ -46,7 +46,7 @@ class MDS(DataFrameModule):
         self._cache = None
 
     def is_ready(self):
-        if not (self.get_input_slot('distance').is_buffer_empty()):
+        if self.get_input_slot('distance').has_created():
             return True
         return super(MDS, self).is_ready()
 

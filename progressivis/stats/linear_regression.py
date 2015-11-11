@@ -1,4 +1,4 @@
-from progressivis.core.common import ProgressiveError
+from progressivis.core.common import ProgressiveError, indices_len
 from progressivis.core.dataframe import DataFrameModule
 from progressivis.core.slot import SlotDescriptor
 
@@ -24,18 +24,19 @@ class LinearRegression(DataFrameModule):
         self._df = self.create_dataframe(LinearRegression.schema)
 
     def is_ready(self):
-        if not self.get_input_slot('df').is_buffer_empty():
+        if self.get_input_slot('df').has_created():
             return True
         return super(LinearRegression, self).is_ready()
 
     def run_step(self,run_number,step_size,howlong):
         dfslot = self.get_input_slot('df')
         input_df = dfslot.data()
-        if not dfslot.update(run_number, input_df):
+        dfslot.update(run_number, input_df)
+        if dfslot.has_updated() or dfslot.has_deleted():
             raise ProgressiveError('%s module does not manage updates or deletes', self.__class__.__name__)
 
-        indices = dfslot.next_buffered(step_size)
-        steps = (indices.stop-indices.start)
+        indices = dfslot.next_created(step_size)
+        steps = indices_len(indices)
         if steps == 0:
             return self._return_run_step(self.state_blocked, steps_run=steps)
         x = input_df.iloc[indices][self._x]

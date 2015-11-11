@@ -10,3 +10,8 @@ def type_fullname(o):
     if module is None or module == str.__class__.__module__:
         return o.__class__.__name__
     return module + '.' + o.__class__.__name__
+
+def indices_len(ind):
+    if isinstance(ind, slice):
+        return ind.stop-ind.start
+    return len(ind)

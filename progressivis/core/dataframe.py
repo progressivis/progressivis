@@ -9,33 +9,48 @@ class DataFrameSlot(Slot):
         super(DataFrameSlot, self).__init__(output_module, output_name, input_module, input_name)
         self.changes = None
 
-    def update(self, run_number, df, simple=True):
-        if self.changes is None:
-            if simple:
-                self.changes = SimpleChangeManager()
-            else:
-                self.changes = ChangeManager()
-        return self.changes.update(run_number,df)
+    def update(self, run_number, df=None):
+        if df is None:
+            df = self.data()
+
+        return self.changemanager.update(run_number, df)
 
     def reset(self):
         if self.changes is not None:
             self.changes.reset()
 
-    def buffer(self):
-        if self.changes:
-            self.changes.buffer()
+    def next_created(self, n=None):
+        return self.changes.next_created(n)
 
-    def next_buffered(self, n, as_ranges=False):
+    def has_created(self):
         if self.changes:
-            return self.changes.next_buffered(n, as_ranges)
-        else:
-            return None
+            return self.changes.has_created()
+        return False
 
-    def is_buffer_empty(self):
+    def created_length(self):
+        return self.changes.created_length()
+    
+    def next_updated(self, n=None):
+        return self.changes.next_updated(n)
+
+    def has_updated(self):
         if self.changes:
-            return self.changes.is_buffer_empty()
-        else:
-            return True
+            return self.changes.has_updated()
+        return False
+
+    def updated_length(self):
+        return self.changes.updated_length()
+
+    def next_deleted(self, n=None):
+        return self.changes.next_deleted(n)
+    
+    def has_deleted(self):
+        if self.changes:
+            return self.changes.has_deleted()
+        return False
+
+    def deleted_length(self):
+        return self.changes.deleted_length()
 
     def next_state(self):
         if self.changes:
@@ -59,6 +74,8 @@ class DataFrameSlot(Slot):
 
     @property
     def changemanager(self):
+        if self.changes is None:
+            self.changes = ChangeManager()
         return self.changes
  
 
