@@ -29,6 +29,12 @@ class CSVLoader(DataFrameModule):
     def rows_read(self):
         return self._rows_read
 
+    def is_ready(self):
+        fn = self.get_input_slot('filenames')
+        if fn and fn.has_created():
+            return True
+        return super(CSVLoader, self).is_ready()
+
     def validate_parser(self, run_number):
         if self.parser is None:
             if self.filepath_or_buffer is not None:
@@ -44,14 +50,14 @@ class CSVLoader(DataFrameModule):
                 if fn_slot is None or fn_slot.output_module is None:
                     return self.state_terminated
                 df = fn_slot.data()
-                if not fn_slot.update(run_number, df):
-                    logger.error('Cannot yet change input files')
-                    raise ProgressiveError('Unhandled input file changes')
+                fn_slot.update(run_number)
+                if fn_slot.has_deleted() or fn_slot.has_updated():
+                    raise ProgressiveError('Cannot handle input file changes')
                 while self.parser is None:
-                    indices = fn_slot.next_buffered(1)
+                    indices = fn_slot.next_created(1)
                     if indices.stop==indices.start:
                         return self.state_blocked
-                    filename = df.at(indices.start, 'filename')
+                    filename = df.at[indices.start, 'filename']
                     try:
                         self.parser = pd.read_csv(filename, **self.csv_kwds)
                     except IOError as e:
@@ -60,30 +66,30 @@ class CSVLoader(DataFrameModule):
                     # fall through
         return self.state_ready
 
-    def next_step_iter(self, run_number, step_size, howlong):
-        for filename in filenames(run_number):
-            try:
-                self.parser = pd.read_csv(filename, **self.csv_kwds)
-            except IOError as e:
-                logger.error('Cannot open file %s: %s', filename, e)
-                continue
-            for df in self.parser.read(step_size):
-                creates = len(df)
-                if self._filter != None:
-                    df = self._filter(df)
-                if len(df) == 0:
-                    logger.info('frame has been filtered out')
-                else:
-                    self._rows_read += creates
-                    logger.info('Loaded %d lines', self._rows_read)
-                    df[self.UPDATE_COLUMN] = run_number
-                if self._df is not None:
-                    self._df = self._df.append(df,ignore_index=True)
-                else:
-                    self._df = df
-                (run_number, step_size, howlong) = yield (self.state_ready, creates)
-                while step_size==0:
-                    (run_number, step_size, howlong) = yield (self.state_ready, 0)
+    # def next_step_iter(self, run_number, step_size, howlong):
+    #     for filename in filenames(run_number):
+    #         try:
+    #             self.parser = pd.read_csv(filename, **self.csv_kwds)
+    #         except IOError as e:
+    #             logger.error('Cannot open file %s: %s', filename, e)
+    #             continue
+    #         for df in self.parser.read(step_size):
+    #             creates = len(df)
+    #             if self._filter != None:
+    #                 df = self._filter(df)
+    #             if len(df) == 0:
+    #                 logger.info('frame has been filtered out')
+    #             else:
+    #                 self._rows_read += creates
+    #                 logger.info('Loaded %d lines', self._rows_read)
+    #                 df[self.UPDATE_COLUMN] = run_number
+    #             if self._df is not None:
+    #                 self._df = self._df.append(df,ignore_index=True)
+    #             else:
+    #                 self._df = df
+    #             (run_number, step_size, howlong) = yield (self.state_ready, creates)
+    #             while step_size==0:
+    #                 (run_number, step_size, howlong) = yield (self.state_ready, 0)
 
     def run_step(self,run_number,step_size, howlong):
         if step_size==0: # bug

@@ -51,7 +51,7 @@ class Stats(DataFrameModule):
         logger.debug('next_created returned %s', indices)
         steps = indices_len(indices)
         if steps > 0:
-            x = input_df.iloc[indices][self._column]
+            x = input_df.loc[indices,self._column]
             df.loc[run_number] = [np.nanmin([prev_min, x.min()]),
                                   np.nanmax([prev_max, x.max()]),
                                   run_number]

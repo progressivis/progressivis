@@ -20,12 +20,12 @@ class TestProgressiveLoadCSV(unittest.TestCase):
         self.logger.setLevel(self.saved)
 
     def runit(self, module):
-        module.run(0)
+        module.run(1)
         df = module.df()
         self.assertFalse(df is None)
         l = len(df)
         self.assertEqual(l, len(df[module.update_timestamps()==module.last_update()]))
-        cnt = 1
+        cnt = 2
         
         while not module.is_zombie():
             module.run(cnt)
@@ -33,7 +33,7 @@ class TestProgressiveLoadCSV(unittest.TestCase):
             s = module.trace_stats(max_runs=1)
             df = module.df()
             ln = len(df)
-            print "Run time: %gs, loaded %d rows" % (s['duration'].irow(-1), ln)
+            #print "Run time: %gs, loaded %d rows" % (s['duration'].irow(-1), ln)
             self.assertEqual(ln-l, len(df[module.update_timestamps()==module.last_update()]))
             l =  ln
         s = module.trace_stats(max_runs=1)
@@ -44,18 +44,21 @@ class TestProgressiveLoadCSV(unittest.TestCase):
         s=Scheduler()
         module=CSVLoader(get_dataset('bigfile'), index_col=False, header=None, scheduler=s)
         self.assertTrue(module.df() is None)
-        cnt = self.runit(module)
+        s.start()
+        #cnt = self.runit(module)
         self.assertEqual(len(module.df()), 1000000)
-        df2 = module.df().groupby([module.UPDATE_COLUMN])
-        self.assertEqual(cnt, len(df2))
+        #df2 = module.df().groupby([module.UPDATE_COLUMN])
+        #self.assertEqual(cnt, len(df2))
 
     def test_read_multiple_csv(self):
         s=Scheduler()
-        filenames = pd.DataFrame({'filename': [get_dataset('smallfile'), get_dataset('smallfile')]})
+        filenames = pd.DataFrame({'filename': [get_dataset('bigfile'), get_dataset('bigfile')]})
         cst = Constant(df=filenames, scheduler=s)
         csv = CSVLoader(index_col=False, header=None, scheduler=s)
         csv.input.filenames = cst.output.df
-        self.runit(csv)
+        s.start()
+        self.assertEqual(len(csv.df()), 2000000)
+        #self.runit(csv)
 
 
 if __name__ == '__main__':

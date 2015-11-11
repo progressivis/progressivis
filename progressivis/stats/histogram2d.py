@@ -101,7 +101,7 @@ class Histogram2D(DataFrameModule):
             return self._return_run_step(self.state_blocked, steps_run=steps, reads=steps, updates=steps)
         logger.info('Read %d rows', steps)
         self.total_read += steps
-        filtered_df = input_df.iloc[indices]
+        filtered_df = input_df.loc[indices]
         x = filtered_df[self.x_column]
         y = filtered_df[self.y_column]
         histo, xedges, yedges = np.histogram2d(y, x,

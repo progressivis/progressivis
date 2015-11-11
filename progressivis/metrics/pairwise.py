@@ -74,7 +74,7 @@ class PairwiseDistances(DataFrameModule):
             if Si is not None:
                 i = rows.loc[Si.index]
                 assert len(i)==len(Si.index)
-            j = rows.iloc[indices]
+            j = rows.loc[indices]
             assert len(j)==indices_len(indices)
 
         Sj = pairwise_distances(j, metric=self._metric, n_jobs=self._n_jobs)

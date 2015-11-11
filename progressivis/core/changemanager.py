@@ -87,54 +87,54 @@ class ChangeManagerBase(object):
     def deleted_length(self):
         raise ProgressiveError('Not implemented')
 
-class SimpleChangeManager(ChangeManagerBase):
-    def __init__(self):
-        super(SimpleChangeManager,self).__init__()
+# class SimpleChangeManager(ChangeManagerBase):
+#     def __init__(self):
+#         super(SimpleChangeManager,self).__init__()
     
-    def reset(self):
-        super(SimpleChangeManager,self).reset()
-        self._buffer = slice(0, 0)
+#     def reset(self):
+#         super(SimpleChangeManager,self).reset()
+#         self._buffer = slice(0, 0)
 
-    def update(self, run_number, df):
-        if run_number <= self.last_run:
-            return True
-        uc = df[Module.UPDATE_COLUMN]
-        self._buffered = False
+#     def update(self, run_number, df):
+#         if run_number <= self.last_run:
+#             return True
+#         uc = df[Module.UPDATE_COLUMN]
+#         self._buffered = False
 
-        nlen = len(df)
-        if self.last_run==0:
-            self._created = slice(0, nlen)
-        else:
-            olen = len(self.index)
-            end = slice(olen,olen+nlen)
-            if not (uc[end] > self.last_run).all():
-                return False # something else happened
-            self._created = slice(self._created.start, end.stop)
-        self.index = df.index
-        self.last_run = run_number
-        logger.info('Updating for run_number %d: created:%s',
-                    run_number, self._created)
-        self.buffer()
-        return True
+#         nlen = len(df)
+#         if self.last_run==0:
+#             self._created = slice(0, nlen)
+#         else:
+#             olen = len(self.index)
+#             end = slice(olen,olen+nlen)
+#             if not (uc[end] > self.last_run).all():
+#                 return False # something else happened
+#             self._created = slice(self._created.start, end.stop)
+#         self.index = df.index
+#         self.last_run = run_number
+#         logger.info('Updating for run_number %d: created:%s',
+#                     run_number, self._created)
+#         self.buffer()
+#         return True
 
-    def buffer(self):
-        if self._buffered:
-            return
-        self._buffered = True
-        if self._created is None or self._created.start==self._created.stop:
-            return
-        self._buffer = slice(self._buffer.start, self._created.stop)
+#     def buffer(self):
+#         if self._buffered:
+#             return
+#         self._buffered = True
+#         if self._created is None or self._created.start==self._created.stop:
+#             return
+#         self._buffer = slice(self._buffer.start, self._created.stop)
 
-    def next_buffered(self, n, as_ranges=False):
-        if (self._buffer.start+n) >= self._buffer.stop:
-           ret = self._buffer
-        else:
-            ret = slice(self._buffer.start, self._buffer.start+n)
-        self._buffer = slice(ret.stop, self._buffer.stop)
-        return ret
+#     def next_buffered(self, n, as_ranges=False):
+#         if (self._buffer.start+n) >= self._buffer.stop:
+#            ret = self._buffer
+#         else:
+#             ret = slice(self._buffer.start, self._buffer.start+n)
+#         self._buffer = slice(ret.stop, self._buffer.stop)
+#         return ret
 
-    def is_buffer_empty(self):
-        return self._buffer.start >= self._buffer.stop
+#     def is_buffer_empty(self):
+#         return self._buffer.start >= self._buffer.stop
     
 
 class ChangeManager(ChangeManagerBase):
