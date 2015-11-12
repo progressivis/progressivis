@@ -61,11 +61,16 @@ class DataFrameAsDict(object):
         
     def __getitem__(self, key):
         df = super(DataFrameAsDict, self).__getattribute__('df')
+        if isinstance(key,(list,slice,np.ndarray,pd.Series)):
+            return df.loc[df.index[-1], key]
         return df.at[df.index[-1], key]
 
     def __setitem__(self, key, value):
         df = super(DataFrameAsDict, self).__getattribute__('df')
-        df.at[df.index[-1], key] = value
+        if isinstance(key, (list,slice,np.ndarray,pd.Series)):
+            df.loc[dx.index[-1], key] = value
+        else:
+            df.at[df.index[-1], key] = value
 
     def __getattr__(self, attr):
         return self[attr]

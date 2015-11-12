@@ -39,8 +39,10 @@ class LinearRegression(DataFrameModule):
         steps = indices_len(indices)
         if steps == 0:
             return self._return_run_step(self.state_blocked, steps_run=steps)
-        x = input_df.loc[indices][self._x]
-        y = input_df.loc[indices][self._y]
+        if isinstance(indices,slice):
+            indices = slice(indices.start,indices.stop-1) # semantic of slice with .loc
+
+        (x, y) = input_df.loc[self._x,[self._x, self._y]]
         df = self._df
         sum_x     = df.at[0, 'sum_x']     + x.sum() 
         sum_x_sqr = df.at[0, 'sum_x_sqr'] + (x*x).sum()

@@ -51,6 +51,8 @@ class Stats(DataFrameModule):
         logger.debug('next_created returned %s', indices)
         steps = indices_len(indices)
         if steps > 0:
+            if isinstance(indices,slice):
+                indices=slice(indices.start,indices.stop-1) # semantic of slice with .loc
             x = input_df.loc[indices,self._column]
             df.loc[run_number] = [np.nanmin([prev_min, x.min()]),
                                   np.nanmax([prev_max, x.max()]),

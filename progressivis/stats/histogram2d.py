@@ -43,12 +43,7 @@ class Histogram2D(DataFrameModule):
     def update_bounds(self):
         p = self.params
         logger.info('Updating bounds')
-        xdelta = p.xdelta
-        ydelta = p.ydelta
-        xmin = p.xmin
-        xmax = p.xmax
-        ymin = p.ymin
-        ymax = p.ymax
+        xdelta, ydelta,xmin,xmax,ymin,ymax = p[['xdelta', 'ydelta', 'xmin', 'xmax', 'ymin', 'ymax']]
         if xmax < xmin:
             xmax, xmin = xmin, xmax
             logger.warn('xmax < xmin, swapped')
@@ -101,7 +96,10 @@ class Histogram2D(DataFrameModule):
             return self._return_run_step(self.state_blocked, steps_run=steps, reads=steps, updates=steps)
         logger.info('Read %d rows', steps)
         self.total_read += steps
-        filtered_df = input_df.loc[indices]
+        if isinstance(indices,slice):
+            filtered_df = input_df.loc[indices.start:indices.stop-1] # semantic of slice with .loc
+        else:
+            filtered_df = input_df.loc[indices]
         x = filtered_df[self.x_column]
         y = filtered_df[self.y_column]
         histo, xedges, yedges = np.histogram2d(y, x,
