@@ -19,7 +19,7 @@ svg {
 }
 
 .dot {
-  stroke: #000;
+  stroke: none;
 }
 
 #run_number {

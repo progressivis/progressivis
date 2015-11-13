@@ -19,6 +19,12 @@ var yAxis = d3.svg.axis()
     .scale(y)
     .orient("left");
 
+var zoom = d3.behavior.zoom()
+    .x(x)
+    .y(y)
+    .scaleExtent([1, 32])
+    .on("zoom", scatterplot_zoomed);
+
 const DEFAULT_SIGMA = 2;
 const DEFAULT_FILTER = "default";
 
@@ -45,7 +51,9 @@ function scatterplot_update_vis(rawdata) {
             .attr("height", height)
             .attr("fill", "black");
 
-        svg.append("image")
+        var zoomable = svg.append("g").attr('id', 'zoomable');
+
+        zoomable.append("image")
             .attr("class", "heatmap")
             .attr("xlink:href", rawdata['image'])
             .attr("preserveAspectRatio", "none")
@@ -93,8 +101,9 @@ function scatterplot_update_vis(rawdata) {
             .call(yAxis);
     }
 
-    var dots = svg.selectAll(".dot")
-            .data(data['data'], function(d, i) { return index[i]; });
+    var dots = d3.select("#zoomable")
+            .selectAll(".dot")
+             .data(data['data'], function(d, i) { return index[i]; });
     
     dots.enter().append("circle")
          .attr("class", "dot")
@@ -110,6 +119,15 @@ function scatterplot_update_vis(rawdata) {
          .attr("cy", function(d) { return y(d[1]); });    
     dots.exit().remove();
 }
+
+function scatterplot_zoomed() {
+    svg.select(".x.axis").call(xAxis);
+    svg.select(".y.axis").call(yAxis);
+    svg.select("#zoomable")
+        .attr("transform", "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")");
+    svg.selectAll(".dot").attr("r", 3.5/d3.event.scale);
+}
+
 
 function scatterplot_refresh() {
   module_get(scatterplot_update, error);
@@ -138,7 +156,8 @@ function scatterplot_ready() {
          .attr("width", width + margin.left + margin.right)
          .attr("height", height + margin.top + margin.bottom)
         .append("g")
-         .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+         .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+         .call(zoom);
 
     $('#nav-tabs a').click(function (e) {
         e.preventDefault();
