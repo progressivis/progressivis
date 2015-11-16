@@ -7,7 +7,7 @@ logger = logging.getLogger(__name__)
 
 
 class CSVLoader(DataFrameModule):
-    def __init__(self, filepath_or_buffer=None, filter=None, **kwds):
+    def __init__(self, filepath_or_buffer=None, filter=None, force_valid_ids=False, **kwds):
         """CSVLoader(filepath_or_buffer=None, sep=', ', dialect=None, compression='infer', doublequote=True, escapechar=None, quotechar='"', quoting=0, skipinitialspace=False, lineterminator=None, header='infer', index_col=None, names=None, prefix=None, skiprows=None, skipfooter=None, skip_footer=0, na_values=None, na_fvalues=None, true_values=None, false_values=None, delimiter=None, converters=None, dtype=None, usecols=None, engine=None, delim_whitespace=False, as_recarray=False, na_filter=True, compact_ints=False, use_unsigned=False, low_memory=True, buffer_lines=None, warn_bad_lines=True, error_bad_lines=True, keep_default_na=True, thousands=None, comment=None, decimal='.', parse_dates=False, keep_date_col=False, dayfirst=False, date_parser=None, memory_map=False, float_precision=None, nrows=None, chunksize=None, verbose=False, encoding=None, squeeze=False, mangle_dupe_cols=True, tupleize_cols=False, infer_datetime_format=False, skip_blank_lines=True, id=None,scheduler=None,tracer=None,predictor=None,storage=None,input_descriptors=[],output_descriptors=[])
         """
         self._add_slots(kwds,'input_descriptors',
@@ -19,6 +19,7 @@ class CSVLoader(DataFrameModule):
         csv_kwds = self._filter_kwds(kwds, pd.read_csv)
         # When called with a specified chunksize, it returns a parser
         self.filepath_or_buffer = filepath_or_buffer
+        self.force_valid_ids = force_valid_ids
         self.parser = None
         self.csv_kwds = csv_kwds
         self._rows_read = 0
@@ -125,9 +126,11 @@ class CSVLoader(DataFrameModule):
         else:
             self._rows_read += creates
             logger.info('Loaded %d lines', self._rows_read)
+            if self.force_valid_ids:
+                self.force_valid_id_columns(df)
             df[self.UPDATE_COLUMN] = run_number
             if self._df is not None:
                 self._df = self._df.append(df,ignore_index=True)
             else:
                 self._df = df
-        return self._return_run_step(self.state_ready, steps_run=creates, creates=creates)
+        return self._return_run_step(self.state_ready, steps_run=creates)

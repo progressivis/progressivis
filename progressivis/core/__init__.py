@@ -10,6 +10,7 @@ from .mt_scheduler import MTScheduler
 from .slot import Slot, SlotDescriptor
 from .storagemanager import StorageManager
 from .module import Module, connect, Every, Print
-from .dataframe import DataFrameModule, Constant
+from .dataframe import DataFrameModule
+from .constant import Constant
 from .wait import Wait
 from .merge import Merge

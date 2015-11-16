@@ -6,7 +6,11 @@ import pandas as pd
 import numpy as np
 
 from progressivis.core.common import ProgressiveError, type_fullname
-from progressivis.core.utils import empty_typed_dataframe, typed_dataframe, DataFrameAsDict, remove_nan
+from progressivis.core.utils import (empty_typed_dataframe,
+                                     typed_dataframe,
+                                     DataFrameAsDict,
+                                     remove_nan,
+                                     force_valid_id_columns)
 from progressivis.core.scheduler import Scheduler
 from progressivis.core.slot import Slot, SlotDescriptor, InputSlots, OutputSlots
 from progressivis.core.tracer import Tracer
@@ -610,6 +614,10 @@ class Module(object):
             return None
         idx = index[-1]
         return df.loc[idx]
+
+    @staticmethod
+    def force_valid_id_columns(df):
+        force_valid_id_columns(df)
 
 def print_len(x):
     if x is not None:

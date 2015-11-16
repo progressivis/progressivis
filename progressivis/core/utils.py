@@ -1,5 +1,7 @@
 import pandas as pd
 import numpy as np
+import keyword
+import re
 
 def remove_nan(d):
     if isinstance(d,float) and np.isnan(d):
@@ -80,3 +82,33 @@ class DataFrameAsDict(object):
 
     def __dir__(self):
         return list(self.__dict__['df'].columns)
+
+ID_RE = re.compile(r'[_A-Za-z][_a-zA-Z0-9]*')
+
+def is_valid_identifier(s):
+    m = ID_RE.match(s)
+    return bool(m and m.end(0)==len(s) and not keyword.iskeyword(s))
+
+def force_valid_id_columns(df):
+    uniq = set()
+    columns = []
+    i = 0
+    for c in df.columns:
+        i += 1
+        if not isinstance(c, (str,unicode)):
+            c = unicode(c)
+        c = fix_identifier(c)
+        while c in uniq:
+            c.append('_'+str(i))
+        columns.append(c)
+    df.columns = columns
+
+def fix_identifier(c):
+    m = ID_RE.match(c)
+    if m is None:
+        c = '_'+c
+        m = ID_RE.match(c)
+    while m.end(0) != len(c):
+        c = c[:m.end(0)]+ '_'+c[m.end(0)+1:]
+        m = ID_RE.match(c)
+    return c

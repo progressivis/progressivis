@@ -165,6 +165,7 @@ function scatterplot_update_vis(rawdata) {
          .attr("cx", function(d) { return x(d[0]); })
          .attr("cy", function(d) { return y(d[1]); });    
     dots.exit().remove();
+    dots.order();
 }
 
 function scatterplot_zoomed() {
