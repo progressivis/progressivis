@@ -28,7 +28,7 @@ var zoom = d3.behavior.zoom()
 const DEFAULT_SIGMA = 2;
 const DEFAULT_FILTER = "default";
 
-const MAX_PREV_IMAGES = 4;
+const MAX_PREV_IMAGES = 3;
 var imageHistory = new History(MAX_PREV_IMAGES);
 
 function scatterplot_update(data) {
@@ -115,23 +115,31 @@ function scatterplot_update_vis(rawdata) {
     imageHistory.enqueueUnique(imgSrc);
 
     var prevImgElements = d3.select("#prevImages").selectAll("img")
-      .data(imageHistory.getItems()); 
+      .data(imageHistory.getItems(), function(d){ return d; }); 
 
-      prevImgElements.enter()
-      .append("img")
-      .attr("width", 100)
-      .attr("height", 100)
-      .on("mouseover", function(d){
-        d3.select(".heatmapCompare")
-          .attr("xlink:href", d)
-          .attr("visibility", "inherit");
-      })
-      .on("mouseout", function(d){
-        d3.select(".heatmapCompare")
-          .attr("visibility", "hidden");
-      });
+    prevImgElements.enter()
+    .append("img")
+    .attr("width", 50)
+    .attr("height", 50)
+    .on("mouseover", function(d){
+      d3.select(".heatmapCompare")
+        .attr("xlink:href", d)
+        .attr("visibility", "inherit");
+    })
+    .on("mouseout", function(d){
+      d3.select(".heatmapCompare")
+        .attr("visibility", "hidden");
+    });
 
-      prevImgElements.attr("src", function(d){ return d; })
+    prevImgElements.transition().duration(500)
+    .attr("src", function(d){ return d; })
+    .attr("width", 100)
+    .attr("height", 100);
+
+    prevImgElements.exit().transition().duration(500)
+    .attr("width", 5)
+    .attr("height", 5)
+    .remove();
 
     var dots = d3.select("#zoomable")
             .selectAll(".dot")

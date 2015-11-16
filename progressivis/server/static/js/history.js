@@ -1,9 +1,11 @@
+"use strict";
+
 /**
  * A component that manages (visualization) histories.
  * @param maxItems - maximum number of items to keep in history.
  */
 function History(maxItems){
-  if ( !(this instanceof arguments.callee) ) 
+  if ( !(this instanceof History) ) 
    throw new Error("Constructor called as a function");
 
   if(maxItems < 1){
