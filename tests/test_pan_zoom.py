@@ -16,11 +16,11 @@ class TestPanZoom(unittest.TestCase):
         x_stats.input.df = csv.output.df
         y_stats = Stats(2, min_column='ymin', max_column='ymax',scheduler=s)
         y_stats.input.df = csv.output.df
-        merge = Merge(scheduler=s)
-        merge.input.df = x_stats.output.stats
-        merge.input.df = y_stats.output.stats # magic input df slot
+        join = Join(scheduler=s)
+        join.input.df = x_stats.output.stats
+        join.input.df = y_stats.output.stats # magic input df slot
         pan_zoom=PanZoom(id='test_pan_zoom', scheduler=s)
-        pan_zoom.input.bounds = merge.output.df
+        pan_zoom.input.bounds = join.output.df
         pan_zoom.describe()
         pr=Print(id='print', scheduler=s)
         pr.input.inp = pan_zoom.output.panzoom
@@ -33,13 +33,13 @@ class TestPanZoom(unittest.TestCase):
         x_stats.input.df = csv.output.df
         y_stats = Stats(2, min_column='ymin', max_column='ymax',scheduler=s)
         y_stats.input.df = csv.output.df
-        merge = Merge(scheduler=s)
-        merge.input.df = x_stats.output.stats
-        merge.input.df = y_stats.output.stats # magic input df slot
+        join = Join(scheduler=s)
+        join.input.df = x_stats.output.stats
+        join.input.df = y_stats.output.stats # magic input df slot
         viewport = pd.DataFrame({'xmin': [0], 'xmax': [1], 'ymin': [0], 'ymax': [1]})
         cst = Constant(df=viewport, scheduler=s)
         pan_zoom=PanZoom(id='test_pan_zoom', scheduler=s)
-        pan_zoom.input.bounds = merge.output.df
+        pan_zoom.input.bounds = join.output.df
         pan_zoom.input.viewport = cst.output.df
         pan_zoom.describe()
         pr=Print(id='print', scheduler=s)

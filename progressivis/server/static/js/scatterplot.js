@@ -192,6 +192,19 @@ function makeOptions(select, names){
   });
 }
 
+function scatterplot_filter() {
+    var xmin = x.invert(0),
+        xmax = x.invert(width),
+        ymin = y.invert(height),
+        ymax = y.invert(0),
+        bounds = progressivis_data['bounds'];
+
+    if (xmin != bounds['xmin'] || xmax != bounds['xmax'])
+        console.log('filter x['+xmin+','+xmax+']');
+    if (ymin != bounds['ymin'] || ymax != bounds['ymax'])
+        console.log('filter y['+ymin+','+ymax+']');
+}
+
 function scatterplot_ready() {
     svg = d3.select("#scatterplot svg")
          .attr("width", width + margin.left + margin.right)
@@ -220,6 +233,8 @@ function scatterplot_ready() {
     });
     colorMapSelect.get(0).value = DEFAULT_FILTER;
     makeOptions(colorMapSelect.get(0), colormaps.getTableNames());
+
+    $('#filter').click(function() { scatterplot_filter(); });
     
     refresh = scatterplot_refresh; // function to call to refresh
     module_ready();

@@ -11,10 +11,21 @@ logger = logging.getLogger(__name__)
 
 __all__ = ['Scheduler']
 
+class FakeLock(object):
+    def acquire(self, blocking=1):
+        return False
+    def release(self):
+        pass
+    def __enter__(self):
+        return self
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        return
+
 class Scheduler(object):
     default = None
     
     def __init__(self):
+        self.lock = FakeLock()
         self._modules = dict()
         self._module = AttributeDict(self._modules)
         self._running = False
@@ -46,12 +57,13 @@ class Scheduler(object):
 
     def collect_dependencies(self, only_required=False):
         dependencies = {}
-        for (mid, module) in self._modules.iteritems():
-            if not module.is_valid(): # ignore invalid modules
-                continue
-            outs = [m.output_module.id for m in module.input_slot_values() \
+        with self.lock:
+            for (mid, module) in self._modules.iteritems():
+                if not module.is_valid(): # ignore invalid modules
+                    continue
+                outs = [m.output_module.id for m in module.input_slot_values() \
                     if m and (not only_required or module.input_slot_required(m.input_name)) ]
-            dependencies[mid] = set(outs)
+                dependencies[mid] = set(outs)
         return dependencies
 
     def order_modules(self):
@@ -137,15 +149,18 @@ class Scheduler(object):
         if not self.validate():
             raise ProgressiveError('Cannot validate progressive workflow')
 
-        self._runorder = self.order_modules()
+        modules = []
+        with self.lock:
+            self._runorder = self.order_modules()
+            modules = [self.module[m] for m in self._runorder]
         logger.info("Scheduler run order: %s", self._runorder)
-        modules = [self.module[m] for m in self._runorder]
 
         self._run_number_time[self._run_number] = self.timer()
         for module in modules:
             module.starting()
         while len(modules)!=0 and not self._stopped:
-            self._run_number += 1
+            with self.lock:
+                self._run_number += 1
             if self._tick_proc:
                 self._tick_proc(self, self._run_number)
             self._before_run()
@@ -159,7 +174,8 @@ class Scheduler(object):
             for module in modules:
                 module.cleanup_run(self._run_number)
             # remove terminated modules from the run queue
-            modules = [m for m in modules if not m.is_terminated()]
+            with self.lock:
+                modules = [m for m in modules if not m.is_terminated()]
             self._after_run()
             self._run_number_time[self._run_number] = self.timer()
 
@@ -204,11 +220,12 @@ class Scheduler(object):
         return self._run_number_time[run_number]
 
     def add_module(self, module):
-        if not module.is_created():
-            raise ProgressiveError('Cannot add running module %s', module.id)
-        if module.id is None:
-            module._id = self.generate_id(module.pretty_typename())
-        self._add_module(module)
+        with self.lock:
+            if not module.is_created():
+                raise ProgressiveError('Cannot add running module %s', module.id)
+            if module.id is None:
+                module._id = self.generate_id(module.pretty_typename())
+            self._add_module(module)
 
     def _add_module(self, module):
         self._modules[module.id] = module
@@ -218,11 +235,12 @@ class Scheduler(object):
         return self._module
 
     def remove_module(self, module):
-        if isinstance(module,str) or isinstance(module,unicode):
-            module = self.module[module]
-        self.stop()
-        module._stop(self._run_number)
-        self._remove_module(module)
+        with self.lock:
+            if isinstance(module,str) or isinstance(module,unicode):
+                module = self.module[module]
+            self.stop()
+            module._stop(self._run_number)
+            self._remove_module(module)
 
     def _remove_module(self, module):
         del self._modules[module.id]

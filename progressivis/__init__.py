@@ -3,7 +3,7 @@ from progressivis.core import (ProgressiveError, NIL,
                                Scheduler, MTScheduler, Slot, SlotDescriptor,
                                Module, connect, StorageManager, Every, Print,
                                DataFrameModule, Constant,
-                               Wait, Merge)
+                               Wait, Merge, Join, CombineFirst)
 
 import logging
 
@@ -11,7 +11,8 @@ __all__ = ["log_level",
            "ProgressiveError", "Scheduler", "MTScheduler",
            "version", "__version__", "short_version",
            "Slot", "SlotDescriptor", "Module", "connect", "StorageManager",
-           "DataFrameModule", "Constant", "Every", "Print", "Wait", "Merge", "NIL" ]
+           "DataFrameModule", "Constant", "Every", "Print", "Wait",
+           "Merge", "Join", "CombineFirst", "NIL" ]
 
 
 # Magic spell to avoid the message 'No handlers could be found for logger X.Y.Z'

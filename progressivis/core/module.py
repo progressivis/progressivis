@@ -149,6 +149,10 @@ class Module(object):
     def parameter(self):
         return self._params
 
+    @property
+    def lock(self):
+        return self.scheduler.lock
+
     def _parse_parameters(self, kwds):
         self._params = self.create_dataframe(self.all_parameters + [self.UPDATE_COLUMN_DESC])
         self.params = DataFrameAsDict(self._params)
@@ -520,6 +524,16 @@ class Module(object):
 
     def current_params(self):
         return self._params.loc[self._params.index[-1]]
+
+    def set_current_params(self, v):
+        if not isinstance(v,pd.Series):
+            v = pd.Series(v, dtype=object) # raises error if not compatible
+        with self.lock:
+            current = self.current_params()
+            v = current.combine_first(v) # fill-in missing values
+            s3[self.UPDATE_COLUMN] = self.scheduler.run_number()
+            self._params.loc[self._params.index[-1]+1] = v
+        return v
 
     def run(self, run_number):
         if self.is_running():

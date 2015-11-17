@@ -27,7 +27,7 @@ class TestScatterPlot(unittest.TestCase):
         cnt = Every(proc=print_len,constant_time=True,scheduler=s)
         cnt.input.inp = csv.output.df
         prt = Print(scheduler=s)
-        prt.input.inp = sp.merge.output.df
+        prt.input.inp = sp.join.output.df
         csv.scheduler().start()
 
 

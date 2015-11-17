@@ -1,7 +1,7 @@
 """Visualize DataFrame columns x,y on the notebook, allowing refreshing."""
 from __future__ import print_function
 
-from progressivis import SlotDescriptor, Wait, Merge
+from progressivis import SlotDescriptor, Wait, Join
 from progressivis.core.dataframe import DataFrameModule
 from progressivis.stats import Histogram2D, Stats, Sample
 from progressivis.vis import Heatmap
@@ -50,7 +50,7 @@ class ScatterPlot(DataFrameModule):
     def get_visualization(self):
         return "scatterplot";
 
-    def create_scatterplot_modules(self, wait=None, x_stats=None, y_stats=None, sample=None, merge=None, histogram2d=None):
+    def create_scatterplot_modules(self, wait=None, x_stats=None, y_stats=None, sample=None, join=None, histogram2d=None):
         s=self._scheduler
         if wait is None:
             wait = Wait(reads=0,group=self.id,scheduler=s)
@@ -60,14 +60,14 @@ class ScatterPlot(DataFrameModule):
         if y_stats is None:
             y_stats = Stats(self.y_column, min_column='ymin', max_column='ymax',group=self.id,scheduler=s)
         y_stats.input.df = wait.output.out
-        if merge is None:
-            merge = Merge(group=self.id,scheduler=s)
-        merge.input.df = x_stats.output.stats
-        merge.input.df = y_stats.output.stats # magic input df slot
+        if join is None:
+            join = Join(group=self.id,scheduler=s)
+        join.input.df = x_stats.output.stats
+        join.input.df = y_stats.output.stats # magic input df slot
         if histogram2d is None:
             histogram2d = Histogram2D(self.x_column, self.y_column,group=self.id,scheduler=s);
         histogram2d.input.df = wait.output.out
-        histogram2d.input._params = merge.output.df
+        histogram2d.input._params = join.output.df
         heatmap = Heatmap(group=self.id,filename='heatmap%d.png', history=100, scheduler=s)
         heatmap.input.array = histogram2d.output.histogram2d
         if sample is None:
@@ -77,7 +77,7 @@ class ScatterPlot(DataFrameModule):
         self.wait = wait
         self.x_stats = x_stats
         self.y_stats = y_stats
-        self.merge = merge
+        self.join = join
         self.histogram2d = histogram2d
         self.heatmap = heatmap
         self.sample = sample

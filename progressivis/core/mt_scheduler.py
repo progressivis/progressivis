@@ -35,10 +35,6 @@ class MTScheduler(Scheduler):
         l.setLevel(level)
         l.propagate = False
 
-    def collect_dependencies(self, only_required=False):
-        with self.lock:
-            return super(MTScheduler,self).collect_dependencies(only_required)
-
     def validate(self):
         with self.lock:
             return super(MTScheduler,self).validate()
@@ -93,11 +89,4 @@ class MTScheduler(Scheduler):
         else:
             yield
 
-    def _add_module(self, module):
-        with self.lock:
-            super(MTScheduler,self)._add_module(module)
-
-    def _remove_module(self, module):
-        with self.lock:
-            super(MTScheduler,self)._remove_module(module)
         

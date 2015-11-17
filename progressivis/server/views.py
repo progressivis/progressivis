@@ -8,6 +8,8 @@ from flask import render_template, request, send_from_directory, jsonify, abort,
 from os.path import join, dirname, abspath
 from .app import progressivis_bp
 
+from pprint import pprint
+
 SERVER_DIR = dirname(dirname(abspath(__file__)))
 JS_DIR = join(SERVER_DIR, 'server/static')
 
@@ -107,3 +109,16 @@ def serve_pil_image(pil_img):
     img_io.seek(0)
     return send_file(img_io, mimetype='image/png', cache_timeout=0)
 
+@progressivis_bp.route('/progressivis/module/<id>/set_parameter', methods=['POST'])
+def module_set_parameter(id):
+    scheduler = progressivis_bp.scheduler
+    module = scheduler.module[id]
+    if module is None:
+        abort(404)
+    var_values = request.get_json()
+    try:
+        module.set_current_params(var_values)
+    except Exception as e:
+        return jsonify({'status': 'failed', 'reason': 'Cannot set parameters: %s' % e})
+
+    return jsonify({'status': 'success'})
