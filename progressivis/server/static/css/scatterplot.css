@@ -2,8 +2,10 @@
   border-width: 1px;
   border-color: black;
   border-style: solid;
-  width: 100%;
+  width: 350px;
   height: 120px;
+  display: flex;
+  align-items: center;
 }
 
 #prevImages img {
