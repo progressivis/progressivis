@@ -1,3 +1,4 @@
+from progressivis.core.common import indices_len
 from progressivis.core.dataframe import DataFrameModule
 from progressivis.core.slot import SlotDescriptor
 
@@ -42,6 +43,10 @@ class Heatmap(DataFrameModule):
         dfslot = self.get_input_slot('array')
         input_df = dfslot.data()
         dfslot.update(run_number, input_df)
+        indices = dfslot.next_created()
+        steps = indices_len(indices)
+        if steps == 0:
+            return self._return_run_step(self.state_blocked, steps_run=1)
         histo = input_df.at[input_df.index[-1], 'array']
         p = self.params
         cmax = p.cmax
@@ -95,8 +100,7 @@ class Heatmap(DataFrameModule):
         json['columns'] = [histo.x_column, histo.y_column]
         histo_df = dfslot.data()
         if histo_df is not None and histo_df.index[-1] is not None:
-            idx = histo_df.index[-1]
-            row = histo_df.loc[idx]
+            row = self.last_row(histo_df)
             if not (np.isnan(row.xmin) or np.isnan(row.xmax)
                     or np.isnan(row.ymin) or np.isnan(row.ymax)):
                 json['bounds'] = {
@@ -107,20 +111,16 @@ class Heatmap(DataFrameModule):
                 }
         df = self._df
         if df is not None and self._last_update is not None:
-            json['image'] = "%s/image?run_number=%d"%(self.id,self._last_update)
+            row = self.last_row(df)
+            json['image'] = "%s/image?run_number=%d"%(self.id,row[self.UPDATE_COLUMN])
         return json
 
     def get_image(self, run_number=None):
-        if self._df is None:
+        if self._df is None or len(self._df)==0:
             return None
-        if run_number is None:
-            run_number = self._df.index[-1]
-        if run_number is None:
-            return None
+        last_run_number = self._df.index[-1]
+        if run_number is None or run_number > last_run_number:
+            run_number = last_run_number
 
-        if run_number in self._df.index:
-            (image, filename, run_number) = self._df.loc[run_number]
-            return filename if filename is not None else image
-        else:
-            return None
-
+        (image, filename, run_number) = self._df.loc[run_number]
+        return filename if filename is not None else image

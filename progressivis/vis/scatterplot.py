@@ -3,6 +3,7 @@ from __future__ import print_function
 
 from progressivis import SlotDescriptor, Wait, Join, Select
 from progressivis.core.dataframe import DataFrameModule
+from progressivis.io import Input
 from progressivis.stats import Histogram2D, Stats, Sample
 from progressivis.vis import Heatmap
 
@@ -64,9 +65,12 @@ class ScatterPlot(DataFrameModule):
             join = Join(group=self.id,scheduler=s)
         join.input.df = x_stats.output.stats
         join.input.df = y_stats.output.stats # magic input df slot
+        inp = Input(group=self.id,scheduler=s)
+        inp.add_input('') # no filter
         if select is None:
-            select = Select(group=self.id,scheduler=s)
+            select = Select(select_column='input', group=self.id,scheduler=s)
         select.input.df = wait.output.out
+        select.input.select = inp.output.df
         if histogram2d is None:
             histogram2d = Histogram2D(self.x_column, self.y_column,group=self.id,scheduler=s);
         histogram2d.input.df = select.output.df
@@ -78,6 +82,7 @@ class ScatterPlot(DataFrameModule):
         sample.input.df = select.output.df
 
         self.wait = wait
+        self.inp = inp
         self.select = select
         self.x_stats = x_stats
         self.y_stats = y_stats
@@ -115,6 +120,9 @@ class ScatterPlot(DataFrameModule):
     def get_image(self, run_number=None):
         heatmap = self.get_input_module('heatmap')
         return heatmap.get_image(run_number)
+
+    def add_input(self, msg):
+        self.inp.add_input(msg)
 
     # For Bokeh, but not ready for prime time yet...
     x = np.array([0, 10, 50, 90, 100], np.dtype(float))

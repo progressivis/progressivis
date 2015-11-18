@@ -404,9 +404,9 @@ class Module(object):
             slots = self.input_slot_values()
             in_count = 0
             term_count = 0
-            ready = True
+            ready_count = 0
             for slot in slots:
-                if slot is None: # not required slot
+                if slot is None: # slot not required and not connected
                     continue
                 in_count += 1
                 in_module = slot.output_module
@@ -415,18 +415,15 @@ class Module(object):
 
                 if in_module.state==Module.state_terminated or in_module.state==Module.state_invalid:
                     term_count += 1
-                elif in_ts is None:
-                    logger.info("%s Not ready because %s has not started", self.id, in_module.id)
-                    ready = False
-                elif (ts is not None) and (in_ts <= ts):
-                    logger.info("%s Not ready because %s is not newer", self.id, in_module.id)
-                    ready = False
+                elif (ts is None) or (in_ts > ts):
+                    ready_count += 1
                 
             if in_count != 0 and term_count==in_count: # if all the input slot modules are terminated or invalid
                 logger.info('%s zombie', self.id)
                 self.state = Module.state_zombie
                 ready = False
-            return ready
+             # sources are always ready, and when 1 is ready, the module can run.
+            return in_count==0 or ready_count!=0
         logger.error("%s Not ready because is in weird state %s", self.id, self.state_name[self.state])
         return False
 

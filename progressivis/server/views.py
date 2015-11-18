@@ -49,7 +49,6 @@ def module_graph(*unused_all, **kwargs):
 @progressivis_bp.route('/progressivis/scheduler/', methods=['POST'])
 def scheduler():
     short = request.values.get('short', 'True').lower() != 'false'
-    print "scheduler short="+str(short)
     scheduler = progressivis_bp.scheduler
     scheduler.set_tick_proc(progressivis_bp.tick_scheduler) # setting it multiple times is ok
     return jsonify(scheduler.to_json(short))
@@ -76,9 +75,9 @@ def module(id):
     module = scheduler.module[id]
     module.set_end_run(progressivis_bp.tick_module) # setting it multiple time is ok
     if request.method == 'POST':
-        print 'POST module %s'%id
+        #print 'POST module %s'%id
         return jsonify(module.to_json())
-    print 'GET module %s'%id
+    #print 'GET module %s'%id
     if module.is_visualization():
         vis = module.get_visualization()
         return render_template(vis+'.html', title="%s %s"%(vis,id), id=id)
@@ -122,3 +121,18 @@ def module_set_parameter(id):
         return jsonify({'status': 'failed', 'reason': 'Cannot set parameters: %s' % e})
 
     return jsonify({'status': 'success'})
+
+@progressivis_bp.route('/progressivis/module/<id>/input', methods=['POST'])
+def module_input(id):
+    scheduler = progressivis_bp.scheduler
+    module = scheduler.module[id]
+    if module is None:
+        abort(404)
+    var_values = request.get_json()
+    try:
+        module.add_input(var_values['input'])
+    except Exception as e:
+        return jsonify({'status': 'failed', 'reason': 'Cannot input: %s' % e})
+
+    return jsonify({'status': 'success'})
+

@@ -37,6 +37,7 @@ class Scheduler(object):
         self._run_number = 0
         self._run_number_time =  {}
         self._tick_proc = None
+        self._idle_proc = None
 
     def clear(self):
         self._modules = dict()
@@ -49,6 +50,7 @@ class Scheduler(object):
         self._run_number = 0
         self._run_number_time =  {}
         self._tick_proc = None
+        self._idle_proc = None
 
     def timer(self):
         if self._start is None:
@@ -134,8 +136,9 @@ class Scheduler(object):
     def _after_run(self):
         pass
 
-    def start(self, tick_proc=None):
+    def start(self, tick_proc=None, idle_proc=None):
         self._tick_proc = tick_proc
+        self._idle_proc = idle_proc
         self.run()
 
     def set_tick_proc(self, tick_proc):
@@ -143,6 +146,11 @@ class Scheduler(object):
             self._tick_proc = tick_proc
         else:
             raise ProgressiveError('value should be callable or None', tick_proc)
+    def set_idle_proc(self, idle_proc):
+        if idle_proc is None or callable(idle_proc):
+            self.idle_proc = idle_proc
+        else:
+            raise ProgressiveError('value should be callable or None', idle_proc)
 
     def run(self):
         self._stopped = False
@@ -183,7 +191,10 @@ class Scheduler(object):
             self._run_number_time[self._run_number] = self.timer()
             if last_work < self._run_number: # nothing has run on that loop, sleep a bit
                 logger.info('Sleeping after idle run %d', self._run_number)
-                sleep(1)
+                if self._idle_proc:
+                    self._idle_proc(self, self._run_number)
+                else:
+                    sleep(1)
 
         # get back all the modules
         modules = [self.module[m] for m in self._runorder]

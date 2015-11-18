@@ -42,6 +42,10 @@ class Sample(DataFrameModule):
 
     def run_step(self,run_number,step_size,howlong):
         dfslot = self.get_input_slot('df')
+        dfslot.update(run_number)
+        # do not produce another sample is nothing has changed
+        if not (dfslot.has_created() or dfslot.has_deleted() or dfslot.has_updated()):
+            return self._return_run_step(self.state_blocked, steps_run=0)
         input_df = dfslot.data()
         l = len(input_df) if input_df is not None else 0
 

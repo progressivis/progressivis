@@ -1,6 +1,7 @@
-from progressivis.core.common import indices_len
+from progressivis.core.common import ProgressiveError, indices_len
 from progressivis.core.dataframe import DataFrameModule
 from progressivis.core.slot import SlotDescriptor
+from .utils import is_valid_identifier
 
 import pandas as pd
 
@@ -29,13 +30,11 @@ class Select(DataFrameModule):
             indices = select_slot.next_created() # read it all
             select = self.last_row(select_df)[self._select_column] # get the select expression
             if select is not None:
-                select = unicode(select) # make sure we have a string
+                if len(select)==0:
+                    select=None
+                else:
+                    select = unicode(select) # make sure we have a string
 
-        if select is None: # nothing to select, just pass through
-            logger.info('No select, passing data through')
-            self._df = df_slot.data()
-            return self._return_run_step(self.state_blocked, steps_run=1)
-        
         df_slot.update(run_number)
         if df_slot.has_deleted() or df_slot.has_updated():
             df_slot.reset()
@@ -46,6 +45,12 @@ class Select(DataFrameModule):
         steps = indices_len(indices)
         if steps==0:
             return self._return_run_step(self.state_blocked, steps_run=steps)
+
+        if select is None: # nothing to select, just pass through
+            logger.info('No select, passing data through')
+            self._df = df_slot.data()
+            return self._return_run_step(self.state_blocked, steps_run=1)
+        
         if isinstance(indices, slice):
             indices = slice(indices.start, indices.stop-1)
         df = df_slot.data().loc[indices]
@@ -63,3 +68,29 @@ class Select(DataFrameModule):
         else:
             self._df = self._df.append(selected_df) # don't ignore index I think
         return self._return_run_step(self.state_blocked, steps_run=steps)
+
+    @staticmethod
+    def make_range_query(column, low, high=None):
+        if not is_valid_identifier(column):
+            raise ProgressiveError('Cannot use column "%s", invalid name in expression',column)
+        if high==None or low==high:
+            return "({} == {})".format(low,column)
+        elif low > high:
+            low,high = high, low
+        return "({} <= {} <= {})".format(low,column,high)
+
+    @staticmethod
+    def make_and_query(*expr):
+        if len(expr)==1:
+            return expr[0]
+        elif len(expr)>1:
+            return " and ".join(expr)
+        return ""
+
+    @staticmethod
+    def make_or_query(*expr):
+        if len(expr)==1:
+            return expr[0]
+        elif len(expr)>1:
+            return " or ".join(expr)
+        return ""

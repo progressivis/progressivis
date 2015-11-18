@@ -14,6 +14,9 @@ def print_len(x):
     if x is not None:
         print len(x)
 
+def idle_proc(s, x):
+    s.stop()
+
 class TestScatterPlot(unittest.TestCase):
 #    def setUp(self):
 #        log_level(logging.INFO,'progressivis')
@@ -28,7 +31,8 @@ class TestScatterPlot(unittest.TestCase):
         cnt.input.inp = csv.output.df
         prt = Print(scheduler=s)
         prt.input.inp = sp.join.output.df
-        csv.scheduler().start()
+        csv.scheduler().start(None,idle_proc)
+        self.assertEquals(len(csv.df()), 1000000)
 
 
 if __name__ == '__main__':
