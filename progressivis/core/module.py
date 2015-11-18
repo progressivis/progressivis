@@ -531,7 +531,7 @@ class Module(object):
         with self.lock:
             current = self.current_params()
             v = current.combine_first(v) # fill-in missing values
-            s3[self.UPDATE_COLUMN] = self.scheduler.run_number()
+            v[self.UPDATE_COLUMN] = self.scheduler.run_number()
             self._params.loc[self._params.index[-1]+1] = v
         return v
 
@@ -628,6 +628,15 @@ class Module(object):
             return None
         idx = index[-1]
         return df.loc[idx]
+
+    @staticmethod
+    def add_row(df, row):
+        index = df.index
+        if len(index)==0:
+            df.loc[0] = row
+        else:
+            df.loc[index[-1]+1] = row
+        return df
 
     @staticmethod
     def force_valid_id_columns(df):

@@ -1,7 +1,7 @@
 """Visualize DataFrame columns x,y on the notebook, allowing refreshing."""
 from __future__ import print_function
 
-from progressivis import SlotDescriptor, Wait, Join
+from progressivis import SlotDescriptor, Wait, Join, Filter
 from progressivis.core.dataframe import DataFrameModule
 from progressivis.stats import Histogram2D, Stats, Sample
 from progressivis.vis import Heatmap
@@ -50,7 +50,7 @@ class ScatterPlot(DataFrameModule):
     def get_visualization(self):
         return "scatterplot";
 
-    def create_scatterplot_modules(self, wait=None, x_stats=None, y_stats=None, sample=None, join=None, histogram2d=None):
+    def create_scatterplot_modules(self, wait=None, x_stats=None, y_stats=None, filter=None, sample=None, join=None, histogram2d=None):
         s=self._scheduler
         if wait is None:
             wait = Wait(reads=0,group=self.id,scheduler=s)
@@ -64,17 +64,21 @@ class ScatterPlot(DataFrameModule):
             join = Join(group=self.id,scheduler=s)
         join.input.df = x_stats.output.stats
         join.input.df = y_stats.output.stats # magic input df slot
+        if filter is None:
+            filter = Filter(group=self.id,scheduler=s)
+        filter.input.df = wait.output.out
         if histogram2d is None:
             histogram2d = Histogram2D(self.x_column, self.y_column,group=self.id,scheduler=s);
-        histogram2d.input.df = wait.output.out
+        histogram2d.input.df = filter.output.df
         histogram2d.input._params = join.output.df
         heatmap = Heatmap(group=self.id,filename='heatmap%d.png', history=100, scheduler=s)
         heatmap.input.array = histogram2d.output.histogram2d
         if sample is None:
             sample = Sample(n=500,group=self.id,scheduler=s)
-        sample.input.df = wait.output.out
+        sample.input.df = filter.output.df
 
         self.wait = wait
+        self.filter = filter
         self.x_stats = x_stats
         self.y_stats = y_stats
         self.join = join
@@ -92,7 +96,27 @@ class ScatterPlot(DataFrameModule):
     def run_step(self,run_number,step_size,howlong):
         return self._return_run_step(self.state_blocked, steps_run=1, reads=1, updates=1)
 
+    def to_json(self, short=False):
+        self.image = None
+        json = super(ScatterPlot, self).to_json(short)
+        if short:
+            return json
+        return self.scatterplot_to_json(json, short)
 
+    def scatterplot_to_json(self, json, short):
+        df = self.df()
+        if df is not None:
+            json['scatterplot'] = self.remove_nan(df[[self.x_column,self.y_column]]
+                                                  .to_dict(orient='split'))
+
+        heatmap = self.get_input_module('heatmap')
+        return heatmap.heatmap_to_json(json, short)
+
+    def get_image(self, run_number=None):
+        heatmap = self.get_input_module('heatmap')
+        return heatmap.get_image(run_number)
+
+    # For Bokeh, but not ready for prime time yet...
     x = np.array([0, 10, 50, 90, 100], np.dtype(float))
     y = np.array([0, 50, 90, 10, 100], np.dtype(float))
     img = np.zeros((3, 3), np.float)
@@ -149,7 +173,6 @@ class ScatterPlot(DataFrameModule):
     @property
     def auto_update(self):
         return self._auto_update
-
     @auto_update.setter
     def auto_update(self, value):
         self._auto_update = value
@@ -158,24 +181,4 @@ class ScatterPlot(DataFrameModule):
         super(ScatterPlot, self).cleanup_run(run_number)
         if self._auto_update:
             self.update(None)
-
-    def to_json(self, short=False):
-        self.image = None
-        json = super(ScatterPlot, self).to_json(short)
-        if short:
-            return json
-        return self.scatterplot_to_json(json, short)
-
-    def scatterplot_to_json(self, json, short):
-        df = self.df()
-        if df is not None:
-            json['scatterplot'] = self.remove_nan(df[[self.x_column,self.y_column]]
-                                                  .to_dict(orient='split'))
-
-        heatmap = self.get_input_module('heatmap')
-        return heatmap.heatmap_to_json(json, short)
-
-    def get_image(self, run_number=None):
-        heatmap = self.get_input_module('heatmap')
-        return heatmap.get_image(run_number)
 

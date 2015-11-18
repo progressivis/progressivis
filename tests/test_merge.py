@@ -1,6 +1,6 @@
 import unittest
 
-from progressivis import *
+from progressivis import Every, Scheduler, Constant, Print
 from progressivis.stats import Stats
 from progressivis.io import CSVLoader
 from progressivis.core.merge import Merge

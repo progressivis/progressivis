@@ -1,5 +1,3 @@
-from progressivis.core.dataframe import DataFrameModule
-from progressivis.core.slot import SlotDescriptor
 from .nary import NAry
 
 import pandas as pd

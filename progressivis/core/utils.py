@@ -70,7 +70,7 @@ class DataFrameAsDict(object):
     def __setitem__(self, key, value):
         df = super(DataFrameAsDict, self).__getattribute__('df')
         if isinstance(key, (list,slice,np.ndarray,pd.Series)):
-            df.loc[dx.index[-1], key] = value
+            df.loc[df.index[-1], key] = value
         else:
             df.at[df.index[-1], key] = value
 

@@ -1,8 +1,4 @@
-from progressivis.core.dataframe import DataFrameModule
-from progressivis.core.slot import SlotDescriptor
 from .nary import NAry 
-
-import pandas as pd
 
 class CombineFirst(NAry):
     def run_step(self,run_number,step_size,howlong):

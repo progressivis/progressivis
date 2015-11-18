@@ -3,7 +3,6 @@ from progressivis.core.slot import SlotDescriptor
 
 import numpy as np
 import pandas as pd
-import scipy as sp
 
 import logging
 logger = logging.getLogger(__name__)

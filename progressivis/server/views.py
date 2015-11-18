@@ -8,7 +8,7 @@ from flask import render_template, request, send_from_directory, jsonify, abort,
 from os.path import join, dirname, abspath
 from .app import progressivis_bp
 
-from pprint import pprint
+#from pprint import pprint
 
 SERVER_DIR = dirname(dirname(abspath(__file__)))
 JS_DIR = join(SERVER_DIR, 'server/static')

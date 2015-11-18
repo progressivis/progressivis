@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 
 class RandomTable(DataFrameModule):
-    def __init__(self, columns, rows=-1, random=np.random.rand, **kwds):
+    def __init__(self, columns, rows=-1, random=np.random.rand, force_valid_ids=False, **kwds):
         super(RandomTable, self).__init__(**kwds)
         self.default_step_size = 1000
         if isinstance(columns,int):
@@ -23,6 +23,8 @@ class RandomTable(DataFrameModule):
         self.rows = rows
         self.random = random
         self._df = self.create_dataframe(self.columns, types=cols*[np.dtype(float)]+[np.dtype(int)])
+        if force_valid_ids:
+            self.force_valid_id_columns(self._df)
         self.columns = self._df.columns # reuse the pandas index structure
 
     def run_step(self,run_number,step_size, howlong):
