@@ -151,7 +151,7 @@ class Module(object):
 
     @property
     def lock(self):
-        return self.scheduler.lock
+        return self.scheduler().lock
 
     def _parse_parameters(self, kwds):
         self._params = self.create_dataframe(self.all_parameters + [self.UPDATE_COLUMN_DESC])
@@ -614,8 +614,8 @@ class Module(object):
 
     # Convenience methods
     @staticmethod
-    def create_dataframe(columns, types=None, values=None):
-        if values is None and types is not None:
+    def create_dataframe(columns, empty=False, types=None, values=None):
+        if empty or (values is None and types is not None):
             return empty_typed_dataframe(columns, types)
         return typed_dataframe(columns, types, values)
 

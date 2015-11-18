@@ -1,6 +1,7 @@
 from progressivis.core.common import ProgressiveError
 from progressivis.core.utils import AttributeDict
 
+from time import sleep
 from timeit import default_timer
 from toposort import toposort_flatten
 from contextlib import contextmanager
@@ -158,6 +159,7 @@ class Scheduler(object):
         self._run_number_time[self._run_number] = self.timer()
         for module in modules:
             module.starting()
+        last_work = self._run_number
         while len(modules)!=0 and not self._stopped:
             with self.lock:
                 self._run_number += 1
@@ -168,6 +170,7 @@ class Scheduler(object):
                 if not module.is_ready():
                     logger.info("Module %s not ready", module.id)
                     continue
+                last_work = self._run_number
                 logger.info("Running module %s", module.id)
                 module.run(self._run_number)
                 logger.info("Module %s returned", module.id)
@@ -178,6 +181,9 @@ class Scheduler(object):
                 modules = [m for m in modules if not m.is_terminated()]
             self._after_run()
             self._run_number_time[self._run_number] = self.timer()
+            if last_work < self._run_number: # nothing has run on that loop, sleep a bit
+                logger.info('Sleeping after idle run %d', self._run_number)
+                sleep(1)
 
         # get back all the modules
         modules = [self.module[m] for m in self._runorder]
