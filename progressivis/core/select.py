@@ -8,12 +8,13 @@ import logging
 logger = logging.getLogger(__name__)
 
 class Select(DataFrameModule):
-    def __init__(self, **kwds):
+    def __init__(self, select_column='select', **kwds):
         self._add_slots(kwds,'input_descriptors',
                         [SlotDescriptor('df', type=pd.DataFrame, required=True),
                          SlotDescriptor('select', type=pd.DataFrame, required=False)])
         super(Select, self).__init__(**kwds)
         self.default_step_size = 1000
+        self._select_column = select_column
         
     def run_step(self,run_number,step_size,howlong):
         select_slot = self.get_input_slot('select')
@@ -26,7 +27,7 @@ class Select(DataFrameModule):
             if  select_slot.has_created(): # ignore deleted and updated
                 df_slot.reset() # re-filter
             indices = select_slot.next_created() # read it all
-            select = self.last_row(select_df)['select'] # get the select expression
+            select = self.last_row(select_df)[self._select_column] # get the select expression
             if select is not None:
                 select = unicode(select) # make sure we have a string
 
