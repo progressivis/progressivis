@@ -1,7 +1,7 @@
 """Visualize DataFrame columns x,y on the notebook, allowing refreshing."""
 from __future__ import print_function
 
-from progressivis import SlotDescriptor, Wait, Join, Filter
+from progressivis import SlotDescriptor, Wait, Join, Select
 from progressivis.core.dataframe import DataFrameModule
 from progressivis.stats import Histogram2D, Stats, Sample
 from progressivis.vis import Heatmap
@@ -50,7 +50,7 @@ class ScatterPlot(DataFrameModule):
     def get_visualization(self):
         return "scatterplot";
 
-    def create_scatterplot_modules(self, wait=None, x_stats=None, y_stats=None, filter=None, sample=None, join=None, histogram2d=None):
+    def create_scatterplot_modules(self, wait=None, x_stats=None, y_stats=None, select=None, sample=None, join=None, histogram2d=None):
         s=self._scheduler
         if wait is None:
             wait = Wait(reads=0,group=self.id,scheduler=s)
@@ -64,21 +64,21 @@ class ScatterPlot(DataFrameModule):
             join = Join(group=self.id,scheduler=s)
         join.input.df = x_stats.output.stats
         join.input.df = y_stats.output.stats # magic input df slot
-        if filter is None:
-            filter = Filter(group=self.id,scheduler=s)
-        filter.input.df = wait.output.out
+        if select is None:
+            select = Select(group=self.id,scheduler=s)
+        select.input.df = wait.output.out
         if histogram2d is None:
             histogram2d = Histogram2D(self.x_column, self.y_column,group=self.id,scheduler=s);
-        histogram2d.input.df = filter.output.df
+        histogram2d.input.df = select.output.df
         histogram2d.input._params = join.output.df
         heatmap = Heatmap(group=self.id,filename='heatmap%d.png', history=100, scheduler=s)
         heatmap.input.array = histogram2d.output.histogram2d
         if sample is None:
             sample = Sample(n=500,group=self.id,scheduler=s)
-        sample.input.df = filter.output.df
+        sample.input.df = select.output.df
 
         self.wait = wait
-        self.filter = filter
+        self.select = select
         self.x_stats = x_stats
         self.y_stats = y_stats
         self.join = join
