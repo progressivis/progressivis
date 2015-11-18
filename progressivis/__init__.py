@@ -2,7 +2,7 @@ from progressivis.core import (ProgressiveError, NIL,
                                version, __version__, short_version,
                                Scheduler, MTScheduler, Slot, SlotDescriptor,
                                Module, connect, StorageManager, Every, Print,
-                               DataFrameModule, Constant, Filter,
+                               DataFrameModule, Constant, Select,
                                Wait, Merge, Join, CombineFirst)
 
 import logging
@@ -11,7 +11,7 @@ __all__ = ["log_level",
            "ProgressiveError", "Scheduler", "MTScheduler",
            "version", "__version__", "short_version",
            "Slot", "SlotDescriptor", "Module", "connect", "StorageManager",
-           "DataFrameModule", "Constant", "Every", "Print", "Wait", "Filter",
+           "DataFrameModule", "Constant", "Every", "Print", "Wait", "Select",
            "Merge", "Join", "CombineFirst", "NIL" ]
 
 

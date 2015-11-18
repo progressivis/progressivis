@@ -1,7 +1,7 @@
 __all__ = [ "ProgressiveError", "type_fullname", "indices_len", "Scheduler", "MTScheduler",
             "version", "__version__", "short_version",
            "Slot", "SlotDescriptor", "Module", "connect", "StorageManager",
-           "DataFrameModule", "Constant", "Every", "Print", "Wait", "Filter"
+           "DataFrameModule", "Constant", "Every", "Print", "Wait", "Select"
            "Merge", "Join", "CombineFirst", "NIL" ]
 
 from .version import version, __version__, short_version
@@ -13,12 +13,12 @@ from .storagemanager import StorageManager
 from .module import Module, connect, Every, Print
 from .dataframe import DataFrameModule
 from .constant import Constant
-from .filter import Filter
+from .select import Select
 from .wait import Wait
 from .merge import Merge
 from .join import Join
 from .combine_first import CombineFirst
 
 # Keep PyFlakes happy
-Filter
+Select
 Merge
