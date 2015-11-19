@@ -1,8 +1,11 @@
-from . import DataFrameModule
+from . import DataFrameModule, ProgressiveError
+
+import pandas as pd
 
 class Constant(DataFrameModule):
     def __init__(self, df, **kwds):        
         super(Constant, self).__init__(**kwds)
+        assert isinstance(df, pd.DataFrame)
         self._df = df
         self._df[self.UPDATE_COLUMN] = 1
 

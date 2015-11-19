@@ -10,8 +10,7 @@ import pandas as pd
 class TestPercentiles(unittest.TestCase):
     def test_percentile(self):
         s=Scheduler()
-        csv_module = CSVLoader(get_dataset('smallfile'), index_col=False,header=None,
-                               scheduler=s)
+        csv_module = CSVLoader(get_dataset('smallfile'), index_col=False,header=None, scheduler=s)
         module=Percentiles(1,id='test_percentile',
                            percentiles=[0.1, 0.25, 0.5, 0.75, 0.9],
                            scheduler=s)

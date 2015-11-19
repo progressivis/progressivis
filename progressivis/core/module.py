@@ -617,14 +617,17 @@ class Module(object):
         return typed_dataframe(columns, types, values)
 
     @staticmethod
-    def last_row(df):
+    def last_row(df, remove_update=False):
         if df is None:
             return None
         index = df.index
         if len(index)==0:
             return None
         idx = index[-1]
-        return df.loc[idx]
+        last = df.loc[idx]
+        if remove_update:
+            del last[Module.UPDATE_COLUMN]
+        return last
 
     @staticmethod
     def add_row(df, row):

@@ -4,6 +4,13 @@ function module_get(success, error) {
     $.post($SCRIPT_ROOT+'/progressivis/module/'+module_id)
         .done(success)
         .fail(error);
+}
+
+function module_input(data, success, error) {
+    $.post($SCRIPT_ROOT+'/progressivis/module/'+module_id+'/input',
+           data, null, 'json')
+        .done(success)
+        .fail(error);
 };
 
 function module_update(data) {

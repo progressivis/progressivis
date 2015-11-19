@@ -9,31 +9,31 @@ import logging
 logger = logging.getLogger(__name__)
 
 class Select(DataFrameModule):
-    def __init__(self, select_column='select', **kwds):
+    def __init__(self, select_column='query', **kwds):
         self._add_slots(kwds,'input_descriptors',
                         [SlotDescriptor('df', type=pd.DataFrame, required=True),
-                         SlotDescriptor('select', type=pd.DataFrame, required=False)])
+                         SlotDescriptor('query', type=pd.DataFrame, required=False)])
         super(Select, self).__init__(**kwds)
         self.default_step_size = 1000
-        self._select_column = select_column
+        self._query_column = query_column
         
     def run_step(self,run_number,step_size,howlong):
-        select_slot = self.get_input_slot('select')
+        query_slot = self.get_input_slot('query')
         df_slot = self.get_input_slot('df')
-        if not select_slot:
-            select = None
+        if not query_slot:
+            query = None
         else:
-            select_df = select_slot.data()
-            select_slot.update(run_number)
-            if  select_slot.has_created(): # ignore deleted and updated
+            query_df = query_slot.data()
+            query_slot.update(run_number)
+            if  query_slot.has_created(): # ignore deleted and updated
                 df_slot.reset() # re-filter
-            indices = select_slot.next_created() # read it all
-            select = self.last_row(select_df)[self._select_column] # get the select expression
-            if select is not None:
-                if len(select)==0:
-                    select=None
+            indices = query_slot.next_created() # read it all
+            query = self.last_row(query_df)[self._query_column] # get the query expression
+            if query is not None:
+                if len(query)==0:
+                    query=None
                 else:
-                    select = unicode(select) # make sure we have a string
+                    query = unicode(query) # make sure we have a string
 
         df_slot.update(run_number)
         if df_slot.has_deleted() or df_slot.has_updated():
@@ -46,8 +46,8 @@ class Select(DataFrameModule):
         if steps==0:
             return self._return_run_step(self.state_blocked, steps_run=steps)
 
-        if select is None: # nothing to select, just pass through
-            logger.info('No select, passing data through')
+        if query is None: # nothing to query, just pass through
+            logger.info('No query, passing data through')
             self._df = df_slot.data()
             return self._return_run_step(self.state_blocked, steps_run=1)
         
@@ -55,11 +55,11 @@ class Select(DataFrameModule):
             indices = slice(indices.start, indices.stop-1)
         df = df_slot.data().loc[indices]
         try:
-            selected_df = df.eval(select)
+            selected_df = df.eval(query)
             if isinstance(selected_df, pd.Series):
                 selected_df = df[selected_df]
         except Exception as e:
-            logger.error('Probably a syntax error in select expression: %s', e)
+            logger.error('Probably a syntax error in query expression: %s', e)
             self._df = df_slot.data()
             return self._return_run_step(self.state_blocked, steps_run=steps)
         selected_df[self.UPDATE_COLUMN] = run_number

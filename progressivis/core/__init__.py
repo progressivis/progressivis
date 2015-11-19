@@ -1,8 +1,8 @@
 __all__ = [ "ProgressiveError", "type_fullname", "indices_len", "Scheduler", "MTScheduler",
             "version", "__version__", "short_version",
            "Slot", "SlotDescriptor", "Module", "connect", "StorageManager",
-           "DataFrameModule", "Constant", "Every", "Print", "Wait", "Select"
-           "Merge", "Join", "CombineFirst", "NIL" ]
+           "DataFrameModule", "Constant", "Every", "Print", "Wait", "Select",
+           "RangeQuery", "Merge", "Join", "CombineFirst", "NIL" ]
 
 from .version import version, __version__, short_version
 from .common import type_fullname, ProgressiveError, NIL
@@ -15,6 +15,7 @@ from .dataframe import DataFrameModule
 from .constant import Constant
 from .select import Select
 from .wait import Wait
+from .range_query import RangeQuery
 from .merge import Merge
 from .join import Join
 from .combine_first import CombineFirst

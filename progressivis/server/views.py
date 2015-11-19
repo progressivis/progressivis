@@ -3,6 +3,8 @@ from __future__ import absolute_import
 import logging
 logger = logging.getLogger(__name__)
 
+from progressivis.core import Module
+
 from StringIO import StringIO
 from flask import render_template, request, send_from_directory, jsonify, abort, send_file
 from os.path import join, dirname, abspath
@@ -122,17 +124,30 @@ def module_set_parameter(id):
 
     return jsonify({'status': 'success'})
 
-@progressivis_bp.route('/progressivis/module/<id>/input', methods=['POST'])
-def module_input(id):
+@progressivis_bp.route('/progressivis/module/<id>/input', defaults={'subid': None}, methods=['POST'])
+@progressivis_bp.route('/progressivis/module/<id>.<subid>/input', methods=['POST'])
+def module_input(id,subid):
     scheduler = progressivis_bp.scheduler
     module = scheduler.module[id]
     if module is None:
         abort(404)
+    if subid:
+        if not hasattr(module, subid):
+            abort(404)
+        module = getattr(module, subid)
+        if not isinstance(module, Module):
+            abort(404)
+            
     var_values = request.get_json()
+    msg = ''
     try:
-        module.add_input(var_values['input'])
+        msg = module.add_input(var_values)
     except Exception as e:
-        return jsonify({'status': 'failed', 'reason': 'Cannot input: %s' % e})
+        msg = str(e)
+        return jsonify({'status': 'failed', 'reason': 'Cannot input: %s' % msg})
 
-    return jsonify({'status': 'success'})
+    ret = {'status': 'success'}
+    if msg:
+        ret['error'] = msg
+    return jsonify(ret)
 

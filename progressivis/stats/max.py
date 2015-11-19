@@ -58,8 +58,8 @@ class Max(DataFrameModule):
         if self._df is None:
             self._df = pd.DataFrame([op])
         else:
-            op = pd.concat([self.last_row(self.df_), op], axis=1).max(axis=1)
-            # Also computed the min over the UPDATE_COLUMNS so reset it
+            op = pd.concat([self.last_row(self._df), op], axis=1).max(axis=1)
+            # Also computed the max over the UPDATE_COLUMNS so reset it
             op[self.UPDATE_COLUMN] = run_number
             self._df[run_number] = op
 

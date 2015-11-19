@@ -55,24 +55,29 @@ function scatterplot_update_vis(rawdata) {
 
         var zoomable = svg.append("g").attr('id', 'zoomable');
 
+        var ix = x(bounds['xmin']),
+            iy = y(bounds['ymax']),
+            iw = x(bounds['xmax'])-ix,
+            ih = y(bounds['ymin'])-iy;
+            
         zoomable.append("image")
             .attr("class", "heatmap")
             .attr("xlink:href", rawdata['image'])
             .attr("preserveAspectRatio", "none")
-            .attr("x", 0)
-            .attr("y", 0)
-            .attr("width", width)
-            .attr("height", height)
+            .attr("x", ix)
+            .attr("y", iy)
+            .attr("width",  iw)
+            .attr("height", ih)
             .attr("filter", "url(#gaussianBlur)");
 
         svg.append("image")
            .attr("class", "heatmapCompare")
            .attr("preserveAspectRatio", "none")
            .attr("opacity", 0.5)
-           .attr("x", 0)
-           .attr("y", 0)
-           .attr("width", width)
-           .attr("height", height);
+            .attr("x", ix)
+            .attr("y", iy)
+            .attr("width",  iw)
+            .attr("height", ih);
 
         svg.append("g")
             .attr("class", "x axis")
@@ -199,9 +204,9 @@ function scatterplot_filter() {
         ymax = y.invert(0),
         bounds = progressivis_data['bounds'];
 
-    if (xmin != bounds['xmin'] || xmax != bounds['xmax'])
+    if (xmin > bounds['xmin'] || xmax < bounds['xmax'])
         console.log('filter x['+xmin+','+xmax+']');
-    if (ymin != bounds['ymin'] || ymax != bounds['ymax'])
+    if (ymin > bounds['ymin'] || ymax < bounds['ymax'])
         console.log('filter y['+ymin+','+ymax+']');
 }
 
