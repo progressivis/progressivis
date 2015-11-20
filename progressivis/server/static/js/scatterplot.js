@@ -197,17 +197,40 @@ function makeOptions(select, names){
   });
 }
 
-function scatterplot_filter() {
-    var xmin = x.invert(0),
-        xmax = x.invert(width),
-        ymin = y.invert(height),
-        ymax = y.invert(0),
-        bounds = progressivis_data['bounds'];
+function ignore(data) {}
 
-    if (xmin > bounds['xmin'] || xmax < bounds['xmax'])
-        console.log('filter x['+xmin+','+xmax+']');
-    if (ymin > bounds['ymin'] || ymax < bounds['ymax'])
-        console.log('filter y['+ymin+','+ymax+']');
+function scatterplot_filter() {
+    var xmin    = x.invert(0),
+        xmax    = x.invert(width),
+        ymin    = y.invert(height),
+        ymax    = y.invert(0),
+        bounds  = progressivis_data['bounds'],
+        columns = progressivis_data['columns'],
+        min     = {},
+        max     = {};
+
+
+    if (xmin > bounds['xmin'])
+        min[columns[0]] = xmin;
+    else
+        min[columns[0]] = null; // NaN means bump to min
+    if (xmax < bounds['xmax']) 
+        max[columns[0]] = xmax;
+    else
+        max[columns[0]] = null;
+
+    if (ymin > bounds['ymin'])
+        min[columns[1]] = ymin;
+    else
+        min[columns[1]] = null;
+
+    if (ymax < bounds['ymax'])
+        max[columns[1]] = ymax;
+    else
+        max[columns[1]] = null;
+    
+    module_input(min, ignore, progressivis_error, module_id+".min_value");
+    module_input(max, ignore, progressivis_error, module_id+".max_value");
 }
 
 function scatterplot_ready() {

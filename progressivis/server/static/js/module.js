@@ -6,10 +6,19 @@ function module_get(success, error) {
         .fail(error);
 }
 
-function module_input(data, success, error) {
-    $.post($SCRIPT_ROOT+'/progressivis/module/'+module_id+'/input',
-           data, null, 'json')
-        .done(success)
+function module_input(data, success, error, module) {
+    if (! module)
+        module = module_id;
+    if (data != null && typeof(data)!='string')
+        data = JSON.stringify(data);
+    $.ajax({
+        type: 'POST',
+        url: $SCRIPT_ROOT+'/progressivis/module/'+module+'/input',
+        data: data,
+        success: success,
+        contentType: "application/json",
+        dataType: 'json'
+    })
         .fail(error);
 };
 

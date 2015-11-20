@@ -1,9 +1,9 @@
 """Visualize DataFrame columns x,y on the notebook, allowing refreshing."""
 from __future__ import print_function
 
-from progressivis import SlotDescriptor, Wait, Select
+from progressivis import SlotDescriptor, Wait, Select, RangeQuery
 from progressivis.core.dataframe import DataFrameModule
-from progressivis.io import Input
+from progressivis.io import Input, Variable
 from progressivis.stats import Histogram2D, Sample, Min, Max
 from progressivis.vis import Heatmap
 
@@ -58,11 +58,20 @@ class ScatterPlot(DataFrameModule):
         min.input.df = wait.output.df
         max = Max(group=self.id,scheduler=s)
         max.input.df = wait.output.df
-        inp = Input(group=self.id,scheduler=s)
-        inp.add_input('') # no filter
-        select = Select(query_column='input', group=self.id,scheduler=s)
+        min_value = Variable(group=self.id,scheduler=s)
+        min_value.input.like = min.output.df
+        max_value = Variable(group=self.id,scheduler=s)
+        max_value.input.like = max.output.df
+        #inp = Input(group=self.id,scheduler=s)
+        #inp.add_input('') # no filter
+        range_query = RangeQuery(group=self.id,scheduler=s)
+        range_query.input.min = min.output.df
+        range_query.input.max = max.output.df
+        range_query.input.min_value = min_value.output.df
+        range_query.input.max_value = max_value.output.df
+        select = Select(group=self.id,scheduler=s)
         select.input.df = wait.output.df
-        select.input.query = inp.output.df
+        select.input.query = range_query.output.query
         histogram2d = Histogram2D(self.x_column, self.y_column,group=self.id,scheduler=s);
         histogram2d.input.df = select.output.df
         histogram2d.input.min = min.output.df
@@ -73,10 +82,12 @@ class ScatterPlot(DataFrameModule):
         sample.input.df = select.output.df
 
         self.wait = wait
-        self.inp = inp
         self.select = select
         self.min = min
         self.max = max
+        self.min_value = min_value
+        self.max_value = max_value
+        self.range_query = range_query
         self.histogram2d = histogram2d
         self.heatmap = heatmap
         self.sample = sample

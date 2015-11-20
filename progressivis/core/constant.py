@@ -5,9 +5,10 @@ import pandas as pd
 class Constant(DataFrameModule):
     def __init__(self, df, **kwds):        
         super(Constant, self).__init__(**kwds)
-        assert isinstance(df, pd.DataFrame)
+        assert df is None or isinstance(df, pd.DataFrame)
+        if df:
+            df[self.UPDATE_COLUMN] = 1
         self._df = df
-        self._df[self.UPDATE_COLUMN] = 1
 
     def predict_step_size(self, duration):
         return 1

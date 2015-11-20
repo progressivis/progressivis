@@ -127,6 +127,7 @@ def module_set_parameter(id):
 @progressivis_bp.route('/progressivis/module/<id>/input', defaults={'subid': None}, methods=['POST'])
 @progressivis_bp.route('/progressivis/module/<id>.<subid>/input', methods=['POST'])
 def module_input(id,subid):
+    print 'module_input(%s,%s)'%(id,subid)
     scheduler = progressivis_bp.scheduler
     module = scheduler.module[id]
     if module is None:
@@ -141,11 +142,14 @@ def module_input(id,subid):
     var_values = request.get_json()
     msg = ''
     try:
+        print 'sending to %s: %s'%(module.id, var_values)
         msg = module.add_input(var_values)
     except Exception as e:
         msg = str(e)
+        print 'Error: %s'%msg
         return jsonify({'status': 'failed', 'reason': 'Cannot input: %s' % msg})
 
+    print 'success: %s'%msg
     ret = {'status': 'success'}
     if msg:
         ret['error'] = msg

@@ -19,12 +19,12 @@ except:
     s = Scheduler()
 
 #csv = CSVLoader('../nyc-taxi/yellow_tripdata_2014-10.csv', index_col=False,skipinitialspace=True,usecols=['pickup_longitude', 'pickup_latitude'], filter=filter, scheduler=s)
-csv = CSVLoader(get_dataset('bigfile'),header=None,index_col=False,scheduler=s)
+csv = CSVLoader(get_dataset('bigfile'),header=None,index_col=False,force_valid_ids=True,scheduler=s)
 pr = Every(scheduler=s)
 pr.input.inp = csv.output.df
-scatterplot = ScatterPlot(1, 2, scheduler=s)
+scatterplot = ScatterPlot('_1', '_2', scheduler=s)
 wait=scatterplot.create_scatterplot_modules()
-wait.input.inp = csv.output.df
+wait.input.df = csv.output.df
 
 if __name__=='__main__':
     csv.start()

@@ -12,7 +12,7 @@ pr.input.inp = csv.output.df
 histogram2d=Histogram2D(1, 2, xbins=128, ybins=128)
 histogram2d.input.df = csv.output.df
 pr = Print(id='print')
-pr.input.inp = histogram2d.output.histogram2d
+pr.input.inp = histogram2d.output.df
 
 if __name__=='__main__':
     csv.start()

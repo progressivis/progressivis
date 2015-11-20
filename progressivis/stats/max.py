@@ -56,12 +56,12 @@ class Max(DataFrameModule):
 
         op[self.UPDATE_COLUMN] = run_number
         if self._df is None:
-            self._df = pd.DataFrame([op])
+            self._df = pd.DataFrame([op],index=[run_number])
         else:
             op = pd.concat([self.last_row(self._df), op], axis=1).max(axis=1)
             # Also computed the max over the UPDATE_COLUMNS so reset it
             op[self.UPDATE_COLUMN] = run_number
-            self._df[run_number] = op
+            self._df.loc[run_number] = op
 
         if len(self._df) > self.params.history:
             self._df = self._df.loc[self._df.index[-self.params.history:]]

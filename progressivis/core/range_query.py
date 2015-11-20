@@ -36,9 +36,13 @@ class RangeQuery(DataFrameModule):
         minv_slot = self.get_input_slot('min_value')
         minv_slot.update(run_number)
         minv = self.last_row(minv_slot.data(), remove_update=True)
+        if minv is None:
+            mminv = min
         maxv_slot = self.get_input_slot('max_value')
         maxv_slot.update(run_number)
         maxv = self.last_row(maxv_slot.data(), remove_update=True)
+        if maxv is None:
+            maxv = max
 
         # Need to align the series to create queries
         aligned = pd.DataFrame({'min': min, 'max': max, 'min_value': minv, 'max_value': maxv})

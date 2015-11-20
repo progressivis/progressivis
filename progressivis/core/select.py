@@ -26,6 +26,7 @@ class Select(DataFrameModule):
             query_df = query_slot.data()
             query_slot.update(run_number)
             if  query_slot.has_created(): # ignore deleted and updated
+                self._df = None
                 df_slot.reset() # re-filter
             indices = query_slot.next_created() # read it all
             query = self.last_row(query_df)[self._query_column] # get the query expression
