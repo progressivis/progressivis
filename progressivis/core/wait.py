@@ -10,8 +10,8 @@ class Wait(DataFrameModule):
                   ('reads', np.dtype(int), -1)]
 
     def __init__(self, **kwds):
-        self._add_slots(kwds,'input_descriptors', [SlotDescriptor('inp', type=pd.DataFrame)])
-        super(Wait, self).__init__(dataframe_slot='out', **kwds)
+        self._add_slots(kwds,'input_descriptors', [SlotDescriptor('df', type=pd.DataFrame)])
+        super(Wait, self).__init__(**kwds)
         if np.isnan(self.params.delay) and self.params.reads == -1:
             raise ProgressiveError('Module %s needs either a delay or a number of reads, not both',
                                    self.pretty_typename())
@@ -25,7 +25,7 @@ class Wait(DataFrameModule):
         reads = self.params.reads
         if np.isnan(delay) and reads<0:
             return False
-        inslot = self.get_input_slot('inp')
+        inslot = self.get_input_slot('df')
         #if inslot.output_module is None: # should not happen, the slot is mandatory
         #    return False
         trace = inslot.output_module.tracer.df()
@@ -38,7 +38,7 @@ class Wait(DataFrameModule):
         return False
 
     def df(self):
-        return self.get_input_slot('inp').data()
+        return self.get_input_slot('df').data()
 
     def predict_step_size(self, duration):
         return 1

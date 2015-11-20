@@ -1,4 +1,4 @@
-from . import DataFrameModule, ProgressiveError
+from . import DataFrameModule
 
 import pandas as pd
 

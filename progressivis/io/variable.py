@@ -1,4 +1,4 @@
-from progressivis import Constant
+from progressivis import Constant, ProgressiveError
 
 class Variable(Constant):
     def __init__(self, df, **kwds):

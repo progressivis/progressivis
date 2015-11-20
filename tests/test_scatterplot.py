@@ -26,11 +26,11 @@ class TestScatterPlot(unittest.TestCase):
         csv = CSVLoader(get_dataset('bigfile'),index_col=False,header=None,scheduler=s)
         sp = ScatterPlot(x_column=1, y_column=2, scheduler=s)
         wait = sp.create_scatterplot_modules()
-        wait.input.inp = csv.output.df
+        wait.input.df = csv.output.df
         cnt = Every(proc=print_len,constant_time=True,scheduler=s)
         cnt.input.inp = csv.output.df
         prt = Print(scheduler=s)
-        prt.input.inp = sp.join.output.df
+        prt.input.inp = sp.histogram2d.output.df
         csv.scheduler().start(None,idle_proc)
         self.assertEquals(len(csv.df()), 1000000)
 

@@ -1,10 +1,10 @@
 """Visualize DataFrame columns x,y on the notebook, allowing refreshing."""
 from __future__ import print_function
 
-from progressivis import SlotDescriptor, Wait, Join, Select
+from progressivis import SlotDescriptor, Wait, Select
 from progressivis.core.dataframe import DataFrameModule
 from progressivis.io import Input
-from progressivis.stats import Histogram2D, Stats, Sample
+from progressivis.stats import Histogram2D, Sample, Min, Max
 from progressivis.vis import Heatmap
 
 from bokeh.plotting import show
@@ -51,42 +51,32 @@ class ScatterPlot(DataFrameModule):
     def get_visualization(self):
         return "scatterplot";
 
-    def create_scatterplot_modules(self, wait=None, x_stats=None, y_stats=None, select=None, sample=None, join=None, histogram2d=None):
+    def create_scatterplot_modules(self):
         s=self._scheduler
-        if wait is None:
-            wait = Wait(reads=0,group=self.id,scheduler=s)
-        if x_stats is None:
-            x_stats = Stats(self.x_column, min_column='xmin', max_column='xmax',group=self.id,scheduler=s)
-        x_stats.input.df = wait.output.out
-        if y_stats is None:
-            y_stats = Stats(self.y_column, min_column='ymin', max_column='ymax',group=self.id,scheduler=s)
-        y_stats.input.df = wait.output.out
-        if join is None:
-            join = Join(group=self.id,scheduler=s)
-        join.input.df = x_stats.output.stats
-        join.input.df = y_stats.output.stats # magic input df slot
+        wait = Wait(reads=0,group=self.id,scheduler=s)
+        min = Min(group=self.id,scheduler=s)
+        min.input.df = wait.output.df
+        max = Max(group=self.id,scheduler=s)
+        max.input.df = wait.output.df
         inp = Input(group=self.id,scheduler=s)
         inp.add_input('') # no filter
-        if select is None:
-            select = Select(select_column='input', group=self.id,scheduler=s)
-        select.input.df = wait.output.out
-        select.input.select = inp.output.df
-        if histogram2d is None:
-            histogram2d = Histogram2D(self.x_column, self.y_column,group=self.id,scheduler=s);
+        select = Select(query_column='input', group=self.id,scheduler=s)
+        select.input.df = wait.output.df
+        select.input.query = inp.output.df
+        histogram2d = Histogram2D(self.x_column, self.y_column,group=self.id,scheduler=s);
         histogram2d.input.df = select.output.df
-        histogram2d.input._params = join.output.df
+        histogram2d.input.min = min.output.df
+        histogram2d.input.max = max.output.df
         heatmap = Heatmap(group=self.id,filename='heatmap%d.png', history=100, scheduler=s)
-        heatmap.input.array = histogram2d.output.histogram2d
-        if sample is None:
-            sample = Sample(n=500,group=self.id,scheduler=s)
+        heatmap.input.array = histogram2d.output.df
+        sample = Sample(n=500,group=self.id,scheduler=s)
         sample.input.df = select.output.df
 
         self.wait = wait
         self.inp = inp
         self.select = select
-        self.x_stats = x_stats
-        self.y_stats = y_stats
-        self.join = join
+        self.min = min
+        self.max = max
         self.histogram2d = histogram2d
         self.heatmap = heatmap
         self.sample = sample
@@ -152,7 +142,7 @@ class ScatterPlot(DataFrameModule):
             return
         logger.info("Updating module '%s.%s'", self.pretty_typename(), self.id)
         #TODO use data from the same run
-        histo_df = self.get_input_slot('histogram2d').data()
+        histo_df = self.histogram2d.df()
         row = None
         df = self.df()
         if df is not None:

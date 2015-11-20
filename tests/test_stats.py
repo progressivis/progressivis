@@ -15,10 +15,10 @@ class TestStats(unittest.TestCase):
                                scheduler=s)
         stats=Stats(1,id='test_stats', scheduler=s)
         wait=Wait(id='wait', delay=3, scheduler=s)
-        wait.input.inp = csv_module.output.df
-        #connect(csv_module, 'df', wait, 'inp')
-        stats.input._params = wait.output.out
-        #connect(wait, 'out', stats, '_params')
+        wait.input.df = csv_module.output.df
+        #connect(csv_module, 'df', wait, 'df')
+        stats.input._params = wait.output.df
+        #connect(wait, 'df', stats, '_params')
         #connect(csv_module, 'df', stats, 'df')
         stats.input.df = csv_module.output.df
         pr = Print(id='print', scheduler=s)

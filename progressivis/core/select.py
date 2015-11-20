@@ -9,7 +9,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 class Select(DataFrameModule):
-    def __init__(self, select_column='query', **kwds):
+    def __init__(self, query_column='query', **kwds):
         self._add_slots(kwds,'input_descriptors',
                         [SlotDescriptor('df', type=pd.DataFrame, required=True),
                          SlotDescriptor('query', type=pd.DataFrame, required=False)])

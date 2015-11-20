@@ -29,10 +29,10 @@ class TestSelect(unittest.TestCase):
     def test_query(self):
         s=Scheduler()
         csv = CSVLoader(get_dataset('bigfile'), index_col=False,header=None,force_valid_ids=True,scheduler=s)
-        cst=Constant(pd.DataFrame({'select': ['_1 < 0.5']}),scheduler=s)
+        cst=Constant(pd.DataFrame({'query': ['_1 < 0.5']}),scheduler=s)
         q=Select(scheduler=s)
         q.input.df = csv.output.df
-        q.input.select = cst.output.df
+        q.input.query = cst.output.df
         prlen = Every(proc=print_len, constant_time=True, scheduler=s)
         prlen.input.inp = q.output.df
         s.start()

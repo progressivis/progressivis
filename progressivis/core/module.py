@@ -421,7 +421,7 @@ class Module(object):
             if in_count != 0 and term_count==in_count: # if all the input slot modules are terminated or invalid
                 logger.info('%s zombie', self.id)
                 self.state = Module.state_zombie
-                ready = False
+                ready_count = 0
              # sources are always ready, and when 1 is ready, the module can run.
             return in_count==0 or ready_count!=0
         logger.error("%s Not ready because is in weird state %s", self.id, self.state_name[self.state])
