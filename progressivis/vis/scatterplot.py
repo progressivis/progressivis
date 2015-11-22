@@ -74,11 +74,11 @@ class ScatterPlot(DataFrameModule):
         select.input.query = range_query.output.query
         histogram2d = Histogram2D(self.x_column, self.y_column,group=self.id,scheduler=s);
         histogram2d.input.df = select.output.df
-        histogram2d.input.min = min.output.df
-        histogram2d.input.max = max.output.df
+        histogram2d.input.min = range_query.output.min
+        histogram2d.input.max = range_query.output.max
         heatmap = Heatmap(group=self.id,filename='heatmap%d.png', history=100, scheduler=s)
         heatmap.input.array = histogram2d.output.df
-        sample = Sample(n=500,group=self.id,scheduler=s)
+        sample = Sample(n=50,group=self.id,scheduler=s)
         sample.input.df = select.output.df
 
         self.wait = wait

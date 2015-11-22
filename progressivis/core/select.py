@@ -63,7 +63,7 @@ class Select(DataFrameModule):
             logger.error('Probably a syntax error in query expression: %s', e)
             self._df = df_slot.data()
             return self._return_run_step(self.state_blocked, steps_run=steps)
-        selected_df[self.UPDATE_COLUMN] = run_number
+        selected_df.loc[:,self.UPDATE_COLUMN] = run_number
         if self._df is None:
             self._df = selected_df
         else:

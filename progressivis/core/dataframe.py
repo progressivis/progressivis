@@ -86,12 +86,12 @@ class DataFrameModule(Module):
         super(DataFrameModule, self).__init__(**kwds)
         self._dataframe_slot = dataframe_slot
         self._df = None
-        self._stats = {}
 
     def create_slot(self, output_name, input_module, input_name):
-        if output_name==self._dataframe_slot:
-            return DataFrameSlot(self, output_name, input_module, input_name)
-        return super(DataFrameModule, self).create_slot(output_name, input_module, input_name)
+        # No penalty in using a DataFrameSlot when a simple slot would have worked
+        #if output_name==self._dataframe_slot:
+        return DataFrameSlot(self, output_name, input_module, input_name)
+        #return super(DataFrameModule, self).create_slot(output_name, input_module, input_name)
 
     def df(self):
         return self._df
@@ -100,15 +100,6 @@ class DataFrameModule(Module):
         if name==self._dataframe_slot:
             return self.df()
         return super(DataFrameModule, self).get_data(name)
-
-    def set_step_stat(self, name, value):
-        self._stats[name] = value
-
-    def add_step_stat(self, name, value):
-        if name in self._stats:
-            self._stats[name] += value
-        else:
-            self._stats[name] = value
 
     def update_timestamps(self):
         if self._df is not None:

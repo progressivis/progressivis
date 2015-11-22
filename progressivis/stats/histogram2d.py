@@ -49,7 +49,9 @@ class Histogram2D(DataFrameModule):
         min_df = min_slot.data()
         if len(min_df)==0 and self._bounds is None:
             return None
-        xmin, ymin = min_df.loc[min_df.index[-1],[self.x_column, self.y_column]]
+        min = min_df.loc[min_df.index[-1]]
+        xmin = min[self.x_column]
+        ymin = min[self.y_column]
         
         max_slot = self.get_input_slot('max')
         max_slot.update(run_number)
@@ -57,7 +59,9 @@ class Histogram2D(DataFrameModule):
         max_df = max_slot.data()
         if len(max_df)==0 and self._bounds is None:
             return None
-        xmax,ymax = max_df.loc[max_df.index[-1],[self.x_column, self.y_column]]
+        max = max_df.loc[max_df.index[-1]]
+        xmax = max[self.x_column]
+        ymax = max[self.y_column]
         
         if xmax < xmin:
             xmax, xmin = xmin, xmax

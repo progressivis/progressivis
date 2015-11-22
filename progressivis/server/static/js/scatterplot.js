@@ -4,10 +4,12 @@ var margin = {top: 20, right: 20, bottom: 30, left: 40},
     svg, firstTime = true;
 
 var x = d3.scale.linear()
-    .range([0, width]);
+    .range([0, width]),
+    x0;
 
 var y = d3.scale.linear()
-    .range([height, 0]);
+    .range([height, 0]),
+    y0;
 
 var color = d3.scale.category10();
 
@@ -38,14 +40,18 @@ function scatterplot_update(data) {
 
 function scatterplot_update_vis(rawdata) {
     var data = rawdata['scatterplot'],
-        bounds = rawdata['bounds'];
+        bounds = rawdata['bounds'],
+        ix, iy, iw, ih;
 
     if (!data || !bounds) return;
     var index = data['index'];
-    x.domain([bounds['xmin'], bounds['xmax']]).nice();
-    y.domain([bounds['ymin'], bounds['ymax']]).nice();
 
     if (firstTime) {
+        x.domain([bounds['xmin'], bounds['xmax']]).nice();
+        x0 = x.copy();
+        y.domain([bounds['ymin'], bounds['ymax']]).nice();
+        y0 = y.copy();
+
         svg.append("rect")
             .attr("x", 0)
             .attr("y", 0)
@@ -55,10 +61,10 @@ function scatterplot_update_vis(rawdata) {
 
         var zoomable = svg.append("g").attr('id', 'zoomable');
 
-        var ix = x(bounds['xmin']),
-            iy = y(bounds['ymax']),
-            iw = x(bounds['xmax'])-ix,
-            ih = y(bounds['ymin'])-iy;
+        ix = x(bounds['xmin']),
+        iy = y(bounds['ymax']),
+        iw = x(bounds['xmax'])-ix,
+        ih = y(bounds['ymin'])-iy;
             
         zoomable.append("image")
             .attr("class", "heatmap")
@@ -103,8 +109,35 @@ function scatterplot_update_vis(rawdata) {
         firstTime = false;
     }
     else { // not firstTime
+        var translate = zoom.translate(),
+            scale = zoom.scale(),
+            ws_translate = [x.invert(translate[0]), y.invert(translate[1])];
+
+        x0.domain([bounds['xmin'], bounds['xmax']]).nice();
+        y0.domain([bounds['ymin'], bounds['ymax']]).nice();
+        zoom.x(x.domain(x0.domain()));
+        zoom.y(y.domain(y0.domain()));
+        //later: translate = [x(ws_translate[0]), y(translate[1])]; // map center back with new domain
+        x.domain(x0.range().map(function(x) { return (x - translate[0]) / scale; }).map(x0.invert));
+        y.domain(y0.range().map(function(y) { return (y - translate[1]) / scale; }).map(y0.invert));
+
+        ix = x(bounds['xmin']);
+        iy = y(bounds['ymax']);
+        iw = x(bounds['xmax'])-ix;
+        ih = y(bounds['ymin'])-iy;
+            
         svg.select(".heatmap")
+            .attr("x", ix)
+            .attr("y", iy)
+            .attr("width",  iw)
+            .attr("height", ih)
             .attr("xlink:href", rawdata['image']);
+
+        svg.select(".heatmapCompare")
+            .attr("x", ix)
+            .attr("y", iy)
+            .attr("width",  iw)
+            .attr("height", ih);
 
         svg.select(".x.axis")
             //.transition()

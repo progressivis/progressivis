@@ -579,16 +579,16 @@ class Module(object):
                 run_step_ret['next_state'] = next_state
                 now = self.timer()
                 break
-            except Exception as e:
-                next_state = Module.state_zombie
-                run_step_ret['next_state'] = next_state
-                now = self.timer()
-                logger.debug("Exception in %s", self.id)
-                tracer.exception(now,run_number)
-                exception = e
-                self._had_error = True
-                self._start_time = now
-                break
+            # except Exception as e:
+            #     next_state = Module.state_zombie
+            #     run_step_ret['next_state'] = next_state
+            #     now = self.timer()
+            #     logger.debug("Exception in %s", self.id)
+            #     tracer.exception(now,run_number)
+            #     exception = e
+            #     self._had_error = True
+            #     self._start_time = now
+            #     break
             finally:
                 assert run_step_ret is not None, "Error: %s run_step_ret not returning a dict" % self.pretty_typename()
                 tracer.after_run_step(now,run_number,**run_step_ret)

@@ -69,5 +69,5 @@ class Sample(DataFrameModule):
             self._df = input_df
         else:
             self._df = input_df.sample(n=size)
-            self._df[self.UPDATE_COLUMN] = run_number
+            self._df.loc[:,self.UPDATE_COLUMN] = run_number
         return self._return_run_step(self.state_blocked, steps_run=1, reads=l, updates=l)

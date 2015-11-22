@@ -23,8 +23,8 @@ class TestScatterPlot(unittest.TestCase):
 
     def test_scatterplot(self):
         s=Scheduler()
-        csv = CSVLoader(get_dataset('bigfile'),index_col=False,header=None,scheduler=s)
-        sp = ScatterPlot(x_column=1, y_column=2, scheduler=s)
+        csv = CSVLoader(get_dataset('bigfile'),index_col=False,header=None,force_valid_ids=True,scheduler=s)
+        sp = ScatterPlot(x_column='_1', y_column='_2', scheduler=s)
         wait = sp.create_scatterplot_modules()
         wait.input.df = csv.output.df
         cnt = Every(proc=print_len,constant_time=True,scheduler=s)

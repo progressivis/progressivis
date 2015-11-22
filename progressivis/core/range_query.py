@@ -17,9 +17,21 @@ class RangeQuery(DataFrameModule):
                          SlotDescriptor('max', type=pd.DataFrame, required=True),
                          SlotDescriptor('min_value', type=pd.DataFrame, required=True),
                          SlotDescriptor('max_value', type=pd.DataFrame, required=True)])
+        self._add_slots(kwds,'output_descriptors',
+                        [SlotDescriptor('min', type=pd.DataFrame, required=False),
+                         SlotDescriptor('max', type=pd.DataFrame, required=False)])
         super(RangeQuery, self).__init__(dataframe_slot='query', **kwds)
         self.default_step_size = 1
         self._df = self.create_dataframe(RangeQuery.schema, empty=True)
+        self._min = None
+        self._max = None
+
+    def get_data(self, name):
+        if name=='min':
+            return self._min
+        elif name=='max':
+            return self._max
+        return super(RangeQuery,self).get_data(name)
 
     def run_step(self,run_number,step_size, howlong):
         # Assuming min and max come from applying Min and Max to a DataFrame with e.g.
@@ -61,6 +73,15 @@ class RangeQuery(DataFrameModule):
         for row in aligned.index[range_query]:
             if query: query += ' and '
             query += '({} < {} < {})'.format(minv[row], row, maxv[row])
+
+        # compute the new min/max columns
+        op = aligned.min(axis=1)
+        op[self.UPDATE_COLUMN] = run_number
+        self._min = pd.DataFrame([op],index=[run_number])
+
+        op = aligned.max(axis=1)
+        op[self.UPDATE_COLUMN] = run_number
+        self._max = pd.DataFrame([op],index=[run_number])
 
         if len(self._df)!=0:
             last = self._df.at[self._df.index[-1],'query']

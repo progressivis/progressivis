@@ -21,9 +21,9 @@ class TestRangeQuery(unittest.TestCase):
         max = Max(scheduler=s)
         max.input.df = table.output.df
         min_df = pd.DataFrame({'_1': [np.nan], '_2': [np.nan], '_3': [0.2], '_4': [0.00001], '_5':[0.7]})
-        min_value = Variable(min_df, scheduler=s)
+        min_value = Constant(min_df, scheduler=s)
         max_df = pd.DataFrame({'_1': [np.nan], '_2': [0.8], '_3': [0.999], '_4': [0.3], '_5':[np.nan]})
-        max_value = Variable(max_df, scheduler=s)
+        max_value = Constant(max_df, scheduler=s)
         range_query = RangeQuery(scheduler=s)
         range_query.input.min = min.output.df
         range_query.input.min_value = min_value.output.df
