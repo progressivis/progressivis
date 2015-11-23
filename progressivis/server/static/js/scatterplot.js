@@ -45,10 +45,10 @@ function scatterplot_update_vis(rawdata) {
         ix, iy, iw, ih;
 
     if (!data || !bounds) return;
-    var index = data['index'],
-        bounds_changed = false;
+    var index = data['index'];
 
     if (firstTime) {
+        prev_bounds = bounds;
         x.domain([bounds['xmin'], bounds['xmax']]).nice();
         y.domain([bounds['ymin'], bounds['ymax']]).nice();
         x0 = x.copy();
@@ -111,17 +111,20 @@ function scatterplot_update_vis(rawdata) {
         firstTime = false;
     }
     else { // not firstTime
-        var translate = zoom.translate(),
+        var bounds_equal = _.eq(bounds, prev_bounds),
+            translate = zoom.translate(),
             scale = zoom.scale(),
             ws_translate = [x.invert(translate[0]), y.invert(translate[1])];
 
-        x0.domain([bounds['xmin'], bounds['xmax']]).nice();
-        y0.domain([bounds['ymin'], bounds['ymax']]).nice();
-        zoom.x(x.domain(x0.domain()));
-        zoom.y(y.domain(y0.domain()));
-        //later: translate = [x(ws_translate[0]), y(translate[1])]; // map center back with new domain
-        x.domain(x0.range().map(function(x) { return (x - translate[0]) / scale; }).map(x0.invert));
-        y.domain(y0.range().map(function(y) { return (y - translate[1]) / scale; }).map(y0.invert));
+        if (! bounds_equal) {
+            x0.domain([bounds['xmin'], bounds['xmax']]).nice();
+            y0.domain([bounds['ymin'], bounds['ymax']]).nice();
+            zoom.x(x.domain(x0.domain()));
+            zoom.y(y.domain(y0.domain()));
+            //later: translate = [x(ws_translate[0]), y(translate[1])]; // map center back with new domain
+            x.domain(x0.range().map(function(x) { return (x - translate[0]) / scale; }).map(x0.invert));
+            y.domain(y0.range().map(function(y) { return (y - translate[1]) / scale; }).map(y0.invert));
+        }
 
         ix = x(bounds['xmin']);
         iy = y(bounds['ymax']);
@@ -141,15 +144,17 @@ function scatterplot_update_vis(rawdata) {
             .attr("width",  iw)
             .attr("height", ih);
 
-        svg.select(".x.axis")
+        if (! bounds_equal) {
+            svg.select(".x.axis")
             //.transition()
             //.duration(1000)
-            .call(xAxis);
+                .call(xAxis);
 
-        svg.select(".y.axis")
+            svg.select(".y.axis")
             //.transition()
             //.duration(100)
-            .call(yAxis);
+                .call(yAxis);
+        }
     }
     var imgSrc = rawdata['image'];
     imageHistory.enqueueUnique(imgSrc);

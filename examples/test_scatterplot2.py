@@ -36,8 +36,7 @@ csv.input.filenames = cst.output.df
 pr = Every(scheduler=s)
 pr.input.df = csv.output.df
 scatterplot = ScatterPlot('pickup_longitude', 'pickup_latitude', scheduler=s)
-wait=scatterplot.create_scatterplot_modules()
-wait.input.df = csv.output.df
+scatterplot.create_dependent_modules(csv,'df')
 
 if __name__=='__main__':
     csv.start()

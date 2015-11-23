@@ -22,8 +22,7 @@ csv = CSVLoader(get_dataset('bigfile'),header=None,index_col=False,force_valid_i
 pr = Every(scheduler=s)
 pr.input.df = csv.output.df
 scatterplot = ScatterPlot('_1', '_2', scheduler=s)
-wait=scatterplot.create_scatterplot_modules()
-wait.input.df = csv.output.df
+scatterplot.create_dependent_modules(csv,'df')
 
 if __name__=='__main__':
     csv.start()
