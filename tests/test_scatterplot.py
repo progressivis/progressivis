@@ -25,8 +25,7 @@ class TestScatterPlot(unittest.TestCase):
         s=Scheduler()
         csv = CSVLoader(get_dataset('bigfile'),index_col=False,header=None,force_valid_ids=True,scheduler=s)
         sp = ScatterPlot(x_column='_1', y_column='_2', scheduler=s)
-        wait = sp.create_scatterplot_modules()
-        wait.input.df = csv.output.df
+        sp.create_dependent_modules(csv,'df')
         cnt = Every(proc=print_len,constant_time=True,scheduler=s)
         cnt.input.df = csv.output.df
         prt = Print(scheduler=s)

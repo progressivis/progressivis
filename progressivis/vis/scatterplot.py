@@ -3,7 +3,6 @@ from __future__ import print_function
 
 from progressivis import SlotDescriptor, Wait, Select, RangeQuery
 from progressivis.core.dataframe import DataFrameModule
-from progressivis.io import Variable
 from progressivis.stats import Histogram2D, Sample, Min, Max
 from progressivis.vis import Heatmap
 
@@ -51,50 +50,44 @@ class ScatterPlot(DataFrameModule):
     def get_visualization(self):
         return "scatterplot";
 
-    def create_scatterplot_modules(self):
-        s=self._scheduler
-        wait = Wait(reads=0,group=self.id,scheduler=s)
-        min = Min(group=self.id,scheduler=s)
-        min.input.df = wait.output.df
-        max = Max(group=self.id,scheduler=s)
-        max.input.df = wait.output.df
-        min_value = Variable(group=self.id,scheduler=s)
-        min_value.input.like = min.output.df
-        max_value = Variable(group=self.id,scheduler=s)
-        max_value.input.like = max.output.df
-        #inp = Input(group=self.id,scheduler=s)
-        #inp.add_input('') # no filter
-        range_query = RangeQuery(group=self.id,scheduler=s)
-        range_query.input.min = min.output.df
-        range_query.input.max = max.output.df
-        range_query.input.min_value = min_value.output.df
-        range_query.input.max_value = max_value.output.df
-        select = Select(group=self.id,scheduler=s)
-        select.input.df = wait.output.df
+    def create_dependent_modules(self, input_module, input_slot, range_query=None, select=None, histogram2d=None,heatmap=None,sample=None, **kwds):
+        if hasattr(self, 'input_module'): # test if already called
+            return self
+        
+        s=self.scheduler()
+        self.input_module = input_module
+        self.input_slot = input_slot
+        
+        if range_query is None:
+            range_query = RangeQuery(group=self.id,scheduler=s)
+            range_query.create_dependent_modules(input_module, input_slot, **kwds)
+        if select is None:
+            select = Select(group=self.id,scheduler=s)
+        select.input.df = input_module.output[input_slot]
         select.input.query = range_query.output.query
-        histogram2d = Histogram2D(self.x_column, self.y_column,group=self.id,scheduler=s);
+        if histogram2d is None:
+            histogram2d = Histogram2D(self.x_column, self.y_column,group=self.id,scheduler=s);
         histogram2d.input.df = select.output.df
         histogram2d.input.min = range_query.output.min
         histogram2d.input.max = range_query.output.max
-        heatmap = Heatmap(group=self.id,filename='heatmap%d.png', history=100, scheduler=s)
+        if heatmap is None:
+            heatmap = Heatmap(group=self.id,filename='heatmap%d.png', history=100, scheduler=s)
         heatmap.input.array = histogram2d.output.df
-        sample = Sample(n=50,group=self.id,scheduler=s)
+        if sample is None:
+            sample = Sample(n=50,group=self.id,scheduler=s)
         sample.input.df = select.output.df
 
-        self.wait = wait
+        scatterplot=self
+        scatterplot.input.heatmap = heatmap.output.heatmap
+        scatterplot.input.df = sample.output.sample
+
         self.select = select
-        self.min = min
-        self.max = max
-        self.min_value = min_value
-        self.max_value = max_value
         self.range_query = range_query
         self.histogram2d = histogram2d
         self.heatmap = heatmap
         self.sample = sample
-        
-        self.input.heatmap = heatmap.output.heatmap
-        self.input.df = sample.output.sample
-        return wait
+
+        return scatterplot
 
     def predict_step_size(self, duration):
         return 1

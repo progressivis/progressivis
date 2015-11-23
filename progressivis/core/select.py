@@ -17,6 +17,24 @@ class Select(DataFrameModule):
         self.default_step_size = 1000
         self._query_column = query_column
         
+    def create_dependent_modules(self, input_module, input_slot, **kwds):
+        from progressivis import RangeQuery
+        
+        if hasattr(self, 'input_module'): # test if already called
+            return self
+        s=self.scheduler()
+        self.input_module = input_module
+        self.input_slot = input_slot
+
+        query = RangeQuery(group=self.id,scheduler=s)
+        query.create_dependent_modules(input_module, input_slot, **kwds)
+
+        select = self
+        select.input.df = input_module.output[input_slot]
+        select.input.query = query.output.query
+        return select
+        
+
     def run_step(self,run_number,step_size,howlong):
         query_slot = self.get_input_slot('query')
         df_slot = self.get_input_slot('df')

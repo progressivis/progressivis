@@ -26,6 +26,41 @@ class RangeQuery(DataFrameModule):
         self._min = None
         self._max = None
 
+    def create_dependent_modules(self, input_module, input_slot, min_value=None, max_value=None, **kwds):
+        from progressivis.io import Variable
+        from progressivis.stats import Min, Max
+
+        if hasattr(self, 'input_module'): # test if already called
+            return self
+
+        s=self.scheduler()
+        self.input_module = input_module
+        self.input_slot = input_slot
+
+        min = Min(group=self.id,scheduler=s)
+        min.input.df = input_module.output[input_slot]
+        max = Max(group=self.id,scheduler=s)
+        max.input.df = input_module.output[input_slot]
+        if min_value is None:
+            min_value = Variable(group=self.id,scheduler=s)
+            min_value.input.like = min.output.df
+        
+        if max_value is None:
+            max_value = Variable(group=self.id,scheduler=s)
+            max_value.input.like = max.output.df
+
+        range_query = self
+        range_query.input.min = min.output.df
+        range_query.input.max = max.output.df
+        range_query.input.min_value = min_value.output.df # might fail if min_value is not a Min
+        range_query.input.max_value = max_value.output.df # might fail if max_value is not a Max
+
+        self.min = min
+        self.max = max
+        self.min_value = min_value
+        self.max_value = max_value
+        return range_query
+
     def is_visualization(self):
         return True
 

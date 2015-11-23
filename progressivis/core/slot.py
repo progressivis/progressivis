@@ -79,6 +79,12 @@ class InputSlots(object):
     def __getattr__(self, name):
         raise ProgressiveError('Input slots cannot be read, only assigned to')
 
+    def __getitem__(self, name):
+        return self.__getattr__(name)
+
+    def __setitem__(self, name, slot):
+        return self.__setattr__(name, slot)
+
     def __dir__(self):
         return self.__dict__['module'].input_slot_names()
 
@@ -91,6 +97,9 @@ class OutputSlots(object):
 
     def __getattr__(self, name):
         return self.__dict__['module'].create_slot(name, None, None)
+
+    def __getitem__(self, key):
+        return self.__getattr__(key)
 
     def __dir__(self):
         return self.__dict__['module'].output_slot_names()

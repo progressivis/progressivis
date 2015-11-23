@@ -119,6 +119,11 @@ class Module(object):
         self._start_run = None
         self._end_run = None
 
+    def create_dependent_modules(self, *params, **kwds):
+        """Create modules that this module depends on.
+        """
+        pass
+
     def destroy(self):
         self.scheduler().remove_module(self)
 
