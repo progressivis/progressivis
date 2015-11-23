@@ -26,6 +26,12 @@ class RangeQuery(DataFrameModule):
         self._min = None
         self._max = None
 
+    def is_visualization(self):
+        return True
+
+    def get_visualization(self):
+        return "range_query"
+
     def get_data(self, name):
         if name=='min':
             return self._min
