@@ -15,7 +15,7 @@ class TestRangeQuery(unittest.TestCase):
     def test_range_query(self):
         s=Scheduler()
         #table = CSVLoader(get_dataset('bigfile'), index_col=False,header=None, force_valid_ids=True,scheduler=s)
-        table = RandomTable(['_1', '_2', '_3', '_4', '_5'], rows=1000000, scheduler=s)
+        table = RandomTable(['_1', '_2', '_3', '_4', '_5'], rows=10000, throttle=1000, scheduler=s)
         min = Min(scheduler=s)
         min.input.df = table.output.df
         max = Max(scheduler=s)
