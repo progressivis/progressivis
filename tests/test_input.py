@@ -8,10 +8,6 @@ import numpy as np
 import threading
 from time import sleep
 
-def print_len(x):
-    if x is not None:
-        print len(x)
-
 def ten_times(scheduler, run_number):
     if run_number > 10:
         scheduler.stop()

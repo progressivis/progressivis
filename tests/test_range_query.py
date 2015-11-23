@@ -1,6 +1,6 @@
 import unittest
 
-from progressivis import Module, Scheduler, Constant, Print
+from progressivis import Module, Scheduler, Constant, Print, Select, Every
 from progressivis.io import Variable
 from progressivis.stats import RandomTable, Min, Max
 from progressivis.core import RangeQuery
@@ -10,6 +10,10 @@ from progressivis.datasets import get_dataset
 
 import pandas as pd
 import numpy as np
+
+def print_len(x):
+    if x is not None:
+        print len(x)
 
 class TestRangeQuery(unittest.TestCase):
     def test_range_query(self):
@@ -31,6 +35,12 @@ class TestRangeQuery(unittest.TestCase):
         range_query.input.max_value = max_value.output.df
         pr=Print(id='print', scheduler=s)
         pr.input.inp = range_query.output.query
+        select=Select(scheduler=s)
+        select.input.df = table.output.df
+        select.input.query = range_query.output.query
+        prlen = Every(proc=print_len, constant_time=True, scheduler=s)
+        prlen.input.inp = select.output.df
+        
         s.start()
 
         out_df  = Module.last_row(range_query.get_data('df'), remove_update=True)
