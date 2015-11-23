@@ -37,9 +37,9 @@ class TestHistogram2D(unittest.TestCase):
         heatmap.input.array = histogram2d.output.df
         #pr = Print(scheduler=s)
         pr = Every(scheduler=s)
-        #pr.input.inp = heatmap.output.heatmap
-        #pr.input.inp = histogram2d.output.df
-        pr.input.inp = csv.output.df
+        #pr.input.df = heatmap.output.heatmap
+        #pr.input.df = histogram2d.output.df
+        pr.input.df = csv.output.df
         csv.scheduler().start()
         #self.scheduler.thread.join()
         s = histogram2d.trace_stats()

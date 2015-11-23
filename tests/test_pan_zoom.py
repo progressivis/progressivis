@@ -23,7 +23,7 @@ class TestPanZoom(unittest.TestCase):
         pan_zoom.input.bounds = join.output.df
         pan_zoom.describe()
         pr=Print(id='print', scheduler=s)
-        pr.input.inp = pan_zoom.output.panzoom
+        pr.input.df = pan_zoom.output.panzoom
         s.start()
 
     def test_pan_zoom2(self):
@@ -43,7 +43,7 @@ class TestPanZoom(unittest.TestCase):
         pan_zoom.input.viewport = cst.output.df
         pan_zoom.describe()
         pr=Print(id='print', scheduler=s)
-        pr.input.inp = pan_zoom.output.panzoom
+        pr.input.df = pan_zoom.output.panzoom
         s.start()
         df=pan_zoom.df()
         res=df.loc[df.index[-1]]

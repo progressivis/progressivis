@@ -23,7 +23,7 @@ class TestSample(unittest.TestCase):
         smp = Sample(n=10,scheduler=s)
         smp.input.df = csv.output.df
         prt = Print(scheduler=s)
-        prt.input.inp = smp.output.sample
+        prt.input.df = smp.output.sample
         csv.scheduler().start()
 
 

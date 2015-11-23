@@ -26,7 +26,7 @@ class TestCombineFirst(unittest.TestCase):
         cf.input.df = cst2.output.df
         cf.input.df = cst3.output.df
         pr=Print(scheduler=s)
-        pr.input.inp = cf.output.df
+        pr.input.df = cf.output.df
         s.start()
         res = cf.trace_stats(max_runs=1)
         pd.set_option('display.expand_frame_repr', False)
@@ -47,7 +47,7 @@ class TestCombineFirst(unittest.TestCase):
         cf.input.df = cst2.output.df
         cf.input.df = cst3.output.df
         pr=Print(scheduler=s)
-        pr.input.inp = cf.output.df
+        pr.input.df = cf.output.df
         s.start()
         res = cf.trace_stats(max_runs=1)
         pd.set_option('display.expand_frame_repr', False)

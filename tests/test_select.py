@@ -22,7 +22,7 @@ class TestSelect(unittest.TestCase):
         q=Select(scheduler=s)
         q.input.df = csv.output.df
         prlen = Every(proc=print_len, constant_time=True, scheduler=s)
-        prlen.input.inp = q.output.df
+        prlen.input.df = q.output.df
         s.start()
         self.assertEqual(len(q.df()), 1000000)
 
@@ -34,7 +34,7 @@ class TestSelect(unittest.TestCase):
         q.input.df = csv.output.df
         q.input.query = cst.output.df
         prlen = Every(proc=print_len, constant_time=True, scheduler=s)
-        prlen.input.inp = q.output.df
+        prlen.input.df = q.output.df
         s.start()
         self.assertTrue(len(q.df()) < 1000000)
 

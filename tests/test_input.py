@@ -25,7 +25,7 @@ class TestInput(unittest.TestCase):
         s=Scheduler()
         inp = Input(scheduler=s)
         pr=Print(scheduler=s)
-        pr.input.inp = inp.output.df
+        pr.input.df = inp.output.df
         #s.start(ten_times)
         t=threading.Thread(target=do_line,args=(inp,s))
         t.start()

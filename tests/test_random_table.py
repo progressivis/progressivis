@@ -19,7 +19,7 @@ class TestRandomTable(unittest.TestCase):
         self.assertEqual(module.df().columns[1],'b')
         self.assertEqual(len(module.df().columns), 3) # add the UPDATE_COLUMN
         prlen = Every(proc=print_len, constant_time=True, scheduler=s)
-        prlen.input.inp = module.output.df
+        prlen.input.df = module.output.df
         s.start()
         self.assertEqual(len(module.df()), 10000)
         self.assertFalse(module.df()['a'].hasnans())
@@ -33,7 +33,7 @@ class TestRandomTable(unittest.TestCase):
         self.assertEqual(module.df().columns[0],'_1')
         self.assertEqual(module.df().columns[1],'_2')
         prlen = Every(proc=print_len, constant_time=True, scheduler=s)
-        prlen.input.inp = module.output.df
+        prlen.input.df = module.output.df
         s.start()
         self.assertEqual(len(module.df()), 10000000)
         self.assertFalse(module.df()['_1'].hasnans())

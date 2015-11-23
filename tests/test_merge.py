@@ -26,9 +26,9 @@ class TestMerge(unittest.TestCase):
         merge.input.df = stat1.output.stats
         merge.input.df = stat2.output.stats
         pr=Print(scheduler=s)
-        pr.input.inp = merge.output.df
+        pr.input.df = merge.output.df
         prlen = Every(proc=print_len, constant_time=True, scheduler=s)
-        prlen.input.inp = csv.output.df
+        prlen.input.df = csv.output.df
         s.start()
         res = merge.trace_stats(max_runs=1)
         pd.set_option('display.expand_frame_repr', False)
@@ -42,7 +42,7 @@ class TestMerge(unittest.TestCase):
         merge.input.df = cst1.output.df
         merge.input.df = cst2.output.df
         pr=Print(scheduler=s)
-        pr.input.inp = merge.output.df
+        pr.input.df = merge.output.df
         s.start()
         res = merge.trace_stats(max_runs=1)
         pd.set_option('display.expand_frame_repr', False)

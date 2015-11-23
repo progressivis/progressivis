@@ -34,12 +34,12 @@ class TestRangeQuery(unittest.TestCase):
         range_query.input.max = max.output.df
         range_query.input.max_value = max_value.output.df
         pr=Print(id='print', scheduler=s)
-        pr.input.inp = range_query.output.query
+        pr.input.df = range_query.output.query
         select=Select(scheduler=s)
         select.input.df = table.output.df
         select.input.query = range_query.output.query
         prlen = Every(proc=print_len, constant_time=True, scheduler=s)
-        prlen.input.inp = select.output.df
+        prlen.input.df = select.output.df
         
         s.start()
 

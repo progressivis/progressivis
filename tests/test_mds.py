@@ -27,7 +27,7 @@ class TestMDS(unittest.TestCase):
     #     dis.input.df = vec.output.df
     #     dis.input.array = vec.output.array
     #     cnt = Every(proc=print_len,constant_time=True)
-    #     cnt.input.inp = dis.output.df
+    #     cnt.input.df = dis.output.df
     #     vec.start()
 
     def test_MDS_csv(self):
@@ -36,7 +36,7 @@ class TestMDS(unittest.TestCase):
         dis=PairwiseDistances(metric='euclidean',scheduler=s)
         dis.input.df = vec.output.df
         cnt = Every(proc=print_len,constant_time=True,scheduler=s)
-        cnt.input.inp = dis.output.distance
+        cnt.input.df = dis.output.distance
         s.start(ten_times)
 
 if __name__ == '__main__':

@@ -18,7 +18,7 @@ class TestPercentiles(unittest.TestCase):
         csv_module.describe()
         connect(csv_module, 'df', module, 'df')
         connect(module, 'percentiles',
-                Print(id='print', scheduler=s), 'inp')
+                Print(id='print', scheduler=s), 'df')
         s.start()
         ret = module.trace_stats(max_runs=1)
         #print "Done. Run time: %gs, loaded %d rows" % (s['duration'].irow(-1), len(module.df()))

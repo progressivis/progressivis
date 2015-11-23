@@ -648,7 +648,7 @@ def print_len(x):
 
 class Every(Module):
     def __init__(self, proc=print_len, constant_time=True, **kwds):
-        self._add_slots(kwds,'input_descriptors', [SlotDescriptor('inp')])
+        self._add_slots(kwds,'input_descriptors', [SlotDescriptor('df')])
         super(Every, self).__init__(**kwds)
         self._proc = proc
         self._constant_time = constant_time
@@ -659,7 +659,7 @@ class Every(Module):
         return self(Every, self).predict_step_size(duration)
 
     def run_step(self,run_number,step_size,howlong):
-        df = self.get_input_slot('inp').data()
+        df = self.get_input_slot('df').data()
         reads = 0
         if df is not None:
             reads=len(df)            

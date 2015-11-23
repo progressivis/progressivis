@@ -29,7 +29,7 @@ class TestPairwiseDistances(unittest.TestCase):
         dis.input.df = vec.output.df
         dis.input.array = vec.output.array
         cnt = Every(proc=print_len,constant_time=True,scheduler=s)
-        cnt.input.inp = dis.output.distance
+        cnt.input.df = dis.output.distance
         s.start(ten_times)
 
     def test_csv_distances(self):
@@ -38,7 +38,7 @@ class TestPairwiseDistances(unittest.TestCase):
         dis=PairwiseDistances(metric='euclidean',scheduler=s)
         dis.input.df = vec.output.df
         cnt = Every(proc=print_len,constant_time=True,scheduler=s)
-        cnt.input.inp = dis.output.distance
+        cnt.input.df = dis.output.distance
         s.start(ten_times)
 
 if __name__ == '__main__':

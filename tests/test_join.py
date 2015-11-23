@@ -26,9 +26,9 @@ class TestJoin(unittest.TestCase):
         join.input.df = stat1.output.stats
         join.input.df = stat2.output.stats
         pr=Print(scheduler=s)
-        pr.input.inp = join.output.df
+        pr.input.df = join.output.df
         prlen = Every(proc=print_len, constant_time=True, scheduler=s)
-        prlen.input.inp = csv.output.df
+        prlen.input.df = csv.output.df
         s.start()
         res = join.trace_stats(max_runs=1)
         pd.set_option('display.expand_frame_repr', False)
@@ -42,7 +42,7 @@ class TestJoin(unittest.TestCase):
         join.input.df = cst1.output.df
         join.input.df = cst2.output.df
         pr=Print(scheduler=s)
-        pr.input.inp = join.output.df
+        pr.input.df = join.output.df
         s.start()
         res = join.trace_stats(max_runs=1)
         pd.set_option('display.expand_frame_repr', False)

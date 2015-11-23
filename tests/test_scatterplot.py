@@ -28,9 +28,9 @@ class TestScatterPlot(unittest.TestCase):
         wait = sp.create_scatterplot_modules()
         wait.input.df = csv.output.df
         cnt = Every(proc=print_len,constant_time=True,scheduler=s)
-        cnt.input.inp = csv.output.df
+        cnt.input.df = csv.output.df
         prt = Print(scheduler=s)
-        prt.input.inp = sp.histogram2d.output.df
+        prt.input.df = sp.histogram2d.output.df
         csv.scheduler().start(None,idle_proc)
         self.assertEquals(len(csv.df()), 1000000)
 

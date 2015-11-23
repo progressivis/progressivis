@@ -23,7 +23,7 @@ class TestStats(unittest.TestCase):
         stats.input.df = csv_module.output.df
         pr = Print(id='print', scheduler=s)
         #connect(stats, 'stats', pr, 'inp')
-        pr.input.inp = stats.output.stats
+        pr.input.df = stats.output.stats
         s.start()
         s = stats.trace_stats(max_runs=1)
         pd.set_option('display.expand_frame_repr', False)

@@ -18,7 +18,7 @@ class TestMinMax(unittest.TestCase):
         min=Min(scheduler=s)
         min.input.df = random.output.df
         pr=Print(scheduler=s)
-        pr.input.inp = min.output.df
+        pr.input.df = min.output.df
         s.start()
 
     def test_max(self):
@@ -27,7 +27,7 @@ class TestMinMax(unittest.TestCase):
         max=Max(scheduler=s)
         max.input.df = random.output.df
         pr=Print(scheduler=s)
-        pr.input.inp = max.output.df
+        pr.input.df = max.output.df
         s.start()
 
 if __name__ == '__main__':
