@@ -137,14 +137,20 @@ class Histogram2D(DataFrameModule):
         x = filtered_df[self.x_column]
         y = filtered_df[self.y_column]
         p = self.params
-        histo, xedges, yedges = np.histogram2d(y, x,
-                                               bins=[p.xbins, p.ybins],
-                                               range=[[xmin, xmax],[ymin, ymax]],
-                                               normed=False)
+        if len(x)>0:
+            histo, xedges, yedges = np.histogram2d(y, x,
+                                                   bins=[p.xbins, p.ybins],
+                                                   range=[[xmin, xmax],[ymin, ymax]],
+                                                   normed=False)
+        else:
+            histo = np.array([p.xbins, p.ybins], dtype=int)
+            cmax = 0
+
         if old_histo is None:
             old_histo = histo
         else:
             old_histo += histo
+
         cmax = old_histo.max()
         values = [old_histo, 0, cmax, xmin, xmax, ymin, ymax, run_number]
         self._df.loc[run_number] = values
