@@ -2,13 +2,17 @@
 
 {% block head %}
   <link href="{{ url_for('progressivis.server.progressivis_file', filename='css/progressivis.css') }}" rel="stylesheet">
+  <script src="{{ url_for('static', filename='lodash.min.js') }}"></script>
+  <script src="{{ url_for('static', filename='jquery.min.js') }}"></script>
+  <script src="{{ url_for('static', filename='bootstrap/js/bootstrap.min.js') }}"></script>
+  <script src="{{ url_for('progressivis.server.progressivis_file', filename='js/progressivis.js') }}"></script>
   {% block extra_scripts %}
   {% endblock %}
   <script type="text/javascript">
     $SCRIPT_ROOT = {{ request.script_root|tojson|safe }};
     {{ self.script() }}
   </script>
-  <script src="{{ url_for('progressivis.server.progressivis_file', filename='js/progressivis.js') }}"></script>
+/script>
 {% endblock %}
 
 {% block body %}

@@ -67,31 +67,6 @@ class CSVLoader(DataFrameModule):
                     # fall through
         return self.state_ready
 
-    # def next_step_iter(self, run_number, step_size, howlong):
-    #     for filename in filenames(run_number):
-    #         try:
-    #             self.parser = pd.read_csv(filename, **self.csv_kwds)
-    #         except IOError as e:
-    #             logger.error('Cannot open file %s: %s', filename, e)
-    #             continue
-    #         for df in self.parser.read(step_size):
-    #             creates = len(df)
-    #             if self._filter != None:
-    #                 df = self._filter(df)
-    #             if len(df) == 0:
-    #                 logger.info('frame has been filtered out')
-    #             else:
-    #                 self._rows_read += creates
-    #                 logger.info('Loaded %d lines', self._rows_read)
-    #                 df[self.UPDATE_COLUMN] = run_number
-    #             if self._df is not None:
-    #                 self._df = self._df.append(df,ignore_index=True)
-    #             else:
-    #                 self._df = df
-    #             (run_number, step_size, howlong) = yield (self.state_ready, creates)
-    #             while step_size==0:
-    #                 (run_number, step_size, howlong) = yield (self.state_ready, 0)
-
     def run_step(self,run_number,step_size, howlong):
         if step_size==0: # bug
             logger.error('Received a step_size of 0')

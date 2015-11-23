@@ -29,24 +29,6 @@ function progressivis_update(data) {
     progressivis_data = data;
     progressivis_run_number = data['run_number'];
     $('#run_number').text(progressivis_run_number);
-    if (data.is_running) {
-        $('#start')//.addClass('disabled')
-            .prop('disabled', true);
-        $('#stop')//.removeClass('disabled')
-            .prop('disabled', false);
-    }
-    else if (data.is_terminated) {
-        $('#start')//.removeClass('disabled')
-            .prop('disabled', false);
-        $('#stop')//.removeClass('disabled')
-            .prop('disabled', true);
-    }
-    else {
-        $('#start')//.removeClass('disabled')
-            .prop('disabled', false);
-        $('#stop')//.addClass('disabled')
-            .prop('disabled', true);
-    }
 }
 
 function progressivis_websocket_submit(text) {
@@ -92,19 +74,28 @@ function layout_value(v) {
 }
 
 function progressivis_start(success, error) {
-    $.post($SCRIPT_ROOT+'/progressivis/scheduler/start')
-        .done(success)
-        .fail(error);
+    var xdr = $.post($SCRIPT_ROOT+'/progressivis/scheduler/start');
+    if (success)
+        xdr.done(success);
+    if (error)
+        xdr.fail(error);
+    return xdr;
 };
 
 function progressivis_stop(success, error) {
-    $.post($SCRIPT_ROOT+'/progressivis/scheduler/stop')
-        .done(success)
-        .fail(error);
+    var xdr = $.post($SCRIPT_ROOT+'/progressivis/scheduler/stop');
+    if (success)
+        xdr.done(success);
+    if (error)
+        xdr.fail(error);
+    return xdr;
 };
 
-function progressivis_error(ev) {
-  var contents = '<div class="alert alert-danger" role="alert">Error</div>';
+function progressivis_error(ev, msg) {
+    var contents = '<div class="alert alert-danger alert-dismissible" role="alert">Error: ';
+    if (msg)
+        contents += msg;
+    contents += '</div>';
   $('#error').html(contents);
 }
 
@@ -115,6 +106,7 @@ function progressivis_socketmsg(message) {
         run_number = Number(txt.substr(5));
         //console.log('Reveived netsocket tick '+run_number);
         if (run_number > progressivis_run_number) {
+            progressivis_run_number = run_number;
             if (refresh == null) {
                 console.log('ERROR: refresh is not defined');
             }

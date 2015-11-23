@@ -1,7 +1,8 @@
 var margin = {top: 20, right: 20, bottom: 30, left: 40},
     width = 960 - margin.left - margin.right,
     height = 500 - margin.top - margin.bottom,
-    svg, firstTime = true;
+    svg, firstTime = true,
+    prev_bounds = null;
 
 var x = d3.scale.linear()
     .range([0, width]),
@@ -44,12 +45,13 @@ function scatterplot_update_vis(rawdata) {
         ix, iy, iw, ih;
 
     if (!data || !bounds) return;
-    var index = data['index'];
+    var index = data['index'],
+        bounds_changed = false;
 
     if (firstTime) {
         x.domain([bounds['xmin'], bounds['xmax']]).nice();
-        x0 = x.copy();
         y.domain([bounds['ymin'], bounds['ymax']]).nice();
+        x0 = x.copy();
         y0 = y.copy();
 
         svg.append("rect")
