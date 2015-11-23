@@ -75,12 +75,14 @@ class RangeQuery(DataFrameModule):
             query += '({} < {} < {})'.format(minv[row], row, maxv[row])
 
         # compute the new min/max columns
-        op = aligned.min(axis=1)
+        op = aligned[['min','min_value']].max(axis=1)
         op[self.UPDATE_COLUMN] = run_number
+        op.name = 'min'
         self._min = pd.DataFrame([op],index=[run_number])
 
-        op = aligned.max(axis=1)
+        op = aligned[['max','max_value']].min(axis=1)
         op[self.UPDATE_COLUMN] = run_number
+        op.name = 'max'
         self._max = pd.DataFrame([op],index=[run_number])
 
         if len(self._df)!=0:
