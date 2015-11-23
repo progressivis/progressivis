@@ -3,7 +3,7 @@ from __future__ import print_function
 
 from progressivis import SlotDescriptor, Wait, Select, RangeQuery
 from progressivis.core.dataframe import DataFrameModule
-from progressivis.io import Input, Variable
+from progressivis.io import Variable
 from progressivis.stats import Histogram2D, Sample, Min, Max
 from progressivis.vis import Heatmap
 

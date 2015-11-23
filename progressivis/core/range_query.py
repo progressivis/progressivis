@@ -55,7 +55,7 @@ class RangeQuery(DataFrameModule):
         minv_slot.update(run_number)
         minv = self.last_row(minv_slot.data(), remove_update=True)
         if minv is None:
-            mminv = min
+            minv = min
         maxv_slot = self.get_input_slot('max_value')
         maxv_slot.update(run_number)
         maxv = self.last_row(maxv_slot.data(), remove_update=True)

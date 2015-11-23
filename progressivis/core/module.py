@@ -572,23 +572,23 @@ class Module(object):
                 run_step_ret = self.run_step(run_number, step_size, remaining_time)
                 next_state = run_step_ret['next_state']
                 now = self.timer()
-            except StopIteration as e:
+            except StopIteration:
                 #print_exc()
                 logger.info('In Module.run(): Received a StopIteration exception')
                 next_state = Module.state_zombie
                 run_step_ret['next_state'] = next_state
                 now = self.timer()
                 break
-            # except Exception as e:
-            #     next_state = Module.state_zombie
-            #     run_step_ret['next_state'] = next_state
-            #     now = self.timer()
-            #     logger.debug("Exception in %s", self.id)
-            #     tracer.exception(now,run_number)
-            #     exception = e
-            #     self._had_error = True
-            #     self._start_time = now
-            #     break
+            except Exception as e:
+                next_state = Module.state_zombie
+                run_step_ret['next_state'] = next_state
+                now = self.timer()
+                logger.debug("Exception in %s", self.id)
+                tracer.exception(now,run_number)
+                exception = e
+                self._had_error = True
+                self._start_time = now
+                break
             finally:
                 assert run_step_ret is not None, "Error: %s run_step_ret not returning a dict" % self.pretty_typename()
                 tracer.after_run_step(now,run_number,**run_step_ret)
