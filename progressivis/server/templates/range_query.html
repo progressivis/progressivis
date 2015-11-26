@@ -4,7 +4,15 @@
 Range Query for module {{id}}
 {% endblock %}
 
+{%block head %}
+  {{ super() }}
+  <link href="{{ url_for('static', filename='css/d3.slider.css') }}" rel="stylesheet">
+  <link href="{{ url_for('progressivis.server.progressivis_file', filename='css/range_query.css') }}" rel="stylesheet">
+{% endblock %}
+
 {% block extra_scripts %}
+<script src="{{ url_for('static', filename='d3.min.js') }}"></script>
+<script src="{{ url_for('static', filename='d3.slider.js') }}"></script>
 <script src="{{ url_for('progressivis.server.progressivis_file', filename='js/module.js') }}"></script>
 <script src="{{ url_for('progressivis.server.progressivis_file', filename='js/range_query.js') }}"></script>
 {% endblock %}
@@ -35,6 +43,7 @@ $(document).ready(range_query.ready);
   <div class="tab-content">
     <div role="tabpanel" class="tab-pane active" id="range_query_tab">
       <div id='range_query'>
+        <div id="sliders"></div>
       </div>
     </div>
     <div role="tabpanel" class="tab-pane" id="module"><div id='module'></div></div>
