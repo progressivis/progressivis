@@ -9,7 +9,6 @@ var range_query = function(){
   }
 
   function update(data){
-    console.log(data);
     module_update(data);
   }
 
