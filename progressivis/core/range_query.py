@@ -1,4 +1,5 @@
 from progressivis.core.dataframe import DataFrameModule
+from progressivis.core.module import Module
 from progressivis.core.slot import SlotDescriptor
 
 import pandas as pd
@@ -66,6 +67,31 @@ class RangeQuery(DataFrameModule):
 
     def get_visualization(self):
         return "range_query"
+
+    def to_json(self, short=False):
+        json = super(RangeQuery, self).to_json(short)
+        if short:
+            return json
+        return self._ranges_to_json(json)
+
+    def _ranges_to_json(self, json):
+        #join the min and max input slots, and the min and max output slots by name
+        #example: 
+        #ranges = [{"name": "xRange", "in_min": 0, "in_max": 1, "out_min": 0, "out_max": 1},
+        #    {"name": "yRange", "in_min": 0, "in_max": 1, "out_min": 0, "out_max": 1}]
+        in_min = self.get_input_slot('min').data()
+        in_max = self.get_input_slot('max').data()
+        out_min = self.get_output_slot('min')[0].data()
+        out_max = self.get_output_slot('max')[0].data()
+        if all(x is not None for x in [in_min, in_max, out_min, out_max]):
+           in_min_final = self.last_row(in_min).drop(Module.UPDATE_COLUMN).transpose()
+           in_max_final = self.last_row(in_max).drop(Module.UPDATE_COLUMN).transpose()
+           out_min_final = self.last_row(out_min).drop(Module.UPDATE_COLUMN).transpose()
+           out_max_final = self.last_row(out_max).drop(Module.UPDATE_COLUMN).transpose()
+           ranges = pd.DataFrame({'in_min': in_min_final, 'in_max': in_max_final, 'out_min': out_min_final, 'out_max': out_max_final})
+           ranges.index.name = "name"
+           json['ranges'] = ranges.reset_index().to_dict(orient='records')
+        return json
 
     def get_data(self, name):
         if name=='min':
