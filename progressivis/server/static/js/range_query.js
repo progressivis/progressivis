@@ -28,8 +28,28 @@ var range_query = function(){
           
     //containers.call(d3.slider().value([10,40]).orientation("vertical"));
     //the line above is simpler but does not work -- maybe because of a bug in d3-sliders. All thumbs are mixed up.
-    containers.selectAll(".slider-container").each(function(d,i){ d3.select(this).call(d3.slider().value([d.out_min,d.out_max]).axis(true).min(d.in_min).max(d.in_max).orientation("vertical")); });
+    containers.selectAll(".slider-container")
+              .each(function(d,i){ 
+                      d3.select(this)
+                        .call(d3.slider()
+                                .value([d.out_min,d.out_max])
+                                .axis(true)
+                                .min(d.in_min)
+                                .max(d.in_max)
+                                .orientation("vertical")
+                                .on('slideend', function(evt, value){
+                                  //set module inputs
+                                  var min = {};
+                                  min[d.name] = value[0];
+                                  var max = {};
+                                  max[d.name] = value[1];
+                                  module_input(min, update_success, error, module_id+".min_value");
+                                  module_input(max, update_success, error, module_id+".max_value");
+                                })); 
+              });
   }
+
+  function update_success(){}
 
   function error(err){
     console.error(err);
