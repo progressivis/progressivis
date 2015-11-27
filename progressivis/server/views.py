@@ -77,9 +77,9 @@ def module(id):
     module = scheduler.module[id]
     module.set_end_run(progressivis_bp.tick_module) # setting it multiple time is ok
     if request.method == 'POST':
-        #print 'POST module %s'%id
+        print 'POST module %s'%id
         return jsonify(module.to_json())
-    #print 'GET module %s'%id
+    print 'GET module %s'%id
     if module.is_visualization():
         vis = module.get_visualization()
         return render_template(vis+'.html', title="%s %s"%(vis,id), id=id)

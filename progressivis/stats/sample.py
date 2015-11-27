@@ -16,8 +16,6 @@ class Sample(DataFrameModule):
     def __init__(self, **kwds):
         self._add_slots(kwds,'input_descriptors',
                         [SlotDescriptor('df', type=pd.DataFrame)])
-        self._add_slots(kwds,'output_descriptors',
-                        [SlotDescriptor('sample', type=pd.DataFrame, required=False)])
         super(Sample, self).__init__(**kwds)
          # probability associated with each sample. If n selected over N, p=n/N
         stickiness = self.params.stickiness
@@ -28,17 +26,6 @@ class Sample(DataFrameModule):
     def predict_step_size(self, duration):
         # Module sample is constant time (supposedly)
         return 1
-
-    def get_data(self, name):
-        if name=='sample':
-            return self.sample()
-        return super(Sample,self).get_data(name)
-
-    def df(self):
-        return self.get_input_slot('df').data()
-
-    def sample(self):
-        return self._df
 
     def run_step(self,run_number,step_size,howlong):
         dfslot = self.get_input_slot('df')

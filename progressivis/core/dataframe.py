@@ -29,7 +29,9 @@ class DataFrameSlot(Slot):
         return False
 
     def created_length(self):
-        return self.changes.created_length()
+        if self.changes:
+            return self.changes.created_length()
+        return 0
     
     def next_updated(self, n=None):
         return self.changes.next_updated(n)
@@ -101,6 +103,16 @@ class DataFrameModule(Module):
         if name==self._dataframe_slot:
             return self.df()
         return super(DataFrameModule, self).get_data(name)
+
+    def get_progress(self):
+        slot = self.get_input_slot(self._dataframe_slot)
+        if slot is None or slot.data() is None:
+            return (0,0)
+        len = len(slot.data())
+        if slot.has_created():
+            return (len-slot.created_length(), len)
+        # assume all has been processed
+        return (len, len)
 
     def update_timestamps(self):
         if self._df is not None:

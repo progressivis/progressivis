@@ -6,8 +6,9 @@ from progressivis.datasets import get_dataset
 import pandas as pd
 
 def filter(df):
-    l = df['pickup_longitude']
-    return df[(l < -70) & (l > -80) ]
+    lon = df['pickup_longitude']
+    lat = df['pickup_latitude']
+    return df[(lon>-74.08)&(lon<-73.5)&(lat>40.55)&(lat<41)]
 
 def print_len(x):
     if x is not None:

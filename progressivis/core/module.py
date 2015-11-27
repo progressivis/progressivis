@@ -62,6 +62,7 @@ class Module(object):
     state_blocked = 3
     state_zombie = 4
     state_terminated = 5
+    #TODO state_paused to pause the computation of a module 
     state_invalid = 6
     state_name = ['created', 'ready', 'running', 'blocked', 'zombie', 'terminated', 'invalid']
 
@@ -116,6 +117,7 @@ class Module(object):
         self.input = InputSlots(self)
         self.output = OutputSlots(self)
         self._scheduler.add_module(self)
+        # callbacks
         self._start_run = None
         self._end_run = None
 
@@ -123,6 +125,13 @@ class Module(object):
         """Create modules that this module depends on.
         """
         pass
+
+    def get_progress(self):
+        """Return a tuple of numbers (current,total) where current is `current` progress
+        value and `total` is the total number of values to process; these values can
+        change during the computations.
+        """
+        return (0,0)
 
     def destroy(self):
         self.scheduler().remove_module(self)
@@ -608,7 +617,6 @@ class Module(object):
             logger.debug('Module %s zombie', self.pretty_typename())
             tracer.terminated(now,run_number)
         tracer.end_run(now,run_number)
-        self.end_run(run_number)
         self._stop(run_number)
         if exception:
             print_exc()

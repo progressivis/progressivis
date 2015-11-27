@@ -58,7 +58,7 @@ class Heatmap(DataFrameModule):
         high = p.high
         low = p.low
         image = sp.misc.toimage(sp.special.cbrt(histo), cmin=cmin, cmax=cmax, high=high, low=low, mode='I')
-        image.transpose(Image.FLIP_TOP_BOTTOM)
+        image = image.transpose(Image.FLIP_TOP_BOTTOM)
         filename = p.filename
         if filename is not None:
             try:

@@ -49,7 +49,7 @@ class Histogram2D(DataFrameModule):
         min_df = min_slot.data()
         if len(min_df)==0 and self._bounds is None:
             return None
-        min = min_df.loc[min_df.index[-1]]
+        min = self.last_row(min_df)
         xmin = min[self.x_column]
         ymin = min[self.y_column]
         
@@ -59,7 +59,7 @@ class Histogram2D(DataFrameModule):
         max_df = max_slot.data()
         if len(max_df)==0 and self._bounds is None:
             return None
-        max = max_df.loc[max_df.index[-1]]
+        max = self.last_row(max_df)
         xmax = max[self.x_column]
         ymax = max[self.y_column]
         
@@ -106,17 +106,21 @@ class Histogram2D(DataFrameModule):
             
         bounds = self.get_bounds(run_number)
         if bounds is None:
+            print('No bounds yet at run %d'%run_number)
+            logger.debug('No bounds yet at run %d', run_number)
             return self._return_run_step(self.state_blocked, steps_run=0)
         xmin, xmax, ymin, ymax = bounds
         if self._bounds is None:
             (xdelta, ydelta) = self.get_delta(*bounds)
             self._bounds = (xmin-xdelta,xmax+xdelta,ymin-ydelta,ymax+ydelta)
+            print('New bounds at run %d: %s'%(run_number,self._bounds))
         else:
             (dxmin, dxmax, dymin, dymax) = self._bounds
             if xmin < dxmin or xmax > dxmax or ymin < dymin or ymax > dymax:
                 (xdelta, ydelta) = self.get_delta(*bounds)
                 self._bounds = (xmin-xdelta,xmax+xdelta,ymin-ydelta,ymax+ydelta)
-                logger.info('Updated bounds: %s', self._bounds)
+                print('Updated bounds at run %d: %s'%(run_number,self._bounds))
+                logger.info('Updated bounds at tun: %s', run_number, self._bounds)
                 dfslot.reset()
                 dfslot.update(run_number) # should recompute the histogram from scatch
                 old_histo = None 
@@ -131,27 +135,29 @@ class Histogram2D(DataFrameModule):
         self.total_read += steps
         
         if isinstance(indices,slice):
-            filtered_df = input_df.loc[indices.start:indices.stop-1] # semantic of slice with .loc
-        else:
-            filtered_df = input_df.loc[indices]
+            indices=slice(indices.start,indices.stop-1)
+
+        filtered_df = input_df.loc[indices]
         x = filtered_df[self.x_column]
         y = filtered_df[self.y_column]
         p = self.params
         if len(x)>0:
             histo, xedges, yedges = np.histogram2d(y, x,
-                                                   bins=[p.xbins, p.ybins],
-                                                   range=[[xmin, xmax],[ymin, ymax]],
+                                                   bins=[p.ybins, p.xbins],
+                                                   range=[[ymin, ymax], [xmin, xmax]],
                                                    normed=False)
         else:
-            histo = np.array([p.xbins, p.ybins], dtype=int)
+            histo = None
             cmax = 0
 
         if old_histo is None:
             old_histo = histo
-        else:
+        elif histo is not None:
             old_histo += histo
 
-        cmax = old_histo.max()
+        if old_histo is not None:
+            cmax = old_histo.max()
+        print 'cmax=%d'%cmax
         values = [old_histo, 0, cmax, xmin, xmax, ymin, ymax, run_number]
         self._df.loc[run_number] = values
         if len(self._df) > p.history:

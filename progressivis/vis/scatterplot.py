@@ -79,7 +79,7 @@ class ScatterPlot(DataFrameModule):
 
         scatterplot=self
         scatterplot.input.heatmap = heatmap.output.heatmap
-        scatterplot.input.df = sample.output.sample
+        scatterplot.input.df = sample.output.df
 
         self.select = select
         self.range_query = range_query

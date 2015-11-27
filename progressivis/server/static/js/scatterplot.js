@@ -117,6 +117,7 @@ function scatterplot_update_vis(rawdata) {
             ws_translate = [x.invert(translate[0]), y.invert(translate[1])];
 
         if (! bounds_equal) {
+            console.log('Bounds changed');
             x0.domain([bounds['xmin'], bounds['xmax']]).nice();
             y0.domain([bounds['ymin'], bounds['ymax']]).nice();
             zoom.x(x.domain(x0.domain()));
@@ -124,6 +125,7 @@ function scatterplot_update_vis(rawdata) {
             //later: translate = [x(ws_translate[0]), y(translate[1])]; // map center back with new domain
             x.domain(x0.range().map(function(x) { return (x - translate[0]) / scale; }).map(x0.invert));
             y.domain(y0.range().map(function(y) { return (y - translate[1]) / scale; }).map(y0.invert));
+            prev_bounds = bounds;
         }
 
         ix = x(bounds['xmin']);

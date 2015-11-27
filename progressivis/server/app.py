@@ -62,8 +62,10 @@ class ProgressiveWebSocket(WebSocketHandler):
 
     @staticmethod
     def write_to_path(path, msg):
+        logger.info('Sending message %s to path %s'%(msg,path))
         sockets = ProgressiveWebSocket.sockets_for_path.get(path)
         if not sockets:
+            logger.warn('Message sent to nonexistent path %s',path)
             return
         for s in sockets:
             s.write_message(msg)
