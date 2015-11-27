@@ -28,7 +28,7 @@ var range_query = function(){
           
     //containers.call(d3.slider().value([10,40]).orientation("vertical"));
     //the line above is simpler but does not work -- maybe because of a bug in d3-sliders. All thumbs are mixed up.
-    containers.selectAll(".slider-container")
+    cEnter.selectAll(".slider-container")
               .each(function(d,i){ 
                       d3.select(this)
                         .call(d3.slider()
