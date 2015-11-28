@@ -14,20 +14,25 @@ def print_len(x):
     if x is not None:
         print len(x)
 
-#log_level()
+log_level()
 
 try:
     s = scheduler
 except:
-    s = Scheduler()
+    s = MTScheduler()
+
+#PREFIX= 'https://storage.googleapis.com/tlc-trip-data/2015/'
+#SUFFIX= ''
+PREFIX= '../nyc-taxi/'
+SUFFIX= '.bz2'
 
 URLS = [
-    'https://storage.googleapis.com/tlc-trip-data/2015/yellow_tripdata_2015-01.csv',
-    'https://storage.googleapis.com/tlc-trip-data/2015/yellow_tripdata_2015-02.csv',
-    'https://storage.googleapis.com/tlc-trip-data/2015/yellow_tripdata_2015-03.csv',
-    'https://storage.googleapis.com/tlc-trip-data/2015/yellow_tripdata_2015-04.csv',
-    'https://storage.googleapis.com/tlc-trip-data/2015/yellow_tripdata_2015-05.csv',
-    'https://storage.googleapis.com/tlc-trip-data/2015/yellow_tripdata_2015-06.csv',
+    PREFIX+'yellow_tripdata_2015-01.csv'+SUFFIX,
+    PREFIX+'yellow_tripdata_2015-02.csv'+SUFFIX,
+    PREFIX+'yellow_tripdata_2015-03.csv'+SUFFIX,
+    PREFIX+'yellow_tripdata_2015-04.csv'+SUFFIX,
+    PREFIX+'yellow_tripdata_2015-05.csv'+SUFFIX,
+    PREFIX+'yellow_tripdata_2015-06.csv'+SUFFIX,
 ]
 
 filenames = pd.DataFrame({'filename': URLS})
@@ -40,6 +45,11 @@ scatterplot = ScatterPlot('pickup_longitude', 'pickup_latitude', scheduler=s)
 scatterplot.create_dependent_modules(csv,'df')
 
 if __name__=='__main__':
-    csv.start()
+    s.start()
+    while True:
+        time.sleep(2)
+        scheluder.to_json()
+        scatterplot.to_json() # simulate a web query
+        scatterplot.get_image()
     s.thread.join()
     print len(csv.df())

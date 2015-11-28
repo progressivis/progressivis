@@ -73,23 +73,29 @@ function layout_value(v) {
     return v.toString();
 }
 
-function progressivis_start(success, error) {
-    var xdr = $.post($SCRIPT_ROOT+'/progressivis/scheduler/start');
+function progressivis_post(url, success, error) {
+    var xdr = $.post(url);
     if (success)
         xdr.done(success);
     if (error)
         xdr.fail(error);
     return xdr;
-};
+}
+
+function progressivis_start(success, error) {
+    return progressivis_post($SCRIPT_ROOT+'/progressivis/scheduler/start',
+                             success, error);
+}
 
 function progressivis_stop(success, error) {
-    var xdr = $.post($SCRIPT_ROOT+'/progressivis/scheduler/stop');
-    if (success)
-        xdr.done(success);
-    if (error)
-        xdr.fail(error);
-    return xdr;
-};
+    return progressivis_post($SCRIPT_ROOT+'/progressivis/scheduler/stop',
+                             success, error);
+}
+
+function progressivis_step(success, error) {
+    return progressivis_post($SCRIPT_ROOT+'/progressivis/scheduler/step',
+                             success, error);
+}
 
 function progressivis_error(ev, msg) {
     var contents = '<div class="alert alert-danger alert-dismissible" role="alert">Error: ';
@@ -127,6 +133,7 @@ function progressivis_ready(socket_name) {
     else
         refresh();
     $('#start').click(function() { progressivis_start(refresh, error); });
-    $('#stop').click(function() { progressivis_stop(refresh, error); });
+    $('#stop' ).click(function() { progressivis_stop (refresh, error); });
+    $('#step' ).click(function() { progressivis_step (refresh, error); });
     progressivis_websocket_open(socket_name, progressivis_socketmsg);
 }

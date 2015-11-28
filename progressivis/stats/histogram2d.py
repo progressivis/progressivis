@@ -38,13 +38,19 @@ class Histogram2D(DataFrameModule):
         self.y_column = y_column
         self.default_step_size = 10000
         self.total_read = 0
-        self._old_histo = None
+        self._histo = None
+        self._xedges = None
+        self._yedges = None
         self._bounds = None
         self._df = self.create_dataframe(Histogram2D.schema)
 
-    def get_bounds(self, run_number):
-        min_slot = self.get_input_slot('min')
-        min_slot.update(run_number)
+    def is_ready(self):
+        # If we have created data but no valid min/max, we can only wait
+        if self._bounds and self.get_input_slot('df').has_created():
+            return True
+        return super(Histogram2D, self).is_ready()
+
+    def get_bounds(self, min_slot, max_slot):
         min_slot.next_created()
         min_df = min_slot.data()
         if len(min_df)==0 and self._bounds is None:
@@ -53,8 +59,6 @@ class Histogram2D(DataFrameModule):
         xmin = min[self.x_column]
         ymin = min[self.y_column]
         
-        max_slot = self.get_input_slot('max')
-        max_slot.update(run_number)
         max_slot.next_created()
         max_df = max_slot.data()
         if len(max_df)==0 and self._bounds is None:
@@ -84,27 +88,28 @@ class Histogram2D(DataFrameModule):
             logger.info('ydelta is %f', ydelta)
         return (xdelta, ydelta)
 
-    def is_ready(self):
-        # If we have created data but no valid min/max, we can only wait
-        if self._bounds and self.get_input_slot('df').has_created():
-            return True
-        return super(Histogram2D, self).is_ready()
-
     def run_step(self,run_number,step_size,howlong):
         dfslot = self.get_input_slot('df')
-        input_df = dfslot.data()
         dfslot.update(run_number)
-        if dfslot.has_updated() or dfslot.has_deleted():
-            dfslot.reset()
-            dfslot.update(run_number)
-            self.total_read = 0
+        min_slot = self.get_input_slot('min')
+        min_slot.update(run_number)
+        max_slot = self.get_input_slot('max')
+        max_slot.update(run_number)
 
-        if not dfslot.has_created(): # nothing to do, just wait 
-            logger.info('Index buffer empty')
+        if dfslot.has_updated() or dfslot.has_deleted():
+            logger.debug('reseting histogram')
+            dfslot.reset()
+            self._histo = None
+            self._xedges = None
+            self._yedges = None
+            dfslot.update(run_number)
+
+        if not (dfslot.has_created() or min_slot.has_created() or max_slot.has_created()):
+            # nothing to do, just wait 
+            logger.info('Input buffers empty')
             return self._return_run_step(self.state_blocked, steps_run=0)
-        old_histo = self._old_histo
             
-        bounds = self.get_bounds(run_number)
+        bounds = self.get_bounds(min_slot, max_slot)
         if bounds is None:
             print('No bounds yet at run %d'%run_number)
             logger.debug('No bounds yet at run %d', run_number)
@@ -123,12 +128,18 @@ class Histogram2D(DataFrameModule):
                 logger.info('Updated bounds at tun: %s', run_number, self._bounds)
                 dfslot.reset()
                 dfslot.update(run_number) # should recompute the histogram from scatch
-                old_histo = None 
-        
+                self._histo = None 
+                self._xedges = None
+                self._yedges = None
+
         xmin, xmax, ymin, ymax = self._bounds
+        if xmin>=xmax or ymin>=ymax:
+            logger.error('Invalid bounds: %s', self._bounds)
+            return self._return_run_step(self.state_blocked, steps_run=0)
 
         # Now, we know we have data and bounds, proceed to create a new histogram
 
+        input_df = dfslot.data()
         indices = dfslot.next_created(step_size)
         steps = indices_len(indices)
         logger.info('Read %d rows', steps)
@@ -141,26 +152,31 @@ class Histogram2D(DataFrameModule):
         x = filtered_df[self.x_column]
         y = filtered_df[self.y_column]
         p = self.params
+        if self._xedges is not None:
+            bins = [self._xedges, self._yedges]
+        else:
+            bins = [p.ybins, p.xbins]
         if len(x)>0:
             histo, xedges, yedges = np.histogram2d(y, x,
-                                                   bins=[p.ybins, p.xbins],
+                                                   bins=bins,
                                                    range=[[ymin, ymax], [xmin, xmax]],
                                                    normed=False)
+            self._xedges = xedges
+            self._yedges = yedges
         else:
             histo = None
             cmax = 0
 
-        if old_histo is None:
-            old_histo = histo
+        if self._histo is None:
+            self._histo = histo
         elif histo is not None:
-            old_histo += histo
+            self._histo += histo
 
-        if old_histo is not None:
-            cmax = old_histo.max()
+        if self._histo is not None:
+            cmax = self._histo.max()
         print 'cmax=%d'%cmax
-        values = [old_histo, 0, cmax, xmin, xmax, ymin, ymax, run_number]
+        values = [self._histo, 0, cmax, xmin, xmax, ymin, ymax, run_number]
         self._df.loc[run_number] = values
         if len(self._df) > p.history:
             self._df = self._df.loc[self._df.index[-p.history:]]
-        self._old_histo = old_histo
         return self._return_run_step(dfslot.next_state(), steps_run=steps)

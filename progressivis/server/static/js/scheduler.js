@@ -72,7 +72,7 @@ function scheduler_refresh() {
 }
 
 function scheduler_show_module(module) {
-    var url = $SCRIPT_ROOT+'/progressivis/module/'+module.id;
+    var url = $SCRIPT_ROOT+'/progressivis/module/get/'+module.id;
     var win = window.open(url, '_blank');
     win.focus();
 }

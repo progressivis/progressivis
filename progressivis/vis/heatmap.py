@@ -112,7 +112,7 @@ class Heatmap(DataFrameModule):
         df = self._df
         if df is not None and self._last_update is not None:
             row = self.last_row(df)
-            json['image'] = "%s/image?run_number=%d"%(self.id,row[self.UPDATE_COLUMN])
+            json['image'] = "/progressivis/module/image/%s?run_number=%d"%(self.id,row[self.UPDATE_COLUMN])
         return json
 
     def get_image(self, run_number=None):

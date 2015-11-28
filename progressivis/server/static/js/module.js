@@ -1,7 +1,7 @@
 var module_id = null;
 
 function module_get(success, error) {
-    $.post($SCRIPT_ROOT+'/progressivis/module/'+module_id)
+    $.post($SCRIPT_ROOT+'/progressivis/module/get/'+module_id)
         .done(success)
         .fail(error);
 }
@@ -13,7 +13,7 @@ function module_input(data, success, error, module) {
         data = JSON.stringify(data);
     $.ajax({
         type: 'POST',
-        url: $SCRIPT_ROOT+'/progressivis/module/'+module+'/input',
+        url: $SCRIPT_ROOT+'/progressivis/module/input/'+module,
         data: data,
         success: success,
         contentType: "application/json",

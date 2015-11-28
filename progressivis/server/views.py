@@ -71,10 +71,35 @@ def scheduler_stop():
     scheduler.stop()
     return jsonify({'status': 'success'})
 
-@progressivis_bp.route('/progressivis/module/<id>', methods=['GET', 'POST'])
-def module(id):
+@progressivis_bp.route('/progressivis/scheduler/step', methods=['POST'])
+def scheduler_step():
     scheduler = progressivis_bp.scheduler
-    module = scheduler.module[id]
+    if scheduler.is_running():
+        return jsonify({'status': 'failed', 'reason': 'scheduler is is_running'})
+    scheduler.step()
+    return jsonify({'status': 'success'})
+
+def path_to_module(path):
+    print 'module_input(%s)'%(path)
+    ids = path.split('/')
+    
+    scheduler = progressivis_bp.scheduler
+    module = scheduler.module[ids[0]]
+    if module is None:
+        return None
+    for subid in ids[1:]:
+        if not hasattr(module, subid):
+            return None
+        module = getattr(module, subid)
+        if not isinstance(module, Module):
+            return None
+    return module
+
+@progressivis_bp.route('/progressivis/module/get/<id>', methods=['GET', 'POST'])
+def module(id):
+    module = path_to_module(id)
+    if module is None:
+        abort(404)
     module.set_end_run(progressivis_bp.tick_module) # setting it multiple time is ok
     if request.method == 'POST':
         print 'POST module %s'%id
@@ -85,7 +110,7 @@ def module(id):
         return render_template(vis+'.html', title="%s %s"%(vis,id), id=id)
     return render_template('module.html', title="Module "+id, id=id)
 
-@progressivis_bp.route('/progressivis/module/<id>/image', methods=['GET'])
+@progressivis_bp.route('/progressivis/module/image/<id>', methods=['GET'])
 def module_image(id):
     run_number = request.values.get('run_number', None)
     try:
@@ -93,8 +118,7 @@ def module_image(id):
     except:
         run_number = None
     print 'Requested module image for %s?run_number=%s'%(id,run_number)
-    scheduler = progressivis_bp.scheduler
-    module = scheduler.module[id]
+    module = path_to_module(id)
     if module is None:
         abort(404)
     img = module.get_image(run_number)
@@ -110,10 +134,9 @@ def serve_pil_image(pil_img):
     img_io.seek(0)
     return send_file(img_io, mimetype='image/png', cache_timeout=0)
 
-@progressivis_bp.route('/progressivis/module/<id>/set_parameter', methods=['POST'])
+@progressivis_bp.route('/progressivis/module/set/<id>', methods=['POST'])
 def module_set_parameter(id):
-    scheduler = progressivis_bp.scheduler
-    module = scheduler.module[id]
+    module = path_to_module(id)
     if module is None:
         abort(404)
     var_values = request.get_json()
@@ -124,21 +147,11 @@ def module_set_parameter(id):
 
     return jsonify({'status': 'success'})
 
-@progressivis_bp.route('/progressivis/module/<id>/input', defaults={'subid': None}, methods=['POST'])
-@progressivis_bp.route('/progressivis/module/<id>.<subid>/input', methods=['POST'])
-def module_input(id,subid):
-    print 'module_input(%s,%s)'%(id,subid)
-    scheduler = progressivis_bp.scheduler
-    module = scheduler.module[id]
+@progressivis_bp.route('/progressivis/module/input/<path:path>', methods=['POST'])
+def module_input(path):
+    module = path_to_module(path)
     if module is None:
         abort(404)
-    if subid:
-        if not hasattr(module, subid):
-            abort(404)
-        module = getattr(module, subid)
-        if not isinstance(module, Module):
-            abort(404)
-            
     var_values = request.get_json()
     msg = ''
     try:

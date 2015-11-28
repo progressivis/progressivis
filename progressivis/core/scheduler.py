@@ -6,6 +6,7 @@ from timeit import default_timer
 from toposort import toposort_flatten
 from contextlib import contextmanager
 from uuid import uuid4
+from functools import partial
 
 import logging
 logger = logging.getLogger(__name__)
@@ -140,6 +141,12 @@ class Scheduler(object):
         self._tick_proc = tick_proc
         self._idle_proc = idle_proc
         self.run()
+
+    def _step_proc(self, s, run_number):
+        self.stop()
+
+    def step(self):
+        self.start(tick_proc=self._step_proc)
 
     def set_tick_proc(self, tick_proc):
         if tick_proc is None or callable(tick_proc):

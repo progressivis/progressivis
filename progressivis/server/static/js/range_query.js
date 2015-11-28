@@ -24,7 +24,7 @@ var range_query = function(){
 
     cEnter.append("div")
           .attr("class", "slider-name")
-          .text(function(d){ return d.name; })
+          .text(function(d){ return d.name; });
           
     //containers.call(d3.slider().value([10,40]).orientation("vertical"));
     //the line above is simpler but does not work -- maybe because of a bug in d3-sliders. All thumbs are mixed up.
