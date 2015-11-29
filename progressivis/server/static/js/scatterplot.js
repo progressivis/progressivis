@@ -140,8 +140,7 @@ function scatterplot_update_vis(rawdata) {
     else { // not firstTime
         var bounds_equal = true, //_.eq(bounds, prev_bounds),
             translate = zoom.translate(),
-            scale = zoom.scale(),
-            ws_translate = [x.invert(translate[0]), y.invert(translate[1])];
+            scale = zoom.scale();
 
         if (! bounds_equal) {
             console.log('Bounds changed');
@@ -172,13 +171,12 @@ function scatterplot_update_vis(rawdata) {
 
         add_dots(data, index);
 
-        zoom.x(x.domain(x0.domain()));
-        zoom.y(y.domain(y0.domain()));
-        //later: translate = [x(ws_translate[0]), y(translate[1])]; // map center back with new domain
-        x.domain(x0.range().map(function(x) { return (x - translate[0]) / scale; }).map(x0.invert));
-        y.domain(y0.range().map(function(y) { return (y - translate[1]) / scale; }).map(y0.invert));
+        zoom.x(x);
+        zoom.y(y);
         zoom.scale(scale);
         zoom.translate(translate);
+        x.domain(x0.range().map(function(x) { return (x - translate[0]) / scale; }).map(x0.invert));
+        y.domain(y0.range().map(function(y) { return (y - translate[1]) / scale; }).map(y0.invert));
         zoom.event(svg);
     }
     var imgSrc = rawdata['image'];
@@ -275,8 +273,8 @@ function scatterplot_filter() {
     else
         max[columns[1]] = null;
     
-    module_input(min, ignore, progressivis_error, module_id+".min_value");
-    module_input(max, ignore, progressivis_error, module_id+".max_value");
+    module_input(min, ignore, progressivis_error, module_id+"/range_query/min_value");
+    module_input(max, ignore, progressivis_error, module_id+"/range_query/max_value");
 }
 
 function scatterplot_ready() {
