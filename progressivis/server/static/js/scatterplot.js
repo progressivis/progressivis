@@ -39,13 +39,38 @@ function scatterplot_update(data) {
     scatterplot_update_vis(data);
 }
 
+function add_dots(data, index) {
+    var dots = d3.select("#zoomable")
+        .selectAll(".dot")
+        .data(data['data'], function(d, i) { return index[i]; });
+    
+    //enter
+    dots.enter().append("circle")
+        .attr("class", "dot")
+        .attr("r", 3.5)
+        .attr("cx", function(d) { return x(d[0]); })
+        .attr("cy", function(d) { return y(d[1]); })
+        .style("fill", "blue") //function(d) { return color(d.species); });
+        .append("title")
+        .text(function(d, i) { return index[i]; });
+
+    //update
+    dots
+        .attr("cx", function(d) { return x(d[0]); })
+        .attr("cy", function(d) { return y(d[1]); });    
+    //remove
+    dots.exit().remove();
+    //order
+    dots.order();
+}
+
 function scatterplot_update_vis(rawdata) {
     var data = rawdata['scatterplot'],
         bounds = rawdata['bounds'],
         ix, iy, iw, ih;
 
     if (!data || !bounds) return;
-    var index = data['index'];
+    var index = data['index'], dots;
 
     if (firstTime) {
         prev_bounds = bounds;
@@ -108,25 +133,24 @@ function scatterplot_update_vis(rawdata) {
             .attr("dy", ".71em")
             .style("text-anchor", "end")
             .text(data['columns'][1]);
+
+        add_dots(data, index);
         firstTime = false;
     }
     else { // not firstTime
-        var bounds_equal = _.eq(bounds, prev_bounds),
+        var bounds_equal = true, //_.eq(bounds, prev_bounds),
             translate = zoom.translate(),
             scale = zoom.scale(),
             ws_translate = [x.invert(translate[0]), y.invert(translate[1])];
 
         if (! bounds_equal) {
             console.log('Bounds changed');
-            x0.domain([bounds['xmin'], bounds['xmax']]).nice();
-            y0.domain([bounds['ymin'], bounds['ymax']]).nice();
-            zoom.x(x.domain(x0.domain()));
-            zoom.y(y.domain(y0.domain()));
-            //later: translate = [x(ws_translate[0]), y(translate[1])]; // map center back with new domain
-            x.domain(x0.range().map(function(x) { return (x - translate[0]) / scale; }).map(x0.invert));
-            y.domain(y0.range().map(function(y) { return (y - translate[1]) / scale; }).map(y0.invert));
-            prev_bounds = bounds;
         }
+        x0.domain([bounds['xmin'], bounds['xmax']]).nice();
+        y0.domain([bounds['ymin'], bounds['ymax']]).nice();
+        x.domain(x0.domain());
+        y.domain(y0.domain());
+        prev_bounds = bounds;
 
         ix = x(bounds['xmin']);
         iy = y(bounds['ymax']);
@@ -146,17 +170,16 @@ function scatterplot_update_vis(rawdata) {
             .attr("width",  iw)
             .attr("height", ih);
 
-        if (! bounds_equal) {
-            svg.select(".x.axis")
-            //.transition()
-            //.duration(1000)
-                .call(xAxis);
+        add_dots(data, index);
 
-            svg.select(".y.axis")
-            //.transition()
-            //.duration(100)
-                .call(yAxis);
-        }
+        zoom.x(x.domain(x0.domain()));
+        zoom.y(y.domain(y0.domain()));
+        //later: translate = [x(ws_translate[0]), y(translate[1])]; // map center back with new domain
+        x.domain(x0.range().map(function(x) { return (x - translate[0]) / scale; }).map(x0.invert));
+        y.domain(y0.range().map(function(y) { return (y - translate[1]) / scale; }).map(y0.invert));
+        zoom.scale(scale);
+        zoom.translate(translate);
+        zoom.event(svg);
     }
     var imgSrc = rawdata['image'];
     imageHistory.enqueueUnique(imgSrc);
@@ -179,33 +202,14 @@ function scatterplot_update_vis(rawdata) {
     });
 
     prevImgElements.transition().duration(500)
-    .attr("src", function(d){ return d; })
-    .attr("width", 100)
-    .attr("height", 100);
+        .attr("src", function(d){ return d; })
+        .attr("width", 100)
+        .attr("height", 100);
 
     prevImgElements.exit().transition().duration(500)
-    .attr("width", 5)
-    .attr("height", 5)
-    .remove();
-
-    var dots = d3.select("#zoomable")
-            .selectAll(".dot")
-             .data(data['data'], function(d, i) { return index[i]; });
-    
-    dots.enter().append("circle")
-         .attr("class", "dot")
-         .attr("r", 3.5)
-         .attr("cx", function(d) { return x(d[0]); })
-         .attr("cy", function(d) { return y(d[1]); })
-         .style("fill", "blue") //function(d) { return color(d.species); });
-        .append("title")
-        .text(function(d, i) { return index[i]; });
-    dots//.transition()  // Transition from old to new
-        //.duration(500)  // Length of animation
-         .attr("cx", function(d) { return x(d[0]); })
-         .attr("cy", function(d) { return y(d[1]); });    
-    dots.exit().remove();
-    dots.order();
+        .attr("width", 5)
+        .attr("height", 5)
+        .remove();
 }
 
 function scatterplot_zoomed() {
