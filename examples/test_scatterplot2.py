@@ -37,7 +37,8 @@ URLS = [
 
 filenames = pd.DataFrame({'filename': URLS})
 cst = Constant(df=filenames, scheduler=s)
-csv = CSVLoader(index_col=False,skipinitialspace=True,usecols=['pickup_longitude', 'pickup_latitude'], filter=filter, scheduler=s)
+#csv = CSVLoader(index_col=False,skipinitialspace=True,usecols=['pickup_longitude', 'pickup_latitude'], filter=filter, scheduler=s)
+csv = CSVLoader(index_col=False,skipinitialspace=True,usecols=['pickup_longitude', 'pickup_latitude'], scheduler=s)
 csv.input.filenames = cst.output.df
 pr = Every(scheduler=s)
 pr.input.df = csv.output.df
