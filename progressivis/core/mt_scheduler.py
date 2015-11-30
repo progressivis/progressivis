@@ -17,6 +17,7 @@ class MTScheduler(Scheduler):
         self.lock = threading.RLock()
         self.thread = None
         self._thread_parent = None
+        self.thread_name = "Progressive Scheduler"
 
     @staticmethod
     def set_default():
@@ -46,10 +47,9 @@ class MTScheduler(Scheduler):
     def _before_run(self):
         logger.debug("Before run %d" % self._run_number)
 
-
     def start(self, tick_proc=None):
         if self.thread is None:
-            self.thread = threading.Thread(target=self.run, name="Progressive Scheduler")
+            self.thread = threading.Thread(target=self.run, name=self.thread_name)
             if hasattr(sys.stdout, 'thread_parent'):
                 self._thread_parent = sys.stdout.thread_parent # capture notebook context
             else:

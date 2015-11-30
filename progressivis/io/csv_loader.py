@@ -81,7 +81,8 @@ class CSVLoader(DataFrameModule):
             raise StopIteration('Unexpected situation')
         logger.info('loading %d lines', step_size)
         try:
-            df = self.parser.read(step_size) # raises StopIteration at EOF
+            with self.lock:
+                df = self.parser.read(step_size) # raises StopIteration at EOF
         except StopIteration:
             fn_slot = self.get_input_slot('filenames')
             if fn_slot is None or fn_slot.output_module is None:

@@ -97,8 +97,12 @@ class DataFrameModule(Module):
         #return super(DataFrameModule, self).create_slot(output_name, input_module, input_name)
 
     def df(self):
-        #import threading
-        #print('Current thread is: %s'% threading.current_thread().ident)
+        # from threading import current_thread
+        # from traceback import print_stack
+        # if current_thread().name != self.scheduler().thread_name:
+        #     print('Current thread is: %s'% current_thread().ident)
+        #     print_stack(limit=3)
+            
         return self._df
 
     def get_data(self, name):
