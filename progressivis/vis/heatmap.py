@@ -104,21 +104,23 @@ class Heatmap(DataFrameModule):
         dfslot = self.get_input_slot('array')
         histo = dfslot.output_module
         json['columns'] = [histo.x_column, histo.y_column]
-        histo_df = dfslot.data()
-        if histo_df is not None and histo_df.index[-1] is not None:
-            row = self.last_row(histo_df)
-            if not (np.isnan(row.xmin) or np.isnan(row.xmax)
-                    or np.isnan(row.ymin) or np.isnan(row.ymax)):
-                json['bounds'] = {
-                    'xmin': row.xmin,
-                    'ymin': row.ymin,
-                    'xmax': row.xmax,
-                    'ymax': row.ymax
-                }
-        df = self._df
-        if df is not None and self._last_update is not None:
-            row = self.last_row(df)
-            json['image'] = "/progressivis/module/image/%s?run_number=%d"%(self.id,row[self.UPDATE_COLUMN])
+        with dfslot.lock:
+            histo_df = dfslot.data()
+            if histo_df is not None and histo_df.index[-1] is not None:
+                row = self.last_row(histo_df)
+                if not (np.isnan(row.xmin) or np.isnan(row.xmax)
+                        or np.isnan(row.ymin) or np.isnan(row.ymax)):
+                    json['bounds'] = {
+                        'xmin': row.xmin,
+                        'ymin': row.ymin,
+                        'xmax': row.xmax,
+                        'ymax': row.ymax
+                    }
+        with self.lock:
+            df = self.df()
+            if df is not None and self._last_update is not None:
+                row = self.last_row(df)
+                json['image'] = "/progressivis/module/image/%s?run_number=%d"%(self.id,row[self.UPDATE_COLUMN])
         return json
 
     def get_image(self, run_number=None):

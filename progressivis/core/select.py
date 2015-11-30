@@ -36,6 +36,7 @@ class Select(DataFrameModule):
         
 
     def run_step(self,run_number,step_size,howlong):
+        df = self._df # work on a copy to avoid race conditions
         query_slot = self.get_input_slot('query')
         df_slot = self.get_input_slot('df')
         if not query_slot:
@@ -44,7 +45,7 @@ class Select(DataFrameModule):
             query_df = query_slot.data()
             query_slot.update(run_number)
             if  query_slot.has_created(): # ignore deleted and updated
-                self._df = None
+                df = None
                 df_slot.reset() # re-filter
             indices = query_slot.next_created() # read it all
             query = self.last_row(query_df)[self._query_column] # get the query expression
@@ -57,7 +58,7 @@ class Select(DataFrameModule):
         df_slot.update(run_number)
         if df_slot.has_deleted() or df_slot.has_updated():
             df_slot.reset()
-            self._df = None
+            df = None
             df_slot.update(run_number)
         
         indices = df_slot.next_created(step_size)
@@ -83,10 +84,10 @@ class Select(DataFrameModule):
             self._df = df_slot.data()
             return self._return_run_step(self.state_blocked, steps_run=steps)
         selected_df.loc[:,self.UPDATE_COLUMN] = run_number
-        if self._df is None:
+        if df is None:
             self._df = selected_df
         else:
-            self._df = self._df.append(selected_df) # don't ignore index I think
+            self._df = df.append(selected_df) # don't ignore index I think
         return self._return_run_step(self.state_blocked, steps_run=steps)
 
     @staticmethod

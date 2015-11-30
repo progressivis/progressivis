@@ -97,6 +97,8 @@ class DataFrameModule(Module):
         #return super(DataFrameModule, self).create_slot(output_name, input_module, input_name)
 
     def df(self):
+        #import threading
+        #print('Current thread is: %s'% threading.current_thread().ident)
         return self._df
 
     def get_data(self, name):
@@ -114,24 +116,5 @@ class DataFrameModule(Module):
         # assume all has been processed
         return (len, len)
 
-    def update_timestamps(self):
-        if self._df is not None:
-            return self._df[Module.UPDATE_COLUMN]
-        return Module.EMPTY_COLUMN
-
-    def updated_after(self, run_number=None):
-        df = self.df()
-        if run_number is None:
-            return list(df.index)
-        else:
-            return list(df.index[df[Module.UPDATE_COLUMN] > run_number])
-
-    def add_timestamp(self, run_number, selection=None):
-        if self._df is None:
-            return
-        if not selection:
-            self._df[Module.UPDATE_COLUMN] = run_number
-        else:
-            self._df.loc[selection,Module.UPDATE_COLUMN] = run_number
 
 

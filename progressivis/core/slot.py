@@ -19,6 +19,9 @@ class Slot(object):
 
     def data(self):
         return self.output_module.get_data(self.output_name)
+    @property
+    def lock(self):
+        return self.output_module.lock
 
     def __str__(self):
         return unicode(self).encode('utf-8')

@@ -31,7 +31,7 @@ class LinearRegression(DataFrameModule):
     def run_step(self,run_number,step_size,howlong):
         dfslot = self.get_input_slot('df')
         input_df = dfslot.data()
-        dfslot.update(run_number, input_df)
+        dfslot.update(run_number)
         if dfslot.has_updated() or dfslot.has_deleted():
             raise ProgressiveError('%s module does not manage updates or deletes', self.__class__.__name__)
 

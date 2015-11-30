@@ -18,7 +18,7 @@ class TestProgressiveLoadVEC(unittest.TestCase):
         df = module.df()
         self.assertFalse(df is None)
         l = len(df)
-        self.assertEqual(l, len(df[module.update_timestamps()==module.last_update()]))
+        self.assertEqual(l, len(df[df[module.UPDATE_COLUMN]==module.last_update()]))
         cnt = 1
         
         while not module.is_zombie():
@@ -28,7 +28,7 @@ class TestProgressiveLoadVEC(unittest.TestCase):
             df = module.df()
             ln = len(df)
             print "Run time: %gs, loaded %d rows" % (s['duration'].irow(-1), ln)
-            self.assertEqual(ln-l, len(df[module.update_timestamps()==module.last_update()]))
+            self.assertEqual(ln-l, len(df[df[module.UPDATE_COLUMN]==module.last_update()]))
             l =  ln
         s = module.trace_stats(max_runs=1)
         print "Done. Run time: %gs, loaded %d rows" % (s['duration'].irow(-1), len(module.df()))

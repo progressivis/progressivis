@@ -89,5 +89,4 @@ class PairwiseDistances(DataFrameModule):
             S = np.vstack((S1, S2))
             index = Si.index.append(df.index[indices])
         self._df = pd.DataFrame(S,index=index)
-        return self._return_run_step(dfslot.next_state(),
-                                     steps_run=m, reads=m, updates=len(self._df))
+        return self._return_run_step(dfslot.next_state(), steps_run=m)

@@ -14,7 +14,7 @@ def print_len(x):
     if x is not None:
         print len(x)
 
-log_level() #package='progressivis.stats.histogram2d')
+#log_level() #package='progressivis.stats.histogram2d')
 
 try:
     s = scheduler

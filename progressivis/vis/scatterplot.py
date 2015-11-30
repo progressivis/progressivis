@@ -103,10 +103,11 @@ class ScatterPlot(DataFrameModule):
         return self.scatterplot_to_json(json, short)
 
     def scatterplot_to_json(self, json, short):
-        df = self.df()
-        if df is not None:
-            json['scatterplot'] = self.remove_nan(df[[self.x_column,self.y_column]]
-                                                  .to_dict(orient='split'))
+        with self.lock:
+            df = self.df()
+            if df is not None:
+                json['scatterplot'] = self.remove_nan(df[[self.x_column,self.y_column]]
+                                                      .to_dict(orient='split'))
 
         heatmap = self.get_input_module('heatmap')
         return heatmap.heatmap_to_json(json, short)

@@ -110,10 +110,11 @@ class VECLoader(DataFrameModule):
                            self.UPDATE_COLUMN: run_number})
         
         self._rows_read += creates
-        if self._df is not None:
-            self._df = self._df.append(df,ignore_index=True)
-        else:
-            self._df = df
+        with self.lock:
+            if self._df is not None:
+                self._df = self._df.append(df,ignore_index=True)
+            else:
+                self._df = df
         return self._return_run_step(self.state_ready, steps_run=creates, creates=creates)
 
 

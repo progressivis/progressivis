@@ -23,11 +23,12 @@ class Loc(DataFrameModule):
         in_df = df_slot.data()
         if in_df is None:
             return self._return_run_step(self.state_blocked, 0)
-        try:
-            self._df = in_df.loc[self._indices, self._columns]
-        except Exception as e:
-            logger.error('Cannot extract indices or columns: %s', e)
-            self._df = None
-        else:
-            self._df[self.UPDATE_COLUMN] = run_number
+        with self.lock:
+            try:
+                self._df = in_df.loc[self._indices, self._columns]
+            except Exception as e:
+                logger.error('Cannot extract indices or columns: %s', e)
+                self._df = None
+            else:
+                self._df[self.UPDATE_COLUMN] = run_number
         return self._return_run_step(self.state_blocked, steps_run=1)

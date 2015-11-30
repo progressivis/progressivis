@@ -13,5 +13,6 @@ class CombineFirst(NAry):
         for other in frames[1:]:
             df = df.combine_first(other)
         df[self.UPDATE_COLUMN] = run_number
+        l = len(df)
         self._df = df
-        return self._return_run_step(self.state_blocked, steps_run=len(self._df))
+        return self._return_run_step(self.state_blocked, steps_run=l)

@@ -357,9 +357,6 @@ class Module(object):
             return self._params
         return None
 
-    def update_timestamps(self):
-        return Module.EMPTY_COLUMN
-
     def run_step(self,run_number,step_size,howlong):
         """Run one step of the module, with a duration up to the 'howlong' parameter.
 

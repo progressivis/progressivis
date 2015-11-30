@@ -21,5 +21,6 @@ class Join(NAry):
         for other in frames[1:]:
             df = df.join(other, **self.join_kwds)
         df[self.UPDATE_COLUMN] = run_number
+        l = len(df)
         self._df = df
-        return self._return_run_step(self.state_blocked, steps_run=len(self._df))
+        return self._return_run_step(self.state_blocked, steps_run=l)

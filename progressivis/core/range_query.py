@@ -152,10 +152,11 @@ class RangeQuery(DataFrameModule):
         op.name = 'max'
         self._max = pd.DataFrame([op],index=[run_number])
 
-        if len(self._df)!=0:
-            last = self._df.at[self._df.index[-1],'query']
-            if last==query: # do not repeat the query to allow optimizing downstream
-                return self._return_run_step(self.state_blocked, steps_run=1)
-            print 'New query: "%s"'%query
-        self._df.loc[run_number] = pd.Series({'query': query, self.UPDATE_COLUMN: run_number})
+        with self.lock:
+            if len(self._df)!=0:
+                last = self._df.at[self._df.index[-1],'query']
+                if last==query: # do not repeat the query to allow optimizing downstream
+                    return self._return_run_step(self.state_blocked, steps_run=1)
+                logger.info('New query: "%s"', query)
+            self._df.loc[run_number] = pd.Series({'query': query, self.UPDATE_COLUMN: run_number})
         return self._return_run_step(self.state_blocked, steps_run=1)

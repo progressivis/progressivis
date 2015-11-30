@@ -52,20 +52,22 @@ class Histogram2D(DataFrameModule):
 
     def get_bounds(self, min_slot, max_slot):
         min_slot.next_created()
-        min_df = min_slot.data()
-        if len(min_df)==0 and self._bounds is None:
-            return None
-        min = self.last_row(min_df)
-        xmin = min[self.x_column]
-        ymin = min[self.y_column]
+        with min_slot.lock:
+            min_df = min_slot.data()
+            if len(min_df)==0 and self._bounds is None:
+                return None
+            min = self.last_row(min_df)
+            xmin = min[self.x_column]
+            ymin = min[self.y_column]
         
         max_slot.next_created()
-        max_df = max_slot.data()
-        if len(max_df)==0 and self._bounds is None:
-            return None
-        max = self.last_row(max_df)
-        xmax = max[self.x_column]
-        ymax = max[self.y_column]
+        with max_slot.lock:
+            max_df = max_slot.data()
+            if len(max_df)==0 and self._bounds is None:
+                return None
+            max = self.last_row(max_df)
+            xmax = max[self.x_column]
+            ymax = max[self.y_column]
         
         if xmax < xmin:
             xmax, xmin = xmin, xmax
@@ -178,7 +180,8 @@ class Histogram2D(DataFrameModule):
             cmax = self._histo.max()
         print 'cmax=%d'%cmax
         values = [self._histo, 0, cmax, xmin, xmax, ymin, ymax, run_number]
-        self._df.loc[run_number] = values
-        if len(self._df) > p.history:
-            self._df = self._df.loc[self._df.index[-p.history:]]
+        with self.lock:
+            self._df.loc[run_number] = values
+            if len(self._df) > p.history:
+                self._df = self._df.loc[self._df.index[-p.history:]]
         return self._return_run_step(dfslot.next_state(), steps_run=steps)
