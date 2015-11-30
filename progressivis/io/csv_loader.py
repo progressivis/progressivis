@@ -105,7 +105,8 @@ class CSVLoader(DataFrameModule):
                 self.force_valid_id_columns(df)
             df[self.UPDATE_COLUMN] = run_number
             if self._df is not None:
-                self._df = self._df.append(df,ignore_index=True)
+                with self.lock:
+                    self._df = self._df.append(df,ignore_index=True)
             else:
                 self._df = df
         return self._return_run_step(self.state_ready, steps_run=creates)

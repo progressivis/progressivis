@@ -75,8 +75,9 @@ class Select(DataFrameModule):
         df = df_slot.data().loc[indices]
         try:
             selected_df = df.eval(query)
+            print 'Select evaluated %d/%d rows'%(len(selected_df),steps)
             if isinstance(selected_df, pd.Series):
-                selected_df = df[selected_df]
+                selected_df = df.loc[selected_df]
         except Exception as e:
             logger.error('Probably a syntax error in query expression: %s', e)
             self._df = df_slot.data()

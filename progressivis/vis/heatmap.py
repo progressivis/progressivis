@@ -48,6 +48,8 @@ class Heatmap(DataFrameModule):
         if steps == 0:
             return self._return_run_step(self.state_blocked, steps_run=1)
         histo = input_df.at[input_df.index[-1], 'array']
+        if histo is None:
+            return self._return_run_step(self.state_blocked, steps_run=1)
         p = self.params
         cmax = p.cmax
         if np.isnan(cmax):
@@ -57,9 +59,13 @@ class Heatmap(DataFrameModule):
             cmin = None
         high = p.high
         low = p.low
-        image = sp.misc.toimage(sp.special.cbrt(histo), cmin=cmin, cmax=cmax, high=high, low=low, mode='I')
-        image = image.transpose(Image.FLIP_TOP_BOTTOM)
-        filename = p.filename
+        try:
+            image = sp.misc.toimage(sp.special.cbrt(histo), cmin=cmin, cmax=cmax, high=high, low=low, mode='I')
+            image = image.transpose(Image.FLIP_TOP_BOTTOM)
+            filename = p.filename
+        except:
+            image = None
+            filename = None
         if filename is not None:
             try:
                 if re.search(r'%(0[\d])?d', filename):

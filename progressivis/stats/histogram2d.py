@@ -121,11 +121,13 @@ class Histogram2D(DataFrameModule):
             print('New bounds at run %d: %s'%(run_number,self._bounds))
         else:
             (dxmin, dxmax, dymin, dymax) = self._bounds
-            if xmin < dxmin or xmax > dxmax or ymin < dymin or ymax > dymax:
-                (xdelta, ydelta) = self.get_delta(*bounds)
+            (xdelta, ydelta) = self.get_delta(*bounds)
+            # Either the min/max has extended, or it has shrunk beyond the deltas
+            if (xmin<dxmin or xmax>dxmax or ymin<dymin or ymax>dymax) \
+              or (xmin>(dxmin+xdelta) or xmax<(dxmax-xdelta) or ymin>(dymin+ydelta) or ymax<(dymax-ydelta)):
                 self._bounds = (xmin-xdelta,xmax+xdelta,ymin-ydelta,ymax+ydelta)
                 print('Updated bounds at run %d: %s'%(run_number,self._bounds))
-                logger.info('Updated bounds at tun: %s', run_number, self._bounds)
+                logger.info('Updated bounds at run %s: %s', run_number, self._bounds)
                 dfslot.reset()
                 dfslot.update(run_number) # should recompute the histogram from scatch
                 self._histo = None 

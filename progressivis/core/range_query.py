@@ -142,12 +142,12 @@ class RangeQuery(DataFrameModule):
             query += '({} < {} < {})'.format(minv[row], row, maxv[row])
 
         # compute the new min/max columns
-        op = aligned[['min','min_value']].max(axis=1)
+        op = aligned.loc[:,['min','min_value']].max(axis=1)
         op[self.UPDATE_COLUMN] = run_number
         op.name = 'min'
         self._min = pd.DataFrame([op],index=[run_number])
 
-        op = aligned[['max','max_value']].min(axis=1)
+        op = aligned.loc[:,['max','max_value']].min(axis=1)
         op[self.UPDATE_COLUMN] = run_number
         op.name = 'max'
         self._max = pd.DataFrame([op],index=[run_number])
@@ -156,5 +156,6 @@ class RangeQuery(DataFrameModule):
             last = self._df.at[self._df.index[-1],'query']
             if last==query: # do not repeat the query to allow optimizing downstream
                 return self._return_run_step(self.state_blocked, steps_run=1)
+            print 'New query: "%s"'%query
         self._df.loc[run_number] = pd.Series({'query': query, self.UPDATE_COLUMN: run_number})
         return self._return_run_step(self.state_blocked, steps_run=1)

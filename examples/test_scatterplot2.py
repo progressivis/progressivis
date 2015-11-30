@@ -8,13 +8,13 @@ import pandas as pd
 def filter(df):
     lon = df['pickup_longitude']
     lat = df['pickup_latitude']
-    return df[(lon>-74.08)&(lon<-73.5)&(lat>40.55)&(lat<41)]
+    return df[(lon>-74.08)&(lon<-73.5)&(lat>40.55)&(lat<41.00)]
 
 def print_len(x):
     if x is not None:
         print len(x)
 
-log_level()
+log_level() #package='progressivis.stats.histogram2d')
 
 try:
     s = scheduler
