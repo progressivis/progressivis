@@ -68,7 +68,7 @@ class Select(DataFrameModule):
         if query is None: # nothing to query, just pass through
             logger.info('No query, passing data through')
             self._df = df_slot.data()
-            return self._return_run_step(self.state_blocked, steps_run=1)
+            return self._return_run_step(self.state_blocked, steps_run=steps)
         
         if isinstance(indices, slice):
             indices = slice(indices.start, indices.stop-1)
