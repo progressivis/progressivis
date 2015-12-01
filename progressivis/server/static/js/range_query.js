@@ -1,4 +1,5 @@
 var range_query = function(){
+
   function ready(){
     refresh = range_query_refresh;
     module_ready();
@@ -24,7 +25,7 @@ var range_query = function(){
 
     cEnter.append("div")
           .attr("class", "slider-name")
-          .text(function(d){ return d.name; });
+          .text(function(d){ return d.name; })
           
     //containers.call(d3.slider().value([10,40]).orientation("vertical"));
     //the line above is simpler but does not work -- maybe because of a bug in d3-sliders. All thumbs are mixed up.
@@ -43,8 +44,8 @@ var range_query = function(){
                                   min[d.name] = value[0];
                                   var max = {};
                                   max[d.name] = value[1];
-                                  module_input(min, update_success, error, module_id+".min_value");
-                                  module_input(max, update_success, error, module_id+".max_value");
+                                  module_input(min, update_success, error, module_id+"/min_value");
+                                  module_input(max, update_success, error, module_id+"/max_value");
                                 })); 
               });
   }
