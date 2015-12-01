@@ -13,8 +13,8 @@ done in all existing scientific analysis systems, ProgressiVis modules
 run in short batches, each batch being only allowed to run for a
 specific quantum of time - typically 1 second - producing a usable
 result in the end, and yielding control to the next module.  To
-perform the whole computation, ProxiVis loops over the modules as many
-times as necessary to converge to a result that the analyst consider
+perform the whole computation, ProgressiVis loops over the modules as many
+times as necessary to converge to a result that the analyst considers
 satisfactory.
 
 ProgressiVis relies on well known Python libraries, such as
