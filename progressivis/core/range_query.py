@@ -81,13 +81,13 @@ class RangeQuery(DataFrameModule):
         #    {"name": "yRange", "in_min": 0, "in_max": 1, "out_min": 0, "out_max": 1}]
         in_min = self.get_input_slot('min').data()
         in_max = self.get_input_slot('max').data()
-        out_min = self._min
-        out_max = self._max
+        out_min = self.get_data('min')
+        out_max = self.get_data('max')
         if all(x is not None for x in [in_min, in_max, out_min, out_max]):
-           in_min_final = self.last_row(in_min).drop(Module.UPDATE_COLUMN).transpose()
-           in_max_final = self.last_row(in_max).drop(Module.UPDATE_COLUMN).transpose()
-           out_min_final = self.last_row(out_min).drop(Module.UPDATE_COLUMN).transpose()
-           out_max_final = self.last_row(out_max).drop(Module.UPDATE_COLUMN).transpose()
+           in_min_final = self.last_row(in_min, remove_update=True)
+           in_max_final = self.last_row(in_max, remove_update=True)
+           out_min_final = self.last_row(out_min, remove_update=True)
+           out_max_final = self.last_row(out_max, remove_update=True)
            ranges = pd.DataFrame({'in_min': in_min_final, 'in_max': in_max_final, 'out_min': out_min_final, 'out_max': out_max_final})
            ranges.index.name = "name"
            json['ranges'] = ranges.reset_index().to_dict(orient='records')
