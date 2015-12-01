@@ -81,8 +81,8 @@ class RangeQuery(DataFrameModule):
         #    {"name": "yRange", "in_min": 0, "in_max": 1, "out_min": 0, "out_max": 1}]
         in_min = self.get_input_slot('min').data()
         in_max = self.get_input_slot('max').data()
-        out_min = self.get_output_slot('min')[0].data()
-        out_max = self.get_output_slot('max')[0].data()
+        out_min = self._min
+        out_max = self._max
         if all(x is not None for x in [in_min, in_max, out_min, out_max]):
            in_min_final = self.last_row(in_min).drop(Module.UPDATE_COLUMN).transpose()
            in_max_final = self.last_row(in_max).drop(Module.UPDATE_COLUMN).transpose()

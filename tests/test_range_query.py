@@ -54,6 +54,12 @@ class TestRangeQuery(unittest.TestCase):
         self.assertTrue((Module.last_row(min_df)[['_3', '_4', '_5']]==out_min[['_3', '_4', '_5']]).all())
         self.assertTrue((Module.last_row(max_df)[['_2', '_3', '_4']]==out_max[['_2', '_3', '_4']]).all())
 
+        json = range_query.to_json()
+        print json['ranges']
+        self.assertTrue(json['ranges'] is not None)
+        self.assertTrue(len(json['ranges']) == 5)
+        self.assertTrue(all([range['out_min'] >= range['in_min'] and range['out_max'] <= range['in_max'] for range in json['ranges']]))
+
 
 if __name__ == '__main__':
     unittest.main()
