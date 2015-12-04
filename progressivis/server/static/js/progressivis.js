@@ -53,6 +53,10 @@ function layout_dict(dict, order) {
     return layout;
 }
 
+function escapeHTML(s) {
+    return $('<div>').text(s).html();
+}
+
 function layout_value(v) {
     var i, layout = "";
     if (v == null) return "";
@@ -63,14 +67,17 @@ function layout_value(v) {
 		layout += "<br>";
 	    layout += layout_value(v[i]);
 	}
-	    
+        return layout;
+    }
+    if (typeof(v) === "string" && v.startsWith('<div')) {
+        return v;
     }
     if (typeof(v) === "object") {
 	var keys = Object.keys(v);
 	if (keys.length == 0) return "";
 	return layout_dict(v, keys.sort());
     }
-    return v.toString();
+    return escapeHTML(v.toString()); // escape
 }
 
 function progressivis_post(url, success, error) {

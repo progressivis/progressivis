@@ -1,6 +1,7 @@
 from inspect import getargspec
 from traceback import print_exc
 import re
+import pdb
 
 import pandas as pd
 import numpy as np
@@ -62,7 +63,6 @@ class Module(object):
     state_blocked = 3
     state_zombie = 4
     state_terminated = 5
-    #TODO state_paused to pause the computation of a module 
     state_invalid = 6
     state_name = ['created', 'ready', 'running', 'blocked', 'zombie', 'terminated', 'invalid']
 
@@ -121,6 +121,7 @@ class Module(object):
         self._start_run = None
         self._end_run = None
         self._synchronized_lock = self.scheduler().create_lock()
+        self._debug = False
 
     def create_dependent_modules(self, *params, **kwds):
         """Create modules that this module depends on.
@@ -159,6 +160,14 @@ class Module(object):
                 raise ProgressiveError('Duplicate slot name %s in slot descriptor', desc.name)
             slots[desc.name] = None
         return slots
+
+    @property
+    def debug(self):
+        return self._debug
+    
+    @debug.setter
+    def debug(self, b):
+        self._debug = bool(b)
 
     @property
     def parameter(self):
@@ -582,6 +591,8 @@ class Module(object):
                 break
             try:
                 tracer.before_run_step(now,run_number)
+                if self._debug:
+                    pdb.set_trace()
                 run_step_ret = self.run_step(run_number, step_size, remaining_time)
                 next_state = run_step_ret['next_state']
                 now = self.timer()
@@ -604,6 +615,8 @@ class Module(object):
                 break
             finally:
                 assert run_step_ret is not None, "Error: %s run_step_ret not returning a dict" % self.pretty_typename()
+                if self._debug:
+                    run_step_ret['debug'] = True
                 tracer.after_run_step(now,run_number,**run_step_ret)
                 self.state = next_state
                 logger.debug('Next step is %s in module %s', self.state_name[next_state], self.pretty_typename())

@@ -36,15 +36,20 @@ function module_show_dataframe(slot) {
 
 function module_update_table(data) {
     var slots = data['output_slots'],
-        buttons = '<div class="btn-group" role="group" aria-label="DataFrames">\n';
+        buttons = '';
 
-    for (var slot in slots) {
-        buttons += '<button type="button" class="btn btn-default slot">'+slot+'</button>\n';
+    if (slots) {
+        buttons = '<div class="btn-group" role="group" aria-label="DataFrames">\n';
+        for (var slot in slots) {
+            buttons += '<button type="button" class="btn btn-default slot">'+slot+'</button>\n';
+        }
+        buttons += '</div>';
+        data['output_slots'] = buttons;
     }
-    buttons += '</div>';
     
-    $('#module').html(buttons + layout_dict(data,
+    $('#module').html(layout_dict(data,
                                   ["classname",
+                                   "output_slots",
                                    "state",
                                    "last_update",
                                    "default_step_size",

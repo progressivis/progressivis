@@ -147,7 +147,10 @@ class DataFrameTracer(Tracer):
         last_run_start['updates'] += row['updates']
         last_run_start['creates'] += row['creates']
         last_run_start['steps_run'] += row['steps_run']
-        row['type'] = 'step'
+        if 'debug' in kwds:
+            row['type'] = 'debug_step'
+        else:
+            row['type'] = 'step'
         row['loadavg'] = os.getloadavg()[0]
         self.buffer.append(row)
         self.step_count += 1
