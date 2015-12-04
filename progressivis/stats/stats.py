@@ -42,7 +42,7 @@ class Stats(DataFrameModule):
         prev = df.index[-1]
         prev_max = df.at[prev, self.max_column]
         prev_min = df.at[prev, self.min_column]
-        dfslot.update(run_number, input_df)
+        dfslot.update(run_number)
         if dfslot.has_updated() or dfslot.has_deleted():        
             dfslot.reset()
             prev_min = prev_max = np.nan

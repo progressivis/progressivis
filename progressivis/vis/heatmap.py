@@ -42,12 +42,13 @@ class Heatmap(DataFrameModule):
     def run_step(self,run_number,step_size,howlong):
         dfslot = self.get_input_slot('array')
         input_df = dfslot.data()
-        dfslot.update(run_number, input_df)
+        dfslot.update(run_number)
         indices = dfslot.next_created()
         steps = indices_len(indices)
         if steps == 0:
             return self._return_run_step(self.state_blocked, steps_run=1)
-        histo = input_df.at[input_df.index[-1], 'array']
+        with dfslot.lock:
+            histo = input_df.at[input_df.index[-1], 'array']
         if histo is None:
             return self._return_run_step(self.state_blocked, steps_run=1)
         p = self.params
@@ -79,10 +80,11 @@ class Heatmap(DataFrameModule):
                 raise
 
         values = [image, filename, run_number]
-        df = self._df
-        df.loc[run_number] = values
-        if len(df) > p.history:
-            self._df = df.loc[df.index[-p.history:]]
+        with self.lock:
+            df = self._df
+            df.loc[run_number] = values
+            if len(df) > p.history:
+                self._df = df.loc[df.index[-p.history:]]
         return self._return_run_step(self.state_blocked,
                                      steps_run=1,
                                      reads=1,

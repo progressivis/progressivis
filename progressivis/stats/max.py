@@ -1,6 +1,7 @@
 from progressivis.core.common import indices_len
 from progressivis.core.dataframe import DataFrameModule
 from progressivis.core.slot import SlotDescriptor
+from progressivis.core.synchronized import synchronized
 
 import numpy as np
 import pandas as pd
@@ -25,20 +26,21 @@ class Max(DataFrameModule):
             return True
         return super(Max, self).is_ready()
 
+    @synchronized
     def run_step(self,run_number,step_size,howlong):
         dfslot = self.get_input_slot('df')
-        input_df = dfslot.data()
         dfslot.update(run_number)
         if dfslot.has_updated() or dfslot.has_deleted():        
             dfslot.reset()
             self._df = None
-            dfslot.update(run_number, input_df)
+            dfslot.update(run_number)
         indices = dfslot.next_created(step_size) # returns a slice
         steps = indices_len(indices)
         if steps==0:
             self._return_run_step(self.state_blocked, steps_run=0)
         if isinstance(indices,slice):
             indices=slice(indices.start,indices.stop-1) # semantic of slice with .loc
+        input_df = dfslot.data()
         if self._df is None:
             # Need to check now which columns exist. Cannot do it before we receive a valid df
             cols = input_df.columns.difference([self.UPDATE_COLUMN])
@@ -51,7 +53,8 @@ class Max(DataFrameModule):
                     self._columns = input_df.columns.difference([self.UPDATE_COLUMN])
 
         op = input_df.loc[indices,self._columns].max()
-        if not op.index.equals(self._columns): # some columns are not numerical
+        if not op.index.equals(self._columns):
+            # some columns are not numerical
             self._columns = op.index
 
         op[self.UPDATE_COLUMN] = run_number

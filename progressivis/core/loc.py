@@ -1,5 +1,6 @@
 from progressivis.core.dataframe import DataFrameModule
 from progressivis.core.slot import SlotDescriptor
+from progressivis.core.synchronized import synchronized
 
 import pandas as pd
 
@@ -16,19 +17,19 @@ class Loc(DataFrameModule):
 
     def predict_step_size(self, duration):
         return 1
-    
+
+    @synchronized
     def run_step(self,run_number,step_size,howlong):
         df_slot = self.get_input_slot('df')
-        df_slot.update(run_number)
         in_df = df_slot.data()
         if in_df is None:
             return self._return_run_step(self.state_blocked, 0)
-        with self.lock:
-            try:
-                self._df = in_df.loc[self._indices, self._columns]
-            except Exception as e:
-                logger.error('Cannot extract indices or columns: %s', e)
-                self._df = None
-            else:
-                self._df[self.UPDATE_COLUMN] = run_number
+        df_slot.update(run_number)
+        try:
+            self._df = in_df.loc[self._indices, self._columns]
+        except Exception as e:
+            logger.error('Cannot extract indices or columns: %s', e)
+            self._df = None
+        else:
+            self._df[self.UPDATE_COLUMN] = run_number
         return self._return_run_step(self.state_blocked, steps_run=1)

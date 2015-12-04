@@ -1,4 +1,5 @@
 from progressivis import ProgressiveError, DataFrameModule, SlotDescriptor
+from progressivis.core.buffered_dataframe import BufferedDataFrame
 
 import pandas as pd
 
@@ -26,6 +27,7 @@ class CSVLoader(DataFrameModule):
         if filter is not None and not callable(filter):
             raise ProgressiveError('filter parameter should be callable or None')
         self._filter = filter
+        self._buffer = BufferedDataFrame()
 
     def rows_read(self):
         return self._rows_read
@@ -50,21 +52,22 @@ class CSVLoader(DataFrameModule):
                 fn_slot = self.get_input_slot('filenames')
                 if fn_slot is None or fn_slot.output_module is None:
                     return self.state_terminated
-                df = fn_slot.data()
-                fn_slot.update(run_number)
-                if fn_slot.has_deleted() or fn_slot.has_updated():
-                    raise ProgressiveError('Cannot handle input file changes')
-                while self.parser is None:
-                    indices = fn_slot.next_created(1)
-                    if indices.stop==indices.start:
-                        return self.state_blocked
-                    filename = df.at[indices.start, 'filename']
-                    try:
-                        self.parser = pd.read_csv(filename, **self.csv_kwds)
-                    except IOError as e:
-                        logger.error('Cannot open file %s: %s', filename, e)
-                        self.parser = None
-                    # fall through
+                with fn_slot.lock:
+                    fn_slot.update(run_number)
+                    if fn_slot.has_deleted() or fn_slot.has_updated():
+                        raise ProgressiveError('Cannot handle input file changes')
+                    df = fn_slot.data()                        
+                    while self.parser is None:
+                        indices = fn_slot.next_created(1)
+                        if indices.stop==indices.start:
+                            return self.state_blocked
+                        filename = df.at[indices.start, 'filename']
+                        try:
+                            self.parser = pd.read_csv(filename, **self.csv_kwds)
+                        except IOError as e:
+                            logger.error('Cannot open file %s: %s', filename, e)
+                            self.parser = None
+                        # fall through
         return self.state_ready
 
     def run_step(self,run_number,step_size, howlong):
@@ -106,8 +109,6 @@ class CSVLoader(DataFrameModule):
                 self.force_valid_id_columns(df)
             df[self.UPDATE_COLUMN] = run_number
             with self.lock:
-                if self._df is not None:
-                    self._df = self._df.append(df,ignore_index=True)
-                else:
-                    self._df = df
+                self._buffer.append(df)
+                self._df = self._buffer.df()
         return self._return_run_step(self.state_ready, steps_run=creates)

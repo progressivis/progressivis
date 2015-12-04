@@ -14,10 +14,12 @@ logger = logging.getLogger(__name__)
 class MTScheduler(Scheduler):
     def __init__(self):
         super(MTScheduler,self).__init__()
-        self.lock = threading.RLock()
         self.thread = None
         self._thread_parent = None
         self.thread_name = "Progressive Scheduler"
+
+    def create_lock(self):
+        return threading.RLock()
 
     @staticmethod
     def set_default():

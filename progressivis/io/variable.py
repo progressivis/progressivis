@@ -41,5 +41,6 @@ class Variable(Constant):
             if slot is not None:
                 df = slot.data()
                 if df is not None:
-                    self._df = df.iloc[0:0] # create an empty copy
+                    with slot.lock:
+                        self._df = df.iloc[0:0] # create an empty copy
         return self._return_run_step(self.state_blocked, steps_run=1)

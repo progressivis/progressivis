@@ -10,10 +10,11 @@ class TestBufferedDataFrame(unittest.TestCase):
         buf = BufferedDataFrame()
 
         for i in range(0,100,10):
-            df = pd.DataFrame(np.random.rand(10,10))
+            df = pd.DataFrame({'a': range(i,i+10), 'b': range(i,i+10), 'c': range(i,i+10)})
             buf.append(df)
             print 'Iteration %d'%i,
             self.assertEquals(len(buf.df()), i+10)
+            self.assertTrue((buf.df().loc[i:i+9,'a']==pd.Series(range(i,i+10))).all())
             print 'OK, size=%d'%len(buf._base)
             # Test if _df is shared with _base
-            self.assertIs(buf._df[0].base,buf._base[0].base)
+            self.assertIs(buf._df['a'].base,buf._base['a'].base)

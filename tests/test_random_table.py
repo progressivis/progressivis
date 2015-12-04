@@ -22,8 +22,8 @@ class TestRandomTable(unittest.TestCase):
         prlen.input.df = module.output.df
         s.start()
         self.assertEqual(len(module.df()), 10000)
-        self.assertFalse(module.df()['a'].hasnans())
-        self.assertFalse(module.df()['b'].hasnans())
+        self.assertFalse(module.df()['a'].isnull().any())
+        self.assertFalse(module.df()['b'].isnull().any())
 
     def test_randome_table2(self):
         s=Scheduler()
@@ -36,5 +36,5 @@ class TestRandomTable(unittest.TestCase):
         prlen.input.df = module.output.df
         s.start()
         self.assertEqual(len(module.df()), 10000000)
-        self.assertFalse(module.df()['_1'].hasnans())
-        self.assertFalse(module.df()['_2'].hasnans())
+        self.assertFalse(module.df()['_1'].isnull().any())
+        self.assertFalse(module.df()['_2'].isnull().any())

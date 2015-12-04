@@ -14,13 +14,16 @@ class Join(NAry):
         for name in self.inputs:
             if not name.startswith('df'):
                 continue
-            df = self.get_input_slot(name).data()
-            df = df[df.columns.difference([self.UPDATE_COLUMN])]
+            slot = self.get_input_slot(name)
+            with slot.lock:
+                df = slot.data()
+                df = df[df.columns.difference([self.UPDATE_COLUMN])]
             frames.append(df)
         df = frames[0]
         for other in frames[1:]:
             df = df.join(other, **self.join_kwds)
         df[self.UPDATE_COLUMN] = run_number
         l = len(df)
-        self._df = df
+        with self.lock:
+            self._df = df
         return self._return_run_step(self.state_blocked, steps_run=l)

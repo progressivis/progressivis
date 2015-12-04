@@ -9,12 +9,11 @@ class DataFrameSlot(Slot):
         super(DataFrameSlot, self).__init__(output_module, output_name, input_module, input_name)
         self.changes = None
 
-    def update(self, run_number, df=None):
-        if self.changes is None:
-            self.changes = ChangeManager()
-        if df is None:
+    def update(self, run_number):
+        c = self.changemanager
+        with self.lock:
             df = self.data()
-        return self.changes.update(run_number,df)
+            return c.update(run_number,df)
 
     def reset(self):
         if self.changes is not None:

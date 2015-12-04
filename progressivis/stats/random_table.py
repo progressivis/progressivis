@@ -1,5 +1,5 @@
 from progressivis.core import DataFrameModule, ProgressiveError
-
+from progressivis.core.buffered_dataframe import BufferedDataFrame
 
 import pandas as pd
 import numpy as np
@@ -30,6 +30,7 @@ class RandomTable(DataFrameModule):
         if force_valid_ids:
             self.force_valid_id_columns(self._df)
         self.columns = self._df.columns # reuse the pandas index structure
+        self._buffer = BufferedDataFrame()
 
     def run_step(self,run_number,step_size, howlong):
         if step_size==0: # bug
@@ -50,9 +51,8 @@ class RandomTable(DataFrameModule):
             values[c] = s
         values[self.UPDATE_COLUMN] = pd.Series(step_size*[run_number], dtype=np.dtype(int))
         df = pd.DataFrame(values, columns=self.columns)
-        if self._df is not None and len(self._df) != 0:
-            self._df = self._df.append(df,ignore_index=True)
-        else:
-            self._df = df
+        with self.lock:
+            self._buffer.append(df)
+            self._df = self._buffer.df()
         next_state = self.state_blocked if self.throttle else self.state_ready
         return self._return_run_step(next_state, steps_run=step_size)

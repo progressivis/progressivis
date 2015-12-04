@@ -56,29 +56,32 @@ class Percentiles(DataFrameModule):
 
     def run_step(self,run_number,step_size,howlong):
         dfslot = self.get_input_slot('df')
-        input_df = dfslot.data()
-        dfslot.update(run_number, input_df)
+        dfslot.update(run_number)
         if dfslot.has_updated() or dfslot.has_deleted():
-            # should restart from time 0
-            raise ProgressiveError('Percentile module does not manage updates or deletes')
+            dfslot.reset()
+            dfslot.update(run_number)
+            self.tdigest = Tdigest() # reset
 
         indices = dfslot.next_created(step_size)
         steps = indices_len(indices)
         if steps == 0:
             return self._return_run_step(self.state_blocked, steps_run=steps)
-        if isinstance(indices, slice):
-            x = input_df.loc[indices.start:indices.stop-1,self._column]  # semantic of slice with .loc
-        else:
-            x = input_df.loc[indices,self._column]
-        self.tdigest.batch_update(x)
+        input_df = dfslot.data()
+        with dfslot.lock:
+            if isinstance(indices, slice): # semantic of slice with .loc
+                x = input_df.loc[indices.start:indices.stop-1,self._column]
+            else:
+                x = input_df.loc[indices,self._column]
+            self.tdigest.batch_update(x)
         df = self._df
         values = []
         for p in self._percentiles:
             values.append(self.tdigest.percentile(p*100))
         values.append(run_number)
-        df.loc[run_number] = values
-        if len(df) > self.params.history:
-            self._df = df.loc[df.index[-self.params.history:]]
+        with self.lock:
+            df.loc[run_number] = values
+            if len(df) > self.params.history:
+                self._df = df.loc[df.index[-self.params.history:]]
         return self._return_run_step(dfslot.next_state(),
                                      steps_run=steps, reads=steps, updates=len(self._df))
 

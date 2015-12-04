@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from progressivis import DataFrameModule, SlotDescriptor
+from progressivis.core.buffered_dataframe import BufferedDataFrame
 
 import pandas as pd
 import numpy as np
@@ -58,6 +59,7 @@ class VECLoader(DataFrameModule):
         # When created with a specified chunksize, it returns the parser
         self._rows_read = 0
         self._csr_matrix = None
+        self._buffer = BufferedDataFrame()
 
     def rows_read(self):
         return self._rows_read
@@ -111,10 +113,8 @@ class VECLoader(DataFrameModule):
         
         self._rows_read += creates
         with self.lock:
-            if self._df is not None:
-                self._df = self._df.append(df,ignore_index=True)
-            else:
-                self._df = df
+            self._buffer.append(df)
+            self._df = self._buffer.df()
         return self._return_run_step(self.state_ready, steps_run=creates, creates=creates)
 
 

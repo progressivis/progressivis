@@ -4,6 +4,8 @@
 from progressivis.core.common import ProgressiveError, indices_len
 from progressivis.core.dataframe import DataFrameModule
 from progressivis.core.slot import SlotDescriptor
+from progressivis.core.synchronized import synchronized
+
 
 import numpy as np
 import pandas as pd
@@ -31,10 +33,11 @@ class PairwiseDistances(DataFrameModule):
             return True
         return super(PairwiseDistances, self).is_ready()
 
+    @synchronized
     def run_step(self,run_number,step_size,howlong):
         dfslot = self.get_input_slot('df')
         df = dfslot.data()
-        dfslot.update(run_number, df)
+        dfslot.update(run_number)
         if dfslot.has_updated() or dfslot.has_deleted():        
             dfslot.reset()
             logger.info('Reseting history because of changes in the input df')

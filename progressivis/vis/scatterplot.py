@@ -6,13 +6,13 @@ from progressivis.core.dataframe import DataFrameModule
 from progressivis.stats import Histogram2D, Sample, Min, Max
 from progressivis.vis import Heatmap
 
-from bokeh.plotting import show
-from bokeh.models.mappers import LinearColorMapper
-from bokeh.palettes import YlOrRd9
-from bokeh.models import ColumnDataSource, Range1d
+# from bokeh.plotting import show
+# from bokeh.models.mappers import LinearColorMapper
+# from bokeh.palettes import YlOrRd9
+# from bokeh.models import ColumnDataSource, Range1d
 
-from ipywidgets import widgets
-from IPython.display import display
+# from ipywidgets import widgets
+# from IPython.display import display
 #output_notebook()
 
 import numpy as np
@@ -119,69 +119,69 @@ class ScatterPlot(DataFrameModule):
     def add_input(self, msg):
         self.inp.add_input(msg)
 
-    # For Bokeh, but not ready for prime time yet...
-    x = np.array([0, 10, 50, 90, 100], np.dtype(float))
-    y = np.array([0, 50, 90, 10, 100], np.dtype(float))
-    img = np.zeros((3, 3), np.float)
+    # # For Bokeh, but not ready for prime time yet...
+    # x = np.array([0, 10, 50, 90, 100], np.dtype(float))
+    # y = np.array([0, 50, 90, 10, 100], np.dtype(float))
+    # img = np.zeros((3, 3), np.float)
 
-    def show(self, p):
-        self.figure = p
-        self.image_source = ColumnDataSource(data={
-            'image': [self.img],
-            'x': [0],
-            'y': [0],
-            'dw': [100],
-            'dh': [100]})
-        self.palette = YlOrRd9[::-1]
-        p.image(image='image', x='x', y='y', dw='dw', dh='dh',
-                color_mapper=LinearColorMapper(self.palette), source=self.image_source)
-        self.scatter_source = ColumnDataSource(data={'x': self.x, 'y': self.y})
-        p.scatter('x','y',source=self.scatter_source)
-        show(self.figure)
-        button = widgets.Button(description="Refresh!")
-        display(button)
-        button.on_click(self.update)
+    # def show(self, p):
+    #     self.figure = p
+    #     self.image_source = ColumnDataSource(data={
+    #         'image': [self.img],
+    #         'x': [0],
+    #         'y': [0],
+    #         'dw': [100],
+    #         'dh': [100]})
+    #     self.palette = YlOrRd9[::-1]
+    #     p.image(image='image', x='x', y='y', dw='dw', dh='dh',
+    #             color_mapper=LinearColorMapper(self.palette), source=self.image_source)
+    #     self.scatter_source = ColumnDataSource(data={'x': self.x, 'y': self.y})
+    #     p.scatter('x','y',source=self.scatter_source)
+    #     show(self.figure)
+    #     button = widgets.Button(description="Refresh!")
+    #     display(button)
+    #     button.on_click(self.update)
 
-    def update(self, b):
-        if self.image_source is None:
-            return
-        logger.info("Updating module '%s.%s'", self.pretty_typename(), self.id)
-        #TODO use data from the same run
-        histo_df = self.histogram2d.df()
-        row = None
-        df = self.df()
-        if df is not None:
-            self.scatter_source.data['x'] = df[self.x_column]
-            self.scatter_source.data['y'] = df[self.y_column]
-            self.scatter_source.push_notebook()
+    # def update(self, b):
+    #     if self.image_source is None:
+    #         return
+    #     logger.info("Updating module '%s.%s'", self.pretty_typename(), self.id)
+    #     #TODO use data from the same run
+    #     histo_df = self.histogram2d.df()
+    #     row = None
+    #     df = self.df()
+    #     if df is not None:
+    #         self.scatter_source.data['x'] = df[self.x_column]
+    #         self.scatter_source.data['y'] = df[self.y_column]
+    #         self.scatter_source.push_notebook()
 
-        if histo_df is not None and histo_df.index[-1] is not None:
-            idx = histo_df.index[-1]
-            row = histo_df.loc[idx]
-            if not (np.isnan(row.xmin) or np.isnan(row.xmax)
-                    or np.isnan(row.ymin) or np.isnan(row.ymax)
-                    or row.array is None):
-                self.image_source.data['image'] = [row.array]
-                self.image_source.data['x'] = [row.xmin]
-                self.image_source.data['y'] = [row.ymin]
-                self.image_source.data['dw'] = [row.xmax-row.xmin]
-                self.image_source.data['dh'] = [row.ymax-row.ymin]
-                self.image_source.push_notebook()
-                self.figure.set(x_range=Range1d(row.xmin, row.xmax),
-                                y_range=Range1d(row.ymin, row.ymax))
-                logger.debug('Bounds: %g,%g,%g,%g', row.xmin, row.xmax, row.ymin, row.ymax)
-            else:
-                logger.debug('Cannot compute bounds from image')
+    #     if histo_df is not None and histo_df.index[-1] is not None:
+    #         idx = histo_df.index[-1]
+    #         row = histo_df.loc[idx]
+    #         if not (np.isnan(row.xmin) or np.isnan(row.xmax)
+    #                 or np.isnan(row.ymin) or np.isnan(row.ymax)
+    #                 or row.array is None):
+    #             self.image_source.data['image'] = [row.array]
+    #             self.image_source.data['x'] = [row.xmin]
+    #             self.image_source.data['y'] = [row.ymin]
+    #             self.image_source.data['dw'] = [row.xmax-row.xmin]
+    #             self.image_source.data['dh'] = [row.ymax-row.ymin]
+    #             self.image_source.push_notebook()
+    #             self.figure.set(x_range=Range1d(row.xmin, row.xmax),
+    #                             y_range=Range1d(row.ymin, row.ymax))
+    #             logger.debug('Bounds: %g,%g,%g,%g', row.xmin, row.xmax, row.ymin, row.ymax)
+    #         else:
+    #             logger.debug('Cannot compute bounds from image')
 
-    @property
-    def auto_update(self):
-        return self._auto_update
-    @auto_update.setter
-    def auto_update(self, value):
-        self._auto_update = value
+    # @property
+    # def auto_update(self):
+    #     return self._auto_update
+    # @auto_update.setter
+    # def auto_update(self, value):
+    #     self._auto_update = value
 
-    def cleanup_run(self, run_number):
-        super(ScatterPlot, self).cleanup_run(run_number)
-        if self._auto_update:
-            self.update(None)
+    # def cleanup_run(self, run_number):
+    #     super(ScatterPlot, self).cleanup_run(run_number)
+    #     if self._auto_update:
+    #         self.update(None)
 

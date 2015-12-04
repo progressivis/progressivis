@@ -168,3 +168,18 @@ def module_input(path):
         ret['error'] = msg
     return jsonify(ret)
 
+@progressivis_bp.route('/progressivis/module/df/<id>/<slot>', methods=['GET', 'POST'])
+def df(id,slot):
+    module = path_to_module(id)
+    if module is None:
+        abort(404)
+    print 'Getting slot "'+slot+'"'
+    df = module.get_data(slot)
+    if df is None:
+        abort(404)
+    if request.method == 'POST':
+        print 'POST df %s/%s'%(id,slot)
+        return jsonify(df.to_dict(orient='split'))
+    print 'GET df %s/%s'%(id,slot)
+    return render_template('dataframe.html', title="DataFrame "+id+'/'+slot, id=id, slot=slot, df=df)
+

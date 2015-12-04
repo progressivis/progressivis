@@ -116,10 +116,11 @@ class Module(object):
         self.default_step_size = 1
         self.input = InputSlots(self)
         self.output = OutputSlots(self)
-        self._scheduler.add_module(self)
+        self.scheduler().add_module(self)
         # callbacks
         self._start_run = None
         self._end_run = None
+        self._synchronized_lock = self.scheduler().create_lock()
 
     def create_dependent_modules(self, *params, **kwds):
         """Create modules that this module depends on.
@@ -165,7 +166,7 @@ class Module(object):
 
     @property
     def lock(self):
-        return self.scheduler().lock
+        return self._synchronized_lock
 
     def _parse_parameters(self, kwds):
         self._params = self.create_dataframe(self.all_parameters + [self.UPDATE_COLUMN_DESC])
@@ -191,15 +192,16 @@ class Module(object):
         }
         if short:
             return json
-        
-        json.update({
-            'start_time': self._start_time,
-            'end_time': self._end_time,
-            'input_slots': { k: slot_to_json(s) for (k, s) in self._input_slots.iteritems() },
-            'output_slots': { k: slot_to_json(s) for (k, s) in self._output_slots.iteritems() },
-            'default_step_size': self.default_step_size,
-            'parameters': self.remove_nan(self.current_params().to_dict())
-        })
+
+        with self.lock:
+            json.update({
+                'start_time': self._start_time,
+                'end_time': self._end_time,
+                'input_slots': { k: slot_to_json(s) for (k, s) in self._input_slots.iteritems() },
+                'output_slots': { k: slot_to_json(s) for (k, s) in self._output_slots.iteritems() },
+                'default_step_size': self.default_step_size,
+                'parameters': self.remove_nan(self.current_params().to_dict())
+            })
         return json
 
     @staticmethod
@@ -669,12 +671,14 @@ class Every(Module):
         return self(Every, self).predict_step_size(duration)
 
     def run_step(self,run_number,step_size,howlong):
-        df = self.get_input_slot('df').data()
+        slot = self.get_input_slot('df')
+        df = slot.data()
         reads = 0
         if df is not None:
-            reads=len(df)            
-            with self.scheduler().stdout_parent():
-                self._proc(df)
+            with slot.lock:
+                reads=len(df)            
+                with self.scheduler().stdout_parent():
+                    self._proc(df)
         return self._return_run_step(Module.state_blocked, steps_run=1, reads=reads)
 
 def prt(x):

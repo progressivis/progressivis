@@ -14,8 +14,10 @@ class Merge(NAry):
         for name in self.inputs:
             if not name.startswith('df'):
                 continue
-            df = self.get_input_slot(name).data()
-            df = df[df.columns.difference([self.UPDATE_COLUMN])]
+            slot = self.get_input_slot(name)
+            df = slot.data()
+            with slot.lock:
+                df = df[df.columns.difference([self.UPDATE_COLUMN])]
             frames.append(df)
         df = frames[0]
         for other in frames[1:]:

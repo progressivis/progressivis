@@ -107,19 +107,23 @@ class RangeQuery(DataFrameModule):
         # they contain either no value (e.g. index only contains 'a', 'b', or empty),
         # or NaN for 'a' and/or 'b'.
         min_slot = self.get_input_slot('min')
-        min_slot.update(run_number)
-        min = self.last_row(min_slot.data(), remove_update=True)
+        with min_slot.lock:
+            min_slot.update(run_number)
+            min = self.last_row(min_slot.data(), remove_update=True)
         max_slot = self.get_input_slot('max')
-        max_slot.update(run_number)
-        max = self.last_row(max_slot.data(), remove_update=True)
+        with max_slot.lock:
+            max_slot.update(run_number)
+            max = self.last_row(max_slot.data(), remove_update=True)
         minv_slot = self.get_input_slot('min_value')
-        minv_slot.update(run_number)
-        minv = self.last_row(minv_slot.data(), remove_update=True)
+        with minv_slot.lock:
+            minv_slot.update(run_number)
+            minv = self.last_row(minv_slot.data(), remove_update=True)
         if minv is None:
             minv = min
         maxv_slot = self.get_input_slot('max_value')
-        maxv_slot.update(run_number)
-        maxv = self.last_row(maxv_slot.data(), remove_update=True)
+        with maxv_slot.lock:
+            maxv_slot.update(run_number)
+            maxv = self.last_row(maxv_slot.data(), remove_update=True)
         if maxv is None:
             maxv = max
 

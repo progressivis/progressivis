@@ -1,6 +1,10 @@
 import pandas as pd
 import numpy as np
 
+import logging
+logger = logging.getLogger(__name__)
+
+
 # See view-source:http://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2Float
 def next_pow2(v):
   v -= 1;
@@ -19,6 +23,10 @@ class BufferedDataFrame(object):
         self._base = None
         self.append(df)
 
+    def reset(self):
+        self._df = None
+        self._base = None
+
     def df(self):
         return self._df
 
@@ -26,25 +34,33 @@ class BufferedDataFrame(object):
         lb = 0 if self._base is None else len(self._base)
         if l > lb:
             n = next_pow2(l)
+            logger.info('Resizing dataframe %s from %d to %d', hex(id(self)), lb, n)
             to_add = n-lb
             if lb==0:
-                self._base = pd.DataFrame([],index=range(0,n))
+                self._base = pd.DataFrame({},index=range(0,n))
             else:
-                self._base = self._base.append(pd.DataFrame({},index=range(lb,n)))
-        self._df = self._base.loc[0:l-1]
+                 # specifying the columns maintains the column order, otherwise, it gets sorted
+                self._base = self._base.append(pd.DataFrame({},index=range(lb,n),
+                                                            columns=self._base.columns))
+                logger.debug('Dataframe %s length=%d', hex(id(self)), len(self._base))
+        self._df = self._base.iloc[0:l]
         return self._df
 
-    def append(self, df):
+    def append(self, df, ignore_index=True):
         if df is None or len(df)==0:
             return
         if self._base is None:
             n = next_pow2(len(df))
             to_add = n-len(df)
-            self._base = df.append(pd.DataFrame([],index=range(len(df),n)))
-            self._df = self._base.loc[0:len(df)-1]
+            if ignore_index:
+                df.index = range(0,len(df))
+            # specifying the columns maintains the column order, otherwise, it gets sorted
+            self._base = df.append(pd.DataFrame([],index=range(len(df),n),columns=df.columns))
+            self._df = self._base.iloc[0:len(df)]
         else:
             start=len(self._df)
             end  =len(df)+len(self._df)
             self.resize(end)
-            df.index = range(start,end)
-            self._df.loc[start:end-1] = df
+            if ignore_index:
+                df.index = range(start,end)
+            self._df.iloc[start:end] = df

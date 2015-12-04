@@ -22,7 +22,7 @@ class Slot(object):
 
     @property
     def lock(self):
-        return self.output_module.lock
+        return self.input_module.lock
 
     def __str__(self):
         return unicode(self).encode('utf-8')

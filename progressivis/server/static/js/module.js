@@ -27,8 +27,23 @@ function module_update(data) {
     module_update_table(data);
 }
 
+function module_show_dataframe(slot) {
+    var url = $SCRIPT_ROOT+'/progressivis/module/df/'+module_id+'/'+slot;
+    var win = window.open(url, '_blank');
+    win.focus();
+}
+
+
 function module_update_table(data) {
-    $('#module').html(layout_dict(data,
+    var slots = data['output_slots'],
+        buttons = '<div class="btn-group" role="group" aria-label="DataFrames">\n';
+
+    for (var slot in slots) {
+        buttons += '<button type="button" class="btn btn-default slot">'+slot+'</button>\n';
+    }
+    buttons += '</div>';
+    
+    $('#module').html(buttons + layout_dict(data,
                                   ["classname",
                                    "state",
                                    "last_update",
@@ -36,47 +51,9 @@ function module_update_table(data) {
                                    "start_time",
                                    "end_time",
                                    "parameters",
-                                   "input_slots",
-                                   "output_slots"]));
-    return;
-    var columns = ['column', 'value'],
-        vals = Object.keys(data).map(function(k) {
-            return {column: k, value: data[k]};
-        });
-    
-    var tr = d3
-            .select("tbody")
-            .selectAll("tr")
-            .data(vals, function(d) { return d.column; });
+                                   "input_slots"]));
 
-    // Enter function
-    var rows = tr.enter()
-            .append("tr")
-            .attr("class", "module-property");
-
-    tr.order();
-
-    var cells = rows.selectAll("td")
-            .data(function(row) {
-                return columns.map(function(column) {
-                    return {column: column, value: row[column]};
-                });
-            })
-            .enter()
-            .append("td")
-            .text(function(d) { return d.value; });
-
-    // Update function
-    tr.selectAll("td")
-        .data(function(row) {
-            return columns.map(function(column) {
-                return {column: column, value: row[column]};
-            });
-        })
-        .text(function(d) { return d.value; });
-
-    // Exit function
-    tr.exit().remove();
+    $('.btn.slot').click(function() { module_show_dataframe($(this).text()); });
 }
 
 function module_refresh() {

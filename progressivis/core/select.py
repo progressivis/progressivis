@@ -1,7 +1,8 @@
 from progressivis.core.common import ProgressiveError, indices_len
 from progressivis.core.dataframe import DataFrameModule
-from progressivis.core.slot import SlotDescriptor
+from .slot import SlotDescriptor
 from .utils import is_valid_identifier
+from .buffered_dataframe import BufferedDataFrame
 
 import pandas as pd
 
@@ -16,6 +17,7 @@ class Select(DataFrameModule):
         super(Select, self).__init__(**kwds)
         self.default_step_size = 1000
         self._query_column = query_column
+        self._buffer = BufferedDataFrame()
         
     def create_dependent_modules(self, input_module, input_slot, **kwds):
         from progressivis import RangeQuery
@@ -48,7 +50,8 @@ class Select(DataFrameModule):
                 df = None
                 df_slot.reset() # re-filter
             indices = query_slot.next_created() # read it all
-            query = self.last_row(query_df)[self._query_column] # get the query expression
+            with query_slot.lock:
+                query = self.last_row(query_df)[self._query_column] # get the query expression
             if query is not None:
                 if len(query)==0:
                     query=None
@@ -59,6 +62,7 @@ class Select(DataFrameModule):
         if df_slot.has_deleted() or df_slot.has_updated():
             df_slot.reset()
             df = None
+            self._buffer.reset()
             df_slot.update(run_number)
         
         indices = df_slot.next_created(step_size)
@@ -73,21 +77,20 @@ class Select(DataFrameModule):
         
         if isinstance(indices, slice):
             indices = slice(indices.start, indices.stop-1)
-        new_df = df_slot.data().loc[indices]
-        try:
-            selected_df = new_df.eval(query)
-            print 'Select evaluated %d/%d rows'%(len(selected_df),steps)
-            if isinstance(selected_df, pd.Series):
-                selected_df = new_df.loc[selected_df]
-        except Exception as e:
-            logger.error('Probably a syntax error in query expression: %s', e)
-            self._df = df_slot.data()
-            return self._return_run_step(self.state_blocked, steps_run=steps)
-        selected_df.loc[:,self.UPDATE_COLUMN] = run_number
-        if df is None:
-            self._df = selected_df
-        else:
-            self._df = df.append(selected_df) # don't ignore index I think
+        with df_slot.lock:
+            new_df = df_slot.data().loc[indices]
+            try:
+                selected_df = new_df.eval(query)
+                #print 'Select evaluated %d/%d rows'%(len(selected_df),steps)
+                if isinstance(selected_df, pd.Series):
+                    selected_df = new_df.loc[selected_df]
+            except Exception as e:
+                logger.error('Probably a syntax error in query expression: %s', e)
+                self._df = df_slot.data()
+                return self._return_run_step(self.state_blocked, steps_run=steps)
+            selected_df.loc[:,self.UPDATE_COLUMN] = run_number
+            self._buffer.append(selected_df, ignore_index=False)
+            self._df = self._buffer.df()
         return self._return_run_step(self.state_blocked, steps_run=steps)
 
     @staticmethod

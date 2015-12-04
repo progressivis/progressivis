@@ -38,7 +38,8 @@ class Sample(DataFrameModule):
             dfslot.update(run_number)
             self._df = None
         input_df = dfslot.data()
-        l = len(input_df) if input_df is not None else 0
+        with dfslot.lock:
+            l = len(input_df) if input_df is not None else 0
 
         if (l == 0):
             if self._df is not None and len(self._df) != 0:
@@ -52,9 +53,10 @@ class Sample(DataFrameModule):
             size = n
         elif not np.isnan(frac):
             size = np.max(0, np.floor(l*frac))
-        if size >= len(input_df):
-            self._df = input_df
-        else:
-            self._df = input_df.sample(n=size)
-            self._df.loc[:,self.UPDATE_COLUMN] = run_number
+        with dfslot.lock:
+            if size >= len(input_df):
+                self._df = input_df
+            else:
+                self._df = input_df.sample(n=size)
+                self._df.loc[:,self.UPDATE_COLUMN] = run_number
         return self._return_run_step(self.state_blocked, steps_run=1, reads=l, updates=l)

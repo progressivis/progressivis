@@ -27,7 +27,7 @@ class Scheduler(object):
     default = None
     
     def __init__(self):
-        self.lock = FakeLock()
+        self._lock = self.create_lock()
         self._modules = dict()
         self._module = AttributeDict(self._modules)
         self._running = False
@@ -39,6 +39,12 @@ class Scheduler(object):
         self._run_number_time =  {}
         self._tick_proc = None
         self._idle_proc = None
+
+    def create_lock(self):
+        #import traceback
+        #print 'creating lock'
+        #traceback.print_stack()
+        return FakeLock()
 
     def clear(self):
         self._modules = dict()
@@ -52,6 +58,10 @@ class Scheduler(object):
         self._run_number_time =  {}
         self._tick_proc = None
         self._idle_proc = None
+
+    @property
+    def lock(self):
+        return self._lock
 
     def timer(self):
         if self._start is None:

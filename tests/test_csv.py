@@ -9,14 +9,14 @@ import pandas as pd
 import logging, sys
 
 class TestProgressiveLoadCSV(unittest.TestCase):
-    def setUp(self):
+    def setUpNO(self):
         self.logger=logging.getLogger('progressivis.core')
         self.saved=self.logger.getEffectiveLevel()
         self.logger.setLevel(logging.DEBUG)
         ch = logging.StreamHandler(stream=sys.stdout)
         self.logger.addHandler(ch)
 
-    def tearDown(self):
+    def tearDownNO(self):
         self.logger.setLevel(self.saved)
 
     def runit(self, module):
