@@ -116,9 +116,6 @@ class ScatterPlot(DataFrameModule):
         heatmap = self.get_input_module('heatmap')
         return heatmap.get_image(run_number)
 
-    def add_input(self, msg):
-        self.inp.add_input(msg)
-
     # # For Bokeh, but not ready for prime time yet...
     # x = np.array([0, 10, 50, 90, 100], np.dtype(float))
     # y = np.array([0, 50, 90, 10, 100], np.dtype(float))

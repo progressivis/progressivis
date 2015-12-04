@@ -23,7 +23,7 @@ class Input(DataFrameModule):
         self._last = len(self._df)
         return self._return_run_step(self.state_blocked, steps_run=0)
         
-    def add_input(self, input):
+    def from_input(self, input):
         if not isinstance(input,list):
             input = [input]
         with self.lock:

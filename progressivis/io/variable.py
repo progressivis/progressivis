@@ -11,7 +11,7 @@ class Variable(Constant):
                         [SlotDescriptor('like', type=pd.DataFrame, required=False)])
         super(Variable, self).__init__(df, **kwds)
 
-    def add_input(self, input):
+    def from_input(self, input):
         if not isinstance(input,dict):
             raise ProgressiveError('Expecting a dictionary')
         if self._df is None and self.get_input_slot('like') is None:

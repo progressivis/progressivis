@@ -80,7 +80,7 @@ def scheduler_step():
     return jsonify({'status': 'success'})
 
 def path_to_module(path):
-    print 'module_input(%s)'%(path)
+    print 'module_path(%s)'%(path)
     ids = path.split('/')
     
     scheduler = progressivis_bp.scheduler
@@ -156,7 +156,7 @@ def module_input(path):
     msg = ''
     try:
         print 'sending to %s: %s'%(module.id, var_values)
-        msg = module.add_input(var_values)
+        msg = module.from_input(var_values)
     except Exception as e:
         msg = str(e)
         print 'Error: %s'%msg

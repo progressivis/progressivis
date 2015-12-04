@@ -47,7 +47,8 @@ def slot_to_json(slot):
 class Module(object):
     __metaclass__ = ModuleMeta
     
-    parameters = [('quantum', np.dtype(float), 1.0)]
+    parameters = [('quantum', np.dtype(float), 1.0),
+                  ('debug', np.dtype(bool), false)]
         
     EMPTY_COLUMN = pd.Series([],index=[],name='empty')
     EMPTY_TIMESTAMP = 0
@@ -194,6 +195,7 @@ class Module(object):
             'is_terminated': s.is_terminated(),
             'run_number': s.run_number(),
             'id': self.id,
+            'debug': self.debug,
             'classname': self.pretty_typename(),
             'is_visualization': self.is_visualization(),
             'last_update': self._last_update,
@@ -213,6 +215,11 @@ class Module(object):
             })
         return json
 
+    def from_input(self, msg):
+        if 'debug' in msg:
+            debug = msg['debug']
+        pass
+
     @staticmethod
     def remove_nan(d):
         return remove_nan(d)
@@ -224,6 +231,7 @@ class Module(object):
         print 'id: %s' % self.id
         print 'class: %s' % type_fullname(self)
         print 'quantum: %f' % self.params.quantum
+        print 'debug: %s' % self.debug
         print 'start_time: %s' % self._start_time
         print 'end_time: %s' % self._end_time
         print 'last_update: %s' % self._last_update
