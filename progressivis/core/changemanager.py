@@ -156,27 +156,32 @@ class ChangeManager(ChangeManagerBase):
     def update(self, run_number, df):
         if run_number <= self.last_run:
             return
+        index = df.index
+        if index.has_duplicates:
+            logger.error('Index has duplicates')
+            import pdb
+            pdb.set_trace()
         uc = df[Module.UPDATE_COLUMN]
         if self.last_run==0:
-            self.index = df.index
+            self.index = index
             self._created = self.index.values
             self._updated = NIL
             self._deleted = NIL
         else:
             # Simle case 1: nothing deleted
             l1 = len(self.index)
-            l2 = len(df.index) 
-            if l1 <= l2 and np.array_equal(self.index,df.index[0:l1]):
+            l2 = len(index) 
+            if l1 <= l2 and np.array_equal(self.index,index[0:l1]):
                 deleted = NIL
                 updated = np.where(uc[0:l1] > self.last_run)[0]
-                created = df.index[l1:]
+                created = index[l1:]
             #TODO: These computations are potentially expensive
             # later, optimize them by testing simple cases first
             # such as only created items, or only updated items
             else:
-                deleted = self.index.difference(df.index).values
+                deleted = self.index.difference(index).values
                 updated = np.where(uc[self.index] > self.last_run)[0]
-                created = df.index.difference(self.index).values
+                created = index.difference(self.index).values
 
             if self._buffer_created:
                 # For created items still buffered, we can ignore that they've been updated
@@ -195,7 +200,7 @@ class ChangeManager(ChangeManagerBase):
             else:
                 self._updated = updated
 
-            self.index = df.index
+            self.index = index
         self.last_run = run_number
         logger.info('Updating for run_number %d: updated:%d/created:%d/deleted:%d',
                     run_number, len(self._updated), len(self._created), len(self._deleted))

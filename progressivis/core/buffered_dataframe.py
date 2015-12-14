@@ -44,13 +44,12 @@ class BufferedDataFrame(object):
         self._df = self._base.iloc[0:l]
         return self._df
 
-    def append(self, df, ignore_index=True):
+    def append(self, df): #TODO more work needed to handle, ignore_index=True):
         if df is None or len(df)==0:
             return
         if self._base is None:
             n = next_pow2(len(df))
-            if ignore_index:
-                df.index = range(0,len(df))
+            df.index = range(0,len(df))
             # specifying the columns maintains the column order, otherwise, it gets sorted
             self._base = df.append(pd.DataFrame([],index=range(len(df),n),columns=df.columns))
             self._df = self._base.iloc[0:len(df)]
@@ -58,6 +57,5 @@ class BufferedDataFrame(object):
             start=len(self._df)
             end  =len(df)+len(self._df)
             self.resize(end)
-            if ignore_index:
-                df.index = range(start,end)
+            df.index = range(start,end)
             self._df.iloc[start:end] = df

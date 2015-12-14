@@ -54,6 +54,7 @@ class Select(DataFrameModule):
             query_slot.update(run_number)
             if  query_slot.has_created(): # ignore deleted and updated
                 df_slot.reset() # re-filter
+                self._buffer.reset();
             indices = query_slot.next_created() # read it all
             with query_slot.lock:
                 query = self.last_row(query_df)[self._query_column] # get the query expression
@@ -87,13 +88,16 @@ class Select(DataFrameModule):
                 selected_df = new_df.eval(query)
                 #print 'Select evaluated %d/%d rows'%(len(selected_df),steps)
                 if isinstance(selected_df, pd.Series):
+                    if selected_df.index.has_duplicates:
+                        import pdb
+                        pdb.set_trace()
                     selected_df = new_df.loc[selected_df]
             except Exception as e:
                 logger.error('Probably a syntax error in query expression: %s', e)
                 self._df = df_slot.data()
                 return self._return_run_step(self.state_blocked, steps_run=steps)
             selected_df.loc[:,self.UPDATE_COLUMN] = run_number
-            self._buffer.append(selected_df, ignore_index=False)
+            self._buffer.append(selected_df) #, ignore_index=False) TODO later
             self._df = self._buffer.df()
         return self._return_run_step(self.state_blocked, steps_run=steps)
 
