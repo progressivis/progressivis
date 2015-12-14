@@ -48,8 +48,8 @@ class Module(object):
     __metaclass__ = ModuleMeta
     
     parameters = [('quantum', np.dtype(float), 1.0),
-                  ('debug', np.dtype(bool), false)]
-        
+                  ('debug', object, False) # should be np.dtype(bool) but cannot serialize with json
+    ]
     EMPTY_COLUMN = pd.Series([],index=[],name='empty')
     EMPTY_TIMESTAMP = 0
     UPDATE_COLUMN = '_update'
@@ -122,7 +122,6 @@ class Module(object):
         self._start_run = None
         self._end_run = None
         self._synchronized_lock = self.scheduler().create_lock()
-        self._debug = False
 
     def create_dependent_modules(self, *params, **kwds):
         """Create modules that this module depends on.
@@ -164,11 +163,12 @@ class Module(object):
 
     @property
     def debug(self):
-        return self._debug
+        return self.params.debug
     
     @debug.setter
     def debug(self, b):
-        self._debug = bool(b)
+        #TODO: should change the run_number of the params
+        self.params.debug = bool(b)
 
     @property
     def parameter(self):
@@ -195,7 +195,6 @@ class Module(object):
             'is_terminated': s.is_terminated(),
             'run_number': s.run_number(),
             'id': self.id,
-            'debug': self.debug,
             'classname': self.pretty_typename(),
             'is_visualization': self.is_visualization(),
             'last_update': self._last_update,
@@ -231,7 +230,6 @@ class Module(object):
         print 'id: %s' % self.id
         print 'class: %s' % type_fullname(self)
         print 'quantum: %f' % self.params.quantum
-        print 'debug: %s' % self.debug
         print 'start_time: %s' % self._start_time
         print 'end_time: %s' % self._end_time
         print 'last_update: %s' % self._last_update
@@ -599,7 +597,7 @@ class Module(object):
                 break
             try:
                 tracer.before_run_step(now,run_number)
-                if self._debug:
+                if self.debug:
                     pdb.set_trace()
                 run_step_ret = self.run_step(run_number, step_size, remaining_time)
                 next_state = run_step_ret['next_state']
@@ -623,7 +621,7 @@ class Module(object):
                 break
             finally:
                 assert run_step_ret is not None, "Error: %s run_step_ret not returning a dict" % self.pretty_typename()
-                if self._debug:
+                if self.debug:
                     run_step_ret['debug'] = True
                 tracer.after_run_step(now,run_number,**run_step_ret)
                 self.state = next_state

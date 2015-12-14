@@ -23,10 +23,10 @@ var yAxis = d3.svg.axis()
     .orient("left");
 
 var zoom = d3.behavior.zoom()
-    .x(x)
-    .y(y)
-    .scaleExtent([1, 32])
-    .on("zoom", scatterplot_zoomed);
+        .x(x)
+        .y(y)
+        .scaleExtent([1, 32])
+        .on("zoom", scatterplot_zoomed);
 
 const DEFAULT_SIGMA = 2;
 const DEFAULT_FILTER = "default";
@@ -39,38 +39,13 @@ function scatterplot_update(data) {
     scatterplot_update_vis(data);
 }
 
-function add_dots(data, index) {
-    var dots = d3.select("#zoomable")
-        .selectAll(".dot")
-        .data(data['data'], function(d, i) { return index[i]; });
-    
-    //enter
-    dots.enter().append("circle")
-        .attr("class", "dot")
-        .attr("r", 3.5)
-        .attr("cx", function(d) { return x(d[0]); })
-        .attr("cy", function(d) { return y(d[1]); })
-        .style("fill", "blue") //function(d) { return color(d.species); });
-        .append("title")
-        .text(function(d, i) { return index[i]; });
-
-    //update
-    dots
-        .attr("cx", function(d) { return x(d[0]); })
-        .attr("cy", function(d) { return y(d[1]); });    
-    //remove
-    dots.exit().remove();
-    //order
-    dots.order();
-}
-
 function scatterplot_update_vis(rawdata) {
     var data = rawdata['scatterplot'],
         bounds = rawdata['bounds'],
         ix, iy, iw, ih;
 
     if (!data || !bounds) return;
-    var index = data['index'], dots;
+    var index = data['index'];
 
     if (firstTime) {
         prev_bounds = bounds;
@@ -78,6 +53,8 @@ function scatterplot_update_vis(rawdata) {
         y.domain([bounds['ymin'], bounds['ymax']]).nice();
         x0 = x.copy();
         y0 = y.copy();
+        zoom.x(x)
+            .y(y);
 
         svg.append("rect")
             .attr("x", 0)
@@ -133,18 +110,14 @@ function scatterplot_update_vis(rawdata) {
             .attr("dy", ".71em")
             .style("text-anchor", "end")
             .text(data['columns'][1]);
-
-        add_dots(data, index);
         firstTime = false;
     }
     else { // not firstTime
-        var bounds_equal = true, //_.eq(bounds, prev_bounds),
-            translate = zoom.translate(),
-            scale = zoom.scale();
+        var translate = zoom.translate(),
+            scale = zoom.scale(),
+            x_bounds = zoom.x().domain(),
+            y_bounds = zoom.y().domain();
 
-        if (! bounds_equal) {
-            console.log('Bounds changed');
-        }
         x0.domain([bounds['xmin'], bounds['xmax']]).nice();
         y0.domain([bounds['ymin'], bounds['ymax']]).nice();
         x.domain(x0.domain());
@@ -169,15 +142,17 @@ function scatterplot_update_vis(rawdata) {
             .attr("width",  iw)
             .attr("height", ih);
 
-        add_dots(data, index);
+        if (! bounds_equal) {
+            svg.select(".x.axis")
+            //.transition()
+            //.duration(1000)
+                .call(xAxis);
 
-        zoom.x(x);
-        zoom.y(y);
-        zoom.scale(scale);
-        zoom.translate(translate);
-        x.domain(x0.range().map(function(x) { return (x - translate[0]) / scale; }).map(x0.invert));
-        y.domain(y0.range().map(function(y) { return (y - translate[1]) / scale; }).map(y0.invert));
-        zoom.event(svg);
+            svg.select(".y.axis")
+            //.transition()
+            //.duration(100)
+                .call(yAxis);
+        }
     }
     var imgSrc = rawdata['image'];
     imageHistory.enqueueUnique(imgSrc);
@@ -200,14 +175,33 @@ function scatterplot_update_vis(rawdata) {
     });
 
     prevImgElements.transition().duration(500)
-        .attr("src", function(d){ return d; })
-        .attr("width", 100)
-        .attr("height", 100);
+    .attr("src", function(d){ return d; })
+    .attr("width", 100)
+    .attr("height", 100);
 
     prevImgElements.exit().transition().duration(500)
-        .attr("width", 5)
-        .attr("height", 5)
-        .remove();
+    .attr("width", 5)
+    .attr("height", 5)
+    .remove();
+
+    var dots = d3.select("#zoomable")
+            .selectAll(".dot")
+             .data(data['data'], function(d, i) { return index[i]; });
+    
+    dots.enter().append("circle")
+         .attr("class", "dot")
+         .attr("r", 3.5)
+         .attr("cx", function(d) { return x(d[0]); })
+         .attr("cy", function(d) { return y(d[1]); })
+         .style("fill", "blue") //function(d) { return color(d.species); });
+        .append("title")
+        .text(function(d, i) { return index[i]; });
+    dots//.transition()  // Transition from old to new
+        //.duration(500)  // Length of animation
+         .attr("cx", function(d) { return x(d[0]); })
+         .attr("cy", function(d) { return y(d[1]); });    
+    dots.exit().remove();
+    dots.order();
 }
 
 function scatterplot_zoomed() {
@@ -273,8 +267,8 @@ function scatterplot_filter() {
     else
         max[columns[1]] = null;
     
-    module_input(min, ignore, progressivis_error, module_id+"/range_query/min_value");
-    module_input(max, ignore, progressivis_error, module_id+"/range_query/max_value");
+    module_input(min, ignore, progressivis_error, module_id+".min_value");
+    module_input(max, ignore, progressivis_error, module_id+".max_value");
 }
 
 function scatterplot_ready() {
