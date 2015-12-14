@@ -1,9 +1,9 @@
 """Visualize DataFrame columns x,y on the notebook, allowing refreshing."""
 from __future__ import print_function
 
-from progressivis import SlotDescriptor, Wait, Select, RangeQuery
+from progressivis import SlotDescriptor, Select, RangeQuery
 from progressivis.core.dataframe import DataFrameModule
-from progressivis.stats import Histogram2D, Sample, Min, Max
+from progressivis.stats import Histogram2D, Sample
 from progressivis.vis import Heatmap
 
 # from bokeh.plotting import show
@@ -81,8 +81,12 @@ class ScatterPlot(DataFrameModule):
         scatterplot.input.heatmap = heatmap.output.heatmap
         scatterplot.input.df = sample.output.df
 
-        self.select = select
         self.range_query = range_query
+        self.min = range_query.min
+        self.max = range_query.max
+        self.min_value = range_query.min_value
+        self.max_value = range_query.max_value
+        self.select = select
         self.histogram2d = histogram2d
         self.heatmap = heatmap
         self.sample = sample

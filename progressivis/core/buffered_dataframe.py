@@ -1,5 +1,4 @@
 import pandas as pd
-import numpy as np
 
 import logging
 logger = logging.getLogger(__name__)
@@ -35,7 +34,6 @@ class BufferedDataFrame(object):
         if l > lb:
             n = next_pow2(l)
             logger.info('Resizing dataframe %s from %d to %d', hex(id(self)), lb, n)
-            to_add = n-lb
             if lb==0:
                 self._base = pd.DataFrame({},index=range(0,n))
             else:
@@ -51,7 +49,6 @@ class BufferedDataFrame(object):
             return
         if self._base is None:
             n = next_pow2(len(df))
-            to_add = n-len(df)
             if ignore_index:
                 df.index = range(0,len(df))
             # specifying the columns maintains the column order, otherwise, it gets sorted

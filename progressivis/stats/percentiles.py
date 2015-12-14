@@ -60,7 +60,7 @@ class Percentiles(DataFrameModule):
         if dfslot.has_updated() or dfslot.has_deleted():
             dfslot.reset()
             dfslot.update(run_number)
-            self.tdigest = Tdigest() # reset
+            self.tdigest = TDigest() # reset
 
         indices = dfslot.next_created(step_size)
         steps = indices_len(indices)

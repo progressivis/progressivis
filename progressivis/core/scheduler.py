@@ -6,7 +6,6 @@ from timeit import default_timer
 from toposort import toposort_flatten
 from contextlib import contextmanager
 from uuid import uuid4
-from functools import partial
 
 import logging
 logger = logging.getLogger(__name__)

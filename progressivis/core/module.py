@@ -216,7 +216,7 @@ class Module(object):
 
     def from_input(self, msg):
         if 'debug' in msg:
-            debug = msg['debug']
+            self.debug = msg['debug']
         pass
 
     @staticmethod

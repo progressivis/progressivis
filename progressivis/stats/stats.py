@@ -2,6 +2,8 @@ from progressivis.core.common import indices_len
 from progressivis.core.dataframe import DataFrameModule
 from progressivis.core.slot import SlotDescriptor
 
+#TODO update with http://www.johndcook.com/blog/skewness_kurtosis/
+
 import numpy as np
 import pandas as pd
 
