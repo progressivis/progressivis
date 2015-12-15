@@ -34,13 +34,13 @@ class BufferedDataFrame(object):
         if l > lb:
             n = next_pow2(l)
             logger.info('Resizing dataframe %s from %d to %d', hex(id(self)), lb, n)
-            if lb==0:
+            if self._base is None:
                 self._base = pd.DataFrame({},index=range(0,n))
             else:
                  # specifying the columns maintains the column order, otherwise, it gets sorted
                 self._base = self._base.append(pd.DataFrame({},index=range(lb,n),
                                                             columns=self._base.columns))
-                logger.debug('Dataframe %s length=%d', hex(id(self)), len(self._base))
+                logger.debug('Dataframe %s grew to length=%d', hex(id(self)), len(self._base))
         self._df = self._base.iloc[0:l]
         return self._df
 
@@ -57,5 +57,4 @@ class BufferedDataFrame(object):
             start=len(self._df)
             end  =len(df)+len(self._df)
             self.resize(end)
-            df.index = range(start,end)
-            self._df.iloc[start:end] = df
+            self._df.iloc[start:end] = df.values

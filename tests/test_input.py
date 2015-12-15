@@ -15,7 +15,7 @@ def ten_times(scheduler, run_number):
 def do_line(inp,s):
     sleep(2)
     for r in xrange(10):
-        inp.add_input('line#%d'%r)
+        inp.from_input('line#%d'%r)
         sleep(np.random.random())
     sleep(3)
     s.stop()
