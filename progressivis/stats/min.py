@@ -13,12 +13,11 @@ logger = logging.getLogger(__name__)
 class Min(DataFrameModule):
     parameters = [('history', np.dtype(int), 3)]
 
-    def __init__(self, columns=None, rename=None, **kwds):
+    def __init__(self, columns=None, **kwds):
         self._add_slots(kwds,'input_descriptors',
                         [SlotDescriptor('df', type=pd.DataFrame, required=True)])
         super(Min, self).__init__(**kwds)
         self._columns = columns
-        self._rename = rename
         self.default_step_size = 10000
 
     def is_ready(self):

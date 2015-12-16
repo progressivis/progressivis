@@ -3,6 +3,7 @@ from progressivis.core.dataframe import DataFrameModule
 from progressivis.core.slot import SlotDescriptor
 
 #TODO update with http://www.johndcook.com/blog/skewness_kurtosis/
+#Use http://www.grantjenks.com/docs/runstats/ 
 
 import numpy as np
 import pandas as pd
