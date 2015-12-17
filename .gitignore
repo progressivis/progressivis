@@ -18,6 +18,7 @@
 .tmp*
 .ipynb_checkpoints
 
+/.eggs
 /bin
 /build
 /lib
@@ -33,3 +34,4 @@
 /dist
 *.egg-info
 /*.ipynb
+/pip-*
