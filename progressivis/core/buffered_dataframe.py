@@ -58,3 +58,17 @@ class BufferedDataFrame(object):
             end  =len(df)+len(self._df)
             self.resize(end)
             self._df.iloc[start:end] = df.values
+        return self
+
+    def append_row(self, row):
+        if self._base is None:
+            df = pd.DataFrame(row, index=[0])
+            self._base = df
+            self._df = df
+        else:
+            start=len(self._df)
+            end  = 1+len(self._df)
+            self.resize(end)
+            self._df.iloc[start] = row
+        return self
+    
