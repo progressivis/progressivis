@@ -1,7 +1,6 @@
 import unittest
 
 from progressivis import *
-from progressivis.stats import Stats
 from progressivis.io import CSVLoader
 from progressivis.stats import Sample
 from progressivis.datasets import get_dataset

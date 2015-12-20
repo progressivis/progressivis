@@ -3,7 +3,6 @@ import unittest
 from progressivis import *
 from progressivis.stats import Stats
 from progressivis.io import CSVLoader
-from progressivis.core.join import Join
 from progressivis.datasets import get_dataset
 
 import pandas as pd
@@ -14,17 +13,21 @@ def print_len(x):
         print len(x)
 
 
-class TestJoin(unittest.TestCase):
+class TestLastRow(unittest.TestCase):
     def test_join(self):
         s=Scheduler()
         csv = CSVLoader(get_dataset('bigfile'), index_col=False,header=None,scheduler=s)
-        stat1=Stats(1, reset_index=True, scheduler=s)
+        stat1=Stats(1, scheduler=s)
         stat1.input.df = csv.output.df
-        stat2=Stats(2, reset_index=True, scheduler=s)
+        stat2=Stats(2, scheduler=s)
         stat2.input.df = csv.output.df
+        lr1 = LastRow(scheduler=s)
+        lr1.input.df = stat1.output.stats
+        lr2 = LastRow(scheduler=s)
+        lr2.input.df = stat2.output.stats
         join=Join(scheduler=s)
-        join.input.df = stat1.output.stats
-        join.input.df = stat2.output.stats
+        join.input.df = lr1.output.df
+        join.input.df = lr2.output.df
         pr=Print(scheduler=s)
         pr.input.df = join.output.df
         prlen = Every(proc=print_len, constant_time=True, scheduler=s)
@@ -32,6 +35,11 @@ class TestJoin(unittest.TestCase):
         s.start()
         res = join.trace_stats(max_runs=1)
         pd.set_option('display.expand_frame_repr', False)
+        last = join.df()
+        df = csv.df()
+        self.assertTrue(last.at[0,'1.min']==df[1].min() and last.at[0,'1.max']==df[1].max() and \
+                        last.at[0,'2.min']==df[2].min() and last.at[0,'2.max']==df[2].max())
+
         print res
 
     def test_join_simple(self):

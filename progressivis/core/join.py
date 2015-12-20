@@ -10,7 +10,7 @@ class Join(NAry):
         self.join_kwds = self._filter_kwds(kwds, pd.DataFrame.join)
         
     def run_step(self,run_number,step_size,howlong):
-        frames = []
+        frames = []        
         for name in self.inputs:
             if not name.startswith('df'):
                 continue

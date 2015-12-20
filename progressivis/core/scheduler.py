@@ -185,15 +185,15 @@ class Scheduler(object):
             module.starting()
         last_work = self._run_number
         while len(modules)!=0 and not self._stopped:
-            with self.lock:
-                self._run_number += 1
+            self._before_run()
             if self._tick_proc:
                 self._tick_proc(self, self._run_number)
-            self._before_run()
             for module in modules:
                 if not module.is_ready():
                     logger.info("Module %s not ready", module.id)
                     continue
+                with self.lock:
+                    self._run_number += 1
                 last_work = self._run_number
                 logger.info("Running module %s", module.id)
                 module.run(self._run_number)
