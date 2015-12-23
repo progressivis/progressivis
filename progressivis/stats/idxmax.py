@@ -47,7 +47,7 @@ class IdxMax(DataFrameModule):
         indices = dfslot.next_created(step_size) # returns a slice
         steps = indices_len(indices)
         if steps==0:
-            self._return_run_step(self.state_blocked, steps_run=0)
+            return self._return_run_step(self.state_blocked, steps_run=0)
         if isinstance(indices,slice):
             indices=slice(indices.start,indices.stop-1) # semantic of slice with .loc
         input_df = dfslot.data()
@@ -69,21 +69,24 @@ class IdxMax(DataFrameModule):
 
         op[self.UPDATE_COLUMN] = run_number
         if self._max is None:
-            self._df = pd.DataFrame([op])
-            max = pd.Series([np.nan], index=op.index) # the run_number is included
+            max = pd.Series([np.nan], index=op.index) # the UPDATE_COLUMN is included
+            max[self.UPDATE_COLUMN] = run_number
             for col in op.index:
                 if col==self.UPDATE_COLUMN: continue
-                max[col] = input_df.loc[op[col], col]
-            max[self.UPDATE_COLUMN] = run_number
-            self._max = pd.DataFrame([max], index=op.index)
+                max[col] = input_df.loc[op[col], col] # lookup value, is there a better way?
+            self._max = pd.DataFrame([max], columns=op.index)
+            self._df = pd.DataFrame([op], columns=op.index)
         else:
             prev_max = self.last_row(self._max)
             prev_idx = self.last_row(self._df)
             max = pd.Series(prev_max)
+            max[self.UPDATE_COLUMN] = run_number
             for col in op.index:
                 if col==self.UPDATE_COLUMN: continue
                 val = input_df.loc[op[col], col]
-                if val < max[col]:
+                if np.isnan(val):
+                    pass
+                elif np.isnan(max[col]) or val > max[col]:
                     op[col] = prev_idx[col]
                     max[col] = val
             op[self.UPDATE_COLUMN] = run_number

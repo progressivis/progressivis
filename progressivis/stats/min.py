@@ -36,7 +36,7 @@ class Min(DataFrameModule):
         indices = dfslot.next_created(step_size) # returns a slice
         steps = indices_len(indices)
         if steps==0:
-            self._return_run_step(self.state_blocked, steps_run=0)
+            return self._return_run_step(self.state_blocked, steps_run=0)
         if isinstance(indices,slice):
             indices=slice(indices.start,indices.stop-1) # semantic of slice with .loc
         input_df = dfslot.data()
