@@ -2,6 +2,7 @@ from .stats import Stats
 from .min import Min
 from .max import Max
 from .idxmax import IdxMax
+from .idxmin import IdxMin
 from .percentiles import Percentiles
 from .linear_regression import LinearRegression
 from .histogram2d import Histogram2D
@@ -13,6 +14,7 @@ __all__ = ["Stats",
            "Min",
            "Max",
            "IdxMax",
+           "IdxMin",
            "Percentiles",
            "LinearRegression",
            "Histogram2D",
