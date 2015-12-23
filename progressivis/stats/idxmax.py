@@ -23,9 +23,12 @@ class IdxMax(DataFrameModule):
         self._max = None
         self.default_step_size = 10000
 
+    def max(self):
+        return self._max
+
     def get_data(self, name):
         if name=='max':
-            return self._max
+            return self.max()
         return super(IdxMax,self).get_data(name)
 
     def is_ready(self):
@@ -69,8 +72,10 @@ class IdxMax(DataFrameModule):
             self._df = pd.DataFrame([op])
             max = pd.Series([np.nan], index=op.index) # the run_number is included
             for col in op.index:
+                if col==self.UPDATE_COLUMN: continue
                 max[col] = input_df.loc[op[col], col]
-            self._max = max
+            max[self.UPDATE_COLUMN] = run_number
+            self._max = pd.DataFrame([max], index=op.index)
         else:
             prev_max = self.last_row(self._max)
             prev_idx = self.last_row(self._df)
@@ -83,7 +88,7 @@ class IdxMax(DataFrameModule):
                     max[col] = val
             op[self.UPDATE_COLUMN] = run_number
             with self.lock:
-                self._df = self._df.concat(op, ignore_index=True)
+                self._df = self._df.append(op, ignore_index=True)
                 self._max = self._max.append(max, ignore_index=True)
                 if len(self._df) > self.params.history:
                     self._df = self._df.loc[self._df.index[-self.params.history:]]
