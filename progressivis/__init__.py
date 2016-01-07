@@ -26,3 +26,5 @@ def log_level(level=logging.DEBUG, package='progressivis'):
     logging.getLogger(package).addHandler(ch)
     logging.getLogger(package).setLevel(level)
 
+# Usage example
+#log_level(level=logging.INFO)
