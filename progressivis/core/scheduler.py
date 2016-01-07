@@ -1,6 +1,7 @@
 from progressivis.core.common import ProgressiveError
 from progressivis.core.utils import AttributeDict
 
+from collections import deque
 from time import sleep
 from timeit import default_timer
 from toposort import toposort_flatten
@@ -38,6 +39,8 @@ class Scheduler(object):
         self._run_number_time =  {}
         self._tick_proc = None
         self._idle_proc = None
+        self._new_modules_ids = []
+        self._run_queue = deque()
 
     def create_lock(self):
         #import traceback
@@ -57,6 +60,8 @@ class Scheduler(object):
         self._run_number_time =  {}
         self._tick_proc = None
         self._idle_proc = None
+        self._new_modules_ids = []
+        self._run_queue = deque()
 
     @property
     def lock(self):
@@ -168,51 +173,51 @@ class Scheduler(object):
         else:
             raise ProgressiveError('value should be callable or None', idle_proc)
 
+    def next_module(self):
+        """Yields a possibly infinite sequence of modules. Handles 
+        order recomputation and starting logic if needed."""
+        while (self._run_queue or self._new_modules_ids) and not self._stopped:
+            if self._new_modules_ids:
+                for id in self._new_modules_ids:
+                    self._modules[id].starting()
+                self._new_modules_ids = []
+                with self.lock:
+                    self._runorder = self.order_modules() 
+                    for id in self._runorder:
+                        self._run_queue.append(self._modules[id])
+                if not self.validate():
+                    raise ProgressiveError('Cannot validate progressive workflow')
+            yield self._run_queue.popleft()
+            
+
+    def _run_loop(self):
+        """Main scheduler loop."""
+        for module in self.next_module():
+             if self._stopped:
+                 break
+             if not module.is_ready():
+                 logger.info("Module %s not ready", module.id)
+                 continue
+             # Note: is calling tick_prock for each module the right thing?
+             # Should we have a sentry in the run queue to invoke ticks?
+             if self._tick_proc:
+                 self._tick_proc(self, self._run_number)
+             with self.lock:
+                 self._run_number += 1
+             logger.info("Running module %s", module.id)
+             module.run(self._run_number)
+             logger.info("Module %s returned", module.id)
+             if not module.is_terminated():
+                 self._run_queue.append(module)
+             # TODO: idle sleep, cleanup_run
+
     def run(self):
         self._stopped = False
         self._running = True
-        if not self.validate():
-            raise ProgressiveError('Cannot validate progressive workflow')
+        self._before_run()
 
-        modules = []
-        with self.lock:
-            self._runorder = self.order_modules()
-            modules = [self.module[m] for m in self._runorder]
-        logger.info("Scheduler run order: %s", self._runorder)
+        self._run_loop()
 
-        self._run_number_time[self._run_number] = self.timer()
-        for module in modules:
-            module.starting()
-        last_work = self._run_number
-        while len(modules)!=0 and not self._stopped:
-            self._before_run()
-            if self._tick_proc:
-                self._tick_proc(self, self._run_number)
-            for module in modules:
-                if not module.is_ready():
-                    logger.info("Module %s not ready", module.id)
-                    continue
-                with self.lock:
-                    self._run_number += 1
-                last_work = self._run_number
-                logger.info("Running module %s", module.id)
-                module.run(self._run_number)
-                logger.info("Module %s returned", module.id)
-            for module in modules:
-                module.cleanup_run(self._run_number)
-            # remove terminated modules from the run queue
-            with self.lock:
-                modules = [m for m in modules if not m.is_terminated()]
-            self._after_run()
-            self._run_number_time[self._run_number] = self.timer()
-            if last_work < self._run_number: # nothing has run on that loop, sleep a bit
-                logger.info('Sleeping after idle run %d', self._run_number)
-                if self._idle_proc:
-                    self._idle_proc(self, self._run_number)
-                else:
-                    sleep(1)
-
-        # get back all the modules
         modules = [self.module[m] for m in self._runorder]
         for module in reversed(modules):
             module.ending()
@@ -261,7 +266,8 @@ class Scheduler(object):
             self._add_module(module)
 
     def _add_module(self, module):
-        self._modules[module.id] = module
+         self._new_modules_ids += [module.id]
+         self._modules[module.id] = module
 
     @property
     def module(self):
