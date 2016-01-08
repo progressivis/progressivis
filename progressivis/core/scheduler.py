@@ -40,6 +40,7 @@ class Scheduler(object):
         self._tick_proc = None
         self._idle_proc = None
         self._new_modules_ids = []
+        self._slots_updated = False
         self._run_queue = deque()
 
     def create_lock(self):
@@ -61,6 +62,7 @@ class Scheduler(object):
         self._tick_proc = None
         self._idle_proc = None
         self._new_modules_ids = []
+        self._slots_updated = False
         self._run_queue = deque()
 
     @property
@@ -173,15 +175,21 @@ class Scheduler(object):
         else:
             raise ProgressiveError('value should be callable or None', idle_proc)
 
+    def slots_updated(self):
+        self._slots_updated = True
+
     def next_module(self):
         """Yields a possibly infinite sequence of modules. Handles 
         order recomputation and starting logic if needed."""
-        while (self._run_queue or self._new_modules_ids) and not self._stopped:
-            if self._new_modules_ids:
+        while (self._run_queue or self._new_modules_ids or self._slots_updated) \
+               and not self._stopped:
+            if self._new_modules_ids or self._slots_updated:
                 for id in self._new_modules_ids:
                     self._modules[id].starting()
                 self._new_modules_ids = []
+                self._slots_updated = False
                 with self.lock:
+                    self._run_queue.clear()
                     self._runorder = self.order_modules() 
                     for id in self._runorder:
                         self._run_queue.append(self._modules[id])

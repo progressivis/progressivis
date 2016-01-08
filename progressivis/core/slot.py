@@ -48,14 +48,15 @@ class Slot(object):
         if scheduler != self.input_module.scheduler():
             raise ProgressiveError('Cannot connect modules managed by different schedulers')
         
-        if scheduler.is_running():
-            raise ProgressiveError('Cannot change module slots while running')
+        # TODO we should ensure that all connections required to move the pipeline from a valid state to another are executed atomically
+        with scheduler.lock:
+            scheduler.slots_updated()
 
-        self.output_module._connect_output(self)
-        prev_slot = self.input_module._connect_input(self)
-        if prev_slot:
-            raise ProgressiveError(u'Input already connected for %s', unicode(self))
-        scheduler.invalidate()
+            self.output_module._connect_output(self)
+            prev_slot = self.input_module._connect_input(self)
+            if prev_slot:
+                raise ProgressiveError(u'Input already connected for %s', unicode(self))
+            scheduler.invalidate()
 
     def validate_types(self):
         output_type = self.output_module.output_slot_type(self.output_name)
