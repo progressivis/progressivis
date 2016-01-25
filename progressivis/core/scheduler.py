@@ -136,7 +136,7 @@ class Scheduler(object):
             valid = True
             for module in self._modules.values():
                 if not module.validate():
-                    logger.error('Cannot validate module %d', module.id)
+                    logger.error('Cannot validate module %s', module.id)
                     valid = False
             self._valid = valid
         return self._valid
