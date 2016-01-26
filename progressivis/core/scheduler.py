@@ -1,6 +1,7 @@
 from progressivis.core.common import ProgressiveError
 from progressivis.core.utils import AttributeDict
 
+from copy import copy
 from collections import deque
 from time import sleep
 from timeit import default_timer
@@ -198,6 +199,9 @@ class Scheduler(object):
         while (self._run_queue or self._new_modules_ids or self._slots_updated) \
                and not self._stopped:
             if self._new_modules_ids or self._slots_updated:
+                # Make a shallow copy of the current run order;
+                # if we cannot validate the new state, revert to the copy
+                prev_run_queue = copy(self._run_queue)
                 for id in self._new_modules_ids:
                     self._modules[id].starting()
                 self._new_modules_ids = []
@@ -208,7 +212,8 @@ class Scheduler(object):
                     for id in self._runorder:
                         self._run_queue.append(self._modules[id])
                 if not self.validate():
-                    raise ProgressiveError('Cannot validate progressive workflow')
+                    logger.error("Cannot validate progressive workflow, reverting to previous workflow")
+                    self._run_queue = prev_run_queue
             yield self._run_queue.popleft()
             
 
