@@ -38,6 +38,7 @@ class Scheduler(object):
         self._run_number = 0
         self._run_number_time =  {}
         self._tick_proc = None
+        self._oneshot_tick_procs = []
         self._idle_proc = None
         self._new_modules_ids = []
         self._slots_updated = False
@@ -60,6 +61,7 @@ class Scheduler(object):
         self._run_number = 0
         self._run_number_time =  {}
         self._tick_proc = None
+        self._oneshot_tick_procs = []
         self._idle_proc = None
         self._new_modules_ids = []
         self._slots_updated = False
@@ -169,6 +171,18 @@ class Scheduler(object):
             self._tick_proc = tick_proc
         else:
             raise ProgressiveError('value should be callable or None', tick_proc)
+
+    def add_oneshot_tick_proc(self, tick_proc):
+        """
+        Add a oneshot function that will be run at the next scheduler tick.
+        This is especially useful for setting up module connections.
+        """
+        if not callable(tick_proc):
+            logger.warn("tick_proc should be callable")
+        else:
+            with self.lock:
+                self._oneshot_tick_procs += [tick_proc]
+
     def set_idle_proc(self, idle_proc):
         if idle_proc is None or callable(idle_proc):
             self.idle_proc = idle_proc
@@ -211,6 +225,12 @@ class Scheduler(object):
              if self._tick_proc:
                  self._tick_proc(self, self._run_number)
              with self.lock:
+                 for proc in self._oneshot_tick_procs:
+                     try:
+                         proc()
+                     except Exception as e:
+                         logger.warn(e)
+                 self._oneshot_tick_procs = []
                  self._run_number += 1
              logger.info("Running module %s", module.id)
              module.run(self._run_number)
