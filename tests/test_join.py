@@ -13,6 +13,7 @@ def print_len(x):
     if x is not None:
         print len(x)
 
+#log_level()
 
 class TestJoin(unittest.TestCase):
     def test_join(self):

@@ -78,7 +78,6 @@ class Histogram1D(DataFrameModule):
                 dfslot.reset()
                 dfslot.update(run_number)
                 self._histo = None
-                self_edges = None
   
         (curr_min, curr_max) = self._bounds
         if curr_min >= curr_max:

@@ -10,7 +10,6 @@ import glob
 import csv
 import numpy as np
 import pandas as pd
-from pprint import pprint
 
 import logging
 logging.basicConfig(level=logging.WARNING)
@@ -34,9 +33,8 @@ class TestHistogram1D(unittest.TestCase):
    
         #pr = Print(scheduler=s)
         pr = Every(scheduler=s)
-        pr.input.df = histogram1d.output.df
-        csv.scheduler().start()
-        #self.scheduler.thread.join()
+        pr.input.df = csv.output.df
+        s.start(tick_proc=lambda s,r: csv.is_terminated() and s.stop())
         s = histogram1d.trace_stats()
         #print "Done. Run time: %gs, loaded %d rows" % (s['duration'].irow(-1), len(module.df()))
         pd.set_option('display.expand_frame_repr', False)

@@ -12,7 +12,7 @@ from progressivis.core.utils import (empty_typed_dataframe,
                                      DataFrameAsDict,
                                      remove_nan,
                                      force_valid_id_columns)
-from progressivis.core.scheduler import Scheduler
+#from progressivis.core.scheduler import Scheduler
 from progressivis.core.slot import Slot, SlotDescriptor, InputSlots, OutputSlots
 from progressivis.core.tracer import Tracer
 from progressivis.core.time_predictor import TimePredictor
@@ -80,6 +80,7 @@ class Module(object):
         """Module(id=None,scheduler=None,tracer=None,predictor=None,storage=None,input_descriptors=[],output_descriptors=[])
         """
         if scheduler is None:
+            from scheduler import Scheduler
             scheduler = Scheduler.default
         if tracer is None:
             tracer = Tracer.default()
@@ -107,7 +108,7 @@ class Module(object):
         self.storage = storage
         self._start_time = None
         self._end_time = None
-        self._last_update = None
+        self._last_update = 0
         self._state = Module.state_created
         self._had_error = False
         self._input_slots = self._validate_descriptors(input_descriptors)
@@ -282,6 +283,9 @@ class Module(object):
         slot.connect()
         return slot
 
+    def has_any_input(self):
+        return any(self._input_slots.values())
+
     def get_input_slot(self,name):
          # raises error is the slot is not declared
         return self._input_slots[name]
@@ -319,6 +323,9 @@ class Module(object):
                 valid = False
         return valid
 
+    def has_any_output(self):
+        return any(self._output_slots.values())
+    
     def get_output_slot(self,name):
          # raise error is the slot is not declared
         return self._output_slots[name]
@@ -385,7 +392,7 @@ class Module(object):
         raise NotImplementedError('run_step not defined')
 
     def _return_run_step(self, next_state, steps_run, reads=0, updates=0, creates=0):
-        assert next_state>=Module.state_ready and next_state<=Module.state_blocked
+        assert next_state>=Module.state_ready and next_state<=Module.state_zombie
         if creates and updates==0:
             updates=creates
         elif creates > updates:
@@ -409,6 +416,10 @@ class Module(object):
         return self._state == Module.state_running
 
     def is_ready(self):
+        if self.state == Module.state_zombie:
+            logger.info("%s Not ready because it turned from zombie to terminated", self.id)
+            self.state = Module.state_terminated
+            return False
         if self.state == Module.state_terminated:
             logger.info("%s Not ready because it terminated", self.id)
             return False
@@ -417,7 +428,7 @@ class Module(object):
             return False
         # source modules can be generators that
         # cannot run out of input, unless they decide so.
-        if len(self._input_slots)==0:
+        if not self.has_any_input():
             return True
 
         # Module is either a source or has buffered data to process
@@ -441,15 +452,15 @@ class Module(object):
                 in_ts = in_module.last_update()
                 ts = self.last_update()
 
-                if in_module.state==Module.state_terminated or in_module.state==Module.state_invalid:
+                if in_module.is_terminated() or in_module.state==Module.state_invalid:
                     term_count += 1
-                elif (ts is None) or (in_ts > ts):
+                elif in_ts > ts:
                     ready_count += 1
                 
             if in_count != 0 and term_count==in_count: # if all the input slot modules are terminated or invalid
-                logger.info('%s zombie', self.id)
+                logger.info('%s becomes zombie because all its input slots are terminated', self.id)
                 self.state = Module.state_zombie
-                ready_count = 0
+                return False
              # sources are always ready, and when 1 is ready, the module can run.
             return in_count==0 or ready_count!=0
         logger.error("%s Not ready because is in weird state %s", self.id, self.state_name[self.state])
@@ -574,7 +585,6 @@ class Module(object):
         self.state = Module.state_running
         self._start_time = now
         self._end_time = self._start_time + quantum
-
         self._update_params(run_number)
 
         #step_size = np.ceil(self.default_step_size*quantum)

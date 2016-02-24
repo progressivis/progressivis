@@ -1,7 +1,7 @@
 import unittest
 
-from progressivis import *
-from progressivis.io.vec_loader import *
+from progressivis.core import Scheduler, Module
+from progressivis.io import VECLoader
 from progressivis.datasets import get_dataset
 
     

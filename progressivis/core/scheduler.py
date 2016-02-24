@@ -1,9 +1,9 @@
 from progressivis.core.common import ProgressiveError
 from progressivis.core.utils import AttributeDict
+from progressivis.core.sink import Sink
 
 from copy import copy
 from collections import deque
-from time import sleep
 from timeit import default_timer
 from toposort import toposort_flatten
 from contextlib import contextmanager
@@ -29,6 +29,7 @@ class Scheduler(object):
     
     def __init__(self):
         self._lock = self.create_lock()
+        # same as clear below
         self._modules = dict()
         self._module = AttributeDict(self._modules)
         self._running = False
@@ -44,6 +45,8 @@ class Scheduler(object):
         self._new_modules_ids = []
         self._slots_updated = False
         self._run_queue = deque()
+        # Create sink last 
+        self._sink = Sink(scheduler=self)
 
     def create_lock(self):
         #import traceback
@@ -109,6 +112,9 @@ class Scheduler(object):
             return -1
         return 0
 
+    def run_queue_length(self):
+        return len(self._run_queue)
+
     def to_json(self, short=True):
         msg = {}
         mods = {}
@@ -157,8 +163,10 @@ class Scheduler(object):
         pass
 
     def start(self, tick_proc=None, idle_proc=None):
-        self._tick_proc = tick_proc
-        self._idle_proc = idle_proc
+        if tick_proc:
+            self._tick_proc = tick_proc
+        if idle_proc:
+            self._idle_proc = idle_proc
         self.run()
 
     def _step_proc(self, s, run_number):
@@ -210,7 +218,10 @@ class Scheduler(object):
                     self._run_queue.clear()
                     self._runorder = self.order_modules() 
                     for id in self._runorder:
-                        self._run_queue.append(self._modules[id])
+                        m = self._modules[id]
+                        if m is not self._sink:
+                            self._run_queue.append(m)
+                    self._run_queue.append(self._sink) # always at the end
                 if not self.validate():
                     logger.error("Cannot validate progressive workflow, reverting to previous workflow")
                     self._run_queue = prev_run_queue
@@ -220,30 +231,36 @@ class Scheduler(object):
     def _run_loop(self):
         """Main scheduler loop."""
         for module in self.next_module():
-             if self._stopped:
-                 break
-             if not module.is_ready():
-                 logger.info("Module %s not ready", module.id)
-                 continue
-             # Note: is calling tick_prock for each module the right thing?
-             # Should we have a sentry in the run queue to invoke ticks?
-             if self._tick_proc:
-                 self._tick_proc(self, self._run_number)
-             with self.lock:
-                 for proc in self._oneshot_tick_procs:
-                     try:
-                         proc()
-                     except Exception as e:
-                         logger.warn(e)
-                 self._oneshot_tick_procs = []
-                 self._run_number += 1
-             logger.info("Running module %s", module.id)
-             module.run(self._run_number)
-             logger.info("Module %s returned", module.id)
-             if not module.is_terminated():
-                 self._run_queue.append(module)
-             # TODO: idle sleep, cleanup_run
-
+            if self._stopped:
+                break
+            if not module.is_ready():
+                logger.info("Module %s not ready", module.id)
+            else:
+                self._run_number += 1
+                with self.lock:
+                    if self._tick_proc:
+                        logger.debug('Calling tick_proc')
+                        try:
+                            self._tick_proc(self, self._run_number)
+                        except Exception as e:
+                            logger.warn(e)
+                    for proc in self._oneshot_tick_procs:
+                        try:
+                            proc()
+                        except Exception as e:
+                            logger.warn(e)
+                    self._oneshot_tick_procs = []
+                    logger.info("Running module %s", module.id)
+                    module.run(self._run_number)
+                    logger.info("Module %s returned", module.id)
+            # Do it for all the modules
+            if not module.is_terminated():
+                self._run_queue.append(module)
+            else:
+                logger.info('Module %s is terminated', module.id)
+            # TODO: idle sleep, cleanup_run
+        logger.info('Leaving loop')
+        
     def run(self):
         self._stopped = False
         self._running = True
@@ -274,7 +291,7 @@ class Scheduler(object):
         pass
 
     def __len__(self):
-        return len(self._modules)
+        return len(self._modules)-1
 
     def exists(self, id):
         return id in self._modules

@@ -1,6 +1,6 @@
 import unittest
 
-from progressivis import Print, Scheduler
+from progressivis import Print, Scheduler, log_level
 from progressivis.io import Input
 
 import pandas as pd
@@ -8,8 +8,11 @@ import numpy as np
 import threading
 from time import sleep
 
+#log_level()
+
 def ten_times(scheduler, run_number):
-    if run_number > 10:
+    print 'ten_times %d'%run_number
+    if run_number > 20:
         scheduler.stop()
 
 def do_line(inp,s):
@@ -17,7 +20,7 @@ def do_line(inp,s):
     for r in xrange(10):
         inp.from_input('line#%d'%r)
         sleep(np.random.random())
-    sleep(3)
+    sleep(1)
     s.stop()
 
 class TestInput(unittest.TestCase):
@@ -26,7 +29,6 @@ class TestInput(unittest.TestCase):
         inp = Input(scheduler=s)
         pr=Print(scheduler=s)
         pr.input.df = inp.output.df
-        #s.start(ten_times)
         t=threading.Thread(target=do_line,args=(inp,s))
         t.start()
         s.start()
