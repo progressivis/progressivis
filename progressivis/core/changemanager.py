@@ -154,7 +154,7 @@ class ChangeManager(ChangeManagerBase):
         self._buffer = NIL
 
     def update(self, run_number, df):
-        if run_number <= self.last_run:
+        if df is None or run_number <= self.last_run:
             return
         index = df.index
         if index.has_duplicates:

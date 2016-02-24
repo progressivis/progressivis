@@ -3,6 +3,16 @@ import pandas as pd
 import logging
 logger = logging.getLogger(__name__)
 
+if pd.__version__ > '0.18':
+    def create_index(l,h):
+        return pd.RangeIndex(l,h)
+    def fix_index(df,l,h):
+        df.index = pd.RangeIndex(l,h)
+else:
+    def create_index(l,h):
+        return range(l,h)
+    def fix_index(df,l,h):
+        pass
 
 # See view-source:http://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2Float
 def next_pow2(v):
@@ -35,11 +45,12 @@ class BufferedDataFrame(object):
             n = next_pow2(l)
             logger.info('Resizing dataframe %s from %d to %d', hex(id(self)), lb, n)
             if self._base is None:
-                self._base = pd.DataFrame({},index=range(0,n))
+                self._base = pd.DataFrame({},index=create_index(0,n))
             else:
                  # specifying the columns maintains the column order, otherwise, it gets sorted
-                self._base = self._base.append(pd.DataFrame({},index=range(lb,n),
+                self._base = self._base.append(pd.DataFrame({},index=create_index(lb,n),
                                                             columns=self._base.columns))
+                fix_index(self._base,0,n)
                 logger.debug('Dataframe %s grew to length=%d', hex(id(self)), len(self._base))
         self._df = self._base.iloc[0:l]
         return self._df
@@ -49,9 +60,9 @@ class BufferedDataFrame(object):
             return
         if self._base is None:
             n = next_pow2(len(df))
-            df.index = range(0,len(df))
             # specifying the columns maintains the column order, otherwise, it gets sorted
-            self._base = df.append(pd.DataFrame([],index=range(len(df),n),columns=df.columns))
+            self._base = df.append(pd.DataFrame([],index=create_index(len(df),n),columns=df.columns))
+            fix_index(self._base, 0, n)
             self._df = self._base.iloc[0:len(df)]
         else:
             start=len(self._df)
