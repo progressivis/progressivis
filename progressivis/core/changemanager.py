@@ -159,8 +159,6 @@ class ChangeManager(ChangeManagerBase):
         index = df.index
         if index.has_duplicates:
             logger.error('Index has duplicates')
-            import pdb
-            pdb.set_trace()
         uc = df[Module.UPDATE_COLUMN]
         if self.last_run==0:
             self.index = index
