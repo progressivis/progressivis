@@ -5,6 +5,8 @@ from progressivis.vis import Heatmap
 
 import pandas as pd
 
+RESOLUTION=1024
+
 def filter(df):
     lon = df['pickup_longitude']
     lat = df['pickup_latitude']
@@ -43,7 +45,7 @@ min = Min(scheduler=s)
 min.input.df = csv.output.df
 max = Max(scheduler=s)
 max.input.df = csv.output.df
-histogram2d = Histogram2D('pickup_longitude', 'pickup_latitude', xbins=512, ybin=512, scheduler=s)
+histogram2d = Histogram2D('pickup_longitude', 'pickup_latitude', xbins=RESOLUTION, ybins=RESOLUTION, scheduler=s)
 histogram2d.input.df = csv.output.df
 histogram2d.input.min = min.output.df
 histogram2d.input.max = max.output.df

@@ -1,4 +1,4 @@
-from progressivis.core.common import ProgressiveError, indices_len
+from progressivis.core.utils import ProgressiveError, indices_len
 from progressivis.core.dataframe import DataFrameModule
 from .slot import SlotDescriptor
 from .utils import is_valid_identifier

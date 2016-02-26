@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """ Computes the distance matrix from each row of a data frame.
 """
-from progressivis.core.common import ProgressiveError, indices_len
+from progressivis.core.utils import ProgressiveError, indices_len
 from progressivis.core.dataframe import DataFrameModule
 from progressivis.core.slot import SlotDescriptor
 from progressivis.core.synchronized import synchronized

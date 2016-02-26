@@ -5,7 +5,7 @@ __all__ = [ "ProgressiveError", "type_fullname", "indices_len", "Scheduler", "MT
            "RangeQuery", "Merge", "Join", "CombineFirst", "NIL", "LastRow" ]
 
 from .version import version, __version__, short_version
-from .common import type_fullname, ProgressiveError, NIL
+from .utils import type_fullname, ProgressiveError, NIL
 from .scheduler import Scheduler
 from .mt_scheduler import MTScheduler
 from .slot import Slot, SlotDescriptor

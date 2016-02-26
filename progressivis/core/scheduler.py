@@ -1,4 +1,4 @@
-from progressivis.core.common import ProgressiveError
+from progressivis.core.utils import ProgressiveError
 from progressivis.core.utils import AttributeDict
 from progressivis.core.sink import Sink
 

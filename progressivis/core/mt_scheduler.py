@@ -1,6 +1,6 @@
 """Multi-Thread Scheduler, meant to run in its own thread."""
 from scheduler import Scheduler
-from common import ProgressiveError
+from utils import ProgressiveError
 import threading
 import sys, io
 from tempfile import mkstemp

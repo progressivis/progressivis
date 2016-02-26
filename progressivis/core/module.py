@@ -6,8 +6,9 @@ import pdb
 import pandas as pd
 import numpy as np
 
-from progressivis.core.common import ProgressiveError, type_fullname
-from progressivis.core.utils import (empty_typed_dataframe,
+from progressivis.core.utils import (ProgressiveError,
+                                     type_fullname,
+                                     empty_typed_dataframe,
                                      typed_dataframe,
                                      DataFrameAsDict,
                                      remove_nan,

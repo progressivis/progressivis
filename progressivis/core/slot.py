@@ -1,4 +1,4 @@
-from progressivis.core.common import ProgressiveError
+from progressivis.core.utils import ProgressiveError
 
 import logging
 logger = logging.getLogger(__name__)

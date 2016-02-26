@@ -1,4 +1,4 @@
-from progressivis.core.common import ProgressiveError
+from progressivis.core.utils import ProgressiveError
 from progressivis.core.dataframe import DataFrameModule
 from progressivis.core.slot import SlotDescriptor
 

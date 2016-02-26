@@ -1,4 +1,4 @@
-from progressivis.core.common import indices_len
+from progressivis.core.utils import indices_len
 from progressivis.core.dataframe import DataFrameModule
 from progressivis.core.slot import SlotDescriptor
 

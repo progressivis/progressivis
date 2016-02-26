@@ -3,6 +3,11 @@ import numpy as np
 import keyword
 import re
 
+class ProgressiveError(Exception):
+    pass
+
+NIL = np.array([],dtype=int)
+
 def remove_nan(d):
     if isinstance(d,float) and np.isnan(d):
         return None
@@ -112,3 +117,14 @@ def fix_identifier(c):
         c = c[:m.end(0)]+ '_'+c[m.end(0)+1:]
         m = ID_RE.match(c)
     return c
+
+def type_fullname(o):
+    module = o.__class__.__module__
+    if module is None or module == str.__class__.__module__:
+        return o.__class__.__name__
+    return module + '.' + o.__class__.__name__
+
+def indices_len(ind):
+    if isinstance(ind, slice):
+        return ind.stop-ind.start
+    return len(ind)
