@@ -11,10 +11,6 @@ logger = logging.getLogger(__name__)
 class Histogram2D(DataFrameModule):
     parameters = [('xbins',  np.dtype(int),   512),
                   ('ybins',  np.dtype(int),   512),
-#                  ('xmin',   np.dtype(float), 0),
-#                  ('xmax',   np.dtype(float), 1),
-#                  ('ymin',   np.dtype(float), 0),
-#                  ('ymax',   np.dtype(float), 1),
                   ('xdelta', np.dtype(float), -5), # means 5%
                   ('ydelta', np.dtype(float), -5), # means 5%
                   ('history',np.dtype(int),   3) ]
@@ -106,7 +102,7 @@ class Histogram2D(DataFrameModule):
             self._yedges = None
             dfslot.update(run_number)
 
-        if not (dfslot.has_created() and min_slot.has_created() and max_slot.has_created()):
+        if not (dfslot.has_created() or min_slot.has_created() or max_slot.has_created()):
             # nothing to do, just wait 
             logger.info('Input buffers empty')
             return self._return_run_step(self.state_blocked, steps_run=0)
