@@ -53,7 +53,7 @@ class Histogram1D(DataFrameModule):
             self._edges = None
             dfslot.update(run_number)
   
-        if not (dfslot.has_created() and min_slot.has_created() and max_slot.has_created()):
+        if not (dfslot.has_created() or min_slot.has_created() or max_slot.has_created()):
             logger.info('input buffers empty')
             return self._return_run_step(self.state_blocked, steps_run=0)
   
