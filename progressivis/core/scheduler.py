@@ -327,8 +327,9 @@ class Scheduler(object):
         with self.lock:
             if isinstance(module,str) or isinstance(module,unicode):
                 module = self.module[module]
-            self.stop()
-            module._stop(self._run_number)
+            module.state = self.state_zombie
+#            self.stop()
+#            module._stop(self._run_number)
             self._remove_module(module)
 
     def _remove_module(self, module):

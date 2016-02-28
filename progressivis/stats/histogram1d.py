@@ -103,7 +103,6 @@ class Histogram1D(DataFrameModule):
             self._histo += histo
         values = [self._histo, curr_min, curr_max, run_number]
         with self.lock:
-            print self._histo
             self._df.loc[run_number] = values
             self._df = self._df.loc[self._df.index[-1:]]
         return self._return_run_step(dfslot.next_state(), steps_run=steps)

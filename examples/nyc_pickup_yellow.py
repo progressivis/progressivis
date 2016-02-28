@@ -1,4 +1,4 @@
-from progressivis import MTScheduler, Every, Constant
+from progressivis import Scheduler, Every, Constant, log_level
 from progressivis.stats import Histogram2D, Min, Max
 from progressivis.io import CSVLoader
 from progressivis.vis import Heatmap
@@ -7,6 +7,8 @@ import pandas as pd
 
 RESOLUTION=1024
 
+bounds_min = {'pickup_latitude': 40.60, 'pickup_longitude': -74.10}
+bounds_max = {'pickup_latitude': 41.00, 'pickup_longitude': -73.70}
 def filter(df):
     lon = df['pickup_longitude']
     lat = df['pickup_latitude']
@@ -21,7 +23,7 @@ def print_len(x):
 try:
     s = scheduler
 except:
-    s = MTScheduler()
+    s = Scheduler()
 
 #PREFIX= 'https://storage.googleapis.com/tlc-trip-data/2015/'
 #SUFFIX= ''
@@ -41,10 +43,12 @@ filenames = pd.DataFrame({'filename': URLS})
 cst = Constant(df=filenames, scheduler=s)
 csv = CSVLoader(index_col=False,skipinitialspace=True,usecols=['pickup_longitude', 'pickup_latitude'], filter=filter, scheduler=s)
 csv.input.filenames = cst.output.df
-min = Min(scheduler=s)
-min.input.df = csv.output.df
-max = Max(scheduler=s)
-max.input.df = csv.output.df
+#min = Min(scheduler=s)
+#min.input.df = csv.output.df
+#max = Max(scheduler=s)
+#max.input.df = csv.output.df
+min = Constant(df=pd.DataFrame([bounds_min]), scheduler=s)
+max = Constant(df=pd.DataFrame([bounds_max]), scheduler=s)
 histogram2d = Histogram2D('pickup_longitude', 'pickup_latitude', xbins=RESOLUTION, ybins=RESOLUTION, scheduler=s)
 histogram2d.input.df = csv.output.df
 histogram2d.input.min = min.output.df

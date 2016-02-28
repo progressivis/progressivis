@@ -61,6 +61,13 @@ class DataFrameSlot(Slot):
             return Module.state_blocked
 
     @property
+    def column_changes(self):
+        if self.changes:
+            return self.changes.column_changes
+        else:
+            return None
+
+    @property
     def last_time(self):
         if self.changes:
             return self.changes.last_time

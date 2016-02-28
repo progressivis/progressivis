@@ -5,6 +5,7 @@ import re
 import shutil
 from urlparse import urljoin
 from urllib import pathname2url
+#TODO change to use either home directory or local directory instead/as an option for working storage
 
 import logging
 logger = logging.getLogger(__name__)

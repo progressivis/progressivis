@@ -1,6 +1,5 @@
-from progressivis.core import Module, NIL, ProgressiveError
+from progressivis.core import Module, NIL
 from progressivis.core.index_diff import NIL_INDEX, index_diff, index_changes
-import pandas as pd
 import numpy as np
 # TODO use the new RangeIndex when possible instead of explicit vector of indices
 
@@ -199,7 +198,3 @@ class ChangeManager(object):
     def deleted_length(self):
         return len(self._deleted)
 
-    def columns_created(self):
-        if not self._manage_columns:
-            return NIL
-        
