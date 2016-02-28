@@ -1,6 +1,8 @@
-from . import Module, NIL, ProgressiveError
+from progressivis.core import Module, NIL, ProgressiveError
+from progressivis.core.index_diff import NIL_INDEX, index_diff, index_changes
 import pandas as pd
 import numpy as np
+# TODO use the new RangeIndex when possible instead of explicit vector of indices
 
 import logging
 logger = logging.getLogger(__name__)
@@ -19,152 +21,53 @@ def maybe_slice(array):
             return array # not sliceable
     return slice(s, e+1)
 
-CM_CREATED = 1
-CM_UPDATED = 2
-CM_DELETED = 4
-
-class ChangeManagerBase(object):
-    
-    def __init__(self):
-        self.reset()
-        self._buffer_created = True
-        self._buffer_updated = False
-        self._buffer_deleted = False
-
-    def reset(self):
-        logger.info('Reseting history')
-        self.last_run = 0
-        self.index = pd.Index([])
-        self._created = None
-        self._updated = None
-
-    def update(self, run_number, df):
-        raise ProgressiveError('Update not implemented')
-
-    def next_state(self, buffer=CM_CREATED):
-        if buffer&CM_CREATED and self.has_created():
-            return Module.state_ready
-        if buffer&CM_UPDATED and self.has_updated():
-            return Module.state_ready
-        if buffer&CM_DELETED and self.has_deleted():
-            return Module.state_ready
-
-        return Module.state_blocked
-
-    def buffer_created(self, v=True):
-        self._buffer_created = v
-
-    def next_created(self, n=None):
-        raise ProgressiveError('Not implemented')
-
-    def has_created(self):
-        raise ProgressiveError('Not implemented')
-
-    def created_length(self):
-        raise ProgressiveError('Not implemented')
-    
-    def buffer_updated(self, v=True):
-        self._buffer_updated = v
-
-    def next_updated(self, n=None):
-        raise ProgressiveError('Not implemented')
-
-    def has_updated(self):
-        raise ProgressiveError('Not implemented')
-
-    def updated_length(self):
-        raise ProgressiveError('Not implemented')
-
-    def buffer_deleted(self, v=True):
-        self._buffer_deleted = v
-
-    def next_deleted(self, n=None):
-        raise ProgressiveError('Not implemented')
-    
-    def has_deleted(self):
-        raise ProgressiveError('Not implemented')
-
-    def deleted_length(self):
-        raise ProgressiveError('Not implemented')
-
-# class SimpleChangeManager(ChangeManagerBase):
-#     def __init__(self):
-#         super(SimpleChangeManager,self).__init__()
-    
-#     def reset(self):
-#         super(SimpleChangeManager,self).reset()
-#         self._buffer = slice(0, 0)
-
-#     def update(self, run_number, df):
-#         if run_number <= self.last_run:
-#             return True
-#         uc = df[Module.UPDATE_COLUMN]
-#         self._buffered = False
-
-#         nlen = len(df)
-#         if self.last_run==0:
-#             self._created = slice(0, nlen)
-#         else:
-#             olen = len(self.index)
-#             end = slice(olen,olen+nlen)
-#             if not (uc[end] > self.last_run).all():
-#                 return False # something else happened
-#             self._created = slice(self._created.start, end.stop)
-#         self.index = df.index
-#         self.last_run = run_number
-#         logger.info('Updating for run_number %d: created:%s',
-#                     run_number, self._created)
-#         self.buffer()
-#         return True
-
-#     def buffer(self):
-#         if self._buffered:
-#             return
-#         self._buffered = True
-#         if self._created is None or self._created.start==self._created.stop:
-#             return
-#         self._buffer = slice(self._buffer.start, self._created.stop)
-
-#     def next_buffered(self, n, as_ranges=False):
-#         if (self._buffer.start+n) >= self._buffer.stop:
-#            ret = self._buffer
-#         else:
-#             ret = slice(self._buffer.start, self._buffer.start+n)
-#         self._buffer = slice(ret.stop, self._buffer.stop)
-#         return ret
-
-#     def is_buffer_empty(self):
-#         return self._buffer.start >= self._buffer.stop
-    
-
-class ChangeManager(ChangeManagerBase):
+class ChangeManager(object):
     """Manage changes that occured in a DataFrame between runs.
     """
-    def __init__(self,buffer_created=True,buffer_updated=False,buffer_deleted=False):
-        super(ChangeManager,self).__init__() # calls reset()
+    def __init__(self,buffer_created=True,buffer_updated=False,buffer_deleted=False, manage_columns=True):
         self._buffer_created = buffer_created
         self._buffer_updated = buffer_updated
         self._buffer_deleted = buffer_deleted
+        self._manage_columns = manage_columns
+        self.reset()
 
     def reset(self):
-        super(ChangeManager,self).reset()
+        self.last_run = 0
+        self.index = NIL_INDEX
+        self.column_index = NIL_INDEX
         self._created = NIL
         self._updated = NIL
         self._deleted = NIL
-        self._buffer = NIL
+        self._column_changes = None
+
+    def next_state(self):
+        if self._buffer_created and self.has_created():
+            return Module.state_ready
+        if self._buffer_updated and  self.has_updated():
+            return Module.state_ready
+        if self._buffer_deleted and  self.has_deleted():
+            return Module.state_ready
+
+        return Module.state_blocked
 
     def update(self, run_number, df):
         if df is None or run_number <= self.last_run:
             return
         index = df.index
         if index.has_duplicates:
-            logger.error('Index has duplicates')
+            logger.error('cannot update changes, Index has duplicates')
         uc = df[Module.UPDATE_COLUMN]
         if self.last_run==0:
             self.index = index
-            self._created = self.index.values
+            self.column_index = df.columns
+            if self._buffer_created:
+                self._created = self.index.values
+            else:
+                self._created = NIL
             self._updated = NIL
             self._deleted = NIL
+            if self._manage_columns:
+                self._column_changes = index_diff(created=df.columns, kept=NIL_INDEX, deleted=NIL_INDEX)
         else:
             # Simle case 1: nothing deleted
             l1 = len(self.index)
@@ -199,9 +102,26 @@ class ChangeManager(ChangeManagerBase):
                 self._updated = updated
 
             self.index = index
+            if self._manage_columns:
+                self._column_changes = index_changes(df.columns, self.column_index)
+            self.column_index = df.columns
         self.last_run = run_number
-        logger.info('Updating for run_number %d: updated:%d/created:%d/deleted:%d',
+        logger.debug('Updating for run_number %d: updated:%d/created:%d/deleted:%d',
                     run_number, len(self._updated), len(self._created), len(self._deleted))
+
+    def manage_columns(self, v=True):
+        self._manage_columns = v
+        if not v:
+            self._manage_columns = None
+
+    @property
+    def column_changes(self):
+        return self._column_changes
+
+    def buffer_created(self, v=True):
+        self._buffer_created = v
+        if not v:
+            self._created = NIL
 
     def next_created(self, n=None):
         """
@@ -210,6 +130,8 @@ class ChangeManager(ChangeManagerBase):
         Note that if buffer_created is not set, only the items created in the last run
         will be returned
         """
+        if not self._buffer_created:
+            return NIL
         if n is None:
             n = len(self._created)
         ret, self._created = np.split(self._created, [n])
@@ -223,6 +145,11 @@ class ChangeManager(ChangeManagerBase):
     def created_length(self):
         return len(self._created)
 
+    def buffer_updated(self, v=True):
+        self._buffer_updated = v
+        if not v:
+            self._updated = NIL
+
     def next_updated(self, n=None):
         """
         Return at most n indices of newly updated items. If n is not provided, return the
@@ -230,6 +157,8 @@ class ChangeManager(ChangeManagerBase):
         Note that if buffer_updated is not set, only the items updated in the last run
         will be returned
         """
+        if not self._buffer_updated:
+            return NIL
         if n is None:
             n = len(self._updated)
         ret, self._updated = np.split(self._updated, [n])
@@ -243,6 +172,11 @@ class ChangeManager(ChangeManagerBase):
     def updated_length(self):
         return len(self._updated)
 
+    def buffer_deleted(self, v=True):
+        self._buffer_deleted = v
+        if not v:
+            self._deleted = NIL
+
     def next_deleted(self, n=None):
         """
         Return at most n indices of newly deleted items. If n is not provided, return the
@@ -250,6 +184,8 @@ class ChangeManager(ChangeManagerBase):
         Note that if buffer_deleted is not set, only the items deleted in the last run
         will be returned
         """
+        if not self._buffer_deleted:
+            return NIL
         if n is None:
             n = len(self._deleted)
         ret, self._deleted = np.split(self._deleted, [n])
@@ -262,3 +198,8 @@ class ChangeManager(ChangeManagerBase):
 
     def deleted_length(self):
         return len(self._deleted)
+
+    def columns_created(self):
+        if not self._manage_columns:
+            return NIL
+        

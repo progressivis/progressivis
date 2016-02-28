@@ -3,7 +3,7 @@ import pandas as pd
 
 NIL_INDEX = pd.Index([])
 
-index_diff = namedtuple('index_diff','created,updated,deleted')
+index_diff = namedtuple('index_diff','created,kept,deleted')
 
 if pd.__version__ > '0.18':
     def index_difference(index1,index2):
@@ -26,8 +26,8 @@ else:
 
 def index_changes(index1, index2):
     if index1.equals(index2):
-        return index_diff(enter=None,update=index1,delete=None)
-    created = index2.difference(index1)
-    updated = index2.intersection(index1)
-    deleted = index1.difference(index2)
-    return index_diff(created=created,updated=updated,deleted=deleted)
+        return index_diff(created=NIL_INDEX,kept=index1,deleted=NIL_INDEX)
+    created = index_difference(index2, index1)
+    kept = index2.intersection(index1)
+    deleted = index_difference(index1, index2)
+    return index_diff(created=created, kept=kept, deleted=deleted)

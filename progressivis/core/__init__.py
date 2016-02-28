@@ -2,7 +2,8 @@ __all__ = [ "ProgressiveError", "type_fullname", "indices_len", "Scheduler", "MT
             "version", "__version__", "short_version",
            "Slot", "SlotDescriptor", "Module", "connect", "StorageManager",
            "DataFrameModule", "Constant", "Every", "Print", "Wait", "Select",
-           "RangeQuery", "Merge", "Join", "CombineFirst", "NIL", "LastRow" ]
+           "RangeQuery", "Merge", "Join", "CombineFirst", "NIL", "LastRow",
+           "NIL_INDEX", 'index_diff', 'index_changes' ]
 
 from .version import version, __version__, short_version
 from .utils import type_fullname, ProgressiveError, NIL
@@ -20,6 +21,7 @@ from .merge import Merge
 from .join import Join
 from .combine_first import CombineFirst
 from .last_row import LastRow
+from .index_diff import NIL_INDEX, index_diff, index_changes
 
 # Keep PyFlakes happy
 Select
