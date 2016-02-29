@@ -29,10 +29,9 @@ class Variable(Constant):
                 last[k] = v
             else:
                 error += 'Invalid key %s ignored. '%k
-        with self.lock:
-            run_number = self.scheduler().run_number()+1
-            last[self.UPDATE_COLUMN] = run_number
-            self._df.loc[run_number] = last
+        run_number = self.scheduler().for_input(self)
+        last[self.UPDATE_COLUMN] = run_number
+        self._df.loc[run_number] = last
         return error
     
     def run_step(self,run_number,step_size,howlong):

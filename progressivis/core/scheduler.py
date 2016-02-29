@@ -45,7 +45,8 @@ class Scheduler(object):
         self._new_modules_ids = []
         self._slots_updated = False
         self._run_queue = deque()
-        # Create Sentinel last 
+        self._input_triggered = {}
+        # Create Sentinel last since it needs the scheduler to be ready
         self._sentinel = Sentinel(scheduler=self)
 
     def create_lock(self):
@@ -340,6 +341,13 @@ class Scheduler(object):
     def stdout_parent(self):
         yield
 
+    def for_input(self, module):
+        with self.lock:
+            self._input_triggered[module.id] = 0 # don't know the run number yet
+            return self.run_number()+1
+
+    def has_input(self):
+        return bool(self._input_triggered)
 
 if Scheduler.default is None:
     Scheduler.default = Scheduler()
