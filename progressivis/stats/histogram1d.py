@@ -130,3 +130,6 @@ class Histogram1D(DataFrameModule):
         if delta < 0:
             return extent*delta/-100.0
 
+    def get_histogram(self):
+        #TODO
+        return {}

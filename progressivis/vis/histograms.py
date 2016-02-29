@@ -90,26 +90,10 @@ class Histograms(NAry):
         return self.histograms_to_json(json, short)
 
     def histograms_to_json(self, json, short):
-        #for (c,v) in self._histogram.iteritems():
-        # dfslot = self.get_input_slot('array')
-        # histo = dfslot.output_module
-        # json['columns'] = [histo.x_column, histo.y_column]
-        # with dfslot.lock:
-        #     histo_df = dfslot.data()
-        #     if histo_df is not None and histo_df.index[-1] is not None:
-        #         row = self.last_row(histo_df)
-        #         if not (np.isnan(row.xmin) or np.isnan(row.xmax)
-        #                 or np.isnan(row.ymin) or np.isnan(row.ymax)):
-        #             json['bounds'] = {
-        #                 'xmin': row.xmin,
-        #                 'ymin': row.ymin,
-        #                 'xmax': row.xmax,
-        #                 'ymax': row.ymax
-        #             }
-        # with self.lock:
-        #     df = self.df()
-        #     if df is not None and self._last_update is not None:
-        #         row = self.last_row(df)
-        #         json['image'] = "/progressivis/module/image/%s?run_number=%d"%(self.id,row[self.UPDATE_COLUMN])
+        histo_json = {}
+        for (c,v) in self._histogram.iteritems():
+            c = unicode(c)
+            histo_json[c] = v.get_histogram()
+        json['histograms'] = histo_json
         return json
 
