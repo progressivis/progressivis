@@ -121,16 +121,6 @@ class Scheduler(object):
         with self.lock:
             for (name,module) in self.modules().iteritems():
                 mods[name] = module.to_json(short=short)
-                           
-            if self._runorder:
-                i = 0
-                for m in self._runorder:
-                    if m in mods:
-                        mods[m]['order'] = i
-                    else:
-                        logger.error("module '%s' not in module list", m)
-                        mods[m] = {'module': None, 'order': i }
-                i += 1
         mods = mods.values()
         modules = sorted(mods, self.module_order)
         msg['modules'] = modules
@@ -217,11 +207,15 @@ class Scheduler(object):
                 self._slots_updated = False
                 with self.lock:
                     self._run_queue.clear()
-                    self._runorder = self.order_modules() 
+                    self._runorder = self.order_modules()
+                    i = 0
                     for id in self._runorder:
                         m = self._modules[id]
                         if m is not self._sink:
                             self._run_queue.append(m)
+                            m.order = i
+                            i += 1
+                    self._sink.order = i
                     self._run_queue.append(self._sink) # always at the end
                 if not self.validate():
                     logger.error("Cannot validate progressive workflow, reverting to previous workflow")
