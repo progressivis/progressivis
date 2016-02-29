@@ -131,5 +131,26 @@ class Histogram1D(DataFrameModule):
             return extent*delta/-100.0
 
     def get_histogram(self):
-        #TODO
-        return {}
+        min = self._bounds[0] if self._bounds else None
+        max = self._bounds[1] if self._bounds else None
+        return {"edges": self._edges.tolist(), 
+                "values": self._histo.tolist(),
+                "min": min, 
+                "max": max}
+
+    def is_vizualization(self):
+        return True
+
+    def get_visualization(self):
+        return "histogram1d"
+
+    def to_json(self, short=False):
+        json = super(Histogram1D, self).to_json(short)
+        if short:
+            return json
+        return self._hist_to_json(json)
+    
+    def _hist_to_json(self, json):
+        json['histogram'] = self.get_histogram()
+        return json
+
