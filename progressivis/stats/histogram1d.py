@@ -133,8 +133,8 @@ class Histogram1D(DataFrameModule):
     def get_histogram(self):
         min = self._bounds[0] if self._bounds else None
         max = self._bounds[1] if self._bounds else None
-        return {"edges": self._edges.tolist(), 
-                "values": self._histo.tolist(),
+        return {"edges": self._edges.tolist() if self._edges else [], 
+                "values": self._histo.tolist() if self._histo else [],
                 "min": min, 
                 "max": max}
 
