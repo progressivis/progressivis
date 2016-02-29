@@ -118,17 +118,19 @@ class Scheduler(object):
     def to_json(self, short=True):
         msg = {}
         mods = {}
-        for (name,module) in self.modules().iteritems():
-            mods[name] = module.to_json(short=short)
+        with self.lock:
+            for (name,module) in self.modules().iteritems():
+                mods[name] = module.to_json(short=short)
                            
         if self._runorder:
             i = 0
-            for m in self._runorder:
-                if m in mods:
-                    mods[m]['order'] = i
-                else:
-                    logger.error("module '%s' not in module list", m)
-                    mods[m] = {'module': None, 'order': i }
+            with self.lock:
+                for m in self._runorder:
+                    if m in mods:
+                        mods[m]['order'] = i
+                    else:
+                        logger.error("module '%s' not in module list", m)
+                        mods[m] = {'module': None, 'order': i }
                 i += 1
         mods = mods.values()
         modules = sorted(mods, self.module_order)

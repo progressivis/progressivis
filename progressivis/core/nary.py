@@ -4,11 +4,12 @@ from progressivis.core.slot import SlotDescriptor
 import pandas as pd
 
 class NAry(DataFrameModule):
-    def __init__(self, **kwds):
+    def __init__(self, nary='df', **kwds):
         self._add_slots(kwds,'input_descriptors',
                         [SlotDescriptor('df', type=pd.DataFrame, required=True)])
         super(NAry, self).__init__(**kwds)
-        self.inputs = ['df']
+        self.nary = nary
+        self.inputs = [nary]
         
     def predict_step_size(self, duration):
         return 1
@@ -21,8 +22,8 @@ class NAry(DataFrameModule):
     # Magic input slot created 
     def _connect_input(self, slot):
         ret = self.get_input_slot(slot.input_name)
-        if ret and slot.input_name=='df':
-            name = 'df.%d' % len(self.inputs)
+        if ret and slot.input_name==self.nary:
+            name = '%s.%d' % (self.nary, len(self.inputs))
             self._add_input_slot(name)
             slot.input_name = name # patch the slot name
             ret = None

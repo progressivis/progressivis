@@ -139,6 +139,7 @@ class Module(object):
 
     def destroy(self):
         self.scheduler().remove_module(self)
+        #TODO remove connections with the input and output modules
 
     @staticmethod
     def _filter_kwds(kwds, function_or_method):

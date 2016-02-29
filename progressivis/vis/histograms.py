@@ -1,4 +1,4 @@
-from progressivis.core.dataframe import DataFrameModule
+from progressivis.core import DataFrameModule, NAry
 from progressivis.core.slot import SlotDescriptor
 from progressivis.stats import Histogram1D
 
@@ -10,16 +10,18 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-class Histograms(DataFrameModule):
+class Histograms(NAry):
+    parameters = [('bins', np.dtype(int), 128),
+                  ('delta', np.dtype(float), -5)] # 5%
+
     def __init__(self, columns=None, **kwds):
         self._add_slots(kwds, 'input_descriptors',
-                        [SlotDescriptor('df', type=pd.DataFrame, required=True),
-                         SlotDescriptor('min', type=pd.DataFrame, required=True),
+                        [SlotDescriptor('min', type=pd.DataFrame, required=True),
                          SlotDescriptor('max', type=pd.DataFrame, required=True)])
         self._add_slots(kwds,'output_descriptors',
                         [SlotDescriptor('min', type=pd.DataFrame, required=False),
                          SlotDescriptor('max', type=pd.DataFrame, required=False)])
-        super(Histograms, self).__init__(dataframe_slot='df', **kwds)
+        super(Histograms, self).__init__(**kwds)
         self.default_step_size = 1
         self._columns = columns
         self._histogram = {}
@@ -48,6 +50,11 @@ class Histograms(DataFrameModule):
         return self._return_run_step(self.state_blocked, steps_run=1)
 
     def create_columns(self, columns, df):
+        bins = self.params.bins
+        delta = self.params.delta # crude
+        inp = self.get_input_module('df')
+        min = self.get_input_module('min')
+        max = self.get_input_module('max')
         for c in columns:
             if c==self.UPDATE_COLUMN:
                 continue
@@ -56,10 +63,11 @@ class Histograms(DataFrameModule):
             if not np.issubdtype(dtype, numbers.Number):
                 # only create histograms for number columns
                 continue
-            h = Histogram1D(group=self.id, column=c,scheduler=self.scheduler())
-            h.input.df = self.output.df
-            h.input.min = self.output.min
-            h.input.max = self.output.max
+            h = Histogram1D(group=self.id, column=c, bins=bins, delta=delta, scheduler=self.scheduler())
+            h.input.df = inp.output.df
+            h.input.min = min.output.df
+            h.input.max = max.output.df
+            self.input.df = h.output._trace # will become df.1 ...
             self._histogram[c] = h
 
     def delete_columns(self, columns):
@@ -82,6 +90,7 @@ class Histograms(DataFrameModule):
         return self.histograms_to_json(json, short)
 
     def histograms_to_json(self, json, short):
+        #for (c,v) in self._histogram.iteritems():
         # dfslot = self.get_input_slot('array')
         # histo = dfslot.output_module
         # json['columns'] = [histo.x_column, histo.y_column]
