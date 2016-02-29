@@ -1,6 +1,6 @@
 from progressivis.core.utils import ProgressiveError
 from progressivis.core.utils import AttributeDict
-from progressivis.core.sink import Sink
+from progressivis.core.sentinel import Sentinel
 
 from copy import copy
 from collections import deque
@@ -45,8 +45,8 @@ class Scheduler(object):
         self._new_modules_ids = []
         self._slots_updated = False
         self._run_queue = deque()
-        # Create sink last 
-        self._sink = Sink(scheduler=self)
+        # Create Sentinel last 
+        self._sentinel = Sentinel(scheduler=self)
 
     def create_lock(self):
         #import traceback
@@ -211,12 +211,12 @@ class Scheduler(object):
                     i = 0
                     for id in self._runorder:
                         m = self._modules[id]
-                        if m is not self._sink:
+                        if m is not self._sentinel:
                             self._run_queue.append(m)
                             m.order = i
                             i += 1
-                    self._sink.order = i
-                    self._run_queue.append(self._sink) # always at the end
+                    self._sentinel.order = i
+                    self._run_queue.append(self._sentinel) # always at the end
                 if not self.validate():
                     logger.error("Cannot validate progressive workflow, reverting to previous workflow")
                     self._run_queue = prev_run_queue
