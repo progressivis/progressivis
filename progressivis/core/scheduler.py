@@ -102,7 +102,9 @@ class Scheduler(object):
                 dependencies[mid] = set(outs)
         return dependencies
 
-    def update_dependency_matrix(self, dependencies):
+    def compute_reachability(self, dependencies):
+        #TODO implement a recursive transitive_closure computation
+        # instead of using the brute-force djikstra algorithm
         d = dependencies
         k = d.keys()
         n = len(k)
@@ -116,17 +118,25 @@ class Scheduler(object):
                 row.append(index[v2])
                 data.append(1)
         coo = coo_matrix((data,(row,col)), shape=(n,n))
-        print coo.toarray()
-        print k
+        #print coo.toarray()
+        #print k
         dist = shortest_path(coo, directed=True, return_predecessors=False, unweighted=True)
         self._reachability = {}
+        reach_no_vis = set()
+        all_vis = set(self.get_visualizations())
         for i1 in range(n):
             s = set()
             for i2 in range(n):
-                if dist[i1,i2] != np.inf:
+                dst = dist[i1,i2]
+                if dst != 0 and dst != np.inf:
                     s.add(k[i2])
             if s:
                 self._reachability[k[i1]] = s
+                if not all_vis.intersection(s):
+                    reach_no_vis.update(s)
+        # filter out module that reach no vis
+        for (k,v) in self._reachability.iteritems():
+            v.difference_update(reach_no_vis)
 
     def is_reachable(self, from_module, to_module):
         if isinstance(from_module, Module):
@@ -136,20 +146,19 @@ class Scheduler(object):
         return from_module in self._reachability and to_module in self._reachability[from_module]
 
     def get_visualizations(self):
-        return [ m for m in self.modules().values() if m.is_visualization()]
+        return [ m.id for m in self.modules().values() if m.is_visualization()]
 
     def get_inputs(self):
-        return [ m for m in self.modules().values() if m.is_input()]
+        return [ m.id for m in self.modules().values() if m.is_input()]
 
     def reachable_from_inputs(self, inputs):
-        #all_inputs = set(self.get_inputs())
         reachable = set()
         if len(inputs)==0:
             return set()
         # collect all modules reachable from the modified inputs
         for i in inputs:
             reachable.update(self._reachability[i])
-        all_vis = [ m.id for m in self.get_visualizations()]
+        all_vis = self.get_visualizations()
         reachable_vis = reachable.intersection(all_vis)
         if reachable_vis:
             #TODO remove modules following visualizations
@@ -161,13 +170,13 @@ class Scheduler(object):
         try:
             dependencies = self.collect_dependencies()
             runorder = toposort_flatten(dependencies)
-            self.update_dependency_matrix(dependencies)
+            self.compute_reachability(dependencies)
         except ValueError: # cycle, try to break it then
             # if there's still a cycle, we cannot run the first cycle
             logger.info('Cycle in module dependencies, trying to drop optional fields')
             dependencies = self.collect_dependencies(only_required=True)
             runorder = toposort_flatten(dependencies)
-            self.update_dependency_matrix(dependencies)
+            self.compute_reachability(dependencies)
         return runorder
 
     @staticmethod
