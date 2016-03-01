@@ -30,3 +30,6 @@ class Input(DataFrameModule):
         df = pd.DataFrame({'input': input,
                            self.UPDATE_COLUMN: run_number})
         self._df = self._df.append(df,ignore_index=True)
+
+    def is_input(self):
+        return True

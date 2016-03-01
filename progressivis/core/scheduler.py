@@ -9,6 +9,10 @@ from toposort import toposort_flatten
 from contextlib import contextmanager
 from uuid import uuid4
 
+from scipy.sparse import coo_matrix
+from scipy.sparse.csgraph import shortest_path
+import numpy as np
+
 import logging
 logger = logging.getLogger(__name__)
 
@@ -46,6 +50,8 @@ class Scheduler(object):
         self._slots_updated = False
         self._run_queue = deque()
         self._input_triggered = {}
+        self._input_run_number = 0
+        self._reachability = {}
         # Create Sentinel last since it needs the scheduler to be ready
         self._sentinel = Sentinel(scheduler=self)
 
@@ -71,6 +77,9 @@ class Scheduler(object):
         self._new_modules_ids = []
         self._slots_updated = False
         self._run_queue = deque()
+        self._input_triggered = {}
+        self._input_run_number = 0
+        self._reachability = {}
 
     @property
     def lock(self):
@@ -93,14 +102,72 @@ class Scheduler(object):
                 dependencies[mid] = set(outs)
         return dependencies
 
+    def update_dependency_matrix(self, dependencies):
+        d = dependencies
+        k = d.keys()
+        n = len(k)
+        index = dict(zip(k,range(len(k))))
+        row = []
+        col = []
+        data = []
+        for (v1,vs) in d.iteritems():
+            for v2 in vs:
+                col.append(index[v1])
+                row.append(index[v2])
+                data.append(1)
+        coo = coo_matrix((data,(row,col)), shape=(n,n))
+        print coo.toarray()
+        print k
+        dist = shortest_path(coo, directed=True, return_predecessors=False, unweighted=True)
+        self._reachability = {}
+        for i1 in range(n):
+            s = set()
+            for i2 in range(n):
+                if dist[i1,i2] != np.inf:
+                    s.add(k[i2])
+            if s:
+                self._reachability[k[i1]] = s
+
+    def is_reachable(self, from_module, to_module):
+        if isinstance(from_module, Module):
+            from_module = from_module.id
+        if isinstance(to_module, Module):
+            to_module = to_module.id
+        return from_module in self._reachability and to_module in self._reachability[from_module]
+
+    def get_visualizations(self):
+        return [ m for m in self.modules().values() if m.is_visualization()]
+
+    def get_inputs(self):
+        return [ m for m in self.modules().values() if m.is_input()]
+
+    def reachable_from_inputs(self, inputs):
+        #all_inputs = set(self.get_inputs())
+        reachable = set()
+        if len(inputs)==0:
+            return set()
+        # collect all modules reachable from the modified inputs
+        for i in inputs:
+            reachable.update(self._reachability[i])
+        all_vis = [ m.id for m in self.get_visualizations()]
+        reachable_vis = reachable.intersection(all_vis)
+        if reachable_vis:
+            #TODO remove modules following visualizations
+            return reachable
+        return None
+
     def order_modules(self):
         runorder = None
         try:
-            runorder = toposort_flatten(self.collect_dependencies())
+            dependencies = self.collect_dependencies()
+            runorder = toposort_flatten(dependencies)
+            self.update_dependency_matrix(dependencies)
         except ValueError: # cycle, try to break it then
             # if there's still a cycle, we cannot run the first cycle
             logger.info('Cycle in module dependencies, trying to drop optional fields')
-            runorder = toposort_flatten(self.collect_dependencies(), only_required=True)
+            dependencies = self.collect_dependencies(only_required=True)
+            runorder = toposort_flatten(dependencies)
+            self.update_dependency_matrix(dependencies)
         return runorder
 
     @staticmethod
