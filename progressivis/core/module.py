@@ -226,6 +226,9 @@ class Module(object):
             self.debug = msg['debug']
         pass
 
+    def is_input(self):
+        return False
+
     @staticmethod
     def remove_nan(d):
         return remove_nan(d)
