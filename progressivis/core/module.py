@@ -98,6 +98,7 @@ class Module(object):
         output_descriptors = output_descriptors + [SlotDescriptor(Module.TRACE_SLOT, type=pd.DataFrame, required=False)]
         
         input_descriptors = input_descriptors + [SlotDescriptor(Module.PARAMETERS_SLOT, type=pd.DataFrame, required=False)]
+        self.order = None
         self._id = id
         self._group = group
         self._parse_parameters(kwds)
@@ -203,6 +204,9 @@ class Module(object):
             'last_update': self._last_update,
             'state': self.state_name[self._state]
         }
+        if self.order is not None:
+            json['order'] = self.order
+
         if short:
             return json
 

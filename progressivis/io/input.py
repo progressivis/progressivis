@@ -26,7 +26,7 @@ class Input(DataFrameModule):
     def from_input(self, input):
         if not isinstance(input,list):
             input = [input]
-        with self.lock:
-            df = pd.DataFrame({'input': input,
-                               self.UPDATE_COLUMN: self.scheduler().run_number()+1})
-            self._df = self._df.append(df,ignore_index=True)
+        run_number = self.scheduler().for_input(self)
+        df = pd.DataFrame({'input': input,
+                           self.UPDATE_COLUMN: run_number})
+        self._df = self._df.append(df,ignore_index=True)

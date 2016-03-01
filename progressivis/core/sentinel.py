@@ -4,13 +4,13 @@ import time
 import logging
 logger = logging.getLogger(__name__)
 
-__all__ = ['Sink']
+__all__ = ['Sentinel']
 
-class Sink(Module):
+class Sentinel(Module):
     """Module that is run by the scheduler to sleep a bit if nothing else is running.
     """
     def __init__(self, min_time=0.2, **kwds):
-        super(Sink, self).__init__(**kwds)
+        super(Sentinel, self).__init__(**kwds)
         self._min_time = min_time
 
     def predict_step_size(self, duration):

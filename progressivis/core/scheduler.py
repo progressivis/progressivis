@@ -1,6 +1,6 @@
 from progressivis.core.utils import ProgressiveError
 from progressivis.core.utils import AttributeDict
-from progressivis.core.sink import Sink
+from progressivis.core.sentinel import Sentinel
 
 from copy import copy
 from collections import deque
@@ -45,8 +45,9 @@ class Scheduler(object):
         self._new_modules_ids = []
         self._slots_updated = False
         self._run_queue = deque()
-        # Create sink last 
-        self._sink = Sink(scheduler=self)
+        self._input_triggered = {}
+        # Create Sentinel last since it needs the scheduler to be ready
+        self._sentinel = Sentinel(scheduler=self)
 
     def create_lock(self):
         #import traceback
@@ -121,16 +122,6 @@ class Scheduler(object):
         with self.lock:
             for (name,module) in self.modules().iteritems():
                 mods[name] = module.to_json(short=short)
-                           
-            if self._runorder:
-                i = 0
-                for m in self._runorder:
-                    if m in mods:
-                        mods[m]['order'] = i
-                    else:
-                        logger.error("module '%s' not in module list", m)
-                        mods[m] = {'module': None, 'order': i }
-                i += 1
         mods = mods.values()
         modules = sorted(mods, self.module_order)
         msg['modules'] = modules
@@ -217,12 +208,16 @@ class Scheduler(object):
                 self._slots_updated = False
                 with self.lock:
                     self._run_queue.clear()
-                    self._runorder = self.order_modules() 
+                    self._runorder = self.order_modules()
+                    i = 0
                     for id in self._runorder:
                         m = self._modules[id]
-                        if m is not self._sink:
+                        if m is not self._sentinel:
                             self._run_queue.append(m)
-                    self._run_queue.append(self._sink) # always at the end
+                            m.order = i
+                            i += 1
+                    self._sentinel.order = i
+                    self._run_queue.append(self._sentinel) # always at the end
                 if not self.validate():
                     logger.error("Cannot validate progressive workflow, reverting to previous workflow")
                     self._run_queue = prev_run_queue
@@ -346,6 +341,13 @@ class Scheduler(object):
     def stdout_parent(self):
         yield
 
+    def for_input(self, module):
+        with self.lock:
+            self._input_triggered[module.id] = 0 # don't know the run number yet
+            return self.run_number()+1
+
+    def has_input(self):
+        return bool(self._input_triggered)
 
 if Scheduler.default is None:
     Scheduler.default = Scheduler()
