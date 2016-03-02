@@ -48,6 +48,12 @@ def contact(*unused_all, **kwargs):
 def module_graph(*unused_all, **kwargs):
     return render_template('module_graph.html')
 
+@progressivis_bp.route('/progressivis/debug/', defaults={'package': 'progressivis', 'level': 'debug'})
+@progressivis_bp.route('/progressivis/debug/package/<package>', defaults={'level': 'debug'})
+def debug(package):
+    logging.getLogger(package).setLevel(logging.DEBUG)
+    return "OK"
+
 @progressivis_bp.route('/progressivis/scheduler/', methods=['POST'])
 def scheduler():
     short = request.values.get('short', 'True').lower() != 'false'
