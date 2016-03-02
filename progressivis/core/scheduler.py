@@ -9,7 +9,7 @@ from toposort import toposort_flatten
 from contextlib import contextmanager
 from uuid import uuid4
 
-from scipy.sparse import coo_matrix
+from scipy.sparse import csr_matrix
 from scipy.sparse.csgraph import shortest_path
 import numpy as np
 
@@ -117,10 +117,10 @@ class Scheduler(object):
                 col.append(index[v1])
                 row.append(index[v2])
                 data.append(1)
-        coo = coo_matrix((data,(row,col)), shape=(n,n))
-        #print coo.toarray()
+        mat = csr_matrix((data,(row,col)), shape=(n,n))
+        #print mat.toarray()
         #print k
-        dist = shortest_path(coo, directed=True, return_predecessors=False, unweighted=True)
+        dist = shortest_path(mat, directed=True, return_predecessors=False, unweighted=True)
         self._reachability = {}
         reach_no_vis = set()
         all_vis = set(self.get_visualizations())
