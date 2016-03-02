@@ -50,7 +50,7 @@ class Scheduler(object):
         self._slots_updated = False
         self._run_queue = deque()
         self._input_triggered = {}
-        self._input_run_number = 0
+        self._module_selection = None
         self._reachability = {}
         # Create Sentinel last since it needs the scheduler to be ready
         self._sentinel = Sentinel(scheduler=self)
@@ -78,7 +78,7 @@ class Scheduler(object):
         self._slots_updated = False
         self._run_queue = deque()
         self._input_triggered = {}
-        self._input_run_number = 0
+        self._module_selection = None
         self._reachability = {}
 
     @property
@@ -95,7 +95,7 @@ class Scheduler(object):
         dependencies = {}
         with self.lock:
             for (mid, module) in self._modules.iteritems():
-                if not module.is_valid(): # ignore invalid modules
+                if not module.is_valid() or module==self._sentinel:
                     continue
                 outs = [m.output_module.id for m in module.input_slot_values() \
                     if m and (not only_required or module.input_slot_required(m.input_name)) ]
@@ -125,18 +125,24 @@ class Scheduler(object):
         reach_no_vis = set()
         all_vis = set(self.get_visualizations())
         for i1 in range(n):
+            v1 = k[i1]
             s = set()
             for i2 in range(n):
+                v2 = k[i2]
                 dst = dist[i1,i2]
                 if dst != 0 and dst != np.inf:
-                    s.add(k[i2])
-            if s:
-                self._reachability[k[i1]] = s
-                if not all_vis.intersection(s):
-                    reach_no_vis.update(s)
+                    s.add(v2)
+            self._reachability[v1] = s
+            if not all_vis.intersection(s):
+                logger.debug('No visualization after module %s: %s',v1,s)
+                reach_no_vis.update(s)
+                if not self.module[v1].is_visualization():
+                    reach_no_vis.add(v1)
+        logger.debug('Unreachable modules: %s',reach_no_vis)
         # filter out module that reach no vis
         for (k,v) in self._reachability.iteritems():
             v.difference_update(reach_no_vis)
+        logger.debug('reachability map: %s', self._reachability)
 
     def is_reachable(self, from_module, to_module):
         if isinstance(from_module, Module):
@@ -269,7 +275,7 @@ class Scheduler(object):
     def slots_updated(self):
         self._slots_updated = True
 
-    def next_module(self):
+    def _next_module(self):
         """Yields a possibly infinite sequence of modules. Handles 
         order recomputation and starting logic if needed."""
         while (self._run_queue or self._new_modules_ids or self._slots_updated) \
@@ -298,14 +304,15 @@ class Scheduler(object):
                     logger.error("Cannot validate progressive workflow, reverting to previous workflow")
                     self._run_queue = prev_run_queue
             yield self._run_queue.popleft()
-            
 
     def _run_loop(self):
         """Main scheduler loop."""
-        for module in self.next_module():
+        for module in self._next_module():
             if self._stopped:
                 break
-            if not module.is_ready():
+            if not self._consider_module(module):
+                logger.info("Module %s not part of input management", module.id)
+            elif not module.is_ready():
                 logger.info("Module %s not ready", module.id)
             else:
                 self._run_number += 1
@@ -322,16 +329,15 @@ class Scheduler(object):
                         except Exception as e:
                             logger.warn(e)
                     self._oneshot_tick_procs = []
-                    logger.info("Running module %s", module.id)
+                    logger.debug("Running module %s", module.id)
                     module.run(self._run_number)
-                    logger.info("Module %s returned", module.id)
+                    logger.debug("Module %s returned", module.id)
             # Do it for all the modules
             if not module.is_terminated():
                 self._run_queue.append(module)
             else:
-                logger.info('Module %s is terminated', module.id)
+                logger.debug('Module %s is terminated', module.id)
             # TODO: idle sleep, cleanup_run
-        logger.info('Leaving loop')
         
     def run(self):
         self._stopped = False
@@ -420,10 +426,36 @@ class Scheduler(object):
     def for_input(self, module):
         with self.lock:
             self._input_triggered[module.id] = 0 # don't know the run number yet
+            # limit modules to react
+            sel = self._reachability[module.id]
+            if sel:
+                if self._module_selection is None:
+                    self._module_selection = sel
+                else:
+                    self._module_selection.update(sel)
             return self.run_number()+1
 
     def has_input(self):
-        return bool(self._input_triggered)
+        if self._module_selection is not None:
+            if len(self._module_selection)==0:
+                logger.debug('Finishing input management')
+                self._module_selection = None
+                return False
+            return True
+        return False
+
+    def _consider_module(self, module):
+        if not self.has_input():
+            return True
+        if module is self._sentinel:
+            return True
+        logger.debug('Has input; considering module %s for scheduling', module.id)
+        if module.id in self._module_selection:
+            self._module_selection.remove(module.id)
+            logger.debug('Module %s ready for scheduling', module.id)
+            return True
+        logger.debug('Module %s NOT ready for scheduling', module.id)
+        return False
 
 if Scheduler.default is None:
     Scheduler.default = Scheduler()
