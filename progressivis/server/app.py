@@ -11,6 +11,7 @@ from tornado.websocket import WebSocketHandler
 from tornado.ioloop import IOLoop
 
 from progressivis import ProgressiveError, Scheduler
+from StringIO import StringIO
 
 
 class ProgressiveWebSocket(WebSocketHandler):
@@ -74,6 +75,14 @@ class ProgressiveWebSocket(WebSocketHandler):
 class ProgressivisBlueprint(Blueprint):
     def __init__(self, *args, **kwargs):
         super(ProgressivisBlueprint, self).__init__(*args, **kwargs)
+        out = self._log_stream = StringIO()
+        out.write("<html><body><table><tr><th>Time</th><th>Name</th><th>Level</th><th>Message</th></tr>\n");
+        ch = logging.StreamHandler(stream=self._log_stream)
+        ch.setLevel(logging.DEBUG)
+        formatter = logging.Formatter('<tr><td>%(asctime)s</td><td>%(name)s</td><td>%(levelname)s</td><td>%(message)s</td></tr>\n')
+        ch.setFormatter(formatter)
+        logging.getLogger("progressivis").addHandler(ch)
+        logging.getLogger("progressivis").setLevel(logging.DEBUG)
 
     def setup(self, scheduler):
         self.scheduler = scheduler
@@ -85,6 +94,9 @@ class ProgressivisBlueprint(Blueprint):
     def tick_module(self, module, run_number):
         ProgressiveWebSocket.write_to_path('module %s'%module.id, 'tick %d'%run_number)
 
+    def get_log(self):
+        self._log_stream.flush()
+        return self._log_stream.getvalue().replace("\n",'<br>')
 
 
 progressivis_bp = ProgressivisBlueprint('progressivis.server',
