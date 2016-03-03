@@ -68,8 +68,6 @@ var histogram1d = function() {
         bar.append("rect")
            .attr("x", 1)
            .attr("y", function(d){ return yScale(d.y); })
-           .attr("width", function(d){ return xScale(d.x + d.dx) - xScale(d.x) - 1; })
-           .attr("height", function(d) { return height - yScale(d.y); });
 
         var rects = d3.selectAll("rect").data(histogram)
           .attr("y", function(d){ return yScale(d.y); })
