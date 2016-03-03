@@ -12,7 +12,6 @@ var histogram1d = function() {
   }
 
   function update(data) {
-    console.log("update");
     module_update(data);
 
     hist = hist.histogram(process_histogram(data.histogram));
