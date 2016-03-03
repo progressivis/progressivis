@@ -1,13 +1,15 @@
 import unittest
 
-from progressivis import *
+from progressivis import Scheduler, Every, log_level
 from progressivis.io import VECLoader
 from progressivis.io import CSVLoader
 from progressivis.metrics import PairwiseDistances
 from progressivis.datasets import get_dataset
 
-import logging
+import numpy as np
+from sklearn.metrics.pairwise import _VALID_METRICS, pairwise_distances
 
+import logging
 
 
 def print_len(x):
@@ -22,8 +24,8 @@ def ten_times(scheduler, run_number):
         scheduler.stop()
 
 class TestPairwiseDistances(unittest.TestCase):
-#    def setUp(self):
-#        log_level(logging.INFO,'progressivis')
+    def NOsetUp(self):
+        log_level(logging.DEBUG,'progressivis.metrics.pairwise')
 
     def test_vec_distances(self):
         s=Scheduler()
@@ -36,6 +38,11 @@ class TestPairwiseDistances(unittest.TestCase):
         global times
         times = 0
         s.start(ten_times)
+        df = vec.df()
+        computed = dis.dist()
+        self.assertEquals(computed.shape[0], len(df))
+        truth = pairwise_distances(vec.toarray(), metric=dis._metric)
+        self.assertTrue(np.allclose(truth, computed))
 
     def test_csv_distances(self):
         s=Scheduler()
@@ -47,6 +54,16 @@ class TestPairwiseDistances(unittest.TestCase):
         global times
         times = 0
         s.start(ten_times)
+        df = vec.df()
+        computed = dis.dist()
+        self.assertEquals(computed.shape[0], len(df))
+
+        del df[CSVLoader.UPDATE_COLUMN]
+        offset=10000
+        size=offset+5000
+        truth = pairwise_distances(df.iloc[offset:size], metric=dis._metric)
+        dist = computed[offset:size,offset:size]
+        self.assertTrue(np.allclose(truth, dist,atol=1e-7)) # reduce tolerance
 
 if __name__ == '__main__':
     unittest.main()
