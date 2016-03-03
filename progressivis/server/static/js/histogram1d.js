@@ -123,6 +123,7 @@ var histogram1d = function() {
 
   return {
     ready: ready,
-    chart: chart
+    chart: chart,
+    process_histogram: process_histogram
   };
 }();
