@@ -1,24 +1,11 @@
 from progressivis.core import Module, NIL
+from progressivis.core.utils import indices_to_slice
 from progressivis.core.index_diff import NIL_INDEX, index_diff, index_changes
 import numpy as np
 # TODO use the new RangeIndex when possible instead of explicit vector of indices
 
 import logging
 logger = logging.getLogger(__name__)
-
-def maybe_slice(array):
-    if len(array)==0:
-        return slice(0,0)
-    s = e = None
-    array.sort()
-    for i in array:
-        if s is None:
-            s = e = i
-        elif i==e or i==e+1:
-            e=i
-        else:
-            return array # not sliceable
-    return slice(s, e+1)
 
 class ChangeManager(object):
     """Manage changes that occured in a DataFrame between runs.
@@ -136,7 +123,7 @@ class ChangeManager(object):
         ret, self._created = np.split(self._created, [n])
         # Try to return a slice instead of indices to avoid copying
         # arrays instead of creating views.
-        return maybe_slice(ret)
+        return indices_to_slice(ret)
 
     def has_created(self):
         return len(self._created) != 0
@@ -163,7 +150,7 @@ class ChangeManager(object):
         ret, self._updated = np.split(self._updated, [n])
         # Try to return a slice instead of indices to avoid copying
         # arrays instead of creating views.
-        return maybe_slice(ret)
+        return indices_to_slice(ret)
 
     def has_updated(self):
         return len(self._updated) != 0
@@ -190,7 +177,7 @@ class ChangeManager(object):
         ret, self._deleted = np.split(self._deleted, [n])
         # Try to return a slice instead of indices to avoid copying
         # arrays instead of creating views.
-        return maybe_slice(ret)
+        return indices_to_slice(ret)
 
     def has_deleted(self):
         return len(self._deleted) != 0

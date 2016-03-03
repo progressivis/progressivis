@@ -1,13 +1,12 @@
 import unittest
 
-import sys
-
 import pandas as pd
 import numpy as np
 
 from progressivis.core.buffered_matrix import BufferedMatrix
 
 import logging
+import sys
 
 class TestBufferedMatrix(unittest.TestCase):
     def setUp(self):

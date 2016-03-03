@@ -12,10 +12,13 @@ import logging
 
 def print_len(x):
     if x is not None:
-        print len(x)
+        print x.shape
+
+times = 0
 
 def ten_times(scheduler, run_number):
-    if run_number > 10:
+    times += 1
+    if times > 10:
         scheduler.stop()
 
 class TestPairwiseDistances(unittest.TestCase):
@@ -29,7 +32,9 @@ class TestPairwiseDistances(unittest.TestCase):
         dis.input.df = vec.output.df
         dis.input.array = vec.output.array
         cnt = Every(proc=print_len,constant_time=True,scheduler=s)
-        cnt.input.df = dis.output.distance
+        cnt.input.df = dis.output.dist
+        global times
+        times = 0
         s.start(ten_times)
 
     def test_csv_distances(self):
@@ -38,7 +43,9 @@ class TestPairwiseDistances(unittest.TestCase):
         dis=PairwiseDistances(metric='euclidean',scheduler=s)
         dis.input.df = vec.output.df
         cnt = Every(proc=print_len,constant_time=True,scheduler=s)
-        cnt.input.df = dis.output.distance
+        cnt.input.df = dis.output.dist
+        global times
+        times = 0
         s.start(ten_times)
 
 if __name__ == '__main__':
