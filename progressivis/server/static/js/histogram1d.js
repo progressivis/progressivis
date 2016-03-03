@@ -40,7 +40,7 @@ var histogram1d = function() {
    */
   function chart(){
     var histogram = [];
-    var margin = { top: 10, bottom: 25, left: 15, right: 15};
+    var margin = { top: 10, bottom: 25, left: 45, right: 15};
     var width = 400 - margin.left - margin.right;
     var height = 100 - margin.top - margin.bottom;
     var xScale = d3.scale.linear();
@@ -49,9 +49,10 @@ var histogram1d = function() {
     function my(selection){
       selection.each(function() {
         //set up scales and svg element
-        xScale.domain([histogram[0].x, histogram[histogram.length-1].x + histogram[histogram.length-1].dx]).range([0,width - margin.left - margin.right]);
+        xScale.domain([histogram[0].x, histogram[histogram.length-1].x + histogram[histogram.length-1].dx]).range([0,width]);
         yScale.domain([0, d3.max(histogram, function(d){ return d.y; })]).range([height,0]);
         var xAxis = d3.svg.axis().scale(xScale).orient("bottom");
+        var yAxis = d3.svg.axis().ticks(5).scale(yScale).orient("left");
         
         var svg = d3.select(this).selectAll("svg").data([histogram]);
         var gEnter = svg.enter().append("svg")
@@ -75,11 +76,22 @@ var histogram1d = function() {
           .attr("height", function(d) { return height - yScale(d.y); });
 
 
-        //draw horizontal axis
-        gEnter.append("g")
+        //draw axes
+        var x = svg.selectAll(".x").data([histogram]);
+        x.enter()
+           .append("g")
            .attr("class", "x axis")
-           .attr("transform", "translate(0," + height + ")")
-           .call(xAxis);
+           .attr("transform", "translate(" + margin.left + "," + (height + margin.top) + ")");
+
+        x.call(xAxis);
+
+        var y = svg.selectAll(".y").data([histogram]);
+        y.enter()
+           .append("g")
+           .attr("class", "y axis")
+           .attr("transform", "translate(" + (margin.left) + ", " + margin.top + ")");
+
+        y.call(yAxis);
       });
     }
 
