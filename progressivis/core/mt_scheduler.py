@@ -6,6 +6,7 @@ import sys, io
 from tempfile import mkstemp
 
 from contextlib import contextmanager
+from progressivis.core.synchronized import synchronized
 
 import logging
 logger = logging.getLogger(__name__)
@@ -38,13 +39,13 @@ class MTScheduler(Scheduler):
         l.setLevel(level)
         l.propagate = False
 
+    @synchronized
     def validate(self):
-        with self.lock:
-            return super(MTScheduler,self).validate()
+        return super(MTScheduler,self).validate()
 
+    @synchronized
     def invalidate(self):
-        with self.lock:
-            super(MTScheduler,self).invalidate()
+        super(MTScheduler,self).invalidate()
 
     def _before_run(self):
         logger.debug("Before run %d" % self._run_number)

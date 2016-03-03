@@ -140,3 +140,17 @@ def next_pow2(v):
   v |= v >> 32
   return v+1
 
+def indices_to_slice(indices):
+    if len(indices)==0:
+        return slice(0,0)
+    s = e = None
+    #indices.sort()
+    for i in indices:
+        if s is None:
+            s = e = i
+        elif i==e or i==e+1:
+            e=i
+        else:
+            return indices # not sliceable
+    return slice(s, e+1)
+

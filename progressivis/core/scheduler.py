@@ -1,6 +1,7 @@
 from progressivis.core.utils import ProgressiveError
 from progressivis.core.utils import AttributeDict
 from progressivis.core.sentinel import Sentinel
+from progressivis.core.synchronized import synchronized
 
 from copy import copy
 from collections import deque
@@ -91,15 +92,15 @@ class Scheduler(object):
             return 0
         return default_timer()-self._start
 
+    @synchronized
     def collect_dependencies(self, only_required=False):
         dependencies = {}
-        with self.lock:
-            for (mid, module) in self._modules.iteritems():
-                if not module.is_valid() or module==self._sentinel:
-                    continue
-                outs = [m.output_module.id for m in module.input_slot_values() \
+        for (mid, module) in self._modules.iteritems():
+            if not module.is_valid() or module==self._sentinel:
+                continue
+            outs = [m.output_module.id for m in module.input_slot_values() \
                     if m and (not only_required or module.input_slot_required(m.input_name)) ]
-                dependencies[mid] = set(outs)
+            dependencies[mid] = set(outs)
         return dependencies
 
     def compute_reachability(self, dependencies):
@@ -385,13 +386,13 @@ class Scheduler(object):
     def run_number_time(self, run_number):
         return self._run_number_time[run_number]
 
+    @synchronized
     def add_module(self, module):
-        with self.lock:
-            if not module.is_created():
-                raise ProgressiveError('Cannot add running module %s', module.id)
-            if module.id is None:
-                module._id = self.generate_id(module.pretty_typename())
-            self._add_module(module)
+        if not module.is_created():
+            raise ProgressiveError('Cannot add running module %s', module.id)
+        if module.id is None:
+            module._id = self.generate_id(module.pretty_typename())
+        self._add_module(module)
 
     def _add_module(self, module):
          self._new_modules_ids += [module.id]
@@ -401,14 +402,14 @@ class Scheduler(object):
     def module(self):
         return self._module
 
+    @synchronized
     def remove_module(self, module):
-        with self.lock:
-            if isinstance(module,str) or isinstance(module,unicode):
-                module = self.module[module]
-            module.state = self.state_zombie
+        if isinstance(module,str) or isinstance(module,unicode):
+            module = self.module[module]
+        module.state = self.state_zombie
 #            self.stop()
 #            module._stop(self._run_number)
-            self._remove_module(module)
+        self._remove_module(module)
 
     def _remove_module(self, module):
         del self._modules[module.id]
@@ -423,17 +424,17 @@ class Scheduler(object):
     def stdout_parent(self):
         yield
 
+    @synchronized
     def for_input(self, module):
-        with self.lock:
-            self._input_triggered[module.id] = 0 # don't know the run number yet
-            # limit modules to react
-            sel = self._reachability[module.id]
-            if sel:
-                if self._module_selection is None:
-                    self._module_selection = sel
-                else:
-                    self._module_selection.update(sel)
-            return self.run_number()+1
+        self._input_triggered[module.id] = 0 # don't know the run number yet
+        # limit modules to react
+        sel = self._reachability[module.id]
+        if sel:
+            if self._module_selection is None:
+                self._module_selection = sel
+            else:
+                self._module_selection.update(sel)
+        return self.run_number()+1
 
     def has_input(self):
         if self._module_selection is not None:
