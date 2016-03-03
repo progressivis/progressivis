@@ -3,6 +3,8 @@ import pandas as pd
 import logging
 logger = logging.getLogger(__name__)
 
+from .utils import next_pow2
+
 if pd.__version__ > '0.18':
     def create_index(l,h):
         return pd.RangeIndex(l,h)
@@ -13,18 +15,6 @@ else:
         return range(l,h)
     def fix_index(df,l,h):
         pass
-
-# See view-source:http://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2Float
-def next_pow2(v):
-  v -= 1;
-  v |= v >> 1
-  v |= v >> 2
-  v |= v >> 4
-  v |= v >> 8
-  v |= v >> 16
-  v |= v >> 32
-  return v+1
-
 
 class BufferedDataFrame(object):
     def __init__(self, df=None):
@@ -39,17 +29,21 @@ class BufferedDataFrame(object):
     def df(self):
         return self._df
 
+    def _create_dataframe(self,index,columns,dtype):
+        return pd.DataFrame({}, index=index,columns=columns,dtype=dtype)
+
     def resize(self, l):
         lb = 0 if self._base is None else len(self._base)
         if l > lb:
             n = next_pow2(l)
             logger.info('Resizing dataframe %s from %d to %d', hex(id(self)), lb, n)
             if self._base is None:
-                self._base = pd.DataFrame({},index=create_index(0,n))
+                self._base = self._create_dataframe(create_index(0,n),None,None)
             else:
                  # specifying the columns maintains the column order, otherwise, it gets sorted
-                self._base = self._base.append(pd.DataFrame({},index=create_index(lb,n),
-                                                            columns=self._base.columns))
+                self._base = self._base.append(self._create_dataframe(create_index(lb,n),
+                                                                      self._base.columns,
+                                                                      self._base.dtypes))
                 fix_index(self._base,0,n)
                 logger.debug('Dataframe %s grew to length=%d', hex(id(self)), len(self._base))
         self._df = self._base.iloc[0:l]
@@ -61,7 +55,7 @@ class BufferedDataFrame(object):
         if self._base is None:
             n = next_pow2(len(df))
             # specifying the columns maintains the column order, otherwise, it gets sorted
-            self._base = df.append(pd.DataFrame([],index=create_index(len(df),n),columns=df.columns))
+            self._base = df.append(self._create_dataframe(create_index(len(df),n),df.columns,df.dtypes))
             fix_index(self._base, 0, n)
             self._df = self._base.iloc[0:len(df)]
         else:
