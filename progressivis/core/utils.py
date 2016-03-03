@@ -128,3 +128,15 @@ def indices_len(ind):
     if isinstance(ind, slice):
         return ind.stop-ind.start
     return len(ind)
+
+# See view-source:http://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2Float
+def next_pow2(v):
+  v -= 1;
+  v |= v >> 1
+  v |= v >> 2
+  v |= v >> 4
+  v |= v >> 8
+  v |= v >> 16
+  v |= v >> 32
+  return v+1
+
