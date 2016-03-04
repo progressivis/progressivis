@@ -38,9 +38,12 @@ class PairwiseDistances(Module):
             return True
         return super(PairwiseDistances, self).is_ready()
 
+    def dist(self):
+        return self._buf.matrix()
+
     def get_data(self, name):
         if name=='dist':
-            return self._buf.matrix()
+            return self.dist()
         return super(PairwiseDistances, self).get_data(name)
 
     @synchronized
@@ -94,7 +97,7 @@ class PairwiseDistances(Module):
             mat[:,:] = Sj
             self._last_index = dfslot.last_index[indices]
         else:
-            Sij = pairwise_distances(i,j)
+            Sij = pairwise_distances(i,j, metric=self._metric, n_jobs=self._n_jobs)
             n0 = i.shape[0]
             n1 = n0+j.shape[0]
             mat = self._buf.resize(n1)
@@ -102,4 +105,8 @@ class PairwiseDistances(Module):
             mat[n0:n1,0:n0] = Sij.T
             mat[n0:n1,n0:n1] = Sj
             self._last_index = self._last_index.append(df.index[indices])
+            #truth = pairwise_distances(array[0:n1], metric=self._metric)
+            #import pdb
+            #pdb.set_trace()
+            #assert np.allclose(mat,truth)
         return self._return_run_step(dfslot.next_state(), steps_run=m)
