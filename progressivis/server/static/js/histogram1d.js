@@ -78,8 +78,7 @@ var histogram1d = function() {
           .attr("transform", function(d) { return "translate(" + xScale(d.x) + "," + 0 + ")"; });
 
         bar.append("rect")
-           .attr("x", 1)
-           .attr("y", function(d){ return yScale(d.y); })
+           .attr("x", 1);
 
         var rects = selection.selectAll("rect").data(histogram)
           .attr("y", function(d){ return yScale(d.y); })
