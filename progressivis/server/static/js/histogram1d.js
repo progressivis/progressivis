@@ -23,6 +23,15 @@ var histogram1d = function() {
     console.log(err);
   }
 
+  /**
+   * Converts a Progressivis-style histogram into a d3-style histogram.
+   *
+   * @param prohist - a Progressivis-style histogram, i.e. an object
+   * that contains a n-sized array "values" (histogram frequencies)
+   * and a n+1-sized array "edges" (bin edges)
+   *
+   * @return a d3-style histogram
+   */
   function process_histogram(prohist){
     return prohist.values.reduce(function(acc, val, idx, arr){
       // x: lower bound
