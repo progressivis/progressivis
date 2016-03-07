@@ -45,6 +45,8 @@ var histograms = function() {
       charts[idx](d3.select(this));
     });
 
+    histElts.exit().remove();
+
   }
 
   function error(err) {
