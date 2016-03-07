@@ -29,9 +29,9 @@ var histograms = function() {
     var histElts = d3.select("#histograms").selectAll(".hist").data(d3hists);
     var hist = histElts.enter()
                       .append("div")
-                      .attr("class", "hist");
+                      .attr("class", "hist panel panel-default");
     hist.append("div")
-        .attr("class", "colName")
+        .attr("class", "colName panel-heading")
         .text(function(d){ return d.columnName; });
     hist.append("div")
         .attr("class", "chart");
