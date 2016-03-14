@@ -39,10 +39,10 @@ class MBKMeans(DataFrameModule):
         if step_size < len(dfslot.data()):
             self.mbk.fit(X=input_df.as_matrix(columns=self.columns))
         else:
-            self.mbk.fit_partial(X=input_df.as_matrix(columns=self.columns))
+            self.mbk.partial_fit(X=input_df.as_matrix(columns=self.columns))
 
         self._df = self.get_cluster_centers_df()
-        return self._return_run_step(dfslot.next_state(), steps_run=len(dfslot.data))
+        return self._return_run_step(dfslot.next_state(), steps_run=len(dfslot.data()))
 
     def get_cluster_centers(self):
         try:
