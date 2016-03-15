@@ -16,7 +16,7 @@ class MBKMeans(DataFrameModule):
               DataFrameModule.UPDATE_COLUMN_DESC]
 
     def __init__(self, columns, n_clusters, batch_size, **kwds):
-        self.mbk = MiniBatchKMeans()
+        self.mbk = MiniBatchKMeans(n_clusters=n_clusters)
         self._add_slots(kwds, 'input_descriptors',
                 [SlotDescriptor('df', type=pd.DataFrame, required=True)])
         super(MBKMeans, self).__init__(dataframe_slot='df', **kwds)
@@ -42,6 +42,7 @@ class MBKMeans(DataFrameModule):
             self.mbk.partial_fit(X=input_df.as_matrix(columns=self.columns))
 
         self._df = self.get_cluster_centers_df()
+        self._df['_update'] = run_number
         return self._return_run_step(dfslot.next_state(), steps_run=len(dfslot.data()))
 
     def get_cluster_centers(self):
@@ -61,8 +62,8 @@ class MBKMeans(DataFrameModule):
 
     def to_json(self, short=False):
         json = super(MBKMeans, self).to_json(short)
-        #if short:
-        #    return json
+        if short:
+            return json
         return self._centers_to_json(json)
 
     def _centers_to_json(self, json):
