@@ -3,6 +3,7 @@ from progressivis import DataFrameModule, SlotDescriptor
 import numpy as np
 import pandas as pd
 
+from sklearn.utils.extmath import squared_norm
 from sklearn.cluster import MiniBatchKMeans
 
 import logging
@@ -15,35 +16,61 @@ class MBKMeans(DataFrameModule):
     schema = [('array', np.dtype(object), None),
               DataFrameModule.UPDATE_COLUMN_DESC]
 
-    def __init__(self, columns, n_clusters, batch_size, **kwds):
-        self.mbk = MiniBatchKMeans(n_clusters=n_clusters)
+    def __init__(self, columns, n_clusters, batch_size=100, tol=1e-4, **kwds):
+        self.mbk = MiniBatchKMeans(n_clusters=n_clusters,batch_size=batch_size,tol=tol)
         self._add_slots(kwds, 'input_descriptors',
                 [SlotDescriptor('df', type=pd.DataFrame, required=True)])
-        super(MBKMeans, self).__init__(dataframe_slot='df', **kwds)
+        self._add_slots(kwds,'output_descriptors',
+                        [SlotDescriptor('centroids', type=pd.DataFrame, required=False)])
+        super(MBKMeans, self).__init__(**kwds)
         self.columns = columns
         self.n_clusters = n_clusters
-        self._df = self.create_dataframe(MBKMeans.schema)
+        self._df = None
+        self._centroids = None
+        self._current_tol = np.inf
 
-    def is_ready(self):
-        return super(MBKMeans, self).is_ready()
+    def get_data(self, name):
+        if name=='centroids':
+            return self._centroids
+        return super(MBKMeans, self).get_data(name)
 
     def run_step(self, run_number, step_size, howlong):
         dfslot = self.get_input_slot('df')
         dfslot.update(run_number)
 
-        if dfslot.has_updated() or dfslot.has_deleted():
-            #No need to act (mbkmeans does not need to keep track of changes)
-            pass
+        if dfslot.has_deleted():
+            dfslot.reset()
+            dfslot.update(run_number)
+            self._df = None
+            self._centroids = None
+        if self._current_tol < self.mbk.tol and \
+           not (dfslot.has_created() or dfslot.has_updated()):
+            logger.debug('converged at run_step(%d), tol=%s', run_step, self._current_tol)
+            return self._return_run_step(self.state_blocked, steps_run=0)
 
         input_df = dfslot.data()
-        if step_size < len(dfslot.data()):
-            self.mbk.fit(X=input_df.as_matrix(columns=self.columns))
-        else:
-            self.mbk.partial_fit(X=input_df.as_matrix(columns=self.columns))
+        if len(dfslot.data()) < self.mbk.n_clusters:
+               return self._return_run_step(self.state_blocked, steps_run=0)
+        input_df = input_df[self.columns]
+        steps = 0
+        if self._df is None:
+            # bound time for initialization
+            self.mbk.fit(X=input_df.loc[0:self.mbk.batch_size].as_matrix())
+            steps = 1
+        while steps < step_size:
+            self.mbk.partial_fit(X=input_df.as_matrix())
+            steps += 1
 
-        self._df = self.get_cluster_centers_df()
-        self._df['_update'] = run_number
-        return self._return_run_step(dfslot.next_state(), steps_run=len(dfslot.data()))
+        centroids = self.get_cluster_centers_df()
+        if self._centroids is not None:
+            self._current_tol = squared_norm(self._centroids - centroids)
+        self._centroids = centroids
+        self._centroids[self.UPDATE_COLUMN] = run_number
+        df = pd.DataFrame(self.mbk.labels_)
+        #TODO optimize if the labels have not changed
+        df[self.UPDATE_COLUMN] = run_number
+        self._df = df
+        return self._return_run_step(dfslot.next_state(), steps_run=steps)
 
     def get_cluster_centers(self):
         try:

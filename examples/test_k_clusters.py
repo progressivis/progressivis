@@ -17,9 +17,9 @@ data = CSVLoader('s3.txt',sep=',',header=None,index_col=False,scheduler=s)
 mbkmeans = MBKMeans(columns=[0, 1], n_clusters=15, batch_size=100)
 mbkmeans.input.df = data.output.df
 prn = Every(scheduler=s)
-prn.input.df = mbkmeans.output.df
+prn.input.df = mbkmeans.output.centroids
 sp = ScatterPlot(0,1)
-sp.create_dependent_modules(mbkmeans,'df')
+sp.create_dependent_modules(mbkmeans,'centroids')
 
 if __name__ == '__main__':
     data.start()
