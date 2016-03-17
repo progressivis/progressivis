@@ -15,7 +15,7 @@ try:
 except:
     s = Scheduler()
 
-data = CSVLoader(get_dataset('cluster:s3'),sep=',',header=None,index_col=False,scheduler=s)
+data = CSVLoader(get_dataset('cluster:s3'),sep='    ',skipinitialspace=True,header=None,index_col=False,scheduler=s)
 mbkmeans = MBKMeans(columns=[0, 1], n_clusters=15, batch_size=100)
 mbkmeans.input.df = data.output.df
 prn = Every(scheduler=s)
