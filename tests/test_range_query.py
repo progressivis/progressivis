@@ -1,7 +1,6 @@
 import unittest
 
 from progressivis import Module, Scheduler, Constant, Print, Select, Every
-from progressivis.io import Variable
 from progressivis.stats import RandomTable, Min, Max
 from progressivis.core import RangeQuery
 from progressivis.io import CSVLoader

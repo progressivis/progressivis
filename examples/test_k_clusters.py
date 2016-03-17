@@ -3,6 +3,7 @@ from progressivis.cluster import MBKMeans
 from progressivis.io import CSVLoader
 from progressivis.stats import Min, Max, Histogram2D
 from progressivis.vis import Heatmap, ScatterPlot
+from progressivis.datasets import get_dataset
 
 """
 Clustering datasets may be found at
@@ -14,7 +15,7 @@ try:
 except:
     s = Scheduler()
 
-data = CSVLoader('s3.txt',sep=',',header=None,index_col=False,scheduler=s)
+data = CSVLoader(get_dataset('cluster:s3'),sep=',',header=None,index_col=False,scheduler=s)
 mbkmeans = MBKMeans(columns=[0, 1], n_clusters=15, batch_size=100)
 mbkmeans.input.df = data.output.df
 prn = Every(scheduler=s)

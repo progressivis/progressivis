@@ -14,6 +14,10 @@ def get_dataset(name, **kwds):
     if name=='warlogs':
         return wget_file(filename='%s/warlogs.vec.bz2'%data_dir,
                          url='http://www.cs.ubc.ca/labs/imager/video/2014/QSNE/warlogs.vec.bz2')
+    if name.startswith('cluster:'):
+        fname = name[len('cluster:'):] + ".txt"
+        return wget_file(filename='%s/%s'%(data_dir,fname),
+                         url='http://cs.joensuu.fi/sipu/datasets/%s'%fname)
     raise ProgressiveError('Unknow dataset %s', name)
 
 from .random import generate_random_csv

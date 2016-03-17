@@ -1,5 +1,8 @@
 import urllib2
 
+import logging
+logger = logging.getLogger(__name__)
+
 def wget_file(filename, url):
     attempts = 0
     while attempts < 3:
@@ -11,5 +14,5 @@ def wget_file(filename, url):
             break
         except urllib2.URLError as e:
             attempts += 1
-            print type(e)
+            logger.error('Failed to load %s',e)
     return filename
