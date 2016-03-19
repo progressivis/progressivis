@@ -62,6 +62,9 @@ class Scheduler(object):
         #traceback.print_stack()
         return FakeLock()
 
+    def join(self):
+        pass
+
     def clear(self):
         self._modules = dict()
         self._module = AttributeDict(self._modules)

@@ -22,6 +22,10 @@ class MTScheduler(Scheduler):
     def create_lock(self):
         return threading.RLock()
 
+    def join(self):
+        if self.thread is not None:
+            self.thread.join()
+
     @staticmethod
     def set_default():
         if not isinstance(Scheduler.default, MTScheduler):
