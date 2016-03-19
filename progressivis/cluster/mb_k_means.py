@@ -26,6 +26,7 @@ class MBKMeans(DataFrameModule):
         self._df = None
         self._centroids = None
         self._current_tol = np.inf
+        self.default_step_size = 100
 
     def get_data(self, name):
         if name=='centroids':
@@ -33,9 +34,8 @@ class MBKMeans(DataFrameModule):
         return super(MBKMeans, self).get_data(name)
 
     def is_ready(self):
-        if self._current_tol > self.mbk.tol:
-            return True
-        return super(MBKMeans, self).is_ready()
+        return super(MBKMeans, self).is_ready() or \
+          self._current_tol > self.mbk.tol
 
     def run_step(self, run_number, step_size, howlong):
         dfslot = self.get_input_slot('df')
@@ -81,9 +81,8 @@ class MBKMeans(DataFrameModule):
         logger.debug('Tolerance: %s', self._current_tol)
         if self._current_tol < self.mbk.tol:
             logger.debug('Tolerance is good')
-            if not (dfslot.has_created() or dfslot.has_updated()):
-                self._return_run_step(self.state_blocked, steps_run=steps)
-            logger.debug('But more work to do, created: %d, updated: %d', dfslot.created_length(), dfslot.updated_length())
+            return self._return_run_step(self.state_blocked, steps_run=steps)
+        logger.debug('Tolerance not good enough')
         return self._return_run_step(self.state_ready, steps_run=steps)
 
     def is_visualization(self):
