@@ -52,5 +52,5 @@ if __name__=='__main__':
         scheluder.to_json()
         scatterplot.to_json() # simulate a web query
         scatterplot.get_image()
-    s.thread.join()
+    s.join()
     print len(csv.df())

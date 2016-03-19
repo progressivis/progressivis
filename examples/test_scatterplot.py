@@ -26,5 +26,5 @@ scatterplot.create_dependent_modules(csv,'df')
 
 if __name__=='__main__':
     csv.start()
-    s.thread.join()
+    s.join()
     print len(csv.df())
