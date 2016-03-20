@@ -13,13 +13,13 @@ function dataframe_update(data) {
 }
 
 function dataframe_update_table(data) {
-    var columns = data['columns'].map(function(c) { return {title: c}; }),
+    var columns = data['columns'].map(function(c) { return {"sTitle": c.toString()}; }),
         dataSet = data['data'],
         index = data['index'];
     for (var i = 0; i < index.length; i++) {
-        dataSet[i].unshift(index[i]);
+        dataSet[i].unshift(index[i].toString());
     }
-    columns.unshift({title: 'index'});
+    columns.unshift({"sTitle": 'index'});
 
     $('#dataframe').DataTable( {
         "data": dataSet,

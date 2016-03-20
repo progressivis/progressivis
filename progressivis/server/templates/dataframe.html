@@ -6,6 +6,7 @@ Progressivis Server
 
 {% block extra_scripts %}
 <link  type='text/css' href="{{ url_for('static', filename='css/datatables.min.css') }}"></link>
+<link  type='text/css' href="{{ url_for('static', filename='css/datatables.bootstrap.min.css') }}"></link>
 <script type="text/javascript" charset="utf8" src="{{ url_for('static', filename='lib/datatables.min.js') }}"></script>
 <script type="text/javascript" charset="utf8"  src="{{ url_for('progressivis.server.progressivis_file', filename='js/dataframe.js') }}"></script>
 {% endblock %}
@@ -28,7 +29,7 @@ $(document).ready(dataframe_ready);
 
   <div id='error'></div>
 
-<div><table id='dataframe' class='dataframe display' cellspacing="0" width="100%"></table></div>
+<div><table id='dataframe' class='dataframe table-striped table-hover table-bordered' cellspacing="0" width="100%"></table></div>
 
 
 {% endblock %}
