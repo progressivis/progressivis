@@ -1,3 +1,4 @@
+from progressivis.core.module import Module
 from progressivis.core.utils import ProgressiveError
 from progressivis.core.utils import AttributeDict
 from progressivis.core.sentinel import Sentinel
@@ -130,7 +131,7 @@ class Scheduler(object):
         all_vis = set(self.get_visualizations())
         for i1 in range(n):
             v1 = k[i1]
-            s = set()
+            s = {v1}
             for i2 in range(n):
                 v2 = k[i2]
                 dst = dist[i1,i2]
@@ -437,6 +438,7 @@ class Scheduler(object):
                 self._module_selection = sel
             else:
                 self._module_selection.update(sel)
+            print('Input selection: ', self._module_selection)
         return self.run_number()+1
 
     def has_input(self):

@@ -465,8 +465,9 @@ class Module(object):
                     term_count += 1
                 elif in_ts > ts:
                     ready_count += 1
-                
-            if in_count != 0 and term_count==in_count: # if all the input slot modules are terminated or invalid
+
+            # if all the input slot modules are terminated or invalid                
+            if not self.is_input() and in_count != 0 and term_count==in_count:
                 logger.info('%s becomes zombie because all its input slots are terminated', self.id)
                 self.state = Module.state_zombie
                 return False
