@@ -1,4 +1,4 @@
-from progressivis.core import DataFrameModule, NAry
+from progressivis.core import NAry
 from progressivis.core.slot import SlotDescriptor
 from progressivis.stats import Histogram1D
 
@@ -45,7 +45,7 @@ class Histograms(NAry):
         dfslot.update(run_number)
         col_changes = dfslot.column_changes
         if col_changes is not None:
-            self.create_columns(col_changes.created, dfslot.data())
+            self.create_columns(col_changes.created, input_df)
             self.delete_columns(col_changes.deleted)
         return self._return_run_step(self.state_blocked, steps_run=1)
 

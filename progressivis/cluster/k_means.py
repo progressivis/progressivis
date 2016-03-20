@@ -1,4 +1,4 @@
-from progressivis.core.utils import ProgressiveError, indices_len
+from progressivis.core.utils import indices_len
 from progressivis.core.dataframe import DataFrameModule
 from progressivis.core.slot import SlotDescriptor
 
@@ -9,7 +9,7 @@ class KMeans(DataFrameModule):
     def __init__(self, k, columns=None, **kwds):
         self._add_slots(kwds,'input_descriptors',
                         [SlotDescriptor('df', type=pd.DataFrame)])
-        super(Percentiles, self).__init__(dataframe_slot='percentiles', **kwds)
+        super(KMeans, self).__init__(dataframe_slot='percentiles', **kwds)
         self._columns = columns
         self._k = k
         self.default_step_size = 1000
@@ -17,7 +17,7 @@ class KMeans(DataFrameModule):
     def is_ready(self):
         if self.get_input_slot('df').has_created():
             return True
-        return super(Percentiles, self).is_ready()
+        return super(KMeans, self).is_ready()
 
     def run_step(self,run_number,step_size,howlong):
         dfslot = self.get_input_slot('df')

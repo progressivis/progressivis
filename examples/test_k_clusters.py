@@ -14,7 +14,7 @@ try:
     s = scheduler
 except:
     s = Scheduler()
-    log_level(package="progressivis.cluster")
+    #log_level(package="progressivis.cluster")
 
 data = CSVLoader(get_dataset('cluster:s3'),sep='    ',skipinitialspace=True,header=None,index_col=False,scheduler=s)
 mbkmeans = MBKMeans(columns=[0, 1], n_clusters=15, batch_size=100, scheduler=s)
@@ -22,6 +22,7 @@ mbkmeans.input.df = data.output.df
 prn = Every(scheduler=s)
 prn.input.df = mbkmeans.output.centroids
 sp = ScatterPlot(0,1, scheduler=s)
+sp.move_point = mbkmeans # for input management
 #sp.create_dependent_modules(mbkmeans,'centroids')
 # Create modules by hand rather than with the utility.
 # We show the cluster centroids on the scatterplot and the

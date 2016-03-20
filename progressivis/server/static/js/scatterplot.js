@@ -40,6 +40,30 @@ function scatterplot_update(data) {
 
 function _db(b) { return b[1]-b[0]; }
 
+function scatterplot_dragstart(d, i) {
+    d3.event.sourceEvent.stopPropagation();
+    d3.select(this).classed("dragging", true);
+}
+
+function scatterplot_dragmove(d, i) {
+    d[0] = x0.invert(d3.event.x);
+    d[1] = y0.invert(d3.event.y);
+    d3.select(this)
+        .attr("cx", d3.event.x)
+        .attr("cy", d3.event.y);
+}
+
+function scatterplot_dragend(d, i) {
+    var msg = {};
+    d3.select(this).classed("dragging", false);
+    msg[i] = d;
+    module_input(msg, ignore, progressivis_error, module_id+"/move_point");
+}
+
+var node_drag = d3.behavior.drag()
+        .on("dragstart", scatterplot_dragstart)
+        .on("drag", scatterplot_dragmove)
+        .on("dragend", scatterplot_dragend);
 /*
  We use a transform that is a bit tricky.
  All the coordinates are translated in pixels by the x0/y0 scales.
@@ -79,7 +103,8 @@ function scatterplot_update_vis(rawdata) {
             .attr("y", 0)
             .attr("width", width)
             .attr("height", height)
-            .attr("fill", "black");
+            .style("fill", "none")
+            .style("pointer-events", "all");
 
         var zoomable = svg.append("g").attr('id', 'zoomable');
 
@@ -90,6 +115,7 @@ function scatterplot_update_vis(rawdata) {
             
         zoomable.append("image")
             .attr("class", "heatmap")
+            .style("pointer-events",  "none")
             .attr("xlink:href", rawdata['image'])
             .attr("preserveAspectRatio", "none")
             .attr("x", ix)
@@ -99,9 +125,10 @@ function scatterplot_update_vis(rawdata) {
             .attr("filter", "url(#gaussianBlur)");
 
         svg.append("image")
-           .attr("class", "heatmapCompare")
-           .attr("preserveAspectRatio", "none")
-           .attr("opacity", 0.5)
+            .attr("class", "heatmapCompare")
+            .style("pointer-events",  "none")
+            .attr("preserveAspectRatio", "none")
+            .attr("opacity", 0.5)
             .attr("x", ix)
             .attr("y", iy)
             .attr("width",  iw)
@@ -128,6 +155,7 @@ function scatterplot_update_vis(rawdata) {
             .attr("dy", ".71em")
             .style("text-anchor", "end")
             .text(data['columns'][1]);
+
         firstTime = false;
     }
     else { // not firstTime
@@ -210,12 +238,13 @@ function scatterplot_update_vis(rawdata) {
          .attr("cx", function(d) { return x0(d[0]); }) // use untransformed x0/y0
          .attr("cy", function(d) { return y0(d[1]); })
          .style("fill", "blue") //function(d) { return color(d.species); });
+         .call(node_drag)
         .append("title")
         .text(function(d, i) { return index[i]; });
     dots//.transition()  // Transition from old to new
         //.duration(500)  // Length of animation
          .attr("cx", function(d) { return x0(d[0]); })
-         .attr("cy", function(d) { return y0(d[1]); });    
+         .attr("cy", function(d) { return y0(d[1]); });
     dots.exit().remove();
     dots.order();
 }

@@ -161,7 +161,7 @@ def module_set_parameter(id):
 def module_input(path):
     module = path_to_module(path)
     if module is None:
-        abort(404)
+        abort(405)
     var_values = request.get_json()
     msg = ''
     try:

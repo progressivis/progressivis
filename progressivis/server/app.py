@@ -75,6 +75,9 @@ class ProgressiveWebSocket(WebSocketHandler):
 class ProgressivisBlueprint(Blueprint):
     def __init__(self, *args, **kwargs):
         super(ProgressivisBlueprint, self).__init__(*args, **kwargs)
+        self.start_logging()
+
+    def start_logging(self):
         out = self._log_stream = StringIO()
         out.write("<html><body><table><tr><th>Time</th><th>Name</th><th>Level</th><th>Message</th></tr>\n");
         ch = logging.StreamHandler(stream=self._log_stream)
