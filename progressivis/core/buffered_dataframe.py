@@ -29,6 +29,9 @@ class BufferedDataFrame(object):
     def df(self):
         return self._df
 
+    def __len__(self):
+        return 0 if self._base is None else len(self._df)
+
     def _create_dataframe(self,index,columns,dtype):
         return pd.DataFrame({}, index=index,columns=columns,dtype=dtype)
 

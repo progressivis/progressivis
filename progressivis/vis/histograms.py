@@ -43,6 +43,7 @@ class Histograms(NAry):
         dfslot = self.get_input_slot('df')
         input_df = dfslot.data()
         dfslot.update(run_number)
+        dfslot.flush_buffers()
         col_changes = dfslot.column_changes
         if col_changes is not None:
             self.create_columns(col_changes.created, input_df)

@@ -273,9 +273,12 @@ class Scheduler(object):
 
     def set_idle_proc(self, idle_proc):
         if idle_proc is None or callable(idle_proc):
-            self.idle_proc = idle_proc
+            self._idle_proc = idle_proc
         else:
             raise ProgressiveError('value should be callable or None', idle_proc)
+
+    def idle_proc(self):
+        return self._idle_proc
 
     def slots_updated(self):
         self._slots_updated = True

@@ -19,6 +19,12 @@ class DataFrameSlot(Slot):
         if self.changes is not None:
             self.changes.reset()
 
+    def flush_buffers(self):
+        return self.changes.flush_buffers()
+
+    def flush_created(self):
+        return self.changes.flush_created()
+
     def next_created(self, n=None):
         return self.changes.next_created(n)
 
@@ -32,6 +38,9 @@ class DataFrameSlot(Slot):
             return self.changes.created_length()
         return 0
     
+    def flush_updated(self):
+        return self.changes.flush_updated()
+
     def next_updated(self, n=None):
         return self.changes.next_updated(n)
 
@@ -42,6 +51,9 @@ class DataFrameSlot(Slot):
 
     def updated_length(self):
         return self.changes.updated_length()
+
+    def flush_deleted(self):
+        return self.changes.flush_deleted()
 
     def next_deleted(self, n=None):
         return self.changes.next_deleted(n)

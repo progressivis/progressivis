@@ -102,12 +102,20 @@ class ChangeManager(object):
 
     @property
     def column_changes(self):
-        return self._column_changes
+        return self._column_changes       
+
+    def flush_buffers(self):
+        self.flush_created()
+        self.flush_updated()
+        self.flush_deleted()
 
     def buffer_created(self, v=True):
         self._buffer_created = v
         if not v:
             self._created = NIL
+
+    def flush_created(self):
+        self._created = NIL
 
     def next_created(self, n=None):
         """
@@ -136,6 +144,9 @@ class ChangeManager(object):
         if not v:
             self._updated = NIL
 
+    def flush_updated(self):
+        self._updated = NIL
+
     def next_updated(self, n=None):
         """
         Return at most n indices of newly updated items. If n is not provided, return the
@@ -162,6 +173,9 @@ class ChangeManager(object):
         self._buffer_deleted = v
         if not v:
             self._deleted = NIL
+
+    def flush_deleted(self):
+        self._deleted = NIL
 
     def next_deleted(self, n=None):
         """

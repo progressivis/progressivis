@@ -21,6 +21,10 @@ class Sentinel(Module):
         if self.scheduler().run_queue_length() == 0: # lonely in the queue
             return self._return_run_step(Module.state_zombie, steps_run=1)
         if self.last_update() is (run_number-1): # nothing else was run
-            logger.info('sleeping %f', self._min_time)
-            time.sleep(self._min_time)
+            idle = self.scheduler().idle_proc()
+            if idle is None:
+                logger.info('sleeping %f', self._min_time)
+                time.sleep(self._min_time)
+            else:
+                idle(self.scheduler(), run_number)
         return self._return_run_step(Module.state_blocked, steps_run=1)
