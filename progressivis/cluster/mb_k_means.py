@@ -69,7 +69,7 @@ class MBKMeans(DataFrameModule):
             self._centroids = None
 
         input_df = dfslot.data()
-        if dfslot.created_length() < self.mbk.n_clusters:
+        if (len(self._df)+dfslot.created_length()) < self.mbk.n_clusters:
             # Should add more than k items per loop
             return self._return_run_step(self.state_blocked, steps_run=0)
         indices = dfslot.next_created(step_size) # returns a slice
@@ -83,13 +83,8 @@ class MBKMeans(DataFrameModule):
         X = input_df.loc[indices,self.columns].values
         batch_size = self.mbk.batch_size or 100
         chunks = range(0, steps, batch_size)
-        last = chunks[-1]
-        if (steps-last) <= self.mbk.n_clusters:
-            del chunks[-1]
-        chunks = zip(chunks, (chunks[1:]+[steps]))
-        for (start,stop) in chunks:
-            #print "start, stop:", start, stop
-            self.mbk.partial_fit(X[start:stop])
+        for start in chunks:
+            self.mbk.partial_fit(X[start:start+batch_size])
             df = pd.DataFrame({'labels': self.mbk.labels_})
             df[self.UPDATE_COLUMN] = run_number
             self._df.append(df)
