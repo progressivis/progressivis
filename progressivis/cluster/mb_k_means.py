@@ -20,34 +20,45 @@ class MBKMeans(DataFrameModule):
         self._add_slots(kwds, 'input_descriptors',
                         [SlotDescriptor('df', type=pd.DataFrame, required=True)])
         self._add_slots(kwds,'output_descriptors',
-                        [SlotDescriptor('centroids', type=pd.DataFrame, required=False),
-                         SlotDescriptor('inertia', type=pd.DataFrame, required=False)])
+                         [SlotDescriptor('labels', type=pd.DataFrame, required=False)])
         super(MBKMeans, self).__init__(**kwds)
         self.mbk = MiniBatchKMeans(n_clusters=n_clusters, batch_size=batch_size,
                                    verbose=True,
                                    tol=tol, random_state=random_state)
         self.columns = columns
         self.n_clusters = n_clusters
-        self._df = BufferedDataFrame()
-        self._centroids = None
-        self._inertia = BufferedDataFrame()
-        self._rel_tol = tol
         self.default_step_size = 100
+        self._buffer = None
+        self._labels = None
 
-    def df(self):
-        return self._df.df()
+    def reset(self):
+        self.mbk = MiniBatchKMeans(n_clusters=self.mbk.n_clusters,
+                                   batch_size=self.mbk.batch_size,
+                                   tol=self._rel_tol,
+                                   random_state=self.mbk.random_state)
+        dfslot = self.get_input_slot('df')
+        dfslot.reset()
+        if self._buffer:
+            self._buffer.reset()
+        self._labels = None
 
-    def inertia(self):
-        return self._inertia.df()
+    def validate_outputs(self):
+        valid = super(MBKMeans, self).validate_inputs()
+        if valid:
+            opt_slot = self.get_output_slot('labels')
+            if opt_slot:
+                logger.debug('Maintaining labels')
+                self._buffer = BufferedDataFrame()
+            else:
+                logger.debug('Not maintaining labels')
+        return valid
 
-    def centroids(self):
-        return self._centroids
-        
+    def labels(self):
+        return self._labels
+
     def get_data(self, name):
-        if name=='centroids':
-            return self.centroids()
-        if name=='inertia':
-            return self.inertia()
+        if name=='labels':
+            return self.labels()
         return super(MBKMeans, self).get_data(name)
 
     def run_step(self, run_number, step_size, howlong):
@@ -56,20 +67,10 @@ class MBKMeans(DataFrameModule):
 
         if dfslot.has_deleted() or dfslot.has_updated():
             logger.debug('has deleted or updated, reseting')
-            dfslot.reset()
+            self.reset()
             dfslot.update(run_number)
-            # need to reset the mini batch as well
-            self.mbk = MiniBatchKMeans(n_clusters=self.mbk.n_clusters,
-                                       batch_size=self.mbk.batch_size,
-                                       tol=self._rel_tol,
-                                       random_state=self.mbk.random_state)
-            self._buffer.reset()
-            self._df = BufferedDataFrame()
-            self._inertia = BufferedDataFrame()
-            self._centroids = None
 
-        input_df = dfslot.data()
-        if (len(self._df)+dfslot.created_length()) < self.mbk.n_clusters:
+        if (dfslot.created_length()) < self.mbk.n_clusters:
             # Should add more than k items per loop
             return self._return_run_step(self.state_blocked, steps_run=0)
         indices = dfslot.next_created(step_size) # returns a slice
@@ -78,6 +79,8 @@ class MBKMeans(DataFrameModule):
             return self._return_run_step(self.state_blocked, steps_run=0)
         if isinstance(indices,slice):
             indices=slice(indices.start,indices.stop-1) # semantic of slice with .loc
+
+        input_df = dfslot.data()
         if self.columns is None:
             self.columns = input_df.columns.difference([self.UPDATE_COLUMN])
         X = input_df.loc[indices,self.columns].values
@@ -85,18 +88,17 @@ class MBKMeans(DataFrameModule):
         chunks = range(0, steps, batch_size)
         for start in chunks:
             self.mbk.partial_fit(X[start:start+batch_size])
-            df = pd.DataFrame({'labels': self.mbk.labels_})
-            df[self.UPDATE_COLUMN] = run_number
-            self._df.append(df)
+            if self._buffer is not None:
+                df = pd.DataFrame({'labels': self.mbk.labels_})
+                df[self.UPDATE_COLUMN] = run_number
+                self._buffer.append(df)
 
-        centroids = pd.DataFrame(self.mbk.cluster_centers_.copy(), columns=self.columns)
-        if self._centroids is not None:
-            centroids_nocol = self._centroids[self.columns]
-            centroids[self.UPDATE_COLUMN] = run_number
-            #centroids.loc[centroids!=centroids_nocol,self.UPDATE_COLUMN] = run_number
-        else:
-            centroids[self.UPDATE_COLUMN] = run_number
-        self._centroids = centroids
+        with self.lock:
+            self._df = pd.DataFrame(self.mbk.cluster_centers_, columns=self.columns)
+            self._df[self.UPDATE_COLUMN] = run_number
+            if self._buffer is not None:
+                logger.debug('Setting the labels')
+                self._labels = self._buffer.df()
         return self._return_run_step(dfslot.next_state(), steps_run=steps)
 
     def is_visualization(self):
@@ -109,8 +111,8 @@ class MBKMeans(DataFrameModule):
         return self._centers_to_json(json)
 
     def _centers_to_json(self, json):
-        if self._centroids is not None:
-            json['cluster_centers'] = self._centroids.to_json()
+        if self._df is not None:
+            json['cluster_centers'] = self._df.to_json()
         return json
 
     def set_centroid(self, c, values):
@@ -119,7 +121,7 @@ class MBKMeans(DataFrameModule):
         except:
             pass
 
-        centroids = self._centroids
+        centroids = self._df
         if c not in centroids.index:
             raise ProgressiveError('Expected %s values, received %s', len(self.columns), values)
 
