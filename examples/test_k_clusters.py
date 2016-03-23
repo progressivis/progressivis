@@ -20,7 +20,7 @@ data = CSVLoader(get_dataset('cluster:s3'),sep='    ',skipinitialspace=True,head
 mbkmeans = MBKMeans(columns=[0, 1], n_clusters=15, batch_size=100, scheduler=s)
 mbkmeans.input.df = data.output.df
 prn = Every(scheduler=s)
-prn.input.df = mbkmeans.output.centroids
+prn.input.df = mbkmeans.output.df
 sp = ScatterPlot(0,1, scheduler=s)
 sp.move_point = mbkmeans # for input management
 #sp.create_dependent_modules(mbkmeans,'centroids')
@@ -42,7 +42,7 @@ heatmap = Heatmap(filename='heatmap%d.png', history=100, scheduler=s)
 heatmap.input.array = histogram2d.output.df
 # scatterplot
 sp.input.heatmap = heatmap.output.heatmap
-sp.input.df = mbkmeans.output.centroids
+sp.input.df = mbkmeans.output.df
 
 if __name__ == '__main__':
     data.start()

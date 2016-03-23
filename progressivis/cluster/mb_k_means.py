@@ -16,7 +16,7 @@ class MBKMeans(DataFrameModule):
     """
     Mini-batch k-means using the sklearn implementation.
     """
-    def __init__(self, n_clusters, columns=None, batch_size=100, tol=0.0, random_state=None,**kwds):
+    def __init__(self, n_clusters, columns=None, batch_size=100, tol=0.0, is_input=True, random_state=None,**kwds):
         self._add_slots(kwds, 'input_descriptors',
                         [SlotDescriptor('df', type=pd.DataFrame, required=True)])
         self._add_slots(kwds,'output_descriptors',
@@ -30,6 +30,7 @@ class MBKMeans(DataFrameModule):
         self.default_step_size = 100
         self._buffer = None
         self._labels = None
+        self._is_input = is_input
 
     def reset(self):
         self.mbk = MiniBatchKMeans(n_clusters=self.mbk.n_clusters,
@@ -134,7 +135,7 @@ class MBKMeans(DataFrameModule):
         return values
 
     def is_input(self):
-        return True
+        return self._is_input
 
     def from_input(self, msg):
         logger.info('Received message %s', msg)
