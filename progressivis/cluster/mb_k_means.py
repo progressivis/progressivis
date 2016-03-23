@@ -32,14 +32,16 @@ class MBKMeans(DataFrameModule):
         self._labels = None
         self._is_input = is_input
 
-    def reset(self):
+    def reset(self, init='k-means++'):
+        print "Reset, init=", init
         self.mbk = MiniBatchKMeans(n_clusters=self.mbk.n_clusters,
                                    batch_size=self.mbk.batch_size,
-                                   tol=self._rel_tol,
+                                   init=init,
+                                   #tol=self._rel_tol,
                                    random_state=self.mbk.random_state)
         dfslot = self.get_input_slot('df')
         dfslot.reset()
-        if self._buffer:
+        if self._buffer is not None:
             self._buffer.reset()
         self._labels = None
 
@@ -141,3 +143,4 @@ class MBKMeans(DataFrameModule):
         logger.info('Received message %s', msg)
         for c in msg:
             self.set_centroid(c, msg[c])
+        self.reset(init=self.mbk.cluster_centers_)
