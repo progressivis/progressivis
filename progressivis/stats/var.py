@@ -36,6 +36,9 @@ class OnlineVariance(object):
 
 
 class Var(DataFrameModule):
+    """
+    Compute the variance of the columns of an input dataframe.
+    """
     parameters = [('history', np.dtype(int), 3)]
 
     def __init__(self, columns=None, **kwds):
