@@ -459,12 +459,15 @@ class Module(object):
                 in_count += 1
                 in_module = slot.output_module
                 in_ts = in_module.last_update()
-                ts = self.last_update()
+                ts = slot.last_update()
 
-                if in_module.is_terminated() or in_module.state==Module.state_invalid:
-                    term_count += 1
-                elif in_ts > ts:
+                # logger.debug('for %s[%s](%d)->%s(%d)',
+                #              slot.input_module.id, slot.input_name, in_ts,
+                #              slot.output_name, ts)
+                if in_ts > ts:
                     ready_count += 1
+                elif in_module.is_terminated() or in_module.state==Module.state_invalid:
+                    term_count += 1
 
             # if all the input slot modules are terminated or invalid                
             if not self.is_input() and in_count != 0 and term_count==in_count:

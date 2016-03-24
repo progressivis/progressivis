@@ -9,6 +9,11 @@ class DataFrameSlot(Slot):
         super(DataFrameSlot, self).__init__(output_module, output_name, input_module, input_name)
         self.changes = None
 
+    def last_update(self):
+        if self.changes:
+            return self.changes.last_update()
+        return super(DataFrameSlot, self).last_update()
+
     def update(self, run_number):
         c = self.changemanager
         with self.lock:
@@ -76,13 +81,6 @@ class DataFrameSlot(Slot):
     def column_changes(self):
         if self.changes:
             return self.changes.column_changes
-        else:
-            return None
-
-    @property
-    def last_time(self):
-        if self.changes:
-            return self.changes.last_time
         else:
             return None
 

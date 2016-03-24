@@ -18,7 +18,7 @@ class ChangeManager(object):
         self.reset()
 
     def reset(self):
-        self.last_run = 0
+        self._last_update = 0
         self.index = NIL_INDEX
         self.column_index = NIL_INDEX
         self._created = NIL
@@ -33,17 +33,19 @@ class ChangeManager(object):
             return Module.state_ready
         if self._buffer_deleted and  self.has_deleted():
             return Module.state_ready
-
         return Module.state_blocked
 
+    def last_update(self):
+        return self._last_update
+
     def update(self, run_number, df):
-        if df is None or run_number <= self.last_run:
+        if df is None or run_number <= self._last_update:
             return
         index = df.index
         if index.has_duplicates:
             logger.error('cannot update changes, Index has duplicates')
         uc = df[Module.UPDATE_COLUMN]
-        if self.last_run==0:
+        if self._last_update==0:
             self.index = index
             self.column_index = df.columns
             if self._buffer_created:
@@ -60,14 +62,14 @@ class ChangeManager(object):
             l2 = len(index) 
             if l1 <= l2 and np.array_equal(self.index,index[0:l1]):
                 deleted = NIL
-                updated = np.where(uc[0:l1] > self.last_run)[0]
+                updated = np.where(uc[0:l1] > self._last_update)[0]
                 created = index[l1:]
             #TODO: These computations are potentially expensive
             # later, optimize them by testing simple cases first
             # such as only created items, or only updated items
             else:
                 deleted = self.index.difference(index).values
-                updated = np.where(uc[self.index] > self.last_run)[0]
+                updated = np.where(uc[self.index] > self._last_update)[0]
                 created = index.difference(self.index).values
 
             if self._buffer_created:
@@ -91,7 +93,7 @@ class ChangeManager(object):
             if self._manage_columns:
                 self._column_changes = index_changes(df.columns, self.column_index)
             self.column_index = df.columns
-        self.last_run = run_number
+        self._last_update = run_number
         logger.debug('Updating for run_number %d: updated:%d/created:%d/deleted:%d',
                     run_number, len(self._updated), len(self._created), len(self._deleted))
 

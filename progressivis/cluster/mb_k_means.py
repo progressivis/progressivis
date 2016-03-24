@@ -43,6 +43,7 @@ class MBKMeans(DataFrameModule):
         dfslot.reset()
         if self._buffer is not None:
             self._buffer.reset()
+        self._df = None
         self._labels = None
 
     def validate_outputs(self):
@@ -73,7 +74,8 @@ class MBKMeans(DataFrameModule):
             self.reset()
             dfslot.update(run_number)
 
-        if (dfslot.created_length()) < self.mbk.n_clusters:
+        print('dfslot has buffered %d elements'% dfslot.created_length())
+        if dfslot.created_length() < self.mbk.n_clusters:
             # Should add more than k items per loop
             return self._return_run_step(self.state_blocked, steps_run=0)
         indices = dfslot.next_created(step_size) # returns a slice

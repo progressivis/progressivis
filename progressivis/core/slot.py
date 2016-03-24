@@ -37,6 +37,9 @@ class Slot(object):
     def __repr__(self):
         return self.__unicode__()
 
+    def last_update(self):
+        return self.input_module.last_update()
+
     def to_json(self):
         return {'output_name': self.output_name,
                 'output_module': self.output_module.id,
