@@ -9,6 +9,7 @@ import pandas as pd
 import logging
 logger = logging.getLogger(__name__)
 
+# Should translate that to Cython eventually
 class OnlineVariance(object):
     """
     Welford's algorithm computes the sample variance incrementally.

@@ -5,6 +5,7 @@ from progressivis.core.slot import SlotDescriptor
 import numpy as np
 import pandas as pd
 
+# Should use a Cython implementation eventually
 from tdigest import TDigest
 
 def _pretty_name(x):
