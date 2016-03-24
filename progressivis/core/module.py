@@ -678,12 +678,13 @@ class Module(object):
         if len(index)==0:
             return None
         idx = index[-1]
-        if as_series:
-            last = df.loc[idx]
-        else:
-            last = df.loc[[idx]]
+        cols = df.columns
         if remove_update:
-            del last[Module.UPDATE_COLUMN]
+            cols = cols.difference([Module.UPDATE_COLUMN])
+        if as_series:
+            last = df.loc[idx,cols]
+        else:
+            last = df.loc[[idx],cols]
         return last
 
     @staticmethod

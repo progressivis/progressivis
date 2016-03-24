@@ -9,21 +9,59 @@ import pandas as pd
 import logging
 logger = logging.getLogger(__name__)
 
+class OnlineVariance(object):
+    """
+    Welford's algorithm computes the sample variance incrementally.
+    """
 
-class Min(DataFrameModule):
+    def __init__(self, ddof=1):
+        self.ddof, self.n, self.mean, self.M2 = ddof, 0, 0.0, 0.0
+
+    def add(self, iterable):
+        if iterable is not None:
+            for datum in iterable:
+                self.include(datum)
+
+    def include(self, datum):
+        if np.isnan(datum): return
+        self.n += 1
+        self.delta = datum - self.mean
+        self.mean += self.delta / self.n
+        self.M2 += self.delta * (datum - self.mean)
+        self.variance = self.M2 / (self.n - self.ddof)
+
+    @property
+    def std(self):
+        return np.sqrt(self.variance)
+
+
+class Var(DataFrameModule):
     parameters = [('history', np.dtype(int), 3)]
 
     def __init__(self, columns=None, **kwds):
         self._add_slots(kwds,'input_descriptors',
                         [SlotDescriptor('df', type=pd.DataFrame, required=True)])
-        super(Min, self).__init__(**kwds)
+        super(Var, self).__init__(**kwds)
         self._columns = columns
-        self.default_step_size = 10000
+        self._data = {}
+        self.default_step_size = 1000
 
     def is_ready(self):
         if self.get_input_slot('df').has_created():
             return True
-        return super(Min, self).is_ready()
+        return super(Var, self).is_ready()
+
+    def op(self, chunk):
+        cols = chunk.columns
+        ret = []
+        for c in cols:
+            data = self._data.get(c)
+            if data is None:
+                data = OnlineVariance()
+                self._data[c] = data
+            data.add(chunk[c])
+            ret.append(data.variance)
+        return pd.Series(ret, index=cols)
 
     @synchronized
     def run_step(self,run_number,step_size,howlong):
@@ -51,19 +89,13 @@ class Min(DataFrameModule):
                     logger.error('Nonexistant columns %s in dataframe, ignoring', self._columns)
                     self._columns = input_df.columns.difference([self.UPDATE_COLUMN])
 
-        op = input_df.loc[indices,self._columns].min()
-        if not op.index.equals(self._columns):
-            # some columns are not numerical
-            self._columns = op.index
-
+        op = self.op(input_df.loc[indices,self._columns])
         op[self.UPDATE_COLUMN] = run_number
         if self._df is None:
-            self._df = pd.DataFrame([op],index=[run_number])
+            self._df = pd.DataFrame([op], index=[run_number])
         else:
-            op = pd.concat([self.last_row(self._df), op], axis=1).min(axis=1)
-            # Also computed the min over the UPDATE_COLUMNS so reset it
-            op[self.UPDATE_COLUMN] = run_number
             self._df.loc[run_number] = op
+        print self._df
 
         if len(self._df) > self.params.history:
             self._df = self._df.loc[self._df.index[-self.params.history:]]

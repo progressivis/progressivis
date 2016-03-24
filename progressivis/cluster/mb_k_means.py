@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 
 from sklearn.utils.extmath import squared_norm
-from sklearn.utils import check_random_state
+from sklearn.utils import check_random_state, gen_batches
 from sklearn.cluster import MiniBatchKMeans
 
 import logging
@@ -90,9 +90,8 @@ class MBKMeans(DataFrameModule):
             self.columns = input_df.columns.difference([self.UPDATE_COLUMN])
         X = input_df.loc[indices,self.columns].values
         batch_size = self.mbk.batch_size or 100
-        chunks = range(0, steps, batch_size)
-        for start in chunks:
-            self.mbk.partial_fit(X[start:start+batch_size])
+        for batch in gen_batches(steps, batch_size):
+            self.mbk.partial_fit(X[batch])
             if self._buffer is not None:
                 df = pd.DataFrame({'labels': self.mbk.labels_})
                 df[self.UPDATE_COLUMN] = run_number
