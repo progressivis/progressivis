@@ -2,11 +2,13 @@ __all__ = [ "ProgressiveError", "type_fullname", "indices_len", "Scheduler", "MT
             "version", "__version__", "short_version",
            "Slot", "SlotDescriptor", "Module", "connect", "StorageManager",
            "DataFrameModule", "Constant", "Every", "Print", "Wait", "Select",
-           "RangeQuery", "Merge", "Join", "CombineFirst", "NIL", "LastRow", "NAry",
+           "RangeQuery", "Merge", "Join", "CombineFirst", "NIL", "force_valid_id_columns",
+           "create_dataframe", "last_row", "add_row", "fix_loc", "LastRow", "NAry",
            "NIL_INDEX", 'index_diff', 'index_changes' ]
 
 from .version import version, __version__, short_version
-from .utils import type_fullname, ProgressiveError, NIL
+from .utils import (type_fullname, ProgressiveError, NIL,
+                    create_dataframe, last_row, add_row, force_valid_id_columns, fix_loc)
 from .scheduler import Scheduler
 from .mt_scheduler import MTScheduler
 from .slot import Slot, SlotDescriptor

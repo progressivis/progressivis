@@ -3,6 +3,7 @@ import unittest
 from progressivis import Module, Scheduler, Constant, Print, Select, Every
 from progressivis.stats import RandomTable, Min, Max
 from progressivis.core import RangeQuery
+from progressivis.core.utils import last_row
 from progressivis.io import CSVLoader
 from progressivis.datasets import get_dataset
 
@@ -43,15 +44,15 @@ class TestRangeQuery(unittest.TestCase):
         
         s.start()
 
-        out_df  = Module.last_row(range_query.get_data('df'), remove_update=True)
-        out_min = Module.last_row(range_query.get_data('min'), remove_update=True)
-        out_max = Module.last_row(range_query.get_data('max'), remove_update=True)
+        out_df  = last_row(range_query.get_data('df'), remove_update=True)
+        out_min = last_row(range_query.get_data('min'), remove_update=True)
+        out_max = last_row(range_query.get_data('max'), remove_update=True)
         print out_df
         print out_min
         print out_max
         self.assertTrue((out_min<  out_max).all())
-        self.assertTrue((Module.last_row(min_df)[['_3', '_4', '_5']]==out_min[['_3', '_4', '_5']]).all())
-        self.assertTrue((Module.last_row(max_df)[['_2', '_3', '_4']]==out_max[['_2', '_3', '_4']]).all())
+        self.assertTrue((last_row(min_df)[['_3', '_4', '_5']]==out_min[['_3', '_4', '_5']]).all())
+        self.assertTrue((last_row(max_df)[['_2', '_3', '_4']]==out_max[['_2', '_3', '_4']]).all())
 
         json = range_query.to_json()
         print json['ranges']

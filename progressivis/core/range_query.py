@@ -1,5 +1,6 @@
 from progressivis.core.dataframe import DataFrameModule
 from progressivis.core.slot import SlotDescriptor
+from progressivis.core.utils import last_row, create_dataframe
 
 import pandas as pd
 import numpy as np
@@ -22,7 +23,7 @@ class RangeQuery(DataFrameModule):
                          SlotDescriptor('max', type=pd.DataFrame, required=False)])
         super(RangeQuery, self).__init__(dataframe_slot='query', **kwds)
         self.default_step_size = 1
-        self._df = self.create_dataframe(RangeQuery.schema, empty=True)
+        self._df = create_dataframe(RangeQuery.schema, empty=True)
         self._min = None
         self._max = None
 
@@ -83,10 +84,10 @@ class RangeQuery(DataFrameModule):
         out_min = self.get_data('min')
         out_max = self.get_data('max')
         if all(x is not None for x in [in_min, in_max, out_min, out_max]):
-           in_min_final = self.last_row(in_min, remove_update=True)
-           in_max_final = self.last_row(in_max, remove_update=True)
-           out_min_final = self.last_row(out_min, remove_update=True)
-           out_max_final = self.last_row(out_max, remove_update=True)
+           in_min_final = last_row(in_min, remove_update=True)
+           in_max_final = last_row(in_max, remove_update=True)
+           out_min_final = last_row(out_min, remove_update=True)
+           out_max_final = last_row(out_max, remove_update=True)
            ranges = pd.DataFrame({'in_min': in_min_final, 'in_max': in_max_final, 'out_min': out_min_final, 'out_max': out_max_final})
            ranges.index.name = "name"
            json['ranges'] = ranges.reset_index().to_dict(orient='records')
@@ -108,21 +109,21 @@ class RangeQuery(DataFrameModule):
         min_slot = self.get_input_slot('min')
         with min_slot.lock:
             min_slot.update(run_number)
-            min = self.last_row(min_slot.data(), remove_update=True)
+            min = last_row(min_slot.data(), remove_update=True)
         max_slot = self.get_input_slot('max')
         with max_slot.lock:
             max_slot.update(run_number)
-            max = self.last_row(max_slot.data(), remove_update=True)
+            max = last_row(max_slot.data(), remove_update=True)
         minv_slot = self.get_input_slot('min_value')
         with minv_slot.lock:
             minv_slot.update(run_number)
-            minv = self.last_row(minv_slot.data(), remove_update=True)
+            minv = last_row(minv_slot.data(), remove_update=True)
         if minv is None:
             minv = min
         maxv_slot = self.get_input_slot('max_value')
         with maxv_slot.lock:
             maxv_slot.update(run_number)
-            maxv = self.last_row(maxv_slot.data(), remove_update=True)
+            maxv = last_row(maxv_slot.data(), remove_update=True)
         if maxv is None:
             maxv = max
 

@@ -1,4 +1,4 @@
-from progressivis.core import DataFrameModule, ProgressiveError
+from progressivis.core import DataFrameModule, ProgressiveError, create_dataframe, force_valid_id_columns
 from progressivis.core.buffered_dataframe import BufferedDataFrame
 
 import pandas as pd
@@ -26,9 +26,9 @@ class RandomTable(DataFrameModule):
             self.throttle = throttle
         else:
             self.throttle = False
-        self._df = self.create_dataframe(self.columns, types=cols*[np.dtype(float)]+[np.dtype(int)])
+        self._df = create_dataframe(self.columns, types=cols*[np.dtype(float)]+[np.dtype(int)])
         if force_valid_ids:
-            self.force_valid_id_columns(self._df)
+            force_valid_id_columns(self._df)
         self.columns = self._df.columns # reuse the pandas index structure
         self._buffer = BufferedDataFrame()
 

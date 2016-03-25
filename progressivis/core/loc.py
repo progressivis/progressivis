@@ -11,9 +11,8 @@ class Loc(DataFrameModule):
     def __init__(self, indices, columns, **kwds):
         self._add_slots(kwds,'input_descriptors',
                         [SlotDescriptor('df', type=pd.DataFrame, required=True)])
-        super(Loc, self).__init__(**kwds)
+        super(Loc, self).__init__(columns=columns, **kwds)
         self._indices = indices
-        self._columns = columns
 
     def predict_step_size(self, duration):
         return 1
@@ -26,7 +25,7 @@ class Loc(DataFrameModule):
             return self._return_run_step(self.state_blocked, 0)
         df_slot.update(run_number)
         try:
-            self._df = in_df.loc[self._indices, self._columns]
+            self._df = self.filter_columns(in_df, self._indices)
         except Exception as e:
             logger.error('Cannot extract indices or columns: %s', e)
             self._df = None

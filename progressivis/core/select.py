@@ -1,4 +1,4 @@
-from progressivis.core.utils import ProgressiveError, indices_len
+from progressivis.core.utils import ProgressiveError, indices_len, last_row, fix_loc
 from progressivis.core.dataframe import DataFrameModule
 from .slot import SlotDescriptor
 from .utils import is_valid_identifier
@@ -57,7 +57,7 @@ class Select(DataFrameModule):
                 self._buffer.reset();
             indices = query_slot.next_created() # read it all
             with query_slot.lock:
-                query = self.last_row(query_df)[self._query_column] # get the query expression
+                query = last_row(query_df)[self._query_column] # get the query expression
             if query is not None:
                 if len(query)==0:
                     query=None
@@ -80,10 +80,8 @@ class Select(DataFrameModule):
             self._df = df_slot.data()
             return self._return_run_step(self.state_blocked, steps_run=steps)
         
-        if isinstance(indices, slice):
-            indices = slice(indices.start, indices.stop-1)
         with df_slot.lock:
-            new_df = df_slot.data().loc[indices]
+            new_df = df_slot.data().loc[fix_loc(indices)]
             try:
                 selected_df = new_df.eval(query)
                 #print 'Select evaluated %d/%d rows'%(len(selected_df),steps)

@@ -1,4 +1,4 @@
-from progressivis.core.utils import indices_len
+from progressivis.core.utils import indices_len, create_dataframe, last_row
 from progressivis.core.dataframe import DataFrameModule
 from progressivis.core.slot import SlotDescriptor
 
@@ -33,7 +33,7 @@ class Heatmap(DataFrameModule):
         self.colormap = colormap
         self.default_step_size = 1
 
-        self._df = self.create_dataframe(Heatmap.schema)
+        self._df = create_dataframe(Heatmap.schema)
 
     def predict_step_size(self, duration):
         # Module sample is constant time (supposedly)
@@ -109,7 +109,7 @@ class Heatmap(DataFrameModule):
         with dfslot.lock:
             histo_df = dfslot.data()
             if histo_df is not None and histo_df.index[-1] is not None:
-                row = self.last_row(histo_df)
+                row = last_row(histo_df)
                 if not (np.isnan(row.xmin) or np.isnan(row.xmax)
                         or np.isnan(row.ymin) or np.isnan(row.ymax)):
                     json['bounds'] = {
@@ -121,7 +121,7 @@ class Heatmap(DataFrameModule):
         with self.lock:
             df = self.df()
             if df is not None and self._last_update is not None:
-                row = self.last_row(df)
+                row = last_row(df)
                 json['image'] = "/progressivis/module/image/%s?run_number=%d"%(self.id,row[self.UPDATE_COLUMN])
         return json
 

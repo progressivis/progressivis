@@ -16,6 +16,7 @@ def print_len(x):
 times = 0
 
 def ten_times(scheduler, run_number):
+    global times
     times += 1
     if times > 10:
         scheduler.stop()

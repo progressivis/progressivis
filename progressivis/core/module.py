@@ -7,12 +7,10 @@ import pandas as pd
 import numpy as np
 
 from progressivis.core.utils import (ProgressiveError,
+                                     create_dataframe,
                                      type_fullname,
-                                     empty_typed_dataframe,
-                                     typed_dataframe,
                                      DataFrameAsDict,
-                                     remove_nan,
-                                     force_valid_id_columns)
+                                     remove_nan)
 #from progressivis.core.scheduler import Scheduler
 from progressivis.core.slot import Slot, SlotDescriptor, InputSlots, OutputSlots
 from progressivis.core.tracer import Tracer
@@ -69,6 +67,7 @@ class Module(object):
     state_name = ['created', 'ready', 'running', 'blocked', 'zombie', 'terminated', 'invalid']
 
     def __init__(self,
+                 columns=None,
                  id=None,
                  group=None,
                  scheduler=None,
@@ -80,6 +79,7 @@ class Module(object):
                  **kwds):
         """Module(id=None,scheduler=None,tracer=None,predictor=None,storage=None,input_descriptors=[],output_descriptors=[])
         """
+        self._columns = columns
         if scheduler is None:
             from scheduler import Scheduler
             scheduler = Scheduler.default
@@ -183,7 +183,7 @@ class Module(object):
         return self._synchronized_lock
 
     def _parse_parameters(self, kwds):
-        self._params = self.create_dataframe(self.all_parameters + [self.UPDATE_COLUMN_DESC])
+        self._params = create_dataframe(self.all_parameters + [self.UPDATE_COLUMN_DESC])
         self.params = DataFrameAsDict(self._params)
         for (name,dtype,dflt) in self.all_parameters:
             if name in kwds:
@@ -663,42 +663,22 @@ class Module(object):
             print_exc()
             raise exception
 
-    # Convenience methods
-    @staticmethod
-    def create_dataframe(columns, empty=False, types=None, values=None):
-        if empty or (values is None and types is not None):
-            return empty_typed_dataframe(columns, types)
-        return typed_dataframe(columns, types, values)
-
-    @staticmethod
-    def last_row(df, remove_update=False, as_series=True):
+    def get_columns(self, df):
         if df is None:
             return None
-        index = df.index
-        if len(index)==0:
+        if self._columns is None:
+            self._columns = df.columns.difference([Module.UPDATE_COLUMN])
+        else:
+            self._columns = df.columns.intersection(self._columns)
+        return self._columns
+
+    def filter_columns(self, df, indices=None):
+        cols = self.get_columns(df)
+        if cols is None:
             return None
-        idx = index[-1]
-        cols = df.columns
-        if remove_update:
-            cols = cols.difference([Module.UPDATE_COLUMN])
-        if as_series:
-            last = df.loc[idx,cols]
-        else:
-            last = df.loc[[idx],cols]
-        return last
-
-    @staticmethod
-    def add_row(df, row):
-        index = df.index
-        if len(index)==0:
-            df.loc[0] = row
-        else:
-            df.loc[index[-1]+1] = row
-        return df
-
-    @staticmethod
-    def force_valid_id_columns(df):
-        force_valid_id_columns(df)
+        if indices is None:
+            return df[cols]
+        return df.loc[indices,cols]
 
 def print_len(x):
     if x is not None:

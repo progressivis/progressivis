@@ -1,4 +1,4 @@
-from progressivis.core.utils import indices_len
+from progressivis.core.utils import indices_len, create_dataframe, last_row, fix_loc
 from progressivis.core.dataframe import DataFrameModule
 from progressivis.core.slot import SlotDescriptor
 
@@ -38,7 +38,7 @@ class Histogram2D(DataFrameModule):
         self._xedges = None
         self._yedges = None
         self._bounds = None
-        self._df = self.create_dataframe(Histogram2D.schema)
+        self._df = create_dataframe(Histogram2D.schema)
 
     def is_ready(self):
         # If we have created data but no valid min/max, we can only wait
@@ -52,7 +52,7 @@ class Histogram2D(DataFrameModule):
             min_df = min_slot.data()
             if len(min_df)==0 and self._bounds is None:
                 return None
-            min = self.last_row(min_df)
+            min = last_row(min_df)
             xmin = min[self.x_column]
             ymin = min[self.y_column]
         
@@ -61,7 +61,7 @@ class Histogram2D(DataFrameModule):
             max_df = max_slot.data()
             if len(max_df)==0 and self._bounds is None:
                 return None
-            max = self.last_row(max_df)
+            max = last_row(max_df)
             xmax = max[self.x_column]
             ymax = max[self.y_column]
         
@@ -145,10 +145,7 @@ class Histogram2D(DataFrameModule):
         logger.info('Read %d rows', steps)
         self.total_read += steps
         
-        if isinstance(indices,slice):
-            indices=slice(indices.start,indices.stop-1)
-
-        filtered_df = input_df.loc[indices]
+        filtered_df = input_df.loc[fix_loc(indices)]
         x = filtered_df[self.x_column]
         y = filtered_df[self.y_column]
         p = self.params

@@ -1,12 +1,10 @@
 from progressivis import ProgressiveError, DataFrameModule, SlotDescriptor
 from progressivis.core.buffered_dataframe import BufferedDataFrame
-from progressivis.core.utils import indices_len
+from progressivis.core.utils import indices_len, fix_loc
 
-import numpy as np
 import pandas as pd
 
-from sklearn.utils.extmath import squared_norm
-from sklearn.utils import check_random_state, gen_batches
+from sklearn.utils import gen_batches
 from sklearn.cluster import MiniBatchKMeans
 
 import logging
@@ -82,13 +80,8 @@ class MBKMeans(DataFrameModule):
         steps = indices_len(indices)
         if steps==0:
             return self._return_run_step(self.state_blocked, steps_run=0)
-        if isinstance(indices,slice):
-            indices=slice(indices.start,indices.stop-1) # semantic of slice with .loc
-
         input_df = dfslot.data()
-        if self.columns is None:
-            self.columns = input_df.columns.difference([self.UPDATE_COLUMN])
-        X = input_df.loc[indices,self.columns].values
+        X = self.filter_columns(input_df, fix_loc(indices)).values
         batch_size = self.mbk.batch_size or 100
         for batch in gen_batches(steps, batch_size):
             self.mbk.partial_fit(X[batch])

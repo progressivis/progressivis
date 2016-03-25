@@ -1,4 +1,4 @@
-from progressivis.core.utils import ProgressiveError, indices_len
+from progressivis.core.utils import ProgressiveError, indices_len, create_dataframe, fix_loc
 from progressivis.core.dataframe import DataFrameModule
 from progressivis.core.slot import SlotDescriptor
 
@@ -21,7 +21,7 @@ class LinearRegression(DataFrameModule):
         super(LinearRegression, self).__init__(dataframe_slot='inp', **kwds)
         self.default_step_size = 10000
 
-        self._df = self.create_dataframe(LinearRegression.schema)
+        self._df = create_dataframe(LinearRegression.schema)
 
     def is_ready(self):
         if self.get_input_slot('df').has_created():
@@ -39,10 +39,8 @@ class LinearRegression(DataFrameModule):
         steps = indices_len(indices)
         if steps == 0:
             return self._return_run_step(self.state_blocked, steps_run=steps)
-        if isinstance(indices,slice):
-            indices = slice(indices.start,indices.stop-1) # semantic of slice with .loc
 
-        (x, y) = input_df.loc[self._x,[self._x, self._y]]
+        (x, y) = input_df.loc[fix_loc(indices),[self._x, self._y]]
         df = self._df
         sum_x     = df.at[0, 'sum_x']     + x.sum() 
         sum_x_sqr = df.at[0, 'sum_x_sqr'] + (x*x).sum()

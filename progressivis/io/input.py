@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from progressivis import DataFrameModule
+from progressivis.core.utils import create_dataframe
 
 import pandas as pd
 import numpy as np
@@ -11,7 +12,7 @@ class Input(DataFrameModule):
 
     def __init__(self, **kwds):
         super(Input, self).__init__(**kwds)
-        self._df = self.create_dataframe(Input.schema,empty=True)
+        self._df = create_dataframe(Input.schema,empty=True)
         self._last = len(self._df)
         self.default_step_size = 1000000
 

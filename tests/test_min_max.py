@@ -2,6 +2,7 @@ import unittest
 
 from progressivis import Print, Scheduler
 from progressivis.stats import Min, Max, RandomTable
+from progressivis.core.utils import last_row
 
 import pandas as pd
 import numpy as np
@@ -16,7 +17,7 @@ class TestMinMax(unittest.TestCase):
         pr.input.df = min.output.df
         s.start()
         res1 = random.df()[random.columns.difference([random.UPDATE_COLUMN])].min()
-        res2 = min.last_row(min._df, remove_update=True)
+        res2 = last_row(min._df, remove_update=True)
         self.assertTrue(np.allclose(res1, res2))
 
     def test_max(self):
@@ -28,7 +29,7 @@ class TestMinMax(unittest.TestCase):
         pr.input.df = max.output.df
         s.start()
         res1 = random.df()[random.columns.difference([random.UPDATE_COLUMN])].max()
-        res2 = max.last_row(max.df(), remove_update=True)
+        res2 = last_row(max.df(), remove_update=True)
         self.assertTrue(np.allclose(res1, res2))
 
 if __name__ == '__main__':

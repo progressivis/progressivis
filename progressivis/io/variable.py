@@ -1,4 +1,5 @@
 from progressivis import Constant, ProgressiveError, SlotDescriptor
+from progressivis.core.utils import last_row
 
 import pandas as pd
 
@@ -21,7 +22,7 @@ class Variable(Constant):
             error = 'Variable %s with no initial value and no input slot'%self.id
             logger.error(error)
             return error
-        last = self.last_row(self._df)
+        last = last_row(self._df)
         if last is None:
             last = {v: None for v in self._df.columns}
         else:

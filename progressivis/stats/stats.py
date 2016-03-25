@@ -1,4 +1,4 @@
-from progressivis.core.utils import indices_len
+from progressivis.core.utils import indices_len, create_dataframe, fix_loc
 from progressivis.core.dataframe import DataFrameModule
 from progressivis.core.slot import SlotDescriptor
 
@@ -32,7 +32,7 @@ class Stats(DataFrameModule):
         self.schema = [(self._min_column, np.dtype(float), np.nan),
                        (self._max_column, np.dtype(float), np.nan),
                        DataFrameModule.UPDATE_COLUMN_DESC]
-        self._df = self.create_dataframe(self.schema)
+        self._df = create_dataframe(self.schema)
 
     def is_ready(self):
         if self.get_input_slot('df').has_created():
@@ -55,9 +55,7 @@ class Stats(DataFrameModule):
         logger.debug('next_created returned %s', indices)
         steps = indices_len(indices)
         if steps > 0:
-            if isinstance(indices,slice):
-                indices=slice(indices.start,indices.stop-1) # semantic of slice with .loc
-            x = input_df.loc[indices,self._column]
+            x = input_df.loc[fix_loc(indices), self._column]
             row = [np.nanmin([prev_min, x.min()]),
                    np.nanmax([prev_max, x.max()]),
                    run_number]

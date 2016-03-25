@@ -1,4 +1,4 @@
-from progressivis.core.utils import indices_len
+from progressivis.core.utils import indices_len, create_dataframe, last_row, fix_loc
 from progressivis.core.dataframe import DataFrameModule
 from progressivis.core.slot import SlotDescriptor
 
@@ -30,7 +30,7 @@ class Histogram1D(DataFrameModule):
         self._histo = None
         self._edges = None
         self._bounds = None
-        self._df = self.create_dataframe(Histogram1D.schema)
+        self._df = create_dataframe(Histogram1D.schema)
   
     def is_ready(self):
         if self._bounds and self.get_input_slot('df').has_created():
@@ -89,9 +89,7 @@ class Histogram1D(DataFrameModule):
         steps = indices_len(indices)
         logger.info('Read %d rows', steps)
         self.total_read += steps
-        if isinstance(indices, slice):
-            indices = slice(indices.start, indices.stop - 1)
-        filtered_df = input_df.loc[indices]
+        filtered_df = input_df.loc[fix_loc(indices)]
         column = filtered_df[self.column]
         bins = self._edges if self._edges is not None else self.params.bins
         histo = None
@@ -113,14 +111,14 @@ class Histogram1D(DataFrameModule):
             min_df = min_slot.data()
             if len(min_df) == 0 and self._bounds is None:
                 return None
-            min = self.last_row(min_df)[self.column]
+            min = last_row(min_df)[self.column]
   
         max_slot.next_created() 
         with max_slot.lock:
             max_df = max_slot.data()
             if len(max_df) == 0 and self._bounds is None:
                 return None
-            max = self.last_row(max_df)[self.column]
+            max = last_row(max_df)[self.column]
   
         return (min, max)
 

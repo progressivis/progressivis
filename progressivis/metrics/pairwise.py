@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """ Computes the distance matrix from each row of a data frame.
 """
-from progressivis.core.utils import ProgressiveError, indices_len
+from progressivis.core.utils import ProgressiveError, indices_len, fix_loc
 from progressivis.core.module import Module
 from progressivis.core.buffered_matrix import BufferedMatrix
 from progressivis.core.slot import SlotDescriptor
@@ -82,13 +82,7 @@ class PairwiseDistances(Module):
             if Si is not None:
                 i = rows.loc[self._last_index]
                 assert len(i)==len(self._last_index)
-            if isinstance(indices,slice):
-                # pandas .loc idiosyncrasy. The doc says:
-                # "note that contrary to usual python slices,
-                #  both the start and the stop are included!"
-                j = rows.loc[indices.start:indices.stop-1]
-            else:
-                j = rows.loc[indices]
+            j = rows.loc[fix_loc(indices)]
             assert len(j)==indices_len(indices)
 
         Sj = pairwise_distances(j, metric=self._metric, n_jobs=self._n_jobs)

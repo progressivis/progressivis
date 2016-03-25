@@ -129,6 +129,11 @@ def indices_len(ind):
         return ind.stop-ind.start
     return len(ind)
 
+def fix_loc(indices):
+    if isinstance(indices,slice):
+        return slice(indices.start,indices.stop-1) # semantic of slice with .loc
+    return indices
+
 # See view-source:http://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2Float
 def next_pow2(v):
   v -= 1;
@@ -153,4 +158,33 @@ def indices_to_slice(indices):
         else:
             return indices # not sliceable
     return slice(s, e+1)
+
+def create_dataframe(columns, empty=False, types=None, values=None):
+    if empty or (values is None and types is not None):
+        return empty_typed_dataframe(columns, types)
+    return typed_dataframe(columns, types, values)
+
+def last_row(df, remove_update=False, as_series=True):
+    if df is None:
+        return None
+    index = df.index
+    if len(index)==0:
+        return None
+    idx = index[-1]
+    cols = df.columns
+    if remove_update:
+        cols = cols.difference(['_update'])
+    if as_series:
+        last = df.loc[idx,cols]
+    else:
+        last = df.loc[[idx],cols]
+    return last
+
+def add_row(df, row):
+    index = df.index
+    if len(index)==0:
+        df.loc[0] = row
+    else:
+        df.loc[index[-1]+1] = row
+    return df
 

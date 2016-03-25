@@ -2,6 +2,7 @@ import unittest
 
 from progressivis import Print, Scheduler
 from progressivis.stats import IdxMax, IdxMin, Max, Min, RandomTable
+from progressivis.core.utils import last_row
 
 import pandas as pd
 from pprint import pprint
@@ -22,9 +23,9 @@ class TestIdxMax(unittest.TestCase):
         pr=Print(scheduler=s)
         pr.input.df = idxmax.output.max
         s.start()
-        max1=max.last_row(max.df(),remove_update=True)
+        max1=last_row(max.df(),remove_update=True)
         #print max1
-        max2=idxmax.last_row(idxmax.max(),remove_update=True)
+        max2=last_row(idxmax.max(),remove_update=True)
         #print max2
         self.assertTrue((max1==max2).all())
 
@@ -38,9 +39,9 @@ class TestIdxMax(unittest.TestCase):
         pr=Print(scheduler=s)
         pr.input.df = idxmin.output.min
         s.start()
-        min1=min.last_row(min.df(),remove_update=True)
+        min1=last_row(min.df(),remove_update=True)
         #print min1
-        min2=idxmin.last_row(idxmin.min(),remove_update=True)
+        min2=last_row(idxmin.min(),remove_update=True)
         #print min2
         self.assertTrue((min1==min2).all())
 

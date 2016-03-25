@@ -1,4 +1,5 @@
 from progressivis.core.dataframe import DataFrameModule
+from progressivis.core.utils import last_row
 from progressivis.core.slot import SlotDescriptor
 
 import pandas as pd
@@ -19,7 +20,7 @@ class LastRow(DataFrameModule):
 
         if df is not None:
             with slot.lock:
-                last = self.last_row(slot.data(), as_series=False)
+                last = last_row(slot.data(), as_series=False)
             last[self.UPDATE_COLUMN] = run_number
             if self._reset_index:
                 last.index = [0]

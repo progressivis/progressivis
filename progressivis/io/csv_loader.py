@@ -1,5 +1,6 @@
 from progressivis import ProgressiveError, DataFrameModule, SlotDescriptor
 from progressivis.core.buffered_dataframe import BufferedDataFrame
+from progressivis.core.utils import force_valid_id_columns
 
 import pandas as pd
 
@@ -106,7 +107,7 @@ class CSVLoader(DataFrameModule):
             self._rows_read += creates
             logger.info('Loaded %d lines', self._rows_read)
             if self.force_valid_ids:
-                self.force_valid_id_columns(df)
+                force_valid_id_columns(df)
             df[self.UPDATE_COLUMN] = run_number
             with self.lock:
                 self._buffer.append(df)

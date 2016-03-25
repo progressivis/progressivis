@@ -1,4 +1,4 @@
-from progressivis.core.utils import indices_len
+from progressivis.core.utils import indices_len, fix_loc
 from progressivis.core.dataframe import DataFrameModule
 from progressivis.core.slot import SlotDescriptor
 
@@ -6,11 +6,10 @@ import numpy as np
 import pandas as pd
 
 class KMeans(DataFrameModule):
-    def __init__(self, k, columns=None, **kwds):
+    def __init__(self, k, **kwds):
         self._add_slots(kwds,'input_descriptors',
                         [SlotDescriptor('df', type=pd.DataFrame)])
         super(KMeans, self).__init__(dataframe_slot='percentiles', **kwds)
-        self._columns = columns
         self._k = k
         self.default_step_size = 1000
 
@@ -33,10 +32,7 @@ class KMeans(DataFrameModule):
             return self._return_run_step(self.state_blocked, steps_run=steps)
         input_df = dfslot.data()
         with dfslot.lock:
-            if isinstance(indices, slice): # semantic of slice with .loc
-                x = input_df.loc[indices.start:indices.stop-1,self._column]
-            else:
-                x = input_df.loc[indices,self._column]
+            x = self.filter_columns(input_df, fix_loc(indices))
             self.tdigest.batch_update(x)
         df = self._df
         values = []

@@ -1,4 +1,4 @@
-from progressivis.core.utils import ProgressiveError, indices_len
+from progressivis.core.utils import ProgressiveError, indices_len, create_dataframe, fix_loc
 from progressivis.core.dataframe import DataFrameModule
 from progressivis.core.slot import SlotDescriptor
 
@@ -48,7 +48,7 @@ class Percentiles(DataFrameModule):
         
         self.schema = [(_pretty_name(x), np.dtype(float), np.nan) for x in self._percentiles]
         self.schema.append(DataFrameModule.UPDATE_COLUMN_DESC)
-        self._df = self.create_dataframe(self.schema)
+        self._df = create_dataframe(self.schema)
 
     def is_ready(self):
         if self.get_input_slot('df').has_created():
@@ -69,10 +69,7 @@ class Percentiles(DataFrameModule):
             return self._return_run_step(self.state_blocked, steps_run=steps)
         input_df = dfslot.data()
         with dfslot.lock:
-            if isinstance(indices, slice): # semantic of slice with .loc
-                x = input_df.loc[indices.start:indices.stop-1,self._column]
-            else:
-                x = input_df.loc[indices,self._column]
+            x = self.filter_columns(input_df, fix_loc(indices))
             self.tdigest.batch_update(x)
         df = self._df
         values = []
