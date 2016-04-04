@@ -12,7 +12,7 @@ def print_len(x):
 
 
 class TestRandomTable(unittest.TestCase):
-    def test_randome_table(self):
+    def test_random_table(self):
         s=Scheduler()
         module=RandomTable(['a', 'b'], rows=10000, scheduler=s)
         self.assertEqual(module.df().columns[0],'a')
@@ -25,7 +25,7 @@ class TestRandomTable(unittest.TestCase):
         self.assertFalse(module.df()['a'].isnull().any())
         self.assertFalse(module.df()['b'].isnull().any())
 
-    def test_randome_table2(self):
+    def test_random_table2(self):
         s=Scheduler()
          # produces more than 4M rows per second on my laptop
         module=RandomTable(10, rows=10000000, force_valid_ids=True, scheduler=s)
