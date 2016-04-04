@@ -43,6 +43,8 @@ class LinearTimePredictor(TimePredictor):
 
     def fit(self, trace_df):
         self.calls += 1
+        if trace_df is None:
+            return
         step_traces = trace_df[(trace_df['type']=='step') & (trace_df['duration']!=0)]
         n = len(step_traces)
         if n < 1:
