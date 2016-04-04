@@ -77,17 +77,18 @@ class ChangeManager(object):
             # Simle case 1: nothing deleted
             len1 = len(self.index)
             len2 = len(index)
-            if len1 <= len2 and np.array_equal(self.index, index[0:len1]):
+            if len1 <= len2 and self.index.equals(index[0:len1]):
                 deleted = NIL
-                updated = np.where(update_column.loc[0:len1] > self._last_update)[0]
+                updated = np.where(update_column.iloc[0:len1] > self._last_update)[0]
                 created = index[len1:]
             #TODO: These computations are potentially expensive
             # later, optimize them by testing simple cases first
             # such as only created items, or only updated items
             else:
                 deleted = self.index.difference(index).values
-                updated = np.where(update_column.loc[self.index] > self._last_update)[0]
                 created = index.difference(self.index).values
+                updated = index.intersection(self.index)
+                updated = np.where(update_column.loc[updated] > self._last_update)[0]
 
             if self._buffer_created:
                 # For created items still buffered, we can ignore that they've been updated
