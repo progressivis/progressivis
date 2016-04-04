@@ -16,6 +16,8 @@ else:
     def fix_index(df,l,h):
         pass
 
+#TODO avoid promotion of int columns into float columns due to NaNs for uninitialized values
+#Maybe int columns should be initialized to 0?
 class BufferedDataFrame(object):
     def __init__(self, df=None):
         self._df = None

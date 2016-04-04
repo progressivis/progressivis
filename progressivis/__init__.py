@@ -1,4 +1,6 @@
-from progressivis.core import (ProgressiveError, NIL, 
+import logging
+
+from progressivis.core import (ProgressiveError, NIL,
                                version, __version__, short_version,
                                Scheduler, MTScheduler, Slot, SlotDescriptor,
                                Module, connect, StorageManager, Every, Print,
@@ -6,7 +8,7 @@ from progressivis.core import (ProgressiveError, NIL,
                                Wait, RangeQuery, Merge, Join, CombineFirst, LastRow,
                                NIL_INDEX, index_diff, index_changes)
 
-import logging
+
 
 __all__ = ["log_level",
            "ProgressiveError", "Scheduler", "MTScheduler",
@@ -14,18 +16,18 @@ __all__ = ["log_level",
            "Slot", "SlotDescriptor", "Module", "connect", "StorageManager",
            "DataFrameModule", "Constant", "Every", "Print", "Wait", "Select",
            "RangeQuery", "Merge", "Join", "CombineFirst", "NIL", "LastRow",
-           "NIL_INDEX", 'index_diff', 'index_changes' ]
+           "NIL_INDEX", 'index_diff', 'index_changes']
 
 
 # Magic spell to avoid the message 'No handlers could be found for logger X.Y.Z'
 #logging.getLogger('progressivis').addHandler(logging.NullHandler())
 
 def log_level(level=logging.DEBUG, package='progressivis'):
-    ch = logging.StreamHandler()
-    ch.setLevel(level)
+    stream = logging.StreamHandler()
+    stream.setLevel(level)
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    ch.setFormatter(formatter)
-    logging.getLogger(package).addHandler(ch)
+    stream.setFormatter(formatter)
+    logging.getLogger(package).addHandler(stream)
     logging.getLogger(package).setLevel(level)
 
 # Usage example

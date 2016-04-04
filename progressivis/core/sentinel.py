@@ -1,13 +1,16 @@
-from progressivis.core.module import Module
+import logging
 import time
 
-import logging
+from progressivis.core.module import Module
+
+
 logger = logging.getLogger(__name__)
 
 __all__ = ['Sentinel']
 
 class Sentinel(Module):
-    """Module that is run by the scheduler to sleep a bit if nothing else is running.
+    """
+    Module that is run by the scheduler to sleep a bit if nothing else is running.
     """
     def __init__(self, min_time=0.2, **kwds):
         super(Sentinel, self).__init__(**kwds)

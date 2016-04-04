@@ -44,7 +44,7 @@ class Scheduler(object):
         self._valid = False
         self._start = None
         self._run_number = 0
-        self._run_number_time =  {}
+        self._run_number_time = {}
         self._tick_proc = None
         self._oneshot_tick_procs = []
         self._idle_proc = None
@@ -75,7 +75,7 @@ class Scheduler(object):
         self._valid = False
         self._start = None
         self._run_number = 0
-        self._run_number_time =  {}
+        self._run_number_time = {}
         self._tick_proc = None
         self._oneshot_tick_procs = []
         self._idle_proc = None
@@ -100,10 +100,10 @@ class Scheduler(object):
     def collect_dependencies(self, only_required=False):
         dependencies = {}
         for (mid, module) in self._modules.iteritems():
-            if not module.is_valid() or module==self._sentinel:
+            if not module.is_valid() or module == self._sentinel:
                 continue
             outs = [m.output_module.id for m in module.input_slot_values() \
-                    if m and (not only_required or module.input_slot_required(m.input_name)) ]
+                    if m and (not only_required or module.input_slot_required(m.input_name))]
             dependencies[mid] = set(outs)
         return dependencies
 
@@ -113,16 +113,16 @@ class Scheduler(object):
         d = dependencies
         k = d.keys()
         n = len(k)
-        index = dict(zip(k,range(len(k))))
+        index = dict(zip(k, range(len(k))))
         row = []
         col = []
         data = []
-        for (v1,vs) in d.iteritems():
+        for (v1, vs) in d.iteritems():
             for v2 in vs:
                 col.append(index[v1])
                 row.append(index[v2])
                 data.append(1)
-        mat = csr_matrix((data,(row,col)), shape=(n,n))
+        mat = csr_matrix((data, (row,col)), shape=(n,n))
         #print mat.toarray()
         #print k
         dist = shortest_path(mat, directed=True, return_predecessors=False, unweighted=True)
@@ -134,12 +134,12 @@ class Scheduler(object):
             s = {v1}
             for i2 in range(n):
                 v2 = k[i2]
-                dst = dist[i1,i2]
+                dst = dist[i1, i2]
                 if dst != 0 and dst != np.inf:
                     s.add(v2)
             self._reachability[v1] = s
             if not all_vis.intersection(s):
-                logger.debug('No visualization after module %s: %s',v1,s)
+                logger.debug('No visualization after module %s: %s', v1, s)
                 reach_no_vis.update(s)
                 if not self.module[v1].is_visualization():
                     reach_no_vis.add(v1)

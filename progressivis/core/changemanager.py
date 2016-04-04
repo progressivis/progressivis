@@ -1,21 +1,36 @@
+import logging
+
+import numpy as np
+
 from progressivis.core import Module, NIL
 from progressivis.core.utils import indices_to_slice
 from progressivis.core.index_diff import NIL_INDEX, index_diff, index_changes
-import numpy as np
 # TODO use the new RangeIndex when possible instead of explicit vector of indices
 
-import logging
 logger = logging.getLogger(__name__)
 
 class ChangeManager(object):
-    """Manage changes that occured in a DataFrame between runs.
     """
-    def __init__(self,buffer_created=True,buffer_updated=False,buffer_deleted=False, manage_columns=True):
+    Manage changes that occured in a DataFrame between runs.
+    """
+    # pylint: disable=too-many-instance-attributes
+    def __init__(self,
+                 buffer_created=True,
+                 buffer_updated=False,
+                 buffer_deleted=False,
+                 manage_columns=True):
         self._buffer_created = buffer_created
         self._buffer_updated = buffer_updated
         self._buffer_deleted = buffer_deleted
         self._manage_columns = manage_columns
-        self.reset()
+        self._last_update = 0
+        self.index = NIL_INDEX
+        self.column_index = NIL_INDEX
+        self._created = NIL
+        self._updated = NIL
+        self._deleted = NIL
+        self._column_changes = None
+
 
     def reset(self):
         self._last_update = 0
@@ -44,8 +59,8 @@ class ChangeManager(object):
         index = df.index
         if index.has_duplicates:
             logger.error('cannot update changes, Index has duplicates')
-        uc = df[Module.UPDATE_COLUMN]
-        if self._last_update==0:
+        update_column = df[Module.UPDATE_COLUMN]
+        if self._last_update == 0:
             self.index = index
             self.column_index = df.columns
             if self._buffer_created:
@@ -55,21 +70,23 @@ class ChangeManager(object):
             self._updated = NIL
             self._deleted = NIL
             if self._manage_columns:
-                self._column_changes = index_diff(created=df.columns, kept=NIL_INDEX, deleted=NIL_INDEX)
+                self._column_changes = index_diff(created=df.columns,
+                                                  kept=NIL_INDEX,
+                                                  deleted=NIL_INDEX)
         else:
             # Simle case 1: nothing deleted
-            l1 = len(self.index)
-            l2 = len(index) 
-            if l1 <= l2 and np.array_equal(self.index,index[0:l1]):
+            len1 = len(self.index)
+            len2 = len(index)
+            if len1 <= len2 and np.array_equal(self.index, index[0:len1]):
                 deleted = NIL
-                updated = np.where(uc[0:l1] > self._last_update)[0]
-                created = index[l1:]
+                updated = np.where(update_column[0:len1] > self._last_update)[0]
+                created = index[len1:]
             #TODO: These computations are potentially expensive
             # later, optimize them by testing simple cases first
             # such as only created items, or only updated items
             else:
                 deleted = self.index.difference(index).values
-                updated = np.where(uc[self.index] > self._last_update)[0]
+                updated = np.where(update_column[self.index] > self._last_update)[0]
                 created = index.difference(self.index).values
 
             if self._buffer_created:
@@ -78,7 +95,7 @@ class ChangeManager(object):
                 self._created = np.union1d(np.setdiff1d(self._created, deleted), created)
             else:
                 self._created = created
-            
+
             if self._buffer_deleted:
                 self._deleted = np.union1d(self._deleted, deleted)
             else:
@@ -95,7 +112,7 @@ class ChangeManager(object):
             self.column_index = df.columns
         self._last_update = run_number
         logger.debug('Updating for run_number %d: updated:%d/created:%d/deleted:%d',
-                    run_number, len(self._updated), len(self._created), len(self._deleted))
+                     run_number, len(self._updated), len(self._created), len(self._deleted))
 
     def manage_columns(self, v=True):
         self._manage_columns = v
@@ -104,7 +121,7 @@ class ChangeManager(object):
 
     @property
     def column_changes(self):
-        return self._column_changes       
+        return self._column_changes
 
     def flush_buffers(self):
         self.flush_created()
@@ -119,7 +136,7 @@ class ChangeManager(object):
     def flush_created(self):
         self._created = NIL
 
-    def next_created(self, n=None):
+    def next_created(self, n=None, as_slice=True):
         """
         Return at most n indices of newly created items. If n is not provided, return the
         indices of all the items that have been created.
@@ -133,7 +150,9 @@ class ChangeManager(object):
         ret, self._created = np.split(self._created, [n])
         # Try to return a slice instead of indices to avoid copying
         # arrays instead of creating views.
-        return indices_to_slice(ret)
+        if as_slice:
+            return indices_to_slice(ret)
+        return ret
 
     def has_created(self):
         return len(self._created) != 0
@@ -149,21 +168,23 @@ class ChangeManager(object):
     def flush_updated(self):
         self._updated = NIL
 
-    def next_updated(self, n=None):
+    def next_updated(self, length=None, as_slice=True):
         """
-        Return at most n indices of newly updated items. If n is not provided, return the
+        Return at most length indices of newly updated items. If length is not provided, return the
         indices of all the items that have been updated.
         Note that if buffer_updated is not set, only the items updated in the last run
         will be returned
         """
         if not self._buffer_updated:
             return NIL
-        if n is None:
-            n = len(self._updated)
-        ret, self._updated = np.split(self._updated, [n])
+        if length is None:
+            length = len(self._updated)
+        ret, self._updated = np.split(self._updated, [length])
         # Try to return a slice instead of indices to avoid copying
         # arrays instead of creating views.
-        return indices_to_slice(ret)
+        if as_slice:
+            return indices_to_slice(ret)
+        return ret
 
     def has_updated(self):
         return len(self._updated) != 0
@@ -179,21 +200,23 @@ class ChangeManager(object):
     def flush_deleted(self):
         self._deleted = NIL
 
-    def next_deleted(self, n=None):
+    def next_deleted(self, length=None, as_slice=True):
         """
-        Return at most n indices of newly deleted items. If n is not provided, return the
+        Return at most length indices of newly deleted items. If length is not provided, return the
         indices of all the items that have been deleted.
         Note that if buffer_deleted is not set, only the items deleted in the last run
         will be returned
         """
         if not self._buffer_deleted:
             return NIL
-        if n is None:
-            n = len(self._deleted)
-        ret, self._deleted = np.split(self._deleted, [n])
+        if length is None:
+            length = len(self._deleted)
+        ret, self._deleted = np.split(self._deleted, [length])
         # Try to return a slice instead of indices to avoid copying
         # arrays instead of creating views.
-        return indices_to_slice(ret)
+        if as_slice:
+            return indices_to_slice(ret)
+        return ret
 
     def has_deleted(self):
         return len(self._deleted) != 0

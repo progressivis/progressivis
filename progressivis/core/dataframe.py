@@ -30,8 +30,8 @@ class DataFrameSlot(Slot):
     def flush_created(self):
         return self.changes.flush_created()
 
-    def next_created(self, n=None):
-        return self.changes.next_created(n)
+    def next_created(self, n=None, as_slice=True):
+        return self.changes.next_created(n, as_slice)
 
     def has_created(self):
         if self.changes:
@@ -46,8 +46,8 @@ class DataFrameSlot(Slot):
     def flush_updated(self):
         return self.changes.flush_updated()
 
-    def next_updated(self, n=None):
-        return self.changes.next_updated(n)
+    def next_updated(self, n=None, as_slice=True):
+        return self.changes.next_updated(n, as_slice)
 
     def has_updated(self):
         if self.changes:
@@ -60,8 +60,8 @@ class DataFrameSlot(Slot):
     def flush_deleted(self):
         return self.changes.flush_deleted()
 
-    def next_deleted(self, n=None):
-        return self.changes.next_deleted(n)
+    def next_deleted(self, n=None, as_slice=True):
+        return self.changes.next_deleted(n, as_slice)
     
     def has_deleted(self):
         if self.changes:

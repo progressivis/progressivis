@@ -34,8 +34,8 @@ class MTScheduler(Scheduler):
     @staticmethod
     def log_level(level=logging.DEBUG, package='progressivis'):
         logging.getLogger('progressivis').addHandler(logging.NullHandler())
-        fd, filename = mkstemp(prefix='progressive', suffix='.log')
-        stream = io.FileIO(fd, mode='w')
+        filedesc, filename = mkstemp(prefix='progressive', suffix='.log')
+        stream = io.FileIO(filedsc, mode='w')
         ch = logging.StreamHandler(stream=stream)
         ch.setLevel(level)
         l=logging.getLogger(package)
