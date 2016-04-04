@@ -14,11 +14,29 @@ class DataFrameSlot(Slot):
             return self.changes.last_update()
         return super(DataFrameSlot, self).last_update()
 
-    def update(self, run_number):
-        c = self.changemanager
+    def create_changed(self,
+                       buffer_created=True,
+                       buffer_updated=False,
+                       buffer_deleted=False,
+                       manage_columns=True):
+        self.changes = ChangeManager(buffer_created=buffer_created,
+                                     buffer_updated=buffer_updated,
+                                     buffer_deleted=buffer_deleted,
+                                     manage_columns=True)
+
+    def update(self, run_number,
+               buffer_created=True,
+               buffer_updated=False,
+               buffer_deleted=False,
+               manage_columns=True):
+        if self.changes is None:
+            self.create_changed(buffer_created=buffer_created,
+                                buffer_updated=buffer_updated,
+                                buffer_deleted=buffer_deleted,
+                                manage_columns=manage_columns)
         with self.lock:
             df = self.data()
-            return c.update(run_number,df)
+            return self.changes.update(run_number, df)
 
     def reset(self):
         if self.changes is not None:
@@ -94,7 +112,7 @@ class DataFrameSlot(Slot):
     @property
     def changemanager(self):
         if self.changes is None:
-            self.changes = ChangeManager()
+            self.changes = self.create_changed()
         return self.changes
  
 
