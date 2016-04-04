@@ -30,7 +30,7 @@ class ChangeManager(object):
         self._updated = NIL
         self._deleted = NIL
         self._column_changes = None
-
+    # pylint: enable=too-many-instance-attributes
 
     def reset(self):
         self._last_update = 0
@@ -79,14 +79,14 @@ class ChangeManager(object):
             len2 = len(index)
             if len1 <= len2 and np.array_equal(self.index, index[0:len1]):
                 deleted = NIL
-                updated = np.where(update_column[0:len1] > self._last_update)[0]
+                updated = np.where(update_column.loc[0:len1] > self._last_update)[0]
                 created = index[len1:]
             #TODO: These computations are potentially expensive
             # later, optimize them by testing simple cases first
             # such as only created items, or only updated items
             else:
                 deleted = self.index.difference(index).values
-                updated = np.where(update_column[self.index] > self._last_update)[0]
+                updated = np.where(update_column.loc[self.index] > self._last_update)[0]
                 created = index.difference(self.index).values
 
             if self._buffer_created:
