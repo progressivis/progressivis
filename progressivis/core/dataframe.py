@@ -22,7 +22,7 @@ class DataFrameSlot(Slot):
         self.changes = ChangeManager(buffer_created=buffer_created,
                                      buffer_updated=buffer_updated,
                                      buffer_deleted=buffer_deleted,
-                                     manage_columns=True)
+                                     manage_columns=manage_columns)
 
     def update(self, run_number,
                buffer_created=True,
@@ -148,11 +148,11 @@ class DataFrameModule(Module):
         slot = self.get_input_slot(self._dataframe_slot)
         if slot is None or slot.data() is None:
             return (0,0)
-        len = len(slot.data())
+        length = len(slot.data())
         if slot.has_created():
             return (len-slot.created_length(), len)
         # assume all has been processed
-        return (len, len)
+        return (length, length)
 
 
 
