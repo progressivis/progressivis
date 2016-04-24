@@ -43,6 +43,7 @@ class MBKMeans(DataFrameModule):
             self._buffer.reset()
         self._df = None
         self._labels = None
+        self.set_state(self.state_ready)
 
     def validate_outputs(self):
         valid = super(MBKMeans, self).validate_inputs()
