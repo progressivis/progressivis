@@ -33,7 +33,9 @@ class FakeLock(object):
 class Scheduler(object):
     default = None
     
-    def __init__(self):
+    def __init__(self, interaction_latency = 0.1):
+        if interaction_latency <= 0:
+            raise ProgressiveError('Invalid interaction_latency, should be strictly positive: %s'% interaction_latency)
         self._lock = self.create_lock()
         # same as clear below
         self._modules = dict()
@@ -53,6 +55,8 @@ class Scheduler(object):
         self._run_queue = deque()
         self._input_triggered = {}
         self._module_selection = None
+        self._selection_target_time = -1
+        self.interaction_latency = interaction_latency
         self._reachability = {}
         # Create Sentinel last since it needs the scheduler to be ready
         self._sentinel = Sentinel(scheduler=self)
@@ -84,6 +88,7 @@ class Scheduler(object):
         self._run_queue = deque()
         self._input_triggered = {}
         self._module_selection = None
+        self._selection_target_time = -1
         self._reachability = {}
 
     @property
@@ -439,9 +444,10 @@ class Scheduler(object):
         if sel:
             if self._module_selection is None:
                 self._module_selection = sel
+                self._selection_target_time = self.timer()+self.interaction_latency
             else:
                 self._module_selection.update(sel)
-            print('Input selection: ', self._module_selection)
+            logger.debug('Input selection for module: %s', self._module_selection)
         return self.run_number()+1
 
     def has_input(self):
@@ -449,8 +455,9 @@ class Scheduler(object):
             if len(self._module_selection)==0:
                 logger.debug('Finishing input management')
                 self._module_selection = None
-                return False
-            return True
+                self._selection_target_time = -1
+            else:
+                return True
         return False
 
     def _consider_module(self, module):
@@ -458,13 +465,30 @@ class Scheduler(object):
             return True
         if module is self._sentinel:
             return True
-        logger.debug('Has input; considering module %s for scheduling', module.id)
+        #logger.debug('Has input; considering module %s for scheduling', module.id)
         if module.id in self._module_selection:
             self._module_selection.remove(module.id)
+            #TODO reset quantum
             logger.debug('Module %s ready for scheduling', module.id)
             return True
         logger.debug('Module %s NOT ready for scheduling', module.id)
         return False
+
+    def time_left(self):
+        if self._selection_target_time <= 0:
+            logger.error('time_left called with no target time')
+            return 0
+        return max(0, self._selection_target_time - self.timer())
+
+
+    def fix_quantum(self, module, quantum):
+        if self.has_input() and module.id in self._module_selection:
+            quantum = self.time_left() / len(self._module_selection)
+            print "Changed quantum to ", quantum
+        if quantum==0:
+            quantum=0.1
+            logger.error('Quantum is 0 in %s, setting it to a reasonable value', module.id)
+        return quantum
 
 if Scheduler.default is None:
     Scheduler.default = Scheduler()

@@ -1,13 +1,10 @@
 import unittest
 from time import sleep
 
-from progressivis import *
+from progressivis import MTScheduler, Print
 from progressivis.io import CSVLoader
 from progressivis.stats import Min, Sample
 from progressivis.datasets import get_dataset
-
-import pandas as pd
-import numpy as np
 
 import logging
 logging.basicConfig(level=logging.WARNING)
@@ -47,6 +44,8 @@ class TestScheduler(unittest.TestCase):
         self.assertTrue(s._runorder.index(smp.id) > s._runorder.index(csv.id))
         self.assertTrue(s._runorder.index(smp2.id) > s._runorder.index(csv.id))
         #self.assertTrue(s._runorder.index(m.id) > s._runorder.index(smp2.id))
+        s.stop()
+        s.join()
 
 if __name__ == '__main__':
     unittest.main()

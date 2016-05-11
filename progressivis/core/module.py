@@ -183,9 +183,10 @@ class Module(object):
         return self._synchronized_lock
 
     def _parse_parameters(self, kwds):
+        # pylint: disable=no-member
         self._params = create_dataframe(self.all_parameters + [self.UPDATE_COLUMN_DESC])
         self.params = DataFrameAsDict(self._params)
-        for (name,dtype,dflt) in self.all_parameters:
+        for (name,_,_) in self.all_parameters:
             if name in kwds:
                 self.params[name] = kwds[name]
 
@@ -590,7 +591,7 @@ class Module(object):
         next_state = self.state
         exception = None
         now=self.timer()
-        quantum=self.params.quantum
+        quantum=self.scheduler().fix_quantum(self, self.params.quantum)
         tracer=self.tracer
         if quantum==0:
             quantum=0.1
@@ -694,7 +695,7 @@ class Every(Module):
     def predict_step_size(self, duration):
         if self._constant_time:
             return 1
-        return self(Every, self).predict_step_size(duration)
+        return super(Every, self).predict_step_size(duration)
 
     def run_step(self,run_number,step_size,howlong):
         slot = self.get_input_slot('df')
