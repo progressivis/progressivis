@@ -1,13 +1,13 @@
 package:
   name: progressivis
-  version: 'nightly'
+  version: 0.0.4
 
 build:
-  number: {{ environ.get('BINSTAR_BUILD', 1) }}
+  number: 1
 
-extra:
-  channels:
-    - progressivis
+source:
+  git_rev: v0.0.4
+  git_url: https://github.com/jdfekete/progressivis
 
 requirements:
   build:
@@ -18,10 +18,6 @@ requirements:
   run:
     # progressivis
     - python
-    - requests
-    - pyyaml
-    - python-dateutil
-    - jinja2
     - numpy
     - scipy
     - pandas
@@ -34,27 +30,11 @@ requirements:
     - flask
     - tornado >=4.0
 
-    # bokeh
-    - ipython
-    - ipython-notebook
-    - ipywidgets
-    - matplotlib
-
-
 test:
-  requires:
-    # docs
-    - pygments
-    - sphinx >=1.3.1
-    - sphinx-bootstrap-theme
-    - sphinxcontrib-httpdomain
-
-  commands:
-    - runserver -h        [linux64 or osx]
-
   imports:
-    - progressivis
+    -
 
 about:
   home: https://github.com/jdfekete/progressivis
   license: New BSD
+  license_file: LICENCE
