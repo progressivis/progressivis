@@ -1,18 +1,17 @@
-from progressivis import Scheduler, Every, log_level
+"""
+Clustering datasets may be found at
+https://cs.joensuu.fi/sipu/datasets/
+"""
+from progressivis import Scheduler, Every#, log_level
 from progressivis.cluster import MBKMeans
 from progressivis.io import CSVLoader
 from progressivis.stats import Min, Max, Histogram2D
 from progressivis.vis import Heatmap, ScatterPlot
 from progressivis.datasets import get_dataset
 
-"""
-Clustering datasets may be found at
-https://cs.joensuu.fi/sipu/datasets/
-"""
-
 try:
     s = scheduler
-except:
+except NameError:
     s = Scheduler()
     #log_level(package="progressivis.cluster")
 
@@ -31,12 +30,12 @@ sp.move_point = mbkmeans # for input management
 # histogram2d
 histogram2d = Histogram2D(0, 1, scheduler=s)
 histogram2d.input.df = data.output.df
-min = Min([0,1], scheduler=s)
-max = Max([0,1], scheduler=s)
-min.input.df = data.output.df
-max.input.df = data.output.df
-histogram2d.input.min = min.output.df
-histogram2d.input.max = max.output.df
+min_mod = Min([0,1], scheduler=s)
+max_mod = Max([0,1], scheduler=s)
+min_mod.input.df = data.output.df
+max_mod.input.df = data.output.df
+histogram2d.input.min = min_mod.output.df
+histogram2d.input.max = max_mod.output.df
 # heatmap
 heatmap = Heatmap(filename='heatmap%d.png', history=100, scheduler=s)
 heatmap.input.array = histogram2d.output.df
