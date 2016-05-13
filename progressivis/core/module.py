@@ -225,7 +225,6 @@ class Module(object):
     def from_input(self, msg):
         if 'debug' in msg:
             self.debug = msg['debug']
-        pass
 
     def is_input(self):
         return False
