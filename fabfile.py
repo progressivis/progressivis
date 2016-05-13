@@ -16,7 +16,7 @@ import sys
 import time
 
 PROJ_ROOT = os.path.dirname(env.real_fabfile)
-env.project_name = 'progressive'
+env.project_name = 'progressivis'
 env.python = 'python' if 'VIRTUAL_ENV' in os.environ else './bin/python'
 
 @task
