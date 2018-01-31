@@ -1,28 +1,21 @@
 """Visualize DataFrame columns x,y on the notebook, allowing refreshing."""
-from __future__ import print_function
 
-from progressivis import SlotDescriptor, Select, RangeQuery
-from progressivis.core.dataframe import DataFrameModule
-from progressivis.stats import Histogram2D, Sample
+
+from progressivis.core import SlotDescriptor, ProgressiveError
+from progressivis.table import Table
+from progressivis.table.select import Select #, RangeQuery
+from progressivis.table.module import TableModule
+
+from progressivis.stats import Histogram2D, Sample, Min, Max
 from progressivis.vis import Heatmap
 
-# from bokeh.plotting import show
-# from bokeh.models.mappers import LinearColorMapper
-# from bokeh.palettes import YlOrRd9
-# from bokeh.models import ColumnDataSource, Range1d
-
-# from ipywidgets import widgets
-# from IPython.display import display
-#output_notebook()
-
 import numpy as np
-import pandas as pd
 
 import logging
 logger = logging.getLogger(__name__)
 
 
-class ScatterPlot(DataFrameModule):
+class ScatterPlot(TableModule):
     parameters = [('xmin',   np.dtype(float), 0),
                   ('xmax',   np.dtype(float), 1),
                   ('ymin',   np.dtype(float), 0),
@@ -30,8 +23,9 @@ class ScatterPlot(DataFrameModule):
         
     def __init__(self, x_column, y_column, **kwds):
         self._add_slots(kwds,'input_descriptors',
-                        [SlotDescriptor('heatmap', type=pd.DataFrame),
-                         SlotDescriptor('df', type=pd.DataFrame) ])
+                        [SlotDescriptor('heatmap', type=Table),
+                         SlotDescriptor('table', type=Table),
+                         SlotDescriptor('select', type=Table)])
         super(ScatterPlot, self).__init__(quantum=0.1, **kwds)
         self.x_column = x_column
         self.y_column = y_column
@@ -39,57 +33,78 @@ class ScatterPlot(DataFrameModule):
         self.image_source = None
         self.scatter_source = None
         self.image = None
-#        self.bounds_source = None
+        self.input_module = None
+        self.input_slot = None
+        self.min = None
+        self.max = None
+        self.histogram2d = None
+        self.heatmap = None       
 
-    def df(self):
-        return self.get_input_slot('df').data()
+#    def get_data(self, name):
+#        return self.get_input_slot(name).data()
+        #return super(ScatterPlot, self).get_data(name)
+
+    def table(self):
+        return self.get_input_slot('table').data()
 
     def is_visualization(self):
         return True
 
     def get_visualization(self):
-        return "scatterplot";
+        return "scatterplot"
 
-    def create_dependent_modules(self, input_module, input_slot, range_query=None, select=None, histogram2d=None,heatmap=None,sample=None, **kwds):
-        if hasattr(self, 'input_module'): # test if already called
+    def create_dependent_modules(self, input_module, input_slot, histogram2d=None,heatmap=None,sample=True,select=None, **kwds):
+        if self.input_module is not None:
             return self
         
         s=self.scheduler()
         self.input_module = input_module
         self.input_slot = input_slot
         
-        if range_query is None:
-            range_query = RangeQuery(group=self.id,scheduler=s)
-            range_query.create_dependent_modules(input_module, input_slot, **kwds)
-        if select is None:
-            select = Select(group=self.id,scheduler=s)
-        select.input.df = input_module.output[input_slot]
-        select.input.query = range_query.output.query
+        # if range_query is None:
+        #     range_query = RangeQuery(group=self.id,scheduler=s)
+        #     range_query.create_dependent_modules(input_module, input_slot, **kwds)
+        min_ = Min(group=self.id,scheduler=s)
+        max_ = Max(group=self.id,scheduler=s)
+        min_.input.table = input_module.output[input_slot]
+        max_.input.table = input_module.output[input_slot]
         if histogram2d is None:
-            histogram2d = Histogram2D(self.x_column, self.y_column,group=self.id,scheduler=s);
-        histogram2d.input.df = select.output.df
-        histogram2d.input.min = range_query.output.min
-        histogram2d.input.max = range_query.output.max
+            histogram2d = Histogram2D(self.x_column, self.y_column,group=self.id,scheduler=s)
+        histogram2d.input.table = input_module.output[input_slot]
+        histogram2d.input.min = min_.output.table
+        histogram2d.input.max = max_.output.table
         if heatmap is None:
             heatmap = Heatmap(group=self.id,filename='heatmap%d.png', history=100, scheduler=s)
-        heatmap.input.array = histogram2d.output.df
-        if sample is None:
-            sample = Sample(n=50,group=self.id,scheduler=s)
-        sample.input.df = select.output.df
+        heatmap.input.array = histogram2d.output.table
+        if sample is True:
+            sample = Sample(samples=100,group=self.id,scheduler=s)
+        elif sample is None and select is None:
+            raise ProgressiveError("Scatterplot needs a select module")
+        if sample is not None:
+            sample.input.table = input_module.output[input_slot] #select.output.df
+        if select is None:
+            select = Select(group=self.id,scheduler=s)
+            select.input.table = input_module.output[input_slot]
+            select.input.select = sample.output.select
 
         scatterplot=self
         scatterplot.input.heatmap = heatmap.output.heatmap
-        scatterplot.input.df = sample.output.df
+        scatterplot.input.table = input_module.output[input_slot]
+        scatterplot.input.select = select.output.table
 
-        self.range_query = range_query
-        self.min = range_query.min
-        self.max = range_query.max
-        self.min_value = range_query.min_value
-        self.max_value = range_query.max_value
+        # self.range_query = range_query
+        # self.min = range_query.min
+        # self.max = range_query.max
+        # self.min_value = range_query.min_value
+        # self.max_value = range_query.max_value
+        # self.histogram2d = histogram2d
+        # self.heatmap = heatmap
+        # self.sample = sample
         self.select = select
+        self.min = min_
+        self.max = max_
         self.histogram2d = histogram2d
-        self.heatmap = heatmap
-        self.sample = sample
+        self.heatmap = heatmap        
 
         return scatterplot
 
@@ -108,10 +123,12 @@ class ScatterPlot(DataFrameModule):
 
     def scatterplot_to_json(self, json, short):
         with self.lock:
-            df = self.df()
-            if df is not None:
-                json['scatterplot'] = self.remove_nan(df[[self.x_column,self.y_column]]
-                                                      .to_dict(orient='split'))
+            select = self.get_input_slot('select').data()
+            if select is not None:
+                json['scatterplot'] = select.to_json(orient='split',
+                                                     columns=[self.x_column,self.y_column])
+            else:
+                logger.debug('Select data not found')
 
         heatmap = self.get_input_module('heatmap')
         return heatmap.heatmap_to_json(json, short)
@@ -119,70 +136,4 @@ class ScatterPlot(DataFrameModule):
     def get_image(self, run_number=None):
         heatmap = self.get_input_module('heatmap')
         return heatmap.get_image(run_number)
-
-    # # For Bokeh, but not ready for prime time yet...
-    # x = np.array([0, 10, 50, 90, 100], np.dtype(float))
-    # y = np.array([0, 50, 90, 10, 100], np.dtype(float))
-    # img = np.zeros((3, 3), np.float)
-
-    # def show(self, p):
-    #     self.figure = p
-    #     self.image_source = ColumnDataSource(data={
-    #         'image': [self.img],
-    #         'x': [0],
-    #         'y': [0],
-    #         'dw': [100],
-    #         'dh': [100]})
-    #     self.palette = YlOrRd9[::-1]
-    #     p.image(image='image', x='x', y='y', dw='dw', dh='dh',
-    #             color_mapper=LinearColorMapper(self.palette), source=self.image_source)
-    #     self.scatter_source = ColumnDataSource(data={'x': self.x, 'y': self.y})
-    #     p.scatter('x','y',source=self.scatter_source)
-    #     show(self.figure)
-    #     button = widgets.Button(description="Refresh!")
-    #     display(button)
-    #     button.on_click(self.update)
-
-    # def update(self, b):
-    #     if self.image_source is None:
-    #         return
-    #     logger.info("Updating module '%s.%s'", self.pretty_typename(), self.id)
-    #     #TODO use data from the same run
-    #     histo_df = self.histogram2d.df()
-    #     row = None
-    #     df = self.df()
-    #     if df is not None:
-    #         self.scatter_source.data['x'] = df[self.x_column]
-    #         self.scatter_source.data['y'] = df[self.y_column]
-    #         self.scatter_source.push_notebook()
-
-    #     if histo_df is not None and histo_df.index[-1] is not None:
-    #         idx = histo_df.index[-1]
-    #         row = histo_df.loc[idx]
-    #         if not (np.isnan(row.xmin) or np.isnan(row.xmax)
-    #                 or np.isnan(row.ymin) or np.isnan(row.ymax)
-    #                 or row.array is None):
-    #             self.image_source.data['image'] = [row.array]
-    #             self.image_source.data['x'] = [row.xmin]
-    #             self.image_source.data['y'] = [row.ymin]
-    #             self.image_source.data['dw'] = [row.xmax-row.xmin]
-    #             self.image_source.data['dh'] = [row.ymax-row.ymin]
-    #             self.image_source.push_notebook()
-    #             self.figure.set(x_range=Range1d(row.xmin, row.xmax),
-    #                             y_range=Range1d(row.ymin, row.ymax))
-    #             logger.debug('Bounds: %g,%g,%g,%g', row.xmin, row.xmax, row.ymin, row.ymax)
-    #         else:
-    #             logger.debug('Cannot compute bounds from image')
-
-    # @property
-    # def auto_update(self):
-    #     return self._auto_update
-    # @auto_update.setter
-    # def auto_update(self, value):
-    #     self._auto_update = value
-
-    # def cleanup_run(self, run_number):
-    #     super(ScatterPlot, self).cleanup_run(run_number)
-    #     if self._auto_update:
-    #         self.update(None)
 

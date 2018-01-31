@@ -1,0 +1,3 @@
+include versioneer.py
+include progressivis/core/version.py
+include progressivis/core/_version.py

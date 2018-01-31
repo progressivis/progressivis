@@ -1,44 +1,41 @@
-import unittest
+from . import ProgressiveTest
 
-from progressivis import *
+from progressivis import Scheduler, Every
 from progressivis.io import CSVLoader
 from progressivis.stats import Histogram1D, Min, Max
 from progressivis.datasets import get_dataset
 
-import os
-import glob
-import csv
-import numpy as np
-import pandas as pd
+#import pandas as pd
 
 import logging
 logging.basicConfig(level=logging.WARNING)
 
-class TestHistogram1D(unittest.TestCase):
+class TestHistogram1D(ProgressiveTest):
 
-    def tearDown(self):
-        StorageManager.default.end()
+    #def tearDown(self):
+        #StorageManager.default.end()
 
     def test_histogram1d(self):
-        s=Scheduler()
+        s=self.scheduler()
         csv = CSVLoader(get_dataset('bigfile'), index_col=False,header=None,scheduler=s)
-        min = Min(scheduler=s)
-        min.input.df = csv.output.df
-        max = Max(scheduler=s)
-        max.input.df = csv.output.df
-        histogram1d=Histogram1D(2, scheduler=s) # columns are called 1..30
-        histogram1d.input.df = csv.output.df
-        histogram1d.input.min = min.output.df
-        histogram1d.input.max = max.output.df
+        min_ = Min(scheduler=s)
+        min_.input.table = csv.output.table
+        max_ = Max(scheduler=s)
+        max_.input.table = csv.output.table
+        histogram1d=Histogram1D('_2', scheduler=s) # columns are called 1..30
+        histogram1d.input.table = csv.output.table
+        histogram1d.input.min = min_.output.table
+        histogram1d.input.max = max_.output.table
    
         #pr = Print(scheduler=s)
-        pr = Every(scheduler=s)
-        pr.input.df = csv.output.df
+        pr = Every(proc=self.terse, scheduler=s)
+        pr.input.df = csv.output.table
         s.start(tick_proc=lambda s,r: csv.is_terminated() and s.stop())
+        s.join()
         s = histogram1d.trace_stats()
         #print "Done. Run time: %gs, loaded %d rows" % (s['duration'].irow(-1), len(module.df()))
-        pd.set_option('display.expand_frame_repr', False)
-        print s
+        #pd.set_option('display.expand_frame_repr', False)
+        #print(repr(histogram1d.table()))
 
 if __name__ == '__main__':
-    unittest.main()
+    ProgressiveTest.main()

@@ -1,61 +1,88 @@
-import unittest
+from . import ProgressiveTest
 
-from progressivis import Constant, Scheduler
 from progressivis.io import CSVLoader
-from progressivis.datasets import get_dataset
+from progressivis.table.constant import Constant
+from progressivis.table.table import Table
+from progressivis.datasets import get_dataset#, RandomBytesIO
+from progressivis.core.utils import RandomBytesIO
+#import logging, sys
 
-import pandas as pd
+class TestProgressiveLoadCSV(ProgressiveTest):
+    # def setUpNO(self):
+    #     self.logger=logging.getLogger('progressivis.core')
+    #     self.saved=self.logger.getEffectiveLevel()
+    #     self.logger.setLevel(logging.DEBUG)
+    #     ch = logging.StreamHandler(stream=sys.stdout)
+    #     self.logger.addHandler(ch)
 
-import logging, sys
-
-class TestProgressiveLoadCSV(unittest.TestCase):
-    def setUpNO(self):
-        self.logger=logging.getLogger('progressivis.core')
-        self.saved=self.logger.getEffectiveLevel()
-        self.logger.setLevel(logging.DEBUG)
-        ch = logging.StreamHandler(stream=sys.stdout)
-        self.logger.addHandler(ch)
-
-    def tearDownNO(self):
-        self.logger.setLevel(self.saved)
+    # def tearDownNO(self):
+    #     self.logger.setLevel(self.saved)
 
     def runit(self, module):
         module.run(1)
-        df = module.df()
-        self.assertFalse(df is None)
-        l = len(df)
-        self.assertEqual(l, len(df[df[module.UPDATE_COLUMN]==module.last_update()]))
+        table = module.table()
+        self.assertFalse(table is None)
+        l = len(table)
         cnt = 2
         
         while not module.is_zombie():
             module.run(cnt)
             cnt += 1
-            s = module.trace_stats(max_runs=1)
-            df = module.df()
-            ln = len(df)
+            #s = module.trace_stats(max_runs=1)
+            table = module.table()
+            ln = len(table)
             #print "Run time: %gs, loaded %d rows" % (s['duration'].irow(-1), ln)
-            self.assertEqual(ln-l, len(df[df[module.UPDATE_COLUMN]==module.last_update()]))
+            #self.assertEqual(ln-l, len(df[df[module.UPDATE_COLUMN]==module.last_update()]))
             l =  ln
         s = module.trace_stats(max_runs=1)
-        print "Done. Run time: %gs, loaded %d rows" % (s['duration'].irow(-1), len(module.df()))
+        #print("Done. Run time: %gs, loaded %d rows" % (s['duration'][-1], len(module.table())))
         return cnt
 
     def test_read_csv(self):
-        s=Scheduler()
+        s=self.scheduler()
         module=CSVLoader(get_dataset('bigfile'), index_col=False, header=None, scheduler=s)
-        self.assertTrue(module.df() is None)
+        self.assertTrue(module.table() is None)
         s.start()
-        self.assertEqual(len(module.df()), 1000000)
+        s.join()
+        self.assertEqual(len(module.table()), 1000000)
+        
+
+
+    def test_read_fake_csv(self):
+        s=self.scheduler()
+        module=CSVLoader(RandomBytesIO(cols=30, rows=1000000), index_col=False, header=None, scheduler=s)
+        self.assertTrue(module.table() is None)
+        s.start()
+        s.join()
+        self.assertEqual(len(module.table()), 1000000)
 
     def test_read_multiple_csv(self):
-        s=Scheduler()
-        filenames = pd.DataFrame({'filename': [get_dataset('smallfile'), get_dataset('smallfile')]})
-        cst = Constant(df=filenames, scheduler=s)
+        s=self.scheduler()
+        filenames = Table(name='file_names',
+                          dshape='{filename: string}',
+                          data={'filename': [get_dataset('smallfile'), get_dataset('smallfile')]})
+        cst = Constant(table=filenames, scheduler=s)
         csv = CSVLoader(index_col=False, header=None, scheduler=s)
-        csv.input.filenames = cst.output.df
+        csv.input.filenames = cst.output.table
         csv.start()
-        self.assertEqual(len(csv.df()), 60000)
+        s.join()
+        self.assertEqual(len(csv.table()), 60000)
+
+    def test_read_multiple_fake_csv(self):
+        s=self.scheduler()
+        filenames = Table(name='file_names',
+                          dshape='{filename: string}',
+                          data={'filename': [
+                              'buffer://fake1?cols=10&rows=30000',
+                              'buffer://fake2?cols=10&rows=30000']})
+        cst = Constant(table=filenames, scheduler=s)
+        csv = CSVLoader(index_col=False, header=None, scheduler=s)
+        csv.input.filenames = cst.output.table
+        csv.start()
+        s.join()        
+        self.assertEqual(len(csv.table()), 60000)
+
 
 
 if __name__ == '__main__':
-    unittest.main()
+    ProgressiveTest.main()

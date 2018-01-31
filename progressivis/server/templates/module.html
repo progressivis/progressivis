@@ -5,6 +5,7 @@ Progressivis Server
 {% endblock %}
 
 {% block extra_scripts %}
+<script src="{{ url_for('progressivis.server.progressivis_file', filename='js/line_graph.js') }}"></script>
 <script src="{{ url_for('progressivis.server.progressivis_file', filename='js/module.js') }}"></script>
 {% endblock %}
 
@@ -21,7 +22,7 @@ $(document).ready(module_ready);
 
 <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
   <h1 class='page-header'>{{title}}</h1>
-
+  <div id='d3quality'></div>
   <div id='error'></div>
 
 <div>

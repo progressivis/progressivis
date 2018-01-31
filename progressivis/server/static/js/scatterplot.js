@@ -1,14 +1,12 @@
 var margin = {top: 20, right: 20, bottom: 30, left: 40},
     width = 960 - margin.left - margin.right,
     height = 500 - margin.top - margin.bottom,
-    svg, firstTime = true;
+    svg, prevBounds = null;
 
-var x = d3.scale.linear()
-    .range([0, width]),
+var x = d3.scale.linear().range([0, width]),
     x0;
 
-var y = d3.scale.linear()
-    .range([height, 0]),
+var y = d3.scale.linear().range([height, 0]),
     y0;
 
 var color = d3.scale.category10();
@@ -27,7 +25,7 @@ var zoom = d3.behavior.zoom()
         .scaleExtent([1, 32])
         .on("zoom", scatterplot_zoomed);
 
-const DEFAULT_SIGMA = 2;
+const DEFAULT_SIGMA = 1;
 const DEFAULT_FILTER = "default";
 
 const MAX_PREV_IMAGES = 3;
@@ -90,7 +88,8 @@ function scatterplot_update_vis(rawdata) {
     if (!data || !bounds) return;
     var index = data['index'];
 
-    if (firstTime) {
+    if (prevBounds == null) {
+        prevBounds = bounds;
         x.domain([bounds['xmin'], bounds['xmax']]).nice();
         y.domain([bounds['ymin'], bounds['ymax']]).nice();
         x0 = x.copy();
@@ -158,31 +157,40 @@ function scatterplot_update_vis(rawdata) {
 
         firstTime = false;
     }
-    else { // not firstTime
-        var x_bounds = zoom.x().domain(),
-            y_bounds = zoom.y().domain(),
-            translate;
+    else { // prevBounds != null
+        var changed = false;
+        for (v in prevBounds) {
+            if (prevBounds[v] != bounds[v]) {
+                changed = true;
+                break;
+            }
+        }
+        if (changed) {
+            var x_bounds = [prevBounds.xmin, prevBounds.xmax],
+                y_bounds = [prevBounds.ymin, prevBounds.ymax],
+                translate;
 
-        // Compute the new scale and translation according to the new bounds,
-        // leaving the lower left point unmoved or almost if the aspect ratio is not.
-        scale = Math.min(_db(x0.domain()) / _db(x_bounds) ,
-                         _db(y0.domain()) / _db(y_bounds));
-        translate = [-x0(x_bounds[0])*scale, -y0(y_bounds[1])*scale];
-        x.domain([bounds['xmin'], bounds['xmax']]).nice();
-        y.domain([bounds['ymin'], bounds['ymax']]).nice();
-        x0 = x.copy();
-        y0 = y.copy();
-        zoom.x(x)
-            .y(y)
-            .translate(translate)
-            .scale(scale);
-        x.domain(x0.range().map(function(x) { return (x - translate[0]) / scale; }).map(x0.invert));
+            prevBounds = bounds;
+            // Compute the new scale and translation according to the new bounds,
+            // leaving the lower left point unmoved or almost if the aspect ratio is not.
+            scale = Math.min(_db(x0.domain()) / _db(x_bounds) ,
+                             _db(y0.domain()) / _db(y_bounds));
+            translate = [-x0(x_bounds[0])*scale, -y0(y_bounds[1])*scale];
+            x.domain([bounds['xmin'], bounds['xmax']]).nice();
+            y.domain([bounds['ymin'], bounds['ymax']]).nice();
+            x0 = x.copy();
+            y0 = y.copy();
+            zoom.x(x)
+                .y(y)
+                .translate(translate)
+                .scale(scale);
+            x.domain(x0.range().map(function(x) { return (x - translate[0]) / scale; }).map(x0.invert));
+        }
 
         ix = x0(bounds['xmin']);
         iy = y0(bounds['ymax']);
         iw = x0(bounds['xmax'])-ix;
         ih = y0(bounds['ymin'])-iy;
-            
         svg.select(".heatmap")
             .attr("x", ix)
             .attr("y", iy)
@@ -205,28 +213,28 @@ function scatterplot_update_vis(rawdata) {
       .data(imageHistory.getItems(), function(d){ return d; }); 
 
     prevImgElements.enter()
-    .append("img")
-    .attr("width", 50)
-    .attr("height", 50)
-    .on("mouseover", function(d){
-      d3.select(".heatmapCompare")
-        .attr("xlink:href", d)
-        .attr("visibility", "inherit");
-    })
-    .on("mouseout", function(d){
-      d3.select(".heatmapCompare")
-        .attr("visibility", "hidden");
-    });
+        .append("img")
+        .attr("width", 50)
+        .attr("height", 50)
+        .on("mouseover", function(d){
+          d3.select(".heatmapCompare")
+            .attr("xlink:href", d)
+            .attr("visibility", "inherit");
+        })
+        .on("mouseout", function(d){
+          d3.select(".heatmapCompare")
+            .attr("visibility", "hidden");
+        });
 
     prevImgElements.transition().duration(500)
-    .attr("src", function(d){ return d; })
-    .attr("width", 100)
-    .attr("height", 100);
+        .attr("src", function(d){ return d; })
+        .attr("width", 100)
+        .attr("height", 100);
 
     prevImgElements.exit().transition().duration(500)
-    .attr("width", 5)
-    .attr("height", 5)
-    .remove();
+        .attr("width", 5)
+        .attr("height", 5)
+        .remove();
 
     var dots = d3.select("#zoomable")
             .selectAll(".dot")

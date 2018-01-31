@@ -1,31 +1,30 @@
-__all__ = [ "ProgressiveError", "type_fullname", "indices_len", "Scheduler", "MTScheduler",
-            "version", "__version__", "short_version",
-           "Slot", "SlotDescriptor", "Module", "connect", "StorageManager",
-           "DataFrameModule", "Constant", "Every", "Print", "Wait", "Select",
-           "RangeQuery", "Merge", "Join", "CombineFirst", "NIL", "force_valid_id_columns",
-           "create_dataframe", "last_row", "add_row", "fix_loc", "LastRow", "NAry",
-           "NIL_INDEX", 'index_diff', 'index_changes' ]
+from __future__ import absolute_import, division, print_function
 
-from .version import version, __version__, short_version
-from .utils import (type_fullname, ProgressiveError, NIL,
-                    create_dataframe, last_row, add_row, force_valid_id_columns, fix_loc)
+from ._version import get_versions
+from .utils import (type_fullname, ProgressiveError, fix_loc, indices_len, integer_types)
 from .scheduler import Scheduler
-from .mt_scheduler import MTScheduler
+from .scheduler_base import BaseScheduler
 from .slot import Slot, SlotDescriptor
 from .storagemanager import StorageManager
-from .module import Module, connect, Every, Print
-from .dataframe import DataFrameModule
-from .constant import Constant
-from .select import Select
+from .module import Module, Every, Print
+from .index_diff import NIL_INDEX, IndexDiff, index_changes
+from .bitmap import bitmap
 from .wait import Wait
-from .range_query import RangeQuery
-from .merge import Merge
-from .join import Join
-from .combine_first import CombineFirst
-from .last_row import LastRow
-from .nary import NAry
-from .index_diff import NIL_INDEX, index_diff, index_changes
+# pylint: disable=unused-import
+from .changemanager_bitmap import BitmapChangeManager
 
-# Keep PyFlakes happy
-Select
-Merge
+
+__version__ = get_versions()['version']
+version = __version__
+short_version = __version__
+del get_versions
+
+
+__all__ = ["ProgressiveError", "type_fullname", "fix_loc", "indices_len",
+           "integer_types",
+           "BaseScheduler", "Scheduler", "bitmap",
+           "version", "__version__", "short_version",
+           "Slot", "SlotDescriptor", "Module", "StorageManager",
+           "Every", "Print", "Wait",
+           "NIL_INDEX", 'IndexDiff', 'index_changes', ]
+#           "get_option", "set_option", "option_context", "config_prefix" ]

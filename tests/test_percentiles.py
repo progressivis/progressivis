@@ -1,29 +1,27 @@
-import unittest
+from . import ProgressiveTest
 
-from progressivis import *
+from progressivis import Every
 from progressivis.stats import Percentiles
 from progressivis.io import CSVLoader
 from progressivis.datasets import get_dataset
 
-import pandas as pd
-
-class TestPercentiles(unittest.TestCase):
+class TestPercentiles(ProgressiveTest):
     def test_percentile(self):
-        s=Scheduler()
-        csv_module = CSVLoader(get_dataset('smallfile'), index_col=False,header=None, scheduler=s)
-        module=Percentiles(1,id='test_percentile',
+        s = self.scheduler()
+        csv_module = CSVLoader(get_dataset('smallfile'), index_col=False, header=None, scheduler=s)
+        module=Percentiles('_1',mid='test_percentile',
                            percentiles=[0.1, 0.25, 0.5, 0.75, 0.9],
                            scheduler=s)
-        module.describe()
-        csv_module.describe()
-        connect(csv_module, 'df', module, 'df')
-        connect(module, 'percentiles',
-                Print(id='print', scheduler=s), 'df')
+        module.input.table = csv_module.output.table
+        prt = Every(proc=self.terse, mid='print', scheduler=s)
+        prt.input.df = module.output.percentiles
+                
         s.start()
-        ret = module.trace_stats(max_runs=1)
+        s.join()
+        #ret = module.trace_stats(max_runs=1)
         #print "Done. Run time: %gs, loaded %d rows" % (s['duration'].irow(-1), len(module.df()))
-        pd.set_option('display.expand_frame_repr', False)
-        print ret
+        #pd.set_option('display.expand_frame_repr', False)
+        #print(repr(module.table()))
 
 if __name__ == '__main__':
-    unittest.main()
+    ProgressiveTest.main()

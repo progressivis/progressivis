@@ -1,17 +1,15 @@
-import unittest
+from . import ProgressiveTest, skip
 
-from progressivis import *
-from progressivis.io import VECLoader
+from progressivis import Every
 from progressivis.io import CSVLoader
 from progressivis.metrics import PairwiseDistances
-from progressivis.manifold import MDS
 from progressivis.datasets import get_dataset
 
 import logging
 
 def print_len(x):
     if x is not None:
-        print x.shape
+        print(x.shape)
 
 times = 0
 
@@ -21,7 +19,7 @@ def ten_times(scheduler, run_number):
     if times > 10:
         scheduler.stop()
 
-class TestMDS(unittest.TestCase):
+class TestMDS(ProgressiveTest):
     # def test_MDS_vec(self):
     #     vec=VECLoader(get_dataset('warlogs'))
     #     dis=PairwiseDistances(metric='cosine')
@@ -31,16 +29,17 @@ class TestMDS(unittest.TestCase):
     #     cnt.input.df = dis.output.df
     #     vec.start()
 
+    @skip("Need to implement MDS on tables")
     def test_MDS_csv(self):
-        s=Scheduler()
+        s= self.scheduler()
         vec=CSVLoader(get_dataset('smallfile'),index_col=False,header=None,scheduler=s)
         dis=PairwiseDistances(metric='euclidean',scheduler=s)
         dis.input.df = vec.output.df
-        cnt = Every(proc=print_len,constant_time=True,scheduler=s)
+        cnt = Every(proc=self.terse, constant_time=True,scheduler=s)
         cnt.input.df = dis.output.dist
         global times
         times = 0
         s.start(ten_times)
 
 if __name__ == '__main__':
-    unittest.main()
+    ProgressiveTest.main()

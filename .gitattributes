@@ -1,0 +1,2 @@
+progressivis/core/version.py export-subst
+progressivis/core/_version.py export-subst

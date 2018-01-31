@@ -1,10 +1,13 @@
-from progressivis import Constant, ProgressiveError, SlotDescriptor
-from progressivis.core.utils import last_row
+from __future__ import absolute_import, division, print_function
 
-import pandas as pd
-
+import six
 import logging
 logger = logging.getLogger(__name__)
+
+import numpy as np
+
+from progressivis import ProgressiveError
+from progressivis.table.constant import Constant
 
 class AddToRow(Constant):
     def __init__(self, df=None, **kwds):
@@ -14,19 +17,24 @@ class AddToRow(Constant):
         return True
 
     def from_input(self, input):
+        _ = input
         if not isinstance(input,dict):
             raise ProgressiveError('Expecting a dictionary')
-        if self._df is None:
+        if self._table is None:
             error = 'AddToRow %s with no initial value and no input slot'%self.id
             logger.error(error)
             return error
 
         run_number = 0
-        for (row, value) in input.iteritems():
-            self._df.loc[row, self.get_columns(self._df)] += value
+        for (row_, value) in six.iteritems(input):
+            #self._df.loc[row, self.get_columns(self._df)] += value
+            current_row = self._table.row(row_).to_dict(ordered=True)
+            vals = np.array(list(current_row.values()))
+            vals += value
+            self._table.loc[row_, :] = vals # TODO: implement __iadd__() on Table
             if run_number == 0:
                 run_number = self.scheduler().for_input(self)
-            self._df.at[row, self.UPDATE_COLUMN] = run_number
+            #self._df.at[row, UPDATE_COLUMN] = run_number
         if run_number != 0:
             self._last_update = run_number
         return "OK"

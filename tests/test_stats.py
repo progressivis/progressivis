@@ -1,33 +1,37 @@
-import unittest
+from . import ProgressiveTest
 
-from progressivis import *
+from progressivis import Print
 from progressivis.stats import Stats
 from progressivis.io import CSVLoader
 from progressivis.core.wait import Wait
 from progressivis.datasets import get_dataset
 
-import pandas as pd
+import numpy as np
 
-class TestStats(unittest.TestCase):
+class TestStats(ProgressiveTest):
+#    def setUp(self):
+#        log_level(logging.DEBUG,'progressivis.core')
+
     def test_stats(self):
-        s=Scheduler()
+        s = self.scheduler()
         csv_module = CSVLoader(get_dataset('smallfile'), index_col=False,header=None,
                                scheduler=s)
-        stats=Stats(1,id='test_stats', scheduler=s)
-        wait=Wait(id='wait', delay=3, scheduler=s)
-        wait.input.df = csv_module.output.df
-        #connect(csv_module, 'df', wait, 'df')
-        stats.input._params = wait.output.df
-        #connect(wait, 'df', stats, '_params')
-        #connect(csv_module, 'df', stats, 'df')
-        stats.input.df = csv_module.output.df
-        pr = Print(id='print', scheduler=s)
-        #connect(stats, 'stats', pr, 'inp')
+        stats=Stats('_1', mid='test_stats', scheduler=s)
+        wait=Wait(mid='wait', delay=3, scheduler=s)
+        wait.input.inp = csv_module.output.table
+        stats.input._params = wait.output.out
+        stats.input.table = csv_module.output.table
+        pr = Print(proc=self.terse, mid='print', scheduler=s)
         pr.input.df = stats.output.stats
         s.start()
-        s = stats.trace_stats(max_runs=1)
-        pd.set_option('display.expand_frame_repr', False)
-        print s
+        s.join()
+        table = csv_module.table()
+        stable = stats.table()
+        last = stable.last()
+        tmin = table['_1'].min()
+        self.assertTrue(np.isclose(tmin, last['__1_min']))
+        tmax = table['_1'].max()
+        self.assertTrue(np.isclose(tmax, last['__1_max']))
 
 if __name__ == '__main__':
-    unittest.main()
+    ProgressiveTest.main()

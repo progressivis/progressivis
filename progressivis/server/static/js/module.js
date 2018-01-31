@@ -25,6 +25,7 @@ function module_input(data, success, error, module) {
 function module_update(data) {
     progressivis_update(data);
     module_update_table(data);
+
 }
 
 function module_show_dataframe(slot) {
@@ -37,7 +38,6 @@ function module_show_dataframe(slot) {
 function module_update_table(data) {
     var slots = data['output_slots'],
         buttons = '<div class="btn-group" role="group" aria-label="DataFrames">\n';
-    
     slots['_params'] = true;
     for (var slot in slots) {
         buttons += '<button type="button" class="btn btn-default slot">'+slot+'</button>\n';
@@ -56,12 +56,20 @@ function module_update_table(data) {
                                    "end_time",
                                    "parameters",
                                    "input_slots"]));
+    $.ajax({
+        type: 'POST',
+        url: $SCRIPT_ROOT+'/progressivis/module/quality/'+module_id,
+        data: {},
+        success: line_graph, 
+        contentType: "application/json",
+        dataType: 'json'
+    });
 
     $('.btn.slot').click(function() { module_show_dataframe($(this).text()); });
 }
 
 function module_refresh() {
-  module_get(module_update, error);
+    module_get(module_update, error);
 }
 
 function module_ready() {
@@ -69,4 +77,7 @@ function module_ready() {
         refresh = module_refresh;
     }
     progressivis_ready("module "+module_id);
+
 }
+
+

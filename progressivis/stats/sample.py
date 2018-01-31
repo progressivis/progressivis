@@ -1,62 +1,128 @@
-"""Simple and naive module to sample a progressive dataframe."""
-from progressivis import DataFrameModule, SlotDescriptor, ProgressiveError
+# -*- coding: utf-8 -*-
+"""Fast Approximate Reservoir Sampling.
+See http://erikerlandson.github.io/blog/2015/11/20/very-fast-reservoir-sampling/
+and https://en.wikipedia.org/wiki/Reservoir_sampling
+
+Vitter, Jeffrey S. (1 March 1985). "Random sampling with a reservoir" (PDF). ACM Transactions on Mathematical Software. 11 (1): 37-57. doi:10.1145/3147.3165.
+"""
+from __future__ import absolute_import, division, print_function
+
+from progressivis import SlotDescriptor
+from progressivis.core.bitmap import bitmap
+from progressivis.table import Table
+from progressivis.table.module import TableModule
+from progressivis.core.utils import indices_len
 
 import numpy as np
-import pandas as pd
-
 
 import logging
 logger = logging.getLogger(__name__)
 
-class Sample(DataFrameModule):
-    parameters = [('n',  np.dtype(int),   100),
-                  ('frac',   np.dtype(float), np.nan),
-                  ('stickiness',   np.dtype(float), 0.9)] # probability of a sample to remain
+def has_len(d):
+    return hasattr(d, '__len__')
+
+class Sample(TableModule):
+    parameters = [('samples',  np.dtype(int), 100)] 
 
     def __init__(self, **kwds):
         self._add_slots(kwds,'input_descriptors',
-                        [SlotDescriptor('df', type=pd.DataFrame)])
+                        [SlotDescriptor('table', type=Table)])
+        self._add_slots(kwds,'output_descriptors',
+                        [SlotDescriptor('select', type=bitmap, required=False)])
+        
         super(Sample, self).__init__(**kwds)
-         # probability associated with each sample. If n selected over N, p=n/N
-        stickiness = self.params.stickiness
-        if stickiness < 0 or stickiness >= 1:
-            raise ProgressiveError('Invalid stickiness (%f) should be [0,1]', stickiness)
-        self._df = None
+        self._table = Table(self.generate_table_name('sample'),
+                            dshape='{select: int64}',
+#                            scheduler=self.scheduler(),
+                            create=True)
+        self._size = 0 # holds the size consumed from the input table so far
+        self._bitmap = None
 
-    def predict_step_size(self, duration):
-        # Module sample is constant time (supposedly)
-        return 1
+    def reset(self):
+        self._table.resize(0)
+        self._size = 0
+        self._bitmap = None
+        self.get_input_slot('table').reset(mid=self.id)
+
+    def get_data(self, name):
+        if name=='select':
+            return self.get_bitmap()
+        return super(Sample,self).get_data(name)
+
+    def get_bitmap(self):
+        if self._bitmap is None:
+            self._bitmap = bitmap(self._table['select'])
+        return self._bitmap
 
     def run_step(self,run_number,step_size,howlong):
-        dfslot = self.get_input_slot('df')
-        dfslot.update(run_number)
+        dfslot = self.get_input_slot('table')
+        dfslot.update(run_number, self.id)
         # do not produce another sample is nothing has changed
-        if not (dfslot.has_created() or dfslot.has_deleted() or dfslot.has_updated()):
+        if dfslot.deleted.any():
+            self.reset()
+            dfslot.update(run_number, self.id)
+        if not dfslot.created.any():
             return self._return_run_step(self.state_blocked, steps_run=0)
-        if dfslot.has_deleted() or dfslot.has_updated():
-            dfslot.reset()
-            dfslot.update(run_number)
-            self._df = None
-        input_df = dfslot.data()
-        with dfslot.lock:
-            l = len(input_df) if input_df is not None else 0
 
-        if (l == 0):
-            if self._df is not None and len(self._df) != 0:
-                self._df = None
-            self._return_run_step(self.state_blocked, steps_run=0)
+        indices = dfslot.created.next(step_size, as_slice=False)
+        steps = indices_len(indices)
+        if steps==0:
+            return self._return_run_step(self.state_blocked, steps_run=0)
+        
+        k = int(self.params.samples)
+        reservoir = self._table
+        res = reservoir['select']
+        size = self._size # cache in local variable
+        if size < k:
+            logger.info('Filling the reservoir %d/%d', size, k)
+            # fill the reservoir array until it contains k elements
+            rest = indices.pop(k-size)
+            reservoir.append({'select': rest})
+            size = len(reservoir)
 
-        size = 1
-        n = self.params.n
-        frac = self.params.frac
-        if n > 0:
-            size = n
-        elif not np.isnan(frac):
-            size = np.max(0, np.floor(l*frac))
-        with dfslot.lock:
-            if size >= len(input_df):
-                self._df = input_df
+        if len(indices)==0: # nothing else to do
+            self._size = size
+            if steps:
+                self._bitmap = None
+            return self._return_run_step(self.state_blocked, steps_run=steps)
+
+        t = 4 * k
+        # Threshold (t) determines when to start fast sampling
+        # logic. The optimal value for (t) may vary depending on RNG
+        # performance characteristics.
+        
+        if size < t and len(indices)!=0:
+            logger.info('Normal sampling from %d to %d', size, t)
+        while size < t and len(indices)!=0:
+            # Normal reservoir sampling is fastest up to (t) samples
+            j = np.random.randint(size)
+            if j < k:
+                res[j] = indices.pop()[0]
+            size += 1
+
+        if len(indices)==0:
+            self._size = size
+            if steps:
+                self._bitmap = None
+            return self._return_run_step(self.state_blocked, steps_run=steps)
+
+        logger.info('Fast sampling with %d indices', len(indices))
+        while indices:
+            # draw gap size (g) from geometric distribution with probability p = k / size
+            p = k / size
+            u = np.random.rand()
+            g = int(np.floor(np.log(u) / np.log(1-p)))
+            # advance over the gap, and assign next element to the reservoir
+            if (g+1) < len(indices):
+                j = np.random.randint(k)
+                res[j] = indices[g]
+                indices.pop(g+1)
+                size += g+1
             else:
-                self._df = input_df.sample(n=size)
-                self._df.loc[:,self.UPDATE_COLUMN] = run_number
-        return self._return_run_step(self.state_blocked, steps_run=1, reads=l, updates=l)
+                size += len(indices)
+                break
+
+        self._size = size
+        if steps:
+            self._bitmap = None
+        return self._return_run_step(self.state_blocked, steps_run=steps)

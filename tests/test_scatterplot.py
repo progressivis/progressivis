@@ -1,37 +1,40 @@
-import unittest
+from . import ProgressiveTest
 
-from progressivis import *
+from progressivis import Every, Print
 from progressivis.io import CSVLoader
 from progressivis.vis import ScatterPlot
 from progressivis.datasets import get_dataset
-
-import pandas as pd
-from pprint import pprint
-import logging
+#from pprint import pprint
 
 def print_len(x):
     if x is not None:
-        print len(x)
+        print(len(x))
 
-def idle_proc(s, x):
+def print_repr(x):
+    if x is not None:
+        print(repr(x))
+    
+def idle_proc(s, _):
     s.stop()
 
-class TestScatterPlot(unittest.TestCase):
+class TestScatterPlot(ProgressiveTest):
 #    def setUp(self):
 #        log_level(logging.INFO,'progressivis')
 
     def test_scatterplot(self):
-        s=Scheduler()
-        csv = CSVLoader(get_dataset('bigfile'),index_col=False,header=None,force_valid_ids=True,scheduler=s)
+        s = self.scheduler()
+        csv = CSVLoader(get_dataset('smallfile'),index_col=False,header=None,force_valid_ids=True,scheduler=s)
         sp = ScatterPlot(x_column='_1', y_column='_2', scheduler=s)
-        sp.create_dependent_modules(csv,'df')
-        cnt = Every(proc=print_len,constant_time=True,scheduler=s)
-        cnt.input.df = csv.output.df
-        prt = Print(scheduler=s)
-        prt.input.df = sp.histogram2d.output.df
-        csv.scheduler().start(None,idle_proc)
-        self.assertEquals(len(csv.df()), 1000000)
+        sp.create_dependent_modules(csv,'table')
+        cnt = Every(proc=self.terse, constant_time=True,scheduler=s)
+        cnt.input.df = csv.output.table
+        prt = Print(proc=self.terse, scheduler=s)
+        prt.input.df = sp.output.table
+        csv.scheduler().start(idle_proc=idle_proc)
+        s.join()
+        self.assertEqual(len(csv.table()), 30000) #1000000)
+        #pprint(sp.to_json())
 
 
 if __name__ == '__main__':
-    unittest.main()
+    ProgressiveTest.main()

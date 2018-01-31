@@ -1,36 +1,38 @@
-from progressivis.core import DataFrameModule, ProgressiveError, create_dataframe, force_valid_id_columns
-from progressivis.core.buffered_dataframe import BufferedDataFrame
+from progressivis.core import ProgressiveError
+from progressivis.table.module import TableModule
+from progressivis.table.table import Table
+from progressivis.core.utils import integer_types
 
-import pandas as pd
 import numpy as np
-
+from collections import OrderedDict
 import logging
 logger = logging.getLogger(__name__)
 
+rand=np.random.rand
 
-class RandomTable(DataFrameModule):
-    def __init__(self, columns, rows=-1, random=np.random.rand, throttle=False, force_valid_ids=False, **kwds):
+
+class RandomTable(TableModule):
+    def __init__(self, columns, rows=-1, random=rand, throttle=False, **kwds):
         super(RandomTable, self).__init__(**kwds)
         self.default_step_size = 1000
-        if isinstance(columns,int):
-            self.columns = list(range(1,columns+1))
+        if isinstance(columns,integer_types):
+            self.columns = ["_%d"%i for i in range(1,columns+1)]
         elif isinstance(columns,(list,np.ndarray)):
             self.columns = columns
         else:
             raise ProgressiveError('Invalid type for columns')
-        cols = len(self.columns)
-        self.columns.append(self.UPDATE_COLUMN)
         self.rows = rows
         self.random = random
-        if throttle and isinstance(throttle,(int,float)):
+        if throttle and isinstance(throttle, integer_types+(float,)):
             self.throttle = throttle
         else:
             self.throttle = False
-        self._df = create_dataframe(self.columns, types=cols*[np.dtype(float)]+[np.dtype(int)])
-        if force_valid_ids:
-            force_valid_id_columns(self._df)
-        self.columns = self._df.columns # reuse the pandas index structure
-        self._buffer = BufferedDataFrame()
+        dshape = "{" + (", ".join(["%s: float64"%col for col in self.columns])) + "}"
+        self._table = Table(self.generate_table_name('table'),
+                            dshape=dshape,
+#                            scheduler=self.scheduler(),
+                            create=True)
+        self.columns = self._table.columns
 
     def run_step(self,run_number,step_size, howlong):
         if step_size==0: # bug
@@ -39,20 +41,17 @@ class RandomTable(DataFrameModule):
         logger.info('generating %d lines', step_size)
         if self.throttle:
             step_size = np.min([self.throttle,step_size])
-        if self.rows >= 0 and (len(self._df)+step_size) > self.rows:
-            step_size = self.rows - len(self._df)
+        if self.rows >= 0 and (len(self._table)+step_size) > self.rows:
+            step_size = self.rows - len(self._table)
             if step_size <= 0:
                 raise StopIteration
             logger.info('truncating to %d lines', step_size)
 
-        values = {}
-        for c in self.columns[:-1]:
-            s = pd.Series(self.random(step_size))
+        values = OrderedDict()
+        for c in self.columns:
+            s = self.random(step_size)
             values[c] = s
-        values[self.UPDATE_COLUMN] = pd.Series(step_size*[run_number], dtype=np.dtype(int))
-        df = pd.DataFrame(values, columns=self.columns)
         with self.lock:
-            self._buffer.append(df)
-            self._df = self._buffer.df()
+            self._table.append(values)
         next_state = self.state_blocked if self.throttle else self.state_ready
         return self._return_run_step(next_state, steps_run=step_size)

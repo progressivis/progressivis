@@ -2,9 +2,8 @@
 """ Computes the distance matrix from each row of a data frame.
 """
 from progressivis.core.utils import ProgressiveError, indices_len, fix_loc
-from progressivis.core.module import Module
-from progressivis.core.buffered_matrix import BufferedMatrix
-from progressivis.core.slot import SlotDescriptor
+from progressivis.table.module import TableModule, SlotDescriptor
+from progressivis.table.table import Table
 from progressivis.core.synchronized import synchronized
 
 
@@ -15,13 +14,9 @@ from sklearn.metrics.pairwise import _VALID_METRICS, pairwise_distances
 import logging
 logger = logging.getLogger(__name__)
 
-class PairwiseDistances(Module):
+class PairwiseDistances(TableModule):
     def __init__(self, metric='euclidean', columns=None, n_jobs=1, **kwds):
-        self._add_slots(kwds,'input_descriptors',
-                        [SlotDescriptor('df', type=pd.DataFrame),
-                         SlotDescriptor('array', required=False)])
-        self._add_slots(kwds,'output_descriptors',
-                        [SlotDescriptor('dist', type=np.ndarray, required=False)])
+        self._add_slots(kwds,'input_descriptors', [SlotDescriptor('table', type=Table)])
         super(PairwiseDistances, self).__init__(dataframe_slot='distance', **kwds)
         self.default_step_size = kwds.get('step_Size', 100)  # initial guess
         self.columns = columns
@@ -31,15 +26,18 @@ class PairwiseDistances(Module):
         if (metric not in _VALID_METRICS and
             not callable(metric) and metric != "precomputed"):
             raise ProgressiveError('Unknown distance %s', metric)
-        self._buf = BufferedMatrix()
+        self._table = Table(self.generate_table_name('distance'),
+                            dshape="{distance: var * real}",
+                            scheduler=self.scheduler(),
+                            storagegroup=self.storagegroup)
 
     def is_ready(self):
-        if self.get_input_slot('df').has_created():
+        if self.get_input_slot('table').created.any():
             return True
         return super(PairwiseDistances, self).is_ready()
 
     def dist(self):
-        return self._buf.matrix()
+        return self._table
 
     def get_data(self, name):
         if name=='dist':
@@ -48,23 +46,23 @@ class PairwiseDistances(Module):
 
     @synchronized
     def run_step(self,run_number,step_size,howlong):
-        dfslot = self.get_input_slot('df')
+        dfslot = self.get_input_slot('table')
         df = dfslot.data()
-        dfslot.update(run_number)
-        if dfslot.has_updated() or dfslot.has_deleted():        
-            dfslot.reset()
-            logger.info('Reseting history because of changes in the input df')
-            dfslot.update(run_number, df)
+        dfslot.update(run_number, self.id)
+        if dfslot.updated.any() or dfslot.deleted.any():        
+            dfslot.reset(mid=self.id)
+            logger.info('Reseting history because of changes in the input table')
+            dfslot.update(run_number, self.id)
             #TODO: be smarter with changed values
 
         m = step_size
         
-        indices = dfslot.next_created(m)
+        indices = dfslot.created.next(m)
         m = indices_len(indices)
 
         i = None
         j = None
-        Si = self._buf.matrix()
+        Si = self._table['document']
 
         arrayslot = self.get_input_slot('array')
         if arrayslot is not None and arrayslot.data() is not None:
@@ -75,7 +73,7 @@ class PairwiseDistances(Module):
             j = array[indices]
         if j is None:
             if self.columns is None:
-                self.columns = df.columns.delete(np.where(df.columns==Module.UPDATE_COLUMN))
+                self.columns = df.columns.delete(np.where(df.columns==UPDATE_COLUMN))
             elif not isinstance(self.columns, pd.Index):
                 self.columns = pd.Index(self.columns)
             rows = df[self.columns]
@@ -103,4 +101,4 @@ class PairwiseDistances(Module):
             #import pdb
             #pdb.set_trace()
             #assert np.allclose(mat,truth)
-        return self._return_run_step(dfslot.next_state(), steps_run=m)
+        return self._return_run_step(self.next_state(dfslot), steps_run=m)

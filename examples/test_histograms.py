@@ -6,22 +6,22 @@ from progressivis.vis import Histograms
 
 try:
     s = scheduler
-    print 'No scheduler defined, using the standard one'
+    print('No scheduler defined, using the standard one')
 except:
     s = Scheduler()
 
 csv = RandomTable(columns=['a', 'b', 'c'],rows=1000000, throttle=1000, scheduler=s)
 min = Min(scheduler=s)
-min.input.df = csv.output.df
+min.input.table = csv.output.table
 max = Max(scheduler=s)
-max.input.df = csv.output.df
+max.input.table = csv.output.table
 histograms = Histograms(scheduler=s)
-histograms.input.df = csv.output.df
-histograms.input.min = min.output.df
-histograms.input.max = max.output.df
+histograms.input.table = csv.output.table
+histograms.input.min = min.output.table
+histograms.input.max = max.output.table
 prlen = Every(scheduler=s)
-prlen.input.df = histograms.output.df
+prlen.input.df = histograms.output.table
 
 if __name__=='__main__':
-    print "Starting"
+    print("Starting")
     csv.start()

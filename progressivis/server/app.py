@@ -1,19 +1,33 @@
-from __future__ import print_function
+from __future__ import absolute_import, division, print_function
 
+from six import StringIO
 import logging
 logger = logging.getLogger(__name__)
 
 from flask import Flask, Blueprint
-
+from flask.json import JSONEncoder
 from tornado.wsgi import WSGIContainer
 from tornado.web import Application, FallbackHandler
 from tornado.websocket import WebSocketHandler
 from tornado.ioloop import IOLoop
-
 from progressivis import ProgressiveError, Scheduler
-from StringIO import StringIO
+import numpy as np
 
-
+class JSONEncoder4Numpy(JSONEncoder):
+    def default(self, obj):
+        try:
+            if isinstance(obj, float) and np.isnan(obj):
+                return None
+            if isinstance(obj, np.integer):
+                return int(obj)
+            if isinstance(obj, np.bool_):
+                return bool(obj)
+            if isinstance(obj, np.ndarray):
+                return obj.tolist()
+        except:
+            pass
+        return JSONEncoder.default(self, obj)
+    
 class ProgressiveWebSocket(WebSocketHandler):
     sockets_for_path = {}
     def __init__(self, application, request, **kwargs):
@@ -51,7 +65,7 @@ class ProgressiveWebSocket(WebSocketHandler):
             else:
                 logger.error("Received msg before handshake: '%s'", message)
             return
-        logger.warn("Received message '%s' from '%s'", message, self.path)
+        logger.warning("Received message '%s' from '%s'", message, self.path)
 
     def on_close(self):
         self.unregister()
@@ -66,12 +80,12 @@ class ProgressiveWebSocket(WebSocketHandler):
         logger.info('Sending message %s to path %s'%(msg,path))
         sockets = ProgressiveWebSocket.sockets_for_path.get(path)
         if not sockets:
-            logger.warn('Message sent to nonexistent path "%s"',path)
+            logger.warning('Message sent to nonexistent path "%s"',path)
             return
         for s in sockets:
             s.write_message(msg)
 
-
+        
 class ProgressivisBlueprint(Blueprint):
     def __init__(self, *args, **kwargs):
         super(ProgressivisBlueprint, self).__init__(*args, **kwargs)
@@ -94,6 +108,16 @@ class ProgressivisBlueprint(Blueprint):
     def tick_scheduler(self, scheduler, run_number):
         ProgressiveWebSocket.write_to_path('scheduler', 'tick %d'%run_number)
 
+    def step_tick_scheduler(self, scheduler, run_number):        
+        ProgressiveWebSocket.write_to_path('scheduler', 'tick %d'%run_number)
+        scheduler.stop()
+
+    def step_once(self):
+        self.scheduler.start(tick_proc=self.step_tick_scheduler) # i.e. step+write_to_path
+        
+    def start(self):
+        self.scheduler.start(tick_proc=self.tick_scheduler)
+        
     def tick_module(self, module, run_number):
         ProgressiveWebSocket.write_to_path('module %s'%module.id, 'tick %d'%run_number)
 
@@ -108,8 +132,10 @@ progressivis_bp = ProgressivisBlueprint('progressivis.server',
                                         static_url_path='/progressivis/static',
                                         template_folder='templates')
 
-import views
+from . import views
 views # to shut up pyflakes
+from progressivis.core.scheduler import Scheduler
+
 
 def app_create(config="settings.py", scheduler=None):
     if scheduler is None:
@@ -119,7 +145,7 @@ def app_create(config="settings.py", scheduler=None):
         app.config.from_pyfile(config)
     elif isinstance(config, dict):
         app.config.update(config)
-
+    app.json_encoder = JSONEncoder4Numpy
     app.register_blueprint(progressivis_bp)
     progressivis_bp.setup(scheduler)
 
@@ -133,3 +159,14 @@ def app_create(config="settings.py", scheduler=None):
 
 def app_run(app):
     IOLoop.instance().start()
+
+
+
+def start_server(scheduler=None, debug=False):
+    if scheduler is None:
+        scheduler = Scheduler.default    
+    print('Scheduler has %d modules' % len(scheduler))
+    app = app_create(scheduler)
+    app.debug = debug    
+    app_run(app)
+    

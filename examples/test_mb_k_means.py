@@ -10,11 +10,11 @@ except:
 
 table = RandomTable(columns=['a', 'b'], rows=50000, throttle=500, scheduler=s)
 mbkmeans = MBKMeans(columns=['a', 'b'], n_clusters=8, batch_size=100, is_input=False, scheduler=s)
-mbkmeans.input.df = table.output.df
+mbkmeans.input.table = table.output.table
 prn = Print(scheduler=s)
-prn.input.df = mbkmeans.output.df
-#sp = ScatterPlot('a', 'b')
-#sp.create_dependent_modules(mbkmeans,'df')
+prn.input.df = mbkmeans.output.table
+sp = ScatterPlot('a', 'b', scheduler=s)
+sp.create_dependent_modules(mbkmeans,'table')
 
 if __name__ == '__main__':
     table.start()

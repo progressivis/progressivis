@@ -144,3 +144,5 @@ function progressivis_ready(socket_name) {
     $('#step' ).click(function() { progressivis_step (refresh, error); });
     progressivis_websocket_open(socket_name, progressivis_socketmsg);
 }
+
+window.addEventListener('visibilitychange', function() {if(!document.hidden){refresh();}})

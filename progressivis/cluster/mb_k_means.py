@@ -1,8 +1,9 @@
-from progressivis import ProgressiveError, DataFrameModule, SlotDescriptor
-from progressivis.core.buffered_dataframe import BufferedDataFrame
+from __future__ import print_function
+from progressivis import ProgressiveError, SlotDescriptor
 from progressivis.core.utils import indices_len, fix_loc
-
-import pandas as pd
+from ..table.module import TableModule
+from ..table import Table
+from ..table.dshape import dshape_from_dtype
 
 from sklearn.utils import gen_batches
 from sklearn.cluster import MiniBatchKMeans
@@ -10,15 +11,17 @@ from sklearn.cluster import MiniBatchKMeans
 import logging
 logger = logging.getLogger(__name__)
 
-class MBKMeans(DataFrameModule):
+import numpy as np
+
+class MBKMeans(TableModule):
     """
     Mini-batch k-means using the sklearn implementation.
     """
     def __init__(self, n_clusters, columns=None, batch_size=100, tol=0.0, is_input=True, random_state=None,**kwds):
         self._add_slots(kwds, 'input_descriptors',
-                        [SlotDescriptor('df', type=pd.DataFrame, required=True)])
+                        [SlotDescriptor('table', type=Table, required=True)])
         self._add_slots(kwds,'output_descriptors',
-                         [SlotDescriptor('labels', type=pd.DataFrame, required=False)])
+                         [SlotDescriptor('labels', type=Table, required=False)])
         super(MBKMeans, self).__init__(**kwds)
         self.mbk = MiniBatchKMeans(n_clusters=n_clusters, batch_size=batch_size,
                                    verbose=True,
@@ -26,22 +29,21 @@ class MBKMeans(DataFrameModule):
         self.columns = columns
         self.n_clusters = n_clusters
         self.default_step_size = 100
-        self._buffer = None
         self._labels = None
+        self._remaining_inits = 10
+        self._initialization_steps = 0
         self._is_input = is_input
 
     def reset(self, init='k-means++'):
-        print "Reset, init=", init
+        print("Reset, init=", init)
         self.mbk = MiniBatchKMeans(n_clusters=self.mbk.n_clusters,
                                    batch_size=self.mbk.batch_size,
                                    init=init,
                                    #tol=self._rel_tol,
                                    random_state=self.mbk.random_state)
-        dfslot = self.get_input_slot('df')
-        dfslot.reset()
-        if self._buffer is not None:
-            self._buffer.reset()
-        self._df = None
+        dfslot = self.get_input_slot('table')
+        dfslot.reset(mid=self.id)
+        self._table = None
         self._labels = None
         self.set_state(self.state_ready)
 
@@ -51,10 +53,20 @@ class MBKMeans(DataFrameModule):
             opt_slot = self.get_output_slot('labels')
             if opt_slot:
                 logger.debug('Maintaining labels')
-                self._buffer = BufferedDataFrame()
+                self.maintain_labels(True)
             else:
                 logger.debug('Not maintaining labels')
+                self.maintain_labels(False)
         return valid
+
+    def maintain_labels(self, yes=True):
+        if yes and self._labels is None:
+            self._labels = Table(self.generate_table_name('labels'),
+                                dshape="{ labels: int64 }",
+#                                scheduler=self.scheduler(),
+                                create=True)
+        elif not yes:
+            self._labels = None
 
     def labels(self):
         return self._labels
@@ -65,39 +77,55 @@ class MBKMeans(DataFrameModule):
         return super(MBKMeans, self).get_data(name)
 
     def run_step(self, run_number, step_size, howlong):
-        dfslot = self.get_input_slot('df')
-        dfslot.update(run_number)
+        dfslot = self.get_input_slot('table')
+        dfslot.update(run_number, self.id)
 
-        if dfslot.has_deleted() or dfslot.has_updated():
+        if dfslot.deleted.any() or dfslot.updated.any():
             logger.debug('has deleted or updated, reseting')
             self.reset()
-            dfslot.update(run_number)
+            dfslot.update(run_number, self.id)
 
-        print('dfslot has buffered %d elements'% dfslot.created_length())
-        if dfslot.created_length() < self.mbk.n_clusters:
+        #print('dfslot has buffered %d elements'% dfslot.created_length())
+        input_df = dfslot.data()
+        if (input_df is None or len(input_df)==0) and dfslot.created_length() < self.mbk.n_clusters:
             # Should add more than k items per loop
             return self._return_run_step(self.state_blocked, steps_run=0)
-        indices = dfslot.next_created(step_size) # returns a slice
+        indices = dfslot.created.next(step_size) # returns a slice
         steps = indices_len(indices)
         if steps==0:
             return self._return_run_step(self.state_blocked, steps_run=0)
-        input_df = dfslot.data()
-        X = self.filter_columns(input_df, fix_loc(indices)).values
+        cols = self.get_columns(input_df)
+        if len(cols)==0:
+            return self._return_run_step(self.state_blocked, steps_run=0)
+        locs = fix_loc(indices)
+        if self._labels is not None and isinstance(indices, slice):
+            indices = np.arange(indices.start, indices.stop)
+            
+        X = input_df.to_array(columns=cols, keys=locs)
+        
         batch_size = self.mbk.batch_size or 100
         for batch in gen_batches(steps, batch_size):
             self.mbk.partial_fit(X[batch])
-            if self._buffer is not None:
-                df = pd.DataFrame({'labels': self.mbk.labels_})
-                df[self.UPDATE_COLUMN] = run_number
-                self._buffer.append(df)
+            if self._labels is not None:
+                self._labels.append({'labels': self.mbk.labels_},indices=indices[batch])
+        if self._table is None:
+            dshape = self.dshape_from_columns(input_df, cols, dshape_from_dtype(X.dtype))
+            self._table = Table(self.generate_table_name('centers'),
+                                dshape=dshape,
+                                create=True)
+            self._table.resize(self.mbk.cluster_centers_.shape[0])
+        self._table[cols] = self.mbk.cluster_centers_
+        return self._return_run_step(self.next_state(dfslot), steps_run=steps)
 
-        with self.lock:
-            self._df = pd.DataFrame(self.mbk.cluster_centers_, columns=self.columns)
-            self._df[self.UPDATE_COLUMN] = run_number
-            if self._buffer is not None:
-                logger.debug('Setting the labels')
-                self._labels = self._buffer.df()
-        return self._return_run_step(dfslot.next_state(), steps_run=steps)
+    def dshape_from_columns(self, table, columns, dshape):
+        dshapes = []
+        for colname in columns:
+            col = table._column(colname)
+            if len(col.shape) > 1:
+                dshapes.append("%s: %d * %s"%(col.name, col.shape[1], dshape))
+            else:
+                dshapes.append("%s: %s"%(col.name, dshape))
+        return "{" + ",".join(dshapes)+"}"
 
     def is_visualization(self):
         return False
@@ -109,8 +137,8 @@ class MBKMeans(DataFrameModule):
         return self._centers_to_json(json)
 
     def _centers_to_json(self, json):
-        if self._df is not None:
-            json['cluster_centers'] = self._df.to_json()
+        if self._table is not None:
+            json['cluster_centers'] = self._table.to_json()
         return json
 
     def set_centroid(self, c, values):
@@ -119,15 +147,14 @@ class MBKMeans(DataFrameModule):
         except:
             pass
 
-        centroids = self._df
-        if c not in centroids.index:
-            raise ProgressiveError('Expected %s values, received %s', len(self.columns), values)
+        centroids = self._table
+        #idx = centroids.id_to_index(c)
 
         if len(values)!=len(self.columns):
             raise ProgressiveError('Expected %s of values, received %s', len(self.columns), values)
-        run_number = self.scheduler().for_input(self)
+        _ = self.scheduler().for_input(self)
         centroids.loc[c, self.columns] = values
-        centroids.loc[c, self.UPDATE_COLUMN] = run_number
+        #TODO unpack the table
         self.mbk.cluster_centers_[c] = centroids.loc[c, self.columns]
         return values
 
@@ -138,4 +165,5 @@ class MBKMeans(DataFrameModule):
         logger.info('Received message %s', msg)
         for c in msg:
             self.set_centroid(c, msg[c])
-        self.reset(init=self.mbk.cluster_centers_)
+        #self.reset(init=self.mbk.cluster_centers_)
+

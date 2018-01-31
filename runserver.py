@@ -1,23 +1,34 @@
-#from progressivis import log_level
-from progressivis.server.app import app_create, app_run
+from progressivis.server.app import start_server
 from progressivis.core.scheduler import Scheduler
-from progressivis.core.mt_scheduler import MTScheduler
 
+from progressivis.core.utils import Thread
 import sys
-
-MTScheduler.set_default()
+import signal
+from six.moves import input
+import requests
 
 
 env = {'scheduler': Scheduler.default }
 
 for fn in sys.argv[1:]:
-    print "Loading '%s'" % fn
-    execfile(fn, env, env)
+    if fn=="nosetests":
+        continue
+    print("Loading '%s'" % fn)
+    exec(compile(open(fn).read(), fn, 'exec'), env, env)
 
+def signal_handler(signum, frame):
+    requests.get('http://localhost:5000/exit')
+    sys.exit()
+    
 if __name__=='__main__':
     #log_level()
-    print 'Scheduler has %d modules' % len(Scheduler.default)
-    app = app_create(Scheduler.default)
-    app.debug = True
+    signal.signal(signal.SIGTERM, signal_handler)
+    signal.signal(signal.SIGINT, signal_handler)    
+    th = Thread(target=start_server)
+    th.start()
+    print("Server launched!")
+    while True:
+        _ = input()
+
     
-    app_run(app)
+    

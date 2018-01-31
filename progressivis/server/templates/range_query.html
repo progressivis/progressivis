@@ -12,6 +12,7 @@ Range Query for module {{id}}
 
 {% block extra_scripts %}
 <script src="{{ url_for('static', filename='lib/d3.slider.js') }}"></script>
+<script src="{{ url_for('progressivis.server.progressivis_file', filename='js/line_graph.js') }}"></script>
 <script src="{{ url_for('progressivis.server.progressivis_file', filename='js/module.js') }}"></script>
 <script src="{{ url_for('progressivis.server.progressivis_file', filename='js/range_query.js') }}"></script>
 {% endblock %}

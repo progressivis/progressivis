@@ -1,34 +1,38 @@
-from inspect import getargspec
+from __future__ import absolute_import, division, print_function
+
 from traceback import print_exc
 import re
 import pdb
-
 import pandas as pd
 import numpy as np
-
-from progressivis.core.utils import (ProgressiveError,
-                                     create_dataframe,
-                                     type_fullname,
-                                     DataFrameAsDict,
-                                     remove_nan)
-#from progressivis.core.scheduler import Scheduler
-from progressivis.core.slot import Slot, SlotDescriptor, InputSlots, OutputSlots
-from progressivis.core.tracer import Tracer
+import six
+from abc import ABCMeta, abstractmethod
+from progressivis.core.utils import (ProgressiveError, type_fullname)
+from progressivis.table.table_base import BaseTable
+from progressivis.table.table import Table
+from progressivis.table.dshape import dshape_from_dtype
+from progressivis.table.row import Row
+from progressivis.core.slot import (SlotDescriptor, Slot,
+                                    InputSlots, OutputSlots)
+from progressivis.core.tracer_base import Tracer
 from progressivis.core.time_predictor import TimePredictor
 from progressivis.core.storagemanager import StorageManager
-
+from progressivis.core.storage import Group
 import logging
+if six.PY2:
+    from inspect import getargspec as getfullargspec
+else:
+    from inspect import getfullargspec
+
 logger = logging.getLogger(__name__)
 
 
-def connect(output_module, output_name, input_module, input_name):
-    return output_module.connect_output(output_name, input_module, input_name)
-
-class ModuleMeta(type):
-    """Module metaclass is needed to collect the input parameter list in all_parameters.
+class ModuleMeta(ABCMeta):
+    """Module metaclass is needed to collect the input parameter list
+    in the field ``all_parameters''.
     """
     def __init__(cls, name, bases, attrs):
-        if not "parameters" in attrs:
+        if "parameters" not in attrs:
             cls.parameters = []
         all_props = list(cls.parameters)
         for base in bases:
@@ -36,24 +40,11 @@ class ModuleMeta(type):
         cls.all_parameters = all_props
         super(ModuleMeta, cls).__init__(name, bases, attrs)
 
-def slot_to_json(slot):
-    if slot is None:
-        return None
-    if isinstance(slot, list):
-        return [ slot_to_json(s) for s in slot]
-    return slot.to_json()
 
-class Module(object):
-    __metaclass__ = ModuleMeta
-    
+@six.python_2_unicode_compatible
+class Module(six.with_metaclass(ModuleMeta, object)):
     parameters = [('quantum', np.dtype(float), 1.0),
-                  ('debug', object, False) # should be np.dtype(bool) but cannot serialize with json
-    ]
-    EMPTY_COLUMN = pd.Series([],index=[],name='empty')
-    EMPTY_TIMESTAMP = 0
-    UPDATE_COLUMN = '_update'
-    UPDATE_COLUMN_TYPE = np.dtype(int)
-    UPDATE_COLUMN_DESC = (UPDATE_COLUMN, UPDATE_COLUMN_TYPE, EMPTY_TIMESTAMP)
+                  ('debug', np.dtype(bool), False)]
     TRACE_SLOT = '_trace'
     PARAMETERS_SLOT = '_params'
 
@@ -64,60 +55,73 @@ class Module(object):
     state_zombie = 4
     state_terminated = 5
     state_invalid = 6
-    state_name = ['created', 'ready', 'running', 'blocked', 'zombie', 'terminated', 'invalid']
+    state_name = ['created', 'ready', 'running', 'blocked',
+                  'zombie', 'terminated', 'invalid']
 
     def __init__(self,
-                 columns=None,
-                 id=None,
+                 mid=None,
+                 name=None,
                  group=None,
                  scheduler=None,
                  tracer=None,
                  predictor=None,
                  storage=None,
-                 input_descriptors=[],
-                 output_descriptors=[],
+                 storagegroup=None,
+                 input_descriptors=None,
+                 output_descriptors=None,
                  **kwds):
-        """Module(id=None,scheduler=None,tracer=None,predictor=None,storage=None,input_descriptors=[],output_descriptors=[])
-        """
-        self._columns = columns
         if scheduler is None:
-            from scheduler import Scheduler
+            from .scheduler import Scheduler
             scheduler = Scheduler.default
-        if tracer is None:
-            tracer = Tracer.default()
+        self._scheduler = scheduler
+        if name is not None:
+            if mid is None:
+                mid = name
+            else:
+                raise ValueError('Cannot use name (%s) and mid (%s)'
+                                 ' at the same time', name, mid)
+        if mid is None:
+            mid = self._scheduler.generate_id(self.pretty_typename())
+        self._id = mid
         if predictor is None:
             predictor = TimePredictor.default()
+        predictor.id = mid
+        self.predictor = predictor
         if storage is None:
             storage = StorageManager.default
-        if id is None:
-            id = scheduler.generate_id(self.pretty_typename())
-
-        predictor.id = id
+        self.storage = storage
+        if storagegroup is None:
+            storagegroup = Group.default()
+        self.storagegroup = storagegroup
+        if tracer is None:
+            tracer = Tracer.default(mid, storagegroup)
 
         # always present
-        output_descriptors = output_descriptors + [SlotDescriptor(Module.TRACE_SLOT, type=pd.DataFrame, required=False)]
-        
-        input_descriptors = input_descriptors + [SlotDescriptor(Module.PARAMETERS_SLOT, type=pd.DataFrame, required=False)]
+        input_descriptors = input_descriptors or []
+        output_descriptors = output_descriptors or []
+        output_descriptors += [SlotDescriptor(Module.TRACE_SLOT,
+                                              type=BaseTable,
+                                              required=False)]
+        input_descriptors += [SlotDescriptor(Module.PARAMETERS_SLOT,
+                                             type=BaseTable,
+                                             required=False)]
         self.order = None
-        self._id = id
         self._group = group
-        self._parse_parameters(kwds)
-        self._scheduler = scheduler
-        if self._scheduler.exists(id):
-            raise ProgressiveError('module already exists in scheduler, delete it first')
+        if self._scheduler.exists(mid):
+            raise ProgressiveError('module already exists in scheduler,'
+                                   ' delete it first')
         self.tracer = tracer
-        self.predictor = predictor
-        self.storage = storage
         self._start_time = None
         self._end_time = None
         self._last_update = 0
         self._state = Module.state_created
         self._had_error = False
+        self._parse_parameters(kwds)
         self._input_slots = self._validate_descriptors(input_descriptors)
         self.input_descriptors = {d.name: d for d in input_descriptors}
         self._output_slots = self._validate_descriptors(output_descriptors)
         self.output_descriptors = {d.name: d for d in output_descriptors}
-        self.default_step_size = 1
+        self.default_step_size = 100
         self.input = InputSlots(self)
         self.output = OutputSlots(self)
         self.scheduler().add_module(self)
@@ -132,21 +136,43 @@ class Module(object):
         pass
 
     def get_progress(self):
-        """Return a tuple of numbers (current,total) where current is `current` progress
-        value and `total` is the total number of values to process; these values can
-        change during the computations.
+        """Return a tuple of numbers (current,total) where current is `current`
+        progress value and `total` is the total number of values to process;
+        these values can change during the computations.
         """
-        return (0,0)
+        if not self.has_any_input():
+            return (0, 0)
+        slots = self.input_slot_values()
+        progresses = []
+        for slot in slots:
+            if slot is not None:
+                progresses.append(slot.output_module.get_progress())
+        if len(progresses) == 1:
+            return progresses[0]
+        elif len(progresses) == 0:
+            return (0, 0)
+        pos = 0
+        size = 0
+        for p in progresses:
+            pos += p[0]
+            size += p[1]
+        return (pos, size)
+
+    def get_quality(self):
+        """Quality value, should increase.
+        """
+        return 0.0
 
     def destroy(self):
         self.scheduler().remove_module(self)
-        #TODO remove connections with the input and output modules
+        # TODO remove connections with the input and output modules
 
     @staticmethod
     def _filter_kwds(kwds, function_or_method):
-        argspec = getargspec(function_or_method)
-        keys = argspec.args[len(argspec.args)-len(argspec.defaults):]
-        filtered_kwds = {k: kwds[k] for k in kwds.viewkeys()&keys}
+        argspec = getfullargspec(function_or_method)
+        keys_ = argspec.args[len(argspec.args)-(0 if argspec.defaults is None
+                                                else len(argspec.defaults)):]
+        filtered_kwds = {k: kwds[k] for k in six.viewkeys(kwds) & keys_}
         return filtered_kwds
 
     @staticmethod
@@ -161,17 +187,18 @@ class Module(object):
         slots = {}
         for desc in descriptor_list:
             if desc.name in slots:
-                raise ProgressiveError('Duplicate slot name %s in slot descriptor', desc.name)
+                raise ProgressiveError('Duplicate slot name %s'
+                                       ' in slot descriptor', desc.name)
             slots[desc.name] = None
         return slots
 
     @property
     def debug(self):
         return self.params.debug
-    
+
     @debug.setter
     def debug(self, b):
-        #TODO: should change the run_number of the params
+        # TODO: should change the run_number of the params
         self.params.debug = bool(b)
 
     @property
@@ -184,11 +211,15 @@ class Module(object):
 
     def _parse_parameters(self, kwds):
         # pylint: disable=no-member
-        self._params = create_dataframe(self.all_parameters + [self.UPDATE_COLUMN_DESC])
-        self.params = DataFrameAsDict(self._params)
-        for (name,_,_) in self.all_parameters:
+        self._params = _create_table(self.generate_table_name("params"),
+                                     self.all_parameters)
+        self.params = Row(self._params)
+        for (name, _, _) in self.all_parameters:
             if name in kwds:
-                self.params[name] = kwds[name]
+                self.params[name] = kwds.pop(name)
+
+    def generate_table_name(self, name):
+        return "s{}_{}_{}".format(self.scheduler().id, self.id, name)
 
     def timer(self):
         return self._scheduler.timer()
@@ -203,7 +234,9 @@ class Module(object):
             'classname': self.pretty_typename(),
             'is_visualization': self.is_visualization(),
             'last_update': self._last_update,
-            'state': self.state_name[self._state]
+            'state': self.state_name[self._state],
+            'quality': self.get_quality(),
+            'progress': list(self.get_progress())
         }
         if self.order is not None:
             json['order'] = self.order
@@ -215,10 +248,12 @@ class Module(object):
             json.update({
                 'start_time': self._start_time,
                 'end_time': self._end_time,
-                'input_slots': { k: slot_to_json(s) for (k, s) in self._input_slots.iteritems() },
-                'output_slots': { k: slot_to_json(s) for (k, s) in self._output_slots.iteritems() },
+                'input_slots': {k: _slot_to_json(s) for (k, s) in
+                                six.iteritems(self._input_slots)},
+                'output_slots': {k: _slot_to_json(s) for (k, s) in
+                                 six.iteritems(self._output_slots)},
                 'default_step_size': self.default_step_size,
-                'parameters': self.remove_nan(self.current_params().to_dict())
+                'parameters': self.current_params().to_json()
             })
         return json
 
@@ -229,28 +264,29 @@ class Module(object):
     def is_input(self):
         return False
 
-    @staticmethod
-    def remove_nan(d):
-        return remove_nan(d)
-
+    # pylint: disable=unused-argument
     def get_image(self, run_number=None):
+        """
+        Return an image geenrated by this module.
+        """
         return None
+    # pylint: enable=unused-argument
 
     def describe(self):
-        print 'id: %s' % self.id
-        print 'class: %s' % type_fullname(self)
-        print 'quantum: %f' % self.params.quantum
-        print 'start_time: %s' % self._start_time
-        print 'end_time: %s' % self._end_time
-        print 'last_update: %s' % self._last_update
-        print 'state: %s(%d)' % (self.state_name[self._state], self._state)
-        print 'input_slots: %s' % self._input_slots
-        print 'outpus_slots: %s' % self._output_slots
-        print 'default_step_size: %d' % self.default_step_size
+        print('id: %s' % self.id)
+        print('class: %s' % type_fullname(self))
+        print('quantum: %f' % self.params.quantum)
+        print('start_time: %s' % self._start_time)
+        print('end_time: %s' % self._end_time)
+        print('last_update: %s' % self._last_update)
+        print('state: %s(%d)' % (self.state_name[self._state], self._state))
+        print('input_slots: %s' % self._input_slots)
+        print('outpus_slots: %s' % self._output_slots)
+        print('default_step_size: %d' % self.default_step_size)
         if len(self._params):
-            print 'parameters: '
-            print self._params
-    
+            print('parameters: ')
+            print(self._params)
+
     def pretty_typename(self):
         name = self.__class__.__name__
         s1 = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
@@ -259,20 +295,20 @@ class Module(object):
         return s1
 
     def __str__(self):
-        return unicode(self).encode('utf-8')
-
-    def __unicode__(self):
-        return u'Module %s: %s' % (self.__class__.__name__, self.id)
+        return six.u('Module %s: %s' % (self.__class__.__name__, self.id))
 
     def __repr__(self):
-        return self.__unicode__()
+        return str(self)
 
-    def __hash__(self):
-        return self._id.__hash__()
+#    def __hash__(self):
+#        return self._id.__hash__()
 
     @property
     def id(self):
         return self._id
+
+    def name(self):
+        return id
 
     @property
     def group(self):
@@ -284,35 +320,38 @@ class Module(object):
     def start(self):
         self.scheduler().start()
 
+    def terminate(self):
+        self.state = Module.state_zombie
+
     def create_slot(self, output_name, input_module, input_name):
         return Slot(self, output_name, input_module, input_name)
 
     def connect_output(self, output_name, input_module, input_name):
-        slot=self.create_slot(output_name, input_module, input_name)
+        slot = self.create_slot(output_name, input_module, input_name)
         slot.connect()
         return slot
 
     def has_any_input(self):
         return any(self._input_slots.values())
 
-    def get_input_slot(self,name):
-         # raises error is the slot is not declared
+    def get_input_slot(self, name):
+        # raises error is the slot is not declared
         return self._input_slots[name]
 
-    def get_input_module(self,name):
+    def get_input_module(self, name):
         return self.get_input_slot(name).output_module
 
     def input_slot_values(self):
-        return self._input_slots.values()
+        return list(self._input_slots.values())
 
-    def input_slot_type(self,name):
+    def input_slot_type(self, name):
         return self.input_descriptors[name].type
 
-    def input_slot_required(self,name):
+    def input_slot_required(self, name):
         return self.input_descriptors[name].required
 
     def input_slot_names(self):
-        return self._input_slots.keys()
+        return list(self._input_slots.keys())
 
     def _connect_input(self, slot):
         ret = self.get_input_slot(slot.input_name)
@@ -334,26 +373,27 @@ class Module(object):
 
     def has_any_output(self):
         return any(self._output_slots.values())
-    
-    def get_output_slot(self,name):
-         # raise error is the slot is not declared
+
+    def get_output_slot(self, name):
+        # raise error is the slot is not declared
         return self._output_slots[name]
 
-    def output_slot_type(self,name):
+    def output_slot_type(self, name):
         return self.output_descriptors[name].type
 
     def output_slot_values(self):
-        return self._output_slots.values()
+        return list(self._output_slots.values())
 
     def output_slot_names(self):
-        return self._output_slots.keys()
+        return list(self._output_slots.keys())
 
     def validate_outputs(self):
         valid = True
         for sd in self.output_descriptors.values():
             slots = self._output_slots[sd.name]
-            if sd.required and (slots is None or len(slots)==0):
-                logger.error('Missing required output slot %s in %s', sd.name, self._id)
+            if sd.required and (slots is None or len(slots) == 0):
+                logger.error('Missing required output slot %s in %s',
+                             sd.name, self._id)
                 valid = False
             if slots:
                 for slot in slots:
@@ -364,7 +404,7 @@ class Module(object):
     def _connect_output(self, slot):
         slot_list = self.get_output_slot(slot.output_name)
         if slot_list is None:
-            self._output_slots[slot.output_name] = [ slot ]
+            self._output_slots[slot.output_name] = [slot]
         else:
             slot_list.append(slot)
         return slot_list
@@ -377,20 +417,21 @@ class Module(object):
 
     def validate(self):
         if self.validate_inouts():
-            self.state=Module.state_blocked
+            self.state = Module.state_blocked
             return True
         else:
-            self.state=Module.state_invalid
+            self.state = Module.state_invalid
             return False
 
     def get_data(self, name):
-        if name==Module.TRACE_SLOT:
-            return self.tracer.df()
-        elif name==Module.PARAMETERS_SLOT:
+        if name == Module.TRACE_SLOT:
+            return self.tracer.trace_stats()
+        elif name == Module.PARAMETERS_SLOT:
             return self._params
         return None
 
-    def run_step(self,run_number,step_size,howlong):
+    @abstractmethod
+    def run_step(self, run_number, step_size, howlong):
         """Run one step of the module, with a duration up to the 'howlong' parameter.
 
         Returns a dictionary with at least 5 pieces of information: 1)
@@ -400,12 +441,21 @@ class Module(object):
         """
         raise NotImplementedError('run_step not defined')
 
-    def _return_run_step(self, next_state, steps_run, reads=0, updates=0, creates=0):
-        assert next_state>=Module.state_ready and next_state<=Module.state_zombie
-        if creates and updates==0:
-            updates=creates
+    @staticmethod
+    def next_state(slot):
+        if slot.has_buffered():
+            return Module.state_ready
+        return Module.state_blocked
+
+    def _return_run_step(self, next_state, steps_run,
+                         reads=0, updates=0, creates=0):
+        assert (next_state >= Module.state_ready and
+                next_state <= Module.state_zombie)
+        if creates and updates == 0:
+            updates = creates
         elif creates > updates:
-            raise ProgressiveError('More creates (%d) than updates (%d)', creates, updates)
+            raise ProgressiveError('More creates (%d) than updates (%d)',
+                                   creates, updates)
         return {'next_state': next_state,
                 'steps_run': steps_run,
                 'reads': reads,
@@ -419,14 +469,15 @@ class Module(object):
         return None
 
     def is_created(self):
-        return self._state==Module.state_created
+        return self._state == Module.state_created
 
     def is_running(self):
         return self._state == Module.state_running
 
     def is_ready(self):
         if self.state == Module.state_zombie:
-            logger.info("%s Not ready because it turned from zombie to terminated", self.id)
+            logger.info("%s Not ready because it turned from zombie"
+                        " to terminated", self.id)
             self.state = Module.state_terminated
             return False
         if self.state == Module.state_terminated:
@@ -454,7 +505,7 @@ class Module(object):
             term_count = 0
             ready_count = 0
             for slot in slots:
-                if slot is None: # slot not required and not connected
+                if slot is None:  # slot not required and not connected
                     continue
                 in_count += 1
                 in_module = slot.output_module
@@ -464,19 +515,23 @@ class Module(object):
                 # logger.debug('for %s[%s](%d)->%s(%d)',
                 #              slot.input_module.id, slot.input_name, in_ts,
                 #              slot.output_name, ts)
-                if in_ts > ts:
+                if slot.has_buffered() or in_ts > ts:
                     ready_count += 1
-                elif in_module.is_terminated() or in_module.state==Module.state_invalid:
+                elif (in_module.is_terminated() or
+                      in_module.state == Module.state_invalid):
                     term_count += 1
 
-            # if all the input slot modules are terminated or invalid                
-            if not self.is_input() and in_count != 0 and term_count==in_count:
-                logger.info('%s becomes zombie because all its input slots are terminated', self.id)
+            # if all the input slot modules are terminated or invalid
+            if (not self.is_input() and in_count != 0 and
+               term_count == in_count):
+                logger.info('%s becomes zombie because all its input slots'
+                            ' are terminated', self.id)
                 self.state = Module.state_zombie
                 return False
-             # sources are always ready, and when 1 is ready, the module can run.
-            return in_count==0 or ready_count!=0
-        logger.error("%s Not ready because is in weird state %s", self.id, self.state_name[self.state])
+            # sources are always ready, and when 1 is ready, the module is.
+            return in_count == 0 or ready_count != 0
+        logger.error("%s Not ready because is in weird state %s",
+                     self.id, self.state_name[self.state])
         return False
 
     def cleanup_run(self, run_number):
@@ -484,17 +539,18 @@ class Module(object):
 
         Resources could also be released for terminated modules.
         """
-        if self.is_zombie(): # terminate modules that died in the previous run
+        if self.is_zombie():  # terminate modules that died in the previous run
             self.state = Module.state_terminated
+        return run_number  # keep pylint happy
 
     def is_zombie(self):
-        return self._state==Module.state_zombie
+        return self._state == Module.state_zombie
 
     def is_terminated(self):
-        return self._state==Module.state_terminated
+        return self._state == Module.state_terminated
 
     def is_valid(self):
-        return self._state!=Module.state_invalid
+        return self._state != Module.state_invalid
 
     @property
     def state(self):
@@ -505,7 +561,9 @@ class Module(object):
         self.set_state(s)
 
     def set_state(self, s):
-        assert s>=Module.state_created and s<=Module.state_invalid, "State %s invalid in module %s"%(s, self.id)
+        assert (s >= Module.state_created and
+                s <= Module.state_invalid), "State %s invalid in module %s" % (
+                    s, self.id)
         self._state = s
 
     def trace_stats(self, max_runs=None):
@@ -529,7 +587,8 @@ class Module(object):
         if start_run is None or callable(start_run):
             self._start_run = start_run
         else:
-            raise ProgressiveError('value should be callable or None', start_run)
+            raise ProgressiveError('value should be callable or None',
+                                   start_run)
 
     def start_run(self, run_number):
         if self._start_run:
@@ -556,31 +615,22 @@ class Module(object):
 
     def _update_params(self, run_number):
         pslot = self.get_input_slot(self.PARAMETERS_SLOT)
-        if pslot is None or pslot.output_module is None: # optional slot
+        if pslot is None or pslot.output_module is None:  # optional slot
             return
         df = pslot.data()
         if df is None:
             return
-        s2 = df.loc[df.index[-1]]
-        s1 = self._params.loc[self._params.index[-1]]
-        if s2[Module.UPDATE_COLUMN] <= s1[Module.UPDATE_COLUMN]:
-            # no need to update
-            return
-        s3 = s2.combine_first(s1)
-        s3[self.UPDATE_COLUMN] = run_number
-        logger.info('Changing params of %s for:\n%s', self.id, s3)
-        self._params.loc[self._params.index[-1]+1] = s3 # seems to drop undeclared columns
+        raise NotImplementedError('Updating parameters not implemented yet')
 
     def current_params(self):
         return self._params.loc[self._params.index[-1]]
 
     def set_current_params(self, v):
-        if not isinstance(v,pd.Series):
-            v = pd.Series(v, dtype=object) # raises error if not compatible
+        if not isinstance(v, pd.Series):
+            v = pd.Series(v, dtype=object)  # raises error if not compatible
         with self.lock:
             current = self.current_params()
-            v = current.combine_first(v) # fill-in missing values
-            v[self.UPDATE_COLUMN] = self.scheduler.run_number()
+            v = current.combine_first(v)  # fill-in missing values
             self._params.loc[self._params.index[-1]+1] = v
         return v
 
@@ -589,104 +639,103 @@ class Module(object):
             raise ProgressiveError('Module already running')
         next_state = self.state
         exception = None
-        now=self.timer()
-        quantum=self.scheduler().fix_quantum(self, self.params.quantum)
-        tracer=self.tracer
-        if quantum==0:
-            quantum=0.1
-            logger.error('Quantum is 0 in %s, setting it to a reasonable value', self.id)
+        now = self.timer()
+        quantum = self.scheduler().fix_quantum(self, self.params.quantum)
+        tracer = self.tracer
+        if quantum == 0:
+            quantum = 0.1
+            logger.error('Quantum is 0 in %s, setting it to a'
+                         ' reasonable value', self.id)
         self.state = Module.state_running
         self._start_time = now
         self._end_time = self._start_time + quantum
         self._update_params(run_number)
 
-        #step_size = np.ceil(self.default_step_size*quantum)
-        #TODO Forcing 4 steps, but I am not sure, maybe change when the predictor improves
+        # TODO Forcing 4 steps, not sure, change when the predictor improves
         max_time = quantum / 4.0
-        
+
         run_step_ret = {'reads': 0, 'updates': 0, 'creates': 0}
         self.start_run(run_number)
-        tracer.start_run(now,run_number)
+        tracer.start_run(now, run_number)
         while self._start_time < self._end_time:
             remaining_time = self._end_time-self._start_time
-            if remaining_time <=0:
-                logger.info('Late by %d s in module %s', remaining_time, self.pretty_typename())
-                break # no need to try to squeeze anything
-            logger.debug('Time remaining: %f in module %s', remaining_time, self.pretty_typename())
-            step_size = self.predict_step_size(np.min([max_time, remaining_time]))
-            logger.debug('step_size=%d in module %s', step_size, self.pretty_typename())
+            if remaining_time <= 0:
+                logger.info('Late by %d s in module %s',
+                            remaining_time, self.pretty_typename())
+                break  # no need to try to squeeze anything
+            logger.debug('Time remaining: %f in module %s',
+                         remaining_time, self.pretty_typename())
+            step_size = self.predict_step_size(np.min([max_time,
+                                                       remaining_time]))
+            logger.debug('step_size=%d in module %s',
+                         step_size, self.pretty_typename())
             if step_size == 0:
-                logger.debug('step_size of 0 in module %s', self.pretty_typename())
+                logger.debug('step_size of 0 in module %s',
+                             self.pretty_typename())
                 break
+            # pylint: disable=broad-except
             try:
-                tracer.before_run_step(now,run_number)
+                tracer.before_run_step(now, run_number)
                 if self.debug:
                     pdb.set_trace()
-                run_step_ret = self.run_step(run_number, step_size, remaining_time)
+                run_step_ret = self.run_step(run_number,
+                                             step_size,
+                                             remaining_time)
                 next_state = run_step_ret['next_state']
                 now = self.timer()
             except StopIteration:
-                #print_exc()
-                logger.info('In Module.run(): Received a StopIteration exception')
+                logger.info('In Module.run(): Received a StopIteration')
                 next_state = Module.state_zombie
                 run_step_ret['next_state'] = next_state
                 now = self.timer()
                 break
             except Exception as e:
+                print_exc()
                 next_state = Module.state_zombie
                 run_step_ret['next_state'] = next_state
                 now = self.timer()
                 logger.debug("Exception in %s", self.id)
-                tracer.exception(now,run_number)
+                tracer.exception(now, run_number)
                 exception = e
                 self._had_error = True
                 self._start_time = now
                 break
             finally:
-                assert run_step_ret is not None, "Error: %s run_step_ret not returning a dict" % self.pretty_typename()
+                assert (run_step_ret is not None), "Error: %s run_step_ret"\
+                  " not returning a dict" % self.pretty_typename()
                 if self.debug:
                     run_step_ret['debug'] = True
-                tracer.after_run_step(now,run_number,**run_step_ret)
+                tracer.after_run_step(now, run_number, **run_step_ret)
                 self.state = next_state
-                logger.debug('Next step is %s in module %s', self.state_name[next_state], self.pretty_typename())
+                logger.debug('Next step is %s in module %s',
+                             self.state_name[next_state],
+                             self.pretty_typename())
+
             if self._start_time is None or self.state != Module.state_ready:
-                tracer.run_stopped(now,run_number)
+                tracer.run_stopped(now, run_number)
                 break
             self._start_time = now
-        self.state=next_state
-        if self.state==Module.state_zombie:
+        self.state = next_state
+        if self.state == Module.state_zombie:
             logger.debug('Module %s zombie', self.pretty_typename())
-            tracer.terminated(now,run_number)
-        tracer.end_run(now,run_number)
+            tracer.terminated(now, run_number)
+        progress = self.get_progress()
+        tracer.end_run(now, run_number,
+                       progress_current=progress[0], progress_max=progress[1],
+                       quality=self.get_quality())
         self._stop(run_number)
         if exception:
-            print_exc()
-            raise exception
+            raise RuntimeError("{} {}".format(type(exception), exception))
 
-    def get_columns(self, df):
-        if df is None:
-            return None
-        if self._columns is None:
-            self._columns = df.columns.difference([Module.UPDATE_COLUMN])
-        else:
-            self._columns = df.columns.intersection(self._columns)
-        return self._columns
-
-    def filter_columns(self, df, indices=None):
-        cols = self.get_columns(df)
-        if cols is None:
-            return None
-        if indices is None:
-            return df[cols]
-        return df.loc[indices,cols]
 
 def print_len(x):
     if x is not None:
-        print len(x)
+        print(len(x))
+
 
 class Every(Module):
     def __init__(self, proc=print_len, constant_time=True, **kwds):
-        self._add_slots(kwds,'input_descriptors', [SlotDescriptor('df')])
+        self._add_slots(kwds, 'input_descriptors', [SlotDescriptor('df')])
         super(Every, self).__init__(**kwds)
         self._proc = proc
         self._constant_time = constant_time
@@ -696,22 +745,45 @@ class Every(Module):
             return 1
         return super(Every, self).predict_step_size(duration)
 
-    def run_step(self,run_number,step_size,howlong):
+    def run_step(self, run_number, step_size, howlong):
         slot = self.get_input_slot('df')
         df = slot.data()
         reads = 0
         if df is not None:
             with slot.lock:
-                reads=len(df)            
+                reads = len(df)
                 with self.scheduler().stdout_parent():
                     self._proc(df)
-        return self._return_run_step(Module.state_blocked, steps_run=1, reads=reads)
+        return self._return_run_step(Module.state_blocked, steps_run=1,
+                                     reads=reads)
+
 
 def prt(x):
-    print x
+    print(x)
+
 
 class Print(Every):
     def __init__(self, **kwds):
-        super(Print, self).__init__(quantum=0.1, proc=prt, constant_time=True, **kwds)
+        if 'proc' not in kwds:
+            kwds['proc'] = prt
+        super(Print, self).__init__(quantum=0.1, constant_time=True, **kwds)
 
+def _slot_to_json(slot):
+    if slot is None:
+        return None
+    if isinstance(slot, list):
+        return [_slot_to_json(s) for s in slot]
+    return slot.to_json()
 
+def _create_table(tname, columns):
+    ds = ""
+    data = {}
+    for (name, dtype, val) in columns:
+        if len(ds):
+            ds += ','
+        ds += '%s: %s'%(name, dshape_from_dtype(dtype))
+        data[name] = val
+    ds = '{'+ds+'}'
+    table = Table(tname, dshape=ds)
+    table.add(data)
+    return table

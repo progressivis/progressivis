@@ -1,0 +1,61 @@
+{% set version = "0.0.5" %}
+
+package:
+  name: progressivis
+  version: {{ version }}
+
+build:
+  number: 1
+
+source:
+  git_rev: v{{ version}}
+  git_url: https://gitlab.inria.fr/aviz/progressivis.git
+
+requirements:
+  build:
+    - python=3.6
+    - setuptools
+    - cython=0.26.1
+    - numpy=1.13.3
+    - scipy=0.19.1
+
+  run:
+    # progressivis
+    - python=3.6
+    - numpy=1.13.3
+    - scipy=0.19.1
+    - numexpr>=2.6.1
+    - pytables>=3.3.0
+    - pandas=0.20.3
+    - scikit-learn=0.19.1
+    - toposort=1.5
+    - tdigest
+    - pillow=4.2.1
+    - h5py=2.7.0
+    - zarr=2.1.4
+    - numcodecs=0.5.2
+    - bcolz=1.1.2
+    - datashape=0.5.4
+    - pyroaring=0.0.7
+    - msgpack-python>=0.4.8
+    # server
+    - flask=0.12.2
+    - tornado >=4.0
+    - boto
+    - s3fs
+    - sqlalchemy
+    - memory_profiler
+    - tabulate
+
+requires:
+    - nose
+
+about:
+  home: https://github.com/jdfekete/progressivis
+  license: New BSD
+  license_file: LICENCE
+
+extra:
+  recipe-maintainers:
+    - jdfekete
+    - cpoli

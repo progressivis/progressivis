@@ -1,58 +1,61 @@
-import unittest
+from . import ProgressiveTest
 
-from progressivis import *
+from progressivis import Print, Every
 from progressivis.stats import Stats
 from progressivis.io import CSVLoader
-from progressivis.core.join import Join
 from progressivis.datasets import get_dataset
+from progressivis.table.join import Join
+from progressivis.table.constant import Constant
+from progressivis.table.table import Table
 
 import pandas as pd
-from pprint import pprint
+#from pprint import pprint
 
 def print_len(x):
     if x is not None:
-        print len(x)
+        print(len(x))
 
 #log_level()
 
-class TestJoin(unittest.TestCase):
+class TestJoin(ProgressiveTest):
     def test_join(self):
-        s=Scheduler()
+        s=self.scheduler()
         csv = CSVLoader(get_dataset('bigfile'), index_col=False,header=None,scheduler=s)
         stat1=Stats(1, reset_index=True, scheduler=s)
-        stat1.input.df = csv.output.df
+        stat1.input.table = csv.output.table
         stat2=Stats(2, reset_index=True, scheduler=s)
-        stat2.input.df = csv.output.df
+        stat2.input.table = csv.output.table
         join=Join(scheduler=s)
-        join.input.df = stat1.output.stats
-        join.input.df = stat2.output.stats
-        pr=Print(scheduler=s)
-        pr.input.df = join.output.df
-        prlen = Every(proc=print_len, constant_time=True, scheduler=s)
-        prlen.input.df = csv.output.df
+        join.input.table = stat1.output.stats
+        join.input.table = stat2.output.stats
+        pr=Print(proc=self.terse, scheduler=s)
+        pr.input.df = join.output.table
+        prlen = Every(proc=self.terse, constant_time=True, scheduler=s)
+        prlen.input.df = csv.output.table
         s.start()
         res = join.trace_stats(max_runs=1)
-        pd.set_option('display.expand_frame_repr', False)
-        print res
+        print(res)
 
     def test_join_simple(self):
-        s=Scheduler()
-        cst1=Constant(pd.DataFrame({'xmin': [1], 'xmax': [2]}), scheduler=s)
-        cst2=Constant(pd.DataFrame({'ymin': [3], 'ymax': [4]}), scheduler=s)
+        s=self.scheduler()
+        cst1=Constant(Table(name='test_join_simple_cst1',
+                data=pd.DataFrame({'xmin': [1], 'xmax': [2]}), create=True), scheduler=s)
+        cst2=Constant(Table(name='test_join_simple_cst2',
+                data=pd.DataFrame({'ymin': [3], 'ymax': [4]}), create=True), scheduler=s)
         join=Join(scheduler=s)
-        join.input.df = cst1.output.df
-        join.input.df = cst2.output.df
-        pr=Print(scheduler=s)
-        pr.input.df = join.output.df
+        join.input.table = cst1.output.table
+        join.input.table = cst2.output.table
+        pr=Print(proc=self.terse, scheduler=s)
+        pr.input.df = join.output.table
         s.start()
+        s.join()        
         res = join.trace_stats(max_runs=1)
-        pd.set_option('display.expand_frame_repr', False)
-        print res
-        df = join.df()
+        print(res)
+        df = join.table()
         last = df.loc[df.index[-1]]
         self.assertTrue(last['xmin']==1 and last['xmax']==2 and \
                         last['ymin']==3 and last['ymax']==4)
 
 
 if __name__ == '__main__':
-    unittest.main()
+    ProgressiveTest.main()

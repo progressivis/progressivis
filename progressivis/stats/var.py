@@ -1,7 +1,11 @@
+from __future__ import absolute_import, division, print_function
+
 from progressivis.core.utils import indices_len, fix_loc
-from progressivis.core.dataframe import DataFrameModule
 from progressivis.core.slot import SlotDescriptor
 from progressivis.core.synchronized import synchronized
+from progressivis.table.module import TableModule
+from progressivis.table.table import Table
+from collections import OrderedDict
 
 import numpy as np
 import pandas as pd
@@ -17,6 +21,8 @@ class OnlineVariance(object):
 
     def __init__(self, ddof=1):
         self.ddof, self.n, self.mean, self.M2 = ddof, 0, 0.0, 0.0
+        self.delta = 0
+        self.variance = 0
 
     def add(self, iterable):
         if iterable is not None:
@@ -36,7 +42,7 @@ class OnlineVariance(object):
         return np.sqrt(self.variance)
 
 
-class Var(DataFrameModule):
+class Var(TableModule):
     """
     Compute the variance of the columns of an input dataframe.
     """
@@ -44,50 +50,50 @@ class Var(DataFrameModule):
 
     def __init__(self, columns=None, **kwds):
         self._add_slots(kwds,'input_descriptors',
-                        [SlotDescriptor('df', type=pd.DataFrame, required=True)])
-        super(Var, self).__init__(**kwds)
+                        [SlotDescriptor('table', type=Table, required=True)])
+        super(Var, self).__init__(dataframe_slot='table', **kwds)
         self._columns = columns
         self._data = {}
         self.default_step_size = 1000
 
     def is_ready(self):
-        if self.get_input_slot('df').has_created():
+        if self.get_input_slot('table').created.any():
             return True
         return super(Var, self).is_ready()
 
     def op(self, chunk):
         cols = chunk.columns
-        ret = []
+        ret = {}
         for c in cols:
             data = self._data.get(c)
             if data is None:
                 data = OnlineVariance()
                 self._data[c] = data
             data.add(chunk[c])
-            ret.append(data.variance)
-        return pd.Series(ret, index=cols)
+            ret[c] = data.variance
+        return ret
 
     @synchronized
     def run_step(self,run_number,step_size,howlong):
-        dfslot = self.get_input_slot('df')
-        dfslot.update(run_number)
-        if dfslot.has_updated() or dfslot.has_deleted():        
-            dfslot.reset()
-            self._df = None
-            dfslot.update(run_number)
-        indices = dfslot.next_created(step_size) # returns a slice
+        dfslot = self.get_input_slot('table')
+        dfslot.update(run_number, self.id)
+        if dfslot.updated.any() or dfslot.deleted.any():        
+            dfslot.reset(mid=self.id)
+            self._table = None
+            dfslot.update(run_number, self.id)
+        indices = dfslot.created.next(step_size) # returns a slice
         steps = indices_len(indices)
         if steps==0:
             return self._return_run_step(self.state_blocked, steps_run=0)
         input_df = dfslot.data()
         op = self.op(self.filter_columns(input_df,fix_loc(indices)))
-        op[self.UPDATE_COLUMN] = run_number
-        if self._df is None:
-            self._df = pd.DataFrame([op], index=[run_number])
-        else:
-            self._df.loc[run_number] = op
-        print self._df
+        if self._table is None:
+            self._table = Table(self.generate_table_name('var'), dshape=input_df.dshape,
+#                                scheduler=self.scheduler(),
+                                create=True)
+        self._table.append(op, indices=[run_number])
+        print(self._table)
 
-        if len(self._df) > self.params.history:
-            self._df = self._df.loc[self._df.index[-self.params.history:]]
-        return self._return_run_step(dfslot.next_state(), steps_run=steps)
+        if len(self._table) > self.params.history:
+            self._table = self._table.loc[self._table.index[-self.params.history:]]
+        return self._return_run_step(self.next_state(dfslot), steps_run=steps)

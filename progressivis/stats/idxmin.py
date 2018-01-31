@@ -1,25 +1,25 @@
-from progressivis.core.utils import indices_len, last_row, fix_loc
-from progressivis.core.dataframe import DataFrameModule
+from __future__ import absolute_import, division, print_function
+
+from progressivis.core.utils import indices_len, fix_loc
 from progressivis.core.slot import SlotDescriptor
 from progressivis.core.synchronized import synchronized
-
+from progressivis.table.module import TableModule
+from progressivis.table.table import Table
+from collections import OrderedDict
 import numpy as np
-import pandas as pd
-
 import logging
 logger = logging.getLogger(__name__)
 
 
-class IdxMin(DataFrameModule):
+class IdxMin(TableModule):
     parameters = [('history', np.dtype(int), 3)]
 
-    def __init__(self, columns=None, **kwds):
+    def __init__(self, **kwds):
         self._add_slots(kwds,'input_descriptors',
-                        [SlotDescriptor('df', type=pd.DataFrame, required=True)])
+                        [SlotDescriptor('table', type=Table, required=True)])
         self._add_slots(kwds,'output_descriptors',
-                        [SlotDescriptor('min', type=pd.DataFrame, required=False)])
+                        [SlotDescriptor('min', type=Table, required=False)])
         super(IdxMin, self).__init__(**kwds)
-        self._columns = columns
         self._min = None
         self.default_step_size = 10000
 
@@ -32,56 +32,65 @@ class IdxMin(DataFrameModule):
         return super(IdxMin,self).get_data(name)
 
     def is_ready(self):
-        if self.get_input_slot('df').has_created():
+        if self.get_input_slot('table').created.any():
             return True
         return super(IdxMin, self).is_ready()
 
     @synchronized
     def run_step(self,run_number,step_size,howlong):
-        dfslot = self.get_input_slot('df')
-        dfslot.update(run_number)
-        if dfslot.has_updated() or dfslot.has_deleted():        
-            dfslot.reset()
+        dfslot = self.get_input_slot('table')
+        dfslot.update(run_number, self.id)
+        if dfslot.updated.any() or dfslot.deleted.any():        
+            dfslot.reset(mid=self.id)
             self._df = None
-            dfslot.update(run_number)
-        indices = dfslot.next_created(step_size) # returns a slice
+            dfslot.update(run_number, self.id)
+        indices = dfslot.created.next(step_size) # returns a slice
         steps = indices_len(indices)
         if steps==0:
             return self._return_run_step(self.state_blocked, steps_run=0)
         input_df = dfslot.data()
         op = self.filter_columns(input_df, fix_loc(indices)).idxmin()
-        if not op.index.equals(self._columns):
-            # some columns are not numerical
-            self._columns = op.index
+        #if not op.index.equals(self._columns):
+        #    # some columns are not numerical
+        #    self._columns = op.index
 
-        op[self.UPDATE_COLUMN] = run_number
+
         if self._min is None:
-            min = pd.Series([np.nan], index=op.index) # the UPDATE_COLUMN is included
-            min[self.UPDATE_COLUMN] = run_number
-            for col in op.index:
-                if col==self.UPDATE_COLUMN: continue
-                min[col] = input_df.loc[op[col], col] # lookup value, is there a better way?
-            self._min = pd.DataFrame([min], columns=op.index)
-            self._df = pd.DataFrame([op], columns=op.index)
+            min_ = OrderedDict(zip(op.keys(), [np.nan]*len(op.keys())))
+            for col, ix in op.items():
+                min_[col] = input_df.at[ix, col] # lookup value, is there a better way?
+            self._min = Table(self.generate_table_name('_min'),
+                                  dshape=input_df.dshape,
+#                                  scheduler=self.scheduler(),
+                                  create=True)
+            self._min.append(min_, indices=[run_number])
+            self._df = Table(self.generate_table_name('_df'),
+                                 dshape=input_df.dshape,
+#                                 scheduler=self.scheduler(),
+                                 create=True)
+            self._df.append(op, indices=[run_number])
         else:
-            prev_min = last_row(self._min)
-            prev_idx = last_row(self._df)
-            min = pd.Series(prev_min)
-            min[self.UPDATE_COLUMN] = run_number
-            for col in op.index:
-                if col==self.UPDATE_COLUMN: continue
-                val = input_df.loc[op[col], col]
+            prev_min = self._min.last()
+            prev_idx = self._df.last()
+            min_ = OrderedDict(prev_min.items()) 
+            for col, ix in op.items():
+                val = input_df.at[ix, col]
                 if np.isnan(val):
                     pass
-                elif np.isnan(min[col]) or val < min[col]:
+                elif np.isnan(min_[col]) or val < min_[col]:
                     op[col] = prev_idx[col]
-                    min[col] = val
-            op[self.UPDATE_COLUMN] = run_number
+                    min_[col] = val
             with self.lock:
-                self._df = self._df.append(op, ignore_index=True)
-                self._min = self._min.append(min, ignore_index=True)
+                self._df.append(op, indices=[run_number])
+                self._min.append(min_, indices=[run_number])
                 if len(self._df) > self.params.history:
-                    self._df = self._df.loc[self._df.index[-self.params.history:]]
-                    self._min = self._min.loc[self._min.index[-self.params.history:]]
+                    self._df = Table(self.generate_table_name('_df'),
+                                         data=self._df.loc[self._df.index[-self.params.history:]],
+#                                         scheduler=self.scheduler(),
+                                         create=True)
+                    self._min = Table(self.generate_table_name('_min'),
+                                          data=self._min.loc[self._min.index[-self.params.history:]],
+#                                          scheduler=self.scheduler(),
+                                          create=True)
 
-        return self._return_run_step(dfslot.next_state(), steps_run=steps)
+        return self._return_run_step(self.next_state(dfslot), steps_run=steps)

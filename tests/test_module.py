@@ -1,18 +1,28 @@
-import unittest
+from . import ProgressiveTest
 
-from progressivis import *
+from progressivis import Module, Every
 
-class TestProgressiveModule(unittest.TestCase):
+class TestProgressiveModule(ProgressiveTest):
     def setUp(self):
-        self.scheduler = Scheduler()
+        super(TestProgressiveModule, self).setUp()
 
     def test_scheduler(self):
-        self.assertEqual(len(self.scheduler), 0)
+        self.assertEqual(len(self.scheduler()), 0)
 
     def test_module(self):
-        module = Module(id='a', scheduler=self.scheduler)
+        # pylint: disable=broad-except
+        s = self.scheduler()
+        try:
+            module = Module(mid='a', scheduler=s)
+        except TypeError:
+            pass
+        except Exception as e:
+            self.fail('Unexpected error while creating abstract module %s'% e)
+        else:
+            self.fail('Abstract module created, error')
+        module = Every(proc=self.terse, mid='a', scheduler=s)
         self.assertEqual(module.id, 'a')
-        self.assertEqual(self.scheduler.exists('a'), True)
+        self.assertEqual(s.exists('a'), True)
 
 if __name__ == '__main__':
-    unittest.main()
+    ProgressiveTest.main()

@@ -8,6 +8,19 @@
     <link href="{{ url_for('static', filename='bootstrap/css/bootstrap.min.css') }}" rel="stylesheet">
     {% block head %}
     {% endblock %}
+    <style> /* set the CSS for the D3 quality graph*/
+    path { 
+      stroke: steelblue;
+      stroke-width: 2;
+      fill: none;
+      }
+    .axis path, .axis line {
+      fill: none;
+      stroke: grey;
+      stroke-width: 1;
+      shape-rendering: crispEdges;
+     }
+    </style>
   </head>
   <body>
     {% block body %}

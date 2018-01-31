@@ -1,36 +1,44 @@
-import unittest
+from . import ProgressiveTest
 
-from progressivis import Print, Scheduler
+from progressivis import Print
 from progressivis.stats import Min, Max, RandomTable
-from progressivis.core.utils import last_row
 
-import pandas as pd
 import numpy as np
 
-class TestMinMax(unittest.TestCase):
+class TestMinMax(ProgressiveTest):
     def test_min(self):
-        s=Scheduler()
+        s = self.scheduler()
         random = RandomTable(10, rows=10000, scheduler=s)
-        min=Min(scheduler=s)
-        min.input.df = random.output.df
-        pr=Print(scheduler=s)
-        pr.input.df = min.output.df
+        min_=Min(mid='min_'+str(hash(random)), scheduler=s)
+        min_.input.table = random.output.table
+        pr=Print(proc=self.terse, scheduler=s)
+        pr.input.df = min_.output.table
         s.start()
-        res1 = random.df()[random.columns.difference([random.UPDATE_COLUMN])].min()
-        res2 = last_row(min._df, remove_update=True)
-        self.assertTrue(np.allclose(res1, res2))
+        s.join()
+        res1 = random.table().min()
+        res2 = min_.table().last()
+        self.compare(res1, res2)
+
+    def compare(self, res1, res2):
+        v1 = np.array(list(res1.values()))
+        v2 = np.array(list(res2.values()))
+        #print('v1 = ', v1)
+        #print('v2 = ', v2)
+        self.assertTrue(np.allclose(v1, v2))
 
     def test_max(self):
-        s=Scheduler()
+        s = self.scheduler()
         random = RandomTable(10, rows=10000, scheduler=s)
-        max=Max(scheduler=s)
-        max.input.df = random.output.df
-        pr=Print(scheduler=s)
-        pr.input.df = max.output.df
+        max_=Max(id='max_'+str(hash(random)), scheduler=s)
+        max_.input.table = random.output.table
+        pr=Print(proc=self.terse, scheduler=s)
+        pr.input.df = max_.output.table
         s.start()
-        res1 = random.df()[random.columns.difference([random.UPDATE_COLUMN])].max()
-        res2 = last_row(max.df(), remove_update=True)
-        self.assertTrue(np.allclose(res1, res2))
+        s.join()
+        res1 = random.table().max()
+        res2 = max_.table().last()
+        self.compare(res1, res2)
+
 
 if __name__ == '__main__':
-    unittest.main()
+    ProgressiveTest.main()

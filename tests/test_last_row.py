@@ -1,65 +1,58 @@
-import unittest
+from . import ProgressiveTest
 
-from progressivis import *
+from progressivis import Print, Every
+from progressivis.table.last_row import LastRow
+from progressivis.table.constant import Constant
 from progressivis.stats import Stats
 from progressivis.io import CSVLoader
 from progressivis.datasets import get_dataset
-
+from progressivis.table.table import Table
+from progressivis.table.join import Join
+from progressivis.core.utils import get_random_name
 import pandas as pd
-from pprint import pprint
 
 def print_len(x):
     if x is not None:
-        print len(x)
+        print(len(x))
 
 
-class TestLastRow(unittest.TestCase):
-    def test_join(self):
-        s=Scheduler()
-        csv = CSVLoader(get_dataset('bigfile'), index_col=False,header=None,scheduler=s)
-        stat1=Stats(1, scheduler=s)
-        stat1.input.df = csv.output.df
-        stat2=Stats(2, scheduler=s)
-        stat2.input.df = csv.output.df
+class TestLastRow(ProgressiveTest):
+    def test_last_row(self):
+        s = self.scheduler()
+        csv = CSVLoader(get_dataset('smallfile'), index_col=False,header=None,scheduler=s)
         lr1 = LastRow(scheduler=s)
-        lr1.input.df = stat1.output.stats
-        lr2 = LastRow(scheduler=s)
-        lr2.input.df = stat2.output.stats
-        join=Join(scheduler=s)
-        join.input.df = lr1.output.df
-        join.input.df = lr2.output.df
-        pr=Print(scheduler=s)
-        pr.input.df = join.output.df
-        prlen = Every(proc=print_len, constant_time=True, scheduler=s)
-        prlen.input.df = csv.output.df
+        lr1.input.table = csv.output.table
+        prlen = Every(proc=self.terse, constant_time=True, scheduler=s)
+        prlen.input.df = lr1.output.table
         s.start()
-        res = join.trace_stats(max_runs=1)
-        pd.set_option('display.expand_frame_repr', False)
-        last = join.df()
-        df = csv.df()
-        self.assertTrue(last.at[0,'1.min']==df[1].min() and last.at[0,'1.max']==df[1].max() and \
-                        last.at[0,'2.min']==df[2].min() and last.at[0,'2.max']==df[2].max())
+        s.join()
+        df = csv.table()
+        last = df.last()
+        res = lr1.table()
+        self.assertEqual(res.at[0,'_1'], last['_1'])
 
-        print res
-
-    def test_join_simple(self):
-        s=Scheduler()
-        cst1=Constant(pd.DataFrame({'xmin': [1], 'xmax': [2]}), scheduler=s)
-        cst2=Constant(pd.DataFrame({'ymin': [3], 'ymax': [4]}), scheduler=s)
+        #print(res)
+    def test_last_row_simple(self):
+        s = self.scheduler()
+        t1 = Table(name=get_random_name("cst1"), data={'xmin': [1], 'xmax': [2]})
+        t2 = Table(name=get_random_name("cst2"),data={'ymin': [3], 'ymax': [4]})
+        cst1=Constant(t1, scheduler=s)
+        cst2=Constant(t2, scheduler=s)
         join=Join(scheduler=s)
-        join.input.df = cst1.output.df
-        join.input.df = cst2.output.df
-        pr=Print(scheduler=s)
-        pr.input.df = join.output.df
+        join.input.table = cst1.output.table
+        join.input.table = cst2.output.table
+        pr=Print(proc=self.terse, scheduler=s)
+        pr.input.df = join.output.table
         s.start()
-        res = join.trace_stats(max_runs=1)
-        pd.set_option('display.expand_frame_repr', False)
-        print res
-        df = join.df()
-        last = df.loc[df.index[-1]]
+        s.join()
+        #res = join.trace_stats(max_runs=1)
+        #pd.set_option('display.expand_frame_repr', False)
+        #print(res)
+        df = join.table()
+        last = df.last()
         self.assertTrue(last['xmin']==1 and last['xmax']==2 and \
                         last['ymin']==3 and last['ymax']==4)
 
 
 if __name__ == '__main__':
-    unittest.main()
+    ProgressiveTest.main()

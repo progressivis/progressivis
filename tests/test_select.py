@@ -1,38 +1,56 @@
-import unittest
+from . import ProgressiveTest, skip
 
-from progressivis import *
+import time
+
+from progressivis import Print, Every
 from progressivis.io import CSVLoader
-from progressivis.core.select import Select
+from progressivis.table.select import Select
+from progressivis.stats import Sample
 from progressivis.datasets import get_dataset
 
+from progressivis.core.bitmap import bitmap
+
 import pandas as pd
-from pprint import pprint
 
-#log_level(package='progressivis.core.select')
 
-class TestSelect(unittest.TestCase):
-    def test_query_simple(self):
-        s=Scheduler()
-        csv = CSVLoader(get_dataset('bigfile'), index_col=False,header=None,force_valid_ids=True,scheduler=s)
+def print_repr(x):
+    print(repr(x))
+
+class TestSelect(ProgressiveTest):
+    def setUp(self):
+        super(TestSelect, self).setUp()
+#        self.log(self.INFO)
+
+    def test_select_simple(self):
+        s = self.scheduler()
+        csv = CSVLoader(get_dataset('bigfile'), index_col=False,header=None,scheduler=s)
+        sample=Sample(samples=100, scheduler=s)
+        sample.input.table = csv.output.table
         q=Select(scheduler=s)
-        q.input.df = csv.output.df
-        prlen = Every(constant_time=True, scheduler=s)
-        prlen.input.df = q.output.df
+        q.input.table = csv.output.table
+        q.input.select = sample.output.select
+        prlen = Print(proc=self.terse,  scheduler=s)
+        prlen.input.df = q.output.table
         s.start()
-        self.assertEqual(len(q.df()), 1000000)
+        s.join()
+        print(repr(q.table()))
+        self.assertEqual(len(q.table()), 100)
+        self.assertEqual(bitmap(q.table().index), sample.get_data("select"))
 
-    def test_query(self):
-        s=Scheduler()
+    @skip("Need to implement select on tables")
+    def test_select(self):
+        s = self.scheduler()
         csv = CSVLoader(get_dataset('bigfile'), index_col=False,header=None,force_valid_ids=True,scheduler=s)
         cst=Constant(pd.DataFrame({'query': ['_1 < 0.5']}),scheduler=s)
         q=Select(scheduler=s)
         q.input.df = csv.output.df
         q.input.query = cst.output.df
-        prlen = Every(constant_time=True, scheduler=s)
+        prlen = Every(proc=self.terse, constant_time=True, scheduler=s)
         prlen.input.df = q.output.df
         s.start()
-        self.assertTrue(len(q.df()) < 1000000)
+        s.join()
+        self.assertTrue(len(q.table()) < 1000000)
 
 
 if __name__ == '__main__':
-    unittest.main()
+    ProgressiveTest.main()

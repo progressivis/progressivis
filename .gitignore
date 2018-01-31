@@ -9,6 +9,7 @@
 *.db
 *.out
 *.swp
+*.idea
 
 .DS_Store
 .Python
@@ -17,7 +18,8 @@
 .settings
 .tmp*
 .ipynb_checkpoints
-
+progressivis/core/custom_multi_threading.py
+__pycache__
 /.eggs
 /bin
 /build
@@ -35,3 +37,6 @@
 *.egg-info
 /*.ipynb
 /pip-*
+/*.h5
+/.coverage
+/coverage
