@@ -6,7 +6,7 @@ from ..utils import integer_types
 from ..fast import next_pow2
 
 import numpy as np
-import pptable as pypmm
+#import pptable as pypmm
 
 import logging
 logger = logging.getLogger(__name__)

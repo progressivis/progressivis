@@ -117,7 +117,7 @@ setup(
         "sqlalchemy",
         "memory_profiler",
         "tabulate",
-        "pptable",
+#        "pptable",
     ],
     setup_requires = [ 'nose>=1.3.7', 'coverage'],
     #test_suite='tests',
