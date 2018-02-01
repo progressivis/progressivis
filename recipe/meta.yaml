@@ -42,7 +42,7 @@ requirements:
 
   run:
     - python=3.6
-    - cython=0.26.1
+    - setuptools
     # progressivis
     - numpy=1.13.3
     - scipy=0.19.1

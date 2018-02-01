@@ -18,9 +18,7 @@ packages = ['progressivis',
             #'progressivis.manifold',
             'progressivis.metrics',
             'progressivis.server',
-            #'progressivis.dataframe',
             'progressivis.table',
-            #'progressivis.table.stats',
             #'stool'
 ]
 
@@ -96,7 +94,6 @@ setup(
         "Pillow>=4.2.0",
         "numpy>=1.11.3",
         "scipy>=0.18.1",
-        "cython>=0.25.1",
         "numexpr>=2.6.1",
         "tables>=3.3.0",
         "pandas>=0.19.1",
@@ -119,7 +116,7 @@ setup(
         "tabulate",
 #        "pptable",
     ],
-    setup_requires = [ 'nose>=1.3.7', 'coverage'],
+    setup_requires = [ 'cython', 'numpy', 'nose>=1.3.7', 'coverage'],
     #test_suite='tests',
     test_suite='nose.collector',
     cmdclass = versioneer.get_cmdclass({'bench': run_bench}),
