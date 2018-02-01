@@ -3,8 +3,7 @@ import logging
 from progressivis.core import (ProgressiveError,
                                version, __version__, short_version,
                                BaseScheduler, Scheduler, Slot, SlotDescriptor,
-                               Module, StorageManager, Every, Print,
-                               NIL_INDEX, IndexDiff, index_changes)
+                               Module, StorageManager, Every, Print)
 
 from progressivis.table import Table, Column, Row
 
@@ -12,7 +11,7 @@ __all__ = ["log_level",
            "ProgressiveError", "BaseScheduler", "Scheduler",
            "version", "__version__", "short_version",
            "Slot", "SlotDescriptor", "Module", "StorageManager",
-           "Every", "Print", "NIL_INDEX", 'IndexDiff', 'index_changes',
+           "Every", "Print",
            "Table", "Column", "Row"]
 
 # Avoids the message 'No handlers could be found for logger X.Y.Z'

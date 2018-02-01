@@ -1,4 +1,4 @@
-{% set version = "0.0.5" %}
+{% set version = "0.0.6" %}
 
 package:
   name: progressivis
@@ -9,7 +9,7 @@ build:
 
 source:
   git_rev: v{{ version}}
-  git_url: https://gitlab.inria.fr/aviz/progressivis.git
+  git_url: https://github.com/jdfekete/progressivis.git
 
 requirements:
   build:
@@ -58,4 +58,4 @@ about:
 extra:
   recipe-maintainers:
     - jdfekete
-    - cpoli
+    - xtianpoli

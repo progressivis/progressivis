@@ -5,7 +5,6 @@ from progressivis.stats import Histogram1D
 from progressivis.table.table import Table
 
 import six
-import pandas as pd
 import numpy as np
 import numbers
 

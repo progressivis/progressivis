@@ -4,7 +4,6 @@ from progressivis.table.module import TableModule
 from progressivis.table import Table
 from progressivis.core.slot import SlotDescriptor
 
-#import pandas as pd
 
 class NAry(TableModule):
     def __init__(self, nary='table', **kwds):

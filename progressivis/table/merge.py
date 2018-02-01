@@ -3,7 +3,6 @@ from __future__ import absolute_import, division, print_function
 from .nary import NAry
 from .table import Table
 
-#import pandas as pd
 
 class Merge(NAry):
     def __init__(self, **kwds):
