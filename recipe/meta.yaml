@@ -14,11 +14,11 @@ source:
 requirements:
   host:
     - coverage
+
+  build:
     - python=3.6
     - setuptools
     - cython=0.26.1
-
-  build:
     - numpy=1.13.3
     - scipy=0.19.1
 
