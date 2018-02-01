@@ -47,8 +47,9 @@ requirements:
     - memory_profiler
     - tabulate
 
-requires:
+  test:
     - nose
+    - coverage
 
 about:
   home: https://github.com/jdfekete/progressivis
