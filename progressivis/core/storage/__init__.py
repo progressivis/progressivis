@@ -11,6 +11,12 @@ try:
 except ImportError:
     numpyengine = None
 
+# try:
+#     from .mmap import MMapStorageEngine
+#     mmapengine = MMapStorageEngine()
+# except ImportError:
+#     mmapengine = None
+
 
 # try:
 #     from .pptable import PPTableStorageEngine
