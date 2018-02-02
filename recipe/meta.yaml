@@ -70,12 +70,13 @@ requirements:
     - tabulate
     - nose
     - coverage
+    - requests
 
 
 about:
   home: https://github.com/jdfekete/progressivis
   license: New BSD
-  license_file: LICENCE
+  license_file: LICENSE
 
 extra:
   recipe-maintainers:
