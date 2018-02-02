@@ -10,28 +10,28 @@ source:
 
 requirements:
   build:
-    - python=3.6
+    - python 3.6
     - setuptools
-    - cython=0.26.1
-    - numpy=1.13.3
-    - scipy=0.19.1
-    - numexpr>=2.6.1
-    - pytables>=3.3.0
-    - pandas=0.20.3
-    - scikit-learn=0.19.1
-    - toposort=1.5
+    - cython 0.26.1
+    - numpy 1.13.3
+    - scipy 0.19.1
+    - numexpr >=2.6.1
+    - pytables >=3.3.0
+    - pandas 0.20.3
+    - scikit-learn 0.19.1
+    - toposort 1.5
     - tdigest
-    - pillow=4.2.1
-    - h5py=2.7.0
-    - zarr=2.1.4
-    - numcodecs=0.5.2
-    - bcolz=1.1.2
-    - datashape=0.5.4
-    - pyroaring=0.0.7
-    - msgpack-python>=0.4.8
+    - pillow 4.2.1
+    - h5py 2.7.0
+    - zarr 2.1.4
+    - numcodecs 0.5.2
+    - bcolz 1.1.2
+    - datashape 0.5.4
+    - pyroaring 0.0.7
+    - msgpack-python >=0.4.8
     # server
-    - flask=0.12.2
-    - tornado >=4.0
+    - flask 0.12.2
+    - tornado  >=4.0
     - boto
     - s3fs
     - sqlalchemy
@@ -41,27 +41,27 @@ requirements:
     - coverage
 
   run:
-    - python=3.6
+    - python 3.6
     - setuptools
     # progressivis
-    - numpy=1.13.3
-    - scipy=0.19.1
-    - numexpr>=2.6.1
-    - pytables>=3.3.0
-    - pandas=0.20.3
-    - scikit-learn=0.19.1
-    - toposort=1.5
+    - numpy 1.13.3
+    - scipy 0.19.1
+    - numexpr >=2.6.1
+    - pytables >=3.3.0
+    - pandas 0.20.3
+    - scikit-learn 0.19.1
+    - toposort 1.5
     - tdigest
-    - pillow=4.2.1
-    - h5py=2.7.0
-    - zarr=2.1.4
-    - numcodecs=0.5.2
-    - bcolz=1.1.2
-    - datashape=0.5.4
-    - pyroaring=0.0.7
-    - msgpack-python>=0.4.8
+    - pillow 4.2.1
+    - h5py 2.7.0
+    - zarr 2.1.4
+    - numcodecs 0.5.2
+    - bcolz 1.1.2
+    - datashape 0.5.4
+    - pyroaring 0.0.7
+    - msgpack-python >=0.4.8
     # server
-    - flask=0.12.2
+    - flask 0.12.2
     - tornado >=4.0
     - boto
     - s3fs
