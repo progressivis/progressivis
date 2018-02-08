@@ -11,6 +11,8 @@ from bisect import bisect_left, bisect_right
 from progressivis.core.utils import (slice_to_arange, slice_to_bitmap,
                                      indices_len, fix_loc)
 from progressivis.core.bitmap import bitmap
+from progressivis.stats import Min, Max
+
 import operator
 import functools
 
@@ -148,13 +150,13 @@ class _HistogramIndexImpl(ModuleImpl):
                 _, bin_ = self._get_bin(x)
                 bin_.add(loc)
 
-    def query(self, operator_, pivot, approximate=False):
-        pos, bkt = self._get_bin(pivot)
+    def query(self, operator_, limit, approximate=False):
+        pos, bkt = self._get_bin(limit)
         detail = bitmap([])
         if not approximate:
             for loc in bkt.values:
                 x = self._table.at[loc, self._column]
-                if operator_(x, pivot):
+                if operator_(x, limit):
                     detail.add(id)
         if operator_ in (operator.lt, operator.le):
             values = functools.reduce(operator.or_,
@@ -175,7 +177,7 @@ sample = [
 ]
 
 
-class HistogramIndexMod(Module):
+class HistogramIndexMod(TableModule):
     """
     """
     parameters = [
@@ -195,6 +197,9 @@ class HistogramIndexMod(Module):
         self.column = column
         self._impl = None  # will be created when the init_threshold is reached
         # so realistic initial values for min and max were available
+        self.input_module = None
+        self.input_slot = None
+        
     def get_bounds(self, min_slot, max_slot):
         min_slot.created.next()
         with min_slot.lock:
@@ -217,6 +222,7 @@ class HistogramIndexMod(Module):
         steps = 0
         with input_slot.lock:
             input_table = input_slot.data()
+            self._table = input_table
         if len(input_table) < self.params.init_threshold:
             # there are not enough rows. it's not worth building an index yet
             return self._return_run_step(self.state_blocked, steps_run=0)
@@ -253,17 +259,31 @@ class HistogramIndexMod(Module):
         return self._return_run_step(
             self.next_state(input_slot), steps_run=steps)
 
-    def _eval_to_ids(self, op, pivot, input_ids=slice(0, None, 1)):
+    def _eval_to_ids(self, op, limit, input_ids=slice(0, None, 1)):
         input_slot = self.get_input_slot('table')
         table_ = input_slot.data()
         x = table_.loc[_fix(input_ids), self.column][0].values
-        mask_ = op(x, pivot)
+        mask_ = op(x, limit)
         arr = slice_to_arange(input_ids)
         return bitmap(arr[np.nonzero(mask_)])  # maybe fancy indexing ...
 
-    def query(self, op, pivot):
+    def query(self, op, limit):
         if self._impl:
-            self._impl.query(op, pivot)  # we have an histogram so we query it
+            self._impl.query(op, limit)  # we have an histogram so we query it
         else:
-            self._eval_to_ids(op, pivot)  # there are no histogram yet so
+            self._eval_to_ids(op, limit)  # there are no histogram yet so
             # we query the input table directly
+
+    def create_dependent_modules(self, input_module, input_slot, **kwds):
+        s=self.scheduler()
+        self.input_module = input_module
+        self.input_slot = input_slot
+        min_ = Min(group=self.id,scheduler=s)
+        max_ = Max(group=self.id,scheduler=s)
+        min_.input.table = input_module.output[input_slot]
+        max_.input.table = input_module.output[input_slot]
+        hist_index = self
+        hist_index.input.table = input_module.output[input_slot]
+        hist_index.input.min = min_.output.table
+        hist_index.input.max = max_.output.table
+        
