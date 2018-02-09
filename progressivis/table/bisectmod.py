@@ -5,7 +5,6 @@ from ..core.slot import SlotDescriptor
 from .module import TableModule
 import numpy as np
 from ..core.utils import Dialog, indices_len, fix_loc
-from .bisect_impl import BisectImpl
 from ..core.bitmap import bitmap
 from .mod_impl import ModuleImpl
 
@@ -75,7 +74,7 @@ class BisectImpl(ModuleImpl):
         return self.resume(limit, created, updated, deleted)
 
 
-class BisectMod(TableModule):
+class Bisect(TableModule):
     """
     """
     parameters = [('column', str, "unknown"),
@@ -89,7 +88,7 @@ class BisectMod(TableModule):
         self._add_slots(kwds,'input_descriptors',
                             [SlotDescriptor('table', type=Table, required=True),
                                  SlotDescriptor('limit', type=Table, required=True)])
-        super(BisectMod, self).__init__(scheduler=scheduler, **kwds)
+        super(Bisect, self).__init__(scheduler=scheduler, **kwds)
         self._impl = BisectImpl(self.params.column,
                                           self.params.op, self.params.hist_index) 
 

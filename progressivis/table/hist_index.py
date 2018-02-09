@@ -4,7 +4,8 @@ from .nary import NAry
 from . import Table
 from . import TableSelectedView
 from ..core.slot import SlotDescriptor
-from .module import Module
+from .module import TableModule
+
 import numpy as np
 from bisect import bisect_left, bisect_right
 
@@ -177,7 +178,7 @@ sample = [
 ]
 
 
-class HistogramIndexMod(TableModule):
+class HistogramIndex(TableModule):
     """
     """
     parameters = [
@@ -193,7 +194,7 @@ class HistogramIndexMod(TableModule):
             SlotDescriptor('min', type=Table, required=True),
             SlotDescriptor('max', type=Table, required=True)
         ])
-        super(HistogramIndexMod, self).__init__(scheduler=scheduler, **kwds)
+        super(HistogramIndex, self).__init__(scheduler=scheduler, **kwds)
         self.column = column
         self._impl = None  # will be created when the init_threshold is reached
         # so realistic initial values for min and max were available
