@@ -21,18 +21,13 @@ from .mod_impl import ModuleImpl
 
 import six
 
+
 import numpy as np
 import operator
 
 _len = indices_len
-_fix = fix_loc
 
-op_dict = {
-    '>': operator.gt,
-    '>=': operator.ge,
-    '<': operator.lt,
-    '<=': operator.le
-}
+
 
 import logging
 logger = logging.getLogger(__name__)
@@ -108,8 +103,8 @@ class _Bucket(object):
         return i - 1, bkt
 
 
-class _HistogramIndexImpl(ModuleImpl):
-    def __init__(self, table_, column, e_min, e_max, nb_bin):
+class _HistogramIndexImpl(object):
+    def __init__(self, column, table_, e_min, e_max, nb_bin):
         super(_HistogramIndexImpl, self).__init__()
         self._table = table_
         self._column = column
@@ -122,6 +117,7 @@ class _HistogramIndexImpl(ModuleImpl):
     def _init_histogram(self, e_min, e_max, nb_bin):
         step = (e_max - e_min) * 1.0 / nb_bin
         left_b = float("-inf")
+        self._buckets = []
         for i in range(nb_bin + 1):
             right_b = e_min + i * step
             bucket = _Bucket(left_b, right_b)
@@ -158,7 +154,7 @@ class _HistogramIndexImpl(ModuleImpl):
             for loc in bkt.values:
                 x = self._table.at[loc, self._column]
                 if operator_(x, limit):
-                    detail.add(id)
+                    detail.add(loc)
         if operator_ in (operator.lt, operator.le):
             values = functools.reduce(operator.or_,
                                       (b.values for b in self._buckets[:pos]))
@@ -237,7 +233,7 @@ class HistogramIndex(TableModule):
             return self._return_run_step(self.state_blocked, steps_run=0)
         bound_min, bound_max = bounds
         if self._impl is None:
-            HistogramIndexImpl(self.column, input_table, bound_min, bound_max,
+            self._impl = _HistogramIndexImpl(self.column, input_table, bound_min, bound_max,
                                self.params.bins)
         else:
             self._impl.reshape(bound_min, bound_max)
@@ -253,6 +249,8 @@ class HistogramIndex(TableModule):
         if input_slot.updated.any():
             updated = input_slot.updated.next(step_size)
             steps += indices_len(updated)
+        if steps==0:
+            return self._return_run_step(self.state_blocked, steps_run=0)
         with input_slot.lock:
             input_table = input_slot.data()
         status = self._impl._update_histogram(
@@ -260,20 +258,23 @@ class HistogramIndex(TableModule):
         return self._return_run_step(
             self.next_state(input_slot), steps_run=steps)
 
-    def _eval_to_ids(self, op, limit, input_ids=slice(0, None, 1)):
+    def _eval_to_ids(self, op, limit, input_ids=None):
         input_slot = self.get_input_slot('table')
         table_ = input_slot.data()
-        x = table_.loc[_fix(input_ids), self.column][0].values
+        if input_ids is None:
+            input_ids=slice(0, len(table_), 1)
+        x = table_.loc[fix_loc(input_ids), self.column][0].values
         mask_ = op(x, limit)
         arr = slice_to_arange(input_ids)
         return bitmap(arr[np.nonzero(mask_)])  # maybe fancy indexing ...
 
     def query(self, op, limit):
         if self._impl:
-            self._impl.query(op, limit)  # we have an histogram so we query it
-        else:
-            self._eval_to_ids(op, limit)  # there are no histogram yet so
-            # we query the input table directly
+            return self._impl.query(op, limit)  # we have an histogram so we query it
+        # there are no histogram because init_threshold wasn't be reached yet
+        # so we query the input table directly
+        return self._eval_to_ids(op, limit)  
+        
 
     def create_dependent_modules(self, input_module, input_slot, **kwds):
         s=self.scheduler()
@@ -287,4 +288,4 @@ class HistogramIndex(TableModule):
         hist_index.input.table = input_module.output[input_slot]
         hist_index.input.min = min_.output.table
         hist_index.input.max = max_.output.table
-        
+        return hist_index

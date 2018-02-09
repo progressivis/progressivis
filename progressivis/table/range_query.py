@@ -42,19 +42,19 @@ class RangeQuery(TableModule):
         if max_value is None:
             max_value = Variable(group=self.id, scheduler=s)
             max_value.input.like = max_.output.table
-        hist_index = HistogramIndex(column=p.column)
+        hist_index = HistogramIndex(column=p.column, group=self.id, scheduler=s)
         hist_index.input.table = input_module.output[input_slot]
         hist_index.input.min = min_.output.table
         hist_index.input.max = max_.output.table
-        bisect_min = Bisect(column=p.column,op='>', hist_index=hist_index)
+        bisect_min = Bisect(column=p.column,op='>', hist_index=hist_index, group=self.id, scheduler=s)
         bisect_min.input.table = hist_index.output.table
         bisect_min.input.limit = min_value.output.table
-        bisect_max = Bisect(column=p.column,op='<', hist_index=hist_index)
+        bisect_max = Bisect(column=p.column,op='<', hist_index=hist_index, group=self.id, scheduler=s)
         bisect_max.input.table = hist_index.output.table
         bisect_max.input.limit = max_value.output.table
         range_query = self
-        range_query.input.min_value = bisect_min.output.table # might fail if min_value is not a Min
-        range_query.input.max_value = bisect_max.output.table # might fail if max_value is not a Max
+        range_query.input.min_value = bisect_min.output.table
+        range_query.input.max_value = bisect_max.output.table
         return range_query
        
     def run_step(self, run_number, step_size, howlong):
