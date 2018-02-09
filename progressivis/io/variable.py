@@ -51,4 +51,6 @@ class Variable(Constant):
                         self._table = Table(self.generate_table_name('like'),
                                             dshape=like.dshape,
                                             create=True)
-        return self._return_run_step(self.state_blocked, steps_run=1)
+        #return self._return_run_step(self.state_blocked, steps_run=1)
+        raise StopIteration()
+
