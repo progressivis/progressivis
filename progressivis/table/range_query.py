@@ -3,6 +3,13 @@ from ..stats import Min, Max
 from .hist_index import HistogramIndex
 from .bisectmod import Bisect
 from .module import TableModule
+from ..core.slot import SlotDescriptor
+from . import Table
+from . import TableSelectedView
+from ..core.bitmap import bitmap
+
+from progressivis.core.utils import (slice_to_arange, slice_to_bitmap,
+                                     indices_len, fix_loc)
 
 class RangeQuery(TableModule):
     parameters = [
@@ -10,13 +17,14 @@ class RangeQuery(TableModule):
         ('hist_index', object, None),
     ]
 
-    def __init__(self, **kwds):
+    def __init__(self, scheduler=None,**kwds):
         self._add_slots(kwds, 'input_descriptors',
                         [
                          SlotDescriptor('min_value', type=Table, required=True),
                          SlotDescriptor('max_value', type=Table, required=True)])
         self._min = None
         self._max = None
+        super(RangeQuery, self).__init__(scheduler=scheduler, **kwds)
     def create_dependent_modules(self,
                                     input_module,
                                     input_slot,
@@ -59,21 +67,53 @@ class RangeQuery(TableModule):
        
     def run_step(self, run_number, step_size, howlong):
         min_slot = self.get_input_slot('min_value')
-        min_slot.update(run_number, self.id)
+        #import pdb;pdb.set_trace()
+        min_slot.update(run_number, self.id, cleanup=False)
         max_slot = self.get_input_slot('max_value')
         max_slot.update(run_number, self.id)
-        changes = (min_slot.deleted, min_slot.updated, min_slot.created,
+        """changes = (min_slot.deleted, min_slot.updated, min_slot.created,
                        max_slot.deleted, max_slot.updated, max_slot.created)
         if not any((c.any() for c in changes)):
-            return self._return_run_step(self.state_blocked, steps_run=0)
-        steps = sum((indices_len(c.next(step_size)) for c in changes))
+            return self._return_run_step(self.state_blocked, steps_run=0)"""
+        steps = 0 #sum((indices_len(c.next(step_size)) for c in changes))
         min_table = min_slot.data()
         max_table = max_slot.data()
-        new_sel = min_table.selection & max_table.selection
+        # min
+        deleted_min = None
+        if min_slot.deleted.any():
+            deleted_min = min_slot.deleted.next(step_size)
+            steps += indices_len(deleted_min)
+        created_min = None
+        if min_slot.created.any():
+            created_min = min_slot.created.next(step_size)
+            steps += indices_len(created_min)
+        updated_min = None
+        if min_slot.updated.any():
+            updated_min = min_slot.updated.next(step_size)
+            steps += indices_len(updated_min)
+        # max
+        deleted_max = None
+        if max_slot.deleted.any():
+            deleted_max = max_slot.deleted.next(step_size)
+            steps += indices_len(deleted_max)
+        created_max = None
+        if max_slot.created.any():
+            created_max = max_slot.created.next(step_size)
+            steps += indices_len(created_max)
+        updated_max = None
+        if max_slot.updated.any():
+            updated_max = max_slot.updated.next(step_size)
+            steps += indices_len(updated_max)
         if not self._table:
-            self._table = TableSelectedView(min_table, new_sel) # any, actually
-        else:
+            self._table = TableSelectedView(min_table.base, bitmap([]))
+            new_sel = min_table.selection & max_table.selection
             self._table.selection = new_sel
+        if steps==0:
+            return self._return_run_step(self.state_blocked, steps_run=0)
+        to_remove = (bitmap(deleted_min)|bitmap(deleted_max)|
+                         bitmap(updated_min)|bitmap(updated_max))
+        to_add = (bitmap(created_min)|bitmap(updated_min)) & (bitmap(created_max)|bitmap(updated_max))
+        self._table.selection = (self._table.selection - to_remove) | to_add
         return self._return_run_step(self.next_state(min_slot), steps_run=steps)    
             
         
