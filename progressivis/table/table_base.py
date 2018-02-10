@@ -608,10 +608,10 @@ class BaseTable(six.with_metaclass(ABCMeta, object)):
             raise RuntimeError('Table has no index')
         self._ids.changes = c
 
-    def compute_updates(self, start, mid=None):
+    def compute_updates(self, start, mid=None, cleanup=True):
         if self._ids is None:
             return None
-        return self._ids.compute_updates(start, mid)
+        return self._ids.compute_updates(start, mid, cleanup)
 
     def __getitem__(self, key):
         fast=False # hack, use t[['a', 'b'], 1] to get a list instead of a TableView

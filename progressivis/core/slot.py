@@ -110,7 +110,7 @@ class Slot(object):
 
     def update(self, run_number, mid,
                buffer_created=True, buffer_updated=True, buffer_deleted=True,
-               manage_columns=True):
+               manage_columns=True, cleanup=True):
         if self.changes is None:
             self.changes = self.create_changes(buffer_created=buffer_created,
                                                buffer_updated=buffer_updated,
@@ -120,7 +120,7 @@ class Slot(object):
             return
         with self.lock:
             df = self.data()
-            return self.changes.update(run_number, df, mid=mid)
+            return self.changes.update(run_number, df, mid=mid, cleanup=cleanup)
 
     def reset(self, mid=None):
         if self.changes:

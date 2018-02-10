@@ -483,10 +483,10 @@ class IdColumn(Column):
             locs = self._normalize_locs(locs)
             self._changes.add_deleted(locs)
 
-    def compute_updates(self, start, mid=None):
+    def compute_updates(self, start, mid=None, cleanup=True):
         if self._changes:
             self._flush_cache()
-            updates = self._changes.compute_updates(start, mid)
+            updates = self._changes.compute_updates(start, mid, cleanup)
             if updates is None:
                 try: # EAFP
                     updates = IndexUpdate(created=bitmap(self.dataset[:]))

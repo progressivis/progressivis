@@ -71,7 +71,7 @@ class TableChanges(BaseChanges):
             return
         update.add_deleted(locs)
 
-    def compute_updates(self, start, mid):
+    def compute_updates(self, start, mid, cleanup=True):
         assert(mid is not None)
         time = self.scheduler.run_number()
         if start == 0:
@@ -86,10 +86,11 @@ class TableChanges(BaseChanges):
             if self._saved_update[j] is not update:
                 update = self._combine_updates(update, j)
                 break
-        del self._saved_time[i]
-        del self._saved_mid[i]
-        del self._saved_update[i]
-        self._save_time(time, mid)
+        if cleanup:
+            del self._saved_time[i]
+            del self._saved_mid[i]
+            del self._saved_update[i]
+            self._save_time(time, mid)
         return update
 
     def _combine_updates(self, update, start):
