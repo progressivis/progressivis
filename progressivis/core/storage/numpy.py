@@ -108,10 +108,10 @@ class NumpyGroup(GroupImpl):
     def __init__(self, name='numpy', parent=None):
         super(NumpyGroup, self).__init__(name, parent=parent)
 
-    def create_dataset(self, name, shape=None, dtype=None, data=None, fillvalue=None, chunks=None, maxshape=None, **kwds):
-        _ = maxshape
+    def create_dataset(self, name, shape=None, dtype=None, data=None, **kwds):
         if name in self.dict:
             raise KeyError('name %s already defined', name)
+        chunks = kwds.pop('chunks', None)
         if chunks is None:
             chunklen=None
         elif isinstance(chunks, integer_types):
@@ -122,6 +122,7 @@ class NumpyGroup(GroupImpl):
                 chunklen *= m
         if dtype is not None:
             dtype = np.dtype(dtype)
+        fillvalue = kwds.pop('fillvalue', None)
         if fillvalue is None:
             if dtype==np.object:
                 fillvalue=''

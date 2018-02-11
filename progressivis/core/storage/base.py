@@ -170,11 +170,12 @@ class StorageEngine(Group):
     def name(self):
         return self._name
 
-    @abstractmethod
     def open(self, name, flags, **kwds):
         pass
 
-    @abstractmethod
+    def close(self, name, flags, **kwds):
+        pass
+
     def flush(self):
         pass
 

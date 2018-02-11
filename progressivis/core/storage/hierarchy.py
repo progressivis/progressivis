@@ -21,12 +21,11 @@ class GroupImpl(Group):
         return self._attrs
 
     @abstractmethod
-    def create_dataset(self, name, shape=None, dtype=None, data=None, fillvalue=None, chunks=None, maxshape=None, **kwds):
+    def create_dataset(self, name, shape=None, dtype=None, data=None, **kwds):
         pass
 
     def _create_attribute(self, dict_values=None):
         return AttributeImpl(dict_values)
-
 
     def require_dataset(self, name, shape, dtype, exact=False, **kwds):
         _ = exact # don't know what to do with it
