@@ -22,5 +22,5 @@ class BaseChanges(six.with_metaclass(ABCMeta, object)):
         pass
 
     @abstractmethod
-    def compute_updates(self, start, mid):
+    def compute_updates(self, start, mid, cleanup=True):
         return None

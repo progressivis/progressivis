@@ -186,10 +186,10 @@ class BaseColumn(six.with_metaclass(ABCMeta, object)):
             raise RuntimeError('Column has no index')
         self.index.changes = c
 
-    def compute_updates(self, start, mid=None):
+    def compute_updates(self, start, mid=None, cleanup=True):
         if self.index is None:
             return None
-        return self.index.compute_updates(start, mid)
+        return self.index.compute_updates(start, mid, cleanup)
 
     def unary(self, op, **kwargs):
         axis = kwargs.pop('axis', 0)

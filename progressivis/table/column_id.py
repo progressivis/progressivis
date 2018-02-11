@@ -486,7 +486,7 @@ class IdColumn(Column):
     def compute_updates(self, start, mid=None, cleanup=True):
         if self._changes:
             self._flush_cache()
-            updates = self._changes.compute_updates(start, mid, cleanup)
+            updates = self._changes.compute_updates(start, mid, cleanup=cleanup)
             if updates is None:
                 try: # EAFP
                     updates = IndexUpdate(created=bitmap(self.dataset[:]))
