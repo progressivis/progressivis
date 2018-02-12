@@ -42,7 +42,7 @@ class BitmapChangeManager(BaseChangeManager):
         self._last_bm = bitmap(data)
         return changes
 
-    def update(self, run_number, data, mid=None, cleanup=True):
+    def update(self, run_number, data, mid):
         # pylint: disable=unused-argument
         assert isinstance(data, bitmap)
         if data is None or (run_number != 0 and

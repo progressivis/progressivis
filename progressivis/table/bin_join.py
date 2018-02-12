@@ -20,9 +20,9 @@ class BinJoin(TableModule):
 
     def run_step(self, run_number, step_size, howlong):
         first_slot = self.get_input_slot('first')
-        first_slot.update(run_number, self.id)
+        first_slot.update(run_number)
         second_slot = self.get_input_slot('second')
-        second_slot.update(run_number, self.id)
+        second_slot.update(run_number)
         steps = 0
         if first_slot.deleted.any() or second_slot.deleted.any():
             first_slot.reset(mid=self.id)
@@ -30,8 +30,8 @@ class BinJoin(TableModule):
             if self._table is not None:
                 self._table.resize(0)
                 first_slot.join_reset(self._dialog)
-            first_slot.update(run_number, self.id)
-            second_slot.update(run_number, self.id)
+            first_slot.update(run_number)
+            second_slot.update(run_number)
         created = {}
         if first_slot.created.any():
             indices = first_slot.created.next(step_size)

@@ -106,7 +106,7 @@ class CSVLoader(TableModule):
                 if fn_slot is None or fn_slot.output_module is None:
                     return self.state_terminated
                 with fn_slot.lock:
-                    fn_slot.update(run_number, self.id)
+                    fn_slot.update(run_number)
                     if fn_slot.deleted.any() or fn_slot.updated.any():
                         raise ProgressiveError('Cannot handle input file changes')
                     df = fn_slot.data()

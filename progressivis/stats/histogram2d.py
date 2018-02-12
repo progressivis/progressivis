@@ -105,16 +105,16 @@ class Histogram2D(TableModule):
 
     def run_step(self,run_number,step_size,howlong):
         dfslot = self.get_input_slot('table')
-        dfslot.update(run_number, self.id)
+        dfslot.update(run_number)
         min_slot = self.get_input_slot('min')
-        min_slot.update(run_number, self.id)
+        min_slot.update(run_number)
         max_slot = self.get_input_slot('max')
-        max_slot.update(run_number, self.id)
+        max_slot.update(run_number)
 
         if dfslot.updated.any() or dfslot.deleted.any():
             logger.debug('reseting histogram')
             self.reset()
-            dfslot.update(run_number, self.id)
+            dfslot.update(run_number)
 
         if not (dfslot.created.any() or min_slot.created.any() or max_slot.created.any()):
             logger.info('Input buffers empty')
@@ -142,7 +142,7 @@ class Histogram2D(TableModule):
                 #print('Updated bounds at run %d: %s old %s deltas %s, %s'%(run_number,self._bounds, bounds, xdelta, ydelta))
                 logger.info('Updated bounds at run %s: %s', run_number, self._bounds)
                 self.reset()
-                dfslot.update(run_number, self.id)
+                dfslot.update(run_number)
 
 
         xmin, xmax, ymin, ymax = self._bounds

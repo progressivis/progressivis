@@ -56,11 +56,11 @@ class Sample(TableModule):
 
     def run_step(self,run_number,step_size,howlong):
         dfslot = self.get_input_slot('table')
-        dfslot.update(run_number, self.id)
+        dfslot.update(run_number)
         # do not produce another sample is nothing has changed
         if dfslot.deleted.any():
             self.reset()
-            dfslot.update(run_number, self.id)
+            dfslot.update(run_number)
         if not dfslot.created.any():
             return self._return_run_step(self.state_blocked, steps_run=0)
 

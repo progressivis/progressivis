@@ -78,12 +78,12 @@ class MBKMeans(TableModule):
 
     def run_step(self, run_number, step_size, howlong):
         dfslot = self.get_input_slot('table')
-        dfslot.update(run_number, self.id)
+        dfslot.update(run_number)
 
         if dfslot.deleted.any() or dfslot.updated.any():
             logger.debug('has deleted or updated, reseting')
             self.reset()
-            dfslot.update(run_number, self.id)
+            dfslot.update(run_number)
 
         #print('dfslot has buffered %d elements'% dfslot.created_length())
         input_df = dfslot.data()

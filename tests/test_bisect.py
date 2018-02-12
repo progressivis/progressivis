@@ -1,17 +1,18 @@
-from . import ProgressiveTest
 from progressivis.table.table import Table
 from progressivis.io import Variable
-from progressivis import Print, Scheduler
+from progressivis import Print
 from progressivis.stats import  RandomTable
 from progressivis.table.bisectmod import Bisect
 from progressivis.core.bitmap import bitmap
 from progressivis.table.hist_index import HistogramIndex
 
-import numpy as np
+from . import ProgressiveTest
+
+
 
 class TestBisect(ProgressiveTest):
     def test_bisect(self):
-        s=self.scheduler()
+        s = self.scheduler()
         random = RandomTable(2, rows=100000, scheduler=s)
         t = Table(name=None, dshape='{value: string}', data={'value':[0.5]})
         min_value = Variable(table=t, scheduler=s)
@@ -19,9 +20,9 @@ class TestBisect(ProgressiveTest):
         hist_index.create_dependent_modules(random, 'table')
         bisect_ = Bisect(column='_1', op='>', hist_index=hist_index, scheduler=s)
         bisect_.input.table = hist_index.output.table
-        #bisect_.input.table = random.output.table        
+        #bisect_.input.table = random.output.table
         bisect_.input.limit = min_value.output.table
-        pr=Print(proc=self.terse, scheduler=s)
+        pr = Print(proc=self.terse, scheduler=s)
         pr.input.df = bisect_.output.table
         s.start()
         s.join()
@@ -30,4 +31,4 @@ class TestBisect(ProgressiveTest):
 
 
 if __name__ == '__main__':
-    unittest.main()
+    ProgressiveTest.main()

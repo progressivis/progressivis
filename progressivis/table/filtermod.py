@@ -26,13 +26,13 @@ class FilterMod(TableModule):
 
     def run_step(self, run_number, step_size, howlong):
         input_slot = self.get_input_slot('table')
-        input_slot.update(run_number, self.id)
+        input_slot.update(run_number)
         steps = 0
         if input_slot.updated.any():
             input_slot.reset(mid=self.id)
             if self._table is not None:
                 self._table.selection = bitmap([])
-            input_slot.update(run_number, self.id)
+            input_slot.update(run_number)
         deleted = None            
         if input_slot.deleted.any():
             deleted = input_slot.deleted.next(step_size)

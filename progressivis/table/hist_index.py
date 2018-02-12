@@ -215,7 +215,7 @@ class HistogramIndex(TableModule):
 
     def run_step(self, run_number, step_size, howlong):
         input_slot = self.get_input_slot('table')
-        input_slot.update(run_number, self.id)
+        input_slot.update(run_number)
         steps = 0
         with input_slot.lock:
             input_table = input_slot.data()
@@ -224,9 +224,9 @@ class HistogramIndex(TableModule):
             # there are not enough rows. it's not worth building an index yet
             return self._return_run_step(self.state_blocked, steps_run=0)
         min_slot = self.get_input_slot('min')
-        min_slot.update(run_number, self.id)
+        min_slot.update(run_number)
         max_slot = self.get_input_slot('max')
-        max_slot.update(run_number, self.id)
+        max_slot.update(run_number)
         bounds = self.get_bounds(min_slot, max_slot)
         if bounds is None:
             logger.debug('No bounds yet at run %d', run_number)

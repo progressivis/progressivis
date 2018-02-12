@@ -25,12 +25,11 @@ class TableChangeManager(BaseChangeManager):
         if data.changes is None:
             data.changes = TableChanges(slot.scheduler())
 
-    def update(self, run_number, data, mid=None, cleanup=True):
+    def update(self, run_number, data, mid):
         assert isinstance(data, BaseTable)
         if data is None or (run_number != 0 and run_number <= self._last_update):
             return
-        #print('compute_updates(%s,%s,%d,%d)'%(data.name, mid, self._last_update, run_number))
-        changes = data.compute_updates(self._last_update, mid, cleanup=cleanup)
+        changes = data.compute_updates(self._last_update, mid)
         self._last_update = run_number
         self._row_changes.combine(changes,
                                   self.created.buffer,

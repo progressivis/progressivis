@@ -93,7 +93,7 @@ class Bisect(TableModule):
 
     def run_step(self, run_number, step_size, howlong):
         input_slot = self.get_input_slot('table')
-        input_slot.update(run_number, self.id)
+        input_slot.update(run_number)
         steps = 0
         deleted = None
         if input_slot.deleted.any():
@@ -113,7 +113,7 @@ class Bisect(TableModule):
             input_table = input_slot.data()
         p = self.params
         limit_slot = self.get_input_slot('limit')
-        limit_slot.update(run_number, self.id)
+        limit_slot.update(run_number)
         limit_changed = False
         if limit_slot.deleted.any():
             limit_slot.deleted.next()

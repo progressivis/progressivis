@@ -81,9 +81,10 @@ class RangeQuery(TableModule):
 
     def run_step(self, run_number, step_size, howlong):
         min_slot = self.get_input_slot('min_value')
-        min_slot.update(run_number, self.id, cleanup=False)
+        #import pdb; pdb.set_trace()
+        min_slot.update(run_number)
         max_slot = self.get_input_slot('max_value')
-        max_slot.update(run_number, self.id)
+        max_slot.update(run_number)
         """changes = (min_slot.deleted, min_slot.updated, min_slot.created,
                        max_slot.deleted, max_slot.updated, max_slot.created)
         if not any((c.any() for c in changes)):

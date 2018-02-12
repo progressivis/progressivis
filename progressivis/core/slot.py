@@ -1,42 +1,53 @@
+"""
+Slots between modules.
+"""
 from __future__ import absolute_import, division, print_function
 
-import six
 import logging
+from collections import namedtuple
+
+import six
 from .utils import ProgressiveError
 from .changemanager_base import EMPTY_BUFFER
 
 logger = logging.getLogger(__name__)
 
-builtin_type = type
-
-
-class SlotDescriptor(object):
-    # pylint: disable=redefined-builtin
-    def __init__(self, name, type=None, required=True, doc=None):
-        assert type is None or isinstance(type, builtin_type)
-        self.name = name
-        self.type = type
-        self.required = required
-        self.doc = doc
-
+class SlotDescriptor(namedtuple('SD',
+                                ['name', 'type', 'required', 'doc'])):
+    "SlotDescriptor is used in modules to describe the input/output slots."
+    __slots__ = ()
+    def __new__(cls, name, type=None, required=True, doc=None):
+        return super(SlotDescriptor, cls).__new__(cls,
+                                                  name, type, required, doc)
 
 @six.python_2_unicode_compatible
 class Slot(object):
+    "A Slot manages one connection between two modules."
     def __init__(self, output_module, output_name, input_module, input_name):
         self.output_name = output_name
         self.output_module = output_module
         self.input_name = input_name
         self.input_module = input_module
+        self._name = None
         self.changes = None
 
+    def name(self):
+        "Return the unique name of that slot"
+        if self._name is None:
+            self._name = self.input_module.id + '_' + self.input_name
+        return self._name
+
     def data(self):
+        "Return the data associated with this slot"
         return self.output_module.get_data(self.output_name)
 
     def scheduler(self):
+        "Return the scheduler associated with this slot"
         return self.output_module.scheduler()
 
     @property
     def lock(self):
+        "Return a context manager locking this slot for multi-threaded access"
         return self.input_module.lock
 
     def __str__(self):
@@ -50,17 +61,20 @@ class Slot(object):
         return str(self)
 
     def last_update(self):
+        "Return the time of the last update for thie slot"
         if self.changes:
             return self.changes.last_update()
         return self.input_module.last_update()
 
     def to_json(self):
+        "Return a dictionary describing this slot, meant to be serialized in json"
         return {'output_name': self.output_name,
                 'output_module': self.output_module.id,
                 'input_name': self.input_name,
                 'input_module': self.input_module.id}
 
     def connect(self):
+        "Run when the progressive pipeline is about to run through this slot"
         scheduler = self.scheduler()
         if scheduler != self.input_module.scheduler():
             raise ProgressiveError('Cannot connect modules managed by'
@@ -80,6 +94,7 @@ class Slot(object):
             scheduler.invalidate()
 
     def validate_types(self):
+        "Validate the types of the endpoints connected through this slot"
         output_type = self.output_module.output_slot_type(self.output_name)
         input_type = self.input_module.input_slot_type(self.input_name)
         if output_type is None or input_type is None:
@@ -87,7 +102,7 @@ class Slot(object):
         if output_type == input_type:
             return True
         if (not isinstance(input_type, type) and callable(input_type) and
-           input_type(output_type)):
+                input_type(output_type)):
             return True
 
         logger.error('Incompatible types for slot (%s,%s) in %s',
@@ -99,6 +114,7 @@ class Slot(object):
                        buffer_updated=False,
                        buffer_deleted=False,
                        manage_columns=True):
+        "Create a ChangeManager associated with the type of the endpoints of the slot"
         data = self.data()
         if data is not None:
             return self.create_changemanager(type(data), self,
@@ -108,9 +124,11 @@ class Slot(object):
                                              manage_columns=manage_columns)
         return None
 
-    def update(self, run_number, mid,
+    def update(self, run_number,
                buffer_created=True, buffer_updated=True, buffer_deleted=True,
-               manage_columns=True, cleanup=True):
+               manage_columns=True):
+        # pylint: disable=too-many-arguments
+        "Compute the changes that occur since the last time this slot has been updated"
         if self.changes is None:
             self.changes = self.create_changes(buffer_created=buffer_created,
                                                buffer_updated=buffer_updated,
@@ -120,9 +138,10 @@ class Slot(object):
             return
         with self.lock:
             df = self.data()
-            return self.changes.update(run_number, df, mid=mid, cleanup=cleanup)
+            return self.changes.update(run_number, df, self.name())
 
     def reset(self, mid=None):
+        "Reset the slot"
         if self.changes:
             self.changes.reset(mid)
 
@@ -157,6 +176,7 @@ class Slot(object):
                              buffer_updated,
                              buffer_deleted,
                              manage_columns):
+        # pylint: disable=too-many-arguments
         logger.debug('create_changemanager(%s, %s)', datatype, slot)
         if datatype is not None:
             queue = [datatype]
@@ -191,6 +211,11 @@ class Slot(object):
 
 
 class InputSlots(object):
+    # pylint: disable=too-few-public-methods
+    """
+    Convenience class to refer to input slots by name
+    as if they were attributes.
+    """
     def __init__(self, module):
         self.__dict__['module'] = module
 
@@ -221,6 +246,11 @@ class InputSlots(object):
 
 
 class OutputSlots(object):
+    # pylint: disable=too-few-public-methods
+    """
+    Convenience class to refer to output slots by name
+    as if they were attributes.
+    """
     def __init__(self, module):
         self.__dict__['module'] = module
 

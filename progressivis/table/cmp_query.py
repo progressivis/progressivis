@@ -47,10 +47,10 @@ class CmpQueryLast(TableModule):
 
     def run_step(self, run_number, step_size, howlong):
         table_slot = self.get_input_slot('table')
-        table_slot.update(run_number, self.id)
+        table_slot.update(run_number)
         table_data = table_slot.data()
         cmp_slot = self.get_input_slot('cmp')
-        cmp_slot.update(run_number, self.id)
+        cmp_slot.update(run_number)
         cmp_slot.clear_buffers()
         cmp_data = cmp_slot.data()
 
@@ -62,8 +62,8 @@ class CmpQueryLast(TableModule):
             # restart from scatch
             table_slot.reset(mid=self.id)
             self._bitmap = None
-            table_slot.update(run_number, self.id)
-            cmp_slot.update(run_number, self.id)
+            table_slot.update(run_number)
+            cmp_slot.update(run_number)
 
         cr = table_slot.created.next(as_slice=False)
         if cr is None:

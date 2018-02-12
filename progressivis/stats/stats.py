@@ -42,10 +42,10 @@ class Stats(TableModule):
     def run_step(self, run_number, step_size, howlong):
         prev_min = prev_max = np.nan        
         dfslot = self.get_input_slot('table')
-        dfslot.update(run_number, self.id)
+        dfslot.update(run_number)
         if dfslot.updated.any() or dfslot.deleted.any():        
             dfslot.reset(mid=self.id)
-            dfslot.update(run_number, self.id)
+            dfslot.update(run_number)
         else:
             df = self._table
             prev = len(df)-1

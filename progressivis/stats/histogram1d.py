@@ -43,18 +43,18 @@ class Histogram1D(TableModule):
 
     def run_step(self, run_number, step_size, howlong):
         dfslot = self.get_input_slot('table')
-        dfslot.update(run_number, self.id)
+        dfslot.update(run_number)
         min_slot = self.get_input_slot('min')
-        min_slot.update(run_number, self.id)
+        min_slot.update(run_number)
         max_slot = self.get_input_slot('max')
-        max_slot.update(run_number, self.id)
+        max_slot.update(run_number)
   
         if dfslot.updated.any() or dfslot.deleted.any():
             logger.debug('reseting histogram')
             dfslot.reset(mid=self.id)
             self._histo = None
             self._edges = None
-            dfslot.update(run_number, self.id)
+            dfslot.update(run_number)
   
         if not (dfslot.created.any() or min_slot.created.any() or max_slot.created.any()):
             logger.info('Input buffers empty')
@@ -79,7 +79,7 @@ class Histogram1D(TableModule):
                 self._bounds = (bound_min - delta, bound_max + delta)
                 logger.info('Updated bounds at run %d: %s', run_number, self._bounds)
                 dfslot.reset(mid=self.id)
-                dfslot.update(run_number, self.id)
+                dfslot.update(run_number)
                 self._histo = None
                 self._edges = None
   

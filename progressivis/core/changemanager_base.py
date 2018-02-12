@@ -60,7 +60,7 @@ class BaseChangeManager(object):
         return self._last_update
 
     @abstractmethod
-    def update(self, run_number, data, mid=None):
+    def update(self, run_number, data, mid):
         """
         Compute the changes from the last_update to the specified run_number.
         """

@@ -52,14 +52,14 @@ class Select(TableModule):
     def run_step(self, run_number, step_size, howlong):
         table_slot = self.get_input_slot('table')
         table = table_slot.data()
-        table_slot.update(run_number, self.id,
+        table_slot.update(run_number,
                           buffer_created=False,
                           buffer_updated=True,
                           buffer_deleted=False,
                           manage_columns=False)
         
         select_slot = self.get_input_slot('select')
-        select_slot.update(run_number, mid=self.id,
+        select_slot.update(run_number,
                            buffer_created=True,
                            buffer_updated=False,
                            buffer_deleted=True)

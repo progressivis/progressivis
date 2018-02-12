@@ -28,12 +28,12 @@ class Min(TableModule):
     @synchronized
     def run_step(self,run_number,step_size,howlong):
         dfslot = self.get_input_slot('table')
-        dfslot.update(run_number, self.id)
+        dfslot.update(run_number)
         if dfslot.updated.any() or dfslot.deleted.any():        
             dfslot.reset(mid=self.id)
             if self._table is not None:
                 self._table.resize(0)
-            dfslot.update(run_number, self.id)
+            dfslot.update(run_number)
         indices = dfslot.created.next(step_size) # returns a slice
         steps = indices_len(indices)
         if steps==0:

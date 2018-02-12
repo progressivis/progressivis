@@ -68,10 +68,10 @@ class Binop(TableModule):
 
     def run_step(self, run_number, step_size, howlong):
         arg1_slot = self.get_input_slot('table')
-        arg1_slot.update(run_number, self.id)
+        arg1_slot.update(run_number)
         arg1_data = arg1_slot.data()
         arg2_slot = self.get_input_slot('cmp')
-        arg2_slot.update(run_number, self.id)
+        arg2_slot.update(run_number)
         arg2_data = arg1_slot.data()
 
         if arg1_data is None or len(arg1_data)==0 or arg2_data is None or len(arg2_data)==0:
@@ -82,8 +82,8 @@ class Binop(TableModule):
             arg1_slot.reset(mid=self.id)
             arg1_slot.reset(mid=self.id)
             self._bitmap = None
-            arg1_slot.update(run_number, self.id)
-            arg2_slot.update(run_number, self.id)
+            arg1_slot.update(run_number)
+            arg2_slot.update(run_number)
 
         l = min(len(arg1_data), len(arg2_data))
         cr1 = arg1_slot.created.next(as_slice=False)

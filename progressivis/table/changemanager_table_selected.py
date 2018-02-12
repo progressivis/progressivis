@@ -45,7 +45,7 @@ class TableSelectedChangeManager(BitmapChangeManager):
         super(TableSelectedChangeManager, self).reset(mid)
         self._tablechange.reset(mid)
 
-    def update(self, run_number, data, mid=None, cleanup=True):
+    def update(self, run_number, data, mid):
         assert isinstance(data, TableSelectedView)
         #import pdb; pdb.set_trace()
         if data is None or (run_number != 0 and run_number <= self._last_update):
@@ -53,9 +53,9 @@ class TableSelectedChangeManager(BitmapChangeManager):
         table = data.base
         selection = data.selection
         super(TableSelectedChangeManager, self).update(run_number, selection, mid)
-        self._tablechange.update(run_number, table, mid, cleanup)
+        self._tablechange.update(run_number, table, mid)
         table_changes = self._tablechange.row_changes
-        # Mask table changes with current selection. 
+        # Mask table changes with current selection.
         table_changes.created &= data.selection
         table_changes.updated &= data.selection
         table_changes.deleted &= data.selection

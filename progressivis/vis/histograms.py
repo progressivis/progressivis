@@ -44,7 +44,7 @@ class Histograms(NAry):
     def run_step(self,run_number,step_size,howlong):
         dfslot = self.get_input_slot('table')
         input_df = dfslot.data()
-        dfslot.update(run_number, self.id)
+        dfslot.update(run_number)
         dfslot.clear_buffers()
         col_changes = dfslot.column_changes
         if col_changes is not None:

@@ -48,11 +48,11 @@ class PairwiseDistances(TableModule):
     def run_step(self,run_number,step_size,howlong):
         dfslot = self.get_input_slot('table')
         df = dfslot.data()
-        dfslot.update(run_number, self.id)
+        dfslot.update(run_number)
         if dfslot.updated.any() or dfslot.deleted.any():        
             dfslot.reset(mid=self.id)
             logger.info('Reseting history because of changes in the input table')
-            dfslot.update(run_number, self.id)
+            dfslot.update(run_number)
             #TODO: be smarter with changed values
 
         m = step_size

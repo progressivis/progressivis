@@ -1,57 +1,85 @@
+"""
+TableChanges keep track of the changes (creation, updates, deletions) in tables.
+"""
 from __future__ import absolute_import, division, print_function
+
+import bisect
+import logging
+
 
 from ..core.index_update import IndexUpdate
 from ..core.tablechanges import BaseChanges
 from ..core.bitmap import bitmap
 
-import bisect
-
-import logging
 logger = logging.getLogger(__name__)
 
+
+class Bookmark(object):
+    "Bookmark for changes"
+    def __init__(self, time, refcount, update):
+        self.time = time
+        self.refcount = refcount
+        self.update = update
+
+
 class TableChanges(BaseChanges):
+    "Keep track of changes in tables"
     def __init__(self, scheduler):
         self.scheduler = scheduler
-        self._saved_time = []
-        self._saved_update = []
-        self._saved_mid = []
-        
-    def _last_update(self):
-        if len(self._saved_update)==0:
-            return None
-        return self._saved_update[-1]
+        self._times = []     # list of times sorted
+        self._bookmarks = [] # list of bookmarks synchronized with times
+        self._mid_time = {}  # time associated with last mid update
 
-    def _saved_index(self, x):
-        #print('_saved_index: %d'%x)
-        a = self._saved_time
-        i = bisect.bisect_left(a, x)
-        if i != len(a) and a[i] == x:
+    def _last_update(self):
+        if not self._bookmarks:
+            return None
+        return self._bookmarks[-1].update
+
+    def _saved_index(self, time):
+        times = self._times
+        i = bisect.bisect_left(times, time)
+        if i != len(times) and times[i] == time:
             return i
-        raise ValueError('Invalid time searched in _saved_index: %d'%x)
+        return -1
 
     def _save_time(self, time, mid):
-        if mid is not None and mid in self._saved_mid:
+        if  mid in self._mid_time:
             # reset
             logger.debug('Reset received for module %s', mid)
-            i = self._saved_index(time)
-            if self._saved_mid[i] != mid:
-                raise ValueError('Invalid module id in compute_updates %s instead of %s'\
-                                 %(mid, self._saved_mid[i]))
-            del self._saved_time[i]
-            del self._saved_mid[i]
-            del self._saved_update[i]
+            last_time = self._mid_time[mid]
+            i = self._saved_index(last_time)
+            assert i != -1
+            bookmark = self._bookmarks[i]
+            if bookmark.time != last_time:
+                raise ValueError('Invalid module time in compute_updates %s instead of %s',
+                                 last_time, bookmark.time)
+            bookmark.refcount -= 1
+            if bookmark.refcount == 0:
+                del self._times[i]
+                del self._bookmarks[i]
+            else:
+                logger.info('refcount is not 0 in reset %s', mid)
+            del self._mid_time[mid]
 
-        self._saved_time.append(time)
-        self._saved_mid.append(mid)
-        if len(self._saved_update)==0:
+        self._mid_time[mid] = time
+        if self._times and self._times[-1] == time:
+            bookmark = self._bookmarks[-1]
+            bookmark.refcount += 1
+            return
+        assert  self._saved_index(time) == -1  # double check
+        bookmark = Bookmark(time=time, refcount=1, update=None)
+        self._times.append(time)
+        if not self._bookmarks:
             update = IndexUpdate(created=None, deleted=None, updated=None)
         else:
-            update = self._saved_update[-1]
-            # if some changes have already been collected, we create a fresh IndexUpdate,
-            # otherwise we share the same entry: multiple times will share the same set of changes.
-            if (update.created or update.deleted or update.updated):
-                update = IndexUpdate()
-        self._saved_update.append(update)
+            update = self._bookmarks[-1].update
+        self._bookmarks.append(bookmark)
+        # if some changes have already been collected, we create a fresh IndexUpdate,
+        # otherwise we share the same entry: multiple times will share the same set of changes.
+        if update.created or update.deleted or update.updated:
+            update = IndexUpdate()
+        bookmark.update = update
+        assert len(self._bookmarks) == len(self._times)
 
     def add_created(self, locs):
         update = self._last_update()
@@ -71,41 +99,44 @@ class TableChanges(BaseChanges):
             return
         update.add_deleted(locs)
 
-    def compute_updates(self, start, mid, cleanup=True):
-        assert(mid is not None)
+    def compute_updates(self, last, mid, cleanup=True):
+        assert mid is not None
         time = self.scheduler.run_number()
-        if start == 0:
+        if last == 0:
             self._save_time(time, mid)
             return None
-        i = self._saved_index(start)
-        if not (mid is None or self._saved_mid[i] == mid):
-            raise ValueError('Invalid module id in compute_updates %s instead of %s'\
-                             %(mid, self._saved_mid[i]))
-        update = self._saved_update[i]
-        for j in range(i+1, len(self._saved_update)):
-            if self._saved_update[j] is not update:
+        assert last == self._mid_time[mid]
+        i = self._saved_index(last)
+        bookmark = self._bookmarks[i]
+        update = bookmark.update
+        for j in range(i+1, len(self._bookmarks)):
+            if self._bookmarks[j].update is not update:
                 update = self._combine_updates(update, j)
                 break
-        if cleanup:
-            del self._saved_time[i]
-            del self._saved_mid[i]
-            del self._saved_update[i]
-            self._save_time(time, mid)
+
+        bookmark.refcount -= 1
+        if bookmark.refcount == 0:
+            del self._times[i]
+            del self._bookmarks[i]
+        else:
+            logger.info('refcount is not 0 in %s', mid)
+        del self._mid_time[mid]
+        self._save_time(time, mid)
         return update
 
     def _combine_updates(self, update, start):
         #TODO reuse cached results if it matches
-        nu = IndexUpdate(
-            created = bitmap(update.created),
-            deleted = bitmap(update.deleted),
-            updated = bitmap(update.updated))
+        new_u = IndexUpdate(
+            created=bitmap(update.created),
+            deleted=bitmap(update.deleted),
+            updated=bitmap(update.updated))
 
         last_u = None
-        for i in range(start, len(self._saved_update)):
-            u = self._saved_update[i]
-            if u is last_u:
+        for i in range(start, len(self._bookmarks)):
+            update = self._bookmarks[i].update
+            if update is last_u:
                 continue
-            nu.combine(u)
+            new_u.combine(update)
+            last_u = new_u
         #TODO cache results to reuse it if necessary
-        return nu
-
+        return new_u

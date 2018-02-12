@@ -491,8 +491,8 @@ class IdColumn(Column):
                 try: # EAFP
                     updates = IndexUpdate(created=bitmap(self.dataset[:]))
                 except OverflowError: # because rows could be created then removed in the same step
-                    v = self.dataset[:]
-                    updates = IndexUpdate(created=bitmap(v[v>=0]))
+                    ids = self.dataset[:]
+                    updates = IndexUpdate(created=bitmap(ids[ids >= 0]))
             return updates
         return None
 

@@ -41,7 +41,7 @@ class DummyMod(TableModule):
         if self.params.fixed_step_size and False:
              step_size = self.params.fixed_step_size
         input_slot = self.get_input_slot('table')
-        input_slot.update(run_number, self.id)
+        input_slot.update(run_number)
         steps = 0
         if not input_slot.created.any():
             return self._return_run_step(self.state_blocked, steps_run=0)
