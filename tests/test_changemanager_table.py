@@ -11,7 +11,6 @@ from . import ProgressiveTest
 
 class FakeSlot(namedtuple('FakeSlot', ['scheduler', 'table'])):
     "Fake Slot for ChangeManager"
-    __slots__ = ['scheduler', 'table']
     def data(self):
         "Return the table"
         return self.table
