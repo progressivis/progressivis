@@ -79,9 +79,9 @@ class Bisect(TableModule):
     parameters = [('column', str, "unknown"),
                       ('op', str, ">"),
                       ("limit_key", str, ""),
-                      ('hist_index', object, None) # to improve ...
+                      #('hist_index', object, None) # to improve ...
                       ] 
-    def __init__(self, scheduler=None, **kwds):
+    def __init__(self, hist_index=None, scheduler=None, **kwds):
         """
         """
         self._add_slots(kwds,'input_descriptors',
@@ -89,7 +89,7 @@ class Bisect(TableModule):
                                  SlotDescriptor('limit', type=Table, required=False)])
         super(Bisect, self).__init__(scheduler=scheduler, **kwds)
         self._impl = BisectImpl(self.params.column,
-                                          self.params.op, self.params.hist_index) 
+                                          self.params.op, hist_index) 
 
     def run_step(self, run_number, step_size, howlong):
         input_slot = self.get_input_slot('table')

@@ -33,22 +33,26 @@ class RangeQuery(TableModule):
         self.input_slot = None
 
     def create_dependent_modules(self,
-                                 input_module,
-                                 input_slot,
-                                 min_value=None,
-                                 max_value=None,
-                                 **kwds):
-        if self.input_module is not None: # test if already called
+                                    input_module,
+                                    input_slot,
+                                    min_=None,
+                                    max_=None,
+                                    min_value=None,
+                                    max_value=None,
+                                    **kwds):
+        
+        if self.input_module is not None: # test if already called            
             return self
         s = self.scheduler()
         params = self.params
         self.input_module = input_module
         self.input_slot = input_slot
-
-        min_ = Min(group=self.id, scheduler=s)
-        min_.input.table = input_module.output[input_slot]
-        max_ = Max(group=self.id, scheduler=s)
-        max_.input.table = input_module.output[input_slot]
+        if min_ is None:
+            min_ = Min(group=self.id, scheduler=s)
+            min_.input.table = input_module.output[input_slot]
+        if max_ is None:
+            max_ = Max(group=self.id, scheduler=s)
+            max_.input.table = input_module.output[input_slot]
         if min_value is None:
             min_value = Variable(group=self.id, scheduler=s)
             min_value.input.like = min_.output.table
@@ -77,6 +81,10 @@ class RangeQuery(TableModule):
         range_query = self
         range_query.input.min_value = bisect_min.output.table
         range_query.input.max_value = bisect_max.output.table
+        self.min = min_
+        self.max = max_
+        self.min_value = min_value
+        self.max_value = max_value        
         return range_query
 
     def run_step(self, run_number, step_size, howlong):
