@@ -15,8 +15,10 @@ logger = logging.getLogger(__name__)
 
 
 class Bookmark(object):
+    # pylint: disable=too-few-public-methods
     "Bookmark for changes"
-    def __init__(self, time, refcount, update):
+    __slots__ = ['time', 'refcount', 'update']
+    def __init__(self, time, refcount=1, update=None):
         self.time = time
         self.refcount = refcount
         self.update = update
@@ -67,7 +69,7 @@ class TableChanges(BaseChanges):
             bookmark.refcount += 1
             return
         assert  self._saved_index(time) == -1  # double check
-        bookmark = Bookmark(time=time, refcount=1, update=None)
+        bookmark = Bookmark(time)
         self._times.append(time)
         if not self._bookmarks:
             update = IndexUpdate(created=None, deleted=None, updated=None)
