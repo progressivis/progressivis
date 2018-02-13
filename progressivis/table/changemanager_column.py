@@ -1,9 +1,11 @@
+"Change manager for columns"
 from __future__ import absolute_import, division, print_function
 
 from progressivis.core.changemanager_base import BaseChangeManager
 
 from .column_base import BaseColumn
 from .tablechanges import TableChanges
+from ..core.slot import Slot
 
 class ColumnChangeManager(BaseChangeManager):
     """
@@ -13,14 +15,12 @@ class ColumnChangeManager(BaseChangeManager):
                  slot,
                  buffer_created=True,
                  buffer_updated=False,
-                 buffer_deleted=False,
-                 manage_columns=True):
+                 buffer_deleted=False):
         super(ColumnChangeManager, self).__init__(
             slot,
             buffer_created,
             buffer_updated,
-            buffer_deleted,
-            manage_columns)
+            buffer_deleted)
         data = slot.data()
         if data.changes is None:
             data.changes = TableChanges(slot.scheduler())
@@ -36,5 +36,4 @@ class ColumnChangeManager(BaseChangeManager):
                                   self.updated.buffer,
                                   self.deleted.buffer)
 
-from ..core.slot import Slot
 Slot.add_changemanager_type(BaseColumn, ColumnChangeManager)

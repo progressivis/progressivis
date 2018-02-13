@@ -21,7 +21,7 @@ from ..utils import integer_types
 
 logger = logging.getLogger(__name__)
 
-METADATA_FILE = ".progressivis"
+METADATA_FILE = ".metadata"
 PAGESIZE = getpagesize()
 
 

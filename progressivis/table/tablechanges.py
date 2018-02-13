@@ -1,5 +1,5 @@
 """
-TableChanges keep track of the changes (creation, updates, deletions) in tables.
+TableChanges keep track of the changes (creation, updates, deletions) in tables/columns.
 """
 from __future__ import absolute_import, division, print_function
 
@@ -8,8 +8,8 @@ import logging
 
 
 from ..core.index_update import IndexUpdate
-from ..core.tablechanges import BaseChanges
 from ..core.bitmap import bitmap
+from .tablechanges_base import BaseChanges
 
 logger = logging.getLogger(__name__)
 

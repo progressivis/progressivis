@@ -120,8 +120,7 @@ class Slot(object):
             return self.create_changemanager(type(data), self,
                                              buffer_created=buffer_created,
                                              buffer_updated=buffer_updated,
-                                             buffer_deleted=buffer_deleted,
-                                             manage_columns=manage_columns)
+                                             buffer_deleted=buffer_deleted)
         return None
 
     def update(self, run_number,
@@ -174,8 +173,7 @@ class Slot(object):
     def create_changemanager(datatype, slot,
                              buffer_created,
                              buffer_updated,
-                             buffer_deleted,
-                             manage_columns):
+                             buffer_deleted):
         # pylint: disable=too-many-arguments
         logger.debug('create_changemanager(%s, %s)', datatype, slot)
         if datatype is not None:
@@ -193,8 +191,7 @@ class Slot(object):
                     return cls(slot,
                                buffer_created,
                                buffer_updated,
-                               buffer_deleted,
-                               manage_columns)
+                               buffer_deleted)
                 if hasattr(datatype, '__base__'):
                     queue.append(datatype.__base__)
                 elif hasattr(datatype, '__bases__'):

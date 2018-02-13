@@ -37,8 +37,7 @@ class TestTableChangeManager(ProgressiveTest):
         mid1 = 1
         changemanager = TableChangeManager(slot,
                                            buffer_updated=True,
-                                           buffer_deleted=True,
-                                           manage_columns=True)
+                                           buffer_deleted=True)
         self.assertEqual(changemanager.last_update(), 0)
         self.assertEqual(changemanager.created.length(), 0)
         self.assertEqual(changemanager.updated.length(), 0)
@@ -47,8 +46,7 @@ class TestTableChangeManager(ProgressiveTest):
         mid2 = 2
         cm2 = TableChangeManager(slot,
                                  buffer_updated=True,
-                                 buffer_deleted=True,
-                                 manage_columns=True)
+                                 buffer_deleted=True)
         self.assertEqual(cm2.last_update(), 0)
         self.assertEqual(cm2.created.length(), 0)
         self.assertEqual(cm2.updated.length(), 0)
@@ -57,8 +55,7 @@ class TestTableChangeManager(ProgressiveTest):
         mid3 = 3
         cm3 = TableChangeManager(slot,
                                  buffer_updated=True,
-                                 buffer_deleted=True,
-                                 manage_columns=True)
+                                 buffer_deleted=True)
         self.assertEqual(cm3.last_update(), 0)
         self.assertEqual(cm3.created.length(), 0)
         self.assertEqual(cm3.updated.length(), 0)

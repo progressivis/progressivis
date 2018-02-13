@@ -28,21 +28,21 @@ class TestColumnChangeManager(ProgressiveTest):
         slot = FakeSlot(self.scheduler, column)
 
         mid1 = 1
-        cm = ColumnChangeManager(slot, buffer_updated=True,buffer_deleted=True,manage_columns=True)
+        cm = ColumnChangeManager(slot, buffer_updated=True,buffer_deleted=True)
         self.assertEqual(cm.last_update(), 0)
         self.assertEqual(cm.created.length(), 0)
         self.assertEqual(cm.updated.length(), 0)
         self.assertEqual(cm.deleted.length(), 0)
 
         mid2 = 2
-        cm2 = ColumnChangeManager(slot, buffer_updated=True,buffer_deleted=True,manage_columns=True)
+        cm2 = ColumnChangeManager(slot, buffer_updated=True,buffer_deleted=True)
         self.assertEqual(cm2.last_update(), 0)
         self.assertEqual(cm2.created.length(), 0)
         self.assertEqual(cm2.updated.length(), 0)
         self.assertEqual(cm2.deleted.length(), 0)
 
         mid3 = 3
-        cm3 = ColumnChangeManager(slot, buffer_updated=True,buffer_deleted=True,manage_columns=True)
+        cm3 = ColumnChangeManager(slot, buffer_updated=True,buffer_deleted=True)
         self.assertEqual(cm3.last_update(), 0)
         self.assertEqual(cm3.created.length(), 0)
         self.assertEqual(cm3.updated.length(), 0)

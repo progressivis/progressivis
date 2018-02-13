@@ -14,14 +14,12 @@ class BitmapChangeManager(BaseChangeManager):
                  slot,
                  buffer_created=True,
                  buffer_updated=False,
-                 buffer_deleted=True,
-                 manage_columns=False):
+                 buffer_deleted=True):
         super(BitmapChangeManager, self).__init__(
             slot,
             buffer_created,
             buffer_updated,
-            buffer_deleted,
-            manage_columns)
+            buffer_deleted)
         self._last_bm = None
 
     def reset(self, mid=None):

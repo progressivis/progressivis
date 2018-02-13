@@ -1,3 +1,8 @@
+"""
+Base class for change managers.
+Change managers are used by slots to maintain the list of changes in the data structures
+they manage, typically a Table, a Column, or a bitmap.
+"""
 from __future__ import absolute_import, division, print_function
 
 from abc import ABCMeta, abstractmethod
@@ -9,37 +14,43 @@ logger = logging.getLogger(__name__)
 
 
 class BaseChangeManager(object):
+    "Base class for change managers"
     __metaclass__ = ABCMeta
 
     def __init__(self,
                  slot,
                  buffer_created=True,
                  buffer_updated=False,
-                 buffer_deleted=False,
-                 manage_columns=True):
-        # pylint: disable=unused-argument
+                 buffer_deleted=False):
+        _ = slot
         self._row_changes = IndexUpdate()
         # The bitmaps are shared between _row_changes and the buffers.
         # To remain shared, they should never be assigned to, only updated.
-        self._created = buffer(buffer_created, self._row_changes.created)
-        self._updated = buffer(buffer_updated, self._row_changes.updated)
-        self._deleted = buffer(buffer_deleted, self._row_changes.deleted)
-        self._manage_columns = manage_columns
+        self._created = _buffer(buffer_created, self._row_changes.created)
+        self._updated = _buffer(buffer_updated, self._row_changes.updated)
+        self._deleted = _buffer(buffer_deleted, self._row_changes.deleted)
         self._last_update = 0
 
     @property
     def created(self):
+        "Return information of items created"
         return self._created
 
     @property
     def updated(self):
+        "Return information of items updated"
         return self._updated
 
     @property
     def deleted(self):
+        "Return information of items deleted"
         return self._deleted
 
     def reset(self, mid=None):
+        """
+        Reset the change manager so changes will come as if the managed data
+        was freshly created.
+        """
         # pylint: disable=unused-argument
         self._last_update = 0
         self.clear()
@@ -47,6 +58,7 @@ class BaseChangeManager(object):
 
     @property
     def row_changes(self):
+        "Return the IndexUpdate keeping track of the row changes"
         return self._row_changes
 
     def has_buffered(self):
@@ -57,6 +69,7 @@ class BaseChangeManager(object):
         return self.created.any() or self.updated.any() or self.deleted.any()
 
     def last_update(self):
+        "Return the date of the last update"
         return self._last_update
 
     @abstractmethod
@@ -67,6 +80,10 @@ class BaseChangeManager(object):
         pass
 
     def clear(self):
+        """
+        removed all the buffered information from the
+        created/updated/deleted information
+        """
         self._row_changes.clear()
 
 
@@ -79,39 +96,47 @@ def _next(bm, length, as_slice):
     return ret
 
 
-class buffer(object):
+class _buffer(object):
     def __init__(self, default, changes):
         self.buffer = default
         self.changes = changes
 
     def set_buffered(self, v=True):
+        "Set if data is buffered"
         self.buffer = v
         if not v:
             self.changes.clear()
 
     def clear(self):
+        "Clear the buffer"
         self.changes.clear()
 
     def __len__(self):
+        "Return the buffer length"
         return len(self.changes)
 
     def length(self):
+        "Return the buffer length"
         return len(self.changes)
 
     def any(self):
+        "Return True if there is anything in the buffer"
         return self.buffer and len(self.changes) != 0
 
     def next(self, length=None, as_slice=True):
+        "Return the next items in the buffer"
         if not self.buffer:
             return None
         return _next(self.changes, length, as_slice)
 
     def pop(self, bm):
+        "Remove a set of items from the buffer"
         if self.buffer:
             self.changes -= bm
 
     def push(self, bm):
+        "Adds a sset of items in the buffer"
         if self.buffer:
             self.changes |= bm
 
-EMPTY_BUFFER = buffer(False, bitmap())
+EMPTY_BUFFER = _buffer(False, bitmap())
