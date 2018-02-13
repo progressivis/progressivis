@@ -1,11 +1,19 @@
+"Main Table class"
 from __future__ import absolute_import, division, print_function
 
+from collections import OrderedDict, Mapping
+import logging
+
+import numpy as np
+import pandas as pd
+import numexpr as ne
+
+import six
+
 from progressivis.core.utils import (integer_types, get_random_name,
-                                         all_int, are_instances, gen_columns)
+                                     all_int, are_instances, gen_columns)
 from progressivis.core.fast import indices_to_slice
 from progressivis.core.storage import Group
-import os
-import os.path
 from .dshape import (dshape_create, dshape_table_check, dshape_fields,
                      dshape_to_shape, dshape_extract, dshape_compatible,
                      dshape_from_dtype)
@@ -14,24 +22,22 @@ from .table_base import BaseTable
 from .column import Column
 from .column_id import IdColumn
 
-from collections import OrderedDict, Mapping
-import six
 if six.PY2:
     from itertools import imap
 else:
     imap = map
 
-import numpy as np
-import pandas as pd
-import logging
-import numexpr as ne
 logger = logging.getLogger(__name__)
 
 
-__all__ = [ "Table" ]
+__all__ = ["Table"]
 
 
 class Table(BaseTable):
+    """
+    Main Table data structure.
+    Acts in a similar way than as Pandas or R DataFrame.
+    """
     def __init__(self,
                  name,
                  data=None,
@@ -52,7 +58,7 @@ class Table(BaseTable):
             if create is not None:
                 logger.warning('creating a Table with data and create=False')
             create = True
-                
+
         self._chunks = chunks
         #self._nrow = 0
         self._name = get_random_name('table_') if name is None else name
@@ -61,8 +67,8 @@ class Table(BaseTable):
             raise ValueError('Invalid storagegroup (%s) should be None or a Group'%storagegroup)
         if storagegroup is None:
             storagegroup = Group.default()
-        if storagegroup == None:
-            raise RuntimeError('Cannot get a valid default storage Group') 
+        if storagegroup is None:
+            raise RuntimeError('Cannot get a valid default storage Group')
         self._storagegroup = storagegroup
         if dshape is None:
             if data is None:
@@ -72,7 +78,7 @@ class Table(BaseTable):
                 self._dshape = dshape_extract(data)
         else:
             self._dshape = dshape_create(dshape)
-            assert(dshape_table_check(self._dshape))
+            assert dshape_table_check(self._dshape)
         if create and self._dshape is None:
             raise ValueError('Cannot create a table without a dshape')
         if self._dshape is None or (not create and metadata.ATTR_TABLE in self._storagegroup):
@@ -87,6 +93,7 @@ class Table(BaseTable):
         return self._name
 
     def chunks_for(self, name):
+        "Return the chunks for the specified column"
         chunks = self._chunks
         if chunks is None:
             return None
@@ -100,6 +107,7 @@ class Table(BaseTable):
 
     @property
     def storagegroup(self):
+        "Return the storagegroup form this column"
         return self._storagegroup
 
     def _load_table(self): #, scheduler):
@@ -111,7 +119,7 @@ class Table(BaseTable):
             raise ValueError('Invalid version "%s" for Table', version)
         nrow = node.attrs[metadata.ATTR_NROWS]
         self._dshape = dshape_create(node.attrs[metadata.ATTR_DATASHAPE])
-        assert(dshape_table_check(self._dshape))
+        assert dshape_table_check(self._dshape)
         self._ids = IdColumn()
         self._ids.load_dataset(dshape=None, nrow=nrow)
         for (name, dshape) in dshape_fields(self._dshape):
@@ -130,7 +138,7 @@ class Table(BaseTable):
         self._ids = IdColumn(storagegroup=self.storagegroup)
         self._ids.create_dataset(dshape=None, fillvalue=-1)
         for (name, dshape) in dshape_fields(self._dshape):
-            assert(name not in self._columndict)
+            assert name not in self._columndict
             shape = dshape_to_shape(dshape)
             fillvalue = fillvalues.get(name, None)
             chunks = self.chunks_for(name)
@@ -180,6 +188,7 @@ class Table(BaseTable):
         return index
 
     def touch_rows(self, loc=None):
+        "Signals that the values at loc have been changed"
         self._ids.touch(loc)
 
     def __delitem__(self, col):
@@ -194,10 +203,10 @@ class Table(BaseTable):
         if locs is None:
             locs = self.index[index]
         self._ids._delete_ids(locs, index)
-        #del 
+        #del
         # for column in self._columns:
         #    column.update()
-        
+
     def parse_data(self, data, indices=None):
         if data is None:
             return None
@@ -210,41 +219,46 @@ class Table(BaseTable):
         return data # hoping it works
 
     def append(self, data, indices=None):
+        """
+        Append Table-like data to the Table.
+        The data has to be compatible. It can be from multiple sources [more details needed].
+        """
         if data is None:
             return
         data = self.parse_data(data, indices)
         dshape = dshape_extract(data)
         if not dshape_compatible(dshape, self.dshape):
             raise ValueError("{shape} incompatible data shape in append".format(shape=str(dshape)))
-        l = -1
+        length = -1
         all_arrays = True
         for colname in self:
             fromcol = data[colname]
-            if l is -1:
-                l = len(fromcol)
-            elif l != len(fromcol):
+            if length is -1:
+                length = len(fromcol)
+            elif length != len(fromcol):
                 raise ValueError('Cannot append ragged values')
             all_arrays |= isinstance(fromcol, np.ndarray)
-        if l==0:
+        if length == 0:
             return
-        if indices is not None and len(indices) != l:
-            raise ValueError('Bad index length (%d/%d)', len(indices), l)
-        indices = self._allocate(l, indices)
+        if indices is not None and len(indices) != length:
+            raise ValueError('Bad index length (%d/%d)', len(indices), length)
+        indices = self._allocate(length, indices)
         if all_arrays:
             indices = indices_to_slice(indices)
             for colname in self:
                 tocol = self._column(colname)
                 fromcol = data[colname]
-                tocol[indices] = fromcol[0:l]
+                tocol[indices] = fromcol[0:length]
         else:
             for colname in self:
                 tocol = self._column(colname)
                 fromcol = data[colname]
-                for i in range(l):
+                for i in range(length):
                     tocol[indices[i]] = fromcol[i]
 
     def add(self, row, index=None):
-        assert len(row)==self.ncol
+        "Add one row to the Table"
+        assert len(row) == self.ncol
 
         if isinstance(row, Mapping):
             for colname in self:
@@ -278,7 +292,7 @@ class Table(BaseTable):
             offsets = [(i, i+1) for i in range(array.shape[1])]
         if offsets is not None:
             if all_int(offsets):
-                offsets = [ (offsets[i], offsets[i+1]) for i in range(len(offsets)-1) ]
+                offsets = [(offsets[i], offsets[i+1]) for i in range(len(offsets)-1)]
             elif not all([isinstance(elt, tuple) for elt in offsets]):
                 raise ValueError('Badly formed offset list %s', offsets)
 
@@ -289,32 +303,33 @@ class Table(BaseTable):
                 dshape = dshape_create(dshape)
                 columns = [fieldname for (fieldname, _) in dshape_fields(dshape)]
         if dshape is None:
-            dshape_type=dshape_from_dtype(array.dtype)
-            dims = [ "" if (off[0]+1==off[1]) else "%d *"%(off[1]-off[0]) for off in offsets]
-            dshapes = [ "%s: %s %s"%(column, dim, dshape_type) for column, dim in zip(columns, dims) ]
-            dshape =  "{" + ", ".join(dshapes)+"}"
+            dshape_type = dshape_from_dtype(array.dtype)
+            dims = ["" if (off[0]+1 == off[1]) else "%d *"%(off[1] - off[0])
+                    for off in offsets]
+            dshapes = ["%s: %s %s"%(column, dim, dshape_type)
+                       for column, dim in zip(columns, dims)]
+            dshape = "{" + ", ".join(dshapes) + "}"
         data = OrderedDict()
-        for name, off in zip(columns, offsets):
-            if off[0]+1==off[1]:
-                data[name] = array[:, off[0]]
+        for nam, off in zip(columns, offsets):
+            if off[0]+1 == off[1]:
+                data[nam] = array[:, off[0]]
             else:
-                data[name] = array[:, off[0]:off[1]]
+                data[nam] = array[:, off[0]:off[1]]
         return Table(name, data=data, dshape=dshape, **kwds)
-    
+
     def eval(self, expr, inplace=False, name=None, result_object=None, user_dict=None):
         """
         inplace: ...
         name: used when a new table/view is created, otherwise ignored
         result_object: ...
-           Posible values for result_object : 
+           Posible values for result_object :
            - 'raw_numexpr','index', 'view', 'table' when expr is conditional
-           NB: a result as 'view' is not guaranteed: it may be 'table' when the calculated 
+           NB: a result as 'view' is not guaranteed: it may be 'table' when the calculated
            index is not sliceable
            - 'table' or None when expr is an assignment
            Default values for result_object :
            - 'indices' when expr is conditional
            - NA i.e. always None when inplace=True, otherwise a new table is returned
-        
         """
         if inplace and result_object:
             raise ValueError("'inplace' and 'result_object' options are not compatible")
@@ -338,11 +353,11 @@ class Table(BaseTable):
                 is_assign = True
             except:
                 raise err
-            if result_object is not None and result_object!='table':
+            if result_object is not None and result_object != 'table':
                 raise ValueError("result_object={} is not valid when expr "
-                                     "is an assignment".format(result_object))
+                                 "is an assignment".format(result_object))
         else:
-            if result_object not in ('raw_numexpr','index', 'view', 'table'):
+            if result_object not in ('raw_numexpr', 'index', 'view', 'table'):
                 raise ValueError("result_object={} is not valid".format(result_object))
         if is_assign:
             if inplace:
@@ -350,7 +365,7 @@ class Table(BaseTable):
                 return
             # then not inplace ...
             def cval(key):
-                return res if key==l_col else self[key].values
+                return res if key == l_col else self[key].values
             data = [(cname, cval(cname)) for cname in self.columns]
             return Table(name=name, data=OrderedDict(data), indices=self.index)
         # not an assign ...
@@ -360,16 +375,17 @@ class Table(BaseTable):
                 'or a conditional expr.!')
         if inplace:
             raise ValueError('inplace eval of conditional expr '
-                                 'not implemented!')
+                             'not implemented!')
         if result_object == 'raw_numexpr':
             return res
-        ix = np.where(res)[0]
-        ix_slice = indices_to_slice(ix)
+        indices = np.where(res)[0]
+        ix_slice = indices_to_slice(indices)
         if result_object == 'index':
             return ix_slice
         if result_object == 'view':
             return self.iloc[ix_slice, :]
         # as a new table ...
-        data = [(cname, self[cname].values[ix]) for cname in self.columns]
-        return Table(name=name, data=OrderedDict(data), indices=self._ids.values[ix])
-        
+        data = [(cname, self[cname].values[indices]) for cname in self.columns]
+        return Table(name=name,
+                     data=OrderedDict(data),
+                     indices=self._ids.values[indices])
