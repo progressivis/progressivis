@@ -52,6 +52,5 @@ class Variable(Constant):
                                             dshape=like.dshape,
                                             create=True)
                         self._table.append(like.last().to_dict(ordered=True), indices=[0])
-        return self._return_run_step(self.state_blocked, steps_run=1)
-
-
+        #return self._return_run_step(self.state_blocked, steps_run=1)
+        raise StopIteration()

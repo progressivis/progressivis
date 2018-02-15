@@ -1,53 +1,32 @@
+"""Histogram Index computes a index for numerical values by
+maintaining multiple bitmaps for value ranges, each bitmap corresponds
+to a value bin.  The first bin corresponds to half infinite values
+lower than the first specifid value, and the last bin corresponds to
+half infinite values higher than the last specified value.
+"""
 from __future__ import absolute_import, division, print_function
-
-from .nary import NAry
-from . import Table
-from . import TableSelectedView
-from ..core.slot import SlotDescriptor
-from .module import TableModule
-
-import numpy as np
-from bisect import bisect_left, bisect_right
-
-from progressivis.core.utils import (slice_to_arange, slice_to_bitmap,
-                                     indices_len, fix_loc)
-from progressivis.core.bitmap import bitmap
-from progressivis.stats import Min, Max
 
 import operator
 import functools
-
-from .mod_impl import ModuleImpl
-
-import six
-
+from bisect import bisect_right
+import logging
 
 import numpy as np
-import operator
 
-_len = indices_len
+from progressivis.core.utils import (indices_len, fix_loc, slice_to_arange)
+from progressivis.core.bitmap import bitmap
+from progressivis.stats import Min, Max
+from . import Table
+from ..core.slot import SlotDescriptor
+from .module import TableModule
 
-
-
-import logging
 logger = logging.getLogger(__name__)
-
-
-class _Selection(object):
-    def __init__(self, values=None):
-        self._values = bitmap([]) if values is None else values
-
-    def add(self, values):
-        self._values.update(values)
-
-    def remove(self, values):
-        self._values = self._values - bitmap(values)
 
 
 class _Bucket(object):
     def __init__(self, left_b, right_b, bm=None):
-        self._left_b = left_b
-        self._right_b = right_b
+        self.left_b = left_b
+        self.right_b = right_b
         if bm is None:
             self._bitmap = bitmap([])
         else:
@@ -55,26 +34,27 @@ class _Bucket(object):
 
     @property
     def values(self):
+        "Return the bitmap associated with this bucket"
         return self._bitmap
 
     def __str__(self):
-        return "[{}, {})".format(self._left_b, self._right_b)
+        return "[{}, {})".format(self.left_b, self.right_b)
 
     def __repr__(self):
         return self.__str__()
 
     def __lt__(self, x):
-        ret = self._right_b < x
-        return self._right_b < x
+        ret = self.right_b < x
+        return ret
 
     def __le__(self, x):
-        return self._right_b <= x
+        return self.right_b <= x
 
     def __gt__(self, x):
-        return self._left_b > x
+        return self.left_b > x
 
     def __ge__(self, x):
-        return self._left_b >= x
+        return self.left_b >= x
 
     def __eq__(self, x):
         if isinstance(x, float):
@@ -85,28 +65,30 @@ class _Bucket(object):
         raise ValueError("not implemented cmp")
 
     def add(self, loc):
+        "Add new values in this bucket"
         self._bitmap.add(loc)
 
     def update(self, values):
+        "Add new values in this bucket"
         self._bitmap.update(values)
 
     def remove(self, values):
-        self._bitmap = self._bitmap - bitmap(values)
+        "Remove values from this bucket"
+        self._bitmap = self._bitmap - bitmap.asbitmap(values)
 
     @staticmethod
-    def find_bucket(a, x):
+    def find_bucket(alist, x):
         'Find the bucket whose bounds include x'
-        i = bisect_right(a, x)
+        i = bisect_right(alist, x)
         assert i > 0
-        bkt = a[i - 1]
-        assert x >= bkt._left_b and x < bkt._right_b
+        bkt = alist[i - 1]
+        assert x >= bkt.left_b and x < bkt.right_b
         return i - 1, bkt
 
 
 class _HistogramIndexImpl(object):
-    def __init__(self, column, table_, e_min, e_max, nb_bin):
-        super(_HistogramIndexImpl, self).__init__()
-        self._table = table_
+    def __init__(self, column, table, e_min, e_max, nb_bin):
+        self._table = table
         self._column = column
         self.bins = nb_bin
         self.e_min = e_min
@@ -127,27 +109,36 @@ class _HistogramIndexImpl(object):
         self._buckets.append(last_bkt)
 
     def reshape(self, min_, max_):
-        pass  # to be defined...the implemented
+        "Change the bounds of the index if needed"
+        pass  # to be defined...then implemented
 
     def _get_bin(self, val):
-        return _Bucket.find_bucket(self._buckets, val)  # TODO: to be improved
+        return _Bucket.find_bucket(self._buckets, val)
 
-    def _update_histogram(self, created=None, updated=None, deleted=None):
-        updated_bm = slice_to_bitmap(updated) if updated else bitmap([])
+    def update_histogram(self, created, updated, deleted):
+        "Update the histogram index"
+        updated_bm = bitmap.asbitmap(updated)
         if deleted or updated:
-            deleted_bm = slice_to_bitmap(deleted) if deleted else bitmap([])
+            deleted_bm = bitmap.asbitmap(deleted)
             to_remove = updated_bm | deleted_bm
             for bkt in self._buckets:
                 bkt.remove(to_remove)
         if created or updated:
-            created_bm = slice_to_bitmap(created) if created else bitmap([])
+            created_bm = bitmap.asbitmap(created)
             to_add = updated_bm | created_bm
             for loc in to_add:
+                # TODO: Extract the column and work on it
+                # Should probably be done in cython
                 x = self._table.at[loc, self._column]
                 _, bin_ = self._get_bin(x)
                 bin_.add(loc)
 
-    def query(self, operator_, limit, approximate=False):
+    def query(self, operator_, limit, approximate=False):  # blocking...
+        """
+        Return the list of rows matching the query.
+        For example, returning all values less than 10 (< 10) would be
+        `query(operator.__lt__, 10)`
+        """
         pos, bkt = self._get_bin(limit)
         detail = bitmap([])
         if not approximate:
@@ -164,7 +155,7 @@ class _HistogramIndexImpl(object):
         return values | detail
 
 
-sample = [
+EXAMPLE = [
     _Bucket(float("-inf"), -500.0),
     _Bucket(-500.0, -300),
     _Bucket(-300.0, 0.0),
@@ -176,6 +167,7 @@ sample = [
 
 class HistogramIndex(TableModule):
     """
+    Compute and maintain an histogram index
     """
     parameters = [
         ('bins', np.dtype(int), 128),
@@ -183,8 +175,6 @@ class HistogramIndex(TableModule):
     ]
 
     def __init__(self, column, scheduler=None, **kwds):
-        """
-        """
         self._add_slots(kwds, 'input_descriptors', [
             SlotDescriptor('table', type=Table, required=True),
             SlotDescriptor('min', type=Table, required=True),
@@ -196,19 +186,20 @@ class HistogramIndex(TableModule):
         # so realistic initial values for min and max were available
         self.input_module = None
         self.input_slot = None
-        
+
     def get_bounds(self, min_slot, max_slot):
+        "Return the bounds of the input table according to the min and max modules"
         min_slot.created.next()
         with min_slot.lock:
             min_df = min_slot.data()
-            if len(min_df) == 0 and self._bounds is None:
+            if min_df is None:
                 return None
             min_ = min_df.last(self.column)
 
         max_slot.created.next()
         with max_slot.lock:
             max_df = max_slot.data()
-            if len(max_df) == 0 and self._bounds is None:
+            if max_df is None:
                 return None
             max_ = max_df.last(self.column)
         return (min_, max_)
@@ -233,9 +224,12 @@ class HistogramIndex(TableModule):
             return self._return_run_step(self.state_blocked, steps_run=0)
         bound_min, bound_max = bounds
         if self._impl is None:
-            self._impl = _HistogramIndexImpl(self.column, input_table, bound_min, bound_max,
-                               self.params.bins)
+            self._impl = _HistogramIndexImpl(self.column,
+                                             input_table,
+                                             bound_min, bound_max,
+                                             self.params.bins)
         else:
+            # Many not always, or should the implementation decide?
             self._impl.reshape(bound_min, bound_max)
         deleted = None
         if input_slot.deleted.any():
@@ -249,39 +243,37 @@ class HistogramIndex(TableModule):
         if input_slot.updated.any():
             updated = input_slot.updated.next(step_size)
             steps += indices_len(updated)
-        if steps==0:
+        if steps == 0:
             return self._return_run_step(self.state_blocked, steps_run=0)
         with input_slot.lock:
             input_table = input_slot.data()
-        status = self._impl._update_histogram(
-            created=created, updated=updated, deleted=deleted)
+        self._impl.update_histogram(created, updated, deleted)
         return self._return_run_step(
             self.next_state(input_slot), steps_run=steps)
 
-    def _eval_to_ids(self, op, limit, input_ids=None):
+    def _eval_to_ids(self, operator_, limit, input_ids=None):  # horribly slow
         input_slot = self.get_input_slot('table')
         table_ = input_slot.data()
         if input_ids is None:
-            input_ids=slice(0, len(table_), 1)
+            input_ids = slice(0, len(table_), 1)
         x = table_.loc[fix_loc(input_ids), self.column][0].values
-        mask_ = op(x, limit)
+        mask_ = operator_(x, limit)
         arr = slice_to_arange(input_ids)
         return bitmap(arr[np.nonzero(mask_)])  # maybe fancy indexing ...
 
-    def query(self, op, limit):
+    def query(self, operator_, limit):
         if self._impl:
-            return self._impl.query(op, limit)  # we have an histogram so we query it
+            return self._impl.query(operator_, limit)  # we have an histogram so we query it
         # there are no histogram because init_threshold wasn't be reached yet
         # so we query the input table directly
-        return self._eval_to_ids(op, limit)  
-        
+        return self._eval_to_ids(operator_, limit)
 
     def create_dependent_modules(self, input_module, input_slot, **kwds):
-        s=self.scheduler()
+        s = self.scheduler()
         self.input_module = input_module
         self.input_slot = input_slot
-        min_ = Min(group=self.id,scheduler=s)
-        max_ = Max(group=self.id,scheduler=s)
+        min_ = Min(group=self.id, scheduler=s)
+        max_ = Max(group=self.id, scheduler=s)
         min_.input.table = input_module.output[input_slot]
         max_.input.table = input_module.output[input_slot]
         hist_index = self

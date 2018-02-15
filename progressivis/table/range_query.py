@@ -31,17 +31,20 @@ class RangeQuery(TableModule):
         super(RangeQuery, self).__init__(scheduler=scheduler, **kwds)
         self.input_module = None
         self.input_slot = None
+        self.min = None
+        self.max = None
+        self.min_value = None
+        self.max_value = None
 
     def create_dependent_modules(self,
-                                    input_module,
-                                    input_slot,
-                                    min_=None,
-                                    max_=None,
-                                    min_value=None,
-                                    max_value=None,
-                                    **kwds):
-        
-        if self.input_module is not None: # test if already called            
+                                 input_module,
+                                 input_slot,
+                                 min_=None,
+                                 max_=None,
+                                 min_value=None,
+                                 max_value=None,
+                                 **kwds):
+        if self.input_module is not None: # test if already called
             return self
         s = self.scheduler()
         params = self.params
@@ -84,7 +87,7 @@ class RangeQuery(TableModule):
         self.min = min_
         self.max = max_
         self.min_value = min_value
-        self.max_value = max_value        
+        self.max_value = max_value
         return range_query
 
     def run_step(self, run_number, step_size, howlong):

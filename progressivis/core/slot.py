@@ -17,6 +17,7 @@ class SlotDescriptor(namedtuple('SD',
     "SlotDescriptor is used in modules to describe the input/output slots."
     __slots__ = ()
     def __new__(cls, name, type=None, required=True, doc=None):
+        # pylint: disable=redefined-builtin
         return super(SlotDescriptor, cls).__new__(cls,
                                                   name, type, required, doc)
 
@@ -112,8 +113,7 @@ class Slot(object):
     def create_changes(self,
                        buffer_created=True,
                        buffer_updated=False,
-                       buffer_deleted=False,
-                       manage_columns=True):
+                       buffer_deleted=False):
         "Create a ChangeManager associated with the type of the endpoints of the slot"
         data = self.data()
         if data is not None:
@@ -131,8 +131,7 @@ class Slot(object):
         if self.changes is None:
             self.changes = self.create_changes(buffer_created=buffer_created,
                                                buffer_updated=buffer_updated,
-                                               buffer_deleted=buffer_deleted,
-                                               manage_columns=manage_columns)
+                                               buffer_deleted=buffer_deleted)
         if self.changes is None:
             return
         with self.lock:
@@ -145,26 +144,35 @@ class Slot(object):
             self.changes.reset(mid)
 
     def clear_buffers(self):
+        "Clear all the buffers"
         if self.changes:
             self.changes.clear()
 
     def has_buffered(self):
+        """
+        Return True if any of the created/updated/deleted information
+        is buffered
+        """
         return self.changes.has_buffered() if self.changes else False
 
     @property
     def created(self):
+        "Return the buffer for created rows"
         return self.changes.created if self.changes else EMPTY_BUFFER
 
     @property
     def updated(self):
+        "Return the buffer for updated rows"
         return self.changes.updated if self.changes else EMPTY_BUFFER
 
     @property
     def deleted(self):
+        "Return the buffer for deleted rows"
         return self.changes.deleted if self.changes else EMPTY_BUFFER
 
     @property
     def changemanager(self):
+        "Return the ChangeManager"
         return self.changes
 
     changemanager_classes = {}
@@ -174,6 +182,10 @@ class Slot(object):
                              buffer_created,
                              buffer_updated,
                              buffer_deleted):
+        """
+        Create the ChangeManager responsible for this slot type or
+        None if no ChangeManager is registered for that type.
+        """
         # pylint: disable=too-many-arguments
         logger.debug('create_changemanager(%s, %s)', datatype, slot)
         if datatype is not None:
@@ -202,6 +214,9 @@ class Slot(object):
 
     @staticmethod
     def add_changemanager_type(datatype, cls):
+        """
+        Declare a ChangerManager class for a slot type
+        """
         assert isinstance(datatype, type)
         assert isinstance(cls, type)
         Slot.changemanager_classes[datatype] = cls
