@@ -109,8 +109,8 @@ class _HistogramIndexImpl(object):
         self.e_max = e_max
         self._buckets = None
         self._init_histogram(e_min, e_max, nb_bin)
-        self._show_histogram()
-        #import subprocess;subprocess.check_call(['pkill','-9','-f','runserver'])
+        #self._show_histogram()
+        
     def _init_histogram(self, e_min, e_max, nb_bin):
         step = (e_max - e_min) * 1.0 / nb_bin
         left_b = float("-inf")
@@ -125,7 +125,7 @@ class _HistogramIndexImpl(object):
     def _show_histogram(self):
         print("HISTOGRAM INDEX:")
         for bkt in self._buckets:
-            print("bkt: ",dict(left=bkt._left_b, right=bkt._right_b))
+            print("bkt: ",dict(left=bkt.left_b, right=bkt.right_b))
         print("END HISTOGRAM INDEX")
     def reshape(self, min_, max_):
         "Change the bounds of the index if needed"
@@ -167,16 +167,13 @@ class _HistogramIndexImpl(object):
                 x = self._table.at[loc, self._column]
                 if operator_(x, limit):
                     detail.add(loc)
-        try:
-            if operator_ in (operator.lt, operator.le):
-                values = functools.reduce(operator.or_,
-                                        (b.values for b in self._buckets[:pos]), bitmap([]))
-            else:
-                values = functools.reduce(
-                    operator.or_, (b.values for b in self._buckets[pos + 1:]))
-        except:
-            print("PB REDUCE", dict(pos=pos, ln=len(self._buckets), limit=limit, op= operator_), bitmap([]))
-            import subprocess;subprocess.check_call(['pkill','-9','-f','runserver'])            
+
+        if operator_ in (operator.lt, operator.le):
+            values = functools.reduce(operator.or_,
+                                          (b.values for b in self._buckets[:pos]), bitmap([]))
+        else:
+            values = functools.reduce(
+                operator.or_, (b.values for b in self._buckets[pos + 1:]))
         return values | detail
         
 
