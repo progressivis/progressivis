@@ -381,7 +381,9 @@ def slice_to_bitmap(sl):
 def slice_to_arange(sl):
     if isinstance(sl, slice):
         return np.arange(*sl.indices(sl.stop))
-    return sl
+    if isinstance(sl, np.ndarray):
+        return sl
+    return np.array(sl)
 
 
 def get_random_name(prefix):

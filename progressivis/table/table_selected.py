@@ -17,7 +17,7 @@ class TableSelectedView(BaseTable):
     def __init__(self, base, row_selection, col_key=None, name=None):
         # should test if row_selection in indices
         assert isinstance(row_selection, bitmap)
-        assert row_selection in base.index
+        assert row_selection in bitmap(base.index)
         super(TableSelectedView, self).__init__(base=base)
         self._name = base.name if name is None else name
         self._ids = IdColumnSelectedView(base.index, row_selection)
