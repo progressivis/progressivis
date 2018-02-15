@@ -6,6 +6,20 @@ half infinite values higher than the last specified value.
 """
 from __future__ import absolute_import, division, print_function
 
+from .nary import NAry
+from . import Table
+from . import TableSelectedView
+from ..core.slot import SlotDescriptor
+from .module import TableModule
+
+import numpy as np
+from bisect import bisect_left, bisect_right
+
+from progressivis.core.utils import (slice_to_arange, slice_to_bitmap,
+                                     indices_len, fix_loc, indices_to_slice)
+from progressivis.core.bitmap import bitmap
+from progressivis.stats import Min, Max
+
 import operator
 import functools
 from bisect import bisect_right
@@ -95,7 +109,8 @@ class _HistogramIndexImpl(object):
         self.e_max = e_max
         self._buckets = None
         self._init_histogram(e_min, e_max, nb_bin)
-
+        self._show_histogram()
+        #import subprocess;subprocess.check_call(['pkill','-9','-f','runserver'])
     def _init_histogram(self, e_min, e_max, nb_bin):
         step = (e_max - e_min) * 1.0 / nb_bin
         left_b = float("-inf")
@@ -107,7 +122,11 @@ class _HistogramIndexImpl(object):
             left_b = right_b
         last_bkt = _Bucket(left_b, float("inf"))
         self._buckets.append(last_bkt)
-
+    def _show_histogram(self):
+        print("HISTOGRAM INDEX:")
+        for bkt in self._buckets:
+            print("bkt: ",dict(left=bkt._left_b, right=bkt._right_b))
+        print("END HISTOGRAM INDEX")
     def reshape(self, min_, max_):
         "Change the bounds of the index if needed"
         pass  # to be defined...then implemented
@@ -130,6 +149,8 @@ class _HistogramIndexImpl(object):
                 # TODO: Extract the column and work on it
                 # Should probably be done in cython
                 x = self._table.at[loc, self._column]
+                if np.isnan(x):
+                    continue
                 _, bin_ = self._get_bin(x)
                 bin_.add(loc)
 
@@ -146,14 +167,18 @@ class _HistogramIndexImpl(object):
                 x = self._table.at[loc, self._column]
                 if operator_(x, limit):
                     detail.add(loc)
-        if operator_ in (operator.lt, operator.le):
-            values = functools.reduce(operator.or_,
-                                      (b.values for b in self._buckets[:pos]))
-        else:
-            values = functools.reduce(
-                operator.or_, (b.values for b in self._buckets[pos + 1:]))
+        try:
+            if operator_ in (operator.lt, operator.le):
+                values = functools.reduce(operator.or_,
+                                        (b.values for b in self._buckets[:pos]), bitmap([]))
+            else:
+                values = functools.reduce(
+                    operator.or_, (b.values for b in self._buckets[pos + 1:]))
+        except:
+            print("PB REDUCE", dict(pos=pos, ln=len(self._buckets), limit=limit, op= operator_), bitmap([]))
+            import subprocess;subprocess.check_call(['pkill','-9','-f','runserver'])            
         return values | detail
-
+        
 
 EXAMPLE = [
     _Bucket(float("-inf"), -500.0),
@@ -170,8 +195,8 @@ class HistogramIndex(TableModule):
     Compute and maintain an histogram index
     """
     parameters = [
-        ('bins', np.dtype(int), 128),
-        ('init_threshold', int, 100),
+        ('bins', np.dtype(int), 126), # actually 128 with "-inf" and "inf"
+        ('init_threshold', int, 1000),
     ]
 
     def __init__(self, column, scheduler=None, **kwds):
@@ -255,11 +280,11 @@ class HistogramIndex(TableModule):
         input_slot = self.get_input_slot('table')
         table_ = input_slot.data()
         if input_ids is None:
-            input_ids = slice(0, len(table_), 1)
-        x = table_.loc[fix_loc(input_ids), self.column][0].values
-        mask_ = operator_(x, limit)
+            input_ids=indices_to_slice(table_.index)
+        x = table_.loc[fix_loc(input_ids)][self.column].values
+        mask_ = op(x, limit)
         arr = slice_to_arange(input_ids)
-        return bitmap(arr[np.nonzero(mask_)])  # maybe fancy indexing ...
+        return bitmap(arr[np.nonzero(mask_)[0]])  # maybe fancy indexing ...
 
     def query(self, operator_, limit):
         if self._impl:

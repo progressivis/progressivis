@@ -1,5 +1,6 @@
 """Visualize DataFrame columns x,y on the notebook, allowing refreshing."""
 
+from ..io import Variable
 
 from progressivis.core import SlotDescriptor, ProgressiveError
 from progressivis.table import Table
@@ -8,7 +9,7 @@ from progressivis.table.module import TableModule
 
 from progressivis.stats import Histogram2D, Sample, Min, Max
 from progressivis.vis import Heatmap
-
+from ..table.range_query import RangeQuery
 import numpy as np
 
 import logging
@@ -68,11 +69,25 @@ class ScatterPlot(TableModule):
         max_ = Max(group=self.id,scheduler=s)
         min_.input.table = input_module.output[input_slot]
         max_.input.table = input_module.output[input_slot]
+        self.min_value = Variable(group=self.id, scheduler=s)
+        self.min_value.input.like = min_.output.table
+        self.max_value = Variable(group=self.id, scheduler=s)
+        self.max_value.input.like = max_.output.table
+        range_query_x = RangeQuery(column=self.x_column, group=self.id,scheduler=s)
+        range_query_x.create_dependent_modules(input_module, input_slot, min_=min_, max_=max_, min_value=self.min_value, max_value=self.max_value)
+        range_query_y = RangeQuery(column=self.y_column, group=self.id,scheduler=s)
+        range_query_y.create_dependent_modules(range_query_x, input_slot, min_=min_, max_=max_, min_value=self.min_value, max_value=self.max_value)
+        #range_query_y.create_dependent_modules(input_module, input_slot, min_=min_, max_=max_)
+        select_output = range_query_y.output
+        min_rq = Min(group=self.id,scheduler=s)
+        max_rq = Max(group=self.id,scheduler=s)
+        min_rq.input.table = select_output.table
+        max_rq.input.table = select_output.table
         if histogram2d is None:
             histogram2d = Histogram2D(self.x_column, self.y_column,group=self.id,scheduler=s)
-        histogram2d.input.table = input_module.output[input_slot]
-        histogram2d.input.min = min_.output.table
-        histogram2d.input.max = max_.output.table
+        histogram2d.input.table = select_output.table
+        histogram2d.input.min = min_rq.output.table
+        histogram2d.input.max = max_rq.output.table
         if heatmap is None:
             heatmap = Heatmap(group=self.id,filename='heatmap%d.png', history=100, scheduler=s)
         heatmap.input.array = histogram2d.output.table
@@ -81,10 +96,10 @@ class ScatterPlot(TableModule):
         elif sample is None and select is None:
             raise ProgressiveError("Scatterplot needs a select module")
         if sample is not None:
-            sample.input.table = input_module.output[input_slot] #select.output.df
+            sample.input.table =  select_output.table
         if select is None:
             select = Select(group=self.id,scheduler=s)
-            select.input.table = input_module.output[input_slot]
+            select.input.table = range_query_y.output.table #input_module.output[input_slot]
             select.input.select = sample.output.select
 
         scatterplot=self
@@ -95,11 +110,11 @@ class ScatterPlot(TableModule):
         # self.range_query = range_query
         # self.min = range_query.min
         # self.max = range_query.max
-        # self.min_value = range_query.min_value
-        # self.max_value = range_query.max_value
-        # self.histogram2d = histogram2d
-        # self.heatmap = heatmap
-        # self.sample = sample
+        #self.min_value = range_query.min_value
+        #self.max_value = range_query.max_value
+        self.histogram2d = histogram2d
+        self.heatmap = heatmap
+        self.sample = sample
         self.select = select
         self.min = min_
         self.max = max_

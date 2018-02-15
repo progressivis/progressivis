@@ -6,10 +6,12 @@ from . import Table
 from . import TableSelectedView
 from ..core.slot import SlotDescriptor
 from .module import TableModule
-from ..core.utils import indices_len, fix_loc
 from ..core.bitmap import bitmap
 from .mod_impl import ModuleImpl
 from .binop import ops
+
+def _get_physical_table(t):
+    return t if t.base is None else _get_physical_table(t.base)
 
 class _Selection(object):
     def __init__(self, values=None):
@@ -43,11 +45,11 @@ class BisectImpl(ModuleImpl):
         self.result = None
 
     def _eval_to_ids(self, limit, input_ids):
-        x = self._table.loc[fix_loc(input_ids), self._column][0].values
+        x = self._table.loc[fix_loc(input_ids)][self._column].values
         mask_ = self._op(x, limit)
         arr = slice_to_arange(input_ids)
-        return bitmap(arr[np.nonzero(mask_)]) # maybe fancy indexing ...
-
+        return bitmap(arr[np.nonzero(mask_)[0]]) # maybe fancy indexing ...
+                          
     def resume(self, limit, limit_changed, created=None, updated=None, deleted=None):
         if limit_changed:
             #return self.reconstruct_from_hist_cache(limit)
@@ -89,7 +91,7 @@ class Bisect(TableModule):
         super(Bisect, self).__init__(scheduler=scheduler, **kwds)
         self._impl = BisectImpl(self.params.column,
                                 self.params.op, hist_index) 
-
+        self.default_step_size = 1000
     def run_step(self, run_number, step_size, howlong):
         input_slot = self.get_input_slot('table')
         input_slot.update(run_number)
@@ -106,10 +108,12 @@ class Bisect(TableModule):
         if input_slot.updated.any():
             updated = input_slot.updated.next(step_size)
             steps += indices_len(updated)
-        if steps == 0:
-            return self._return_run_step(self.state_blocked, steps_run=0)
         with input_slot.lock:
             input_table = input_slot.data()
+        if not self._table:
+            self._table = TableSelectedView(input_table, bitmap([]))
+        if steps==0:
+            return self._return_run_step(self.state_blocked, steps_run=0)
         param = self.params
         limit_slot = self.get_input_slot('limit')
         limit_slot.update(run_number)
@@ -122,12 +126,14 @@ class Bisect(TableModule):
         if limit_slot.created.any():
             limit_slot.created.next()
             limit_changed = True
+        if len(limit_slot.data()) == 0:
+            return self._return_run_step(self.state_blocked, steps_run=0)
         if param.limit_key:
             limit_value = limit_slot.data().last(param.limit_key)
         else:
             limit_value = limit_slot.data().last()[0]
         if not self._impl.is_started:
-            self._table = TableSelectedView(input_table, bitmap([]))
+            #self._table = TableSelectedView(input_table, bitmap([]))
             status = self._impl.start(input_table, limit_value, limit_changed,
                                       created=created,
                                       updated=updated,

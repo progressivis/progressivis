@@ -1,5 +1,5 @@
 from progressivis.table.table import Table
-from progressivis.io import Variable
+from progressivis.table.constant import Constant
 from progressivis import Print
 from progressivis.stats import  RandomTable
 from progressivis.table.bisectmod import Bisect
@@ -15,7 +15,7 @@ class TestBisect(ProgressiveTest):
         s = self.scheduler()
         random = RandomTable(2, rows=100000, scheduler=s)
         t = Table(name=None, dshape='{value: string}', data={'value':[0.5]})
-        min_value = Variable(table=t, scheduler=s)
+        min_value = Constant(table=t, scheduler=s) 
         hist_index = HistogramIndex(column='_1', scheduler=s)
         hist_index.create_dependent_modules(random, 'table')
         bisect_ = Bisect(column='_1', op='>', hist_index=hist_index, scheduler=s)
