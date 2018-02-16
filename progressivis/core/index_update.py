@@ -79,8 +79,8 @@ class IndexUpdate(object):
            self.updated == other.updated and
            self.deleted == other.deleted)
 
-    def __neq__(self, other):
-        return not (self == other)
+    def __ne__(self, other):
+        return not self == other
 
     def copy(self):
         return IndexUpdate(created=bitmap(self.created),

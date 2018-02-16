@@ -213,9 +213,7 @@ class Column(BaseColumn):
         except TypeError:
             if isinstance(index, Iterable):
                 return np.array([self.dataset[e] for e in index])
-            else:
-                raise
-        return self.dataset[index]
+            raise
 
     def read_direct(self, array, source_sel=None, dest_sel=None):
         if hasattr(self.dataset, 'read_direct'):

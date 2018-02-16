@@ -50,7 +50,7 @@ class TestBitmap(ProgressiveTest):
         bm.update(slice(1000, 1001))
         self.assertEqual(len(bm), 1001)
         with self.assertRaises(TypeError):
-            bm = bm + 10
+            bm = bm & 10
         with self.assertRaises(TypeError):
             bm = bm + "hello"
 

@@ -49,9 +49,16 @@ class TestBitmapChangeManager(ProgressiveTest):
         self.assertEqual(cm.last_update(), 4)
         # 2 has been created before it was consumed so it becomes updated
         self.assertEqual(cm.created.length(), 0)
+        self.assertEqual(cm.created.length(), len(cm.created))
         self.assertEqual(cm.updated.length(), 0) # updates are ignored by default
         # 2 should be removed because added at ts=4
         self.assertEqual(cm.deleted.next(), slice(5, 6))
+
+        cm.created.clear()
+        self.assertEqual(cm.created.length(), 0)
+        cm.created.set_buffered(False)
+        self.assertIsNone(cm.created.next())
+
 
 if __name__ == '__main__':
     ProgressiveTest.main()
