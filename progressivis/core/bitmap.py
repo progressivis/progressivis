@@ -5,10 +5,10 @@ import array
 import six
 import numpy as np
 
-if six.PY2:
+if six.PY2: # pragma no cover
     range = xrange
     integer_types = (six.integer_types, np.integer)
-else:
+else: : # pragma no cover
     integer_types = (int, np.integer)
 
 

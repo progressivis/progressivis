@@ -25,7 +25,7 @@ class IndexUpdate(object):
         b = bool(self.created & self.updated) \
           or bool(self.created & self.deleted) \
           or bool(self.updated & self.deleted)
-        if verbose and b:
+        if verbose and b:  # pragma no cover
             print("self.created & self.updated", self.created & self.updated)
             print("self.created & self.deleted", self.created & self.deleted)
             print("self.updated & self.deleted", self.updated & self.deleted)
