@@ -11,3 +11,6 @@ class ModuleImpl(six.with_metaclass(ABCMeta, object)):
     @abstractmethod
     def resume(self, *args, **kwargs):
         pass    
+    def __str__(self):
+        return ""
+    
