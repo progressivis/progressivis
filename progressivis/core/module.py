@@ -307,7 +307,7 @@ class Module(six.with_metaclass(ModuleMeta, object)):
         return self._id
 
     def name(self):
-        return id
+        return self.id
 
     @property
     def group(self):

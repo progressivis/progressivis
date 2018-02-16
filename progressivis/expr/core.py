@@ -1,9 +1,9 @@
 from __future__ import absolute_import, division, print_function
 
 import logging
-logger = logging.getLogger(__name__)
-from ..table.module import TableModule
+from progressivis.table.module import TableModule
 
+logger = logging.getLogger(__name__)
 
 class ValidationError(RuntimeError):
     pass
@@ -48,7 +48,7 @@ class Expr(object):
         return Expr(
             self._module_class,
             self._non_expr_args,
-            dict(**self._non_expr_kwds, lazy=True),
+            dict(lazy=True, **self._non_expr_kwds),
             output_slot=output_slot,
             module=self._module)
 

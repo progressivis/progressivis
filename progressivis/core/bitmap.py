@@ -1,24 +1,34 @@
+"""Manage bit sets as ordered list of integers very efficiently, relying on RoaringBitmaps.
+"""
 from __future__ import absolute_import, division, print_function
 
-from pyroaring import BitMap
 import array
+
+from pyroaring import BitMap
 import six
 import numpy as np
 
 if six.PY2: # pragma no cover
+    # pylint: disable=invalid-name,redefined-builtin,undefined-variable
     range = xrange
     integer_types = (six.integer_types, np.integer)
 else:  # pragma no cover
+    # pylint: disable=invalid-name
     integer_types = (int, np.integer)
 
 
 class bitmap(BitMap, object):
+    # pylint: disable=invalid-name
+    """
+    Derive from an efficient and light-weight ordered set of 32 bits integers.
+    """
     def __init__(self, values=None, obj=None):
         if isinstance(values, slice):
             values = range(values.start, values.stop, (values.step or 1))
         BitMap.__init__(self, values, obj)
 
     def clear(self):
+        "Clear the bitmap in-place"
         self &= NIL_BITMAP
 
     def __contains__(self, other):
@@ -59,6 +69,7 @@ class bitmap(BitMap, object):
         return BitMap.__eq__(self, other)
 
     def update(self, values):
+        "Add new values from either a bitmap, an array, a slice, or an Iterable"
         if values is None:
             return
         # NP check the copy here for slice
@@ -71,29 +82,29 @@ class bitmap(BitMap, object):
         BitMap.update(self, values)
 
     def pop(self, length=1):
-        l = len(self)
-
-        if length >= l:
+        "Remove one or many items and return them as a bitmap"
+        if length >= len(self):
             ret = bitmap(self)
-            self &= bitmap()
+            self &= NIL_BITMAP
             return ret
         ret = self[0:length]
         self -= ret
         return bitmap(ret)
 
     def to_slice_maybe(self):
-        l = len(self)
-        if l == 0:
+        "Convert this bitmap to a slice if possible, or return self"
+        length = len(self)
+        if length == 0:
             return slice(0, 0)
         first = self.min()
         last = self.max()
-        if last-first+1 == l:
+        if last-first+1 == length:
             return slice(first, last+1)
-        else:
-            return self
+        return self
 
     @staticmethod
     def asbitmap(x):
+        "Try to coerce the value as a bitmap"
         if x is None:
             return NIL_BITMAP
         if isinstance(x, (bitmap, BitMap)):
