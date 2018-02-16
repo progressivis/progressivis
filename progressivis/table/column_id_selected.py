@@ -2,7 +2,7 @@ from __future__ import absolute_import, division, print_function
 
 from .column_id import IdColumn
 from .column_proxy import ColumnProxy
-
+import numpy as np
 from ..core.bitmap import bitmap
 from ..core.utils import is_none_alike
 
@@ -46,7 +46,10 @@ class IdColumnSelectedView(ColumnProxy):
 
     def __delitem__(self, key):
         self._selection -= bitmap.asbitmap(key)
-
+        
+    def __iter__(self):
+        return iter(self._selection)
+    
     def __len__(self):
         return len(self._selection)
 

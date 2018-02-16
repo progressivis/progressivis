@@ -7,7 +7,7 @@ from progressivis.core.utils import indices_len
 from ..io import Variable
 from ..stats import Min, Max
 from .hist_index import HistogramIndex
-from .bisectmod import Bisect
+from .bisectmod import Bisect, _get_physical_table
 from .module import TableModule
 from ..core.slot import SlotDescriptor
 from . import Table
@@ -67,14 +67,14 @@ class RangeQuery(TableModule):
         hist_index.input.table = input_module.output[input_slot]
         hist_index.input.min = min_.output.table
         hist_index.input.max = max_.output.table
-        bisect_min = Bisect(column=params.column,
+        bisect_min = Bisect(column=params.column, limit_key=params.column,
                             op='>',
                             hist_index=hist_index,
                             group=self.id,
                             scheduler=s)
         bisect_min.input.table = hist_index.output.table
         bisect_min.input.limit = min_value.output.table
-        bisect_max = Bisect(column=params.column,
+        bisect_max = Bisect(column=params.column, limit_key=params.column,
                             op='<',
                             hist_index=hist_index,
                             group=self.id,
@@ -92,15 +92,10 @@ class RangeQuery(TableModule):
 
     def run_step(self, run_number, step_size, howlong):
         min_slot = self.get_input_slot('min_value')
-        #import pdb; pdb.set_trace()
         min_slot.update(run_number)
         max_slot = self.get_input_slot('max_value')
         max_slot.update(run_number)
-        """changes = (min_slot.deleted, min_slot.updated, min_slot.created,
-                       max_slot.deleted, max_slot.updated, max_slot.created)
-        if not any((c.any() for c in changes)):
-            return self._return_run_step(self.state_blocked, steps_run=0)"""
-        steps = 0 #sum((indices_len(c.next(step_size)) for c in changes))
+        steps = 0 
         min_table = min_slot.data()
         max_table = max_slot.data()
         # min
@@ -130,7 +125,7 @@ class RangeQuery(TableModule):
             updated_max = max_slot.updated.next(step_size)
             steps += indices_len(updated_max)
         if not self._table:
-            self._table = TableSelectedView(min_table.base, bitmap([]))
+            self._table = TableSelectedView(_get_physical_table(min_table), bitmap([]))
             new_sel = min_table.selection & max_table.selection
             self._table.selection = new_sel
         if steps == 0:
