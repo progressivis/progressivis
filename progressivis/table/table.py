@@ -318,13 +318,18 @@ class Table(BaseTable):
         return Table(name, data=data, dshape=dshape, **kwds)
 
     def eval(self, expr, inplace=False, name=None, result_object=None, user_dict=None):
-        """
-        inplace: ...
-        name: used when a new table/view is created, otherwise ignored
-        result_object: ...
-           Posible values for result_object :
-           - 'raw_numexpr','index', 'view', 'table' when expr is conditional
-           NB: a result as 'view' is not guaranteed: it may be 'table' when the calculated
+        """Evaluate the `expr` on columns and return the result.
+
+        Parameters:
+        -----------
+        inplace: boolean, optional
+            Apply the changes in place
+        name: string
+            used when a new table/view is created, otherwise ignored
+        result_object: string
+           Posible values for result_object: {'raw_numexpr', 'index', 'view', 'table'}
+           When expr is conditional.
+           Note: a result as 'view' is not guaranteed: it may be 'table' when the calculated
            index is not sliceable
            - 'table' or None when expr is an assignment
            Default values for result_object :

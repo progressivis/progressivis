@@ -60,7 +60,7 @@ class CmpQueryLast(TableModule):
             return self._return_run_step(self.state_blocked, steps_run=1)
         if table_slot.deleted.any() or cmp_slot.deleted.any():
             # restart from scatch
-            table_slot.reset(mid=self.id)
+            table_slot.reset()
             self._bitmap = None
             table_slot.update(run_number)
             cmp_slot.update(run_number)

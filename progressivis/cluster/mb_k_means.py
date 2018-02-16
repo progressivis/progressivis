@@ -42,7 +42,7 @@ class MBKMeans(TableModule):
                                    #tol=self._rel_tol,
                                    random_state=self.mbk.random_state)
         dfslot = self.get_input_slot('table')
-        dfslot.reset(mid=self.id)
+        dfslot.reset()
         self._table = None
         self._labels = None
         self.set_state(self.state_ready)

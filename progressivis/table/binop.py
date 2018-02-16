@@ -79,8 +79,8 @@ class Binop(TableModule):
             self._bitmap = None
             return self._return_run_step(self.state_blocked, steps_run=1)
         if arg1_slot.deleted.any() or arg2_slot.deleted.any():
-            arg1_slot.reset(mid=self.id)
-            arg1_slot.reset(mid=self.id)
+            arg1_slot.reset()
+            arg1_slot.reset()
             self._bitmap = None
             arg1_slot.update(run_number)
             arg2_slot.update(run_number)

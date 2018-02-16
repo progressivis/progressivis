@@ -29,7 +29,7 @@ class FilterMod(TableModule):
         input_slot.update(run_number)
         steps = 0
         if input_slot.updated.any():
-            input_slot.reset(mid=self.id)
+            input_slot.reset()
             if self._table is not None:
                 self._table.selection = bitmap([])
             input_slot.update(run_number)

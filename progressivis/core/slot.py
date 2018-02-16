@@ -138,10 +138,10 @@ class Slot(object):
             df = self.data()
             return self.changes.update(run_number, df, self.name())
 
-    def reset(self, mid=None):
+    def reset(self):
         "Reset the slot"
         if self.changes:
-            self.changes.reset(mid)
+            self.changes.reset(self.name())
 
     def clear_buffers(self):
         "Clear all the buffers"

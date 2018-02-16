@@ -44,7 +44,7 @@ class Stats(TableModule):
         dfslot = self.get_input_slot('table')
         dfslot.update(run_number)
         if dfslot.updated.any() or dfslot.deleted.any():        
-            dfslot.reset(mid=self.id)
+            dfslot.reset()
             dfslot.update(run_number)
         else:
             df = self._table

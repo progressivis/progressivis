@@ -32,7 +32,7 @@ class Max(TableModule):
         dfslot = self.get_input_slot('table')
         dfslot.update(run_number)
         if dfslot.updated.any() or dfslot.deleted.any():
-            dfslot.reset(mid=self.id)
+            dfslot.reset()
             if self._table is not None:
                 self._table.resize(0)
             dfslot.update(run_number)

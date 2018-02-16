@@ -51,7 +51,7 @@ class Histogram1D(TableModule):
   
         if dfslot.updated.any() or dfslot.deleted.any():
             logger.debug('reseting histogram')
-            dfslot.reset(mid=self.id)
+            dfslot.reset()
             self._histo = None
             self._edges = None
             dfslot.update(run_number)
@@ -78,7 +78,7 @@ class Histogram1D(TableModule):
               or bound_min > (old_min + delta) or bound_max < (old_max - delta):
                 self._bounds = (bound_min - delta, bound_max + delta)
                 logger.info('Updated bounds at run %d: %s', run_number, self._bounds)
-                dfslot.reset(mid=self.id)
+                dfslot.reset()
                 dfslot.update(run_number)
                 self._histo = None
                 self._edges = None

@@ -42,7 +42,7 @@ class Sample(TableModule):
         self._table.resize(0)
         self._size = 0
         self._bitmap = None
-        self.get_input_slot('table').reset(mid=self.id)
+        self.get_input_slot('table').reset()
 
     def get_data(self, name):
         if name=='select':

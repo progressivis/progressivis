@@ -78,7 +78,7 @@ class Var(TableModule):
         dfslot = self.get_input_slot('table')
         dfslot.update(run_number)
         if dfslot.updated.any() or dfslot.deleted.any():        
-            dfslot.reset(mid=self.id)
+            dfslot.reset()
             self._table = None
             dfslot.update(run_number)
         indices = dfslot.created.next(step_size) # returns a slice

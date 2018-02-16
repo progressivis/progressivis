@@ -55,7 +55,7 @@ class Histogram2D(TableModule):
         self._xedges = None
         self._yedges = None
         self.total_read = 0
-        self.get_input_slot('table').reset(mid=self.id)        
+        self.get_input_slot('table').reset()        
 
     def is_ready(self):
         # If we have created data but no valid min/max, we can only wait
