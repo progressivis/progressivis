@@ -279,7 +279,7 @@ class HistogramIndex(TableModule):
         if input_ids is None:
             input_ids=indices_to_slice(table_.index)
         x = table_.loc[fix_loc(input_ids)][self.column].values
-        mask_ = op(x, limit)
+        mask_ = operator_(x, limit)
         arr = slice_to_arange(input_ids)
         return bitmap(arr[np.nonzero(mask_)[0]])  # maybe fancy indexing ...
 
