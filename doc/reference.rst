@@ -16,6 +16,9 @@ The Table class
 
 .. currentmodule:: progressivis.table
 
+.. autoclass:: BaseTable
+   :members:
+
 .. autoclass:: Table
    :members:
 

@@ -54,6 +54,7 @@ master_doc = 'index'
 # General information about the project.
 project = 'progressivis'
 copyright = '2018, Jean-Daniel Fekete and the ProgressiVis contributors'
+authors = 'Jean-Daniel Fekete, Romain Primet, Christian Poli'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -163,7 +164,7 @@ latex_documents = [
 # (source start file, name, description, authors, manual section).
 man_pages = [
     (master_doc, 'progressivis', 'progressivis Documentation',
-     [author], 1)
+     [authors], 1)
 ]
 
 
@@ -174,7 +175,7 @@ man_pages = [
 #  dir menu entry, description, category)
 texinfo_documents = [
     (master_doc, 'progressivis', 'progressivis Documentation',
-     author, 'progressivis', 'One line description of project.',
+     authors, 'progressivis', 'One line description of project.',
      'Miscellaneous'),
 ]
 
