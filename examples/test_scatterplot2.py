@@ -3,7 +3,7 @@ from progressivis.vis import ScatterPlot
 from progressivis.io import CSVLoader
 from progressivis.datasets import get_dataset
 from progressivis.table.constant import Constant
-
+import six
 import pandas as pd
 
 def filter_(df):
@@ -25,7 +25,10 @@ except:
 #PREFIX= 'https://storage.googleapis.com/tlc-trip-data/2015/'
 #SUFFIX= ''
 PREFIX= '../nyc-taxi/'
-SUFFIX= '.bz2'
+if six.PY3:
+    SUFFIX= '.bz2'
+else:
+    SUFFIX= '.gz'
 
 URLS = [
     PREFIX+'yellow_tripdata_2015-01.csv'+SUFFIX,
