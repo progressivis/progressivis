@@ -75,9 +75,8 @@ class Table(BaseTable):
         >>> t = Table('my-table', dshape='{a: int32, b: float32, c: bool}')
         >>> len(t)
         0
-        >>> t.columns()
+        >>> t.columns
         ['a', 'b', 'c']
-
     """
     def __init__(self,
                  name,

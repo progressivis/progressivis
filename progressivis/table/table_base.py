@@ -314,278 +314,6 @@ class BaseTable(six.with_metaclass(ABCMeta, object)):
             offsets.append(dim2)
         return offsets
 
-    def to_array(self, locs=None, columns=None):
-        """Convert this table to a numpy array
-
-        Parameters
-        ----------
-        locs: a list of ids or None
-            The rows to extract.  Locs can be specified with multiple formats:
-            integer, list, numpy array, Iterable, or slice.
-        columns: a list or None
-            the columns to extract
-        """
-        if columns is None:
-            columns = self.columns
-
-        shapes = [self[c].shape for c in columns]
-        offsets = self.column_offsets(columns, shapes)
-        dtypes = [self[c].dtype for c in columns]
-        dtype = np.find_common_type(dtypes, [])
-        indices = None
-        #TODO split the copy in chunks
-        if locs is None:
-            if self._ids.has_freelist():
-                indices = self._ids[:]
-                mask = np.one(locs.shape, dtype=np.bool)
-                mask[self._ids.freelist()] = False
-                indices = np.ma.masked_array(indices, mask)
-            else:
-                indices = slice(0, self.size)
-        elif isinstance(locs, (list, np.ndarray)):
-            indices = np.asarray(locs, np.int64)
-            indices = self.id_to_index(indices)
-        elif isinstance(locs, Iterable):
-            indices = self.id_to_index(indices)
-        elif isinstance(locs, integer_types):
-            indices = self.id_to_index(slice(locs, locs+1, 1))
-        elif isinstance(locs, slice):
-            indices = self.id_to_index(locs)
-
-        arr = np.empty((indices_len(indices), offsets[-1]), dtype=dtype)
-        for i, column in enumerate(columns):
-            col = self._column(column)
-            shape = shapes[i]
-            if len(shape) == 1:
-                col.read_direct(arr, indices, dest_sel=np.s_[:, offsets[i]])
-            else:
-                col.read_direct(arr, indices, dest_sel=np.s_[:, offsets[i]:offsets[i+1]])
-        return arr
-
-    def join(self, other, name=None, on=None, how='left', lsuffix='', rsuffix='', sort=False):
-        from .table import Table
-        if sort:
-            raise ValueError("'sort' not yet implemented in Table.join()")
-        if on is not None:
-            raise ValueError("'on' not yet implemented in Table.join()")
-        dshape, rename = dshape_join(self.dshape, other.dshape, lsuffix, rsuffix)
-        join_table = Table(name=name, dshape=dshape)
-        if how == 'left':
-            if np.array_equal(self._ids.values, other._ids.values):
-                join_table.resize(len(self), index=self.index)
-                left_cols = [rename['left'].get(c, c) for c in self.columns]
-                right_cols = [rename['right'].get(c, c) for c in other.columns]
-                join_table.loc[:, left_cols] = self.loc[:, self.columns]
-                join_table.loc[:, right_cols] = other.loc[:, other.columns]
-        else:
-            raise ValueError("how={} not yet implemented".format(how))
-        return join_table
-
-    def join_reset(self, dialog):
-        bag = dialog.bag
-        bag.first_orphans = bitmap([])
-        bag.second_orphans = bitmap([])
-        bag.existing_ids = None
-
-    def join_start(self, other, dialog, name=None, on=None, how='left',
-                   created=None, updated=None, deleted=None,
-                   order=('c', 'u', 'd'), reset=False,
-                   lsuffix='', rsuffix='',  sort=False):
-        from .table import Table
-
-        if sort:
-            raise ValueError("'sort' not yet implemented in Table.join()")
-        if on is not None:
-            raise ValueError("'on' not yet implemented in Table.join()")
-        dshape, rename = dshape_join(self.dshape, other.dshape, lsuffix, rsuffix)
-        left_cols = [rename['left'].get(c, c) for c in self.columns]
-        right_cols = [rename['right'].get(c, c) for c in other.columns]
-        if how == 'left':
-            first, second = self, other
-            first_key, second_key = "self", "other"
-            first_cols, second_cols = left_cols, right_cols
-
-        elif how == 'right':
-            first, second = other, self
-            first_key, second_key = "other", "self"
-            first_cols, second_cols = right_cols, left_cols
-
-        else:
-            raise ValueError("how={} not yet implemented".format(how))
-
-        bag = dialog.bag
-        bag.dshape = dshape
-        bag.first_cols = first_cols
-        bag.second_cols = second_cols
-        bag.first_key = first_key
-        bag.second_key = second_key
-        bag.how = how
-        self.join_reset(dialog)
-        join_table = Table(name=name, dshape=dshape)
-        dialog.set_output_table(join_table)
-        dialog.set_started()
-        return self.join_cont(other, dialog, created, updated, deleted, order)
-    
-    def join_cont(self, other, dialog, created=None, updated=None,
-                  deleted=None, order='cud', reset=False):
-        join_table = dialog.output_table #Table(name=None, dshape=dialog['dshape'])
-        first_cols = dialog.bag.first_cols
-        second_cols = dialog.bag.second_cols
-        first_key = dialog.bag.first_key
-        second_key = dialog.bag.second_key
-        #first_orphans = dialog['first_orphans']
-        #second_orphans = dialog['second_orphans']
-        #existing_ids = dialog['existing_ids']
-        how = dialog.bag.how
-        if how == 'left':
-            first, second = self, other
-        else:
-            first, second = other, self
-        _len = indices_len
-        _fix = fix_loc
-        def _void(obj):
-            if isinstance(obj, slice) and obj.start == obj.stop:
-                return True
-            return not obj
-        def _process_created_outer(ret):
-            pass
-        def _process_created(ret):
-            b = dialog.bag
-            if not created: return
-            if how == 'outer':
-                return _process_created_outer(ret)
-            #if first_key not in created: return
-            first_ids = created.get(first_key, None)
-            second_ids = created.get(second_key, None)
-            only_1st, common, only_2nd = inter_slice(first_ids, second_ids)
-            if first_ids is not None:
-                new_size = _len(first_ids)
-                if (isinstance(first_ids, slice) and join_table.is_identity and
-                        (join_table.last_id+1 == first_ids.start or join_table.last_id==0)): # the nice case (no gaps)
-                    join_table.resize(new_size)
-                else: # there are gaps ...we have to keep trace of existing ids
-                    join_table.resize(new_size, index=bitmap.asbitmap(first_ids))
-                    if b.existing_ids is None:
-                        b.existing_ids = bitmap.asbitmap(join_table.index)
-                    else:
-                        b.existing_ids = bitmap.union(b.existing_ids, bitmap.asbitmap(first_ids))
-                join_table.loc[_fix(first_ids), first_cols] = first.loc[_fix(first_ids), first.columns]
-            if not _void(common):
-                join_table.loc[_fix(common), second_cols] = second.loc[_fix(common), second.columns]
-            # first matching: older orphans on the second table with new orphans on the first
-            only_1st_bm = bitmap.asbitmap(only_1st)
-            paired = b.second_orphans & only_1st_bm
-            if paired:
-                join_table.loc[paired, second_cols] = second.loc[paired, second.columns]
-                b.second_orphans = b.second_orphans - paired
-                only_1st_bm -= paired
-            b.first_orphans = bitmap.union(b.first_orphans, only_1st_bm)
-            # 2nd matching: older orphans on the first table with new orphans on the second
-            only_2nd_bm = bitmap.asbitmap(only_2nd)
-            paired = b.first_orphans & only_2nd_bm
-            if paired:
-                join_table.loc[paired, second_cols] = second.loc[paired, second.columns]
-                b.first_orphans = b.first_orphans - paired
-                only_2nd_bm -= paired
-            b.second_orphans = bitmap.union(b.second_orphans, only_2nd_bm)
-        def _process_updated(ret):
-            if not updated: return
-            first_ids = updated.get(first_key, None)
-            second_ids = updated.get(second_key, None)
-            if first_ids:
-                join_table.loc[_fix(first_ids), first_cols] = first.loc[_fix(first_ids), first.columns]
-            if second_ids:
-                if join_table.is_identity:
-                    xisting_ = slice(0, join_table.last_id, 1)
-                else:
-                    xisting_ = existing_ids
-                _, common, _ = inter_slice(second_ids, xisting_)
-                join_table.loc[_fix(common), second_cols] = second.loc[_fix(common), second.columns]
-        def _process_deleted(ret):
-            pass
-        order_dict = {'c': _process_created, 'u': _process_updated, 'd': _process_deleted}
-        ret = {}
-        for op in order:
-            order_dict[op](ret)
-        return ret
-
-    def merge(self, right, name=None, how='inner', on=None, left_on=None, right_on=None,
-              left_index=False, right_index=False, sort=False,
-              suffixes=('_x', '_y'), copy=True, indicator=False, merge_ctx=None):
-        from .table import Table
-
-        lsuffix, rsuffix = suffixes
-        if not all((left_index, right_index)):
-            raise ValueError("currently, only right_index=True and "
-                             "left_index=True are allowed in Table.merge()")
-        dshape, rename = dshape_join(self.dshape, right.dshape, lsuffix, rsuffix)
-        merge_table = Table(name=name, dshape=dshape)
-        if how == 'inner':
-            merge_ids = sorted(set(self._ids.values) & set(right._ids.values))
-            new_ids = self.index[merge_ids]
-            merge_table.resize(len(new_ids), index=new_ids)
-            left_cols = [rename['left'].get(c, c) for c in self.columns]
-            right_cols = [rename['right'].get(c, c) for c in right.columns]
-            merge_table.loc[merge_ids, left_cols] = self.loc[merge_ids, self.columns]
-            merge_table.loc[merge_ids, right_cols] = right.loc[merge_ids, right.columns]
-        else:
-            raise ValueError("how={} not implemented in Table.merge()".format(how))
-        if isinstance(merge_ctx, dict):
-            merge_ctx['dshape'] = dshape
-            merge_ctx['left_cols'] = left_cols
-            merge_ctx['right_cols'] = right_cols
-        return merge_table
-
-    def merge_cont(self, right, merge_ctx):
-        from .table import Table
-
-        merge_table = Table(name=None, dshape=merge_ctx['dshape'])
-        merge_ids = sorted(set(self._ids.values) & set(right._ids.values))
-        new_ids = self.index[merge_ids]
-        merge_table.resize(len(new_ids), index=new_ids)
-        merge_table.loc[merge_ids, merge_ctx['left_cols']] = self.loc[merge_ids, self.columns]
-        merge_table.loc[merge_ids, merge_ctx['right_cols']] = right.loc[merge_ids, right.columns]
-        return merge_table
-
-    def combine_first(self, other, name=None):
-        from .table import Table
-
-        dshape = dshape_union(self.dshape, other.dshape)
-        comb_table = Table(name=name, dshape=dshape)
-        if np.all(self._ids.values == other._ids.values): # the gentle case
-            comb_table.resize(len(self._ids), index=self.index)
-            for cname in self.columns:
-                comb_table.loc[:, [cname]] = self.loc[:, [cname]]
-                if cname in other.columns:
-                    nans = self.index.values[np.isnan(self._column(cname).values)]
-                    comb_table.loc[nans, [cname]] = other.loc[nans, [cname]]
-            for cname in other.columns:
-                if cname in self.columns:
-                    continue
-                comb_table.loc[:, [cname]] = other.loc[:, [cname]]
-        else:
-            self_set = set(self._ids.values)
-            other_set = set(other._ids.values)
-            comb_idx = sorted(self_set | other_set)
-            common_set = self_set & other_set
-            common_idx = sorted(common_set)
-            self_u_common_idx = sorted(self_set | common_set)
-            other_u_common_idx = sorted(other_set | common_set)
-            other_only_idx = sorted(other_set - self_set)
-            comb_table.resize(len(comb_idx), index=comb_idx)
-            for cname in self.columns:
-                comb_table.loc[self_u_common_idx, [cname]] = self.loc[self_u_common_idx, [cname]]
-                if cname in other.columns:
-                    nans = self.index.values[np.isnan(self._column(cname).values)]
-                    nans = sorted(set(nans) & common_set)
-                    comb_table.loc[nans, [cname]] = other.loc[nans, [cname]]
-                comb_table.loc[other_only_idx, [cname]] = other.loc[other_only_idx, [cname]]
-            for cname in other.columns:
-                if cname in self.columns:
-                    continue
-                comb_table.loc[other_u_common_idx, [cname]] = other.loc[other_u_common_idx, [cname]]
-        return comb_table
-
     @property
     def columns(self):
         "Return the list of column names in this table"
@@ -746,16 +474,16 @@ class BaseTable(six.with_metaclass(ABCMeta, object)):
 
     def last(self, key=None):
         "Return the last row"
-        l = len(self)
-        if l == 0:
+        length = len(self)
+        if length == 0:
             return None
         if key is None or isinstance(key, integer_types):
             from .row import Row
             return Row(self, key)
         if isinstance(key, six.string_types):
-            return self._column(key)[self.index[l-1]]
+            return self._column(key)[self.index[length-1]]
         if all_string_or_int(key):
-            index = self.index[l-1]
+            index = self.index[length-1]
             return (self._column(c)[index] for c in key)
         raise ValueError('last not implemented for key "%s"' % key)
 
@@ -847,48 +575,54 @@ class BaseTable(six.with_metaclass(ABCMeta, object)):
         indices = self._col_slice_to_indices(colkey)
         self._setitem_iterable(indices, rowkey, values)
 
-    # def get_subtable_name(self, name):
-    #     return 'stbl_'+name+'_'+str(uuid.uuid4()).split('-')[-1]
 
-    # def create_subtable(self, row_key, col_key, as_loc):
-    #     from .table import Table
+    def to_array(self, locs=None, columns=None):
+        """Convert this table to a numpy array
 
-    #     if as_loc:
-    #         if isinstance(col_key, Iterable) and all_string(col_key):
-    #             dshape_ = get_projection_dshape_with_keys(self.dshape, col_key)
-    #         elif col_key==slice(None):
-    #             col_list = range(*col_key.indices(self.ncol))
-    #             dshape_ = get_projection_dshape(self.dshape, col_list)
-    #         else:
-    #             raise ValueError('create_subtable not implemented for key "%s"' % col_key)
+        Parameters
+        ----------
+        locs: a list of ids or None
+            The rows to extract.  Locs can be specified with multiple formats:
+            integer, list, numpy array, Iterable, or slice.
+        columns: a list or None
+            the columns to extract
+        """
+        if columns is None:
+            columns = self.columns
 
-    #     else: # iloc
-    #         col_list = col_key
-    #         if isinstance(col_key, slice):
-    #             col_list = range(*col_key.indices(self.ncol))
-    #         elif not (isinstance(col_key, Iterable) and
-    #                   all_int(col_key)):
-    #             raise ValueError('create_subtable not implemented for key "%s"' % col_key)
-    #         dshape_ = get_projection_dshape(self.dshape, col_list)
-    #     subtable_name = self.get_subtable_name(self.name ) #+ str(self._subtable_cnt)
-    #     subtable = Table(subtable_name, dshape=dshape_, path=self.path)
-    #     if isinstance(row_key, Iterable):
-    #         if all_bool(row_key):
-    #             new_size = np.count_nonzero(row_key)
-    #         else:
-    #             new_size = len(row_key)
-    #         if new_size == 0:
-    #             return subtable  # empty table
-    #     elif isinstance(row_key, slice):
-    #         new_size = len(range(*row_key.indices(self.size)))
-    #     elif isinstance(row_key, integer_types):
-    #         new_size = 1
-    #     else:
-    #         raise ValueError('cannot compute the size of %s' % row_key)
-    #     subtable.resize(new_size, index=self.index.values[row_key])
-    #     for (name, _) in dshape_fields(dshape_):
-    #         subtable[name].dataset[:] = self._column(name)[row_key]
-    #     return subtable
+        shapes = [self[c].shape for c in columns]
+        offsets = self.column_offsets(columns, shapes)
+        dtypes = [self[c].dtype for c in columns]
+        dtype = np.find_common_type(dtypes, [])
+        indices = None
+        #TODO split the copy in chunks
+        if locs is None:
+            if self._ids.has_freelist():
+                indices = self._ids[:]
+                mask = np.one(locs.shape, dtype=np.bool)
+                mask[self._ids.freelist()] = False
+                indices = np.ma.masked_array(indices, mask)
+            else:
+                indices = slice(0, self.size)
+        elif isinstance(locs, (list, np.ndarray)):
+            indices = np.asarray(locs, np.int64)
+            indices = self.id_to_index(indices)
+        elif isinstance(locs, Iterable):
+            indices = self.id_to_index(indices)
+        elif isinstance(locs, integer_types):
+            indices = self.id_to_index(slice(locs, locs+1, 1))
+        elif isinstance(locs, slice):
+            indices = self.id_to_index(locs)
+
+        arr = np.empty((indices_len(indices), offsets[-1]), dtype=dtype)
+        for i, column in enumerate(columns):
+            col = self._column(column)
+            shape = shapes[i]
+            if len(shape) == 1:
+                col.read_direct(arr, indices, dest_sel=np.s_[:, offsets[i]])
+            else:
+                col.read_direct(arr, indices, dest_sel=np.s_[:, offsets[i]:offsets[i+1]])
+        return arr
 
     def unary(self, op, **kwargs):
         axis = kwargs.get('axis', 0) # get() is cheeper than pop(), it avoids to update unused kwargs
@@ -1055,6 +789,7 @@ class BaseTable(six.with_metaclass(ABCMeta, object)):
         for c, ix in res.items():
             res[c] = self.index_to_id(ix)
         return res
+
     def idxmax(self, **kwargs):
         res = self.argmax(**kwargs)
         for c, ix in res.items():
