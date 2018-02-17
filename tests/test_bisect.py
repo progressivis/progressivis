@@ -26,7 +26,7 @@ class TestBisect(ProgressiveTest):
         pr.input.df = bisect_.output.table
         s.start()
         s.join()
-        idx = bisect_.get_input_slot('table').data().eval('_1>0.5', result_object='index')
+        idx = random.table().eval('_1>0.5', result_object='index')
         self.assertEqual(bisect_._table.selection, bitmap(idx))
 
 
