@@ -33,7 +33,7 @@ class _HistogramIndexImpl(object):
         self.bitmaps = None
         self.bins = None
         self._init_histogram(e_min, e_max, nb_bin)
-
+        self.update_histogram(created=table.index)
     def _init_histogram(self, e_min, e_max, nb_bin):
         self.bins = np.linspace(e_min, e_max, nb_bin, endpoint=True)
         assert len(self.bins) == nb_bin
@@ -47,7 +47,7 @@ class _HistogramIndexImpl(object):
         i = np.digitize(val, self.bins)
         return self.bitmaps[int(i)]
 
-    def update_histogram(self, created, updated, deleted):
+    def update_histogram(self, created, updated=(), deleted=()):
         "Update the histogram index"
         created = bitmap.asbitmap(created)
         updated = bitmap.asbitmap(updated)
@@ -172,11 +172,14 @@ class HistogramIndex(TableModule):
             return self._return_run_step(self.state_blocked, steps_run=0)
         bound_min, bound_max = bounds
         if self._impl is None:
+            input_slot.reset()
             self._impl = _HistogramIndexImpl(self.column,
                                              input_table,
                                              bound_min, bound_max,
                                              self.params.bins)
+            self.selection = bitmap(input_table.index)
             self._table = TableSelectedView(input_table, self.selection)
+            return self._return_run_step(self.state_blocked, steps_run=len(self.selection))
         else:
             # Many not always, or should the implementation decide?
             self._impl.reshape(bound_min, bound_max)
