@@ -19,9 +19,9 @@ from progressivis.core.time_predictor import TimePredictor
 from progressivis.core.storagemanager import StorageManager
 from progressivis.core.storage import Group
 import logging
-if six.PY2:
+if six.PY2:  # pragma no cover
     from inspect import getargspec as getfullargspec
-else:
+else:  # pragma no cover
     from inspect import getfullargspec
 
 logger = logging.getLogger(__name__)
@@ -130,7 +130,7 @@ class Module(six.with_metaclass(ModuleMeta, object)):
         self._end_run = None
         self._synchronized_lock = self.scheduler().create_lock()
 
-    def create_dependent_modules(self, *params, **kwds):
+    def create_dependent_modules(self, *params, **kwds):  # pragma no cover
         """Create modules that this module depends on.
         """
         pass
@@ -264,13 +264,12 @@ class Module(six.with_metaclass(ModuleMeta, object)):
     def is_input(self):
         return False
 
-    # pylint: disable=unused-argument
-    def get_image(self, run_number=None):
+    def get_image(self, run_number=None):  # pragma no cover
+        # pylint: disable=unused-argument
         """
         Return an image geenrated by this module.
         """
         return None
-    # pylint: enable=unused-argument
 
     def describe(self):
         print('id: %s' % self.id)
@@ -308,7 +307,7 @@ class Module(six.with_metaclass(ModuleMeta, object)):
         return self._id
 
     def name(self):
-        return id
+        return self.id
 
     @property
     def group(self):
@@ -358,7 +357,7 @@ class Module(six.with_metaclass(ModuleMeta, object)):
         self._input_slots[slot.input_name] = slot
         return ret
 
-    def _disconnect_input(self, slot):
+    def _disconnect_input(self, slot):  # pragma no cover
         pass
 
     def validate_inputs(self):
@@ -431,7 +430,7 @@ class Module(six.with_metaclass(ModuleMeta, object)):
         return None
 
     @abstractmethod
-    def run_step(self, run_number, step_size, howlong):
+    def run_step(self, run_number, step_size, howlong):  # pragma no cover
         """Run one step of the module, with a duration up to the 'howlong' parameter.
 
         Returns a dictionary with at least 5 pieces of information: 1)

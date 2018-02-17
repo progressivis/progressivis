@@ -73,7 +73,7 @@ class BaseChangeManager(object):
         return self._last_update
 
     @abstractmethod
-    def update(self, run_number, data, mid):
+    def update(self, run_number, data, mid):  # pragma no cover
         """
         Compute the changes from the last_update to the specified run_number.
         """

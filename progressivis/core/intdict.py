@@ -3,7 +3,7 @@ from __future__ import absolute_import, division, print_function
 from progressivis.core.utils import integer_types
 import numpy as np
 import six
-if six.PY2:
+if six.PY2:  # pragma no cover
     range = xrange
 
 
@@ -54,7 +54,7 @@ try:
             assert isinstance(keys, np.ndarray) and keys.dtype == np.int64
             return self._ht.contains_any(keys)
 
-except ImportError:
+except ImportError:  # pragma no cover
     print("# Cannot load IntHashTable")
 
     class IntDict(dict):

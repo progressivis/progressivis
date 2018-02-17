@@ -132,3 +132,9 @@ class TestColumn(ProgressiveTest):
         self.assertEqual(col3.shape, (0,))
         self.assertIsInstance(col3.chunks, tuple)
         
+        col3.append(None)
+        with self.assertRaises(ValueError):
+            col3.append([1, 2], indices=[2, 3, 4]) # Bad indices length
+        with self.assertRaises(ValueError):
+            col3.set_shape((3, 2))
+        self.assertEqual(col3.maxshape, (0,))

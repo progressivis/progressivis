@@ -101,7 +101,7 @@ class MBKMeans(TableModule):
         if self._labels is not None and isinstance(indices, slice):
             indices = np.arange(indices.start, indices.stop)
             
-        X = input_df.to_array(columns=cols, keys=locs)
+        X = input_df.to_array(columns=cols, locs=locs)
         
         batch_size = self.mbk.batch_size or 100
         for batch in gen_batches(steps, batch_size):

@@ -1,4 +1,7 @@
-"Main Table class"
+# -*- coding: utf-8 -*-
+"""
+Main Table class
+"""
 from __future__ import absolute_import, division, print_function
 
 from collections import OrderedDict, Mapping
@@ -29,14 +32,51 @@ else:
 
 logger = logging.getLogger(__name__)
 
-
 __all__ = ["Table"]
 
 
 class Table(BaseTable):
-    """
-    Main Table data structure.
-    Acts in a similar way than as Pandas or R DataFrame.
+    """Create a Table data structure, made of a collection of columns.
+
+    A Table is similar to Python Pandas or R DataFrame, but
+    column-based and supporting fast addition of items.
+
+    Args:
+        name : string
+            The name of the table
+        data : optional container
+            Data that will be appended to the table. It can be of multiple
+            types.
+            Table) another table is used to fill-up this table
+            DataFrame) a Pandas DataFrame is copied to this table
+            ndarray) a numpy array is copied. The dshape should be provided
+        dshape : data shape such as `{'a': int32, 'b': float64, 'c': string}`
+            The column names and types as specified by the ``datashape`` library.
+        fillvalues : the default values of the columns specified as a dictionary
+            Each column is created with a default ``fillvalue``. This parameter can
+            specify the fillvalue of each column with 3 formats:
+            a single value) which will be used by all the column creations
+            a dictionary) associating a column name to a value
+            the '*' entry in a dictionary) for defaulting the fillvalue when not specified.
+        storagegroup : a factory used to create the columns
+            When not specified or `None` the default ``storage`` is used.
+            Otherwise, a ``storagegroup`` is specified in Group.
+        chunks : the specification of the chunking of columns when the storagegroup supports it
+            Like the ``fillvalue`` argument, it can be one value or a dict.
+        create : forces the creation of the column
+            The the storagegroup allows persistence, a table with the same name may exist
+            in the storagegroup. With ``create=False``, the previous value is loaded, whereas
+            with ``create=True`` it is replaced.
+        indices : the indices of the rows appended when data is specified, in case the
+            table contents has to be joined with another table.
+
+    Example:
+        >>> from progressivis.table import Table
+        >>> t = Table('my-table', dshape='{a: int32, b: float32, c: bool}')
+        >>> len(t)
+        0
+        >>> t.columns
+        ['a', 'b', 'c']
     """
     def __init__(self,
                  name,
@@ -46,9 +86,7 @@ class Table(BaseTable):
                  storagegroup=None,
                  chunks=None,
                  create=None, indices=None):
-        """
-        Table('foo', dshape='{a: int32, b: float32, c: bool}')
-        """
+        # pylint: disable=too-many-arguments, too-many-branches
         super(Table, self).__init__()
         if not (fillvalues is None or isinstance(fillvalues, Mapping)):
             raise ValueError('Invalid fillvalues (%s) should be None or a dictionary'%fillvalues)
@@ -92,8 +130,7 @@ class Table(BaseTable):
     def name(self):
         return self._name
 
-    def chunks_for(self, name):
-        "Return the chunks for the specified column"
+    def _chunks_for(self, name):
         chunks = self._chunks
         if chunks is None:
             return None
@@ -141,7 +178,7 @@ class Table(BaseTable):
             assert name not in self._columndict
             shape = dshape_to_shape(dshape)
             fillvalue = fillvalues.get(name, None)
-            chunks = self.chunks_for(name)
+            chunks = self._chunks_for(name)
             #TODO compute chunks according to the shape
             column = self._create_column(name)
             column.create_dataset(dshape=dshape,
@@ -318,23 +355,22 @@ class Table(BaseTable):
         return Table(name, data=data, dshape=dshape, **kwds)
 
     def eval(self, expr, inplace=False, name=None, result_object=None, user_dict=None):
-        """Evaluate the `expr` on columns and return the result.
+        """Evaluate the ``expr`` on columns and return the result.
 
-        Parameters:
-        -----------
-        inplace: boolean, optional
-            Apply the changes in place
-        name: string
-            used when a new table/view is created, otherwise ignored
-        result_object: string
-           Posible values for result_object: {'raw_numexpr', 'index', 'view', 'table'}
-           When expr is conditional.
-           Note: a result as 'view' is not guaranteed: it may be 'table' when the calculated
-           index is not sliceable
-           - 'table' or None when expr is an assignment
-           Default values for result_object :
-           - 'indices' when expr is conditional
-           - NA i.e. always None when inplace=True, otherwise a new table is returned
+        Args:
+            inplace: boolean, optional
+                Apply the changes in place
+            name: string
+                used when a new table/view is created, otherwise ignored
+            result_object: string
+               Posible values for result_object: {'raw_numexpr', 'index', 'view', 'table'}
+               When expr is conditional.
+               Note: a result as 'view' is not guaranteed: it may be 'table' when the calculated
+               index is not sliceable
+               - 'table' or None when expr is an assignment
+               Default values for result_object :
+               - 'indices' when expr is conditional
+               - NA i.e. always None when inplace=True, otherwise a new table is returned
         """
         if inplace and result_object:
             raise ValueError("'inplace' and 'result_object' options are not compatible")

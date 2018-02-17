@@ -16,12 +16,9 @@ class FilterMod(TableModule):
 
                       ] 
     def __init__(self, scheduler=None, **kwds):
-        """Join(on=None, how='left', lsuffix='', rsuffix='',sort=False,id=None,tracer=None,predictor=None,storage=None,input_descriptors=[],output_descriptors=[])
-        """
         self._add_slots(kwds,'input_descriptors',
                             [SlotDescriptor('table', type=Table, required=True)])
         super(FilterMod, self).__init__(scheduler=scheduler, **kwds)
-        self.join_kwds = self._filter_kwds(kwds, Table.join)
         self._impl = FilterImpl(self.params.expr, self.params.user_dict) 
 
     def run_step(self, run_number, step_size, howlong):

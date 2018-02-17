@@ -57,7 +57,7 @@ class Stats(TableModule):
         input_df = dfslot.data()
         steps = indices_len(indices)
         if steps > 0:
-            x = input_df.to_array(keys=fix_loc(indices), columns=[self._column])
+            x = input_df.to_array(locs=fix_loc(indices), columns=[self._column])
             new_min = np.nanmin(x)
             new_max = np.nanmax(x)
             

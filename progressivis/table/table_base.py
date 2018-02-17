@@ -1,35 +1,35 @@
+"""Base class for Tables
+"""
 from __future__ import absolute_import, division, print_function
 
 from abc import ABCMeta, abstractmethod, abstractproperty
+from collections import OrderedDict, Mapping, Iterable
+import operator
+import logging
 
+import six
+import numpy as np
 
-from progressivis.core.utils import (integer_types,
+from progressivis.core.utils import (integer_types, 
                                      all_string_or_int, all_bool,
-                                     indices_len, 
+                                     indices_len,
                                      is_none_alike, inter_slice, fix_loc)
 from progressivis.core.config import get_option
 from progressivis.core.bitmap  import bitmap
 from .dshape import (dshape_print, dshape_join, dshape_union)
 
-import uuid
-
-from collections import OrderedDict, Mapping, Iterable
-import six
 if six.PY2:
     from itertools import imap
 else:
     imap = map
 
-import numpy as np
-import operator
-
-import logging
 logger = logging.getLogger(__name__)
 
 
 FAST = 1
 
 class _BaseLoc(object):
+    # pylint: disable=too-few-public-methods
     def __init__(self, this_table, as_loc=True):
         self._table = this_table
         self._as_loc = as_loc
@@ -48,10 +48,11 @@ class _BaseLoc(object):
         return index, col_key, locs
 
 class _Loc(_BaseLoc):
+    # pylint: disable=too-few-public-methods
     def __delitem__(self, key):
         index, col_key, locs = self.parse_key(key)
         if col_key != slice(None):
-            raise ValueError('Cannot delete key "%s"' % key)            
+            raise ValueError('Cannot delete key "%s"' % key)
         self._table.drop(index, locs)
 
     def __getitem__(self, key):
@@ -76,6 +77,7 @@ class _Loc(_BaseLoc):
 
 
 class _At(_BaseLoc):
+    # pylint: disable=too-few-public-methods
     def __getitem__(self, key):
         index, col_key, _ = self.parse_key(key)
         if not isinstance(col_key, (six.string_types, integer_types)):
@@ -90,6 +92,9 @@ class _At(_BaseLoc):
 
 @six.python_2_unicode_compatible
 class BaseTable(six.with_metaclass(ABCMeta, object)):
+    # pylint: disable=too-many-public-methods, too-many-instance-attributes
+    """Base class for Tables.
+    """
     def __init__(self, base=None):
         self._base = base
         self._columns = []
@@ -102,35 +107,43 @@ class BaseTable(six.with_metaclass(ABCMeta, object)):
 
     @property
     def loc(self):
+        "Return a `locator` object for indexing using ids"
         return self._loc
 
     @property
     def iloc(self):
+        "Return a `locator` object for indexing using indices"
         return self._iloc
 
     @property
     def at(self):
+        # pylint: disable=invalid-name
+        "Return an object for indexing values using ids"
         return self._at
 
     @property
     def iat(self):
+        "Return an object for indexing values using indices"
         return self._iat
 
     def __repr__(self):
         return str(self)+ self.info_contents()
 
     def __str__(self):
-        cn = self.__class__.__name__
-        l = len(self)
-        return u'%s("%s", dshape="%s")[%d]' % (cn, self.name, dshape_print(self.dshape), l)
+        classname = self.__class__.__name__
+        length = len(self)
+        return u'%s("%s", dshape="%s")[%d]' % (classname,
+                                               self.name,
+                                               dshape_print(self.dshape), length)
 
     def info_row(self, row, width):
+        "Return a description for a row, used in `repr`"
         rep = "{0:{width}}|".format(self.index_to_id(row), width=width)
         for name in self.columns:
             col = self[name]
             v = str(col[row])
             if len(v) > width:
-                if col.dshape=="string":
+                if col.dshape == "string":
                     v = v[0:width-3]+'...'
                 else:
                     v = v[0:width-1]+'.'
@@ -138,16 +151,17 @@ class BaseTable(six.with_metaclass(ABCMeta, object)):
         return rep
 
     def info_contents(self):
-        l = len(self)
+        "Return a description of the contents of this table"
+        length = len(self)
         rep = ''
-        max_rows = min(l, get_option('display.max_rows'))
+        max_rows = min(length, get_option('display.max_rows'))
         if max_rows == 0:
             return ''
-        if max_rows < l:
+        if max_rows < length:
             head = max_rows//2
-            tail = l - max_rows//2
+            tail = length - max_rows//2
         else:
-            head = l
+            head = length
             tail = None
         width = get_option('display.column_space')
 
@@ -162,8 +176,8 @@ class BaseTable(six.with_metaclass(ABCMeta, object)):
             rep += self.info_row(row, width)
 
         if tail:
-            rep += ("\n...(%d)..."%l)
-            for row in range(tail, l):
+            rep += ("\n...(%d)..." % length)
+            for row in range(tail, length):
                 rep += "\n"
                 rep += self.info_row(row, width)
         return rep
@@ -173,31 +187,58 @@ class BaseTable(six.with_metaclass(ABCMeta, object)):
 
     @property
     def size(self):
+        "Return the size of this table, which is the number of rows"
         return self.nrow
 
     @property
     def is_identity(self):
+        "Return True if the index is using the identity mapping"
         return self._ids.is_identity
 
     @property
     def last_id(self):
+        "Return the last id of this table"
         return self._ids.last_id
 
     def width(self, colnames=None):
+        """Return the number of effective width (number of columns) of the table
+
+        Since a column can be multidimensional, the effective width of a table is
+        the sum of the effective width of each of its columns.
+
+        Parameters
+        ----------
+        colnames : list or `None`
+            The optional list of columns to use for counting, or all the columns
+            when not specified or `None`.
+        """
         columns = self._columns if colnames is None else [self[name] for name in colnames]
-        w = 0
+        width = 0
         for col in columns:
-            w += col.shape[1] if len(col.shape)>1 else 1
-        return w
-    
+            width += col.shape[1] if len(col.shape) > 1 else 1
+        return width
+
     @property
     def shape(self):
+        "Return the shape of this table as if it were a numpy array"
         return self.size, self.width()
 
     def to_json(self, **kwds):
+        "Return a dictionary describing the contents of this columns."
         return self.to_dict(**kwds)
-    
+
     def to_dict(self, orient='dict', columns=None):
+        # pylint: disable=too-many-branches
+        """
+        Return a dictionary describing the contents of this columns.
+
+        Parameters
+        ----------
+        orient : {'dict', 'list', 'split', 'rows', 'record', 'index'}
+            TODO
+        columns : list or `None`
+            TODO
+        """
         if columns is None:
             columns = self.columns
         if orient == 'dict':
@@ -260,285 +301,22 @@ class BaseTable(six.with_metaclass(ABCMeta, object)):
         raise ValueError("to_dict(orient) not implemented for orient={}".format(orient))
 
     def column_offsets(self, columns, shapes=None):
+        "Return the offsets of each column considering columns can have multiple dimensions"
         if shapes is None:
             shapes = [self[c].shape for c in columns]
         offsets = [0]
         dim2 = 0
         for shape in shapes:
             dims = len(shape)
-            if dims >2:
+            if dims > 2:
                 raise ValueError('Cannot convert table to numpy array because of shape %s', shape)
             dim2 += dims
             offsets.append(dim2)
         return offsets
 
-    def to_array(self, keys=None, columns=None):
-        if columns is None:
-            columns = self.columns
-
-        shapes = [self[c].shape for c in columns]
-        offsets = self.column_offsets(columns, shapes)
-        dtypes = [self[c].dtype for c in columns]
-        dtype = np.find_common_type(dtypes, [])
-        indices = None
-        #TODO split the copy in chunks
-        if keys is None:
-            if self._ids.has_freelist():
-                indices = self._ids[:]
-                mask = np.one(keys.shape, dtype=np.bool)
-                mask[self._ids.freelist()] = False
-                indices = np.ma.masked_array(indices, mask)
-            else:
-                indices=slice(0, self.size)
-        elif isinstance(keys, (list, np.ndarray)):
-            indices = np.asarray(keys, np.int64)
-            indices = self.id_to_index(indices)
-        elif isinstance(keys, Iterable):
-            indices = self.id_to_index(indices)
-        elif isinstance(keys, integer_types):
-            indices = self.id_to_index(slice(keys,keys+1,1))
-        elif isinstance(keys, slice):
-            indices = self.id_to_index(keys)
-
-        arr = np.empty((indices_len(indices), offsets[-1]), dtype=dtype)
-        for i, column in enumerate(columns):
-            c = self._column(column)
-            shape = shapes[i]
-            if len(shape)==1:
-                c.read_direct(arr, indices, dest_sel=np.s_[:, offsets[i]])
-            else:
-                c.read_direct(arr, indices, dest_sel=np.s_[:,offsets[i]:offsets[i+1]])
-        return arr
-    
-    def join(self, other, name=None, on=None, how='left', lsuffix='', rsuffix='',  sort=False):
-        from .table import Table
-        if sort:
-            raise ValueError("'sort' not yet implemented in Table.join()")
-        if on is not None:
-            raise ValueError("'on' not yet implemented in Table.join()")
-        dshape, rename = dshape_join(self.dshape, other.dshape, lsuffix, rsuffix)
-        join_table = Table(name=name, dshape=dshape)
-        if how == 'left':
-            if np.array_equal(self._ids.values,other._ids.values):
-                join_table.resize(len(self), index=self.index)
-                left_cols = [rename['left'].get(c, c) for c in self.columns]
-                right_cols = [rename['right'].get(c, c) for c in other.columns]
-                join_table.loc[:, left_cols] = self.loc[:, self.columns]
-                join_table.loc[:, right_cols] = other.loc[:, other.columns]
-        else:
-            raise ValueError("how={} not yet implemented".format(how))
-        return join_table
-
-    def join_reset(self, dialog):
-        bag = dialog.bag
-        bag.first_orphans = bitmap([])
-        bag.second_orphans = bitmap([])
-        bag.existing_ids = None                
-
-    
-    def join_start(self, other, dialog, name=None, on=None, how='left', 
-                       created=None, updated=None, deleted=None,
-                       order=('c','u','d'), reset=False,
-                       lsuffix='', rsuffix='',  sort=False):
-        from .table import Table
-       
-        if sort:
-            raise ValueError("'sort' not yet implemented in Table.join()")
-        if on is not None:
-            raise ValueError("'on' not yet implemented in Table.join()")
-        dshape, rename = dshape_join(self.dshape, other.dshape, lsuffix, rsuffix)
-        left_cols = [rename['left'].get(c, c) for c in self.columns]
-        right_cols = [rename['right'].get(c, c) for c in other.columns]       
-        if how == 'left':
-            first, second = self, other
-            first_key, second_key = "self", "other"
-            first_cols, second_cols = left_cols, right_cols
-
-        elif how == 'right':
-            first, second = other, self
-            first_key, second_key = "other", "self"
-            first_cols, second_cols = right_cols, left_cols
-
-        else:
-            raise ValueError("how={} not yet implemented".format(how))
-        
-        bag = dialog.bag
-        bag.dshape = dshape
-        bag.first_cols = first_cols
-        bag.second_cols = second_cols
-        bag.first_key = first_key
-        bag.second_key = second_key
-        bag.how = how
-        self.join_reset(dialog)
-        join_table = Table(name=name, dshape=dshape)
-        dialog.set_output_table(join_table)
-        dialog.set_started()
-        return self.join_cont(other, dialog, created, updated, deleted, order)
-        
-    
-    def join_cont(self, other, dialog, created=None, updated=None,
-                      deleted=None, order='cud', reset=False):
-        join_table = dialog.output_table #Table(name=None, dshape=dialog['dshape'])
-        first_cols = dialog.bag.first_cols
-        second_cols = dialog.bag.second_cols
-        first_key = dialog.bag.first_key
-        second_key = dialog.bag.second_key
-        #first_orphans = dialog['first_orphans']
-        #second_orphans = dialog['second_orphans']
-        #existing_ids = dialog['existing_ids']
-        how = dialog.bag.how
-        if how == 'left':
-            first, second = self, other
-        else:
-            first, second = other, self
-        _len = indices_len
-        _fix = fix_loc 
-        def _void(obj):
-            if isinstance(obj, slice) and obj.start == obj.stop:
-                return True
-            return not obj
-        def _process_created_outer(ret):
-            pass
-        def _process_created(ret):
-            b = dialog.bag
-            if not created: return
-            if how == 'outer':
-                return _process_created_outer(ret)
-            #if first_key not in created: return
-            first_ids = created.get(first_key, None)
-            second_ids = created.get(second_key, None)
-            only_1st, common, only_2nd = inter_slice(first_ids, second_ids)
-            if first_ids is not None:
-                new_size = _len(first_ids)
-                if (isinstance(first_ids, slice) and join_table.is_identity and
-                        (join_table.last_id+1 == first_ids.start or join_table.last_id==0)): # the nice case (no gaps)
-                    join_table.resize(new_size)
-                else: # there are gaps ...we have to keep trace of existing ids
-                    join_table.resize(new_size, index=bitmap.asbitmap(first_ids))
-                    if b.existing_ids is None:
-                        b.existing_ids = bitmap.asbitmap(join_table.index)
-                    else:
-                        b.existing_ids = bitmap.union(b.existing_ids, bitmap.asbitmap(first_ids))
-                join_table.loc[_fix(first_ids), first_cols] = first.loc[_fix(first_ids), first.columns]
-            if not _void(common):
-                join_table.loc[_fix(common), second_cols] = second.loc[_fix(common), second.columns]
-            # first matching: older orphans on the second table with new orphans on the first
-            only_1st_bm = bitmap.asbitmap(only_1st)
-            paired = b.second_orphans & only_1st_bm
-            if paired:
-                join_table.loc[paired, second_cols] = second.loc[paired, second.columns]
-                b.second_orphans = b.second_orphans - paired
-                only_1st_bm -= paired
-            b.first_orphans = bitmap.union(b.first_orphans, only_1st_bm)
-            # 2nd matching: older orphans on the first table with new orphans on the second
-            only_2nd_bm = bitmap.asbitmap(only_2nd)
-            paired = b.first_orphans & only_2nd_bm
-            if paired:
-                join_table.loc[paired, second_cols] = second.loc[paired, second.columns]
-                b.first_orphans = b.first_orphans - paired
-                only_2nd_bm -= paired
-            b.second_orphans = bitmap.union(b.second_orphans, only_2nd_bm)
-        def _process_updated(ret):
-            if not updated: return
-            first_ids = updated.get(first_key, None)
-            second_ids = updated.get(second_key, None)
-            if first_ids:
-                join_table.loc[_fix(first_ids), first_cols] = first.loc[_fix(first_ids), first.columns]
-            if second_ids:
-                if join_table.is_identity:
-                    xisting_ = slice(0, join_table.last_id, 1)
-                else:
-                    xisting_ = existing_ids
-                _, common, _ = iter_slice(second_ids, xisting_)
-                join_table.loc[_fix(common), second_cols] = second.loc[_fix(common), second.columns]
-        def _process_deleted(ret):
-            pass
-        order_dict = {'c': _process_created, 'u': _process_updated, 'd': _process_deleted}
-        ret = {}
-        for op in order:
-            order_dict[op](ret)
-        return ret
-        
-    
-    def merge(self, right, name=None, how='inner', on=None, left_on=None, right_on=None,
-                  left_index=False, right_index=False, sort=False,
-                  suffixes=('_x', '_y'), copy=True, indicator=False, merge_ctx=None):
-        from .table import Table
-
-        lsuffix, rsuffix = suffixes
-        if not all((left_index, right_index)):
-            raise ValueError("currently, only right_index=True and "
-                                 "left_index=True are allowed in Table.merge()")
-        dshape, rename = dshape_join(self.dshape, right.dshape, lsuffix, rsuffix)
-        merge_table = Table(name=name, dshape=dshape)        
-        if how == 'inner':
-            merge_ids = sorted(set(self._ids.values) & set(right._ids.values))
-            new_ids = self.index[merge_ids]
-            merge_table.resize(len(new_ids), index=new_ids)
-            left_cols = [rename['left'].get(c, c) for c in self.columns]
-            right_cols = [rename['right'].get(c, c) for c in right.columns]
-            merge_table.loc[merge_ids, left_cols] = self.loc[merge_ids, self.columns]
-            merge_table.loc[merge_ids, right_cols] = right.loc[merge_ids, right.columns]            
-        else:
-            raise ValueError("how={} not implemented in Table.merge()".format(how))
-        if isinstance(merge_ctx, dict):
-            merge_ctx['dshape'] = dshape
-            merge_ctx['left_cols'] = left_cols
-            merge_ctx['right_cols'] = right_cols
-        return merge_table
-
-    def merge_cont(self, right, merge_ctx):
-        from .table import Table
-
-        merge_table = Table(name=None, dshape=merge_ctx['dshape'])
-        merge_ids = sorted(set(self._ids.values) & set(right._ids.values))
-        new_ids = self.index[merge_ids]
-        merge_table.resize(len(new_ids), index=new_ids)
-        merge_table.loc[merge_ids, merge_ctx['left_cols']] = self.loc[merge_ids, self.columns]
-        merge_table.loc[merge_ids, merge_ctx['right_cols']] = right.loc[merge_ids, right.columns]
-        return merge_table
-    
-    def combine_first(self, other, name=None):
-        from .table import Table
-
-        dshape = dshape_union(self.dshape, other.dshape)
-        comb_table = Table(name=name, dshape=dshape)
-        if np.all(self._ids.values == other._ids.values): # the gentle case
-            comb_table.resize(len(self._ids), index=self.index)
-            for cname in self.columns:
-                comb_table.loc[:, [cname]] = self.loc[:, [cname]]
-                if cname in other.columns:
-                    nans = self.index.values[np.isnan(self._column(cname).values)]
-                    comb_table.loc[nans, [cname]] = other.loc[nans, [cname]]
-            for cname in other.columns:
-                if cname in self.columns:
-                    continue
-                comb_table.loc[:, [cname]] = other.loc[:, [cname]]
-        else:
-            self_set = set(self._ids.values)
-            other_set = set(other._ids.values)
-            comb_idx = sorted(self_set | other_set)
-            common_set = self_set & other_set
-            common_idx = sorted(common_set)
-            self_u_common_idx = sorted(self_set | common_set)
-            other_u_common_idx = sorted(other_set | common_set)
-            other_only_idx = sorted(other_set - self_set)
-            comb_table.resize(len(comb_idx), index=comb_idx)
-            for cname in self.columns:
-                comb_table.loc[self_u_common_idx, [cname]] = self.loc[self_u_common_idx, [cname]]
-                if cname in other.columns:
-                    nans = self.index.values[np.isnan(self._column(cname).values)]
-                    nans = sorted(set(nans) & common_set)
-                    comb_table.loc[nans, [cname]] = other.loc[nans, [cname]]
-                comb_table.loc[other_only_idx, [cname]] = other.loc[other_only_idx, [cname]]
-            for cname in other.columns:
-                if cname in self.columns:
-                    continue
-                comb_table.loc[other_u_common_idx, [cname]] = other.loc[other_u_common_idx, [cname]]
-        return comb_table
-        
     @property
     def columns(self):
+        "Return the list of column names in this table"
         return list(self._columndict.keys())
 
     def _column(self, name):
@@ -547,26 +325,50 @@ class BaseTable(six.with_metaclass(ABCMeta, object)):
         return self._columns[self._columndict[name]]
 
     def column_index(self, name):
+        "Return the index of the specified column in this table"
         if isinstance(name, integer_types):
             return name
         return self._columndict[name]
 
     def index_to_id(self, ix):
+        """Return the ids of the specified indices
+
+        Parameters
+        ----------
+        ix: the specification of an index or a list of indices
+            The list can be specified with multiple formats: integer, list,
+            numpy array, Iterable, or slice.  A similar format is return,
+            except that slices and Iterables may return expanded as lists or arrays.
+        """
         return self._ids[ix]
 
     def id_to_index(self, loc, as_slice=True): # to be reimplemented with LRU-dict+pyroaring
+        """Return the indices of the specified id or ids
+
+        Parameters
+        ----------
+        loc : an id or list of ids
+            The format can be: integer, list, numpy array, Iterable, or slice.
+            Note that a bitmap is an list, and array, and a bitmap are all Iterables but
+            are managed in an efficient way.
+        as_slice : boolean
+            If True, try to convert the result into a slice if possible and not too expensive.
+        """
         return self._ids.id_to_index(loc, as_slice)
 
     @property
     def index(self):
+        "Return the object in change of indexing this table"
         return self._ids
 
     @property
     def ncol(self):
+        "Return the number of columns (same as `len(table.columns()`)"
         return len(self._columns)
 
     @abstractproperty
     def nrow(self):
+        "Return the number of rows (same as `len(table)`)"
         pass
 
     def __len__(self):
@@ -574,6 +376,18 @@ class BaseTable(six.with_metaclass(ABCMeta, object)):
 
     @abstractmethod
     def resize(self, newsize, index=None):
+        """Resize this table
+
+        Parameters
+        ----------
+        newsize: integer
+            the new size of this table, which can be larger or shorter than the
+            current size
+        index: list of ids or None
+            ids to associate to the newly created rows.  The ids should be unique
+            in the table, and the list of ids should be the same length as the
+            number of newly created rows.  If None, the ids are created automatically.
+        """
         pass
 
     @abstractmethod
@@ -586,35 +400,54 @@ class BaseTable(six.with_metaclass(ABCMeta, object)):
 
     @abstractproperty
     def name(self):
+        "Return the name of this table"
         pass
 
     @abstractproperty
     def dshape(self):
+        "Return the datashape of this table"
         pass
 
     @property
     def base(self):
+        "Return the base table for views, or None if the table is not a view"
         return self._base
 
     @property
     def changes(self):
+        "Return the TableChange manager associated with this table or None"
         if self._ids is None:
             return None
         return self._ids.changes
-    
+
     @changes.setter
-    def changes(self, c):
+    def changes(self, tablechange):
+        "Set the TableChange manager associated with this table, or unset with None"
         if self._ids is None:
             raise RuntimeError('Table has no index')
-        self._ids.changes = c
+        self._ids.changes = tablechange
 
-    def compute_updates(self, start, mid=None, cleanup=True):
+    def compute_updates(self, start, mid):
+        """Compute the updates (delta) that happened to this table since the last call.
+
+        Parameters
+        ----------
+        start: integer
+            Start si interpreted as a virtual time for `now`
+        mid: hashable object
+            An identifier for the object that will ask for updates,
+            usually the name of a slot.
+        Returns
+        -------
+        updates: None or an IndexUpdate structure which describes the list
+             of rows created, updated, and deleted.
+        """
         if self._ids is None:
             return None
-        return self._ids.compute_updates(start, mid, cleanup=cleanup)
+        return self._ids.compute_updates(start, mid)
 
     def __getitem__(self, key):
-        fast=False # hack, use t[['a', 'b'], 1] to get a list instead of a TableView
+        fast = False # hack, use t[['a', 'b'], 1] to get a list instead of a TableView
         if isinstance(key, tuple):
             key = key[0]
             fast = True
@@ -631,23 +464,26 @@ class BaseTable(six.with_metaclass(ABCMeta, object)):
                 return (self._column(c) for c in range(*indices))
         raise ValueError('getitem not implemented for key "%s"' % key)
 
-    def row(self, key):
-        return self.last(key)
+    def row(self, loc):
+        "Return a Row object wrapping the loc"
+        return self.last(loc)
 
     def iterrows(self):
+        "Return an iterator returning rows and their ids"
         return imap(self.row, iter(self._ids))
 
     def last(self, key=None):
-        l = len(self)
-        if l == 0:
+        "Return the last row"
+        length = len(self)
+        if length == 0:
             return None
         if key is None or isinstance(key, integer_types):
             from .row import Row
             return Row(self, key)
         if isinstance(key, six.string_types):
-            return self._column(key)[self.index[l-1]]
+            return self._column(key)[self.index[length-1]]
         if all_string_or_int(key):
-            index=self.index[l-1]
+            index = self.index[length-1]
             return (self._column(c)[index] for c in key)
         raise ValueError('last not implemented for key "%s"' % key)
 
@@ -663,8 +499,10 @@ class BaseTable(six.with_metaclass(ABCMeta, object)):
 
     def __setitem__(self, colkey, values):
         if isinstance(colkey, tuple):
-            raise ValueError("Adding new columns ({}) via __setitem__ not implemented".format(colkey))
-        if isinstance(colkey, (six.string_types, integer_types)): # NB: on Pandas, only strings are accepted!
+            raise ValueError("Adding new columns ({}) via __setitem__"
+                             " not implemented".format(colkey))
+        if isinstance(colkey, (six.string_types, integer_types)):
+            # NB: on Pandas, only strings are accepted!
             self._setitem_key(colkey, None, values)
         elif isinstance(colkey, Iterable):
             if not all_string_or_int(colkey):
@@ -686,6 +524,7 @@ class BaseTable(six.with_metaclass(ABCMeta, object)):
             column[rowkey] = values
 
     def _setitem_iterable(self, colkey, rowkey, values):
+        # pylint: disable=too-many-branches
         colnames = list(colkey)
         len_colnames = len(colnames)
         if not isinstance(values, Iterable):
@@ -699,23 +538,24 @@ class BaseTable(six.with_metaclass(ABCMeta, object)):
                     column[rowkey] = v
         elif hasattr(values, 'shape'):
             shape = values.shape
-            if len(shape)>1 and shape[1] != self.width(colnames): #and not isinstance(values, BaseTable):
+            if len(shape) > 1 and shape[1] != self.width(colnames):
+                #and not isinstance(values, BaseTable):
                 raise ValueError('Shape [1] (width)) of columns and value shape do not match')
-            
+
             if rowkey is None:
                 rowkey = slice(None, None)
             for i, colname in enumerate(colnames):
                 column = self._column(colname)
                 if len(column.shape) > 1:
-                    w = column.shape[1]
-                    column[rowkey,0:w] = values[i:i+w]
+                    wid = column.shape[1]
+                    column[rowkey, 0:wid] = values[i:i+wid]
                 else: # i.e. len(column.shape) == 1
                     if isinstance(values, BaseTable):
-                        column[rowkey] = values[i] #[rowkey] #if isinstance(values, BaseTable) else values[rowkey, i] #[rowkey, i] if len(shape)>1 else values[i]
+                        column[rowkey] = values[i]
                     elif len(shape) == 1: # values is a row
                         column[rowkey] = values[i]
                     else:
-                        column[rowkey] = values[:, i] 
+                        column[rowkey] = values[:, i]
         else:
             for i, colname, v in zip(range(len_colnames), colnames, values):
                 column = self._column(colname)
@@ -726,57 +566,63 @@ class BaseTable(six.with_metaclass(ABCMeta, object)):
 
     def _col_slice_to_indices(self, colkey):
         if isinstance(colkey.start, six.string_types):
-            i0 = self.column_index(colkey.start)
-            i1 = self.column_index(colkey.stop)
-            colkey = slice(i0, i1+1, colkey.step)
+            start = self.column_index(colkey.start)
+            end = self.column_index(colkey.stop)
+            colkey = slice(start, end+1, colkey.step)
         return range(*colkey.indices(self.ncol))
 
     def _setitem_slice(self, colkey, rowkey, values):
         indices = self._col_slice_to_indices(colkey)
         self._setitem_iterable(indices, rowkey, values)
 
-    # def get_subtable_name(self, name):
-    #     return 'stbl_'+name+'_'+str(uuid.uuid4()).split('-')[-1]
 
-    # def create_subtable(self, row_key, col_key, as_loc):
-    #     from .table import Table
+    def to_array(self, locs=None, columns=None):
+        """Convert this table to a numpy array
 
-    #     if as_loc:
-    #         if isinstance(col_key, Iterable) and all_string(col_key):
-    #             dshape_ = get_projection_dshape_with_keys(self.dshape, col_key)
-    #         elif col_key==slice(None):
-    #             col_list = range(*col_key.indices(self.ncol))
-    #             dshape_ = get_projection_dshape(self.dshape, col_list)
-    #         else:
-    #             raise ValueError('create_subtable not implemented for key "%s"' % col_key)
+        Parameters
+        ----------
+        locs: a list of ids or None
+            The rows to extract.  Locs can be specified with multiple formats:
+            integer, list, numpy array, Iterable, or slice.
+        columns: a list or None
+            the columns to extract
+        """
+        if columns is None:
+            columns = self.columns
 
-    #     else: # iloc
-    #         col_list = col_key
-    #         if isinstance(col_key, slice):
-    #             col_list = range(*col_key.indices(self.ncol))
-    #         elif not (isinstance(col_key, Iterable) and
-    #                   all_int(col_key)):
-    #             raise ValueError('create_subtable not implemented for key "%s"' % col_key)
-    #         dshape_ = get_projection_dshape(self.dshape, col_list)
-    #     subtable_name = self.get_subtable_name(self.name ) #+ str(self._subtable_cnt)
-    #     subtable = Table(subtable_name, dshape=dshape_, path=self.path)
-    #     if isinstance(row_key, Iterable):
-    #         if all_bool(row_key):
-    #             new_size = np.count_nonzero(row_key)
-    #         else:
-    #             new_size = len(row_key)
-    #         if new_size == 0:
-    #             return subtable  # empty table
-    #     elif isinstance(row_key, slice):
-    #         new_size = len(range(*row_key.indices(self.size)))
-    #     elif isinstance(row_key, integer_types):
-    #         new_size = 1
-    #     else:
-    #         raise ValueError('cannot compute the size of %s' % row_key)
-    #     subtable.resize(new_size, index=self.index.values[row_key])
-    #     for (name, _) in dshape_fields(dshape_):
-    #         subtable[name].dataset[:] = self._column(name)[row_key]
-    #     return subtable
+        shapes = [self[c].shape for c in columns]
+        offsets = self.column_offsets(columns, shapes)
+        dtypes = [self[c].dtype for c in columns]
+        dtype = np.find_common_type(dtypes, [])
+        indices = None
+        #TODO split the copy in chunks
+        if locs is None:
+            if self._ids.has_freelist():
+                indices = self._ids[:]
+                mask = np.one(locs.shape, dtype=np.bool)
+                mask[self._ids.freelist()] = False
+                indices = np.ma.masked_array(indices, mask)
+            else:
+                indices = slice(0, self.size)
+        elif isinstance(locs, (list, np.ndarray)):
+            indices = np.asarray(locs, np.int64)
+            indices = self.id_to_index(indices)
+        elif isinstance(locs, Iterable):
+            indices = self.id_to_index(indices)
+        elif isinstance(locs, integer_types):
+            indices = self.id_to_index(slice(locs, locs+1, 1))
+        elif isinstance(locs, slice):
+            indices = self.id_to_index(locs)
+
+        arr = np.empty((indices_len(indices), offsets[-1]), dtype=dtype)
+        for i, column in enumerate(columns):
+            col = self._column(column)
+            shape = shapes[i]
+            if len(shape) == 1:
+                col.read_direct(arr, indices, dest_sel=np.s_[:, offsets[i]])
+            else:
+                col.read_direct(arr, indices, dest_sel=np.s_[:, offsets[i]:offsets[i+1]])
+        return arr
 
     def unary(self, op, **kwargs):
         axis = kwargs.get('axis', 0) # get() is cheeper than pop(), it avoids to update unused kwargs
@@ -943,6 +789,7 @@ class BaseTable(six.with_metaclass(ABCMeta, object)):
         for c, ix in res.items():
             res[c] = self.index_to_id(ix)
         return res
+
     def idxmax(self, **kwargs):
         res = self.argmax(**kwargs)
         for c, ix in res.items():
