@@ -4,6 +4,7 @@ coverage
 Pillow>=4.2.0
 numpy>=1.11.3
 scipy>=0.18.1
+matplotlib
 numexpr>=2.6.1
 tables>=3.3.0
 pandas>=0.19.1
