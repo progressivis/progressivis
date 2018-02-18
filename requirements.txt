@@ -24,3 +24,4 @@ s3fs
 sqlalchemy
 memory_profiler
 tabulate
+requests
