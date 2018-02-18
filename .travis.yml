@@ -14,25 +14,23 @@ matrix:
     env: TEST_SUITE=suite_3_6
 
 stages:
+  - install
   - build
   - test
   - cleanup
   
-progressivis_build:
-    stage: build
-    script:
-    - /bin/rm -rf build;python ./setup.py install
+install:
+  - pip install -r requirements.txt
 
-progressivis_test:
-    stage: test
+build:
     script:
-    - python  ./setup.py nosetests
+    - python ./setup.py install
 
-progressivis_cleanup:
-    stage: cleanup
+cleanup:
     script:
     - /bin/rm -rf /tmp/progressivis_*
     when: always
     
- #
- 
+script:
+  - python  setup.py nosetests
+
