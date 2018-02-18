@@ -26,3 +26,4 @@ sqlalchemy
 memory_profiler
 tabulate
 requests
+dask
