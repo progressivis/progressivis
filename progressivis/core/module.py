@@ -202,10 +202,6 @@ class Module(six.with_metaclass(ModuleMeta, object)):
         self.params.debug = bool(b)
 
     @property
-    def parameter(self):
-        return self._params
-
-    @property
     def lock(self):
         return self._synchronized_lock
 
@@ -622,15 +618,14 @@ class Module(six.with_metaclass(ModuleMeta, object)):
         raise NotImplementedError('Updating parameters not implemented yet')
 
     def current_params(self):
-        return self._params.loc[self._params.index[-1]]
+        return self._params.last()
 
     def set_current_params(self, v):
-        if not isinstance(v, pd.Series):
-            v = pd.Series(v, dtype=object)  # raises error if not compatible
         with self.lock:
             current = self.current_params()
-            v = current.combine_first(v)  # fill-in missing values
-            self._params.loc[self._params.index[-1]+1] = v
+            combined = dict(current)
+            combined.update(v)
+            self._params.add(combined)
         return v
 
     def run(self, run_number):
