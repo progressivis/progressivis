@@ -27,3 +27,4 @@ memory_profiler
 tabulate
 requests
 dask
+toolz
