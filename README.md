@@ -1,5 +1,7 @@
 # Progressivis
 
+[![Build Status](https://travis-ci.org/jdfekete/progressivis.svg?branch=master)](https://travis-ci.org/jdfekete/progressivis)
+
 ProgressiVis is a Python toolkit and scientific workflow system that
 implements a new [programming
 paradigm](https://en.wikipedia.org/wiki/Programming_paradigm) that we
@@ -56,4 +58,3 @@ If you are having issues, please let us know.
 
 The project is licensed under the BSD license.
 
-[![Build Status](https://travis-ci.org/jdfekete/progressivis.svg?branch=master)](https://travis-ci.org/jdfekete/progressivis)
