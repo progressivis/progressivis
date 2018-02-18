@@ -36,6 +36,13 @@ class TestProgressiveModule(ProgressiveTest):
         module.destroy()
         self.assertEqual(s.exists('a'), False)
         module.describe()
+        json = module.to_json(short=True)
+        self.assertEqual(json.get('is_running'), False)
+        self.assertEqual(json.get('is_terminated'), False)
+        json = module.to_json(short=False)
+        self.assertEqual(json.get('start_time', 0), None)
+        # maybe check others
+        self.assertFalse(module.has_any_output())
 
 if __name__ == '__main__':
     ProgressiveTest.main()
