@@ -1,6 +1,18 @@
 #before_script:
 #-  /home/gitlab-runner/anaconda3/bin/python ./setup.py install
 
+language: python
+python:
+  - '2.7'
+  - '3.6'
+
+matrix:
+  include:
+  - python: "2.7"
+    env: TEST_SUITE=suite_2_7
+  - python: "3.6"
+    env: TEST_SUITE=suite_3_6
+
 stages:
   - build
   - test
@@ -9,13 +21,13 @@ stages:
 progressivis_build:
     stage: build
     script:
-    - /bin/rm -rf build/;/home/gitlab-runner/anaconda3/bin/python ./setup.py install
+    - /bin/rm -rf build;python ./setup.py install
 
 progressivis_test:
     stage: test
     script:
-    - /home/gitlab-runner/anaconda3/bin/python  ./setup.py nosetests
-    
+    - python  ./setup.py nosetests
+
 progressivis_cleanup:
     stage: cleanup
     script:
