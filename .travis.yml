@@ -5,6 +5,8 @@ python:
 
 install: 
   - pip install -r requirements.txt
+  - python -m pyroaring install --user
+  - export LD_LIBRARY_PATH="`pwd`/croaring:$LD_LIBRARY_PATH"
   - python setup.py install
 
 script: python setup.py nosetests
