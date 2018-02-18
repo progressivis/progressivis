@@ -456,9 +456,9 @@ class BaseScheduler(object):
     def run_number(self):
         return self._run_number
 
-    @contextmanager
-    def stdout_parent(self):
-        yield
+    # @contextmanager
+    # def stdout_parent(self):
+    #     yield
 
     @synchronized
     def for_input(self, module):

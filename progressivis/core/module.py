@@ -1,12 +1,16 @@
+"""Base class for progressive modules.
+"""
 from __future__ import absolute_import, division, print_function
 
+from abc import ABCMeta, abstractmethod
 from traceback import print_exc
 import re
 import pdb
-import pandas as pd
+import logging
+
 import numpy as np
 import six
-from abc import ABCMeta, abstractmethod
+
 from progressivis.core.utils import (ProgressiveError, type_fullname)
 from progressivis.table.table_base import BaseTable
 from progressivis.table.table import Table
@@ -18,7 +22,7 @@ from progressivis.core.tracer_base import Tracer
 from progressivis.core.time_predictor import TimePredictor
 from progressivis.core.storagemanager import StorageManager
 from progressivis.core.storage import Group
-import logging
+
 if six.PY2:  # pragma no cover
     from inspect import getargspec as getfullargspec
 else:  # pragma no cover
@@ -43,6 +47,8 @@ class ModuleMeta(ABCMeta):
 
 @six.python_2_unicode_compatible
 class Module(six.with_metaclass(ModuleMeta, object)):
+    """The Module class is the base class for all the progressive modules.
+    """
     parameters = [('quantum', np.dtype(float), 1.0),
                   ('debug', np.dtype(bool), False)]
     TRACE_SLOT = '_trace'
@@ -149,21 +155,23 @@ class Module(six.with_metaclass(ModuleMeta, object)):
                 progresses.append(slot.output_module.get_progress())
         if len(progresses) == 1:
             return progresses[0]
-        elif len(progresses) == 0:
+        elif not progresses:
             return (0, 0)
         pos = 0
         size = 0
-        for p in progresses:
-            pos += p[0]
-            size += p[1]
+        for prog in progresses:
+            pos += prog[0]
+            size += prog[1]
         return (pos, size)
 
     def get_quality(self):
+        # pylint: disable=no-self-use
         """Quality value, should increase.
         """
         return 0.0
 
     def destroy(self):
+        "Destroy the module, removing it from its scheduler"
         self.scheduler().remove_module(self)
         # TODO remove connections with the input and output modules
 
@@ -194,15 +202,22 @@ class Module(six.with_metaclass(ModuleMeta, object)):
 
     @property
     def debug(self):
+        "Return the value of the debug property"
         return self.params.debug
 
     @debug.setter
-    def debug(self, b):
+    def debug(self, value):
+        """Set the value of the debug property.
+
+        when True, the module trapped into the debugger when the run_step method
+        is called.
+        """
         # TODO: should change the run_number of the params
-        self.params.debug = bool(b)
+        self.params.debug = bool(value)
 
     @property
     def lock(self):
+        "Return a recursive lock usable to lock the access and change of attributes"
         return self._synchronized_lock
 
     def _parse_parameters(self, kwds):
@@ -215,12 +230,15 @@ class Module(six.with_metaclass(ModuleMeta, object)):
                 self.params[name] = kwds.pop(name)
 
     def generate_table_name(self, name):
+        "Return a uniq name for this module"
         return "s{}_{}_{}".format(self.scheduler().id, self.id, name)
 
     def timer(self):
+        "Return the timer associated with this module"
         return self._scheduler.timer()
 
     def to_json(self, short=False):
+        "Return a dictionary describing the module"
         s = self.scheduler()
         json = {
             'is_running': s.is_running(),
@@ -254,20 +272,26 @@ class Module(six.with_metaclass(ModuleMeta, object)):
         return json
 
     def from_input(self, msg):
+        "Catch and process a message from an interaction"
         if 'debug' in msg:
             self.debug = msg['debug']
 
     def is_input(self):
+        # pylint: disable=no-self-use
+        "Return True if this module is an input module"
         return False
 
     def get_image(self, run_number=None):  # pragma no cover
-        # pylint: disable=unused-argument
+        "Return an image created by this module or None"
+        # pylint: disable=unused-argument, no-self-use
+
         """
         Return an image geenrated by this module.
         """
         return None
 
     def describe(self):
+        "Print the description of this module"
         print('id: %s' % self.id)
         print('class: %s' % type_fullname(self))
         print('quantum: %f' % self.params.quantum)
@@ -278,16 +302,17 @@ class Module(six.with_metaclass(ModuleMeta, object)):
         print('input_slots: %s' % self._input_slots)
         print('outpus_slots: %s' % self._output_slots)
         print('default_step_size: %d' % self.default_step_size)
-        if len(self._params):
+        if self._params:
             print('parameters: ')
             print(self._params)
 
     def pretty_typename(self):
+        "Return a the type name of this module in a pretty form"
         name = self.__class__.__name__
-        s1 = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
-        s1 = re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
-        s1 = re.sub('_module$', '', s1)
-        return s1
+        pretty = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
+        pretty = re.sub('([a-z0-9])([A-Z])', r'\1_\2', pretty).lower()
+        pretty = re.sub('_module$', '', pretty)
+        return pretty
 
     def __str__(self):
         return six.u('Module %s: %s' % (self.__class__.__name__, self.id))
@@ -295,45 +320,53 @@ class Module(six.with_metaclass(ModuleMeta, object)):
     def __repr__(self):
         return str(self)
 
-#    def __hash__(self):
-#        return self._id.__hash__()
-
     @property
     def id(self):
+        "Return an identifier for this module"
         return self._id
 
     def name(self):
+        "Return a name for this module, identical to the id"
         return self.id
 
     @property
     def group(self):
+        "Return or group name associated with the module, or None"
         return self._group
 
     def scheduler(self):
+        "Return the scheduler associated with this module"
         return self._scheduler
 
     def start(self):
+        "Start the scheduler associated with this module"
         self.scheduler().start()
 
     def terminate(self):
+        "Set the state to terminated for this module"
         self.state = Module.state_zombie
 
     def create_slot(self, output_name, input_module, input_name):
+        "Create a specified output slot"
         return Slot(self, output_name, input_module, input_name)
 
     def connect_output(self, output_name, input_module, input_name):
+        "Connect the output slot"
         slot = self.create_slot(output_name, input_module, input_name)
         slot.connect()
         return slot
 
     def has_any_input(self):
+        "Return True if the module has any input"
         return any(self._input_slots.values())
 
     def get_input_slot(self, name):
+        "Return the specified input slot"
         # raises error is the slot is not declared
         return self._input_slots[name]
 
     def get_input_module(self, name):
+        "Return the specified input module"
         return self.get_input_slot(name).output_module
 
     def input_slot_values(self):
@@ -609,6 +642,7 @@ class Module(six.with_metaclass(ModuleMeta, object)):
         return self._end_time
 
     def _update_params(self, run_number):
+        # pylint: disable=unused-argument
         pslot = self.get_input_slot(self.PARAMETERS_SLOT)
         if pslot is None or pslot.output_module is None:  # optional slot
             return
@@ -722,13 +756,14 @@ class Module(six.with_metaclass(ModuleMeta, object)):
             raise RuntimeError("{} {}".format(type(exception), exception))
 
 
-def print_len(x):
+def _print_len(x):
     if x is not None:
         print(len(x))
 
 
 class Every(Module):
-    def __init__(self, proc=print_len, constant_time=True, **kwds):
+    "Module running a function at eatch iteration"
+    def __init__(self, proc=_print_len, constant_time=True, **kwds):
         self._add_slots(kwds, 'input_descriptors', [SlotDescriptor('df')])
         super(Every, self).__init__(**kwds)
         self._proc = proc
@@ -746,20 +781,21 @@ class Every(Module):
         if df is not None:
             with slot.lock:
                 reads = len(df)
-                with self.scheduler().stdout_parent():
-                    self._proc(df)
+                #with self.scheduler().stdout_parent():
+                self._proc(df)
         return self._return_run_step(Module.state_blocked, steps_run=1,
                                      reads=reads)
 
 
-def prt(x):
+def _prt(x):
     print(x)
 
 
 class Print(Every):
+    "Module to print its input slot"
     def __init__(self, **kwds):
         if 'proc' not in kwds:
-            kwds['proc'] = prt
+            kwds['proc'] = _prt
         super(Print, self).__init__(quantum=0.1, constant_time=True, **kwds)
 
 def _slot_to_json(slot):
@@ -770,14 +806,14 @@ def _slot_to_json(slot):
     return slot.to_json()
 
 def _create_table(tname, columns):
-    ds = ""
+    dshape = ""
     data = {}
     for (name, dtype, val) in columns:
-        if len(ds):
-            ds += ','
-        ds += '%s: %s'%(name, dshape_from_dtype(dtype))
+        if dshape:
+            dshape += ','
+        dshape += '%s: %s'%(name, dshape_from_dtype(dtype))
         data[name] = val
-    ds = '{'+ds+'}'
-    table = Table(tname, dshape=ds)
+    dshape = '{'+dshape+'}'
+    table = Table(tname, dshape=dshape)
     table.add(data)
     return table

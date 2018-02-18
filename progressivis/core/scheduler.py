@@ -2,8 +2,6 @@
 from __future__ import absolute_import, division, print_function
 
 import sys
-import io
-from tempfile import mkstemp
 from contextlib import contextmanager
 import logging
 from .synchronized import synchronized
@@ -14,10 +12,15 @@ logger = logging.getLogger(__name__)
 
 
 class Scheduler(BaseScheduler):
+    """
+    Main scheduler class.
+
+    Manage the execution of the progressive workflow in its own thread.
+    """
     def __init__(self):
         super(Scheduler, self).__init__()
         self.thread = None
-        self._thread_parent = None
+        #self._thread_parent = None
         self.thread_name = "Progressive Scheduler"
 
     def create_lock(self):
@@ -31,20 +34,9 @@ class Scheduler(BaseScheduler):
 
     @staticmethod
     def set_default():
+        "Set the default scheduler, used implicitly when no schedule keyword is provided"
         if not isinstance(BaseScheduler.default, Scheduler):
             BaseScheduler.default = Scheduler()
-
-    @staticmethod
-    def log_level(level=logging.DEBUG, package='progressivis'):
-        logging.getLogger('progressivis').addHandler(logging.NullHandler())
-        filedesc, _ = mkstemp(prefix='progressive', suffix='.log')
-        stream = io.FileIO(filedesc, mode='w')
-        ch = logging.StreamHandler(stream=stream)
-        ch.setLevel(level)
-        l = logging.getLogger(package)
-        l.addHandler(ch)
-        l.setLevel(level)
-        l.propagate = False
 
     @synchronized
     def validate(self):
@@ -63,11 +55,11 @@ class Scheduler(BaseScheduler):
                 raise ProgressiveError('Trying to start scheduler thread'
                                        ' inside scheduler thread')
             self.thread = Thread(target=self.run, name=self.thread_name)
-            if hasattr(sys.stdout, 'thread_parent'):
-                # capture notebook context
-                self._thread_parent = sys.stdout.thread_parent
-            else:
-                self._thread_parent = None
+            # if hasattr(sys.stdout, 'thread_parent'):
+            #     # capture notebook context
+            #     self._thread_parent = sys.stdout.thread_parent
+            # else:
+            #     self._thread_parent = None
             self._tick_proc = tick_proc
             self._idle_proc = idle_proc
             logger.debug('starting thread')
@@ -81,25 +73,25 @@ class Scheduler(BaseScheduler):
 
     def done(self):
         self.thread = None
-        self._thread_parent = None
+        #self._thread_parent = None
 
-    @property
-    def thread_parent(self):
-        return self._thread_parent
+    # @property
+    # def thread_parent(self):
+    #     return self._thread_parent
 
-    @contextmanager
-    def stdout_parent(self):
-        if self._thread_parent:
-            saved_parent = sys.stdout.parent_header
-            with self.lock:
-                sys.stdout.parent_header = self._thread_parent
-                try:
-                    yield
-                finally:
-                    sys.stdout.flush()
-                    sys.stdout.parent_header = saved_parent
-        else:
-            yield
+    # @contextmanager
+    # def stdout_parent(self):
+    #     if self._thread_parent:
+    #         saved_parent = sys.stdout.parent_header
+    #         with self.lock:
+    #             sys.stdout.parent_header = self._thread_parent
+    #             try:
+    #                 yield
+    #             finally:
+    #                 sys.stdout.flush()
+    #                 sys.stdout.parent_header = saved_parent
+    #     else:
+    #         yield
 
 
 if BaseScheduler.default is None:
