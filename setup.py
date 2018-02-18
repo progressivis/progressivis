@@ -108,7 +108,7 @@ setup(
                       "zarr>=2.1.4",
                       "numcodecs>=0.5.2",
                       "bcolz>=1.1.2",
-                      "datashape>=0.5.4",
+                      "datashape>=0.5.2",
                       "pyroaring==0.0.7", # when pyroaring>0.0.5 => error
                       "msgpack-python>=0.4.8",
                       "boto",
