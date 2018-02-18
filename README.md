@@ -31,6 +31,7 @@ to be reconstructructed from scratch. This reconstruction is extremely
 costly currently, but could become almost acceptable with some
 internal changes.
 
+
 ## Installation
 
 ProgressiVis can be installed with pip with or without virtualenv.
@@ -54,3 +55,5 @@ If you are having issues, please let us know.
 ## License
 
 The project is licensed under the BSD license.
+
+[![Build Status](https://travis-ci.org/jdfekete/progressivis.svg?branch=master)](https://travis-ci.org/jdfekete/progressivis)
