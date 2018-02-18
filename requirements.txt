@@ -26,10 +26,3 @@ sqlalchemy
 memory_profiler
 tabulate
 requests
-dask
-# dask dependencies
-toolz>=0.7.3
-bag
-cloudpickle>=0.2.1
-partd>=0.3.8
-distributed>=1.21
