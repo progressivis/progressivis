@@ -5,8 +5,8 @@ from progressivis.io import CSVLoader
 from progressivis.table.constant import Constant
 from progressivis.table.table import Table
 from progressivis.datasets import get_dataset
-from progressivis.core.storage import StorageEngine
-#from progressivis.core.storage.zarr import ZARRStorageEngine
+from progressivis.storage import StorageEngine
+#from progressivis.storage.zarr import ZARRStorageEngine
 import sys
 import os
 import os.path
