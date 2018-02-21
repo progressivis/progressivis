@@ -9,7 +9,7 @@ from progressivis.table.table_sliced import TableSlicedView
 from progressivis.table.table_selected import TableSelectedView
 from progressivis.io.csv_loader import CSVLoader
 from progressivis.datasets import get_dataset
-from progressivis.core.storage import Group
+from progressivis.storage import Group
 
 import numpy as np
 import pandas as pd

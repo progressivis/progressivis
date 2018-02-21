@@ -1,9 +1,9 @@
 from __future__ import absolute_import, division, print_function
 
+from progressivis.core.utils import integer_types
+from progressivis.core.fast import next_pow2
 from .base import StorageEngine, Dataset
 from .hierarchy import GroupImpl, AttributeImpl
-from ..utils import integer_types
-from ..fast import next_pow2
 
 import numpy as np
 #import pptable as pypmm

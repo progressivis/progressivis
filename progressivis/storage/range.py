@@ -1,15 +1,15 @@
 from __future__ import absolute_import, division, print_function
 
-from .base import Dataset
-
-from .hierarchy import AttributeImpl
-from ..utils import integer_types
-from ..bitmap import bitmap
-
 from collections import Iterable
+import logging
+
 import numpy as np
 
-import logging
+from progressivis.core.utils import integer_types
+from progressivis.core.bitmap import bitmap
+from .base import Dataset
+from .hierarchy import AttributeImpl
+
 logger = logging.getLogger(__name__)
 
 class RangeError(RuntimeError):

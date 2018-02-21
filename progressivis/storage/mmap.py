@@ -14,9 +14,9 @@ import logging
 
 import numpy as np
 
+from progressivis.core.utils import integer_types
 from .base import StorageEngine, Dataset
 from .hierarchy import GroupImpl, AttributeImpl
-from ..utils import integer_types
 
 
 logger = logging.getLogger(__name__)

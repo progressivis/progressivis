@@ -16,7 +16,7 @@ import six
 from progressivis.core.utils import (integer_types, get_random_name,
                                      all_int, are_instances, gen_columns)
 from progressivis.core.fast import indices_to_slice
-from progressivis.core.storage import Group
+from progressivis.storage import Group
 from .dshape import (dshape_create, dshape_table_check, dshape_fields,
                      dshape_to_shape, dshape_extract, dshape_compatible,
                      dshape_from_dtype)

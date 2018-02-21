@@ -1,9 +1,9 @@
 from __future__ import absolute_import, division, print_function
 
+from progressivis.core.utils import integer_types
+from progressivis.table.dshape import VSTRING, OBJECT
 from .base import StorageEngine, Dataset, Attribute
 from .hierarchy import GroupImpl
-from ..utils import integer_types
-from progressivis.table.dshape import VSTRING, OBJECT
 
 import bcolz
 from bcolz.attrs import attrs

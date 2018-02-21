@@ -1,19 +1,20 @@
 from __future__ import absolute_import, division, print_function
 
-import numpy as np
-from .dshape import dshape_to_h5py, np_dshape, dshape_create
-from . import metadata 
+from collections import Iterable
+import logging
 
+import numpy as np
+
+from progressivis.storage import Group
 from progressivis.core.utils import integer_types
 from progressivis.core.fast import indices_to_slice
 from .column_base import BaseColumn
+from .dshape import dshape_to_h5py, np_dshape, dshape_create
+from . import metadata
 
-from collections import Iterable
-
-import logging
 logger = logging.getLogger(__name__)
 
-__all__ = [ "Column" ]
+__all__ = ["Column"]
 
 
 class Column(BaseColumn):
@@ -24,7 +25,6 @@ class Column(BaseColumn):
 
         if index is None and self.index return None, a new index and dataset are created.
         """
-        from progressivis.core.storage import Group
         super(Column, self).__init__(name, index, base=base)
         if storagegroup is None:
             if index is not None:

@@ -21,7 +21,7 @@ from progressivis.core.slot import (SlotDescriptor, Slot,
 from progressivis.core.tracer_base import Tracer
 from progressivis.core.time_predictor import TimePredictor
 from progressivis.core.storagemanager import StorageManager
-from progressivis.core.storage import Group
+from progressivis.storage import Group
 
 if six.PY2:  # pragma no cover
     from inspect import getargspec as getfullargspec

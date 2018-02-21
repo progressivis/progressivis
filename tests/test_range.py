@@ -1,6 +1,6 @@
 from . import ProgressiveTest
 
-from progressivis.core.storage.range import RangeDataset, RangeError
+from progressivis.storage.range import RangeDataset, RangeError
 
 import numpy as np
 

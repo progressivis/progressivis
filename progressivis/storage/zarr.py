@@ -1,7 +1,8 @@
 from __future__ import absolute_import, division, print_function
 
-from .base import StorageEngine, Group, Attribute, Dataset
-from ..config import get_option
+from collections import Iterable
+
+import numpy as np
 
 import zarr
 from zarr.attrs import Attributes
@@ -9,8 +10,10 @@ from zarr.storage import init_group, contains_group
 import numcodecs
 zarr.codecs.codec_registry[numcodecs.Pickle.codec_id] = numcodecs.Pickle
 zarr.codecs.codec_registry[numcodecs.MsgPack.codec_id] = numcodecs.MsgPack
-from collections import Iterable
-import numpy as np
+
+from progressivis.core.config import get_option
+from .base import StorageEngine, Group, Attribute, Dataset
+
 
 # For now (April 21st 2017), zarr misses two important features: fancy indexing and Boolean indexing.
 # These two features are scheduled for inclusion in future releases of zarr.

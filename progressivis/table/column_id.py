@@ -10,8 +10,8 @@ from progressivis.core.fast import indices_to_slice
 from progressivis.core.intdict import IntDict
 from progressivis.core.index_update import IndexUpdate
 from progressivis.core.config import get_option
-from progressivis.core.storage.range import RangeDataset, RangeError
 from progressivis.core.bitmap import bitmap
+from progressivis.storage.range import RangeDataset, RangeError
 
 from .loc import Loc
 from .column import Column

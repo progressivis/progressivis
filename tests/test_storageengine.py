@@ -1,6 +1,6 @@
 from . import ProgressiveTest
 
-from progressivis.core.storage.base import StorageEngine, Group, Dataset #, Attribute
+from progressivis.storage.base import StorageEngine, Group, Dataset #, Attribute
 from progressivis.table.table import Table
 
 import numpy as np

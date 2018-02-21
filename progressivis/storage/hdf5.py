@@ -1,8 +1,8 @@
 from __future__ import absolute_import, division, print_function
 
+from progressivis.core.storagemanager import StorageManager
+from progressivis.core.config import get_option
 from .base import StorageEngine, Group, Attribute, Dataset
-from ..storagemanager import StorageManager
-from ..config import get_option
 
 import h5py
 

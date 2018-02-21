@@ -11,8 +11,8 @@ import numpy as np
 
 PACKAGES = ['progressivis',
             'progressivis.core',
-            'progressivis.core.storage',
             'progressivis.core.khash',
+            'progressivis.storage',
             'progressivis.io',
             'progressivis.stats',
             'progressivis.datasets',
