@@ -6,8 +6,8 @@ from progressivis.table.constant import Constant
 from progressivis.table.table import Table
 from progressivis.datasets import get_dataset
 from benchmarkit import BenchEnv, BenchmarkIt, InputProc
-from progressivis.core.storage import StorageEngine
-#from progressivis.core.storage.zarr import ZARRStorageEngine
+from progressivis.storage import StorageEngine
+#from progressivis.storage.zarr import ZARRStorageEngine
 import sys
 import os
 import os.path
