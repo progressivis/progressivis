@@ -41,8 +41,8 @@ class IdColumnSelectedView(ColumnProxy):
         return self.base.id_to_index(loc) # indices in base columns for now
 
     def __getitem__(self, index):
-        #if is_full_slice(index):
-        #    return self._selection
+        if is_full_slice(index):
+            return self._selection
         ids = self.base[index]
         if not ids in self._selection:
             raise KeyError('Invalid key(s) %s' % index)
