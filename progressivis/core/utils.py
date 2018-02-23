@@ -769,5 +769,5 @@ class Dialog(object):
 def spy(*args, **kwargs):
     import time
     f = open(kwargs.pop('file'), "a")        
-    print(*args, time.time(), file=f, flush=True, **kwargs)
+    print(time.time(), *args, file=f, flush=True, **kwargs)
     f.close()
