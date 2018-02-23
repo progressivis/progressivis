@@ -29,6 +29,6 @@ class ColumnSelectedView(ColumnProxy):
 
     @property
     def value(self):
-        return self._base[self.index.id_to_index(None)]
+        return self._base[self.index.id_to_index(slice(None, None, None))]
 
 

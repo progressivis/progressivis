@@ -319,6 +319,11 @@ def norm_slice(sl):
     step = 1 if sl.step is None else sl.step
     return slice(start, sl.stop, step)
 
+def is_full_slice(sl):
+    if not isinstance(sl, slice):
+        return False
+    nsl = norm_slice(sl)
+    return nsl.start == 0 and nsl.step == 1 and nsl.stop is None
 
 def inter_slice(this, that):
     bz = bitmap([])
@@ -760,3 +765,9 @@ class Dialog(object):
     @property
     def output_table(self):
         return self._module._table
+
+def spy(*args, **kwargs):
+    import time
+    f = open(kwargs.pop('file'), "a")        
+    print(*args, time.time(), file=f, flush=True, **kwargs)
+    f.close()

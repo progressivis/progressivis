@@ -4,7 +4,7 @@ from .column_id import IdColumn
 from .column_proxy import ColumnProxy
 import numpy as np
 from ..core.bitmap import bitmap
-from ..core.utils import is_none_alike
+from ..core.utils import is_none_alike, is_full_slice
 
 class IdColumnSelectedView(ColumnProxy):
     def __init__(self, index, selection):
@@ -16,7 +16,12 @@ class IdColumnSelectedView(ColumnProxy):
     @property
     def selection(self):
         return self._selection
+    
+    @property
+    def value(self):
+        return self.selection
 
+    
     @selection.setter
     def selection(self, selection):
         self._selection = selection
@@ -29,16 +34,18 @@ class IdColumnSelectedView(ColumnProxy):
         return 'IdColumnSelectedView(%s,dshape=%s)' % (self.name, str(self.dshape))
 
     def id_to_index(self, loc, as_slice=True):
-        if is_none_alike(loc):
+        if is_full_slice(loc):
             loc = self._selection
         elif not loc in self._selection:
-            raise KeyError('Invalid key(s) %s', loc)
+            raise KeyError('Invalid key(s) %s' % loc)
         return self.base.id_to_index(loc) # indices in base columns for now
 
     def __getitem__(self, index):
+        #if is_full_slice(index):
+        #    return self._selection
         ids = self.base[index]
         if not ids in self._selection:
-            raise KeyError('Invalid key(s) %s', index)
+            raise KeyError('Invalid key(s) %s' % index)
         return ids
         
     def __setitem__(self, index, value):
