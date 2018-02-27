@@ -14,8 +14,9 @@ from . import Table
 from . import TableSelectedView
 from ..core.bitmap import bitmap
 from progressivis.table.nary import NAry
-
-
+#from collections import defaultdict
+from functools import reduce
+import operator
 class Intersection(NAry):
     "Intersection Module"
     parameters = []
@@ -28,7 +29,8 @@ class Intersection(NAry):
         step_size = 1000
         _b = bitmap.asbitmap
         to_delete = bitmap([])
-        to_create = bitmap([])
+        to_create_maybe = bitmap()
+        to_create_4sure = bitmap()
         steps = 0
         tables = []
         ph_table = None
@@ -49,21 +51,25 @@ class Intersection(NAry):
                 deleted = slot.deleted.next(step_size)
                 steps += 1
                 to_delete |= _b(deleted)
-            if slot.updated.any():
-                updated = slot.updated.next(step_size)
-                to_delete |= _b(updated)
-                to_create |= _b(updated)
-                steps += indices_len(updated) + 1
+            if slot.updated.any(): # actually don't care
+                _ = slot.updated.next(step_size)
+                #to_delete |= _b(updated)
+                #to_create |= _b(updated)
+                #steps += 1 # indices_len(updated) + 1
             if slot.created.any():
                 created = slot.created.next(step_size)
-                to_create |= _b(created)
+                bm = _b(created)
+                to_create_maybe |= bm
+                to_create_4sure &= bm
                 steps += indices_len(created)
         if steps == 0:
             return self._return_run_step(self.state_blocked, steps_run=0)
         if not self._table:
             self._table = TableSelectedView(ph_table, bitmap([]))
         self._table.selection -= to_delete
-        eff_create = to_create
+        self._table.selection |= to_create_4sure
+        to_create_maybe -= to_create_4sure
+        eff_create = to_create_maybe
         for t in tables:
             eff_create &= t.selection
         self._table.selection |= eff_create
