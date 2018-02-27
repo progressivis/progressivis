@@ -18,7 +18,7 @@ import numpy as np
 import logging
 logger = logging.getLogger(__name__)
 
-WITH_INTERSECTION = False
+VARIANT = 'LAST'
 
 class ScatterPlot(TableModule):
     parameters = [('xmin',   np.dtype(float), 0),
@@ -137,17 +137,24 @@ class ScatterPlot(TableModule):
         self.min_value.input.like = min_.output.table
         self.max_value = Variable(group=self.id, scheduler=s)
         self.max_value.input.like = max_.output.table
-        if not WITH_INTERSECTION:
-            # RangeQuery variant
+        if VARIANT == 'CHAINED':
+            # Old RangeQuery variant
             range_query_x = RangeQuery(column=self.x_column, group=self.id,scheduler=s)
             range_query_x.create_dependent_modules(input_module, input_slot, min_=min_, max_=max_, min_value=self.min_value, max_value=self.max_value)
             range_query_y = RangeQuery(column=self.y_column, group=self.id,scheduler=s)
             range_query_y.create_dependent_modules(range_query_x, input_slot, min_=min_, max_=max_, min_value=self.min_value, max_value=self.max_value)
             range_query2d = range_query_y
-        else:
+        elif VARIANT == 'INTERSECTION':
             # Intersection variant
             range_query2d = self.make_range_query2d(input_module, input_slot, min_=min_, max_=max_, scheduler=s)
-    
+        else: # LAST
+            range_query_x = RangeQuery(column=self.x_column, group=self.id,scheduler=s)
+            range_query_x.create_dependent_modules(input_module, input_slot, min_=min_, max_=max_, min_value=self.min_value, max_value=self.max_value)
+            range_query_y = RangeQuery(column=self.y_column, group=self.id,scheduler=s)
+            range_query_y.create_dependent_modules(range_query_x, input_slot, min_=min_, max_=max_, min_value=self.min_value, max_value=self.max_value)
+            range_query2d = Intersection(group=self.id, scheduler=s)
+            range_query2d.input.table = range_query_x.output.table
+            range_query2d.input.table = range_query_y.output.table            
         # Sequential variant
         #range_query_x = self.seq_make_range_query(input_module, input_slot, self.x_column, min_=min_, max_=max_, min_value=self.min_value, max_value=self.max_value, group=self.id, scheduler=s)
         #range_query_y = self.seq_make_range_query(range_query_x, input_slot, self.y_column, min_=min_, max_=max_, min_value=self.min_value, max_value=self.max_value, group=self.id, scheduler=s)        
