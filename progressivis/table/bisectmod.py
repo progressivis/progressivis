@@ -58,10 +58,12 @@ class BisectImpl(ModuleImpl):
             return
         if updated:
             self.result.remove(updated)
-            res = self._eval_to_ids(limit, updated)
+            #res = self._eval_to_ids(limit, updated)
+            res = self._hist_index.restricted_query(self._op, limit, updated)
             self.result.add(res) # add not defined???
         if created:
-            res = self._eval_to_ids(limit, created)
+            #res = self._eval_to_ids(limit, created)
+            res = self._hist_index.restricted_query(self._op, limit, created)            
             self.result.update(res)
         if deleted:
             self.result.remove(deleted)

@@ -89,6 +89,27 @@ class _HistogramIndexImpl(object):
                 detail.update(bm)
         return detail
 
+    def restricted_query(self, operator_, limit, only_locs, approximate=False):  # blocking...
+        """
+        Returns the subset of only_locs matching the query.
+        """
+        only_locs = bitmap.asbitmap(only_locs)
+        pos = np.digitize(limit, self.bins)
+        detail = bitmap()
+        if not approximate:
+            ids = np.array(self.bitmaps[pos]&only_locs, np.int64)
+            values = self.column.loc[ids]
+            selected = ids[operator_(values, limit)]
+            detail.update(selected)
+
+        if operator_ in (operator.lt, operator.le):
+            for bm in self.bitmaps[:pos]:
+                detail.update(bm&only_locs)
+        else:
+            for bm in self.bitmaps[pos + 1:]:
+                detail.update(bm&only_locs)
+        return detail
+
     def range_query(self, lower, upper, approximate=False):
         """
         Return the list of rows with values in range [`lower`, `upper`[
@@ -230,6 +251,17 @@ class HistogramIndex(TableModule):
         # there are no histogram because init_threshold wasn't be reached yet
         # so we query the input table directly
         return self._eval_to_ids(operator_, limit)
+    def restricted_query(self, operator_, limit, only_locs, approximate=False):
+        """
+        Return the list of rows matching the query.
+        For example, returning all values less than 10 (< 10) would be
+        `query(operator.__lt__, 10)`
+        """
+        if self._impl:
+            return self._impl.restricted_query(operator_, limit, only_locs, approximate)
+        # there are no histogram because init_threshold wasn't be reached yet
+        # so we query the input table directly
+        return self._eval_to_ids(operator_, limit, only_locs)
 
     def range_query(self, lower, upper, approximate=False):
         """
