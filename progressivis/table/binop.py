@@ -32,6 +32,7 @@ ops = {"<":   operator.__lt__,
        ">>":  operator.__rshift__,
        "-":   operator.__sub__,
        }
+inv_ops = {v:k for k, v in ops.items()}
 
 if "__div__" in operator.__dict__:
     ops["/"] = operator.__div__
