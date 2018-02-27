@@ -127,10 +127,36 @@ class _HistogramIndexImpl(object):
                 selected = ids[lower <= values]
                 detail.update(selected)
                 ids = np.array(self.bitmaps[pos[1]], np.int64)
+                values = self.column.loc[ids]
                 selected = ids[values < upper]
                 detail.update(selected)
         for bm in self.bitmaps[pos[0] + 1:pos[1]]:
             detail.update(bm)
+        return detail
+
+    def restricted_range_query(self, lower, upper, only_locs, approximate=False):
+        """
+        Return the list of rows with values in range [`lower`, `upper`[
+        """
+        if lower > upper:
+            lower, upper = upper, lower
+        only_locs = bitmap.asbitmap(only_locs)
+        pos = np.digitize([lower, upper], self.bins)
+        detail = bitmap()
+        if not approximate:
+            ids = np.array(self.bitmaps[pos[0]]&only_locs, np.int64)
+            values = self.column.loc[ids]
+            if pos[0] == pos[1]:
+                selected = ids[lower <= values < upper]
+            else:
+                selected = ids[lower <= values]
+                detail.update(selected)
+                ids = np.array(self.bitmaps[pos[1]]&only_locs, np.int64)
+                values = self.column.loc[ids]
+                selected = ids[values < upper]
+                detail.update(selected)
+        for bm in self.bitmaps[pos[0] + 1:pos[1]]:
+            detail.update(bm&only_locs)
         return detail
 
 
@@ -273,6 +299,16 @@ class HistogramIndex(TableModule):
         # so we query the input table directly
         return (self._eval_to_ids(operator.__lt__, upper) &  # optimize later
                 self._eval_to_ids(operator.__ge__, lower))
+    def restricted_range_query(self, lower, upper, only_locs, approximate=False):
+        """
+        Return the list of rows with values in range [`lower`, `upper`[
+        """
+        if self._impl:
+            return self._impl.restricted_range_query(lower, upper, only_locs, approximate)
+        # there are no histogram because init_threshold wasn't be reached yet
+        # so we query the input table directly
+        return (self._eval_to_ids(operator.__lt__, upper, only_locs) &  # optimize later
+                self._eval_to_ids(operator.__ge__, lower, only_locs))
 
     def create_dependent_modules(self, input_module, input_slot, **kwds):
         s = self.scheduler()

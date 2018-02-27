@@ -1,41 +1,108 @@
-"""
-Range Query module.
+import numpy as np
 
+from progressivis.core.utils import (slice_to_arange, indices_len, fix_loc)
 
-"""
-from progressivis.core.utils import indices_len
+from . import Table
+from . import TableSelectedView
+from ..core.slot import SlotDescriptor
+from .module import TableModule
+from ..core.bitmap import bitmap
+from .mod_impl import ModuleImpl
+from .binop import ops
 from ..io import Variable
 from ..stats import Min, Max
 from .hist_index import HistogramIndex
-from .bisectmod import Bisect, _get_physical_table
-from .module import TableModule
-from ..core.slot import SlotDescriptor
-from . import Table
-from . import TableSelectedView
-from ..core.bitmap import bitmap
+from progressivis.core.synchronized import synchronized
+
+def _get_physical_table(t):
+    return t if t.base is None else _get_physical_table(t.base)
+
+class _Selection(object):
+    def __init__(self, values=None):
+        self._values = bitmap([]) if values is None else values
+
+    def update(self, values):
+        self._values.update(values)
+
+    def remove(self, values):
+        self._values = self._values -bitmap(values)
+
+    def assign(self, values):
+        self._values = values
+
+class RangeQueryImpl(ModuleImpl):
+    def __init__(self, column, hist_index):
+        super(RangeQueryImpl, self).__init__()
+        self._table = None
+        self._column = column
+        self.bins = None
+        self._hist_index = hist_index
+        self.result = None
+        self.is_started = False
+        
+    def resume(self, lower, upper, limit_changed, created=None, updated=None, deleted=None):
+        if limit_changed:
+            #return self.reconstruct_from_hist_cache(limit)
+            new_sel = self._hist_index.range_query(lower, upper)
+            self.result.assign(new_sel)
+            return
+        if updated:
+            self.result.remove(updated)
+            #res = self._eval_to_ids(limit, updated)
+            res = self._hist_index.restricted_range_query(lower, upper, updated)
+            self.result.add(res) # add not defined???
+        if created:
+            #res = self._eval_to_ids(limit, created)
+            res = self._hist_index.restricted_range_query(lower, upper, created)            
+            self.result.update(res)
+        if deleted:
+            self.result.remove(deleted)
+
+    def start(self, table, lower, upper, limit_changed, created=None, updated=None, deleted=None):
+        self._table = table
+        self.result = _Selection()
+        self.is_started = True
+        return self.resume(lower, upper, limit_changed, created, updated, deleted)
 
 
 class RangeQuery(TableModule):
-    "Range Query Module"
-    parameters = [
-        ('column', str, ''),
-        ('hist_index', object, None),
-    ]
+    """
+    """
+    parameters = [('column', str, "unknown"),
+                  ("watched_key_lower", str, ""),
+                  ("watched_key_upper", str, ""),                  
+                  #('hist_index', object, None) # to improve ...
+                 ]
 
-    def __init__(self, scheduler=None, **kwds):
+    def __init__(self, hist_index=None, scheduler=None, **kwds):
+        """
+        """
         self._add_slots(kwds, 'input_descriptors',
-                        [SlotDescriptor('min_value', type=Table, required=True),
-                         SlotDescriptor('max_value', type=Table, required=True)])
-        self._min = None
-        self._max = None
+                        [SlotDescriptor('table', type=Table, required=True),
+                         SlotDescriptor('lower', type=Table, required=False),
+                         SlotDescriptor('upper', type=Table, required=False)
+                        ])
         super(RangeQuery, self).__init__(scheduler=scheduler, **kwds)
+        self._impl = None #RangeQueryImpl(self.params.column, hist_index)
+        self._hist_index = None
+        self._column = self.params.column
+        self._watched_key_lower = self.params.watched_key_lower
+        if not self._watched_key_lower:
+            self._watched_key_lower = self._column
+        self._watched_key_upper = self.params.watched_key_upper
+        if not self._watched_key_upper:
+            self._watched_key_upper = self._column
+        self.default_step_size = 1000
         self.input_module = None
-        self.input_slot = None
-        self.min = None
-        self.max = None
-        self.min_value = None
-        self.max_value = None
-
+        
+    @property
+    def hist_index(self):
+        return self._hist_index
+    @hist_index.setter
+    def hist_index(self, hi):
+        self._hist_index = hi
+        self._impl = RangeQueryImpl(self._column, hi)
+        
     def create_dependent_modules(self,
                                  input_module,
                                  input_slot,
@@ -44,6 +111,7 @@ class RangeQuery(TableModule):
                                  min_value=None,
                                  max_value=None,
                                  **kwds):
+        #import pdb; pdb.set_trace()
         if self.input_module is not None: # test if already called
             return self
         s = self.scheduler()
@@ -67,72 +135,81 @@ class RangeQuery(TableModule):
         hist_index.input.table = input_module.output[input_slot]
         hist_index.input.min = min_.output.table
         hist_index.input.max = max_.output.table
-        bisect_min = Bisect(column=params.column, limit_key=params.column,
-                            op='>',
-                            hist_index=hist_index,
-                            group=self.id,
-                            scheduler=s)
-        bisect_min.input.table = hist_index.output.table
-        bisect_min.input.limit = min_value.output.table
-        bisect_max = Bisect(column=params.column, limit_key=params.column,
-                            op='<',
-                            hist_index=hist_index,
-                            group=self.id,
-                            scheduler=s)
-        bisect_max.input.table = hist_index.output.table
-        bisect_max.input.limit = max_value.output.table
         range_query = self
-        range_query.input.min_value = bisect_min.output.table
-        range_query.input.max_value = bisect_max.output.table
+        range_query.hist_index = hist_index
+        range_query.input.table = hist_index.output.table       
+        range_query.input.lower = min_value.output.table
+        range_query.input.upper = max_value.output.table
         self.min = min_
         self.max = max_
         self.min_value = min_value
         self.max_value = max_value
         return range_query
 
+    @synchronized    
     def run_step(self, run_number, step_size, howlong):
-        min_slot = self.get_input_slot('min_value')
-        min_slot.update(run_number)
-        max_slot = self.get_input_slot('max_value')
-        max_slot.update(run_number)
-        steps = 0 
-        min_table = min_slot.data()
-        max_table = max_slot.data()
-        # min
-        deleted_min = None
-        if min_slot.deleted.any():
-            deleted_min = min_slot.deleted.next(step_size)
-            steps += indices_len(deleted_min)
-        created_min = None
-        if min_slot.created.any():
-            created_min = min_slot.created.next(step_size)
-            steps += indices_len(created_min)
-        updated_min = None
-        if min_slot.updated.any():
-            updated_min = min_slot.updated.next(step_size)
-            steps += indices_len(updated_min)
-        # max
-        deleted_max = None
-        if max_slot.deleted.any():
-            deleted_max = max_slot.deleted.next(step_size)
-            steps += indices_len(deleted_max)
-        created_max = None
-        if max_slot.created.any():
-            created_max = max_slot.created.next(step_size)
-            steps += indices_len(created_max)
-        updated_max = None
-        if max_slot.updated.any():
-            updated_max = max_slot.updated.next(step_size)
-            steps += indices_len(updated_max)
+        input_slot = self.get_input_slot('table')
+        input_slot.update(run_number)
+        steps = 0
+        deleted = None
+        if input_slot.deleted.any():
+            deleted = input_slot.deleted.next(step_size)
+            steps += indices_len(deleted)
+        created = None
+        if input_slot.created.any():
+            created = input_slot.created.next(step_size)
+            steps += indices_len(created)
+        updated = None
+        if input_slot.updated.any():
+            updated = input_slot.updated.next(step_size)
+            steps += indices_len(updated)
+        with input_slot.lock:
+            input_table = input_slot.data()
         if not self._table:
-            self._table = TableSelectedView(_get_physical_table(min_table), bitmap([]))
-            new_sel = min_table.selection & max_table.selection
-            self._table.selection = new_sel
-        if steps == 0:
+            self._table = TableSelectedView(input_table, bitmap([]))
+        param = self.params
+        lower_slot = self.get_input_slot('lower')
+        lower_slot.update(run_number)
+        upper_slot = self.get_input_slot('upper')
+        #upper_slot.update(run_number)
+        limit_changed = False
+        if lower_slot.deleted.any():
+            lower_slot.deleted.next()
+        if lower_slot.updated.any():
+            lower_slot.updated.next()
+            limit_changed = True
+        if lower_slot.created.any():
+            lower_slot.created.next()
+            limit_changed = True
+        if not (lower_slot is upper_slot):
+            #import pdb;pdb.set_trace()
+            upper_slot.update(run_number)
+            if upper_slot.deleted.any():
+                upper_slot.deleted.next()
+            if upper_slot.updated.any():
+                upper_slot.updated.next()
+                limit_changed = True
+            if upper_slot.created.any():
+                upper_slot.created.next()
+                limit_changed = True            
+        if len(lower_slot.data())  + len(upper_slot.data()) == 0:
             return self._return_run_step(self.state_blocked, steps_run=0)
-        to_remove = (bitmap(deleted_min)|bitmap(deleted_max)|
-                     bitmap(updated_min)|bitmap(updated_max))
-        to_add = ((bitmap(created_min)|bitmap(updated_min)) &
-                  (bitmap(created_max)|bitmap(updated_max)))
-        self._table.selection = (self._table.selection - to_remove) | to_add
-        return self._return_run_step(self.next_state(min_slot), steps_run=steps)
+        if steps==0:
+            return self._return_run_step(self.state_blocked, steps_run=0)
+
+        lower_value = lower_slot.data().last(self._watched_key_lower)
+        upper_value = upper_slot.data().last(self._watched_key_upper)
+        if not self._impl.is_started:
+            #self._table = TableSelectedView(input_table, bitmap([]))
+            status = self._impl.start(input_table, lower_value, upper_value, limit_changed,
+                                      created=created,
+                                      updated=updated,
+                                      deleted=deleted)
+            self._table.selection = self._impl.result._values
+        else:
+            status = self._impl.resume(lower_value, upper_value, limit_changed,
+                                       created=created,
+                                       updated=updated,
+                                       deleted=deleted)
+            self._table.selection = self._impl.result._values
+        return self._return_run_step(self.next_state(input_slot), steps_run=steps)
