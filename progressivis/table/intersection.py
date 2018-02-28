@@ -23,10 +23,11 @@ class Intersection(NAry):
 
     def __init__(self, scheduler=None, **kwds):        
         super(Intersection, self).__init__(scheduler=scheduler, **kwds)
-        #self.default_step_size = 1000
+
+    def predict_step_size(self, duration):
+        return 1000
 
     def run_step(self, run_number, step_size, howlong):
-        step_size = 1000
         _b = bitmap.asbitmap
         to_delete = bitmap([])
         to_create_maybe = bitmap()
