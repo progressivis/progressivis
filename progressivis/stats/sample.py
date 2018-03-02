@@ -51,7 +51,7 @@ class Sample(TableModule):
         if name=='select':
             return self.get_bitmap()
         if self._table is not None:
-            print("SAMPLE: ", len(self._table.selection -self.get_bitmap()) )            
+            #print("SAMPLE: ", len(self._table.selection -self.get_bitmap()) )  
             self._table.selection = self.get_bitmap()
         return super(Sample,self).get_data(name)
 
