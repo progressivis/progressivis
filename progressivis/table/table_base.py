@@ -245,17 +245,17 @@ class BaseTable(six.with_metaclass(ABCMeta, object)):
             ret = OrderedDict()
             for name in columns:
                 col = self[name]
-                ret[name] = dict(zip(self._ids.values.tolist(),
-                                     col.values.tolist()))
+                ret[name] = dict(zip(self._ids.tolist(),
+                                     col.tolist()))
             return ret
         if orient == 'list':
             ret = OrderedDict()
             for name in columns:
                 col = self[name]
-                ret[name] = col.values.tolist()
+                ret[name] = col.tolist()
             return ret
         if orient == 'split':
-            ret = {'index': self._ids.values.tolist(),
+            ret = {'index': self._ids.tolist(),
                    'columns': columns}
             data = []
             cols = [self[c] for c in columns]

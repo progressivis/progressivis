@@ -59,5 +59,7 @@ class ColumnProxy(BaseColumn):
     def resize(self, newsize):
         self._base.resize(newsize)
 
+    def tolist(self):
+        return list(self.values)
 
 

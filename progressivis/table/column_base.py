@@ -105,7 +105,8 @@ class BaseColumn(six.with_metaclass(ABCMeta, object)):
     @abstractmethod
     def __getitem__(self, index):
         pass
-
+    def tolist(self):
+        return self.values.tolist()
     def read_direct(self, array, source_sel=None, dest_sel=None):
         """ Read data from column into an existing NumPy array.
 
