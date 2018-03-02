@@ -8,10 +8,11 @@ Vitter, Jeffrey S. (1 March 1985). "Random sampling with a reservoir" (PDF). ACM
 from __future__ import absolute_import, division, print_function
 
 from progressivis import SlotDescriptor
-from progressivis.core.bitmap import bitmap
-from progressivis.table import Table
-from progressivis.table.module import TableModule
-from progressivis.core.utils import indices_len
+from ..core.bitmap import bitmap
+from ..table import Table
+from ..table.module import TableModule
+from ..core.utils import indices_len
+from ..table import TableSelectedView
 
 import numpy as np
 
@@ -31,31 +32,40 @@ class Sample(TableModule):
                         [SlotDescriptor('select', type=bitmap, required=False)])
         
         super(Sample, self).__init__(**kwds)
-        self._table = Table(self.generate_table_name('sample'),
+        self._tmp_table = Table(self.generate_table_name('sample'),
                             dshape='{select: int64}',
 #                            scheduler=self.scheduler(),
                             create=True)
         self._size = 0 # holds the size consumed from the input table so far
         self._bitmap = None
-
+        self._table = None
+        
     def reset(self):
-        self._table.resize(0)
+        self._tmp_table.resize(0)
         self._size = 0
         self._bitmap = None
         self.get_input_slot('table').reset()
 
     def get_data(self, name):
+        #import pdb;pdb.set_trace()
         if name=='select':
             return self.get_bitmap()
+        if self._table is not None:
+            print("SAMPLE: ", len(self._table.selection -self.get_bitmap()) )            
+            self._table.selection = self.get_bitmap()
         return super(Sample,self).get_data(name)
 
     def get_bitmap(self):
         if self._bitmap is None:
-            self._bitmap = bitmap(self._table['select'])
+            self._bitmap = bitmap(self._tmp_table['select'])
         return self._bitmap
 
     def run_step(self,run_number,step_size,howlong):
+        #import pdb;pdb.set_trace()
         dfslot = self.get_input_slot('table')
+        if self._table is None:
+            input_table = self.get_input_slot('table').data()
+            self._table = TableSelectedView(input_table, bitmap([]))
         dfslot.update(run_number)
         # do not produce another sample is nothing has changed
         if dfslot.deleted.any():
@@ -70,7 +80,7 @@ class Sample(TableModule):
             return self._return_run_step(self.state_blocked, steps_run=0)
         
         k = int(self.params.samples)
-        reservoir = self._table
+        reservoir = self._tmp_table
         res = reservoir['select']
         size = self._size # cache in local variable
         if size < k:

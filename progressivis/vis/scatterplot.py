@@ -4,7 +4,7 @@ from ..io import Variable
 
 from progressivis.core import SlotDescriptor, ProgressiveError
 from progressivis.table import Table
-from progressivis.table.select import Select #, RangeQuery
+#from progressivis.table.liteselect import LiteSelect
 from progressivis.table.module import TableModule
 
 from progressivis.stats import Histogram2D, Sample, Min, Max
@@ -179,15 +179,15 @@ class ScatterPlot(TableModule):
             raise ProgressiveError("Scatterplot needs a select module")
         if sample is not None:
             sample.input.table =  select_output.table
-        if select is None:
-            select = Select(group=self.id,scheduler=s)
-            select.input.table = range_query2d.output.table #input_module.output[input_slot]
-            select.input.select = sample.output.select
+        #if select is None:
+        #    select = LiteSelect(group=self.id,scheduler=s)
+        #    select.input.table = range_query2d.output.table #input_module.output[input_slot]
+        #    select.input.select = sample.output.select
 
         scatterplot=self
         scatterplot.input.heatmap = heatmap.output.heatmap
         scatterplot.input.table = input_module.output[input_slot]
-        scatterplot.input.select = select.output.table
+        scatterplot.input.select = sample.output.table
 
         # self.range_query = range_query
         # self.min = range_query.min
