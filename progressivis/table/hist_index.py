@@ -39,7 +39,7 @@ class _HistogramIndexImpl(object):
         assert len(self.bins) == nb_bin
         self.bitmaps = [bitmap() for _ in range(nb_bin+1)]
 
-    def reshape(self, min_, max_):
+    def reshape(self):
         "Change the bounds of the index if needed"
         pass  # to be defined...then implemented
 
@@ -62,12 +62,16 @@ class _HistogramIndexImpl(object):
             values = self.column.loc[to_add]
             bins = np.digitize(values, self.bins)
             counts = np.bincount(bins)
+            #nz_counts = np.nonzero(counts)[0]
+            #self._min_bin = nz_counts[0]
+            #self._max_bin = nz_counts[-1]
+            #import pdb;pdb.set_trace()
             for i in np.nonzero(counts)[0]:
                 bm = self.bitmaps[i]
                 selection = (bins == i)    # boolean mask of values in bin i
                 bm.update(ids[selection])  # add them to the bitmap
 
-    def query(self, operator_, limit, approximate=False):  # blocking...
+    def query(self, operator_, limit, approximate=True):  # blocking...
         """
         Return the list of rows matching the query.
         For example, returning all values less than 10 (< 10) would be
@@ -89,7 +93,7 @@ class _HistogramIndexImpl(object):
                 detail.update(bm)
         return detail
 
-    def restricted_query(self, operator_, limit, only_locs, approximate=False):  # blocking...
+    def restricted_query(self, operator_, limit, only_locs, approximate=True):  # blocking...
         """
         Returns the subset of only_locs matching the query.
         """
@@ -110,7 +114,7 @@ class _HistogramIndexImpl(object):
                 detail.update(bm&only_locs)
         return detail
 
-    def range_query(self, lower, upper, approximate=False):
+    def range_query(self, lower, upper, approximate=True):
         """
         Return the list of rows with values in range [`lower`, `upper`[
         """
@@ -134,7 +138,7 @@ class _HistogramIndexImpl(object):
             detail.update(bm)
         return detail
 
-    def restricted_range_query(self, lower, upper, only_locs, approximate=False):
+    def restricted_range_query(self, lower, upper, only_locs, approximate=True):
         """
         Return the list of rows with values in range [`lower`, `upper`[
         """
@@ -159,6 +163,22 @@ class _HistogramIndexImpl(object):
             detail.update(bm&only_locs)
         return detail
 
+    def get_min_bin(self):
+        if self.bitmaps is None:
+            return None
+        for bm in self.bitmaps:
+            if bm: return bm
+        return None
+
+    def get_max_bin(self):
+        #import pdb;pdb.set_trace()
+        if self.bitmaps is None:
+            return None
+        for i in range(1, len(self.bitmaps)+1):
+            bm = self.bitmaps[-i]
+            if bm: return bm
+        return None
+
 
 class HistogramIndex(TableModule):
     """
@@ -172,9 +192,13 @@ class HistogramIndex(TableModule):
     def __init__(self, column, scheduler=None, **kwds):
         self._add_slots(kwds, 'input_descriptors', [
             SlotDescriptor('table', type=Table, required=True),
-            SlotDescriptor('min', type=Table, required=True),
-            SlotDescriptor('max', type=Table, required=True)
+            #SlotDescriptor('min', type=Table, required=True),
+            #SlotDescriptor('max', type=Table, required=True)
         ])
+        self._add_slots(kwds,'output_descriptors', [
+            SlotDescriptor('min_out', type=Table, required=False),
+            SlotDescriptor('max_out', type=Table, required=False)])
+        
         super(HistogramIndex, self).__init__(scheduler=scheduler, **kwds)
         self.column = column
         self._impl = None  # will be created when the init_threshold is reached
@@ -182,44 +206,59 @@ class HistogramIndex(TableModule):
         # so realistic initial values for min and max were available
         self.input_module = None
         self.input_slot = None
-
-    def get_bounds(self, min_slot, max_slot):
-        "Return the bounds of the input table according to the min and max modules"
-        min_slot.created.next()
-        with min_slot.lock:
-            min_df = min_slot.data()
-            if min_df is None:
+        self._min_table = None
+        self._max_table = None
+        
+    def compute_bounds(self, input_table):
+        #import pdb; pdb.set_trace()
+        values = input_table[self.column]
+        return values.min(), values.max()
+    def get_data(self, name):
+        #import pdb;pdb.set_trace()
+        if name in ('min_out', 'max_out'):
+            if self._impl is None:
                 return None
-            min_ = min_df.last(self.column)
-
-        max_slot.created.next()
-        with max_slot.lock:
-            max_df = max_slot.data()
-            if max_df is None:
+            if self._input_table is None:
                 return None
-            max_ = max_df.last(self.column)
-        return (min_, max_)
+        if name == 'min_out':
+            if self.get_min_bin() is None:
+                return None
+            if self._min_table is None:
+                self._min_table = TableSelectedView(self._input_table, bitmap([]))
+            self._min_table.selection = self.get_min_bin()
+            return self._min_table
+        if name == 'max_out':
+            if self.get_max_bin() is None:
+                return None
+            if self._max_table is None:
+                self._max_table = TableSelectedView(self._input_table, bitmap([]))
+            self._max_table.selection = self.get_max_bin()
+            return self._max_table
+        return super(HistogramIndex,self).get_data(name)
 
+    def get_min_bin(self):
+        if self._impl is None:
+            return None
+        return self._impl.get_min_bin()
+    def get_max_bin(self):
+        if self._impl is None:
+            return None
+        return self._impl.get_max_bin()        
+        
     def run_step(self, run_number, step_size, howlong):
         input_slot = self.get_input_slot('table')
         input_slot.update(run_number)
         steps = 0
         with input_slot.lock:
             input_table = input_slot.data()
+            self._input_table = input_table
+            
         if len(input_table) < self.params.init_threshold:
             # there are not enough rows. it's not worth building an index yet
             return self._return_run_step(self.state_blocked, steps_run=0)
-        min_slot = self.get_input_slot('min')
-        min_slot.update(run_number)
-        max_slot = self.get_input_slot('max')
-        max_slot.update(run_number)
-        bounds = self.get_bounds(min_slot, max_slot)
-        if bounds is None:
-            logger.debug('No bounds yet at run %d', run_number)
-            return self._return_run_step(self.state_blocked, steps_run=0)
-        bound_min, bound_max = bounds
         if self._impl is None:
             input_slot.reset()
+            bound_min, bound_max = self.compute_bounds(input_table)
             self._impl = _HistogramIndexImpl(self.column,
                                              input_table,
                                              bound_min, bound_max,
@@ -229,7 +268,7 @@ class HistogramIndex(TableModule):
             return self._return_run_step(self.state_blocked, steps_run=len(self.selection))
         else:
             # Many not always, or should the implementation decide?
-            self._impl.reshape(bound_min, bound_max)
+            self._impl.reshape()
         deleted = None
         if input_slot.deleted.any():
             deleted = input_slot.deleted.next(as_slice=False)
@@ -277,7 +316,7 @@ class HistogramIndex(TableModule):
         # there are no histogram because init_threshold wasn't be reached yet
         # so we query the input table directly
         return self._eval_to_ids(operator_, limit)
-    def restricted_query(self, operator_, limit, only_locs, approximate=False):
+    def restricted_query(self, operator_, limit, only_locs, approximate=True):
         """
         Return the list of rows matching the query.
         For example, returning all values less than 10 (< 10) would be
@@ -289,7 +328,7 @@ class HistogramIndex(TableModule):
         # so we query the input table directly
         return self._eval_to_ids(operator_, limit, only_locs)
 
-    def range_query(self, lower, upper, approximate=False):
+    def range_query(self, lower, upper, approximate=True):
         """
         Return the list of rows with values in range [`lower`, `upper`[
         """
@@ -299,7 +338,7 @@ class HistogramIndex(TableModule):
         # so we query the input table directly
         return (self._eval_to_ids(operator.__lt__, upper) &  # optimize later
                 self._eval_to_ids(operator.__ge__, lower))
-    def restricted_range_query(self, lower, upper, only_locs, approximate=False):
+    def restricted_range_query(self, lower, upper, only_locs, approximate=True):
         """
         Return the list of rows with values in range [`lower`, `upper`[
         """
@@ -314,12 +353,12 @@ class HistogramIndex(TableModule):
         s = self.scheduler()
         self.input_module = input_module
         self.input_slot = input_slot
-        min_ = Min(group=self.id, scheduler=s)
-        max_ = Max(group=self.id, scheduler=s)
-        min_.input.table = input_module.output[input_slot]
-        max_.input.table = input_module.output[input_slot]
+        #min_ = Min(group=self.id, scheduler=s)
+        #max_ = Max(group=self.id, scheduler=s)
+        #min_.input.table = input_module.output[input_slot]
+        #max_.input.table = input_module.output[input_slot]
         hist_index = self
         hist_index.input.table = input_module.output[input_slot]
-        hist_index.input.min = min_.output.table
-        hist_index.input.max = max_.output.table
+        #hist_index.input.min = min_.output.table
+        #hist_index.input.max = max_.output.table
         return hist_index
