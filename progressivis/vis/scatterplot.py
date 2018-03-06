@@ -147,7 +147,7 @@ class ScatterPlot(TableModule):
         with self.lock:
             select = self.get_input_slot('select').data()
             if select is not None:
-                select = self._cleanup(select)
+                #select = self._cleanup(select)
                 json['scatterplot'] = select.to_json(orient='split',
                                                      columns=[self.x_column,self.y_column])
             else:
