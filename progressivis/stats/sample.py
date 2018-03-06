@@ -47,21 +47,20 @@ class Sample(TableModule):
         self.get_input_slot('table').reset()
 
     def get_data(self, name):
-        #import pdb;pdb.set_trace()
         if name=='select':
             return self.get_bitmap()
         if self._table is not None:
-            #print("SAMPLE: ", len(self._table.selection -self.get_bitmap()) )  
             self._table.selection = self.get_bitmap()
         return super(Sample,self).get_data(name)
 
     def get_bitmap(self):
         if self._bitmap is None:
-            self._bitmap = bitmap(self._tmp_table['select'])
+            len_ = len(self._tmp_table['select'])
+            # Avoid "ValueError: Iteration of zero-sized operands is not enabled"
+            self._bitmap = bitmap(self._tmp_table['select']) if len_ else bitmap()
         return self._bitmap
 
     def run_step(self,run_number,step_size,howlong):
-        #import pdb;pdb.set_trace()
         dfslot = self.get_input_slot('table')
         if self._table is None:
             input_table = self.get_input_slot('table').data()
