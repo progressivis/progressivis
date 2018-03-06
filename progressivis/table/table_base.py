@@ -1,7 +1,6 @@
 """Base class for Tables
 """
 from __future__ import absolute_import, division, print_function
-
 from abc import ABCMeta, abstractmethod, abstractproperty
 from collections import OrderedDict, Mapping, Iterable
 import operator
@@ -13,7 +12,7 @@ import numpy as np
 from progressivis.core.utils import (integer_types, 
                                      all_string_or_int, all_bool,
                                      indices_len,
-                                     is_none_alike, inter_slice, fix_loc)
+                                     is_none_alike, inter_slice, fix_loc, get_physical_base)
 from progressivis.core.config import get_option
 from progressivis.core.bitmap  import bitmap
 from .dshape import (dshape_print, dshape_join, dshape_union)
@@ -255,17 +254,18 @@ class BaseTable(six.with_metaclass(ABCMeta, object)):
                 ret[name] = col.tolist()
             return ret
         if orient == 'split':
-            ret = {'index': self._ids.tolist(),
+            ret = {'index': self.index.tolist(),
                    'columns': columns}
             data = []
             cols = [self[c] for c in columns]
-            for i in self._ids:
+            for i in self.index:
                 line = []
                 for col in cols:
                     #col_i = col[i]
                     #if isinstance(col_i, np.ndarray):
                     #    col_i = col_i.tolist()
-                    line.append(col.loc[i])
+
+                    line.append(get_physical_base(col).loc[i])
                 data.append(line)
             ret['data'] = data
             return ret

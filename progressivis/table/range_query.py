@@ -1,6 +1,7 @@
 import numpy as np
 
-from progressivis.core.utils import (slice_to_arange, indices_len, fix_loc)
+from progressivis.core.utils import (slice_to_arange, indices_len, fix_loc,
+                                         get_physical_base)
 
 from . import Table
 from . import TableSelectedView
@@ -180,20 +181,13 @@ class RangeQuery(TableModule):
 
     def get_data(self, name):
         if name == 'min':
-            #if self._min_table is None or len(self._min_table)==0:
-            #    print('min=None')
-            #    return None
-            #print('min=DATA')
             return self._min_table
         if name == 'max':
-            #if self._max_table is None or len(self._max_table)==0:
-            #    return None
             return self._max_table
         return super(RangeQuery, self).get_data(name)
                 
     @synchronized    
     def run_step(self, run_number, step_size, howlong):
-        #print("CALL RQ!")
         input_slot = self.get_input_slot('table')
         input_slot.update(run_number)
         steps = 0
@@ -254,7 +248,6 @@ class RangeQuery(TableModule):
         max_slot.created.next()
         max_slot.updated.next()
         max_slot.deleted.next()
-        #import pdb;pdb.set_trace()
         if (lower_slot.data() is None or upper_slot.data() is None
                 or len(lower_slot.data()) == 0 or len(upper_slot.data()) == 0):
             return self._return_run_step(self.state_blocked, steps_run=0)
@@ -268,15 +261,15 @@ class RangeQuery(TableModule):
         if steps==0:
             return self._return_run_step(self.state_blocked, steps_run=0)
         minv = min_slot.data().last(self._watched_key_lower)
-        if np.isnan(lower_value) or lower_value < minv:
+        maxv = max_slot.data().last(self._watched_key_upper)
+        if lower_value is None or np.isnan(lower_value) or lower_value < minv or lower_value>=maxv:
             lower_value = minv
             limit_changed = True
-        #import pdb;pdb.set_trace()
-        self._set_min_out(lower_value)
-        maxv = max_slot.data().last(self._watched_key_upper)
-        if np.isnan(upper_value) or upper_value > maxv:
+        if (upper_value is None or np.isnan(upper_value) or upper_value > maxv or upper_value<=minv
+                or upper_value<=lower_value):
             upper_value = maxv
             limit_changed = True
+        self._set_min_out(lower_value)
         self._set_max_out(upper_value)
         # ...
         if not self._impl.is_started:
