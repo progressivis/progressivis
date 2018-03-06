@@ -259,13 +259,13 @@ class BaseTable(six.with_metaclass(ABCMeta, object)):
                    'columns': columns}
             data = []
             cols = [self[c] for c in columns]
-            for i in range(len(self._ids)):
+            for i in self._ids:
                 line = []
                 for col in cols:
                     #col_i = col[i]
                     #if isinstance(col_i, np.ndarray):
                     #    col_i = col_i.tolist()
-                    line.append(col[i])
+                    line.append(col.loc[i])
                 data.append(line)
             ret['data'] = data
             return ret
