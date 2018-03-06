@@ -13,6 +13,8 @@ from ..table.range_query import RangeQuery
 from ..table.hist_index import HistogramIndex
 from ..table.bisectmod import Bisect, _get_physical_table
 from progressivis.table.paste import Paste #bin_join import BinJoin
+from ..table import TableSelectedView
+from ..core.bitmap import bitmap
 
 from ..table.intersection import Intersection
 import numpy as np
@@ -20,7 +22,6 @@ import numpy as np
 import logging
 logger = logging.getLogger(__name__)
 
-VARIANT = 'LAST'
 
 class ScatterPlot(TableModule):
     parameters = [('xmin',   np.dtype(float), 0),
@@ -137,10 +138,16 @@ class ScatterPlot(TableModule):
             return json
         return self.scatterplot_to_json(json, short)
 
+    def _cleanup(self, tsv):
+        pht = _get_physical_table(tsv)
+        clean_index = [i for i in tsv.index if i in pht.index]
+        return TableSelectedView(pht, bitmap(clean_index))
+    
     def scatterplot_to_json(self, json, short):
         with self.lock:
             select = self.get_input_slot('select').data()
             if select is not None:
+                select = self._cleanup(select)
                 json['scatterplot'] = select.to_json(orient='split',
                                                      columns=[self.x_column,self.y_column])
             else:
