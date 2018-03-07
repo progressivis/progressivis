@@ -29,7 +29,7 @@ class ScatterPlot(TableModule):
                   ('ymin',   np.dtype(float), 0),
                   ('ymax',   np.dtype(float), 1) ]
         
-    def __init__(self, x_column, y_column, **kwds):
+    def __init__(self, x_column, y_column, approximate=False, **kwds):
         self._add_slots(kwds,'input_descriptors',
                         [SlotDescriptor('heatmap', type=Table),
                          SlotDescriptor('table', type=Table),
@@ -37,6 +37,7 @@ class ScatterPlot(TableModule):
         super(ScatterPlot, self).__init__(quantum=0.1, **kwds)
         self.x_column = x_column
         self.y_column = y_column
+        self._approximate = approximate
         self._auto_update = False
         self.image_source = None
         self.scatter_source = None
@@ -63,16 +64,27 @@ class ScatterPlot(TableModule):
 
     
     
-    def create_dependent_modules(self, input_module, input_slot, histogram2d=None,heatmap=None,sample=True,select=None, **kwds):
+    def create_dependent_modules(self, input_module, input_slot,
+                                     histogram2d=None, heatmap=None,
+                                     sample=True,select=None, **kwds):
         if self.input_module is not None:
             return self
         s=self.scheduler()
         self.input_module = input_module
         self.input_slot = input_slot
-        range_query_x = RangeQuery(column=self.x_column, group=self.id,scheduler=s)
-        range_query_x.create_dependent_modules(input_module, input_slot, min_value=False, max_value=False)
-        range_query_y = RangeQuery(column=self.y_column, group=self.id,scheduler=s)
-        range_query_y.create_dependent_modules(input_module, input_slot, min_value=False, max_value=False)
+        range_query_x = RangeQuery(column=self.x_column,
+                                       group=self.id,scheduler=s,
+                                       approximate=self._approximate)
+        range_query_x.create_dependent_modules(input_module,
+                                                   input_slot,
+                                                   min_value=False,
+                                                   max_value=False)
+        range_query_y = RangeQuery(column=self.y_column,
+                                       group=self.id,scheduler=s,
+                                       approximate=self._approximate)
+        range_query_y.create_dependent_modules(input_module, input_slot,
+                                                   min_value=False,
+                                                   max_value=False)
         min2d = Paste(group=self.id, scheduler=s)
         min2d.input.first = range_query_x.min.output.table
         min2d.input.second = range_query_y.min.output.table
@@ -97,12 +109,14 @@ class ScatterPlot(TableModule):
         max_rq.input.first = range_query_x.output.max
         max_rq.input.second = range_query_y.output.max
         if histogram2d is None:
-            histogram2d = Histogram2D(self.x_column, self.y_column,group=self.id,scheduler=s)
+            histogram2d = Histogram2D(self.x_column, self.y_column,
+                                          group=self.id,scheduler=s)
         histogram2d.input.table = range_query2d.output.table
         histogram2d.input.min = min_rq.output.table
         histogram2d.input.max = max_rq.output.table
         if heatmap is None:
-            heatmap = Heatmap(group=self.id,filename='heatmap%d.png', history=100, scheduler=s)
+            heatmap = Heatmap(group=self.id, filename='heatmap%d.png',
+                                  history=100, scheduler=s)
         heatmap.input.array = histogram2d.output.table
         if sample is True:
             sample = Sample(samples=100,group=self.id,scheduler=s)
@@ -129,7 +143,8 @@ class ScatterPlot(TableModule):
         return 1
 
     def run_step(self,run_number,step_size,howlong):
-        return self._return_run_step(self.state_blocked, steps_run=1, reads=1, updates=1)
+        return self._return_run_step(self.state_blocked, steps_run=1,
+                                         reads=1, updates=1)
 
     def to_json(self, short=False):
         self.image = None
@@ -149,7 +164,7 @@ class ScatterPlot(TableModule):
             if select is not None:
                 #select = self._cleanup(select)
                 json['scatterplot'] = select.to_json(orient='split',
-                                                     columns=[self.x_column,self.y_column])
+                                        columns=[self.x_column, self.y_column])
             else:
                 logger.debug('Select data not found')
 

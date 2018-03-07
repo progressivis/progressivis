@@ -46,7 +46,7 @@ csv = CSVLoader(index_col=False,skipinitialspace=True,usecols=['pickup_longitude
 csv.input.filenames = cst.output.table
 pr = Every(scheduler=s)
 pr.input.df = csv.output.table
-scatterplot = ScatterPlot('pickup_longitude', 'pickup_latitude', scheduler=s)
+scatterplot = ScatterPlot('pickup_longitude', 'pickup_latitude', scheduler=s, approximate=True)
 scatterplot.create_dependent_modules(csv,'table')
 
 if __name__=='__main__':

@@ -32,29 +32,34 @@ class _Selection(object):
         self._values = values
 
 class RangeQueryImpl(ModuleImpl):
-    def __init__(self, column, hist_index):
+    def __init__(self, column, hist_index, approximate):
         super(RangeQueryImpl, self).__init__()
         self._table = None
         self._column = column
         self.bins = None
         self._hist_index = hist_index
+        self._approximate = approximate
         self.result = None
         self.is_started = False
         
-    def resume(self, lower, upper, limit_changed, created=None, updated=None, deleted=None):
+    def resume(self, lower, upper, limit_changed, created=None,
+                   updated=None, deleted=None):
         if limit_changed:
             #return self.reconstruct_from_hist_cache(limit)
-            new_sel = self._hist_index.range_query(lower, upper)
+            new_sel = self._hist_index.range_query(lower, upper,
+                                                approximate=self._approximate)
             self.result.assign(new_sel)
             return
         if updated:
             self.result.remove(updated)
             #res = self._eval_to_ids(limit, updated)
-            res = self._hist_index.restricted_range_query(lower, upper, only_locs=updated)
+            res = self._hist_index.restricted_range_query(lower, upper,
+                            only_locs=updated, approximate=self._approximate)
             self.result.add(res) # add not defined???
         if created:
             #res = self._eval_to_ids(limit, created)
-            res = self._hist_index.restricted_range_query(lower, upper, only_locs=created)            
+            res = self._hist_index.restricted_range_query(lower, upper,
+                            only_locs=created, approximate=self._approximate)
             self.result.update(res)
         if deleted:
             self.result.remove(deleted)
@@ -75,7 +80,7 @@ class RangeQuery(TableModule):
                   #('hist_index', object, None) # to improve ...
                  ]
 
-    def __init__(self, hist_index=None, scheduler=None, **kwds):
+    def __init__(self, hist_index=None, approximate=False, scheduler=None, **kwds):
         """
         """
         self._add_slots(kwds, 'input_descriptors',
@@ -91,6 +96,7 @@ class RangeQuery(TableModule):
         super(RangeQuery, self).__init__(scheduler=scheduler, **kwds)
         self._impl = None #RangeQueryImpl(self.params.column, hist_index)
         self._hist_index = None
+        self._approximate = approximate
         self._column = self.params.column
         self._watched_key_lower = self.params.watched_key_lower
         if not self._watched_key_lower:
@@ -108,7 +114,7 @@ class RangeQuery(TableModule):
     @hist_index.setter
     def hist_index(self, hi):
         self._hist_index = hi
-        self._impl = RangeQueryImpl(self._column, hi)
+        self._impl = RangeQueryImpl(self._column, hi, approximate=self._approximate)
         
     def create_dependent_modules(self,
                                  input_module,

@@ -12,7 +12,6 @@ from . import ProgressiveTest, main, skip
 
 class TestRangeQuery(ProgressiveTest):
     "Test Suite for RangeQuery Module"
-    @skip("Need fixing")
     def test_range_query(self):
         "Run tests of the RangeQuery module"
         s = self.scheduler()
