@@ -14,6 +14,7 @@ from . import Table
 from . import TableSelectedView
 from ..core.bitmap import bitmap
 from progressivis.table.nary import NAry
+from progressivis.core.synchronized import synchronized
 #from collections import defaultdict
 from functools import reduce
 import operator
@@ -26,7 +27,7 @@ class Intersection(NAry):
 
     def predict_step_size(self, duration):
         return 1000
-
+    @synchronized
     def run_step(self, run_number, step_size, howlong):
         _b = bitmap.asbitmap
         to_delete = bitmap([])
