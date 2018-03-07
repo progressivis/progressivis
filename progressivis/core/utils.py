@@ -723,6 +723,10 @@ def _infer_compression(filepath_or_buffer, compression):
     msg += '\nValid compression types are {}'.format(valid)
     raise ValueError(msg)
 
+def get_physical_base(t):
+    return t if t.base is None else get_physical_base(t.base)
+
+
 
 def force_valid_id_columns(df):
     uniq = set()
