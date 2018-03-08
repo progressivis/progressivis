@@ -106,7 +106,7 @@ class BaseColumn(six.with_metaclass(ABCMeta, object)):
     def __getitem__(self, index):
         pass
     def tolist(self):
-        return self.values.tolist()
+        return self.values.tolist() if self.index.is_identity else self.values[self.index].tolist()
     def read_direct(self, array, source_sel=None, dest_sel=None):
         """ Read data from column into an existing NumPy array.
 

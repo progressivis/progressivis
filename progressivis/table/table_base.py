@@ -244,7 +244,7 @@ class BaseTable(six.with_metaclass(ABCMeta, object)):
             ret = OrderedDict()
             for name in columns:
                 col = self[name]
-                ret[name] = dict(zip(self._ids.tolist(),
+                ret[name] = dict(zip(self.index,
                                      col.tolist()))
             return ret
         if orient == 'list':
@@ -269,33 +269,34 @@ class BaseTable(six.with_metaclass(ABCMeta, object)):
                 data.append(line)
             ret['data'] = data
             return ret
-        if orient == 'rows':
-            data = []
-            cols = [self[c] for c in columns]
-            for i in range(len(self._ids)):
-                line = [self._ids.values[i]]
-                for col in cols:
-                    line.append(str(col[i]))
-                data.append(line)
-            return data
-        if orient == 'records':
+        #if orient == 'rows':
+        #    data = []
+        #    cols = [self[c] for c in columns]
+        #    for i in self.index:
+        #        line = [i]
+        #        for col in cols:
+        #            line.append(str(col[i]))
+        #        data.append(dict(zip(columns, line)))
+        #    return data
+        if orient in ('records', 'rows'):
+            #import pdb;pdb.set_trace()
             ret = []
-            for i in range(len(self._ids)):
+            for i in self.index:
                 line = OrderedDict()
                 for name in columns:
                     col = self[name]
                     #line[name] = remove_nan_etc(col.values[i])
-                    line[name] = col.values[i]
+                    line[name] = col.loc[i]
                 ret.append(line)
             return ret
         if orient == 'index':
             ret = OrderedDict()
-            for i, id_ in enumerate(self._ids):
+            for id_ in self.index:
                 line = {}
                 for name in columns:
                     col = self[name]
                     #line[name] = remove_nan_etc(col.values[i])
-                    line[name] = col.values[i]
+                    line[name] = col.loc[id_]
                 ret[int(id_)] = line
             return ret
         raise ValueError("to_dict(orient) not implemented for orient={}".format(orient))
