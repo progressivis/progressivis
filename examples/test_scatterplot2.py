@@ -1,17 +1,23 @@
-from progressivis import *
-from progressivis.vis import ScatterPlot
-from progressivis.io import CSVLoader
-from progressivis.datasets import get_dataset
-from progressivis.table.constant import Constant
+"""
+Test loading of nyc_taxis with dynamic queries.
+"""
+import time
 import six
 import pandas as pd
 
-def filter_(df):
+from progressivis.core import Scheduler, Every
+from progressivis.table import Table
+from progressivis.vis import ScatterPlot
+from progressivis.io import CSVLoader
+#from progressivis.datasets import get_dataset
+from progressivis.table.constant import Constant
+
+def _filter(df):
     lon = df['pickup_longitude']
     lat = df['pickup_latitude']
-    return df[(lon>-74.08)&(lon<-73.5)&(lat>40.55)&(lat<41.00)]
+    return df[(lon > -74.08) & (lon < -73.5) & (lat > 40.55) & (lat < 41.00)]
 
-def print_len(x):
+def _print_len(x):
     if x is not None:
         print(len(x))
 
@@ -19,16 +25,16 @@ def print_len(x):
 
 try:
     s = scheduler
-except:
+except NameError:
     s = Scheduler()
 
 #PREFIX= 'https://storage.googleapis.com/tlc-trip-data/2015/'
 #SUFFIX= ''
-PREFIX= '../nyc-taxi/'
+PREFIX = '../nyc-taxi/'
 if six.PY3:
-    SUFFIX= '.bz2'
+    SUFFIX = '.bz2'
 else:
-    SUFFIX= '.gz'
+    SUFFIX = '.gz'
 
 URLS = [
     PREFIX+'yellow_tripdata_2015-01.csv'+SUFFIX,
@@ -39,22 +45,24 @@ URLS = [
     PREFIX+'yellow_tripdata_2015-06.csv'+SUFFIX,
 ]
 
-filenames = pd.DataFrame({'filename': URLS})
-cst = Constant(Table('filenames', data=filenames), scheduler=s)
-csv = CSVLoader(index_col=False,skipinitialspace=True,usecols=['pickup_longitude', 'pickup_latitude'], filter_=filter_, scheduler=s)
-#csv = CSVLoader(index_col=False,skipinitialspace=True,usecols=['pickup_longitude', 'pickup_latitude'], scheduler=s)
-csv.input.filenames = cst.output.table
-pr = Every(scheduler=s)
-pr.input.df = csv.output.table
-scatterplot = ScatterPlot('pickup_longitude', 'pickup_latitude', scheduler=s, approximate=True)
-scatterplot.create_dependent_modules(csv,'table')
+FILENAMES = pd.DataFrame({'filename': URLS})
+CST = Constant(Table('filenames', data=FILENAMES), scheduler=s)
+CSV = CSVLoader(index_col=False, skipinitialspace=True,
+                usecols=['pickup_longitude', 'pickup_latitude'],
+                filter_=_filter, scheduler=s)
 
-if __name__=='__main__':
+CSV.input.filenames = CST.output.table
+PR = Every(scheduler=s)
+PR.input.df = CSV.output.table
+SCATTERPLOT = ScatterPlot('pickup_longitude', 'pickup_latitude', scheduler=s, approximate=True)
+SCATTERPLOT.create_dependent_modules(CSV, 'table')
+
+if __name__ == '__main__':
     s.start()
     while True:
         time.sleep(2)
-        scheluder.to_json()
-        scatterplot.to_json() # simulate a web query
-        scatterplot.get_image()
+        s.to_json()
+        SCATTERPLOT.to_json() # simulate a web query
+        SCATTERPLOT.get_image()
     s.join()
-    print(len(csv.df()))
+    print(len(CSV.table()))
