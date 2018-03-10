@@ -6,6 +6,8 @@ import re
 import six
 from itertools import tee
 import uuid
+from functools import wraps
+
 from collections import Iterable, Mapping
 from progressivis.core.bitmap import bitmap
 try:
@@ -775,3 +777,51 @@ def spy(*args, **kwargs):
     f = open(kwargs.pop('file'), "a")        
     print(time.time(), *args, file=f, flush=True, **kwargs)
     f.close()
+
+
+def patch_this(to_decorate, module, patch):
+    """
+    patch decorator
+    """
+    def patch_decorator(to_decorate):
+        """
+        This is the actual decorator. It brings together the function to be
+        decorated and the decoration stuff
+        """
+        @wraps(to_decorate)
+        def patch_wrapper(*args, **kwargs):
+            """
+            This function is the decoration
+            run_step(self, run_number, step_size, howlong)
+            """
+            patch.before_run_step(module, *args, **kwargs)
+            ret = to_decorate(*args, **kwargs)
+            patch.after_run_step(module, *args, **kwargs)
+            return ret
+        return patch_wrapper
+    return patch_decorator(to_decorate)
+
+class ModulePatch(object):
+    def __init__(self, name):
+        self._name = name
+        self.applied = False
+    def patch_condition(self, m):
+        if self.applied: return False
+        return self._name == m.name()
+    def before_run_step(self, m, *args, **kwargs):
+        pass
+    def after_run_step(self, m, *args, **kwargs):
+        pass
+
+
+def decorate_module(m, patch):
+    assert hasattr(m, 'run_step')
+    m.run_step = patch_this(to_decorate=m.run_step, module=m, patch=patch)
+    patch.applied = True
+def decorate(scheduler, patch):
+    for m in scheduler.modules().values():
+        if patch.patch_condition(m):
+            decorate_module(m, patch)
+
+
+    
