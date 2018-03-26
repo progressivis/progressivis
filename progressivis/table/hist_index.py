@@ -96,7 +96,7 @@ class _HistogramIndexImpl(object):
         bin_tuples = list(zip(self.bitmaps, bins_1))
         merge_cnt = 0
         if len(bin_tuples) <= 2:
-            return ret
+            return merge_cnt
         merged_tuples = []
         prev_bm, prev_sep = bin_tuples[0]
         for bm, sep in bin_tuples[1:]:
