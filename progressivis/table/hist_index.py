@@ -118,7 +118,7 @@ class _HistogramIndexImpl(object):
         for i, bm in enumerate(self.bitmaps):
             if self._needs_division(len(bm)):
                 self.divide_bin(i)
-        while self._is_merging_required():
+        if self._is_merging_required():
             self.merge_once()
 
 
