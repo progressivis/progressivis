@@ -9,7 +9,7 @@ from six.moves import input
 import requests
 
 from progressivis import log_level
-from progressivis.server.app import start_server
+from progressivis.server import start_server
 from progressivis.core.scheduler import Scheduler
 
 from progressivis.core.utils import Thread
@@ -21,6 +21,7 @@ for filename in sys.argv[1:]:
     if filename == "nosetests":
         continue
     print("Loading '%s'" % filename)
+    # pylint: disable=exec-used
     exec(compile(open(filename).read(), filename, 'exec'), ENV, ENV)
 
 def _signal_handler(signum, frame):
@@ -32,8 +33,8 @@ if __name__ == '__main__':
     log_level(level=logging.NOTSET)
     signal.signal(signal.SIGTERM, _signal_handler)
     signal.signal(signal.SIGINT, _signal_handler)
-    thread = Thread(target=start_server)
-    thread.start()
+    THREAD = Thread(target=start_server)
+    THREAD.start()
     print("Server launched!")
     while True:
         _ = input()

@@ -1,8 +1,13 @@
+"""
+Flask server for ProgressiVis.
+"""
 from __future__ import absolute_import, division, print_function
 
-from six import StringIO
 import logging
-logger = logging.getLogger(__name__)
+
+from six import StringIO
+
+import numpy as np
 
 from flask import Flask, Blueprint
 from flask.json import JSONEncoder
@@ -10,32 +15,41 @@ from tornado.wsgi import WSGIContainer
 from tornado.web import Application, FallbackHandler
 from tornado.websocket import WebSocketHandler
 from tornado.ioloop import IOLoop
-from progressivis import ProgressiveError, Scheduler
-import numpy as np
+from progressivis import ProgressiveError
+from progressivis.core.scheduler import Scheduler
+
+
+
+logger = logging.getLogger(__name__)
 
 class JSONEncoder4Numpy(JSONEncoder):
+    "Encode numpy objects"
     def default(self, obj):
-        try:
-            if isinstance(obj, float) and np.isnan(obj):
-                return None
-            if isinstance(obj, np.integer):
-                return int(obj)
-            if isinstance(obj, np.bool_):
-                return bool(obj)
-            if isinstance(obj, np.ndarray):
-                return obj.tolist()
-        except:
-            pass
+        "Handle default encoding."
+        if isinstance(obj, float) and np.isnan(obj):
+            return None
+        if isinstance(obj, np.integer):
+            return int(obj)
+        if isinstance(obj, np.bool_):
+            return bool(obj)
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
         return JSONEncoder.default(self, obj)
-    
+
+
 class ProgressiveWebSocket(WebSocketHandler):
+    "Manage the WebSocket connection"
     sockets_for_path = {}
     def __init__(self, application, request, **kwargs):
         super(ProgressiveWebSocket, self).__init__(application, request, **kwargs)
         self.handshake = False
         self.path = None
 
+    def data_received(self, chunk):
+        pass
+
     def register(self):
+        "Register the websocket to ProgressiVis"
         if self.path is None:
             logger.error('Trying to register a websocket without path')
             raise ProgressiveError('Trying to register a websocket without path')
@@ -45,11 +59,13 @@ class ProgressiveWebSocket(WebSocketHandler):
             self.sockets_for_path[self.path].append(self)
 
     def unregister(self):
+        "Unregister the websocket from ProgressiVis"
         if self.path is None or self.path not in self.sockets_for_path:
             return
         self.sockets_for_path[self.path].remove(self)
 
-    def open(self):
+    def open(self, *args, **kwargs):
+        "Open the connection"
         logger.info("Socket opened.")
         self.handshake = False
 
@@ -77,53 +93,71 @@ class ProgressiveWebSocket(WebSocketHandler):
 
     @staticmethod
     def write_to_path(path, msg):
-        logger.info('Sending message %s to path %s'%(msg,path))
+        "Write message to web page monitoring the specific path"
+        logger.info('Sending message %s to path %s', msg, path)
         sockets = ProgressiveWebSocket.sockets_for_path.get(path)
         if not sockets:
-            logger.warning('Message sent to nonexistent path "%s"',path)
+            logger.warning('Message sent to nonexistent path "%s"', path)
             return
         for s in sockets:
             s.write_message(msg)
 
-        
+
 class ProgressivisBlueprint(Blueprint):
+    "Blueprint for ProgressiVis"
     def __init__(self, *args, **kwargs):
         super(ProgressivisBlueprint, self).__init__(*args, **kwargs)
+        self.scheduler = None
         self.start_logging()
 
     def start_logging(self):
+        "Start logging out"
         out = self._log_stream = StringIO()
-        out.write("<html><body><table><tr><th>Time</th><th>Name</th><th>Level</th><th>Message</th></tr>\n");
-        ch = logging.StreamHandler(stream=self._log_stream)
-        ch.setLevel(logging.DEBUG)
-        formatter = logging.Formatter('<tr><td>%(asctime)s</td><td>%(name)s</td><td>%(levelname)s</td><td>%(message)s</td></tr>\n')
-        ch.setFormatter(formatter)
-        logging.getLogger("progressivis").addHandler(ch)
+        out.write("<html><body><table>"
+                  "<tr><th>Time</th><th>Name</th><th>Level</th><th>Message</th></tr>\n")
+        streamhandler = logging.StreamHandler(stream=self._log_stream)
+        streamhandler.setLevel(logging.DEBUG)
+        formatter = logging.Formatter('<tr><td>%(asctime)s</td>'
+                                      '<td>%(name)s</td>'
+                                      '<td>%(levelname)s</td>'
+                                      '<td>%(message)s</td></tr>\n')
+        streamhandler.setFormatter(formatter)
+        logging.getLogger("progressivis").addHandler(streamhandler)
         logging.getLogger("progressivis").setLevel(logging.DEBUG)
 
     def setup(self, scheduler):
+        "Setup the connection with the scheduler"
         self.scheduler = scheduler
         self.scheduler._tick_proc = self.tick_scheduler
 
     def tick_scheduler(self, scheduler, run_number):
+        "Run at each tick"
+        # pylint: disable=unused-argument, no-self-use
         ProgressiveWebSocket.write_to_path('scheduler', 'tick %d'%run_number)
 
-    def step_tick_scheduler(self, scheduler, run_number):        
+    def step_tick_scheduler(self, scheduler, run_number):
+        "Run at each step"
+        # pylint: disable=no-self-use
         ProgressiveWebSocket.write_to_path('scheduler', 'tick %d'%run_number)
         scheduler.stop()
 
     def step_once(self):
+        "Run once"
         self.scheduler.start(tick_proc=self.step_tick_scheduler) # i.e. step+write_to_path
-        
+
     def start(self):
+        "Run when the scheduler starts"
         self.scheduler.start(tick_proc=self.tick_scheduler)
-        
+
     def tick_module(self, module, run_number):
+        "Run when a module has run"
+        # pylint: disable=no-self-use
         ProgressiveWebSocket.write_to_path('module %s'%module.id, 'tick %d'%run_number)
 
     def get_log(self):
+        "Return the log"
         self._log_stream.flush()
-        return self._log_stream.getvalue().replace("\n",'<br>')
+        return self._log_stream.getvalue().replace("\n", '<br>')
 
 
 progressivis_bp = ProgressivisBlueprint('progressivis.server',
@@ -132,12 +166,9 @@ progressivis_bp = ProgressivisBlueprint('progressivis.server',
                                         static_url_path='/progressivis/static',
                                         template_folder='templates')
 
-from . import views
-views # to shut up pyflakes
-from progressivis.core.scheduler import Scheduler
-
 
 def app_create(config="settings.py", scheduler=None):
+    "Create the application"
     if scheduler is None:
         scheduler = Scheduler.default
     app = Flask('progressivis.server')
@@ -158,15 +189,15 @@ def app_create(config="settings.py", scheduler=None):
     return server
 
 def app_run(app):
+    "Run the application"
+    # pylint: disable=unused-argument
     IOLoop.instance().start()
 
-
-
 def start_server(scheduler=None, debug=False):
+    "Start the server"
     if scheduler is None:
-        scheduler = Scheduler.default    
+        scheduler = Scheduler.default
     print('Scheduler has %d modules' % len(scheduler))
     app = app_create(scheduler)
-    app.debug = debug    
+    app.debug = debug
     app_run(app)
-    

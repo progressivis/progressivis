@@ -1,3 +1,6 @@
+"""
+Main imports from progressivis.
+"""
 import logging
 
 from progressivis.core import (ProgressiveError,
@@ -19,6 +22,7 @@ __all__ = ["log_level",
 
 
 def log_level(level=logging.DEBUG, package='progressivis'):
+    "Set the logging level for progressivis."
     stream = logging.StreamHandler()
     stream.setLevel(level)
     formatter = logging.Formatter('%(asctime)s - %(name)s -'
