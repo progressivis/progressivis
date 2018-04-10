@@ -48,11 +48,14 @@ class Percentiles(TableModule):
         lbm = len(hii.bitmaps)
         acc_list = np.empty(lbm, dtype=np.int64)
         sz_list = np.empty(lbm, dtype=np.int64)
+        bm_list = []
         for i, bm in enumerate(hii.bitmaps):
-            sz = len(_filter(bm))
+            fbm = _filter(bm)
+            sz = len(fbm)
             acc += sz
             sz_list[i] = sz
             acc_list[i] = acc
+            bm_list.append(fbm)
             if acc > max_k:
                 break # just avoids unnecessary computes
         acc_list = acc_list[:i+1]
@@ -63,10 +66,10 @@ class Percentiles(TableModule):
             assert sz_list[i] > reminder >= 0 
             if sz_list[i] < k_accuracy:
                 #print("the fast way")
-                ret_values.append(column[hii.bitmaps[i][0]])
+                ret_values.append(column[bm_list[i][0]])
             else:
                 #print("the accurate way")
-                values = column.loc[hii.bitmaps[i]]
+                values = column.loc[bm_list[i]]
                 part = np.partition(values, reminder)
                 ret_values.append(values[reminder])
         return OrderedDict(zip(points.keys(), ret_values))
