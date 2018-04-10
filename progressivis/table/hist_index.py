@@ -10,7 +10,7 @@ import operator
 import logging
 
 import numpy as np
-
+from tdigest import TDigest
 from progressivis.core.bitmap import bitmap
 from progressivis.core.slot import SlotDescriptor
 from progressivis.core.utils import (slice_to_arange, fix_loc, indices_to_slice)
@@ -27,21 +27,130 @@ class _HistogramIndexImpl(object):
     def __init__(self, column, table, e_min, e_max, nb_bin):
         #self.table = table
         self.column = table[column] #  column
-        self.bins = nb_bin
         self.e_min = e_min
         self.e_max = e_max
         self.bitmaps = None
         self.bins = None
+        #self._tdigest = TDigest()
+        #self._tdigest_is_valid = True
+        self._sampling_size = 1000
+        self._perm_deviation = 0.1 # permitted deviation
+        self._divide_threshold = 1000 # TODO: make it settable!
+        self._divide_coef = 5 # TODO: make it settable!
+        self._merge_threshold = 1000 # TODO: make it settable!        
+        self._merge_coef = 5 # TODO: make it settable!
+        self._min_hist_size = 64
+        self._max_hist_size = 256
         self._init_histogram(e_min, e_max, nb_bin)
         self.update_histogram(created=table.index)
     def _init_histogram(self, e_min, e_max, nb_bin):
         self.bins = np.linspace(e_min, e_max, nb_bin, endpoint=True)
         assert len(self.bins) == nb_bin
         self.bitmaps = [bitmap() for _ in range(nb_bin+1)]
-
-    def reshape(self):
+    def _needs_division(self, size):
+        len_c = len(self.column)
+        len_b = len(self.bins)
+        mean = float(len_c)/len_b
+        if size < self._divide_threshold:
+            return False
+        return size > self._divide_coef*mean
+                    
+        
+    def __reshape__still_inconclusive_variant(self, i):
         "Change the bounds of the index if needed"
-        pass  # to be defined...then implemented
+        prev_ = sum([len(bm) for bm in self.bitmaps[:i]])
+        p_ = (prev_ + len(self.bitmaps[i])/2.0)/len(self.column) * 100
+        v = self._tdigest.percentile(p_)
+        try:
+            assert self.bins[i-1] < v < self.bins[i]
+        except:
+            import pdb;pdb.set_trace()
+        ids = np.array(self.bitmaps[i], np.int64)
+        values = self.column.loc[ids]
+        lower_bin = bitmap(ids[values < v])
+        upper_bin = self.bitmaps[i] - lower_bin
+        np.insert(self.bins, i, v)
+        self.bitmaps.insert(i, lower_bin)
+        self.bitmaps[i] = upper_bin
+
+    def show_histogram(self):
+        for i, bm in enumerate(self.bitmaps):
+            print(i, len(bm), "="*len(bm))
+
+    def _is_merging_required(self):
+        return len(self.bitmaps) > self._max_hist_size
+    
+    def _is_mergeable_pair(self, bm1, bm2, merge_cnt):
+        if len(self.bitmaps) - merge_cnt < self._min_hist_size:
+            return False
+        len_c = len(self.column)
+        len_b = len(self.bins)
+        mean = float(len_c)/len_b
+        return len(bm1)+len(bm2) < max(self._merge_coef*mean, self._merge_threshold)
+    
+
+    def merge_once(self):
+        assert len(self.bins)+1 == len(self.bitmaps), "no good"
+        bins_1 = list(self.bins)
+        bins_1.append(None)
+        bin_tuples = list(zip(self.bitmaps, bins_1))
+        merge_cnt = 0
+        if len(bin_tuples) <= 2:
+            return merge_cnt
+        merged_tuples = []
+        prev_bm, prev_sep = bin_tuples[0]
+        for bm, sep in bin_tuples[1:]:
+            if self._is_mergeable_pair(prev_bm, bm, merge_cnt):
+                prev_bm = prev_bm | bm
+                prev_sep = sep
+                merge_cnt += 1
+            else:
+                merged_tuples.append((prev_bm, prev_sep))
+                prev_bm, prev_sep = bm, sep
+        assert prev_sep is None
+        merged_bitmaps, merged_bins = zip(*merged_tuples)
+        merged_bitmaps = list(merged_bitmaps) + [prev_bm]
+        self.bins = np.array(merged_bins)
+        self.bitmaps = merged_bitmaps
+        return merge_cnt
+    
+    def reshape(self):
+        for i, bm in enumerate(self.bitmaps):
+            if self._needs_division(len(bm)):
+                self.divide_bin(i)
+        if self._is_merging_required():
+            self.merge_once()
+
+
+    def divide_bin(self, i):
+        "Change the bounds of the index if needed"
+        #import pdb;pdb.set_trace()
+        ids = np.array(self.bitmaps[i], np.int64)
+        if self._sampling_size*1.2 < len(ids):
+            samples = np.random.choice(ids, self._sampling_size, replace=False)
+        else:
+            samples = ids
+        s_vals = self.column.loc[samples]
+        v = np.median(s_vals)
+        assert self.bins[i-1] < v < self.bins[i] if i>0 else v < self.bins[i]
+        values = self.column.loc[ids]
+        lower_bin = bitmap(ids[values < v])
+        upper_bin = self.bitmaps[i] - lower_bin
+        lower_len = len(lower_bin)
+        upper_len = len(upper_bin)
+        t = len(ids)*self._perm_deviation
+        if abs(lower_len - upper_len) > t:
+            print("DIFF: ", lower_len, upper_len, float(abs(lower_len - upper_len))/len(ids))
+        old = self.bins
+        self.bins = np.insert(self.bins, i, v)
+        try:
+            assert (self.bins[i-1] < self.bins[i] < self.bins[i+1] if i>0
+                        else self.bins[i] < self.bins[i+1])
+        except:
+            import pdb;pdb.set_trace()
+        self.bitmaps.insert(i, lower_bin)
+        self.bitmaps[i+1] = upper_bin
+        print('*', end='')
 
     def _get_bin(self, val):
         i = np.digitize(val, self.bins)
@@ -52,6 +161,8 @@ class _HistogramIndexImpl(object):
         created = bitmap.asbitmap(created)
         updated = bitmap.asbitmap(updated)
         deleted = bitmap.asbitmap(deleted)
+        if deleted:
+            self._tdigest_is_valid = False
         if deleted or updated:
             to_remove = updated | deleted
             for bm in self.bitmaps:
@@ -60,13 +171,14 @@ class _HistogramIndexImpl(object):
             to_add = created | updated
             ids = np.array(to_add, np.int64)
             values = self.column.loc[to_add]
+            #self._tdigest.batch_update(values)
             bins = np.digitize(values, self.bins)
             counts = np.bincount(bins)
             for i in np.nonzero(counts)[0]:
                 bm = self.bitmaps[i]
                 selection = (bins == i)    # boolean mask of values in bin i
                 bm.update(ids[selection])  # add them to the bitmap
-
+                #self.check_shape(i)
     def query(self, operator_, limit, approximate=APPROX):  # blocking...
         """
         Return the list of rows matching the query.
@@ -265,6 +377,7 @@ class HistogramIndex(TableModule):
         else:
             # Many not always, or should the implementation decide?
             self._impl.reshape()
+            pass
         deleted = None
         if input_slot.deleted.any():
             deleted = input_slot.deleted.next(as_slice=False)
