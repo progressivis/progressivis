@@ -35,13 +35,11 @@ class TestPercentiles(ProgressiveTest):
         pdict = percentiles.table().last().to_dict()
         v = random.table()['_1'].values
         p25 = np.percentile(v, 25.0)
-        print(p25, pdict['_25'])
-        self.assertAlmostEqual(p25, pdict['_25'], delta=0.01)
         p50 = np.percentile(v, 50.0)
-        print(p50, pdict['_50'])
-        self.assertAlmostEqual(p50, pdict['_50'], delta=0.01)
         p75 = np.percentile(v, 75.0)
-        print(p75, pdict['_75'])
+        print("Table=> accuracy: ", accuracy," 25:", p25, pdict['_25'], " 50:", p50, pdict['_50'], " 75:", p75, pdict['_75'])
+        self.assertAlmostEqual(p25, pdict['_25'], delta=0.01)        
+        self.assertAlmostEqual(p50, pdict['_50'], delta=0.01)        
         self.assertAlmostEqual(p75, pdict['_75'], delta=0.01)
     def test_percentiles_fast(self):
         """test_percentiles: Simple test for HistIndex based percentiles
@@ -52,6 +50,7 @@ class TestPercentiles(ProgressiveTest):
         """test_percentiles: Simple test for HistIndex based percentiles
         higher accurracy => slower mode
         """
+        return self._impl_tst_percentiles(0.2)
     def _impl_tst_percentiles_rq(self, accuracy):
         """
         """
@@ -81,13 +80,11 @@ class TestPercentiles(ProgressiveTest):
         pdict = percentiles.table().last().to_dict()
         v = range_qry.table()['_1'].values
         p25 = np.percentile(v, 25.0)
-        print(p25, pdict['_25'])
-        self.assertAlmostEqual(p25, pdict['_25'], delta=0.01)
         p50 = np.percentile(v, 50.0)
-        print(p50, pdict['_50'])
-        self.assertAlmostEqual(p50, pdict['_50'], delta=0.01)
         p75 = np.percentile(v, 75.0)
-        print(p75, pdict['_75'])
+        print("TSV=> accuracy: ", accuracy," 25:",p25, pdict['_25'], " 50:", p50, pdict['_50'], " 75:", p75, pdict['_75'])
+        self.assertAlmostEqual(p25, pdict['_25'], delta=0.01)        
+        self.assertAlmostEqual(p50, pdict['_50'], delta=0.01)        
         self.assertAlmostEqual(p75, pdict['_75'], delta=0.01)
     def test_percentiles_fast_rq(self):
         """test_percentiles: Simple test for HistIndex based percentiles
