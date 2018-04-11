@@ -24,43 +24,41 @@ var module_graph = function(){
   
   function graph_setup() {
       var outer = d3.select("#module-graph")
-              .attr({width: width, height: height, "pointer-events": "all"});
+              .attr('width', width)
+              .attr('height', height)
+              .attr("pointer-events", "all");
   
       outer.append('rect')
-          .attr({ 'class': 'background', width: "100%", height: "100%"})
-          .call(d3.behavior.zoom().on("zoom", zoom));
-  
-      outer.append('svg:defs').append('svg:marker')
-          .attr({
-              id: 'end-arrow',
-              viewBox: '0 -5 10 10',
-              refX: 8,
-              markerWidth: 6,
-              markerHeight: 6,
-              orient: 'auto'
-          })
-          .append('svg:path')
-          .attr({
-              d: 'M0,-5L10,0L0,5L2,0',
-              'stroke-width': '0px',
-              fill: '#000'});
+          .attr('class', 'background')
+          .attr('width', "100%")
+          .attr('height', "100%")
+          .call(d3.zoom().on("zoom", zoom));
   
       var vis = outer.append('g');
+
+      outer.append('svg:defs').append('svg:marker')
+          .attr('id','end-arrow')
+          .attr('viewBox','0 -5 10 10')
+          .attr('refX',8)
+          .attr('markerWidth',6)
+          .attr('markerHeight',6)
+          .attr('orient','auto')
+          .append('svg:path')
+          .attr('d','M0,-5L10,0L0,5L2,0Z')
+          .attr('stroke-width','0px')
+          .attr('fill','#000');
+  
   
       function zoom() {
-          vis.attr("transform", "translate(" + d3.event.translate + ")" + " scale(" + d3.event.scale + ")");
+          vis.attr("transform", d3.event.transform);
       }
   
-      d3cola = cola.d3adaptor().convergenceThreshold(0.1);
-  
-      d3cola
-          .avoidOverlaps(true)
-          .convergenceThreshold(1e-3)
-          .flowLayout('x', 150)
+      d3cola = cola.d3adaptor(d3)
           .size([width, height])
+          .avoidOverlaps(true)
+          .convergenceThreshold(0.001)
+          .flowLayout('x', 150)
           .jaccardLinkLengths(150);
-  
-  
   }
   
   /**
@@ -119,63 +117,77 @@ var module_graph = function(){
       var vis = d3.select("#module-graph g");
   
       var node = vis.selectAll(".node")
-              .data(nodes);
-  
-      node.attr("class", function(d){ return "node " + d.state; });
+              .data(nodes, function (d) { return d.id; });
   
   
       if (firstTime) {
           node.enter().append("rect")
               .attr("class", function(d){ return "node " + d.state; })
-              .attr({ rx: 5, ry: 5 });
+              .attr('rx', 5)
+              .attr('ry', 5);
   
           node.exit().remove();
   
           var label = vis.selectAll(".label")
-                  .data(nodes);
-  
-          label.enter().append("text")
-              .attr("class", "label")
-              .text(function (d) { return d.name; })
-              .each(function (d) {
-                  var b = this.getBBox();
-                  var extra = 2 * margin + 2 * pad;
-                  d.width = b.width + extra;
-                  d.height = b.height + extra;
-              });
+                  .data(nodes)
+                  .enter().append("text")
+                  .attr("class", "label")
+                  .text(function (d) { return d.name; })
+                  .each(function (d) {
+                      var b = this.getBBox();
+                      var extra = 2 * margin + 2 * pad;
+                      d.width = b.width + extra;
+                      d.height = b.height + extra;
+                  });
           label.exit().remove();
   
           var link = vis.selectAll(".link")
-                  .data(edges);
+                  .data(edges)
+                  .enter().append("path")
+                  .attr("class", "link");
           
-          link.enter().append("path")
-              .attr("class", "link");
-  
           link.exit().remove();
           
-          var lineFunction = d3.svg.line()
+          var lineFunction = d3.line()
                   .x(function (d) { return d.x; })
-                  .y(function (d) { return d.y; })
-                  .interpolate("linear");
+                  .y(function (d) { return d.y; });
   
           var routeEdges = function(){
-              d3cola.prepareEdgeRouting();
+              d3cola.prepareEdgeRouting(margin / 3);
               link.attr("d", function(d){ return lineFunction(d3cola.routeEdge(d)); });
           };
   
+          node = vis.selectAll(".node") // reset?
+              .data(nodes, function (d) { return d.id; }); 
           d3cola.nodes(nodes)
               .links(edges)
-              .start(50, 100, 200).on("tick", function () {
-                  node.each(function (d) { d.innerBounds = d.bounds.inflate(-margin); })
-                      .attr("x", function (d) { return d.innerBounds.x; })
-                      .attr("y", function (d) { return d.innerBounds.y; })
+              .start(50, 100, 200)
+              .on("tick", function () {
+                  node.each(function (d) {
+                      d.innerBounds = d.bounds.inflate(-margin);
+                  })
+                      .attr("x", function (d) {
+                          return d.innerBounds.x;
+                      })
+                      .attr("y", function (d) {
+                          return d.innerBounds.y;
+                      })
                       .attr("width", function (d) {
                           return d.innerBounds.width();
                       })
-                      .attr("height", function (d) { return d.innerBounds.height(); });
-                  label.attr("x", function(d){ return d.x; })
+                      .attr("height", function (d) {
+                          return d.innerBounds.height();
+                      });
+
+                  link.attr("d", function(d) {
+                      var route = cola.makeEdgeBetween(d.source.innerBounds, d.target.innerBounds, 5);
+                      return lineFunction([route.sourceIntersection, route.arrowStart]);
+                  });
+                  label
+                      .attr("x", function(d){ return d.x; })
                       .attr("y", function(d){ return d.y + (margin + pad) / 2; });
-              }).on("end", routeEdges);
+              })
+              .on("end", routeEdges);
       }
   }
   

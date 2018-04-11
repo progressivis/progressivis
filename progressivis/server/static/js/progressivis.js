@@ -145,4 +145,4 @@ function progressivis_ready(socket_name) {
     progressivis_websocket_open(socket_name, progressivis_socketmsg);
 }
 
-window.addEventListener('visibilitychange', function() {if(!document.hidden){refresh();}})
+window.addEventListener('visibilitychange', function() {if(!document.hidden){refresh();}});
