@@ -1,3 +1,4 @@
+var scatterplot_ready = (function() {
 var margin = {top: 20, right: 20, bottom: 30, left: 40},
     width = 960 - margin.left - margin.right,
     height = 500 - margin.top - margin.bottom,
@@ -352,3 +353,5 @@ function scatterplot_ready() {
     refresh = scatterplot_refresh; // function to call to refresh
     module_ready();
 }
+return scatterplot_ready;
+})();

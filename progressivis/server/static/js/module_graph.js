@@ -157,13 +157,13 @@ var module_graph = function(){
               link.attr("d", function(d){ return lineFunction(d3cola.routeEdge(d)); });
           };
   
-          node = vis.selectAll(".node") // reset?
-              .data(nodes, function (d) { return d.id; }); 
           d3cola.nodes(nodes)
               .links(edges)
               .start(50, 100, 200)
               .on("tick", function () {
-                  node.each(function (d) {
+                  var node = vis.selectAll(".node")
+                          .data(nodes, function (d) { return d.id; })
+                          .each(function (d) {
                       d.innerBounds = d.bounds.inflate(-margin);
                   })
                       .attr("x", function (d) {
