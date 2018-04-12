@@ -93,8 +93,6 @@ function scatterplot_update_vis(rawdata) {
         y.domain([bounds['ymin'], bounds['ymax']]).nice();
         x0 = x.copy();
         y0 = y.copy();
-        // zoom.x(x)
-        //     .y(y);
 
         // svg.append("rect")
         //     .attr("x", 0)
@@ -157,19 +155,12 @@ function scatterplot_update_vis(rawdata) {
             var x_bounds = [prevBounds.xmin, prevBounds.xmax],
                 y_bounds = [prevBounds.ymin, prevBounds.ymax];
 
+            console.log('Bounds have changed from '+prevBounds+' to '+bounds);
             prevBounds = bounds;
             x.domain([bounds['xmin'], bounds['xmax']]).nice();
             y.domain([bounds['ymin'], bounds['ymax']]).nice();
             x0 = x.copy();
             y0 = y.copy();
-            // zoom.x(x)
-            //     .y(y)
-            //     .translate(translate)
-            //     .scale(scale);
-            // x.domain(x0.range()
-            //          .map(function(x) {
-            //              return (x - translate[0]) / scale; })
-            //          .map(x0.invert));
         }
 
         ix = x0(bounds['xmin']);
@@ -235,17 +226,16 @@ function scatterplot_update_vis(rawdata) {
          .call(node_drag)
         .append("title")
         .text(function(d, i) { return index[i]; });
-    dots//.transition()  // Transition from old to new
-        //.duration(500)  // Length of animation
-         .attr("cx", function(d) { return x0(d[0]); })
+    dots .attr("cx", function(d) { return x0(d[0]); })
          .attr("cy", function(d) { return y0(d[1]); });
     dots.exit().remove();
     dots.order();
 }
 
-function scatterplot_zoomed(transform) {
-    if (transform === undefined)
-        transform = d3.event.transform;
+function scatterplot_zoomed(t) {
+    if (t === undefined)
+        t = d3.event.transform;
+    transform = t;
     gX.call(xAxis.scale(transform.rescaleX(x)));
     gY.call(yAxis.scale(transform.rescaleY(y)));
     zoomable.attr("transform", transform);
@@ -278,16 +268,16 @@ function makeOptions(select, names){
 function ignore(data) {}
 
 function scatterplot_filter() {
-    var xmin    = x.invert(0),
-        xmax    = x.invert(width),
-        ymin    = y.invert(height),
-        ymax    = y.invert(0),
-        bounds  = progressivis_data['bounds'],
+    var xmin = xAxis.scale().invert(0),
+        xmax = xAxis.scale().invert(width),
+        ymin = yAxis.scale().invert(height),
+        ymax = yAxis.scale().invert(0),
+        bounds  = prevBounds,
         columns = progressivis_data['columns'],
         min     = {},
         max     = {};
 
-
+    
     if (xmin > bounds['xmin'])
         min[columns[0]] = xmin;
     else
