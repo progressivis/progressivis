@@ -3,27 +3,30 @@ var margin = {top: 20, right: 20, bottom: 30, left: 40},
     height = 500 - margin.top - margin.bottom,
     svg, prevBounds = null;
 
-var x = d3.scaleLinear().range([0, width]),
+var xScale = d3.scaleLinear().range([0, width]),
     x0;
 
-var y = d3.scaleLinear().range([height, 0]),
+var yScale = d3.scaleLinear().range([height, 0]),
     y0;
 
 var color = d3.scaleOrdinal(d3.schemeCategory10);
 
-var xAxis = d3.axisBottom()
-    .scale(x);
+var xAxis = d3.axisBottom(xScale)
+        .tickSize(height)
+        .tickPadding(8 - height);
 
-var yAxis = d3.axisLeft()
-    .scale(y);
+var yAxis = d3.axisRight(yScale)
+        .tickSize(width)
+        .tickPadding(8 - width);
 
 var zoom = d3.zoom()
-        .scaleExtent([1, 32])
+        //.scaleExtent([1, 32])
         .on("zoom", scatterplot_zoomed);
+
+var view, gX, gY, zoomable;
 
 const DEFAULT_SIGMA = 1;
 const DEFAULT_FILTER = "default";
-
 const MAX_PREV_IMAGES = 3;
 var imageHistory = new History(MAX_PREV_IMAGES);
 
@@ -84,29 +87,31 @@ function scatterplot_update_vis(rawdata) {
     if (!data || !bounds) return;
     var index = data['index'];
 
-    if (prevBounds == null) {
+    if (prevBounds == null) { // first display, not refresh
         prevBounds = bounds;
-        x.domain([bounds['xmin'], bounds['xmax']]).nice();
-        y.domain([bounds['ymin'], bounds['ymax']]).nice();
-        x0 = x.copy();
-        y0 = y.copy();
+        xScale.domain([bounds['xmin'], bounds['xmax']]).nice();
+        yScale.domain([bounds['ymin'], bounds['ymax']]).nice();
+        x0 = xScale.copy();
+        y0 = yScale.copy();
         // zoom.x(x)
         //     .y(y);
 
-        svg.append("rect")
-            .attr("x", 0)
-            .attr("y", 0)
-            .attr("width", width)
-            .attr("height", height)
-            .style("fill", "none")
-            .style("pointer-events", "all");
+        // svg.append("rect")
+        //     .attr("x", 0)
+        //     .attr("y", 0)
+        //     .attr("width", width)
+        //     .attr("height", height)
+        //     .style("fill", "none")
+        //     .style("pointer-events", "all");
 
-        var zoomable = svg.append("g").attr('id', 'zoomable');
+        zoomable = svg.append("g")
+            .attr('id', 'zoomable')
+            .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
-        ix = x(bounds['xmin']),
-        iy = y(bounds['ymax']),
-        iw = x(bounds['xmax'])-ix,
-        ih = y(bounds['ymin'])-iy;
+        ix = xScale(bounds['xmin']),
+        iy = yScale(bounds['ymax']),
+        iw = xScale(bounds['xmax'])-ix,
+        ih = yScale(bounds['ymin'])-iy;
             
         zoomable.append("image")
             .attr("class", "heatmap")
@@ -129,28 +134,15 @@ function scatterplot_update_vis(rawdata) {
             .attr("width",  iw)
             .attr("height", ih);
 
-        svg.append("g")
-            .attr("class", "x axis")
-            .attr("transform", "translate(0," + height + ")")
-            .call(xAxis)
-            .append("text")
-            .attr("class", "label")
-            .attr("x", width)
-            .attr("y", -6)
-            .style("text-anchor", "end")
-            .text([0]);
+        gX = svg.append("g")
+            .attr("class", "x axis axis--x")
+            .call(xAxis);
 
-        svg.append("g")
-            .attr("class", "y axis")
-            .call(yAxis)
-            .append("text")
-            .attr("class", "label")
-            .attr("transform", "rotate(-90)")
-            .attr("y", 6)
-            .attr("dy", ".71em")
-            .style("text-anchor", "end")
-            .text(data['columns'][1]);
+        gY = svg.append("g")
+            .attr("class", "y axis axis--y")
+            .call(yAxis);
 
+        svg.call(zoom);
         firstTime = false;
     }
     else { // prevBounds != null
@@ -169,18 +161,21 @@ function scatterplot_update_vis(rawdata) {
             prevBounds = bounds;
             // Compute the new scale and translation according to the new bounds,
             // leaving the lower left point unmoved or almost if the aspect ratio is not.
-            scale = Math.min(_db(x0.domain()) / _db(x_bounds) ,
-                             _db(y0.domain()) / _db(y_bounds));
-            translate = [-x0(x_bounds[0])*scale, -y0(y_bounds[1])*scale];
-            x.domain([bounds['xmin'], bounds['xmax']]).nice();
-            y.domain([bounds['ymin'], bounds['ymax']]).nice();
-            x0 = x.copy();
-            y0 = y.copy();
+            // scale = Math.min(_db(x0.domain()) / _db(x_bounds) ,
+            //                  _db(y0.domain()) / _db(y_bounds));
+            // translate = [-x0(x_bounds[0])*scale, -y0(y_bounds[1])*scale];
+            xScale.domain([bounds['xmin'], bounds['xmax']]).nice();
+            yScale.domain([bounds['ymin'], bounds['ymax']]).nice();
+            x0 = xScale.copy();
+            y0 = yScale.copy();
             // zoom.x(x)
             //     .y(y)
             //     .translate(translate)
             //     .scale(scale);
-            x.domain(x0.range().map(function(x) { return (x - translate[0]) / scale; }).map(x0.invert));
+            // x.domain(x0.range()
+            //          .map(function(x) {
+            //              return (x - translate[0]) / scale; })
+            //          .map(x0.invert));
         }
 
         ix = x0(bounds['xmin']);
@@ -200,13 +195,14 @@ function scatterplot_update_vis(rawdata) {
             .attr("width",  iw)
             .attr("height", ih);
         
-        zoom.event(svg); // propagate
+        //zoom.event(svg); // propagate
     }
     var imgSrc = rawdata['image'];
     imageHistory.enqueueUnique(imgSrc);
 
-    var prevImgElements = d3.select("#prevImages").selectAll("img")
-      .data(imageHistory.getItems(), function(d){ return d; }); 
+    var prevImgElements = d3.select("#prevImages")
+            .selectAll("img")
+            .data(imageHistory.getItems(), function(d){ return d; });
 
     prevImgElements.enter()
         .append("img")
@@ -232,7 +228,7 @@ function scatterplot_update_vis(rawdata) {
         .attr("height", 5)
         .remove();
 
-    var dots = d3.select("#zoomable")
+    var dots = zoomable
             .selectAll(".dot")
              .data(data['data'], function(d, i) { return index[i]; });
     
@@ -255,10 +251,11 @@ function scatterplot_update_vis(rawdata) {
 
 function scatterplot_zoomed() {
     var transform = d3.event.transform;
-    svg.select(".x.axis").call(xAxis.scale(transform.rescaleX(x)));
-    svg.select(".y.axis").call(yAxis.scale(transform.rescaleY(y)));
-    svg.select("#zoomable")
-        .attr("transform", transform);
+    gX.call(xAxis.scale(transform.rescaleX(xScale)));
+    gY.call(yAxis.scale(transform.rescaleY(yScale)));
+    // var ydomain = y.range().map(transform.invertY, transform).map(y.invert, y);
+    // gY.call(yAxis.scale(ydomain));
+    zoomable.attr("transform", transform);
     //svg.selectAll(".dot").attr("r", 3.5/scale);
 }
 
@@ -324,10 +321,10 @@ function scatterplot_filter() {
 function scatterplot_ready() {
     svg = d3.select("#scatterplot svg")
          .attr("width", width + margin.left + margin.right)
-         .attr("height", height + margin.top + margin.bottom)
-        .append("g")
-         .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
-         .call(zoom);
+         .attr("height", height + margin.top + margin.bottom);
+        //.append("g")
+        //.attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+        //.call(zoom);
 
     $('#nav-tabs a').click(function (e) {
         e.preventDefault();

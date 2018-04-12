@@ -1,5 +1,7 @@
 // Canvas props
 
+var line_graph = (function() {
+
 var margin = {top: 30, right: 20, bottom: 30, left: 50},
     width = 600 - margin.left - margin.right,
     height = 200 - margin.top - margin.bottom;
@@ -58,3 +60,5 @@ function line_graph(data){
 
 }
 
+return line_graph;
+})();
