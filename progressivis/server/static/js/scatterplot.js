@@ -2,21 +2,21 @@ var scatterplot_ready = (function() {
 var margin = {top: 20, right: 20, bottom: 30, left: 40},
     width = 960 - margin.left - margin.right,
     height = 500 - margin.top - margin.bottom,
-    svg, prevBounds = null;
+    svg, prevBounds = null, transform = d3.zoomIdentity;
 
-var xScale = d3.scaleLinear().range([0, width]),
+var x = d3.scaleLinear().range([0, width]),
     x0;
 
-var yScale = d3.scaleLinear().range([height, 0]),
+var y = d3.scaleLinear().range([height, 0]),
     y0;
 
 var color = d3.scaleOrdinal(d3.schemeCategory10);
 
-var xAxis = d3.axisBottom(xScale)
+var xAxis = d3.axisBottom(x)
         .tickSize(height)
         .tickPadding(8 - height);
 
-var yAxis = d3.axisRight(yScale)
+var yAxis = d3.axisRight(y)
         .tickSize(width)
         .tickPadding(8 - width);
 
@@ -82,7 +82,6 @@ var node_drag = d3.drag()
 function scatterplot_update_vis(rawdata) {
     var data = rawdata['scatterplot'],
         bounds = rawdata['bounds'],
-        scale = 1,
         ix, iy, iw, ih;
 
     if (!data || !bounds) return;
@@ -90,10 +89,10 @@ function scatterplot_update_vis(rawdata) {
 
     if (prevBounds == null) { // first display, not refresh
         prevBounds = bounds;
-        xScale.domain([bounds['xmin'], bounds['xmax']]).nice();
-        yScale.domain([bounds['ymin'], bounds['ymax']]).nice();
-        x0 = xScale.copy();
-        y0 = yScale.copy();
+        x.domain([bounds['xmin'], bounds['xmax']]).nice();
+        y.domain([bounds['ymin'], bounds['ymax']]).nice();
+        x0 = x.copy();
+        y0 = y.copy();
         // zoom.x(x)
         //     .y(y);
 
@@ -109,10 +108,10 @@ function scatterplot_update_vis(rawdata) {
             .attr('id', 'zoomable')
             .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
-        ix = xScale(bounds['xmin']),
-        iy = yScale(bounds['ymax']),
-        iw = xScale(bounds['xmax'])-ix,
-        ih = yScale(bounds['ymin'])-iy;
+        ix = x(bounds['xmin']),
+        iy = y(bounds['ymax']),
+        iw = x(bounds['xmax'])-ix,
+        ih = y(bounds['ymin'])-iy;
             
         zoomable.append("image")
             .attr("class", "heatmap")
@@ -156,19 +155,13 @@ function scatterplot_update_vis(rawdata) {
         }
         if (changed) {
             var x_bounds = [prevBounds.xmin, prevBounds.xmax],
-                y_bounds = [prevBounds.ymin, prevBounds.ymax],
-                translate;
+                y_bounds = [prevBounds.ymin, prevBounds.ymax];
 
             prevBounds = bounds;
-            // Compute the new scale and translation according to the new bounds,
-            // leaving the lower left point unmoved or almost if the aspect ratio is not.
-            // scale = Math.min(_db(x0.domain()) / _db(x_bounds) ,
-            //                  _db(y0.domain()) / _db(y_bounds));
-            // translate = [-x0(x_bounds[0])*scale, -y0(y_bounds[1])*scale];
-            xScale.domain([bounds['xmin'], bounds['xmax']]).nice();
-            yScale.domain([bounds['ymin'], bounds['ymax']]).nice();
-            x0 = xScale.copy();
-            y0 = yScale.copy();
+            x.domain([bounds['xmin'], bounds['xmax']]).nice();
+            y.domain([bounds['ymin'], bounds['ymax']]).nice();
+            x0 = x.copy();
+            y0 = y.copy();
             // zoom.x(x)
             //     .y(y)
             //     .translate(translate)
@@ -235,7 +228,7 @@ function scatterplot_update_vis(rawdata) {
     
     dots.enter().append("circle")
          .attr("class", "dot")
-         .attr("r", 3.5/scale)
+         .attr("r", 3.5/transform.k)
          .attr("cx", function(d) { return x0(d[0]); }) // use untransformed x0/y0
          .attr("cy", function(d) { return y0(d[1]); })
          .style("fill", "blue") //function(d) { return color(d.species); });
@@ -250,14 +243,13 @@ function scatterplot_update_vis(rawdata) {
     dots.order();
 }
 
-function scatterplot_zoomed() {
-    var transform = d3.event.transform;
-    gX.call(xAxis.scale(transform.rescaleX(xScale)));
-    gY.call(yAxis.scale(transform.rescaleY(yScale)));
-    // var ydomain = y.range().map(transform.invertY, transform).map(y.invert, y);
-    // gY.call(yAxis.scale(ydomain));
+function scatterplot_zoomed(transform) {
+    if (transform === undefined)
+        transform = d3.event.transform;
+    gX.call(xAxis.scale(transform.rescaleX(x)));
+    gY.call(yAxis.scale(transform.rescaleY(y)));
     zoomable.attr("transform", transform);
-    //svg.selectAll(".dot").attr("r", 3.5/scale);
+    svg.selectAll(".dot").attr("r", 3.5/transform.k);
 }
 
 
