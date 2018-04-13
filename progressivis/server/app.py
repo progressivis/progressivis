@@ -44,6 +44,7 @@ class ProgressiveWebSocket(WebSocketHandler):
         super(ProgressiveWebSocket, self).__init__(application, request, **kwargs)
         self.handshake = False
         self.path = None
+        self.protocol = "old"
 
     def data_received(self, chunk):
         pass
@@ -88,7 +89,10 @@ class ProgressiveWebSocket(WebSocketHandler):
         logger.info("Socket for '%s' closed.", self.path)
 
     def select_subprotocol(self, subprotocols):
-        # for now, don't implement any subprotocol
+        logger.info('Subprotocol %s selected', subprotocols)
+        if "new" in subprotocols:
+            self.protocol = "new"
+            return self.protocol
         return None
 
     @staticmethod
