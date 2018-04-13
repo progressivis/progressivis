@@ -2,23 +2,44 @@ var ProgressiVis = {};
 
 var socket = null,
     handshake = false,
+    protocol = null,
     progressivis_run_number,
     progressivis_data,
     refresh, error;
 
 function progressivis_websocket_open(msg, handler) {
+    //socket = new WebSocket("ws://" + document.domain + ":5000/websocket/", "new");
     socket = new WebSocket("ws://" + document.domain + ":5000/websocket/");
 
     socket.onopen = function() {
-        socket.send("ping "+msg);
+        protocol = socket.protocol;
+        if (protocol)
+            console.log('Socket open with protocol '+protocol);
+        if (protocol == "new")
+            socket.send(JSON.stringify({"type": "ping"}));
+        else
+            socket.send("ping "+msg);
 	handshake = false;
     };
 
+    socket.onclose = function() {
+        handshake = false;
+    };
+
     socket.onmessage = function(message) {
+        if (protocol == "new") {
+            var msg = JSON.parse(message);
+            if (msg.type == "pong" && ! handshake) {
+	        handshake = true;
+	        console.log('Handshake received');
+	        return;
+            }
+            if (handler) handler(msg);
+        }
         var txt = message.data;
 	if (txt == 'pong' && !handshake) {
 	    handshake = true;
-	    //console.log('Received handshake');
+	    console.log('Handshake received');
 	    return;
 	}
 	if (handler) handler(message);
@@ -32,7 +53,8 @@ function progressivis_update(data) {
 }
 
 function progressivis_websocket_submit(text) {
-    socket.send(text);
+    if (handshake == true)
+        socket.send(text);
 }
 
 function layout_dict(dict, order) {
@@ -145,4 +167,4 @@ function progressivis_ready(socket_name) {
     progressivis_websocket_open(socket_name, progressivis_socketmsg);
 }
 
-window.addEventListener('visibilitychange', function() {if(!document.hidden){refresh();}})
+window.addEventListener('visibilitychange', function() {if(!document.hidden){refresh();}});
