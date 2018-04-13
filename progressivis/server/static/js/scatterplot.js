@@ -1,4 +1,4 @@
-var scatterplot_ready = (function() {
+var scatterplot_ready = (function() { // encapsulate to avoid side effects
 var margin = {top: 20, right: 20, bottom: 30, left: 40},
     width = 960 - margin.left - margin.right,
     height = 500 - margin.top - margin.bottom,
@@ -19,10 +19,15 @@ var x     = d3.scaleLinear().range([0, width]),
 
 var view, gX, gY, zoomable;
 
-const DEFAULT_SIGMA = 1;
+const DEFAULT_SIGMA = 0;
 const DEFAULT_FILTER = "default";
 const MAX_PREV_IMAGES = 3;
 var imageHistory = new History(MAX_PREV_IMAGES);
+
+const EPSILON = 1e-6;
+function float_equal(a, b) {
+    return Math.abs(a-b) < EPSILON;
+}
 
 function scatterplot_update(data) {
     module_update(data);
@@ -55,23 +60,7 @@ var node_drag = d3.drag()
         .on("start", scatterplot_dragstart)
         .on("drag", scatterplot_dragmove)
         .on("end", scatterplot_dragend);
-/*
- We use a transform that is a bit tricky.
- All the coordinates are translated in pixels by the x0/y0 scales.
- The x/y scales are the zoomed versions managed by the zoom tool.
- However, the zoom changes the transform of the group that contains
- the heatmap and the points in screen coordinates.
- We change the radius of the points to be constant, so we divide them by the
- zoom scale.
- We position everything on the group according to x0/y0 and not x/y, which are
- only used by the axes.
 
- When a new scatterplot arrives, the bounds can have changed. When
- progressing, the bounds can grow, but through filtering, the bounds
- can also shrink.  So when a new scatterplot arrives, we recompute the
- scale/translation of the zoom component to show the same viewport as
- before.
-*/
 function scatterplot_update_vis(rawdata) {
     var data = rawdata['scatterplot'],
         bounds = rawdata['bounds'],
@@ -80,22 +69,10 @@ function scatterplot_update_vis(rawdata) {
     if (!data || !bounds) return;
     var index = data['index'];
 
-    var x0 = xAxis.scale(),
-        y0 = yAxis.scale();
-
-
     if (prevBounds == null) { // first display, not refresh
         prevBounds = bounds;
         x.domain([bounds['xmin'], bounds['xmax']]).nice();
         y.domain([bounds['ymin'], bounds['ymax']]).nice();
-
-        // svg.append("rect")
-        //     .attr("x", 0)
-        //     .attr("y", 0)
-        //     .attr("width", width)
-        //     .attr("height", height)
-        //     .style("fill", "none")
-        //     .style("pointer-events", "all");
 
         zoomable = svg.append("g")
             .attr('id', 'zoomable')
@@ -154,7 +131,9 @@ function scatterplot_update_vis(rawdata) {
             prevBounds = bounds;
             x.domain([bounds['xmin'], bounds['xmax']]).nice();
             y.domain([bounds['ymin'], bounds['ymax']]).nice();
-            transform = compute_transform(x, y, x0, y0);
+            transform = compute_transform(x, y,
+                                          xAxis.scale(), yAxis.scale());
+            svg.__zoom = transform; // HACK
             scatterplot_zoomed(transform);
         }
 
@@ -174,8 +153,6 @@ function scatterplot_update_vis(rawdata) {
             .attr("y", iy)
             .attr("width",  iw)
             .attr("height", ih);
-        
-        //zoom.event(svg); // propagate
     }
     var imgSrc = rawdata['image'];
     imageHistory.enqueueUnique(imgSrc);
@@ -242,6 +219,19 @@ function scatterplot_refresh() {
   module_get(scatterplot_update, error);
 }
 
+function delta(d) { return d[1] - d[0]; }
+
+function compute_transform(x, y, x0, y0) {
+    var K0 = delta(x.domain()) / delta(x0.domain()),
+        K1 = delta(y.domain()) / delta(y0.domain()),
+        K = Math.min(K0, K1),
+        X = -x(x0.invert(0))*K,
+        Y = -y(y0.invert(0))*K;
+    return d3.zoomIdentity
+            .translate(X, Y)
+            .scale(K);
+}
+
 
 /**
  * @param select - a select element that will be mutated 
@@ -258,13 +248,6 @@ function makeOptions(select, names){
     option.innerHTML = name;
     select.appendChild(option);
   });
-}
-
-function compute_transform(x, y, x0, y0) {
-    var X = x(x0.invert(0)),
-        Y = y(y0.invert(height)),
-        K = (x(x0.invert(width))-X) / width;
-    return new d3.zoomIdentity.translate(X, Y).scale(K);
 }
 
 function ignore(data) {}
@@ -309,9 +292,6 @@ function scatterplot_ready() {
     svg = d3.select("#scatterplot svg")
          .attr("width", width + margin.left + margin.right)
          .attr("height", height + margin.top + margin.bottom);
-        //.append("g")
-        //.attr("transform", "translate(" + margin.left + "," + margin.top + ")")
-        //.call(zoom);
 
     $('#nav-tabs a').click(function (e) {
         e.preventDefault();
