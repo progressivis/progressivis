@@ -4,23 +4,16 @@ var margin = {top: 20, right: 20, bottom: 30, left: 40},
     height = 500 - margin.top - margin.bottom,
     svg, prevBounds = null, transform = d3.zoomIdentity;
 
-var x = d3.scaleLinear().range([0, width]),
-    x0;
-
-var y = d3.scaleLinear().range([height, 0]),
-    y0;
-
-var color = d3.scaleOrdinal(d3.schemeCategory10);
-
-var xAxis = d3.axisBottom(x)
+var x     = d3.scaleLinear().range([0, width]),
+    y     = d3.scaleLinear().range([height, 0]),
+    color = d3.scaleOrdinal(d3.schemeCategory10),
+    xAxis = d3.axisBottom(x)
         .tickSize(height)
-        .tickPadding(8 - height);
-
-var yAxis = d3.axisRight(y)
+        .tickPadding(8 - height),
+    yAxis = d3.axisRight(y)
         .tickSize(width)
-        .tickPadding(8 - width);
-
-var zoom = d3.zoom()
+        .tickPadding(8 - width),
+    zoom = d3.zoom()
         //.scaleExtent([1, 32])
         .on("zoom", scatterplot_zoomed);
 
@@ -44,8 +37,8 @@ function scatterplot_dragstart(d, i) {
 }
 
 function scatterplot_dragmove(d, i) {
-    d[0] = x0.invert(d3.event.x);
-    d[1] = y0.invert(d3.event.y);
+    d[0] = xAxis.scale().invert(d3.event.x);
+    d[1] = yAxis.scale().invert(d3.event.y);
     d3.select(this)
         .attr("cx", d3.event.x)
         .attr("cy", d3.event.y);
@@ -87,12 +80,14 @@ function scatterplot_update_vis(rawdata) {
     if (!data || !bounds) return;
     var index = data['index'];
 
+    var x0 = xAxis.scale(),
+        y0 = yAxis.scale();
+
+
     if (prevBounds == null) { // first display, not refresh
         prevBounds = bounds;
         x.domain([bounds['xmin'], bounds['xmax']]).nice();
         y.domain([bounds['ymin'], bounds['ymax']]).nice();
-        x0 = x.copy();
-        y0 = y.copy();
 
         // svg.append("rect")
         //     .attr("x", 0)
@@ -155,18 +150,18 @@ function scatterplot_update_vis(rawdata) {
             var x_bounds = [prevBounds.xmin, prevBounds.xmax],
                 y_bounds = [prevBounds.ymin, prevBounds.ymax];
 
-            console.log('Bounds have changed from '+prevBounds+' to '+bounds);
+            console.log('Bounds have changed');
             prevBounds = bounds;
             x.domain([bounds['xmin'], bounds['xmax']]).nice();
             y.domain([bounds['ymin'], bounds['ymax']]).nice();
-            x0 = x.copy();
-            y0 = y.copy();
+            transform = compute_transform(x, y, x0, y0);
+            scatterplot_zoomed(transform);
         }
 
-        ix = x0(bounds['xmin']);
-        iy = y0(bounds['ymax']);
-        iw = x0(bounds['xmax'])-ix;
-        ih = y0(bounds['ymin'])-iy;
+        ix = x(bounds['xmin']);
+        iy = y(bounds['ymax']);
+        iw = x(bounds['xmax'])-ix;
+        ih = y(bounds['ymin'])-iy;
         svg.select(".heatmap")
             .attr("x", ix)
             .attr("y", iy)
@@ -220,14 +215,14 @@ function scatterplot_update_vis(rawdata) {
     dots.enter().append("circle")
          .attr("class", "dot")
          .attr("r", 3.5/transform.k)
-         .attr("cx", function(d) { return x0(d[0]); }) // use untransformed x0/y0
-         .attr("cy", function(d) { return y0(d[1]); })
+         .attr("cx", function(d) { return x(d[0]); }) // use untransformed x0/y0
+         .attr("cy", function(d) { return y(d[1]); })
          .style("fill", "blue") //function(d) { return color(d.species); });
          .call(node_drag)
         .append("title")
         .text(function(d, i) { return index[i]; });
-    dots .attr("cx", function(d) { return x0(d[0]); })
-         .attr("cy", function(d) { return y0(d[1]); });
+    dots .attr("cx", function(d) { return x(d[0]); })
+         .attr("cy", function(d) { return y(d[1]); });
     dots.exit().remove();
     dots.order();
 }
@@ -265,34 +260,43 @@ function makeOptions(select, names){
   });
 }
 
+function compute_transform(x, y, x0, y0) {
+    var X = x(x0.invert(0)),
+        Y = y(y0.invert(height)),
+        K = (x(x0.invert(width))-X) / width;
+    return new d3.zoomIdentity.translate(X, Y).scale(K);
+}
+
 function ignore(data) {}
 
 function scatterplot_filter() {
-    var xmin = xAxis.scale().invert(0),
-        xmax = xAxis.scale().invert(width),
-        ymin = yAxis.scale().invert(height),
-        ymax = yAxis.scale().invert(0),
+    var xscale = xAxis.scale(),
+        xmin = xscale.invert(0),
+        xmax = xscale.invert(width),
+        yscale = yAxis.scale(),
+        ymin = yscale.invert(height),
+        ymax = yscale.invert(0),
         bounds  = prevBounds,
         columns = progressivis_data['columns'],
         min     = {},
         max     = {};
 
     
-    if (xmin > bounds['xmin'])
+    if (xmin != bounds['xmin'])
         min[columns[0]] = xmin;
     else
         min[columns[0]] = null; // NaN means bump to min
-    if (xmax < bounds['xmax']) 
+    if (xmax != bounds['xmax']) 
         max[columns[0]] = xmax;
     else
         max[columns[0]] = null;
 
-    if (ymin > bounds['ymin'])
+    if (ymin != bounds['ymin'])
         min[columns[1]] = ymin;
     else
         min[columns[1]] = null;
 
-    if (ymax < bounds['ymax'])
+    if (ymax != bounds['ymax'])
         max[columns[1]] = ymax;
     else
         max[columns[1]] = null;

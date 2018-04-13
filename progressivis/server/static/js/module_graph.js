@@ -142,10 +142,11 @@ var module_graph = function(){
           label.exit().remove();
   
           var link = vis.selectAll(".link")
-                  .data(edges)
-                  .enter().append("path")
-                  .attr("class", "link");
-          
+                  .data(edges);
+
+          link.enter().append("path")
+              .attr("class", "link");
+
           link.exit().remove();
           
           var lineFunction = d3.line()

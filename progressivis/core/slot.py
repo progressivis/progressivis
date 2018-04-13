@@ -31,6 +31,8 @@ class Slot(object):
         self.input_module = input_module
         self._name = None
         self.changes = None
+        self._manage_columns = None
+        self._last_columns = None
 
     def name(self):
         "Return the unique name of that slot"
@@ -100,7 +102,7 @@ class Slot(object):
         input_type = self.input_module.input_slot_type(self.input_name)
         if output_type is None or input_type is None:
             return True
-        if output_type == input_type:
+        if issubclass(output_type, input_type):
             return True
         if (not isinstance(input_type, type) and callable(input_type) and
                 input_type(output_type)):
@@ -132,11 +134,20 @@ class Slot(object):
             self.changes = self.create_changes(buffer_created=buffer_created,
                                                buffer_updated=buffer_updated,
                                                buffer_deleted=buffer_deleted)
+        if self._manage_columns is None:
+            self._manage_columns = manage_columns
         if self.changes is None:
-            return
+            return None
         with self.lock:
             df = self.data()
             return self.changes.update(run_number, df, self.name())
+
+    @property
+    def column_changes(self):
+        "Compute the column changes since the last time this slot has been updated"
+        if self._manage_columns:
+            return self.changes.column_changes
+        return None
 
     def reset(self):
         "Reset the slot"

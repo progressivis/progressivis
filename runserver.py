@@ -4,13 +4,14 @@ Starts the progressivis server and launches a python progressivis application.
 import sys
 import signal
 import logging
+from os import getenv
 
 from six.moves import input
 import requests
 
 from progressivis import log_level
 from progressivis.server import start_server
-from progressivis.core.scheduler import Scheduler
+from progressivis.core.scheduler import Scheduler, BaseScheduler
 
 from progressivis.core.utils import Thread
 
@@ -20,6 +21,8 @@ ENV = {'scheduler': Scheduler.default}
 for filename in sys.argv[1:]:
     if filename == "nosetests":
         continue
+    if getenv("NOTHREAD"):
+        ENV['scheduler'] = BaseScheduler()
     print("Loading '%s'" % filename)
     # pylint: disable=exec-used
     exec(compile(open(filename).read(), filename, 'exec'), ENV, ENV)
