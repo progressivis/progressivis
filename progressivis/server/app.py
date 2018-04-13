@@ -4,6 +4,7 @@ Flask server for ProgressiVis.
 from __future__ import absolute_import, division, print_function
 
 import logging
+import json
 
 from six import StringIO
 
@@ -11,13 +12,13 @@ import numpy as np
 
 from flask import Flask, Blueprint
 from flask.json import JSONEncoder
+
 from tornado.wsgi import WSGIContainer
 from tornado.web import Application, FallbackHandler
 from tornado.websocket import WebSocketHandler
 from tornado.ioloop import IOLoop
 from progressivis import ProgressiveError
 from progressivis.core.scheduler import Scheduler
-
 
 
 logger = logging.getLogger(__name__)
@@ -36,7 +37,6 @@ class JSONEncoder4Numpy(JSONEncoder):
             return obj.tolist()
         return JSONEncoder.default(self, obj)
 
-
 class ProgressiveWebSocket(WebSocketHandler):
     "Manage the WebSocket connection"
     sockets_for_path = {}
@@ -44,7 +44,6 @@ class ProgressiveWebSocket(WebSocketHandler):
         super(ProgressiveWebSocket, self).__init__(application, request, **kwargs)
         self.handshake = False
         self.path = None
-        self.protocol = "old"
 
     def data_received(self, chunk):
         pass
@@ -72,11 +71,12 @@ class ProgressiveWebSocket(WebSocketHandler):
 
     def on_message(self, message):
         #self.write_message("Received: " + message)
+        message = json.loads(message)
         if not self.handshake:
-            if message.startswith('ping '):
-                self.path = message[5:]
+            if message["type"] == "ping":
+                self.path = message["path"]
                 self.register()
-                self.write_message('pong')
+                self.write_message(json.dumps({'type': 'pong'}))
                 self.handshake = True
                 logger.debug("Handshake received for path: '%s'", self.path)
             else:
@@ -91,18 +91,18 @@ class ProgressiveWebSocket(WebSocketHandler):
     def select_subprotocol(self, subprotocols):
         logger.info('Subprotocol %s selected', subprotocols)
         if "new" in subprotocols:
-            self.protocol = "new"
-            return self.protocol
-        return None
+            return "new"
+        return 'No'
 
     @staticmethod
     def write_to_path(path, msg):
         "Write message to web page monitoring the specific path"
-        logger.info('Sending message %s to path %s', msg, path)
+        logger.info('Sending message to path %s', path)
         sockets = ProgressiveWebSocket.sockets_for_path.get(path)
         if not sockets:
             logger.warning('Message sent to nonexistent path "%s"', path)
             return
+        msg = json.dumps(msg)
         for s in sockets:
             s.write_message(msg)
 
@@ -137,12 +137,14 @@ class ProgressivisBlueprint(Blueprint):
     def tick_scheduler(self, scheduler, run_number):
         "Run at each tick"
         # pylint: disable=unused-argument, no-self-use
-        ProgressiveWebSocket.write_to_path('scheduler', 'tick %d'%run_number)
+        ProgressiveWebSocket.write_to_path('scheduler', scheduler.to_json(short=False))
+        #ProgressiveWebSocket.write_to_path('scheduler', 'tick %d'%run_number)
 
     def step_tick_scheduler(self, scheduler, run_number):
         "Run at each step"
         # pylint: disable=no-self-use
-        ProgressiveWebSocket.write_to_path('scheduler', 'tick %d'%run_number)
+        ProgressiveWebSocket.write_to_path('scheduler', scheduler.to_json(short=False))
+        #ProgressiveWebSocket.write_to_path('scheduler', 'tick %d'%run_number)
         scheduler.stop()
 
     def step_once(self):
@@ -156,7 +158,8 @@ class ProgressivisBlueprint(Blueprint):
     def tick_module(self, module, run_number):
         "Run when a module has run"
         # pylint: disable=no-self-use
-        ProgressiveWebSocket.write_to_path('module %s'%module.id, 'tick %d'%run_number)
+        #ProgressiveWebSocket.write_to_path('module %s'%module.id, 'tick %d'%run_number)
+        ProgressiveWebSocket.write_to_path('module %s'%module.id, module.to_json())
 
     def get_log(self):
         "Return the log"

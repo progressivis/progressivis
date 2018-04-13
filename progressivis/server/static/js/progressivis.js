@@ -8,15 +8,15 @@ var socket = null,
     refresh, error;
 
 function progressivis_websocket_open(msg, handler) {
-    //socket = new WebSocket("ws://" + document.domain + ":5000/websocket/", "new");
-    socket = new WebSocket("ws://" + document.domain + ":5000/websocket/");
+    socket = new WebSocket("ws://" + document.domain + ":5000/websocket/", "new");
+    //socket = new WebSocket("ws://" + document.domain + ":5000/websocket/");
 
     socket.onopen = function() {
         protocol = socket.protocol;
         if (protocol)
             console.log('Socket open with protocol '+protocol);
         if (protocol == "new")
-            socket.send(JSON.stringify({"type": "ping"}));
+            socket.send(JSON.stringify({"type": "ping", "path": msg}));
         else
             socket.send("ping "+msg);
 	handshake = false;
@@ -28,7 +28,7 @@ function progressivis_websocket_open(msg, handler) {
 
     socket.onmessage = function(message) {
         if (protocol == "new") {
-            var msg = JSON.parse(message);
+            var msg = JSON.parse(message.data);
             if (msg.type == "pong" && ! handshake) {
 	        handshake = true;
 	        console.log('Handshake received');
@@ -36,13 +36,13 @@ function progressivis_websocket_open(msg, handler) {
             }
             if (handler) handler(msg);
         }
-        var txt = message.data;
-	if (txt == 'pong' && !handshake) {
-	    handshake = true;
-	    console.log('Handshake received');
-	    return;
-	}
-	if (handler) handler(message);
+        // var txt = message.data;
+	// if (txt == 'pong' && !handshake) {
+	//     handshake = true;
+	//     console.log('Handshake received');
+	//     return;
+	// }
+	// if (handler) handler(message);
     };
 }
 
@@ -134,23 +134,32 @@ function progressivis_error(ev, msg) {
   $('#error').html(contents);
 }
 
-function progressivis_socketmsg(message) {
-    var txt = message.data,
-        run_number;
-    if (txt.startsWith("tick ")) {
-        run_number = Number(txt.substr(5));
-        //console.log('Reveived netsocket tick '+run_number);
-        if (run_number > progressivis_run_number) {
-            progressivis_run_number = run_number;
-            if (refresh == null) {
-                console.log('ERROR: refresh is not defined');
-            }
-            else
-                refresh();
+function progressivis_socketmsg(json) {
+    var run_number = json.run_number;
+
+    if (run_number > progressivis_run_number) {
+        progressivis_run_number = run_number;
+        if (refresh == null) {
+            console.log('ERROR: refresh is not defined');
         }
+        else
+            refresh(json);
     }
-    else 
-        console.log('Received unexpected socket message: '+txt);
+
+    // if (txt.startsWith("tick ")) {
+    //     run_number = Number(txt.substr(5));
+    //     //console.log('Reveived netsocket tick '+run_number);
+    //     if (run_number > progressivis_run_number) {
+    //         progressivis_run_number = run_number;
+    //         if (refresh == null) {
+    //             console.log('ERROR: refresh is not defined');
+    //         }
+    //         else
+    //             refresh();
+    //     }
+    // }
+    // else 
+    //     console.log('Received unexpected socket message: '+txt);
 }
 
 function progressivis_ready(socket_name) {

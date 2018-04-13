@@ -10,6 +10,7 @@ function scheduler_get(success, error) {
     if(current_xhr){
         return;
     }
+    console.log('Ajax query for scheduler');    
     current_xhr = $.post($SCRIPT_ROOT+'/progressivis/scheduler/?short=False')
         .done(success)
         .fail(error)
@@ -67,8 +68,11 @@ function scheduler_update_table(data) {
     tr.exit().remove();
 }
 
-function scheduler_refresh() {
-  scheduler_get(scheduler_update, error);
+function scheduler_refresh(json) {
+    if (json && json.modules)
+        scheduler_update(json);
+    else
+        scheduler_get(scheduler_update, error);
 }
 
 function scheduler_show_module(module) {

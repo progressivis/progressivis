@@ -1,6 +1,7 @@
 var module_id = null;
 
 function module_get(success, error) {
+    console.log("Ajax Request module");
     $.post($SCRIPT_ROOT+'/progressivis/module/get/'+module_id)
         .done(success)
         .fail(error);
@@ -68,8 +69,11 @@ function module_update_table(data) {
     $('.btn.slot').click(function() { module_show_dataframe($(this).text()); });
 }
 
-function module_refresh() {
-    module_get(module_update, error);
+function module_refresh(json) {
+    if (json && json.run_number)
+        module_update(json);
+    else
+        module_get(module_update, error);
 }
 
 function module_ready() {
