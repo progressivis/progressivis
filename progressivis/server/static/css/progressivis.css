@@ -25,3 +25,7 @@ svg {
 #run_number {
     width: 78px !important;
 }
+
+.navbar-fixed-top {
+    background: white;
+}

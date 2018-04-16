@@ -2,9 +2,7 @@ var module_id = null;
 
 function module_get(success, error) {
     console.log("Ajax Request module");
-    $.post($SCRIPT_ROOT+'/progressivis/module/get/'+module_id)
-        .done(success)
-        .fail(error);
+    return progressivis_get('/progressivis/module/get', success, error, module_id);
 }
 
 function module_input(data, success, error, module) {

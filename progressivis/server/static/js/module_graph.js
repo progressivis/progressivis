@@ -16,10 +16,9 @@ var module_graph = function(){
       if(current_request){
           return;
       }
-      current_request = $.post($SCRIPT_ROOT+'/progressivis/scheduler/?short=False')
-          .done(success)
-          .fail(error)
-          .always(clear_current_request);
+      
+      progressivis_get('/progressivis/scheduler', success, error)
+          .finally(i => current_request = false);
   };
   
   function graph_setup() {

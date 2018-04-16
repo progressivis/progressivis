@@ -3,114 +3,46 @@ Flask server for ProgressiVis.
 """
 from __future__ import absolute_import, division, print_function
 
+import time
 import logging
-import json
 
 from six import StringIO
 
 import numpy as np
 
-from flask import Flask, Blueprint
+from flask import Flask, Blueprint, request
 from flask.json import JSONEncoder
+from flask_socketio import SocketIO, join_room, rooms, send
+import eventlet
 
-from tornado.wsgi import WSGIContainer
-from tornado.web import Application, FallbackHandler
-from tornado.websocket import WebSocketHandler
-from tornado.ioloop import IOLoop
-from progressivis import ProgressiveError
-from progressivis.core.scheduler import Scheduler
+from progressivis import Scheduler, Module
 
 
 logger = logging.getLogger(__name__)
 
+# pylint: disable=invalid-name
+socketio = None
+
 class JSONEncoder4Numpy(JSONEncoder):
     "Encode numpy objects"
-    def default(self, obj):
+    def default(self, o):
         "Handle default encoding."
-        if isinstance(obj, float) and np.isnan(obj):
+        if isinstance(o, float) and np.isnan(o):
             return None
-        if isinstance(obj, np.integer):
-            return int(obj)
-        if isinstance(obj, np.bool_):
-            return bool(obj)
-        if isinstance(obj, np.ndarray):
-            return obj.tolist()
-        return JSONEncoder.default(self, obj)
-
-class ProgressiveWebSocket(WebSocketHandler):
-    "Manage the WebSocket connection"
-    sockets_for_path = {}
-    def __init__(self, application, request, **kwargs):
-        super(ProgressiveWebSocket, self).__init__(application, request, **kwargs)
-        self.handshake = False
-        self.path = None
-
-    def data_received(self, chunk):
-        pass
-
-    def register(self):
-        "Register the websocket to ProgressiVis"
-        if self.path is None:
-            logger.error('Trying to register a websocket without path')
-            raise ProgressiveError('Trying to register a websocket without path')
-        if self.path not in self.sockets_for_path:
-            self.sockets_for_path[self.path] = [self]
-        else:
-            self.sockets_for_path[self.path].append(self)
-
-    def unregister(self):
-        "Unregister the websocket from ProgressiVis"
-        if self.path is None or self.path not in self.sockets_for_path:
-            return
-        self.sockets_for_path[self.path].remove(self)
-
-    def open(self, *args, **kwargs):
-        "Open the connection"
-        logger.info("Socket opened.")
-        self.handshake = False
-
-    def on_message(self, message):
-        #self.write_message("Received: " + message)
-        message = json.loads(message)
-        if not self.handshake:
-            if message["type"] == "ping":
-                self.path = message["path"]
-                self.register()
-                self.write_message(json.dumps({'type': 'pong'}))
-                self.handshake = True
-                logger.debug("Handshake received for path: '%s'", self.path)
-            else:
-                logger.error("Received msg before handshake: '%s'", message)
-            return
-        logger.warning("Received message '%s' from '%s'", message, self.path)
-
-    def on_close(self):
-        self.unregister()
-        logger.info("Socket for '%s' closed.", self.path)
-
-    def select_subprotocol(self, subprotocols):
-        logger.info('Subprotocol %s selected', subprotocols)
-        if "new" in subprotocols:
-            return "new"
-        return 'No'
-
-    @staticmethod
-    def write_to_path(path, msg):
-        "Write message to web page monitoring the specific path"
-        logger.info('Sending message to path %s', path)
-        sockets = ProgressiveWebSocket.sockets_for_path.get(path)
-        if not sockets:
-            logger.warning('Message sent to nonexistent path "%s"', path)
-            return
-        msg = json.dumps(msg)
-        for s in sockets:
-            s.write_message(msg)
-
+        if isinstance(o, np.integer):
+            return int(o)
+        if isinstance(o, np.bool_):
+            return bool(o)
+        if isinstance(o, np.ndarray):
+            return o.tolist()
+        return JSONEncoder.default(self, o)
 
 class ProgressivisBlueprint(Blueprint):
     "Blueprint for ProgressiVis"
     def __init__(self, *args, **kwargs):
         super(ProgressivisBlueprint, self).__init__(*args, **kwargs)
+        self._sids_for_path = {}
+        self._run_number_for_sid = {}
         self.scheduler = None
         self.start_logging()
 
@@ -132,20 +64,62 @@ class ProgressivisBlueprint(Blueprint):
     def setup(self, scheduler):
         "Setup the connection with the scheduler"
         self.scheduler = scheduler
+        # pylint: disable=protected-access
         self.scheduler._tick_proc = self.tick_scheduler
+
+    def register_module(self, path, sid):
+        "Register a module with a specified path"
+        print('Register module:', path, 'sid:', sid)
+        self._run_number_for_sid[sid] = 0
+        if path in self._sids_for_path:
+            sids = self._sids_for_path[path]
+            sids.add(sid)
+        else:
+            self._sids_for_path[path] = set([sid])
+
+    def unregister_module(self, sid):
+        "Unregister a specified path"
+        if sid in self._run_number_for_sid:
+            del self._run_number_for_sid[sid]
+        for sids in self._sids_for_path.values():
+            if sid in sids:
+                sids.remove(sid)
+                return
+
+    def sids_for_path(self, path):
+        "Get the sid list from a path"
+        return self._sids_for_path.get(path, set())
+
+    def sid_run_number(self, sid):
+        "Return the last run_number sent for the specified sid"
+        return self._run_number_for_sid.get(sid, 0)
+
+    def reset_sid(self, sid):
+        "Resets the sid to 0 to stop sending ticks for that sid"
+        print('Reseting sid', sid)
+        self._run_number_for_sid[sid] = 0
+
+    def emit_tick(self, path, run_number):
+        "Emit a tick unless it has not been acknowledged"
+        sids = self.sids_for_path(path)
+        for sid in sids:
+            if self._run_number_for_sid[sid] == 0:
+                print('Emiting tick for', sid, 'in path', path)
+                socketio.emit('tick', {'tick': run_number}, room=sid)
+                self._run_number_for_sid[sid] = run_number
+            else:
+                print('No tick for', sid, 'in path', path)
+        time.sleep(0) # yield thread
 
     def tick_scheduler(self, scheduler, run_number):
         "Run at each tick"
-        # pylint: disable=unused-argument, no-self-use
-        ProgressiveWebSocket.write_to_path('scheduler', scheduler.to_json(short=False))
-        #ProgressiveWebSocket.write_to_path('scheduler', 'tick %d'%run_number)
+        # pylint: disable=unused-argument
+        self.emit_tick('scheduler', run_number)
 
     def step_tick_scheduler(self, scheduler, run_number):
         "Run at each step"
-        # pylint: disable=no-self-use
-        ProgressiveWebSocket.write_to_path('scheduler', scheduler.to_json(short=False))
-        #ProgressiveWebSocket.write_to_path('scheduler', 'tick %d'%run_number)
         scheduler.stop()
+        self.emit_tick('scheduler', run_number)
 
     def step_once(self):
         "Run once"
@@ -158,8 +132,7 @@ class ProgressivisBlueprint(Blueprint):
     def tick_module(self, module, run_number):
         "Run when a module has run"
         # pylint: disable=no-self-use
-        #ProgressiveWebSocket.write_to_path('module %s'%module.id, 'tick %d'%run_number)
-        ProgressiveWebSocket.write_to_path('module %s'%module.id, module.to_json())
+        self.emit_tick(module.id, run_number)
 
     def get_log(self):
         "Return the log"
@@ -186,25 +159,112 @@ def app_create(config="settings.py", scheduler=None):
     app.json_encoder = JSONEncoder4Numpy
     app.register_blueprint(progressivis_bp)
     progressivis_bp.setup(scheduler)
+    return app
 
-    container = WSGIContainer(app)
-    server = Application([
-        (r'/websocket/', ProgressiveWebSocket),
-        (r'.*', FallbackHandler, dict(fallback=container))
-    ])
-    server.listen(5000)
-    return server
+def path_to_module(path):
+    """
+    Return a module given its path, or None if not found.
+    A path is the module id alone, or the toplevel module module id
+    followed by modules stored inside it.
 
-def app_run(app):
-    "Run the application"
-    # pylint: disable=unused-argument
-    IOLoop.instance().start()
+    For example 'scatterplot/range_query' will return the range_query
+    module used as dependent module of scatterplot.
+    """
+    scheduler = progressivis_bp.scheduler
+    print('module_path(%s)'%(path))
+    ids = path.split('/')
+    module = scheduler.module[ids[0]]
+    if module is None:
+        return None
+    for subid in ids[1:]:
+        if not hasattr(module, subid):
+            return None
+        module = getattr(module, subid)
+        if not isinstance(module, Module):
+            return None
+    return module
+
+def _on_join(json):
+    if json.get("type") != "ping":
+        logging.error("Expected a ping message")
+    path = json["path"]
+    print('join received for "%s"'% path)
+    join_room(path)
+    roomlist = rooms()
+    print('Roomlist:', roomlist)
+    return {'type': 'pong'}
+
+def _on_connect():
+    print('Connect ', request.sid)
+
+def _on_disconnect():
+    progressivis_bp.unregister_module(request.sid)
+    print('Disconnect ', request.sid)
+
+def _on_start():
+    scheduler = progressivis_bp.scheduler
+    if scheduler.is_running():
+        return {'status': 'failed',
+                'reason': 'scheduler is already running'}
+    progressivis_bp.start()
+    return {'status': 'success'}
+
+def _on_stop():
+    scheduler = progressivis_bp.scheduler
+    if not scheduler.is_running():
+        return {'status': 'failed',
+                'reason': 'scheduler is not is_running'}
+    scheduler.stop()
+    return {'status': 'success'}
+
+def _on_step():
+    scheduler = progressivis_bp.scheduler
+    if scheduler.is_running():
+        send({'status': 'failed',
+              'reason': 'scheduler is is_running'})
+    progressivis_bp.step_once()
+    send({'status': 'success'})
+
+def _on_scheduler(short=False):
+    scheduler = progressivis_bp.scheduler
+    print('socketio scheduler called')
+    progressivis_bp.register_module('scheduler', request.sid)
+    print(progressivis_bp._sids_for_path)
+    assert request.sid in progressivis_bp.sids_for_path('scheduler')
+    return scheduler.to_json(short)
+
+def _on_module(path):
+    print('on_module', path)
+    module = path_to_module(path)
+    if module is None:
+        return {'status': 'failed',
+                'reason': 'unknown module %s'%path}
+    progressivis_bp.register_module(module.id, request.sid)
+    module.set_end_run(progressivis_bp.tick_module) # setting it multiple time is ok
+    return module.to_json()
 
 def start_server(scheduler=None, debug=False):
     "Start the server"
+    # pylint: disable=global-statement
+    global socketio
+    eventlet.monkey_patch() # see https://github.com/miguelgrinberg/Flask-SocketIO/issues/357
+
     if scheduler is None:
         scheduler = Scheduler.default
-    print('Scheduler has %d modules' % len(scheduler))
+    print('Scheduler %s has %d modules' % (scheduler.__class__.__name__, len(scheduler)))
     app = app_create(scheduler)
     app.debug = debug
-    app_run(app)
+    socketio = SocketIO(app)
+    socketio.on_event('connect', _on_connect)
+    socketio.on_event('disconnect', _on_disconnect)
+    socketio.on_event('join', _on_join)
+    socketio.on_event('/progressivis/scheduler/start', _on_start)
+    socketio.on_event('/progressivis/scheduler/step', _on_step)
+    socketio.on_event('/progressivis/scheduler/stop', _on_stop)
+    socketio.on_event('/progressivis/scheduler', _on_scheduler)
+    socketio.on_event('/progressivis/module/get', _on_module)
+    socketio.run(app)
+
+def stop_server():
+    "Stop the server"
+    socketio.stop()

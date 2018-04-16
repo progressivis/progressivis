@@ -15,16 +15,18 @@ from progressivis.core.scheduler import Scheduler, BaseScheduler
 
 from progressivis.core.utils import Thread
 
-
-ENV = {'scheduler': Scheduler.default}
+ENV = {}
 
 for filename in sys.argv[1:]:
     if filename == "nosetests":
         continue
     if getenv("NOTHREAD"):
-        ENV['scheduler'] = BaseScheduler()
+        print('Disabling multithreading')
+        Scheduler.default = BaseScheduler()
+
     print("Loading '%s'" % filename)
     # pylint: disable=exec-used
+    ENV['scheduler'] = Scheduler.default
     exec(compile(open(filename).read(), filename, 'exec'), ENV, ENV)
 
 def _signal_handler(signum, frame):
@@ -38,6 +40,6 @@ if __name__ == '__main__':
     signal.signal(signal.SIGINT, _signal_handler)
     THREAD = Thread(target=start_server)
     THREAD.start()
-    print("Server launched!")
+    print("Web Server launched!")
     while True:
         _ = input()

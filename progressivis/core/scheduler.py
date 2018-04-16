@@ -1,8 +1,6 @@
 """Multi-Thread Scheduler, meant to run in its own thread."""
 from __future__ import absolute_import, division, print_function
 
-import sys
-from contextlib import contextmanager
 import logging
 from .synchronized import synchronized
 from .scheduler_base import BaseScheduler
@@ -55,11 +53,6 @@ class Scheduler(BaseScheduler):
                 raise ProgressiveError('Trying to start scheduler thread'
                                        ' inside scheduler thread')
             self.thread = Thread(target=self.run, name=self.thread_name)
-            # if hasattr(sys.stdout, 'thread_parent'):
-            #     # capture notebook context
-            #     self._thread_parent = sys.stdout.thread_parent
-            # else:
-            #     self._thread_parent = None
             self._tick_proc = tick_proc
             self._idle_proc = idle_proc
             logger.debug('starting thread')
@@ -73,26 +66,6 @@ class Scheduler(BaseScheduler):
 
     def done(self):
         self.thread = None
-        #self._thread_parent = None
-
-    # @property
-    # def thread_parent(self):
-    #     return self._thread_parent
-
-    # @contextmanager
-    # def stdout_parent(self):
-    #     if self._thread_parent:
-    #         saved_parent = sys.stdout.parent_header
-    #         with self.lock:
-    #             sys.stdout.parent_header = self._thread_parent
-    #             try:
-    #                 yield
-    #             finally:
-    #                 sys.stdout.flush()
-    #                 sys.stdout.parent_header = saved_parent
-    #     else:
-    #         yield
-
 
 if BaseScheduler.default is None:
     BaseScheduler.default = Scheduler()

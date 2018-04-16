@@ -2,9 +2,8 @@ var module_id = null,
     dataframe_slot = null;
 
 function dataframe_get(success, error) {
-    $.post($SCRIPT_ROOT+'/progressivis/module/df/'+module_id+'/'+dataframe_slot)
-        .done(success)
-        .fail(error);
+    progressivis_post('/progressivis/module/df/'+module_id+'/'+dataframe_slot,
+                     success, error);
 }
 
 function dataframe_update(data) {

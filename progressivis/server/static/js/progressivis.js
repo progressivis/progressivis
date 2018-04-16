@@ -1,4 +1,49 @@
-var ProgressiVis = {};
+
+class ProgressiVis {
+    constructor(socket_name) {
+        this.socket_name = socket_name;
+        this.socket = null;
+        this.handshake = false;
+        this.run_number = undefined;
+    }
+
+    websocket_open() {
+        socket = io.connect('http://' + document.domain + ':' + location.port);
+        socket.on('connect', function() {
+            socket.emit('join', {"type": "ping", "path": msg},
+                        this.ack.bind(this));
+        });
+        socket.on('disconnect', function() { this.handshake = false; });
+        socket.on('tick', function(msg) {
+            this.tick(msg);
+        });
+    }
+
+    ack(json) {
+        if (json.type == "pong")
+            console.log("Ack received");
+        else
+            console.log("Unexpected reply");
+        this.handshake = true;
+    }
+
+    tick(json) {
+        var run_number = json.run_number;
+        if (run_number > this.run_number) {
+            this.run_number = run_number;
+            this.refresh(json);
+        }
+    }
+
+    error(ev, msg) {
+        var contents = '<div class="alert alert-danger alert-dismissible" role="alert">Error: ';
+        if (msg)
+            contents += msg;
+        contents += '</div>';
+        $('#error').html(contents);
+    }
+
+};
 
 var socket = null,
     handshake = false,
@@ -7,43 +52,25 @@ var socket = null,
     progressivis_data,
     refresh, error;
 
+function ack(json) {
+    if (json.type == "pong")
+        console.log("Ack received");
+    else
+        console.log("Unexpected reply");
+    handshake = true;
+}
+
 function progressivis_websocket_open(msg, handler) {
-    socket = new WebSocket("ws://" + document.domain + ":5000/websocket/", "new");
-    //socket = new WebSocket("ws://" + document.domain + ":5000/websocket/");
+    //socket = new WebSocket("ws://" + document.domain + ":5000/websocket/", "new");
+    socket = io.connect('http://' + document.domain + ':' + location.port);
 
-    socket.onopen = function() {
-        protocol = socket.protocol;
-        if (protocol)
-            console.log('Socket open with protocol '+protocol);
-        if (protocol == "new")
-            socket.send(JSON.stringify({"type": "ping", "path": msg}));
-        else
-            socket.send("ping "+msg);
-	handshake = false;
-    };
-
-    socket.onclose = function() {
-        handshake = false;
-    };
-
-    socket.onmessage = function(message) {
-        if (protocol == "new") {
-            var msg = JSON.parse(message.data);
-            if (msg.type == "pong" && ! handshake) {
-	        handshake = true;
-	        console.log('Handshake received');
-	        return;
-            }
-            if (handler) handler(msg);
-        }
-        // var txt = message.data;
-	// if (txt == 'pong' && !handshake) {
-	//     handshake = true;
-	//     console.log('Handshake received');
-	//     return;
-	// }
-	// if (handler) handler(message);
-    };
+    socket.on('connect', function() {
+        socket.emit('join', {"type": "ping", "path": msg}, ack);
+    });
+    socket.on('disconnect', function() { handshake = false; });
+    socket.on('tick', function(msg) {
+        if (handler) handler(msg);
+    });
 }
 
 function progressivis_update(data) {
@@ -102,28 +129,40 @@ function layout_value(v) {
     return escapeHTML(v.toString()); // escape
 }
 
-function progressivis_post(url, success, error) {
-    var xdr = $.post(url);
-    if (success)
-        xdr.done(success);
-    if (error)
-        xdr.fail(error);
-    return xdr;
+function progressivis_post(path, success, error, param) {
+    var init = {method: "POST"},
+        url = $SCRIPT_ROOT+path;
+    if (param) {
+        url += '/'+param;
+    }
+    return fetch(url, init)
+        .then(response => response.json())
+        .then(success)
+        .catch(error);
+}
+
+function progressivis_get(path, success, error, param) {
+    if (handshake) {
+        return new Promise((resolve, reject) =>
+                           param ? socket.emit(path, param, resolve)
+                           : socket.emit(path, resolve))
+            .then(success)
+            .catch(error);
+    }
+    else
+        return progressivis_post(path, success, error, param);
 }
 
 function progressivis_start(success, error) {
-    return progressivis_post($SCRIPT_ROOT+'/progressivis/scheduler/start',
-                             success, error);
+    progressivis_get('/progressivis/scheduler/start', success, error);
 }
 
 function progressivis_stop(success, error) {
-    return progressivis_post($SCRIPT_ROOT+'/progressivis/scheduler/stop',
-                             success, error);
+    progressivis_get('/progressivis/scheduler/stop', success, error);
 }
 
 function progressivis_step(success, error) {
-    return progressivis_post($SCRIPT_ROOT+'/progressivis/scheduler/step',
-                             success, error);
+    progressivis_get('/progressivis/scheduler/step', success, error);
 }
 
 function progressivis_error(ev, msg) {
@@ -136,35 +175,21 @@ function progressivis_error(ev, msg) {
 
 function progressivis_socketmsg(json) {
     var run_number = json.run_number;
+    if (refresh == null) {
+        console.log('ERROR: refresh is not defined');
+        return;
+    }
 
     if (run_number > progressivis_run_number) {
         progressivis_run_number = run_number;
-        if (refresh == null) {
-            console.log('ERROR: refresh is not defined');
-        }
-        else
-            refresh(json);
+        refresh(json);
     }
-
-    // if (txt.startsWith("tick ")) {
-    //     run_number = Number(txt.substr(5));
-    //     //console.log('Reveived netsocket tick '+run_number);
-    //     if (run_number > progressivis_run_number) {
-    //         progressivis_run_number = run_number;
-    //         if (refresh == null) {
-    //             console.log('ERROR: refresh is not defined');
-    //         }
-    //         else
-    //             refresh();
-    //     }
-    // }
-    // else 
-    //     console.log('Received unexpected socket message: '+txt);
 }
 
 function progressivis_ready(socket_name) {
     if (error === null) 
         error = progressivis_error;
+    progressivis_websocket_open(socket_name, progressivis_socketmsg);
     if (refresh === null) {
         console.log('ERROR: refresh is not defined');
     }
@@ -173,7 +198,6 @@ function progressivis_ready(socket_name) {
     $('#start').click(function() { progressivis_start(refresh, error); });
     $('#stop' ).click(function() { progressivis_stop (refresh, error); });
     $('#step' ).click(function() { progressivis_step (refresh, error); });
-    progressivis_websocket_open(socket_name, progressivis_socketmsg);
 }
 
-window.addEventListener('visibilitychange', function() {if(!document.hidden){refresh();}});
+//window.addEventListener('visibilitychange', function() {if(!document.hidden){refresh();}});
