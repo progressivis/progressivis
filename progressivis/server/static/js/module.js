@@ -1,7 +1,6 @@
 var module_id = null;
 
 function module_get(success, error) {
-    console.log("Ajax Request module");
     return progressivis_get('/progressivis/module/get', success, error, module_id);
 }
 
@@ -68,10 +67,7 @@ function module_update_table(data) {
 }
 
 function module_refresh(json) {
-    if (json && json.run_number)
-        module_update(json);
-    else
-        module_get(module_update, error);
+    module_get(module_update, error);
 }
 
 function module_ready() {

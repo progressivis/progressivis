@@ -5,6 +5,7 @@ from __future__ import absolute_import, division, print_function
 
 import time
 import logging
+from functools import partial
 
 from six import StringIO
 
@@ -69,6 +70,9 @@ class ProgressivisBlueprint(Blueprint):
 
     def register_module(self, path, sid):
         "Register a module with a specified path"
+        if sid in self._run_number_for_sid:
+            self._run_number_for_sid[sid] = 0
+            return
         print('Register module:', path, 'sid:', sid)
         self._run_number_for_sid[sid] = 0
         if path in self._sids_for_path:
@@ -94,9 +98,15 @@ class ProgressivisBlueprint(Blueprint):
         "Return the last run_number sent for the specified sid"
         return self._run_number_for_sid.get(sid, 0)
 
+    def prevent_tick(self, sid, run_number, ack):
+        if ack:
+            self._run_number_for_sid[sid] = run_number
+        else:
+            logging.debug('Ack not well received')
+
     def reset_sid(self, sid):
         "Resets the sid to 0 to stop sending ticks for that sid"
-        print('Reseting sid', sid)
+        #print('Reseting sid', sid)
         self._run_number_for_sid[sid] = 0
 
     def emit_tick(self, path, run_number):
@@ -104,11 +114,11 @@ class ProgressivisBlueprint(Blueprint):
         sids = self.sids_for_path(path)
         for sid in sids:
             if self._run_number_for_sid[sid] == 0:
-                print('Emiting tick for', sid, 'in path', path)
-                socketio.emit('tick', {'tick': run_number}, room=sid)
-                self._run_number_for_sid[sid] = run_number
-            else:
-                print('No tick for', sid, 'in path', path)
+                #print('Emiting tick for', sid, 'in path', path)
+                socketio.emit('tick', {'run_number': run_number}, room=sid,
+                              callback=partial(self.prevent_tick, sid, run_number))
+            #else:
+            #    #print('No tick for', sid, 'in path', path)
         time.sleep(0) # yield thread
 
     def tick_scheduler(self, scheduler, run_number):
@@ -190,8 +200,7 @@ def _on_join(json):
     path = json["path"]
     print('join received for "%s"'% path)
     join_room(path)
-    roomlist = rooms()
-    print('Roomlist:', roomlist)
+    print('Roomlist:', rooms())
     return {'type': 'pong'}
 
 def _on_connect():
@@ -227,9 +236,9 @@ def _on_step():
 
 def _on_scheduler(short=False):
     scheduler = progressivis_bp.scheduler
-    print('socketio scheduler called')
+    #print('socketio scheduler called')
     progressivis_bp.register_module('scheduler', request.sid)
-    print(progressivis_bp._sids_for_path)
+    #print(progressivis_bp._sids_for_path)
     assert request.sid in progressivis_bp.sids_for_path('scheduler')
     return scheduler.to_json(short)
 

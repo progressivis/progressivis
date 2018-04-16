@@ -1,14 +1,7 @@
 var firstTime = true;
 
-var scheduler_get_started = false;
-
 function scheduler_get(success, error) {
-    if(scheduler_get_started) {
-        return;
-    }
-    scheduler_get_started = true;
-    progressivis_get('/progressivis/scheduler', success, error)
-            .finally(() => scheduler_get_started = false);
+    progressivis_get('/progressivis/scheduler', success, error);
 };
 
 function cmp_order(mod1, mod2) {
@@ -63,10 +56,7 @@ function scheduler_update_table(data) {
 }
 
 function scheduler_refresh(json) {
-    if (json && json.run_number)
-        scheduler_update(json);
-    else
-        scheduler_get(scheduler_update, error);
+    scheduler_get(scheduler_update, error);
 }
 
 function scheduler_show_module(module) {

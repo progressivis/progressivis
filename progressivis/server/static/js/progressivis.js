@@ -15,6 +15,7 @@ class ProgressiVis {
         });
         socket.on('disconnect', function() { this.handshake = false; });
         socket.on('tick', function(msg) {
+            console.log('socketio tick');
             this.tick(msg);
         });
     }
@@ -69,7 +70,9 @@ function progressivis_websocket_open(msg, handler) {
     });
     socket.on('disconnect', function() { handshake = false; });
     socket.on('tick', function(msg) {
+        console.log('socketio tick');
         if (handler) handler(msg);
+        return 1;
     });
 }
 
@@ -143,14 +146,17 @@ function progressivis_post(path, success, error, param) {
 
 function progressivis_get(path, success, error, param) {
     if (handshake) {
+        console.log("socketio request "+path);
         return new Promise((resolve, reject) =>
                            param ? socket.emit(path, param, resolve)
                            : socket.emit(path, resolve))
             .then(success)
             .catch(error);
     }
-    else
+    else {
+        console.log("Ajax request "+path);
         return progressivis_post(path, success, error, param);
+    }
 }
 
 function progressivis_start(success, error) {

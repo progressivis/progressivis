@@ -216,10 +216,7 @@ function scatterplot_zoomed(t) {
 
 
 function scatterplot_refresh(json) {
-    if (json && json.run_number)
-        scatterplot_update(json);
-    else
-        module_get(scatterplot_update, error);
+    module_get(scatterplot_update, error);
 }
 
 function delta(d) { return d[1] - d[0]; }
