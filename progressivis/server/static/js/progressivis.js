@@ -159,6 +159,27 @@ function progressivis_get(path, success, error, param) {
     }
 }
 
+function b64(e) {
+    var t="",
+        n=new Uint8Array(e),
+        r=n.byteLength,
+        i;
+    for(i=0;i<r;i++) {
+        t+=String.fromCharCode(n[i]);
+    }
+    return window.btoa(t);
+}
+
+function progressivis_get_image(path, success, error, param) {
+    return progressivis_get(path, (data) => {
+        var img = new Image(),
+            src = "data:image/png;base64,"+b64(data.image);
+        img.setAttribute("src", src);
+        return img;
+    },
+                     error, param);
+}
+
 function progressivis_start(success, error) {
     progressivis_get('/progressivis/scheduler/start', success, error);
 }
@@ -199,8 +220,10 @@ function progressivis_ready(socket_name) {
     if (refresh === null) {
         console.log('ERROR: refresh is not defined');
     }
-    else
-        refresh();
+    else {
+        window.setTimeout(refresh, 500); // wait for websocket to install
+        //refresh();
+    }
     $('#start').click(function() { progressivis_start(refresh, error); });
     $('#stop' ).click(function() { progressivis_stop (refresh, error); });
     $('#step' ).click(function() { progressivis_step (refresh, error); });

@@ -129,7 +129,7 @@ class ProgressivisBlueprint(Blueprint):
         sids = self.sids_for_path(path)
         for sid in sids:
             if self._run_number_for_sid[sid] == 0:
-                print('Emiting tick for', sid, 'in path', path)
+                #print('Emiting tick for', sid, 'in path', path)
                 socketio.emit('tick', {'run_number': run_number}, room=sid,
                               callback=partial(self._prevent_tick, sid, run_number))
             #else:
@@ -182,7 +182,7 @@ def path_to_module(path):
     module used as dependent module of scatterplot.
     """
     scheduler = progressivis_bp.scheduler
-    print('module_path(%s)'%(path))
+    #print('module_path(%s)'%(path))
     ids = path.split('/')
     module = scheduler.module[ids[0]]
     if module is None:
@@ -201,7 +201,7 @@ def _on_join(json):
     path = json["path"]
     print('socketio join received for "%s"'% path)
     join_room(path)
-    print('socketio Roomlist:', rooms())
+    #print('socketio Roomlist:', rooms())
     return {'type': 'pong'}
 
 def _on_connect():
@@ -244,7 +244,7 @@ def _on_scheduler(short=False):
     return scheduler.to_json(short)
 
 def _on_module(path):
-    print('on_module', path)
+    #print('on_module', path)
     module = path_to_module(path)
     if module is None:
         return {'status': 'failed',
@@ -255,7 +255,7 @@ def _on_module(path):
 
 def _on_df(path):
     (mid, slot) = path.split('/')
-    print('socketio Getting module', mid, 'slot "'+slot+'"')
+    #print('socketio Getting module', mid, 'slot "'+slot+'"')
     module = path_to_module(mid)
     if module is None:
         return {'status': 'failed',
@@ -267,13 +267,13 @@ def _on_df(path):
     return {'columns':['index']+df.columns}
 
 def _on_quality(mid):
-    print('socketio quality for', mid)
+    #print('socketio quality for', mid)
     module = path_to_module(mid)
     if module is None:
         return {'status': 'failed',
                 'reason': 'invalid module'}
     slot = '_trace'
-    print('socketio Getting slot "'+slot+'"')
+    #print('socketio Getting slot "'+slot+'"')
     df = module.get_data(slot)
     if df is None:
         return {'status': 'failed',
