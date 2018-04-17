@@ -3,22 +3,12 @@
 var module_graph = function(){
   var d3cola;
   var firstTime = true;
-  var current_request = null;
   
   const width=960, height=500;
   const margin=10, pad=12;
 
-  function clear_current_request(){
-    current_request = null;
-  }
-  
   function graph_get(success, error) {
-      if(current_request){
-          return;
-      }
-      
-      progressivis_get('/progressivis/scheduler', success, error)
-          .finally(i => current_request = false);
+      progressivis_get('/progressivis/scheduler', success, error);
   };
   
   function graph_setup() {

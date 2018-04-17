@@ -26,7 +26,7 @@ from six import StringIO
 
 import numpy as np
 
-from flask import Flask, Blueprint, request
+from flask import Flask, Blueprint, request, json as flask_json
 from flask.json import JSONEncoder
 from flask_socketio import SocketIO, join_room, rooms, send
 import eventlet
@@ -129,7 +129,7 @@ class ProgressivisBlueprint(Blueprint):
         sids = self.sids_for_path(path)
         for sid in sids:
             if self._run_number_for_sid[sid] == 0:
-                #print('Emiting tick for', sid, 'in path', path)
+                print('Emiting tick for', sid, 'in path', path)
                 socketio.emit('tick', {'run_number': run_number}, room=sid,
                               callback=partial(self._prevent_tick, sid, run_number))
             #else:
@@ -172,20 +172,6 @@ progressivis_bp = ProgressivisBlueprint('progressivis.server',
                                         template_folder='templates')
 
 
-def app_create(config="settings.py", scheduler=None):
-    "Create the application"
-    if scheduler is None:
-        scheduler = Scheduler.default
-    app = Flask('progressivis.server')
-    if isinstance(config, str):
-        app.config.from_pyfile(config)
-    elif isinstance(config, dict):
-        app.config.update(config)
-    app.json_encoder = JSONEncoder4Numpy
-    app.register_blueprint(progressivis_bp)
-    progressivis_bp.setup(scheduler)
-    return app
-
 def path_to_module(path):
     """
     Return a module given its path, or None if not found.
@@ -213,17 +199,17 @@ def _on_join(json):
     if json.get("type") != "ping":
         logging.error("Expected a ping message")
     path = json["path"]
-    print('join received for "%s"'% path)
+    print('socketio join received for "%s"'% path)
     join_room(path)
-    print('Roomlist:', rooms())
+    print('socketio Roomlist:', rooms())
     return {'type': 'pong'}
 
 def _on_connect():
-    print('Connect ', request.sid)
+    print('socketio connect ', request.sid)
 
 def _on_disconnect():
     progressivis_bp.unregister_module(request.sid)
-    print('Disconnect ', request.sid)
+    print('socketio disconnect ', request.sid)
 
 def _on_start():
     scheduler = progressivis_bp.scheduler
@@ -267,6 +253,48 @@ def _on_module(path):
     module.set_end_run(progressivis_bp.tick_module) # setting it multiple time is ok
     return module.to_json()
 
+def _on_df(path):
+    (mid, slot) = path.split('/')
+    print('socketio Getting module', mid, 'slot "'+slot+'"')
+    module = path_to_module(mid)
+    if module is None:
+        return {'status': 'failed',
+                'reason': 'invalid module'}
+    df = module.get_data(slot)
+    if df is None:
+        return {'status': 'failed',
+                'reason': 'invalid data'}
+    return {'columns':['index']+df.columns}
+
+def _on_quality(mid):
+    print('socketio quality for', mid)
+    module = path_to_module(mid)
+    if module is None:
+        return {'status': 'failed',
+                'reason': 'invalid module'}
+    slot = '_trace'
+    print('socketio Getting slot "'+slot+'"')
+    df = module.get_data(slot)
+    if df is None:
+        return {'status': 'failed',
+                'reason': 'invalid data'}
+    qual = df['quality'].values
+    return {'index':df.index.values, 'quality': qual}
+
+def app_create(config="settings.py", scheduler=None):
+    "Create the application"
+    if scheduler is None:
+        scheduler = Scheduler.default
+    app = Flask('progressivis.server')
+    if isinstance(config, str):
+        app.config.from_pyfile(config)
+    elif isinstance(config, dict):
+        app.config.update(config)
+    app.json_encoder = JSONEncoder4Numpy
+    app.register_blueprint(progressivis_bp)
+    progressivis_bp.setup(scheduler)
+    return app
+
 def start_server(scheduler=None, debug=False):
     "Start the server"
     # pylint: disable=global-statement
@@ -278,7 +306,7 @@ def start_server(scheduler=None, debug=False):
     print('Scheduler %s has %d modules' % (scheduler.__class__.__name__, len(scheduler)))
     app = app_create(scheduler)
     app.debug = debug
-    socketio = SocketIO(app)
+    socketio = SocketIO(app, json=flask_json)
     socketio.on_event('connect', _on_connect)
     socketio.on_event('disconnect', _on_disconnect)
     socketio.on_event('join', _on_join)
@@ -287,6 +315,8 @@ def start_server(scheduler=None, debug=False):
     socketio.on_event('/progressivis/scheduler/stop', _on_stop)
     socketio.on_event('/progressivis/scheduler', _on_scheduler)
     socketio.on_event('/progressivis/module/get', _on_module)
+    socketio.on_event('/progressivis/module/df', _on_df)
+    socketio.on_event('/progressivis/module/quality', _on_quality)
     socketio.run(app)
 
 def stop_server():

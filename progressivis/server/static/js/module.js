@@ -54,15 +54,7 @@ function module_update_table(data) {
                                    "end_time",
                                    "parameters",
                                    "input_slots"]));
-    $.ajax({
-        type: 'POST',
-        url: $SCRIPT_ROOT+'/progressivis/module/quality/'+module_id,
-        data: {},
-        success: line_graph, 
-        contentType: "application/json",
-        dataType: 'json'
-    });
-
+    progressivis_get('/progressivis/module/quality', line_graph, error, module_id);
     $('.btn.slot').click(function() { module_show_dataframe($(this).text()); });
 }
 
@@ -75,7 +67,6 @@ function module_ready() {
         refresh = module_refresh;
     }
     progressivis_ready("module "+module_id);
-
 }
 
 
