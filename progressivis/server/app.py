@@ -1,5 +1,20 @@
 """
 Flask server for ProgressiVis.
+
+The server provides the main user interface for progressivis.
+It serves pages related to the scheduler and modules.
+For all the modules, it provides access to their internal state and
+to the tables it maintains.
+
+When the scheduler is running, the server implements a simple protocol.
+Each web page shown on a browser also opens a socketio connection.
+The server sends one message "tick" throught the socketio when the served entity is been changed.
+When the client/browser receives it, it sends a request to get the data from the module. This
+request is made through the socketio directly, and the value is returned, allowing the next tick
+to be sent by the server. This mechansim is meant to get a responsive browser with asynchronous
+updates.  Between the time the "tick" is received by the browser and the value is sent back by
+the server, many iterations may have been run.  The browser receives data as fast as it can, and
+the server sends a simple notification and serves the data as fast as it can.
 """
 from __future__ import absolute_import, division, print_function
 
@@ -98,7 +113,7 @@ class ProgressivisBlueprint(Blueprint):
         "Return the last run_number sent for the specified sid"
         return self._run_number_for_sid.get(sid, 0)
 
-    def prevent_tick(self, sid, run_number, ack):
+    def _prevent_tick(self, sid, run_number, ack):
         if ack:
             self._run_number_for_sid[sid] = run_number
         else:
@@ -116,7 +131,7 @@ class ProgressivisBlueprint(Blueprint):
             if self._run_number_for_sid[sid] == 0:
                 #print('Emiting tick for', sid, 'in path', path)
                 socketio.emit('tick', {'run_number': run_number}, room=sid,
-                              callback=partial(self.prevent_tick, sid, run_number))
+                              callback=partial(self._prevent_tick, sid, run_number))
             #else:
             #    #print('No tick for', sid, 'in path', path)
         time.sleep(0) # yield thread
