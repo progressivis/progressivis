@@ -1,10 +1,12 @@
+"Proxy for column"
 from __future__ import absolute_import, division, print_function
 from .column_base import BaseColumn
 
 class ColumnProxy(BaseColumn):
+    "Proxy class for a column"
     def __init__(self, base, index=None, name=None):
         super(ColumnProxy, self).__init__(name, base=base, index=index)
-    
+
     @property
     def chunks(self):
         return self._base.chunks
@@ -22,7 +24,7 @@ class ColumnProxy(BaseColumn):
     @property
     def maxshape(self):
         return self._base.maxshape
-    
+
     @property
     def dtype(self):
         return self._base.dtype
@@ -46,10 +48,6 @@ class ColumnProxy(BaseColumn):
     def value(self):
         return self._base[:]
 
-    @property
-    def values(self):
-        return self.value
-    
     def __getitem__(self, index):
         return self._base[index]
 
@@ -61,5 +59,3 @@ class ColumnProxy(BaseColumn):
 
     def tolist(self):
         return list(self.values)
-
-

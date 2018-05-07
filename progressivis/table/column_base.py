@@ -1,21 +1,28 @@
+"""
+Base class for columns.
+"""
 from __future__ import absolute_import, division, print_function
 
-import numpy as np
+import operator
+import logging
 from abc import ABCMeta, abstractmethod, abstractproperty
+
+import six
+import numpy as np
+
 from progressivis.core.config import get_option
 from progressivis.core.utils import integer_types
 
-import six
-import operator
 
-import logging
 logger = logging.getLogger(__name__)
 
 class _Loc(object):
+    # pylint: disable=too-few-public-methods
     def __init__(self, column):
         self.column = column
 
     def parse_loc(self, loc):
+        "Nomalize the loc"
         if isinstance(loc, tuple):
             raise ValueError('Location accessor not implemented for key "%s"' % loc)
         return self.column.id_to_index(loc)
@@ -31,10 +38,14 @@ class _Loc(object):
     def __setitem__(self, loc, value):
         index = self.parse_loc(loc)
         self.column[index] = value
-    
+
 
 @six.python_2_unicode_compatible
 class BaseColumn(six.with_metaclass(ABCMeta, object)):
+    """
+    Base class for columns.
+    """
+    # pylint: disable=too-many-public-methods
     def __init__(self, name, index=None, base=None):
         self._index = index
         self._name = name
@@ -42,34 +53,45 @@ class BaseColumn(six.with_metaclass(ABCMeta, object)):
 
     @property
     def loc(self):
+        "Return the accessor by id"
         return _Loc(self)
 
     @property
     def name(self):
+        "Return the name"
         return self._name
 
     @property
     def index(self):
+        "Retur the index"
         return self._index
 
     @property
     def base(self):
+        "Return the base column or None"
         return self._base
 
     @abstractproperty
     def size(self):
+        "Return the size of the column"
+        pass
+
+    @abstractproperty
+    def fillvalue(self):
+        "Return the default value of elements created when the column is enlarged"
         pass
 
     def id_to_index(self, loc, as_slice=True):
+        "Convert an identifier to an index"
         # pylint: disable=unused-argument
         if self.index:
             return self.index[loc]
-        raise KeyError('Cannot map key %s to index', loc)
+        raise KeyError('Cannot map key %s to index'% loc)
 
     def update(self):
         """
         Synchronize the column size with its index if needed.
-        This method can be called safely any time, it will 
+        This method can be called safely any time, it will
         do nothing if nothing needs to be done.
         """
         self.resize(self.index.size)
@@ -78,21 +100,24 @@ class BaseColumn(six.with_metaclass(ABCMeta, object)):
         return str(self)+self.info_contents()
 
     def __str__(self):
-        cn = self.__class__.__name__
-        l = len(self)
-        rep = '%s("%s", dshape=%s)[%d]' % (cn, self.name, str(self.dshape), l)
+        classname = self.__class__.__name__
+        rep = '%s("%s", dshape=%s)[%d]' % (classname, self.name, str(self.dshape), len(self))
         return rep
 
     def info_contents(self):
-        l = len(self)
+        "Return a string describing the contents of the column"
+        length = len(self)
         rep = ''
         max_rows = get_option('display.max_rows')
-        for row in range(min(max_rows, l)):
+        for row in range(min(max_rows, length)):
             rep += ("\n    %d: %s"%(self.id_to_index(row), self[row]))
-        if max_rows and l > max_rows:
+        if max_rows and length > max_rows:
             rep += "\n..."
         return rep
+
     def has_freelist(self):
+        # pylint: disable=no-self-use
+        "Return True of the column manages a free list"
         return False
 
     @abstractmethod
@@ -105,8 +130,13 @@ class BaseColumn(six.with_metaclass(ABCMeta, object)):
     @abstractmethod
     def __getitem__(self, index):
         pass
+
     def tolist(self):
-        return self.values.tolist() if self.index.is_identity else self.values[self.index].tolist()
+        "Return a list from the values of the column"
+        if self.index.is_identity:
+            return self.values.tolist()
+        return self.values[self.index].tolist()
+
     def read_direct(self, array, source_sel=None, dest_sel=None):
         """ Read data from column into an existing NumPy array.
 
@@ -123,34 +153,47 @@ class BaseColumn(six.with_metaclass(ABCMeta, object)):
 
     @abstractproperty
     def value(self):
+        "Return a numpy array-compatible object containing the values"
         pass
+
+    @property
+    def values(self):
+        "Synonym with value"
+        return self.value
 
     @abstractmethod
     def resize(self, newsize):
+        "Resize this column"
         pass
 
     @abstractproperty
     def shape(self):
+        "Return the shape of that column"
         pass
 
     @abstractmethod
     def set_shape(self, shape):
+        "Set the shape of that column. The semantics can be different than that of numpy."
         pass
 
     @abstractproperty
     def maxshape(self):
+        "Return the maximum shape"
         pass
 
     @abstractproperty
     def dtype(self):
+        "Return the dtype"
         pass
-    
+
     @abstractproperty
     def dshape(self):
+        "Return the datashape"
         pass
 
     @abstractproperty
     def chunks(self):
+        "Return the chunk size"
         pass
 
     @abstractmethod
@@ -158,54 +201,62 @@ class BaseColumn(six.with_metaclass(ABCMeta, object)):
         pass
 
     def last(self):
-        l = self.size
-        if l==0:
+        "Return the last element"
+        length = self.size
+        if length == 0:
             return None
-        return self[l-1] # the last element is never -1
+        return self[length-1] # the last element is never -1
 
     def index_to_chunk(self, index):
+        "Convert and index to its chunk index"
         if isinstance(index, integer_types):
             index = (index, )
         chunks = self.chunks
-        return [ i // c for i, c in zip(index, chunks)]
+        return [i // c for i, c in zip(index, chunks)]
 
     def chunk_to_index(self, chunk):
+        "Convert a chunk index to its index"
         if isinstance(chunk, integer_types):
             chunk = (chunk, )
         chunks = self.chunks
-        return [ i * c for i, c in zip(chunk, chunks)]
+        return [i * c for i, c in zip(chunk, chunks)]
 
     @property
     def changes(self):
+        "Return the ChangeManager associated with the index of this column"
         if self._index is None:
             return None
         return self._index.changes
-    
+
     @changes.setter
-    def changes(self, c):
+    def changes(self, changemanager):
+        "Set the ChangeManager associated with the index of this column"
         if self.index is None:
             raise RuntimeError('Column has no index')
-        self.index.changes = c
+        self.index.changes = changemanager
 
     def compute_updates(self, start, mid=None, cleanup=True):
+        "Return the updates of this column managed by the index"
         if self.index is None:
             return None
         return self.index.compute_updates(start, mid, cleanup)
 
-    def unary(self, op, **kwargs):
+    def unary(self, operation, **kwargs):
+        "Unary function manager"
         axis = kwargs.pop('axis', 0)
         keepdims = kwargs.pop('keepdims', False)
         # ignore other kwargs, maybe raise error in the future
-        return op(self.value, axis=axis, keepdims=keepdims)
+        return operation(self.value, axis=axis, keepdims=keepdims)
 
-    def binary(self, op, other, **kwargs):
+    def binary(self, operation, other, **kwargs):
+        "Binary function manager"
         axis = kwargs.pop('axis', 0)
-        assert(axis==0)
+        assert axis == 0
         isscalar = (np.isscalar(other) or isinstance(other, np.ndarray))
         if isscalar:
-            value = op(self.value, other)
+            value = operation(self.value, other)
         else:
-            value = op(self.value, other.value)
+            value = operation(self.value, other.value)
         return value
 
     def __abs__(self, **kwargs):
@@ -317,14 +368,17 @@ class BaseColumn(six.with_metaclass(ABCMeta, object)):
         return other.binary(operator.xor, self)
 
     def any(self, **kwargs):
+        "Return True if any element is not False"
         return self.unary(np.any, **kwargs)
 
     def all(self, **kwargs):
+        "Return True if all the elements are True"
         return self.unary(np.all, **kwargs)
 
     def min(self, **kwargs):
+        "Return the min value"
         return self.unary(np.min, **kwargs)
 
     def max(self, **kwargs):
+        "Return the max value"
         return self.unary(np.max, **kwargs)
-

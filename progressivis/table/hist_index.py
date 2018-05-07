@@ -10,11 +10,11 @@ import operator
 import logging
 
 import numpy as np
-from tdigest import TDigest
+#from tdigest import TDigest
 from progressivis.core.bitmap import bitmap
 from progressivis.core.slot import SlotDescriptor
-from progressivis.core.utils import (slice_to_arange, fix_loc, indices_to_slice)
-from progressivis.stats import Min, Max
+from progressivis.core.utils import (slice_to_arange, fix_loc) #, indices_to_slice)
+#from progressivis.stats import Min, Max
 from .module import TableModule
 from . import Table
 from . import TableSelectedView
@@ -24,6 +24,8 @@ logger = logging.getLogger(__name__)
 
 
 class _HistogramIndexImpl(object):
+    "Implementation part of Histogram Index"
+    # pylint: disable=too-many-instance-attributes
     def __init__(self, column, table, e_min, e_max, nb_bin):
         #self.table = table
         self.column = table[column] #  column
@@ -37,7 +39,7 @@ class _HistogramIndexImpl(object):
         self._perm_deviation = 0.1 # permitted deviation
         self._divide_threshold = 1000 # TODO: make it settable!
         self._divide_coef = 5 # TODO: make it settable!
-        self._merge_threshold = 1000 # TODO: make it settable!        
+        self._merge_threshold = 1000 # TODO: make it settable!
         self._merge_coef = 5 # TODO: make it settable!
         self._min_hist_size = 64
         self._max_hist_size = 256
@@ -54,32 +56,32 @@ class _HistogramIndexImpl(object):
         if size < self._divide_threshold:
             return False
         return size > self._divide_coef*mean
-                    
-        
-    def __reshape__still_inconclusive_variant(self, i):
-        "Change the bounds of the index if needed"
-        prev_ = sum([len(bm) for bm in self.bitmaps[:i]])
-        p_ = (prev_ + len(self.bitmaps[i])/2.0)/len(self.column) * 100
-        v = self._tdigest.percentile(p_)
-        try:
-            assert self.bins[i-1] < v < self.bins[i]
-        except:
-            import pdb;pdb.set_trace()
-        ids = np.array(self.bitmaps[i], np.int64)
-        values = self.column.loc[ids]
-        lower_bin = bitmap(ids[values < v])
-        upper_bin = self.bitmaps[i] - lower_bin
-        np.insert(self.bins, i, v)
-        self.bitmaps.insert(i, lower_bin)
-        self.bitmaps[i] = upper_bin
+
+    # def __reshape__still_inconclusive_variant(self, i):
+    #     "Change the bounds of the index if needed"
+    #     prev_ = sum([len(bm) for bm in self.bitmaps[:i]])
+    #     p_ = (prev_ + len(self.bitmaps[i])/2.0)/len(self.column) * 100
+    #     v = self._tdigest.percentile(p_)
+    #     try:
+    #         assert self.bins[i-1] < v < self.bins[i]
+    #     except:
+    #         import pdb;pdb.set_trace()
+    #     ids = np.array(self.bitmaps[i], np.int64)
+    #     values = self.column.loc[ids]
+    #     lower_bin = bitmap(ids[values < v])
+    #     upper_bin = self.bitmaps[i] - lower_bin
+    #     np.insert(self.bins, i, v)
+    #     self.bitmaps.insert(i, lower_bin)
+    #     self.bitmaps[i] = upper_bin
 
     def show_histogram(self):
+        "Print the histogram on the display"
         for i, bm in enumerate(self.bitmaps):
             print(i, len(bm), "="*len(bm))
 
     def _is_merging_required(self):
         return len(self.bitmaps) > self._max_hist_size
-    
+
     def _is_mergeable_pair(self, bm1, bm2, merge_cnt):
         if len(self.bitmaps) - merge_cnt < self._min_hist_size:
             return False
@@ -87,10 +89,9 @@ class _HistogramIndexImpl(object):
         len_b = len(self.bins)
         mean = float(len_c)/len_b
         return len(bm1)+len(bm2) < max(self._merge_coef*mean, self._merge_threshold)
-    
 
     def merge_once(self):
-        assert len(self.bins)+1 == len(self.bitmaps), "no good"
+        assert len(self.bins)+1 == len(self.bitmaps), "unexpected # of bins"
         bins_1 = list(self.bins)
         bins_1.append(None)
         bin_tuples = list(zip(self.bitmaps, bins_1))
@@ -113,7 +114,7 @@ class _HistogramIndexImpl(object):
         self.bins = np.array(merged_bins)
         self.bitmaps = merged_bitmaps
         return merge_cnt
-    
+
     def reshape(self):
         for i, bm in enumerate(self.bitmaps):
             if self._needs_division(len(bm)):
@@ -132,7 +133,7 @@ class _HistogramIndexImpl(object):
             samples = ids
         s_vals = self.column.loc[samples]
         v = np.median(s_vals)
-        assert self.bins[i-1] < v < self.bins[i] if i>0 else v < self.bins[i]
+        assert self.bins[i-1] < v < self.bins[i] if i > 0 else v < self.bins[i]
         values = self.column.loc[ids]
         lower_bin = bitmap(ids[values < v])
         upper_bin = self.bitmaps[i] - lower_bin
@@ -141,11 +142,11 @@ class _HistogramIndexImpl(object):
         t = len(ids)*self._perm_deviation
         if abs(lower_len - upper_len) > t:
             print("DIFF: ", lower_len, upper_len, float(abs(lower_len - upper_len))/len(ids))
-        old = self.bins
+        #old = self.bins
         self.bins = np.insert(self.bins, i, v)
         try:
-            assert (self.bins[i-1] < self.bins[i] < self.bins[i+1] if i>0
-                        else self.bins[i] < self.bins[i+1])
+            assert (self.bins[i-1] < self.bins[i] < self.bins[i+1] if i > 0
+                    else self.bins[i] < self.bins[i+1])
         except:
             import pdb;pdb.set_trace()
         self.bitmaps.insert(i, lower_bin)
@@ -161,8 +162,8 @@ class _HistogramIndexImpl(object):
         created = bitmap.asbitmap(created)
         updated = bitmap.asbitmap(updated)
         deleted = bitmap.asbitmap(deleted)
-        if deleted:
-            self._tdigest_is_valid = False
+        # if deleted:
+        #     self._tdigest_is_valid = False
         if deleted or updated:
             to_remove = updated | deleted
             for bm in self.bitmaps:
@@ -275,16 +276,17 @@ class _HistogramIndexImpl(object):
         if self.bitmaps is None:
             return None
         for bm in self.bitmaps:
-            if bm: return bm
+            if bm:
+                return bm
         return None
 
     def get_max_bin(self):
         #import pdb;pdb.set_trace()
         if self.bitmaps is None:
             return None
-        for i in range(1, len(self.bitmaps)+1):
-            bm = self.bitmaps[-i]
-            if bm: return bm
+        for bm in reversed(self.bitmaps):
+            if bm:
+                return bm
         return None
 
 
@@ -303,10 +305,10 @@ class HistogramIndex(TableModule):
             #SlotDescriptor('min', type=Table, required=True),
             #SlotDescriptor('max', type=Table, required=True)
         ])
-        self._add_slots(kwds,'output_descriptors', [
+        self._add_slots(kwds, 'output_descriptors', [
             SlotDescriptor('min_out', type=Table, required=False),
             SlotDescriptor('max_out', type=Table, required=False)])
-        
+
         super(HistogramIndex, self).__init__(scheduler=scheduler, **kwds)
         self.column = column
         self._impl = None  # will be created when the init_threshold is reached
@@ -314,13 +316,15 @@ class HistogramIndex(TableModule):
         # so realistic initial values for min and max were available
         self.input_module = None
         self.input_slot = None
+        self._input_table = None
         self._min_table = None
         self._max_table = None
-        
+
     def compute_bounds(self, input_table):
         #import pdb; pdb.set_trace()
         values = input_table[self.column]
         return values.min(), values.max()
+
     def get_data(self, name):
         #import pdb;pdb.set_trace()
         if name in ('min_out', 'max_out'):
@@ -342,17 +346,18 @@ class HistogramIndex(TableModule):
                 self._max_table = TableSelectedView(self._input_table, bitmap([]))
             self._max_table.selection = self.get_max_bin()
             return self._max_table
-        return super(HistogramIndex,self).get_data(name)
+        return super(HistogramIndex, self).get_data(name)
 
     def get_min_bin(self):
         if self._impl is None:
             return None
         return self._impl.get_min_bin()
+
     def get_max_bin(self):
         if self._impl is None:
             return None
-        return self._impl.get_max_bin()        
-        
+        return self._impl.get_max_bin()
+
     def run_step(self, run_number, step_size, howlong):
         input_slot = self.get_input_slot('table')
         input_slot.update(run_number)
@@ -360,7 +365,7 @@ class HistogramIndex(TableModule):
         with input_slot.lock:
             input_table = input_slot.data()
             self._input_table = input_table
-            
+
         if len(input_table) < self.params.init_threshold:
             # there are not enough rows. it's not worth building an index yet
             return self._return_run_step(self.state_blocked, steps_run=0)
@@ -377,7 +382,6 @@ class HistogramIndex(TableModule):
         else:
             # Many not always, or should the implementation decide?
             self._impl.reshape()
-            pass
         deleted = None
         if input_slot.deleted.any():
             deleted = input_slot.deleted.next(as_slice=False)
@@ -459,7 +463,7 @@ class HistogramIndex(TableModule):
                 self._eval_to_ids(operator.__ge__, lower, only_locs))
 
     def create_dependent_modules(self, input_module, input_slot, **kwds):
-        s = self.scheduler()
+        #s = self.scheduler()
         self.input_module = input_module
         self.input_slot = input_slot
         #min_ = Min(group=self.id, scheduler=s)

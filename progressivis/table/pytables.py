@@ -1,26 +1,22 @@
+"Wrapper for PyTables"
 from __future__ import absolute_import, division, print_function
 
-from .table_sliced import BaseTable, TableSlicedView
-from .dshape import dshape_from_pytable
+from collections import Iterable
+
+import six
+import numpy as np
+
 from progressivis.core.utils import (integer_types, is_int)
 from progressivis.core.fast import indices_to_slice
 from progressivis.core.intdict import IntDict
-
-from collections import Iterable
-import six
-
-#import tables as pt #pytables
+from .table_sliced import BaseTable, TableSlicedView
+from .dshape import dshape_from_pytable
 
 from .column import BaseColumn
-#from .index import Index
-
-import numpy as np
 
 
-#
-# PyTables wrapper
-#
 class ColumnPT(BaseColumn):
+    "Column Wrapper for PyTables"
     def __init__(self, name, index, base, col_index):
         super(ColumnPT, self).__init__(name, index=index, base=base)
         self._col_index = col_index
@@ -35,7 +31,7 @@ class ColumnPT(BaseColumn):
     @property
     def size(self):
         return len(self)
-    
+
     def __setitem__(self, key, val):
         raise NotImplementedError
 
@@ -49,8 +45,11 @@ class ColumnPT(BaseColumn):
     def shape(self):
         return (len(self),) + self.dshape
 
-
     def set_shape(self, shape):
+        raise NotImplementedError
+
+    @property
+    def fillvalue(self):
         raise NotImplementedError
 
     @property
@@ -60,7 +59,7 @@ class ColumnPT(BaseColumn):
     @property
     def dtype(self):
         return self._base.coltypes[self._name]
-    
+
     @property
     def dshape(self):
         return self._base.coldescrs[self._name].shape
@@ -74,6 +73,7 @@ class ColumnPT(BaseColumn):
 
 
 class IdColumnPT(BaseColumn):
+    "IDColumn Wrapper for PyTables"
     INTERNAL_ID = '_ID'
     def __init__(self, pt):
         super(IdColumnPT, self).__init__(IdColumnPT.INTERNAL_ID)
@@ -82,14 +82,14 @@ class IdColumnPT(BaseColumn):
         self._ids_dict = None
     def __getitem__(self, key):
         return self._base[key]
-    
+
     def __len__(self):
         return len(self._base)
 
     @property
     def size(self):
         return len(self)
-    
+
     def __setitem__(self, key, val):
         raise NotImplementedError
 
@@ -116,9 +116,13 @@ class IdColumnPT(BaseColumn):
         raise NotImplementedError
 
     @property
+    def fillvalue(self):
+        raise NotImplementedError
+
+    @property
     def dtype(self):
         return self._base.dtype
-    
+
     @property
     def dshape(self):
         return self._base.coldescrs[self._name].shape
@@ -129,7 +133,7 @@ class IdColumnPT(BaseColumn):
 
     def __delitem__(self, key):
         raise NotImplementedError
-    
+
     def _init_ids_dict(self, end=None):
         if end is None:
             end = self._last_id
@@ -143,14 +147,14 @@ class IdColumnPT(BaseColumn):
             self._init_ids_dict(end)
         else:
             new_ids = self[start:end]
-            self._ids_dict.update(new_ids,range(start, end))
+            self._ids_dict.update(new_ids, range(start, end))
             #TODO fix
             #self.add_updated(new_ids)
 
-    def id_to_index(self, loc, as_slice=True): 
+    def id_to_index(self, loc, as_slice=True):
         if self._ids_dict is None:
             self._update_ids_dict()
-        if isinstance(loc, np.ndarray) and loc.dtype==np.int64:
+        if isinstance(loc, np.ndarray) and loc.dtype == np.int64:
             ret = self._ids_dict.get_items(loc)
         elif isinstance(loc, integer_types):
             if loc < 0:
@@ -161,7 +165,7 @@ class IdColumnPT(BaseColumn):
                 count = len(loc)
                 # pylint: disable=bare-except
             except:
-                count=-1
+                count = -1
             ret = np.fromiter(loc, dtype=np.int64, count=count)
             ret = self._ids_dict.get_items(ret)
         elif isinstance(loc, slice):
@@ -170,14 +174,17 @@ class IdColumnPT(BaseColumn):
         else:
             raise ValueError('id_to_index not implemented for id "%s"' % loc)
         return indices_to_slice(ret) if as_slice else ret
-    
+
     def equals(self, other):
+        "Test if columns are equal"
         if self is other:
             return True
         return np.all(self.values == other.values)
 
 
 class _PTLoc(object):
+    "Wrapper for PyTables"
+    # pylint: disable=too-few-public-methods
     def __init__(self, this_table, as_loc=True):
         self._table = this_table
         self._as_loc = as_loc
@@ -212,17 +219,17 @@ class _PTLoc(object):
                 raise ValueError('getitem not implemented for key "%s"' % key)
             row_key, col_key = key
         else:
-            row_key, col_key = key, slice(None)            
+            row_key, col_key = key, slice(None)
         if self._as_loc:
             slice_maybe = self._table.id_to_index(row_key)
-            
         else: # i.e iloc mode
             slice_maybe = row_key
         #pylint: disable=protected-access
-        return self._table.setitem_2d(slice_maybe, col_key, value) 
+        return self._table.setitem_2d(slice_maybe, col_key, value)
 
-    
 class _PTAt(object):
+    "Wrapper for PyTables"
+    # pylint: disable=too-few-public-methods
     def __init__(self, this_table, as_loc=True):
         self._table = this_table
         self._as_loc = as_loc
@@ -263,8 +270,8 @@ class _PTAt(object):
         self._table._column(col_key)[row_key] = value
 
 
-
 class PyTableView(BaseTable):
+    "Wrapper for PyTables"
     def __init__(self, pt):
         super(PyTableView, self).__init__()
         self._pt = pt
@@ -286,10 +293,10 @@ class PyTableView(BaseTable):
     @property
     def columns(self):
         return self._columns
-        
+
     def resize(self, newsize, index=None):
         pass # TODO: implement!
-    
+
     def __delitem__(self, key):
         pass # TODO: implement!
 
@@ -298,7 +305,7 @@ class PyTableView(BaseTable):
 
     def __getitem__(self, key):
         pass # TODO: implement!
-    
+
     def __setitem__(self, key, values):
         pass # TODO: implement!
 
@@ -325,4 +332,3 @@ class PyTableView(BaseTable):
     @property
     def iat(self):
         return _PTAt(self, as_loc=False)
-
