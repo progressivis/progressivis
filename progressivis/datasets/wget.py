@@ -1,8 +1,11 @@
-from six.moves import urllib
 import logging
+import os.path
+from six.moves import urllib
 logger = logging.getLogger(__name__)
 
 def wget_file(filename, url):
+    if os.path.exists(filename):
+        return filename
     attempts = 0
     while attempts < 3:
         try:

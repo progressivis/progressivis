@@ -5,7 +5,7 @@ from . import ProgressiveTest
 class TestBitmap(ProgressiveTest):
     def test_bitmap(self):
         bm = bitmap([0, 1, 2, 3])
-        self.assertEqual(str(bm), 'bitmap([0, 1, 2, 3])')
+        self.assertEqual(repr(bm), 'bitmap([0, 1, 2, 3])')
         self.assertEqual(bm, bitmap(slice(0, 4)))
         self.assertEqual(2, bm[2])
         b2 = bm[2:4]
@@ -41,7 +41,7 @@ class TestBitmap(ProgressiveTest):
         res = bitmap([1, 2, 4])
         self.assertEqual(res.to_slice_maybe(), res)
         bm = bitmap(range(1000))
-        self.assertEqual(str(bm), 'bitmap([0, 1, 2, 3, 4, 5...(1000)...999)])')
+        self.assertEqual(repr(bm), 'bitmap([0, 1, 2, 3, 4, 5...(1000)...999)])')
         self.assertEqual(bm | None, bm)
         bm |= None
         self.assertEqual(len(bm), 1000)

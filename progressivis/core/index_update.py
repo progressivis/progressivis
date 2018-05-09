@@ -21,7 +21,7 @@ class IndexUpdate(object):
 
     def __repr__(self):
         return "IndexUpdate(created=%s,updated=%s,deleted=%s)" % (
-            self.created, self.updated, self.deleted)
+            repr(self.created), repr(self.updated), repr(self.deleted))
 
     def clear(self):
         "Clear the changes"

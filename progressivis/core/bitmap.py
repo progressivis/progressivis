@@ -11,10 +11,10 @@ import numpy as np
 if six.PY2: # pragma no cover
     # pylint: disable=invalid-name,redefined-builtin,undefined-variable
     range = xrange
-    integer_types = (six.integer_types, np.integer)
+    _integer_types = (six.integer_types, np.integer)
 else:  # pragma no cover
     # pylint: disable=invalid-name
-    integer_types = (int, np.integer)
+    _integer_types = (int, np.integer)
 
 
 class bitmap(BitMap, object):
@@ -32,7 +32,7 @@ class bitmap(BitMap, object):
         self &= NIL_BITMAP
 
     def __contains__(self, other):
-        if isinstance(other, integer_types):
+        if isinstance(other, _integer_types):
             return BitMap.__contains__(self, other)
         other = self.asbitmap(other)
         return other <= self
@@ -46,18 +46,18 @@ class bitmap(BitMap, object):
             values = ', '.join([str(n) for n in self])
         return 'bitmap([%s])' % values
 
-    def __binary_op__(self, other, function):
-        if other is None:
-            other = NIL_BITMAP
-        try:
-            return bitmap(obj=function(self.__obj__, other.__obj__))
-        except AttributeError:
-            raise TypeError('Not a bitmap.')
+    # def __binary_op__(self, other, function):
+    #     if other is None:
+    #         other = NIL_BITMAP
+    #     try:
+    #         return bitmap(obj=function(self.__obj__, other.__obj__))
+    #     except AttributeError:
+    #         raise TypeError('Not a bitmap.')
 
-    def __binary_op_inplace__(self, other, function):
-        if other is None:
-            other = NIL_BITMAP
-        return BitMap.__binary_op_inplace__(self, other, function)
+    # def __binary_op_inplace__(self, other, function):
+    #     if other is None:
+    #         other = NIL_BITMAP
+    #     return BitMap.__binary_op_inplace__(self, other, function)
 
     def __getitem__(self, values):
         #import pdb;pdb.set_trace()
@@ -84,6 +84,7 @@ class bitmap(BitMap, object):
 
     def pop(self, length=1):
         "Remove one or many items and return them as a bitmap"
+        #import pdb;pdb.set_trace()
         if length >= len(self):
             ret = bitmap(self)
             self &= NIL_BITMAP
@@ -113,32 +114,72 @@ class bitmap(BitMap, object):
         return bitmap(x)
 
     def __or__(self, other):
+        if other is None:
+            other = NIL_BITMAP
         return bitmap(BitMap.__or__(self, other))
-    
+
     def __and__(self, other):
+        if other is None:
+            other = NIL_BITMAP
         return bitmap(BitMap.__and__(self, other))
-    
+
     def __xor__(self, other):
+        if other is None:
+            other = NIL_BITMAP
         return bitmap(BitMap.__xor__(self, other))
-    
+
     def __sub__(self, other):
+        if other is None:
+            other = NIL_BITMAP
         return bitmap(BitMap.__sub__(self, other))
-    
+
+    def __ior__(self, other):
+        if other is None:
+            other = NIL_BITMAP
+        return BitMap.__ior__(self, other)
+
+    def __iand__(self, other):
+        if other is None:
+            other = NIL_BITMAP
+        return BitMap.__iand__(self, other)
+
+    def __ixor__(self, other):
+        if other is None:
+            other = NIL_BITMAP
+        return BitMap.__ixor__(self, other)
+
+    def __isub__(self, other):
+        if other is None:
+            other = NIL_BITMAP
+        return BitMap.__isub__(self, other)
+
     def flip(self, start, end):
+        """
+        Compute the negation of the bitmap within the specified interval.
+        """
         return bitmap(BitMap.flip(self, start, end))
-    
-    @classmethod
-    def union(cls, bitmaps):
-        bm = BitMap.union(cls, bitmaps)
+
+    @staticmethod
+    def union(*bitmaps):
+        """
+        Return the union of the bitmaps.
+        """
+        bm = BitMap.union(*bitmaps)
         return bitmap(bm) if isinstance(bm, BitMap) else bm
-    
-    @classmethod
-    def intersection(cls, bitmaps):
-        bm = BitMap.intersection(cls, bitmaps)
+
+    @staticmethod
+    def intersection(*bitmaps):
+        """
+        Return the intersection of the bitmaps.
+        """
+        bm = BitMap.intersection(*bitmaps)
         return bitmap(bm) if isinstance(bm, BitMap) else bm
-    
-    @classmethod
-    def deserialize(cls, buff):
-        return bitmap(BitMap.deserialize(cls, buff))
-    
+
+    @staticmethod
+    def deserialize(buff):
+        """
+        Generate a bitmap from the given serialization.
+        """
+        return bitmap(BitMap.deserialize(buff))
+
 NIL_BITMAP = bitmap()

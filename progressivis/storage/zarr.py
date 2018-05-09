@@ -34,6 +34,8 @@ class ZARRGroup(zarr.Group):
         filters = kwds.get('filters', [])
         filters.append(numcodecs.MsgPack())
         kwds['filters'] = filters
+        if dtype == np.dtype('O') and kwds.get('object_codec') is None:
+            kwds.update({'object_codec': numcodecs.VLenUTF8()})
         return super(ZARRGroup, self).create_dataset(name, shape=shape, dtype=dtype, data=data, **kwds)
 
     def require_dataset(self, name, shape, dtype=None, exact=False, **kwds):
