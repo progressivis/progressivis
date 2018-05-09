@@ -22,10 +22,10 @@ class bitmap(BitMap, object):
     """
     Derive from an efficient and light-weight ordered set of 32 bits integers.
     """
-    def __init__(self, values=None, obj=None):
+    def __init__(self, values=None, copy_on_write=False):
         if isinstance(values, slice):
             values = range(values.start, values.stop, (values.step or 1))
-        BitMap.__init__(self, values, obj)
+        BitMap.__init__(self, values, copy_on_write)
 
     def clear(self):
         "Clear the bitmap in-place"
@@ -60,6 +60,7 @@ class bitmap(BitMap, object):
         return BitMap.__binary_op_inplace__(self, other, function)
 
     def __getitem__(self, values):
+        #import pdb;pdb.set_trace()
         bm = BitMap.__getitem__(self, values)
         return bitmap(bm) if isinstance(bm, BitMap) else bm
 
@@ -111,4 +112,33 @@ class bitmap(BitMap, object):
             return x
         return bitmap(x)
 
+    def __or__(self, other):
+        return bitmap(BitMap.__or__(self, other))
+    
+    def __and__(self, other):
+        return bitmap(BitMap.__and__(self, other))
+    
+    def __xor__(self, other):
+        return bitmap(BitMap.__xor__(self, other))
+    
+    def __sub__(self, other):
+        return bitmap(BitMap.__sub__(self, other))
+    
+    def flip(self, start, end):
+        return bitmap(BitMap.flip(self, start, end))
+    
+    @classmethod
+    def union(cls, bitmaps):
+        bm = BitMap.union(cls, bitmaps)
+        return bitmap(bm) if isinstance(bm, BitMap) else bm
+    
+    @classmethod
+    def intersection(cls, bitmaps):
+        bm = BitMap.intersection(cls, bitmaps)
+        return bitmap(bm) if isinstance(bm, BitMap) else bm
+    
+    @classmethod
+    def deserialize(cls, buff):
+        return bitmap(BitMap.deserialize(cls, buff))
+    
 NIL_BITMAP = bitmap()
