@@ -78,7 +78,7 @@ class TestScatterPlot(ProgressiveTest):
         decorate(s, SentinelPatch("sentinel_1"))                
         sp.scheduler().start(idle_proc=idle_proc)
         s.join()
-        import pdb; pdb.set_trace()
+        #import pdb; pdb.set_trace()
         js = sp.to_json()
         x, y = zip(*js['scatterplot']['data'])
         min_x=min(x)
