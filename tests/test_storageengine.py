@@ -54,7 +54,7 @@ class TestStorageEngine(ProgressiveTest):
     def _create_table(self, storageengine, group):
         t = Table('table_'+str(storageengine),
                   dshape='{a: int64, b: real, c: string}',
-                  data={'a': [1,2,3], 'b': [0.1, 0.2, 0.3], 'c': ['one', 'two', 'three']},
+                  data={'a': [1,2,3], 'b': [0.1, 0.2, 0.3], 'c': [u'one', u'two', u'three']},
                   storagegroup=group)
         self.assertEqual(len(t), 3)
         return t

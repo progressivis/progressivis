@@ -1,12 +1,12 @@
-from . import ProgressiveTest
-
 from progressivis import Every, Print
 from progressivis.io import CSVLoader
 from progressivis.vis import ScatterPlot
 from progressivis.datasets import get_dataset
 from progressivis.stats import  RandomTable
 from progressivis.core.utils import decorate, ModulePatch
-import time
+
+from . import ProgressiveTest
+
 #from pprint import pprint
 
 def print_len(x):
@@ -44,18 +44,20 @@ class SentinelPatch(ModulePatch):
         if SentinelPatch.cnt > 10:
             m.scheduler().stop()
         else:
-            SentinelPatch.cnt+=1
-    
+            SentinelPatch.cnt += 1
+
 class TestScatterPlot(ProgressiveTest):
 #    def setUp(self):
 #        log_level(logging.INFO,'progressivis')
 
     def test_scatterplot(self):
         s = self.scheduler()
-        csv = CSVLoader(get_dataset('smallfile'),index_col=False,header=None,force_valid_ids=True,scheduler=s)
+        csv = CSVLoader(get_dataset('smallfile'),
+                        index_col=False, header=None,
+                        force_valid_ids=True, scheduler=s)
         sp = ScatterPlot(x_column='_1', y_column='_2', scheduler=s)
-        sp.create_dependent_modules(csv,'table')
-        cnt = Every(proc=self.terse, constant_time=True,scheduler=s)
+        sp.create_dependent_modules(csv, 'table')
+        cnt = Every(proc=self.terse, constant_time=True, scheduler=s)
         cnt.input.df = csv.output.table
         prt = Print(proc=self.terse, scheduler=s)
         prt.input.df = sp.output.table
@@ -68,14 +70,14 @@ class TestScatterPlot(ProgressiveTest):
         s = self.scheduler()
         random = RandomTable(2, rows=2000000, scheduler=s)
         sp = ScatterPlot(x_column='_1', y_column='_2', scheduler=s)
-        sp.create_dependent_modules(random,'table', with_sampling=False)
-        cnt = Every(proc=self.terse, constant_time=True,scheduler=s)
+        sp.create_dependent_modules(random, 'table', with_sampling=False)
+        cnt = Every(proc=self.terse, constant_time=True, scheduler=s)
         cnt.input.df = random.output.table
         prt = Print(proc=self.terse, scheduler=s)
         prt.input.df = sp.output.table
         decorate(s, VariablePatch1("variable_1"))
         decorate(s, VariablePatch2("variable_2"))
-        decorate(s, SentinelPatch("sentinel_1"))                
+        decorate(s, SentinelPatch("sentinel_1"))
         sp.scheduler().start(idle_proc=idle_proc)
         s.join()
         #import pdb; pdb.set_trace()
@@ -89,8 +91,7 @@ class TestScatterPlot(ProgressiveTest):
         self.assertGreaterEqual(min_y, LOWER_Y)
         self.assertLessEqual(max_x, UPPER_X)
         self.assertLessEqual(max_y, UPPER_Y)
-        
+
 if __name__ == '__main__':
     ProgressiveTest.main()
 
-    
