@@ -28,6 +28,7 @@ __all__ = ['BaseScheduler']
 
 class BaseScheduler(object):
     "Base Scheduler class, runs progressive modules"
+    # pylint: disable=too-many-public-methods,too-many-instance-attributes
     default = None
     _last_id = 0
 
@@ -39,8 +40,7 @@ class BaseScheduler(object):
     def __init__(self, interaction_latency=0.1):
         if interaction_latency <= 0:
             raise ProgressiveError('Invalid interaction_latency, '
-                                   'should be strictly positive: %s',
-                                   interaction_latency)
+                                   'should be strictly positive: %s'% interaction_latency)
         self._lock = self.create_lock()
         # same as clear below
         with self.lock:
@@ -132,38 +132,38 @@ class BaseScheduler(object):
     def _compute_reachability(self, dependencies):
         # TODO implement a recursive transitive_closure computation
         # instead of using the brute-force djikstra algorithm
-        d = dependencies
-        k = list(d.keys())
-        n = len(k)
-        index = dict(zip(k, range(len(k))))
+        # pylint: disable=too-many-locals
+        k = list(dependencies.keys())
+        size = len(k)
+        index = dict(zip(k, range(size)))
         row = []
         col = []
         data = []
-        for (v1, vs) in six.iteritems(d):
-            for v2 in vs:
-                col.append(index[v1])
-                row.append(index[v2])
+        for (vertex1, vertexs) in six.iteritems(dependencies):
+            for vertex2 in vertexs:
+                col.append(index[vertex1])
+                row.append(index[vertex2])
                 data.append(1)
-        mat = csr_matrix((data, (row, col)), shape=(n, n))
+        mat = csr_matrix((data, (row, col)), shape=(size, size))
         dist = shortest_path(mat, directed=True, return_predecessors=False,
                              unweighted=True)
         self._reachability = {}
         reach_no_vis = set()
         all_vis = set(self.get_visualizations())
-        for i1 in range(n):
-            v1 = k[i1]
-            s = {v1}
-            for i2 in range(n):
-                v2 = k[i2]
-                dst = dist[i1, i2]
+        for index1 in range(size):
+            vertex1 = k[index1]
+            s = {vertex1}
+            for index2 in range(size):
+                vertex2 = k[index2]
+                dst = dist[index1, index2]
                 if dst != 0 and dst != np.inf:
-                    s.add(v2)
-            self._reachability[v1] = s
+                    s.add(vertex2)
+            self._reachability[vertex1] = s
             if not all_vis.intersection(s):
-                logger.debug('No visualization after module %s: %s', v1, s)
+                logger.debug('No visualization after module %s: %s', vertex1, s)
                 reach_no_vis.update(s)
-                if not self.module[v1].is_visualization():
-                    reach_no_vis.add(v1)
+                if not self.module[vertex1].is_visualization():
+                    reach_no_vis.add(vertex1)
         logger.debug('Module(s) %s always after visualizations', reach_no_vis)
         # filter out module that reach no vis
         for (k, v) in six.iteritems(self._reachability):
@@ -446,7 +446,7 @@ class BaseScheduler(object):
     def add_module(self, module):
         "Add a module to this scheduler."
         if not module.is_created():
-            raise ProgressiveError('Cannot add running module %s', module.id)
+            raise ProgressiveError('Cannot add running module %s' % module.id)
         if module.id is None:
             # pylint: disable=protected-access
             module._id = self.generate_id(module.pretty_typename())
@@ -496,7 +496,8 @@ class BaseScheduler(object):
         sel = self._reachability[module.id]
         if sel:
             if not self._module_selection:
-                self._module_selection = sel
+                logger.info('Starting input management')
+                self._module_selection = set(sel)
                 self._selection_target_time = self.timer() + self.interaction_latency
             else:
                 self._module_selection.update(sel)
@@ -508,7 +509,7 @@ class BaseScheduler(object):
         "Return True of the scheduler is in input mode"
         if self._module_selection is not None:
             if not self._module_selection:
-                logger.debug('Finishing input management')
+                logger.info('Finishing input management')
                 self._module_selection = None
                 self._selection_target_time = -1
             else:
