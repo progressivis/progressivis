@@ -113,7 +113,7 @@ class ScatterPlot(TableModule):
         histogram2d.input.min = min_rq.output.table
         histogram2d.input.max = max_rq.output.table
         if heatmap is None:
-            heatmap = Heatmap(group=self.id, filename='heatmap%d.png',
+            heatmap = Heatmap(group=self.id, # filename='heatmap%d.png',
                               history=100, scheduler=s)
         heatmap.input.array = histogram2d.output.table
         if sample is True:
