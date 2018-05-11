@@ -20,7 +20,7 @@ def get_dataset(name, **kwds):
     if name.startswith('cluster:'):
         fname = name[len('cluster:'):] + ".txt"
         return wget_file(filename='%s/%s'%(DATA_DIR, fname),
-                         url='https://cs.joensuu.fi/sipu/datasets/%s'%fname)
+                         url='http://cs.joensuu.fi/sipu/datasets/%s'%fname)
     raise ProgressiveError('Unknow dataset %s'%name)
 
 
