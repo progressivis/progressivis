@@ -124,7 +124,6 @@ class RangeQuery(TableModule):
                                  min_value=None,
                                  max_value=None,
                                  **kwds):
-        #import pdb; pdb.set_trace()
         if self.input_module is not None: # test if already called
             return self
         s = self.scheduler()
@@ -231,7 +230,6 @@ class RangeQuery(TableModule):
             lower_slot.created.next()
             limit_changed = True
         if not (lower_slot is upper_slot):
-            #import pdb;pdb.set_trace()
             upper_slot.update(run_number)
             if upper_slot.deleted.any():
                 upper_slot.deleted.next()
@@ -257,14 +255,10 @@ class RangeQuery(TableModule):
         if (lower_slot.data() is None or upper_slot.data() is None
                 or len(lower_slot.data()) == 0 or len(upper_slot.data()) == 0):
             return self._return_run_step(self.state_blocked, steps_run=0)
-        if steps==0:
-            return self._return_run_step(self.state_blocked, steps_run=0)
         lower_value = lower_slot.data().last(self._watched_key_lower)
         upper_value = upper_slot.data().last(self._watched_key_upper)
         if (lower_slot.data() is None or upper_slot.data() is None
                 or len(min_slot.data()) == 0 or len(max_slot.data()) == 0):
-            return self._return_run_step(self.state_blocked, steps_run=0)
-        if steps==0:
             return self._return_run_step(self.state_blocked, steps_run=0)
         minv = min_slot.data().last(self._watched_key_lower)
         maxv = max_slot.data().last(self._watched_key_upper)
@@ -277,9 +271,10 @@ class RangeQuery(TableModule):
             limit_changed = True
         self._set_min_out(lower_value)
         self._set_max_out(upper_value)
+        if steps==0 and not limit_changed:
+            return self._return_run_step(self.state_blocked, steps_run=0)
         # ...
         if not self._impl.is_started:
-            #self._table = TableSelectedView(input_table, bitmap([]))
             status = self._impl.start(input_table, lower_value, upper_value, limit_changed,
                                       created=created,
                                       updated=updated,
