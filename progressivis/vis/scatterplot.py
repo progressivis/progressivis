@@ -134,6 +134,7 @@ class ScatterPlot(TableModule):
         self.max = max2d
         self.range_query_x = range_query_x
         self.range_query_y = range_query_y
+        self.range_query2d = range_query2d
         self.histogram2d = histogram2d
         self.heatmap = heatmap        
 

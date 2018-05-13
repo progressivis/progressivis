@@ -109,7 +109,7 @@ class bitmap(BitMap, object):
         "Try to coerce the value as a bitmap"
         if x is None:
             return NIL_BITMAP
-        if isinstance(x, (bitmap, BitMap)):
+        if isinstance(x, bitmap):
             return x
         return bitmap(x)
 
