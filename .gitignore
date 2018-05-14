@@ -40,3 +40,4 @@ __pycache__
 /*.h5
 /.coverage
 /coverage
+/mmap-storage

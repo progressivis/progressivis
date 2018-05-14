@@ -20,6 +20,7 @@ from __future__ import absolute_import, division, print_function
 
 import time
 import logging
+import six
 from functools import partial
 
 from six import StringIO
@@ -281,6 +282,19 @@ def _on_quality(mid):
     qual = df['quality'].values
     return {'index':df.index.values, 'quality': qual}
 
+def _on_logger():
+    managers = logging.Logger.manager.loggerDict
+    ret = []
+    for (module, log) in six.iteritems(managers):
+        if isinstance(log, logging.Logger):
+            ret.append({'module': module,
+                        'level': logging.getLevelName(log.getEffectiveLevel())})
+    def _key_log(a):
+        return a['module'].lower()
+    ret.sort(key=_key_log)
+    return {'loggers': ret}
+
+
 def app_create(config="settings.py", scheduler=None):
     "Create the application"
     if scheduler is None:
@@ -317,6 +331,7 @@ def start_server(scheduler=None, debug=False):
     socketio.on_event('/progressivis/module/get', _on_module)
     socketio.on_event('/progressivis/module/df', _on_df)
     socketio.on_event('/progressivis/module/quality', _on_quality)
+    socketio.on_event('/progressivis/logger', _on_logger)
     socketio.run(app)
 
 def stop_server():

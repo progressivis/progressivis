@@ -35,18 +35,27 @@ class MMapDataset(Dataset):
         self._name = name
         self._filename = os.path.join(path, name)
         length = 0
+        if dtype is not None:
+            dtype = np.dtype(dtype)
         if data is not None:
             shape = data.shape
             if dtype is None:
                 dtype = data.dtype
+        if dtype is None:
+            raise ValueError('dtype requied when no data is provided')
+        self._dtype = dtype
+        if dtype == OBJECT:
+            self._strings = MMapDataset(path, name+"_strings", shape=shape, dtype=np.int8)
+            dtype = np.int64
+        else:
+            self._strings = None
+        
         if shape:
             length = 1
             for shap in shape:
                 length *= shap
             length *= dtype.itemsize
         else:
-            if dtype is None:
-                raise ValueError('dtype requied when no data is provided')
             shape = (0,)
 
         last = max(0, length - 1)
@@ -63,6 +72,8 @@ class MMapDataset(Dataset):
             self._fillvalue = kwds.pop('fillvalue')
             #print('fillvalue specified for %s is %s'%(self.base.dtype, self._fillvalue))
         else:
+            if dtype == OBJECT:
+                self._fillvalue = ''
             if np.issubdtype(dtype, np.int):
                 self._fillvalue = 0
             elif np.issubdtype(dtype, np.bool):
@@ -80,9 +91,28 @@ class MMapDataset(Dataset):
             self.view = self.base[:shape[0]]
             assert self.view.shape == shape
         if data is not None:
-            self.view[:] = np.asarray(data)
+            self._fill(0, data)
 
         self._attrs = AttributeImpl()
+
+    def _fill(self, data, start=0, end=None):
+        if end is None:
+            end = start + len(data)
+        if self.base.dtype == OBJECT:
+            for i, v in enumerate(data):
+                self._set_value_at(start+i, v)
+        else:
+            self.view[start:end] = np.asarray(data)
+
+    def _set_value_at(self, i, v):
+        #TODO free current value
+        if v is None:
+            self.view[i] = -1
+        else:
+            data = v.encode('utf-8')
+            offset = len(self._strings)
+            self._strings.append(np.frombuffer(data, dtype=np.int8))
+            self._strings.append([0])
 
     @property
     def shape(self):
@@ -90,7 +120,7 @@ class MMapDataset(Dataset):
 
     @property
     def dtype(self):
-        return self.view.dtype
+        return self._dtype
 
     @property
     def maxshape(self):
@@ -129,6 +159,7 @@ class MMapDataset(Dataset):
             self.base = self.base.reshape(shape)
         baseshape = np.array(self.base.shape)
         viewshape = self.view.shape
+        size = np.asarray(size)
         if (size > baseshape).any():
             self.view = None
             newsize = []
@@ -168,6 +199,8 @@ class MMapDataset(Dataset):
         return self._name
 
 
+OBJECT = np.dtype('O')
+
 class MMapGroup(GroupImpl):
     """
     Group of mmap-based groups and datasets.
@@ -178,9 +211,9 @@ class MMapGroup(GroupImpl):
         metadata = os.path.join(self._directory, METADATA_FILE)
         if os.path.exists(self._directory):
             if not os.path.isdir(self._directory):
-                raise OSError('Cannot create group %s', self._directory)
+                raise OSError('Cannot create group %s'%self._directory)
             if not os.path.isfile(metadata):
-                raise ValueError('Cannot create group %s, unsuitable directory',
+                raise ValueError('Cannot create group %s, "unsuitable directory'%
                                  self._directory)
             _read_attributes(self._attrs.attrs, metadata)
         else:
@@ -195,7 +228,7 @@ class MMapGroup(GroupImpl):
 
     def create_dataset(self, name, shape=None, dtype=None, data=None, **kwds):
         if name in self.dict:
-            raise KeyError('name %s already defined', name)
+            raise KeyError('name %s already defined' % name)
         chunks = kwds.pop('chunks', None)
         if chunks is None:
             chunklen = None
@@ -209,7 +242,7 @@ class MMapGroup(GroupImpl):
             dtype = np.dtype(dtype)
         fillvalue = kwds.pop('fillvalue', None)
         if fillvalue is None:
-            if dtype == np.object:
+            if dtype == OBJECT:
                 fillvalue = ''
             else:
                 fillvalue = 0
@@ -236,7 +269,7 @@ class MMapGroup(GroupImpl):
 
 class MMapStorageEngine(StorageEngine, MMapGroup):
     "StorageEngine for mmap-based storage"
-    def __init__(self, root='.'):
+    def __init__(self, root='mmap_storage'):
         """
         Create a storage manager from a specified root directory.
         """
@@ -250,8 +283,7 @@ def _read_attributes(attrs, filename):
     with open(filename, 'rb') as inf:
         dictionary = marshal.load(inf)
     if not isinstance(dictionary, dict):
-        raise ValueError('metadata contains invalid data %s',
-                         filename)
+        raise ValueError('metadata contains invalid data %s'%filename)
     attrs.clear()
     attrs.update(dictionary)
     return attrs

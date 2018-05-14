@@ -37,7 +37,7 @@ class BaseScheduler(object):
         "Return the specified scheduler of, in None, the default one."
         return scheduler or cls.default
 
-    def __init__(self, interaction_latency=0.1):
+    def __init__(self, interaction_latency=1):
         if interaction_latency <= 0:
             raise ProgressiveError('Invalid interaction_latency, '
                                    'should be strictly positive: %s'% interaction_latency)
@@ -160,15 +160,15 @@ class BaseScheduler(object):
                     s.add(vertex2)
             self._reachability[vertex1] = s
             if not all_vis.intersection(s):
-                logger.debug('No visualization after module %s: %s', vertex1, s)
+                logger.info('No visualization after module %s: %s', vertex1, s)
                 reach_no_vis.update(s)
                 if not self.module[vertex1].is_visualization():
                     reach_no_vis.add(vertex1)
-        logger.debug('Module(s) %s always after visualizations', reach_no_vis)
+        logger.info('Module(s) %s always after visualizations', reach_no_vis)
         # filter out module that reach no vis
         for (k, v) in six.iteritems(self._reachability):
             v.difference_update(reach_no_vis)
-        logger.debug('reachability map: %s', self._reachability)
+        logger.info('reachability map: %s', self._reachability)
 
     def get_visualizations(self):
         "Return the visualization modules"
@@ -498,7 +498,8 @@ class BaseScheduler(object):
             if not self._module_selection:
                 logger.info('Starting input management')
                 self._module_selection = set(sel)
-                self._selection_target_time = self.timer() + self.interaction_latency
+                self._selection_target_time = (self.timer() +
+                                               self.interaction_latency)
             else:
                 self._module_selection.update(sel)
             logger.debug('Input selection for module: %s',

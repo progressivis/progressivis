@@ -231,3 +231,30 @@ def _dfslice(mid, slot):
 def _exit_():
     stop_server()
     return "Stopped!"
+
+@progressivis_bp.route('/progressivis/logger.html')
+def _logger_page():
+    managers = logging.Logger.manager.loggerDict
+    ret = []
+    for (module, log) in six.iteritems(managers):
+        if isinstance(log, logging.Logger):
+            ret.append({'module': module,
+                        'level': logging.getLevelName(log.getEffectiveLevel())})
+    def _key_log(a):
+        return a['module'].lower()
+    ret.sort(key=_key_log)
+    return render_template('logger.html',
+                           title="ProgressiVis Loggers", loggers=ret)
+
+@progressivis_bp.route('/progressivis/logger', methods=['POST'])
+def _logger():
+    managers = logging.Logger.manager.loggerDict
+    ret = []
+    for (module, log) in six.iteritems(managers):
+        if isinstance(log, logging.Logger):
+            ret.append({'module': module,
+                        'level': logging.getLevelName(log.getEffectiveLevel())})
+    def _key_log(a):
+        return a['module'].lower()
+    ret.sort(key=_key_log)
+    return jsonify({'loggers': ret})
