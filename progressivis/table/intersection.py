@@ -24,8 +24,8 @@ class Intersection(NAry):
 
     def __init__(self, scheduler=None, **kwds):        
         super(Intersection, self).__init__(scheduler=scheduler, **kwds)
-        self.run_step = self.run_step_progress
-        #self.run_step = self.run_step_seq        
+        #self.run_step = self.run_step_progress
+        self.run_step = self.run_step_seq        
 
     def predict_step_size(self, duration):
         return 1000
