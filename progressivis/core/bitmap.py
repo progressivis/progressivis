@@ -71,17 +71,21 @@ class bitmap(BitMap, object):
 
     def update(self, values):
         "Add new values from either a bitmap, an array, a slice, or an Iterable"
-        if values is None:
-            return
-        # NP check the copy here for slice
-        if not isinstance(values, (bitmap, BitMap, array.array)):
-            if isinstance(values, slice):
-                values = range(*values.indices(values.stop+1))
-            # do not call bitmap constructor here cause
-            # BitMap constructor calls update=>infinite recursion
-            values = array.array('I', values)
-        BitMap.update(self, values)
-
+        try:
+            BitMap.update(self, values)
+        except TypeError:
+            if values is None:
+                return
+            # NP check the copy here for slice
+            if not isinstance(values, (bitmap, BitMap, array.array)):
+                if isinstance(values, slice):
+                    values = range(*values.indices(values.stop+1))
+                # do not call bitmap constructor here cause
+                # BitMap constructor calls update=>infinite recursion
+                values = array.array('I', values)
+                BitMap.update(self, values)
+            else:
+                raise
     def pop(self, length=1):
         "Remove one or many items and return them as a bitmap"
         #import pdb;pdb.set_trace()
