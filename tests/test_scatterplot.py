@@ -80,37 +80,6 @@ class TestScatterPlot(ProgressiveTest):
         decorate(s, SentinelPatch("sentinel_1"))
         sp.scheduler().start(idle_proc=idle_proc)
         s.join()
-        jsx = sp.range_query_x._table.to_json(orient='list')
-        x = jsx['_1']
-        min_x=min(x)
-        max_x=max(x)
-        self.assertGreaterEqual(min_x, LOWER_X)
-        self.assertLessEqual(max_x, UPPER_X)
-        jsy = sp.range_query_y._table.to_json(orient='list')
-        y = jsy['_2']
-        min_y=min(y)
-        max_y=max(y)
-        self.assertGreaterEqual(min_y, LOWER_Y)
-        self.assertLessEqual(max_y, UPPER_Y)
-        if False and set(sp.range_query2d._table.selection) != set(sp.range_query_x._table.selection) & set(sp.range_query_y._table.selection):
-            ints_ = set(sp.range_query_x._table.selection) & set(sp.range_query_y._table.selection)
-            print("PB: ", len(set(sp.range_query2d._table.selection)-ints_))
-            print("PB2: ", ints_-set(sp.range_query2d._table.selection))
-            t = sp.range_query_x._table.selection&sp.range_query_y._table.selection
-            if t!= sp.range_query2d._table.selection:
-                print("PB3:", len(sp.range_query2d._table.selection-t))
-            else:
-                print("PB4")
-        js = sp.range_query2d._table.to_json(orient='list')
-        x, y = js['_1'], js['_2']
-        min_x=min(x)
-        max_x=max(x)
-        min_y=min(y)
-        max_y=max(y)
-        self.assertGreaterEqual(min_x, LOWER_X)
-        self.assertGreaterEqual(min_y, LOWER_Y)
-        self.assertLessEqual(max_x, UPPER_X)
-        self.assertLessEqual(max_y, UPPER_Y)        
         js = sp.to_json()
         x, y = zip(*js['scatterplot']['data'])
         min_x=min(x)

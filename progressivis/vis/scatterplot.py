@@ -9,10 +9,10 @@ from progressivis.table.module import TableModule
 
 from progressivis.stats import Histogram2D, Sample, Min, Max
 from progressivis.vis import Heatmap
-from ..table.range_query import RangeQuery
+from ..table.range_query_2d import RangeQuery2d
 from ..table.hist_index import HistogramIndex
 from ..table.bisectmod import Bisect, _get_physical_table
-from progressivis.table.paste import Paste #bin_join import BinJoin
+#from progressivis.table.paste import Paste #bin_join import BinJoin
 from ..table import TableSelectedView
 from ..core.bitmap import bitmap
 
@@ -61,8 +61,8 @@ class ScatterPlot(TableModule):
 
     def get_visualization(self):
         return "scatterplot"
-
-    def create_dependent_modules(self, input_module, input_slot,
+    """
+    def create_dependent_modules_older_variant(self, input_module, input_slot,
                                  histogram2d=None, heatmap=None,
                                  sample=True, select=None, **kwds):
         if self.input_module is not None:
@@ -135,6 +135,61 @@ class ScatterPlot(TableModule):
         self.range_query_x = range_query_x
         self.range_query_y = range_query_y
         self.range_query2d = range_query2d
+        self.histogram2d = histogram2d
+        self.heatmap = heatmap        
+
+        return scatterplot"""
+
+
+    def create_dependent_modules(self, input_module, input_slot,
+                                 histogram2d=None, heatmap=None,
+                                 sample=True, select=None, **kwds):
+        if self.input_module is not None:
+            return self
+        s = self.scheduler()
+        self.input_module = input_module
+        self.input_slot = input_slot
+        range_query_2d = RangeQuery2d(column_x=self.x_column,
+                                   column_y=self.y_column,
+                                   group=self.id, scheduler=s,
+                                   approximate=self._approximate)
+        range_query_2d.create_dependent_modules(input_module,
+                                               input_slot,
+                                               min_value=False,
+                                               max_value=False)
+        self.min_value = Variable(group=self.id, scheduler=s)
+        self.min_value.input.like = range_query_2d.min.output.table
+        range_query_2d.input.lower = self.min_value.output.table
+        self.max_value = Variable(group=self.id, scheduler=s)
+        self.max_value.input.like = range_query_2d.max.output.table
+        range_query_2d.input.upper = self.max_value.output.table
+        if histogram2d is None:
+            histogram2d = Histogram2D(self.x_column, self.y_column,
+                                      group=self.id, scheduler=s)
+        histogram2d.input.table = range_query_2d.output.table
+        histogram2d.input.min = range_query_2d.output.min
+        histogram2d.input.max = range_query_2d.output.max
+        if heatmap is None:
+            heatmap = Heatmap(group=self.id, # filename='heatmap%d.png',
+                              history=100, scheduler=s)
+        heatmap.input.array = histogram2d.output.table
+        if sample is True:
+            sample = Sample(samples=100, group=self.id, scheduler=s)
+        elif sample is None and select is None:
+            raise ProgressiveError("Scatterplot needs a select module")
+        if sample is not None:
+            sample.input.table = range_query_2d.output.table
+        scatterplot=self
+        scatterplot.input.heatmap = heatmap.output.heatmap
+        scatterplot.input.table = input_module.output[input_slot]
+        scatterplot.input.select = sample.output.table
+        self.histogram2d = histogram2d
+        self.heatmap = heatmap
+        self.sample = sample
+        self.select = select
+        self.min = range_query_2d.min.output.table
+        self.max = range_query_2d.max.output.table
+        self.range_query_2d = range_query_2d
         self.histogram2d = histogram2d
         self.heatmap = heatmap        
 

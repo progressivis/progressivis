@@ -225,7 +225,7 @@ class _HistogramIndexImpl(object):
 
     def range_query(self, lower, upper, approximate=APPROX):
         """
-        Return the list of rows with values in range [`lower`, `upper`[
+        Return the bitmap of all rows with values in range [`lower`, `upper`[
         """
         if lower > upper:
             lower, upper = upper, lower
@@ -247,9 +247,33 @@ class _HistogramIndexImpl(object):
             detail.update(bm)
         return detail
 
+    def range_query_aslist(self, lower, upper, approximate=APPROX):
+        """
+        Return the list of bitmaps with values in range [`lower`, `upper`[
+        """
+        if lower > upper:
+            lower, upper = upper, lower
+        pos = np.digitize([lower, upper], self.bins)
+        detail = bitmap()
+        res = self.bitmaps[pos[0] + 1:pos[1]]
+        if not approximate:
+            ids = np.array(self.bitmaps[pos[0]], np.int64)
+            values = self.column.loc[ids]
+            if pos[0] == pos[1]:
+                selected = ids[(lower <= values)&(values < upper)]
+            else:
+                selected = ids[lower <= values]
+                detail.update(selected)
+                ids = np.array(self.bitmaps[pos[1]], np.int64)
+                values = self.column.loc[ids]
+                selected = ids[values < upper]
+                detail.update(selected)
+            res.append(detail)
+        return res
+
     def restricted_range_query(self, lower, upper, only_locs, approximate=APPROX):
         """
-        Return the list of rows with values in range [`lower`, `upper`[
+        Return the bitmap of only_locs rows in range [`lower`, `upper`[
         """
         if lower > upper:
             lower, upper = upper, lower
@@ -441,6 +465,13 @@ class HistogramIndex(TableModule):
         # so we query the input table directly
         return self._eval_to_ids(operator_, limit, only_locs)
 
+    def range_query_aslist(self, lower, upper, approximate=APPROX):
+        """
+        Return the list of rows with values in range [`lower`, `upper`[
+        """
+        if self._impl:
+            return self._impl.range_query_aslist(lower, upper, approximate)
+        return None
     def range_query(self, lower, upper, approximate=APPROX):
         """
         Return the list of rows with values in range [`lower`, `upper`[
@@ -453,7 +484,8 @@ class HistogramIndex(TableModule):
                 self._eval_to_ids(operator.__ge__, lower))
     def restricted_range_query(self, lower, upper, only_locs, approximate=APPROX):
         """
-        Return the list of rows with values in range [`lower`, `upper`[
+        Return the list of rows with values in range [`lower`, `upper`[ 
+        among only_locs
         """
         if self._impl:
             return self._impl.restricted_range_query(lower, upper, only_locs, approximate)
