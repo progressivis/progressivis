@@ -16,7 +16,13 @@ except ImportError:
     import collections as collections_abc
 
 from multiprocessing import Process
-from pandas.io.common import _is_url, _is_s3_url
+from pandas.io.common import _is_url
+try:
+    from pandas.io.common import _is_s3_url
+except ImportError: # pandas >=0.23.0 
+    from pandas.io.common import is_s3_url
+    _is_s3_url = is_s3_url
+    
 import requests
 import os
 import os.path
