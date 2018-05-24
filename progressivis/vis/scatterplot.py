@@ -22,7 +22,6 @@ import numpy as np
 import logging
 logger = logging.getLogger(__name__)
 
-
 class ScatterPlot(TableModule):
     parameters = [('xmin',   np.dtype(float), 0),
                   ('xmax',   np.dtype(float), 1),
@@ -47,7 +46,8 @@ class ScatterPlot(TableModule):
         self.min = None
         self.max = None
         self.histogram2d = None
-        self.heatmap = None       
+        self.heatmap = None
+        self._json_digest = None
 
 #    def get_data(self, name):
 #        return self.get_input_slot(name).data()
@@ -199,10 +199,15 @@ class ScatterPlot(TableModule):
         return 1
 
     def run_step(self,run_number,step_size,howlong):
+        self._json_digest = self._to_json_impl()
         return self._return_run_step(self.state_blocked, steps_run=1,
                                          reads=1, updates=1)
 
     def to_json(self, short=False):
+        if self._json_digest:
+            return self._json_digest
+        return self._to_json_impl(short)
+    def _to_json_impl(self, short=False):
         self.image = None
         json = super(ScatterPlot, self).to_json(short)
         if short:
