@@ -278,7 +278,7 @@ class BaseTable(six.with_metaclass(ABCMeta, object)):
         #            line.append(str(col[i]))
         #        data.append(dict(zip(columns, line)))
         #    return data
-        if orient == 'rows': # not pandas compliant but useful for JS DataTable
+        if orient == 'datatable': # not a pandas compliant mode but useful for JS DataTable
             ret = []
             for i in self.index:
                 line = [i]
@@ -287,7 +287,7 @@ class BaseTable(six.with_metaclass(ABCMeta, object)):
                     line.append(get_physical_base(col).loc[i])
                 ret.append(line)
             return ret
-        if orient == 'records':
+        if orient in ('rows', 'records'):
             ret = []
             for i in self.index:
                 line = OrderedDict()

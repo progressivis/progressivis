@@ -225,7 +225,7 @@ def _dfslice(mid, slot):
     return jsonify({'draw':draw_,
                     'recordsTotal':df_len,
                     'recordsFiltered':df_len,
-                    'data': df_slice.to_json(orient='rows')})
+                    'data': df_slice.to_json(orient='datatable')})
 
 @progressivis_bp.route('/exit')
 def _exit_():
