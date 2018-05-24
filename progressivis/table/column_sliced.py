@@ -142,5 +142,7 @@ class ColumnSlicedView(ColumnProxy):
         #self.update.touch(index)
         #self._base.update.touch(shifted_index)
 
+    def __iter__(self):
+        return iter(self.value)
 
 

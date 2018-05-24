@@ -278,15 +278,23 @@ class BaseTable(six.with_metaclass(ABCMeta, object)):
         #            line.append(str(col[i]))
         #        data.append(dict(zip(columns, line)))
         #    return data
-        if orient in ('records', 'rows'):
-            #import pdb;pdb.set_trace()
+        if orient == 'rows': # not pandas compliant but useful for JS DataTable
+            ret = []
+            for i in self.index:
+                line = [i]
+                for name in columns:
+                    col = self[name]
+                    line.append(get_physical_base(col).loc[i])
+                ret.append(line)
+            return ret
+        if orient == 'records':
             ret = []
             for i in self.index:
                 line = OrderedDict()
                 for name in columns:
                     col = self[name]
                     #line[name] = remove_nan_etc(col.values[i])
-                    line[name] = col.loc[i]
+                    line[name] = get_physical_base(col).loc[i]
                 ret.append(line)
             return ret
         if orient == 'index':
