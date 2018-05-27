@@ -10,7 +10,6 @@ from collections import deque
 
 from timeit import default_timer
 from uuid import uuid4
-from toposort import toposort_flatten
 import six
 
 from scipy.sparse import csr_matrix
@@ -18,8 +17,9 @@ from scipy.sparse.csgraph import shortest_path
 import numpy as np
 
 
-from progressivis.core.utils import ProgressiveError, AttributeDict, FakeLock
-from progressivis.core.synchronized import synchronized
+from .utils import ProgressiveError, AttributeDict, FakeLock
+from .synchronized import synchronized
+from .toposort import toposort
 
 logger = logging.getLogger(__name__)
 
@@ -202,7 +202,8 @@ class BaseScheduler(object):
         runorder = None
         try:
             dependencies = self._collect_dependencies()
-            runorder = toposort_flatten(dependencies)
+            runorder = toposort(dependencies)
+            #print('normal order of', dependencies, 'is', runorder, file=sys.stderr)
             self._compute_reachability(dependencies)
         except ValueError:  # cycle, try to break it then
             # if there's still a cycle, we cannot run the first cycle
@@ -210,7 +211,8 @@ class BaseScheduler(object):
             logger.info('Cycle in module dependencies, '
                         'trying to drop optional fields')
             dependencies = self._collect_dependencies(only_required=True)
-            runorder = toposort_flatten(dependencies)
+            runorder = toposort(dependencies)
+            #print('Filtered order of', dependencies, 'is', runorder, file=sys.stderr)
             self._compute_reachability(dependencies)
         return runorder
 

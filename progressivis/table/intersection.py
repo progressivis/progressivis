@@ -1,34 +1,28 @@
 """
 Range Query module.
 
-
 """
-from progressivis.core.utils import indices_len
-from ..io import Variable
-from ..stats import Min, Max
-from .hist_index import HistogramIndex
-from .bisectmod import Bisect, _get_physical_table
-from .module import TableModule
-from ..core.slot import SlotDescriptor
-from . import Table
-from . import TableSelectedView
-from ..core.bitmap import bitmap
+
 from progressivis.table.nary import NAry
 from progressivis.core.synchronized import synchronized
-#from collections import defaultdict
-from functools import reduce
-import operator
+from progressivis.core.utils import indices_len
+from .bisectmod import _get_physical_table
+from . import TableSelectedView
+from ..core.bitmap import bitmap
+
+
 class Intersection(NAry):
     "Intersection Module"
     parameters = []
 
-    def __init__(self, scheduler=None, **kwds):        
+    def __init__(self, scheduler=None, **kwds):
         super(Intersection, self).__init__(scheduler=scheduler, **kwds)
         #self.run_step = self.run_step_progress
-        self.run_step = self.run_step_seq        
+        self.run_step = self.run_step_seq
 
     def predict_step_size(self, duration):
         return 1000
+
     @synchronized
     def run_step_progress(self, run_number, step_size, howlong):
         _b = bitmap.asbitmap

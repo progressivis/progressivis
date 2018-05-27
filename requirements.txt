@@ -9,7 +9,6 @@ numexpr>=2.6.1
 tables>=3.3.0
 pandas>=0.19.1
 scikit-learn>=0.18.1
-toposort>=1.4
 tdigest>=0.4.1.0
 flask>=0.12.1
 eventlet>=0.22.0
