@@ -11,3 +11,12 @@
 #prevImages img {
   margin-left: 5px;
 }
+
+.axis path {
+  display: none;
+}
+
+.axis line {
+  stroke-opacity: 0.3;
+  shape-rendering: crispEdges;
+}

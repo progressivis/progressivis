@@ -1,19 +1,7 @@
 var firstTime = true;
 
-var current_xhr = null;
-
-function clear_current_xhr(){
-    current_xhr = null;
-}
-
 function scheduler_get(success, error) {
-    if(current_xhr){
-        return;
-    }
-    current_xhr = $.post($SCRIPT_ROOT+'/progressivis/scheduler/?short=False')
-        .done(success)
-        .fail(error)
-        .always(clear_current_xhr);
+    progressivis_get('/progressivis/scheduler', success, error);
 };
 
 function cmp_order(mod1, mod2) {
@@ -67,8 +55,8 @@ function scheduler_update_table(data) {
     tr.exit().remove();
 }
 
-function scheduler_refresh() {
-  scheduler_get(scheduler_update, error);
+function scheduler_refresh(json) {
+    scheduler_get(scheduler_update, error);
 }
 
 function scheduler_show_module(module) {

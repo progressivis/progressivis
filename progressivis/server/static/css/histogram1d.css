@@ -1,5 +1,6 @@
-.bar rect {
+.bar {
   fill: steelblue;
+  stroke: none;
 }
 
 .axis path, .axis line {

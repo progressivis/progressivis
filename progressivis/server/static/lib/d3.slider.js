@@ -65,7 +65,7 @@ return function module() {
       var drag = d3.behavior.drag();
       drag.on('dragend', function () {
         dispatch.slideend(d3.event, value);
-      })
+      });
 
       // Slider handle
       //if range slider, create two
@@ -245,7 +245,7 @@ return function module() {
         } else if ( d3.event.sourceEvent.target.id == "handle-two" ) {
           active = 2;
         }
-        var pos = sliderLength - Math.max(0, Math.min(sliderLength, d3.event.y))
+        var pos = sliderLength - Math.max(0, Math.min(sliderLength, d3.event.y));
         moveHandle(scale.invert ? 
                     stepValue(scale.invert(pos / sliderLength))
                   : nearestTick(pos / sliderLength));
@@ -423,5 +423,5 @@ return function module() {
 
   return slider;
 
-}
+};
 }));

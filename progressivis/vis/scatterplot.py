@@ -9,16 +9,18 @@ from progressivis.table.module import TableModule
 
 from progressivis.stats import Histogram2D, Sample, Min, Max
 from progressivis.vis import Heatmap
-from ..table.range_query import RangeQuery
+from ..table.range_query_2d import RangeQuery2d
 from ..table.hist_index import HistogramIndex
 from ..table.bisectmod import Bisect, _get_physical_table
+#from progressivis.table.paste import Paste #bin_join import BinJoin
+from ..table import TableSelectedView
+from ..core.bitmap import bitmap
+
 from ..table.intersection import Intersection
 import numpy as np
 
 import logging
 logger = logging.getLogger(__name__)
-
-VARIANT = 'LAST'
 
 class ScatterPlot(TableModule):
     parameters = [('xmin',   np.dtype(float), 0),
@@ -26,7 +28,7 @@ class ScatterPlot(TableModule):
                   ('ymin',   np.dtype(float), 0),
                   ('ymax',   np.dtype(float), 1) ]
         
-    def __init__(self, x_column, y_column, **kwds):
+    def __init__(self, x_column, y_column, approximate=False, **kwds):
         self._add_slots(kwds,'input_descriptors',
                         [SlotDescriptor('heatmap', type=Table),
                          SlotDescriptor('table', type=Table),
@@ -34,6 +36,7 @@ class ScatterPlot(TableModule):
         super(ScatterPlot, self).__init__(quantum=0.1, **kwds)
         self.x_column = x_column
         self.y_column = y_column
+        self._approximate = approximate
         self._auto_update = False
         self.image_source = None
         self.scatter_source = None
@@ -43,7 +46,8 @@ class ScatterPlot(TableModule):
         self.min = None
         self.max = None
         self.histogram2d = None
-        self.heatmap = None       
+        self.heatmap = None
+        self._json_digest = None
 
 #    def get_data(self, name):
 #        return self.get_input_slot(name).data()
@@ -57,149 +61,135 @@ class ScatterPlot(TableModule):
 
     def get_visualization(self):
         return "scatterplot"
-
-    def seq_make_range_query(self, input_module, input_slot, column, min_, max_, min_value, max_value, group, scheduler):
-        """ 
-        Not dropped yet cause potentially useful for debugging TableSelectedView
-        """
-        hist_index = HistogramIndex(column=column, group=group, scheduler=scheduler)
-        hist_index.input.table = input_module.output[input_slot]
-        hist_index.input.min = min_.output.table
-        hist_index.input.max = max_.output.table
-        bisect_min = Bisect(column=column, limit_key=column,
-                            op='>=',
-                            hist_index=hist_index,
-                            group=group,
-                            scheduler=scheduler)
-        bisect_min.input.table = hist_index.output.table
-        bisect_min.input.limit = min_value.output.table
-        bisect_max = Bisect(column=column, limit_key=column,
-                            op='<=',
-                            hist_index=hist_index,
-                            group=group,
-                            scheduler=scheduler)
-        bisect_max.input.table = bisect_min.output.table
-        bisect_max.input.limit = max_value.output.table
-        return bisect_max
-
-    def make_range_query1d(self, input_module, input_slot, column, min_, max_, scheduler):
-        hist_index = HistogramIndex(column=column, group=self.id, scheduler=scheduler)
-        hist_index.input.table = input_module.output[input_slot]
-        hist_index.input.min = min_.output.table
-        hist_index.input.max = max_.output.table
-        bisect_min = Bisect(column=column, limit_key=column,
-                            op='>=',
-                            hist_index=hist_index,
-                            group=self.id,
-                            scheduler=scheduler)
-        bisect_min.input.table = hist_index.output.table
-        bisect_min.input.limit = self.min_value.output.table
-        bisect_max = Bisect(column=column, limit_key=column,
-                            op='<=',
-                            hist_index=hist_index,
-                            group=self.id,
-                            scheduler=scheduler)
-        bisect_max.input.table = bisect_min.output.table
-        bisect_max.input.limit = self.max_value.output.table
-        return bisect_min, bisect_max
-
-    def make_range_query2d(self, input_module, input_slot, min_, max_, scheduler):
-        min_x, max_x= self.make_range_query1d(input_module, input_slot,
-                                                self.x_column, min_=min_,
-                                                max_=max_, scheduler=scheduler)
-        min_y, max_y= self.make_range_query1d(input_module, input_slot,
-                                                self.y_column, min_=min_,
-                                                max_=max_, scheduler=scheduler)
-        range_query2d = Intersection(group=self.id, scheduler=scheduler)
-        range_query2d.input.table = min_x.output.table
-        range_query2d.input.table = max_x.output.table
-        range_query2d.input.table = min_y.output.table
-        range_query2d.input.table = max_y.output.table
-        return range_query2d
-    
-    
-    def create_dependent_modules(self, input_module, input_slot, histogram2d=None,heatmap=None,sample=True,select=None, **kwds):
+    """
+    def create_dependent_modules_older_variant(self, input_module, input_slot,
+                                 histogram2d=None, heatmap=None,
+                                 sample=True, select=None, **kwds):
         if self.input_module is not None:
             return self
-        
-        s=self.scheduler()
+        s = self.scheduler()
         self.input_module = input_module
         self.input_slot = input_slot
-        
-        # if range_query is None:
-        #     range_query = RangeQuery(group=self.id,scheduler=s)
-        #     range_query.create_dependent_modules(input_module, input_slot, **kwds)
-        min_ = Min(group=self.id,scheduler=s)
-        max_ = Max(group=self.id,scheduler=s)
-        min_.input.table = input_module.output[input_slot]
-        max_.input.table = input_module.output[input_slot]
+        range_query_x = RangeQuery(column=self.x_column,
+                                   group=self.id, scheduler=s,
+                                   approximate=self._approximate)
+        range_query_x.create_dependent_modules(input_module,
+                                               input_slot,
+                                               min_value=False,
+                                               max_value=False)
+        range_query_y = RangeQuery(column=self.y_column,
+                                   group=self.id, scheduler=s,
+                                   approximate=self._approximate)
+        range_query_y.create_dependent_modules(input_module, input_slot,
+                                               min_value=False,
+                                               max_value=False)
+        min2d = Paste(group=self.id, scheduler=s)
+        min2d.input.first = range_query_x.min.output.table
+        min2d.input.second = range_query_y.min.output.table
+        max2d = Paste(group=self.id, scheduler=s)
+        max2d.input.first = range_query_x.max.output.table
+        max2d.input.second = range_query_y.max.output.table
         self.min_value = Variable(group=self.id, scheduler=s)
-        self.min_value.input.like = min_.output.table
+        self.min_value.input.like = min2d.output.table
+        range_query_x.input.lower = self.min_value.output.table
+        range_query_y.input.lower = self.min_value.output.table
         self.max_value = Variable(group=self.id, scheduler=s)
-        self.max_value.input.like = max_.output.table
-        if VARIANT == 'CHAINED':
-            # Old RangeQuery variant
-            range_query_x = RangeQuery(column=self.x_column, group=self.id,scheduler=s)
-            range_query_x.create_dependent_modules(input_module, input_slot, min_=min_, max_=max_, min_value=self.min_value, max_value=self.max_value)
-            range_query_y = RangeQuery(column=self.y_column, group=self.id,scheduler=s)
-            range_query_y.create_dependent_modules(range_query_x, input_slot, min_=min_, max_=max_, min_value=self.min_value, max_value=self.max_value)
-            range_query2d = range_query_y
-        elif VARIANT == 'INTERSECTION':
-            # Intersection variant
-            range_query2d = self.make_range_query2d(input_module, input_slot, min_=min_, max_=max_, scheduler=s)
-        else: # LAST
-            range_query_x = RangeQuery(column=self.x_column, group=self.id,scheduler=s)
-            range_query_x.create_dependent_modules(input_module, input_slot, min_=min_, max_=max_, min_value=self.min_value, max_value=self.max_value)
-            range_query_y = RangeQuery(column=self.y_column, group=self.id,scheduler=s)
-            range_query_y.create_dependent_modules(range_query_x, input_slot, min_=min_, max_=max_, min_value=self.min_value, max_value=self.max_value)
-            range_query2d = Intersection(group=self.id, scheduler=s)
-            range_query2d.input.table = range_query_x.output.table
-            range_query2d.input.table = range_query_y.output.table            
-        # Sequential variant
-        #range_query_x = self.seq_make_range_query(input_module, input_slot, self.x_column, min_=min_, max_=max_, min_value=self.min_value, max_value=self.max_value, group=self.id, scheduler=s)
-        #range_query_y = self.seq_make_range_query(range_query_x, input_slot, self.y_column, min_=min_, max_=max_, min_value=self.min_value, max_value=self.max_value, group=self.id, scheduler=s)        
-        
-        
-        select_output = range_query2d.output
-        min_rq = Min(group=self.id,scheduler=s)
-        max_rq = Max(group=self.id,scheduler=s)
-        min_rq.input.table = select_output.table
-        max_rq.input.table = select_output.table
+        self.max_value.input.like = max2d.output.table
+        range_query_x.input.upper = self.max_value.output.table
+        range_query_y.input.upper = self.max_value.output.table
+        range_query2d = Intersection(group=self.id, scheduler=s)
+        range_query2d.input.table = range_query_x.output.table
+        range_query2d.input.table = range_query_y.output.table
+        min_rq = Paste(group=self.id, scheduler=s)
+        min_rq.input.first = range_query_x.output.min
+        min_rq.input.second = range_query_y.output.min
+        max_rq = Paste(group=self.id, scheduler=s)
+        max_rq.input.first = range_query_x.output.max
+        max_rq.input.second = range_query_y.output.max
         if histogram2d is None:
-            histogram2d = Histogram2D(self.x_column, self.y_column,group=self.id,scheduler=s)
-        histogram2d.input.table = select_output.table
+            histogram2d = Histogram2D(self.x_column, self.y_column,
+                                      group=self.id, scheduler=s)
+        histogram2d.input.table = range_query2d.output.table
         histogram2d.input.min = min_rq.output.table
         histogram2d.input.max = max_rq.output.table
         if heatmap is None:
-            heatmap = Heatmap(group=self.id,filename='heatmap%d.png', history=100, scheduler=s)
+            heatmap = Heatmap(group=self.id, # filename='heatmap%d.png',
+                              history=100, scheduler=s)
         heatmap.input.array = histogram2d.output.table
         if sample is True:
-            sample = Sample(samples=100,group=self.id,scheduler=s)
+            sample = Sample(samples=100, group=self.id, scheduler=s)
         elif sample is None and select is None:
             raise ProgressiveError("Scatterplot needs a select module")
         if sample is not None:
-            sample.input.table =  select_output.table
-        #if select is None:
-        #    select = LiteSelect(group=self.id,scheduler=s)
-        #    select.input.table = range_query2d.output.table #input_module.output[input_slot]
-        #    select.input.select = sample.output.select
-
+            sample.input.table = range_query2d.output.table
         scatterplot=self
         scatterplot.input.heatmap = heatmap.output.heatmap
         scatterplot.input.table = input_module.output[input_slot]
         scatterplot.input.select = sample.output.table
-
-        # self.range_query = range_query
-        # self.min = range_query.min
-        # self.max = range_query.max
-        #self.min_value = range_query.min_value
-        #self.max_value = range_query.max_value
         self.histogram2d = histogram2d
         self.heatmap = heatmap
         self.sample = sample
         self.select = select
-        self.min = min_
-        self.max = max_
+        self.min = min2d
+        self.max = max2d
+        self.range_query_x = range_query_x
+        self.range_query_y = range_query_y
+        self.range_query2d = range_query2d
+        self.histogram2d = histogram2d
+        self.heatmap = heatmap        
+
+        return scatterplot"""
+
+
+    def create_dependent_modules(self, input_module, input_slot,
+                                 histogram2d=None, heatmap=None,
+                                 sample=True, select=None, **kwds):
+        if self.input_module is not None:
+            return self
+        s = self.scheduler()
+        self.input_module = input_module
+        self.input_slot = input_slot
+        range_query_2d = RangeQuery2d(column_x=self.x_column,
+                                   column_y=self.y_column,
+                                   group=self.id, scheduler=s,
+                                   approximate=self._approximate)
+        range_query_2d.create_dependent_modules(input_module,
+                                               input_slot,
+                                               min_value=False,
+                                               max_value=False)
+        self.min_value = Variable(group=self.id, scheduler=s)
+        self.min_value.input.like = range_query_2d.min.output.table
+        range_query_2d.input.lower = self.min_value.output.table
+        self.max_value = Variable(group=self.id, scheduler=s)
+        self.max_value.input.like = range_query_2d.max.output.table
+        range_query_2d.input.upper = self.max_value.output.table
+        if histogram2d is None:
+            histogram2d = Histogram2D(self.x_column, self.y_column,
+                                      group=self.id, scheduler=s)
+        histogram2d.input.table = range_query_2d.output.table
+        histogram2d.input.min = range_query_2d.output.min
+        histogram2d.input.max = range_query_2d.output.max
+        if heatmap is None:
+            heatmap = Heatmap(group=self.id, # filename='heatmap%d.png',
+                              history=100, scheduler=s)
+        heatmap.input.array = histogram2d.output.table
+        if sample is True:
+            sample = Sample(samples=100, group=self.id, scheduler=s)
+        elif sample is None and select is None:
+            raise ProgressiveError("Scatterplot needs a select module")
+        if sample is not None:
+            sample.input.table = range_query_2d.output.table
+        scatterplot=self
+        scatterplot.input.heatmap = heatmap.output.heatmap
+        scatterplot.input.table = input_module.output[input_slot]
+        scatterplot.input.select = sample.output.table
+        self.histogram2d = histogram2d
+        self.heatmap = heatmap
+        self.sample = sample
+        self.select = select
+        self.min = range_query_2d.min.output.table
+        self.max = range_query_2d.max.output.table
+        self.range_query_2d = range_query_2d
         self.histogram2d = histogram2d
         self.heatmap = heatmap        
 
@@ -209,21 +199,33 @@ class ScatterPlot(TableModule):
         return 1
 
     def run_step(self,run_number,step_size,howlong):
-        return self._return_run_step(self.state_blocked, steps_run=1, reads=1, updates=1)
+        self._json_digest = self._to_json_impl()
+        return self._return_run_step(self.state_blocked, steps_run=1,
+                                         reads=1, updates=1)
 
     def to_json(self, short=False):
+        if self._json_digest:
+            return self._json_digest
+        return self._to_json_impl(short)
+    def _to_json_impl(self, short=False):
         self.image = None
         json = super(ScatterPlot, self).to_json(short)
         if short:
             return json
         return self.scatterplot_to_json(json, short)
 
+    def _cleanup(self, tsv):
+        pht = _get_physical_table(tsv)
+        clean_index = [i for i in tsv.index if i in pht.index]
+        return TableSelectedView(pht, bitmap(clean_index))
+    
     def scatterplot_to_json(self, json, short):
         with self.lock:
             select = self.get_input_slot('select').data()
             if select is not None:
+                #select = self._cleanup(select)
                 json['scatterplot'] = select.to_json(orient='split',
-                                                     columns=[self.x_column,self.y_column])
+                                        columns=[self.x_column, self.y_column])
             else:
                 logger.debug('Select data not found')
 

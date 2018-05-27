@@ -3,21 +3,19 @@ var margin = {top: 20, right: 20, bottom: 30, left: 40},
     height = 500 - margin.top - margin.bottom,
     svg, firstTime = true;
 
-var x = d3.scale.linear()
+var x = d3.scaleLinear()
     .range([0, width]);
 
-var y = d3.scale.linear()
+var y = d3.scaleLinear()
     .range([height, 0]);
 
-var color = d3.scale.category10();
+var color = d3.scaleOrdinal(d3.schemeCategory10);
 
-var xAxis = d3.svg.axis()
-    .scale(x)
-    .orient("bottom");
+var xAxis = d3.axisBottom()
+    .scale(x);
 
-var yAxis = d3.svg.axis()
-    .scale(y)
-    .orient("left");
+var yAxis = d3.axisLeft()
+    .scale(y);
 
 
 function heatmap_update(data) {
@@ -36,7 +34,7 @@ function heatmap_update_vis(data) {
     if (firstTime) {
         svg.append("image")
             .attr("class", "heatmap")
-            .attr("xlink:href", function() { return image+"&ts="+new Date().getTime(); })
+            .attr("xlink:href", function() { return image; }) //+"&ts="+new Date().getTime(); })
             .attr("preserveAspectRatio", "none")
             .attr("x", 0)
             .attr("y", 0)

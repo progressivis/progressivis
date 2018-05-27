@@ -32,6 +32,11 @@ class BaseChangeManager(object):
         self._last_update = 0
 
     @property
+    def column_changes(self):
+        "Return information for columns changed"
+        return None
+
+    @property
     def created(self):
         "Return information of items created"
         return self._created

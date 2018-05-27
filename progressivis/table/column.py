@@ -202,10 +202,6 @@ class Column(BaseColumn):
     def value(self):
         return self.dataset[:]
 
-    @property
-    def values(self):
-        return self.dataset[:]
-
     def __getitem__(self, index):
         if isinstance(index, np.ndarray):
             index = list(index)

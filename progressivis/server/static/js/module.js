@@ -1,9 +1,7 @@
 var module_id = null;
 
 function module_get(success, error) {
-    $.post($SCRIPT_ROOT+'/progressivis/module/get/'+module_id)
-        .done(success)
-        .fail(error);
+    return progressivis_get('/progressivis/module/get', success, error, module_id);
 }
 
 function module_input(data, success, error, module) {
@@ -56,19 +54,11 @@ function module_update_table(data) {
                                    "end_time",
                                    "parameters",
                                    "input_slots"]));
-    $.ajax({
-        type: 'POST',
-        url: $SCRIPT_ROOT+'/progressivis/module/quality/'+module_id,
-        data: {},
-        success: line_graph, 
-        contentType: "application/json",
-        dataType: 'json'
-    });
-
+    progressivis_get('/progressivis/module/quality', line_graph, error, module_id);
     $('.btn.slot').click(function() { module_show_dataframe($(this).text()); });
 }
 
-function module_refresh() {
+function module_refresh(json) {
     module_get(module_update, error);
 }
 
@@ -77,7 +67,6 @@ function module_ready() {
         refresh = module_refresh;
     }
     progressivis_ready("module "+module_id);
-
 }
 
 

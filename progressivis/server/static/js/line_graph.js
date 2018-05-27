@@ -1,5 +1,7 @@
 // Canvas props
 
+var line_graph = (function() {
+
 var margin = {top: 30, right: 20, bottom: 30, left: 50},
     width = 600 - margin.left - margin.right,
     height = 200 - margin.top - margin.bottom;
@@ -7,17 +9,15 @@ var margin = {top: 30, right: 20, bottom: 30, left: 50},
 
 // ranges & axes
 
-var x = d3.scale.linear().range([0, width]);
-var y = d3.scale.linear().range([height, 0]);
+var x = d3.scaleLinear().range([0, width]);
+var y = d3.scaleLinear().range([height, 0]);
 
-var xAxis = d3.svg.axis().scale(x)
-    .orient("bottom").ticks(5);
-var yAxis = d3.svg.axis().scale(y)
-    .orient("left").ticks(5);
+var xAxis = d3.axisBottom().scale(x).ticks(5);
+var yAxis = d3.axisLeft().scale(y).ticks(5);
 
 // Define the line func
 
-var lineval = d3.svg.line()
+var lineval = d3.line()
     .x(function(d) { return x(d.step); })
     .y(function(d) { return y(d.quality); });
     
@@ -60,3 +60,5 @@ function line_graph(data){
 
 }
 
+return line_graph;
+})();

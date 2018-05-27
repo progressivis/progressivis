@@ -1,35 +1,33 @@
+var scatterplot_ready = (function() { // encapsulate to avoid side effects
 var margin = {top: 20, right: 20, bottom: 30, left: 40},
     width = 960 - margin.left - margin.right,
     height = 500 - margin.top - margin.bottom,
-    svg, prevBounds = null;
+    svg, prevBounds = null, transform = d3.zoomIdentity;
 
-var x = d3.scale.linear().range([0, width]),
-    x0;
-
-var y = d3.scale.linear().range([height, 0]),
-    y0;
-
-var color = d3.scale.category10();
-
-var xAxis = d3.svg.axis()
-    .scale(x)
-    .orient("bottom");
-
-var yAxis = d3.svg.axis()
-    .scale(y)
-    .orient("left");
-
-var zoom = d3.behavior.zoom()
-        .x(x)
-        .y(y)
-        .scaleExtent([1, 32])
+var x     = d3.scaleLinear().range([0, width]),
+    y     = d3.scaleLinear().range([height, 0]),
+    color = d3.scaleOrdinal(d3.schemeCategory10),
+    xAxis = d3.axisBottom(x)
+        .tickSize(height)
+        .tickPadding(8 - height),
+    yAxis = d3.axisRight(y)
+        .tickSize(width)
+        .tickPadding(8 - width),
+    zoom = d3.zoom()
+        //.scaleExtent([1, 32])
         .on("zoom", scatterplot_zoomed);
 
-const DEFAULT_SIGMA = 1;
-const DEFAULT_FILTER = "default";
+var view, gX, gY, zoomable;
 
+const DEFAULT_SIGMA = 0;
+const DEFAULT_FILTER = "default";
 const MAX_PREV_IMAGES = 3;
 var imageHistory = new History(MAX_PREV_IMAGES);
+
+const EPSILON = 1e-6;
+function float_equal(a, b) {
+    return Math.abs(a-b) < EPSILON;
+}
 
 function scatterplot_update(data) {
     module_update(data);
@@ -44,8 +42,8 @@ function scatterplot_dragstart(d, i) {
 }
 
 function scatterplot_dragmove(d, i) {
-    d[0] = x0.invert(d3.event.x);
-    d[1] = y0.invert(d3.event.y);
+    d[0] = xAxis.scale().invert(d3.event.x);
+    d[1] = yAxis.scale().invert(d3.event.y);
     d3.select(this)
         .attr("cx", d3.event.x)
         .attr("cy", d3.event.y);
@@ -58,54 +56,27 @@ function scatterplot_dragend(d, i) {
     module_input(msg, ignore, progressivis_error, module_id+"/move_point");
 }
 
-var node_drag = d3.behavior.drag()
-        .on("dragstart", scatterplot_dragstart)
+var node_drag = d3.drag()
+        .on("start", scatterplot_dragstart)
         .on("drag", scatterplot_dragmove)
-        .on("dragend", scatterplot_dragend);
-/*
- We use a transform that is a bit tricky.
- All the coordinates are translated in pixels by the x0/y0 scales.
- The x/y scales are the zoomed versions managed by the zoom tool.
- However, the zoom changes the transform of the group that contains
- the heatmap and the points in screen coordinates.
- We change the radius of the points to be constant, so we divide them by the
- zoom scale.
- We position everything on the group according to x0/y0 and not x/y, which are
- only used by the axes.
+        .on("end", scatterplot_dragend);
 
- When a new scatterplot arrives, the bounds can have changed. When
- progressing, the bounds can grow, but through filtering, the bounds
- can also shrink.  So when a new scatterplot arrives, we recompute the
- scale/translation of the zoom component to show the same viewport as
- before.
-*/
 function scatterplot_update_vis(rawdata) {
     var data = rawdata['scatterplot'],
         bounds = rawdata['bounds'],
-        scale = 1,
         ix, iy, iw, ih;
 
     if (!data || !bounds) return;
     var index = data['index'];
 
-    if (prevBounds == null) {
+    if (prevBounds == null) { // first display, not refresh
         prevBounds = bounds;
         x.domain([bounds['xmin'], bounds['xmax']]).nice();
         y.domain([bounds['ymin'], bounds['ymax']]).nice();
-        x0 = x.copy();
-        y0 = y.copy();
-        zoom.x(x)
-            .y(y);
 
-        svg.append("rect")
-            .attr("x", 0)
-            .attr("y", 0)
-            .attr("width", width)
-            .attr("height", height)
-            .style("fill", "none")
-            .style("pointer-events", "all");
-
-        var zoomable = svg.append("g").attr('id', 'zoomable');
+        zoomable = svg.append("g")
+            .attr('id', 'zoomable')
+            .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
         ix = x(bounds['xmin']),
         iy = y(bounds['ymax']),
@@ -133,28 +104,15 @@ function scatterplot_update_vis(rawdata) {
             .attr("width",  iw)
             .attr("height", ih);
 
-        svg.append("g")
-            .attr("class", "x axis")
-            .attr("transform", "translate(0," + height + ")")
-            .call(xAxis)
-            .append("text")
-            .attr("class", "label")
-            .attr("x", width)
-            .attr("y", -6)
-            .style("text-anchor", "end")
-            .text([0]);
+        gX = svg.append("g")
+            .attr("class", "x axis axis--x")
+            .call(xAxis);
 
-        svg.append("g")
-            .attr("class", "y axis")
-            .call(yAxis)
-            .append("text")
-            .attr("class", "label")
-            .attr("transform", "rotate(-90)")
-            .attr("y", 6)
-            .attr("dy", ".71em")
-            .style("text-anchor", "end")
-            .text(data['columns'][1]);
+        gY = svg.append("g")
+            .attr("class", "y axis axis--y")
+            .call(yAxis);
 
+        svg.call(zoom);
         firstTime = false;
     }
     else { // prevBounds != null
@@ -167,30 +125,22 @@ function scatterplot_update_vis(rawdata) {
         }
         if (changed) {
             var x_bounds = [prevBounds.xmin, prevBounds.xmax],
-                y_bounds = [prevBounds.ymin, prevBounds.ymax],
-                translate;
+                y_bounds = [prevBounds.ymin, prevBounds.ymax];
 
+            console.log('Bounds have changed');
             prevBounds = bounds;
-            // Compute the new scale and translation according to the new bounds,
-            // leaving the lower left point unmoved or almost if the aspect ratio is not.
-            scale = Math.min(_db(x0.domain()) / _db(x_bounds) ,
-                             _db(y0.domain()) / _db(y_bounds));
-            translate = [-x0(x_bounds[0])*scale, -y0(y_bounds[1])*scale];
             x.domain([bounds['xmin'], bounds['xmax']]).nice();
             y.domain([bounds['ymin'], bounds['ymax']]).nice();
-            x0 = x.copy();
-            y0 = y.copy();
-            zoom.x(x)
-                .y(y)
-                .translate(translate)
-                .scale(scale);
-            x.domain(x0.range().map(function(x) { return (x - translate[0]) / scale; }).map(x0.invert));
+            transform = compute_transform(x, y,
+                                          xAxis.scale(), yAxis.scale());
+            svg.__zoom = transform; // HACK
+            scatterplot_zoomed(transform);
         }
 
-        ix = x0(bounds['xmin']);
-        iy = y0(bounds['ymax']);
-        iw = x0(bounds['xmax'])-ix;
-        ih = y0(bounds['ymin'])-iy;
+        ix = x(bounds['xmin']);
+        iy = y(bounds['ymax']);
+        iw = x(bounds['xmax'])-ix;
+        ih = y(bounds['ymin'])-iy;
         svg.select(".heatmap")
             .attr("x", ix)
             .attr("y", iy)
@@ -203,14 +153,13 @@ function scatterplot_update_vis(rawdata) {
             .attr("y", iy)
             .attr("width",  iw)
             .attr("height", ih);
-        
-        zoom.event(svg); // propagate
     }
     var imgSrc = rawdata['image'];
     imageHistory.enqueueUnique(imgSrc);
 
-    var prevImgElements = d3.select("#prevImages").selectAll("img")
-      .data(imageHistory.getItems(), function(d){ return d; }); 
+    var prevImgElements = d3.select("#prevImages")
+            .selectAll("img")
+            .data(imageHistory.getItems(), function(d){ return d; });
 
     prevImgElements.enter()
         .append("img")
@@ -236,42 +185,51 @@ function scatterplot_update_vis(rawdata) {
         .attr("height", 5)
         .remove();
 
-    var dots = d3.select("#zoomable")
+    var dots = zoomable
             .selectAll(".dot")
              .data(data['data'], function(d, i) { return index[i]; });
     
     dots.enter().append("circle")
          .attr("class", "dot")
-         .attr("r", 3.5/scale)
-         .attr("cx", function(d) { return x0(d[0]); }) // use untransformed x0/y0
-         .attr("cy", function(d) { return y0(d[1]); })
+         .attr("r", 3.5/transform.k)
+         .attr("cx", function(d) { return x(d[0]); }) // use untransformed x0/y0
+         .attr("cy", function(d) { return y(d[1]); })
          .style("fill", "blue") //function(d) { return color(d.species); });
          .call(node_drag)
         .append("title")
         .text(function(d, i) { return index[i]; });
-    dots//.transition()  // Transition from old to new
-        //.duration(500)  // Length of animation
-         .attr("cx", function(d) { return x0(d[0]); })
-         .attr("cy", function(d) { return y0(d[1]); });
+    dots .attr("cx", function(d) { return x(d[0]); })
+         .attr("cy", function(d) { return y(d[1]); });
     dots.exit().remove();
     dots.order();
 }
 
-function scatterplot_zoomed() {
-    _zoomed(d3.event.scale, d3.event.translate);
+function scatterplot_zoomed(t) {
+    if (t === undefined)
+        t = d3.event.transform;
+    transform = t;
+    gX.call(xAxis.scale(transform.rescaleX(x)));
+    gY.call(yAxis.scale(transform.rescaleY(y)));
+    zoomable.attr("transform", transform);
+    svg.selectAll(".dot").attr("r", 3.5/transform.k);
 }
 
-function _zoomed(scale, translate) {
-    svg.select(".x.axis").call(xAxis);
-    svg.select(".y.axis").call(yAxis);
-    svg.select("#zoomable")
-        .attr("transform", "translate(" + translate + ")scale(" + scale + ")");
-    svg.selectAll(".dot").attr("r", 3.5/scale);
+
+function scatterplot_refresh(json) {
+    module_get(scatterplot_update, error);
 }
 
+function delta(d) { return d[1] - d[0]; }
 
-function scatterplot_refresh() {
-  module_get(scatterplot_update, error);
+function compute_transform(x, y, x0, y0) {
+    var K0 = delta(x.domain()) / delta(x0.domain()),
+        K1 = delta(y.domain()) / delta(y0.domain()),
+        K = Math.min(K0, K1),
+        X = -x(x0.invert(0))*K,
+        Y = -y(y0.invert(0))*K;
+    return d3.zoomIdentity
+            .translate(X, Y)
+            .scale(K);
 }
 
 
@@ -295,31 +253,33 @@ function makeOptions(select, names){
 function ignore(data) {}
 
 function scatterplot_filter() {
-    var xmin    = x.invert(0),
-        xmax    = x.invert(width),
-        ymin    = y.invert(height),
-        ymax    = y.invert(0),
-        bounds  = progressivis_data['bounds'],
+    var xscale = xAxis.scale(),
+        xmin = xscale.invert(0),
+        xmax = xscale.invert(width),
+        yscale = yAxis.scale(),
+        ymin = yscale.invert(height),
+        ymax = yscale.invert(0),
+        bounds  = prevBounds,
         columns = progressivis_data['columns'],
         min     = {},
         max     = {};
 
-
-    if (xmin > bounds['xmin'])
+    
+    if (xmin != bounds['xmin'])
         min[columns[0]] = xmin;
     else
         min[columns[0]] = null; // NaN means bump to min
-    if (xmax < bounds['xmax']) 
+    if (xmax != bounds['xmax']) 
         max[columns[0]] = xmax;
     else
         max[columns[0]] = null;
 
-    if (ymin > bounds['ymin'])
+    if (ymin != bounds['ymin'])
         min[columns[1]] = ymin;
     else
         min[columns[1]] = null;
 
-    if (ymax < bounds['ymax'])
+    if (ymax != bounds['ymax'])
         max[columns[1]] = ymax;
     else
         max[columns[1]] = null;
@@ -331,10 +291,7 @@ function scatterplot_filter() {
 function scatterplot_ready() {
     svg = d3.select("#scatterplot svg")
          .attr("width", width + margin.left + margin.right)
-         .attr("height", height + margin.top + margin.bottom)
-        .append("g")
-         .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
-         .call(zoom);
+         .attr("height", height + margin.top + margin.bottom);
 
     $('#nav-tabs a').click(function (e) {
         e.preventDefault();
@@ -362,3 +319,5 @@ function scatterplot_ready() {
     refresh = scatterplot_refresh; // function to call to refresh
     module_ready();
 }
+return scatterplot_ready;
+})();

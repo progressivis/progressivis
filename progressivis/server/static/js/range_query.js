@@ -21,21 +21,26 @@ var range_query = function() {
     }
 
     function range_query_create_slider(d, i) { 
-        var slider = d3.slider()
-                  .value([d.out_min,d.out_max])
-                  .axis(true)
-                  .min(d.in_min)
-                  .max(d.in_max)
-                  .orientation("horizontal")
-                  .on('slideend', function(evt, value) { range_query_input(evt, value, d); });
+        // var slider = d3.slider()
+        //           .value([d.out_min,d.out_max])
+        //           .axis(true)
+        //           .min(d.in_min)
+        //           .max(d.in_max)
+        //           .orientation("horizontal")
+        //           .on('slideend', function(evt, value) { range_query_input(evt, value, d); });
+        var slider = d3.select(this)
+                .append("input")
+                .attr("type", "range")
+                .attr("value", ""+d.in_min+","+d.in_max)
+                .on("change", function(e) {
+                    range_query_input(e, [e.valueLow, e.valueHigh], d);
+                });
         sliders[d.name] = slider; // store the slider to reuse it later
-        d3.select(this)
-            .call(slider);
     }
 
     function range_query_update_slider(d, i) {
         var slider = sliders[d.name];
-        slider.value([d.out_min, d.out_max]);
+        slider.value = ""+d.out_min+","+d.out_max;
     }
 
     function range_query_remove_slider(d, i) {

@@ -1,7 +1,6 @@
 """Base class for Tables
 """
 from __future__ import absolute_import, division, print_function
-
 from abc import ABCMeta, abstractmethod, abstractproperty
 from collections import OrderedDict, Mapping, Iterable
 import operator
@@ -13,7 +12,7 @@ import numpy as np
 from progressivis.core.utils import (integer_types, 
                                      all_string_or_int, all_bool,
                                      indices_len,
-                                     is_none_alike, inter_slice, fix_loc)
+                                     is_none_alike, inter_slice, fix_loc, get_physical_base)
 from progressivis.core.config import get_option
 from progressivis.core.bitmap  import bitmap
 from .dshape import (dshape_print, dshape_join, dshape_union)
@@ -245,7 +244,7 @@ class BaseTable(six.with_metaclass(ABCMeta, object)):
             ret = OrderedDict()
             for name in columns:
                 col = self[name]
-                ret[name] = dict(zip(self._ids.tolist(),
+                ret[name] = dict(zip(self.index,
                                      col.tolist()))
             return ret
         if orient == 'list':
@@ -255,47 +254,57 @@ class BaseTable(six.with_metaclass(ABCMeta, object)):
                 ret[name] = col.tolist()
             return ret
         if orient == 'split':
-            ret = {'index': self._ids.tolist(),
+            ret = {'index': self.index.tolist(),
                    'columns': columns}
             data = []
             cols = [self[c] for c in columns]
-            for i in range(len(self._ids)):
+            for i in self.index:
                 line = []
                 for col in cols:
                     #col_i = col[i]
                     #if isinstance(col_i, np.ndarray):
                     #    col_i = col_i.tolist()
-                    line.append(col[i])
+
+                    line.append(get_physical_base(col).loc[i])
                 data.append(line)
             ret['data'] = data
             return ret
-        if orient == 'rows':
-            data = []
-            cols = [self[c] for c in columns]
-            for i in range(len(self._ids)):
-                line = [self._ids.values[i]]
-                for col in cols:
-                    line.append(str(col[i]))
-                data.append(line)
-            return data
-        if orient == 'records':
+        #if orient == 'rows':
+        #    data = []
+        #    cols = [self[c] for c in columns]
+        #    for i in self.index:
+        #        line = [i]
+        #        for col in cols:
+        #            line.append(str(col[i]))
+        #        data.append(dict(zip(columns, line)))
+        #    return data
+        if orient == 'datatable': # not a pandas compliant mode but useful for JS DataTable
             ret = []
-            for i in range(len(self._ids)):
+            for i in self.index:
+                line = [i]
+                for name in columns:
+                    col = self[name]
+                    line.append(get_physical_base(col).loc[i])
+                ret.append(line)
+            return ret
+        if orient in ('rows', 'records'):
+            ret = []
+            for i in self.index:
                 line = OrderedDict()
                 for name in columns:
                     col = self[name]
                     #line[name] = remove_nan_etc(col.values[i])
-                    line[name] = col.values[i]
+                    line[name] = get_physical_base(col).loc[i]
                 ret.append(line)
             return ret
         if orient == 'index':
             ret = OrderedDict()
-            for i, id_ in enumerate(self._ids):
+            for id_ in self.index:
                 line = {}
                 for name in columns:
                     col = self[name]
                     #line[name] = remove_nan_etc(col.values[i])
-                    line[name] = col.values[i]
+                    line[name] = col.loc[id_]
                 ret[int(id_)] = line
             return ret
         raise ValueError("to_dict(orient) not implemented for orient={}".format(orient))

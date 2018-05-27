@@ -1,9 +1,16 @@
+"""
+Return changes inside tables/columns/bitmaps.
+"""
 from __future__ import absolute_import, division, print_function
 
 from ..core.bitmap import bitmap
 
 
 class IndexUpdate(object):
+    """
+    IndexUpdate is used to keep track of chages occuring in linear data structures
+    such as tables, columns, or bitmaps.
+    """
     def __init__(self, created=None, updated=None, deleted=None):
         created = created if isinstance(created, bitmap) else bitmap(created)
         updated = updated if isinstance(updated, bitmap) else bitmap(updated)
@@ -14,14 +21,16 @@ class IndexUpdate(object):
 
     def __repr__(self):
         return "IndexUpdate(created=%s,updated=%s,deleted=%s)" % (
-            self.created, self.updated, self.deleted)
+            repr(self.created), repr(self.updated), repr(self.deleted))
 
     def clear(self):
+        "Clear the changes"
         self.created.clear()
         self.updated.clear()
         self.deleted.clear()
 
     def test(self, verbose=False):
+        "Test if the IndexUpdate is valid"
         b = bool(self.created & self.updated) \
           or bool(self.created & self.deleted) \
           or bool(self.updated & self.deleted)
@@ -32,22 +41,26 @@ class IndexUpdate(object):
         return not b
 
     def add_created(self, bm):
+        "Add created items"
         self.created.update(bm)
         self.deleted -= bm
         self.updated -= bm
 
     def add_updated(self, bm):
+        "Add updated items"
         self.updated.update(bm)
         self.updated -= self.created
         self.updated -= self.deleted
 
     def add_deleted(self, bm):
+        "Add deleted items"
         self.deleted.update(bm)
         self.updated -= bm
         self.created -= bm
 
     def combine(self, other,
                 update_created=True, update_updated=True, update_deleted=True):
+        "Combine this IndexUpdate with another IndexUpdate"
         if other.deleted:
             # if not created yet, no need to delete
             toignore = other.deleted & self.created
@@ -83,6 +96,7 @@ class IndexUpdate(object):
         return not self == other
 
     def copy(self):
+        "Copy this Indexupdate"
         return IndexUpdate(created=bitmap(self.created),
                            updated=bitmap(self.updated),
                            deleted=bitmap(self.deleted))
