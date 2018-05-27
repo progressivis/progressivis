@@ -66,7 +66,7 @@ function heatmap_update_vis(data) {
     }
     else { // not firstTime
         svg.select(".heatmap")
-            .attr("xlink:href", function() { return image+"&ts="+new Date().getTime(); });
+            .attr("xlink:href", function() { return image; });
 
         svg.select(".x.axis")
             .transition()

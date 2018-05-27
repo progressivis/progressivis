@@ -28,6 +28,11 @@ def toposort(graph):
 
     >>> toposort({'a': ['b'], 'c': ['d']})
     ['b', 'a', 'd', 'c']
+
+    >>> toposort({'a': ['b'], 'b': ['a']})
+    Traceback (most recent call last):
+      ...
+    ValueError: Cycle in graph
     """
     permanent = set()
     temporary = set()

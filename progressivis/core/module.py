@@ -49,7 +49,7 @@ class ModuleMeta(ABCMeta):
 class Module(six.with_metaclass(ModuleMeta, object)):
     """The Module class is the base class for all the progressive modules.
     """
-    parameters = [('quantum', np.dtype(float), 1.0),
+    parameters = [('quantum', np.dtype(float), .5),
                   ('debug', np.dtype(bool), False)]
     TRACE_SLOT = '_trace'
     PARAMETERS_SLOT = '_params'
@@ -85,7 +85,7 @@ class Module(six.with_metaclass(ModuleMeta, object)):
                 mid = name
             else:
                 raise ValueError('Cannot use name (%s) and mid (%s)'
-                                 ' at the same time', name, mid)
+                                 ' at the same time'%(name, mid))
         if mid is None:
             mid = self._scheduler.generate_id(self.pretty_typename())
         self._id = mid
@@ -679,8 +679,8 @@ class Module(six.with_metaclass(ModuleMeta, object)):
         self._end_time = self._start_time + quantum
         self._update_params(run_number)
 
-        # TODO Forcing 4 steps, not sure, change when the predictor improves
-        max_time = quantum / 4.0
+        # TODO Forcing 3 steps, not sure, change when the predictor improves
+        max_time = quantum / 3.0
 
         run_step_ret = {'reads': 0, 'updates': 0, 'creates': 0}
         self.start_run(run_number)
