@@ -1,7 +1,7 @@
 var firstTime = true;
 
 function scheduler_get(success, error) {
-    progressivis_get('/progressivis/scheduler', success, error);
+    progressivis_get('/progressivis/scheduler', success, error, !firstTime);
 };
 
 function cmp_order(mod1, mod2) {

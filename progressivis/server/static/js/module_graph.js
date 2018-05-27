@@ -101,8 +101,6 @@ var module_graph = function(){
           return acc;
       }, {});
   
-      var edges = collect_edges(modules, name2id);
-  
       var vis = d3.select("#module-graph g");
   
       var node = vis.selectAll(".node")
@@ -110,6 +108,8 @@ var module_graph = function(){
   
   
       if (firstTime) {
+          var edges = collect_edges(modules, name2id);
+
           node.enter().append("rect")
               .attr("class", function(d){ return "node " + d.state; })
               .attr('rx', 5)
