@@ -115,8 +115,6 @@ var module_graph = function(){
               .attr('rx', 5)
               .attr('ry', 5);
   
-          node.exit().remove();
-  
           var label = vis.selectAll(".label")
                   .data(nodes)
                   .enter().append("text")
@@ -128,23 +126,20 @@ var module_graph = function(){
                       d.width = b.width + extra;
                       d.height = b.height + extra;
                   });
-          label.exit().remove();
   
           var link = vis.selectAll(".link")
                   .data(edges);
 
-          link.enter().append("path")
-              .attr("class", "link");
-
-          link.exit().remove();
-          
           var lineFunction = d3.line()
                   .x(function (d) { return d.x; })
                   .y(function (d) { return d.y; });
   
           var routeEdges = function(){
               d3cola.prepareEdgeRouting(margin / 3);
-              link.attr("d", function(d){ return lineFunction(d3cola.routeEdge(d)); });
+
+              link.enter().append("path")
+                  .attr("class", "link")
+                  .attr("d", function(d){ return lineFunction(d3cola.routeEdge(d)); });
           };
   
           d3cola.nodes(nodes)
@@ -178,6 +173,9 @@ var module_graph = function(){
                       .attr("y", function(d){ return d.y + (margin + pad) / 2; });
               })
               .on("end", routeEdges);
+      }
+      else {
+          node.attr("class", function(d){ return "node " + d.state; });
       }
   }
   
