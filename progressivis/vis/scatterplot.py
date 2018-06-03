@@ -150,13 +150,13 @@ class ScatterPlot(TableModule):
         self.input_module = input_module
         self.input_slot = input_slot
         range_query_2d = RangeQuery2d(column_x=self.x_column,
-                                   column_y=self.y_column,
-                                   group=self.id, scheduler=s,
-                                   approximate=self._approximate)
+                                      column_y=self.y_column,
+                                      group=self.id, scheduler=s,
+                                      approximate=self._approximate)
         range_query_2d.create_dependent_modules(input_module,
-                                               input_slot,
-                                               min_value=False,
-                                               max_value=False)
+                                                input_slot,
+                                                min_value=False,
+                                                max_value=False)
         self.min_value = Variable(group=self.id, scheduler=s)
         self.min_value.input.like = range_query_2d.min.output.table
         range_query_2d.input.lower = self.min_value.output.table

@@ -550,8 +550,7 @@ class Module(six.with_metaclass(ModuleMeta, object)):
                     term_count += 1
 
             # if all the input slot modules are terminated or invalid
-            if (not self.is_input() and in_count != 0 and
-               term_count == in_count):
+            if not self.is_input() and in_count != 0 and term_count == in_count:
                 logger.info('%s becomes zombie because all its input slots'
                             ' are terminated', self.id)
                 self.state = Module.state_zombie

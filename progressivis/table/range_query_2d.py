@@ -200,35 +200,40 @@ class RangeQuery2d(TableModule):
         self.min_value = min_value
         self.max_value = max_value
         return range_query
+
     @property
     def min_max_dshape(self):
         return '{%s: float64, %s: float64}'%(self._column_x, self._column_y)
+
     def _create_min_max(self):
         if self._min_table is None:
             self._min_table = Table(name=None, dshape=self.min_max_dshape)
         if self._max_table is None:
             self._max_table = Table(name=None, dshape=self.min_max_dshape)
+
     def _set_min_out(self, val_x, val_y):
         if self._min_table is None:
             self._min_table = Table(name=None, dshape=self.min_max_dshape)
-        if len(self._min_table)==0:
+        if len(self._min_table) == 0:
             self._min_table.append({self._column_x: val_x,
-                                        self._column_y: val_y}, indices=[0])
+                                    self._column_y: val_y}, indices=[0])
             return
         if (self._min_table.last(self._column_x) == val_x and
-                self._min_table.last(self._column_y) == val_y): return
+            self._min_table.last(self._column_y) == val_y):
+            return
         self._min_table[self._column_x].loc[0] = val_x
         self._min_table[self._column_y].loc[0] = val_y
-        
+
     def _set_max_out(self, val_x, val_y):
         if self._max_table is None:
             self._max_table = Table(name=None, dshape=self.min_max_dshape)
-        if len(self._max_table)==0:
+        if len(self._max_table) == 0:
             self._max_table.append({self._column_x: val_x,
-                                        self._column_y: val_y}, indices=[0])
+                                    self._column_y: val_y}, indices=[0])
             return
         if (self._max_table.last(self._column_x) == val_x and
-                self._max_table.last(self._column_y) == val_y): return 
+            self._max_table.last(self._column_y) == val_y):
+            return
         self._max_table[self._column_x].loc[0] = val_x
         self._max_table[self._column_y].loc[0] = val_y
 
@@ -238,8 +243,8 @@ class RangeQuery2d(TableModule):
         if name == 'max':
             return self._max_table
         return super(RangeQuery2d, self).get_data(name)
-                
-    @synchronized    
+
+    @synchronized
     def run_step(self, run_number, step_size, howlong):
         input_slot = self.get_input_slot('table')
         input_slot.update(run_number)

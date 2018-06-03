@@ -3,10 +3,11 @@ Base Scheduler class, runs progressive modules.
 """
 from __future__ import absolute_import, division, print_function
 
+import time
 import logging
 import functools
 from copy import copy
-from collections import deque
+#from collections import deque
 
 from timeit import default_timer
 from uuid import uuid4
@@ -60,15 +61,12 @@ class BaseScheduler(object):
         self._idle_proc = None
         self._new_modules_ids = []
         self._slots_updated = False
-        self._run_queue = deque()
-        self._input_triggered = {}
+        self._run_list = []
+        self._run_index = 0
         self._module_selection = None
         self._selection_target_time = -1
         self.interaction_latency = interaction_latency
         self._reachability = {}
-        # Create Sentinel last since it needs the scheduler to be ready
-        from .sentinel import Sentinel
-        self._sentinel = Sentinel(scheduler=self)
 
     def create_lock(self):
         "Create a lock, fake in this class, real in the derived Scheduler"
@@ -77,28 +75,6 @@ class BaseScheduler(object):
     def join(self):
         "Wait for this execution thread to finish."
         pass
-
-    def clear(self):
-        "Clear the scheduler."
-        self._modules = dict()
-        self._module = AttributeDict(self._modules)
-        self._running = False
-        self._runorder = None
-        self._stopped = False
-        self._valid = False
-        self._start = None
-        self._run_number = 0
-        self._run_number_time = {}
-        self._tick_proc = None
-        self._oneshot_tick_procs = []
-        self._idle_proc = None
-        self._new_modules_ids = []
-        self._slots_updated = False
-        self._run_queue = deque()
-        self._input_triggered = {}
-        self._module_selection = None
-        self._selection_target_time = -1
-        self._reachability = {}
 
     @property
     def lock(self):
@@ -121,7 +97,7 @@ class BaseScheduler(object):
     def _collect_dependencies(self, only_required=False):
         dependencies = {}
         for (mid, module) in six.iteritems(self._modules):
-            if not module.is_valid() or module == self._sentinel:
+            if not module.is_valid():
                 continue
             outs = [m.output_module.id for m in module.input_slot_values()
                     if m and (not only_required or
@@ -130,8 +106,6 @@ class BaseScheduler(object):
         return dependencies
 
     def _compute_reachability(self, dependencies):
-        # TODO implement a recursive transitive_closure computation
-        # instead of using the brute-force djikstra algorithm
         # pylint: disable=too-many-locals
         k = list(dependencies.keys())
         size = len(k)
@@ -139,13 +113,15 @@ class BaseScheduler(object):
         row = []
         col = []
         data = []
-        for (vertex1, vertexs) in six.iteritems(dependencies):
-            for vertex2 in vertexs:
+        for (vertex1, vertices) in six.iteritems(dependencies):
+            for vertex2 in vertices:
                 col.append(index[vertex1])
                 row.append(index[vertex2])
                 data.append(1)
         mat = csr_matrix((data, (row, col)), shape=(size, size))
-        dist = shortest_path(mat, directed=True, return_predecessors=False,
+        dist = shortest_path(mat,
+                             directed=True,
+                             return_predecessors=False,
                              unweighted=True)
         self._reachability = {}
         reach_no_vis = set()
@@ -228,7 +204,7 @@ class BaseScheduler(object):
 
     def run_queue_length(self):
         "Return the length of the run queue"
-        return len(self._run_queue)
+        return len(self._run_list)
 
     def to_json(self, short=True):
         "Return a dictionary describing the scheduler"
@@ -323,73 +299,6 @@ class BaseScheduler(object):
         "Set by slot when it has been correctly updated"
         self._slots_updated = True
 
-    def _next_module(self):
-        """Yields a possibly infinite sequence of modules. Handles
-        order recomputation and starting logic if needed."""
-        while (self._run_queue or self._new_modules_ids or
-               self._slots_updated) and not self._stopped:
-            if self._new_modules_ids or self._slots_updated:
-                # Make a shallow copy of the current run order;
-                # if we cannot validate the new state, revert to the copy
-                prev_run_queue = copy(self._run_queue)
-                for mid in self._new_modules_ids:
-                    self._modules[mid].starting()
-                self._new_modules_ids = []
-                self._slots_updated = False
-                with self.lock:
-                    self._run_queue.clear()
-                    self._runorder = self.order_modules()
-                    i = 0
-                    for mid in self._runorder:
-                        module = self._modules[mid]
-                        if module is not self._sentinel:
-                            self._run_queue.append(module)
-                            module.order = i
-                            i += 1
-                    self._sentinel.order = i
-                    self._run_queue.append(self._sentinel)  # always at the end
-                if not self.validate():
-                    logger.error("Cannot validate progressive workflow,"
-                                 " reverting to previous")
-                    self._run_queue = prev_run_queue
-            yield self._run_queue.popleft()
-
-    def _run_loop(self):
-        """Main scheduler loop."""
-        # pylint: disable=broad-except
-        for module in self._next_module():
-            if self._stopped:
-                break
-            if not self._consider_module(module):
-                logger.info("Module %s not part of input management",
-                            module.id)
-            elif not module.is_ready():
-                logger.info("Module %s not ready", module.id)
-            else:
-                self._run_number += 1
-                with self.lock:
-                    if self._tick_proc:
-                        logger.debug('Calling tick_proc')
-                        try:
-                            self._tick_proc(self, self._run_number)
-                        except Exception as exc:
-                            logger.warning(exc)
-                    for proc in self._oneshot_tick_procs:
-                        try:
-                            proc()
-                        except Exception as exc:
-                            logger.warning(exc)
-                    self._oneshot_tick_procs = []
-                    logger.debug("Running module %s", module.id)
-                    module.run(self._run_number)
-                    logger.debug("Module %s returned", module.id)
-            # Do it for all the modules
-            if not module.is_terminated():
-                self._run_queue.append(module)
-            else:
-                logger.info('Module %s is terminated', module.id)
-            # TODO: idle sleep, cleanup_run
-
     def run(self):
         "Run the modules, called by start()."
         self._stopped = False
@@ -404,6 +313,107 @@ class BaseScheduler(object):
         self._running = False
         self._stopped = True
         self.done()
+
+    def _run_loop(self):
+        """Main scheduler loop."""
+        # pylint: disable=broad-except
+        for module in self._next_module():
+            if not (self._consider_module(module) and module.is_ready()):
+                continue
+            self._run_number += 1
+            with self.lock:
+                self._run_tick_procs()
+                module.run(self._run_number)
+
+    def _next_module(self):
+        """Yields a possibly infinite sequence of modules.
+        Handles order recomputation and starting logic if needed.
+        """
+        self._run_index = 0
+        first_run = self._run_number
+        input_mode = self.has_input()
+        while not self._stopped:
+            # Apply changes in the dataflow
+            if self._new_module_available():
+                self._update_modules()
+                self._run_index = 0
+                first_run = self._run_number
+            # If run_list empty, we're done
+            if not self._run_list:
+                break
+            # Check for interactive input mode
+            if input_mode != self.has_input():
+                if input_mode: # end input mode
+                    input_mode = False
+                else:
+                    input_mode = True
+                # Restart from beginning
+                self._run_index = 0
+                first_run = self._run_number
+            module = self._run_list[self._run_index]
+            self._run_index += 1 # allow it to be reset
+            yield module
+            if self._run_index >= len(self._run_list): # end of modules
+                self._end_of_modules(first_run)
+                first_run = self._run_number
+
+    def _new_module_available(self):
+        return self._new_modules_ids or self._slots_updated
+
+    def _update_modules(self):
+        if self._new_modules_ids:
+            # Make a shallow copy of the current run order;
+            # if we cannot validate the new state, revert to the copy
+            prev_run_list = copy(self._run_list)
+            for mid in self._new_modules_ids:
+                self._modules[mid].starting()
+            self._new_modules_ids = []
+            self._slots_updated = False
+            with self.lock:
+                self._run_list = []
+                self._runorder = self.order_modules()
+                for i, mid in enumerate(self._runorder):
+                    module = self._modules[mid]
+                    self._run_list.append(module)
+                    module.order = i
+            if not self.validate():
+                logger.error("Cannot validate progressive workflow,"
+                             " reverting to previous")
+                self._run_list = prev_run_list
+
+    def _end_of_modules(self, first_run):
+        # Reset interaction mode
+        self._module_selection = None
+        self._selection_target_time = -1
+        new_list = [m for m in self._run_list if not m.is_terminated()]
+        self._run_list = new_list
+        if first_run == self._run_number: # no module ready
+            if self._idle_proc:
+                #pylint: disable=broad-except
+                try:
+                    self._idle_proc(self, self._run_number)
+                except Exception as exc:
+                    logger.warning(exc)
+            else:
+                logger.info('sleeping %f', 0.2)
+                time.sleep(0.2)
+        self._run_index = 0
+
+
+    def _run_tick_procs(self):
+        if self._tick_proc:
+            #pylint: disable=broad-except
+            logger.debug('Calling tick_proc')
+            try:
+                self._tick_proc(self, self._run_number)
+            except Exception as exc:
+                logger.warning(exc)
+            for proc in self._oneshot_tick_procs:
+                try:
+                    proc()
+                except Exception as exc:
+                    logger.warning(exc)
+            self._oneshot_tick_procs = []
 
     def stop(self):
         "Stop the execution."
@@ -425,7 +435,7 @@ class BaseScheduler(object):
         pass
 
     def __len__(self):
-        return len(self._modules)-1
+        return len(self._modules)
 
     def exists(self, moduleid):
         "Return True if the moduleid exists in this scheduler."
@@ -493,8 +503,6 @@ class BaseScheduler(object):
         Notify this scheduler that the module has received input
         that should be served fast.
         """
-        self._input_triggered[module.id] = 0  # don't know the run number yet
-        # limit modules to react
         sel = self._reachability[module.id]
         if sel:
             if not self._module_selection:
@@ -506,27 +514,25 @@ class BaseScheduler(object):
                 self._module_selection.update(sel)
             logger.debug('Input selection for module: %s',
                          self._module_selection)
+            print('Input selection for module: %s'%self._module_selection)
         return self.run_number()+1
 
     def has_input(self):
         "Return True of the scheduler is in input mode"
-        if self._module_selection is not None:
-            if not self._module_selection:
-                logger.info('Finishing input management')
-                self._module_selection = None
-                self._selection_target_time = -1
-            else:
-                return True
-        return False
+        if self._module_selection is None:
+            return False
+        if not self._module_selection: # empty, cleanup
+            logger.info('Finishing input management')
+            self._module_selection = None
+            self._selection_target_time = -1
+            return False
+        return True
 
     def _consider_module(self, module):
         if not self.has_input():
             return True
-        if module is self._sentinel:
-            return True
         if module.id in self._module_selection:
             self._module_selection.remove(module.id)
-            # TODO reset quantum
             logger.debug('Module %s ready for scheduling', module.id)
             return True
         logger.debug('Module %s NOT ready for scheduling', module.id)
@@ -543,9 +549,8 @@ class BaseScheduler(object):
         "Fix the quantum of the specified module"
         if self.has_input() and module.id in self._module_selection:
             quantum = self.time_left() / len(self._module_selection)
-            print("Changed quantum to ", quantum)
         if quantum == 0:
             quantum = 0.1
-            logger.error('Quantum is 0 in %s, setting it to'
-                         ' a reasonable value', module.id)
+            logger.info('Quantum is 0 in %s, setting it to'
+                        ' a reasonable value', module.id)
         return quantum

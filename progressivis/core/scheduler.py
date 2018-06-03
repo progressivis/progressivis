@@ -61,9 +61,6 @@ class Scheduler(BaseScheduler):
     def _after_run(self):
         logger.debug("After run %d", self._run_number)
 
-    def stop(self):
-        super(Scheduler, self).stop()
-
     def done(self):
         self.thread = None
 
