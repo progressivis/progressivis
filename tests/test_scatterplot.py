@@ -36,15 +36,15 @@ class VariablePatch2(ModulePatch):
         if m._table:
             m.from_input({'_1': UPPER_X, '_2': UPPER_Y})
 
-class SentinelPatch(ModulePatch):
+class ScatterPlotPatch(ModulePatch):
     def __init__(self, n):
-        SentinelPatch.cnt = 0
-        super(SentinelPatch, self).__init__(n)
+        ScatterPlotPatch.cnt = 0
+        super(ScatterPlotPatch, self).__init__(n)
     def after_run_step(self, m, *args, **kwargs):
-        if SentinelPatch.cnt > 3:
+        if ScatterPlotPatch.cnt > 3:
             m.scheduler().stop()
         else:
-            SentinelPatch.cnt += 1
+            ScatterPlotPatch.cnt += 1
 
 class TestScatterPlot(ProgressiveTest):
 #    def setUp(self):
@@ -63,10 +63,10 @@ class TestScatterPlot(ProgressiveTest):
         prt.input.df = sp.output.table
         csv.scheduler().start(idle_proc=idle_proc)
         s.join()
-        self.assertEqual(len(csv.table()), 30000) #1000000)
-        #pprint(sp.to_json())
+        self.assertEqual(len(csv.table()), 30000) 
 
-    @skip("Problem with termination of the scheduler")
+
+
     def test_scatterplot2(self):
         s = self.scheduler()
         random = RandomTable(2, rows=2000000, scheduler=s)
@@ -78,7 +78,7 @@ class TestScatterPlot(ProgressiveTest):
         prt.input.df = sp.output.table
         decorate(s, VariablePatch1("variable_1"))
         decorate(s, VariablePatch2("variable_2"))
-        #decorate(s, SentinelPatch("sentinel_1"))
+        decorate(s, ScatterPlotPatch("scatter_plot_1"))
         sp.scheduler().start(idle_proc=idle_proc)
         s.join()
         js = sp.to_json()
