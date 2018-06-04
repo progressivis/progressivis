@@ -332,6 +332,7 @@ class BaseScheduler(object):
         self._run_index = 0
         first_run = self._run_number
         input_mode = self.has_input()
+        start_inter = 0
         while not self._stopped:
             # Apply changes in the dataflow
             if self._new_module_available():
@@ -344,8 +345,12 @@ class BaseScheduler(object):
             # Check for interactive input mode
             if input_mode != self.has_input():
                 if input_mode: # end input mode
+                    print('Ending interactive mode after', default_timer()-start_inter)
+                    start_inter = 0
                     input_mode = False
                 else:
+                    start_inter = default_timer()
+                    print('Starting interactive mode at', start_inter)
                     input_mode = True
                 # Restart from beginning
                 self._run_index = 0
