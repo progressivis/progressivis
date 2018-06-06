@@ -244,8 +244,8 @@ def _on_scheduler(short=False):
     assert request.sid in progressivis_bp.sids_for_path('scheduler')
     return scheduler.to_json(short)
 
-def _on_module(path):
-    #print('on_module', path)
+def _on_module_get(path):
+    #print('on_module_get', path)
     module = path_to_module(path)
     if module is None:
         return {'status': 'failed',
@@ -254,7 +254,38 @@ def _on_module(path):
     module.set_end_run(progressivis_bp.tick_module) # setting it multiple time is ok
     return module.to_json()
 
-def _on_df(path):
+def _on_module_input(data):
+    data = flask_json.loads(data)
+    path = None
+    var_values = None
+    try:
+        path = data['path']
+        var_values = data['var_values']
+    except KeyError:
+        pass
+    module = path_to_module(path)
+    if module is None:
+        return {'status': 'failed',
+                'reason': 'unknown module %s'%path}
+    if var_values is None:
+        return {'status': 'failed',
+                'reason': 'no var_values for %s'%path}
+    try:
+        print('sending to %s: %s'%(module.id, var_values))
+        msg = module.from_input(var_values)
+        # pylint: disable=broad-except
+    except Exception as exc:
+        msg = str(exc)
+        print('Error: %s'%msg)
+        return {'status': 'failed', 'reason': 'Cannot input: %s' % msg}
+
+    print('success: %s'%msg)
+    ret = {'status': 'success'}
+    if msg:
+        ret['error'] = msg
+    return ret
+
+def _on_module_df(path):
     (mid, slot) = path.split('/')
     #print('socketio Getting module', mid, 'slot "'+slot+'"')
     module = path_to_module(mid)
@@ -267,7 +298,7 @@ def _on_df(path):
                 'reason': 'invalid data'}
     return {'columns':['index']+df.columns}
 
-def _on_quality(mid):
+def _on_module_quality(mid):
     #print('socketio quality for', mid)
     module = path_to_module(mid)
     if module is None:
@@ -293,7 +324,6 @@ def _on_logger():
         return a['module'].lower()
     ret.sort(key=_key_log)
     return {'loggers': ret}
-
 
 def app_create(config="settings.py", scheduler=None):
     "Create the application"
@@ -328,9 +358,10 @@ def start_server(scheduler=None, debug=False):
     socketio.on_event('/progressivis/scheduler/step', _on_step)
     socketio.on_event('/progressivis/scheduler/stop', _on_stop)
     socketio.on_event('/progressivis/scheduler', _on_scheduler)
-    socketio.on_event('/progressivis/module/get', _on_module)
-    socketio.on_event('/progressivis/module/df', _on_df)
-    socketio.on_event('/progressivis/module/quality', _on_quality)
+    socketio.on_event('/progressivis/module/get', _on_module_get)
+    socketio.on_event('/progressivis/module/df', _on_module_df)
+    socketio.on_event('/progressivis/module/input', _on_module_input)
+    socketio.on_event('/progressivis/module/quality', _on_module_quality)
     socketio.on_event('/progressivis/logger', _on_logger)
     socketio.run(app)
 

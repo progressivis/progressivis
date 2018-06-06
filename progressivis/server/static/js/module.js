@@ -7,18 +7,31 @@ function module_get(success, error) {
 function module_input(data, success, error, module) {
     if (! module)
         module = module_id;
-    if (data != null && typeof(data)!='string')
-        data = JSON.stringify(data);
-    $.ajax({
-        type: 'POST',
-        url: $SCRIPT_ROOT+'/progressivis/module/input/'+module,
-        data: data,
-        success: success,
-        contentType: "application/json",
-        dataType: 'json'
-    })
-        .fail(error);
-};
+    if (handshake) {
+        console.log("socketio input request "+data);
+        if (data != null && typeof(data)!='string')
+            data = JSON.stringify({path: module,
+                                   var_values: data});
+        return new Promise((resolve, reject) =>
+                           socket.emit('/progressivis/module/input',
+                                       data, resolve))
+            .then(success)
+            .catch(error);
+    }
+    else {
+        if (data != null && typeof(data)!='string')
+            data = JSON.stringify(data);
+        $.ajax({
+            type: 'POST',
+            url: $SCRIPT_ROOT+'/progressivis/module/input/'+module,
+            data: data,
+            success: success,
+            contentType: "application/json",
+            dataType: 'json'
+        })
+            .fail(error);
+    }
+}
 
 function module_update(data) {
     progressivis_update(data);
