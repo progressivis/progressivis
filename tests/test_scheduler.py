@@ -36,7 +36,7 @@ class TestScheduler(ProgressiveTest):
             prt = Print(proc=self.terse, scheduler=s)
             prt.input.df = m.output.table
 
-        s.add_oneshot_tick_proc(add_min)
+        s.on_tick_once(add_min)
 
         sleep(1)
         #self.assertTrue(s._runorder.index(smp.id) > s._runorder.index(csv.id))

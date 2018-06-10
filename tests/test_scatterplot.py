@@ -63,9 +63,7 @@ class TestScatterPlot(ProgressiveTest):
         prt.input.df = sp.output.table
         csv.scheduler().start(idle_proc=idle_proc)
         s.join()
-        self.assertEqual(len(csv.table()), 30000) 
-
-
+        self.assertEqual(len(csv.table()), 30000)
 
     def test_scatterplot2(self):
         s = self.scheduler()

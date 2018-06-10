@@ -1,35 +1,33 @@
 """Visualize DataFrame columns x,y on the notebook, allowing refreshing."""
 
-from ..io import Variable
+import logging
+
+import numpy as np
 
 from progressivis.core import SlotDescriptor, ProgressiveError
 from progressivis.table import Table
 #from progressivis.table.liteselect import LiteSelect
 from progressivis.table.module import TableModule
 
-from progressivis.stats import Histogram2D, Sample, Min, Max
+from progressivis.stats import Histogram2D, Sample
 from progressivis.vis import Heatmap
 from ..table.range_query_2d import RangeQuery2d
-from ..table.hist_index import HistogramIndex
-from ..table.bisectmod import Bisect, _get_physical_table
+from ..table.bisectmod import _get_physical_table
 #from progressivis.table.paste import Paste #bin_join import BinJoin
 from ..table import TableSelectedView
 from ..core.bitmap import bitmap
+from ..io import Variable
 
-from ..table.intersection import Intersection
-import numpy as np
-
-import logging
 logger = logging.getLogger(__name__)
 
 class ScatterPlot(TableModule):
-    parameters = [('xmin',   np.dtype(float), 0),
-                  ('xmax',   np.dtype(float), 1),
-                  ('ymin',   np.dtype(float), 0),
-                  ('ymax',   np.dtype(float), 1) ]
-        
+    parameters = [('xmin', np.dtype(float), 0),
+                  ('xmax', np.dtype(float), 1),
+                  ('ymin', np.dtype(float), 0),
+                  ('ymax', np.dtype(float), 1)]
+
     def __init__(self, x_column, y_column, approximate=False, **kwds):
-        self._add_slots(kwds,'input_descriptors',
+        self._add_slots(kwds, 'input_descriptors',
                         [SlotDescriptor('heatmap', type=Table),
                          SlotDescriptor('table', type=Table),
                          SlotDescriptor('select', type=Table)])
@@ -48,6 +46,11 @@ class ScatterPlot(TableModule):
         self.histogram2d = None
         self.heatmap = None
         self._json_digest = None
+        self.min_value = None
+        self.max_value = None
+        self.sample = None
+        self.select = None
+        self.range_query_2d = None
 
 #    def get_data(self, name):
 #        return self.get_input_slot(name).data()
@@ -179,7 +182,7 @@ class ScatterPlot(TableModule):
             raise ProgressiveError("Scatterplot needs a select module")
         if sample is not None:
             sample.input.table = range_query_2d.output.table
-        scatterplot=self
+        scatterplot = self
         scatterplot.input.heatmap = heatmap.output.heatmap
         scatterplot.input.table = input_module.output[input_slot]
         scatterplot.input.select = sample.output.table
@@ -191,22 +194,26 @@ class ScatterPlot(TableModule):
         self.max = range_query_2d.max.output.table
         self.range_query_2d = range_query_2d
         self.histogram2d = histogram2d
-        self.heatmap = heatmap        
+        self.heatmap = heatmap
 
         return scatterplot
 
     def predict_step_size(self, duration):
         return 1
 
-    def run_step(self,run_number,step_size,howlong):
-        self._json_digest = self._to_json_impl()
+    def run_step(self, run_number, step_size, howlong):
         return self._return_run_step(self.state_blocked, steps_run=1,
-                                         reads=1, updates=1)
+                                     reads=1, updates=1)
+
+    def run(self, run_number):
+        super(ScatterPlot, self).run(run_number)
+        self._json_digest = self._to_json_impl()
 
     def to_json(self, short=False):
         if self._json_digest:
             return self._json_digest
         return self._to_json_impl(short)
+
     def _to_json_impl(self, short=False):
         self.image = None
         json = super(ScatterPlot, self).to_json(short)
@@ -218,14 +225,14 @@ class ScatterPlot(TableModule):
         pht = _get_physical_table(tsv)
         clean_index = [i for i in tsv.index if i in pht.index]
         return TableSelectedView(pht, bitmap(clean_index))
-    
+
     def scatterplot_to_json(self, json, short):
         with self.lock:
             select = self.get_input_slot('select').data()
             if select is not None:
                 #select = self._cleanup(select)
                 json['scatterplot'] = select.to_json(orient='split',
-                                        columns=[self.x_column, self.y_column])
+                                                     columns=[self.x_column, self.y_column])
             else:
                 logger.debug('Select data not found')
 
@@ -235,4 +242,3 @@ class ScatterPlot(TableModule):
     def get_image(self, run_number=None):
         heatmap = self.get_input_module('heatmap')
         return heatmap.get_image(run_number)
-

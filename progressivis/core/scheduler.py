@@ -53,9 +53,17 @@ class Scheduler(BaseScheduler):
                 raise ProgressiveError('Trying to start scheduler thread'
                                        ' inside scheduler thread')
             self.thread = Thread(target=self.run, name=self.thread_name)
-            self._tick_proc = tick_proc
-            self._idle_proc = idle_proc
-            logger.debug('starting thread')
+            if tick_proc:
+                assert callable(tick_proc)
+                self._tick_procs = [tick_proc]
+            else:
+                self._tick_procs = []
+            if idle_proc:
+                assert callable(idle_proc)
+                self._idle_procs = [idle_proc]
+            else:
+                self._idle_procs = []
+            logger.info('starting thread')
         self.thread.start()
 
     def _after_run(self):

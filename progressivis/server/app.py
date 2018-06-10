@@ -81,8 +81,7 @@ class ProgressivisBlueprint(Blueprint):
     def setup(self, scheduler):
         "Setup the connection with the scheduler"
         self.scheduler = scheduler
-        # pylint: disable=protected-access
-        self.scheduler._tick_proc = self.tick_scheduler
+        self.scheduler.on_tick(self.tick_scheduler)
 
     def register_module(self, path, sid):
         "Register a module with a specified path"
@@ -119,6 +118,7 @@ class ProgressivisBlueprint(Blueprint):
             self._run_number_for_sid[sid] = run_number
         else:
             logging.debug('Ack not well received')
+            print('Preventing ticks for', sid)
 
     def reset_sid(self, sid):
         "Resets the sid to 0 to stop sending ticks for that sid"
@@ -171,7 +171,6 @@ progressivis_bp = ProgressivisBlueprint('progressivis.server',
                                         static_folder='static',
                                         static_url_path='/progressivis/static',
                                         template_folder='templates')
-
 
 def path_to_module(path):
     """
@@ -245,13 +244,13 @@ def _on_scheduler(short=False):
     return scheduler.to_json(short)
 
 def _on_module_get(path):
-    #print('on_module_get', path)
     module = path_to_module(path)
     if module is None:
         return {'status': 'failed',
                 'reason': 'unknown module %s'%path}
     progressivis_bp.register_module(module.id, request.sid)
     module.set_end_run(progressivis_bp.tick_module) # setting it multiple time is ok
+    print('on_module_get', path)
     return module.to_json()
 
 def _on_module_input(data):

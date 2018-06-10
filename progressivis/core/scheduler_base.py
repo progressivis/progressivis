@@ -55,10 +55,9 @@ class BaseScheduler(object):
         self._valid = False
         self._start = None
         self._run_number = 0
-        self._run_number_time = {}
-        self._tick_proc = None
-        self._oneshot_tick_procs = []
-        self._idle_proc = None
+        self._tick_procs = []
+        self._tick_once_procs = []
+        self._idle_procs = []
         self._new_modules_ids = []
         self._slots_updated = False
         self._run_list = []
@@ -92,6 +91,52 @@ class BaseScheduler(object):
             self._start = default_timer()
             return 0
         return default_timer()-self._start
+
+    def get_visualizations(self):
+        "Return the visualization modules"
+        return [m.id for m in self.modules().values() if m.is_visualization()]
+
+    def get_inputs(self):
+        "Return the input modules"
+        return [m.id for m in self.modules().values() if m.is_input()]
+
+    def reachable_from_inputs(self, inputs):
+        """Return all the vsualizations reachable from
+        the specified list of input modules.
+        """
+        reachable = set()
+        if not inputs:
+            return set()
+        # collect all modules reachable from the modified inputs
+        for i in inputs:
+            reachable.update(self._reachability[i])
+        all_vis = self.get_visualizations()
+        reachable_vis = reachable.intersection(all_vis)
+        if reachable_vis:
+            # TODO remove modules following visualizations
+            return reachable
+        return None
+
+    def order_modules(self):
+        """Compute a topological order for the modules.
+        Should do something smarted with exceptions.
+        """
+        runorder = None
+        try:
+            dependencies = self._collect_dependencies()
+            runorder = toposort(dependencies)
+            #print('normal order of', dependencies, 'is', runorder, file=sys.stderr)
+            self._compute_reachability(dependencies)
+        except ValueError:  # cycle, try to break it then
+            # if there's still a cycle, we cannot run the first cycle
+            # TODO fix this
+            logger.info('Cycle in module dependencies, '
+                        'trying to drop optional fields')
+            dependencies = self._collect_dependencies(only_required=True)
+            runorder = toposort(dependencies)
+            #print('Filtered order of', dependencies, 'is', runorder, file=sys.stderr)
+            self._compute_reachability(dependencies)
+        return runorder
 
     @synchronized
     def _collect_dependencies(self, only_required=False):
@@ -145,52 +190,6 @@ class BaseScheduler(object):
         for (k, v) in six.iteritems(self._reachability):
             v.difference_update(reach_no_vis)
         logger.info('reachability map: %s', self._reachability)
-
-    def get_visualizations(self):
-        "Return the visualization modules"
-        return [m.id for m in self.modules().values() if m.is_visualization()]
-
-    def get_inputs(self):
-        "Return the input modules"
-        return [m.id for m in self.modules().values() if m.is_input()]
-
-    def reachable_from_inputs(self, inputs):
-        """Return all the vsualizations reachable from
-        the specified list of input modules.
-        """
-        reachable = set()
-        if not inputs:
-            return set()
-        # collect all modules reachable from the modified inputs
-        for i in inputs:
-            reachable.update(self._reachability[i])
-        all_vis = self.get_visualizations()
-        reachable_vis = reachable.intersection(all_vis)
-        if reachable_vis:
-            # TODO remove modules following visualizations
-            return reachable
-        return None
-
-    def order_modules(self):
-        """Compute a topological order for the modules.
-        Should do something smarted with exceptions.
-        """
-        runorder = None
-        try:
-            dependencies = self._collect_dependencies()
-            runorder = toposort(dependencies)
-            #print('normal order of', dependencies, 'is', runorder, file=sys.stderr)
-            self._compute_reachability(dependencies)
-        except ValueError:  # cycle, try to break it then
-            # if there's still a cycle, we cannot run the first cycle
-            # TODO fix this
-            logger.info('Cycle in module dependencies, '
-                        'trying to drop optional fields')
-            dependencies = self._collect_dependencies(only_required=True)
-            runorder = toposort(dependencies)
-            #print('Filtered order of', dependencies, 'is', runorder, file=sys.stderr)
-            self._compute_reachability(dependencies)
-        return runorder
 
     @staticmethod
     def _module_order(x, y):
@@ -251,9 +250,11 @@ class BaseScheduler(object):
     def start(self, tick_proc=None, idle_proc=None):
         "Start the scheduler."
         if tick_proc:
-            self._tick_proc = tick_proc
+            self._tick_procs = []
+            self.on_tick(tick_proc)
         if idle_proc:
-            self._idle_proc = idle_proc
+            self._idle_procs = []
+            self.on_idle(idle_proc)
         self.run()
 
     def _step_proc(self, s, run_number):
@@ -264,36 +265,36 @@ class BaseScheduler(object):
         "Start the scheduler for on step."
         self.start(tick_proc=self._step_proc)
 
-    def set_tick_proc(self, tick_proc):
+    def on_tick(self, tick_proc):
         "Set a procedure to call at each tick."
-        if tick_proc is None or callable(tick_proc):
-            self._tick_proc = tick_proc
-        else:
-            raise ProgressiveError('value should be callable or None',
-                                   tick_proc)
+        assert callable(tick_proc)
+        self._tick_procs.append(tick_proc)
 
-    def add_oneshot_tick_proc(self, tick_proc):
+    def remove_tick(self, tick_proc):
+        "Remove a tick callback"
+        self._tick_procs.remove(tick_proc)
+
+    def on_tick_once(self, tick_proc):
         """
         Add a oneshot function that will be run at the next scheduler tick.
         This is especially useful for setting up module connections.
         """
-        if not callable(tick_proc):
-            logger.warning("tick_proc should be callable")
-        else:
-            with self.lock:
-                self._oneshot_tick_procs += [tick_proc]
+        assert callable(tick_proc)
+        self._tick_once_procs.append(tick_proc)
 
-    def set_idle_proc(self, idle_proc):
+    def remove_tick_once(self, tick_proc):
+        "Remove a tick once callback"
+        self._tick_once_procs.remove(tick_proc)
+
+    def on_idle(self, idle_proc):
         "Set a procedure that will be called when there is nothing else to do."
-        if idle_proc is None or callable(idle_proc):
-            self._idle_proc = idle_proc
-        else:
-            raise ProgressiveError('value should be callable or None',
-                                   idle_proc)
+        assert callable(idle_proc)
+        self._idle_procs.append(idle_proc)
 
-    def idle_proc(self):
-        "Return the idle proc."
-        return self._idle_proc
+    def remove_idle(self, idle_proc):
+        "Remove an idle callback."
+        assert callable(idle_proc)
+        self._idle_procs.remove(idle_proc)
 
     def slots_updated(self):
         "Set by slot when it has been correctly updated"
@@ -303,6 +304,7 @@ class BaseScheduler(object):
         "Run the modules, called by start()."
         self._stopped = False
         self._running = True
+        self._start = default_timer()
         self._before_run()
 
         self._run_loop()
@@ -393,32 +395,35 @@ class BaseScheduler(object):
         new_list = [m for m in self._run_list if not m.is_terminated()]
         self._run_list = new_list
         if first_run == self._run_number: # no module ready
-            if self._idle_proc:
+            has_run = False
+            for proc in self._idle_procs:
                 #pylint: disable=broad-except
                 try:
-                    self._idle_proc(self, self._run_number)
+                    logger.debug('Running idle proc')
+                    proc(self, self._run_number)
+                    has_run = True
                 except Exception as exc:
-                    logger.warning(exc)
-            else:
+                    logger.error(exc)
+            if not has_run:
                 logger.info('sleeping %f', 0.2)
                 time.sleep(0.2)
         self._run_index = 0
 
 
     def _run_tick_procs(self):
-        if self._tick_proc:
-            #pylint: disable=broad-except
+        #pylint: disable=broad-except
+        for proc in self._tick_procs:
             logger.debug('Calling tick_proc')
             try:
-                self._tick_proc(self, self._run_number)
+                proc(self, self._run_number)
             except Exception as exc:
                 logger.warning(exc)
-            for proc in self._oneshot_tick_procs:
-                try:
-                    proc()
-                except Exception as exc:
-                    logger.warning(exc)
-            self._oneshot_tick_procs = []
+        for proc in self._tick_once_procs:
+            try:
+                proc()
+            except Exception as exc:
+                logger.warning(exc)
+            self._tick_once_procs = []
 
     def stop(self):
         "Stop the execution."
@@ -454,10 +459,6 @@ class BaseScheduler(object):
             if mid not in self._modules:
                 return mid
         return '%s_%s' % (prefix, uuid4())
-
-    def run_number_time(self, run_number):
-        "Return the time taken by a specific run number."
-        return self._run_number_time[run_number]
 
     @synchronized
     def add_module(self, module):
