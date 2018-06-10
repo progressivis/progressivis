@@ -205,6 +205,10 @@ class BaseScheduler(object):
         "Return the length of the run queue"
         return len(self._run_list)
 
+    def run_queue_only_input(self):
+        "Return True if the run queue only contains interactive modules"
+        return all([m.is_input() for m in self._run_list])
+
     def to_json(self, short=True):
         "Return a dictionary describing the scheduler"
         msg = {}

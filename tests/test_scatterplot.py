@@ -38,13 +38,16 @@ class VariablePatch2(ModulePatch):
 
 class ScatterPlotPatch(ModulePatch):
     def __init__(self, n):
-        ScatterPlotPatch.cnt = 0
         super(ScatterPlotPatch, self).__init__(n)
+        self._last_run = 0
+
     def after_run_step(self, m, *args, **kwargs):
-        if ScatterPlotPatch.cnt > 3:
+        scheduler = m.scheduler()
+        # Deciding when to stop is tricky for now
+        if self._last_run+4 == scheduler.run_number():
             m.scheduler().stop()
         else:
-            ScatterPlotPatch.cnt += 1
+            self._last_run = scheduler.run_number()
 
 class TestScatterPlot(ProgressiveTest):
 #    def setUp(self):
