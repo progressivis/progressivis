@@ -30,7 +30,8 @@ function float_equal(a, b) {
 }
 
 function scatterplot_update(data) {
-    module_update(data);
+    var wt = $('#scatterpanel').attr('class').indexOf("active")<0;
+    module_update(data, with_table=wt);
     scatterplot_update_vis(data);
 }
 
@@ -216,7 +217,11 @@ function scatterplot_zoomed(t) {
 
 
 function scatterplot_refresh(json) {
-    module_get(scatterplot_update, error);
+    if(json && json.payload) {
+        scatterplot_update(json.payload);}
+    else {
+        module_get(scatterplot_update, error);
+    }
 }
 
 function delta(d) { return d[1] - d[0]; }

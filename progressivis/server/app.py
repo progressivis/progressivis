@@ -125,13 +125,15 @@ class ProgressivisBlueprint(Blueprint):
         #print('Reseting sid', sid)
         self._run_number_for_sid[sid] = 0
 
-    def emit_tick(self, path, run_number):
+    def emit_tick(self, path, run_number, payload=None):
         "Emit a tick unless it has not been acknowledged"
         sids = self.sids_for_path(path)
         for sid in sids:
             if self._run_number_for_sid[sid] == 0:
                 #print('Emiting tick for', sid, 'in path', path)
-                socketio.emit('tick', {'run_number': run_number}, room=sid,
+                json_ = {'run_number': run_number}
+                if payload is not None: json_['payload'] = payload
+                socketio.emit('tick', json_, room=sid,
                               callback=partial(self._prevent_tick, sid, run_number))
             #else:
             #    #print('No tick for', sid, 'in path', path)
@@ -158,7 +160,7 @@ class ProgressivisBlueprint(Blueprint):
     def tick_module(self, module, run_number):
         "Run when a module has run"
         # pylint: disable=no-self-use
-        self.emit_tick(module.id, run_number)
+        self.emit_tick(module.id, run_number, payload=module.to_json())
 
     def get_log(self):
         "Return the log"

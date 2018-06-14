@@ -33,9 +33,11 @@ function module_input(data, success, error, module) {
     }
 }
 
-function module_update(data) {
+function module_update(data, with_table=true) {
     progressivis_update(data);
-    module_update_table(data);
+    if(with_table){
+        module_update_table(data);
+    }
 
 }
 
