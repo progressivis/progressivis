@@ -15,17 +15,15 @@ class TestProgressiveModule(ProgressiveTest):
         # pylint: disable=broad-except
         s = self.scheduler()
         with self.assertRaises(TypeError):  # abstract base class
-            module = Module(mid='a', scheduler=s)
-        with self.assertRaises(ValueError): # name and mid specified
-            module = SimpleModule(mid='a', name='foo', scheduler=s)
+            module = Module(name='a', scheduler=s)
 
-        module = Every(proc=self.terse, mid='a', scheduler=s)
-        self.assertEqual(module.id, 'a')
+        module = Every(proc=self.terse, name='a', scheduler=s)
+        self.assertEqual(module.name, 'a')
         self.assertEqual(s.exists('a'), True)
         self.assertEqual(module.get_progress(), (0, 0))
         with self.assertRaises(ProgressiveError):
-            module = SimpleModule(mid='a', scheduler=s)
-        mod2 = SimpleModule(mid='b', scheduler=s)
+            module = SimpleModule(name='a', scheduler=s)
+        mod2 = SimpleModule(name='b', scheduler=s)
         self.assertEqual(mod2.get_progress(), (0, 0))
         module.debug = True
         self.assertEqual(module.params.debug, True)

@@ -37,7 +37,7 @@ class Slot(object):
     def name(self):
         "Return the unique name of that slot"
         if self._name is None:
-            self._name = self.input_module.id + '_' + self.input_name
+            self._name = self.input_module.name + '_' + self.input_name
         return self._name
 
     def data(self):
@@ -55,9 +55,9 @@ class Slot(object):
 
     def __str__(self):
         return six.u('%s(%s[%s]->%s[%s])' % (self.__class__.__name__,
-                                             self.output_module.id,
+                                             self.output_module.name,
                                              self.output_name,
-                                             self.input_module.id,
+                                             self.input_module.name,
                                              self.input_name))
 
     def __repr__(self):
@@ -72,9 +72,9 @@ class Slot(object):
     def to_json(self):
         "Return a dictionary describing this slot, meant to be serialized in json"
         return {'output_name': self.output_name,
-                'output_module': self.output_module.id,
+                'output_module': self.output_module.name,
                 'input_name': self.input_name,
-                'input_module': self.input_module.id}
+                'input_module': self.input_module.name}
 
     def connect(self):
         "Run when the progressive pipeline is about to run through this slot"

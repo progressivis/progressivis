@@ -160,7 +160,7 @@ class ProgressivisBlueprint(Blueprint):
     def tick_module(self, module, run_number):
         "Run when a module has run"
         # pylint: disable=no-self-use
-        self.emit_tick(module.id, run_number, payload=module.to_json())
+        self.emit_tick(module.name, run_number, payload=module.to_json())
 
     def get_log(self):
         "Return the log"
@@ -250,7 +250,7 @@ def _on_module_get(path):
     if module is None:
         return {'status': 'failed',
                 'reason': 'unknown module %s'%path}
-    progressivis_bp.register_module(module.id, request.sid)
+    progressivis_bp.register_module(module.name, request.sid)
     module.set_end_run(progressivis_bp.tick_module) # setting it multiple time is ok
     print('on_module_get', path)
     return module.to_json()
@@ -272,7 +272,7 @@ def _on_module_input(data):
         return {'status': 'failed',
                 'reason': 'no var_values for %s'%path}
     try:
-        print('sending to %s: %s'%(module.id, var_values))
+        print('sending to %s: %s'%(module.name, var_values))
         msg = module.from_input(var_values)
         # pylint: disable=broad-except
     except Exception as exc:

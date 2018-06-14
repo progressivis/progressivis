@@ -74,53 +74,53 @@ class ScatterPlot(TableModule):
         self.input_module = input_module
         self.input_slot = input_slot
         range_query_x = RangeQuery(column=self.x_column,
-                                   group=self.id, scheduler=s,
+                                   group=self.name, scheduler=s,
                                    approximate=self._approximate)
         range_query_x.create_dependent_modules(input_module,
                                                input_slot,
                                                min_value=False,
                                                max_value=False)
         range_query_y = RangeQuery(column=self.y_column,
-                                   group=self.id, scheduler=s,
+                                   group=self.name, scheduler=s,
                                    approximate=self._approximate)
         range_query_y.create_dependent_modules(input_module, input_slot,
                                                min_value=False,
                                                max_value=False)
-        min2d = Paste(group=self.id, scheduler=s)
+        min2d = Paste(group=self.name, scheduler=s)
         min2d.input.first = range_query_x.min.output.table
         min2d.input.second = range_query_y.min.output.table
-        max2d = Paste(group=self.id, scheduler=s)
+        max2d = Paste(group=self.name, scheduler=s)
         max2d.input.first = range_query_x.max.output.table
         max2d.input.second = range_query_y.max.output.table
-        self.min_value = Variable(group=self.id, scheduler=s)
+        self.min_value = Variable(group=self.name, scheduler=s)
         self.min_value.input.like = min2d.output.table
         range_query_x.input.lower = self.min_value.output.table
         range_query_y.input.lower = self.min_value.output.table
-        self.max_value = Variable(group=self.id, scheduler=s)
+        self.max_value = Variable(group=self.name, scheduler=s)
         self.max_value.input.like = max2d.output.table
         range_query_x.input.upper = self.max_value.output.table
         range_query_y.input.upper = self.max_value.output.table
-        range_query2d = Intersection(group=self.id, scheduler=s)
+        range_query2d = Intersection(group=self.name, scheduler=s)
         range_query2d.input.table = range_query_x.output.table
         range_query2d.input.table = range_query_y.output.table
-        min_rq = Paste(group=self.id, scheduler=s)
+        min_rq = Paste(group=self.name, scheduler=s)
         min_rq.input.first = range_query_x.output.min
         min_rq.input.second = range_query_y.output.min
-        max_rq = Paste(group=self.id, scheduler=s)
+        max_rq = Paste(group=self.name, scheduler=s)
         max_rq.input.first = range_query_x.output.max
         max_rq.input.second = range_query_y.output.max
         if histogram2d is None:
             histogram2d = Histogram2D(self.x_column, self.y_column,
-                                      group=self.id, scheduler=s)
+                                      group=self.name, scheduler=s)
         histogram2d.input.table = range_query2d.output.table
         histogram2d.input.min = min_rq.output.table
         histogram2d.input.max = max_rq.output.table
         if heatmap is None:
-            heatmap = Heatmap(group=self.id, # filename='heatmap%d.png',
+            heatmap = Heatmap(group=self.name, # filename='heatmap%d.png',
                               history=100, scheduler=s)
         heatmap.input.array = histogram2d.output.table
         if sample is True:
-            sample = Sample(samples=100, group=self.id, scheduler=s)
+            sample = Sample(samples=100, group=self.name, scheduler=s)
         elif sample is None and select is None:
             raise ProgressiveError("Scatterplot needs a select module")
         if sample is not None:
@@ -154,30 +154,30 @@ class ScatterPlot(TableModule):
         self.input_slot = input_slot
         range_query_2d = RangeQuery2d(column_x=self.x_column,
                                       column_y=self.y_column,
-                                      group=self.id, scheduler=s,
+                                      group=self.name, scheduler=s,
                                       approximate=self._approximate)
         range_query_2d.create_dependent_modules(input_module,
                                                 input_slot,
                                                 min_value=False,
                                                 max_value=False)
-        self.min_value = Variable(group=self.id, scheduler=s)
+        self.min_value = Variable(group=self.name, scheduler=s)
         self.min_value.input.like = range_query_2d.min.output.table
         range_query_2d.input.lower = self.min_value.output.table
-        self.max_value = Variable(group=self.id, scheduler=s)
+        self.max_value = Variable(group=self.name, scheduler=s)
         self.max_value.input.like = range_query_2d.max.output.table
         range_query_2d.input.upper = self.max_value.output.table
         if histogram2d is None:
             histogram2d = Histogram2D(self.x_column, self.y_column,
-                                      group=self.id, scheduler=s)
+                                      group=self.name, scheduler=s)
         histogram2d.input.table = range_query_2d.output.table
         histogram2d.input.min = range_query_2d.output.min
         histogram2d.input.max = range_query_2d.output.max
         if heatmap is None:
-            heatmap = Heatmap(group=self.id, # filename='heatmap%d.png',
+            heatmap = Heatmap(group=self.name, # filename='heatmap%d.png',
                               history=100, scheduler=s)
         heatmap.input.array = histogram2d.output.table
         if sample is True:
-            sample = Sample(samples=100, group=self.id, scheduler=s)
+            sample = Sample(samples=100, group=self.name, scheduler=s)
         elif sample is None and select is None:
             raise ProgressiveError("Scatterplot needs a select module")
         if sample is not None:

@@ -21,7 +21,7 @@ histogram2d.input.max = max_.output.table
 # heatmap
 heatmap=Heatmap(filename='histo_%03d.png')
 heatmap.input.array = histogram2d.output.table
-pr = Print(id='print')
+pr = Print(name='print')
 pr.input.df = csv.output.table
 
 

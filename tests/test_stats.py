@@ -16,12 +16,12 @@ class TestStats(ProgressiveTest):
         s = self.scheduler()
         csv_module = CSVLoader(get_dataset('smallfile'), index_col=False,header=None,
                                scheduler=s)
-        stats=Stats('_1', mid='test_stats', scheduler=s)
-        wait=Wait(mid='wait', delay=3, scheduler=s)
+        stats=Stats('_1', name='test_stats', scheduler=s)
+        wait=Wait(name='wait', delay=3, scheduler=s)
         wait.input.inp = csv_module.output.table
         stats.input._params = wait.output.out
         stats.input.table = csv_module.output.table
-        pr = Print(proc=self.terse, mid='print', scheduler=s)
+        pr = Print(proc=self.terse, name='print', scheduler=s)
         pr.input.df = stats.output.stats
         s.start()
         s.join()

@@ -67,9 +67,9 @@ if __name__=='__main__':
             StorageEngine.default = "numpy"
             s=Scheduler()
             random = RandomTable(10, rows=n*L, scheduler=s)
-            min_=Min(mid='min_'+str(hash(random)), scheduler=s)
+            min_=Min(name='min_'+str(hash(random)), scheduler=s)
             min_.input.table = random.output.table
-            max_=Max(id='max_'+str(hash(random)), scheduler=s)
+            max_=Max(name='max_'+str(hash(random)), scheduler=s)
             max_.input.table = random.output.table
             s.start()
 
@@ -85,9 +85,9 @@ if __name__=='__main__':
             StorageEngine.default = "hdf5"            
             s=Scheduler()
             random = RandomTable(10, rows=n*L, scheduler=s)
-            min_=Min(mid='min_'+str(hash(random)), scheduler=s)
+            min_=Min(name='min_'+str(hash(random)), scheduler=s)
             min_.input.table = random.output.table
-            max_=Max(id='max_'+str(hash(random)), scheduler=s)
+            max_=Max(name='max_'+str(hash(random)), scheduler=s)
             max_.input.table = random.output.table
             s.start()
 
@@ -103,9 +103,9 @@ if __name__=='__main__':
             StorageEngine.default = "zarr"
             s=Scheduler()
             random = RandomTable(10, rows=n*L, scheduler=s)
-            min_=Min(mid='min_'+str(hash(random)), scheduler=s)
+            min_=Min(name='min_'+str(hash(random)), scheduler=s)
             min_.input.table = random.output.table
-            max_=Max(id='max_'+str(hash(random)), scheduler=s)
+            max_=Max(name='max_'+str(hash(random)), scheduler=s)
             max_.input.table = random.output.table
             s.start()
 
@@ -121,9 +121,9 @@ if __name__=='__main__':
             StorageEngine.default = "bcolz"
             s=Scheduler()
             random = RandomTable(10, rows=n*L, scheduler=s)
-            min_=Min(mid='min_'+str(hash(random)), scheduler=s)
+            min_=Min(name='min_'+str(hash(random)), scheduler=s)
             min_.input.table = random.output.table
-            max_=Max(id='max_'+str(hash(random)), scheduler=s)
+            max_=Max(name='max_'+str(hash(random)), scheduler=s)
             max_.input.table = random.output.table
             s.start()
             

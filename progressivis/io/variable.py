@@ -22,7 +22,7 @@ class Variable(Constant):
         if not isinstance(input_,dict):
             raise ProgressiveError('Expecting a dictionary')
         if self._table is None and self.get_input_slot('like') is None:
-            error = 'Variable %s with no initial value and no input slot'%self.id
+            error = 'Variable %s with no initial value and no input slot'%self.name
             logger.error(error)
             return error
         last = self._table.last()

@@ -9,11 +9,11 @@ class TestPercentiles(ProgressiveTest):
     def test_percentile(self):
         s = self.scheduler()
         csv_module = CSVLoader(get_dataset('smallfile'), index_col=False, header=None, scheduler=s)
-        module=Percentiles('_1',mid='test_percentile',
+        module=Percentiles('_1', name='test_percentile',
                            percentiles=[0.1, 0.25, 0.5, 0.75, 0.9],
                            scheduler=s)
         module.input.table = csv_module.output.table
-        prt = Every(proc=self.terse, mid='print', scheduler=s)
+        prt = Every(proc=self.terse, name='print', scheduler=s)
         prt.input.df = module.output.percentiles
                 
         s.start()

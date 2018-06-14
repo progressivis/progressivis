@@ -163,7 +163,7 @@ def _module_input(path):
     var_values = request.get_json()
     msg = ''
     try:
-        print('sending to %s: %s'%(module.id, var_values))
+        print('sending to %s: %s'%(module.name, var_values))
         msg = module.from_input(var_values)
         # pylint: disable=broad-except
     except Exception as exc:

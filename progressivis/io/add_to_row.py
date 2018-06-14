@@ -21,7 +21,7 @@ class AddToRow(Constant):
         if not isinstance(input,dict):
             raise ProgressiveError('Expecting a dictionary')
         if self._table is None:
-            error = 'AddToRow %s with no initial value and no input slot'%self.id
+            error = 'AddToRow %s with no initial value and no input slot'%self.name
             logger.error(error)
             return error
 

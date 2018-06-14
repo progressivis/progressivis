@@ -51,7 +51,7 @@ class BaseChangeManager(object):
         "Return information of items deleted"
         return self._deleted
 
-    def reset(self, mid=None):
+    def reset(self, name=None):
         """
         Reset the change manager so changes will come as if the managed data
         was freshly created.

@@ -163,7 +163,7 @@ class Join(NAry):
     "Module executing join."
     def __init__(self, **kwds):
         """Join(on=None, how='left', lsuffix='', rsuffix='',
-                sort=False,id=None)
+                sort=False,name=None)
         """
         super(Join, self).__init__(**kwds)
         self.join_kwds = self._filter_kwds(kwds, join)

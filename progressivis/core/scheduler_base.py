@@ -46,7 +46,7 @@ class BaseScheduler(object):
         # same as clear below
         with self.lock:
             BaseScheduler._last_id += 1
-            self._id = BaseScheduler._last_id
+            self._name = BaseScheduler._last_id
         self._modules = dict()
         self._module = AttributeDict(self._modules)
         self._running = False
@@ -69,6 +69,7 @@ class BaseScheduler(object):
 
     def create_lock(self):
         "Create a lock, fake in this class, real in the derived Scheduler"
+        # pylint: disable=no-self-use
         return FakeLock()
 
     def join(self):
@@ -81,9 +82,9 @@ class BaseScheduler(object):
         return self._lock
 
     @property
-    def id(self):
+    def name(self):
         "Return the scheduler id"
-        return str(self._id)
+        return str(self._name)
 
     def timer(self):
         "Return the scheduler timer."
@@ -94,11 +95,11 @@ class BaseScheduler(object):
 
     def get_visualizations(self):
         "Return the visualization modules"
-        return [m.id for m in self.modules().values() if m.is_visualization()]
+        return [m.name for m in self.modules().values() if m.is_visualization()]
 
     def get_inputs(self):
         "Return the input modules"
-        return [m.id for m in self.modules().values() if m.is_input()]
+        return [m.name for m in self.modules().values() if m.is_input()]
 
     def reachable_from_inputs(self, inputs):
         """Return all the vsualizations reachable from
@@ -144,7 +145,7 @@ class BaseScheduler(object):
         for (mid, module) in six.iteritems(self._modules):
             if not module.is_valid():
                 continue
-            outs = [m.output_module.id for m in module.input_slot_values()
+            outs = [m.output_module.name for m in module.input_slot_values()
                     if m and (not only_required or
                               module.input_slot_required(m.input_name))]
             dependencies[mid] = set(outs)
@@ -205,10 +206,6 @@ class BaseScheduler(object):
         "Return the length of the run queue"
         return len(self._run_list)
 
-    def run_queue_only_input(self):
-        "Return True if the run queue only contains interactive modules"
-        return all([m.is_input() for m in self._run_list])
-
     def to_json(self, short=True):
         "Return a dictionary describing the scheduler"
         msg = {}
@@ -232,7 +229,7 @@ class BaseScheduler(object):
             valid = True
             for module in self._modules.values():
                 if not module.validate():
-                    logger.error('Cannot validate module %s', module.id)
+                    logger.error('Cannot validate module %s', module.name)
                     valid = False
             self._valid = valid
         return self._valid
@@ -455,8 +452,8 @@ class BaseScheduler(object):
         "Return True if the moduleid exists in this scheduler."
         return moduleid in self._modules
 
-    def generate_id(self, prefix):
-        "Generate an id for a module."
+    def generate_name(self, prefix):
+        "Generate a name for a module."
         # Try to be nice
         for i in range(1, 10):
             mid = '%s_%d' % (prefix, i)
@@ -468,15 +465,15 @@ class BaseScheduler(object):
     def add_module(self, module):
         "Add a module to this scheduler."
         if not module.is_created():
-            raise ProgressiveError('Cannot add running module %s' % module.id)
-        if module.id is None:
+            raise ProgressiveError('Cannot add running module %s' % module.name)
+        if module.name is None:
             # pylint: disable=protected-access
-            module._id = self.generate_id(module.pretty_typename())
+            module._name = self.generate_name(module.pretty_typename())
         self._add_module(module)
 
     def _add_module(self, module):
-        self._new_modules_ids += [module.id]
-        self._modules[module.id] = module
+        self._new_modules_ids += [module.name]
+        self._modules[module.name] = module
 
     @property
     def module(self):
@@ -494,7 +491,7 @@ class BaseScheduler(object):
         self._remove_module(module)
 
     def _remove_module(self, module):
-        del self._modules[module.id]
+        del self._modules[module.name]
 
     def modules(self):
         "Return the dictionary of modules."
@@ -513,7 +510,7 @@ class BaseScheduler(object):
         Notify this scheduler that the module has received input
         that should be served fast.
         """
-        sel = self._reachability[module.id]
+        sel = self._reachability[module.name]
         if sel:
             if not self._module_selection:
                 logger.info('Starting input management')
@@ -541,11 +538,11 @@ class BaseScheduler(object):
     def _consider_module(self, module):
         if not self.has_input():
             return True
-        if module.id in self._module_selection:
-            self._module_selection.remove(module.id)
-            logger.debug('Module %s ready for scheduling', module.id)
+        if module.name in self._module_selection:
+            self._module_selection.remove(module.name)
+            logger.debug('Module %s ready for scheduling', module.name)
             return True
-        logger.debug('Module %s NOT ready for scheduling', module.id)
+        logger.debug('Module %s NOT ready for scheduling', module.name)
         return False
 
     def time_left(self):
@@ -557,10 +554,10 @@ class BaseScheduler(object):
 
     def fix_quantum(self, module, quantum):
         "Fix the quantum of the specified module"
-        if self.has_input() and module.id in self._module_selection:
+        if self.has_input() and module.name in self._module_selection:
             quantum = self.time_left() / len(self._module_selection)
         if quantum == 0:
             quantum = 0.1
             logger.info('Quantum is 0 in %s, setting it to'
-                        ' a reasonable value', module.id)
+                        ' a reasonable value', module.name)
         return quantum

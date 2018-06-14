@@ -73,7 +73,7 @@ class Histograms(NAry):
             if not np.issubdtype(dtype, numbers.Number):
                 # only create histograms for number columns
                 continue
-            histo = Histogram1D(group=self.id, column=column,
+            histo = Histogram1D(group=self.name, column=column,
                                 bins=bins, delta=delta, scheduler=self.scheduler())
             histo.input.table = inp.output.table
             histo.input.min = minmod.output.table

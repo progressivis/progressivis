@@ -146,7 +146,7 @@ class Heatmap(TableModule):
             if df is not None and self._last_update != 0:
                 row = df.last()
                 json['image'] = row['filename']
-                #"/progressivis/module/image/%s?run_number=%d"%(self.id, row['time'])
+                #"/progressivis/module/image/%s?run_number=%d"%(self.name, row['time'])
         return json
 
     def get_image(self, run_number=None):

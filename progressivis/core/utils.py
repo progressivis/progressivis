@@ -813,7 +813,7 @@ class ModulePatch(object):
         self.applied = False
     def patch_condition(self, m):
         if self.applied: return False
-        return self._name == m.name()
+        return self._name == m.name
     def before_run_step(self, m, *args, **kwargs):
         pass
     def after_run_step(self, m, *args, **kwargs):

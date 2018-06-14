@@ -32,7 +32,7 @@ class StorageManager(object):
         return self.start()
 
     def module_directory(self, module):
-        mid = six.u(module.id)
+        mid = six.u(module.name)
         if mid in self.moduledir:
             return self.moduledir[mid]
         dirname = os.path.join(self.start(), mid)

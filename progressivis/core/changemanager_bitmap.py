@@ -22,8 +22,8 @@ class BitmapChangeManager(BaseChangeManager):
             buffer_deleted)
         self._last_bm = None
 
-    def reset(self, mid=None):
-        super(BitmapChangeManager, self).reset(mid)
+    def reset(self, name=None):
+        super(BitmapChangeManager, self).reset(name)
         self._last_bm = None
 
     def compute_updates(self, data):

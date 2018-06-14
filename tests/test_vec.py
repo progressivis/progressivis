@@ -9,7 +9,7 @@ class TestProgressiveLoadVEC(ProgressiveTest):
     @skip("Need to implement sparse columns")
     def test_read_vec(self):
         module=VECLoader(get_dataset('warlogs'),
-                         mid='test_read_vec')
+                         name='test_read_vec')
         #self.assertTrue(module.table() is None)
         module.run(0)
         s = module.trace_stats(max_runs=1)

@@ -11,9 +11,9 @@ class TestPaste(ProgressiveTest):
     def test_paste(self):
         s = self.scheduler()
         random = RandomTable(10, rows=10000, scheduler=s)
-        min_1 = Min(mid='min_1'+str(hash(random)), scheduler=s, columns=['_1'])
+        min_1 = Min(name='min_1'+str(hash(random)), scheduler=s, columns=['_1'])
         min_1.input.table = random.output.table
-        min_2 = Min(mid='min_2'+str(hash(random)), scheduler=s, columns=['_2'])
+        min_2 = Min(name='min_2'+str(hash(random)), scheduler=s, columns=['_2'])
         min_2.input.table = random.output.table
         bj = Paste(scheduler=s)
         bj.input.first = min_1.output.table

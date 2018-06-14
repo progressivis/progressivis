@@ -44,7 +44,7 @@ class CSVLoader(TableModule):
         self._input_compression = None
         self._input_size = 0 # length of the file or input stream when available
 
-        self._table_params = dict(name=self.id, fillvalues=fillvalues)
+        self._table_params = dict(name=self.name, fillvalues=fillvalues)
         self._table = None
 
     def rows_read(self):

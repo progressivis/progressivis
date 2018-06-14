@@ -34,7 +34,7 @@ class Select(TableModule):
         self.input_module = input_module
         self.input_slot = input_slot
 
-        query = RangeQuery(group=self.id,scheduler=s)
+        query = RangeQuery(group=self.name, scheduler=s)
         query.create_dependent_modules(input_module, input_slot, **kwds)
 
         select = self

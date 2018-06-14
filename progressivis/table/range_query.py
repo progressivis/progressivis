@@ -130,20 +130,20 @@ class RangeQuery(TableModule):
         params = self.params
         self.input_module = input_module
         self.input_slot = input_slot
-        hist_index = HistogramIndex(column=params.column, group=self.id, scheduler=s)
+        hist_index = HistogramIndex(column=params.column, group=self.name, scheduler=s)
         hist_index.input.table = input_module.output[input_slot]
         if min_ is None:
-            min_ = Min(group=self.id, scheduler=s, columns=[self._column])
+            min_ = Min(group=self.name, scheduler=s, columns=[self._column])
             min_.input.table = hist_index.output.min_out
         if max_ is None:
-            max_ = Max(group=self.id, scheduler=s, columns=[self._column])
+            max_ = Max(group=self.name, scheduler=s, columns=[self._column])
             max_.input.table = hist_index.output.max_out
         if min_value is None:
-            min_value = Variable(group=self.id, scheduler=s)
+            min_value = Variable(group=self.name, scheduler=s)
             min_value.input.like = min_.output.table
 
         if max_value is None:
-            max_value = Variable(group=self.id, scheduler=s)
+            max_value = Variable(group=self.name, scheduler=s)
             max_value.input.like = max_.output.table
 
         range_query = self

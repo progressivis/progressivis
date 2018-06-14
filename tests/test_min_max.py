@@ -9,7 +9,7 @@ class TestMinMax(ProgressiveTest):
     def test_min(self):
         s = self.scheduler()
         random = RandomTable(10, rows=10000, scheduler=s)
-        min_=Min(mid='min_'+str(hash(random)), scheduler=s)
+        min_=Min(name='min_'+str(hash(random)), scheduler=s)
         min_.input.table = random.output.table
         pr=Print(proc=self.terse, scheduler=s)
         pr.input.df = min_.output.table
@@ -29,7 +29,7 @@ class TestMinMax(ProgressiveTest):
     def test_max(self):
         s = self.scheduler()
         random = RandomTable(10, rows=10000, scheduler=s)
-        max_=Max(id='max_'+str(hash(random)), scheduler=s)
+        max_=Max(name='max_'+str(hash(random)), scheduler=s)
         max_.input.table = random.output.table
         pr=Print(proc=self.terse, scheduler=s)
         pr.input.df = max_.output.table

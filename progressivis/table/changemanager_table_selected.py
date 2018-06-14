@@ -37,9 +37,9 @@ class TableSelectedChangeManager(BitmapChangeManager):
             buffer_updated,
             buffer_deleted)
 
-    def reset(self, mid=None):
-        super(TableSelectedChangeManager, self).reset(mid)
-        self._tablechange.reset(mid)
+    def reset(self, name=None):
+        super(TableSelectedChangeManager, self).reset(name)
+        self._tablechange.reset(name)
 
     def update(self, run_number, data, mid):
         assert isinstance(data, TableSelectedView)

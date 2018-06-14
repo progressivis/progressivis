@@ -65,7 +65,6 @@ class Module(six.with_metaclass(ModuleMeta, object)):
                   'zombie', 'terminated', 'invalid']
 
     def __init__(self,
-                 mid=None,
                  name=None,
                  group=None,
                  scheduler=None,
@@ -80,18 +79,12 @@ class Module(six.with_metaclass(ModuleMeta, object)):
             from .scheduler import Scheduler
             scheduler = Scheduler.default
         self._scheduler = scheduler
-        if name is not None:
-            if mid is None:
-                mid = name
-            else:
-                raise ValueError('Cannot use name (%s) and mid (%s)'
-                                 ' at the same time'%(name, mid))
-        if mid is None:
-            mid = self._scheduler.generate_id(self.pretty_typename())
-        self._id = mid
+        if name is None:
+            name = self._scheduler.generate_name(self.pretty_typename())
+        self._name = name
         if predictor is None:
             predictor = TimePredictor.default()
-        predictor.id = mid
+        predictor.name = name
         self.predictor = predictor
         if storage is None:
             storage = StorageManager.default
@@ -100,7 +93,7 @@ class Module(six.with_metaclass(ModuleMeta, object)):
             storagegroup = Group.default()
         self.storagegroup = storagegroup
         if tracer is None:
-            tracer = Tracer.default(mid, storagegroup)
+            tracer = Tracer.default(name, storagegroup)
 
         # always present
         input_descriptors = input_descriptors or []
@@ -113,7 +106,7 @@ class Module(six.with_metaclass(ModuleMeta, object)):
                                              required=False)]
         self.order = None
         self._group = group
-        if self._scheduler.exists(mid):
+        if self._scheduler.exists(name):
             raise ProgressiveError('module already exists in scheduler,'
                                    ' delete it first')
         self.tracer = tracer
@@ -196,7 +189,7 @@ class Module(six.with_metaclass(ModuleMeta, object)):
         for desc in descriptor_list:
             if desc.name in slots:
                 raise ProgressiveError('Duplicate slot name %s'
-                                       ' in slot descriptor', desc.name)
+                                       ' in slot descriptor'% desc.name)
             slots[desc.name] = None
         return slots
 
@@ -231,7 +224,7 @@ class Module(six.with_metaclass(ModuleMeta, object)):
 
     def generate_table_name(self, name):
         "Return a uniq name for this module"
-        return "s{}_{}_{}".format(self.scheduler().id, self.id, name)
+        return "s{}_{}_{}".format(self.scheduler().name, self.name, name)
 
     def timer(self):
         "Return the timer associated with this module"
@@ -244,7 +237,7 @@ class Module(six.with_metaclass(ModuleMeta, object)):
             'is_running': s.is_running(),
             'is_terminated': s.is_terminated(),
             'run_number': s.run_number(),
-            'id': self.id,
+            'id': self.name,
             'classname': self.pretty_typename(),
             'is_visualization': self.is_visualization(),
             'last_update': self._last_update,
@@ -292,7 +285,7 @@ class Module(six.with_metaclass(ModuleMeta, object)):
 
     def describe(self):
         "Print the description of this module"
-        print('id: %s' % self.id)
+        print('id: %s' % self.name)
         print('class: %s' % type_fullname(self))
         print('quantum: %f' % self.params.quantum)
         print('start_time: %s' % self._start_time)
@@ -315,19 +308,15 @@ class Module(six.with_metaclass(ModuleMeta, object)):
         return pretty
 
     def __str__(self):
-        return six.u('Module %s: %s' % (self.__class__.__name__, self.id))
+        return six.u('Module %s: %s' % (self.__class__.__name__, self.name))
 
     def __repr__(self):
         return str(self)
 
     @property
-    def id(self):
-        "Return an identifier for this module"
-        return self._id
-
     def name(self):
-        "Return a name for this module, identical to the id"
-        return self.id
+        "Return the name for this module"
+        return self._name
 
     @property
     def group(self):
@@ -395,7 +384,7 @@ class Module(six.with_metaclass(ModuleMeta, object)):
         for sd in self.input_descriptors.values():
             slot = self._input_slots[sd.name]
             if sd.required and slot is None:
-                logger.error('Missing inputs slot %s in %s', sd.name, self._id)
+                logger.error('Missing inputs slot %s in %s', sd.name, self.name)
                 valid = False
         return valid
 
@@ -421,7 +410,7 @@ class Module(six.with_metaclass(ModuleMeta, object)):
             slots = self._output_slots[sd.name]
             if sd.required and (slots is None or len(slots) == 0):
                 logger.error('Missing required output slot %s in %s',
-                             sd.name, self._id)
+                             sd.name, self.name)
                 valid = False
             if slots:
                 for slot in slots:
@@ -505,14 +494,14 @@ class Module(six.with_metaclass(ModuleMeta, object)):
     def is_ready(self):
         if self.state == Module.state_zombie:
             logger.info("%s Not ready because it turned from zombie"
-                        " to terminated", self.id)
+                        " to terminated", self.name)
             self.state = Module.state_terminated
             return False
         if self.state == Module.state_terminated:
-            logger.info("%s Not ready because it terminated", self.id)
+            logger.info("%s Not ready because it terminated", self.name)
             return False
         if self.state == Module.state_invalid:
-            logger.info("%s Not ready because it is invalid", self.id)
+            logger.info("%s Not ready because it is invalid", self.name)
             return False
         # source modules can be generators that
         # cannot run out of input, unless they decide so.
@@ -541,7 +530,7 @@ class Module(six.with_metaclass(ModuleMeta, object)):
                 ts = slot.last_update()
 
                 # logger.debug('for %s[%s](%d)->%s(%d)',
-                #              slot.input_module.id, slot.input_name, in_ts,
+                #              slot.input_module.name, slot.input_name, in_ts,
                 #              slot.output_name, ts)
                 if slot.has_buffered() or in_ts > ts:
                     ready_count += 1
@@ -552,13 +541,13 @@ class Module(six.with_metaclass(ModuleMeta, object)):
             # if all the input slot modules are terminated or invalid
             if not self.is_input() and in_count != 0 and term_count == in_count:
                 logger.info('%s becomes zombie because all its input slots'
-                            ' are terminated', self.id)
+                            ' are terminated', self.name)
                 self.state = Module.state_zombie
                 return False
             # sources are always ready, and when 1 is ready, the module is.
             return in_count == 0 or ready_count != 0
         logger.error("%s Not ready because is in weird state %s",
-                     self.id, self.state_name[self.state])
+                     self.name, self.state_name[self.state])
         return False
 
     def cleanup_run(self, run_number):
@@ -590,7 +579,7 @@ class Module(six.with_metaclass(ModuleMeta, object)):
     def set_state(self, s):
         assert (s >= Module.state_created and
                 s <= Module.state_invalid), "State %s invalid in module %s" % (
-                    s, self.id)
+                    s, self.name)
         self._state = s
 
     def trace_stats(self, max_runs=None):
@@ -672,7 +661,7 @@ class Module(six.with_metaclass(ModuleMeta, object)):
         if quantum == 0:
             quantum = 0.1
             logger.error('Quantum is 0 in %s, setting it to a'
-                         ' reasonable value', self.id)
+                         ' reasonable value', self.name)
         self.state = Module.state_running
         self._start_time = now
         self._end_time = self._start_time + quantum
@@ -721,7 +710,7 @@ class Module(six.with_metaclass(ModuleMeta, object)):
                 next_state = Module.state_zombie
                 run_step_ret['next_state'] = next_state
                 now = self.timer()
-                logger.debug("Exception in %s", self.id)
+                logger.debug("Exception in %s", self.name)
                 tracer.exception(now, run_number)
                 exception = e
                 self._had_error = True

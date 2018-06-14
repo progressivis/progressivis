@@ -40,7 +40,7 @@ def bench_this(to_decorate, module, env):
             user_time = ut_ - ut
             ld_avg_1, ld_avg_5, ld_avg_15 = os.getloadavg()
             tbl = env.bench_table
-            ins = tbl.insert().values(module_id=module.id,
+            ins = tbl.insert().values(module_id=module.name,
                                           elapsed_time=elapsed_time,
                                           sys_time=sys_time,
                                           user_time=user_time,

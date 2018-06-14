@@ -9,28 +9,14 @@ logger = logging.getLogger(__name__)
 class TimePredictor(object):
     default = None
 
+    def __init__(self):
+        self.name = None
+
     def fit(self, trace_df):
         pass
 
     def predict(self, duration, default_step):
         pass
-
-    @property
-    def id(self):
-        return self.get_id()
-
-    @id.setter
-    def id(self, n):
-        self.set_id(n)
-
-    def get_id(self):
-        if getattr(self, '_id'):
-            return self._id
-        return "<anonymous>"
-
-    def set_id(self, id_):
-        self._id = id_
-
 
 class ConstantTimePredictor(TimePredictor):
     def __init__(self, t):
@@ -61,19 +47,19 @@ class LinearTimePredictor(TimePredictor):
         durations = trace_df['duration'][step_traces]
         operations = trace_df['steps_run'][step_traces]
         logger.debug('LinearPredictor %s: Fitting %s/%s',
-                     self.id, operations, durations)
+                     self.name, operations, durations)
         num = operations.sum()
         time = durations.sum()
         if num == 0:
             return
         a = num / time
         logger.info('LinearPredictor %s Fit: %f operations per second',
-                    self.id, a)
+                    self.name, a)
         if a > 0:
             self.a = a
         else:
             logger.debug('LinearPredictor %s: predictor fit found'
-                         ' a negative slope, ignoring', self.id)
+                         ' a negative slope, ignoring', self.name)
 
     def predict(self, duration, default):
         if self.a == 0:
@@ -81,7 +67,7 @@ class LinearTimePredictor(TimePredictor):
         # TODO account for the confidence interval and take min of the 95% CI
         steps = int(np.max([0, np.ceil(duration*self.a)]))
         logger.debug('LinearPredictor %s: Predicts %d steps for duration %f',
-                     self.id, steps, duration)
+                     self.name, steps, duration)
         return steps
 
 if TimePredictor.default is None:
