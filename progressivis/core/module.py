@@ -11,17 +11,18 @@ import logging
 import numpy as np
 import six
 
-from progressivis.core.utils import (ProgressiveError, type_fullname)
 from progressivis.table.table_base import BaseTable
 from progressivis.table.table import Table
 from progressivis.table.dshape import dshape_from_dtype
 from progressivis.table.row import Row
-from progressivis.core.slot import (SlotDescriptor, Slot,
-                                    InputSlots, OutputSlots)
-from progressivis.core.tracer_base import Tracer
-from progressivis.core.time_predictor import TimePredictor
-from progressivis.core.storagemanager import StorageManager
 from progressivis.storage import Group
+
+from .scheduler_base import BaseScheduler
+from .utils import (ProgressiveError, type_fullname)
+from .slot import (SlotDescriptor, Slot, InputSlots, OutputSlots)
+from .tracer_base import Tracer
+from .time_predictor import TimePredictor
+from .storagemanager import StorageManager
 
 if six.PY2:  # pragma no cover
     from inspect import getargspec as getfullargspec
@@ -76,8 +77,7 @@ class Module(six.with_metaclass(ModuleMeta, object)):
                  output_descriptors=None,
                  **kwds):
         if scheduler is None:
-            from .scheduler import Scheduler
-            scheduler = Scheduler.default
+            scheduler = BaseScheduler.default
         self._scheduler = scheduler
         if name is None:
             name = self._scheduler.generate_name(self.pretty_typename())
@@ -436,9 +436,8 @@ class Module(six.with_metaclass(ModuleMeta, object)):
         if self.validate_inouts():
             self.state = Module.state_blocked
             return True
-        else:
-            self.state = Module.state_invalid
-            return False
+        self.state = Module.state_invalid
+        return False
 
     def get_data(self, name):
         if name == Module.TRACE_SLOT:
