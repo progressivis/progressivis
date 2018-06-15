@@ -75,9 +75,9 @@ class IdColumnSelectedView(ColumnProxy):
     def changes(self, c):
         self._base.changes = c
 
-    def compute_updates(self, start, mid=None, cleanup=True):
+    def compute_updates(self, start, now, mid=None, cleanup=True):
         mask = self.update_mask
-        updates = self.base.compute_updates(start, mid, cleanup=cleanup)
+        updates = self.base.compute_updates(start, now, mid, cleanup=cleanup)
         updates.created &= mask
         updates.updated &= mask
         updates.deleted &= mask

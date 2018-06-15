@@ -47,10 +47,10 @@ class IdColumnSlicedView(ColumnSlicedView):
         return self._update_mask
 
 
-    def compute_updates(self, start, mid=None, cleanup=True):
+    def compute_updates(self, start, now, mid=None, cleanup=True):
         #TODO the mask should be maintained in ID space, not index space
         mask = self.update_mask
-        updates = self._base.compute_updates(start, mid, cleanup=True)
+        updates = self._base.compute_updates(start, now, mid, cleanup=True)
         updates.created &= mask
         updates.updated &= mask
         updates.deleted &= mask

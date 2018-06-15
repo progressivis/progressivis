@@ -26,8 +26,7 @@ class Bookmark(object):
 
 class TableChanges(BaseChanges):
     "Keep track of changes in tables"
-    def __init__(self, scheduler):
-        self.scheduler = scheduler
+    def __init__(self):
         self._times = []     # list of times sorted
         self._bookmarks = [] # list of bookmarks synchronized with times
         self._mid_time = {}  # time associated with last mid update
@@ -101,9 +100,9 @@ class TableChanges(BaseChanges):
             return
         update.add_deleted(locs)
 
-    def compute_updates(self, last, mid, cleanup=True):
+    def compute_updates(self, last, now, mid, cleanup=True):
         assert mid is not None
-        time = self.scheduler.run_number()
+        time = now
         if last == 0:
             self._save_time(time, mid)
             return None

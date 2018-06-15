@@ -436,13 +436,15 @@ class BaseTable(six.with_metaclass(ABCMeta, object)):
             raise RuntimeError('Table has no index')
         self._ids.changes = tablechange
 
-    def compute_updates(self, start, mid):
+    def compute_updates(self, start, now, mid):
         """Compute the updates (delta) that happened to this table since the last call.
 
         Parameters
         ----------
         start: integer
-            Start si interpreted as a virtual time for `now`
+            Start is interpreted as a virtual time for `last time`
+        now: integer
+            Start is interpreted as a virtual time for `now`
         mid: hashable object
             An identifier for the object that will ask for updates,
             usually the name of a slot.
@@ -453,7 +455,7 @@ class BaseTable(six.with_metaclass(ABCMeta, object)):
         """
         if self._ids is None:
             return None
-        return self._ids.compute_updates(start, mid)
+        return self._ids.compute_updates(start, now, mid)
 
     def __getitem__(self, key):
         fast = False # hack, use t[['a', 'b'], 1] to get a list instead of a TableView

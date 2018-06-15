@@ -29,7 +29,7 @@ class TestTableChangeManager(ProgressiveTest):
         col_a = table['a']
         col_b = table['b']
         s = self.scheduler
-        table.changes = TableChanges(s)
+        table.changes = TableChanges()
         s._run_number = 1
         last = s._run_number
         slot = FakeSlot(self.scheduler, table)

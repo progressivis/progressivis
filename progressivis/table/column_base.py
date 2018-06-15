@@ -235,11 +235,11 @@ class BaseColumn(six.with_metaclass(ABCMeta, object)):
             raise RuntimeError('Column has no index')
         self.index.changes = changemanager
 
-    def compute_updates(self, start, mid=None, cleanup=True):
+    def compute_updates(self, start, now, mid=None, cleanup=True):
         "Return the updates of this column managed by the index"
         if self.index is None:
             return None
-        return self.index.compute_updates(start, mid, cleanup)
+        return self.index.compute_updates(start, now, mid, cleanup)
 
     def unary(self, operation, **kwargs):
         "Unary function manager"

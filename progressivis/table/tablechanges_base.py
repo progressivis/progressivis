@@ -29,6 +29,6 @@ class BaseChanges(six.with_metaclass(ABCMeta, object)):
         pass
 
     @abstractmethod
-    def compute_updates(self, last, mid, cleanup=True):
+    def compute_updates(self, last, now, mid, cleanup=True):
         "Compute and return the list of changes as an IndexUpdate or None"
         return None

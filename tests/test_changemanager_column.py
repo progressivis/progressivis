@@ -22,7 +22,7 @@ class TestColumnChangeManager(ProgressiveTest):
         #pylint: disable=protected-access
         column = Column('test_changemanager_column', None, data=np.array([ 1, 2, 3]))
         s = self.scheduler
-        column.changes = TableChanges(s)
+        column.changes = TableChanges()
         s._run_number = 1
         last = s._run_number
         slot = FakeSlot(self.scheduler, column)
