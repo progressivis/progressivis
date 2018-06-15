@@ -160,7 +160,10 @@ class ProgressivisBlueprint(Blueprint):
     def tick_module(self, module, run_number):
         "Run when a module has run"
         # pylint: disable=no-self-use
-        self.emit_tick(module.name, run_number, payload=module.to_json())
+        payload = None
+        if module.is_visualization():
+            payload = module.to_json()
+        self.emit_tick(module.name, run_number, payload=payload)
 
     def get_log(self):
         "Return the log"
