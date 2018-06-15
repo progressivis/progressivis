@@ -9,9 +9,8 @@ from ..core.slot import Slot
 class FakeSlot(object):
     # pylint: disable=too-few-public-methods
     "Fake slot to provide data to inner change manager"
-    __fields__ = ('scheduler', 'data')
-    def __init__(self, scheduler, data):
-        self.scheduler = scheduler
+    __fields__ = ('data')
+    def __init__(self, data):
         self.data = data
 
 class TableSelectedChangeManager(BitmapChangeManager):
@@ -25,7 +24,7 @@ class TableSelectedChangeManager(BitmapChangeManager):
                  buffer_deleted=False):
         data = slot.data()
         assert isinstance(data, TableSelectedView)
-        bmslot = FakeSlot(slot.scheduler(), data.selection) # not required formally
+        bmslot = FakeSlot(data.selection) # not required formally
         super(TableSelectedChangeManager, self).__init__(
             bmslot,
             buffer_created,

@@ -9,7 +9,7 @@ from progressivis.table.tablechanges import TableChanges
 
 from . import ProgressiveTest
 
-class FakeSlot(namedtuple('FakeSlot', ['scheduler', 'table'])):
+class FakeSlot(namedtuple('FakeSlot', ['table'])):
     "Fake Slot for ChangeManager"
     def data(self):
         "Return the table"
@@ -32,7 +32,7 @@ class TestTableChangeManager(ProgressiveTest):
         table.changes = TableChanges()
         s._run_number = 1
         last = s._run_number
-        slot = FakeSlot(self.scheduler, table)
+        slot = FakeSlot(table)
 
         mid1 = 1
         changemanager = TableChangeManager(slot,

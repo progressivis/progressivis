@@ -6,8 +6,7 @@ from progressivis.table.tablechanges import TableChanges
 import numpy as np
 
 class FakeSlot(object):
-    def __init__(self, scheduler, table):
-        self.scheduler = scheduler
+    def __init__(self, table):
         self.table = table
 
     def data(self):
@@ -25,7 +24,7 @@ class TestColumnChangeManager(ProgressiveTest):
         column.changes = TableChanges()
         s._run_number = 1
         last = s._run_number
-        slot = FakeSlot(self.scheduler, column)
+        slot = FakeSlot(column)
 
         mid1 = 1
         cm = ColumnChangeManager(slot, buffer_updated=True,buffer_deleted=True)

@@ -6,7 +6,7 @@ from progressivis.core.changemanager_bitmap import BitmapChangeManager
 from . import ProgressiveTest
 
 
-class FakeSlot(namedtuple('FakeSlot', ['scheduler', 'table'])):
+class FakeSlot(namedtuple('FakeSlot', ['table'])):
     def data(self):
         return self.table
 
@@ -14,7 +14,7 @@ class TestBitmapChangeManager(ProgressiveTest):
     def test_bitmapchangemanager(self):
         mid1 = 1
         bm = bitmap([1, 2, 3])
-        slot = FakeSlot(None, bm)
+        slot = FakeSlot(bm)
 
         cm = BitmapChangeManager(slot)
         self.assertEqual(cm.last_update(), 0)
