@@ -3,6 +3,13 @@ var module_id = null;
 function module_get(success, error) {
     return progressivis_get('/progressivis/module/get', success, error, module_id);
 }
+function module_set_hotline(status, error) {
+    if(status){
+        return progressivis_get('/progressivis/module/hotline_on', function(_){}, error, module_id);
+    } else {
+        return progressivis_get('/progressivis/module/hotline_off', function(_){}, error, module_id);
+    }
+}
 
 function module_input(data, success, error, module) {
     if (! module)

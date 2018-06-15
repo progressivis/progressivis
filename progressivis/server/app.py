@@ -61,6 +61,7 @@ class ProgressivisBlueprint(Blueprint):
         self._sids_for_path = {}
         self._run_number_for_sid = {}
         self.scheduler = None
+        self.hotline_set = set()
         self.start_logging()
 
     def start_logging(self):
@@ -161,7 +162,7 @@ class ProgressivisBlueprint(Blueprint):
         "Run when a module has run"
         # pylint: disable=no-self-use
         payload = None
-        if module.is_visualization():
+        if module.name in self.hotline_set:
             payload = module.to_json()
         self.emit_tick(module.name, run_number, payload=payload)
 
@@ -257,6 +258,23 @@ def _on_module_get(path):
     module.set_end_run(progressivis_bp.tick_module) # setting it multiple time is ok
     print('on_module_get', path)
     return module.to_json()
+
+def _on_module_hotline_on(path):
+    module = path_to_module(path)
+    if module is None:
+        return {'status': 'failed',
+                'reason': 'unknown module %s'%path}
+    progressivis_bp.hotline_set.add(module.name)
+
+def _on_module_hotline_off(path):
+    module = path_to_module(path)
+    if module is None:
+        return {'status': 'failed',
+                'reason': 'unknown module %s'%path}
+    try:
+        progressivis_bp.hotline_set.remove(module.name)
+    except:
+        pass
 
 def _on_module_input(data):
     data = flask_json.loads(data)
@@ -363,6 +381,8 @@ def start_server(scheduler=None, debug=False):
     socketio.on_event('/progressivis/scheduler/stop', _on_stop)
     socketio.on_event('/progressivis/scheduler', _on_scheduler)
     socketio.on_event('/progressivis/module/get', _on_module_get)
+    socketio.on_event('/progressivis/module/hotline_on', _on_module_hotline_on)
+    socketio.on_event('/progressivis/module/hotline_off', _on_module_hotline_off)
     socketio.on_event('/progressivis/module/df', _on_module_df)
     socketio.on_event('/progressivis/module/input', _on_module_input)
     socketio.on_event('/progressivis/module/quality', _on_module_quality)

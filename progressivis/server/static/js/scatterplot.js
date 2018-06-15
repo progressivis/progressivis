@@ -220,6 +220,7 @@ function scatterplot_refresh(json) {
     if(json && json.payload) {
         scatterplot_update(json.payload);}
     else {
+        module_set_hotline(true);
         module_get(scatterplot_update, error);
     }
 }
