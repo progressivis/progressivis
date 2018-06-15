@@ -11,7 +11,7 @@ import numpy as np
 
 from progressivis.core.utils import (integer_types, 
                                      all_string_or_int, all_bool,
-                                     indices_len,
+                                     indices_len, remove_nan,
                                      is_none_alike, inter_slice, fix_loc, get_physical_base)
 from progressivis.core.config import get_option
 from progressivis.core.bitmap  import bitmap
@@ -284,7 +284,7 @@ class BaseTable(six.with_metaclass(ABCMeta, object)):
                 line = [i]
                 for name in columns:
                     col = self[name]
-                    line.append(get_physical_base(col).loc[i])
+                    line.append(remove_nan(get_physical_base(col).loc[i]))
                 ret.append(line)
             return ret
         if orient in ('rows', 'records'):
