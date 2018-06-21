@@ -39,7 +39,7 @@ function progressivis_websocket_submit(text) {
         socket.send(text);
 }
 
-function layout_dict(dict, order) {
+function layout_dict(dict, order, value_func={}) {
     var i, k, v, layout = '';
 
     if (! order)
@@ -50,7 +50,11 @@ function layout_dict(dict, order) {
 	v = dict[k];
 	layout += ' <dt>'+k.toString()+':</dt>';
 	layout += ' <dd>';
-	layout += layout_value(v);
+    if(value_func[k]){
+	    layout += value_func[k](v);            
+    } else {
+	    layout += layout_value(v);
+    }
 	layout += '</dd>';
     }
     layout += '</dl>';

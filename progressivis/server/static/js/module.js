@@ -54,7 +54,13 @@ function module_show_dataframe(slot) {
     win.focus();
 }
 
-
+function speed_disp(v){
+    var SIZE = 15
+    var last = v[v.length-1];
+    last = last.toFixed(0);
+    last = last+"&nbsp;".repeat(SIZE-last.length);
+    return "<table><tr><td>"+last+"</td><td><span class='speedsparkline'>...</span></td></tr></table>"
+}
 function module_update_table(data) {
     var slots = data['output_slots'],
         buttons = '<div class="btn-group" role="group" aria-label="DataFrames">\n';
@@ -67,6 +73,7 @@ function module_update_table(data) {
     
     $('#module').html(layout_dict(data,
                                   ["classname",
+                                   "speed",
                                    "output_slots",
                                    "debug",
                                    "state",
@@ -75,7 +82,8 @@ function module_update_table(data) {
                                    "start_time",
                                    "end_time",
                                    "parameters",
-                                   "input_slots"]));
+                                   "input_slots"], value_func={speed: speed_disp}));
+    $('.speedsparkline').sparkline(data['speed']); 
     progressivis_get('/progressivis/module/quality', line_graph, error, module_id);
     $('.btn.slot').click(function() { module_show_dataframe($(this).text()); });
 }

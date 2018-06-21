@@ -354,7 +354,7 @@ class Table(BaseTable):
                 data[nam] = array[:, off[0]:off[1]]
         return Table(name, data=data, dshape=dshape, **kwds)
 
-    def eval(self, expr, inplace=False, name=None, result_object=None, user_dict=None):
+    def eval(self, expr, inplace=False, name=None, result_object=None, user_dict=None, as_slice=True):
         """Evaluate the ``expr`` on columns and return the result.
 
         Args:
@@ -420,6 +420,8 @@ class Table(BaseTable):
         if result_object == 'raw_numexpr':
             return res
         indices = np.where(res)[0]
+        if not as_slice and result_object == 'index':
+            return indices
         ix_slice = indices_to_slice(indices)
         if result_object == 'index':
             return ix_slice

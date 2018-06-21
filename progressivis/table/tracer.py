@@ -15,9 +15,9 @@ class TableTracer(Tracer):
                      "loadavg: real,"
                      "run: int64,"
                      "steps: int32,"
-                     "reads: int32,"
-                     "updates: int32,"
-                     "creates: int32,"
+                     #"reads: int32,"
+                     #"updates: int32,"
+                     #"creates: int32,"
                      "steps_run: int32,"
                      "next_state: int32,"
                      "progress_current: real,"
@@ -33,9 +33,9 @@ class TableTracer(Tracer):
         ('loadavg', np.nan),
         ('run', 0),
         ('steps', 0),
-        ('reads', 0),
-        ('updates', 0),
-        ('creates', 0),
+        #('reads', 0),
+        #('updates', 0),
+        #('creates', 0),
         ('steps_run', 0),
         ('next_state', 0),
         ('progress_current', 0.0),
@@ -98,9 +98,9 @@ class TableTracer(Tracer):
         row['end'] = ts
         row['duration'] = ts - row['start']
         row['detail'] = self.last_run_step_details if self.last_run_step_details else ''
-        last_run_start['reads'] += row['reads']
-        last_run_start['updates'] += row['updates']
-        last_run_start['creates'] += row['creates']
+        #last_run_start['reads'] += row['reads']
+        #last_run_start['updates'] += row['updates']
+        #last_run_start['creates'] += row['creates']
         last_run_start['steps_run'] += row['steps_run']
         if 'debug' in kwds:
             row['type'] = 'debug_step'
@@ -118,5 +118,24 @@ class TableTracer(Tracer):
     def terminated(self,ts,run_number,**kwds):
         self.last_run_details += ('terminated')
 
+    def get_speed(self, depth=15):
+        res = []
+        non_zero = self.table.eval('steps_run!=0', as_slice=False)
+        sz = min(depth, len(non_zero))
+        idx = non_zero[-sz:]
+        for d, s in zip(self.table['duration'].loc[idx],
+                            self.table['steps_run'].loc[idx]):
+            if np.isnan(d) or d==0:
+                if not s:
+                    continue
+                elt = np.nan
+                
+            else:
+                elt = float(s)/d
+            if np.isnan(elt):
+                elt = None
+            res.append(elt)
+        return res
+        
 if Tracer.default is None:
     Tracer.default = TableTracer

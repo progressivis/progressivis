@@ -233,6 +233,7 @@ class Module(six.with_metaclass(ModuleMeta, object)):
     def to_json(self, short=False):
         "Return a dictionary describing the module"
         s = self.scheduler()
+        speed_h = self.tracer.get_speed()
         json = {
             'is_running': s.is_running(),
             'is_terminated': s.is_terminated(),
@@ -243,7 +244,8 @@ class Module(six.with_metaclass(ModuleMeta, object)):
             'last_update': self._last_update,
             'state': self.state_name[self._state],
             'quality': self.get_quality(),
-            'progress': list(self.get_progress())
+            'progress': list(self.get_progress()),
+            'speed': speed_h
         }
         if self.order is not None:
             json['order'] = self.order
