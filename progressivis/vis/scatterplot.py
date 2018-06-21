@@ -216,7 +216,7 @@ class ScatterPlot(TableModule):
 
     def _to_json_impl(self, short=False):
         self.image = None
-        json = super(ScatterPlot, self).to_json(short)
+        json = super(ScatterPlot, self).to_json(short, with_speed=False)
         if short:
             return json
         return self.scatterplot_to_json(json, short)

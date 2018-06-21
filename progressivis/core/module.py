@@ -230,10 +230,12 @@ class Module(six.with_metaclass(ModuleMeta, object)):
         "Return the timer associated with this module"
         return self._scheduler.timer()
 
-    def to_json(self, short=False):
+    def to_json(self, short=False, with_speed=True):
         "Return a dictionary describing the module"
         s = self.scheduler()
-        speed_h = self.tracer.get_speed()
+        speed_h = [1.0]
+        if with_speed:
+            speed_h = self.tracer.get_speed()
         json = {
             'is_running': s.is_running(),
             'is_terminated': s.is_terminated(),
