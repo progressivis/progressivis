@@ -6,7 +6,8 @@ class TestBitmap(ProgressiveTest):
     def test_bitmap(self):
         bm = bitmap([0, 1, 2, 3])
         self.assertEqual(repr(bm), 'bitmap([0, 1, 2, 3])')
-        self.assertEqual(bm, bitmap(slice(0, 4)))
+        bm2 = bitmap(slice(0, 4))
+        self.assertEqual(bm, bm2)
         self.assertEqual(2, bm[2])
         b2 = bm[2:4]
         self.assertEqual(type(b2), bitmap)

@@ -109,7 +109,7 @@ setup(
                       "numcodecs>=0.5.2",
                       "bcolz>=1.1.2",
                       "datashape>=0.5.2",
-                      "pyroaring==0.1.7", 
+                      "pyroaring>=0.2.3",
                       "msgpack-python>=0.4.8",
                       "boto",
                       "s3fs",

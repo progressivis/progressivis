@@ -17,15 +17,16 @@ else:  # pragma no cover
     _integer_types = (int, np.integer)
 
 
-class bitmap(BitMap, object):
+class bitmap(BitMap,object):
     # pylint: disable=invalid-name
     """
     Derive from an efficient and light-weight ordered set of 32 bits integers.
     """
-    def __init__(self, values=None, copy_on_write=False):
+    def __new__(cls, values=None, copy_on_write=False, optimize=True, no_init=False):
         if isinstance(values, slice):
             values = range(values.start, values.stop, (values.step or 1))
-        BitMap.__init__(self, values, copy_on_write)
+        return super().__new__(cls, values, copy_on_write, optimize, no_init)
+        #BitMap.__init__(self, values, copy_on_write)
 
     def clear(self):
         "Clear the bitmap in-place"
