@@ -14,7 +14,7 @@ cd ../nyc-taxi
 for n in 01 02 03 04 05 06 07 08 09 10 11 12
 do
     if [ \! -f 'green_tripdata_2015-'$n'.csv.bz2' ]; then
-        wget -nc 'https://storage.googleapis.com/tlc-trip-data/2015/green_tripdata_2015-'$n'.csv'
+        wget -nc 'https://s3.amazonaws.com/nyc-tlc/trip+data/green_tripdata_2015-'$n'.csv'
         bzip2 'green_tripdata_2015-'$n'.csv' &
     fi
 done
@@ -22,7 +22,7 @@ done
 for n in 01 02 03 04 05 06 07 08 09 10 11 12
 do
     if [ \! -f 'yellow_tripdata_2015-'$n'.csv.bz2' ]; then
-        wget -nc 'https://storage.googleapis.com/tlc-trip-data/2015/yellow_tripdata_2015-'$n'.csv'
+        wget -nc 'https://s3.amazonaws.com/nyc-tlc/trip+data/yellow_tripdata_2015-'$n'.csv'
         bzip2 'yellow_tripdata_2015-'$n'.csv' &
     fi
 done
