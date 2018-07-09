@@ -39,7 +39,8 @@ class Variable(Constant):
         _ = self.scheduler().for_input(self)
         #last['_update'] = run_number
         self._table.add(last)
-        self.scheduler()._start_interaction = os.times().elapsed
+        _, _, _, _, elapsed = os.times()
+        self.scheduler()._start_interaction = elapsed
         return error
     
     def run_step(self,run_number,step_size,howlong):

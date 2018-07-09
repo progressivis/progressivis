@@ -396,7 +396,8 @@ class BaseScheduler(object):
         if self._shortcut_cycles_cnt <=0:
             self._module_selection = None
             if self._start_interaction:
-                print("INTERACTION TIME: ",  os.times().elapsed - self._start_interaction)
+                _, _, _, _, elapsed = os.times()
+                print("INTERACTION TIME: ",  elapsed - self._start_interaction)
                 self._start_interaction = 0
                 #sys.exit()
         else:
