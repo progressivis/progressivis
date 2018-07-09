@@ -2,7 +2,7 @@
 Base Scheduler class, runs progressive modules.
 """
 from __future__ import absolute_import, division, print_function
-
+import os, sys
 import time
 import logging
 import functools
@@ -63,9 +63,11 @@ class BaseScheduler(object):
         self._run_list = []
         self._run_index = 0
         self._module_selection = None
+        self._shortcut_cycles_cnt = 0
         self._selection_target_time = -1
         self.interaction_latency = interaction_latency
         self._reachability = {}
+        self._start_interaction = 0
 
     def create_lock(self):
         "Create a lock, fake in this class, real in the derived Scheduler"
@@ -321,7 +323,7 @@ class BaseScheduler(object):
         """Main scheduler loop."""
         # pylint: disable=broad-except
         for module in self._next_module():
-            if not (self._consider_module(module) and module.is_ready()):
+            if not (self._consider_module(module) and (module.is_ready() or self._shortcut_cycles_cnt)):
                 continue
             self._run_number += 1
             with self.lock:
@@ -391,7 +393,14 @@ class BaseScheduler(object):
 
     def _end_of_modules(self, first_run):
         # Reset interaction mode
-        self._module_selection = None
+        if self._shortcut_cycles_cnt <=0:
+            self._module_selection = None
+            if self._start_interaction:
+                print("INTERACTION TIME: ",  os.times().elapsed - self._start_interaction)
+                self._start_interaction = 0
+                #sys.exit()
+        else:
+            self._shortcut_cycles_cnt -= 1
         self._selection_target_time = -1
         new_list = [m for m in self._run_list if not m.is_terminated()]
         self._run_list = new_list
@@ -515,6 +524,7 @@ class BaseScheduler(object):
             if not self._module_selection:
                 logger.info('Starting input management')
                 self._module_selection = set(sel)
+                self._shortcut_cycles_cnt = 3
                 self._selection_target_time = (self.timer() +
                                                self.interaction_latency)
             else:
@@ -539,7 +549,7 @@ class BaseScheduler(object):
         if not self.has_input():
             return True
         if module.name in self._module_selection:
-            self._module_selection.remove(module.name)
+            #self._module_selection.remove(module.name)
             logger.debug('Module %s ready for scheduling', module.name)
             return True
         logger.debug('Module %s NOT ready for scheduling', module.name)

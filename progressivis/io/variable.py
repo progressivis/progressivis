@@ -7,7 +7,7 @@ logger = logging.getLogger(__name__)
 from progressivis import ProgressiveError, SlotDescriptor
 from progressivis.table.table import Table
 from progressivis.table.constant import Constant
-
+import os
 
 class Variable(Constant):
     def __init__(self, table=None, **kwds):
@@ -39,6 +39,7 @@ class Variable(Constant):
         _ = self.scheduler().for_input(self)
         #last['_update'] = run_number
         self._table.add(last)
+        self.scheduler()._start_interaction = os.times().elapsed
         return error
     
     def run_step(self,run_number,step_size,howlong):
