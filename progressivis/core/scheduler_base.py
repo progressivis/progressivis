@@ -63,7 +63,8 @@ class BaseScheduler(object):
         self._run_list = []
         self._run_index = 0
         self._module_selection = None
-        self._shortcut_cycles_cnt = 0
+        self._shortcut_once_again = False
+        self.interaction_witnesses = []
         self._selection_target_time = -1
         self.interaction_latency = interaction_latency
         self._reachability = {}
@@ -323,7 +324,7 @@ class BaseScheduler(object):
         """Main scheduler loop."""
         # pylint: disable=broad-except
         for module in self._next_module():
-            if not (self._consider_module(module) and (module.is_ready() or self._shortcut_cycles_cnt)):
+            if not (self._consider_module(module) and (module.is_ready() or self.has_input())):
                 continue
             self._run_number += 1
             with self.lock:
@@ -393,15 +394,20 @@ class BaseScheduler(object):
 
     def _end_of_modules(self, first_run):
         # Reset interaction mode
-        if self._shortcut_cycles_cnt <=0:
+        if self._shortcut_once_again:
+            self._shortcut_once_again = False
             self._module_selection = None
             if self._start_interaction:
-                _, _, _, _, elapsed = os.times()
-                print("INTERACTION TIME: ",  elapsed - self._start_interaction)
-                self._start_interaction = 0
-                #sys.exit()
-        else:
-            self._shortcut_cycles_cnt -= 1
+                    _, _, _, _, elapsed = os.times()
+                    print("INTERACTION TIME: ",  elapsed - self._start_interaction)
+                    self._start_interaction = 0
+                    #sys.exit()
+        elif self.interaction_witnesses and self.has_input():
+            if not sum([w._steps_acc for w in self.interaction_witnesses]):
+                self._shortcut_once_again = True
+            else:
+                print("STEPS_ACC: ", [w._steps_acc for w in self.interaction_witnesses])
+        
         self._selection_target_time = -1
         new_list = [m for m in self._run_list if not m.is_terminated()]
         self._run_list = new_list
@@ -525,7 +531,6 @@ class BaseScheduler(object):
             if not self._module_selection:
                 logger.info('Starting input management')
                 self._module_selection = set(sel)
-                self._shortcut_cycles_cnt = 3
                 self._selection_target_time = (self.timer() +
                                                self.interaction_latency)
             else:
@@ -558,7 +563,7 @@ class BaseScheduler(object):
 
     def time_left(self):
         "Return the time left to run for this slot."
-        if self._selection_target_time <= 0:
+        if self._selection_target_time <= 0 and not self.has_input():
             logger.error('time_left called with no target time')
             return 0
         return max(0, self._selection_target_time - self.timer())
