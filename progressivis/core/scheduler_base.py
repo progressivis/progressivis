@@ -407,7 +407,8 @@ class BaseScheduler(object):
                 self._shortcut_once_again = True
             else:
                 print("STEPS_ACC: ", [w._steps_acc for w in self.interaction_witnesses])
-        
+        else:
+            self._module_selection = None
         self._selection_target_time = -1
         new_list = [m for m in self._run_list if not m.is_terminated()]
         self._run_list = new_list
