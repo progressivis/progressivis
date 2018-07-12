@@ -2,7 +2,7 @@
 Base Scheduler class, runs progressive modules.
 """
 from __future__ import absolute_import, division, print_function
-import os, sys
+import os, sys, io
 import time
 import logging
 import functools
@@ -26,6 +26,7 @@ logger = logging.getLogger(__name__)
 
 __all__ = ['BaseScheduler']
 
+from .utils import PROFILE_IT
 
 class BaseScheduler(object):
     "Base Scheduler class, runs progressive modules"
@@ -404,6 +405,15 @@ class BaseScheduler(object):
                     print("INTERACTION TIME: ",  elapsed - self._start_interaction)
                     self._start_interaction = 0
                     #sys.exit()
+            if PROFILE_IT:
+                self.cprof.disable()
+                import pstats
+                for sortby, sz in PROFILE_IT.items():
+                    s = io.StringIO()
+                    ps = pstats.Stats(self.cprof, stream=s).sort_stats(sortby)
+                    ps.print_stats()
+                    print(s.getvalue()[:sz])
+                sys.exit()
         elif self.interaction_witnesses and self.has_input():
             if not sum([w._steps_acc for w in self.interaction_witnesses]):
                 self._shortcut_once_again = True

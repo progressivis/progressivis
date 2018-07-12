@@ -8,6 +8,7 @@ from progressivis import ProgressiveError, SlotDescriptor
 from progressivis.table.table import Table
 from progressivis.table.constant import Constant
 import os
+from ..core.utils import PROFILE_IT
 
 class Variable(Constant):
     def __init__(self, table=None, **kwds):
@@ -41,6 +42,12 @@ class Variable(Constant):
         self._table.add(last)
         _, _, _, _, elapsed = os.times()
         self.scheduler()._start_interaction = elapsed
+        if PROFILE_IT:
+            import cProfile, pstats, io
+            if not hasattr(self.scheduler(), 'cprof'):
+                #import pdb;pdb.set_trace()
+                self.scheduler().cprof = cProfile.Profile()
+                self.scheduler().cprof.enable()
         return error
     
     def run_step(self,run_number,step_size,howlong):
