@@ -328,9 +328,7 @@ class BaseScheduler(object):
                 continue
             self._run_number += 1
             with self.lock:
-                if not self.has_input():
-                    # suspend tick processing until interaction is finished
-                    self._run_tick_procs() 
+                self._run_tick_procs() 
                 module.run(self._run_number)
 
     def _next_module(self):
