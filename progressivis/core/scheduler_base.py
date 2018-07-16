@@ -64,7 +64,6 @@ class BaseScheduler(object):
         self._run_list = []
         self._run_index = 0
         self._module_selection = None
-        self._shortcut_once_again = False
         self.interaction_witnesses = []
         self._selection_target_time = -1
         self.interaction_latency = interaction_latency
@@ -397,26 +396,23 @@ class BaseScheduler(object):
 
     def _end_of_modules(self, first_run):
         # Reset interaction mode
-        if self._shortcut_once_again:
-            self._shortcut_once_again = False
-            self._module_selection = None
-            if self._start_interaction:
+        if self.interaction_witnesses and self.has_input():
+            if not sum([w._steps_acc for w in self.interaction_witnesses]):
+                self._module_selection = None
+                if self._start_interaction:
                     _, _, _, _, elapsed = os.times()
                     print("INTERACTION TIME: ",  elapsed - self._start_interaction)
                     self._start_interaction = 0
                     #sys.exit()
-            if PROFILE_IT:
-                self.cprof.disable()
-                import pstats
-                for sortby, sz in PROFILE_IT.items():
-                    s = io.StringIO()
-                    ps = pstats.Stats(self.cprof, stream=s).sort_stats(sortby)
-                    ps.print_stats()
-                    print(s.getvalue()[:sz])
-                sys.exit()
-        elif self.interaction_witnesses and self.has_input():
-            if not sum([w._steps_acc for w in self.interaction_witnesses]):
-                self._shortcut_once_again = True
+                if PROFILE_IT:
+                    self.cprof.disable()
+                    import pstats
+                    for sortby, sz in PROFILE_IT.items():
+                        s = io.StringIO()
+                        ps = pstats.Stats(self.cprof, stream=s).sort_stats(sortby)
+                        ps.print_stats()
+                        print(s.getvalue()[:sz])
+                    sys.exit()
             else:
                 print("STEPS_ACC: ", [w._steps_acc for w in self.interaction_witnesses])
         else:
@@ -438,7 +434,6 @@ class BaseScheduler(object):
                 logger.info('sleeping %f', 0.2)
                 time.sleep(0.2)
         self._run_index = 0
-
 
     def _run_tick_procs(self):
         #pylint: disable=broad-except
