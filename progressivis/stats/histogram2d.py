@@ -4,7 +4,7 @@ from progressivis.core.utils import indices_len, fix_loc
 from progressivis.core.slot import SlotDescriptor
 from progressivis.table.module import TableModule
 from progressivis.table.table import Table
-
+from fast_histogram import histogram2d
 #from timeit import default_timer
 import numpy as np
 
@@ -103,14 +103,13 @@ class Histogram2D(TableModule):
             logger.info('ydelta is %f', ydelta)
         return (xdelta, ydelta)
 
-    def run_step(self, run_number, step_size, howlong):
+    def run_step(self, run_number, step_size, howlong):        
         dfslot = self.get_input_slot('table')
         dfslot.update(run_number)
         min_slot = self.get_input_slot('min')
         min_slot.update(run_number)
         max_slot = self.get_input_slot('max')
         max_slot.update(run_number)
-
         if dfslot.updated.any() or dfslot.deleted.any():
             logger.debug('reseting histogram')
             self.reset()
@@ -172,14 +171,20 @@ class Histogram2D(TableModule):
             bins = [p.ybins, p.xbins]
         if len(x)>0:
             #t = default_timer()
-            histo, xedges, yedges = np.histogram2d(y, x,
-                                                   bins=bins,
-                                                   range=[[ymin, ymax], [xmin, xmax]],
-                                                   normed=False)
+            # using fast_histogram
+            histo = histogram2d(y, x,
+                                bins=bins,
+                                range=[[ymin, ymax], [xmin, xmax]])
+            # using numpy histogram
+            #histo, xedges, yedges = np.histogram2d(y, x,
+            #                                           bins=bins,
+            #                                           range=[[ymin, ymax], [xmin, xmax]],
+            #                                           normed=False)
             #t = default_timer()-t
             #print('Time for histogram2d: %f'%t)
-            self._xedges = xedges
-            self._yedges = yedges
+            #self._xedges = xedges
+            #self._yedges = yedges
+                
         else:
             histo = None
             cmax = 0
