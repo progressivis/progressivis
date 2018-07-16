@@ -39,7 +39,7 @@ class Heatmap(TableModule):
         super(Heatmap, self).__init__(table_slot='heatmap', **kwds)
         self.colormap = colormap
         self.default_step_size = 1
-
+        self._img_cache = None
         name = self.generate_table_name('Heatmap')
         params = self.params
         # if params.filename is None:
@@ -52,6 +52,9 @@ class Heatmap(TableModule):
         return 1
 
     def run_step(self, run_number, step_size, howlong):
+        s = self.scheduler()
+        #if s.has_input() and not s._shortcut_once_again:
+        #    return self._return_run_step(self.state_blocked, steps_run=1)
         dfslot = self.get_input_slot('array')
         input_df = dfslot.data()
         dfslot.update(run_number)
@@ -62,10 +65,24 @@ class Heatmap(TableModule):
             steps = indices_len(indices)
             if steps == 0:
                 return self._return_run_step(self.state_blocked, steps_run=1)
+        self._img_cache = None
+        return self._return_run_step(self.state_blocked, steps_run=1)
+
+
+    def process_img(self):
+        #if self.scheduler().has_input():
+        #    import pdb;pdb.set_trace()
+        if self._img_cache:
+            return self._img_cache
+        dfslot = self.get_input_slot('array')
+        input_df = dfslot.data()
         with dfslot.lock:
-            histo = input_df.last()['array']
+            last_row = input_df.last()
+            if not last_row:
+                return None
+            histo = last_row['array']
         if histo is None:
-            return self._return_run_step(self.state_blocked, steps_run=1)
+            return None
         params = self.params
         cmax = params.cmax
         if np.isnan(cmax):
@@ -76,43 +93,21 @@ class Heatmap(TableModule):
         high = params.high
         low = params.low
         try:
+            #print("heatmap works ********************", self.scheduler().has_input())
             image = sp.misc.toimage(sp.special.cbrt(histo),
                                     cmin=cmin, cmax=cmax,
                                     high=high, low=low, mode='I')
             image = image.transpose(Image.FLIP_TOP_BOTTOM)
-            filename = params.filename
         except:
-            image = None
-            filename = None
-        if filename is not None:
-            try:
-                if re.search(r'%(0[\d])?d', filename):
-                    filename = filename % (run_number)
-                filename = self.storage.fullname(self, filename)
-                 #TODO should do it atomically since it will be called 4 times with the same fn
-                image.save(filename, format='PNG') #, bits=16)
-                logger.debug('Saved image %s', filename)
-                image = None
-            except:
-                logger.error('Cannot save image %s', filename)
-                raise
-        else:
-            buffered = six.BytesIO()
-            image.save(buffered, format='PNG', bits=16)
-            res = base64.b64encode(buffered.getvalue())
-            if six.PY3:
-                res = str(base64.b64encode(buffered.getvalue()), "ascii")
-            filename = "data:image/png;base64,"+res
-
-        if len(self._table) == 0 or self._table.last()['time'] != run_number:
-            values = {'filename': filename, 'time': run_number}
-            with self.lock:
-                self._table.add(values)
-        return self._return_run_step(self.state_blocked,
-                                     steps_run=1,
-                                     reads=1,
-                                     updates=1)
-
+            return None
+        buffered = six.BytesIO()
+        image.save(buffered, format='PNG', bits=16)
+        res = base64.b64encode(buffered.getvalue())
+        if six.PY3:
+            res = str(base64.b64encode(buffered.getvalue()), "ascii")
+        self._img_cache = "data:image/png;base64,"+res
+        return self._img_cache
+    
     def is_visualization(self):
         return True
 
@@ -141,27 +136,6 @@ class Heatmap(TableModule):
                         'xmax': row['xmax'],
                         'ymax': row['ymax']
                     }
-        with self.lock:
-            df = self._table
-            if df is not None and self._last_update != 0:
-                row = df.last()
-                json['image'] = row['filename']
-                #"/progressivis/module/image/%s?run_number=%d"%(self.name, row['time'])
+        json['image'] = self.process_img()
         return json
 
-    def get_image(self, run_number=None):
-        if self._table is None or len(self._table) == 0:
-            return None
-        last = self._table.last()
-        if run_number is None or run_number >= last['time']:
-            run_number = last['time']
-            filename = last['filename']
-        else:
-            time = self._table['time']
-            idx = np.where(time == run_number)[0]
-            if len(idx) == 0:
-                filename = last['filename']
-            else:
-                filename = self._table['filename'][idx[0]]
-
-        return filename

@@ -163,7 +163,10 @@ class ProgressivisBlueprint(Blueprint):
         # pylint: disable=no-self-use
         payload = None
         if module.name in self.hotline_set:
-            payload = module.to_json()
+            if module.scheduler().has_input():
+                payload = '__PASS__'
+            else:
+                payload = module.to_json()
         self.emit_tick(module.name, run_number, payload=payload)
 
     def get_log(self):
