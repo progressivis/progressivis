@@ -27,8 +27,6 @@ logger = logging.getLogger(__name__)
 
 __all__ = ['BaseScheduler']
 
-from .utils import PROFILE_IT
-
 
 class _InteractionOpts(object):
     def __init__(self, starving_mods=None, max_time=None, max_iter=None):
