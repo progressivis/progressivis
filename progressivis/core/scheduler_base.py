@@ -8,7 +8,7 @@ import logging
 import functools
 from copy import copy
 #from collections import deque
-
+from collections import Iterable
 from timeit import default_timer
 from uuid import uuid4
 import six
@@ -22,18 +22,28 @@ from .utils import ProgressiveError, AttributeDict, FakeLock
 from .synchronized import synchronized
 from .toposort import toposort
 
+
 logger = logging.getLogger(__name__)
 
 __all__ = ['BaseScheduler']
 
 from .utils import PROFILE_IT
 
+
+class _InteractionOpts(object):
+    def __init__(self, starving_mods=None, max_time=None, max_iter=None):
+        # TODO: checks ...
+        self.starving_mods = starving_mods
+        self.max_time = max_time
+        self.max_iter = max_iter
+
+    
+
 class BaseScheduler(object):
     "Base Scheduler class, runs progressive modules"
     # pylint: disable=too-many-public-methods,too-many-instance-attributes
     default = None
     _last_id = 0
-
     @classmethod
     def or_default(cls, scheduler):
         "Return the specified scheduler of, in None, the default one."
@@ -64,12 +74,65 @@ class BaseScheduler(object):
         self._run_list = []
         self._run_index = 0
         self._module_selection = None
-        self.interaction_witnesses = []
         self._selection_target_time = -1
         self.interaction_latency = interaction_latency
         self._reachability = {}
-        self._start_interaction = 0
+        self._start_inter = 0
+        self._inter_cycles_cnt = 0
+        self._interaction_opts = None
 
+
+    def set_interaction_opts(self, starving_mods=None, max_time=None, max_iter=None):
+        if starving_mods:
+            if not isinstance(starving_mods, Iterable):
+                raise ValueError("starving_mods must be iterable")
+            from .module import Module
+            for elt in starving_mods:
+                if not isinstance(elt, Module):
+                    raise ValueError("starving_mods  requires a list of Modules")
+        if max_time:
+            if not isinstance(max_time, (int, float)):
+                raise ValueError("max_time must be a float or an int")
+            if max_time <= 0:
+                raise ValueError("max_time must be positive")
+        if max_iter:
+            if not isinstance(max_iter, int):
+                raise ValueError("max_iter must be an int")
+            if max_iter <= 0:
+                raise ValueError("max_iter must be positive")
+        self._interaction_opts = _InteractionOpts(starving_mods, max_time, max_iter)
+        
+    def _proc_interaction_opts(self):
+        if not self.has_input():
+            return
+        if self._interaction_opts is None:
+            self._module_selection = None
+            self._inter_cycles_cnt = 0
+            return
+        if self._interaction_opts.starving_mods:
+            if not sum([w._steps_acc for w in self._interaction_opts.starving_mods]):
+                print("Exiting shortcut mode when data "
+                          "inputs on withesses were exhausted",
+                          self._interaction_opts.starving_mods)
+                self._module_selection = None
+                self._inter_cycles_cnt = 0
+                return
+        if self._interaction_opts.max_time:
+            duration = default_timer()-self._start_inter
+            if  duration >= self._interaction_opts.max_time:
+                print("Exiting shortcut mode on time out, duration: ", duration)
+                self._module_selection = None
+                self._inter_cycles_cnt = 0
+                return
+                
+        if self._interaction_opts.max_iter:
+            if self._inter_cycles_cnt >= self._interaction_opts.max_iter:
+                self._module_selection = None
+                self._inter_cycles_cnt = 0
+                print("Exiting shortcut mode after ", self._interaction_opts.max_iter, " cycles")
+            else:
+                self._inter_cycles_cnt += 1
+        
     def create_lock(self):
         "Create a lock, fake in this class, real in the derived Scheduler"
         # pylint: disable=no-self-use
@@ -338,7 +401,8 @@ class BaseScheduler(object):
         self._run_index = 0
         first_run = self._run_number
         input_mode = self.has_input()
-        start_inter = 0
+        self._start_inter = 0
+        self._inter_loops_cnt = 0
         while not self._stopped:
             # Apply changes in the dataflow
             if self._new_module_available():
@@ -351,12 +415,13 @@ class BaseScheduler(object):
             # Check for interactive input mode
             if input_mode != self.has_input():
                 if input_mode: # end input mode
-                    print('Ending interactive mode after', default_timer()-start_inter)
-                    start_inter = 0
+                    print('Ending interactive mode after', default_timer()-self._start_inter)
+                    self._start_inter = 0
+                    self._inter_loops_cnt = 0
                     input_mode = False
                 else:
-                    start_inter = default_timer()
-                    print('Starting interactive mode at', start_inter)
+                    self._start_inter = default_timer()
+                    print('Starting interactive mode at', self._start_inter)
                     input_mode = True
                 # Restart from beginning
                 self._run_index = 0
@@ -394,27 +459,8 @@ class BaseScheduler(object):
 
     def _end_of_modules(self, first_run):
         # Reset interaction mode
-        if self.interaction_witnesses and self.has_input():
-            if not sum([w._steps_acc for w in self.interaction_witnesses]):
-                self._module_selection = None
-                if self._start_interaction:
-                    _, _, _, _, elapsed = os.times()
-                    print("INTERACTION TIME: ",  elapsed - self._start_interaction)
-                    self._start_interaction = 0
-                    #sys.exit()
-                if PROFILE_IT:
-                    self.cprof.disable()
-                    import pstats
-                    for sortby, sz in PROFILE_IT.items():
-                        s = io.StringIO()
-                        ps = pstats.Stats(self.cprof, stream=s).sort_stats(sortby)
-                        ps.print_stats()
-                        print(s.getvalue()[:sz])
-                    sys.exit()
-            else:
-                print("STEPS_ACC: ", [w._steps_acc for w in self.interaction_witnesses])
-        else:
-            self._module_selection = None
+        #import pdb;pdb.set_trace()
+        self._proc_interaction_opts()
         self._selection_target_time = -1
         new_list = [m for m in self._run_list if not m.is_terminated()]
         self._run_list = new_list

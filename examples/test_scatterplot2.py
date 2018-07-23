@@ -56,8 +56,9 @@ PR = Every(scheduler=s)
 PR.input.df = CSV.output.table
 SCATTERPLOT = ScatterPlot('pickup_longitude', 'pickup_latitude', scheduler=s, approximate=True)
 SCATTERPLOT.create_dependent_modules(CSV, 'table')
-s.interaction_witnesses = [SCATTERPLOT.sample, SCATTERPLOT.histogram2d]
-
+#s.set_interaction_opts(starving_mods=[SCATTERPLOT.sample, SCATTERPLOT.histogram2d], max_iter=3, max_time=1.5)
+#s.set_interaction_opts(max_time=1.5)
+s.set_interaction_opts(max_iter=3)
 if __name__ == '__main__':
     s.start()
     while True:
