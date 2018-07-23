@@ -80,7 +80,6 @@ class TestScatterPlot(ProgressiveTest):
         decorate(s, VariablePatch1("variable_1"))
         decorate(s, VariablePatch2("variable_2"))
         decorate(s, ScatterPlotPatch("scatter_plot_1"))
-        #sp.scheduler().interaction_witnesses = [sp.sample, sp.histogram2d]
         sp.scheduler().start(idle_proc=idle_proc)
         s.join()
         js = sp.to_json()

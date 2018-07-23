@@ -30,10 +30,6 @@ function float_equal(a, b) {
 }
 
 function scatterplot_update(data) {
-    if(data == '__PASS__'){
-        //console.log('__PASS__');
-        return;
-    } 
     var wt = $('#module').attr('class').indexOf("active") >= 0;
     module_update(data, with_table=wt);
     scatterplot_update_vis(data);

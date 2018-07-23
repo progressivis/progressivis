@@ -44,15 +44,6 @@ try:
 except:  # ModuleNotFoundError:
     pass
 
-PROFILE_IT = False
-# in order to profile interaction, create in this directory profile_it.py
-# containing the variable PROFILE_IT=dict(sortby1=size1, sortby2=size2)
-# example : PROFILE_IT = dict(tottime=3000, cumtime=10000)
-try:
-    from .profile_it import PROFILE_IT
-except:  # ModuleNotFoundError:
-    pass
-
 
 class FakeLock(object):
     def acquire(self, blocking=1):

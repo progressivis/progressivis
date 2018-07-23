@@ -127,9 +127,9 @@ class ScatterPlot(TableModule):
         return self._return_run_step(self.state_blocked, steps_run=1,
                                      reads=1, updates=1)
 
-    #def run(self, run_number):
-    #    super(ScatterPlot, self).run(run_number)
-    #    self._json_digest = self._to_json_impl()
+    def run(self, run_number):
+        super(ScatterPlot, self).run(run_number)
+        self._json_digest = self._to_json_impl()
 
     def to_json(self, short=False):
         if self._json_digest:
