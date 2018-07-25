@@ -7,7 +7,8 @@ from progressivis.table.table import Table
 from fast_histogram import histogram2d
 #from timeit import default_timer
 import numpy as np
-
+from pyfastpfor import *
+import scipy as sp
 import logging
 logger = logging.getLogger(__name__)
 
@@ -44,6 +45,8 @@ class Histogram2D(TableModule):
         self._xedges = None
         self._yedges = None
         self._bounds = None
+        self._heatmap_mode = 'full'
+        self._heatmap_cache = None
         self._table = Table(self.generate_table_name('Histogram2D'),
                             dshape=Histogram2D.schema,
                             chunks={'array': (1, 64, 64)},
@@ -213,5 +216,51 @@ class Histogram2D(TableModule):
                 table.add(values)
             else:
                 table.iloc[last.row] = values
-
+        self.heatmap_cache_full()
         return self._return_run_step(self.next_state(dfslot), steps_run=steps)
+    def heatmap_cache_full(self):
+        if not self._table:
+            return
+        json_ = {'columns': [self.x_column, self.y_column]}
+        with self.lock:
+            histo_df = self._table
+            if histo_df is not None and len(histo_df) != 0:
+                if not len(histo_df):
+                    return
+                row = histo_df.last()
+                if not (np.isnan(row['xmin']) or np.isnan(row['xmax'])
+                        or np.isnan(row['ymin']) or np.isnan(row['ymax'])):
+                    json_['bounds'] = {
+                        'xmin': row['xmin'],
+                        'ymin': row['ymin'],
+                        'xmax': row['xmax'],
+                        'ymax': row['ymax']
+                    }
+                    data = sp.special.cbrt(row['array'])
+                    inp = data.astype(np.uint32).flatten()
+                    arrSize = len(inp)
+                    inpComp = np.zeros(arrSize + 1024, dtype = np.uint32, order = 'C')
+                    codec = getCodec('vbyte')
+                    compSize = codec.encodeArray(inp, arrSize, inpComp, len(inpComp))
+                    print("compSize: ", compSize, "arrSize: ", arrSize)
+                    print('Compression ratio: %g' % (float(compSize)/arrSize))
+                    json_['image'] = inpComp[:compSize-1]
+                    self._heatmap_cache = json_
+    def heatmap_to_json(self, json, short=False):
+        if self._heatmap_cache:
+            #import pdb;pdb.set_trace()
+            json.update(self._heatmap_cache)
+        return json
+    
+    
+    def is_visualization(self):
+        return True
+
+    def get_visualization(self):
+        return "heatmap"
+
+    def to_json(self, short=False):
+        json = super(Histogram2D, self).to_json(short)
+        if short:
+            return json
+        return self.heatmap_to_json(json, short)

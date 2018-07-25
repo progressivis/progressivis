@@ -14,8 +14,11 @@ Scatterplot for module {{id}}
 <script src="{{ url_for('progressivis.server.progressivis_file', filename='js/line_graph.js') }}"></script>
 <script src="{{ url_for('progressivis.server.progressivis_file', filename='js/module.js') }}"></script>
 <script src="{{ url_for('progressivis.server.progressivis_file', filename='js/history.js') }}"></script>
+<script src="{{ url_for('progressivis.server.progressivis_file', filename='lib/heatmap.js') }}"></script>
+<script src="{{ url_for('progressivis.server.progressivis_file', filename='lib/FastIntegerCompression.js/FastIntegerCompression.js') }}"></script>
 <script src="{{ url_for('progressivis.server.progressivis_file', filename='js/scatterplot.js') }}"></script>
 <script src="{{ url_for('progressivis.server.progressivis_file', filename='js/colormaps.js') }}"></script>
+
 {% endblock %}
 
 {% block script %}
@@ -28,7 +31,8 @@ $(document).ready(scatterplot_ready);
   <li><a href="#">Home</a></li>
   <li><a href="#">Scatterplot {{id}}</a></li>
 </ol>
-
+<div id="workHeatmap" style="width:512px; height:512px;"></div>
+<div id="witnessHeatmap" style="width:512px; height:512px;"><img>img...</img></div>
 <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
   <h1 class='page-header'>Scatterplot for Module {{id}}</h1>
 

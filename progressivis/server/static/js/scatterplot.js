@@ -18,7 +18,7 @@ var x     = d3.scaleLinear().range([0, width]),
         .on("zoom", scatterplot_zoomed);
 
 var view, gX, gY, zoomable;
-
+    var dataURL;
 const DEFAULT_SIGMA = 0;
 const DEFAULT_FILTER = "default";
 const MAX_PREV_IMAGES = 3;
@@ -62,6 +62,7 @@ var node_drag = d3.drag()
         .on("drag", scatterplot_dragmove)
         .on("end", scatterplot_dragend);
 
+
 function scatterplot_update_vis(rawdata) {
     var data = rawdata['scatterplot'],
         bounds = rawdata['bounds'],
@@ -87,7 +88,8 @@ function scatterplot_update_vis(rawdata) {
         zoomable.append("image")
             .attr("class", "heatmap")
             .style("pointer-events",  "none")
-            .attr("xlink:href", rawdata['image'])
+            //.attr("xlink:href", rawdata['image'])
+            .attr("xlink:href", dataURL)        
             .attr("preserveAspectRatio", "none")
             .attr("x", ix)
             .attr("y", iy)
@@ -147,7 +149,8 @@ function scatterplot_update_vis(rawdata) {
             .attr("y", iy)
             .attr("width",  iw)
             .attr("height", ih)
-            .attr("xlink:href", rawdata['image']);
+            //.attr("xlink:href", rawdata['image']);
+            .attr("xlink:href", dataURL);        
 
         svg.select(".heatmapCompare")
             .attr("x", ix)
@@ -155,8 +158,104 @@ function scatterplot_update_vis(rawdata) {
             .attr("width",  iw)
             .attr("height", ih);
     }
-    var imgSrc = rawdata['image'];
-    imageHistory.enqueueUnique(imgSrc);
+    function nZ(buff){
+        res = [];
+        for(i=0;i< buff.length;i++){
+            if(buff[i]>0){
+                res.push(buff[i]);
+            }
+        }
+        console.log("NZ: ", res);
+        return res;
+    }
+    function bufferToBase64(buf) {
+    var binstr = Array.prototype.map.call(buf, function (ch) {
+        return String.fromCharCode(ch);
+    }).join('');
+        return btoa(unescape(encodeURIComponent(binstr)));
+}
+    var mySetData = function(hmObj, data, min=0, max) {
+      // reset data arrays
+      hmObj._data = [];
+      hmObj._radi = [];
+      var xLen = 512; //data.length;
+      var yLen = 512; //data[0].length;
+      /*for(var i = 0; i < pointsLen; i++) {
+        hmObj._organiseData(dataPoints[i], false);
+        }
+      for (var i=0; i<xLen;i++){
+          for(var j=0; j<yLen;j++){
+              hmObj._store._organiseData({x: i, y: j,
+                                   value: data[yLen-1-j][i]}, false);
+          }
+          }*/
+      for (var i=0; i<xLen;i++){
+          for(var j=0; j<yLen;j++){
+              hmObj._store._organiseData({x: j, y: (yLen-i-1),
+                                   value: data[i*xLen+j]}, false);
+          }
+          }
+/*
+        for (var i=0; data.length;i++){
+          y_ = i%512;
+          x_ = (i-y_)/512;
+          console.log(x_, y_, data.length, data[i]);
+        hmObj._store._organiseData({x: x_, y: y_,
+                                   value: data[i]}, false);
+          
+      }*/
+      hmObj._max = max;
+      hmObj._min = min;
+      
+      hmObj._store._onExtremaChange();
+      hmObj._store._coordinator.emit('renderall', hmObj._store._getInternalData());
+      return hmObj;
+    }
+    //var imgSrc = rawdata['image'];
+    rawImg = rawdata['image'];
+    /*xLen = rawImg.length;
+    yLen = rawImg[0].length;
+    my_arr = Array(xLen*yLen);
+    for (var i=0; i<xLen;i++){
+        for(var j=0; j<yLen;j++){
+            my_arr[i*xLen+j]= {x: i, y: j, value: rawImg[j][i]};
+        }
+    }*/
+    //console.log(document.getElementById('workHeatmap'));
+    //if($("#workHeatmap").children().length==0){
+    $("#workHeatmap").html(""); //.width(iw).height(ih);
+    heatmapInst = h337.create({
+        container: document.getElementById('workHeatmap'),
+        maxOpacity: .95,
+          radius: 10,
+          blur: .95,
+    });
+    //$("#witnessHeatmap").html("");
+    //heatmapInst.setData({data: my_arr, min:0, max:rawdata['vmax']});
+    //console.log("rawImg: ", rawImg);
+    //var bstr = atob(rawImg);
+    var buffer = new ArrayBuffer(rawImg.length*4);
+    //var uint8View = new Uint8Array(buffer);
+    //Array.prototype.forEach.call(bstr, function (ch, i) {
+    //  uint8View[i] = ch.charCodeAt(0);
+    //});
+    var uint32View = new Uint32Array(buffer);    
+    for (var i = 0; i < rawImg.length; i++){uint32View[i] = rawImg[i];}
+    back = FastIntegerCompression.uncompress(buffer);
+    //u8 = new Uint32Array(back);
+    //b64encoded = bufferToBase64(u8);
+    //var decoder = new TextDecoder('ascii');
+    //var b64encoded = btoa(decoder.decode(u8));
+    //var b64encoded = btoa(u8); //String.fromCharCode.apply(null, u8))
+    //uarray = new Uint32Array(buff)
+    //console.log("back.length: ", back.length)
+    //console.log("back: ", back);
+    //console.log(b64encoded);
+    //nZ(u8);
+    mySetData(heatmapInst, back, min=0, max=rawdata['vmax']);
+    //$("#witnessHeatmap img").attr("src", imgSrc);
+    dataURL = heatmapInst.getDataURL();
+    imageHistory.enqueueUnique(dataURL);
 
     var prevImgElements = d3.select("#prevImages")
             .selectAll("img")

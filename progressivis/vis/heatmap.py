@@ -9,7 +9,7 @@ import six
 import numpy as np
 import scipy as sp
 from PIL import Image
-
+from pyfastpfor import *
 from progressivis.core.utils import indices_len
 from progressivis.core.slot import SlotDescriptor
 from progressivis.table import Table
@@ -127,6 +127,7 @@ class Heatmap(TableModule):
 
     def heatmap_to_json(self, json, short):
         dfslot = self.get_input_slot('array')
+        p = self.params
         histo = dfslot.output_module
         json['columns'] = [histo.x_column, histo.y_column]
         with dfslot.lock:
@@ -141,11 +142,37 @@ class Heatmap(TableModule):
                         'xmax': row['xmax'],
                         'ymax': row['ymax']
                     }
+                    #inp = sp.special.cbrt(row['array']).astype(np.uint32).flatten()
+                    data = sp.special.cbrt(row['array'])
+                    #data = np.log(row['array'])
+                    #data = row['array']
+                    cmin, cmax = p.cmin, p.cmax
+                    if cmin is None:
+                        cmin = np.amin(np.ravel(data))
+                    if cmax is None:
+                        cmax = np.amax(np.ravel(data))
+                    data = sp.misc.bytescale(data) #, high=p.high, low=p.low)
+                                 #cmin=cmin, cmax=cmax)    
+                    #data = (data*1.0 - cmin)*(p.high - p.low)/(cmax - cmin) + p.low
+                    inp = data.astype(np.uint32).flatten()
+                        
+                    arrSize = len(inp)
+                    #maxVal = np.max(inp)
+                    inpComp = np.zeros(arrSize + 1024, dtype = np.uint32, order = 'C')
+                    #codec = getCodec('simdbinarypacking')
+                    codec = getCodec('vbyte')
+                    #import pdb;pdb.set_trace()
+                    compSize = codec.encodeArray(inp, arrSize, inpComp, len(inpComp))
+                    print("compSize: ", compSize, "arrSize: ", arrSize)
+                    print('Compression ratio: %g' % (float(compSize)/arrSize))
+                    json['img2'] = inpComp[:compSize-1]
+                    #json['vmax'] = np.max(json['img2'])
+                    #print("HMAX: ", np.max(json['img2']))
         with self.lock:
             df = self._table
             if df is not None and self._last_update != 0:
                 row = df.last()
-                json['image'] = row['filename']
+                #json['image'] = row['filename']
                 #"/progressivis/module/image/%s?run_number=%d"%(self.name, row['time'])
         return json
 
