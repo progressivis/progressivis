@@ -31,7 +31,7 @@ class Histogram2D(TableModule):
              "time: int64" \
              "}"
 
-    def __init__(self, x_column, y_column, **kwds):
+    def __init__(self, x_column, y_column, with_output=False, **kwds):
         self._add_slots(kwds,'input_descriptors',
                         [SlotDescriptor('table', type=Table, required=True),
                          SlotDescriptor('min', type=Table, required=True),
@@ -46,6 +46,7 @@ class Histogram2D(TableModule):
         self._yedges = None
         self._bounds = None
         self._heatmap_mode = 'full'
+        self._with_output = with_output
         self._heatmap_cache = None
         self._table = Table(self.generate_table_name('Histogram2D'),
                             dshape=Histogram2D.schema,
@@ -58,6 +59,8 @@ class Histogram2D(TableModule):
         self._xedges = None
         self._yedges = None
         self.total_read = 0
+        self._heatmap_mode = 'full'
+        print("Heatmap: ", self._heatmap_mode)
         self.get_input_slot('table').reset()        
 
     def is_ready(self):
@@ -207,27 +210,26 @@ class Histogram2D(TableModule):
                   'ymin': ymin,
                   'ymax': ymax,
                   'time': run_number}
-        with self.lock:
-            table = self._table
-            table['array'].set_shape([p.ybins, p.xbins])
-            l = len(table)
-            last = table.last()
-            if l == 0 or last['time'] != run_number:
-                table.add(values)
-            else:
-                table.iloc[last.row] = values
-        self.heatmap_cache_full()
+        if self._with_output:
+            with self.lock:
+                table = self._table
+                table['array'].set_shape([p.ybins, p.xbins])
+                l = len(table)
+                last = table.last()
+                if l == 0 or last['time'] != run_number:
+                    table.add(values)
+                else:
+                    table.iloc[last.row] = values
+        self.build_heatmap(values)
         return self._return_run_step(self.next_state(dfslot), steps_run=steps)
-    def heatmap_cache_full(self):
-        if not self._table:
+
+    def build_heatmap(self, values):
+        if not values:
             return
-        json_ = {'columns': [self.x_column, self.y_column]}
+        p = self.params
+        json_ = {'columns': [self.x_column, self.y_column], 'xbins': p.xbins, 'ybins':p.ybins}
         with self.lock:
-            histo_df = self._table
-            if histo_df is not None and len(histo_df) != 0:
-                if not len(histo_df):
-                    return
-                row = histo_df.last()
+                row = values
                 if not (np.isnan(row['xmin']) or np.isnan(row['xmax'])
                         or np.isnan(row['ymin']) or np.isnan(row['ymax'])):
                     json_['bounds'] = {
@@ -246,6 +248,7 @@ class Histogram2D(TableModule):
                     print('Compression ratio: %g' % (float(compSize)/arrSize))
                     json_['image'] = inpComp[:compSize-1]
                     self._heatmap_cache = json_
+
     def heatmap_to_json(self, json, short=False):
         if self._heatmap_cache:
             #import pdb;pdb.set_trace()
