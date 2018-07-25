@@ -213,11 +213,17 @@ function scatterplot_update_vis(rawdata) {
         maxOpacity: .95,
           radius: 10,
           blur: .95,
-    }*/);
-    var buffer = new ArrayBuffer(rawImg.length*4);
-    var uint32View = new Uint32Array(buffer);    
-    for (var i = 0; i < rawImg.length; i++){uint32View[i] = rawImg[i];}
-    back = FastIntegerCompression.uncompress(buffer);
+          }*/);
+    var compression =  rawdata['compression'];
+    var back = null
+    if(compression){
+        var buffer = new ArrayBuffer(rawImg.length*4);
+        var uint32View = new Uint32Array(buffer);    
+        for (var i = 0; i < rawImg.length; i++){uint32View[i] = rawImg[i];}
+        back = FastIntegerCompression.uncompress(buffer);
+    } else {
+        back = rawImg;
+    }
     heatmapSetData(heatmapInst, back, xbins=xbins, ybins=ybins);
     dataURL = heatmapInst.getDataURL();
     imageHistory.enqueueUnique(dataURL);

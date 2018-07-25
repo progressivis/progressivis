@@ -12,6 +12,7 @@ import scipy as sp
 import logging
 logger = logging.getLogger(__name__)
 
+COMPRESSION = 0
 
 class Histogram2D(TableModule):
     parameters = [('xbins',  np.dtype(int),   512),
@@ -45,7 +46,6 @@ class Histogram2D(TableModule):
         self._xedges = None
         self._yedges = None
         self._bounds = None
-        self._heatmap_mode = 'full'
         self._with_output = with_output
         self._heatmap_cache = None
         self._table = Table(self.generate_table_name('Histogram2D'),
@@ -59,8 +59,6 @@ class Histogram2D(TableModule):
         self._xedges = None
         self._yedges = None
         self.total_read = 0
-        self._heatmap_mode = 'full'
-        print("Heatmap: ", self._heatmap_mode)
         self.get_input_slot('table').reset()        
 
     def is_ready(self):
@@ -227,7 +225,8 @@ class Histogram2D(TableModule):
         if not values:
             return
         p = self.params
-        json_ = {'columns': [self.x_column, self.y_column], 'xbins': p.xbins, 'ybins':p.ybins}
+        json_ = {'columns': [self.x_column, self.y_column], 'xbins': p.xbins,
+                     'ybins':p.ybins, 'compression': COMPRESSION}
         with self.lock:
                 row = values
                 if not (np.isnan(row['xmin']) or np.isnan(row['xmax'])
@@ -239,15 +238,25 @@ class Histogram2D(TableModule):
                         'ymax': row['ymax']
                     }
                     data = sp.special.cbrt(row['array'])
-                    inp = data.astype(np.uint32).flatten()
-                    arrSize = len(inp)
-                    inpComp = np.zeros(arrSize + 1024, dtype = np.uint32, order = 'C')
-                    codec = getCodec('vbyte')
-                    compSize = codec.encodeArray(inp, arrSize, inpComp, len(inpComp))
-                    print("compSize: ", compSize, "arrSize: ", arrSize)
-                    print('Compression ratio: %g' % (float(compSize)/arrSize))
-                    json_['image'] = inpComp[:compSize-1]
-                    self._heatmap_cache = json_
+                    data = sp.misc.bytescale(data)
+                    if COMPRESSION:
+                        inp = data.astype(np.uint32).flatten()
+                        arrSize = len(inp)
+                        inpComp = np.zeros(arrSize + 1024, dtype = np.uint32, order = 'C')
+                        codec = getCodec('vbyte')
+                        compSize = codec.encodeArray(inp, arrSize, inpComp, len(inpComp))
+                        #print("compSize: ", compSize, "arrSize: ", arrSize)
+                        #print('Compression ratio: %g' % (float(compSize)/arrSize))
+                        json_['image'] = inpComp[:compSize-1]
+                        #print("NZ: ", len(inp[inp>0]))
+                        #c_ = json_['image']
+                        #print("NZC: ", len(c_[c_>0]))
+                        self._heatmap_cache = json_
+                    else:
+                        json_['image'] = data.flatten()
+                        #c_ = json_['image']
+                        #print("Ucompressed NZ: ", len(c_[c_>0]))
+                        self._heatmap_cache = json_
 
     def heatmap_to_json(self, json, short=False):
         if self._heatmap_cache:
