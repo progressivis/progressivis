@@ -13,12 +13,12 @@ function ack(json) {
     handshake = true;
 }
 
-function progressivis_websocket_open(msg, handler) {
+function progressivis_websocket_open(msg, handler, refresh) {
     //socket = new WebSocket("ws://" + document.domain + ":5000/websocket/", "new");
     socket = io.connect('http://' + document.domain + ':' + location.port);
 
     socket.on('connect', function() {
-        socket.emit('join', {"type": "ping", "path": msg}, ack);
+        socket.emit('join', {"type": "ping", "path": msg}, function(x){ack(x);refresh();});
     });
     socket.on('disconnect', function() { handshake = false; });
     socket.on('tick', function(msg) {
@@ -172,13 +172,10 @@ function progressivis_socketmsg(json) {
 function progressivis_ready(socket_name) {
     if (error === null) 
         error = progressivis_error;
-    progressivis_websocket_open(socket_name, progressivis_socketmsg);
     if (refresh === null) {
         console.log('ERROR: refresh is not defined');
-    }
-    else {
-        window.setTimeout(refresh, 500); // wait for websocket to install
-        //refresh();
+    } else {
+        progressivis_websocket_open(socket_name, progressivis_socketmsg, refresh);
     }
     $('#start').click(function() { progressivis_start(refresh, error); });
     $('#stop' ).click(function() { progressivis_stop (refresh, error); });
