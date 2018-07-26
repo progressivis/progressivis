@@ -248,15 +248,10 @@ class Histogram2D(TableModule):
                         #print("compSize: ", compSize, "arrSize: ", arrSize)
                         #print('Compression ratio: %g' % (float(compSize)/arrSize))
                         json_['image'] = inpComp[:compSize-1]
-                        #print("NZ: ", len(inp[inp>0]))
-                        #c_ = json_['image']
-                        #print("NZC: ", len(c_[c_>0]))
                         self._heatmap_cache = json_
                     else:
-                        json_['image'] = data.flatten()
-                        #c_ = json_['image']
-                        #print("Ucompressed NZ: ", len(c_[c_>0]))
-                        self._heatmap_cache = json_
+                        json_['image'] = data
+                    self._heatmap_cache = json_
 
     def heatmap_to_json(self, json, short=False):
         if self._heatmap_cache:

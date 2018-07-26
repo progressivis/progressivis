@@ -158,30 +158,32 @@ function scatterplot_update_vis(rawdata) {
             .attr("width",  iw)
             .attr("height", ih);
     }
-    function nZ(buff){
-        res = [];
-        for(i=0;i< buff.length;i++){
-            if(buff[i]>0){
-                res.push(buff[i]);
-            }
-        }
-        console.log("NZ: ", res);
-        return res;
-    }
-    var heatmapSetData = function(hmObj, data, xbins, ybins, min=0, max=255) {
+
+    var heatmapSetData = function(hmObj, data, xbins, ybins, flatten, min=0, max=255) {
       // reset data arrays
       hmObj._data = [];
       hmObj._radi = [];
       var xLen = xbins; //data.length;
       var yLen = ybins; //data[0].length;
-      for (var i=0; i<xLen;i++){
-          for(var j=0; j<yLen;j++){
-              v = data[i*xLen+j];
-              if(!v) continue;
-              hmObj._store._organiseData({x: j, y: (yLen-i-1),
-                                   value: v}, false);
+      if(flatten){// when vbyte compression (currently disabled)
+          for (var i=0; i<xLen;i++){
+              for(var j=0; j<yLen;j++){
+                  v = data[i*xLen+j];
+                  if(!v) continue;
+                  hmObj._store._organiseData({x: j, y: (xLen-i-1),
+                                              value: v}, false);
+              }
           }
+      } else { //without compression     
+          for (var i=0; i<xLen;i++){
+              for(var j=0; j<yLen;j++){
+                  v = data[i][j];
+                  if(!v) continue;
+                  hmObj._store._organiseData({x: j, y: xLen-i-1,
+                                   value: v}, false);
+              }
       }
+      }    
       hmObj._max = max;
       hmObj._min = min;
       
@@ -208,12 +210,7 @@ function scatterplot_update_vis(rawdata) {
             '.95': 'white'
         }
     };
-    heatmapInst = h337.create(heatmapConfig/*{
-        container: document.getElementById('workHeatmap'),
-        maxOpacity: .95,
-          radius: 10,
-          blur: .95,
-          }*/);
+    heatmapInst = h337.create(heatmapConfig);
     var compression =  rawdata['compression'];
     var back = null
     if(compression){
@@ -224,7 +221,7 @@ function scatterplot_update_vis(rawdata) {
     } else {
         back = rawImg;
     }
-    heatmapSetData(heatmapInst, back, xbins=xbins, ybins=ybins);
+    heatmapSetData(heatmapInst, back, xbins, ybins, compression);
     dataURL = heatmapInst.getDataURL();
     imageHistory.enqueueUnique(dataURL);
 
