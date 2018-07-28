@@ -520,6 +520,9 @@ class BaseScheduler(object):
 
     def stop(self):
         "Stop the execution."
+        with self._hibernate_cond:
+            self._keep_running = KEEP_RUNNING
+            self._hibernate_cond.notify()
         self._stopped = True
 
     def is_running(self):
