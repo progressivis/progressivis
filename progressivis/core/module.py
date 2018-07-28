@@ -278,6 +278,11 @@ class Module(six.with_metaclass(ModuleMeta, object)):
         # pylint: disable=no-self-use
         "Return True if this module is an input module"
         return False
+    
+    def is_data_input(self):
+        # pylint: disable=no-self-use
+        "Return True if this module brings new data"        
+        return False
 
     def get_image(self, run_number=None):  # pragma no cover
         "Return an image created by this module or None"

@@ -59,12 +59,25 @@ class FakeLock(object):
     def __exit__(self, exc_type, exc_val, exc_tb):
         return
 
+class FakeCondition(object):
+    def __init__(self, lock=None):
+        self._lock = lock #  still keeps pylint happy
+    def wait(self):
+        pass
+    def notify(self):
+        pass
+    def __enter__(self):
+        pass
+    def __exit__(self, type, value, traceback):
+        pass
+    
 if multi_threading:
-    from threading import Thread, Lock, RLock
+    from threading import Thread, Lock, RLock, Condition
 else:
     Lock = FakeLock
     RLock = FakeLock
-
+    Condition = FakeCondition
+    
     class Thread(object):  # fake threads for debug
         def __init__(self, group=None, target=None, name=None,
                      args=(), kwargs=None):

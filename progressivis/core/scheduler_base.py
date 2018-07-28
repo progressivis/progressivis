@@ -18,7 +18,7 @@ from scipy.sparse.csgraph import shortest_path
 import numpy as np
 
 
-from .utils import ProgressiveError, AttributeDict, FakeLock
+from .utils import ProgressiveError, AttributeDict, FakeLock, Condition
 from .synchronized import synchronized
 from .toposort import toposort
 
@@ -27,6 +27,7 @@ logger = logging.getLogger(__name__)
 
 __all__ = ['BaseScheduler']
 
+KEEP_RUNNING = 5
 
 class _InteractionOpts(object):
     def __init__(self, starving_mods=None, max_time=None, max_iter=None):
@@ -78,7 +79,8 @@ class BaseScheduler(object):
         self._start_inter = 0
         self._inter_cycles_cnt = 0
         self._interaction_opts = None
-
+        self._hibernate_cond = Condition()
+        self._keep_running = KEEP_RUNNING
 
     def set_interaction_opts(self, starving_mods=None, max_time=None, max_iter=None):
         if starving_mods:
@@ -109,8 +111,8 @@ class BaseScheduler(object):
             return
         if self._interaction_opts.starving_mods:
             if not sum([w._steps_acc for w in self._interaction_opts.starving_mods]):
-                print("Exiting shortcut mode when data "
-                          "inputs on withesses were exhausted",
+                print("Exiting shortcut mode because data "
+                          "inputs on witnesses are dried",
                           self._interaction_opts.starving_mods)
                 self._module_selection = None
                 self._inter_cycles_cnt = 0
@@ -385,6 +387,11 @@ class BaseScheduler(object):
         """Main scheduler loop."""
         # pylint: disable=broad-except
         for module in self._next_module():
+            if self.no_more_data() and self.all_blocked() and self.is_waiting_for_input():
+                if not self._keep_running:
+                    with self._hibernate_cond:
+                        self._hibernate_cond.wait()
+            if self._keep_running: self._keep_running -= 1
             if not (self._consider_module(module) and (module.is_ready() or self.has_input())):
                 continue
             self._run_number += 1
@@ -433,7 +440,26 @@ class BaseScheduler(object):
 
     def _new_module_available(self):
         return self._new_modules_ids or self._slots_updated
-
+    
+    def all_blocked(self):
+        from .module import Module
+        for m in self._run_list:
+            if m.state != Module.state_blocked:
+                return False
+        return True
+    
+    def is_waiting_for_input(self):
+        for m in self._run_list:
+            if m.is_input():
+                return True
+        return False
+    
+    def no_more_data(self):
+        for m in self._run_list:
+            if m.is_data_input():
+                return False
+        return True
+    
     def _update_modules(self):
         if self._new_modules_ids:
             # Make a shallow copy of the current run order;
@@ -576,6 +602,9 @@ class BaseScheduler(object):
         Notify this scheduler that the module has received input
         that should be served fast.
         """
+        with self._hibernate_cond:
+            self._keep_running = KEEP_RUNNING            
+            self._hibernate_cond.notify()
         sel = self._reachability[module.name]
         if sel:
             if not self._module_selection:

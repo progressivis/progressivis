@@ -56,6 +56,11 @@ class CSVLoader(TableModule):
         if fn and (fn.created is None or fn.created.any()):
             return True
         return super(CSVLoader, self).is_ready()
+    
+    def is_data_input(self):
+        # pylint: disable=no-self-use
+        "Return True if this module brings new data"
+        return True
 
     def open(self, filepath):
         if self._input_stream is not None:
