@@ -1,6 +1,6 @@
 from __future__ import absolute_import, division, print_function
 
-from progressivis.core.utils import indices_len, fix_loc
+from progressivis.core.utils import indices_len, fix_loc, get_physical_base
 from progressivis.core.slot import SlotDescriptor
 from progressivis.table.module import TableModule
 from progressivis.table.table import Table
@@ -114,7 +114,7 @@ class Histogram2D(TableModule):
         min_slot.update(run_number)
         max_slot = self.get_input_slot('max')
         max_slot.update(run_number)
-        if dfslot.updated.any() or dfslot.deleted.any():
+        if dfslot.updated.any():
             logger.debug('reseting histogram')
             self.reset()
             dfslot.update(run_number)
@@ -138,8 +138,8 @@ class Histogram2D(TableModule):
             assert xdelta >= 0 and ydelta >= 0
             
             # Either the min/max has extended, or it has shrunk beyond the deltas
-            if (xmin<dxmin or xmax>dxmax or ymin<dymin or ymax>dymax) \
-              or (xmin>(dxmin+xdelta) or xmax<(dxmax-xdelta) or ymin>(dymin+ydelta) or ymax<(dymax-ydelta)):
+            if ((xmin<dxmin or xmax>dxmax or ymin<dymin or ymax>dymax)
+                or (xmin>(dxmin+xdelta) or xmax<(dxmax-xdelta) or ymin>(dymin+ydelta) or ymax<(dymax-ydelta))):
                 #print('Old bounds: %s,%s,%s,%s'%(dxmin,dxmax,dymin,dymax))
                 self._bounds = (xmin-xdelta,xmax+xdelta,ymin-ydelta,ymax+ydelta)
                 #print('Updated bounds at run %d: %s old %s deltas %s, %s'%(run_number,self._bounds, bounds, xdelta, ydelta))
@@ -154,10 +154,34 @@ class Histogram2D(TableModule):
             return self._return_run_step(self.state_blocked, steps_run=0)
 
         # Now, we know we have data and bounds, proceed to create a new histogram
-
+        # or to update the previous if is still exists (i.e. no reset)
+        p = self.params
+        steps = 0
+        # if there are new deletions, build the histogram of the deleted pairs
+        # then subtract it from the main histogram
+        if dfslot.deleted.any() and self._histo is not None:
+            input_df = get_physical_base(dfslot.data())
+            indices = dfslot.deleted.next(step_size)
+            steps += indices_len(indices)
+            #print('Histogram2D steps :%d'% steps)
+            logger.info('Read %d rows', steps)
+            x = input_df[self.x_column]
+            y = input_df[self.y_column]
+            idx = input_df.id_to_index(fix_loc(indices))
+            #print(idx)
+            x = x[idx]
+            y = y[idx]
+            bins = [p.ybins, p.xbins]
+            if len(x)>0:
+                histo = histogram2d(y, x,
+                                    bins=bins,
+                                    range=[[ymin, ymax], [xmin, xmax]])
+                self._histo -= histo
+        # if there are new creations, build a partial histogram with them then
+        # add it to the main histogram
         input_df = dfslot.data()
         indices = dfslot.created.next(step_size)
-        steps = indices_len(indices)
+        steps += indices_len(indices)
         #print('Histogram2D steps :%d'% steps)
         logger.info('Read %d rows', steps)
         self.total_read += steps
@@ -168,7 +192,6 @@ class Histogram2D(TableModule):
         #print(idx)
         x = x[idx]
         y = y[idx]
-        p = self.params
         if self._xedges is not None:
             bins = [self._xedges, self._yedges]
         else:
