@@ -2,7 +2,7 @@ var margin = {top: 20, right: 20, bottom: 30, left: 40},
     width = 960 - margin.left - margin.right,
     height = 500 - margin.top - margin.bottom,
     svg, firstTime = true;
-
+var dataURL=null;
 var x = d3.scaleLinear()
     .range([0, width]);
 
@@ -28,13 +28,35 @@ function heatmap_update_vis(data) {
         bounds = data['bounds'];
 
     if (!image || !bounds) return;
+    var rawImg = data['image'];
+    var xbins = data['xbins'];
+    var ybins = data['ybins'];    
+    var heatmapConfig = {
+        container: document.getElementById('heatmapContainer'),
+        radius: 10,
+        maxOpacity: .5,
+        minOpacity: 0,
+        blur: .75,
+        gradient: {
+            // enter n keys between 0 and 1 here
+            // for gradient color customization
+            '.5': 'blue',
+            '.8': 'red',
+            '.95': 'white'
+        }
+    };
+    heatmapInst = h337.create(heatmapConfig);
+    heatmapSetData(heatmapInst, rawImg, xbins, ybins);
+    dataURL = heatmapInst.getDataURL();
+    
     x.domain([bounds['xmin'], bounds['xmax']]);
     y.domain([bounds['ymin'], bounds['ymax']]);
 
     if (firstTime) {
         svg.append("image")
             .attr("class", "heatmap")
-            .attr("xlink:href", function() { return image; }) //+"&ts="+new Date().getTime(); })
+            //.attr("xlink:href", function() { return image; }) //+"&ts="+new Date().getTime(); })
+            .attr("xlink:href", function() { return dataURL; }) //+"&ts="+new Date().getTime(); })        
             .attr("preserveAspectRatio", "none")
             .attr("x", 0)
             .attr("y", 0)
@@ -66,7 +88,8 @@ function heatmap_update_vis(data) {
     }
     else { // not firstTime
         svg.select(".heatmap")
-            .attr("xlink:href", function() { return image; });
+            //.attr("xlink:href", function() { return image; });
+            .attr("xlink:href", function() { return dataURL; });        
 
         svg.select(".x.axis")
             .transition()

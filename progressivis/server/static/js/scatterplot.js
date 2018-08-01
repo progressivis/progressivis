@@ -18,7 +18,7 @@ var x     = d3.scaleLinear().range([0, width]),
         .on("zoom", scatterplot_zoomed);
 
 var view, gX, gY, zoomable;
-    dataURL=null;
+var dataURL=null;
 const DEFAULT_SIGMA = 0;
 const DEFAULT_FILTER = "default";
 const MAX_PREV_IMAGES = 3;
@@ -159,43 +159,10 @@ function scatterplot_update_vis(rawdata) {
             .attr("height", ih);
     }
 
-    var heatmapSetData = function(hmObj, data, xbins, ybins, flatten, min=0, max=255) {
-      // reset data arrays
-      hmObj._data = [];
-      hmObj._radi = [];
-      var xLen = xbins; //data.length;
-      var yLen = ybins; //data[0].length;
-      if(flatten){// when vbyte compression (currently disabled)
-          for (var i=0; i<xLen;i++){
-              for(var j=0; j<yLen;j++){
-                  v = data[i*xLen+j];
-                  if(!v) continue;
-                  hmObj._store._organiseData({x: j, y: (xLen-i-1),
-                                              value: v}, false);
-              }
-          }
-      } else { //without compression     
-          for (var i=0; i<xLen;i++){
-              for(var j=0; j<yLen;j++){
-                  v = data[i][j];
-                  if(!v) continue;
-                  hmObj._store._organiseData({x: j, y: xLen-i-1,
-                                   value: v}, false);
-              }
-      }
-      }    
-      hmObj._max = max;
-      hmObj._min = min;
-      
-      hmObj._store._onExtremaChange();
-      hmObj._store._coordinator.emit('renderall', hmObj._store._getInternalData());
-      return hmObj;
-    }
 
-    rawImg = rawdata['image'];
+    var rawImg = rawdata['image'];
     var xbins = rawdata['xbins'];
     var ybins = rawdata['ybins'];    
-    $("#workHeatmap").html("");
     var heatmapConfig = {
         container: document.getElementById('heatmapContainer'),
         radius: 10,
@@ -211,17 +178,7 @@ function scatterplot_update_vis(rawdata) {
         }
     };
     heatmapInst = h337.create(heatmapConfig);
-    var compression =  rawdata['compression'];
-    var back = null
-    if(compression){
-        var buffer = new ArrayBuffer(rawImg.length*4);
-        var uint32View = new Uint32Array(buffer);    
-        for (var i = 0; i < rawImg.length; i++){uint32View[i] = rawImg[i];}
-        back = FastIntegerCompression.uncompress(buffer);
-    } else {
-        back = rawImg;
-    }
-    heatmapSetData(heatmapInst, back, xbins, ybins, compression);
+    heatmapSetData(heatmapInst, rawImg, xbins, ybins);
     dataURL = heatmapInst.getDataURL();
     imageHistory.enqueueUnique(dataURL);
 

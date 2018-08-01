@@ -7,6 +7,9 @@ Heatmap for module {{id}}
 {% block extra_scripts %}
 <script src="{{ url_for('progressivis.server.progressivis_file', filename='js/line_graph.js') }}"></script>
 <script src="{{ url_for('progressivis.server.progressivis_file', filename='js/module.js') }}"></script>
+<script src="{{ url_for('progressivis.server.progressivis_file', filename='lib/heatmap.js') }}"></script>
+<script src="{{ url_for('progressivis.server.progressivis_file', filename='js/heatmap-img.js') }}"></script>
+
 <script src="{{ url_for('progressivis.server.progressivis_file', filename='js/heatmap.js') }}"></script>
 {% endblock %}
 
@@ -40,5 +43,6 @@ $(document).ready(heatmap_ready);
 <div>
 </div>
 
+<div id="heatmapContainer" style="width:512px; height:512px;visibility: hidden;"></div>
 
 {% endblock %}
