@@ -28,4 +28,4 @@ memory_profiler
 tabulate
 requests
 fast-histogram
-pyfastpfor
+

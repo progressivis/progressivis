@@ -256,7 +256,7 @@ def _on_module_get(path):
                 'reason': 'unknown module %s'%path}
     progressivis_bp.register_module(module.name, request.sid)
     module.set_end_run(progressivis_bp.tick_module) # setting it multiple time is ok
-    print('on_module_get', path)
+    #print('on_module_get', path)
     return module.to_json()
 
 def _on_module_hotline_on(path):

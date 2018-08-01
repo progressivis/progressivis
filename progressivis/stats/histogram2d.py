@@ -7,12 +7,11 @@ from progressivis.table.table import Table
 from fast_histogram import histogram2d
 #from timeit import default_timer
 import numpy as np
-from pyfastpfor import *
 import scipy as sp
 import logging
 logger = logging.getLogger(__name__)
 
-COMPRESSION = 0
+
 
 class Histogram2D(TableModule):
     parameters = [('xbins',  np.dtype(int),   512),
@@ -249,7 +248,7 @@ class Histogram2D(TableModule):
             return
         p = self.params
         json_ = {'columns': [self.x_column, self.y_column], 'xbins': p.xbins,
-                     'ybins':p.ybins, 'compression': COMPRESSION}
+                     'ybins':p.ybins}
         with self.lock:
                 row = values
                 if not (np.isnan(row['xmin']) or np.isnan(row['xmax'])
@@ -261,19 +260,7 @@ class Histogram2D(TableModule):
                         'ymax': row['ymax']
                     }
                     data = sp.special.cbrt(row['array'])
-                    data = sp.misc.bytescale(data)
-                    if COMPRESSION:
-                        inp = data.astype(np.uint32).flatten()
-                        arrSize = len(inp)
-                        inpComp = np.zeros(arrSize + 1024, dtype = np.uint32, order = 'C')
-                        codec = getCodec('vbyte')
-                        compSize = codec.encodeArray(inp, arrSize, inpComp, len(inpComp))
-                        #print("compSize: ", compSize, "arrSize: ", arrSize)
-                        #print('Compression ratio: %g' % (float(compSize)/arrSize))
-                        json_['image'] = inpComp[:compSize-1]
-                        self._heatmap_cache = json_
-                    else:
-                        json_['image'] = data
+                    json_['image'] = sp.misc.bytescale(data)
                     self._heatmap_cache = json_
 
     def heatmap_to_json(self, json, short=False):
