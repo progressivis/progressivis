@@ -23,7 +23,14 @@ logger = logging.getLogger(__name__)
 
 METADATA_FILE = ".metadata"
 PAGESIZE = getpagesize()
+FACTOR = 1
 
+
+def _shape_len(shape):
+    length = 1
+    for dim in shape:
+        length *= dim
+    return length
 
 class MMapDataset(Dataset):
     """
@@ -32,6 +39,7 @@ class MMapDataset(Dataset):
     """
     def __init__(self, path, name, shape=None, dtype=None, data=None, **kwds):
         "Create a MMapDataset."
+        #import pdb;pdb.set_trace()
         self._name = name
         self._filename = os.path.join(path, name)
         length = 0
@@ -42,13 +50,8 @@ class MMapDataset(Dataset):
             if dtype is None:
                 dtype = data.dtype
         if dtype is None:
-            raise ValueError('dtype requied when no data is provided')
+            raise ValueError('dtype required when no data is provided')
         self._dtype = dtype
-        if dtype == OBJECT:
-            self._strings = MMapDataset(path, name+"_strings", shape=shape, dtype=np.int8)
-            dtype = np.int64
-        else:
-            self._strings = None
         
         if shape:
             length = 1
@@ -57,7 +60,17 @@ class MMapDataset(Dataset):
             length *= dtype.itemsize
         else:
             shape = (0,)
-
+            length = 0
+        if dtype == OBJECT:
+                # NB: shape=(1,) means single empty string, offset=0, so shared by all
+                # entries in self.base
+            self._strings = MMapDataset(path, name+"_strings", shape=(1,), dtype=np.int8)
+            if data is not None:
+                pass # TODO: ...
+            dtype = np.dtype(np.int64)
+        else:
+            self._strings = None
+        nb_item = length
         last = max(0, length - 1)
         length = (last // PAGESIZE + 1) * PAGESIZE
 
@@ -72,8 +85,8 @@ class MMapDataset(Dataset):
             self._fillvalue = kwds.pop('fillvalue')
             #print('fillvalue specified for %s is %s'%(self.base.dtype, self._fillvalue))
         else:
-            if dtype == OBJECT:
-                self._fillvalue = ''
+            #if dtype == OBJECT:
+            #    self._fillvalue = ''
             if np.issubdtype(dtype, np.int):
                 self._fillvalue = 0
             elif np.issubdtype(dtype, np.bool):
@@ -83,13 +96,15 @@ class MMapDataset(Dataset):
             #print('fillvalue for %s defaulted to %s'%(self.base.dtype, self._fillvalue))
         if kwds:
             logger.warning('Ignored keywords in MMapDataset: %s', kwds)
-        self.base = np.frombuffer(self._buffer, dtype=dtype)
-
-        if self.base.shape == shape:
-            self.view = self.base
-        else:
-            self.view = self.base[:shape[0]]
-            assert self.view.shape == shape
+        self.base = np.frombuffer(self._buffer, dtype=dtype, count=nb_item)
+        if self.base.shape != shape:
+            self.base = self.base.reshape(shape)
+        self.view = self.base
+        #if self.base.shape == shape:
+        #    self.view = self.base
+        #else:
+        #    self.view = self.base[:shape[0]]
+        assert self.view.shape == shape
         if data is not None:
             self._fill(0, data)
 
@@ -103,7 +118,15 @@ class MMapDataset(Dataset):
                 self._set_value_at(start+i, v)
         else:
             self.view[start:end] = np.asarray(data)
-
+            
+    def append(self, val):
+        #assert isinstance(val, bytes)
+        assert isinstance(self.shape, tuple) and len(self.shape) == 1
+        assert self.dtype == np.int8
+        last = len(self.view)
+        lval = len(val)
+        self.resize(last+lval)
+        self.base[last:last+lval] = val
     def _set_value_at(self, i, v):
         #TODO free current value
         if v is None:
@@ -113,6 +136,7 @@ class MMapDataset(Dataset):
             offset = len(self._strings)
             self._strings.append(np.frombuffer(data, dtype=np.int8))
             self._strings.append([0])
+            return offset
 
     @property
     def shape(self):
@@ -150,16 +174,20 @@ class MMapDataset(Dataset):
             length = 1
             for shap in size:
                 length *= shap
-        length *= self.dtype.itemsize
+            shape = size
+        dtype_ = np.dtype(np.int64) if self.dtype==OBJECT else self.dtype
+        nb_item = length
+        length *= dtype_.itemsize
         last = max(0, length - 1)
         length = (last // PAGESIZE + 1) * PAGESIZE
-        self._buffer.resize(length)
-        self.base = np.frombuffer(self._buffer, self.dtype)
+        if length != len(self._buffer):
+            self._buffer.resize(length)
+        self.base = np.frombuffer(self._buffer, dtype=dtype_, count=nb_item) # returns an 1D array
         if self.base.shape != shape:
             self.base = self.base.reshape(shape)
         baseshape = np.array(self.base.shape)
         viewshape = self.view.shape
-        size = np.asarray(size)
+        size = np.asarray(shape)
         if (size > baseshape).any():
             self.view = None
             newsize = []
@@ -169,23 +197,52 @@ class MMapDataset(Dataset):
                 newsize.append(shap)
             self.base = np.resize(self.base, tuple(newsize))
         # fill new areas with fillvalue
+        fillvalue_ = 0 if self.dtype==OBJECT else self._fillvalue
         if any(size > viewshape) and (size != 0).all():
             newarea = [np.s_[0:os] for os in viewshape]
             for i, oldsiz in enumerate(viewshape):
                 siz = size[i]
                 if siz > oldsiz:
                     newarea[i] = np.s_[oldsiz:siz]
-                    self.base[tuple(newarea)] = self._fillvalue
+                    self.base[tuple(newarea)] = fillvalue_
                 newarea[i] = np.s_[0:siz]
         else:
             newarea = [np.s_[0:s] for s in size]
         self.view = self.base[newarea]
+        #if dtype == OBJECT:
+        #    self._strings.resize(self.compute_strings_resize())
 
     def __getitem__(self, args):
-        return self.view[args]
-
+        if self.dtype != OBJECT:
+            return self.view[args]
+        if isinstance(args, int):
+            offset = self.view[args]
+            end = self._strings._buffer.find(b'\x00', offset)
+            return self._strings._buffer[offset:end].decode()
+        elif isinstance(args, slice):
+            stop_ = args.stop if args.stop is not None else len(self.view)
+            args = range(*args.indices(stop_))
+        res = []
+        for i in args:
+            offset = self.view[i]
+            end = self._strings._buffer.find(b'\x00', offset)
+            res.append(self._strings._buffer[offset:end].decode())
+        return np.array(res, dtype=OBJECT)
+                
     def __setitem__(self, args, val):
-        self.view[args] = val
+        if self.dtype != OBJECT:
+            self.view[args] = val
+            return
+        if isinstance(args, integer_types):
+            args = (args,)
+            val = (val,)
+        elif isinstance(args, slice):
+            stop_ = args.stop if args.stop is not None else len(self.view)
+            args = range(*args.indices(stop_))
+        for i, k in enumerate(args):
+            #import pdb;pdb.set_trace()
+            self.view[k] = self._set_value_at(k, val[i])
+        print(self.view)
 
     def __len__(self):
         return self.view.shape[0]
@@ -205,7 +262,7 @@ class MMapGroup(GroupImpl):
     """
     Group of mmap-based groups and datasets.
     """
-    def __init__(self, name, parent=None):
+    def __init__(self, name='mmap', parent=None):
         super(MMapGroup, self).__init__(name, parent=parent)
         self._directory = self.path()
         metadata = os.path.join(self._directory, METADATA_FILE)
