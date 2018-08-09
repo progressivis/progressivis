@@ -124,7 +124,7 @@ class Module(six.with_metaclass(ModuleMeta, object)):
         self.input = InputSlots(self)
         self.output = OutputSlots(self)
         self.scheduler().add_module(self)
-        self._steps_acc = 0
+        self.steps_acc = 0
         # callbacks
         self._start_run = None
         self._end_run = None
@@ -477,7 +477,7 @@ class Module(six.with_metaclass(ModuleMeta, object)):
                          reads=0, updates=0, creates=0):
         assert (next_state >= Module.state_ready and
                 next_state <= Module.state_zombie)
-        self._steps_acc += steps_run
+        self.steps_acc += steps_run
         if creates and updates == 0:
             updates = creates
         elif creates > updates:
@@ -663,7 +663,7 @@ class Module(six.with_metaclass(ModuleMeta, object)):
     def run(self, run_number):
         if self.is_running():
             raise ProgressiveError('Module already running')
-        self._steps_acc = 0
+        self.steps_acc = 0
         next_state = self.state
         exception = None
         now = self.timer()

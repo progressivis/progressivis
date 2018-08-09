@@ -110,10 +110,10 @@ class BaseScheduler(object):
             self._inter_cycles_cnt = 0
             return
         if self._interaction_opts.starving_mods:
-            if not sum([w._steps_acc for w in self._interaction_opts.starving_mods]):
+            if not sum([mod.steps_acc for mod in self._interaction_opts.starving_mods]):
                 print("Exiting shortcut mode because data "
-                          "inputs on witnesses are dried",
-                          self._interaction_opts.starving_mods)
+                      "inputs on witnesses are dried",
+                      self._interaction_opts.starving_mods)
                 self._module_selection = None
                 self._inter_cycles_cnt = 0
                 return
@@ -407,7 +407,7 @@ class BaseScheduler(object):
         first_run = self._run_number
         input_mode = self.has_input()
         self._start_inter = 0
-        self._inter_loops_cnt = 0
+        self._inter_cycles_cnt = 0
         while not self._stopped:
             # Apply changes in the dataflow
             if self._new_module_available():
@@ -422,7 +422,7 @@ class BaseScheduler(object):
                 if input_mode: # end input mode
                     print('Ending interactive mode after', default_timer()-self._start_inter)
                     self._start_inter = 0
-                    self._inter_loops_cnt = 0
+                    self._inter_cycles_cnt = 0
                     input_mode = False
                 else:
                     self._start_inter = default_timer()
