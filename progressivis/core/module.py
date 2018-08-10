@@ -81,6 +81,9 @@ class Module(six.with_metaclass(ModuleMeta, object)):
         self._scheduler = scheduler
         if name is None:
             name = self._scheduler.generate_name(self.pretty_typename())
+        if self._scheduler.exists(name):
+            raise ProgressiveError('module already exists in scheduler,'
+                                   ' delete it first')
         self._name = name
         if predictor is None:
             predictor = TimePredictor.default()
@@ -106,9 +109,6 @@ class Module(six.with_metaclass(ModuleMeta, object)):
                                              required=False)]
         self.order = None
         self._group = group
-        if self._scheduler.exists(name):
-            raise ProgressiveError('module already exists in scheduler,'
-                                   ' delete it first')
         self.tracer = tracer
         self._start_time = None
         self._end_time = None
@@ -123,12 +123,15 @@ class Module(six.with_metaclass(ModuleMeta, object)):
         self.default_step_size = 100
         self.input = InputSlots(self)
         self.output = OutputSlots(self)
-        self.scheduler().add_module(self)
         self.steps_acc = 0
         # callbacks
         self._start_run = None
         self._end_run = None
         self._synchronized_lock = self.scheduler().create_lock()
+        self._add_module()
+
+    def _add_module(self):
+        self.scheduler().add_module(self)
 
     def create_dependent_modules(self, *params, **kwds):  # pragma no cover
         """Create modules that this module depends on.

@@ -2,7 +2,6 @@
 Base Scheduler class, runs progressive modules.
 """
 from __future__ import absolute_import, division, print_function
-import os, sys, io
 import time
 import logging
 import functools
@@ -36,7 +35,6 @@ class _InteractionOpts(object):
         self.max_time = max_time
         self.max_iter = max_iter
 
-    
 
 class BaseScheduler(object):
     "Base Scheduler class, runs progressive modules"
