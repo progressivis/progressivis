@@ -14,17 +14,32 @@ import logging
 
 import numpy as np
 
-from progressivis.core.utils import integer_types
+from progressivis.core.utils import integer_types, get_random_name
 from .base import StorageEngine, Dataset
 from .hierarchy import GroupImpl, AttributeImpl
-
-
+import sys
+import json
 logger = logging.getLogger(__name__)
 
 METADATA_FILE = ".metadata"
 PAGESIZE = getpagesize()
 FACTOR = 1
 
+
+
+def _str_loads(data):
+    return json.loads(data) 
+
+def _str_dumps(data):
+    return json.dumps(data).encode('utf-8')
+
+def mm_str_loads(data):
+    return marshal.loads(data) 
+
+def mm_str_dumps(data):
+    # unfortunately marshal.dumps generates zeroes
+    # marshal.dumps(5) => b'\xe9\x05\x00\x00\x00'
+    return marshal.dumps(data)
 
 def _shape_len(shape):
     length = 1
@@ -37,9 +52,9 @@ class MMapDataset(Dataset):
     Dataset implemented using the mmap file system function.
     Can grow as desired without needing any copy.
     """
+    #datasets = []
     def __init__(self, path, name, shape=None, dtype=None, data=None, **kwds):
         "Create a MMapDataset."
-        #import pdb;pdb.set_trace()
         self._name = name
         self._filename = os.path.join(path, name)
         length = 0
@@ -70,9 +85,9 @@ class MMapDataset(Dataset):
             dtype = np.dtype(np.int64)
         else:
             self._strings = None
-        nb_item = length
+        nb_item = length//dtype.itemsize
         last = max(0, length - 1)
-        length = (last // PAGESIZE + 1) * PAGESIZE
+        length = (last // PAGESIZE + 1) * PAGESIZE * 10
 
         self._file = open(self._filename, 'wb+') # can raise many exceptions
         os.ftruncate(self._file.fileno(), length)
@@ -85,8 +100,6 @@ class MMapDataset(Dataset):
             self._fillvalue = kwds.pop('fillvalue')
             #print('fillvalue specified for %s is %s'%(self.base.dtype, self._fillvalue))
         else:
-            #if dtype == OBJECT:
-            #    self._fillvalue = ''
             if np.issubdtype(dtype, np.int):
                 self._fillvalue = 0
             elif np.issubdtype(dtype, np.bool):
@@ -107,10 +120,11 @@ class MMapDataset(Dataset):
         assert self.view.shape == shape
         if data is not None:
             self._fill(0, data)
-
         self._attrs = AttributeImpl()
-
+        #MMapDataset.datasets.append(self)
+        
     def _fill(self, data, start=0, end=None):
+        assert self._buffer is not None
         if end is None:
             end = start + len(data)
         if self.base.dtype == OBJECT:
@@ -120,6 +134,7 @@ class MMapDataset(Dataset):
             self.view[start:end] = np.asarray(data)
             
     def append(self, val):
+        assert self._buffer is not None        
         #assert isinstance(val, bytes)
         assert isinstance(self.shape, tuple) and len(self.shape) == 1
         assert self.dtype == np.int8
@@ -127,16 +142,31 @@ class MMapDataset(Dataset):
         lval = len(val)
         self.resize(last+lval)
         self.base[last:last+lval] = val
+
     def _set_value_at(self, i, v):
         #TODO free current value
+        # Using None as in the test below is a bad idea
+        # because if dtype==OBJECT then None is an authorized value
+        # That's why I replaced it by NotImplemented
+        #import pdb;pdb.set_trace()
         if v is None:
             self.view[i] = -1
         else:
-            data = v.encode('utf-8')
+            data = _str_dumps(v)
             offset = len(self._strings)
             self._strings.append(np.frombuffer(data, dtype=np.int8))
             self._strings.append([0])
-            return offset
+            self.view[i] = offset
+
+    def close(self, recurse=True):
+        if self._buffer is not None:
+            self._buffer.close()
+            self._buffer = None
+        if self._file is not None:
+            self._file.close()
+            self._file = None
+        if recurse and self._strings is not None:
+            self._strings.close()
 
     @property
     def shape(self):
@@ -161,8 +191,9 @@ class MMapDataset(Dataset):
     @property
     def size(self):
         return self.view.shape[0]
-
+    
     def resize(self, size, axis=None):
+        assert self._buffer is not None
         shape = self.base.shape
         if isinstance(size, integer_types):
             length = 1
@@ -179,7 +210,7 @@ class MMapDataset(Dataset):
         nb_item = length
         length *= dtype_.itemsize
         last = max(0, length - 1)
-        length = (last // PAGESIZE + 1) * PAGESIZE
+        length = (last // PAGESIZE + 1) * PAGESIZE *10
         if length != len(self._buffer):
             self._buffer.resize(length)
         self.base = np.frombuffer(self._buffer, dtype=dtype_, count=nb_item) # returns an 1D array
@@ -209,26 +240,29 @@ class MMapDataset(Dataset):
         else:
             newarea = [np.s_[0:s] for s in size]
         self.view = self.base[newarea]
-        #if dtype == OBJECT:
-        #    self._strings.resize(self.compute_strings_resize())
 
     def __getitem__(self, args):
         if self.dtype != OBJECT:
             return self.view[args]
-        if isinstance(args, int):
+        if isinstance(args, integer_types):
             offset = self.view[args]
+            if offset == -1:
+                return None
             end = self._strings._buffer.find(b'\x00', offset)
-            return self._strings._buffer[offset:end].decode()
+            return _str_loads(self._strings._buffer[offset:end])
         elif isinstance(args, slice):
             stop_ = args.stop if args.stop is not None else len(self.view)
             args = range(*args.indices(stop_))
         res = []
         for i in args:
             offset = self.view[i]
+            if offset == -1:
+                res.append(None)
+                continue
             end = self._strings._buffer.find(b'\x00', offset)
-            res.append(self._strings._buffer[offset:end].decode())
+            res.append(_str_loads(self._strings._buffer[offset:end]))
         return np.array(res, dtype=OBJECT)
-                
+
     def __setitem__(self, args, val):
         if self.dtype != OBJECT:
             self.view[args] = val
@@ -240,9 +274,7 @@ class MMapDataset(Dataset):
             stop_ = args.stop if args.stop is not None else len(self.view)
             args = range(*args.indices(stop_))
         for i, k in enumerate(args):
-            #import pdb;pdb.set_trace()
-            self.view[k] = self._set_value_at(k, val[i])
-        print(self.view)
+            self._set_value_at(k, val[i])
 
     def __len__(self):
         return self.view.shape[0]
@@ -262,7 +294,12 @@ class MMapGroup(GroupImpl):
     """
     Group of mmap-based groups and datasets.
     """
-    def __init__(self, name='mmap', parent=None):
+    all_instances = []
+    def __init__(self, name=None, parent=None):
+        if name is None:
+            name = get_random_name("mmapstorage_")
+        else:
+            name = get_random_name(name+"_")
         super(MMapGroup, self).__init__(name, parent=parent)
         self._directory = self.path()
         metadata = os.path.join(self._directory, METADATA_FILE)
@@ -274,9 +311,9 @@ class MMapGroup(GroupImpl):
                                  self._directory)
             _read_attributes(self._attrs.attrs, metadata)
         else:
-            os.mkdir(self._directory) # can raise exceptions
+            os.makedirs(self._directory) # can raise exceptions
             _write_attributes(self._attrs.attrs, metadata)
-
+        MMapGroup.all_instances.append(self)
     def path(self):
         "Return the path of the directory for that group"
         if self.parent is None:
@@ -321,8 +358,18 @@ class MMapGroup(GroupImpl):
 
     def delete(self):
         "Delete the group and resources associated. Do it at your own risk"
-        shutil.rmtree(self._directory)
-
+        if os.path.exists(self._directory):
+            shutil.rmtree(self._directory)
+    def close_all(self):
+        for ds in self.dict.values():
+            if isinstance(ds, MMapDataset):
+                ds.close()
+            elif isinstance(ds, MMapGroup):
+                ds.close_all()
+        self.delete()
+                
+    
+            
 
 class MMapStorageEngine(StorageEngine, MMapGroup):
     "StorageEngine for mmap-based storage"

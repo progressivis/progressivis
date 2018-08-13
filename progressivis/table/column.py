@@ -6,7 +6,7 @@ import logging
 import numpy as np
 
 from progressivis.storage import Group
-from progressivis.core.utils import integer_types
+from progressivis.core.utils import integer_types, get_random_name
 from progressivis.core.fast import indices_to_slice
 from .column_base import BaseColumn
 from .dshape import dshape_to_h5py, np_dshape, dshape_create
@@ -30,7 +30,7 @@ class Column(BaseColumn):
             if index is not None:
                 storagegroup = index.storagegroup
             else:
-                storagegroup = Group.default()
+                storagegroup = Group.default(name=get_random_name('column_'))
         self._storagegroup = storagegroup
         self.dataset = None
         self._dshape = None

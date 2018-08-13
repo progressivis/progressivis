@@ -5,7 +5,8 @@ import sys
 from unittest import TestCase, skip, main
 
 from progressivis import log_level, logging, Scheduler, BaseScheduler
-
+from progressivis.storage import Group
+from progressivis.storage.mmap import MMapGroup
 import numpy as np
 
 _ = skip # shut-up pylint
@@ -30,7 +31,7 @@ class ProgressiveTest(TestCase):
     def __init__(self, *args):
         super(ProgressiveTest, self).__init__(*args)
         self._output = False
-
+        self._schedulers = []
     @staticmethod
     def terse(x):
         _ = x
@@ -45,14 +46,22 @@ class ProgressiveTest(TestCase):
             self.log(int(level))
         else:
             self.log()
+        
+    def tearDown(self):
+        for grp in MMapGroup.all_instances:
+            grp.close_all()
 
     def scheduler(self):
+        sched = None
         if getenv("NOTHREAD"):
             if not self._output:
                 print('[Using non-threaded scheduler]', end=' ', file=sys.stderr)
                 self._output = True
-            return BaseScheduler()
-        return Scheduler()
+            sched = BaseScheduler()
+        else:
+            sched = Scheduler()
+        self._schedulers.append(sched)
+        return sched
 
     @staticmethod
     def log(level=logging.ERROR, package='progressivis'):

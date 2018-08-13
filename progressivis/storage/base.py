@@ -93,6 +93,8 @@ class Group(DatasetFactory):
     def __contains__(self, name):
         pass
 
+    def close_all():
+        pass
 
 class Dataset(StorageObject):
     @abstractproperty

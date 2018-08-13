@@ -6,6 +6,7 @@ from progressivis.stats import  RandomTable, Min, Max
 from progressivis.core.bitmap import bitmap
 from progressivis.table.range_query import RangeQuery
 import numpy as np
+import sys
 from . import ProgressiveTest, main
 class TestBinJoin(ProgressiveTest):    
     def test_bin_join(self):

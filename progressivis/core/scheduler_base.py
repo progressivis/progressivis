@@ -659,3 +659,18 @@ class BaseScheduler(object):
             logger.info('Quantum is 0 in %s, setting it to'
                         ' a reasonable value', module.name)
         return quantum
+
+    def close_all(self):
+        for m in self.modules().values():
+            if (hasattr(m, '_table') and
+                    m._table is not None and
+                    m._table.storagegroup is not None):
+                m._table.storagegroup.close_all()
+            #import pdb;pdb.set_trace)(
+            if (hasattr(m, '_params') and
+                    m._params is not None and
+                    m._params.storagegroup is not None):
+                m._params.storagegroup.close_all()
+            if (hasattr(m, 'storagegroup') and
+                    m.storagegroup is not None):
+                m.storagegroup.close_all()

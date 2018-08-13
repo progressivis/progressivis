@@ -11,11 +11,11 @@ try:
 except ImportError:
     numpyengine = None
 
-# try:
-#     from .mmap import MMapStorageEngine
-#     mmapengine = MMapStorageEngine()
-# except ImportError:
-#     mmapengine = None
+try:
+    from .mmap import MMapStorageEngine, MMapGroup
+    mmapengine = MMapStorageEngine()
+except ImportError:
+    mmapengine = None
 
 
 # try:
@@ -45,4 +45,4 @@ except ImportError:
 if get_option('storage.default'):
     StorageEngine.default = get_option('storage.default')
 
-Group.default = NumpyGroup
+Group.default = MMapGroup #NumpyGroup
