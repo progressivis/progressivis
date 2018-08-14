@@ -145,10 +145,6 @@ class MMapDataset(Dataset):
 
     def _set_value_at(self, i, v):
         #TODO free current value
-        # Using None as in the test below is a bad idea
-        # because if dtype==OBJECT then None is an authorized value
-        # That's why I replaced it by NotImplemented
-        #import pdb;pdb.set_trace()
         if v is None:
             self.view[i] = -1
         else:
@@ -253,14 +249,14 @@ class MMapDataset(Dataset):
         elif isinstance(args, slice):
             stop_ = args.stop if args.stop is not None else len(self.view)
             args = range(*args.indices(stop_))
-        res = []
-        for i in args:
+        res = np.empty((len(args),),dtype=OBJECT)
+        for k, i in enumerate(args):
             offset = self.view[i]
             if offset == -1:
-                res.append(None)
+                res[k] = None
                 continue
             end = self._strings._buffer.find(b'\x00', offset)
-            res.append(_str_loads(self._strings._buffer[offset:end]))
+            res[k] = _str_loads(self._strings._buffer[offset:end])
         return np.array(res, dtype=OBJECT)
 
     def __setitem__(self, args, val):
