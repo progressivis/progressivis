@@ -34,13 +34,6 @@ def _str_loads(data):
 def _str_dumps(data):
     return json.dumps(data).encode('utf-8')
 
-def mm_str_loads(data):
-    return marshal.loads(data) 
-
-def mm_str_dumps(data):
-    # unfortunately marshal.dumps generates zeroes
-    # marshal.dumps(5) => b'\xe9\x05\x00\x00\x00'
-    return marshal.dumps(data)
 
 def _shape_len(shape):
     length = 1
@@ -115,15 +108,11 @@ class MMapDataset(Dataset):
         if self.base.shape != shape:
             self.base = self.base.reshape(shape)
         self.view = self.base
-        #if self.base.shape == shape:
-        #    self.view = self.base
-        #else:
-        #    self.view = self.base[:shape[0]]
         assert self.view.shape == shape
         if data is not None:
             self._fill(0, data)
         self._attrs = AttributeImpl()
-        #MMapDataset.datasets.append(self)
+
         
     def _fill(self, data, start=0, end=None):
         assert self._buffer is not None
@@ -131,7 +120,7 @@ class MMapDataset(Dataset):
             end = start + len(data)
         if self.base.dtype == OBJECT:
             for i, v in enumerate(data):
-                self._set_value_at(start+i, v)
+                self._strings.set_at(start+i, v)
         else:
             self.view[start:end] = np.asarray(data)
             
@@ -145,16 +134,6 @@ class MMapDataset(Dataset):
         self.resize(last+lval)
         self.base[last:last+lval] = val
 
-    def _set_value_at(self, i, v):
-        #TODO free current value
-        if v is None:
-            self.view[i] = -1
-        else:
-            data = _str_dumps(v)
-            #offset = len(self._strings)
-            #self._strings.append(np.frombuffer(data, dtype=np.int8))
-            #self._strings.append([0])
-            self.view[i] = self._strings.add(v)
 
     def close(self, recurse=True):
         if self._buffer is not None:
@@ -246,8 +225,6 @@ class MMapDataset(Dataset):
             offset = self.view[args]
             if offset == -1:
                 return None
-            #end = self._strings._buffer.find(b'\x00', offset)
-            #return _str_loads(self._strings._buffer[offset:end])
             return self._strings.get(offset)
         elif isinstance(args, slice):
             stop_ = args.stop if args.stop is not None else len(self.view)
@@ -258,8 +235,6 @@ class MMapDataset(Dataset):
             if offset == -1:
                 res[k] = None
                 continue
-            #end = self._strings._buffer.find(b'\x00', offset)
-            #res[k] = _str_loads(self._strings._buffer[offset:end])
             res[k] = self._strings.get(offset)
         return np.array(res, dtype=OBJECT)
 
@@ -274,10 +249,7 @@ class MMapDataset(Dataset):
             stop_ = args.stop if args.stop is not None else len(self.view)
             args = range(*args.indices(stop_))
         for i, k in enumerate(args):
-            #import pdb;pdb.set_trace()
             self.view[k]  = self._strings.set_at(self.view[k], val[i])
-            #if new_idx != k:
-            #    view[k] = new_idx
 
     def __len__(self):
         return self.view.shape[0]
