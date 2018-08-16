@@ -1,6 +1,7 @@
 from . import ProgressiveTest
 
 from progressivis.datasets import get_dataset
+from  progressivis.core import BaseScheduler
 
 import progressivis.expr as pv
 from progressivis.expr.table import PipedInput
@@ -53,6 +54,7 @@ class TestExpr(ProgressiveTest):
         """
         Connecting modules via the pipe operator ( 3 pipes)
         """
+        BaseScheduler.default = self.scheduler()
         ret = PipedInput(get_dataset('bigfile')) | pv.load_csv(
             index_col=False, header=None) | pv.min() | pv.echo(proc=prtm)
         csv = ret.repipe('csv_loader_1')
@@ -79,6 +81,7 @@ class TestExpr(ProgressiveTest):
         """
         Connecting modules via the pipe operator (only one pipe)
         """
+        BaseScheduler.default = self.scheduler()
         ret = (PipedInput(get_dataset('bigfile'))
                | pv.load_csv(index_col=False, header=None) | pv.min()
                | pv.echo(proc=prtm).repipe('csv_loader_1') | pv.max()

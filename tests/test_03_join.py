@@ -33,6 +33,7 @@ class TestJoin(ProgressiveTest):
         prlen = Every(proc=self.terse, constant_time=True, scheduler=s)
         prlen.input.df = csv.output.table
         s.start()
+        s.join()
         res = join.trace_stats(max_runs=1)
         print(res)
 
