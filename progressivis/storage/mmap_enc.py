@@ -92,7 +92,7 @@ class MMapObject(object):
         if size <= self.sizes[idx]:
             off = _ofs(idx)
             self.mmap[off:off+lb] = buf
-            self.mmap[off+lb:off+size] = b'\x00'*(bufsize-lb) #np.zeros(size-lb, dtype=np.uint8)
+            self.mmap[off+lb:off+size] = b'\x00'*(size-lb) #np.zeros(size-lb, dtype=np.uint8)
             #self.sizes[idx] = size
             return idx
         return self.add(obj)
