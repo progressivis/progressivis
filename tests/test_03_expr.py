@@ -28,6 +28,7 @@ class TestExpr(ProgressiveTest):
         """
         Connecting modules via function calls
         """
+        BaseScheduler.default = self.scheduler()
         csv = pv.load_csv(get_dataset('bigfile'), index_col=False, header=None)
         m = pv.min(csv)
         pv.echo(m, proc=prtm)
