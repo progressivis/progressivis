@@ -17,6 +17,7 @@ import numpy as np
 from progressivis.core.utils import integer_types, get_random_name
 from .base import StorageEngine, Dataset
 from .hierarchy import GroupImpl, AttributeImpl
+from .mmap_enc import MMapObject
 import sys
 import json
 logger = logging.getLogger(__name__)
@@ -79,7 +80,8 @@ class MMapDataset(Dataset):
         if dtype == OBJECT:
                 # NB: shape=(1,) means single empty string, offset=0, so shared by all
                 # entries in self.base
-            self._strings = MMapDataset(path, name+"_strings", shape=(1,), dtype=np.int8)
+            #self._strings = MMapDataset(path, name+"_strings", shape=(1,), dtype=np.int8)
+            self._strings = MMapObject(self._filename+"_strings")
             if data is not None:
                 pass # TODO: ...
             dtype = np.dtype(np.int64)
@@ -149,10 +151,10 @@ class MMapDataset(Dataset):
             self.view[i] = -1
         else:
             data = _str_dumps(v)
-            offset = len(self._strings)
-            self._strings.append(np.frombuffer(data, dtype=np.int8))
-            self._strings.append([0])
-            self.view[i] = offset
+            #offset = len(self._strings)
+            #self._strings.append(np.frombuffer(data, dtype=np.int8))
+            #self._strings.append([0])
+            self.view[i] = self._strings.add(v)
 
     def close(self, recurse=True):
         if self._buffer is not None:
@@ -244,8 +246,9 @@ class MMapDataset(Dataset):
             offset = self.view[args]
             if offset == -1:
                 return None
-            end = self._strings._buffer.find(b'\x00', offset)
-            return _str_loads(self._strings._buffer[offset:end])
+            #end = self._strings._buffer.find(b'\x00', offset)
+            #return _str_loads(self._strings._buffer[offset:end])
+            return self._strings.get(offset)
         elif isinstance(args, slice):
             stop_ = args.stop if args.stop is not None else len(self.view)
             args = range(*args.indices(stop_))
@@ -255,8 +258,9 @@ class MMapDataset(Dataset):
             if offset == -1:
                 res[k] = None
                 continue
-            end = self._strings._buffer.find(b'\x00', offset)
-            res[k] = _str_loads(self._strings._buffer[offset:end])
+            #end = self._strings._buffer.find(b'\x00', offset)
+            #res[k] = _str_loads(self._strings._buffer[offset:end])
+            res[k] = self._strings.get(offset)
         return np.array(res, dtype=OBJECT)
 
     def __setitem__(self, args, val):
@@ -270,7 +274,10 @@ class MMapDataset(Dataset):
             stop_ = args.stop if args.stop is not None else len(self.view)
             args = range(*args.indices(stop_))
         for i, k in enumerate(args):
-            self._set_value_at(k, val[i])
+            #import pdb;pdb.set_trace()
+            self.view[k]  = self._strings.set_at(self.view[k], val[i])
+            #if new_idx != k:
+            #    view[k] = new_idx
 
     def __len__(self):
         return self.view.shape[0]
