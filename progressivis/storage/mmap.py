@@ -68,7 +68,7 @@ class MMapDataset(Dataset):
         if dtype is None:
             raise ValueError('dtype required when no data is provided')
         self._dtype = dtype
-        
+
         if shape:
             length = 1
             for shap in shape:
@@ -124,7 +124,7 @@ class MMapDataset(Dataset):
             self._fill(0, data)
         self._attrs = AttributeImpl()
         #MMapDataset.datasets.append(self)
-        
+
     def _fill(self, data, start=0, end=None):
         assert self._buffer is not None
         if end is None:
@@ -134,7 +134,7 @@ class MMapDataset(Dataset):
                 self._set_value_at(start+i, v)
         else:
             self.view[start:end] = np.asarray(data)
-            
+
     def append(self, val):
         assert self._buffer is not None        
         #assert isinstance(val, bytes)
