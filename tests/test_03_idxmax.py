@@ -21,7 +21,7 @@ class TestIdxMax(ProgressiveTest):
         #print('max1', max1)
         max2 = idxmax.max().last().to_dict()
         #print('max2', max2)
-        self.assertEqual(max1, max2)
+        self.assertAlmostEqual(max1, max2)
 
     def test_idxmin(self):
         s=self.scheduler()
@@ -38,7 +38,7 @@ class TestIdxMax(ProgressiveTest):
         #print('min1', min1)
         min2 = idxmin.min().last().to_dict()
         #print('min2', min2)
-        self.assertEqual(min1, min2)
+        self.assertAlmostEqual(min1, min2)
 
 if __name__ == '__main__':
     ProgressiveTest.main()
