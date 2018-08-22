@@ -11,6 +11,7 @@ class TestTableEval(ProgressiveTest):
     def setUp(self):
         super(TestTableEval, self).setUp()        
         self.scheduler = Scheduler.default
+
     def test_filtering(self):
         t = Table('table_filtering', dshape="{a: int, b: float32}", create=True)
         t.resize(20)
@@ -54,7 +55,7 @@ class TestTableEval(ProgressiveTest):
         self.assertTrue(np.allclose(t['a'], df['a']))
         self.assertTrue(np.allclose(t['b'], df['b']))        
     def test_user_dict(self):
-        t = Table('table_eval_assign', dshape="{a: int, b: float32}", create=True)
+        t = Table('table_user_dict', dshape="{a: int, b: float32}", create=True)
         t.resize(20)
         ivalues = np.random.randint(100,size=20)
         t['a'] = ivalues
@@ -70,3 +71,4 @@ class TestTableEval(ProgressiveTest):
         #df.eval('b = a+2*b', inplace=True)
         #self.assertTrue(np.allclose(t['a'], df['a']))
         #self.assertTrue(np.allclose(t['b'], df['b']))        
+

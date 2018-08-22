@@ -14,6 +14,9 @@ from progressivis.table.range_query import RangeQuery
 
 class TestPercentiles(ProgressiveTest):
     "Tests for HistIndex based percentiles"
+    def tearDown(self):
+        TestPercentiles.cleanup()
+
     def _impl_tst_percentiles(self, accuracy):
         """
         """

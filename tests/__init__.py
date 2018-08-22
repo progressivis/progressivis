@@ -5,7 +5,7 @@ import sys
 from unittest import TestCase, skip, main
 
 from progressivis import log_level, logging, Scheduler, BaseScheduler
-from progressivis.storage import Group
+from progressivis.storage import Group, StorageEngine
 from progressivis.storage.mmap import MMapGroup
 import numpy as np
 
@@ -46,10 +46,22 @@ class ProgressiveTest(TestCase):
             self.log(int(level))
         else:
             self.log()
-        
-    def tearDown(self):
-        for grp in MMapGroup.all_instances:
-            grp.close_all()
+
+    @classmethod
+    def cleanup(self):
+        if StorageEngine.default == 'mmap':
+            root = StorageEngine.engines()['mmap']
+            root.close_all()
+            root.delete_children()
+            root.dict = {}
+
+    @classmethod
+    def setUpClass(cls):
+        cls.cleanup()
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.cleanup()
 
     def scheduler(self):
         sched = None

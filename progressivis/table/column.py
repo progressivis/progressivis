@@ -137,7 +137,7 @@ class Column(BaseColumn):
         self.dataset = dataset
         return dataset
 
-    def load_dataset(self, dshape, nrow, shape=None):
+    def load_dataset(self, dshape, nrow, shape=None, is_id=False):
         self._dshape = dshape
         if shape is None:
             shape = (nrow,)
@@ -145,7 +145,7 @@ class Column(BaseColumn):
             shape=tuple([nrow]+shape)
         dtype = dshape_to_h5py(dshape)
         group = self._storagegroup
-        if not self.name in group: # for lazy ID column creation
+        if is_id and not self.name in group: # for lazy ID column creation 
             return None
         dataset = group.require_dataset(self.name,
                                         dtype=dtype,

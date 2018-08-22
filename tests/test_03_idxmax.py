@@ -4,6 +4,8 @@ from progressivis import Print
 from progressivis.stats import IdxMax, IdxMin, Max, Min, RandomTable
 
 class TestIdxMax(ProgressiveTest):
+    def tearDown(self):
+        TestIdxMax.cleanup()
     def test_idxmax(self):
         s=self.scheduler()
         random = RandomTable(10, rows=10000,throttle=1000, scheduler=s)

@@ -27,21 +27,6 @@ PAGESIZE = getpagesize()
 FACTOR = 1
 
 
-
-def _str_loads(data):
-    return json.loads(data) 
-
-def _str_dumps(data):
-    return json.dumps(data).encode('utf-8')
-
-def mm_str_loads(data):
-    return marshal.loads(data) 
-
-def mm_str_dumps(data):
-    # unfortunately marshal.dumps generates zeroes
-    # marshal.dumps(5) => b'\xe9\x05\x00\x00\x00'
-    return marshal.dumps(data)
-
 def _shape_len(shape):
     length = 1
     for dim in shape:
@@ -58,6 +43,8 @@ class MMapDataset(Dataset):
         "Create a MMapDataset."
         self._name = name
         self._filename = os.path.join(path, name)
+        self._metafile = os.path.join(path, METADATA_FILE+'.'+name)
+        self._attrs = AttributeImpl()        
         length = 0
         if dtype is not None:
             dtype = np.dtype(dtype)
@@ -90,9 +77,12 @@ class MMapDataset(Dataset):
         nb_item = length//dtype.itemsize
         last = max(0, length - 1)
         length = (last // PAGESIZE + 1) * PAGESIZE * 10
-
-        self._file = open(self._filename, 'wb+') # can raise many exceptions
-        os.ftruncate(self._file.fileno(), length)
+        if os.path.exists(self._filename):
+            self._file = open(self._filename, 'ab+')
+            _read_attributes(self._attrs.attrs, self._metafile)
+        else:
+            self._file = open(self._filename, 'wb+') # can raise many exceptions
+            os.ftruncate(self._file.fileno(), length)
         self._buffer = mmap(self._file.fileno(), 0)
 
         if 'maxshape' in kwds:
@@ -122,7 +112,6 @@ class MMapDataset(Dataset):
         assert self.view.shape == shape
         if data is not None:
             self._fill(0, data)
-        self._attrs = AttributeImpl()
         #MMapDataset.datasets.append(self)
 
     def _fill(self, data, start=0, end=None):
@@ -150,10 +139,6 @@ class MMapDataset(Dataset):
         if v is None:
             self.view[i] = -1
         else:
-            data = _str_dumps(v)
-            #offset = len(self._strings)
-            #self._strings.append(np.frombuffer(data, dtype=np.int8))
-            #self._strings.append([0])
             self.view[i] = self._strings.add(v)
 
     def close(self, recurse=True):
@@ -165,7 +150,7 @@ class MMapDataset(Dataset):
             self._file = None
         if recurse and self._strings is not None:
             self._strings.close()
-
+        _write_attributes(self._attrs.attrs, self._metafile)
     @property
     def shape(self):
         return self.view.shape
@@ -246,8 +231,6 @@ class MMapDataset(Dataset):
             offset = self.view[args]
             if offset == -1:
                 return None
-            #end = self._strings._buffer.find(b'\x00', offset)
-            #return _str_loads(self._strings._buffer[offset:end])
             return self._strings.get(offset)
         elif isinstance(args, slice):
             stop_ = args.stop if args.stop is not None else len(self.view)
@@ -258,8 +241,6 @@ class MMapDataset(Dataset):
             if offset == -1:
                 res[k] = None
                 continue
-            #end = self._strings._buffer.find(b'\x00', offset)
-            #res[k] = _str_loads(self._strings._buffer[offset:end])
             res[k] = self._strings.get(offset)
         return np.array(res, dtype=OBJECT)
 
@@ -274,7 +255,6 @@ class MMapDataset(Dataset):
             stop_ = args.stop if args.stop is not None else len(self.view)
             args = range(*args.indices(stop_))
         for i, k in enumerate(args):
-            #import pdb;pdb.set_trace()
             self.view[k]  = self._strings.set_at(self.view[k], val[i])
             #if new_idx != k:
             #    view[k] = new_idx
@@ -297,12 +277,10 @@ class MMapGroup(GroupImpl):
     """
     Group of mmap-based groups and datasets.
     """
-    all_instances = []
+    #all_instances = []
     def __init__(self, name=None, parent=None):
         if name is None:
             name = get_random_name("mmapstorage_")
-        else:
-            name = get_random_name(name+"_")
         super(MMapGroup, self).__init__(name, parent=parent)
         self._directory = self.path()
         metadata = os.path.join(self._directory, METADATA_FILE)
@@ -316,7 +294,11 @@ class MMapGroup(GroupImpl):
         else:
             os.makedirs(self._directory) # can raise exceptions
             _write_attributes(self._attrs.attrs, metadata)
-        MMapGroup.all_instances.append(self)
+        if parent is not None:
+            if name in parent.dict:
+                raise ValueError('Cannot create group {}, already exists'.format(name))
+            parent.dict[name] = self
+            
     def path(self):
         "Return the path of the directory for that group"
         if self.parent is None:
@@ -361,16 +343,34 @@ class MMapGroup(GroupImpl):
 
     def delete(self):
         "Delete the group and resources associated. Do it at your own risk"
+        import pdb;pdb.set_trace()
         if os.path.exists(self._directory):
             shutil.rmtree(self._directory)
+        if self.parent is not None and self in self.parent.dict:
+            del self.parent.dict[self]
+
+            
+    def delete_children(self):
+        for f in os.listdir(self._directory):
+            if f == '.metadata':
+                continue
+            child = os.path.join(self._directory, f)
+            if os.path.isdir(child):
+                shutil.rmtree(child)
+            else:
+                os.unlink(child)
+            
     def close_all(self):
         for ds in self.dict.values():
             if isinstance(ds, MMapDataset):
                 ds.close()
             elif isinstance(ds, MMapGroup):
                 ds.close_all()
-        self.delete()
-                
+        metadata = os.path.join(self._directory, METADATA_FILE)
+        _write_attributes(self._attrs.attrs, metadata)
+
+        #self.delete()
+
     
             
 
@@ -383,6 +383,19 @@ class MMapStorageEngine(StorageEngine, MMapGroup):
         StorageEngine.__init__(self, "mmap")
         MMapGroup.__init__(self, root, None)
 
+        
+    @staticmethod
+    def create_mmap_group(name=None):
+        root = StorageEngine.engines()['mmap']
+        if name in root.dict:
+            name = get_random_name(name[:16]+'_')
+            # TODO : specify this behaviour
+            #grp = root.dict[name]
+            #if not isinstance(grp, MMapGroup):
+            #     raise ValueError("{} already exists and is not a group".format(name))
+            #return grp
+        return MMapGroup(name, parent=root)
+    
     def __contains__(self, name):
         return MMapGroup.__contains__(self, name)
 

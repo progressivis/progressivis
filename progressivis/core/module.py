@@ -18,7 +18,7 @@ from progressivis.table.row import Row
 from progressivis.storage import Group
 
 from .scheduler_base import BaseScheduler
-from .utils import (ProgressiveError, type_fullname)
+from .utils import (ProgressiveError, type_fullname, get_random_name)
 from .slot import (SlotDescriptor, Slot, InputSlots, OutputSlots)
 from .tracer_base import Tracer
 from .time_predictor import TimePredictor
@@ -93,7 +93,7 @@ class Module(six.with_metaclass(ModuleMeta, object)):
             storage = StorageManager.default
         self.storage = storage
         if storagegroup is None:
-            storagegroup = Group.default()
+            storagegroup = Group.default(get_random_name(name+'_tracer'))
         self.storagegroup = storagegroup
         if tracer is None:
             tracer = Tracer.default(name, storagegroup)

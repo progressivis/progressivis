@@ -52,7 +52,8 @@ class ScatterPlotPatch(ModulePatch):
 class TestScatterPlot(ProgressiveTest):
 #    def setUp(self):
 #        log_level(logging.INFO,'progressivis')
-
+    def tearDown(self):
+        TestScatterPlot.cleanup()
     def test_scatterplot(self):
         s = self.scheduler()
         csv = CSVLoader(get_dataset('smallfile'),

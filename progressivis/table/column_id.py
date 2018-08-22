@@ -152,7 +152,7 @@ class IdColumn(Column):
             dshape=IdColumn.ID_DSHAPE
         else:
             assert(dshape==IdColumn.ID_DSHAPE)
-        dataset = super(IdColumn, self).load_dataset(dshape, nrow, shape)
+        dataset = super(IdColumn, self).load_dataset(dshape, nrow, shape, is_id=True)
         if dataset is None:
             self._is_identity = True
             dataset = self.create_dataset(dshape, -1, shape=shape)

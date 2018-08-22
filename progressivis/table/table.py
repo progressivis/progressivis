@@ -104,6 +104,7 @@ class Table(BaseTable):
         if not (storagegroup is None or isinstance(storagegroup, Group)):
             raise ValueError('Invalid storagegroup (%s) should be None or a Group'%storagegroup)
         if storagegroup is None:
+            #import pdb;pdb.set_trace()
             storagegroup = Group.default(self._name)
         if storagegroup is None:
             raise RuntimeError('Cannot get a valid default storage Group')
@@ -119,7 +120,7 @@ class Table(BaseTable):
             assert dshape_table_check(self._dshape)
         if create and self._dshape is None:
             raise ValueError('Cannot create a table without a dshape')
-        if self._dshape is None or (not create and metadata.ATTR_TABLE in self._storagegroup):
+        if self._dshape is None or (not create and metadata.ATTR_TABLE in self._storagegroup.attrs):
             self._load_table()
         else:
             self._create_table(fillvalues or {})
@@ -220,6 +221,7 @@ class Table(BaseTable):
     def _allocate(self, count, index=None):
         index = self._ids._allocate(count, index)
         newsize = self._ids.size
+        self._storagegroup.attrs[metadata.ATTR_NROWS] = newsize
         for column in self._columns:
             column.resize(newsize)
         return index
