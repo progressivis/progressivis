@@ -343,7 +343,6 @@ class MMapGroup(GroupImpl):
 
     def delete(self):
         "Delete the group and resources associated. Do it at your own risk"
-        import pdb;pdb.set_trace()
         if os.path.exists(self._directory):
             shutil.rmtree(self._directory)
         if self.parent is not None and self in self.parent.dict:

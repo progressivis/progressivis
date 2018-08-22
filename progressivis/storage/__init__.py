@@ -46,4 +46,4 @@ if get_option('storage.default'):
     StorageEngine.default = get_option('storage.default')
 
 #Group.default = MMapGroup #NumpyGroup
-Group.default = MMapStorageEngine.create_mmap_group
+Group.default = staticmethod(MMapStorageEngine.create_mmap_group)
