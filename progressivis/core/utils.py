@@ -662,18 +662,68 @@ def s3_get_filepath_or_buffer(filepath_or_buffer, encoding=None,
         filepath_or_buffer = fs.open(_strip_schema(filepath_or_buffer))
     return filepath_or_buffer, None, compression
 
+class HttpDesc(object):
+    def __init__(self, obj, flushing_str):
+        self._obj = obj
+        self._cnt = 0
+        self._str = flushing_str
+        self._len = len(flushing_str) if flushing_str is not None else 0
+        self._start = 0 if flushing_str else None
+        self._end = False
+        self._delivered = 0
+    @property
+    def cnt(self):
+        return self._cnt
+
+    def read(self, n=0):
+        if self._start is None:
+            ret = self._obj.read(n)
+            self._cnt += len(ret)
+            return ret
+        if n >= len(self._str[self._start:]):
+            ret = self._str[self._start:]
+            self._start = None
+            self._end = True
+            assert ret
+            self._delivered += len(ret)
+            assert self._delivered <= self._len
+            return ret
+        ret = self._str[self._start:self._start+n]
+        assert ret
+        self._start += n
+        self._delivered += len(ret)
+        assert self._delivered <= self._len
+        return ret
+
+    def tell(self):
+        return self._obj.tell()
+
+    def size(self):
+        return self._obj.size()
+
+    def __iter__(self):
+        return self
+
+    def close(self):
+        try:
+            self._obj.close()
+        except:
+            pass
 
 def filepath_to_buffer(filepath, encoding=None,
-                       compression=None):
+                       compression=None, timeout=None, start_byte=0, flushing_str=''):
     if not is_str(filepath):
         return filepath, encoding, compression, filepath.size()
     if _is_url(filepath):
-        req = requests.get(filepath, stream=True)
+        headers = None
+        if start_byte:
+            headers = {"Range": "bytes={}-".format(start_byte)}
+        req = requests.get(filepath, stream=True, headers=headers, timeout=timeout)
         content_encoding = req.headers.get('Content-Encoding', None)
         if content_encoding == 'gzip':
             compression = 'gzip'
         size = req.headers.get('Content-Length', 0)
-        return req.raw, encoding, compression, int(size)
+        return HttpDesc(req.raw, flushing_str), encoding, compression, int(size)
     if _is_s3_url(filepath):
         from pandas.io import s3
         reader, encoding, compression = s3_get_filepath_or_buffer(

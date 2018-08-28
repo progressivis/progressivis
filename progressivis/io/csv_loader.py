@@ -4,13 +4,15 @@ import logging
 logger = logging.getLogger(__name__)
 
 import pandas as pd
-
+import numpy as np
+from io import BytesIO
 from progressivis import ProgressiveError, SlotDescriptor
 from ..table.module import TableModule
 from ..table.table import Table
 from ..table.dshape import dshape_from_dataframe
 from ..core.utils import filepath_to_buffer, _infer_compression, force_valid_id_columns
-
+from requests.packages.urllib3.exceptions import HTTPError
+import bz2
 
 class CSVLoader(TableModule):
     def __init__(self,
@@ -18,6 +20,7 @@ class CSVLoader(TableModule):
                  filter_=None,
                  force_valid_ids=True,
                  fillvalues=None,
+                 timeout=None,
                  **kwds):
         self._add_slots(kwds,'input_descriptors',
                         [SlotDescriptor('filenames', type=Table,required=False)])
@@ -43,9 +46,17 @@ class CSVLoader(TableModule):
         self._input_encoding = None
         self._input_compression = None
         self._input_size = 0 # length of the file or input stream when available
-
+        self._processed_bytes = 0
+        self._flushing_stuff = None
+        self._current_url = None
+        self._recovery = False
+        self._recovery_cnt = 0
+        self._timeout = timeout
         self._table_params = dict(name=self.name, fillvalues=fillvalues)
         self._table = None
+
+    def assign_bytes_cnt(self):
+        self._processed_bytes = self.parser.f.cnt if hasattr(self.parser.f, 'cnt') else  None
 
     def rows_read(self):
         return self._rows_read
@@ -66,9 +77,13 @@ class CSVLoader(TableModule):
         if self._input_stream is not None:
             self.close()
         compression = _infer_compression(filepath, self._compression)
+        flushing_str = self.stringify_flushing_stuff()
         istream, encoding, compression, size = filepath_to_buffer(filepath,
                                                                   encoding=self._encoding,
-                                                                  compression=compression)
+                                                                  compression=compression,
+                                                                    timeout=self._timeout,
+                                                                      start_byte=self._processed_bytes,
+                                                                      flushing_str=flushing_str)
         self._input_stream = istream
         self._input_encoding = encoding
         self._input_compression = compression
@@ -95,21 +110,71 @@ class CSVLoader(TableModule):
             return (0, 0)
         pos = self._input_stream.tell()
         return (pos, self._input_size)
+    def _reset_recovery(self):
+        self._processed_bytes = 0
+        self._flushing_stuff = None
+        self._recovery = False
+
+    def stringify_flushing_stuff(self):
+        """
+        the flushing stuff structure is: tuple(tuple(None, list, dict), delimitator)
+        """
+        if self._flushing_stuff is None:
+            return None
+        dict_, del_ = self._flushing_stuff
+        cols = list(dict_.values())
+        col_index = dict_.keys()
+        size = len(cols[0])
+        print("RECOVER ", size, " LINES!")
+        acc = BytesIO()
+        has_nan = False
+        for i in range(size):
+            if i>0:
+                acc.write(b'\n')
+            for j in col_index:
+                v = cols[j][i] 
+                if isinstance(v, float) and np.isnan(v):
+                    has_nan = True
+                    continue # TODO: consider the case when data contains "true Nans"
+                if j>0:
+                    acc.write(del_)
+                acc.write(str(v).encode('utf-8'))
+        if not has_nan:
+            print("no Nan-s ...")
+            acc.write(b'\n')
+        #else:
+        #    acc.write(del_)
+        ret = acc.getvalue()
+        acc.close()
+        return ret
 
     def validate_parser(self, run_number):
         if self.parser is None:
             if self.filepath_or_buffer is not None:
                 try:
                     self.parser = pd.read_csv(self.open(self.filepath_or_buffer), **self.csv_kwds)
+                    self._recovery_cnt += 1
+                    if self._recovery:
+                        print("HTTPError recovered!")
                 except IOError as e:
                     logger.error('Cannot open file %s: %s', self.filepath_or_buffer, e)
                     self.parser = None
                     return self.state_terminated
+                self._current_url = self.filepath_or_buffer
                 self.filepath_or_buffer = None
+                self._reset_recovery()
             else:
                 fn_slot = self.get_input_slot('filenames')
                 if fn_slot is None or fn_slot.output_module is None:
                     return self.state_terminated
+                if self._recovery:
+                    try:
+                        print("recovery: ", self._current_url)
+                        self.parser = pd.read_csv(self.open(self._current_url), **self.csv_kwds)
+                    except IOError as e:
+                            logger.error('Cannot open file %s: %s', filename, e)
+                            self.parser = None
+                    return
                 with fn_slot.lock:
                     fn_slot.update(run_number)
                     if fn_slot.deleted.any() or fn_slot.updated.any():
@@ -121,10 +186,12 @@ class CSVLoader(TableModule):
                             return self.state_blocked
                         filename = df.at[indices.start, 'filename']
                         try:
+                            print("read_csv: ", filename)
                             self.parser = pd.read_csv(self.open(filename), **self.csv_kwds)
                         except IOError as e:
                             logger.error('Cannot open file %s: %s', filename, e)
                             self.parser = None
+                        self._current_url = filename
                         # fall through
         return self.state_ready
 
@@ -142,17 +209,32 @@ class CSVLoader(TableModule):
             self.close()
             raise StopIteration('Unexpected situation')
         logger.info('loading %d lines', step_size)
+        self.assign_bytes_cnt()
+        #print("Processed bytes: ", self._processed_bytes)
         try:
             with self.lock:
                 df = self.parser.read(step_size) # raises StopIteration at EOF
         except StopIteration:
+            self._processed_bytes = 0
+            self._reset_recovery()
             self.close()
             fn_slot = self.get_input_slot('filenames')
             if fn_slot is None or fn_slot.output_module is None:
                 raise
             self.parser = None
             return self._return_run_step(self.state_ready, steps_run=0, creates=0)
-
+        except HTTPError as e:
+            self._recovery = True
+            print("HTTPError ...")
+            if self._input_compression is not None:
+                raise
+            stuff = self.parser._engine._reader.read()
+            self.assign_bytes_cnt()
+            self._flushing_stuff = (stuff, self.parser._engine._reader.delimiter.encode('utf-8'))
+            self._timeout = None
+            self.parser = None
+            self.filepath_or_buffer = self._current_url
+            return self._return_run_step(self.state_blocked, steps_run=0, creates=0)            
         creates = len(df)
         if creates == 0: # should not happen
             logger.error('Received 0 elements')
