@@ -51,6 +51,8 @@ class ProgressiveTest(TestCase):
     def cleanup(self):
         if StorageEngine.default == 'mmap':
             root = StorageEngine.engines()['mmap']
+            if not root.has_files():
+                return
             root.close_all()
             root.delete_children()
             root.dict = {}

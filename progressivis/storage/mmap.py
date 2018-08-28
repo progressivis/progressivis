@@ -284,6 +284,7 @@ class MMapGroup(GroupImpl):
         super(MMapGroup, self).__init__(name, parent=parent)
         self._directory = self.path()
         metadata = os.path.join(self._directory, METADATA_FILE)
+        self._metadata = metadata
         if os.path.exists(self._directory):
             if not os.path.isdir(self._directory):
                 raise OSError('Cannot create group %s'%self._directory)
@@ -304,7 +305,12 @@ class MMapGroup(GroupImpl):
         if self.parent is None:
             return self._name
         return os.path.join(self.parent.path(), self._name)
-
+    def has_files(self):
+        if not os.path.isdir(self._directory):
+            return False
+        if not os.path.isfile(self._metadata):
+            return False
+        return True
     def create_dataset(self, name, shape=None, dtype=None, data=None, **kwds):
         if name in self.dict:
             raise KeyError('name %s already defined' % name)
