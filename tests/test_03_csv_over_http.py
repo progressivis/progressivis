@@ -114,7 +114,7 @@ class TestProgressiveLoadCSVOverHTTP(ProgressiveTest):
         self.assertTrue(module.table() is None)
         s.start()
         s.join()
-        self.assertGreater(module._recovery_cnt, 1)
+        self.assertGreater(module.parser._recovery_cnt, 0)
         self.assertEqual(len(module.table()), 1000000)
         
     def test_03_read_multiple_csv(self):

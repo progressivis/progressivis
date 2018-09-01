@@ -7,7 +7,7 @@ import six
 from itertools import tee
 import uuid
 from functools import wraps
-
+from io import BytesIO
 from collections import Iterable, Mapping
 from progressivis.core.bitmap import bitmap
 try:
@@ -511,18 +511,18 @@ class RandomBytesIO(object):
         if n == 0:
             n = self._size
         if self._pos > self._size - 1:
-            return ''
+            return b''
         if self._pos + n > self._size:
             n = self._size - self._pos
         self._pos += n
         if n == len(self._reminder):
             ret = self._reminder
             self._reminder = ""
-            return ret
+            return ret.encode('utf-8')
         if n < len(self._reminder):
             ret = self._reminder[:n]
             self._reminder = self._reminder[n:]
-            return ret
+            return ret.encode('utf-8')
         # n > len(self._reminder)
         n2 = n - len(self._reminder)
         rem = n2 % self._yield_size
@@ -533,7 +533,7 @@ class RandomBytesIO(object):
         raw_str = self._reminder + s
         ret = raw_str[:n]
         self._reminder = raw_str[n:]
-        return ret
+        return ret.encode('utf-8')
 
     def tell(self):
         return self._pos
@@ -662,56 +662,8 @@ def s3_get_filepath_or_buffer(filepath_or_buffer, encoding=None,
         filepath_or_buffer = fs.open(_strip_schema(filepath_or_buffer))
     return filepath_or_buffer, None, compression
 
-class HttpDesc(object):
-    def __init__(self, obj, flushing_str):
-        self._obj = obj
-        self._cnt = 0
-        self._str = flushing_str
-        self._len = len(flushing_str) if flushing_str is not None else 0
-        self._start = 0 if flushing_str else None
-        self._end = False
-        self._delivered = 0
-    @property
-    def cnt(self):
-        return self._cnt
-
-    def read(self, n=0):
-        if self._start is None:
-            ret = self._obj.read(n)
-            self._cnt += len(ret)
-            return ret
-        if n >= len(self._str[self._start:]):
-            ret = self._str[self._start:]
-            self._start = None
-            self._end = True
-            assert ret
-            self._delivered += len(ret)
-            assert self._delivered <= self._len
-            return ret
-        ret = self._str[self._start:self._start+n]
-        assert ret
-        self._start += n
-        self._delivered += len(ret)
-        assert self._delivered <= self._len
-        return ret
-
-    def tell(self):
-        return self._obj.tell()
-
-    def size(self):
-        return self._obj.size()
-
-    def __iter__(self):
-        return self
-
-    def close(self):
-        try:
-            self._obj.close()
-        except:
-            pass
-
 def filepath_to_buffer(filepath, encoding=None,
-                       compression=None, timeout=None, start_byte=0, flushing_str=''):
+                       compression=None, timeout=None, start_byte=0):
     if not is_str(filepath):
         return filepath, encoding, compression, filepath.size()
     if _is_url(filepath):
@@ -723,7 +675,8 @@ def filepath_to_buffer(filepath, encoding=None,
         if content_encoding == 'gzip':
             compression = 'gzip'
         size = req.headers.get('Content-Length', 0)
-        return HttpDesc(req.raw, flushing_str), encoding, compression, int(size)
+        #return HttpDesc(req.raw, filepath), encoding, compression, int(size)
+        return req.raw, encoding, compression, int(size)
     if _is_s3_url(filepath):
         from pandas.io import s3
         reader, encoding, compression = s3_get_filepath_or_buffer(

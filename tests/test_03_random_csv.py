@@ -27,22 +27,22 @@ class TestRandomCsv(ProgressiveTest):
         fixed_rows_obj = RandomBytesIO(cols=10, rows=50)
         with open(self.fixed_rows_file) as fd:
             for n in [7, 77, 777, 7007]:
-                self.assertEqual(fixed_rows_obj.read(n), fd.read(n))
+                self.assertEqual(fixed_rows_obj.read(n), fd.read(n).encode('utf-8'))
                 self.assertEqual(fixed_rows_obj.tell(), fd.tell())                
         fixed_size_obj = RandomBytesIO(cols=10, size=7777)
         with open(self.fixed_size_file) as fd:
             for n in [7, 77, 777, 7007]:
-                self.assertEqual(fixed_size_obj.read(n), fd.read(n))
+                self.assertEqual(fixed_size_obj.read(n), fd.read(n).encode('utf-8'))
                 self.assertEqual(fixed_size_obj.tell(), fd.tell())
                 
     def test_read_all(self):
         fixed_rows_obj = RandomBytesIO(cols=10, rows=50)
         with open(self.fixed_rows_file) as fd:
-            self.assertEqual(fixed_rows_obj.read(), fd.read())
+            self.assertEqual(fixed_rows_obj.read(), fd.read().encode('utf-8'))
             self.assertEqual(fixed_rows_obj.tell(), fd.tell())                            
         fixed_size_obj = RandomBytesIO(cols=10, size=7777)
         with open(self.fixed_size_file) as fd:
-            self.assertEqual(fixed_size_obj.read(), fd.read())
+            self.assertEqual(fixed_size_obj.read(), fd.read().encode('utf-8'))
             self.assertEqual(fixed_size_obj.tell(), fd.tell())                                
 
     def test_iter(self):
