@@ -11,7 +11,7 @@ import marshal
 import shutil
 from mmap import mmap
 import logging
-
+import six
 import numpy as np
 
 from progressivis.core.utils import integer_types, get_random_name
@@ -272,7 +272,7 @@ class MMapDataset(Dataset):
 
 
 OBJECT = np.dtype('O')
-
+ROOT_NAME = "mmap_storage_py2" if six.PY2 else "mmap_storage"
 class MMapGroup(GroupImpl):
     """
     Group of mmap-based groups and datasets.
@@ -381,7 +381,7 @@ class MMapGroup(GroupImpl):
 
 class MMapStorageEngine(StorageEngine, MMapGroup):
     "StorageEngine for mmap-based storage"
-    def __init__(self, root='mmap_storage'):
+    def __init__(self, root=ROOT_NAME):
         """
         Create a storage manager from a specified root directory.
         """
