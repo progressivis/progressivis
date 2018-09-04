@@ -30,13 +30,15 @@ def get_dataset_bz2(name, **kwds):
     dest_file = source_file+'.bz2'
     if os.path.isfile(dest_file):
         return dest_file
+    compressor = bz2.BZ2Compressor()
     with open(source_file, 'rb') as rdesc:
         with open(dest_file, 'wb') as wdesc:
             while True:
                 data = rdesc.read(1024*32)
                 if not data:
                     break
-                wdesc.write(bz2.compress(data))
+                wdesc.write(compressor.compress(data))
+            wdesc.write(compressor.flush())
     return dest_file
 
 __all__ = ['get_dataset', 'get_dataset_bz2',
