@@ -390,10 +390,13 @@ class MMapStorageEngine(StorageEngine, MMapGroup):
 
         
     @staticmethod
-    def create_mmap_group(name=None):
+    def create_mmap_group(name=None, create=True):
         root = StorageEngine.engines()['mmap']
         if name in root.dict:
-            name = get_random_name(name[:16]+'_')
+            if create:
+                name = get_random_name(name[:16]+'_')
+            else:
+                return root.dict[name]
             # TODO : specify this behaviour
             #grp = root.dict[name]
             #if not isinstance(grp, MMapGroup):

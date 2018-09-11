@@ -6,6 +6,7 @@ from requests.packages.urllib3.exceptions import HTTPError
 from io import BytesIO
 import time
 import bz2
+from collections import OrderedDict
 
 SAMPLE_SIZE = 5
 MARGIN = 0.05
@@ -14,16 +15,35 @@ NL = b'\n'
 ROW_MAX_LENGTH_GUESS = 10000
 #DEBUG_CNT = 0
 class Parser(object):
-    def __init__(self, input_source, first_line, pd_kwds):
+    def __init__(self, input_source, remaining, estimated_row_size,
+                     offset=None, overflow_df=None, last_row=0, pd_kwds={}):
         self._input = input_source
         self._pd_kwds = pd_kwds
-        self._remaining = first_line
-        self._estimated_row_size = len(first_line)
-        self._overflow_df = None
-        self._prev_pos = self._input.tell()
-        self._last_row = 0
+        self._remaining = remaining
+        self._estimated_row_size = estimated_row_size
+        self._overflow_df = overflow_df
+        self._offset = self._input.tell() if offset is None else offset
+        self._last_row = last_row
         self._recovery_cnt = 0
+    def get_snapshot(self, run_number, last_id, table_name):
+        ret = OrderedDict(
+                filepath=self._input._filepath,
+                encoding="" if self._input._encoding is None else self._input._encoding,
+                compression="" if self._input._compression is None else self._input._compression,
+                remaining=self._remaining.decode('utf-8'),
+                overflow_df= "" if self._overflow_df is None else self._overflow_df.to_csv(),
+                offset=self._offset,
+                last_row=self._last_row,
+                estimated_row_size=self._estimated_row_size,
+                run_number=run_number,
+                last_id=last_id,
+                table_name=table_name
+            )
+        ret.update(check=hash(ret.values()))
+        return ret
+
     def read(self, n):
+        #import pdb;pdb.set_trace()
         ret = []
         n_ = n 
         if self._overflow_df is not None:
@@ -58,17 +78,17 @@ class Parser(object):
             try:
                 bytes_ = self._input.read(size) # do not raise StopIteration, only returns b''
             except HTTPError:
-                print("HTTPError ...", self._prev_pos)
+                print("HTTPError ...", self._offset)
                 if retries >= MAX_RETRY:
                     raise
                 retries += 1
                 self._recovery_cnt += 1
                 time.sleep(1)
-                self._input.reopen(self._prev_pos)
+                self._input.reopen(self._offset)
                 n_ = recovery_n
                 print("... recovery")
                 continue
-            self._prev_pos = self._input.tell()
+            self._offset = self._input.tell()
             if not bytes_ and not self._remaining:
                 break
             last_nl = bytes_.rfind(NL) # stop after the last NL
@@ -81,7 +101,6 @@ class Parser(object):
                 ret.append(read_df)
                 row_cnt += len_df
                 self._last_row += len_df
-                self._last_byte = self._input.tell()
             else: # overflow (we read to much lines)
                 d = len_df - n_
                 tail = read_df.tail(d)
@@ -90,7 +109,6 @@ class Parser(object):
                 self._overflow_df = tail
                 print("produced overflow: ", len(tail), "rows")
                 self._last_row += d
-                self._last_byte = self._input.tell()
                 break
 
         
@@ -117,8 +135,8 @@ class InputSource(object):
         self._decompressor_class = None
         self._decompressor = None
         self._dec_remaining = b''
-        self._dec_bytes_counter = 0
-        self._compressed_bytes_counter = 0
+        self._dec_offset = 0
+        self._compressed_offset = 0
         if self._compression == 'bz2':
             self._decompressor_class = bz2.BZ2Decompressor
             self._decompressor = self._decompressor_class()
@@ -144,8 +162,8 @@ class InputSource(object):
         self._start_byte = start_byte
         self._stream = istream
         self._decompressor = self._decompressor_class()
-        if self._dec_bytes_counter != start_byte:
-            raise ValueError("PB: {}!={}".format(self._dec_bytes_counter, start_byte))
+        if self._dec_offset != start_byte:
+            raise ValueError("PB: {}!={}".format(self._dec_offset, start_byte))
         self._seek_compressed(start_byte)
         return istream
 
@@ -153,7 +171,7 @@ class InputSource(object):
         if self._compression is None:
             return self._stream.tell()
         else:
-            return self._dec_bytes_counter
+            return self._dec_offset
 
     def read(self, n):
         if self._compression is None:
@@ -186,9 +204,9 @@ class InputSource(object):
             buff.write(bytes_)
             len_bytes = len(bytes_)
             cnt += len_bytes
-            self._compressed_bytes_counter += len(chunk)
+            self._compressed_offset += len(chunk)
             if break_: break
-        self._dec_bytes_counter += cnt
+        self._dec_offset += cnt
         ret = buff.getvalue()
         self._dec_remaining = b''
         if len(ret) > n:
@@ -210,7 +228,7 @@ class InputSource(object):
                 break
             len_bytes = len(bytes_)
             cnt += len_bytes
-            self._dec_bytes_counter += len_bytes
+            self._dec_offset += len_bytes
         assert cnt - n_ == len(self._dec_remaining)
 
     def _seek_compressed(self, n):
@@ -229,9 +247,9 @@ class InputSource(object):
                 break
             len_bytes = len(bytes_)
             cnt += len_bytes
-            self._dec_bytes_counter += len_bytes
-        #if cnt_compressed != self._compressed_bytes_counter:
-        #    print("DIFF AFTER SEEK: ",cnt_compressed, self._compressed_bytes_counter)
+            self._dec_offset += len_bytes
+        #if cnt_compressed != self._compressed_offset:
+        #    print("DIFF AFTER SEEK: ",cnt_compressed, self._compressed_offset)
         assert cnt - n_ == len(self._dec_remaining)
 
 
@@ -266,7 +284,29 @@ def read_csv(input_source, silent_before=0, **csv_kwds):
     del pd_kwds['chunksize']
     #pd_kwds['encoding'] = input_source._encoding
     first_row = get_first_row(input_source)
-    return Parser(input_source, first_row, pd_kwds)
+    return Parser(input_source, remaining=first_row, estimated_row_size=len(first_row), pd_kwds=pd_kwds)
 
-        
-
+def recovery(snapshot, previous_filepath, **csv_kwds):
+    filepath = snapshot['filepath']
+    encoding = snapshot['encoding']
+    if not encoding:
+        encoding = None
+    compression = snapshot['compression']
+    if not compression:
+        compression = None
+    remaining = snapshot['remaining'].encode('utf-8')
+    overflow_df = snapshot['overflow_df'].encode('utf-8')
+    offset = snapshot['offset']
+    last_row = snapshot['last_row']
+    estimated_row_size = snapshot['estimated_row_size']
+    last_id = snapshot['last_id']
+    if overflow_df:
+        overflow_df = pd.read_csv(overflow_df)
+    input_source = InputSource(filepath, encoding, compression, start_byte=offset, timeout=None)
+    pd_kwds = dict(csv_kwds)
+    chunksize = pd_kwds['chunksize']
+    del pd_kwds['chunksize']
+    return Parser(input_source, remaining=remaining,
+                        estimated_row_size=estimated_row_size,
+                        offset=offset, overflow_df=None,
+                        last_row=last_row, pd_kwds=pd_kwds)

@@ -309,6 +309,19 @@ class BaseTable(six.with_metaclass(ABCMeta, object)):
             return ret
         raise ValueError("to_dict(orient) not implemented for orient={}".format(orient))
 
+    def to_csv(self, filename, columns=None, sep=','): # TODO: to be improved
+        if columns is None:
+            columns = self.columns
+        with open(filename, 'wb') as f:
+            for i in self.index:
+                row = []
+                for name in columns:
+                    col = self[name]
+                    row.append(str(remove_nan(get_physical_base(col).loc[i])))
+                row = sep.join(row)
+                f.write(row.encode('utf-8'))
+                f.write(b'\n')
+
     def column_offsets(self, columns, shapes=None):
         "Return the offsets of each column considering columns can have multiple dimensions"
         if shapes is None:

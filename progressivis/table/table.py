@@ -104,7 +104,7 @@ class Table(BaseTable):
         if not (storagegroup is None or isinstance(storagegroup, Group)):
             raise ValueError('Invalid storagegroup (%s) should be None or a Group'%storagegroup)
         if storagegroup is None:
-            storagegroup = Group.default(self._name)
+            storagegroup = Group.default(self._name, create=create)
         if storagegroup is None:
             raise RuntimeError('Cannot get a valid default storage Group')
         self._storagegroup = storagegroup

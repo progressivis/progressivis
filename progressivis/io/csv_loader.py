@@ -12,7 +12,7 @@ from ..table.table import Table
 from ..table.dshape import dshape_from_dataframe
 from ..core.utils import filepath_to_buffer, _infer_compression, force_valid_id_columns
 from requests.packages.urllib3.exceptions import HTTPError
-from .read_csv import read_csv, InputSource
+from .read_csv import read_csv, recovery, InputSource
 
 class CSVLoader(TableModule):
     def __init__(self,
@@ -21,6 +21,9 @@ class CSVLoader(TableModule):
                  force_valid_ids=True,
                  fillvalues=None,
                  timeout=None,
+                 save_context=True,
+                 recovery=0,
+                 recovery_table_size=5,
                  **kwds):
         self._add_slots(kwds,'input_descriptors',
                         [SlotDescriptor('filenames', type=Table,required=False)])
@@ -48,6 +51,11 @@ class CSVLoader(TableModule):
         self._input_size = 0 # length of the file or input stream when available
         self._timeout = timeout
         self._table_params = dict(name=self.name, fillvalues=fillvalues)
+        self._save_context = save_context
+        self._recovery = recovery
+        self._recovery_table_size = recovery_table_size
+        self._recovery_table = None
+        self._recovered_csv_table_name = None
         self._table = None
 
 
@@ -94,13 +102,36 @@ class CSVLoader(TableModule):
     def validate_parser(self, run_number):
         if self.parser is None:
             if self.filepath_or_buffer is not None:
-                try:
-                    self.parser = read_csv(self.create_input_source(self.filepath_or_buffer), **self.csv_kwds)
-                except IOError as e:
-                    logger.error('Cannot open file %s: %s', self.filepath_or_buffer, e)
-                    self.parser = None
-                    return self.state_terminated
-                self.filepath_or_buffer = None
+                if not self._recovery:
+                    try:
+                        self.parser = read_csv(self.create_input_source(self.filepath_or_buffer), **self.csv_kwds)
+                    except IOError as e:
+                        logger.error('Cannot open file %s: %s', self.filepath_or_buffer, e)
+                        self.parser = None
+                        return self.state_terminated
+                    self.filepath_or_buffer = None
+                else:
+                    try:
+                        if self._recovery_table is None:
+                            self._recovery_table = Table(name='csv_loader_recovery', create=False)
+                    except Exception as e: # TODO: specify the exception?
+                        logger.error('Cannot acces recovery table', e)
+                        return self.state_terminated
+                    try:
+                        last_ = self._recovery_table.argmax()['offset'] 
+                        snapshot = self._recovery_table.loc[last_].to_dict()
+                        self._recovered_csv_table_name = snapshot['table_name']
+                    except Exception as e:
+                        logger.error('Cannot read the snapshot', e)
+                        return self.state_terminated
+                    try:
+                        self.parser = recovery(snapshot, self.filepath_or_buffer, **self.csv_kwds)
+                    except Exception as e:
+                        logger.error('Cannot recover from snapshot {}', snapshot, e)
+                        self.parser = None
+                        return self.state_terminated
+                    self.filepath_or_buffer = None
+
             else:
                 fn_slot = self.get_input_slot('filenames')
                 if fn_slot is None or fn_slot.output_module is None:
@@ -142,7 +173,6 @@ class CSVLoader(TableModule):
             with self.lock:
                 df_list = self.parser.read(step_size) # raises StopIteration at EOF
                 if not df_list:
-                    #print("LAST ROW:", self.parser._last_row, self.parser._last_byte)
                     raise StopIteration
         except StopIteration:
             self.close()
@@ -153,7 +183,6 @@ class CSVLoader(TableModule):
             return self._return_run_step(self.state_ready, steps_run=0, creates=0)
         df_len = sum([len(df) for df in df_list])
         creates = df_len
-        #print("step_size: ", step_size, " creates: ", creates, " nb df: ", len(df_list))
         if creates == 0: # should not happen
             logger.error('Received 0 elements')
             raise StopIteration
@@ -170,14 +199,35 @@ class CSVLoader(TableModule):
                     force_valid_id_columns(df)
             with self.lock:
                 if self._table is None:
-                    self._table_params['name'] = self.generate_table_name('table')
-                    self._table_params['dshape'] = dshape_from_dataframe(df_list[0])
-                    self._table_params['data'] = pd.concat(df_list)
-                    self._table_params['create'] = True
-                    self._table = Table(**self._table_params)
+                    if not self._recovery:
+                        self._table_params['name'] = self.generate_table_name('table')
+                        self._table_params['dshape'] = dshape_from_dataframe(df_list[0])
+                        self._table_params['create'] = True
+                        self._table_params['data'] = pd.concat(df_list)
+                        self._table = Table(**self._table_params)
+                    else:
+                        self._table_params['name'] = self._recovered_csv_table_name
+                        self._table_params['create'] = False
+                        self._table = Table(**self._table_params)
+                        self._table.append(pd.concat(df_list))
                 else:
                     for df in df_list:
                         self._table.append(df)
+                if self._recovery_table is None and self._save_context:
+                    snapshot = self.parser.get_snapshot(run_number=run_number, table_name=self._table._name,
+                                                last_id=self._table.last_id)
+                    #print(snapshot)
+                    import pdb;pdb.set_trace()
+                    self._recovery_table = Table(name='csv_loader_recovery', data=pd.DataFrame(snapshot, index=[0]), create=True)
+
+                elif self._save_context:
+                        snapshot = self.parser.get_snapshot(
+                            run_number=run_number,
+                            last_id=self._table.last_id, table_name=self._table._name)
+                        self._recovery_table.add(snapshot)
+                        if len(self._recovery_table) > self._recovery_table_size:
+                            oldest = self._recovery_table.argmin()['offset']
+                            self._recovery_table.drop(np.argmin(oldest))
         #print("Progress: ", self.get_progress())
         return self._return_run_step(self.state_ready, steps_run=creates)
 
