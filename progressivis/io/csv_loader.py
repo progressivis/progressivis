@@ -10,7 +10,9 @@ from progressivis import ProgressiveError, SlotDescriptor
 from ..table.module import TableModule
 from ..table.table import Table
 from ..table.dshape import dshape_from_dataframe
-from ..core.utils import filepath_to_buffer, _infer_compression, force_valid_id_columns
+from ..core.utils import (filepath_to_buffer, _infer_compression,
+                              force_valid_id_columns, is_str
+                              )
 from requests.packages.urllib3.exceptions import HTTPError
 from .read_csv import read_csv, recovery, InputSource
 
@@ -21,7 +23,7 @@ class CSVLoader(TableModule):
                  force_valid_ids=True,
                  fillvalues=None,
                  timeout=None,
-                 save_context=True,
+                 save_context=None,
                  recovery=0,
                  recovery_table_size=5,
                  **kwds):
@@ -51,7 +53,7 @@ class CSVLoader(TableModule):
         self._input_size = 0 # length of the file or input stream when available
         self._timeout = timeout
         self._table_params = dict(name=self.name, fillvalues=fillvalues)
-        self._save_context = save_context
+        self._save_context = True if save_context is None and is_str(filepath_or_buffer) else False
         self._recovery = recovery
         self._recovery_table_size = recovery_table_size
         self._recovery_table = None
@@ -217,7 +219,7 @@ class CSVLoader(TableModule):
                     snapshot = self.parser.get_snapshot(run_number=run_number, table_name=self._table._name,
                                                 last_id=self._table.last_id)
                     #print(snapshot)
-                    import pdb;pdb.set_trace()
+                    #import pdb;pdb.set_trace()
                     self._recovery_table = Table(name='csv_loader_recovery', data=pd.DataFrame(snapshot, index=[0]), create=True)
 
                 elif self._save_context:
