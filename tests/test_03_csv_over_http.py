@@ -45,7 +45,12 @@ class ThrottledReqHandler(RangeRequestHandler):
         else:
             RangeRequestHandler.copyfile(self, src, dest)
 
-
+def _close(module):
+    try:
+        module.parser._input._stream.close()
+    except:
+        pass
+    
 def run_throttled_server(port=8000, threshold=10**6):
     _ = get_dataset('smallfile')
     _ = get_dataset('bigfile')
@@ -93,7 +98,7 @@ class TestProgressiveLoadCSVOverHTTP(ProgressiveTest):
         if self._http_proc is not None:
             try:
                 self._http_proc.terminate()
-                time.sleep(1)
+                time.sleep(3)
             except:
                 pass
 
@@ -107,6 +112,7 @@ class TestProgressiveLoadCSVOverHTTP(ProgressiveTest):
         self.assertTrue(module.table() is None)
         s.start()
         s.join()
+        _close(module)
         self.assertEqual(len(module.table()), 1000000)
 
 
@@ -120,6 +126,7 @@ class TestProgressiveLoadCSVOverHTTP(ProgressiveTest):
         self.assertTrue(module.table() is None)
         s.start()
         s.join()
+        _close(module)
         self.assertGreater(module.parser._recovery_cnt, 0)
         self.assertEqual(len(module.table()), 1000000)
         
@@ -137,6 +144,7 @@ class TestProgressiveLoadCSVOverHTTP(ProgressiveTest):
         csv.input.filenames = cst.output.table
         csv.start()
         s.join()
+        _close(csv)        
         self.assertEqual(len(csv.table()), 60000)
 
     def test_04_read_http_csv_bz2_no_crash(self):
@@ -149,6 +157,7 @@ class TestProgressiveLoadCSVOverHTTP(ProgressiveTest):
         self.assertTrue(module.table() is None)
         s.start()
         s.join()
+        _close(module)
         self.assertEqual(len(module.table()), 1000000)
 
     def test_05_read_http_csv_bz2_crash_recovery(self):
@@ -161,6 +170,7 @@ class TestProgressiveLoadCSVOverHTTP(ProgressiveTest):
         self.assertTrue(module.table() is None)
         s.start()
         s.join()
+        _close(module)
         self.assertGreater(module.parser._recovery_cnt, 0)
         self.assertEqual(len(module.table()), 1000000)
 
@@ -179,6 +189,7 @@ class TestProgressiveLoadCSVOverHTTP(ProgressiveTest):
         csv.input.filenames = cst.output.table
         csv.start()
         s.join()
+        _close(csv)
         self.assertEqual(len(csv.table()), 60000)
 
 
