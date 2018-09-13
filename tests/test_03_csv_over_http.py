@@ -146,6 +146,7 @@ class TestProgressiveLoadCSVOverHTTP(ProgressiveTest):
         s.join()
         _close(csv)        
         self.assertEqual(len(csv.table()), 60000)
+
     @skip("Don't work with travis")
     def test_04_read_http_csv_bz2_no_crash(self):
         p = Process(target=run_simple_server, args=())
@@ -160,6 +161,7 @@ class TestProgressiveLoadCSVOverHTTP(ProgressiveTest):
         _close(module)
         self.assertEqual(len(module.table()), 1000000)
 
+    @skip("Don't work with travis")
     def test_05_read_http_csv_bz2_crash_recovery(self):
         p = Process(target=run_throttled_server, args=(8000, 10**7))
         p.start()
@@ -174,6 +176,7 @@ class TestProgressiveLoadCSVOverHTTP(ProgressiveTest):
         self.assertGreater(module.parser._recovery_cnt, 0)
         self.assertEqual(len(module.table()), 1000000)
 
+    @skip("Don't work with travis")
     def test_06_read_multiple_csv_bz2_crash_recovery(self):
         p = Process(target=run_throttled_server, args=(8000, 10**6))
         p.start()
