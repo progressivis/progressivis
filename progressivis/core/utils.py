@@ -112,9 +112,16 @@ def is_str(s):
     return isinstance(s, six.string_types)
 
 
-def is_iterable(s):
-    return isinstance(s, collections_abc.Iterable)
+def is_iterable(it):
+    return isinstance(it, collections_abc.Iterable)
 
+def is_iter_str(it):
+    if not is_iterable(it):
+        return False
+    for s in it:
+        if not is_str(s):
+            return False
+    return True
 
 class ProgressiveError(Exception):
     pass

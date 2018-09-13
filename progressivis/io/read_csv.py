@@ -1,12 +1,14 @@
 from __future__ import absolute_import, division, print_function
 import pandas as pd
 import numpy as np
-from ..core.utils import filepath_to_buffer, _infer_compression
+from ..core.utils import (filepath_to_buffer,
+                              _infer_compression, is_str)
 from requests.packages.urllib3.exceptions import HTTPError
 from io import BytesIO
 import time
 import bz2
 from collections import OrderedDict
+from pandas.core.dtypes.inference import is_file_like, is_sequence
 
 SAMPLE_SIZE = 5
 MARGIN = 0.05
@@ -14,6 +16,18 @@ MAX_RETRY = 3
 NL = b'\n'
 ROW_MAX_LENGTH_GUESS = 10000
 #DEBUG_CNT = 0
+
+def is_recoverable(inp):
+    if is_str(inp):
+        return True
+    if not is_sequence(inp):
+        return False
+    types = set((type(e) for e in inp))
+    if len(types) != 1:
+        raise ValueError("All inputs must have the same type")
+    return is_str(inp[0])
+
+
 class Parser(object):
     def __init__(self, input_source, remaining, estimated_row_size,
                      offset=None, overflow_df=None, last_row=0, pd_kwds={}):
@@ -25,9 +39,13 @@ class Parser(object):
         self._offset = self._input.tell() if offset is None else offset
         self._last_row = last_row
         self._recovery_cnt = 0
+
     def get_snapshot(self, run_number, last_id, table_name):
+        if not is_recoverable(self._input._seq):
+            raise ValueError("Not recoverable")
         ret = OrderedDict(
-                filepath=self._input._filepath,
+                file_seq='`'.join(self._input._seq),
+                file_cnt = self._input._file_cnt,
                 encoding="" if self._input._encoding is None else self._input._encoding,
                 compression="" if self._input._compression is None else self._input._compression,
                 remaining=self._remaining.decode('utf-8'),
@@ -39,7 +57,7 @@ class Parser(object):
                 last_id=last_id,
                 table_name=table_name
             )
-        ret.update(check=hash(ret.values()))
+        ret.update(check=hash(tuple(ret.values())))
         return ret
 
     def read(self, n):
@@ -110,23 +128,40 @@ class Parser(object):
                 print("produced overflow: ", len(tail), "rows")
                 self._last_row += d
                 break
-
-        
         return ret
 
 class InputSource(object):
-    def __init__(self, filepath, encoding, compression=None, timeout=None, start_byte=0):
+    def __init__(self, inp, encoding, file_cnt=0, compression=None, timeout=None, start_byte=0):
+        """
+        NB: all inputs are supposed to have the same type, encoding, compression
+        TODO: check that for encoding and compression
+        """
         #if self._input_stream is not None:
         #    self.close()
+        if is_str(inp) or is_file_like(inp):
+            inp = [inp]
+        if not is_sequence(inp):
+            raise ValueError("Bad input")
+        types = set((type(e) for e in inp))
+        if len(types) != 1:
+            raise ValueError("All inputs must have the same type")
+        f = inp[0]
+        if not (is_str(f) or is_file_like(f)):
+            raise ValueError("input type not supported")
         if compression is not None and start_byte:
-            raise ValueError("Cannot open a compressed file with a positive start_byte")
-        compression = _infer_compression(filepath, compression)
-        istream, encoding, compression, size = filepath_to_buffer(filepath,
+            raise ValueError("Cannot open a compressed file with a positive offset")
+        if file_cnt >= len(inp):
+            raise ValueError("File counter out of range")
+        self._seq = inp
+        self._file_cnt = file_cnt
+        #self._filepath = self._seq[file_cnt]
+
+        compression = _infer_compression(self.filepath, compression)
+        istream, encoding, compression, size = filepath_to_buffer(self.filepath,
                                                                   encoding=encoding,
                                                                   compression=compression,
                                                                     timeout=timeout,
                                                                       start_byte=start_byte)
-        self._filepath = filepath
         self._encoding = encoding
         self._compression = compression
         self._input_size = size
@@ -142,11 +177,42 @@ class InputSource(object):
             self._decompressor = self._decompressor_class()
         self._stream = istream
 
+    @property
+    def filepath(self):
+        return self._seq[self._file_cnt]
+
+    def switch_to_next(self):
+        """
+        """
+        self._file_cnt += 1
+        if self._file_cnt >= len(self._seq):
+            return False
+        istream, encoding, compression, size = filepath_to_buffer(self.filepath,
+                                                                  encoding=self._encoding,
+                                                                  compression=self._compression)
+        if self._encoding != encoding:
+            raise ValueError("all files must have the same encoding")
+        if self._compression != compression:
+            raise ValueError("all files must have the same compression")
+        self._input_size = size
+        self._timeout = None # for tests
+        self._start_byte = 0
+        self._decompressor_class = None
+        self._decompressor = None
+        self._dec_remaining = b''
+        self._dec_offset = 0
+        self._compressed_offset = 0
+        if self._compression == 'bz2':
+            self._decompressor_class = bz2.BZ2Decompressor
+            self._decompressor = self._decompressor_class()
+        self._stream = istream
+        return True
+
     def reopen(self, start_byte=0):
         if self._stream is not None:
             self.close()
         if self._compression is None:
-            istream, encoding, compression, size = filepath_to_buffer(filepath=self._filepath,
+            istream, encoding, compression, size = filepath_to_buffer(filepath=self.filepath,
                                                                   encoding=self._encoding,
                                                                   compression=self._compression,
                                                                     timeout=self._timeout,
@@ -154,7 +220,7 @@ class InputSource(object):
             self._start_byte = start_byte
             self._stream = istream
             return istream
-        istream, encoding, compression, size = filepath_to_buffer(filepath=self._filepath,
+        istream, encoding, compression, size = filepath_to_buffer(filepath=self.filepath,
                                                                 encoding=self._encoding,
                                                                 compression=self._compression,
                                                                 timeout=self._timeout,
@@ -175,7 +241,12 @@ class InputSource(object):
 
     def read(self, n):
         if self._compression is None:
-            return self._stream.read(n)
+            ret = self._stream.read(n)
+            if ret: return ret
+            if self.switch_to_next():
+                return self.read(n)
+            else:
+                return b''
         else:
             return self._read_compressed(n)
 
@@ -213,23 +284,6 @@ class InputSource(object):
             self._dec_remaining = ret[n:]
             ret = ret[:n]
         return ret
-
-    def __old_seek_compressed(self, n):
-        len_remaining = len(self._dec_remaining)
-        n_ = n - len_remaining
-        cnt = 0
-        #break_ = False
-        while cnt < n_:
-            max_length = 1024 * 100 
-            chunk =self._stream.read(int(max_length))
-            try:
-                bytes_ = self._decompressor.decompress(chunk)
-            except EOFError:
-                break
-            len_bytes = len(bytes_)
-            cnt += len_bytes
-            self._dec_offset += len_bytes
-        assert cnt - n_ == len(self._dec_remaining)
 
     def _seek_compressed(self, n):
         len_remaining = len(self._dec_remaining)
@@ -286,8 +340,13 @@ def read_csv(input_source, silent_before=0, **csv_kwds):
     first_row = get_first_row(input_source)
     return Parser(input_source, remaining=first_row, estimated_row_size=len(first_row), pd_kwds=pd_kwds)
 
-def recovery(snapshot, previous_filepath, **csv_kwds):
-    filepath = snapshot['filepath']
+def recovery(snapshot, previous_file_seq, **csv_kwds):
+    file_seq = snapshot['file_seq'].split('`')
+    if is_str(previous_file_seq):
+        previous_file_seq = [previous_file_seq]
+    if previous_file_seq!= file_seq[:len(previous_file_seq)]: # we tolerate a new file_seq longer than the previoue
+        raise ValueError("File sequence changed, recovery aborted!")
+    file_cnt = snapshot['file_cnt']
     encoding = snapshot['encoding']
     if not encoding:
         encoding = None
@@ -302,7 +361,7 @@ def recovery(snapshot, previous_filepath, **csv_kwds):
     last_id = snapshot['last_id']
     if overflow_df:
         overflow_df = pd.read_csv(overflow_df)
-    input_source = InputSource(filepath, encoding, compression, start_byte=offset, timeout=None)
+    input_source = InputSource(file_seq, encoding=encoding, compression=compression, file_cnt=file_cnt, start_byte=offset, timeout=None)
     pd_kwds = dict(csv_kwds)
     chunksize = pd_kwds['chunksize']
     del pd_kwds['chunksize']

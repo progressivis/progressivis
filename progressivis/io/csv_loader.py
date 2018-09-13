@@ -14,7 +14,7 @@ from ..core.utils import (filepath_to_buffer, _infer_compression,
                               force_valid_id_columns, is_str
                               )
 from requests.packages.urllib3.exceptions import HTTPError
-from .read_csv import read_csv, recovery, InputSource
+from .read_csv import read_csv, recovery, is_recoverable, InputSource
 
 class CSVLoader(TableModule):
     def __init__(self,
@@ -53,11 +53,11 @@ class CSVLoader(TableModule):
         self._input_size = 0 # length of the file or input stream when available
         self._timeout = timeout
         self._table_params = dict(name=self.name, fillvalues=fillvalues)
-        self._save_context = True if save_context is None and is_str(filepath_or_buffer) else False
+        self._save_context = True if save_context is None and is_recoverable(filepath_or_buffer) else False
         self._recovery = recovery
         self._recovery_table_size = recovery_table_size
         self._recovery_table = None
-        self._recovered_csv_table_name = None
+        self._recovery_table_inv = None        
         self._table = None
 
 
@@ -112,16 +112,41 @@ class CSVLoader(TableModule):
                         self.parser = None
                         return self.state_terminated
                     self.filepath_or_buffer = None
-                else:
+                else: # do recovery
                     try:
                         if self._recovery_table is None:
                             self._recovery_table = Table(name='csv_loader_recovery', create=False)
+                        if self._recovery_table_inv is None:
+                            self._recovery_table_inv = Table(name='csv_loader_recovery_invariant', create=False)
+                        if self._table is None:
+                            self._table_params['name'] = self._recovery_table_inv['table_name'].loc[0]
+                            self._table_params['create'] = False
+                            self._table = Table(**self._table_params)
                     except Exception as e: # TODO: specify the exception?
                         logger.error('Cannot acces recovery table', e)
                         return self.state_terminated
                     try:
-                        last_ = self._recovery_table.argmax()['offset'] 
-                        snapshot = self._recovery_table.loc[last_].to_dict()
+                        last_ = self._recovery_table.eval("last_id=={}".format(len(self._table)), as_slice=False)
+                        len_last = len(last_)
+                        if len_last > 1:
+                            logger.error("Inconsistent recovery table")
+                            return self.state_terminated
+                        #last_ = self._recovery_table.argmax()['offset']
+                        snapshot = None
+                        if len_last == 1:
+                            snapshot = self._recovery_table.row(last_[0]).to_dict(ordered=True)
+                            if not check_snapshot(snapshot):
+                                snapshot = None
+                        if snapshot is None: # i.e. snapshot not yet found or inconsistent
+                            max_ = -1
+                            for i in self._recovery_table.eval("last_id<{}".format(len(self._table)), as_slice=False):
+                                sn = self._recovery_table.row(i).to_dict(ordered=True)
+                                if check_snapshot(sn) and sn['last_id'] > max_:
+                                    max_, snapshot = sn['last_id'], sn
+                            if max < 0:
+                                logger.error('Cannot acces recovery table')
+                                return self.state_terminated
+                            self._table.drop(slice(max_, None, None))
                         self._recovered_csv_table_name = snapshot['table_name']
                     except Exception as e:
                         logger.error('Cannot read the snapshot', e)
@@ -134,7 +159,7 @@ class CSVLoader(TableModule):
                         return self.state_terminated
                     self.filepath_or_buffer = None
 
-            else:
+            else: # this case does not support recovery
                 fn_slot = self.get_input_slot('filenames')
                 if fn_slot is None or fn_slot.output_module is None:
                     return self.state_terminated
@@ -218,9 +243,13 @@ class CSVLoader(TableModule):
                 if self._recovery_table is None and self._save_context:
                     snapshot = self.parser.get_snapshot(run_number=run_number, table_name=self._table._name,
                                                 last_id=self._table.last_id)
-                    #print(snapshot)
-                    #import pdb;pdb.set_trace()
-                    self._recovery_table = Table(name='csv_loader_recovery', data=pd.DataFrame(snapshot, index=[0]), create=True)
+                    self._recovery_table = Table(name='csv_loader_recovery',
+                        data=pd.DataFrame(snapshot, index=[0]), create=True)
+                    self._recovery_table_inv = Table(
+                        name='csv_loader_recovery_invariant',
+                        data=pd.DataFrame(dict(table_name=self._table._name,
+                                            csv_input=self.filepath_or_buffer),
+                                              index=[0]), create=True)
 
                 elif self._save_context:
                         snapshot = self.parser.get_snapshot(
@@ -232,6 +261,15 @@ class CSVLoader(TableModule):
                             self._recovery_table.drop(np.argmin(oldest))
         #print("Progress: ", self.get_progress())
         return self._return_run_step(self.state_ready, steps_run=creates)
+
+
+def check_snapshot(snapshot):
+    if not 'check' in snapshot:
+        return False
+    hcode = snapshot['check']
+    del snapshot['check']
+    h = hash(tuple(snapshot.values()))
+    return h == hcode
 
 def extract_params_docstring(fn, only_defaults=False):
     defaults = fn.__defaults__

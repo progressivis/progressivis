@@ -31,8 +31,9 @@ HOST = 'localhost'
 
 
 class Patch1(ModulePatch):
+    max_steps = 10000
     def before_run_step(self, m, *args, **kwargs):
-        if m._table is not None and len(m._table) > 100000:
+        if m._table is not None and len(m._table) >Patch1.max_steps :
             print("Simulate a crash ...")
             m.scheduler().stop()
             #if hasattr(m._table, '__append'):
@@ -66,6 +67,7 @@ class TestProgressiveLoadCSVCrash(ProgressiveTest):
         self._http_proc = None
 
     def tearDown(self):
+        TestProgressiveLoadCSVCrash.cleanup()
         if self._http_proc is not None:
             try:
                 self._http_proc.terminate()
@@ -85,10 +87,46 @@ class TestProgressiveLoadCSVCrash(ProgressiveTest):
         s.start()
         s.join()
         module.parser._input._stream.close() # close the previous HTTP request
-        #                              # necessary onle because the
+        #                              # necessary only because the
         #                              # SimpleHTTPServer is not multi-threaded
         s=self.scheduler()
         module=CSVLoader(make_url('bigfile'), recovery=True, index_col=False, header=None, scheduler=s)
+        self.assertTrue(module.table() is None)
+        s.start()
+        s.join()
+        t = module.table()
+
+    def test_02_read_http_multi_csv_no_crash(self):
+        p = Process(target=run_simple_server, args=())
+        p.start()
+        self._http_proc = p
+        time.sleep(1)
+        s=self.scheduler()
+        module=CSVLoader([make_url('smallfile'),make_url('smallfile')], index_col=False, header=None, scheduler=s)
+        self.assertTrue(module.table() is None)
+        #decorate(s, Patch1("csv_loader_1"))
+        s.start()
+        s.join()
+        self.assertEqual(len(module.table()), 60000)
+
+    def test_03_read_http_multi_csv_no_crash(self):
+        p = Process(target=run_simple_server, args=())
+        p.start()
+        self._http_proc = p
+        time.sleep(1)
+        s=self.scheduler()
+        url_list = [make_url('bigfile'),make_url('bigfile')]
+        module=CSVLoader(url_list, index_col=False, header=None, scheduler=s)
+        self.assertTrue(module.table() is None)
+        Patch1.max_steps = 1200000
+        decorate(s, Patch1("csv_loader_1"))
+        s.start()
+        s.join()
+        module.parser._input._stream.close() # close the previous HTTP request
+        #                              # necessary onle because the
+        #                              # SimpleHTTPServer is not multi-threaded
+        s=self.scheduler()
+        module=CSVLoader(url_list, recovery=True, index_col=False, header=None, scheduler=s)
         self.assertTrue(module.table() is None)
         s.start()
         s.join()
@@ -97,79 +135,9 @@ class TestProgressiveLoadCSVCrash(ProgressiveTest):
         #print("to csv ...")
         #t.to_csv('/tmp/bigfile2.csv')
         #print("... done")
-        self.assertEqual(len(module.table()), 1000000)
+        self.assertEqual(len(module.table()), 2000000)
 
 
-    def t_est_02_read_http_csv_crash_recovery(self):
-        p = Process(target=run_throttled_server, args=(8000, 10**7))
-        p.start()
-        self._http_proc = p        
-        time.sleep(1)        
-        s=self.scheduler()
-        module=CSVLoader(make_url('bigfile'), index_col=False, header=None, scheduler=s, timeout=0.01)
-        self.assertTrue(module.table() is None)
-        s.start()
-        s.join()
-        self.assertGreater(module.parser._recovery_cnt, 0)
-        self.assertEqual(len(module.table()), 1000000)
-        
-    def t_est_03_read_multiple_csv_crash_recovery(self):
-        p = Process(target=run_throttled_server, args=(8000, 10**6))
-        p.start()
-        self._http_proc = p
-        time.sleep(1) 
-        s=self.scheduler()
-        filenames = Table(name='file_names',
-                          dshape='{filename: string}',
-                          data={'filename': [make_url('smallfile'), make_url('smallfile')]})
-        cst = Constant(table=filenames, scheduler=s)
-        csv = CSVLoader(index_col=False, header=None, scheduler=s, timeout=0.01)
-        csv.input.filenames = cst.output.table
-        csv.start()
-        s.join()
-        self.assertEqual(len(csv.table()), 60000)
-
-    def t_est_04_read_http_csv_bz2_no_crash(self):
-        p = Process(target=run_simple_server, args=())
-        p.start()
-        self._http_proc = p
-        time.sleep(1)
-        s=self.scheduler()
-        module=CSVLoader(make_url('bigfile', ext=BZ2), index_col=False, header=None, scheduler=s)
-        self.assertTrue(module.table() is None)
-        s.start()
-        s.join()
-        self.assertEqual(len(module.table()), 1000000)
-
-    def t_est_05_read_http_csv_bz2_crash_recovery(self):
-        p = Process(target=run_throttled_server, args=(8000, 10**7))
-        p.start()
-        self._http_proc = p
-        time.sleep(1)
-        s=self.scheduler()
-        module=CSVLoader(make_url('bigfile', ext=BZ2), index_col=False, header=None, scheduler=s, timeout=0.01)
-        self.assertTrue(module.table() is None)
-        s.start()
-        s.join()
-        self.assertGreater(module.parser._recovery_cnt, 0)
-        self.assertEqual(len(module.table()), 1000000)
-
-    def t_est_06_read_multiple_csv_bz2_crash_recovery(self):
-        p = Process(target=run_throttled_server, args=(8000, 10**6))
-        p.start()
-        self._http_proc = p
-        time.sleep(1)
-        s=self.scheduler()
-        filenames = Table(name='file_names',
-                          dshape='{filename: string}',
-                          data={'filename': [make_url('smallfile', ext=BZ2),
-                                            make_url('smallfile', ext=BZ2)]})
-        cst = Constant(table=filenames, scheduler=s)
-        csv = CSVLoader(index_col=False, header=None, scheduler=s, timeout=0.01)
-        csv.input.filenames = cst.output.table
-        csv.start()
-        s.join()
-        self.assertEqual(len(csv.table()), 60000)
 
 
 if __name__ == '__main__':
