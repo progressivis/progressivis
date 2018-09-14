@@ -672,6 +672,8 @@ def s3_get_filepath_or_buffer(filepath_or_buffer, encoding=None,
 def filepath_to_buffer(filepath, encoding=None,
                        compression=None, timeout=None, start_byte=0):
     if not is_str(filepath):
+        #if start_byte:
+        #    filepath.seek(start_byte)
         return filepath, encoding, compression, filepath.size()
     if _is_url(filepath):
         headers = None
@@ -698,7 +700,10 @@ def filepath_to_buffer(filepath, encoding=None,
     if not os.path.exists(filepath):
         raise ValueError("wrong filepath: {}".format(filepath))
     size = os.stat(filepath).st_size
-    return io.FileIO(filepath), encoding, compression, size
+    stream = io.FileIO(filepath)
+    if start_byte:
+        stream.seek(start_byte)
+    return stream, encoding, compression, size
 
 _compression_to_extension = {
     'gzip': '.gz',
