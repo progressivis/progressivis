@@ -28,7 +28,7 @@ BZ2 = 'csv.bz2'
 
 PORT = 8000
 HOST = 'localhost'
-
+SLEEP = 5
 
 class Patch1(ModulePatch):
     max_steps = 10000
@@ -71,7 +71,7 @@ class TestProgressiveLoadCSVCrash(ProgressiveTest):
         if self._http_proc is not None:
             try:
                 self._http_proc.terminate()
-                time.sleep(1)
+                time.sleep(SLEEP)
             except:
                 pass
 
@@ -79,7 +79,7 @@ class TestProgressiveLoadCSVCrash(ProgressiveTest):
         p = Process(target=run_simple_server, args=())
         p.start()
         self._http_proc = p
-        time.sleep(1)
+        time.sleep(SLEEP)
         s=self.scheduler()
         module=CSVLoader(make_url('bigfile'), index_col=False, header=None, scheduler=s)
         self.assertTrue(module.table() is None)
@@ -100,7 +100,7 @@ class TestProgressiveLoadCSVCrash(ProgressiveTest):
         p = Process(target=run_simple_server, args=())
         p.start()
         self._http_proc = p
-        time.sleep(1)
+        time.sleep(SLEEP)
         s=self.scheduler()
         module=CSVLoader([make_url('smallfile'),make_url('smallfile')], index_col=False, header=None, scheduler=s)
         self.assertTrue(module.table() is None)
@@ -113,7 +113,7 @@ class TestProgressiveLoadCSVCrash(ProgressiveTest):
         p = Process(target=run_simple_server, args=())
         p.start()
         self._http_proc = p
-        time.sleep(1)
+        time.sleep(SLEEP)
         s=self.scheduler()
         url_list = [make_url('bigfile'),make_url('bigfile')]
         module=CSVLoader(url_list, index_col=False, header=None, scheduler=s)

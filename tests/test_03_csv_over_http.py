@@ -24,6 +24,7 @@ else:
     import SimpleHTTPServer as http_srv
 
 BZ2 = 'csv.bz2'
+SLEEP = 5
 
 class ThrottledReqHandler(RangeRequestHandler):
     threshold = 10**6
@@ -98,7 +99,7 @@ class TestProgressiveLoadCSVOverHTTP(ProgressiveTest):
         if self._http_proc is not None:
             try:
                 self._http_proc.terminate()
-                time.sleep(3)
+                time.sleep(SLEEP)
             except:
                 pass
 
@@ -106,7 +107,7 @@ class TestProgressiveLoadCSVOverHTTP(ProgressiveTest):
         p = Process(target=run_simple_server, args=())
         p.start()
         self._http_proc = p
-        time.sleep(1)
+        time.sleep(SLEEP)
         s=self.scheduler()
         module=CSVLoader(make_url('bigfile'), index_col=False, header=None, scheduler=s)
         self.assertTrue(module.table() is None)
@@ -120,7 +121,7 @@ class TestProgressiveLoadCSVOverHTTP(ProgressiveTest):
         p = Process(target=run_throttled_server, args=(8000, 10**7))
         p.start()
         self._http_proc = p        
-        time.sleep(1)        
+        time.sleep(SLEEP)        
         s=self.scheduler()
         module=CSVLoader(make_url('bigfile'), index_col=False, header=None, scheduler=s, timeout=0.01)
         self.assertTrue(module.table() is None)
@@ -134,7 +135,7 @@ class TestProgressiveLoadCSVOverHTTP(ProgressiveTest):
         p = Process(target=run_throttled_server, args=(8000, 10**6))
         p.start()
         self._http_proc = p
-        time.sleep(1) 
+        time.sleep(SLEEP) 
         s=self.scheduler()
         filenames = Table(name='file_names',
                           dshape='{filename: string}',
@@ -152,7 +153,7 @@ class TestProgressiveLoadCSVOverHTTP(ProgressiveTest):
         p = Process(target=run_simple_server, args=())
         p.start()
         self._http_proc = p
-        time.sleep(1)
+        time.sleep(SLEEP)
         s=self.scheduler()
         module=CSVLoader(make_url('bigfile', ext=BZ2), index_col=False, header=None, scheduler=s)
         self.assertTrue(module.table() is None)
@@ -166,7 +167,7 @@ class TestProgressiveLoadCSVOverHTTP(ProgressiveTest):
         p = Process(target=run_throttled_server, args=(8000, 10**7))
         p.start()
         self._http_proc = p
-        time.sleep(1)
+        time.sleep(SLEEP)
         s=self.scheduler()
         module=CSVLoader(make_url('bigfile', ext=BZ2), index_col=False, header=None, scheduler=s, timeout=0.01)
         self.assertTrue(module.table() is None)
@@ -181,7 +182,7 @@ class TestProgressiveLoadCSVOverHTTP(ProgressiveTest):
         p = Process(target=run_throttled_server, args=(8000, 10**6))
         p.start()
         self._http_proc = p
-        time.sleep(1)
+        time.sleep(SLEEP)
         s=self.scheduler()
         filenames = Table(name='file_names',
                           dshape='{filename: string}',
