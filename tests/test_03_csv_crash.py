@@ -75,7 +75,7 @@ class TestProgressiveLoadCSVCrash(ProgressiveTest):
             except:
                 pass
 
-    def te_st_01_read_http_csv_with_crash(self):
+    def test_01_read_http_csv_with_crash(self):
         if TRAVIS: return
         p = Process(target=run_simple_server, args=())
         p.start()
@@ -98,7 +98,7 @@ class TestProgressiveLoadCSVCrash(ProgressiveTest):
         s.start()
         s.join()
         self.assertEqual(len(module.table()), 1000000)
-    def t_est_02_read_http_csv_bz2_with_crash(self):
+    def test_02_read_http_csv_bz2_with_crash(self):
         if TRAVIS: return
         p = Process(target=run_simple_server, args=())
         p.start()
@@ -122,7 +122,7 @@ class TestProgressiveLoadCSVCrash(ProgressiveTest):
         s.join()
         self.assertEqual(len(module.table()), 1000000)
 
-    def t_est_03_read_http_multi_csv_no_crash(self):
+    def test_03_read_http_multi_csv_no_crash(self):
         if TRAVIS: return
         p = Process(target=run_simple_server, args=())
         p.start()
@@ -136,7 +136,7 @@ class TestProgressiveLoadCSVCrash(ProgressiveTest):
         s.join()
         self.assertEqual(len(module.table()), 60000)
 
-    def te_st_04_read_http_multi_csv_bz2_no_crash(self):
+    def test_04_read_http_multi_csv_bz2_no_crash(self):
         if TRAVIS: return
         p = Process(target=run_simple_server, args=())
         p.start()
@@ -151,7 +151,7 @@ class TestProgressiveLoadCSVCrash(ProgressiveTest):
         self.assertEqual(len(module.table()), 60000)
 
 
-    def t_est_05_read_http_multi_csv_with_crash(self):
+    def test_05_read_http_multi_csv_with_crash(self):
         if TRAVIS: return
         p = Process(target=run_simple_server, args=())
         p.start()
@@ -175,7 +175,7 @@ class TestProgressiveLoadCSVCrash(ProgressiveTest):
         s.join()
         self.assertEqual(len(module.table()), 2000000)
 
-    def te_st_06_read_http_multi_csv_bz2_with_crash(self):
+    def test_06_read_http_multi_csv_bz2_with_crash(self):
         if TRAVIS: return
         p = Process(target=run_simple_server, args=())
         p.start()
@@ -199,7 +199,7 @@ class TestProgressiveLoadCSVCrash(ProgressiveTest):
         s.join()
         self.assertEqual(len(module.table()), 2000000)
 
-    def te_st_07_read_multi_csv_file_no_crash(self):
+    def test_07_read_multi_csv_file_no_crash(self):
         s=self.scheduler()
         module=CSVLoader([get_dataset('smallfile'), get_dataset('smallfile')], index_col=False, header=None, scheduler=s)
         self.assertTrue(module.table() is None)
@@ -208,7 +208,7 @@ class TestProgressiveLoadCSVCrash(ProgressiveTest):
         s.join()
         self.assertEqual(len(module.table()), 60000)
 
-    def te_st_08_read_multi_csv_file_bz2_no_crash(self):
+    def test_08_read_multi_csv_file_bz2_no_crash(self):
         s=self.scheduler()
         module=CSVLoader([get_dataset_bz2('smallfile')]*2, index_col=False, header=None, scheduler=s)
         self.assertTrue(module.table() is None)
@@ -217,7 +217,7 @@ class TestProgressiveLoadCSVCrash(ProgressiveTest):
         s.join()
         self.assertEqual(len(module.table()), 60000)
 
-    def te_st_09_read_multi_csv_file_with_crash(self):
+    def test_09_read_multi_csv_file_with_crash(self):
         s=self.scheduler()
         file_list = [get_dataset('bigfile'), get_dataset('bigfile')]
         module=CSVLoader(file_list, index_col=False, header=None, scheduler=s)
