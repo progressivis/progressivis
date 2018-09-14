@@ -50,6 +50,7 @@ class Parser(object):
                 compression="" if self._input._compression is None else self._input._compression,
                 remaining=self._remaining.decode('utf-8'),
                 overflow_df= "" if self._overflow_df is None else self._overflow_df.to_csv(),
+                dec_remaining = self._input._dec_remaining.decode('utf-8'),
                 offset=self._offset,
                 last_row=self._last_row,
                 estimated_row_size=self._estimated_row_size,
@@ -61,7 +62,6 @@ class Parser(object):
         return ret
 
     def read(self, n):
-        #import pdb;pdb.set_trace()
         ret = []
         n_ = n 
         if self._overflow_df is not None:
@@ -131,7 +131,7 @@ class Parser(object):
         return ret
 
 class InputSource(object):
-    def __init__(self, inp, encoding, file_cnt=0, compression=None, timeout=None, start_byte=0):
+    def __init__(self, inp, encoding, file_cnt=0, compression=None, dec_remaining=b'', timeout=None, start_byte=0):
         """
         NB: all inputs are supposed to have the same type, encoding, compression
         TODO: check that for encoding and compression
@@ -148,34 +148,34 @@ class InputSource(object):
         f = inp[0]
         if not (is_str(f) or is_file_like(f)):
             raise ValueError("input type not supported")
-        if compression is not None and start_byte:
-            raise ValueError("Cannot open a compressed file with a positive offset")
+        #if compression is not None and start_byte:
+        #    raise ValueError("Cannot open a compressed file with a positive offset")
         if file_cnt >= len(inp):
             raise ValueError("File counter out of range")
         self._seq = inp
         self._file_cnt = file_cnt
-        #self._filepath = self._seq[file_cnt]
-
         compression = _infer_compression(self.filepath, compression)
+        offs = 0 if compression else start_byte
         istream, encoding, compression, size = filepath_to_buffer(self.filepath,
                                                                   encoding=encoding,
                                                                   compression=compression,
                                                                     timeout=timeout,
-                                                                      start_byte=start_byte)
+                                                                      start_byte=offs)
         self._encoding = encoding
         self._compression = compression
         self._input_size = size
         self._timeout = None # for tests
-        self._start_byte = start_byte
         self._decompressor_class = None
         self._decompressor = None
-        self._dec_remaining = b''
+        self._dec_remaining = dec_remaining
         self._dec_offset = 0
         self._compressed_offset = 0
+        self._stream = istream
         if self._compression == 'bz2':
             self._decompressor_class = bz2.BZ2Decompressor
             self._decompressor = self._decompressor_class()
-        self._stream = istream
+            self._seek_compressed(start_byte)
+
 
     @property
     def filepath(self):
@@ -196,7 +196,6 @@ class InputSource(object):
             raise ValueError("all files must have the same compression")
         self._input_size = size
         self._timeout = None # for tests
-        self._start_byte = 0
         self._decompressor_class = None
         self._decompressor = None
         self._dec_remaining = b''
@@ -217,7 +216,6 @@ class InputSource(object):
                                                                   compression=self._compression,
                                                                     timeout=self._timeout,
                                                                       start_byte=start_byte)
-            self._start_byte = start_byte
             self._stream = istream
             return istream
         istream, encoding, compression, size = filepath_to_buffer(filepath=self.filepath,
@@ -225,7 +223,6 @@ class InputSource(object):
                                                                 compression=self._compression,
                                                                 timeout=self._timeout,
                                                                       start_byte=0)
-        self._start_byte = start_byte
         self._stream = istream
         self._decompressor = self._decompressor_class()
         if self._dec_offset != start_byte:
@@ -242,13 +239,16 @@ class InputSource(object):
     def read(self, n):
         if self._compression is None:
             ret = self._stream.read(n)
-            if ret: return ret
-            if self.switch_to_next():
-                return self.read(n)
-            else:
-                return b''
         else:
-            return self._read_compressed(n)
+            ret = self._read_compressed(n)
+        if ret or not n:
+            return ret
+        if self.switch_to_next():
+            return self.read(n)
+        else:
+            return b''
+        #else:
+        #    return self._read_compressed(n)
 
     def _read_compressed(self, n):
         len_remaining = len(self._dec_remaining)
@@ -344,7 +344,7 @@ def recovery(snapshot, previous_file_seq, **csv_kwds):
     file_seq = snapshot['file_seq'].split('`')
     if is_str(previous_file_seq):
         previous_file_seq = [previous_file_seq]
-    if previous_file_seq!= file_seq[:len(previous_file_seq)]: # we tolerate a new file_seq longer than the previoue
+    if previous_file_seq!= file_seq[:len(previous_file_seq)]: # we tolerate a new file_seq longer than the previous
         raise ValueError("File sequence changed, recovery aborted!")
     file_cnt = snapshot['file_cnt']
     encoding = snapshot['encoding']
@@ -359,9 +359,10 @@ def recovery(snapshot, previous_file_seq, **csv_kwds):
     last_row = snapshot['last_row']
     estimated_row_size = snapshot['estimated_row_size']
     last_id = snapshot['last_id']
+    dec_remaining = snapshot['dec_remaining'].encode('utf-8')
     if overflow_df:
         overflow_df = pd.read_csv(overflow_df)
-    input_source = InputSource(file_seq, encoding=encoding, compression=compression, file_cnt=file_cnt, start_byte=offset, timeout=None)
+    input_source = InputSource(file_seq, encoding=encoding, compression=compression, dec_remaining=dec_remaining, file_cnt=file_cnt, start_byte=offset, timeout=None)
     pd_kwds = dict(csv_kwds)
     chunksize = pd_kwds['chunksize']
     del pd_kwds['chunksize']
