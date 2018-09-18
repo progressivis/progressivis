@@ -7,6 +7,8 @@ from requests.packages.urllib3.exceptions import HTTPError
 from io import BytesIO
 import time
 import bz2
+import zlib
+import lzma
 from collections import OrderedDict
 from pandas.core.dtypes.inference import is_file_like, is_sequence
 
@@ -16,6 +18,13 @@ MAX_RETRY = 3
 NL = b'\n'
 ROW_MAX_LENGTH_GUESS = 10000
 #DEBUG_CNT = 0
+from functools import partial
+
+decompressors = dict(bz2=bz2.BZ2Decompressor,
+                       zlib=zlib.decompressobj,
+                       gzip=partial(zlib.decompressobj, wbits=zlib.MAX_WBITS|16),
+                       xz=lzma.LZMADecompressor
+                       )
 
 def is_recoverable(inp):
     if is_str(inp):
@@ -50,8 +59,7 @@ class Parser(object):
                 compression="" if self._input._compression is None else self._input._compression,
                 remaining=self._remaining.decode('utf-8'),
                 overflow_df= "" if self._overflow_df is None else self._overflow_df.to_csv(),
-                dec_remaining = self._input._dec_remaining.decode('utf-8'),
-                offset=self._offset,
+                offset=self._offset - len(self._input._dec_remaining),
                 last_row=self._last_row,
                 estimated_row_size=self._estimated_row_size,
                 run_number=run_number,
@@ -169,12 +177,12 @@ class InputSource(object):
         self._decompressor = None
         self._dec_remaining = dec_remaining
         self._dec_offset = 0
-        self._compressed_offset = 0
+        #self._compressed_offset = 0
         self._stream = istream
-        if self._compression == 'bz2':
-            self._decompressor_class = bz2.BZ2Decompressor
+        if self._compression is not None:
+            self._decompressor_class = decompressors[self._compression]
             self._decompressor = self._decompressor_class()
-            self._seek_compressed(start_byte)
+            self._read_compressed(start_byte) #seek
 
 
     @property
@@ -200,9 +208,9 @@ class InputSource(object):
         self._decompressor = None
         self._dec_remaining = b''
         self._dec_offset = 0
-        self._compressed_offset = 0
-        if self._compression == 'bz2':
-            self._decompressor_class = bz2.BZ2Decompressor
+        #self._compressed_offset = 0
+        if self._compression is not None:
+            self._decompressor_class = decompressors[self._compression]
             self._decompressor = self._decompressor_class()
         self._stream = istream
         return True
@@ -227,7 +235,7 @@ class InputSource(object):
         self._decompressor = self._decompressor_class()
         if self._dec_offset != start_byte:
             raise ValueError("PB: {}!={}".format(self._dec_offset, start_byte))
-        self._seek_compressed(start_byte)
+        self._read_compressed(start_byte) #seek
         return istream
 
     def tell(self):
@@ -247,8 +255,6 @@ class InputSource(object):
             return self.read(n)
         else:
             return b''
-        #else:
-        #    return self._read_compressed(n)
 
     def _read_compressed(self, n):
         len_remaining = len(self._dec_remaining)
@@ -265,17 +271,16 @@ class InputSource(object):
         while cnt < n_:
             max_length = 1024 * 100
             chunk =self._stream.read(int(max_length))
+            if not len(chunk):
+                break_ = True
             bytes_ = b''
             try:
                 bytes_ = self._decompressor.decompress(chunk)
             except EOFError:
-                #if len(bytes_):
-                #    raise ValueError("Bytes on EOFError: {}".format(bytes_))
                 break_ = True
             buff.write(bytes_)
             len_bytes = len(bytes_)
             cnt += len_bytes
-            self._compressed_offset += len(chunk)
             if break_: break
         self._dec_offset += cnt
         ret = buff.getvalue()
@@ -284,28 +289,6 @@ class InputSource(object):
             self._dec_remaining = ret[n:]
             ret = ret[:n]
         return ret
-
-    def _seek_compressed(self, n):
-        len_remaining = len(self._dec_remaining)
-        n_ = n - len_remaining
-        cnt = 0
-        #break_ = False
-        cnt_compressed = 0
-        while cnt < n_:
-            max_length = 1024 * 100 
-            chunk =self._stream.read(int(max_length))
-            cnt_compressed += len(chunk)
-            try:
-                bytes_ = self._decompressor.decompress(chunk)
-            except EOFError:
-                break
-            len_bytes = len(bytes_)
-            cnt += len_bytes
-            self._dec_offset += len_bytes
-        #if cnt_compressed != self._compressed_offset:
-        #    print("DIFF AFTER SEEK: ",cnt_compressed, self._compressed_offset)
-        assert cnt - n_ == len(self._dec_remaining)
-
 
     def close(self):
         if self._stream is None:
@@ -359,10 +342,10 @@ def recovery(snapshot, previous_file_seq, **csv_kwds):
     last_row = snapshot['last_row']
     estimated_row_size = snapshot['estimated_row_size']
     last_id = snapshot['last_id']
-    dec_remaining = snapshot['dec_remaining'].encode('utf-8')
+    #dec_remaining = snapshot['dec_remaining'].encode('utf-8')
     if overflow_df:
         overflow_df = pd.read_csv(overflow_df)
-    input_source = InputSource(file_seq, encoding=encoding, compression=compression, dec_remaining=dec_remaining, file_cnt=file_cnt, start_byte=offset, timeout=None)
+    input_source = InputSource(file_seq, encoding=encoding, compression=compression, file_cnt=file_cnt, start_byte=offset, timeout=None)
     pd_kwds = dict(csv_kwds)
     chunksize = pd_kwds['chunksize']
     del pd_kwds['chunksize']
