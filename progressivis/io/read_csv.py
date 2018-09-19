@@ -103,9 +103,9 @@ class Parser(object):
                 return ret
         # it remains n_ rows to read
         row_cnt = 0
-        at_least_n = int(n_*(1-MARGIN))
+        #at_least_n = int(n_*(1-MARGIN))
         retries = 0
-        while row_cnt < at_least_n:
+        while row_cnt < n_: #at_least_n:
             row_size = self._estimated_row_size
             recovery_n = n_
             n_ = n_ - row_cnt 

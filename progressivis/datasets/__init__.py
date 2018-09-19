@@ -10,7 +10,7 @@ import zlib
 from functools import partial
 
 DATA_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../data'))
-Z_CHUNK_SIZE = 8*1024*32
+Z_CHUNK_SIZE = 16*1024*32
 
 def get_dataset(name, **kwds):
     if not os.path.isdir(DATA_DIR):
