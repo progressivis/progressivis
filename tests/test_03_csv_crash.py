@@ -5,7 +5,7 @@ from progressivis.table.constant import Constant
 from progressivis.table.table import Table
 from progressivis.datasets import (get_dataset, get_dataset_bz2,
                                        get_dataset_gz,
-                                       get_dataset_lzma,DATA_DIR)
+                                       get_dataset_lzma, DATA_DIR)
 from progressivis.core.utils import RandomBytesIO
 #import logging, sys
 from multiprocessing import Process
@@ -56,8 +56,9 @@ def run_simple_server():
     _ = get_dataset_bz2('bigfile')
     _ = get_dataset_gz('smallfile')
     _ = get_dataset_gz('bigfile')
-    _ = get_dataset_lzma('smallfile')
-    _ = get_dataset_lzma('bigfile')
+    if six.PY3:
+        _ = get_dataset_lzma('smallfile')
+        _ = get_dataset_lzma('bigfile')
     os.chdir(DATA_DIR)
     if six.PY2:
         import SimpleHTTPServer
@@ -234,6 +235,8 @@ class TestProgressiveLoadCSVCrash(ProgressiveTest):
         return self._tst_08_read_multi_csv_file_compress_no_crash(files)
 
     def test_08_read_multi_csv_file_lzma_no_crash(self):
+        if six.PY2:
+            return
         files = [get_dataset_lzma('smallfile')]*2
         return self._tst_08_read_multi_csv_file_compress_no_crash(files)
 
@@ -283,6 +286,8 @@ class TestProgressiveLoadCSVCrash(ProgressiveTest):
         self._tst_10_read_multi_csv_file_compress_with_crash(file_list)
 
     def test_10_read_multi_csv_file_lzma_with_crash(self):
+        if six.PY2:
+            return
         file_list = [get_dataset_lzma('bigfile')]*2
         self._tst_10_read_multi_csv_file_compress_with_crash(file_list)
 

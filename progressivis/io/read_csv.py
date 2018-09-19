@@ -8,7 +8,8 @@ from io import BytesIO
 import time
 import bz2
 import zlib
-import lzma
+import six
+
 from collections import OrderedDict
 from pandas.core.dtypes.inference import is_file_like, is_sequence
 
@@ -20,11 +21,19 @@ ROW_MAX_LENGTH_GUESS = 10000
 #DEBUG_CNT = 0
 from functools import partial
 
-decompressors = dict(bz2=bz2.BZ2Decompressor,
-                       zlib=zlib.decompressobj,
-                       gzip=partial(zlib.decompressobj, wbits=zlib.MAX_WBITS|16),
-                       xz=lzma.LZMADecompressor
-                       )
+if six.PY3:
+    import lzma    
+    decompressors = dict(bz2=bz2.BZ2Decompressor,
+                        zlib=zlib.decompressobj,
+                        gzip=partial(zlib.decompressobj,
+                                         wbits=zlib.MAX_WBITS|16),
+                        xz=lzma.LZMADecompressor
+                        )
+else:
+    decompressors = dict(bz2=bz2.BZ2Decompressor,
+                        zlib=zlib.decompressobj,
+                        gzip=partial(zlib.decompressobj,
+                                         zlib.MAX_WBITS|16))
 
 def is_recoverable(inp):
     if is_str(inp):
