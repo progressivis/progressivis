@@ -48,14 +48,13 @@ def is_recoverable(inp):
 
 class Parser(object):
     def __init__(self, input_source, remaining, estimated_row_size,
-                     offset=None, overflow_df=None, last_row=0, pd_kwds={}):
+                     offset=None, overflow_df=None, pd_kwds={}):
         self._input = input_source
         self._pd_kwds = pd_kwds
         self._remaining = remaining
         self._estimated_row_size = estimated_row_size
         self._overflow_df = overflow_df
         self._offset = self._input.tell() if offset is None else offset
-        self._last_row = last_row
         self._recovery_cnt = 0
 
     def get_snapshot(self, run_number, last_id, table_name):
@@ -69,7 +68,6 @@ class Parser(object):
                 remaining=self._remaining.decode('utf-8'),
                 overflow_df= "" if self._overflow_df is None else self._overflow_df.to_csv(),
                 offset=self._offset - len(self._input._dec_remaining),
-                last_row=self._last_row,
                 estimated_row_size=self._estimated_row_size,
                 run_number=run_number,
                 last_id=last_id,
@@ -79,6 +77,7 @@ class Parser(object):
         return ret
 
     def read(self, n):
+        assert n>0
         ret = []
         n_ = n 
         if self._overflow_df is not None:
@@ -90,17 +89,16 @@ class Parser(object):
                 self._overflow_df.drop(tail.index,inplace=True)
                 ret.append(self._overflow_df)
                 self._overflow_df = tail
-                self._last_row += n
-                print("previous overflow partly consumed : ", d, " rows")
+                #print("previous overflow partly consumed : ", d, " rows")
                 return ret
             #else
-            print("previous overflow entirely consumed: ", len_df, " rows")
-            self._last_row += len_df
+            #print("previous overflow entirely consumed: ", len_df, " rows")
             n_ = n - len_df
             ret.append(self._overflow_df)
             self._overflow_df = None
-            if n - len_df < n*MARGIN: # almost equals
+            if n_ < n*MARGIN: # almost equals
                 return ret
+        assert n_ > 0
         # it remains n_ rows to read
         row_cnt = 0
         #at_least_n = int(n_*(1-MARGIN))
@@ -135,15 +133,13 @@ class Parser(object):
             if len_df <= n_:
                 ret.append(read_df)
                 row_cnt += len_df
-                self._last_row += len_df
-            else: # overflow (we read to much lines)
+            else: # overflow (we read too much lines)
                 d = len_df - n_
                 tail = read_df.tail(d)
                 read_df.drop(tail.index,inplace=True)
                 ret.append(read_df)
                 self._overflow_df = tail
-                print("produced overflow: ", len(tail), "rows")
-                self._last_row += d
+                #print("produced overflow: ", len(tail), "rows")
                 break
         return ret
 
@@ -201,6 +197,7 @@ class InputSource(object):
     def switch_to_next(self):
         """
         """
+        print("Switch to next")
         if self._file_cnt >= len(self._seq)-1:
             return False
         self._file_cnt += 1        
@@ -348,7 +345,6 @@ def recovery(snapshot, previous_file_seq, **csv_kwds):
     remaining = snapshot['remaining'].encode('utf-8')
     overflow_df = snapshot['overflow_df'].encode('utf-8')
     offset = snapshot['offset']
-    last_row = snapshot['last_row']
     estimated_row_size = snapshot['estimated_row_size']
     last_id = snapshot['last_id']
     #dec_remaining = snapshot['dec_remaining'].encode('utf-8')
@@ -361,4 +357,4 @@ def recovery(snapshot, previous_file_seq, **csv_kwds):
     return Parser(input_source, remaining=remaining,
                         estimated_row_size=estimated_row_size,
                         offset=offset, overflow_df=None,
-                        last_row=last_row, pd_kwds=pd_kwds)
+                        pd_kwds=pd_kwds)

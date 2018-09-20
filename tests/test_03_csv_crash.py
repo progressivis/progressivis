@@ -34,6 +34,12 @@ PORT = 8000
 HOST = 'localhost'
 SLEEP = 5
 
+def _close(module):
+    try:
+        module.parser._input._stream.close()
+    except:
+        pass
+
 class Patch1(ModulePatch):
     max_steps = 10000
     def before_run_step(self, m, *args, **kwargs):
@@ -69,14 +75,12 @@ def run_simple_server():
         SimpleHTTPServer.test(HandlerClass=RangeRequestHandler)
     else:
         import RangeHTTPServer.__main__
-        
-class TestProgressiveLoadCSVCrash(ProgressiveTest):
-    def setUp(self):
-        super(TestProgressiveLoadCSVCrash, self).setUp()        
-        self._http_proc = None
 
-    def tearDown(self):
-        TestProgressiveLoadCSVCrash.cleanup()
+class _HttpSrv(object):
+    def __init__(self):
+        _HttpSrv.start(self)
+
+    def stop(self):
         if self._http_proc is not None:
             try:
                 self._http_proc.terminate()
@@ -84,12 +88,33 @@ class TestProgressiveLoadCSVCrash(ProgressiveTest):
             except:
                 pass
 
-    def test_01_read_http_csv_with_crash(self):
-        #if TRAVIS: return
+    def start(self):
         p = Process(target=run_simple_server, args=())
         p.start()
         self._http_proc = p
         time.sleep(SLEEP)
+
+    def restart(self):
+        self.stop()
+        self.start()
+
+        
+class TestProgressiveLoadCSVCrash(ProgressiveTest):
+    def setUp(self):
+        super(TestProgressiveLoadCSVCrash, self).setUp()        
+        self._http_srv = None
+
+    def tearDown(self):
+        TestProgressiveLoadCSVCrash.cleanup()
+        if self._http_srv is not None:
+            try:
+                self._http_srv.stop()
+            except:
+                pass
+
+    def test_01_read_http_csv_with_crash(self):
+        #if TRAVIS: return
+        self._http_srv =  _HttpSrv()
         s=self.scheduler()
         url = make_url('bigfile')
         module=CSVLoader(url, index_col=False, header=None, scheduler=s)
@@ -98,21 +123,17 @@ class TestProgressiveLoadCSVCrash(ProgressiveTest):
         decorate(s, Patch1("csv_loader_1"))
         s.start()
         s.join()
-        module.parser._input._stream.close() # close the previous HTTP request
-        #                              # necessary onle because the
-        #                              # SimpleHTTPServer is not multi-threaded
+        self._http_srv.restart()
         s=self.scheduler()
         module=CSVLoader(url, recovery=True, index_col=False, header=None, scheduler=s)
         self.assertTrue(module.table() is None)
         s.start()
         s.join()
         self.assertEqual(len(module.table()), 1000000)
+
     def test_02_read_http_csv_bz2_with_crash(self):
         #if TRAVIS: return
-        p = Process(target=run_simple_server, args=())
-        p.start()
-        self._http_proc = p
-        time.sleep(SLEEP)
+        self._http_srv =  _HttpSrv()
         s=self.scheduler()
         url = make_url('bigfile', ext=BZ2)
         module=CSVLoader(url, index_col=False, header=None, scheduler=s)
@@ -121,9 +142,7 @@ class TestProgressiveLoadCSVCrash(ProgressiveTest):
         decorate(s, Patch1("csv_loader_1"))
         s.start()
         s.join()
-        module.parser._input._stream.close() # close the previous HTTP request
-        #                              # necessary onle because the
-        #                              # SimpleHTTPServer is not multi-threaded
+        self._http_srv.restart()
         s=self.scheduler()
         module=CSVLoader(url, recovery=True, index_col=False, header=None, scheduler=s)
         self.assertTrue(module.table() is None)
@@ -133,10 +152,7 @@ class TestProgressiveLoadCSVCrash(ProgressiveTest):
 
     def test_03_read_http_multi_csv_no_crash(self):
         #if TRAVIS: return
-        p = Process(target=run_simple_server, args=())
-        p.start()
-        self._http_proc = p
-        time.sleep(SLEEP)
+        self._http_srv =  _HttpSrv()
         s=self.scheduler()
         module=CSVLoader([make_url('smallfile'),make_url('smallfile')], index_col=False, header=None, scheduler=s)
         self.assertTrue(module.table() is None)
@@ -147,10 +163,7 @@ class TestProgressiveLoadCSVCrash(ProgressiveTest):
 
     def test_04_read_http_multi_csv_bz2_no_crash(self):
         #if TRAVIS: return
-        p = Process(target=run_simple_server, args=())
-        p.start()
-        self._http_proc = p
-        time.sleep(SLEEP)
+        self._http_srv =  _HttpSrv()
         s=self.scheduler()
         module=CSVLoader([make_url('smallfile', ext=BZ2)]*2, index_col=False, header=None, scheduler=s)
         self.assertTrue(module.table() is None)
@@ -162,10 +175,7 @@ class TestProgressiveLoadCSVCrash(ProgressiveTest):
 
     def test_05_read_http_multi_csv_with_crash(self):
         #if TRAVIS: return
-        p = Process(target=run_simple_server, args=())
-        p.start()
-        self._http_proc = p
-        time.sleep(SLEEP)
+        self._http_srv =  _HttpSrv()
         s=self.scheduler()
         url_list = [make_url('bigfile'),make_url('bigfile')]
         module=CSVLoader(url_list, index_col=False, header=None, scheduler=s)
@@ -174,9 +184,7 @@ class TestProgressiveLoadCSVCrash(ProgressiveTest):
         decorate(s, Patch1("csv_loader_1"))
         s.start()
         s.join()
-        module.parser._input._stream.close() # close the previous HTTP request
-        #                              # necessary onle because the
-        #                              # SimpleHTTPServer is not multi-threaded
+        self._http_srv.restart()
         s=self.scheduler()
         module=CSVLoader(url_list, recovery=True, index_col=False, header=None, scheduler=s)
         self.assertTrue(module.table() is None)
@@ -186,10 +194,7 @@ class TestProgressiveLoadCSVCrash(ProgressiveTest):
 
     def test_06_read_http_multi_csv_bz2_with_crash(self):
         #if TRAVIS: return
-        p = Process(target=run_simple_server, args=())
-        p.start()
-        self._http_proc = p
-        time.sleep(SLEEP)
+        self._http_srv =  _HttpSrv()
         s=self.scheduler()
         url_list = [make_url('bigfile', ext=BZ2)]*2
         module=CSVLoader(url_list, index_col=False, header=None, scheduler=s)
@@ -198,9 +203,7 @@ class TestProgressiveLoadCSVCrash(ProgressiveTest):
         decorate(s, Patch1("csv_loader_1"))
         s.start()
         s.join()
-        module.parser._input._stream.close() # close the previous HTTP request
-        #                              # necessary onle because the
-        #                              # SimpleHTTPServer is not multi-threaded
+        self._http_srv.restart()
         s=self.scheduler()
         module=CSVLoader(url_list, recovery=True, index_col=False, header=None, scheduler=s)
         self.assertTrue(module.table() is None)
@@ -249,7 +252,7 @@ class TestProgressiveLoadCSVCrash(ProgressiveTest):
         decorate(s, Patch1("csv_loader_1"))
         s.start()
         s.join()
-        module.parser._input._stream.close() # close the previous HTTP request
+        _close(module) # close the previous HTTP request
         #                              # necessary onle because the
         #                              # SimpleHTTPServer is not multi-threaded
         s=self.scheduler()
@@ -267,7 +270,7 @@ class TestProgressiveLoadCSVCrash(ProgressiveTest):
         decorate(s, Patch1("csv_loader_1"))
         s.start()
         s.join()
-        module.parser._input._stream.close() # close the previous HTTP request
+        _close(module) # close the previous HTTP request
         #                              # necessary onle because the
         #                              # SimpleHTTPServer is not multi-threaded
         s=self.scheduler()
