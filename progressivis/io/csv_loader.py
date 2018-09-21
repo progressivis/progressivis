@@ -123,7 +123,7 @@ class CSVLoader(TableModule):
                             self._table_params['create'] = False
                             self._table = Table(**self._table_params)
                     except Exception as e: # TODO: specify the exception?
-                        logger.error('Cannot acces recovery table', e)
+                        logger.error('Cannot acces recovery table %s', e)
                         return self.state_terminated
                     try:
                         last_ = self._recovery_table.eval("last_id=={}".format(len(self._table)), as_slice=False)
@@ -149,12 +149,13 @@ class CSVLoader(TableModule):
                             self._table.drop(slice(max_, None, None))
                         self._recovered_csv_table_name = snapshot['table_name']
                     except Exception as e:
-                        logger.error('Cannot read the snapshot', e)
+                        logger.error('Cannot read the snapshot %s', e)
                         return self.state_terminated
                     try:
                         self.parser = recovery(snapshot, self.filepath_or_buffer, **self.csv_kwds)
                     except Exception as e:
-                        logger.error('Cannot recover from snapshot {}', snapshot, e)
+                        #print('Cannot recover from snapshot {}, {}'.format(snapshot, e))
+                        logger.error('Cannot recover from snapshot %s, %s', snapshot, e)
                         self.parser = None
                         return self.state_terminated
                     self.filepath_or_buffer = None

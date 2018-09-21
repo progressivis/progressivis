@@ -56,6 +56,7 @@ class Parser(object):
         self._overflow_df = overflow_df
         self._offset = self._input.tell() if offset is None else offset
         self._recovery_cnt = 0
+        self._nb_cols = None if overflow_df is None else len(overflow_df.columns)
 
     def get_snapshot(self, run_number, last_id, table_name):
         if not is_recoverable(self._input._seq):
@@ -66,9 +67,13 @@ class Parser(object):
                 encoding="" if self._input._encoding is None else self._input._encoding,
                 compression="" if self._input._compression is None else self._input._compression,
                 remaining=self._remaining.decode('utf-8'),
-                overflow_df= "" if self._overflow_df is None else self._overflow_df.to_csv(),
+                overflow_df= ("" if self._overflow_df is None
+                                  else
+                                  self._overflow_df.to_csv(index=False,
+                                                               header=False)),
                 offset=self._offset - len(self._input._dec_remaining),
                 estimated_row_size=self._estimated_row_size,
+                nb_cols=self._nb_cols,
                 run_number=run_number,
                 last_id=last_id,
                 table_name=table_name
@@ -123,11 +128,22 @@ class Parser(object):
                 continue
             self._offset = self._input.tell()
             if not bytes_ and not self._remaining:
-                break
+                break # end of file
             last_nl = bytes_.rfind(NL) # stop after the last NL
+            if last_nl == -1: # NL not found => we read less than an entire row
+                self._remaining += bytes_
+                continue
             csv_bytes = self._remaining+bytes_[:last_nl+1]
             self._remaining = bytes_[last_nl+1:]
+            if not csv_bytes:
+                break
             read_df = pd.read_csv(BytesIO(csv_bytes), **self._pd_kwds)
+            if self._nb_cols is None:
+                self._nb_cols = len(read_df.columns)
+            elif self._nb_cols != len(read_df.columns):
+                raise ValueError("Wrong number of cols "
+                                     "{} instead of {}".format(
+                                         len(read_df.columns), self._nb_cols))
             len_df = len(read_df)
             self._estimated_row_size = len(csv_bytes)//len_df
             if len_df <= n_:
@@ -231,6 +247,7 @@ class InputSource(object):
                                                                     timeout=self._timeout,
                                                                       start_byte=start_byte)
             self._stream = istream
+            self._input_size = size
             return istream
         istream, encoding, compression, size = filepath_to_buffer(filepath=self.filepath,
                                                                 encoding=self._encoding,
@@ -257,6 +274,11 @@ class InputSource(object):
             ret = self._read_compressed(n)
         if ret or not n:
             return ret
+        if self._stream.tell() < self._input_size:
+            raise ValueError(
+                "Inconsistent read: empty string"
+                " when position {} < size {}".format(self._stream.tell(),
+                                                         self._input_size))
         if self.switch_to_next():
             return self.read(n)
         else:
@@ -330,6 +352,10 @@ def read_csv(input_source, silent_before=0, **csv_kwds):
     return Parser(input_source, remaining=first_row, estimated_row_size=len(first_row), pd_kwds=pd_kwds)
 
 def recovery(snapshot, previous_file_seq, **csv_kwds):
+    print("RECOVERY ...")
+    pd_kwds = dict(csv_kwds)
+    chunksize = pd_kwds['chunksize']
+    del pd_kwds['chunksize']
     file_seq = snapshot['file_seq'].split('`')
     if is_str(previous_file_seq):
         previous_file_seq = [previous_file_seq]
@@ -347,14 +373,19 @@ def recovery(snapshot, previous_file_seq, **csv_kwds):
     offset = snapshot['offset']
     estimated_row_size = snapshot['estimated_row_size']
     last_id = snapshot['last_id']
+    nb_cols = snapshot['nb_cols']
     #dec_remaining = snapshot['dec_remaining'].encode('utf-8')
     if overflow_df:
-        overflow_df = pd.read_csv(overflow_df)
+        overflow_df = pd.read_csv(BytesIO(overflow_df), **pd_kwds)
+        if nb_cols != len(overflow_df.columns):
+            raise ValueError("Inconsistent snapshot: wrong number of cols in df {} instead of {}".format(len(overflow_df.columns), nb_cols))
+    else:
+        overflow_df = None
     input_source = InputSource(file_seq, encoding=encoding, compression=compression, file_cnt=file_cnt, start_byte=offset, timeout=None)
     pd_kwds = dict(csv_kwds)
     chunksize = pd_kwds['chunksize']
     del pd_kwds['chunksize']
     return Parser(input_source, remaining=remaining,
                         estimated_row_size=estimated_row_size,
-                        offset=offset, overflow_df=None,
+                        offset=offset, overflow_df=overflow_df,
                         pd_kwds=pd_kwds)
