@@ -1,4 +1,4 @@
-from . import ProgressiveTest
+from . import ProgressiveTest, skip
 
 
 import logging
@@ -25,6 +25,7 @@ class TestLoadDatasets(ProgressiveTest):
         if six.PY2:
             return
         _ = get_dataset_lzma('smallfile')
+    @skip("Too slow ...")
     def test_load_bigfile_lzma(self):
         if six.PY2:
             return        

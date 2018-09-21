@@ -1,5 +1,5 @@
 from __future__ import absolute_import
-from . import ProgressiveTest
+from . import ProgressiveTest, skip
 from progressivis.io import CSVLoader
 from progressivis.table.constant import Constant
 from progressivis.table.table import Table
@@ -62,9 +62,9 @@ def run_simple_server():
     _ = get_dataset_bz2('bigfile')
     _ = get_dataset_gz('smallfile')
     _ = get_dataset_gz('bigfile')
-    if six.PY3:
-        _ = get_dataset_lzma('smallfile')
-        _ = get_dataset_lzma('bigfile')
+    #if six.PY3:
+    #    _ = get_dataset_lzma('smallfile')
+    #    _ = get_dataset_lzma('bigfile')
     os.chdir(DATA_DIR)
     if six.PY2:
         import SimpleHTTPServer
@@ -111,7 +111,6 @@ class TestProgressiveLoadCSVCrash(ProgressiveTest):
                 self._http_srv.stop()
             except:
                 pass
-
     def test_01_read_http_csv_with_crash(self):
         #if TRAVIS: return
         self._http_srv =  _HttpSrv()
@@ -171,7 +170,6 @@ class TestProgressiveLoadCSVCrash(ProgressiveTest):
         s.start()
         s.join()
         self.assertEqual(len(module.table()), 60000)
-
 
     def test_05_read_http_multi_csv_with_crash(self):
         #if TRAVIS: return
@@ -236,7 +234,8 @@ class TestProgressiveLoadCSVCrash(ProgressiveTest):
     def test_08_read_multi_csv_file_gz_no_crash(self):
         files = [get_dataset_gz('smallfile')]*2
         return self._tst_08_read_multi_csv_file_compress_no_crash(files)
-
+    
+    @skip("Too slow ...")
     def test_08_read_multi_csv_file_lzma_no_crash(self):
         if six.PY2:
             return
@@ -252,9 +251,7 @@ class TestProgressiveLoadCSVCrash(ProgressiveTest):
         decorate(s, Patch1("csv_loader_1"))
         s.start()
         s.join()
-        _close(module) # close the previous HTTP request
-        #                              # necessary onle because the
-        #                              # SimpleHTTPServer is not multi-threaded
+        _close(module)
         s=self.scheduler()
         module=CSVLoader(file_list, recovery=True, index_col=False, header=None, scheduler=s)
         self.assertTrue(module.table() is None)
@@ -270,9 +267,7 @@ class TestProgressiveLoadCSVCrash(ProgressiveTest):
         decorate(s, Patch1("csv_loader_1"))
         s.start()
         s.join()
-        _close(module) # close the previous HTTP request
-        #                              # necessary onle because the
-        #                              # SimpleHTTPServer is not multi-threaded
+        _close(module)
         s=self.scheduler()
         module=CSVLoader(file_list, recovery=True, index_col=False, header=None, scheduler=s)
         self.assertTrue(module.table() is None)
@@ -288,6 +283,7 @@ class TestProgressiveLoadCSVCrash(ProgressiveTest):
         file_list = [get_dataset_gz('bigfile')]*2
         self._tst_10_read_multi_csv_file_compress_with_crash(file_list)
 
+    @skip("Too slow ...")
     def test_10_read_multi_csv_file_lzma_with_crash(self):
         if six.PY2:
             return
