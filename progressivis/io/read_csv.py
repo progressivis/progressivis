@@ -48,7 +48,7 @@ def is_recoverable(inp):
 
 class Parser(object):
     def __init__(self, input_source, remaining, estimated_row_size,
-                     offset=None, overflow_df=None, pd_kwds={}):
+                     offset=None, overflow_df=None, pd_kwds={}, chunksize=0):
         self._input = input_source
         self._pd_kwds = pd_kwds
         self._remaining = remaining
@@ -57,6 +57,7 @@ class Parser(object):
         self._offset = self._input.tell() if offset is None else offset
         self._recovery_cnt = 0
         self._nb_cols = None if overflow_df is None else len(overflow_df.columns)
+        self._chunksize = chunksize
 
     def get_snapshot(self, run_number, last_id, table_name):
         if not is_recoverable(self._input._seq):
@@ -81,7 +82,7 @@ class Parser(object):
         ret.update(check=hash(tuple(ret.values())))
         return ret
 
-    def read(self, n):
+    def read(self, n, flush=False):
         assert n>0
         ret = []
         n_ = n 
@@ -89,12 +90,9 @@ class Parser(object):
             len_df = len(self._overflow_df)
             #assert len_df < n
             if len_df > n:
-                d = len_df - n
-                tail = self._overflow_df.tail(d)
-                self._overflow_df.drop(tail.index,inplace=True)
-                ret.append(self._overflow_df)
-                self._overflow_df = tail
-                #print("previous overflow partly consumed : ", d, " rows")
+                ret.append(self._overflow_df.iloc[:n])
+                self._overflow_df = self._overflow_df.iloc[n:]
+                #print("previous overflow partly consumed : ", n, " rows")
                 return ret
             #else
             #print("previous overflow entirely consumed: ", len_df, " rows")
@@ -111,8 +109,12 @@ class Parser(object):
         while row_cnt < n_: #at_least_n:
             row_size = self._estimated_row_size
             recovery_n = n_
-            n_ = n_ - row_cnt 
-            size = n_ * row_size
+            n_ = n_ - row_cnt
+            if flush:
+                nb_rows = int(n_*0.75)
+            else:
+                nb_rows = max(n_, self._chunksize)
+            size = nb_rows * row_size
             try:
                 bytes_ = self._input.read(size) # do not raise StopIteration, only returns b''
             except HTTPError:
@@ -150,14 +152,14 @@ class Parser(object):
                 ret.append(read_df)
                 row_cnt += len_df
             else: # overflow (we read too much lines)
-                d = len_df - n_
-                tail = read_df.tail(d)
-                read_df.drop(tail.index,inplace=True)
-                ret.append(read_df)
-                self._overflow_df = tail
-                #print("produced overflow: ", len(tail), "rows")
+                self._overflow_df = read_df.iloc[n_:]
+                ret.append(read_df.iloc[:n_])
+                #print("produced overflow: ", len(self._overflow_df), "rows")
                 break
         return ret
+
+    def is_flushed(self):
+        return self._overflow_df is None
 
 class InputSource(object):
     def __init__(self, inp, encoding, file_cnt=0, compression=None, dec_remaining=b'', timeout=None, start_byte=0):
@@ -349,7 +351,7 @@ def read_csv(input_source, silent_before=0, **csv_kwds):
     del pd_kwds['chunksize']
     #pd_kwds['encoding'] = input_source._encoding
     first_row = get_first_row(input_source)
-    return Parser(input_source, remaining=first_row, estimated_row_size=len(first_row), pd_kwds=pd_kwds)
+    return Parser(input_source, remaining=first_row, estimated_row_size=len(first_row), pd_kwds=pd_kwds, chunksize=chunksize)
 
 def recovery(snapshot, previous_file_seq, **csv_kwds):
     print("RECOVERY ...")
@@ -388,4 +390,4 @@ def recovery(snapshot, previous_file_seq, **csv_kwds):
     return Parser(input_source, remaining=remaining,
                         estimated_row_size=estimated_row_size,
                         offset=offset, overflow_df=overflow_df,
-                        pd_kwds=pd_kwds)
+                        pd_kwds=pd_kwds, chunksize=chunksize)

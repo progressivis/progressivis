@@ -25,7 +25,8 @@ class CSVLoader(TableModule):
                  timeout=None,
                  save_context=None,
                  recovery=0,
-                 recovery_table_size=5,
+                 recovery_table_size=3,
+                 save_step_size = 100000,
                  **kwds):
         self._add_slots(kwds,'input_descriptors',
                         [SlotDescriptor('filenames', type=Table,required=False)])
@@ -57,7 +58,9 @@ class CSVLoader(TableModule):
         self._recovery = recovery
         self._recovery_table_size = recovery_table_size
         self._recovery_table = None
-        self._recovery_table_inv = None        
+        self._recovery_table_inv = None
+        self._save_step_size = save_step_size
+        self._last_saved_id = 0
         self._table = None
 
 
@@ -143,7 +146,7 @@ class CSVLoader(TableModule):
                                 sn = self._recovery_table.row(i).to_dict(ordered=True)
                                 if check_snapshot(sn) and sn['last_id'] > max_:
                                     max_, snapshot = sn['last_id'], sn
-                            if max < 0:
+                            if max_ < 0:
                                 logger.error('Cannot acces recovery table')
                                 return self.state_terminated
                             self._table.drop(slice(max_, None, None))
@@ -182,6 +185,11 @@ class CSVLoader(TableModule):
                         # fall through
         return self.state_ready
 
+    def _needs_save(self):
+        if self._table is None:
+            return False
+        return self._table.last_id >= self._last_saved_id + self._save_step_size
+
     def run_step(self,run_number,step_size, howlong):
         if step_size==0: # bug
             logger.error('Received a step_size of 0')
@@ -197,9 +205,10 @@ class CSVLoader(TableModule):
             raise StopIteration('Unexpected situation')
         logger.info('loading %d lines', step_size)
         #print("Processed bytes: ", self.parser._prev_pos)
+        needs_save = self._needs_save()
         try:
             with self.lock:
-                df_list = self.parser.read(step_size) # raises StopIteration at EOF
+                df_list = self.parser.read(step_size, flush=needs_save) # raises StopIteration at EOF
                 if not df_list:
                     raise StopIteration
         except StopIteration:
@@ -241,7 +250,7 @@ class CSVLoader(TableModule):
                 else:
                     for df in df_list:
                         self._table.append(df)
-                if self._recovery_table is None and self._save_context:
+                if self.parser.is_flushed() and needs_save and self._recovery_table is None and self._save_context:
                     snapshot = self.parser.get_snapshot(run_number=run_number, table_name=self._table._name,
                                                 last_id=self._table.last_id)
                     self._recovery_table = Table(name='csv_loader_recovery',
@@ -251,15 +260,16 @@ class CSVLoader(TableModule):
                         data=pd.DataFrame(dict(table_name=self._table._name,
                                             csv_input=self.filepath_or_buffer),
                                               index=[0]), create=True)
-
-                elif self._save_context:
-                        snapshot = self.parser.get_snapshot(
-                            run_number=run_number,
-                            last_id=self._table.last_id, table_name=self._table._name)
-                        self._recovery_table.add(snapshot)
-                        if len(self._recovery_table) > self._recovery_table_size:
-                            oldest = self._recovery_table.argmin()['offset']
-                            self._recovery_table.drop(np.argmin(oldest))
+                    self._last_saved_id = self._table.last_id
+                elif self.parser.is_flushed() and needs_save and self._save_context:
+                    snapshot = self.parser.get_snapshot(
+                        run_number=run_number,
+                        last_id=self._table.last_id, table_name=self._table._name)
+                    self._recovery_table.add(snapshot)
+                    if len(self._recovery_table) > self._recovery_table_size:
+                        oldest = self._recovery_table.argmin()['offset']
+                        self._recovery_table.drop(np.argmin(oldest))
+                    self._last_saved_id = self._table.last_id
         #print("Progress: ", self.get_progress())
         return self._return_run_step(self.state_ready, steps_run=creates)
 
