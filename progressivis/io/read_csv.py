@@ -2,14 +2,14 @@ from __future__ import absolute_import, division, print_function
 import pandas as pd
 import numpy as np
 from ..core.utils import (filepath_to_buffer,
-                              _infer_compression, is_str)
+                              _infer_compression, is_str, is_iter_str)
 from requests.packages.urllib3.exceptions import HTTPError
 from io import BytesIO
 import time
 import bz2
 import zlib
 import six
-
+import json
 from collections import OrderedDict
 from pandas.core.dtypes.inference import is_file_like, is_sequence
 
@@ -17,6 +17,7 @@ SAMPLE_SIZE = 5
 MARGIN = 0.05
 MAX_RETRY = 3
 NL = b'\n'
+SEP = ','
 ROW_MAX_LENGTH_GUESS = 10000
 #DEBUG_CNT = 0
 from functools import partial
@@ -48,7 +49,7 @@ def is_recoverable(inp):
 
 class Parser(object):
     def __init__(self, input_source, remaining, estimated_row_size,
-                     offset=None, overflow_df=None, pd_kwds={}, chunksize=0):
+                     offset=None, overflow_df=None, pd_kwds={}, chunksize=0, usecols=None, names=None, header='infer'):
         self._input = input_source
         self._pd_kwds = pd_kwds
         self._remaining = remaining
@@ -58,15 +59,17 @@ class Parser(object):
         self._recovery_cnt = 0
         self._nb_cols = None if overflow_df is None else len(overflow_df.columns)
         self._chunksize = chunksize
-
+        self._usecols = usecols
+        self._names = names
+        self._header = header
     def get_snapshot(self, run_number, last_id, table_name):
         if not is_recoverable(self._input._seq):
             raise ValueError("Not recoverable")
         ret = OrderedDict(
-                file_seq='`'.join(self._input._seq),
+                file_seq=json.dumps(self._input._seq),
                 file_cnt = self._input._file_cnt,
-                encoding="" if self._input._encoding is None else self._input._encoding,
-                compression="" if self._input._compression is None else self._input._compression,
+                encoding=json.dumps(self._input._encoding),
+                compression=json.dumps(self._input._compression),
                 remaining=self._remaining.decode('utf-8'),
                 overflow_df= ("" if self._overflow_df is None
                                   else
@@ -77,7 +80,9 @@ class Parser(object):
                 nb_cols=self._nb_cols,
                 run_number=run_number,
                 last_id=last_id,
-                table_name=table_name
+                table_name=table_name,
+                names=json.dumps(self._names.tolist() if isinstance(self._names, np.ndarray) else self._names),
+                usecols=json.dumps(self._usecols)
             )
         ret.update(check=hash(tuple(ret.values())))
         return ret
@@ -139,7 +144,16 @@ class Parser(object):
             self._remaining = bytes_[last_nl+1:]
             if not csv_bytes:
                 break
-            read_df = pd.read_csv(BytesIO(csv_bytes), **self._pd_kwds)
+            #print("self._pd_kwds: ", self._pd_kwds)
+            if self._names is None:
+                header = self._header
+                names = None
+            else:
+                header = None
+                names = self._names
+            read_df = pd.read_csv(BytesIO(csv_bytes), header=header, names=names, usecols=self._usecols, **self._pd_kwds)
+            if self._names is None:
+                self._names = read_df.columns.values
             if self._nb_cols is None:
                 self._nb_cols = len(read_df.columns)
             elif self._nb_cols != len(read_df.columns):
@@ -351,31 +365,40 @@ def read_csv(input_source, silent_before=0, **csv_kwds):
     del pd_kwds['chunksize']
     #pd_kwds['encoding'] = input_source._encoding
     first_row = get_first_row(input_source)
-    return Parser(input_source, remaining=first_row, estimated_row_size=len(first_row), pd_kwds=pd_kwds, chunksize=chunksize)
+    usecols = None
+    if 'usecols' in pd_kwds:
+        usecols = pd_kwds.pop('usecols')
+        if is_iter_str(usecols):
+            cols = first_row.decode('utf-8').strip(' \r\n')
+            columns = [c.strip(' ') for c in cols.split(SEP)]
+            usecols = [columns.index(c) for c in usecols]
+    header = 'infer'
+    if 'header' in pd_kwds:
+        header = pd_kwds.pop('header')
+        assert header is None or header == 0
+    return Parser(input_source, remaining=first_row, estimated_row_size=len(first_row), pd_kwds=pd_kwds, chunksize=chunksize, usecols=usecols, header=header)
 
 def recovery(snapshot, previous_file_seq, **csv_kwds):
     print("RECOVERY ...")
     pd_kwds = dict(csv_kwds)
     chunksize = pd_kwds['chunksize']
     del pd_kwds['chunksize']
-    file_seq = snapshot['file_seq'].split('`')
+    file_seq = json.loads(snapshot['file_seq'])
     if is_str(previous_file_seq):
         previous_file_seq = [previous_file_seq]
     if previous_file_seq!= file_seq[:len(previous_file_seq)]: # we tolerate a new file_seq longer than the previous
         raise ValueError("File sequence changed, recovery aborted!")
     file_cnt = snapshot['file_cnt']
-    encoding = snapshot['encoding']
-    if not encoding:
-        encoding = None
-    compression = snapshot['compression']
-    if not compression:
-        compression = None
+    encoding = json.loads(snapshot['encoding'])
+    compression = json.loads(snapshot['compression'])
     remaining = snapshot['remaining'].encode('utf-8')
     overflow_df = snapshot['overflow_df'].encode('utf-8')
     offset = snapshot['offset']
     estimated_row_size = snapshot['estimated_row_size']
     last_id = snapshot['last_id']
     nb_cols = snapshot['nb_cols']
+    names=json.loads(snapshot['names'])
+    usecols = json.loads(snapshot['usecols'])
     #dec_remaining = snapshot['dec_remaining'].encode('utf-8')
     if overflow_df:
         overflow_df = pd.read_csv(BytesIO(overflow_df), **pd_kwds)
@@ -387,7 +410,9 @@ def recovery(snapshot, previous_file_seq, **csv_kwds):
     pd_kwds = dict(csv_kwds)
     chunksize = pd_kwds['chunksize']
     del pd_kwds['chunksize']
+    if 'header' in pd_kwds:
+        header = pd_kwds.pop('header')
     return Parser(input_source, remaining=remaining,
                         estimated_row_size=estimated_row_size,
                         offset=offset, overflow_df=overflow_df,
-                        pd_kwds=pd_kwds, chunksize=chunksize)
+                        pd_kwds=pd_kwds, chunksize=chunksize, names=names, usecols=usecols, header=None)
