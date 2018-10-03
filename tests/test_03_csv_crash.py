@@ -7,6 +7,8 @@ from progressivis.datasets import (get_dataset, get_dataset_bz2,
                                        get_dataset_gz,
                                        get_dataset_lzma, DATA_DIR)
 from progressivis.core.utils import RandomBytesIO
+from progressivis.stats.counter import Counter
+
 #import logging, sys
 from multiprocessing import Process
 import time, os
@@ -16,10 +18,8 @@ from requests.exceptions import ConnectionError
 from progressivis.core.utils import decorate, ModulePatch
 
 from RangeHTTPServer import RangeRequestHandler
-
 import six
 import shutil
-
 if six.PY3:
     import http.server as http_srv
 else:
@@ -129,6 +129,28 @@ class TestProgressiveLoadCSVCrash(ProgressiveTest):
         s.start()
         s.join()
         self.assertEqual(len(module.table()), 1000000)
+
+    def test_01_read_http_csv_with_crash_and_counter(self):
+        #if TRAVIS: return
+        self._http_srv =  _HttpSrv()
+        s=self.scheduler()
+        url = make_url('bigfile')
+        module=CSVLoader(url, index_col=False, header=None, scheduler=s)
+        self.assertTrue(module.table() is None)
+        Patch1.max_steps = 200000
+        decorate(s, Patch1("csv_loader_1"))
+        s.start()
+        s.join()
+        self._http_srv.restart()
+        s=self.scheduler()
+        csv=CSVLoader(url, recovery=True, index_col=False, header=None, scheduler=s)
+        counter = Counter(scheduler=s)
+        counter.input.table = csv.output.table
+        self.assertTrue(csv.table() is None)
+        s.start()
+        s.join()
+        self.assertEqual(len(csv.table()), 1000000)
+        self.assertEqual(counter.table()['counter'].loc[0], 1000000)
 
     def test_02_read_http_csv_bz2_with_crash(self):
         #if TRAVIS: return
