@@ -19,6 +19,7 @@ MAX_RETRY = 3
 NL = b'\n'
 SEP = ','
 ROW_MAX_LENGTH_GUESS = 10000
+HEADER_CHUNK = 50
 #DEBUG_CNT = 0
 from functools import partial
 
@@ -116,7 +117,11 @@ class Parser(object):
             recovery_n = n_
             n_ = n_ - row_cnt
             if flush:
-                nb_rows = int(n_*0.75)
+                nb_rows = n_
+            elif self._names is None and self._usecols is not None:
+                # try not to read a lot of rows because we are going to read
+                # all columns, in order to know their list
+                nb_rows = min(n_, HEADER_CHUNK)
             else:
                 nb_rows = max(n_, self._chunksize)
             size = nb_rows * row_size
@@ -148,12 +153,16 @@ class Parser(object):
             if self._names is None:
                 header = self._header
                 names = None
+                usecols=None
             else:
                 header = None
                 names = self._names
-            read_df = pd.read_csv(BytesIO(csv_bytes), header=header, names=names, usecols=self._usecols, **self._pd_kwds)
+                usecols = self._usecols
+            read_df = pd.read_csv(BytesIO(csv_bytes), header=header, names=names, usecols=usecols, **self._pd_kwds)
             if self._names is None:
                 self._names = read_df.columns.values
+                if self._usecols:
+                    read_df = read_df.loc[:, self._usecols]
             if self._nb_cols is None:
                 self._nb_cols = len(read_df.columns)
             elif self._nb_cols != len(read_df.columns):
@@ -368,10 +377,6 @@ def read_csv(input_source, silent_before=0, **csv_kwds):
     usecols = None
     if 'usecols' in pd_kwds:
         usecols = pd_kwds.pop('usecols')
-        if is_iter_str(usecols):
-            cols = first_row.decode('utf-8').strip(' \r\n')
-            columns = [c.strip(' ') for c in cols.split(SEP)]
-            usecols = [columns.index(c) for c in usecols]
     header = 'infer'
     if 'header' in pd_kwds:
         header = pd_kwds.pop('header')
@@ -399,6 +404,8 @@ def recovery(snapshot, previous_file_seq, **csv_kwds):
     nb_cols = snapshot['nb_cols']
     names=json.loads(snapshot['names'])
     usecols = json.loads(snapshot['usecols'])
+    if usecols is not None:
+        assert 'usecols' in csv_kwds and csv_kwds['usecols'] == usecols
     #dec_remaining = snapshot['dec_remaining'].encode('utf-8')
     if overflow_df:
         overflow_df = pd.read_csv(BytesIO(overflow_df), **pd_kwds)
