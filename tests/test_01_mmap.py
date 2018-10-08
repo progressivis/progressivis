@@ -9,7 +9,7 @@ from progressivis.storage.base import Group, Dataset
 from progressivis.table.table import Table
 from . import ProgressiveTest, skip
 import pandas as pd
-
+import six
 
 class TestMMap(ProgressiveTest):
     "Test mmap-based file storage"
@@ -86,6 +86,9 @@ class TestMMap(ProgressiveTest):
 
     def test_mmap5(self):
         #pylint: disable=protected-access
+        if six.PY2:
+            print("test_mmap5 skipped if PY2")
+            return
         self._rmtree()
         t = Table('table_mmap_5', dshape='{anint: int, atext: string}')
         for i in range(100):

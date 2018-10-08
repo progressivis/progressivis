@@ -9,7 +9,7 @@ from resource import getpagesize
 import marshal
 import six
 import numpy as np
-from functools import lru_cache
+#from functools import lru_cache
 
 PAGESIZE = getpagesize()
 WB = 4
@@ -76,9 +76,15 @@ class MMapObject(object):
         if lb >= MAX_SHORT:
             return self._add_long(buf, lb)
         return self._add_short(buf, lb)
-    @lru_cache(maxsize=LRU_MAX_SIZE)
-    def _add_short(self, buf, lb):
-        return self._add_long(buf, lb, with_reuse=False)
+    if six.PY3:
+        from functools import lru_cache
+        @lru_cache(maxsize=LRU_MAX_SIZE)
+        def _add_short(self, buf, lb):
+            return self._add_long(buf, lb, with_reuse=False)
+    else:
+        def _add_short(self, buf, lb):
+            return self._add_long(buf, lb, with_reuse=False)
+        
     #def _add_long(self, buf, lb):
     #    return self._add_string(buf, lb)
     def _add_to_freelist(self, idx):
