@@ -83,6 +83,56 @@ class TestMMap(ProgressiveTest):
         np.min(t['b'])
         self.assertEqual(len(t),len(df))
         self._rmtree()
+
+    def test_mmap5(self):
+        #pylint: disable=protected-access
+        self._rmtree()
+        t = Table('table_mmap_5', dshape='{anint: int, atext: string}')
+        for i in range(100):
+            t.add(dict(anint=i, atext="abc"))
+            t.add(dict(anint=i, atext="xyz"))
+        nb_str = len(set(t._column("atext").storagegroup["atext"].view))
+        self.assertEqual(nb_str, 2)
+
+    def test_mmap6(self):
+        #pylint: disable=protected-access
+        long_text = "a"*50
+        self._rmtree()
+        t = Table('table_mmap_6', dshape='{anint: int, atext: string}')
+        for i in range(100):
+            t.add(dict(anint=i, atext=long_text))
+        nb_str = len(set(t._column("atext").storagegroup["atext"].view))
+        self.assertEqual(nb_str, 100)
+
+    def _tst_impl_mmap_strings(self, t_name, initial, stride):
+        #pylint: disable=protected-access
+        long_text = initial
+        cnt = len(initial)
+        self._rmtree()
+        t = Table(t_name, dshape='{anint: int, atext: string}')
+        t.add(dict(anint=1, atext=long_text))
+        for i in range(10):
+            if stride >= 0:
+                long_text += stride*chr(ord("a")+i%26+1)
+            else:
+                long_text = long_text[:stride]
+            t.loc[0, "atext"] = long_text
+            cnt+=len(long_text)
+        return t, cnt
+
+    def test_mmap_strings_all_miss(self):
+        t, cnt = self._tst_impl_mmap_strings(t_name='table_mmap_all_miss', initial=50*"a", stride=10)
+        offset = t._column("atext").storagegroup["atext"]._strings.sizes[0]*4
+        self.assertGreater(offset, cnt)
+        self.assertAlmostEqual(offset/float(cnt), 1, delta=0.2)
+
+    def test_mmap_strings_all_hit(self):
+        len_init = 5000
+        initial = len_init*"a"
+        t, cnt = self._tst_impl_mmap_strings(t_name='table_mmap_all_hit', initial=initial, stride=-1)
+        offset = t._column("atext").storagegroup["atext"]._strings.sizes[0]*4
+        self.assertGreater(offset, len_init)
+        self.assertAlmostEqual(offset/float(len_init), 1, delta=0.2)
         
     def _create_table(self, group):
         table = Table('table',
