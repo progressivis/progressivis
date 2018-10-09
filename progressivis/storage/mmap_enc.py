@@ -10,11 +10,15 @@ import marshal
 import six
 import numpy as np
 #from functools import lru_cache
+from ..core.bitmap import bitmap
 
 PAGESIZE = getpagesize()
 WB = 4
 MAX_SHORT = 32
+MAX_SHORT_BIT_LENGTH = MAX_SHORT.bit_length()
 LRU_MAX_SIZE = 128
+FREELIST_SIZE = 63
+MAX_OVERSIZE = 3 # we can reuse a chunk at most 2**MAX_OVERSIZE times greater than required
 
 def _ofs(idx):
     return (idx+1)*WB
@@ -32,7 +36,7 @@ class MMapObject(object):
         self.sizes = np.frombuffer(self.mmap, np.uint32)
         if self._new_file:
             self.sizes[0] = 1
-        self._freelist = []
+        self._freelist = [bitmap() for _ in range(FREELIST_SIZE)]
 
     def _allocate(self, size):
         self.mmap.resize(size*PAGESIZE)
@@ -69,8 +73,7 @@ class MMapObject(object):
     def __getitem__(self, idx):
         return self.get(idx)
 
-
-    def ad_d(self, obj):
+    def add(self, obj):
         buf = self.encode(obj)
         lb = len(buf)
         if lb >= MAX_SHORT:
@@ -85,18 +88,26 @@ class MMapObject(object):
         def _add_short(self, buf, lb):
             return self._add_long(buf, lb, with_reuse=False)
         
-    #def _add_long(self, buf, lb):
-    #    return self._add_string(buf, lb)
-    def _add_to_freelist(self, idx):
-        self._freelist.append(idx)
+    def _maybe_add_to_freelist(self, idx):
+        if not idx:
+            return
+        lb = self.sizes[idx]*WB
+        if lb <= MAX_SHORT:
+            return
+        pos = int(lb).bit_length()-1
+        self._freelist[pos].add(idx)
+
     def _get_from_freelist(self, lb):
-        lw = lb//4+1
-        for idx in self._freelist:
-            if self.sizes[idx] >= lw:
-                #print("HIT: ", lb, lw, self.sizes[idx])
-                return idx
-        #print("MISS: ", lb, lw)
+        pos = int(lb).bit_length()-1
+        for i in self._freelist[pos]:
+            if self.sizes[i]*WB >= lb:
+                return i
+        for i in range(pos+1, pos+MAX_OVERSIZE):
+            bm = self._freelist[i].pop()
+            if bm:
+                return bm[0]
         return -1
+
     def _add_long(self, buf, lb, with_reuse):
         bufsize = lb + WB - lb%WB
         assert bufsize % 4 == 0
@@ -123,8 +134,7 @@ class MMapObject(object):
             raise IndexError('index %d is out of range' % idx)
         buf = self.encode(obj)
         lb = len(buf)
-        if idx > 0 and self.sizes[idx]*WB > MAX_SHORT:
-            self._add_to_freelist(idx)
+        self._maybe_add_to_freelist(idx)
         if lb <= MAX_SHORT:
             return self._add_short(buf, lb)
         # long string case
