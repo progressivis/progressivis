@@ -80,6 +80,8 @@ class GroupImpl(Group):
                 return default
         return root
 
+    def release(self, ids):
+        pass
     def __getitem__(self, item):
         ret = self.get(item)
         if ret is None:

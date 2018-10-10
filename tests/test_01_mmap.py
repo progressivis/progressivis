@@ -5,11 +5,14 @@ import shutil
 import numpy as np
 
 from progressivis.storage.mmap import MMapGroup
+from progressivis.storage.mmap_enc import MAX_SHORT
 from progressivis.storage.base import Group, Dataset
 from progressivis.table.table import Table
-from . import ProgressiveTest, skip
+from . import ProgressiveTest, skip, skipIf
 import pandas as pd
 import six
+
+LONG_SIZE = MAX_SHORT *2
 
 class TestMMap(ProgressiveTest):
     "Test mmap-based file storage"
@@ -84,11 +87,9 @@ class TestMMap(ProgressiveTest):
         self.assertEqual(len(t),len(df))
         self._rmtree()
 
+    @skipIf(six.PY2, "Python 2.x does not provide @lru_cache, test skipped")
     def test_mmap5(self):
         #pylint: disable=protected-access
-        if six.PY2:
-            print("test_mmap5 skipped if PY2")
-            return
         self._rmtree()
         t = Table('table_mmap_5', dshape='{anint: int, atext: string}')
         for i in range(100):
@@ -99,7 +100,7 @@ class TestMMap(ProgressiveTest):
 
     def test_mmap6(self):
         #pylint: disable=protected-access
-        long_text = "a"*50
+        long_text = "a"*LONG_SIZE
         self._rmtree()
         t = Table('table_mmap_6', dshape='{anint: int, atext: string}')
         for i in range(100):
@@ -124,19 +125,36 @@ class TestMMap(ProgressiveTest):
         return t, cnt
 
     def test_mmap_strings_all_miss(self):
-        t, cnt = self._tst_impl_mmap_strings(t_name='table_mmap_all_miss', initial=50*"a", stride=10)
+        t, cnt = self._tst_impl_mmap_strings(t_name='table_mmap_all_miss', initial=LONG_SIZE*"a", stride=10)
         offset = t._column("atext").storagegroup["atext"]._strings.sizes[0]*4
         self.assertGreater(offset, cnt)
         self.assertAlmostEqual(offset/float(cnt), 1, delta=0.2)
 
     def test_mmap_strings_all_hit(self):
-        len_init = 5000
+        len_init = LONG_SIZE * 100
         initial = len_init*"a"
         t, cnt = self._tst_impl_mmap_strings(t_name='table_mmap_all_hit', initial=initial, stride=-1)
         offset = t._column("atext").storagegroup["atext"]._strings.sizes[0]*4
         self.assertGreater(offset, len_init)
         self.assertAlmostEqual(offset/float(len_init), 1, delta=0.2)
-        
+
+    def test_mmap_drop(self):
+        def _free_chunk_nb(t):
+            return sum([len(e) for e in t._column("atext").storagegroup["atext"]._strings._freelist])
+        self._rmtree()
+        t = Table('table_mmap_drop', dshape='{anint: int, atext: string}')
+        for i in range(100):
+            t.add(dict(anint=i, atext="a"*LONG_SIZE))
+        del t.loc[[1,3,5]]
+        self.assertEqual(len(t), 97)
+        self.assertEqual(_free_chunk_nb(t), 3)
+        del t.loc[30:40] # 40 is deleted too
+        self.assertEqual(len(t), 87)
+        self.assertEqual(_free_chunk_nb(t), 14)
+        del t.loc[80:]
+        self.assertEqual(len(t), 67)
+        self.assertEqual(_free_chunk_nb(t), 34)
+
     def _create_table(self, group):
         table = Table('table',
                       dshape='{a: int64, b: real, c: string, d: 10*int}',

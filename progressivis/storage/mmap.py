@@ -134,6 +134,23 @@ class MMapDataset(Dataset):
         self.resize(last+lval)
         self.base[last:last+lval] = val
 
+    def release(self, ids):
+        if  self._strings is None:
+            return
+        if isinstance(ids, integer_types):
+            offset = self.view[ids]
+            if offset == -1:
+                return None
+            return self._strings.release(offset)
+        elif isinstance(ids, slice):
+            stop_ = ids.stop if ids.stop is not None else len(self.view)
+            ids = range(*ids.indices(stop_))
+        for k, i in enumerate(ids):
+            offset = self.view[i]
+            if offset == -1:
+                continue
+            self._strings.release(offset)
+
     def _set_value_at(self, i, v):
         #TODO free current value
         if v is None:
@@ -374,7 +391,10 @@ class MMapGroup(GroupImpl):
         metadata = os.path.join(self._directory, METADATA_FILE)
         _write_attributes(self._attrs.attrs, metadata)
 
-        #self.delete()
+    def release(self, ids):
+        for ds in self.dict.values():
+            ds.release(ids)
+
 
     
             

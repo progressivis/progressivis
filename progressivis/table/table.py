@@ -241,6 +241,8 @@ class Table(BaseTable):
         if locs is None:
             locs = self.index[index]
         self._ids._delete_ids(locs, index)
+        if self._storagegroup is not None:
+            self._storagegroup.release(index)
         #del
         # for column in self._columns:
         #    column.update()

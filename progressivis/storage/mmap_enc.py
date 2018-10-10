@@ -88,7 +88,7 @@ class MMapObject(object):
         def _add_short(self, buf, lb):
             return self._add_long(buf, lb, with_reuse=False)
         
-    def _maybe_add_to_freelist(self, idx):
+    def release(self, idx):
         if not idx:
             return
         lb = self.sizes[idx]*WB
@@ -136,7 +136,7 @@ class MMapObject(object):
             raise IndexError('index %d is out of range' % idx)
         buf = self.encode(obj)
         lb = len(buf)
-        self._maybe_add_to_freelist(idx)
+        self.release(idx)
         if lb <= MAX_SHORT:
             return self._add_short(buf, lb)
         # long string case
