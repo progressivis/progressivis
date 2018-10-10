@@ -438,7 +438,8 @@ class IdColumn(Column):
             ret = np.fromiter(loc, dtype=np.int64, count=count)
             ret = self._ids_dict.get_items(ret)
         elif isinstance(loc, slice):
-            ret = np.array(range(loc.start, loc.stop+1, loc.step or 1), dtype=np.int64)
+            loc_stop = self.last_id if loc.stop is None else loc.stop+1
+            ret = np.array(range(loc.start, loc_stop, loc.step or 1), dtype=np.int64)
             ret = self._ids_dict.get_items(ret)
         else:
             raise ValueError('id_to_index not implemented for id "%s"' % loc)
