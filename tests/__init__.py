@@ -2,7 +2,7 @@ from __future__ import print_function
 
 from os import getenv
 import sys
-from unittest import TestCase, skip, main
+from unittest import TestCase, skip, skipIf, main
 
 from progressivis import log_level, logging, Scheduler, BaseScheduler
 from progressivis.storage import Group, StorageEngine
@@ -10,7 +10,7 @@ from progressivis.storage.mmap import MMapGroup
 import numpy as np
 
 _ = skip # shut-up pylint
-
+_ = skipIf
 
 
 class ProgressiveTest(TestCase):
