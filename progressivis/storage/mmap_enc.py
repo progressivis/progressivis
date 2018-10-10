@@ -99,10 +99,12 @@ class MMapObject(object):
 
     def _get_from_freelist(self, lb):
         pos = int(lb).bit_length()-1
+        lw = lb//WB + 1
         for i in self._freelist[pos]:
-            if self.sizes[i]*WB >= lb:
+            if self.sizes[i] >= lw:
+                self._freelist[pos].remove(i)
                 return i
-        for i in range(pos+1, pos+MAX_OVERSIZE):
+        for i in range(pos+1, min(pos+MAX_OVERSIZE, FREELIST_SIZE-1)):
             bm = self._freelist[i].pop()
             if bm:
                 return bm[0]
