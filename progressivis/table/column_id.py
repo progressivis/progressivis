@@ -335,8 +335,8 @@ class IdColumn(Column):
             locs = [locs]
             index = [index]
         elif isinstance(locs, slice):
-            locs = range(*locs.index(end))
-        elif isinstance(index, np.ndarray):
+            locs = range(*locs.indices(end))
+        if isinstance(index, np.ndarray):
             index = np.nditer(index)  # Beware, nditer flattens the array, which is ok here
         elif isinstance(index, slice):
             index = range(index.start, index.stop, index.step if index.step else 1)
