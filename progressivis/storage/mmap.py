@@ -410,7 +410,7 @@ class MMapStorageEngine(StorageEngine, MMapGroup):
 
         
     @staticmethod
-    def create_mmap_group(name=None, create=True):
+    def create_group(name=None, create=True):
         root = StorageEngine.engines()['mmap']
         if name in root.dict:
             if create:

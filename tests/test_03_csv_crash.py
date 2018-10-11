@@ -1,5 +1,5 @@
 from __future__ import absolute_import
-from . import ProgressiveTest, skip
+from . import ProgressiveTest, skip, skipIf
 from progressivis.io import CSVLoader
 from progressivis.table.constant import Constant
 from progressivis.table.table import Table
@@ -8,6 +8,7 @@ from progressivis.datasets import (get_dataset, get_dataset_bz2,
                                        get_dataset_lzma, DATA_DIR)
 from progressivis.core.utils import RandomBytesIO
 from progressivis.stats.counter import Counter
+from progressivis.storage import IS_PERSISTENT
 
 #import logging, sys
 from multiprocessing import Process
@@ -111,6 +112,8 @@ class TestProgressiveLoadCSVCrash(ProgressiveTest):
                 self._http_srv.stop()
             except:
                 pass
+
+    @skipIf(not IS_PERSISTENT, "transient storage, test skipped")
     def test_01_read_http_csv_with_crash(self):
         #if TRAVIS: return
         self._http_srv =  _HttpSrv()
@@ -130,6 +133,7 @@ class TestProgressiveLoadCSVCrash(ProgressiveTest):
         s.join()
         self.assertEqual(len(module.table()), 1000000)
 
+    @skipIf(not IS_PERSISTENT, "transient storage, test skipped")
     def test_01_read_http_csv_with_crash_and_counter(self):
         #if TRAVIS: return
         self._http_srv =  _HttpSrv()
@@ -152,6 +156,7 @@ class TestProgressiveLoadCSVCrash(ProgressiveTest):
         self.assertEqual(len(csv.table()), 1000000)
         self.assertEqual(counter.table()['counter'].loc[0], 1000000)
 
+    @skipIf(not IS_PERSISTENT, "transient storage, test skipped")
     def test_02_read_http_csv_bz2_with_crash(self):
         #if TRAVIS: return
         self._http_srv =  _HttpSrv()
@@ -171,6 +176,7 @@ class TestProgressiveLoadCSVCrash(ProgressiveTest):
         s.join()
         self.assertEqual(len(module.table()), 1000000)
 
+    @skipIf(not IS_PERSISTENT, "transient storage, test skipped")
     def test_03_read_http_multi_csv_no_crash(self):
         #if TRAVIS: return
         self._http_srv =  _HttpSrv()
@@ -182,6 +188,7 @@ class TestProgressiveLoadCSVCrash(ProgressiveTest):
         s.join()
         self.assertEqual(len(module.table()), 60000)
 
+    @skipIf(not IS_PERSISTENT, "transient storage, test skipped")
     def test_04_read_http_multi_csv_bz2_no_crash(self):
         #if TRAVIS: return
         self._http_srv =  _HttpSrv()
@@ -193,6 +200,7 @@ class TestProgressiveLoadCSVCrash(ProgressiveTest):
         s.join()
         self.assertEqual(len(module.table()), 60000)
 
+    @skipIf(not IS_PERSISTENT, "transient storage, test skipped")
     def test_05_read_http_multi_csv_with_crash(self):
         #if TRAVIS: return
         self._http_srv =  _HttpSrv()
@@ -212,6 +220,7 @@ class TestProgressiveLoadCSVCrash(ProgressiveTest):
         s.join()
         self.assertEqual(len(module.table()), 2000000)
 
+    @skipIf(not IS_PERSISTENT, "transient storage, test skipped")
     def test_06_read_http_multi_csv_bz2_with_crash(self):
         #if TRAVIS: return
         self._http_srv =  _HttpSrv()
@@ -231,6 +240,7 @@ class TestProgressiveLoadCSVCrash(ProgressiveTest):
         s.join()
         self.assertEqual(len(module.table()), 2000000)
 
+    @skipIf(not IS_PERSISTENT, "transient storage, test skipped")
     def test_07_read_multi_csv_file_no_crash(self):
         s=self.scheduler()
         module=CSVLoader([get_dataset('smallfile'), get_dataset('smallfile')], index_col=False, header=None, scheduler=s)
@@ -240,6 +250,7 @@ class TestProgressiveLoadCSVCrash(ProgressiveTest):
         s.join()
         self.assertEqual(len(module.table()), 60000)
 
+    @skipIf(not IS_PERSISTENT, "transient storage, test skipped")
     def _tst_08_read_multi_csv_file_compress_no_crash(self, files):
         s=self.scheduler()
         module=CSVLoader(files, index_col=False, header=None, scheduler=s)#, save_context=False)
@@ -249,14 +260,16 @@ class TestProgressiveLoadCSVCrash(ProgressiveTest):
         s.join()
         self.assertEqual(len(module.table()), 60000)
 
+    @skipIf(not IS_PERSISTENT, "transient storage, test skipped")
     def test_08_read_multi_csv_file_bz2_no_crash(self):
         files = [get_dataset_bz2('smallfile')]*2
         return self._tst_08_read_multi_csv_file_compress_no_crash(files)
 
+    @skipIf(not IS_PERSISTENT, "transient storage, test skipped")
     def test_08_read_multi_csv_file_gz_no_crash(self):
         files = [get_dataset_gz('smallfile')]*2
         return self._tst_08_read_multi_csv_file_compress_no_crash(files)
-    
+
     @skip("Too slow ...")
     def test_08_read_multi_csv_file_lzma_no_crash(self):
         if six.PY2:
@@ -264,6 +277,7 @@ class TestProgressiveLoadCSVCrash(ProgressiveTest):
         files = [get_dataset_lzma('smallfile')]*2
         return self._tst_08_read_multi_csv_file_compress_no_crash(files)
 
+    @skipIf(not IS_PERSISTENT, "transient storage, test skipped")
     def test_09_read_multi_csv_file_with_crash(self):
         s=self.scheduler()
         file_list = [get_dataset('bigfile'), get_dataset('bigfile')]
@@ -297,10 +311,12 @@ class TestProgressiveLoadCSVCrash(ProgressiveTest):
         s.join()
         self.assertEqual(len(module.table()), 2000000)
 
+    @skipIf(not IS_PERSISTENT, "transient storage, test skipped")
     def test_10_read_multi_csv_file_bz2_with_crash(self):
         file_list = [get_dataset_bz2('bigfile')]*2
         self._tst_10_read_multi_csv_file_compress_with_crash(file_list)
 
+    @skipIf(not IS_PERSISTENT, "transient storage, test skipped")
     def test_10_read_multi_csv_file_gzip_with_crash(self):
         file_list = [get_dataset_gz('bigfile')]*2
         self._tst_10_read_multi_csv_file_compress_with_crash(file_list)

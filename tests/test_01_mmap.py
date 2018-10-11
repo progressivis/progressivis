@@ -11,6 +11,7 @@ from progressivis.table.table import Table
 from . import ProgressiveTest, skip, skipIf
 import pandas as pd
 import six
+from progressivis.storage import IS_PERSISTENT as MMAP
 
 LONG_SIZE = MAX_SHORT *2
 
@@ -98,6 +99,7 @@ class TestMMap(ProgressiveTest):
         nb_str = len(set(t._column("atext").storagegroup["atext"].view))
         self.assertEqual(nb_str, 2)
 
+    @skipIf(not MMAP, "storage is not mmap, test skipped")
     def test_mmap6(self):
         #pylint: disable=protected-access
         long_text = "a"*LONG_SIZE
@@ -124,12 +126,14 @@ class TestMMap(ProgressiveTest):
             cnt+=len(long_text)
         return t, cnt
 
+    @skipIf(not MMAP, "storage is not mmap, test skipped")
     def test_mmap_strings_all_miss(self):
         t, cnt = self._tst_impl_mmap_strings(t_name='table_mmap_all_miss', initial=LONG_SIZE*"a", stride=10)
         offset = t._column("atext").storagegroup["atext"]._strings.sizes[0]*4
         self.assertGreater(offset, cnt)
         self.assertAlmostEqual(offset/float(cnt), 1, delta=0.2)
 
+    @skipIf(not MMAP, "storage is not mmap, test skipped")
     def test_mmap_strings_all_hit(self):
         len_init = LONG_SIZE * 100
         initial = len_init*"a"
@@ -138,6 +142,7 @@ class TestMMap(ProgressiveTest):
         self.assertGreater(offset, len_init)
         self.assertAlmostEqual(offset/float(len_init), 1, delta=0.2)
 
+    @skipIf(not MMAP, "storage is not mmap, test skipped")
     def test_mmap_drop(self):
         def _free_chunk_nb(t):
             return sum([len(e) for e in t._column("atext").storagegroup["atext"]._strings._freelist])
