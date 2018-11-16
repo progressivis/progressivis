@@ -36,10 +36,6 @@ class ScatterPlot(TableModule):
         self.x_column = x_column
         self.y_column = y_column
         self._approximate = approximate
-        self._auto_update = False
-        self.image_source = None
-        self.scatter_source = None
-        self.image = None
         self.input_module = None
         self.input_slot = None
         self.min = None
@@ -68,8 +64,8 @@ class ScatterPlot(TableModule):
 
 
     def create_dependent_modules(self, input_module, input_slot,
-                                 histogram2d=None, heatmap=None,
-                                 sample=True, select=None, **kwds):
+                                     histogram2d=None, heatmap=None,
+                                     sample=True, select=None, **kwds):
         if self.input_module is not None:
             return self
         s = self.scheduler()
@@ -138,7 +134,6 @@ class ScatterPlot(TableModule):
         return self._to_json_impl(short)
 
     def _to_json_impl(self, short=False):
-        self.image = None
         json = super(ScatterPlot, self).to_json(short, with_speed=False)
         if short:
             return json

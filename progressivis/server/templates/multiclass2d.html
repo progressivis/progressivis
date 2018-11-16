@@ -1,0 +1,114 @@
+{% extends "_page_base.html" %}
+
+{% block title %}
+MC Scatterplot for module {{id}}
+{% endblock %}
+
+{% block head %}
+  {{ super() }}
+  <link href="{{ url_for('progressivis.server.progressivis_file', filename='css/scatterplot.css') }}" rel="stylesheet">
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{{ url_for('static', filename='lib/chroma.min.js') }}"></script>
+<script src="{{ url_for('progressivis.server.progressivis_file', filename='js/line_graph.js') }}"></script>
+<script src="{{ url_for('progressivis.server.progressivis_file', filename='js/module.js') }}"></script>
+<script src="{{ url_for('progressivis.server.progressivis_file', filename='js/history.js') }}"></script>
+<script src="{{ url_for('progressivis.server.progressivis_file', filename='lib/multiclass-density-maps.js') }}"></script>
+<script src="{{ url_for('progressivis.server.progressivis_file', filename='lib/heatmap.js') }}"></script>
+<script src="{{ url_for('progressivis.server.progressivis_file', filename='js/heatmap-img.js') }}"></script>
+<script src="{{ url_for('progressivis.server.progressivis_file', filename='js/multiclass2d.js') }}"></script>
+<script src="{{ url_for('progressivis.server.progressivis_file', filename='js/colormaps.js') }}"></script>
+
+{% endblock %}
+
+{% block script %}
+var module_id = "{{id}}";
+$(document).ready(multiclass2d_ready);
+{% endblock %}
+
+{% block content %}
+<ol class="breadcrumb">
+  <li><a href="#">Home</a></li>
+  <li><a href="#">MC Scatterplot {{id}}</a></li>
+</ol>
+<!--div id="witnessHeatmap" style="width:512px; height:512px;"><img>img...</img></div-->
+<div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
+  <h1 class='page-header'>MC Scatterplot for Module {{id}}</h1>
+
+  <div id='error'></div>
+
+<!-- Nav tabs -->
+  <ul id='nav-tabs' class="nav nav-tabs" role="tablist">
+    <li role="presentation" class="active"><a href="#scatterpanel" aria-controls="scatterplot" role="tab" data-toggle="tab">MC Scatterplot</a></li>
+    <li role="presentation"><a href="#module" aria-controls="module" role="tab" data-toggle="tab">Module</a></li>
+  </ul>
+
+  <!-- Tab panes -->
+  <div class="tab-content">
+    <div role="tabpanel" class="tab-pane active" id="scatterpanel">
+      <div id='multiclass_scatterplot'>
+        <svg>
+          <filter id="gaussianBlur" width="100%" height="100%" x="0" y="0">
+            <feGaussianBlur id="gaussianBlurElement" in="SourceGraphic" stdDeviation="0" />
+            <feComponentTransfer id="colorMap">
+              <feFuncR type="table" tableValues="1 1 1"/>
+              <feFuncG type="table" tableValues="0.93 0.001 0"/>
+              <feFuncB type="table" tableValues="0.63 0.001 0"/>
+            </feComponentTransfer>
+          </filter>          
+        </svg>
+        <br/>
+        <div class="form-inline">
+          <button class='btn btn-default' id='filter' type="button" aria-label='Filter button'>Filter to viewport</button>
+          <div class="form-group">
+            <label>Blur radius</label>
+            <input class="form-control" id="filterSlider" type="range" value="0" min="0" max="5" step="0.1"></input>
+          </div>
+          <div class="form-group">
+            <label>Color map</label>
+            <select id="colorMapSelect" class="form-control"></select>
+          </div>
+          <div class="form-group">
+            <label>History</label>
+            <span class="form-control" id="prevImages"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div role="tabpanel" class="tab-pane" id="module"><div id='module'></div></div>
+  </div>
+  <div id="heatmapContainer" style="width:512px; height:512px;visibility: hidden;"></div>
+  <div id="mytest"></div>
+      <script>
+/*
+        $(function () {
+
+            function render(spec) {
+
+                var config = new MDM.Config(spec);
+                config.load('http://localhost:5000/progressivis/static/lib/Multiclass-Density-Maps/data2').then(function () {
+                    var interp = new MDM.Interpreter(config);
+
+                    var start = +new Date();
+                    interp.interpret();
+                    interp.render(document.getElementsByTagName('div')[0]);
+                    var end = +new Date();
+
+                    console.log('took ', (end - start), 'ms')
+                });
+            }
+            window.render = render;
+
+            render(
+                {
+                    "data": { "url": "mn_data.json" },
+                    "compose": {
+                        "mix": "max"
+        },
+        "legend":{}
+                });
+})
+*/
+    </script>
+{% endblock %}

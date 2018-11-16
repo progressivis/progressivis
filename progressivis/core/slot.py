@@ -241,7 +241,8 @@ class InputSlots(object):
     """
     def __init__(self, module):
         self.__dict__['module'] = module
-
+        #self.label = None
+        
     def __setattr__(self, name, slot):
         if not isinstance(slot, Slot):
             raise ProgressiveError('Assignment to input slot %s'
@@ -260,7 +261,11 @@ class InputSlots(object):
         return self.__getattr__(name)
 
     def __setitem__(self, name, slot):
-        return self.__setattr__(name, slot)
+        if isinstance(name, six.string_types):
+            return self.__setattr__(name, slot)
+        n, m = name
+        slot.meta = m
+        return self.__setattr__(n, slot)
 
     def __dir__(self):
         return self.__dict__['module'].input_slot_names()

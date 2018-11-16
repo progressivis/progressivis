@@ -7,7 +7,7 @@ logger = logging.getLogger(__name__)
 from progressivis import ProgressiveError, SlotDescriptor
 from progressivis.table.table import Table
 from progressivis.table.constant import Constant
-
+from ..core.utils import all_string
 
 class Variable(Constant):
     def __init__(self, table=None, **kwds):
@@ -52,5 +52,42 @@ class Variable(Constant):
                                             dshape=like.dshape,
                                             create=True)
                         self._table.append(like.last().to_dict(ordered=True), indices=[0])
+        return self._return_run_step(self.state_blocked, steps_run=1)
+        #raise StopIteration()
+
+class VirtualVariable(Constant):
+    def __init__(self, names, **kwds):
+        if not all_string(names):
+            raise ProgressiveError('names {} must be a set of strings'.format(names))
+        self._names = names
+        self._key = frozenset(names)
+        self._subscriptions = []
+        table = None
+        super(VirtualVariable, self).__init__(table, **kwds)
+
+    def is_input(self):
+        return True
+
+    def subscribe(self, var, vocabulary):
+        """
+        Example: vocabulary = {'x': 'longitude', 'y': 'latitude'}
+        """
+        if not isinstance(var, Variable):
+            raise ProgressiveError('Expecting a Variable module')
+        if not isinstance(vocabulary, dict):
+            raise ProgressiveError('Expecting a dictionary')
+        if frozenset(vocabulary.keys()) != self._key or not all_string(vocabulary.values()):
+            raise ProgressiveError('Inconsistent vocabulary')
+        self._subscriptions.append((var, vocabulary))
+
+    def from_input(self, input_):
+        if not isinstance(input_, dict):
+            raise ProgressiveError('Expecting a dictionary')
+        for var, vocabulary in self._subscriptions:
+            translation = {vocabulary[k]: v for k, v in input_.items()}
+            var.from_input(translation)
+        return ''
+
+    def run_step(self, run_number, step_size, howlong):
         return self._return_run_step(self.state_blocked, steps_run=1)
         #raise StopIteration()

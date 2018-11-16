@@ -23,7 +23,7 @@ def has_len(d):
     return hasattr(d, '__len__')
 
 class Sample(TableModule):
-    parameters = [('samples',  np.dtype(int), 100)] 
+    parameters = [('samples',  np.dtype(int), 50)]
 
     def __init__(self, **kwds):
         self._add_slots(kwds,'input_descriptors',
