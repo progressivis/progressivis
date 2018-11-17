@@ -14,8 +14,8 @@ logger = logging.getLogger(__name__)
 
 
 class Histogram2D(TableModule):
-    parameters = [('xbins',  np.dtype(int),   512),
-                  ('ybins',  np.dtype(int),   512),
+    parameters = [('xbins',  np.dtype(int),   256),
+                  ('ybins',  np.dtype(int),   256),
                   ('xdelta', np.dtype(float), -5), # means 5%
                   ('ydelta', np.dtype(float), -5), # means 5%
                   ('history',np.dtype(int),   3) ]
@@ -31,7 +31,7 @@ class Histogram2D(TableModule):
              "time: int64" \
              "}"
 
-    def __init__(self, x_column, y_column, with_output=False, **kwds):
+    def __init__(self, x_column, y_column, with_output=True, **kwds):
         self._add_slots(kwds,'input_descriptors',
                         [SlotDescriptor('table', type=Table, required=True),
                          SlotDescriptor('min', type=Table, required=True),
@@ -222,7 +222,7 @@ class Histogram2D(TableModule):
 
         if self._histo is not None:
             cmax = self._histo.max()
-        values = {'array': self._histo,
+        values = {'array': np.flip(self._histo, axis=0),
                   'cmin': 0,
                   'cmax': cmax,
                   'xmin': xmin,

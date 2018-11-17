@@ -92,7 +92,7 @@ class MultiClass2D(NAry):
             if meta is None:
                 continue
             input_type = meta['inp']
-            class_ = meta['class_']
+            class_ = meta['class_'] 
             if input_type not in ('hist', 'sample'):
                 raise ValueError('{} not in [hist, sample]'.format(input_type))
             
@@ -117,7 +117,7 @@ class MultiClass2D(NAry):
             data = row['array']
             #data = sp.special.cbrt(row['array'])
             #json_['data'] = sp.misc.bytescale(data)
-            json_['data'] = data
+            json_['binnedPixels'] = data
             json_['range'] = [np.min(data), np.max(data)]
             json_['count'] = np.sum(data)
             json_['value'] = domain
@@ -153,7 +153,7 @@ class MultiClass2D(NAry):
             samples.append(smpl)
 
         # TODO: check consistency among classes (e.g. same xbin, ybin etc.)
-        xbins, ybins = buffers[0]['data'].shape
+        xbins, ybins = buffers[0]['binnedPixels'].shape
         encoding = {
             "x": {
                 "bin": {

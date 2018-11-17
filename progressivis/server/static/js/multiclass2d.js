@@ -165,31 +165,28 @@ function multiclass2d_update_vis(rawdata) {
             "mix": "max"
         },
         "rescale": {
-        "type": "log"
+        "type": "cbrt"
         },
         "legend":{}
         }
     data_ = rawdata['chart'];
-    console.log("DATA_************************************************", data_);
-    function render(spec) {
+    function render(spec, data) {
         var config = new MDM.Config(spec);
-        config.load('JSON').then(function () {
-            console.log("before ...");
+        config.loadJson(data).then(function () {
             var interp = new MDM.Interpreter(config);
-            console.log("interp: ", interp);
-            var start = +new Date();
+            //var start = +new Date();
             interp.interpret();
             interp.render(document.getElementById('heatmapContainer'))/*.then(function(){
                 dataURL = $("#heatmapContainer canvas")[0].toDataURL()
             })*/
-            var end = +new Date();
-            console.log('took ', (end - start), 'ms')
+            //var end = +new Date(); 
+            //console.log('took ', (end - start), 'ms')
             interp = null;
         });
     }
     window.render = render;
-    MDM.Util.set_cache('JSON/local', data_);
-    render(spec);
+    //MDM.Util.set_cache('JSON/local', data_);
+    render(spec, data_);
     dataURL = $("#heatmapContainer canvas")[0].toDataURL()
     $("#heatmapContainer").html("")
     imageHistory.enqueueUnique(dataURL);
@@ -253,7 +250,6 @@ function multiclass2d_zoomed(t) {
 
 
     function multiclass2d_refresh(json) {
-        console.log("REFRESHHHHHHHHHHHHHHHHHHHHHHHHHHH", json);
     if(json && json.payload) {
         multiclass2d_update(json.payload);}
     else {
