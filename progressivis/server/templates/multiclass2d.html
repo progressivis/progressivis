@@ -15,7 +15,6 @@ MC Scatterplot for module {{id}}
 <script src="{{ url_for('progressivis.server.progressivis_file', filename='js/module.js') }}"></script>
 <script src="{{ url_for('progressivis.server.progressivis_file', filename='js/history.js') }}"></script>
 <script src="{{ url_for('progressivis.server.progressivis_file', filename='lib/multiclass-density-maps.js') }}"></script>
-<script src="https://raw.githubusercontent.com/xtianpoli/Multiclass-Density-Maps/master/dist/multiclass-density-maps.js"></script>
 <script src="{{ url_for('progressivis.server.progressivis_file', filename='lib/heatmap.js') }}"></script>
 <script src="{{ url_for('progressivis.server.progressivis_file', filename='js/heatmap-img.js') }}"></script>
 <script src="{{ url_for('progressivis.server.progressivis_file', filename='js/multiclass2d.js') }}"></script>
@@ -80,36 +79,5 @@ $(document).ready(multiclass2d_ready);
     <div role="tabpanel" class="tab-pane" id="module"><div id='module'></div></div>
   </div>
   <div id="heatmapContainer" style="width:512px; height:512px;visibility: hidden;"></div>
-  <div id="mytest"></div>
-      <script>
-/*
-        $(function () {
 
-            function render(spec) {
-
-                var config = new MDM.Config(spec);
-                config.load('http://localhost:5000/progressivis/static/lib/Multiclass-Density-Maps/data2').then(function () {
-                    var interp = new MDM.Interpreter(config);
-
-                    var start = +new Date();
-                    interp.interpret();
-                    interp.render(document.getElementsByTagName('div')[0]);
-                    var end = +new Date();
-
-                    console.log('took ', (end - start), 'ms')
-                });
-            }
-            window.render = render;
-
-            render(
-                {
-                    "data": { "url": "mn_data.json" },
-                    "compose": {
-                        "mix": "max"
-        },
-        "legend":{}
-                });
-})
-*/
-    </script>
 {% endblock %}
