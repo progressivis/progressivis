@@ -158,17 +158,19 @@ function multiclass2d_update_vis(rawdata) {
             .attr("width",  iw)
             .attr("height", ih);
     }
-
-    var spec =  {
-        "data": { "url": "local" },
-        "compose": {
-            "mix": "max"
-        },
-        "rescale": {
-        "type": "cbrt"
-        },
-        "legend":{}
+    if(!window.spec){
+        var spec =  {
+            "data": { "url": "bar" },
+            "compose": {
+                "mix": "max"
+            },
+            "rescale": {
+                "type": "cbrt"
+            },
+            "legend":{}
         }
+        window.spec = spec;
+    }
     data_ = rawdata['chart'];
     function render(spec, data) {
         var config = new MDM.Config(spec);
@@ -176,17 +178,14 @@ function multiclass2d_update_vis(rawdata) {
             var interp = new MDM.Interpreter(config);
             //var start = +new Date();
             interp.interpret();
-            interp.render(document.getElementById('heatmapContainer'))/*.then(function(){
-                dataURL = $("#heatmapContainer canvas")[0].toDataURL()
-            })*/
+            interp.render(document.getElementById('heatmapContainer'))
             //var end = +new Date(); 
             //console.log('took ', (end - start), 'ms')
             interp = null;
         });
     }
     window.render = render;
-    //MDM.Util.set_cache('JSON/local', data_);
-    render(spec, data_);
+    render(window.spec, data_);
     dataURL = $("#heatmapContainer canvas")[0].toDataURL()
     $("#heatmapContainer").html("")
     imageHistory.enqueueUnique(dataURL);
