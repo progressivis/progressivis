@@ -178,18 +178,21 @@ function multiclass2d_update_vis(rawdata) {
             var interp = new MDM.Interpreter(config);
             //var start = +new Date();
             interp.interpret();
-            interp.render(document.getElementById('heatmapContainer'))
+            return interp.render(document.getElementById('heatmapContainer'))
             //var end = +new Date(); 
             //console.log('took ', (end - start), 'ms')
-            interp = null;
+            //interp = null;
         });
     }
     window.render = render;
-    render(window.spec, data_);
-    dataURL = $("#heatmapContainer canvas")[0].toDataURL()
-    $("#heatmapContainer").html("")
+    render(window.spec, data_)
+    dataURL = $("#heatmapContainer canvas")[0].toDataURL();
+    window.spec.data = {};
     imageHistory.enqueueUnique(dataURL);
-
+    $('#map-legend').empty();
+    $("#heatmapContainer svg").last().detach().appendTo('#map-legend');
+    //$("#heatmapContainer canvas").last().detach().appendTo('#map-legend');
+    $("#heatmapContainer").html("");
     var prevImgElements = d3.select("#prevImages")
             .selectAll("img")
             .data(imageHistory.getItems(), function(d){ return d; });

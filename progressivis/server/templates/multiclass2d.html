@@ -110,6 +110,7 @@ $(document).ready(multiclass2d_ready);
 
                 <div class="modal-body">
                   <div id="root"></div>
+                  <div id='map-legend'></div>
                  </div>
                  <div class="modal-footer">
                     <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
@@ -252,12 +253,13 @@ $(document).ready(multiclass2d_ready);
           this.handleCompose = this.handleCompose.bind(this);
           this.handleGrp = this.handleGrp.bind(this);
           this.tidy = this.tidy.bind(this);
-          this.state = {rebin: {type: "none", aggregation: "max", size: 4, width: 4, height: 4, stroke: 'rgba(0, 0, 0, .1)'}, rescale: {type: "cbrt", levels: 4}, compose: {mix: "max", threshold: 1, size: 8, width: 32, height: 32, mixing:"additive", shape: "square", template: "punchcard", interval: 0.6},};
+          this.state = {rebin: {type: "none", aggregation: "max", size: 4, width: 4, height: 4, stroke: 'rgba(0, 0, 0, .1)'}, rescale: {type: "cbrt", levels: 4}, compose: {mix: "max", threshold: 1, size: 8, width: 32, height: 32, mixing:"additive", shape: "square", template: "punchcard", interval: 0.6}, data: {}, legend: true};
       }
       handleGrp(grp, key, evt){
           let stateCopy = Object.assign({}, this.state);
           stateCopy[grp][key] = evt.target.value;
           this.setState(stateCopy);
+          window.spec = this.tidy(Object.assign({}, stateCopy));
       };
       handleRebin(key, val){return this.handleGrp('rebin', key, val);};
       handleRescale(key, val){return this.handleGrp('rescale', key, val);};
@@ -281,7 +283,7 @@ $(document).ready(multiclass2d_ready);
           // Rescale
           if(stateCopy.rescale.type != 'equidepth') stateCopy.rescale = getOnly(stateCopy.rescale, ['type']);
           // Compose
-          if(stateCopy.compose.mix in ["none", "mean", "max", "separate"]) stateCopy.compose = stateCopy.compose['mix']
+          if(stateCopy.compose.mix in ["none", "mean", "max", "separate"]) stateCopy.compose = getOnly(stateCopy.compose, ['mix']);
           if(stateCopy.compose.mix == 'invmean') stateCopy.compose = getOnly(stateCopy.compose, ['mix', 'threshold']);
           if(stateCopy.compose.mix == 'blend') stateCopy.compose = getOnly(stateCopy.compose, ['mix', 'mixing']);
           if(stateCopy.compose.mix == 'weaving') stateCopy.compose = getOnly(stateCopy.compose, ['mix', 'size']);
@@ -292,7 +294,6 @@ $(document).ready(multiclass2d_ready);
       }
      render() {
         window.spec = this.tidy();
-        window.spec.data = {url: "foo"};
       return (<form>
         {this.renderRebin()}
         {this.renderRescale()}
