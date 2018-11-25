@@ -96,7 +96,7 @@ $(document).ready(multiclass2d_ready);
 
     <div id="modal-mdm-form" class="modal fade">
 
-        <div class="modal-dialog">
+        <div class="modal-dialog modal-sm">
 
             <div class="modal-content">
 
@@ -130,12 +130,12 @@ $(document).ready(multiclass2d_ready);
       }
     function renderSelect(val, opts, chg){
         let k;
-        return (<select value={val} onChange={chg}>
+        return (<select  className="form-control" value={val} onChange={chg}>
             {Object.keys(opts).map((k, _)=>{return <option value={k}>{opts[k]}</option>})}
             </select>)
     }
     function renderHeader(title, label, dict, val, handler){
-        return (<div><h4>{title}</h4><div class="form-group"> <label>{label}&nbsp;</label>{renderSelect(val, dict, handler)}</div></div>)
+        return (<div><h4>{title}</h4><div className="form-group"> <label>{label}&nbsp;</label>{renderSelect(val, dict, handler)}</div></div>)
     }
     function renderNamedSelect(label, dict, val, handler){
         return (<div><label>{label}&nbsp;</label><div>{renderSelect(val, dict, handler)}</div></div>)

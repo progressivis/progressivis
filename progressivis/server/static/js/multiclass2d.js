@@ -191,7 +191,7 @@ function multiclass2d_update_vis(rawdata) {
     imageHistory.enqueueUnique(dataURL);
     $('#map-legend').empty();
     $("#heatmapContainer svg").last().detach().appendTo('#map-legend');
-    //$("#heatmapContainer canvas").last().detach().appendTo('#map-legend');
+    $("#heatmapContainer canvas").last().detach().attr('style','position: relative; left: -120px; top: 10px;').appendTo('#map-legend'); //blend
     $("#heatmapContainer").html("");
     var prevImgElements = d3.select("#prevImages")
             .selectAll("img")
