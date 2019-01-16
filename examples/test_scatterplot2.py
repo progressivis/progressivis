@@ -7,7 +7,7 @@ import pandas as pd
 
 from progressivis.core import Scheduler, Every
 from progressivis.table import Table
-from progressivis.vis import ScatterPlot
+from progressivis.vis import MCScatterPlot
 from progressivis.io import CSVLoader
 #from progressivis.datasets import get_dataset
 from progressivis.table.constant import Constant
@@ -54,9 +54,10 @@ CSV = CSVLoader(index_col=False, skipinitialspace=True,
 CSV.input.filenames = CST.output.table
 PR = Every(scheduler=s)
 PR.input.df = CSV.output.table
-SCATTERPLOT = ScatterPlot('pickup_longitude', 'pickup_latitude', scheduler=s, approximate=True)
+SCATTERPLOT = MCScatterPlot(scheduler=s, approximate=True)
 SCATTERPLOT.create_dependent_modules(CSV, 'table')
-s.set_interaction_opts(starving_mods=[SCATTERPLOT.sample, SCATTERPLOT.histogram2d], max_iter=3, max_time=1.5)
+SCATTERPLOT.add_class('Scatterplot', 'pickup_longitude', 'pickup_latitude')
+s.set_interaction_opts(starving_mods=SCATTERPLOT.get_starving_mods(), max_iter=3, max_time=1.5)
 #s.set_interaction_opts(max_time=1.5)
 #s.set_interaction_opts(max_iter=3)
 if __name__ == '__main__':
@@ -65,6 +66,6 @@ if __name__ == '__main__':
         time.sleep(2)
         s.to_json()
         SCATTERPLOT.to_json() # simulate a web query
-        SCATTERPLOT.get_image()
+        #SCATTERPLOT.get_image()
     s.join()
     print(len(CSV.table()))

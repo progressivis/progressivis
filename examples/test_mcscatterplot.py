@@ -7,7 +7,7 @@ import pandas as pd
 import copy
 from progressivis.core import Scheduler, Every
 from progressivis.table import Table
-from progressivis.vis import ScatterPlot, MultiClass2D
+from progressivis.vis import MCScatterPlot
 from progressivis.io import CSVLoader
 #from progressivis.datasets import get_dataset
 from progressivis.table.constant import Constant
@@ -59,7 +59,7 @@ CSV = CSVLoader(index_col=False, skipinitialspace=True,
 CSV.input.filenames = CST.output.table
 PR = Every(scheduler=s)
 PR.input.df = CSV.output.table
-MULTICLASS = MultiClass2D(scheduler=s, approximate=True)
+MULTICLASS = MCScatterPlot(scheduler=s, approximate=True)
 MULTICLASS.create_dependent_modules(CSV, 'table')
 MULTICLASS.add_class('pickup', 'pickup_longitude', 'pickup_latitude')
 MULTICLASS.add_class('dropoff', 'dropoff_longitude', 'dropoff_latitude')

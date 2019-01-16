@@ -7,19 +7,16 @@ from ..core.utils import (indices_len, inter_slice, fix_loc)
 from ..core.bitmap import bitmap
 from ..table.nary import NAry
 from ..table import Table
-from .scatterplot import ScatterPlot
+from progressivis.stats import Histogram2D, Sample
+from ..table.range_query_2d import RangeQuery2d
 from ..core import SlotDescriptor, ProgressiveError
-from ..io import VirtualVariable
+from ..io import Variable, VirtualVariable
+
 from itertools import chain
 
 from collections import defaultdict
 
-class _FakeInput(object):
-    def __init__(self):
-        self.table = None
-        self.select = None
-
-class _FakeSP(object):
+class _DataClass(object):
     def __init__(self, name, x_column, y_column, approximate=False, scheduler=None,**kwds):
         self.name = name
         self.x_column = x_column
@@ -37,23 +34,75 @@ class _FakeSP(object):
         self.sample = None
         self.select = None
         self.range_query_2d = None
-        self.input = _FakeInput()
+
     def scheduler(self):
         return self._scheduler
+    def create_dependent_modules(self, input_module, input_slot,
+                                     histogram2d=None, heatmap=None,
+                                     sample=True, select=None, **kwds):
+        if self.input_module is not None:
+            return self
+        s = self.scheduler()
+        self.input_module = input_module
+        self.input_slot = input_slot
+        range_query_2d = RangeQuery2d(column_x=self.x_column,
+                                      column_y=self.y_column,
+                                      group=self.name, scheduler=s,
+                                      approximate=self._approximate)
+        range_query_2d.create_dependent_modules(input_module,
+                                                input_slot,
+                                                min_value=False,
+                                                max_value=False)
+        self.min_value = Variable(group=self.name, scheduler=s)
+        self.min_value.input.like = range_query_2d.min.output.table
+        range_query_2d.input.lower = self.min_value.output.table
+        self.max_value = Variable(group=self.name, scheduler=s)
+        self.max_value.input.like = range_query_2d.max.output.table
+        range_query_2d.input.upper = self.max_value.output.table
+        if histogram2d is None:
+            histogram2d = Histogram2D(self.x_column, self.y_column,
+                                      group=self.name, scheduler=s)
+        histogram2d.input.table = range_query_2d.output.table
+        histogram2d.input.min = range_query_2d.output.min
+        histogram2d.input.max = range_query_2d.output.max
+        #if heatmap is None:
+        #    heatmap = Heatmap(group=self.name, # filename='heatmap%d.png',
+        #                      history=100, scheduler=s)
+        #heatmap.input.array = histogram2d.output.table
+        if sample is True:
+            sample = Sample(samples=100, group=self.name, scheduler=s)
+        elif sample is None and select is None:
+            raise ProgressiveError("Scatterplot needs a select module")
+        if sample is not None:
+            sample.input.table = range_query_2d.output.table
+        scatterplot = self
+        #scatterplot.input.heatmap = heatmap.output.heatmap
+        #scatterplot.input.table = input_module.output[input_slot]
+        #scatterplot.input.select = sample.output.table
+        self.histogram2d = histogram2d
+        #self.heatmap = heatmap
+        self.sample = sample
+        self.select = select
+        self.min = range_query_2d.min.output.table
+        self.max = range_query_2d.max.output.table
+        self.range_query_2d = range_query_2d
+        self.histogram2d = histogram2d
+        #self.heatmap = heatmap
+        return scatterplot
 
-class MultiClass2D(NAry):
+class MCScatterPlot(NAry):
     "Module executing multiclass."
     def __init__(self, x_label="x", y_label="y", approximate=False, **kwds):
         """Multiclass ...
         """
-        super(MultiClass2D, self).__init__(**kwds)
+        super(MCScatterPlot, self).__init__(**kwds)
         self._x_label = x_label
         self._y_label = y_label
         self._approximate = approximate
         self._json_cache = None
         self.input_module = None
         self.input_slot = None
-        self._fake_sp_list = []
+        self._data_class_list = []
         self.min_value = None
         self.max_value = None
 
@@ -73,7 +122,7 @@ class MultiClass2D(NAry):
         return True
 
     def get_visualization(self):
-        return "multiclass2d"
+        return "mcscatterplot"
 
     def predict_step_size(self, duration):
         return 1
@@ -223,7 +272,7 @@ class MultiClass2D(NAry):
         return self._return_run_step(self.state_blocked, steps_run=0)
 
     def run(self, run_number):
-        super(MultiClass2D, self).run(run_number)
+        super(MCScatterPlot, self).run(run_number)
         self._json_cache = self._to_json_impl()
         #import pdb;pdb.set_trace()
 
@@ -234,7 +283,7 @@ class MultiClass2D(NAry):
 
     def _to_json_impl(self, short=False):
         self.image = None
-        json = super(MultiClass2D, self).to_json(short, with_speed=False)
+        json = super(MCScatterPlot, self).to_json(short, with_speed=False)
         if short:
             return json
         return self.make_json(json)
@@ -249,17 +298,17 @@ class MultiClass2D(NAry):
     def add_class(self, name, x_column, y_column):
         if self.input_module is None or self.input_slot is None:
             raise ProgressiveError("You have to create the dependent modules first!")
-        fake_sp = _FakeSP(name, x_column, y_column, approximate=self._approximate,
+        data_class = _DataClass(name, x_column, y_column, approximate=self._approximate,
                               scheduler=self.scheduler())
-        ScatterPlot.create_dependent_modules(fake_sp, self.input_module, self.input_slot)
+        data_class.create_dependent_modules(self.input_module, self.input_slot)
         col_translation = {self._x_label: x_column, self._y_label: y_column}
         hist_meta = dict(inp='hist', class_=name, **col_translation)
         sample_meta = dict(inp='sample', class_=name, **col_translation)
-        self.input['table', hist_meta] = fake_sp.histogram2d.output.table
-        self.input['table', sample_meta] = fake_sp.sample.output.table
-        self._fake_sp_list.append(fake_sp)
-        self.min_value.subscribe(fake_sp.min_value, col_translation)
-        self.max_value.subscribe(fake_sp.max_value, col_translation)
+        self.input['table', hist_meta] = data_class.histogram2d.output.table
+        self.input['table', sample_meta] = data_class.sample.output.table
+        self._data_class_list.append(data_class)
+        self.min_value.subscribe(data_class.min_value, col_translation)
+        self.max_value.subscribe(data_class.max_value, col_translation)
 
     def get_starving_mods(self):
-        return chain(*[(s.histogram2d, s.sample) for s in self._fake_sp_list])
+        return chain(*[(s.histogram2d, s.sample) for s in self._data_class_list])
