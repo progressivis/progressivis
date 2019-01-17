@@ -278,10 +278,8 @@ class Module(six.with_metaclass(ModuleMeta, object)):
             'id': self.name,
             'classname': self.pretty_typename(),
             'parameters': self.current_params().to_json(),
-            'input_slots': {k: _slot_to_json(s) for (k, s) in
-                            six.iteritems(self._input_slots)},
-            'output_slots': {k: _slot_to_json(s) for (k, s) in
-                             six.iteritems(self._output_slots)}
+            'input_slots': {k: _slot_to_dataflow(s) for (k, s) in
+                            six.iteritems(self._input_slots)}
         }
 
         if self._group:
@@ -822,6 +820,13 @@ def _slot_to_json(slot):
     if isinstance(slot, list):
         return [_slot_to_json(s) for s in slot]
     return slot.to_json()
+
+def _slot_to_dataflow(slot):
+    if slot is None:
+        return None
+    if isinstance(slot, list):
+        return [_slot_to_dataflow(s) for s in slot]
+    return (slot.output_module, slot.output_name)
 
 def _create_table(tname, columns):
     dshape = ""
