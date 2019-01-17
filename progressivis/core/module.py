@@ -272,6 +272,22 @@ class Module(six.with_metaclass(ModuleMeta, object)):
             })
         return json
 
+    def to_dataflow(self):
+        "Return a simple representation of the module in a dataflow."
+        mod = {
+            'id': self.name,
+            'classname': self.pretty_typename(),
+            'parameters': self.current_params().to_json(),
+            'input_slots': {k: _slot_to_json(s) for (k, s) in
+                            six.iteritems(self._input_slots)},
+            'output_slots': {k: _slot_to_json(s) for (k, s) in
+                             six.iteritems(self._output_slots)}
+        }
+
+        if self._group:
+            mod['group'] = self._group
+        return mod
+
     def from_input(self, msg):
         "Catch and process a message from an interaction"
         if 'debug' in msg:
@@ -281,10 +297,10 @@ class Module(six.with_metaclass(ModuleMeta, object)):
         # pylint: disable=no-self-use
         "Return True if this module is an input module"
         return False
-    
+
     def is_data_input(self):
         # pylint: disable=no-self-use
-        "Return True if this module brings new data"        
+        "Return True if this module brings new data"
         return False
 
     def get_image(self, run_number=None):  # pragma no cover
