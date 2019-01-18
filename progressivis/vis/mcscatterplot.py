@@ -17,8 +17,9 @@ from itertools import chain
 from collections import defaultdict
 
 class _DataClass(object):
-    def __init__(self, name, x_column, y_column, approximate=False, scheduler=None,**kwds):
+    def __init__(self, name, group, x_column, y_column, approximate=False, scheduler=None,**kwds):
         self.name = name
+        self._group = group
         self.x_column = x_column
         self.y_column = y_column
         self._approximate = approximate
@@ -47,21 +48,21 @@ class _DataClass(object):
         self.input_slot = input_slot
         range_query_2d = RangeQuery2d(column_x=self.x_column,
                                       column_y=self.y_column,
-                                      group=self.name, scheduler=s,
+                                      group=self._group, scheduler=s,
                                       approximate=self._approximate)
         range_query_2d.create_dependent_modules(input_module,
                                                 input_slot,
                                                 min_value=False,
                                                 max_value=False)
-        self.min_value = Variable(group=self.name, scheduler=s)
+        self.min_value = Variable(group=self._group, scheduler=s)
         self.min_value.input.like = range_query_2d.min.output.table
         range_query_2d.input.lower = self.min_value.output.table
-        self.max_value = Variable(group=self.name, scheduler=s)
+        self.max_value = Variable(group=self._group, scheduler=s)
         self.max_value.input.like = range_query_2d.max.output.table
         range_query_2d.input.upper = self.max_value.output.table
         if histogram2d is None:
             histogram2d = Histogram2D(self.x_column, self.y_column,
-                                      group=self.name, scheduler=s)
+                                      group=self._group, scheduler=s)
         histogram2d.input.table = range_query_2d.output.table
         histogram2d.input.min = range_query_2d.output.min
         histogram2d.input.max = range_query_2d.output.max
@@ -70,7 +71,7 @@ class _DataClass(object):
         #                      history=100, scheduler=s)
         #heatmap.input.array = histogram2d.output.table
         if sample is True:
-            sample = Sample(samples=100, group=self.name, scheduler=s)
+            sample = Sample(samples=100, group=self._group, scheduler=s)
         elif sample is None and select is None:
             raise ProgressiveError("Scatterplot needs a select module")
         if sample is not None:
@@ -298,7 +299,7 @@ class MCScatterPlot(NAry):
     def add_class(self, name, x_column, y_column):
         if self.input_module is None or self.input_slot is None:
             raise ProgressiveError("You have to create the dependent modules first!")
-        data_class = _DataClass(name, x_column, y_column, approximate=self._approximate,
+        data_class = _DataClass(name, self.name, x_column, y_column, approximate=self._approximate,
                               scheduler=self.scheduler())
         data_class.create_dependent_modules(self.input_module, self.input_slot)
         col_translation = {self._x_label: x_column, self._y_label: y_column}
