@@ -65,6 +65,13 @@ class Module(six.with_metaclass(ModuleMeta, object)):
     state_name = ['created', 'ready', 'running', 'blocked',
                   'zombie', 'terminated', 'invalid']
 
+    def __new__(cls, *args, **kwds):
+        module = object.__new__(cls)
+        #pylint: disable=protected-access
+        module._args = args
+        module._kwds = kwds
+        return module
+
     def __init__(self,
                  name=None,
                  group=None,
@@ -272,6 +279,23 @@ class Module(six.with_metaclass(ModuleMeta, object)):
             })
         return json
 
+    def to_dataflow(self):
+        "Return a simple representation of the module in a dataflow."
+        mod = {
+            'id': self.name,
+            'module': self,
+            'classname': self.pretty_typename(),
+            'parameters': self.current_params().to_json(),
+            'creation_args': self._args,
+            'creation_kwds': self._kwds,
+            'input_slots': {k: _slot_to_dataflow(s) for (k, s) in
+                            six.iteritems(self._input_slots) if s}
+        }
+
+        if self._group:
+            mod['group'] = self._group
+        return mod
+
     def from_input(self, msg):
         "Catch and process a message from an interaction"
         if 'debug' in msg:
@@ -281,10 +305,10 @@ class Module(six.with_metaclass(ModuleMeta, object)):
         # pylint: disable=no-self-use
         "Return True if this module is an input module"
         return False
-    
+
     def is_data_input(self):
         # pylint: disable=no-self-use
-        "Return True if this module brings new data"        
+        "Return True if this module brings new data"
         return False
 
     def get_image(self, run_number=None):  # pragma no cover
@@ -806,6 +830,13 @@ def _slot_to_json(slot):
     if isinstance(slot, list):
         return [_slot_to_json(s) for s in slot]
     return slot.to_json()
+
+def _slot_to_dataflow(slot):
+    if slot is None:
+        return None
+    if isinstance(slot, list):
+        return [_slot_to_dataflow(s) for s in slot]
+    return (slot.output_module.name, slot.output_name)
 
 def _create_table(tname, columns):
     dshape = ""
