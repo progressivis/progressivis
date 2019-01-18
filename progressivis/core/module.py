@@ -65,6 +65,13 @@ class Module(six.with_metaclass(ModuleMeta, object)):
     state_name = ['created', 'ready', 'running', 'blocked',
                   'zombie', 'terminated', 'invalid']
 
+    def __new__(cls, *args, **kwds):
+        module = object.__new__(cls)
+        #pylint: disable=protected-access
+        module._args = args
+        module._kwds = kwds
+        return module
+
     def __init__(self,
                  name=None,
                  group=None,
@@ -276,8 +283,11 @@ class Module(six.with_metaclass(ModuleMeta, object)):
         "Return a simple representation of the module in a dataflow."
         mod = {
             'id': self.name,
+            'module': self,
             'classname': self.pretty_typename(),
             'parameters': self.current_params().to_json(),
+            'creation_args': self._args,
+            'creation_kwds': self._kwds,
             'input_slots': {k: _slot_to_dataflow(s) for (k, s) in
                             six.iteritems(self._input_slots) if s}
         }
