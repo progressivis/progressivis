@@ -7,7 +7,7 @@ from ..core.utils import (indices_len, inter_slice, fix_loc)
 from ..core.bitmap import bitmap
 from ..table.nary import NAry
 from ..table import Table
-from progressivis.stats import Histogram2D, Sample
+from ..stats import MCHistogram2D, Sample
 from ..table.range_query_2d import RangeQuery2d
 from ..core import SlotDescriptor, ProgressiveError
 from ..io import Variable, VirtualVariable
@@ -61,15 +61,9 @@ class _DataClass(object):
         self.max_value.input.like = range_query_2d.max.output.table
         range_query_2d.input.upper = self.max_value.output.table
         if histogram2d is None:
-            histogram2d = Histogram2D(self.x_column, self.y_column,
+            histogram2d = MCHistogram2D(self.x_column, self.y_column,
                                       group=self._group, scheduler=s)
-        histogram2d.input.table = range_query_2d.output.table
-        histogram2d.input.min = range_query_2d.output.min
-        histogram2d.input.max = range_query_2d.output.max
-        #if heatmap is None:
-        #    heatmap = Heatmap(group=self.name, # filename='heatmap%d.png',
-        #                      history=100, scheduler=s)
-        #heatmap.input.array = histogram2d.output.table
+        histogram2d.input.data = range_query_2d.output.table
         if sample is True:
             sample = Sample(samples=100, group=self._group, scheduler=s)
         elif sample is None and select is None:
@@ -77,26 +71,21 @@ class _DataClass(object):
         if sample is not None:
             sample.input.table = range_query_2d.output.table
         scatterplot = self
-        #scatterplot.input.heatmap = heatmap.output.heatmap
-        #scatterplot.input.table = input_module.output[input_slot]
-        #scatterplot.input.select = sample.output.table
         self.histogram2d = histogram2d
-        #self.heatmap = heatmap
         self.sample = sample
         self.select = select
         self.min = range_query_2d.min.output.table
         self.max = range_query_2d.max.output.table
         self.range_query_2d = range_query_2d
-        self.histogram2d = histogram2d
-        #self.heatmap = heatmap
         return scatterplot
 
 class MCScatterPlot(NAry):
     "Module executing multiclass."
-    def __init__(self, x_label="x", y_label="y", approximate=False, **kwds):
+    def __init__(self, classes, x_label="x", y_label="y", approximate=False, **kwds):
         """Multiclass ...
         """
         super(MCScatterPlot, self).__init__(**kwds)
+        self._classes = classes # TODO: check it ...
         self._x_label = x_label
         self._y_label = y_label
         self._approximate = approximate
@@ -179,7 +168,6 @@ class MCScatterPlot(NAry):
         domain = []
         samples = []
         count = 0
-        #import pdb;pdb.set_trace()
         xmin = ymin = - np.inf
         xmax = ymax = np.inf
         changes, grouped_inputs = self.group_inputs()        
@@ -264,18 +252,14 @@ class MCScatterPlot(NAry):
             s_data.extend(d)
         json['sample'] = dict(data=s_data, index=list(range(len(s_data))))
         json['columns'] = [self._x_label, self._y_label]
-        #import pdb;pdb.set_trace()
         return json
         
     def run_step(self, run_number, step_size, howlong):
-        #if not changes:
-        #    return self._return_run_step(self.state_blocked, steps_run=0)
         return self._return_run_step(self.state_blocked, steps_run=0)
 
     def run(self, run_number):
         super(MCScatterPlot, self).run(run_number)
         self._json_cache = self._to_json_impl()
-        #import pdb;pdb.set_trace()
 
     def to_json(self, short=False):
         if self._json_cache:
@@ -295,12 +279,25 @@ class MCScatterPlot(NAry):
         self.input_slot = input_slot
         self.min_value = VirtualVariable([self._x_label, self._y_label])
         self.max_value = VirtualVariable([self._x_label, self._y_label])
+        for cl in self._classes:
+            self._add_class(*cl)
+        self._finalize()
+
+    def _finalize(self):
+        for dc in self._data_class_list:
+            for dc2 in self._data_class_list:
+                x, y = dc2.x_column, dc2.y_column
+                dc.histogram2d.input['table', ('min', x, y)] = dc2.range_query_2d.output.min
+                dc.histogram2d.input['table', ('max', x, y)] = dc2.range_query_2d.output.max
         
-    def add_class(self, name, x_column, y_column):
+    def _add_class(self, name, x_column, y_column):
         if self.input_module is None or self.input_slot is None:
-            raise ProgressiveError("You have to create the dependent modules first!")
-        data_class = _DataClass(name, self.name, x_column, y_column, approximate=self._approximate,
-                              scheduler=self.scheduler())
+            raise ProgressiveError("You have to create "
+                                       "the dependent modules first!")
+        data_class = _DataClass(name, self.name, x_column,
+                                    y_column,
+                                    approximate=self._approximate,
+                                    scheduler=self.scheduler())
         data_class.create_dependent_modules(self.input_module, self.input_slot)
         col_translation = {self._x_label: x_column, self._y_label: y_column}
         hist_meta = dict(inp='hist', class_=name, **col_translation)

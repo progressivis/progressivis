@@ -54,12 +54,13 @@ CSV = CSVLoader(index_col=False, skipinitialspace=True,
 CSV.input.filenames = CST.output.table
 PR = Every(scheduler=s)
 PR.input.df = CSV.output.table
-SCATTERPLOT = MCScatterPlot(scheduler=s, approximate=True)
+SCATTERPLOT = MCScatterPlot(scheduler=s,
+                                classes=[('Scatterplot',
+                                              'pickup_longitude',
+                                              'pickup_latitude')],
+                                approximate=True)
 SCATTERPLOT.create_dependent_modules(CSV, 'table')
-SCATTERPLOT.add_class('Scatterplot', 'pickup_longitude', 'pickup_latitude')
 s.set_interaction_opts(starving_mods=SCATTERPLOT.get_starving_mods(), max_iter=3, max_time=1.5)
-#s.set_interaction_opts(max_time=1.5)
-#s.set_interaction_opts(max_iter=3)
 if __name__ == '__main__':
     s.start()
     while True:

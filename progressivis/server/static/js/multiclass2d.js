@@ -355,7 +355,7 @@ function multiclass2d_ready() {
     });
     colorMapSelect.get(0).value = DEFAULT_FILTER;
     makeOptions(colorMapSelect.get(0), colormaps.getTableNames());
-
+    colormaps.makeTableFilter(colorMap, "Default");
     $('#filter').click(function() { multiclass2d_filter(); });
     
     refresh = multiclass2d_refresh; // function to call to refresh

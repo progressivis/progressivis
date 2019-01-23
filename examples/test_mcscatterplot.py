@@ -59,10 +59,10 @@ CSV = CSVLoader(index_col=False, skipinitialspace=True,
 CSV.input.filenames = CST.output.table
 PR = Every(scheduler=s)
 PR.input.df = CSV.output.table
-MULTICLASS = MCScatterPlot(scheduler=s, approximate=True)
+MULTICLASS = MCScatterPlot(scheduler=s, classes=[
+    ('pickup', 'pickup_longitude', 'pickup_latitude'),
+    ('dropoff', 'dropoff_longitude', 'dropoff_latitude')], approximate=True)
 MULTICLASS.create_dependent_modules(CSV, 'table')
-MULTICLASS.add_class('pickup', 'pickup_longitude', 'pickup_latitude')
-MULTICLASS.add_class('dropoff', 'dropoff_longitude', 'dropoff_latitude')
 s.set_interaction_opts(starving_mods=MULTICLASS.get_starving_mods(),
                            max_iter=3, max_time=1.5)
 if __name__ == '__main__':

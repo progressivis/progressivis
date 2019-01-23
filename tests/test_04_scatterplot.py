@@ -59,24 +59,21 @@ class TestScatterPlot(ProgressiveTest):
         csv = CSVLoader(get_dataset('smallfile'),
                         index_col=False, header=None,
                         force_valid_ids=True, scheduler=s)
-        sp = MCScatterPlot(scheduler=s, approximate=True)
+        sp = MCScatterPlot(scheduler=s, classes=[('Scatterplot', '_1', '_2')], approximate=True)
         sp.create_dependent_modules(csv, 'table')
-        sp.add_class('Scatterplot', '_1', '_2')
         cnt = Every(proc=self.terse, constant_time=True, scheduler=s)
         cnt.input.df = csv.output.table
         prt = Print(proc=self.terse, scheduler=s)
         prt.input.df = sp.output.table
         csv.scheduler().start(idle_proc=idle_proc)
         s.join()
-        #import pdb;pdb.set_trace()
         self.assertEqual(len(csv.table()), 30000)
 
     def test_scatterplot2(self):
         s = self.scheduler()
         random = RandomTable(2, rows=2000000, scheduler=s)
-        sp = MCScatterPlot(scheduler=s, approximate=True)
+        sp = MCScatterPlot(scheduler=s, classes=[('Scatterplot', '_1', '_2')], approximate=True)
         sp.create_dependent_modules(random, 'table', with_sampling=False)
-        sp.add_class('Scatterplot', '_1', '_2')
         cnt = Every(proc=self.terse, constant_time=True, scheduler=s)
         cnt.input.df = random.output.table
         prt = Print(proc=self.terse, scheduler=s)
@@ -86,7 +83,6 @@ class TestScatterPlot(ProgressiveTest):
         decorate(s, ScatterPlotPatch("mc_scatter_plot_1"))
         sp.scheduler().start(idle_proc=idle_proc)
         s.join()
-        #import pdb;pdb.set_trace()
         js = sp.to_json()
         x, y, _ = zip(*js['sample']['data'])
         min_x=min(x)
