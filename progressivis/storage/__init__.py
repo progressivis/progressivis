@@ -45,6 +45,7 @@ except ImportError:
 if get_option('storage.default'):
     StorageEngine.default = get_option('storage.default')
 
-Group.default = staticmethod(NumpyStorageEngine.create_group)
-#Group.default = staticmethod(MMapStorageEngine.create_group)
+#Group.default = staticmethod(NumpyStorageEngine.create_group)
+Group.default_internal = staticmethod(NumpyStorageEngine.create_group)
+Group.default = staticmethod(MMapStorageEngine.create_group)
 IS_PERSISTENT = Group.default.__module__=='progressivis.storage.mmap' # TODO consider all other persistent storage (HDF5 etc.)

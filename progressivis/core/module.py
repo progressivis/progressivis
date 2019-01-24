@@ -100,7 +100,7 @@ class Module(six.with_metaclass(ModuleMeta, object)):
             storage = StorageManager.default
         self.storage = storage
         if storagegroup is None:
-            storagegroup = Group.default(get_random_name(name+'_tracer'))
+            storagegroup = Group.default_internal(get_random_name(name+'_tracer'))
         self.storagegroup = storagegroup
         if tracer is None:
             tracer = Tracer.default(name, storagegroup)
@@ -847,6 +847,6 @@ def _create_table(tname, columns):
         dshape += '%s: %s'%(name, dshape_from_dtype(dtype))
         data[name] = val
     dshape = '{'+dshape+'}'
-    table = Table(tname, dshape=dshape)
+    table = Table(tname, dshape=dshape, storagegroup=Group.default_internal(tname))
     table.add(data)
     return table

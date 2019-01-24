@@ -11,6 +11,8 @@ from progressivis.vis import MCScatterPlot
 from progressivis.io import CSVLoader
 #from progressivis.datasets import get_dataset
 from progressivis.table.constant import Constant
+from progressivis.storage import Group
+Group.default = Group.default_internal
 
 def _filter(df):
     lon = df['pickup_longitude']
