@@ -11,6 +11,7 @@ from fast_histogram import histogram2d
 import numpy as np
 import scipy as sp
 import logging
+from progressivis.storage import Group
 logger = logging.getLogger(__name__)
 
 
@@ -49,9 +50,11 @@ class MCHistogram2D(NAry):
         self._bounds = None
         self._with_output = with_output
         self._heatmap_cache = None
-        self._table = Table(self.generate_table_name('MCHistogram2D'),
+        n = self.generate_table_name('MCHistogram2D')
+        self._table = Table(n, #self.generate_table_name('MCHistogram2D'),
                             dshape=MCHistogram2D.schema,
-                            chunks={'array': (1, 64, 64)},
+                            storagegroup=Group.default_internal(n),
+                            #chunks={'array': (1, 64, 64)},
 #                            scheduler=self.scheduler(),
                             create=True)
 
