@@ -11,6 +11,7 @@ from ..stats import MCHistogram2D, Sample
 from ..table.range_query_2d import RangeQuery2d
 from ..core import SlotDescriptor, ProgressiveError
 from ..io import Variable, VirtualVariable
+from ..core.synchronized import synchronized
 
 from itertools import chain
 
@@ -138,29 +139,28 @@ class MCScatterPlot(NAry):
             changes |= self.forget_changes(input_slot)
             ret[class_].update({input_type: (input_slot, meta['x'], meta['y'])})
         return changes, ret
-        
+ 
     def build_heatmap(self, inp, domain):
         inp_table = inp.data()
         if inp_table is None:
             return None
-        last = inp_table.last()
-        if last is None:
-            return None
-        row = last.to_dict()
-        #xbins, ybins = row['array'].shape
-        json_ = {}
-        #row = values
-        if not (np.isnan(row['xmin']) or np.isnan(row['xmax'])
-                    or np.isnan(row['ymin']) or np.isnan(row['ymax'])):
-            json_['bounds'] = (row['xmin'], row['ymin'], row['xmax'], row['ymax'])
-            data = row['array']
-            #data = sp.special.cbrt(row['array'])
-            #json_['data'] = sp.misc.bytescale(data)
-            json_['binnedPixels'] = data
-            json_['range'] = [np.min(data), np.max(data)]
-            json_['count'] = np.sum(data)
-            json_['value'] = domain
-            return json_
+        with inp_table.lock:
+            last = inp_table.last()
+            if last is None:
+                return None
+            row = last.to_dict()
+            data = np.copy(row['array'])
+            #xbins, ybins = row['array'].shape
+            json_ = {}
+            #row = values
+            if not (np.isnan(row['xmin']) or np.isnan(row['xmax'])
+                        or np.isnan(row['ymin']) or np.isnan(row['ymax'])):
+                json_['bounds'] = (row['xmin'], row['ymin'], row['xmax'], row['ymax'])                
+                json_['binnedPixels'] = data
+                json_['range'] = [np.min(data), np.max(data)]
+                json_['count'] = np.sum(data)
+                json_['value'] = domain
+                return json_
         return None
     
     def make_json(self, json):
@@ -170,7 +170,7 @@ class MCScatterPlot(NAry):
         count = 0
         xmin = ymin = - np.inf
         xmax = ymax = np.inf
-        changes, grouped_inputs = self.group_inputs()        
+        changes, grouped_inputs = self.group_inputs()
         for cname, inputs in grouped_inputs.items():
             hist_input = inputs['hist'][0]
             buff = self.build_heatmap(hist_input, cname)

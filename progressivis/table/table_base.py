@@ -103,7 +103,7 @@ class BaseTable(six.with_metaclass(ABCMeta, object)):
         self._iloc = _Loc(self, False)
         self._at = _At(self, True)
         self._iat = _At(self, False)
-
+        self._synchronized_lock = None
     @property
     def loc(self):
         "Return a `locator` object for indexing using ids"
@@ -819,3 +819,8 @@ class BaseTable(six.with_metaclass(ABCMeta, object)):
         for c, ix in res.items():
             res[c] = self.index_to_id(ix)
         return res
+
+    @property
+    def lock(self):
+        "Return a recursive lock usable to lock the access and change of attributes"
+        return self._synchronized_lock

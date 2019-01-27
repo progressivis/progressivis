@@ -11,7 +11,6 @@ from fast_histogram import histogram2d
 import numpy as np
 import scipy as sp
 import logging
-from progressivis.storage import Group
 logger = logging.getLogger(__name__)
 
 
@@ -50,14 +49,12 @@ class MCHistogram2D(NAry):
         self._bounds = None
         self._with_output = with_output
         self._heatmap_cache = None
-        n = self.generate_table_name('MCHistogram2D')
-        self._table = Table(n, #self.generate_table_name('MCHistogram2D'),
+        self._table = Table(self.generate_table_name('MCHistogram2D'),
                             dshape=MCHistogram2D.schema,
-                            storagegroup=Group.default_internal(n),
-                            #chunks={'array': (1, 64, 64)},
+                            chunks={'array': (1, 64, 64)},
 #                            scheduler=self.scheduler(),
                             create=True)
-
+        self._table._synchronized_lock = self.scheduler().create_lock()
     def reset(self):
         self._histo = None
         self._xedges = None
@@ -133,7 +130,7 @@ class MCHistogram2D(NAry):
         if np.inf in (xmin, -xmax, ymin, -ymax):
             return None
         return (xmin, xmax, ymin, ymax, has_creation)
-    
+
     def run_step(self, run_number, step_size, howlong):
         dfslot = self.get_input_slot('data')
         dfslot.update(run_number)
@@ -241,7 +238,7 @@ class MCHistogram2D(NAry):
                   'ymax': ymax,
                   'time': run_number}
         if self._with_output:
-            with self.lock:
+            with self._table.lock:
                 table = self._table
                 table['array'].set_shape([p.ybins, p.xbins])
                 l = len(table)
