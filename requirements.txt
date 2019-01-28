@@ -13,7 +13,6 @@ tdigest>=0.4.1.0
 flask>=0.12.1
 eventlet>=0.22.0
 flask-socketio>=2.9.0
-h5py>=2.6.0
 numcodecs>=0.5.5
 datashape>=0.5.2
 pyroaring>=0.2.3

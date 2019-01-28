@@ -3,7 +3,6 @@ from __future__ import absolute_import, division, print_function
 import datashape as ds
 import pandas as pd
 import numpy as np
-import h5py
 import six
 from progressivis.core.utils import integer_types, gen_columns
 
@@ -30,7 +29,7 @@ def dshape_to_shape(dshape, var=None):
     return [ dshape_comp_to_shape(x, var) for x in dshape.shape ]
 
 OBJECT = np.dtype('O')
-VSTRING = h5py.special_dtype(vlen=str)
+VSTRING = OBJECT
 
 def dshape_to_h5py(dshape):
     dtype = dshape.measure.to_numpy_dtype()
