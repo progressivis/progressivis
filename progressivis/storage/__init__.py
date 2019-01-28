@@ -18,29 +18,6 @@ except ImportError:
     mmapengine = None
 
 
-# try:
-#     from .pptable import PPTableStorageEngine
-#     pptableengine = PPTableStorageEngine()
-# except ImportError:
-#     pptableengine = None
-
-try:
-    from .hdf5 import HDF5StorageEngine
-    hdf5engine = HDF5StorageEngine()
-except ImportError:
-    hdf5engine = None
-
-try:
-    from .bcolz import BCOLZStorageEngine
-    bcolzengine = BCOLZStorageEngine()
-except ImportError:
-    bcolzengine = None
-
-try:
-    from .zarr import ZARRStorageEngine
-    zarrengine = ZARRStorageEngine()
-except ImportError:
-    zarrengine = None
 
 if get_option('storage.default'):
     StorageEngine.default = get_option('storage.default')
