@@ -435,3 +435,7 @@ class Table(BaseTable):
         return Table(name=name,
                      data=OrderedDict(data),
                      indices=self._ids.values[indices])
+    def get_panene_data(self, cols=None):
+        if cols is None:
+            cols = self.columns
+        return [self[key].dataset.view for key in cols]
