@@ -1,0 +1,45 @@
+{% extends "_page_base.html" %}
+
+{% block title %}
+KNN Kernel Density for module {{id}}
+{% endblock %}
+{% block head %}
+  {{ super() }}
+{% endblock %}
+{% block extra_scripts %}
+  <!--script src="https://d3js.org/d3.v4.min.js"></script-->
+  <script src="https://d3js.org/d3-contour.v1.min.js"></script>
+
+
+<script src="{{ url_for('progressivis.server.progressivis_file', filename='js/line_graph.js') }}"></script>
+<script src="{{ url_for('progressivis.server.progressivis_file', filename='js/module.js') }}"></script>
+<script src="{{ url_for('progressivis.server.progressivis_file', filename='js/knnkde.js') }}"></script>
+{% endblock %}
+
+{% block script %}
+var module_id = "{{id}}";
+$(document).ready(knnkde_ready);
+{% endblock %}
+
+{% block content %}
+<ol class="breadcrumb">
+  <li><a href="#">Home</a></li>
+  <li><a href="#">KNN Kernel Density {{id}}</a></li>
+</ol>
+
+<div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
+  <h1 class='page-header'>KNN Kernel Density for Module {{id}}</h1>
+
+  <div id='error'></div>
+
+<!-- Nav tabs -->
+  <ul id='nav-tabs' class="nav nav-tabs" role="tablist">
+    <li role="presentation" class="active"><a href="#knnkdepanel" aria-controls="knnkdepanel" role="tab" data-toggle="tab">KNN Kernel Density</a></li>
+    <li role="presentation"><a href="#module" aria-controls="module" role="tab" data-toggle="tab">Module</a></li>
+  </ul>
+<div class="tab-content">
+    <div role="tabpanel" class="tab-pane active" id="knnkdepanel"><div id='knnkdepanel'><svg width="400" height="400" id="knn"></svg></div></div>
+    <div role="tabpanel" class="tab-pane" id="module"><div id='module'></div></div>
+</div>
+<div> </div> 
+{% endblock %}

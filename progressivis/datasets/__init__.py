@@ -2,7 +2,7 @@ import os
 import os.path
 import six
 from progressivis import ProgressiveError
-from .random import generate_random_csv
+from .random import generate_random_csv, generate_random_multivariate_normal_csv
 from .wget import wget_file
 import bz2
 import zlib
@@ -17,6 +17,8 @@ def get_dataset(name, **kwds):
         os.mkdir(DATA_DIR)
     if name == 'bigfile':
         return generate_random_csv('%s/bigfile.csv'%DATA_DIR, 1000000, 30)
+    if name == 'bigfile_mvn':
+        return generate_random_multivariate_normal_csv('%s/bigfile_mvn.csv'%DATA_DIR, 900000)
     if name == 'smallfile':
         return generate_random_csv('%s/smallfile.csv'%DATA_DIR, 30000, 10)
     if name == 'warlogs':

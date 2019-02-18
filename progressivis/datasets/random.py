@@ -21,3 +21,26 @@ def generate_random_csv(filename, rows, cols, seed=1234):
         os.remove(filename)
         raise
     return filename
+
+
+
+def generate_random_multivariate_normal_csv(filename, rows, seed=1234):
+    """
+    Adapted from: https://github.com/e-/PANENE/blob/master/examples/kernel_density/online.py
+    Author: Jaemin Jo
+    Date: February 2019
+    """
+    if os.path.exists(filename):
+        return filename
+    def mv(n, mean, cov):
+        return np.random.multivariate_normal(mean, cov, size=(n)).astype(np.float32)
+    N = rows//3
+    X = np.concatenate((
+        mv(N, [0.1, 0.3], [[0.01, 0], [0, 0.09]]),
+        mv(N, [0.7, 0.5], [[0.04, 0], [0, 0.01]]),
+        mv(N, [-0.4, -0.3], [[0.09, 0.04], [0.04, 0.02]])
+        ), axis=0)
+    np.random.shuffle(X)
+    np.savetxt(filename, X, delimiter=',')
+    return filename
+    
