@@ -1,3 +1,12 @@
+/**
+
+    Adapted from: https://github.com/e-/PANENE/blob/master/examples/kernel_density/online_visualizer.html
+    Author: Jaemin Jo
+    Date: February 2019
+
+*/
+
+
 function translate(x, y) { return 'translate(' + x + ',' + y + ')'; }
 
 function DensityPlot(svgId) {
