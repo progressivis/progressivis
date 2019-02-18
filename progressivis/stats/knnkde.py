@@ -1,7 +1,10 @@
 # Author: Jaemin Jo <jmjo@hcil.snu.ac.kr>
 
 import numpy as np
-from pynene import Index
+try:
+    from pynene import Index
+except:
+    pass
 
 class KNNKernelDensity():
     SQRT2PI = np.sqrt(2 * np.pi)

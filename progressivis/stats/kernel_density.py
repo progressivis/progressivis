@@ -3,8 +3,11 @@ from ..table.module import TableModule
 from ..table import Table
 from ..core.utils import indices_len
 from progressivis import ProgressiveError, SlotDescriptor
-import pynene
-from .knnkde import KNNKernelDensity
+try:
+    import pynene
+    from .knnkde import KNNKernelDensity
+except:
+    pass
 
 class KernelDensity(TableModule):
     parameters = [('samples',  object, 1), ('bins',  np.dtype(int), 1),]
