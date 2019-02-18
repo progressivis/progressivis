@@ -13,7 +13,7 @@ from .histogram2d import Histogram2D
 from .mchistogram2d import MCHistogram2D
 from .sample import Sample
 from .random_table import RandomTable
-from .kernel_density import KernelDensity
+#from .kernel_density import KernelDensity
 
 
 __all__ = ["Stats",
@@ -28,5 +28,7 @@ __all__ = ["Stats",
            "Histogram2D",
            "MCHistogram2D",           
            "Sample",
-           "RandomTable", "KernelDensity"]
+           "RandomTable",
+               #"KernelDensity"
+               ]
 

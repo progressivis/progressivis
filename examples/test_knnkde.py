@@ -10,7 +10,7 @@ from progressivis.table import Table
 from progressivis.io import CSVLoader
 from progressivis.datasets import get_dataset
 from progressivis.stats import RandomTable
-from progressivis.stats import KernelDensity
+from progressivis.stats.kernel_density import KernelDensity
 import numpy as np
 sampleN = 30
 samples = np.indices((sampleN + 1, sampleN + 1)).reshape(2, -1).T / sampleN * 3 - 1.5
