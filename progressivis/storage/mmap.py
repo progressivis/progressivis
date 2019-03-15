@@ -239,7 +239,7 @@ class MMapDataset(Dataset):
                 newarea[i] = np.s_[0:siz]
         else:
             newarea = [np.s_[0:s] for s in size]
-        self.view = self.base[newarea]
+        self.view = self.base[tuple(newarea)]
 
     def __getitem__(self, args):
         if self.dtype != OBJECT:
