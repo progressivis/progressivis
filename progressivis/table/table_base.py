@@ -632,7 +632,7 @@ class BaseTable(six.with_metaclass(ABCMeta, object)):
             indices = np.asarray(locs, np.int64)
             indices = self.id_to_index(indices)
         elif isinstance(locs, Iterable):
-            indices = self.id_to_index(indices)
+            indices = self.id_to_index(locs)
         elif isinstance(locs, integer_types):
             indices = self.id_to_index(slice(locs, locs+1, 1))
         elif isinstance(locs, slice):
