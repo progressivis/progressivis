@@ -33,12 +33,13 @@ class KernelDensity(TableModule):
         if not dfslot.created.any():
             return self._return_run_step(self.state_blocked, steps_run=0)
         indices = dfslot.created.next(step_size, as_slice=False)
+        #import pdb;pdb.set_trace()
         steps = indices_len(indices)
         if steps==0:
             return self._return_run_step(self.state_blocked, steps_run=0)
         if self._kde is None:
             self._kde = KNNKernelDensity(dfslot.data(), online=True)
-        res = self._kde.run(steps)
+        res = self._kde.run_ids(indices.to_array())
         self._inserted += res['numPointsInserted']
         self._lately_inserted += steps        
         samples = self.params.samples

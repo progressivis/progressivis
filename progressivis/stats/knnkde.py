@@ -19,6 +19,9 @@ class KNNKernelDensity():
     def run(self, ops):
         return self.index.run(ops)
 
+    def run_ids(self, ids):
+        return self.index.run_ids(ids)
+
     def score_samples(self, X, k=10, bandwidth=0.2):
         _, dists = self.index.knn_search_points(X, k=k)
         scores = self._gaussian_score(dists, bandwidth) / k
