@@ -18,13 +18,13 @@ class Percentiles(TableModule):
     parameters = [('accuracy', np.dtype(float), 0.5)
                  ]
 
-    def __init__(self, hist_index, scheduler=None, **kwds):
+    def __init__(self, hist_index, **kwds):
         """
         """
         self._add_slots(kwds, 'input_descriptors',
                         [SlotDescriptor('table', type=Table, required=True),
                          SlotDescriptor('percentiles', type=Table, required=True)])
-        super(Percentiles, self).__init__(scheduler=scheduler, **kwds)
+        super(Percentiles, self).__init__(**kwds)
         #self._impl = PercentilesImpl(self.params.accuracy, hist_index)
         self._accuracy = self.params.accuracy
         self._hist_index = hist_index

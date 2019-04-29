@@ -63,7 +63,6 @@ class MBKMeans(TableModule):
         if yes and self._labels is None:
             self._labels = Table(self.generate_table_name('labels'),
                                 dshape="{ labels: int64 }",
-#                                scheduler=self.scheduler(),
                                 create=True)
         elif not yes:
             self._labels = None

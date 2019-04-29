@@ -15,8 +15,8 @@ class Intersection(NAry):
     "Intersection Module"
     parameters = []
 
-    def __init__(self, scheduler=None, **kwds):
-        super(Intersection, self).__init__(scheduler=scheduler, **kwds)
+    def __init__(self, **kwds):
+        super(Intersection, self).__init__(**kwds)
         #self.run_step = self.run_step_progress
         self.run_step = self.run_step_seq
 

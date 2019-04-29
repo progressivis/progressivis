@@ -2,6 +2,7 @@ from __future__ import absolute_import, division, print_function
 
 from ._version import get_versions
 from .utils import (type_fullname, ProgressiveError, fix_loc, indices_len, integer_types)
+from .dataflow import Dataflow
 from .scheduler import Scheduler
 from .scheduler_base import BaseScheduler
 from .slot import Slot, SlotDescriptor
@@ -21,7 +22,8 @@ del get_versions
 
 __all__ = ["ProgressiveError", "type_fullname", "fix_loc", "indices_len",
            "integer_types",
-           "BaseScheduler", "Scheduler", "bitmap",
+           "BaseScheduler", "Scheduler",
+           "Dataflow", "bitmap",
            "version", "__version__", "short_version",
            "Slot", "SlotDescriptor", "Module", "StorageManager",
            "Every", "Print", "Wait" ]

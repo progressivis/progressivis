@@ -663,8 +663,7 @@ class Module(six.with_metaclass(ModuleMeta, object)):
         return v
 
     def run(self, run_number):
-        if self.is_running():
-            raise ProgressiveError('Module already running')
+        assert not self.is_running()
         self.steps_acc = 0
         next_state = self.state
         exception = None
@@ -834,14 +833,10 @@ class Every(Module):
     def run_step(self, run_number, step_size, howlong):
         slot = self.get_input_slot('df')
         df = slot.data()
-        reads = 0
         if df is not None:
             with slot.lock:
-                reads = len(df)
-                #with self.scheduler().stdout_parent():
                 self._proc(df)
-        return self._return_run_step(Module.state_blocked, steps_run=1,
-                                     reads=reads)
+        return self._return_run_step(Module.state_blocked, steps_run=1)
 
 
 def _prt(x):

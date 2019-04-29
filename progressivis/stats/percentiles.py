@@ -51,7 +51,6 @@ class Percentiles(TableModule):
         dshape = "{" + ",".join(["%s: real"%n for n in self._pername]) + "}"
         self._table = Table(self.generate_table_name('percentiles'),
                             dshape=dshape,
-#                            scheduler=self.scheduler(),
                             create=True)
 
     def is_ready(self):

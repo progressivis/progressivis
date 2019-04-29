@@ -34,7 +34,6 @@ class Sample(TableModule):
         super(Sample, self).__init__(**kwds)
         self._tmp_table = Table(self.generate_table_name('sample'),
                             dshape='{select: int64}',
-#                            scheduler=self.scheduler(),
                             create=True)
         self._size = 0 # holds the size consumed from the input table so far
         self._bitmap = None

@@ -4,7 +4,9 @@ from os import getenv
 import sys
 from unittest import TestCase, skip, skipIf, main
 
-from progressivis import log_level, logging, Scheduler, BaseScheduler
+from progressivis import (log_level, logging,
+                          Scheduler, BaseScheduler, 
+                          Dataflow)
 from progressivis.storage import Group, StorageEngine
 from progressivis.storage.mmap import MMapGroup
 import numpy as np
@@ -32,6 +34,8 @@ class ProgressiveTest(TestCase):
         super(ProgressiveTest, self).__init__(*args)
         self._output = False
         self._schedulers = []
+        self._dataflow = None
+
     @staticmethod
     def terse(x):
         _ = x
@@ -76,6 +80,11 @@ class ProgressiveTest(TestCase):
             sched = Scheduler()
         self._schedulers.append(sched)
         return sched
+
+    def dataflow(self):
+        if self._dataflow is None:
+            self._dataflow = Dataflow()
+        return self._dataflow
 
     @staticmethod
     def log(level=logging.ERROR, package='progressivis'):

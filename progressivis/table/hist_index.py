@@ -323,7 +323,7 @@ class HistogramIndex(TableModule):
         ('init_threshold', int, 1000),
     ]
 
-    def __init__(self, column, scheduler=None, **kwds):
+    def __init__(self, column, **kwds):
         self._add_slots(kwds, 'input_descriptors', [
             SlotDescriptor('table', type=Table, required=True),
             #SlotDescriptor('min', type=Table, required=True),
@@ -333,7 +333,7 @@ class HistogramIndex(TableModule):
             SlotDescriptor('min_out', type=Table, required=False),
             SlotDescriptor('max_out', type=Table, required=False)])
 
-        super(HistogramIndex, self).__init__(scheduler=scheduler, **kwds)
+        super(HistogramIndex, self).__init__(**kwds)
         self.column = column
         self._impl = None  # will be created when the init_threshold is reached
         self.selection = bitmap() # will be filled when the table is read
@@ -495,13 +495,8 @@ class HistogramIndex(TableModule):
                 self._eval_to_ids(operator.__ge__, lower, only_locs))
 
     def create_dependent_modules(self, input_module, input_slot, **kwds):
-        #s = self.scheduler()
         self.input_module = input_module
         self.input_slot = input_slot
-        #min_ = Min(group=self.id, scheduler=s)
-        #max_ = Max(group=self.id, scheduler=s)
-        #min_.input.table = input_module.output[input_slot]
-        #max_.input.table = input_module.output[input_slot]
         hist_index = self
         hist_index.input.table = input_module.output[input_slot]
         #hist_index.input.min = min_.output.table

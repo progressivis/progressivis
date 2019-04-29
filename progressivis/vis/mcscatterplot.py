@@ -18,13 +18,13 @@ from itertools import chain
 from collections import defaultdict
 
 class _DataClass(object):
-    def __init__(self, name, group, x_column, y_column, approximate=False, scheduler=None,**kwds):
+    def __init__(self, name, group, x_column, y_column, approximate=False, dataflow=None, **kwds):
         self.name = name
         self._group = group
         self.x_column = x_column
         self.y_column = y_column
         self._approximate = approximate
-        self._scheduler = scheduler
+        self.dataflow = dataflow
         self.input_module = None
         self.input_slot = None
         self.min = None
@@ -38,35 +38,36 @@ class _DataClass(object):
         self.range_query_2d = None
 
     def scheduler(self):
-        return self._scheduler
+        return self.dataflow.scheduler()
+
     def create_dependent_modules(self, input_module, input_slot,
                                      histogram2d=None, heatmap=None,
                                      sample=True, select=None, **kwds):
         if self.input_module is not None:
             return self
-        s = self.scheduler()
+        dataflow = self.dataflow
         self.input_module = input_module
         self.input_slot = input_slot
         range_query_2d = RangeQuery2d(column_x=self.x_column,
                                       column_y=self.y_column,
-                                      group=self._group, scheduler=s,
+                                      group=self._group, dataflow=dataflow,
                                       approximate=self._approximate)
         range_query_2d.create_dependent_modules(input_module,
                                                 input_slot,
                                                 min_value=False,
                                                 max_value=False)
-        self.min_value = Variable(group=self._group, scheduler=s)
+        self.min_value = Variable(group=self._group, dataflow=dataflow)
         self.min_value.input.like = range_query_2d.min.output.table
         range_query_2d.input.lower = self.min_value.output.table
-        self.max_value = Variable(group=self._group, scheduler=s)
+        self.max_value = Variable(group=self._group, dataflow=dataflow)
         self.max_value.input.like = range_query_2d.max.output.table
         range_query_2d.input.upper = self.max_value.output.table
         if histogram2d is None:
             histogram2d = MCHistogram2D(self.x_column, self.y_column,
-                                      group=self._group, scheduler=s)
+                                      group=self._group, dataflow=dataflow)
         histogram2d.input.data = range_query_2d.output.table
         if sample is True:
-            sample = Sample(samples=100, group=self._group, scheduler=s)
+            sample = Sample(samples=100, group=self._group, dataflow=dataflow)
         elif sample is None and select is None:
             raise ProgressiveError("Scatterplot needs a select module")
         if sample is not None:
@@ -297,7 +298,7 @@ class MCScatterPlot(NAry):
         data_class = _DataClass(name, self.name, x_column,
                                     y_column,
                                     approximate=self._approximate,
-                                    scheduler=self.scheduler())
+                                    dataflow=self.dataflow)
         data_class.create_dependent_modules(self.input_module, self.input_slot)
         col_translation = {self._x_label: x_column, self._y_label: y_column}
         hist_meta = dict(inp='hist', class_=name, **col_translation)

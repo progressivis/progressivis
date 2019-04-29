@@ -15,10 +15,10 @@ class FilterMod(TableModule):
                       ('user_dict', object, None),
 
                       ] 
-    def __init__(self, scheduler=None, **kwds):
+    def __init__(self, **kwds):
         self._add_slots(kwds,'input_descriptors',
                             [SlotDescriptor('table', type=Table, required=True)])
-        super(FilterMod, self).__init__(scheduler=scheduler, **kwds)
+        super(FilterMod, self).__init__(**kwds)
         self._impl = FilterImpl(self.params.expr, self.params.user_dict) 
 
     def run_step(self, run_number, step_size, howlong):

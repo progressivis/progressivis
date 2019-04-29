@@ -5,8 +5,11 @@ import logging
 
 from progressivis.core import (ProgressiveError,
                                version, __version__, short_version,
-                               BaseScheduler, Scheduler, Slot, SlotDescriptor,
-                               Module, StorageManager, Every, Print)
+                               BaseScheduler, Scheduler, 
+                               Dataflow,
+                               Slot, SlotDescriptor,
+                               StorageManager,
+                               Module, Every, Print)
 
 from progressivis.table import Table, Column, Row
 

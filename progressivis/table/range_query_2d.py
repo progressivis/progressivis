@@ -94,7 +94,7 @@ class RangeQuery2d(TableModule):
                   #('hist_index', object, None) # to improve ...
                  ]
 
-    def __init__(self, hist_index=None, approximate=False, scheduler=None, **kwds):
+    def __init__(self, hist_index=None, approximate=False, **kwds):
         """
         """
         self._add_slots(kwds, 'input_descriptors',
@@ -107,7 +107,7 @@ class RangeQuery2d(TableModule):
         self._add_slots(kwds,'output_descriptors', [
             SlotDescriptor('min', type=Table, required=False),
             SlotDescriptor('max', type=Table, required=False)])
-        super(RangeQuery2d, self).__init__(scheduler=scheduler, **kwds)
+        super(RangeQuery2d, self).__init__(**kwds)
         self._impl = None #RangeQueryImpl(self.params.column, hist_index)
         self._hist_index_x = None
         self._hist_index_y = None        
@@ -150,35 +150,35 @@ class RangeQuery2d(TableModule):
                                  **kwds):
         if self.input_module is not None: # test if already called
             return self
-        s = self.scheduler()
+        dataflow = self.dataflow
         params = self.params
         self.input_module = input_module
         self.input_slot = input_slot
-        hist_index_x = HistogramIndex(column=params.column_x, group=self.name, scheduler=s)
+        hist_index_x = HistogramIndex(column=params.column_x, group=self.name, dataflow=dataflow)
         hist_index_x.input.table = input_module.output[input_slot]
-        hist_index_y = HistogramIndex(column=params.column_y, group=self.name, scheduler=s)
+        hist_index_y = HistogramIndex(column=params.column_y, group=self.name, dataflow=dataflow)
         hist_index_y.input.table = input_module.output[input_slot]
         if min_ is None:
-            min_x = Min(group=self.name, scheduler=s, columns=[self._column_x])            
+            min_x = Min(group=self.name, dataflow=dataflow, columns=[self._column_x])            
             min_x.input.table = hist_index_x.output.min_out
-            min_y = Min(group=self.name, scheduler=s, columns=[self._column_y])            
+            min_y = Min(group=self.name, dataflow=dataflow, columns=[self._column_y])            
             min_y.input.table = hist_index_y.output.min_out
-            min_ = Paste(group=self.name, scheduler=s)
+            min_ = Paste(group=self.name, dataflow=dataflow)
             min_.input.first = min_x.output.table
             min_.input.second = min_y.output.table
         if max_ is None:
-            max_x = Max(group=self.name, scheduler=s, columns=[self._column_x])
+            max_x = Max(group=self.name, dataflow=dataflow, columns=[self._column_x])
             max_x.input.table = hist_index_x.output.max_out
-            max_y = Max(group=self.name, scheduler=s, columns=[self._column_y])
+            max_y = Max(group=self.name, dataflow=dataflow, columns=[self._column_y])
             max_y.input.table = hist_index_y.output.max_out
-            max_ = Paste(group=self.name, scheduler=s)
+            max_ = Paste(group=self.name, dataflow=dataflow)
             max_.input.first = max_x.output.table
             max_.input.second = max_y.output.table
         if min_value is None:
-            min_value = Variable(group=self.name, scheduler=s)
+            min_value = Variable(group=self.name, dataflow=dataflow)
             min_value.input.like = min_.output.table
         if max_value is None:
-            max_value = Variable(group=self.name, scheduler=s)
+            max_value = Variable(group=self.name, dataflow=dataflow)
             max_value.input.like = max_.output.table
 
         range_query = self

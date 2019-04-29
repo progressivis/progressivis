@@ -89,7 +89,6 @@ class Var(TableModule):
         op = self.op(self.filter_columns(input_df,fix_loc(indices)))
         if self._table is None:
             self._table = Table(self.generate_table_name('var'), dshape=input_df.dshape,
-#                                scheduler=self.scheduler(),
                                 create=True)
         self._table.append(op, indices=[run_number])
         print(self._table)

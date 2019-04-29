@@ -84,13 +84,13 @@ class Bisect(TableModule):
                   #('hist_index', object, None) # to improve ...
                  ]
 
-    def __init__(self, hist_index=None, scheduler=None, **kwds):
+    def __init__(self, hist_index=None, **kwds):
         """
         """
         self._add_slots(kwds, 'input_descriptors',
                         [SlotDescriptor('table', type=Table, required=True),
                          SlotDescriptor('limit', type=Table, required=False)])
-        super(Bisect, self).__init__(scheduler=scheduler, **kwds)
+        super(Bisect, self).__init__(**kwds)
         self._impl = BisectImpl(self.params.column,
                                 self.params.op, hist_index) 
         self.default_step_size = 1000

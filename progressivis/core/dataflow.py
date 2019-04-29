@@ -10,7 +10,8 @@ from uuid import uuid4
 import six
 
 from .utils import ProgressiveError
-from .scheduler_base import BaseScheduler
+from .scheduler import Scheduler
+from .toposort import toposort
 
 logger = logging.getLogger(__name__)
 
@@ -28,12 +29,11 @@ class Dataflow(object):
     """
     def __init__(self, scheduler=None):
         if scheduler is None:
-            scheduler = BaseScheduler.default
+            scheduler = Scheduler.default
         assert scheduler is not None
         self.scheduler = scheduler
         self._modules = dict()
         self._inputs = dict()
-        self._outputs = dict()
 
     def generate_name(self, prefix):
         "Generate a name for a module given its class prefix."
@@ -53,10 +53,8 @@ class Dataflow(object):
         "Add a module to this Dataflow."
         assert module.is_created()
         assert module.name not in self._inputs
-        assert module.name not in self._outputs
         self._modules[module.name] = module
         self._inputs[module.name] = {}
-        self._outputs[module.name] = {}
 
     def remove_module(self, module):
         "Remove the specified module"
@@ -65,27 +63,27 @@ class Dataflow(object):
         module.terminate()
         del self._modules[module.name]
         del self._inputs[module.name]
-        del self._outputs[module.name]
 
     def add_connection(self, output_module, output_name,
                        input_module, input_name):
         "Declares a connection between two module slots"
         assert input_name not in self._inputs[input_module.name]
-        assert output_name not in self._outputs[output_module.name]
         self._inputs[input_module.name][input_name] = (output_module.name, output_name)
-        self._outputs[output_module.name][output_name] = (input_module.name, input_name)
 
-    def collect_dependencies(self, only_required=False):
+    def collect_dependencies(self):
         "Return the dependecies of the modules"
         dependencies = {}
-        for (mid, module) in six.iteritems(self._modules):
-            if not module.is_valid():
-                continue
-            outs = [m.output_module.name for m in module.input_slot_values()
-                    if m and (not only_required or
-                              module.input_slot_required(m.input_name))]
-            dependencies[mid] = set(outs)
+        for (module, slots) in six.iteritems(self._inputs):
+            outs = [m[0] for m in slots.values()]
+            dependencies[module] = set(outs)
         return dependencies
+
+    def order_modules(self):
+        """Compute a topological order for the modules.
+        """
+        dependencies = self.collect_dependencies()
+        runorder = toposort(dependencies)
+        return runorder
 
     def validate(self):
         "Validate the Dataflow, returning [] if it is valid or the invalid modules otherwise."

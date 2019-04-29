@@ -19,10 +19,10 @@ class DummyMod(TableModule):
                   ('del_twice', bool, False),
                   ('fixed_step_size', int, 0),
                   ('mode', str, "random"),]
-    def __init__(self, scheduler=None, **kwds):
+    def __init__(self, **kwds):
         self._add_slots(kwds, 'input_descriptors',
                         [SlotDescriptor('table', type=Table, required=True)])
-        super(DummyMod, self).__init__(scheduler=scheduler, **kwds)
+        super(DummyMod, self).__init__(**kwds)
         self._update_column = self.params.update_column
         self._update_rows = self.params.update_rows
         self._delete_rows = self.params.delete_rows

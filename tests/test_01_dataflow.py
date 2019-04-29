@@ -1,33 +1,35 @@
-from time import sleep
+from pprint import pprint
 
-from progressivis import Print, Scheduler
+from progressivis import Print
 from progressivis.io import CSVLoader
 from progressivis.stats import Min
 from progressivis.datasets import get_dataset
-from progressivis.core.dataflow import Dataflow
 
-from . import ProgressiveTest, skip
+from . import ProgressiveTest
 
 
 class TestDataflow(ProgressiveTest):
-    @skip("Not ready yet")
     def test_dataflow(self):
-        s = Scheduler()
-        with Dataflow(s):
-            csv = CSVLoader(get_dataset('bigfile'), name="csv", index_col=False, header=None)
-            m = Min()
-            m.input.table = csv.output.table
-            prt = Print(proc=self.terse)
-            prt.input.df = m.output.table
+        dataflow = self.dataflow()
+        csv = CSVLoader(get_dataset('bigfile'), name='csv',
+                        index_col=False, header=None,
+                        dataflow=dataflow)
+        self.assertIs(dataflow['csv'], csv)
 
-        self.assertIs(s["csv"], csv)
-        csv.scheduler().start()
+        m = Min(dataflow=dataflow)
+        self.assertIs(dataflow[m.name], m)
 
-        sleep(1)
-        self.assertTrue(csv.scheduler().is_running())
+        prt = Print(proc=self.terse,
+                    dataflow=dataflow)
+        self.assertIs(dataflow[prt.name], prt)
 
-        s.stop()
-        s.join()
+        m.input.table = csv.output.table
+        prt.input.df = m.output.table
+
+        self.assertEqual(len(dataflow), 3)
+        deps = dataflow.order_modules()
+        self.assertEqual(deps, ['csv', m.name, prt.name])
+
 
 if __name__ == '__main__':
     ProgressiveTest.main()

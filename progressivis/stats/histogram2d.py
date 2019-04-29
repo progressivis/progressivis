@@ -50,7 +50,6 @@ class Histogram2D(TableModule):
         self._table = Table(self.generate_table_name('Histogram2D'),
                             dshape=Histogram2D.schema,
                             chunks={'array': (1, 64, 64)},
-#                            scheduler=self.scheduler(),
                             create=True)
 
     def reset(self):

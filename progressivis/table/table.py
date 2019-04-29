@@ -147,7 +147,7 @@ class Table(BaseTable):
         "Return the storagegroup form this column"
         return self._storagegroup
 
-    def _load_table(self): #, scheduler):
+    def _load_table(self):
         node = self._storagegroup
         if metadata.ATTR_TABLE not in node.attrs:
             raise ValueError('Group "%s" is not a Table', self.name)
@@ -322,7 +322,6 @@ class Table(BaseTable):
 
     def binary(self, op, other, **kwargs):
         res = super(Table, self).binary(op, other, **kwargs)
-        #return Table(None, data=res, scheduler=self.scheduler, create=True)
         return Table(None, data=res, create=True)
 
     @staticmethod

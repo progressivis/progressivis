@@ -74,7 +74,7 @@ class Histograms(NAry):
                 # only create histograms for number columns
                 continue
             histo = Histogram1D(group=self.name, column=column,
-                                bins=bins, delta=delta, scheduler=self.scheduler())
+                                bins=bins, delta=delta, dataflow=self.daataflow)
             histo.input.table = inp.output.table
             histo.input.min = minmod.output.table
             histo.input.max = maxmod.output.table

@@ -300,7 +300,7 @@ def extract_params_docstring(fn, only_defaults=False):
 csv_docstring = "CSVLoader(" \
   + extract_params_docstring(pd.read_csv) \
   + ","+extract_params_docstring(CSVLoader.__init__, only_defaults=True) \
-  + ",force_valid_ids=False,id=None,scheduler=None,tracer=None,predictor=None,storage=None,input_descriptors=[],output_descriptors=[])"
+  + ",force_valid_ids=False,id=None,dataflow=None,tracer=None,predictor=None,storage=None,input_descriptors=[],output_descriptors=[])"
 try:
     CSVLoader.__init__.__func__.__doc__ = csv_docstring
 except:

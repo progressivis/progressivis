@@ -18,11 +18,11 @@ class BinJoin(TableModule):
     Args:
         kwds : argument to pass to the join function
     """
-    def __init__(self, scheduler=None, **kwds):
+    def __init__(self, **kwds):
         self._add_slots(kwds, 'input_descriptors',
                         [SlotDescriptor('first', type=Table, required=True),
                          SlotDescriptor('second', type=Table, required=True)])
-        super(BinJoin, self).__init__(scheduler=scheduler, **kwds)
+        super(BinJoin, self).__init__(**kwds)
         self.join_kwds = self._filter_kwds(kwds, join)
         self._dialog = Dialog(self)
 

@@ -30,11 +30,11 @@ class Select(TableModule):
         
         if self.input_module is not None:
             return self
-        s=self.scheduler()
+        dataflow=self.dataflow
         self.input_module = input_module
         self.input_slot = input_slot
 
-        query = RangeQuery(group=self.name, scheduler=s)
+        query = RangeQuery(group=self.name, dataflow=dataflow)
         query.create_dependent_modules(input_module, input_slot, **kwds)
 
         select = self

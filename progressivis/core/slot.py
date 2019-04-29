@@ -29,8 +29,14 @@ class Slot(object):
         self.output_module = output_module
         self.input_name = input_name
         self.input_module = input_module
-        self.name = self.input_module.name + '_' + self.input_name
+        self._name = None
         self.changes = None
+
+    def name(self):
+        if self._name is None:
+            self._name = (self.input_module.name +
+                          '_' + self.input_name)
+        return self._name
 
     def data(self):
         "Return the data associated with this slot"

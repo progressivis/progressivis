@@ -52,7 +52,6 @@ class MCHistogram2D(NAry):
         self._table = Table(self.generate_table_name('MCHistogram2D'),
                             dshape=MCHistogram2D.schema,
                             chunks={'array': (1, 64, 64)},
-#                            scheduler=self.scheduler(),
                             create=True)
         self._table._synchronized_lock = self.scheduler().create_lock()
     def reset(self):

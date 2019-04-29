@@ -43,7 +43,6 @@ class Counter(TableModule):
         if self._table is None:
             self._table = Table(self.generate_table_name('counter'),
                                 data=data,
-#                                scheduler=self.scheduler(),
                                 create=True)
         elif len(self._table)==0: # has been resetted
             self._table.append(data)
