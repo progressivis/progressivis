@@ -1,5 +1,3 @@
-from pprint import pprint
-
 from progressivis import Print
 from progressivis.io import CSVLoader
 from progressivis.stats import Min

@@ -89,10 +89,23 @@ class Dataflow(object):
         "Validate the Dataflow, returning [] if it is valid or the invalid modules otherwise."
         invalid = []
         for module in self._modules.values():
-            if not module.validate():
-                logger.error('Cannot validate module %s', module.name)
+            if not self.validate_module(module):
+                logger.error('Cannot validate module %s', 
+                             module.name)
                 invalid.append(module)
         return invalid
+
+    def validate_module(self, module):
+        inputs = self._inputs[module.name]
+        valid = True
+        for sd in module.input_descriptors.values():
+            slot = inputs.get(sd.name)
+            if sd.required and slot is None:
+                logger.error('Missing inputs slot %s in %s',
+                             sd.name, module.name)
+                valid = False
+                break
+        return valid
 
     def __len__(self):
         return len(self._modules)
