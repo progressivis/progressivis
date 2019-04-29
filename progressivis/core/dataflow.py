@@ -15,56 +15,65 @@ from .scheduler_base import BaseScheduler
 logger = logging.getLogger(__name__)
 
 class Dataflow(object):
+    """Class managing a Dataflow, a configuration of modules and slots
+    constructed by the user to be run by a Scheduler.
+
+    The contents of a Dataflow can be changed at any time without
+    interfering with the Scheduler. To update the Scheduler, it should
+    be validated and committed first.
+    """
+    default = None
     """
     Dataflow graph maintaining modules connected with slots.
     """
     def __init__(self, scheduler=None):
         if scheduler is None:
             scheduler = BaseScheduler.default
-        if scheduler is None:
-            raise ValueError('No scheduler specified and no default scheduler')
+        assert scheduler is not None
         self.scheduler = scheduler
-        self._modules = scheduler.modules.copy()
-        self._modules_created = None
-        self._modules_deleted = None
-        self._slots_created = None
-        self._slots_deleted = None
+        self._modules = dict()
+        self._inputs = dict()
+        self._outputs = dict()
 
-    default = None
-
-    def __enter__(self):
-        assert self.default is None, "cannot have more than one default dataflow"
-        Dataflow.default = self
-        return self
-
-    def __exit__(self, *args):
-        assert self.default is self
-        Dataflow.default = None
-
-    @staticmethod
-    def get_active_dataflow(dataflow=None):
-        """
-        Obtain the currently active dataflow instance by returning the explicitly given
-        dataflow or using the default dataflow.
-
-        Parameters
-        ----------
-        dataflow : Dataflow or None
-            Dataflow to return or `None` to use the default dataflow.
-
-        Raises
-        ------
-        ValueError
-            If no `Dataflow` instance can be obtained.
-        """
-        dataflow = dataflow or Dataflow.default
-        if not dataflow:
-            raise ValueError("`dataflow` must be given explicitly"
-                             " or a default dataflow must be set")
-        return dataflow
+    def generate_name(self, prefix):
+        "Generate a name for a module given its class prefix."
+        for i in range(1, 10):
+            mid = '%s_%d' % (prefix, i)
+            if mid not in self._modules:
+                return mid
+        return '%s_%s' % (prefix, uuid4())
 
     def __getitem__(self, name):
         return self._modules[name]
+
+    def __contains__(self, name):
+        return name in self._modules
+
+    def add_module(self, module):
+        "Add a module to this Dataflow."
+        assert module.is_created()
+        assert module.name not in self._inputs
+        assert module.name not in self._outputs
+        self._modules[module.name] = module
+        self._inputs[module.name] = {}
+        self._outputs[module.name] = {}
+
+    def remove_module(self, module):
+        "Remove the specified module"
+        if isinstance(module, six.string_types):
+            module = self._modules[module]
+        module.terminate()
+        del self._modules[module.name]
+        del self._inputs[module.name]
+        del self._outputs[module.name]
+
+    def add_connection(self, output_module, output_name,
+                       input_module, input_name):
+        "Declares a connection between two module slots"
+        assert input_name not in self._inputs[input_module.name]
+        assert output_name not in self._outputs[output_module.name]
+        self._inputs[input_module.name][input_name] = (output_module.name, output_name)
+        self._outputs[output_module.name][output_name] = (input_module.name, input_name)
 
     def collect_dependencies(self, only_required=False):
         "Return the dependecies of the modules"
@@ -90,27 +99,4 @@ class Dataflow(object):
     def __len__(self):
         return len(self._modules)
 
-    def __contains__(self, moduleid):
-        "Return True if the moduleid exists in this Dataflow."
-        return moduleid in self._modules
-
-    def add(self, module):
-        "Add a module to this Dataflow."
-        if not module.is_created():
-            raise ProgressiveError('Cannot add running module %s' % module.name)
-        if module.name is None:
-            # pylint: disable=protected-access
-            module._id = self.generate_id(module.pretty_typename())
-        self._add_module(module)
-
-    def _add_module(self, module):
-        self._modules_created.append(module.name)
-        #self._modules[module.name] = module
-
-    def generate_id(self, prefix):
-        "Generate an id for a module."
-        for i in range(1, 10):
-            mid = '%s_%d' % (prefix, i)
-            if mid not in self._modules:
-                return mid
-        return '%s_%s' % (prefix, uuid4())
+Dataflow.default = Dataflow()

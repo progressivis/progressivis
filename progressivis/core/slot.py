@@ -29,16 +29,8 @@ class Slot(object):
         self.output_module = output_module
         self.input_name = input_name
         self.input_module = input_module
-        self._name = None
+        self.name = self.input_module.name + '_' + self.input_name
         self.changes = None
-        self._manage_columns = None
-        self._last_columns = None
-
-    def name(self):
-        "Return the unique name of that slot"
-        if self._name is None:
-            self._name = self.input_module.name + '_' + self.input_name
-        return self._name
 
     def data(self):
         "Return the data associated with this slot"
@@ -77,24 +69,22 @@ class Slot(object):
                 'input_module': self.input_module.name}
 
     def connect(self):
-        "Run when the progressive pipeline is about to run through this slot"
-        scheduler = self.scheduler()
-        if scheduler != self.input_module.scheduler():
-            raise ProgressiveError('Cannot connect modules managed by'
-                                   ' different schedulers')
+        "Declares the connection in the Dataflow"
+        dataflow = self.input_module.dataflow
+        assert dataflow == self.output_module.dataflow
+        dataflow.add_connection(self.output_module, self.output_name,
+                                self.input_module, self.input_name)
 
-        # TODO we should ensure that all connections required to move the
-        # pipeline from a valid state to another are executed atomically
-        with scheduler.lock:
-            # pylint: disable=protected-access
-            scheduler.slots_updated()
+        # with scheduler.lock:
+        #     # pylint: disable=protected-access
+        #     scheduler.slots_updated()
 
-            self.output_module._connect_output(self)
-            prev_slot = self.input_module._connect_input(self)
-            if prev_slot:
-                raise ProgressiveError('Input already connected for %s',
-                                       six.u(self))
-            scheduler.invalidate()
+        #     self.output_module._connect_output(self)
+        #     prev_slot = self.input_module._connect_input(self)
+        #     if prev_slot:
+        #         raise ProgressiveError('Input already connected for %s',
+        #                                six.u(self))
+        #     scheduler.invalidate()
 
     def validate_types(self):
         "Validate the types of the endpoints connected through this slot"
@@ -134,20 +124,11 @@ class Slot(object):
             self.changes = self.create_changes(buffer_created=buffer_created,
                                                buffer_updated=buffer_updated,
                                                buffer_deleted=buffer_deleted)
-        if self._manage_columns is None:
-            self._manage_columns = manage_columns
         if self.changes is None:
             return None
         with self.lock:
             df = self.data()
             return self.changes.update(run_number, df, self.name())
-
-    @property
-    def column_changes(self):
-        "Compute the column changes since the last time this slot has been updated"
-        if self._manage_columns:
-            return self.changes.column_changes
-        return None
 
     def reset(self):
         "Reset the slot"
@@ -233,63 +214,3 @@ class Slot(object):
         Slot.changemanager_classes[datatype] = cls
 
 
-class InputSlots(object):
-    # pylint: disable=too-few-public-methods
-    """
-    Convenience class to refer to input slots by name
-    as if they were attributes.
-    """
-    def __init__(self, module):
-        self.__dict__['module'] = module
-        #self.label = None
-        
-    def __setattr__(self, name, slot):
-        if not isinstance(slot, Slot):
-            raise ProgressiveError('Assignment to input slot %s'
-                                   ' should be a Slot', name)
-        if slot.output_module is None or slot.output_name is None:
-            raise ProgressiveError('Assignment to input slot %s invalid, '
-                                   'missing slot output specs', name)
-        slot.input_module = self.__dict__['module']
-        slot.input_name = name
-        slot.connect()
-
-    def __getattr__(self, name):
-        raise ProgressiveError('Input slots cannot be read, only assigned to')
-
-    def __getitem__(self, name):
-        return self.__getattr__(name)
-
-    def __setitem__(self, name, slot):
-        if isinstance(name, six.string_types):
-            return self.__setattr__(name, slot)
-        n, m = name
-        slot.meta = m
-        return self.__setattr__(n, slot)
-
-    def __dir__(self):
-        return self.__dict__['module'].input_slot_names()
-
-    # TODO add a disconnect method to unregister the update manager
-
-
-class OutputSlots(object):
-    # pylint: disable=too-few-public-methods
-    """
-    Convenience class to refer to output slots by name
-    as if they were attributes.
-    """
-    def __init__(self, module):
-        self.__dict__['module'] = module
-
-    def __setattr__(self, name, slot):
-        raise ProgressiveError('Output slots cannot be assigned, only read')
-
-    def __getattr__(self, name):
-        return self.__dict__['module'].create_slot(name, None, None)
-
-    def __getitem__(self, key):
-        return self.__getattr__(key)
-
-    def __dir__(self):
-        return self.__dict__['module'].output_slot_names()

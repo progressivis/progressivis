@@ -98,9 +98,6 @@ class TableTracer(Tracer):
         row['end'] = ts
         row['duration'] = ts - row['start']
         row['detail'] = self.last_run_step_details if self.last_run_step_details else ''
-        #last_run_start['reads'] += row['reads']
-        #last_run_start['updates'] += row['updates']
-        #last_run_start['creates'] += row['creates']
         last_run_start['steps_run'] += row['steps_run']
         if 'debug' in kwds:
             row['type'] = 'debug_step'

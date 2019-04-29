@@ -144,9 +144,8 @@ class StorageEngine(Group):
 
     def __init__(self, name, create_dataset_kwds=None):
         # print('# creating storage engine %s'% name)
-        if name in StorageEngine._engines:
-            raise ValueError('StorageEngine named %s already exists, '
-                             'remove it first', name)
+        # import pdb; pdb.set_trace()
+        assert name not in StorageEngine._engines
         self._name = name
         StorageEngine._engines[name] = self
         if StorageEngine.default is None:

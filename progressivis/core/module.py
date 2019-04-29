@@ -17,9 +17,9 @@ from progressivis.table.dshape import dshape_from_dtype
 from progressivis.table.row import Row
 from progressivis.storage import Group
 
-from .scheduler_base import BaseScheduler
+from .dataflow import Dataflow
 from .utils import (ProgressiveError, type_fullname, get_random_name)
-from .slot import (SlotDescriptor, Slot, InputSlots, OutputSlots)
+from .slot import (SlotDescriptor, Slot)
 from .tracer_base import Tracer
 from .time_predictor import TimePredictor
 from .storagemanager import StorageManager
@@ -75,35 +75,28 @@ class Module(six.with_metaclass(ModuleMeta, object)):
     def __init__(self,
                  name=None,
                  group=None,
-                 scheduler=None,
-                 tracer=None,
-                 predictor=None,
-                 storage=None,
+                 dataflow=None,
                  storagegroup=None,
                  input_descriptors=None,
                  output_descriptors=None,
                  **kwds):
-        if scheduler is None:
-            scheduler = BaseScheduler.default
-        self._scheduler = scheduler
+        if dataflow is None:
+            dataflow = Dataflow.default
+        self.dataflow = dataflow
         if name is None:
-            name = self._scheduler.generate_name(self.pretty_typename())
-        if self._scheduler.exists(name):
+            name = dataflow.generate_name(self.pretty_typename())
+        if name in self.dataflow:
             raise ProgressiveError('module already exists in scheduler,'
                                    ' delete it first')
-        self._name = name
-        if predictor is None:
-            predictor = TimePredictor.default()
+        self.name = name
+        predictor = TimePredictor.default()
         predictor.name = name
         self.predictor = predictor
-        if storage is None:
-            storage = StorageManager.default
+        storage = StorageManager.default
         self.storage = storage
         if storagegroup is None:
             storagegroup = Group.default_internal(get_random_name(name+'_tracer'))
-        self.storagegroup = storagegroup
-        if tracer is None:
-            tracer = Tracer.default(name, storagegroup)
+        tracer = Tracer.default(name, storagegroup)
 
         # always present
         input_descriptors = input_descriptors or []
@@ -115,7 +108,7 @@ class Module(six.with_metaclass(ModuleMeta, object)):
                                              type=BaseTable,
                                              required=False)]
         self.order = None
-        self._group = group
+        self.group = group
         self.tracer = tracer
         self._start_time = None
         self._end_time = None
@@ -135,10 +128,12 @@ class Module(six.with_metaclass(ModuleMeta, object)):
         self._start_run = None
         self._end_run = None
         self._synchronized_lock = self.scheduler().create_lock()
-        self._add_module()
+        self.dataflow.add_module(self)
 
-    def _add_module(self):
-        self.scheduler().add_module(self)
+    def scheduler(self):
+        """Return the scheduler associated with the dataflow.
+        """
+        return self.dataflow.scheduler
 
     def create_dependent_modules(self, *params, **kwds):  # pragma no cover
         """Create modules that this module depends on.
@@ -176,7 +171,7 @@ class Module(six.with_metaclass(ModuleMeta, object)):
 
     def destroy(self):
         "Destroy the module, removing it from its scheduler"
-        self.scheduler().remove_module(self)
+        self.dataflow.remove_module(self)
         # TODO remove connections with the input and output modules
 
     @staticmethod
@@ -292,8 +287,8 @@ class Module(six.with_metaclass(ModuleMeta, object)):
                             six.iteritems(self._input_slots) if s}
         }
 
-        if self._group:
-            mod['group'] = self._group
+        if self.group:
+            mod['group'] = self.group
         return mod
 
     def from_input(self, msg):
@@ -349,20 +344,6 @@ class Module(six.with_metaclass(ModuleMeta, object)):
 
     def __repr__(self):
         return str(self)
-
-    @property
-    def name(self):
-        "Return the name for this module"
-        return self._name
-
-    @property
-    def group(self):
-        "Return or group name associated with the module, or None"
-        return self._group
-
-    def scheduler(self):
-        "Return the scheduler associated with this module"
-        return self._scheduler
 
     def start(self):
         "Start the scheduler associated with this module"
@@ -496,25 +477,19 @@ class Module(six.with_metaclass(ModuleMeta, object)):
 
     @staticmethod
     def next_state(slot):
+        """Return state_ready if the slot has buffered information,
+        or state_blocked otherwise.
+        """
         if slot.has_buffered():
             return Module.state_ready
         return Module.state_blocked
 
-    def _return_run_step(self, next_state, steps_run,
-                         reads=0, updates=0, creates=0):
+    def _return_run_step(self, next_state, steps_run):
         assert (next_state >= Module.state_ready and
                 next_state <= Module.state_zombie)
         self.steps_acc += steps_run
-        if creates and updates == 0:
-            updates = creates
-        elif creates > updates:
-            raise ProgressiveError('More creates (%d) than updates (%d)',
-                                   creates, updates)
         return {'next_state': next_state,
-                'steps_run': steps_run,
-                'reads': reads,
-                'updates': updates,
-                'creates': creates}
+                'steps_run': steps_run}
 
     def is_visualization(self):
         return False
@@ -708,7 +683,7 @@ class Module(six.with_metaclass(ModuleMeta, object)):
         # TODO Forcing 3 steps, not sure, change when the predictor improves
         max_time = quantum / 3.0
 
-        run_step_ret = {'reads': 0, 'updates': 0, 'creates': 0}
+        run_step_ret = {}
         self.start_run(run_number)
         tracer.start_run(now, run_number)
         while self._start_time < self._end_time:
@@ -780,6 +755,62 @@ class Module(six.with_metaclass(ModuleMeta, object)):
         self._stop(run_number)
         if exception:
             raise RuntimeError("{} {}".format(type(exception), exception))
+
+
+class InputSlots(object):
+    # pylint: disable=too-few-public-methods
+    """
+    Convenience class to refer to input slots by name
+    as if they were attributes.
+    """
+    def __init__(self, module):
+        self.__dict__['module'] = module
+
+    def __setattr__(self, name, slot):
+        assert isinstance(slot, Slot)
+        assert slot.output_module is not None
+        assert slot.output_name is not None
+        slot.input_module = self.__dict__['module']
+        slot.input_name = name
+        slot.connect()
+
+    def __getattr__(self, name):
+        raise ProgressiveError('Input slots cannot be read, only assigned to')
+
+    def __getitem__(self, name):
+        raise ProgressiveError('Input slots cannot be read, only assigned to')
+
+    def __setitem__(self, name, slot):
+        if isinstance(name, six.string_types):
+            return self.__setattr__(name, slot)
+        name, meta = name
+        slot.meta = meta
+        return self.__setattr__(name, slot)
+
+    def __dir__(self):
+        return self.__dict__['module'].input_slot_names()
+
+
+class OutputSlots(object):
+    # pylint: disable=too-few-public-methods
+    """
+    Convenience class to refer to output slots by name
+    as if they were attributes.
+    """
+    def __init__(self, module):
+        self.__dict__['module'] = module
+
+    def __setattr__(self, name, slot):
+        raise ProgressiveError('Output slots cannot be assigned, only read')
+
+    def __getattr__(self, name):
+        return self.__dict__['module'].create_slot(name, None, None)
+
+    def __getitem__(self, key):
+        return self.__getattr__(key)
+
+    def __dir__(self):
+        return self.__dict__['module'].output_slot_names()
 
 
 def _print_len(x):
