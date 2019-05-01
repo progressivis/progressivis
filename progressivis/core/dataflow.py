@@ -8,12 +8,15 @@ import logging
 
 from uuid import uuid4
 import six
+from collections import namedtuple
 
 from .utils import ProgressiveError
 from .scheduler import Scheduler
 from .toposort import toposort
 
 logger = logging.getLogger(__name__)
+
+Slot = namedtuple('Slot', ['module', 'name'])
 
 class Dataflow(object):
     """Class managing a Dataflow, a configuration of modules and slots
@@ -32,8 +35,9 @@ class Dataflow(object):
             scheduler = Scheduler.default
         assert scheduler is not None
         self.scheduler = scheduler
-        self._modules = dict()
-        self._inputs = dict()
+        self._modules = {}
+        self._inputs = {}
+        self._outputs = {}
 
     def generate_name(self, prefix):
         "Generate a name for a module given its class prefix."
@@ -55,6 +59,7 @@ class Dataflow(object):
         assert module.name not in self._inputs
         self._modules[module.name] = module
         self._inputs[module.name] = {}
+        self._outputs[module.name] = {}
 
     def remove_module(self, module):
         "Remove the specified module"
@@ -62,13 +67,44 @@ class Dataflow(object):
             module = self._modules[module]
         module.terminate()
         del self._modules[module.name]
-        del self._inputs[module.name]
+        self._remove_module_inputs(module.name)
+        self._remove_module_outputs(module.name)
 
     def add_connection(self, output_module, output_name,
                        input_module, input_name):
-        "Declares a connection between two module slots"
+        "Declare a connection between two module slots"
         assert input_name not in self._inputs[input_module.name]
-        self._inputs[input_module.name][input_name] = (output_module.name, output_name)
+        self._inputs[input_module.name][input_name] = Slot(output_module.name, output_name)
+        oslot = Slot(input_module.name, input_name)
+        if output_module.name not in self._outputs:
+            self._outputs[output_module.name] = {output_name: [oslot]}
+        elif output_name not in self._outputs[output_module.name]:
+            self._outputs[output_module.name][output_name] = [oslot]
+        else:
+            self._outputs[output_module.name].append(oslot)
+
+    def _remove_module_inputs(self, name):
+        module_slots = self._inputs[name]
+        for slot in module_slots.values():
+            slots = self._outputs[slot.module][slot.name]
+            nslots = [s for s in slots if s.module != name]
+            if nslots:
+                self._outputs[slot.module][slot.name] = nslots
+            else:
+                del self._outputs[slot.module][slot.name]
+        del self._inputs[name]
+
+    def _remove_module_outputs(self, name):
+        module_slots = self._outputs[name]
+        for sname in list(module_slots.keys()):
+            slots = module_slots[sname]
+            nslots = [s for s in slots if s.module != name]
+            assert nslots != slots
+            if nslots:
+                module_slots[sname] = nslots
+            else:
+                del module_slots[sname]
+        del self._outputs[name]
 
     def collect_dependencies(self):
         "Return the dependecies of the modules"

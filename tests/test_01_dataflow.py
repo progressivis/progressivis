@@ -1,3 +1,5 @@
+#from pprint import pprint
+
 from progressivis import Print
 from progressivis.io import CSVLoader
 from progressivis.stats import Min
@@ -27,6 +29,14 @@ class TestDataflow(ProgressiveTest):
         self.assertEqual(len(dataflow), 3)
         deps = dataflow.order_modules()
         self.assertEqual(deps, ['csv', m.name, prt.name])
+
+        dataflow.remove_module(prt)
+        self.assertEqual(len(dataflow), 2)
+        deps = dataflow.order_modules()
+        self.assertEqual(deps, ['csv', m.name])
+        #pprint(dataflow._inputs)
+        #pprint(dataflow._outputs)
+
 
 
 if __name__ == '__main__':
