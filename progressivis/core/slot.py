@@ -7,19 +7,16 @@ import logging
 from collections import namedtuple
 
 import six
-from .utils import ProgressiveError
 from .changemanager_base import EMPTY_BUFFER
 
 logger = logging.getLogger(__name__)
 
-class SlotDescriptor(namedtuple('SD',
-                                ['name', 'type', 'required', 'doc'])):
+class SlotDescriptor(namedtuple('SD', ['name', 'type', 'required', 'doc'])):
     "SlotDescriptor is used in modules to describe the input/output slots."
     __slots__ = ()
     def __new__(cls, name, type=None, required=True, doc=None):
         # pylint: disable=redefined-builtin
-        return super(SlotDescriptor, cls).__new__(cls,
-                                                  name, type, required, doc)
+        return super(SlotDescriptor, cls).__new__(cls, name, type, required, doc)
 
 @six.python_2_unicode_compatible
 class Slot(object):
@@ -33,9 +30,9 @@ class Slot(object):
         self.changes = None
 
     def name(self):
+        "Return the name of the slot"
         if self._name is None:
-            self._name = (self.input_module.name +
-                          '_' + self.input_name)
+            self._name = (self.input_module.name + '_' + self.input_name)
         return self._name
 
     def data(self):
@@ -49,7 +46,7 @@ class Slot(object):
     @property
     def lock(self):
         "Return a context manager locking this slot for multi-threaded access"
-        return self.input_module.lock
+        return self.output_module.lock
 
     def __str__(self):
         return six.u('%s(%s[%s]->%s[%s])' % (self.__class__.__name__,
@@ -65,7 +62,7 @@ class Slot(object):
         "Return the time of the last update for thie slot"
         if self.changes:
             return self.changes.last_update()
-        return self.input_module.last_update()
+        return self.output_module.last_update()
 
     def to_json(self):
         "Return a dictionary describing this slot, meant to be serialized in json"
@@ -78,9 +75,7 @@ class Slot(object):
         "Declares the connection in the Dataflow"
         dataflow = self.input_module.dataflow
         assert dataflow == self.output_module.dataflow
-        dataflow.add_connection(self.output_module, self.output_name,
-                                self.input_module, self.input_name)
-
+        dataflow.add_connection(self)
         # with scheduler.lock:
         #     # pylint: disable=protected-access
         #     scheduler.slots_updated()
@@ -218,5 +213,3 @@ class Slot(object):
         assert isinstance(datatype, type)
         assert isinstance(cls, type)
         Slot.changemanager_classes[datatype] = cls
-
-

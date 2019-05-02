@@ -287,14 +287,6 @@ class BaseScheduler(object):
         msg['status'] = 'success'
         return msg
 
-    def to_dataflow(self):
-        "Return a simple representation of the dataflow."
-        flow = {}
-        with self.lock:
-            for (name, module) in six.iteritems(self.modules()):
-                flow[name] = module.to_dataflow()
-        return flow
-
     def validate(self):
         "Validate the scheduler, returning True if it is valid."
         if not self._valid:

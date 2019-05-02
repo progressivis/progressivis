@@ -8,15 +8,11 @@ import logging
 
 from uuid import uuid4
 import six
-from collections import namedtuple
 
-from .utils import ProgressiveError
 from .scheduler import Scheduler
 from .toposort import toposort
 
 logger = logging.getLogger(__name__)
-
-Slot = namedtuple('Slot', ['module', 'name'])
 
 class Dataflow(object):
     """Class managing a Dataflow, a configuration of modules and slots
@@ -35,6 +31,10 @@ class Dataflow(object):
             scheduler = Scheduler.default
         assert scheduler is not None
         self.scheduler = scheduler
+        self.clear()
+
+    def clear(self):
+        "Remove all the modules from the Dataflow"
         self._modules = {}
         self._inputs = {}
         self._outputs = {}
@@ -53,6 +53,14 @@ class Dataflow(object):
     def __contains__(self, name):
         return name in self._modules
 
+    def add_scheduler(self, scheduler):
+        "Fill-up this Dataflow with the dataflow run by a specified Scheduler"
+        for module in scheduler.modules().values():
+            self.add_module(module)
+        for module in scheduler.modules().values():
+            for slot in module.output_slots_values():
+                self.add_connection(slot)
+
     def add_module(self, module):
         "Add a module to this Dataflow."
         assert module.is_created()
@@ -65,42 +73,43 @@ class Dataflow(object):
         "Remove the specified module"
         if isinstance(module, six.string_types):
             module = self._modules[module]
-        module.terminate()
+        # module.terminate()
         del self._modules[module.name]
         self._remove_module_inputs(module.name)
         self._remove_module_outputs(module.name)
 
-    def add_connection(self, output_module, output_name,
-                       input_module, input_name):
+    def add_connection(self, slot):
         "Declare a connection between two module slots"
+        output_module = slot.output_module
+        output_name = slot.output_name
+        input_module = slot.input_module
+        input_name = slot.input_name
         assert input_name not in self._inputs[input_module.name]
-        self._inputs[input_module.name][input_name] = Slot(output_module.name, output_name)
-        oslot = Slot(input_module.name, input_name)
+        self._inputs[input_module.name][input_name] = slot
         if output_module.name not in self._outputs:
-            self._outputs[output_module.name] = {output_name: [oslot]}
+            self._outputs[output_module.name] = {output_name: [slot]}
         elif output_name not in self._outputs[output_module.name]:
-            self._outputs[output_module.name][output_name] = [oslot]
+            self._outputs[output_module.name][output_name] = [slot]
         else:
-            self._outputs[output_module.name].append(oslot)
+            self._outputs[output_module.name].append(slot)
 
     def _remove_module_inputs(self, name):
-        module_slots = self._inputs[name]
-        for slot in module_slots.values():
-            slots = self._outputs[slot.module][slot.name]
-            nslots = [s for s in slots if s.module != name]
+        for slot in self._inputs[name].values():
+            slots = self._outputs[slot.output_module.name][slot.output_name]
+            nslots = [s for s in slots if s.output_module.name != name]
             if nslots:
-                self._outputs[slot.module][slot.name] = nslots
+                self._outputs[slot.output_module.name][slot.output_name] = nslots
             else:
-                del self._outputs[slot.module][slot.name]
+                del self._outputs[slot.output_module.name][slot.output_name]
         del self._inputs[name]
 
     def _remove_module_outputs(self, name):
         module_slots = self._outputs[name]
-        for sname in list(module_slots.keys()):
-            slots = module_slots[sname]
-            nslots = [s for s in slots if s.module != name]
-            assert nslots != slots
-            if nslots:
+        for (sname, slots) in module_slots.items():
+            nslots = [s for s in slots if s.input_module.name != name]
+            if nslots == slots:
+                contimue
+            elif nslots:
                 module_slots[sname] = nslots
             else:
                 del module_slots[sname]
@@ -110,7 +119,7 @@ class Dataflow(object):
         "Return the dependecies of the modules"
         dependencies = {}
         for (module, slots) in six.iteritems(self._inputs):
-            outs = [m[0] for m in slots.values()]
+            outs = [m.output_module.name for m in slots.values()]
             dependencies[module] = set(outs)
         return dependencies
 
