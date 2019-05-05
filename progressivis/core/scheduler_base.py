@@ -166,7 +166,7 @@ class BaseScheduler(object):
         return [m.name for m in self.modules().values() if m.is_input()]
 
     def reachable_from_inputs(self, inputs):
-        """Return all the vsualizations reachable from
+        """Return all the visualizations reachable from
         the specified list of input modules.
         """
         reachable = set()

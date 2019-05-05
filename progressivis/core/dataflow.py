@@ -53,10 +53,12 @@ class Dataflow(object):
     def __contains__(self, name):
         return name in self._modules
 
-    def add_scheduler(self, scheduler):
+    def add_scheduler(self, scheduler=None):
         "Fill-up this Dataflow with the dataflow run by a specified Scheduler"
+        if scheduler is None:
+            scheduler = self.scheduler
         for module in scheduler.modules().values():
-            self.add_module(module)
+            self._add_module(module)
         for module in scheduler.modules().values():
             for slot in module.output_slots_values():
                 self.add_connection(slot)
@@ -64,6 +66,9 @@ class Dataflow(object):
     def add_module(self, module):
         "Add a module to this Dataflow."
         assert module.is_created()
+        self._add_module(module)
+
+    def _add_module(self, module):
         assert module.name not in self._inputs
         self._modules[module.name] = module
         self._inputs[module.name] = {}
@@ -108,7 +113,7 @@ class Dataflow(object):
         for (sname, slots) in module_slots.items():
             nslots = [s for s in slots if s.input_module.name != name]
             if nslots == slots:
-                contimue
+                continue # no need to change, weird
             elif nslots:
                 module_slots[sname] = nslots
             else:
@@ -132,25 +137,47 @@ class Dataflow(object):
 
     def validate(self):
         "Validate the Dataflow, returning [] if it is valid or the invalid modules otherwise."
+        errors = []
         invalid = []
         for module in self._modules.values():
-            if not self.validate_module(module):
-                logger.error('Cannot validate module %s', 
-                             module.name)
+            error = self.validate_module(module)
+            if error:
                 invalid.append(module)
-        return invalid
+                errors.append(error)
+        return errors
+
+    @staticmethod
+    def validate_module_inputs(module, inputs):
+        """Validate the input slots on a module.
+        Return a list of errors, empty if no error occured.
+        """
+        errors = []
+        for slotdesc in module.input_descriptors.values():
+            slot = inputs.get(slotdesc.name)
+            if slotdesc.required and slot is None:
+                errors.append('Missing inputs slot %s in %s'%(slotdesc.name, module.name))
+        return errors
+
+    @staticmethod
+    def validate_module_outputs(module, outputs):
+        """Validate the output slots on a module.
+        Return a list of errors, empty if no error occured.
+        """
+        errors = []
+        for slotdesc in module.output_descriptors.values():
+            slot = outputs.get(slotdesc.name)
+            if slotdesc.required and slot is None:
+                errors.append('Missing output slot %s in %s'%(slotdesc.name, module.name))
+        return errors
+
 
     def validate_module(self, module):
-        inputs = self._inputs[module.name]
-        valid = True
-        for sd in module.input_descriptors.values():
-            slot = inputs.get(sd.name)
-            if sd.required and slot is None:
-                logger.error('Missing inputs slot %s in %s',
-                             sd.name, module.name)
-                valid = False
-                break
-        return valid
+        """Validate a module in the dataflow.
+        Return a list of errors, empty if no error occured.
+        """
+        errors = self.validate_module_inputs(module, self._inputs[module.name])
+        errors.append(self.validate_module_outputs(module, self._inputs[module.name]))
+        return errors
 
     def __len__(self):
         return len(self._modules)
