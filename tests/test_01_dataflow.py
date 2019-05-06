@@ -15,18 +15,26 @@ class TestDataflow(ProgressiveTest):
                         index_col=False, header=None,
                         dataflow=dataflow)
         self.assertIs(dataflow['csv'], csv)
+        self.assertEqual(dataflow.validate_module(csv), [])
 
-        m = Min(dataflow=dataflow)
+        m = Min(name="min", dataflow=dataflow)
         self.assertIs(dataflow[m.name], m)
+        self.assertEqual(dataflow.validate_module(m),
+                         ['Input slot "table" missing in module "min"'])
 
         prt = Print(proc=self.terse,
+                    name="print",
                     dataflow=dataflow)
         self.assertIs(dataflow[prt.name], prt)
+        self.assertEqual(dataflow.validate_module(prt),
+                         ['Input slot "df" missing in module "print"'])
 
         m.input.table = csv.output.table
         prt.input.df = m.output.table
 
         self.assertEqual(len(dataflow), 3)
+        errors = dataflow.validate()
+        self.assertEqual(errors, [])
         deps = dataflow.order_modules()
         self.assertEqual(deps, ['csv', m.name, prt.name])
 

@@ -31,13 +31,17 @@ class Dataflow(object):
             scheduler = Scheduler.default
         assert scheduler is not None
         self.scheduler = scheduler
-        self.clear()
+        self._modules = {}
+        self._inputs = {}
+        self._outputs = {}
+        self.valid = []
 
     def clear(self):
         "Remove all the modules from the Dataflow"
         self._modules = {}
         self._inputs = {}
         self._outputs = {}
+        self.valid = []
 
     def generate_name(self, prefix):
         "Generate a name for a module given its class prefix."
@@ -53,6 +57,10 @@ class Dataflow(object):
     def __contains__(self, name):
         return name in self._modules
 
+    def dir(self):
+        "Return the list of the module names"
+        return list(self._modules.keys())
+
     def add_scheduler(self, scheduler=None):
         "Fill-up this Dataflow with the dataflow run by a specified Scheduler"
         if scheduler is None:
@@ -67,6 +75,7 @@ class Dataflow(object):
         "Add a module to this Dataflow."
         assert module.is_created()
         self._add_module(module)
+        self.valid = []
 
     def _add_module(self, module):
         assert module.name not in self._inputs
@@ -82,6 +91,7 @@ class Dataflow(object):
         del self._modules[module.name]
         self._remove_module_inputs(module.name)
         self._remove_module_outputs(module.name)
+        self.valid = []
 
     def add_connection(self, slot):
         "Declare a connection between two module slots"
@@ -97,6 +107,7 @@ class Dataflow(object):
             self._outputs[output_module.name][output_name] = [slot]
         else:
             self._outputs[output_module.name].append(slot)
+        self.valid = [] # Not sure
 
     def _remove_module_inputs(self, name):
         for slot in self._inputs[name].values():
@@ -122,8 +133,11 @@ class Dataflow(object):
 
     def collect_dependencies(self):
         "Return the dependecies of the modules"
+        self.validate()
         dependencies = {}
-        for (module, slots) in six.iteritems(self._inputs):
+        for valid in self.valid:
+            module = valid.name
+            slots = self._inputs[module]
             outs = [m.output_module.name for m in slots.values()]
             dependencies[module] = set(outs)
         return dependencies
@@ -138,12 +152,15 @@ class Dataflow(object):
     def validate(self):
         "Validate the Dataflow, returning [] if it is valid or the invalid modules otherwise."
         errors = []
-        invalid = []
-        for module in self._modules.values():
-            error = self.validate_module(module)
-            if error:
-                invalid.append(module)
-                errors.append(error)
+        if not self.valid:
+            valid = []
+            for module in self._modules.values():
+                error = self.validate_module(module)
+                if error:
+                    errors += error
+                else:
+                    valid.append(module)
+            self.valid = valid
         return errors
 
     @staticmethod
@@ -155,7 +172,8 @@ class Dataflow(object):
         for slotdesc in module.input_descriptors.values():
             slot = inputs.get(slotdesc.name)
             if slotdesc.required and slot is None:
-                errors.append('Missing inputs slot %s in %s'%(slotdesc.name, module.name))
+                errors.append('Input slot "%s" missing in module "%s"'%(
+                    slotdesc.name, module.name))
         return errors
 
     @staticmethod
@@ -167,7 +185,8 @@ class Dataflow(object):
         for slotdesc in module.output_descriptors.values():
             slot = outputs.get(slotdesc.name)
             if slotdesc.required and slot is None:
-                errors.append('Missing output slot %s in %s'%(slotdesc.name, module.name))
+                errors.append('Output slot "%s" missing in module "%s"'%(
+                    slotdesc.name, module.name))
         return errors
 
 
@@ -176,7 +195,7 @@ class Dataflow(object):
         Return a list of errors, empty if no error occured.
         """
         errors = self.validate_module_inputs(module, self._inputs[module.name])
-        errors.append(self.validate_module_outputs(module, self._inputs[module.name]))
+        errors += self.validate_module_outputs(module, self._inputs[module.name])
         return errors
 
     def __len__(self):
