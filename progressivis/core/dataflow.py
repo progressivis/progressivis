@@ -9,7 +9,6 @@ import logging
 from uuid import uuid4
 import six
 
-from .scheduler import Scheduler
 from .toposort import toposort
 
 logger = logging.getLogger(__name__)
@@ -22,22 +21,33 @@ class Dataflow(object):
     interfering with the Scheduler. To update the Scheduler, it should
     be validated and committed first.
     """
-    default = None
+
     """
     Dataflow graph maintaining modules connected with slots.
     """
-    def __init__(self, scheduler=None):
-        if scheduler is None:
-            scheduler = Scheduler.default
-        assert scheduler is not None
+
+    current = None
+
+    def __init__(self, scheduler):
         self.scheduler = scheduler
+        self.version = -1
         self._modules = {}
         self._inputs = {}
         self._outputs = {}
         self.valid = []
 
+    def _add_scheduler(self):
+        scheduler = self.scheduler
+        self.version = scheduler.version
+        for module in scheduler.modules().values():
+            self._add_module(module)
+        for module in scheduler.modules().values():
+            for slot in module.output_slots_values():
+                self.add_connection(slot)
+
     def clear(self):
         "Remove all the modules from the Dataflow"
+        self.version = -1
         self._modules = {}
         self._inputs = {}
         self._outputs = {}
@@ -58,18 +68,32 @@ class Dataflow(object):
         return name in self._modules
 
     def dir(self):
-        "Return the list of the module names"
+        "Return the list the module names"
         return list(self._modules.keys())
 
-    def add_scheduler(self, scheduler=None):
-        "Fill-up this Dataflow with the dataflow run by a specified Scheduler"
-        if scheduler is None:
-            scheduler = self.scheduler
-        for module in scheduler.modules().values():
-            self._add_module(module)
-        for module in scheduler.modules().values():
-            for slot in module.output_slots_values():
-                self.add_connection(slot)
+    def __enter__(self):
+        assert Dataflow.current is None
+        Dataflow.current = self
+        self._add_scheduler()
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        Dataflow.current = None
+        if exc_type is None:
+            self.commit()
+        else:
+            self.abort()
+
+    def abort(self):
+        "Abort the current dataflow"
+        self.clear()
+
+    def commit(self):
+        "Commit the current dataflow into its scheduler"
+        self.validate()
+        # pylint: disable=protected-access
+        self.scheduler._commit(self)
+        self.clear()
 
     def add_module(self, module):
         "Add a module to this Dataflow."
@@ -142,10 +166,11 @@ class Dataflow(object):
             dependencies[module] = set(outs)
         return dependencies
 
-    def order_modules(self):
+    def order_modules(self, dependencies=None):
         """Compute a topological order for the modules.
         """
-        dependencies = self.collect_dependencies()
+        if dependencies is None:
+            dependencies = self.collect_dependencies()
         runorder = toposort(dependencies)
         return runorder
 
@@ -200,5 +225,3 @@ class Dataflow(object):
 
     def __len__(self):
         return len(self._modules)
-
-Dataflow.default = Dataflow()

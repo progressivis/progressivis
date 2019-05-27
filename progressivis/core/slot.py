@@ -8,6 +8,7 @@ from collections import namedtuple
 
 import six
 from .changemanager_base import EMPTY_BUFFER
+from .dataflow import Dataflow
 
 logger = logging.getLogger(__name__)
 
@@ -73,8 +74,7 @@ class Slot(object):
 
     def connect(self):
         "Declares the connection in the Dataflow"
-        dataflow = self.input_module.dataflow
-        assert dataflow == self.output_module.dataflow
+        dataflow = Dataflow.current
         dataflow.add_connection(self)
         # with scheduler.lock:
         #     # pylint: disable=protected-access

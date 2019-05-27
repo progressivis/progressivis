@@ -12,14 +12,15 @@ from timeit import default_timer
 from uuid import uuid4
 import six
 
-from scipy.sparse import csr_matrix
-from scipy.sparse.csgraph import shortest_path
-import numpy as np
+# from scipy.sparse import csr_matrix
+# from scipy.sparse.csgraph import shortest_path
+# import numpy as np
 
 
-from .utils import ProgressiveError, AttributeDict, FakeLock, Condition
+from .utils import ProgressiveError, FakeLock, Condition
+from .dataflow import Dataflow
 from .synchronized import synchronized
-from .toposort import toposort
+#from .toposort import toposort
 
 
 logger = logging.getLogger(__name__)
@@ -56,16 +57,15 @@ class BaseScheduler(object):
             BaseScheduler._last_id += 1
             self._name = BaseScheduler._last_id
         self._modules = dict()
-        self._module = AttributeDict(self._modules)
         self._running = False
+        self._stopped = True
         self._runorder = None
-        self._stopped = False
-        self._valid = False
         self._start = None
         self._run_number = 0
         self._tick_procs = []
         self._tick_once_procs = []
         self._idle_procs = []
+        self.version = 0
         self._new_modules_ids = []
         self._slots_updated = False
         self._run_list = []
@@ -99,7 +99,7 @@ class BaseScheduler(object):
             if max_iter <= 0:
                 raise ValueError("max_iter must be positive")
         self._interaction_opts = _InteractionOpts(starving_mods, max_time, max_iter)
-        
+
     def _proc_interaction_opts(self):
         if not self.has_input():
             return
@@ -122,7 +122,6 @@ class BaseScheduler(object):
                 self._module_selection = None
                 self._inter_cycles_cnt = 0
                 return
-                
         if self._interaction_opts.max_iter:
             if self._inter_cycles_cnt >= self._interaction_opts.max_iter:
                 self._module_selection = None
@@ -130,7 +129,7 @@ class BaseScheduler(object):
                 print("Exiting shortcut mode after ", self._interaction_opts.max_iter, " cycles")
             else:
                 self._inter_cycles_cnt += 1
-        
+
     def create_lock(self):
         "Create a lock, fake in this class, real in the derived Scheduler"
         # pylint: disable=no-self-use
@@ -144,6 +143,9 @@ class BaseScheduler(object):
     def lock(self):
         "Return the scheduler lock."
         return self._lock
+
+    def dataflow(self):
+        return Dataflow(self)
 
     @property
     def name(self):
@@ -165,107 +167,6 @@ class BaseScheduler(object):
         "Return the input modules"
         return [m.name for m in self.modules().values() if m.is_input()]
 
-    def reachable_from_inputs(self, inputs):
-        """Return all the visualizations reachable from
-        the specified list of input modules.
-        """
-        reachable = set()
-        if not inputs:
-            return set()
-        # collect all modules reachable from the modified inputs
-        for i in inputs:
-            reachable.update(self._reachability[i])
-        all_vis = self.get_visualizations()
-        reachable_vis = reachable.intersection(all_vis)
-        if reachable_vis:
-            # TODO remove modules following visualizations
-            return reachable
-        return None
-
-    def order_modules(self):
-        """Compute a topological order for the modules.
-        Should do something smarted with exceptions.
-        """
-        runorder = None
-        try:
-            dependencies = self._collect_dependencies()
-            runorder = toposort(dependencies)
-            #print('normal order of', dependencies, 'is', runorder, file=sys.stderr)
-            self._compute_reachability(dependencies)
-        except ValueError:  # cycle, try to break it then
-            # if there's still a cycle, we cannot run the first cycle
-            # TODO fix this
-            logger.info('Cycle in module dependencies, '
-                        'trying to drop optional fields')
-            dependencies = self._collect_dependencies(only_required=True)
-            runorder = toposort(dependencies)
-            #print('Filtered order of', dependencies, 'is', runorder, file=sys.stderr)
-            self._compute_reachability(dependencies)
-        return runorder
-
-    @synchronized
-    def _collect_dependencies(self, only_required=False):
-        dependencies = {}
-        for (mid, module) in six.iteritems(self._modules):
-            if not module.is_valid():
-                continue
-            outs = [m.output_module.name for m in module.input_slot_values()
-                    if m and (not only_required or
-                              module.input_slot_required(m.input_name))]
-            dependencies[mid] = set(outs)
-        return dependencies
-
-    def _compute_reachability(self, dependencies):
-        # pylint: disable=too-many-locals
-        k = list(dependencies.keys())
-        size = len(k)
-        index = dict(zip(k, range(size)))
-        row = []
-        col = []
-        data = []
-        for (vertex1, vertices) in six.iteritems(dependencies):
-            for vertex2 in vertices:
-                col.append(index[vertex1])
-                row.append(index[vertex2])
-                data.append(1)
-        mat = csr_matrix((data, (row, col)), shape=(size, size))
-        dist = shortest_path(mat,
-                             directed=True,
-                             return_predecessors=False,
-                             unweighted=True)
-        self._reachability = {}
-        reach_no_vis = set()
-        all_vis = set(self.get_visualizations())
-        for index1 in range(size):
-            vertex1 = k[index1]
-            s = {vertex1}
-            for index2 in range(size):
-                vertex2 = k[index2]
-                dst = dist[index1, index2]
-                if dst != 0 and dst != np.inf:
-                    s.add(vertex2)
-            self._reachability[vertex1] = s
-            if not all_vis.intersection(s):
-                logger.info('No visualization after module %s: %s', vertex1, s)
-                reach_no_vis.update(s)
-                if not self.module[vertex1].is_visualization():
-                    reach_no_vis.add(vertex1)
-        logger.info('Module(s) %s always after visualizations', reach_no_vis)
-        # filter out module that reach no vis
-        for (k, v) in six.iteritems(self._reachability):
-            v.difference_update(reach_no_vis)
-        logger.info('reachability map: %s', self._reachability)
-
-    @staticmethod
-    def _module_order(x, y):
-        if 'order' in x:
-            if 'order' in y:
-                return x['order']-y['order']
-            return 1
-        if 'order' in y:
-            return -1
-        return 0
-
     def run_queue_length(self):
         "Return the length of the run queue"
         return len(self._run_list)
@@ -280,31 +181,12 @@ class BaseScheduler(object):
         mods = mods.values()
         modules = sorted(mods, key=functools.cmp_to_key(self._module_order))
         msg['modules'] = modules
-        msg['is_valid'] = self.is_valid()
         msg['is_running'] = self.is_running()
         msg['is_terminated'] = self.is_terminated()
         msg['run_number'] = self.run_number()
         msg['status'] = 'success'
         return msg
 
-    def validate(self):
-        "Validate the scheduler, returning True if it is valid."
-        if not self._valid:
-            valid = True
-            for module in self._modules.values():
-                if not module.validate():
-                    logger.error('Cannot validate module %s', module.name)
-                    valid = False
-            self._valid = valid
-        return self._valid
-
-    def is_valid(self):
-        "Return True if the scheduler is valid."
-        return self._valid
-
-    def invalidate(self):
-        "Invalidate the scheduler"
-        self._valid = False
 
     def _before_run(self):
         pass
@@ -374,7 +256,7 @@ class BaseScheduler(object):
 
         self._run_loop()
 
-        modules = [self.module[m] for m in self._runorder]
+        modules = [self._modules[m] for m in self._runorder]
         for module in reversed(modules):
             module.ending()
         self._running = False
@@ -438,26 +320,33 @@ class BaseScheduler(object):
 
     def _new_module_available(self):
         return self._new_modules_ids or self._slots_updated
-    
+
     def all_blocked(self):
         from .module import Module
         for m in self._run_list:
             if m.state != Module.state_blocked:
                 return False
         return True
-    
+
     def is_waiting_for_input(self):
         for m in self._run_list:
             if m.is_input():
                 return True
         return False
-    
+
     def no_more_data(self):
         for m in self._run_list:
             if m.is_data_input():
                 return False
         return True
-    
+
+    def _commit(self, dataflow):
+        assert dataflow.version == self.version
+        self.version += 1
+        dependencies = dataflow.collect_dependencies()
+        order = dataflow.order_modules(dependencies)
+        # TODO update the nodes
+
     def _update_modules(self):
         if self._new_modules_ids:
             # Make a shallow copy of the current run order;
@@ -565,26 +454,26 @@ class BaseScheduler(object):
         self._add_module(module)
 
     def _add_module(self, module):
-        self._new_modules_ids += [module.name]
+        self._new_modules_ids.append(module.name)
         self._modules[module.name] = module
 
-    @property
-    def module(self):
-        "Return the dictionary of modules."
-        return self._module
+    # @property
+    # def module(self):
+    #     "Return the dictionary of modules."
+    #     return self._module
 
-    @synchronized
-    def remove_module(self, module):
-        "Remove the specified module"
-        if isinstance(module, six.string_types):
-            module = self.module[module]
-        module.terminate()
-#            self.stop()
-#            module._stop(self._run_number)
-        self._remove_module(module)
+#     @synchronized
+#     def remove_module(self, module):
+#         "Remove the specified module"
+#         if isinstance(module, six.string_types):
+#             module = self.module[module]
+#         module.terminate()
+# #            self.stop()
+# #            module._stop(self._run_number)
+#         self._remove_module(module)
 
-    def _remove_module(self, module):
-        del self._modules[module.name]
+#     def _remove_module(self, module):
+#         del self._modules[module.name]
 
     def modules(self):
         "Return the dictionary of modules."
@@ -604,7 +493,7 @@ class BaseScheduler(object):
         that should be served fast.
         """
         with self._hibernate_cond:
-            self._keep_running = KEEP_RUNNING            
+            self._keep_running = KEEP_RUNNING
             self._hibernate_cond.notify()
         sel = self._reachability[module.name]
         if sel:
@@ -659,12 +548,12 @@ class BaseScheduler(object):
         return quantum
 
     def close_all(self):
+        "Close all the resources associated with this scheduler."
         for m in self.modules().values():
             if (hasattr(m, '_table') and
                     m._table is not None and
                     m._table.storagegroup is not None):
                 m._table.storagegroup.close_all()
-            #import pdb;pdb.set_trace)(
             if (hasattr(m, '_params') and
                     m._params is not None and
                     m._params.storagegroup is not None):
@@ -672,3 +561,88 @@ class BaseScheduler(object):
             if (hasattr(m, 'storagegroup') and
                     m.storagegroup is not None):
                 m.storagegroup.close_all()
+
+    # def order_modules(self):
+    #     """Compute a topological order for the modules.
+    #     Should do something smarted with exceptions.
+    #     """
+    #     runorder = None
+    #     try:
+    #         dependencies = self._collect_dependencies()
+    #         runorder = toposort(dependencies)
+    #         #print('normal order of', dependencies, 'is', runorder, file=sys.stderr)
+    #         self._compute_reachability(dependencies)
+    #     except ValueError:  # cycle, try to break it then
+    #         # if there's still a cycle, we cannot run the first cycle
+    #         # TODO fix this
+    #         logger.info('Cycle in module dependencies, '
+    #                     'trying to drop optional fields')
+    #         dependencies = self._collect_dependencies(only_required=True)
+    #         runorder = toposort(dependencies)
+    #         #print('Filtered order of', dependencies, 'is', runorder, file=sys.stderr)
+    #         self._compute_reachability(dependencies)
+    #     return runorder
+
+    # @synchronized
+    # def _collect_dependencies(self, only_required=False):
+    #     dependencies = {}
+    #     for (mid, module) in six.iteritems(self._modules):
+    #         if not module.is_valid():
+    #             continue
+    #         outs = [m.output_module.name for m in module.input_slot_values()
+    #                 if m and (not only_required or
+    #                           module.input_slot_required(m.input_name))]
+    #         dependencies[mid] = set(outs)
+    #     return dependencies
+
+    # def _compute_reachability(self, dependencies):
+    #     # pylint: disable=too-many-locals
+    #     k = list(dependencies.keys())
+    #     size = len(k)
+    #     index = dict(zip(k, range(size)))
+    #     row = []
+    #     col = []
+    #     data = []
+    #     for (vertex1, vertices) in six.iteritems(dependencies):
+    #         for vertex2 in vertices:
+    #             col.append(index[vertex1])
+    #             row.append(index[vertex2])
+    #             data.append(1)
+    #     mat = csr_matrix((data, (row, col)), shape=(size, size))
+    #     dist = shortest_path(mat,
+    #                          directed=True,
+    #                          return_predecessors=False,
+    #                          unweighted=True)
+    #     self._reachability = {}
+    #     reach_no_vis = set()
+    #     all_vis = set(self.get_visualizations())
+    #     for index1 in range(size):
+    #         vertex1 = k[index1]
+    #         s = {vertex1}
+    #         for index2 in range(size):
+    #             vertex2 = k[index2]
+    #             dst = dist[index1, index2]
+    #             if dst not in (0, np.inf):
+    #                 s.add(vertex2)
+    #         self._reachability[vertex1] = s
+    #         if not all_vis.intersection(s):
+    #             logger.info('No visualization after module %s: %s', vertex1, s)
+    #             reach_no_vis.update(s)
+    #             if not self.module[vertex1].is_visualization():
+    #                 reach_no_vis.add(vertex1)
+    #     logger.info('Module(s) %s always after visualizations', reach_no_vis)
+    #     # filter out module that reach no vis
+    #     for (k, v) in six.iteritems(self._reachability):
+    #         v.difference_update(reach_no_vis)
+    #     logger.info('reachability map: %s', self._reachability)
+
+    # @staticmethod
+    # def _module_order(x, y):
+    #     if 'order' in x:
+    #         if 'order' in y:
+    #             return x['order']-y['order']
+    #         return 1
+    #     if 'order' in y:
+    #         return -1
+    #     return 0
+

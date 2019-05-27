@@ -1,4 +1,4 @@
-#from pprint import pprint
+from pprint import pprint
 
 from progressivis import Print
 from progressivis.io import CSVLoader
@@ -10,40 +10,40 @@ from . import ProgressiveTest
 
 class TestDataflow(ProgressiveTest):
     def test_dataflow(self):
-        dataflow = self.dataflow()
-        csv = CSVLoader(get_dataset('bigfile'), name='csv',
-                        index_col=False, header=None,
+        with self.scheduler().dataflow() as dataflow:
+            csv = CSVLoader(get_dataset('bigfile'), name='csv',
+                            index_col=False, header=None,
+                            dataflow=dataflow)
+            self.assertIs(dataflow['csv'], csv)
+            self.assertEqual(dataflow.validate_module(csv), [])
+
+            m = Min(name="min", dataflow=dataflow)
+            self.assertIs(dataflow[m.name], m)
+            self.assertEqual(dataflow.validate_module(m),
+                             ['Input slot "table" missing in module "min"'])
+
+            prt = Print(proc=self.terse,
+                        name="print",
                         dataflow=dataflow)
-        self.assertIs(dataflow['csv'], csv)
-        self.assertEqual(dataflow.validate_module(csv), [])
+            self.assertIs(dataflow[prt.name], prt)
+            self.assertEqual(dataflow.validate_module(prt),
+                             ['Input slot "df" missing in module "print"'])
 
-        m = Min(name="min", dataflow=dataflow)
-        self.assertIs(dataflow[m.name], m)
-        self.assertEqual(dataflow.validate_module(m),
-                         ['Input slot "table" missing in module "min"'])
+            m.input.table = csv.output.table
+            prt.input.df = m.output.table
 
-        prt = Print(proc=self.terse,
-                    name="print",
-                    dataflow=dataflow)
-        self.assertIs(dataflow[prt.name], prt)
-        self.assertEqual(dataflow.validate_module(prt),
-                         ['Input slot "df" missing in module "print"'])
+            self.assertEqual(len(dataflow), 3)
+            errors = dataflow.validate()
+            self.assertEqual(errors, [])
+            deps = dataflow.order_modules()
+            self.assertEqual(deps, ['csv', m.name, prt.name])
 
-        m.input.table = csv.output.table
-        prt.input.df = m.output.table
-
-        self.assertEqual(len(dataflow), 3)
-        errors = dataflow.validate()
-        self.assertEqual(errors, [])
-        deps = dataflow.order_modules()
-        self.assertEqual(deps, ['csv', m.name, prt.name])
-
-        dataflow.remove_module(prt)
-        self.assertEqual(len(dataflow), 2)
-        deps = dataflow.order_modules()
-        self.assertEqual(deps, ['csv', m.name])
-        #pprint(dataflow._inputs)
-        #pprint(dataflow._outputs)
+            dataflow.remove_module(prt)
+            self.assertEqual(len(dataflow), 2)
+            deps = dataflow.order_modules()
+            self.assertEqual(deps, ['csv', m.name])
+            pprint(dataflow._inputs)
+            pprint(dataflow._outputs)
 
 
 

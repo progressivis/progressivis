@@ -17,12 +17,12 @@ from progressivis.table.dshape import dshape_from_dtype
 from progressivis.table.row import Row
 from progressivis.storage import Group
 
-from .dataflow import Dataflow
 from .utils import (ProgressiveError, type_fullname, get_random_name)
 from .slot import (SlotDescriptor, Slot)
 from .tracer_base import Tracer
 from .time_predictor import TimePredictor
 from .storagemanager import StorageManager
+from .dataflow import Dataflow
 
 if six.PY2:  # pragma no cover
     from inspect import getargspec as getfullargspec
@@ -81,13 +81,13 @@ class Module(six.with_metaclass(ModuleMeta, object)):
                  output_descriptors=None,
                  **kwds):
         if dataflow is None:
-            dataflow = Dataflow.default
-        self.dataflow = dataflow
+            dataflow = Dataflow.current
         if name is None:
             name = dataflow.generate_name(self.pretty_typename())
-        if name in self.dataflow:
+        if name in dataflow:
             raise ProgressiveError('module already exists in scheduler,'
                                    ' delete it first')
+        self._scheduler = dataflow.scheduler
         self.name = name
         predictor = TimePredictor.default()
         predictor.name = name
@@ -128,12 +128,12 @@ class Module(six.with_metaclass(ModuleMeta, object)):
         self._start_run = None
         self._end_run = None
         self._synchronized_lock = self.scheduler().create_lock()
-        self.dataflow.add_module(self)
+        dataflow.add_module(self)
 
     def scheduler(self):
         """Return the scheduler associated with the dataflow.
         """
-        return self.dataflow.scheduler
+        return self._scheduler
 
     def create_dependent_modules(self, *params, **kwds):  # pragma no cover
         """Create modules that this module depends on.
@@ -168,11 +168,6 @@ class Module(six.with_metaclass(ModuleMeta, object)):
         """Quality value, should increase.
         """
         return 0.0
-
-    def destroy(self):
-        "Destroy the module, removing it from its scheduler"
-        self.dataflow.remove_module(self)
-        # TODO remove connections with the input and output modules
 
     @staticmethod
     def _filter_kwds(kwds, function_or_method):
@@ -234,7 +229,7 @@ class Module(six.with_metaclass(ModuleMeta, object)):
 
     def timer(self):
         "Return the timer associated with this module"
-        return self._scheduler.timer()
+        return self.scheduler().timer()
 
     def to_json(self, short=False, with_speed=True):
         "Return a dictionary describing the module"
