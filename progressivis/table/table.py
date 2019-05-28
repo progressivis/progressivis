@@ -24,6 +24,8 @@ from . import metadata
 from .table_base import BaseTable
 from .column import Column
 from .column_id import IdColumn
+from ..core.bitmap import bitmap
+from ..core.khash.hashtable import Int64HashTable
 
 if six.PY2:
     from itertools import imap
@@ -439,3 +441,11 @@ class Table(BaseTable):
         if cols is None:
             cols = self.columns
         return [self[key].dataset.view for key in cols]
+    
+    def cxx_api_info_cols(self, cols=None):
+        if cols is None:
+            cols = self.columns
+        return cols, [self[key].dataset.view for key in cols]
+    def cxx_api_info_index(self):    
+        ix = Int64HashTable() if self.is_identity else self._ids._ids_dict._ht
+        return self.is_identity, ix, self.last_id
