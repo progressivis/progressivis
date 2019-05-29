@@ -32,8 +32,8 @@ class Dataflow(object):
         self.scheduler = scheduler
         self.version = -1
         self._modules = {}
-        self._inputs = {}
-        self._outputs = {}
+        self.inputs = {}
+        self.outputs = {}
         self.valid = []
 
     def _add_scheduler(self):
@@ -49,8 +49,8 @@ class Dataflow(object):
         "Remove all the modules from the Dataflow"
         self.version = -1
         self._modules = {}
-        self._inputs = {}
-        self._outputs = {}
+        self.inputs = {}
+        self.outputs = {}
         self.valid = []
 
     def generate_name(self, prefix):
@@ -60,6 +60,10 @@ class Dataflow(object):
             if mid not in self._modules:
                 return mid
         return '%s_%s' % (prefix, uuid4())
+
+    def modules(self):
+        "Return all the modules in this dataflow"
+        return self._modules.values()
 
     def __getitem__(self, name):
         return self._modules[name]
@@ -78,19 +82,23 @@ class Dataflow(object):
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
-        Dataflow.current = None
+        # import pdb; pdb.set_trace()
         if exc_type is None:
             self.commit()
         else:
+            logger.info('Aborting Dataflow with exception %s',
+                        exc_type)
             self.abort()
 
     def abort(self):
         "Abort the current dataflow"
+        Dataflow.current = None
         self.clear()
 
     def commit(self):
         "Commit the current dataflow into its scheduler"
         self.validate()
+        Dataflow.current = None
         # pylint: disable=protected-access
         self.scheduler._commit(self)
         self.clear()
@@ -102,10 +110,10 @@ class Dataflow(object):
         self.valid = []
 
     def _add_module(self, module):
-        assert module.name not in self._inputs
+        assert module.name not in self.inputs
         self._modules[module.name] = module
-        self._inputs[module.name] = {}
-        self._outputs[module.name] = {}
+        self.inputs[module.name] = {}
+        self.outputs[module.name] = {}
 
     def remove_module(self, module):
         "Remove the specified module"
@@ -123,28 +131,33 @@ class Dataflow(object):
         output_name = slot.output_name
         input_module = slot.input_module
         input_name = slot.input_name
-        assert input_name not in self._inputs[input_module.name]
-        self._inputs[input_module.name][input_name] = slot
-        if output_module.name not in self._outputs:
-            self._outputs[output_module.name] = {output_name: [slot]}
-        elif output_name not in self._outputs[output_module.name]:
-            self._outputs[output_module.name][output_name] = [slot]
+        assert input_name not in self.inputs[input_module.name]
+        self.inputs[input_module.name][input_name] = slot
+        if output_module.name not in self.outputs:
+            self.outputs[output_module.name] = {output_name: [slot]}
+        elif output_name not in self.outputs[output_module.name]:
+            self.outputs[output_module.name][output_name] = [slot]
         else:
-            self._outputs[output_module.name].append(slot)
+            self.outputs[output_module.name].append(slot)
         self.valid = [] # Not sure
 
+    def connect(self, output_module, output_name, input_module, input_name):
+        "Declare a connection between two modules slots"
+        slot = output_module.create_slot(output_module, output_name, input_module, input_name)
+        self.add_connection(slot)
+
     def _remove_module_inputs(self, name):
-        for slot in self._inputs[name].values():
-            slots = self._outputs[slot.output_module.name][slot.output_name]
+        for slot in self.inputs[name].values():
+            slots = self.outputs[slot.output_module.name][slot.output_name]
             nslots = [s for s in slots if s.output_module.name != name]
             if nslots:
-                self._outputs[slot.output_module.name][slot.output_name] = nslots
+                self.outputs[slot.output_module.name][slot.output_name] = nslots
             else:
-                del self._outputs[slot.output_module.name][slot.output_name]
-        del self._inputs[name]
+                del self.outputs[slot.output_module.name][slot.output_name]
+        del self.inputs[name]
 
     def _remove_module_outputs(self, name):
-        module_slots = self._outputs[name]
+        module_slots = self.outputs[name]
         for (sname, slots) in module_slots.items():
             nslots = [s for s in slots if s.input_module.name != name]
             if nslots == slots:
@@ -153,7 +166,7 @@ class Dataflow(object):
                 module_slots[sname] = nslots
             else:
                 del module_slots[sname]
-        del self._outputs[name]
+        del self.outputs[name]
 
     def collect_dependencies(self):
         "Return the dependecies of the modules"
@@ -161,7 +174,7 @@ class Dataflow(object):
         dependencies = {}
         for valid in self.valid:
             module = valid.name
-            slots = self._inputs[module]
+            slots = self.inputs[module]
             outs = [m.output_module.name for m in slots.values()]
             dependencies[module] = set(outs)
         return dependencies
@@ -219,8 +232,8 @@ class Dataflow(object):
         """Validate a module in the dataflow.
         Return a list of errors, empty if no error occured.
         """
-        errors = self.validate_module_inputs(module, self._inputs[module.name])
-        errors += self.validate_module_outputs(module, self._inputs[module.name])
+        errors = self.validate_module_inputs(module, self.inputs[module.name])
+        errors += self.validate_module_outputs(module, self.inputs[module.name])
         return errors
 
     def __len__(self):

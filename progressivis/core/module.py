@@ -5,7 +5,6 @@ from __future__ import absolute_import, division, print_function
 from abc import ABCMeta, abstractmethod
 from traceback import print_exc
 import re
-import pdb
 import logging
 
 import numpy as np
@@ -269,23 +268,6 @@ class Module(six.with_metaclass(ModuleMeta, object)):
             })
         return json
 
-    def to_dataflow(self):
-        "Return a simple representation of the module in a dataflow."
-        mod = {
-            'id': self.name,
-            'module': self,
-            'classname': self.pretty_typename(),
-            'parameters': self.current_params().to_json(),
-            'creation_args': self._args,
-            'creation_kwds': self._kwds,
-            'input_slots': {k: _slot_to_dataflow(s) for (k, s) in
-                            six.iteritems(self._input_slots) if s}
-        }
-
-        if self.group:
-            mod['group'] = self.group
-        return mod
-
     def from_input(self, msg):
         "Catch and process a message from an interaction"
         if 'debug' in msg:
@@ -304,10 +286,6 @@ class Module(six.with_metaclass(ModuleMeta, object)):
     def get_image(self, run_number=None):  # pragma no cover
         "Return an image created by this module or None"
         # pylint: disable=unused-argument, no-self-use
-
-        """
-        Return an image geenrated by this module.
-        """
         return None
 
     def describe(self):
@@ -383,13 +361,28 @@ class Module(six.with_metaclass(ModuleMeta, object)):
     def input_slot_names(self):
         return list(self._input_slots.keys())
 
+    def reconnect(self, inputs):
+        for name, slot in inputs.items():
+            old_slot = self._input_slots.get(name, None)
+            if old_slot is not slot:
+                self._input_slots[name] = slot
+                if old_slot:
+                    # pylint: disable=protected-access
+                    old_slot.output_module._disconnect_output(old_slot.output_name)
+        deleted_keys = set(self._input_slots.keys()) - set(inputs.keys())
+        for name in deleted_keys:
+            old_slot = self._input_slots[name]
+            if old_slot:
+                # pylint: disable=protected-access
+                old_slot.output_module._disconnect_output(old_slot.output_name)
+            self._input_slots[name] = None
+
+
+
     def _connect_input(self, slot):
         ret = self.get_input_slot(slot.input_name)
         self._input_slots[slot.input_name] = slot
         return ret
-
-    def _disconnect_input(self, slot):  # pragma no cover
-        pass
 
     def validate_inputs(self):
         # Only validate existence, the output code will test types
@@ -419,11 +412,11 @@ class Module(six.with_metaclass(ModuleMeta, object)):
 
     def validate_outputs(self):
         valid = True
-        for sd in self.output_descriptors.values():
-            slots = self._output_slots[sd.name]
-            if sd.required and (slots is None or len(slots) == 0):
+        for slotd in self.output_descriptors.values():
+            slots = self._output_slots[slotd.name]
+            if slots.required and (slots is None or not slots):
                 logger.error('Missing required output slot %s in %s',
-                             sd.name, self.name)
+                             slots.name, self.name)
                 valid = False
             if slots:
                 for slot in slots:
@@ -439,8 +432,14 @@ class Module(six.with_metaclass(ModuleMeta, object)):
             slot_list.append(slot)
         return slot_list
 
-    def _disconnect_output(self, slot):
-        pass
+    def _disconnect_output(self, name):
+        slots = self._output_slots.get(name, None)
+        if slots is None:
+            logger.error('Cannot get output slot %s', name)
+            return
+        slots = [s for s in slots if s.output_name != name]
+        self._output_slots[name] = slots
+        # maybe del slots if it is empty and not required?
 
     def validate_inouts(self):
         return self.validate_inputs() and self.validate_outputs()
@@ -455,7 +454,7 @@ class Module(six.with_metaclass(ModuleMeta, object)):
     def get_data(self, name):
         if name == Module.TRACE_SLOT:
             return self.tracer.trace_stats()
-        elif name == Module.PARAMETERS_SLOT:
+        if name == Module.PARAMETERS_SLOT:
             return self._params
         return None
 
@@ -628,9 +627,15 @@ class Module(six.with_metaclass(ModuleMeta, object)):
             self._end_run(self, run_number)
 
     def ending(self):
-        pass
+        "Ends a module, called when it is about the be removed from the scheduler"
+        self._state = Module.state_terminated
+        self._input_slots = None
+        self._output_slots = None
+        self.input = None
+        self.output = None
 
     def last_update(self):
+        "Return the last time when the module was updated"
         return self._last_update
 
     def last_time(self):
@@ -700,7 +705,7 @@ class Module(six.with_metaclass(ModuleMeta, object)):
             try:
                 tracer.before_run_step(now, run_number)
                 if self.debug:
-                    pdb.set_trace()
+                    import pdb; pdb.set_trace()
                 run_step_ret = self.run_step(run_number,
                                              step_size,
                                              remaining_time)

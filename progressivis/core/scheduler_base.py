@@ -5,7 +5,7 @@ from __future__ import absolute_import, division, print_function
 import time
 import logging
 import functools
-from copy import copy
+#from copy import copy
 #from collections import deque
 from collections import Iterable
 from timeit import default_timer
@@ -56,18 +56,20 @@ class BaseScheduler(object):
         with self.lock:
             BaseScheduler._last_id += 1
             self._name = BaseScheduler._last_id
-        self._modules = dict()
+        self._modules = {}
+        self._dependencies = None
         self._running = False
         self._stopped = True
         self._runorder = None
+        self._new_modules = None
+        self._new_dependencies = None
+        self._new_runorder = None
         self._start = None
         self._run_number = 0
         self._tick_procs = []
         self._tick_once_procs = []
         self._idle_procs = []
         self.version = 0
-        self._new_modules_ids = []
-        self._slots_updated = False
         self._run_list = []
         self._run_index = 0
         self._module_selection = None
@@ -137,7 +139,6 @@ class BaseScheduler(object):
 
     def join(self):
         "Wait for this execution thread to finish."
-        pass
 
     @property
     def lock(self):
@@ -145,6 +146,10 @@ class BaseScheduler(object):
         return self._lock
 
     def dataflow(self):
+        """
+        Returns a newly created Dataflow, to use in a context manager.
+
+        """
         return Dataflow(self)
 
     @property
@@ -271,12 +276,13 @@ class BaseScheduler(object):
                 if not self._keep_running:
                     with self._hibernate_cond:
                         self._hibernate_cond.wait()
-            if self._keep_running: self._keep_running -= 1
+            if self._keep_running:
+                self._keep_running -= 1
             if not (self._consider_module(module) and (module.is_ready() or self.has_input())):
                 continue
             self._run_number += 1
             with self.lock:
-                self._run_tick_procs() 
+                self._run_tick_procs()
                 module.run(self._run_number)
 
     def _next_module(self):
@@ -290,7 +296,7 @@ class BaseScheduler(object):
         self._inter_cycles_cnt = 0
         while not self._stopped:
             # Apply changes in the dataflow
-            if self._new_module_available():
+            if self._new_modules:
                 self._update_modules()
                 self._run_index = 0
                 first_run = self._run_number
@@ -318,55 +324,63 @@ class BaseScheduler(object):
                 self._end_of_modules(first_run)
                 first_run = self._run_number
 
-    def _new_module_available(self):
-        return self._new_modules_ids or self._slots_updated
-
     def all_blocked(self):
+        "Return True if all the modules are blocked, False otherwise"
         from .module import Module
-        for m in self._run_list:
-            if m.state != Module.state_blocked:
+        for module in self._run_list:
+            if module.state != Module.state_blocked:
                 return False
         return True
 
     def is_waiting_for_input(self):
-        for m in self._run_list:
-            if m.is_input():
+        "Return True if there is at least one input module"
+        for module in self._run_list:
+            if module.is_input():
                 return True
         return False
 
     def no_more_data(self):
-        for m in self._run_list:
-            if m.is_data_input():
+        "Return True if at least one module has data input."
+        for module in self._run_list:
+            if module.is_data_input():
                 return False
         return True
 
     def _commit(self, dataflow):
         assert dataflow.version == self.version
         self.version += 1
-        dependencies = dataflow.collect_dependencies()
-        order = dataflow.order_modules(dependencies)
-        # TODO update the nodes
+        self._new_modules = dataflow.modules()
+        self._new_dependencies = dataflow.inputs
+        self._new_runorder = dataflow.order_modules()
+        # The slots in the module,_modules, and _runorder will be updated
+        # in _update_modules when the scheduler decides it is time to do so.
 
     def _update_modules(self):
-        if self._new_modules_ids:
-            # Make a shallow copy of the current run order;
-            # if we cannot validate the new state, revert to the copy
-            prev_run_list = copy(self._run_list)
-            for mid in self._new_modules_ids:
-                self._modules[mid].starting()
-            self._new_modules_ids = []
-            self._slots_updated = False
+        if self._new_modules:
+            prev_keys = set(self._modules.keys())
+            modules = {module.name: module for module in self._new_modules}
+            keys = set(modules.keys())
+            added = keys - prev_keys
+            deleted = prev_keys - keys
+            for mid in deleted:
+                self._modules[mid].ending()
+            self._modules = modules
+            for mid in added:
+                modules[mid].starting()
+            self._dependencies = self._new_dependencies
+            self._new_dependencies = None
+            # import pdb; pdb.set_trace()
+            for mid, slots in six.iteritems(self._dependencies):
+                modules[mid].reconnect(slots)
+            self._new_modules = None
             with self.lock:
                 self._run_list = []
-                self._runorder = self.order_modules()
+                self._runorder = self._new_runorder
+                self._new_runorder = None
                 for i, mid in enumerate(self._runorder):
                     module = self._modules[mid]
                     self._run_list.append(module)
                     module.order = i
-            if not self.validate():
-                logger.error("Cannot validate progressive workflow,"
-                             " reverting to previous")
-                self._run_list = prev_run_list
 
     def _end_of_modules(self, first_run):
         # Reset interaction mode
@@ -636,13 +650,13 @@ class BaseScheduler(object):
     #         v.difference_update(reach_no_vis)
     #     logger.info('reachability map: %s', self._reachability)
 
-    # @staticmethod
-    # def _module_order(x, y):
-    #     if 'order' in x:
-    #         if 'order' in y:
-    #             return x['order']-y['order']
-    #         return 1
-    #     if 'order' in y:
-    #         return -1
-    #     return 0
+    @staticmethod
+    def _module_order(x, y):
+        if 'order' in x:
+            if 'order' in y:
+                return x['order']-y['order']
+            return 1
+        if 'order' in y:
+            return -1
+        return 0
 
