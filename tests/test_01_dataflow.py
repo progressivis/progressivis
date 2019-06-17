@@ -12,7 +12,7 @@ class TestDataflow(ProgressiveTest):
     def test_dataflow(self):
         scheduler = self.scheduler()
         with scheduler.dataflow() as dataflow:
-            csv = CSVLoader(get_dataset('bigfile'), name='csv',
+            csv = CSVLoader(get_dataset('smallfile'), name='csv',
                             index_col=False, header=None,
                             dataflow=dataflow)
             self.assertIs(dataflow['csv'], csv)
@@ -38,7 +38,15 @@ class TestDataflow(ProgressiveTest):
             self.assertEqual(errors, [])
             deps = dataflow.order_modules()
             self.assertEqual(deps, ['csv', m.name, prt.name])
+            # dataflow.__exit__() is called here
+        print('Old modules:')
+        pprint(scheduler._modules)
+        scheduler._update_modules() # force modules in the main loop
+        print('New modules:')
+        pprint(scheduler.modules())
 
+        with scheduler.dataflow() as dataflow:
+            self.assertEqual(len(dataflow), 3)
             dataflow.remove_module(prt)
             self.assertEqual(len(dataflow), 2)
             deps = dataflow.order_modules()
@@ -51,7 +59,7 @@ class TestDataflow(ProgressiveTest):
         scheduler._update_modules() # force modules in the main loop
         print('New modules:')
         pprint(scheduler.modules())
-        
+
 
 
 

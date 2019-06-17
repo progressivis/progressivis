@@ -164,14 +164,6 @@ class BaseScheduler(object):
             return 0
         return default_timer()-self._start
 
-    def get_visualizations(self):
-        "Return the visualization modules"
-        return [m.name for m in self.modules().values() if m.is_visualization()]
-
-    def get_inputs(self):
-        "Return the input modules"
-        return [m.name for m in self.modules().values() if m.is_input()]
-
     def run_queue_length(self):
         "Return the length of the run queue"
         return len(self._run_list)
@@ -448,47 +440,6 @@ class BaseScheduler(object):
         "Return True if the moduleid exists in this scheduler."
         return moduleid in self._modules
 
-    def generate_name(self, prefix):
-        "Generate a name for a module."
-        # Try to be nice
-        for i in range(1, 10):
-            mid = '%s_%d' % (prefix, i)
-            if mid not in self._modules:
-                return mid
-        return '%s_%s' % (prefix, uuid4())
-
-    @synchronized
-    def add_module(self, module):
-        "Add a module to this scheduler."
-        if not module.is_created():
-            raise ProgressiveError('Cannot add running module %s' % module.name)
-        if module.name is None:
-            # pylint: disable=protected-access
-            module._name = self.generate_name(module.pretty_typename())
-        self._add_module(module)
-
-    def _add_module(self, module):
-        self._new_modules_ids.append(module.name)
-        self._modules[module.name] = module
-
-    # @property
-    # def module(self):
-    #     "Return the dictionary of modules."
-    #     return self._module
-
-#     @synchronized
-#     def remove_module(self, module):
-#         "Remove the specified module"
-#         if isinstance(module, six.string_types):
-#             module = self.module[module]
-#         module.terminate()
-# #            self.stop()
-# #            module._stop(self._run_number)
-#         self._remove_module(module)
-
-#     def _remove_module(self, module):
-#         del self._modules[module.name]
-
     def modules(self):
         "Return the dictionary of modules."
         return self._modules
@@ -563,18 +514,19 @@ class BaseScheduler(object):
 
     def close_all(self):
         "Close all the resources associated with this scheduler."
-        for m in self.modules().values():
-            if (hasattr(m, '_table') and
-                    m._table is not None and
-                    m._table.storagegroup is not None):
-                m._table.storagegroup.close_all()
-            if (hasattr(m, '_params') and
-                    m._params is not None and
-                    m._params.storagegroup is not None):
-                m._params.storagegroup.close_all()
-            if (hasattr(m, 'storagegroup') and
-                    m.storagegroup is not None):
-                m.storagegroup.close_all()
+        for mod in self.modules().values():
+            # pylint: disable=protected-access
+            if (hasattr(mod, '_table') and
+                    mod._table is not None and
+                    mod._table.storagegroup is not None):
+                mod._table.storagegroup.close_all()
+            if (hasattr(mod, '_params') and
+                    mod._params is not None and
+                    mod._params.storagegroup is not None):
+                mod._params.storagegroup.close_all()
+            if (hasattr(mod, 'storagegroup') and
+                    mod.storagegroup is not None):
+                mod.storagegroup.close_all()
 
     # def order_modules(self):
     #     """Compute a topological order for the modules.

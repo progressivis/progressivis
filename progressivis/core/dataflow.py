@@ -8,6 +8,8 @@ import logging
 
 from uuid import uuid4
 import six
+from scipy.sparse import csr_matrix
+from scipy.sparse.csgraph import breadth_first_order
 
 from .toposort import toposort
 
@@ -35,14 +37,16 @@ class Dataflow(object):
         self.inputs = {}
         self.outputs = {}
         self.valid = []
+        self.reachability = None
 
     def _add_scheduler(self):
+        import pdb; pdb.set_trace()
         scheduler = self.scheduler
         self.version = scheduler.version
         for module in scheduler.modules().values():
             self._add_module(module)
         for module in scheduler.modules().values():
-            for slot in module.output_slots_values():
+            for slot in module.output_slot_values():
                 self.add_connection(slot)
 
     def clear(self):
@@ -52,6 +56,7 @@ class Dataflow(object):
         self.inputs = {}
         self.outputs = {}
         self.valid = []
+        self.reachability = None
 
     def generate_name(self, prefix):
         "Generate a name for a module given its class prefix."
@@ -64,6 +69,14 @@ class Dataflow(object):
     def modules(self):
         "Return all the modules in this dataflow"
         return self._modules.values()
+
+    def get_visualizations(self):
+        "Return the visualization modules"
+        return [m.name for m in self.modules() if m.is_visualization()]
+
+    def get_inputs(self):
+        "Return the input modules"
+        return [m.name for m in self.modules() if m.is_input()]
 
     def __getitem__(self, name):
         return self._modules[name]
@@ -127,6 +140,8 @@ class Dataflow(object):
 
     def add_connection(self, slot):
         "Declare a connection between two module slots"
+        if not slot:
+            return
         output_module = slot.output_module
         output_name = slot.output_name
         input_module = slot.input_module
@@ -238,3 +253,42 @@ class Dataflow(object):
 
     def __len__(self):
         return len(self._modules)
+
+    @staticmethod
+    def _dependency_csgraph(dependencies, index):
+        size = len(index)
+        row = []
+        col = []
+        data = []
+        for (vertex1, vertices) in dependencies.items():
+            for vertex2 in vertices:
+                col.append(index[vertex1])
+                row.append(index[vertex2])
+                data.append(1)
+        return csr_matrix((data, (row, col)), shape=(size, size))
+
+    def _compute_reachability(self, dependencies):
+        if self.reachability:
+            return
+        input_modules = self.get_inputs()
+        k = list(dependencies.keys())
+        index = dict(zip(k, range(len(k))))
+        graph = self._dependency_csgraph(dependencies, index)
+        self.reachability = {}
+        reachability = {inp: set(breadth_first_order(graph,
+                                                     index[inp],
+                                                     return_predecessors=False))
+                        for inp in input_modules}
+        for vis in self.get_visualizations():
+            vis_index = index[vis]
+            vis_reachability = set(breadth_first_order(graph.T,
+                                                       vis_index,
+                                                       return_predecessors=False))
+            for inp in input_modules:
+                inp_reachability = reachability[inp]
+                if vis_index in inp_reachability:
+                    inter = vis_reachability.intersection(inp_reachability)
+                    if inp in self.reachability:
+                        self.reachability[inp].update(inter)
+                    else:
+                        self.reachability[inp] = inter
