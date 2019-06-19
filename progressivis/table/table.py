@@ -442,18 +442,13 @@ class Table(BaseTable):
         if cols is None:
             cols = self.columns
         return [self[key].dataset.view for key in cols]
-    
-    def cxx_api_info_cols(self, cols=None):
-        if cols is None:
-            cols = self.columns
-        res = defaultdict(dict)
-        for i, c in enumerate(cols):
-            dset = self[c].dataset.base
-            dt = str(dset.dtype)
-            res[dt][i] = dset
-        return cols, res
 
     def cxx_api_raw_cols(self, cols=None):
+        if cols is None:
+            cols = self.columns
+        return cols, [self[c].dataset.base for c in cols]
+
+    def cxx_api_raw_cols2(self, cols=None):
         if cols is None:
             cols = self.columns
         return [self[c].dataset.base for c in cols]
