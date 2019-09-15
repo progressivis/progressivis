@@ -362,14 +362,18 @@ class Module(six.with_metaclass(ModuleMeta, object)):
         return list(self._input_slots.keys())
 
     def reconnect(self, inputs):
+        deleted_keys = set(self._input_slots.keys()) - set(inputs.keys())
         for name, slot in inputs.items():
             old_slot = self._input_slots.get(name, None)
             if old_slot is not slot:
+                # pylint: disable=protected-access
+                assert slot.input_module is self
                 self._input_slots[name] = slot
                 if old_slot:
-                    # pylint: disable=protected-access
                     old_slot.output_module._disconnect_output(old_slot.output_name)
-        deleted_keys = set(self._input_slots.keys()) - set(inputs.keys())
+                if slot:
+                    slot.output_module._connect_output(slot)
+
         for name in deleted_keys:
             old_slot = self._input_slots[name]
             if old_slot:
@@ -385,6 +389,7 @@ class Module(six.with_metaclass(ModuleMeta, object)):
         return ret
 
     def validate_inputs(self):
+        "Validate the input slots"
         # Only validate existence, the output code will test types
         valid = True
         for sd in self.input_descriptors.values():

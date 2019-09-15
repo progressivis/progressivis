@@ -26,10 +26,10 @@ class CSVLoader(TableModule):
                  save_context=None,
                  recovery=0,
                  recovery_table_size=3,
-                 save_step_size = 100000,
+                 save_step_size=100000,
                  **kwds):
-        self._add_slots(kwds,'input_descriptors',
-                        [SlotDescriptor('filenames', type=Table,required=False)])
+        self._add_slots(kwds, 'input_descriptors',
+                        [SlotDescriptor('filenames', type=Table, required=False)])
         super(CSVLoader, self).__init__(**kwds)
         self.default_step_size = kwds.get('chunksize', 1000)  # initial guess
         kwds.setdefault('chunksize', self.default_step_size)

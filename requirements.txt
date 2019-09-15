@@ -6,16 +6,16 @@ numpy>=1.11.3
 scipy>=0.18.1
 matplotlib
 numexpr>=2.6.1
-tables>=3.3.0
+#tables>=3.3.0
 pandas>=0.19.1
 scikit-learn>=0.18.1
-tdigest>=0.4.1.0
+#tdigest>=0.4.1.0
 flask>=0.12.1
 eventlet>=0.22.0
 flask-socketio>=2.9.0
 numcodecs>=0.5.5
 datashape>=0.5.2
-pyroaring>=0.2.3
+#pyroaring>=0.2.3
 msgpack-python>=0.4.8
 python-dateutil==2.6.1 # botocore wants < 2.7.0,>=2.1
 boto
@@ -25,5 +25,5 @@ memory_profiler
 tabulate
 requests
 fast-histogram
-rangehttpserver
+#rangehttpserver
 

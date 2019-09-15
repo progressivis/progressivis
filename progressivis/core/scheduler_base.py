@@ -9,7 +9,6 @@ import functools
 #from collections import deque
 from collections import Iterable
 from timeit import default_timer
-from uuid import uuid4
 import six
 
 # from scipy.sparse import csr_matrix
@@ -240,10 +239,6 @@ class BaseScheduler(object):
         assert callable(idle_proc)
         self._idle_procs.remove(idle_proc)
 
-    def slots_updated(self):
-        "Set by slot when it has been correctly updated"
-        self._slots_updated = True
-
     def run(self):
         "Run the modules, called by start()."
         self._stopped = False
@@ -348,31 +343,38 @@ class BaseScheduler(object):
         # in _update_modules when the scheduler decides it is time to do so.
 
     def _update_modules(self):
-        if self._new_modules:
-            prev_keys = set(self._modules.keys())
-            modules = {module.name: module for module in self._new_modules}
-            keys = set(modules.keys())
-            added = keys - prev_keys
-            deleted = prev_keys - keys
+        if not self._new_modules:
+            return
+        #import pdb; pdb.set_trace()
+        prev_keys = set(self._modules.keys())
+        modules = {module.name: module for module in self._new_modules}
+        keys = set(modules.keys())
+        added = keys - prev_keys
+        deleted = prev_keys - keys
+        if deleted:
+            logger.info("Scheduler deleted modules %s", deleted)
             for mid in deleted:
                 self._modules[mid].ending()
-            self._modules = modules
+        self._modules = modules
+        if added:
+            logger.info("Scheduler adding modules %s", added)
             for mid in added:
                 modules[mid].starting()
-            self._dependencies = self._new_dependencies
-            self._new_dependencies = None
-            # import pdb; pdb.set_trace()
-            for mid, slots in six.iteritems(self._dependencies):
-                modules[mid].reconnect(slots)
-            self._new_modules = None
-            with self.lock:
-                self._run_list = []
-                self._runorder = self._new_runorder
-                self._new_runorder = None
-                for i, mid in enumerate(self._runorder):
-                    module = self._modules[mid]
-                    self._run_list.append(module)
-                    module.order = i
+        if not(deleted or added):
+            logger.info("Scheduler updated with no new module(s)")
+        self._dependencies = self._new_dependencies
+        self._new_dependencies = None
+        for mid, slots in six.iteritems(self._dependencies):
+            modules[mid].reconnect(slots)
+        self._new_modules = None
+        with self.lock:
+            self._run_list = []
+            self._runorder = self._new_runorder
+            self._new_runorder = None
+            for i, mid in enumerate(self._runorder):
+                module = self._modules[mid]
+                self._run_list.append(module)
+                module.order = i
 
     def _end_of_modules(self, first_run):
         # Reset interaction mode

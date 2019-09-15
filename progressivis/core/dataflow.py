@@ -40,13 +40,13 @@ class Dataflow(object):
         self.reachability = None
 
     def _add_scheduler(self):
-        import pdb; pdb.set_trace()
         scheduler = self.scheduler
+        #import pdb; pdb.set_trace()
         self.version = scheduler.version
         for module in scheduler.modules().values():
             self._add_module(module)
         for module in scheduler.modules().values():
-            for slot in module.output_slot_values():
+            for slot in module.input_slot_values():
                 self.add_connection(slot)
 
     def clear(self):
@@ -110,7 +110,7 @@ class Dataflow(object):
 
     def commit(self):
         "Commit the current dataflow into its scheduler"
-        self.validate()
+        # self.validate() no need
         Dataflow.current = None
         # pylint: disable=protected-access
         self.scheduler._commit(self)

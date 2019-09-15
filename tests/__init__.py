@@ -45,6 +45,7 @@ class ProgressiveTest(TestCase):
         if level in self.levels:
             level = self.levels[level]
         if level:
+            print('Logger level: ', level, file=sys.stderr)
             self.log(int(level))
         else:
             self.log()
