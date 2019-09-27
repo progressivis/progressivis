@@ -30,11 +30,11 @@ class Select(TableModule):
         
         if self.input_module is not None:
             return self
-        dataflow=self.dataflow
+        scheduler=self.scheduler
         self.input_module = input_module
         self.input_slot = input_slot
 
-        query = RangeQuery(group=self.name, dataflow=dataflow)
+        query = RangeQuery(group=self.name, scheduler=scheduler)
         query.create_dependent_modules(input_module, input_slot, **kwds)
 
         select = self
@@ -46,9 +46,8 @@ class Select(TableModule):
         self.max = query.max
         self.min_value = query.min_value
         self.max_value = query.max_value
-        
         return select
-        
+
     def run_step(self, run_number, step_size, howlong):
         table_slot = self.get_input_slot('table')
         table = table_slot.data()
@@ -57,19 +56,18 @@ class Select(TableModule):
                           buffer_updated=True,
                           buffer_deleted=False,
                           manage_columns=False)
-        
         select_slot = self.get_input_slot('select')
         select_slot.update(run_number,
                            buffer_created=True,
                            buffer_updated=False,
                            buffer_deleted=True)
-                           
         steps = 0
         if self._table is None:
             if self._columns is None:
                 dshape = table.dshape
             else:
-                cols_dshape = [ "%s: %s"%(col, table[col].dshape) for col in self._columns ]
+                cols_dshape = ["%s: %s" % (col, table[col].dshape)
+                               for col in self._columns]
                 dshape = '{' + ",".join(cols_dshape) + '}'
             self._table = Table(self.generate_table_name(table.name),
                                 dshape=dshape,
@@ -78,7 +76,7 @@ class Select(TableModule):
         if select_slot.deleted.any():
             indices = select_slot.deleted.next(step_size*2, as_slice=False)
             s = indices_len(indices)
-            logger.info("deleting %s",indices)
+            logger.info("deleting %s", indices)
             del self._table.loc[indices]
             steps += s//2
             step_size -= s//2
@@ -86,11 +84,11 @@ class Select(TableModule):
         if step_size > 0 and select_slot.created.any():
             indices = select_slot.created.next(step_size, as_slice=False)
             s = indices_len(indices)
-            logger.info("creating %s",indices)
+            logger.info("creating %s", indices)
             steps += s
             step_size -= s
             if self._columns is None:
-                #TODO
+                # TODO
                 # ind = np.array(indices, dtype=np.int64)
                 # for column in self._columns:
                 #   values = table._column(column)[ind]
@@ -99,7 +97,7 @@ class Select(TableModule):
                     row = table.row(i)
                     self._table.add(row, index=i)
             else:
-                row = { c: None for c in self._columns }
+                row = {c: None for c in self._columns}
                 for i in indices:
                     idx = table.id_to_index(i)
                     for c in self._columns:
@@ -116,38 +114,38 @@ class Select(TableModule):
                 for i in indices:
                     self._table.loc[i] = table.loc[i]
             else:
-                row = { c: None for c in self._columns }
+                row = {c: None for c in self._columns}
                 for i in indices:
                     for c in self._columns:
                         idx = table.id_to_index(i)
                         row[c] = table[c][idx]
                     self._table.loc[i] = row
-
-        #print('index: ', len(self._table.index))
-        return self._return_run_step(self.next_state(select_slot), steps_run=steps)
+        return self._return_run_step(self.next_state(select_slot),
+                                     steps_run=steps)
 
     @staticmethod
     def make_range_query(column, low, high=None):
         if not is_valid_identifier(column):
-            raise ProgressiveError('Cannot use column "%s", invalid name in expression',column)
-        if high==None or low==high:
-            return "({} == {})".format(low,column)
+            raise ProgressiveError('Cannot use column "%s", invalid name',
+                                   column)
+        if high is None or low == high:
+            return "({} == {})".format(low, column)
         elif low > high:
-            low,high = high, low
-        return "({} <= {} <= {})".format(low,column,high)
+            low, high = high, low
+        return "({} <= {} <= {})".format(low, column, high)
 
     @staticmethod
     def make_and_query(*expr):
-        if len(expr)==1:
+        if len(expr) == 1:
             return expr[0]
-        elif len(expr)>1:
+        elif len(expr) > 1:
             return " and ".join(expr)
         return ""
 
     @staticmethod
     def make_or_query(*expr):
-        if len(expr)==1:
+        if len(expr) == 1:
             return expr[0]
-        elif len(expr)>1:
+        elif len(expr) > 1:
             return " or ".join(expr)
         return ""

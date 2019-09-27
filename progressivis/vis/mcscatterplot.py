@@ -2,29 +2,26 @@
 from __future__ import absolute_import, division, print_function
 
 import numpy as np
-import scipy as sp
-from ..core.utils import (indices_len, inter_slice, fix_loc)
-from ..core.bitmap import bitmap
 from ..table.nary import NAry
-from ..table import Table
 from ..stats import MCHistogram2D, Sample
 from ..table.range_query_2d import RangeQuery2d
-from ..core import SlotDescriptor, ProgressiveError
+from ..core import ProgressiveError
 from ..io import Variable, VirtualVariable
-from ..core.synchronized import synchronized
 
 from itertools import chain
 
 from collections import defaultdict
 
+
 class _DataClass(object):
-    def __init__(self, name, group, x_column, y_column, approximate=False, dataflow=None, **kwds):
+    def __init__(self, name, group, x_column, y_column, approximate=False,
+                 scheduler=None, **kwds):
         self.name = name
         self._group = group
         self.x_column = x_column
         self.y_column = y_column
         self._approximate = approximate
-        self.dataflow = dataflow
+        self._scheduler = scheduler
         self.input_module = None
         self.input_slot = None
         self.min = None
@@ -38,36 +35,39 @@ class _DataClass(object):
         self.range_query_2d = None
 
     def scheduler(self):
-        return self.dataflow.scheduler()
+        return self._scheduler
 
     def create_dependent_modules(self, input_module, input_slot,
-                                     histogram2d=None, heatmap=None,
-                                     sample=True, select=None, **kwds):
+                                 histogram2d=None, heatmap=None,
+                                 sample=True, select=None, **kwds):
         if self.input_module is not None:
             return self
-        dataflow = self.dataflow
+        scheduler = self.scheduler()
         self.input_module = input_module
         self.input_slot = input_slot
         range_query_2d = RangeQuery2d(column_x=self.x_column,
                                       column_y=self.y_column,
-                                      group=self._group, dataflow=dataflow,
+                                      group=self._group,
+                                      scheduler=scheduler,
                                       approximate=self._approximate)
         range_query_2d.create_dependent_modules(input_module,
                                                 input_slot,
                                                 min_value=False,
                                                 max_value=False)
-        self.min_value = Variable(group=self._group, dataflow=dataflow)
+        self.min_value = Variable(group=self._group, scheduler=scheduler)
         self.min_value.input.like = range_query_2d.min.output.table
         range_query_2d.input.lower = self.min_value.output.table
-        self.max_value = Variable(group=self._group, dataflow=dataflow)
+        self.max_value = Variable(group=self._group, scheduler=scheduler)
         self.max_value.input.like = range_query_2d.max.output.table
         range_query_2d.input.upper = self.max_value.output.table
         if histogram2d is None:
             histogram2d = MCHistogram2D(self.x_column, self.y_column,
-                                      group=self._group, dataflow=dataflow)
+                                        group=self._group,
+                                        scheduler=scheduler)
         histogram2d.input.data = range_query_2d.output.table
         if sample is True:
-            sample = Sample(samples=100, group=self._group, dataflow=dataflow)
+            sample = Sample(samples=100, group=self._group,
+                            scheduler=scheduler)
         elif sample is None and select is None:
             raise ProgressiveError("Scatterplot needs a select module")
         if sample is not None:
@@ -81,13 +81,15 @@ class _DataClass(object):
         self.range_query_2d = range_query_2d
         return scatterplot
 
+
 class MCScatterPlot(NAry):
     "Module executing multiclass."
-    def __init__(self, classes, x_label="x", y_label="y", approximate=False, **kwds):
+    def __init__(self, classes, x_label="x", y_label="y", approximate=False,
+                 **kwds):
         """Multiclass ...
         """
         super(MCScatterPlot, self).__init__(**kwds)
-        self._classes = classes # TODO: check it ...
+        self._classes = classes  # TODO: check it ...
         self._x_label = x_label
         self._y_label = y_label
         self._approximate = approximate
@@ -110,6 +112,7 @@ class MCScatterPlot(NAry):
             input_slot.updated.next()
             changes = True
         return changes
+
     def is_visualization(self):
         return True
 
@@ -133,14 +136,15 @@ class MCScatterPlot(NAry):
             if meta is None:
                 continue
             input_type = meta['inp']
-            class_ = meta['class_'] 
+            class_ = meta['class_']
             if input_type not in ('hist', 'sample'):
                 raise ValueError('{} not in [hist, sample]'.format(input_type))
-            
             changes |= self.forget_changes(input_slot)
-            ret[class_].update({input_type: (input_slot, meta['x'], meta['y'])})
+            ret[class_].update({
+                input_type: (input_slot, meta['x'], meta['y'])
+            })
         return changes, ret
- 
+
     def build_heatmap(self, inp, domain):
         inp_table = inp.data()
         if inp_table is None:
@@ -151,19 +155,18 @@ class MCScatterPlot(NAry):
                 return None
             row = last.to_dict()
             data = np.copy(row['array'])
-            #xbins, ybins = row['array'].shape
             json_ = {}
-            #row = values
             if not (np.isnan(row['xmin']) or np.isnan(row['xmax'])
-                        or np.isnan(row['ymin']) or np.isnan(row['ymax'])):
-                json_['bounds'] = (row['xmin'], row['ymin'], row['xmax'], row['ymax'])                
+                    or np.isnan(row['ymin']) or np.isnan(row['ymax'])):
+                json_['bounds'] = (row['xmin'], row['ymin'],
+                                   row['xmax'], row['ymax'])
                 json_['binnedPixels'] = data
                 json_['range'] = [np.min(data), np.max(data)]
                 json_['count'] = np.sum(data)
                 json_['value'] = domain
                 return json_
         return None
-    
+
     def make_json(self, json):
         buffers = []
         domain = []
@@ -239,13 +242,12 @@ class MCScatterPlot(NAry):
             }
         }
         source = {"program": "progressivis",
-                "type": "python",
-                "rows": count
-                }
+                  "type": "python",
+                  "rows": count
+        }
         json['chart'] = dict(buffers=buffers, encoding=encoding, source=source)
         json['bounds'] = dict(xmin=xmin, ymin=ymin, xmax=xmax, ymax=ymax)
         s_data = []
-        s_classes = []
         for i, s in enumerate(samples):
             d = s['data']
             for row in d:
@@ -254,7 +256,7 @@ class MCScatterPlot(NAry):
         json['sample'] = dict(data=s_data, index=list(range(len(s_data))))
         json['columns'] = [self._x_label, self._y_label]
         return json
-        
+
     def run_step(self, run_number, step_size, howlong):
         return self._return_run_step(self.state_blocked, steps_run=0)
 
@@ -290,15 +292,15 @@ class MCScatterPlot(NAry):
                 x, y = dc2.x_column, dc2.y_column
                 dc.histogram2d.input['table', ('min', x, y)] = dc2.range_query_2d.output.min
                 dc.histogram2d.input['table', ('max', x, y)] = dc2.range_query_2d.output.max
-        
+
     def _add_class(self, name, x_column, y_column):
         if self.input_module is None or self.input_slot is None:
             raise ProgressiveError("You have to create "
-                                       "the dependent modules first!")
+                                   "the dependent modules first!")
         data_class = _DataClass(name, self.name, x_column,
-                                    y_column,
-                                    approximate=self._approximate,
-                                    dataflow=self.dataflow)
+                                y_column,
+                                approximate=self._approximate,
+                                scheduler=self._scheduler)
         data_class.create_dependent_modules(self.input_module, self.input_slot)
         col_translation = {self._x_label: x_column, self._y_label: y_column}
         hist_meta = dict(inp='hist', class_=name, **col_translation)
@@ -310,4 +312,5 @@ class MCScatterPlot(NAry):
         self.max_value.subscribe(data_class.max_value, col_translation)
 
     def get_starving_mods(self):
-        return chain(*[(s.histogram2d, s.sample) for s in self._data_class_list])
+        return chain(*[(s.histogram2d, s.sample)
+                       for s in self._data_class_list])

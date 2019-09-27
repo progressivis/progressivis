@@ -49,7 +49,8 @@ class BaseScheduler(object):
     def __init__(self, interaction_latency=1):
         if interaction_latency <= 0:
             raise ProgressiveError('Invalid interaction_latency, '
-                                   'should be strictly positive: %s'% interaction_latency)
+                                   'should be strictly positive: %s' 
+                                   % interaction_latency)
         self._lock = self.create_lock()
         # same as clear below
         with self.lock:
@@ -80,6 +81,7 @@ class BaseScheduler(object):
         self._interaction_opts = None
         self._hibernate_cond = Condition()
         self._keep_running = KEEP_RUNNING
+        self.dataflow = Dataflow(self)
 
     def set_interaction_opts(self, starving_mods=None, max_time=None, max_iter=None):
         if starving_mods:
@@ -144,12 +146,19 @@ class BaseScheduler(object):
         "Return the scheduler lock."
         return self._lock
 
-    def dataflow(self):
-        """
-        Returns a newly created Dataflow, to use in a context manager.
+    def __enter__(self):
+        if self.dataflow is None:
+            self.dataflow = Dataflow(self)
+        return self.dataflow
 
-        """
-        return Dataflow(self)
+    def __exit__(self, exc_type, exc_value, traceback):
+        # import pdb; pdb.set_trace()
+        if exc_type is None:
+            self._commit(self.dataflow)
+        else:
+            logger.info('Aborting Dataflow with exception %s', exc_type)
+            self.dataflow.aborted()
+        self.dataflow = None
 
     @property
     def name(self):
@@ -183,6 +192,38 @@ class BaseScheduler(object):
         msg['status'] = 'success'
         return msg
 
+    def _repr_html_(self):
+        html_head = "<div type='schedule'>";
+        html_head = """
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>""";
+        html_end = "</div>";
+        html_head += """
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th>Id</th><th>Class</th><th>State</th><th>Last Update</th><th>Order</th>
+    </tr>
+  </thead>
+  <tbody>""";
+        columns = ['id', 'classname', 'state', 'last_update', 'order'];
+        for mod in self._run_list:
+            values = mod.to_json(short=True)
+            html_head += "<tr>";
+            html_head += "".join(["<td>%s</td>"%(values[column]) for column in columns])
+        html_end = "</tbody></table>";
+        return html_head + html_end;
 
     def _before_run(self):
         pass
@@ -241,6 +282,9 @@ class BaseScheduler(object):
 
     def run(self):
         "Run the modules, called by start()."
+        if self.dataflow:
+            self._commit(self.dataflow)
+            self.dataflow = None
         self._stopped = False
         self._running = True
         self._start = default_timer()
@@ -265,15 +309,25 @@ class BaseScheduler(object):
                         self._hibernate_cond.wait()
             if self._keep_running:
                 self._keep_running -= 1
-            if not (self._consider_module(module) and (module.is_ready() or self.has_input())):
+            if not self._consider_module(module):
+                logger.info("Module %s not scheduled"
+                            " because of interactive mode",
+                            module.name)
                 continue
+            if not(module.is_ready() or self.has_input()):
+                logger.info("Module %s not scheduled"
+                            " because not ready and has no input",
+                            module.name)
+                continue
+                 
             self._run_number += 1
             with self.lock:
                 self._run_tick_procs()
                 module.run(self._run_number)
 
     def _next_module(self):
-        """Yields a possibly infinite sequence of modules.
+        """
+        Generator the yields a possibly infinite sequence of modules.
         Handles order recomputation and starting logic if needed.
         """
         self._run_index = 0
@@ -293,13 +347,15 @@ class BaseScheduler(object):
             # Check for interactive input mode
             if input_mode != self.has_input():
                 if input_mode: # end input mode
-                    print('Ending interactive mode after', default_timer()-self._start_inter)
+                    logger.info('Ending interactive mode after %s s',
+                                default_timer()-self._start_inter)
                     self._start_inter = 0
                     self._inter_cycles_cnt = 0
                     input_mode = False
                 else:
                     self._start_inter = default_timer()
-                    print('Starting interactive mode at', self._start_inter)
+                    logger.info('Starting interactive mode at %s',
+                                self._start_inter)
                     input_mode = True
                 # Restart from beginning
                 self._run_index = 0
@@ -335,17 +391,19 @@ class BaseScheduler(object):
 
     def _commit(self, dataflow):
         assert dataflow.version == self.version
-        self.version += 1
+        self._new_runorder = dataflow.order_modules()  # raises if invalid
         self._new_modules = dataflow.modules()
         self._new_dependencies = dataflow.inputs
-        self._new_runorder = dataflow.order_modules()
+        self.dataflow.committed()
+        self.version += 1  # only increment if valid
         # The slots in the module,_modules, and _runorder will be updated
         # in _update_modules when the scheduler decides it is time to do so.
+        if not self._running:  # no need to delay updating the scheduler
+            self._update_modules()
 
     def _update_modules(self):
         if not self._new_modules:
             return
-        #import pdb; pdb.set_trace()
         prev_keys = set(self._modules.keys())
         modules = {module.name: module for module in self._new_modules}
         keys = set(modules.keys())
@@ -364,13 +422,15 @@ class BaseScheduler(object):
             logger.info("Scheduler updated with no new module(s)")
         self._dependencies = self._new_dependencies
         self._new_dependencies = None
+        logger.info("New dependencies: %s", self._dependencies)
         for mid, slots in six.iteritems(self._dependencies):
             modules[mid].reconnect(slots)
         self._new_modules = None
         with self.lock:
             self._run_list = []
-            self._runorder = self._new_runorder
+            self._runorder = self._new_runorder            
             self._new_runorder = None
+            logger.info("New modules order: %s", self._runorder)
             for i, mid in enumerate(self._runorder):
                 module = self._modules[mid]
                 self._run_list.append(module)
@@ -440,14 +500,27 @@ class BaseScheduler(object):
 
     def exists(self, moduleid):
         "Return True if the moduleid exists in this scheduler."
-        return moduleid in self._modules
+        return moduleid in self
 
     def modules(self):
         "Return the dictionary of modules."
         return self._modules
 
     def __getitem__(self, mid):
+        if self.dataflow:
+            return self.dataflow[mid]
         return self._modules.get(mid, None)
+
+    def __delitem__(self, name):
+        if self.dataflow:
+            del self.dataflow[name]
+        else:
+            raise ProgressiveError('Cannot delete module %s outside a context' % name)
+
+    def __contains__(self, name):
+        if self.dataflow:
+            return name in self.dataflow
+        return name in self._modules
 
     def run_number(self):
         "Return the last run number."

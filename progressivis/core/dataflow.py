@@ -13,6 +13,8 @@ from scipy.sparse.csgraph import breadth_first_order
 
 from .toposort import toposort
 
+from .utils import ProgressiveError
+
 logger = logging.getLogger(__name__)
 
 class Dataflow(object):
@@ -28,8 +30,6 @@ class Dataflow(object):
     Dataflow graph maintaining modules connected with slots.
     """
 
-    current = None
-
     def __init__(self, scheduler):
         self.scheduler = scheduler
         self.version = -1
@@ -38,10 +38,7 @@ class Dataflow(object):
         self.outputs = {}
         self.valid = []
         self.reachability = None
-
-    def _add_scheduler(self):
-        scheduler = self.scheduler
-        #import pdb; pdb.set_trace()
+        # add the scheduler's dataflow into self
         self.version = scheduler.version
         for module in scheduler.modules().values():
             self._add_module(module)
@@ -78,42 +75,29 @@ class Dataflow(object):
         "Return the input modules"
         return [m.name for m in self.modules() if m.is_input()]
 
+    def __delitem__(self, name):
+        self.remove_module(name)
+
     def __getitem__(self, name):
-        return self._modules[name]
+        return self._modules.get(name, None)
 
     def __contains__(self, name):
         return name in self._modules
+
+    def __len__(self):
+        return len(self._modules)
 
     def dir(self):
         "Return the list the module names"
         return list(self._modules.keys())
 
-    def __enter__(self):
-        assert Dataflow.current is None
-        Dataflow.current = self
-        self._add_scheduler()
-        return self
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        # import pdb; pdb.set_trace()
-        if exc_type is None:
-            self.commit()
-        else:
-            logger.info('Aborting Dataflow with exception %s',
-                        exc_type)
-            self.abort()
-
-    def abort(self):
-        "Abort the current dataflow"
-        Dataflow.current = None
+    def aborted(self):
+        "The dataflow has been aborted before being sent."
+        # pylint: disable=protected-access
         self.clear()
 
-    def commit(self):
-        "Commit the current dataflow into its scheduler"
-        # self.validate() no need
-        Dataflow.current = None
-        # pylint: disable=protected-access
-        self.scheduler._commit(self)
+    def committed(self):
+        "The dataflow has been sent to the scheduler."
         self.clear()
 
     def add_module(self, module):
@@ -132,6 +116,8 @@ class Dataflow(object):
         "Remove the specified module"
         if isinstance(module, six.string_types):
             module = self._modules[module]
+        if not hasattr(module, 'name'):
+            return  # module is not fully created
         # module.terminate()
         del self._modules[module.name]
         self._remove_module_inputs(module.name)
@@ -153,7 +139,7 @@ class Dataflow(object):
         elif output_name not in self.outputs[output_module.name]:
             self.outputs[output_module.name][output_name] = [slot]
         else:
-            self.outputs[output_module.name].append(slot)
+            self.outputs[output_module.name][output_name].append(slot)
         self.valid = [] # Not sure
 
     def connect(self, output_module, output_name, input_module, input_name):
@@ -183,9 +169,18 @@ class Dataflow(object):
                 del module_slots[sname]
         del self.outputs[name]
 
+    def order_modules(self, dependencies=None):
+        "Compute a topological order for the modules."
+        if dependencies is None:
+            dependencies = self.collect_dependencies()
+        runorder = toposort(dependencies)
+        return runorder
+
     def collect_dependencies(self):
         "Return the dependecies of the modules"
-        self.validate()
+        errors = self.validate()
+        if errors:
+            raise ProgressiveError("Invalid dataflow", errors)
         dependencies = {}
         for valid in self.valid:
             module = valid.name
@@ -193,14 +188,6 @@ class Dataflow(object):
             outs = [m.output_module.name for m in slots.values()]
             dependencies[module] = set(outs)
         return dependencies
-
-    def order_modules(self, dependencies=None):
-        """Compute a topological order for the modules.
-        """
-        if dependencies is None:
-            dependencies = self.collect_dependencies()
-        runorder = toposort(dependencies)
-        return runorder
 
     def validate(self):
         "Validate the Dataflow, returning [] if it is valid or the invalid modules otherwise."
@@ -242,18 +229,16 @@ class Dataflow(object):
                     slotdesc.name, module.name))
         return errors
 
-
     def validate_module(self, module):
         """Validate a module in the dataflow.
         Return a list of errors, empty if no error occured.
         """
         errors = self.validate_module_inputs(module, self.inputs[module.name])
         errors += self.validate_module_outputs(module, self.inputs[module.name])
+        if module.is_created() and not errors:
+            module.validate()
         return errors
-
-    def __len__(self):
-        return len(self._modules)
-
+    
     @staticmethod
     def _dependency_csgraph(dependencies, index):
         size = len(index)

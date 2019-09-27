@@ -18,7 +18,6 @@ class Scheduler(BaseScheduler):
     def __init__(self):
         super(Scheduler, self).__init__()
         self.thread = None
-        #self._thread_parent = None
         self.thread_name = "Progressive Scheduler"
 
     def create_lock(self):
@@ -32,7 +31,7 @@ class Scheduler(BaseScheduler):
 
     @staticmethod
     def set_default():
-        "Set the default scheduler, used implicitly when no schedule keyword is provided"
+        "Set the default scheduler."
         if not isinstance(BaseScheduler.default, Scheduler):
             BaseScheduler.default = Scheduler()
 
@@ -71,6 +70,7 @@ class Scheduler(BaseScheduler):
 
     def done(self):
         self.thread = None
+
 
 if BaseScheduler.default is None:
     BaseScheduler.default = Scheduler()

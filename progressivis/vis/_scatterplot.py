@@ -20,6 +20,7 @@ from ..io import Variable
 
 logger = logging.getLogger(__name__)
 
+
 class ScatterPlot(TableModule):
     parameters = [('xmin', np.dtype(float), 0),
                   ('xmax', np.dtype(float), 1),
@@ -29,7 +30,7 @@ class ScatterPlot(TableModule):
     def __init__(self, x_column, y_column, approximate=False, **kwds):
         self._add_slots(kwds, 'input_descriptors',
                         [
-                         #SlotDescriptor('heatmap', type=Table),
+                         # SlotDescriptor('heatmap', type=Table),
                          SlotDescriptor('table', type=Table),
                          SlotDescriptor('select', type=Table)])
         super(ScatterPlot, self).__init__(quantum=0.1, **kwds)
@@ -51,7 +52,7 @@ class ScatterPlot(TableModule):
 
 #    def get_data(self, name):
 #        return self.get_input_slot(name).data()
-        #return super(ScatterPlot, self).get_data(name)
+#    return super(ScatterPlot, self).get_data(name)
 
     def table(self):
         return self.get_input_slot('table').data()
@@ -62,41 +63,40 @@ class ScatterPlot(TableModule):
     def get_visualization(self):
         return "scatterplot"
 
-
     def create_dependent_modules(self, input_module, input_slot,
-                                     histogram2d=None, heatmap=None,
-                                     sample=True, select=None, **kwds):
+                                 histogram2d=None, heatmap=None,
+                                 sample=True, select=None, **kwds):
         if self.input_module is not None:
             return self
-        dataflow = self.dataflow
+        scheduler = self.scheduler()
         self.input_module = input_module
         self.input_slot = input_slot
         range_query_2d = RangeQuery2d(column_x=self.x_column,
                                       column_y=self.y_column,
-                                      group=self.name, dataflow=dataflow,
+                                      group=self.name, scheduler=scheduler,
                                       approximate=self._approximate)
         range_query_2d.create_dependent_modules(input_module,
                                                 input_slot,
                                                 min_value=False,
                                                 max_value=False)
-        self.min_value = Variable(group=self.name, dataflow=dataflow)
+        self.min_value = Variable(group=self.name, scheduler=scheduler)
         self.min_value.input.like = range_query_2d.min.output.table
         range_query_2d.input.lower = self.min_value.output.table
-        self.max_value = Variable(group=self.name, dataflow=dataflow)
+        self.max_value = Variable(group=self.name, scheduler=scheduler)
         self.max_value.input.like = range_query_2d.max.output.table
         range_query_2d.input.upper = self.max_value.output.table
         if histogram2d is None:
             histogram2d = Histogram2D(self.x_column, self.y_column,
-                                      group=self.name, dataflow=dataflow)
+                                      group=self.name, scheduler=scheduler)
         histogram2d.input.table = range_query_2d.output.table
         histogram2d.input.min = range_query_2d.output.min
         histogram2d.input.max = range_query_2d.output.max
         #if heatmap is None:
         #    heatmap = Heatmap(group=self.name, # filename='heatmap%d.png',
-        #                      history=100, dataflow=dataflow)
+        #                      history=100, scheduler=scheduler)
         #heatmap.input.array = histogram2d.output.table
         if sample is True:
-            sample = Sample(samples=100, group=self.name, dataflow=dataflow)
+            sample = Sample(samples=100, group=self.name, scheduler=scheduler)
         elif sample is None and select is None:
             raise ProgressiveError("Scatterplot needs a select module")
         if sample is not None:

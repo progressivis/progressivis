@@ -49,6 +49,7 @@ class _HistogramIndexImpl(object):
         self.bins = np.linspace(e_min, e_max, nb_bin, endpoint=True)
         assert len(self.bins) == nb_bin
         self.bitmaps = [bitmap() for _ in range(nb_bin+1)]
+
     def _needs_division(self, size):
         len_c = len(self.column)
         len_b = len(self.bins)

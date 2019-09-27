@@ -35,14 +35,15 @@ class TestExpr(ProgressiveTest):
         """
         Connecting modules via function calls
         """
-        csv = pv.load_csv(get_dataset('bigfile'), index_col=False, header=None)
-        m = pv.min(csv)
-        pv.echo(m, proc=prtm)
-        M = pv.max(csv)
-        pv.echo(M, proc=prtM)
-        trace = M["_trace"]
-        pv.echo(trace, proc=prtT)
-        self.assertEqual(csv.scheduler(), csv.module.scheduler())
+        with BaseScheduler.default:
+            csv = pv.load_csv(get_dataset('bigfile'), index_col=False, header=None)
+            m = pv.min(csv)
+            pv.echo(m, proc=prtm)
+            M = pv.max(csv)
+            pv.echo(M, proc=prtM)
+            trace = M["_trace"]
+            pv.echo(trace, proc=prtT)
+            self.assertEqual(csv.scheduler(), csv.module.scheduler())
         csv.scheduler().start()
         csv.scheduler().join()
         table = csv.table
@@ -61,14 +62,15 @@ class TestExpr(ProgressiveTest):
         """
         Connecting modules via the pipe operator ( 3 pipes)
         """
-        ret = PipedInput(get_dataset('bigfile')) | pv.load_csv(
-            index_col=False, header=None) | pv.min() | pv.echo(proc=prtm)
-        csv = ret.repipe('csv_loader_1')
-        _ = csv | pv.max() | pv.echo(proc=prtM)
-        m = ret.fetch('min_1')
-        M = ret.fetch('max_1')
-        _ = M["_trace"] | pv.echo(proc=prtT)
-        self.assertEqual(csv.scheduler(), csv.module.scheduler())
+        with BaseScheduler.default:
+            ret = PipedInput(get_dataset('bigfile')) | pv.load_csv(
+                index_col=False, header=None) | pv.min() | pv.echo(proc=prtm)
+            csv = ret.repipe('csv_loader_1')
+            _ = csv | pv.max() | pv.echo(proc=prtM)
+            m = ret.fetch('min_1')
+            M = ret.fetch('max_1')
+            _ = M["_trace"] | pv.echo(proc=prtT)
+            self.assertEqual(csv.scheduler(), csv.module.scheduler())
         csv.scheduler().start()
         csv.scheduler().join()
         table = csv.table
@@ -87,15 +89,16 @@ class TestExpr(ProgressiveTest):
         """
         Connecting modules via the pipe operator (only one pipe)
         """
-        ret = (PipedInput(get_dataset('bigfile'))
-               | pv.load_csv(index_col=False, header=None) | pv.min()
-               | pv.echo(proc=prtm).repipe('csv_loader_1') | pv.max()
-               | pv.echo(proc=prtM).repipe('max_1', out='_trace')
-               | pv.echo(proc=prtT))
-        m = ret.fetch('min_1')
-        M = ret.fetch('max_1')
-        csv = ret.fetch('csv_loader_1')
-        self.assertEqual(csv.scheduler(), csv.module.scheduler())
+        with BaseScheduler.default:
+            ret = (PipedInput(get_dataset('bigfile'))
+                   | pv.load_csv(index_col=False, header=None) | pv.min()
+                   | pv.echo(proc=prtm).repipe('csv_loader_1') | pv.max()
+                   | pv.echo(proc=prtM).repipe('max_1', out='_trace')
+                   | pv.echo(proc=prtT))
+            m = ret.fetch('min_1')
+            M = ret.fetch('max_1')
+            csv = ret.fetch('csv_loader_1')
+            self.assertEqual(csv.scheduler(), csv.module.scheduler())
         csv.scheduler().start()
         csv.scheduler().join()
         table = csv.table

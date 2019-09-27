@@ -21,7 +21,7 @@ from .slot import (SlotDescriptor, Slot)
 from .tracer_base import Tracer
 from .time_predictor import TimePredictor
 from .storagemanager import StorageManager
-from .dataflow import Dataflow
+from .scheduler_base import BaseScheduler
 
 if six.PY2:  # pragma no cover
     from inspect import getargspec as getfullargspec
@@ -66,7 +66,7 @@ class Module(six.with_metaclass(ModuleMeta, object)):
 
     def __new__(cls, *args, **kwds):
         module = object.__new__(cls)
-        #pylint: disable=protected-access
+        # pylint: disable=protected-access
         module._args = args
         module._kwds = kwds
         return module
@@ -74,20 +74,21 @@ class Module(six.with_metaclass(ModuleMeta, object)):
     def __init__(self,
                  name=None,
                  group=None,
-                 dataflow=None,
+                 scheduler=None,
                  storagegroup=None,
                  input_descriptors=None,
                  output_descriptors=None,
                  **kwds):
-        if dataflow is None:
-            dataflow = Dataflow.current
+        if scheduler is None:
+            scheduler = BaseScheduler.default
+        self._scheduler = scheduler
+        dataflow = scheduler.dataflow
         if name is None:
             name = dataflow.generate_name(self.pretty_typename())
-        if name in dataflow:
+        elif name in dataflow:
             raise ProgressiveError('module already exists in scheduler,'
                                    ' delete it first')
-        self._scheduler = dataflow.scheduler
-        self.name = name
+        self.name = name  # need to set the name so exception can remove it
         predictor = TimePredictor.default()
         predictor.name = name
         self.predictor = predictor
@@ -130,9 +131,14 @@ class Module(six.with_metaclass(ModuleMeta, object)):
         dataflow.add_module(self)
 
     def scheduler(self):
-        """Return the scheduler associated with the dataflow.
+        """Return the scheduler associated with the module.
         """
         return self._scheduler
+
+    def dataflow(self):
+        """Return the dataflow associated with the module at creation time.
+        """
+        return self._scheduler.dataflow
 
     def create_dependent_modules(self, *params, **kwds):  # pragma no cover
         """Create modules that this module depends on.
@@ -189,7 +195,7 @@ class Module(six.with_metaclass(ModuleMeta, object)):
         for desc in descriptor_list:
             if desc.name in slots:
                 raise ProgressiveError('Duplicate slot name %s'
-                                       ' in slot descriptor'% desc.name)
+                                       ' in slot descriptor' % desc.name)
             slots[desc.name] = None
         return slots
 
@@ -202,15 +208,18 @@ class Module(six.with_metaclass(ModuleMeta, object)):
     def debug(self, value):
         """Set the value of the debug property.
 
-        when True, the module trapped into the debugger when the run_step method
-        is called.
+        when True, the module trapped into the debugger when the run_step
+        method is called.
         """
         # TODO: should change the run_number of the params
         self.params.debug = bool(value)
 
     @property
     def lock(self):
-        "Return a recursive lock usable to lock the access and change of attributes"
+        """
+        Return a recursive lock usable to lock the access and
+        change of attributes.
+        """
         return self._synchronized_lock
 
     def _parse_parameters(self, kwds):
@@ -363,6 +372,7 @@ class Module(six.with_metaclass(ModuleMeta, object)):
 
     def reconnect(self, inputs):
         deleted_keys = set(self._input_slots.keys()) - set(inputs.keys())
+        logger.info("Deleted keys: %s", deleted_keys)
         for name, slot in inputs.items():
             old_slot = self._input_slots.get(name, None)
             if old_slot is not slot:
@@ -381,8 +391,6 @@ class Module(six.with_metaclass(ModuleMeta, object)):
                 old_slot.output_module._disconnect_output(old_slot.output_name)
             self._input_slots[name] = None
 
-
-
     def _connect_input(self, slot):
         ret = self.get_input_slot(slot.input_name)
         self._input_slots[slot.input_name] = slot
@@ -395,7 +403,8 @@ class Module(six.with_metaclass(ModuleMeta, object)):
         for sd in self.input_descriptors.values():
             slot = self._input_slots[sd.name]
             if sd.required and slot is None:
-                logger.error('Missing inputs slot %s in %s', sd.name, self.name)
+                logger.error('Missing inputs slot %s in %s',
+                             sd.name, self.name)
                 valid = False
         return valid
 
@@ -415,19 +424,25 @@ class Module(six.with_metaclass(ModuleMeta, object)):
     def output_slot_names(self):
         return list(self._output_slots.keys())
 
-    def validate_outputs(self):
-        valid = True
-        for slotd in self.output_descriptors.values():
-            slots = self._output_slots[slotd.name]
-            if slots.required and (slots is None or not slots):
-                logger.error('Missing required output slot %s in %s',
-                             slots.name, self.name)
-                valid = False
-            if slots:
-                for slot in slots:
-                    if not slot.validate_types():
-                        valid = False
-        return valid
+    # def validate_outputs(self):
+    #     valid = True
+    #     for slotd in self.output_descriptors.values():
+    #         slots = self._output_slots[slotd.name]
+    #         if slots.required and (slots is None or not slots):
+    #             logger.error('Missing required output slot %s in %s',
+    #                          slots.name, self.name)
+    #             valid = False
+    #         if slots:
+    #             for slot in slots:
+    #                 if not slot.validate_types():
+    #                     valid = False
+    #     return valid
+
+    # def validate_inouts(self):
+    #     return self.validate_inputs() and self.validate_outputs()
+
+    def validate(self):
+        self.state = Module.state_blocked
 
     def _connect_output(self, slot):
         slot_list = self.get_output_slot(slot.output_name)
@@ -445,16 +460,6 @@ class Module(six.with_metaclass(ModuleMeta, object)):
         slots = [s for s in slots if s.output_name != name]
         self._output_slots[name] = slots
         # maybe del slots if it is empty and not required?
-
-    def validate_inouts(self):
-        return self.validate_inputs() and self.validate_outputs()
-
-    def validate(self):
-        if self.validate_inouts():
-            self.state = Module.state_blocked
-            return True
-        self.state = Module.state_invalid
-        return False
 
     def get_data(self, name):
         if name == Module.TRACE_SLOT:
@@ -634,10 +639,10 @@ class Module(six.with_metaclass(ModuleMeta, object)):
     def ending(self):
         "Ends a module, called when it is about the be removed from the scheduler"
         self._state = Module.state_terminated
-        self._input_slots = None
-        self._output_slots = None
-        self.input = None
-        self.output = None
+        #  self._input_slots = None
+        #  self._output_slots = None
+        #  self.input = None
+        #  self.output = None
 
     def last_update(self):
         "Return the last time when the module was updated"

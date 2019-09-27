@@ -129,14 +129,11 @@ class Expr(object):
     def invalidate(self):
         self._valid = None
 
-    def dataflow(self):
-        return self._module.dataflow
-
     def scheduler(self):
         return self._module.scheduler()
 
     def repipe(self, mod_name, out=None):
-        mod_ = self.dataflow()[mod_name]
+        mod_ = self.scheduler()[mod_name]
         if isinstance(mod_, TableModule):
             from .table import TableExpr
             return TableExpr(

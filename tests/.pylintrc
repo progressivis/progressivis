@@ -1,5 +1,6 @@
 [MASTER]
 
+py3k=yes
 ignore=.git
 persistent=yes
 load-plugins=

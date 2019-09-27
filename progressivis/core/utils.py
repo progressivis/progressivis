@@ -115,6 +115,7 @@ def is_str(s):
 def is_iterable(it):
     return isinstance(it, collections_abc.Iterable)
 
+
 def is_iter_str(it):
     if not is_iterable(it):
         return False
@@ -123,8 +124,12 @@ def is_iter_str(it):
             return False
     return True
 
+
 class ProgressiveError(Exception):
-    pass
+    "Errors from ProgressiVis."
+    def __init__(self, message=None, details=None):
+        self.message = message
+        self.details = details
 
 
 def len_none(l):

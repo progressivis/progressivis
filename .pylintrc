@@ -11,6 +11,8 @@
 # paths.
 ignore=.git
 
+py3k=yes
+
 # Pickle collected data for later comparisons.
 persistent=yes
 

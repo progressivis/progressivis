@@ -2,7 +2,7 @@ from progressivis.core.utils import indices_len, fix_loc, get_random_name
 from progressivis.core.slot import SlotDescriptor
 from progressivis.table.module import TableModule
 from progressivis.table.table import Table
-from collections import OrderedDict
+
 #TODO update with http://www.johndcook.com/blog/skewness_kurtosis/
 #Use http://www.grantjenks.com/docs/runstats/ 
 
@@ -15,8 +15,9 @@ logger = logging.getLogger(__name__)
 class Stats(TableModule):
     parameters = [('history', np.dtype(int), 3)]
 
-    def __init__(self, column, min_column=None, max_column=None, reset_index=False, **kwds):
-        self._add_slots(kwds,'input_descriptors',
+    def __init__(self, column, min_column=None, max_column=None,
+                 reset_index=False, **kwds):
+        self._add_slots(kwds, 'input_descriptors',
                         [SlotDescriptor('table', type=Table, required=True)])
         super(Stats, self).__init__(table_slot='stats', **kwds)
         self._column = column
@@ -31,7 +32,9 @@ class Stats(TableModule):
         self._reset_index = reset_index
         # self.schema = [(self._min_column, np.dtype(float), np.nan),
         #                (self._max_column, np.dtype(float), np.nan),]
-        self.schema = '{'+self._min_column+': float64, '+self._max_column+': float64}'
+        self.schema = ('{' +
+                       self._min_column+': float64, ' +
+                       self._max_column+': float64}')
         self._table = Table(get_random_name('stats_'), dshape=self.schema)
 
     def is_ready(self):
@@ -40,10 +43,10 @@ class Stats(TableModule):
         return super(Stats, self).is_ready()
 
     def run_step(self, run_number, step_size, howlong):
-        prev_min = prev_max = np.nan        
+        prev_min = prev_max = np.nan
         dfslot = self.get_input_slot('table')
         dfslot.update(run_number)
-        if dfslot.updated.any() or dfslot.deleted.any():        
+        if dfslot.updated.any() or dfslot.deleted.any():
             dfslot.reset()
             dfslot.update(run_number)
         else:
@@ -52,15 +55,15 @@ class Stats(TableModule):
             if prev > 0:
                 prev_min = df.iat[prev, self._min_column]
                 prev_max = df.iat[prev, self._max_column]
-            
-        indices = dfslot.created.next(step_size) # returns a slice
+
+        indices = dfslot.created.next(step_size)  # returns a slice
         input_df = dfslot.data()
         steps = indices_len(indices)
         if steps > 0:
-            x = input_df.to_array(locs=fix_loc(indices), columns=[self._column])
+            x = input_df.to_array(locs=fix_loc(indices),
+                                  columns=[self._column])
             new_min = np.nanmin(x)
             new_max = np.nanmax(x)
-            
             row = {self._min_column: np.nanmin([prev_min, new_min]),
                    self._max_column: np.nanmax([prev_max, new_max])}
             with self.lock:
@@ -68,14 +71,4 @@ class Stats(TableModule):
                     df.loc[run_number] = row
                 else:
                     df.add(row, index=run_number)
-                # while len(df) > self.params.history:
-                #     drop ...self._table
-                # if self._reset_index:
-                #     new_ = Table(get_random_name('stats_'), dshape=self._table.dshape)
-                #     new_.resize(len(self._table))
-                #     new_.iloc[:,self._min_column] = self._table[self._min_column]
-                #     new_.iloc[:,self._max_column] = self._table[self._max_column]
-                #     self._table = new_
-                #print(repr(df))
-        return self._return_run_step(self.next_state(dfslot),
-                                     steps_run=steps, reads=steps, updates=len(self._table))
+        return self._return_run_step(self.next_state(dfslot), steps)

@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 class Histograms(NAry):
     "Visualize a table with multiple histograms"
     parameters = [('bins', np.dtype(int), 128),
-                  ('delta', np.dtype(float), -5)] # 5%
+                  ('delta', np.dtype(float), -5)]  # 5%
 
     def __init__(self, columns=None, **kwds):
         self._add_slots(kwds, 'input_descriptors',
@@ -61,24 +61,23 @@ class Histograms(NAry):
 
     def _create_columns(self, columns, df):
         bins = self.params.bins
-        delta = self.params.delta # crude
+        delta = self.params.delta  # crude
         inp = self.get_input_module('table')
         minmod = self.get_input_module('min')
         maxmod = self.get_input_module('max')
         for column in columns:
-            #if c==UPDATE_COLUMN:
-            #    continue
             logger.debug('Creating histogram1d %s', column)
             dtype = df[column].dtype
             if not np.issubdtype(dtype, numbers.Number):
                 # only create histograms for number columns
                 continue
             histo = Histogram1D(group=self.name, column=column,
-                                bins=bins, delta=delta, dataflow=self.daataflow)
+                                bins=bins, delta=delta,
+                                scheduler=self.scheduler)
             histo.input.table = inp.output.table
             histo.input.min = minmod.output.table
             histo.input.max = maxmod.output.table
-            self.input.table = histo.output._trace # will become table.1 ...
+            self.input.table = histo.output._trace  # will become table.1 ...
             self._histogram[column] = histo
 
     def _delete_columns(self, columns):

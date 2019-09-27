@@ -6,11 +6,10 @@ from unittest import TestCase, skip, skipIf, main
 
 from progressivis import (log_level, logging,
                           Scheduler, BaseScheduler)
-from progressivis.storage import Group, StorageEngine
-from progressivis.storage.mmap import MMapGroup
+from progressivis.storage import StorageEngine
 import numpy as np
 
-_ = skip # shut-up pylint
+_ = skip  # shut-up pylint
 _ = skipIf
 
 
@@ -29,6 +28,7 @@ class ProgressiveTest(TestCase):
         'DEBUG': logging.DEBUG,
         'NOTSET': logging.NOTSET
     }
+
     def __init__(self, *args):
         super(ProgressiveTest, self).__init__(*args)
         self._output = False

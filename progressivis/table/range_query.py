@@ -124,26 +124,26 @@ class RangeQuery(TableModule):
                                  min_value=None,
                                  max_value=None,
                                  **kwds):
-        if self.input_module is not None: # test if already called
+        if self.input_module is not None:  # test if already called
             return self
-        dataflow = self.dataflow
+        scheduler = self.scheduler
         params = self.params
         self.input_module = input_module
         self.input_slot = input_slot
-        hist_index = HistogramIndex(column=params.column, group=self.name, dataflow=dataflow)
+        hist_index = HistogramIndex(column=params.column, group=self.name, scheduler=scheduler)
         hist_index.input.table = input_module.output[input_slot]
         if min_ is None:
-            min_ = Min(group=self.name, dataflow=dataflow, columns=[self._column])
+            min_ = Min(group=self.name, scheduler=scheduler, columns=[self._column])
             min_.input.table = hist_index.output.min_out
         if max_ is None:
-            max_ = Max(group=self.name, dataflow=dataflow, columns=[self._column])
+            max_ = Max(group=self.name, scheduler=scheduler, columns=[self._column])
             max_.input.table = hist_index.output.max_out
         if min_value is None:
-            min_value = Variable(group=self.name, dataflow=dataflow)
+            min_value = Variable(group=self.name, scheduler=scheduler)
             min_value.input.like = min_.output.table
 
         if max_value is None:
-            max_value = Variable(group=self.name, dataflow=dataflow)
+            max_value = Variable(group=self.name, scheduler=scheduler)
             max_value.input.like = max_.output.table
 
         range_query = self

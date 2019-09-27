@@ -1,20 +1,20 @@
 from __future__ import absolute_import, division, print_function
 
-import logging
-logger = logging.getLogger(__name__)
-
 import pandas as pd
 import numpy as np
-from io import BytesIO
+
+import logging
+
 from progressivis import ProgressiveError, SlotDescriptor
 from ..table.module import TableModule
 from ..table.table import Table
 from ..table.dshape import dshape_from_dataframe
-from ..core.utils import (filepath_to_buffer, _infer_compression,
-                              force_valid_id_columns, is_str
-                              )
-from requests.packages.urllib3.exceptions import HTTPError
+from ..core.utils import force_valid_id_columns
 from .read_csv import read_csv, recovery, is_recoverable, InputSource
+
+
+logger = logging.getLogger(__name__)
+
 
 class CSVLoader(TableModule):
     def __init__(self,
@@ -65,6 +65,7 @@ class CSVLoader(TableModule):
 
 
     def rows_read(self):
+        "Return the number of rows read so far."
         return self._rows_read
 
     def is_ready(self):
@@ -73,7 +74,7 @@ class CSVLoader(TableModule):
         if fn and (fn.created is None or fn.created.any()):
             return True
         return super(CSVLoader, self).is_ready()
-    
+
     def is_data_input(self):
         # pylint: disable=no-self-use
         "Return True if this module brings new data"
@@ -193,12 +194,12 @@ class CSVLoader(TableModule):
     def run_step(self,run_number,step_size, howlong):
         if step_size==0: # bug
             logger.error('Received a step_size of 0')
-            return self._return_run_step(self.state_ready, steps_run=0, creates=0)
+            return self._return_run_step(self.state_ready, steps_run=0)
         status = self.validate_parser(run_number)
         if status==self.state_terminated:
             raise StopIteration('no more filenames')
         elif status==self.state_blocked:
-            return self._return_run_step(status, steps_run=0, creates=0)
+            return self._return_run_step(status, steps_run=0)
         elif status != self.state_ready:
             logger.error('Invalid state returned by validate_parser: %d', status)
             self.close()
@@ -217,7 +218,7 @@ class CSVLoader(TableModule):
             if fn_slot is None or fn_slot.output_module is None:
                 raise
             self.parser = None
-            return self._return_run_step(self.state_ready, steps_run=0, creates=0)
+            return self._return_run_step(self.state_ready, 0)
         df_len = sum([len(df) for df in df_list])
         creates = df_len
         if creates == 0: # should not happen
@@ -250,11 +251,13 @@ class CSVLoader(TableModule):
                 else:
                     for df in df_list:
                         self._table.append(df)
-                if self.parser.is_flushed() and needs_save and self._recovery_table is None and self._save_context:
-                    snapshot = self.parser.get_snapshot(run_number=run_number, table_name=self._table._name,
-                                                last_id=self._table.last_id)
+                if self.parser.is_flushed() and needs_save \
+                   and self._recovery_table is None and self._save_context:
+                    snapshot = self.parser.get_snapshot(run_number=run_number,
+                                                        table_name=self._table._name,
+                                                        last_id=self._table.last_id)
                     self._recovery_table = Table(name='csv_loader_recovery',
-                        data=pd.DataFrame(snapshot, index=[0]), create=True)
+                        data = pd.DataFrame(snapshot, index=[0]), create=True)
                     self._recovery_table_inv = Table(
                         name='csv_loader_recovery_invariant',
                         data=pd.DataFrame(dict(table_name=self._table._name,
@@ -270,17 +273,17 @@ class CSVLoader(TableModule):
                         oldest = self._recovery_table.argmin()['offset']
                         self._recovery_table.drop(np.argmin(oldest))
                     self._last_saved_id = self._table.last_id
-        #print("Progress: ", self.get_progress())
         return self._return_run_step(self.state_ready, steps_run=creates)
 
 
 def check_snapshot(snapshot):
-    if not 'check' in snapshot:
+    if 'check' not in snapshot:
         return False
     hcode = snapshot['check']
     del snapshot['check']
     h = hash(tuple(snapshot.values()))
     return h == hcode
+
 
 def extract_params_docstring(fn, only_defaults=False):
     defaults = fn.__defaults__
@@ -288,7 +291,9 @@ def extract_params_docstring(fn, only_defaults=False):
     argcount = fn.__code__.co_argcount
     nodefcount = argcount - len(defaults)
     reqargs = ",".join(varnames[0:nodefcount])
-    defargs = ",".join(["%s=%s"%(varval[0], repr(varval[1])) for varval in zip(varnames[nodefcount:argcount], defaults)])
+    defargs = ",".join(["%s=%s" % (varval[0], repr(varval[1]))
+                        for varval in zip(varnames[nodefcount:argcount],
+                                          defaults)])
     if only_defaults:
         return defargs
     if not reqargs:
@@ -297,15 +302,16 @@ def extract_params_docstring(fn, only_defaults=False):
         return reqargs
     return reqargs+","+defargs
 
-csv_docstring = "CSVLoader(" \
+
+CSV_DOCSTRING = "CSVLoader(" \
   + extract_params_docstring(pd.read_csv) \
   + ","+extract_params_docstring(CSVLoader.__init__, only_defaults=True) \
-  + ",force_valid_ids=False,id=None,dataflow=None,tracer=None,predictor=None,storage=None,input_descriptors=[],output_descriptors=[])"
+  + ",force_valid_ids=False,id=None,tracer=None,predictor=None,storage=None" \
+  + ",input_descriptors=[],output_descriptors=[])"
 try:
-    CSVLoader.__init__.__func__.__doc__ = csv_docstring
-except:
+    CSVLoader.__init__.__func__.__doc__ = CSV_DOCSTRING
+except AttributeError:
     try:
-        CSVLoader.__init__.__doc__ = csv_docstring
-    except:
-        pass
-
+        CSVLoader.__init__.__doc__ = CSV_DOCSTRING
+    except AttributeError:
+        logger.warning("Cannot set CSVLoader docstring")

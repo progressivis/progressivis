@@ -8,16 +8,19 @@ from collections import namedtuple
 
 import six
 from .changemanager_base import EMPTY_BUFFER
-from .dataflow import Dataflow
 
 logger = logging.getLogger(__name__)
+
 
 class SlotDescriptor(namedtuple('SD', ['name', 'type', 'required', 'doc'])):
     "SlotDescriptor is used in modules to describe the input/output slots."
     __slots__ = ()
+
     def __new__(cls, name, type=None, required=True, doc=None):
         # pylint: disable=redefined-builtin
-        return super(SlotDescriptor, cls).__new__(cls, name, type, required, doc)
+        return super(SlotDescriptor, cls).__new__(cls, name, type,
+                                                  required, doc)
+
 
 @six.python_2_unicode_compatible
 class Slot(object):
@@ -63,7 +66,7 @@ class Slot(object):
         "Return the time of the last update for thie slot"
         if self.changes:
             return self.changes.last_update()
-        return self.output_module.last_update()
+        return self.input_module.last_update()
 
     def to_json(self):
         "Return a dictionary describing this slot, meant to be serialized in json"
@@ -74,18 +77,8 @@ class Slot(object):
 
     def connect(self):
         "Declares the connection in the Dataflow"
-        dataflow = Dataflow.current
+        dataflow = self.output_module.dataflow()  # also in input_module?
         dataflow.add_connection(self)
-        # with scheduler.lock:
-        #     # pylint: disable=protected-access
-        #     scheduler.slots_updated()
-
-        #     self.output_module._connect_output(self)
-        #     prev_slot = self.input_module._connect_input(self)
-        #     if prev_slot:
-        #         raise ProgressiveError('Input already connected for %s',
-        #                                six.u(self))
-        #     scheduler.invalidate()
 
     def validate_types(self):
         "Validate the types of the endpoints connected through this slot"
@@ -107,7 +100,7 @@ class Slot(object):
                        buffer_created=True,
                        buffer_updated=False,
                        buffer_deleted=False):
-        "Create a ChangeManager associated with the type of the endpoints of the slot"
+        "Create a ChangeManager associated with the type of the slot's data."
         data = self.data()
         if data is not None:
             return self.create_changemanager(type(data), self,
@@ -120,7 +113,7 @@ class Slot(object):
                buffer_created=True, buffer_updated=True, buffer_deleted=True,
                manage_columns=True):
         # pylint: disable=too-many-arguments
-        "Compute the changes that occur since the last time this slot has been updated"
+        "Compute the changes that occur since this slot has been updated."
         if self.changes is None:
             self.changes = self.create_changes(buffer_created=buffer_created,
                                                buffer_updated=buffer_updated,
