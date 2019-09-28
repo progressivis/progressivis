@@ -82,6 +82,7 @@ class BaseScheduler(object):
         self._hibernate_cond = Condition()
         self._keep_running = KEEP_RUNNING
         self.dataflow = Dataflow(self)
+        self._enter_cnt = 0
 
     def set_interaction_opts(self, starving_mods=None, max_time=None, max_iter=None):
         if starving_mods:
@@ -149,16 +150,22 @@ class BaseScheduler(object):
     def __enter__(self):
         if self.dataflow is None:
             self.dataflow = Dataflow(self)
+            self._enter_cnt = 1
+        else:
+            self._enter_cnt += 1
         return self.dataflow
 
     def __exit__(self, exc_type, exc_value, traceback):
-        # import pdb; pdb.set_trace()
+        self._enter_cnt -= 1
         if exc_type is None:
-            self._commit(self.dataflow)
+            if self._enter_cnt == 0:
+                self._commit(self.dataflow)
+                self.dataflow = None
         else:
             logger.info('Aborting Dataflow with exception %s', exc_type)
-            self.dataflow.aborted()
-        self.dataflow = None
+            if self._enter_cnt == 0:
+                self.dataflow.aborted()
+                self.dataflow = None
 
     @property
     def name(self):

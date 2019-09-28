@@ -20,20 +20,21 @@ class TestPercentiles(ProgressiveTest):
         """
         """
         s = self.scheduler()
-        random = RandomTable(2, rows=10000, scheduler=s)
-        hist_index = HistogramIndex(column='_1', scheduler=s)
-        hist_index.input.table = random.output.table
-        t_percentiles = Table(name=None,
-                              dshape='{_25:float64,_50:float64,_75:float64}',
-                              data={'_25': [25.0],
-                                    '_50': [50.0],
-                                    '_75': [75.0]})
-        which_percentiles = Constant(table=t_percentiles, scheduler=s)
-        percentiles = Percentiles(hist_index, accuracy=accuracy, scheduler=s)
-        percentiles.input.table = random.output.table
-        percentiles.input.percentiles = which_percentiles.output.table
-        prt = Print(proc=self.terse, scheduler=s)
-        prt.input.df = percentiles.output.table
+        with s:
+            random = RandomTable(2, rows=10000, scheduler=s)
+            hist_index = HistogramIndex(column='_1', scheduler=s)
+            hist_index.input.table = random.output.table
+            t_percentiles = Table(name=None,
+                                  dshape='{_25:float64,_50:float64,_75:float64}',
+                                  data={'_25': [25.0],
+                                        '_50': [50.0],
+                                        '_75': [75.0]})
+            which_percentiles = Constant(table=t_percentiles, scheduler=s)
+            percentiles = Percentiles(hist_index, accuracy=accuracy, scheduler=s)
+            percentiles.input.table = random.output.table
+            percentiles.input.percentiles = which_percentiles.output.table
+            prt = Print(proc=self.terse, scheduler=s)
+            prt.input.df = percentiles.output.table
         s.start()
         s.join()
         pdict = percentiles.table().last().to_dict()
@@ -65,30 +66,31 @@ class TestPercentiles(ProgressiveTest):
         """
         """
         s = self.scheduler()
-        random = RandomTable(2, rows=10000, scheduler=s)
-        t_min = Table(name=None,
-                      dshape='{_1: float64}', data={'_1': [0.3]})
-        min_value = Constant(table=t_min, scheduler=s)
-        t_max = Table(name=None,
-                      dshape='{_1: float64}', data={'_1': [0.8]})
-        max_value = Constant(table=t_max, scheduler=s)
-        range_qry = RangeQuery(column='_1', scheduler=s)
-        range_qry.create_dependent_modules(random, 'table',
-                                           min_value=min_value,
-                                           max_value=max_value)
+        with s:
+            random = RandomTable(2, rows=10000, scheduler=s)
+            t_min = Table(name=None,
+                          dshape='{_1: float64}', data={'_1': [0.3]})
+            min_value = Constant(table=t_min, scheduler=s)
+            t_max = Table(name=None,
+                          dshape='{_1: float64}', data={'_1': [0.8]})
+            max_value = Constant(table=t_max, scheduler=s)
+            range_qry = RangeQuery(column='_1', scheduler=s)
+            range_qry.create_dependent_modules(random, 'table',
+                                               min_value=min_value,
+                                               max_value=max_value)
 
-        hist_index = range_qry.hist_index
-        t_percentiles = Table(name=None,
-                              dshape='{_25:float64,_50:float64,_75:float64}',
-                              data={'_25': [25.0],
-                                    '_50': [50.0],
-                                    '_75': [75.0]})
-        which_percentiles = Constant(table=t_percentiles, scheduler=s)
-        percentiles = Percentiles(hist_index, accuracy=accuracy, scheduler=s)
-        percentiles.input.table = range_qry.output.table
-        percentiles.input.percentiles = which_percentiles.output.table
-        prt = Print(proc=self.terse, scheduler=s)
-        prt.input.df = percentiles.output.table
+            hist_index = range_qry.hist_index
+            t_percentiles = Table(name=None,
+                                  dshape='{_25:float64,_50:float64,_75:float64}',
+                                  data={'_25': [25.0],
+                                        '_50': [50.0],
+                                        '_75': [75.0]})
+            which_percentiles = Constant(table=t_percentiles, scheduler=s)
+            percentiles = Percentiles(hist_index, accuracy=accuracy, scheduler=s)
+            percentiles.input.table = range_qry.output.table
+            percentiles.input.percentiles = which_percentiles.output.table
+            prt = Print(proc=self.terse, scheduler=s)
+            prt.input.df = percentiles.output.table
         s.start()
         s.join()
         pdict = percentiles.table().last().to_dict()
@@ -116,6 +118,6 @@ class TestPercentiles(ProgressiveTest):
         """
         return self._impl_tst_percentiles_rq(0.2)
 
-    
+
 if __name__ == '__main__':
     main()
