@@ -20,9 +20,13 @@ class TestRangeQuery(ProgressiveTest):
         s = self.scheduler()
         with s:
             random = RandomTable(2, rows=1000, scheduler=s)
-            t_min = Table(name=None, dshape='{_1: float64}', data={'_1':[0.3]})
+            t_min = Table(name=None,
+                          dshape='{_1: float64}',
+                          data={'_1': [0.3]})
             min_value = Constant(table=t_min, scheduler=s)
-            t_max = Table(name=None, dshape='{_1: float64}', data={'_1':[0.8]})
+            t_max = Table(name=None,
+                          dshape='{_1: float64}',
+                          data={'_1': [0.8]})
             max_value = Constant(table=t_max, scheduler=s)
             range_qry = RangeQuery(column='_1', scheduler=s)
             range_qry.create_dependent_modules(random, 'table',

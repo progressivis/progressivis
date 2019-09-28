@@ -421,10 +421,6 @@ class BaseScheduler(object):
             for mid in deleted:
                 self._modules[mid].ending()
         self._modules = modules
-        if added:
-            logger.info("Scheduler adding modules %s", added)
-            for mid in added:
-                modules[mid].starting()
         if not(deleted or added):
             logger.info("Scheduler updated with no new module(s)")
         self._dependencies = self._new_dependencies
@@ -432,6 +428,10 @@ class BaseScheduler(object):
         logger.info("New dependencies: %s", self._dependencies)
         for mid, slots in six.iteritems(self._dependencies):
             modules[mid].reconnect(slots)
+        if added:
+            logger.info("Scheduler adding modules %s", added)
+            for mid in added:
+                modules[mid].starting()
         self._new_modules = None
         with self.lock:
             self._run_list = []

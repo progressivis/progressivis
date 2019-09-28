@@ -201,6 +201,8 @@ class Dataflow(object):
                 else:
                     valid.append(module)
             self.valid = valid
+        for module in valid:
+            module.validate()
         return errors
 
     @staticmethod
@@ -235,8 +237,6 @@ class Dataflow(object):
         """
         errors = self.validate_module_inputs(module, self.inputs[module.name])
         errors += self.validate_module_outputs(module, self.inputs[module.name])
-        if module.is_created() and not errors:
-            module.validate()
         return errors
     
     @staticmethod

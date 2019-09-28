@@ -27,13 +27,20 @@ class TestMBKmeans(ProgressiveTest):
         #log_level()
         s = self.scheduler()
         n_clusters = 3
-        csv = CSVLoader(get_dataset('cluster:s3'),sep=' ',skipinitialspace=True,header=None,index_col=False,scheduler=s)
-        km = MBKMeans(n_clusters=n_clusters, random_state=42, is_input=False, scheduler=s)
-        km.input.table = csv.output.table
-        pr = Print(proc=self.terse, scheduler=s)
-        pr.input.df = km.output.table
-        e = Every(proc=self.terse, scheduler=s)
-        e.input.df = km.output.labels
+        with s:
+            csv = CSVLoader(get_dataset('cluster:s3'),
+                            sep=' ',
+                            skipinitialspace=True,
+                            header=None,
+                            index_col=False,
+                            scheduler=s)
+            km = MBKMeans(n_clusters=n_clusters, random_state=42,
+                          is_input=False, scheduler=s)
+            km.input.table = csv.output.table
+            pr = Print(proc=self.terse, scheduler=s)
+            pr.input.df = km.output.table
+            e = Every(proc=self.terse, scheduler=s)
+            e.input.df = km.output.labels
         s.start()
         s.join()
         self.assertEqual(len(csv.table()), len(km.labels()))

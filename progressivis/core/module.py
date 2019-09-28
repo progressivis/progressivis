@@ -442,6 +442,7 @@ class Module(six.with_metaclass(ModuleMeta, object)):
     #     return self.validate_inputs() and self.validate_outputs()
 
     def validate(self):
+        "called when the module have been validated"
         self.state = Module.state_blocked
 
     def _connect_output(self, slot):

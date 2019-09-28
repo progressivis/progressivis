@@ -10,7 +10,7 @@ import numpy as np
 import scipy as sp
 from PIL import Image
 
-from progressivis.core.utils import indices_len
+from progressivis.core.utils import indices_len, bytescale
 from progressivis.core.slot import SlotDescriptor
 from progressivis.table import Table
 from progressivis.table.module import TableModule
@@ -76,9 +76,20 @@ class Heatmap(TableModule):
         high = params.high
         low = params.low
         try:
-            image = sp.misc.toimage(sp.special.cbrt(histo),
-                                    cmin=cmin, cmax=cmax,
-                                    high=high, low=low, mode='I')
+            if cmin is None:
+                cmin = histo.min()
+            if cmax is None:
+                cmax = histo.max()
+            cscale = cmax - cmin
+            scale = float(high - low) / cscale
+            data = (sp.special.cbrt(histo) * 1.0 - cmin) * scale + 0.4999
+            data[data > high] = high
+            data[data < 0] = 0
+            data = np.cast[np.uint32](data)
+            if low != 0:
+                data += low
+
+            image = Image.fromarray(data, mode='I')
             image = image.transpose(Image.FLIP_TOP_BOTTOM)
             filename = params.filename
         except:
@@ -108,10 +119,7 @@ class Heatmap(TableModule):
             values = {'filename': filename, 'time': run_number}
             with self.lock:
                 self._table.add(values)
-        return self._return_run_step(self.state_blocked,
-                                     steps_run=1,
-                                     reads=1,
-                                     updates=1)
+        return self._return_run_step(self.state_blocked, steps_run=1)
 
     def is_visualization(self):
         return True
