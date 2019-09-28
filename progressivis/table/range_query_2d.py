@@ -150,50 +150,65 @@ class RangeQuery2d(TableModule):
                                  **kwds):
         if self.input_module is not None:  # test if already called
             return self
-        scheduler = self.scheduler
+        scheduler = self.scheduler()
         params = self.params
         self.input_module = input_module
         self.input_slot = input_slot
-        hist_index_x = HistogramIndex(column=params.column_x, group=self.name, scheduler=scheduler)
-        hist_index_x.input.table = input_module.output[input_slot]
-        hist_index_y = HistogramIndex(column=params.column_y, group=self.name, scheduler=scheduler)
-        hist_index_y.input.table = input_module.output[input_slot]
-        if min_ is None:
-            min_x = Min(group=self.name, scheduler=scheduler, columns=[self._column_x])            
-            min_x.input.table = hist_index_x.output.min_out
-            min_y = Min(group=self.name, scheduler=scheduler, columns=[self._column_y])            
-            min_y.input.table = hist_index_y.output.min_out
-            min_ = Paste(group=self.name, scheduler=scheduler)
-            min_.input.first = min_x.output.table
-            min_.input.second = min_y.output.table
-        if max_ is None:
-            max_x = Max(group=self.name, scheduler=scheduler, columns=[self._column_x])
-            max_x.input.table = hist_index_x.output.max_out
-            max_y = Max(group=self.name, scheduler=scheduler, columns=[self._column_y])
-            max_y.input.table = hist_index_y.output.max_out
-            max_ = Paste(group=self.name, scheduler=scheduler)
-            max_.input.first = max_x.output.table
-            max_.input.second = max_y.output.table
-        if min_value is None:
-            min_value = Variable(group=self.name, scheduler=scheduler)
-            min_value.input.like = min_.output.table
-        if max_value is None:
-            max_value = Variable(group=self.name, scheduler=scheduler)
-            max_value.input.like = max_.output.table
+        with scheduler:
+            hist_index_x = HistogramIndex(column=params.column_x,
+                                          group=self.name,
+                                          scheduler=scheduler)
+            hist_index_x.input.table = input_module.output[input_slot]
+            hist_index_y = HistogramIndex(column=params.column_y,
+                                          group=self.name,
+                                          scheduler=scheduler)
+            hist_index_y.input.table = input_module.output[input_slot]
+            if min_ is None:
+                min_x = Min(group=self.name,
+                            scheduler=scheduler,
+                            columns=[self._column_x])
+                min_x.input.table = hist_index_x.output.min_out
+                min_y = Min(group=self.name,
+                            scheduler=scheduler,
+                            columns=[self._column_y])
+                min_y.input.table = hist_index_y.output.min_out
+                min_ = Paste(group=self.name, scheduler=scheduler)
+                min_.input.first = min_x.output.table
+                min_.input.second = min_y.output.table
+            if max_ is None:
+                max_x = Max(group=self.name,
+                            scheduler=scheduler,
+                            columns=[self._column_x])
+                max_x.input.table = hist_index_x.output.max_out
+                max_y = Max(group=self.name,
+                            scheduler=scheduler,
+                            columns=[self._column_y])
+                max_y.input.table = hist_index_y.output.max_out
+                max_ = Paste(group=self.name, scheduler=scheduler)
+                max_.input.first = max_x.output.table
+                max_.input.second = max_y.output.table
+            if min_value is None:
+                min_value = Variable(group=self.name,
+                                     scheduler=scheduler)
+                min_value.input.like = min_.output.table
+            if max_value is None:
+                max_value = Variable(group=self.name,
+                                     scheduler=scheduler)
+                max_value.input.like = max_.output.table
 
-        range_query = self
-        #range_query.hist_index = hist_index
-        self._impl = RangeQuery2dImpl(self._column_x, self._column_y,
-                                      hist_index_x, hist_index_y,
-                                      approximate=self._approximate)
-        range_query.input.table = hist_index_x.output.table # actually don't care
-        if min_value:
-            range_query.input.lower = min_value.output.table
-        if max_value:
-            range_query.input.upper = max_value.output.table
-        range_query.input.min = min_.output.table
-        range_query.input.max = max_.output.table
-        
+            range_query = self
+            # range_query.hist_index = hist_index
+            self._impl = RangeQuery2dImpl(self._column_x, self._column_y,
+                                          hist_index_x, hist_index_y,
+                                          approximate=self._approximate)
+            range_query.input.table = hist_index_x.output.table  # don't care
+            if min_value:
+                range_query.input.lower = min_value.output.table
+            if max_value:
+                range_query.input.upper = max_value.output.table
+            range_query.input.min = min_.output.table
+            range_query.input.max = max_.output.table
+
         self.min = min_
         self.max = max_
         self.min_value = min_value
@@ -230,8 +245,8 @@ class RangeQuery2d(TableModule):
             self._max_table.append({self._column_x: val_x,
                                     self._column_y: val_y}, indices=[0])
             return
-        if (self._max_table.last(self._column_x) == val_x and
-            self._max_table.last(self._column_y) == val_y):
+        if self._max_table.last(self._column_x) == val_x and \
+           self._max_table.last(self._column_y) == val_y:
             return
         self._max_table[self._column_x].loc[0] = val_x
         self._max_table[self._column_y].loc[0] = val_y

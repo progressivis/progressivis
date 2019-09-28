@@ -14,18 +14,18 @@ class TestDataflow(ProgressiveTest):
         with scheduler as dataflow:
             csv = CSVLoader(get_dataset('smallfile'), name='csv',
                             index_col=False, header=None,
-                            dataflow=dataflow)
-            self.assertIs(dataflow['csv'], csv)
+                            scheduler=scheduler)
+            self.assertIs(scheduler['csv'], csv)
             self.assertEqual(dataflow.validate_module(csv), [])
 
-            m = Min(name="min", dataflow=dataflow)
+            m = Min(name="min", scheduler=scheduler)
             self.assertIs(dataflow[m.name], m)
             self.assertEqual(dataflow.validate_module(m),
                              ['Input slot "table" missing in module "min"'])
 
             prt = Print(proc=self.terse,
-                        name="print",
-                        dataflow=dataflow)
+                        name='print',
+                        scheduler=scheduler)
             self.assertIs(dataflow[prt.name], prt)
             self.assertEqual(dataflow.validate_module(prt),
                              ['Input slot "df" missing in module "print"'])
@@ -74,7 +74,7 @@ class TestDataflow(ProgressiveTest):
             self.assertEqual(deps, ['csv', m.name])
             prt = Print(proc=self.terse,
                         name="print",
-                        dataflow=dataflow)
+                        scheduler=scheduler)
             self.assertIs(dataflow[prt.name], prt)
             self.assertEqual(dataflow.validate_module(prt),
                              ['Input slot "df" missing in module "print"'])

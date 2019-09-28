@@ -132,7 +132,19 @@ class Dataflow(object):
         output_name = slot.output_name
         input_module = slot.input_module
         input_name = slot.input_name
-        assert input_name not in self.inputs[input_module.name]
+        if input_name in self.inputs[input_module.name]:
+            if slot is self.inputs[input_module.name][input_name]:
+                logger.warn("redundant connection:"
+                            "Input slot %s already connected to slot %s in module %s",
+                            input_name,
+                            self.inputs[input_module.name][input_name],
+                            input_module.name)
+            else:
+                raise ProgressiveError("Input slot %s already connected to"
+                                       "slot %s in module %s" % (
+                                           input_name,
+                                           self.inputs[input_module.name][input_name],
+                                           input_module.name))
         self.inputs[input_module.name][input_name] = slot
         if output_module.name not in self.outputs:
             self.outputs[output_module.name] = {output_name: [slot]}
@@ -201,7 +213,7 @@ class Dataflow(object):
                 else:
                     valid.append(module)
             self.valid = valid
-        for module in valid:
+        for module in self.valid:
             module.validate()
         return errors
 

@@ -68,11 +68,12 @@ class ProgressiveTest(TestCase):
     def tearDownClass(cls):
         cls.cleanup()
 
-    def scheduler(self):
-        if self._scheduler is None:
+    def scheduler(self, clean=False):
+        if self._scheduler is None or clean:
             if getenv("NOTHREAD"):
                 if not self._output:
-                    print('[Using non-threaded scheduler]', end=' ', file=sys.stderr)
+                    print('[Using non-threaded scheduler]',
+                          end=' ', file=sys.stderr)
                     self._output = True
                 self._scheduler = BaseScheduler()
             else:

@@ -14,7 +14,7 @@ import numpy as np
 
 class TestCombineFirst(ProgressiveTest):
     def test_combine_first_dup(self):
-        s=self.scheduler()
+        s=self.scheduler(True)
         cst1=Constant(Table(name='tcf_xmin_xmax', data=pd.DataFrame({'xmin': [1], 'xmax': [2]}), create=True), scheduler=s)
         cst2=Constant(Table(name='tcf_ymin_ymax', data=pd.DataFrame({'ymin': [5], 'ymax': [6]}), create=True), scheduler=s)
         cst3=Constant(Table(name='tcf_ymin_ymax2', data=pd.DataFrame({'ymin': [3], 'ymax': [4]}), create=True), scheduler=s)
@@ -33,7 +33,7 @@ class TestCombineFirst(ProgressiveTest):
                         last['ymin']==5 and last['ymax']==6)
 
     def test_combine_first_nan(self):
-        s=self.scheduler()
+        s=self.scheduler(True)
         cst1=Constant(Table(name='tcf_xmin_xmax_nan', data=pd.DataFrame({'xmin': [1], 'xmax': [2]}), create=True), scheduler=s)
         cst2=Constant(Table(name='tcf_ymin_ymax_nan', data=pd.DataFrame({'ymin': [np.nan], 'ymax': [np.nan]}), create=True), scheduler=s)
         cst3=Constant(Table(name='tcf_ymin_ymax2_nan', data=pd.DataFrame({'ymin': [3], 'ymax': [4]}), create=True), scheduler=s)

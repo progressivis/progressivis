@@ -43,42 +43,43 @@ class _DataClass(object):
         if self.input_module is not None:
             return self
         scheduler = self.scheduler()
-        self.input_module = input_module
-        self.input_slot = input_slot
-        range_query_2d = RangeQuery2d(column_x=self.x_column,
-                                      column_y=self.y_column,
-                                      group=self._group,
-                                      scheduler=scheduler,
-                                      approximate=self._approximate)
-        range_query_2d.create_dependent_modules(input_module,
-                                                input_slot,
-                                                min_value=False,
-                                                max_value=False)
-        self.min_value = Variable(group=self._group, scheduler=scheduler)
-        self.min_value.input.like = range_query_2d.min.output.table
-        range_query_2d.input.lower = self.min_value.output.table
-        self.max_value = Variable(group=self._group, scheduler=scheduler)
-        self.max_value.input.like = range_query_2d.max.output.table
-        range_query_2d.input.upper = self.max_value.output.table
-        if histogram2d is None:
-            histogram2d = MCHistogram2D(self.x_column, self.y_column,
-                                        group=self._group,
-                                        scheduler=scheduler)
-        histogram2d.input.data = range_query_2d.output.table
-        if sample is True:
-            sample = Sample(samples=100, group=self._group,
-                            scheduler=scheduler)
-        elif sample is None and select is None:
-            raise ProgressiveError("Scatterplot needs a select module")
-        if sample is not None:
-            sample.input.table = range_query_2d.output.table
+        with scheduler:
+            self.input_module = input_module
+            self.input_slot = input_slot
+            range_query_2d = RangeQuery2d(column_x=self.x_column,
+                                          column_y=self.y_column,
+                                          group=self._group,
+                                          scheduler=scheduler,
+                                          approximate=self._approximate)
+            range_query_2d.create_dependent_modules(input_module,
+                                                    input_slot,
+                                                    min_value=False,
+                                                    max_value=False)
+            self.min_value = Variable(group=self._group, scheduler=scheduler)
+            self.min_value.input.like = range_query_2d.min.output.table
+            range_query_2d.input.lower = self.min_value.output.table
+            self.max_value = Variable(group=self._group, scheduler=scheduler)
+            self.max_value.input.like = range_query_2d.max.output.table
+            range_query_2d.input.upper = self.max_value.output.table
+            if histogram2d is None:
+                histogram2d = MCHistogram2D(self.x_column, self.y_column,
+                                            group=self._group,
+                                            scheduler=scheduler)
+            histogram2d.input.data = range_query_2d.output.table
+            if sample is True:
+                sample = Sample(samples=100, group=self._group,
+                                scheduler=scheduler)
+            elif sample is None and select is None:
+                raise ProgressiveError("Scatterplot needs a select module")
+            if sample is not None:
+                sample.input.table = range_query_2d.output.table
+            self.histogram2d = histogram2d
+            self.sample = sample
+            self.select = select
+            self.min = range_query_2d.min.output.table
+            self.max = range_query_2d.max.output.table
+            self.range_query_2d = range_query_2d
         scatterplot = self
-        self.histogram2d = histogram2d
-        self.sample = sample
-        self.select = select
-        self.min = range_query_2d.min.output.table
-        self.max = range_query_2d.max.output.table
-        self.range_query_2d = range_query_2d
         return scatterplot
 
 
@@ -280,11 +281,12 @@ class MCScatterPlot(NAry):
                                  sample=True, select=None, **kwds):
         self.input_module = input_module
         self.input_slot = input_slot
-        self.min_value = VirtualVariable([self._x_label, self._y_label])
-        self.max_value = VirtualVariable([self._x_label, self._y_label])
-        for cl in self._classes:
-            self._add_class(*cl)
-        self._finalize()
+        with self.scheduler():
+            self.min_value = VirtualVariable([self._x_label, self._y_label])
+            self.max_value = VirtualVariable([self._x_label, self._y_label])
+            for cl in self._classes:
+                self._add_class(*cl)
+            self._finalize()
 
     def _finalize(self):
         for dc in self._data_class_list:
