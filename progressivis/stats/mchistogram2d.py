@@ -14,13 +14,12 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-
 class MCHistogram2D(NAry):
     parameters = [('xbins',  np.dtype(int),   256),
                   ('ybins',  np.dtype(int),   256),
-                  ('xdelta', np.dtype(float), -5), # means 5%
-                  ('ydelta', np.dtype(float), -5), # means 5%
-                  ('history',np.dtype(int),   3) ]
+                  ('xdelta', np.dtype(float), -5),  # means 5%
+                  ('ydelta', np.dtype(float), -5),  # means 5%
+                  ('history', np.dtype(int),   3)]
 
     schema = "{" \
              "array: var * var * float64," \
@@ -34,10 +33,10 @@ class MCHistogram2D(NAry):
              "}"
 
     def __init__(self, x_column, y_column, with_output=True, **kwds):
-        self._add_slots(kwds,'input_descriptors',
-                        [SlotDescriptor('data', type=Table, required=True),])
-                         #SlotDescriptor('min', type=Table, required=False),
-                         #SlotDescriptor('max', type=Table, required=False)])
+        self._add_slots(kwds, 'input_descriptors',
+                        [SlotDescriptor('data', type=Table, required=True)])
+        # SlotDescriptor('min', type=Table, required=False),
+        # SlotDescriptor('max', type=Table, required=False)])
         super(MCHistogram2D, self).__init__(dataframe_slot='data', **kwds)
         self.x_column = x_column
         self.y_column = y_column
@@ -54,17 +53,17 @@ class MCHistogram2D(NAry):
                             chunks={'array': (1, 64, 64)},
                             create=True)
         self._table._synchronized_lock = self.scheduler().create_lock()
+
     def reset(self):
         self._histo = None
         self._xedges = None
         self._yedges = None
         self.total_read = 0
-        self.get_input_slot('data').reset()        
+        self.get_input_slot('data').reset()
+
     def predict_step_size(self, duration):
         return Module. predict_step_size(self, duration)
 
-
-    
     def is_ready(self):
         # If we have created data but no valid min/max, we can only wait
         if self._bounds and self.get_input_slot('data').created.any():
@@ -112,7 +111,7 @@ class MCHistogram2D(NAry):
                 max_slot = input_slot
                 max_slot.update(run_number)
                 if max_slot.created.any():
-                    has_creation = True                
+                    has_creation = True
                 max_slot.created.next()
                 with max_slot.lock:
                     max_df = max_slot.data()
@@ -144,16 +143,16 @@ class MCHistogram2D(NAry):
         xmin, xmax, ymin, ymax, has_creation = bounds
         if not (dfslot.created.any() or has_creation):
             logger.info('Input buffers empty')
-            return self._return_run_step(self.state_blocked, steps_run=0)                    
+            return self._return_run_step(self.state_blocked, steps_run=0)
         if self._bounds is None:
             (xdelta, ydelta) = self.get_delta(xmin, xmax, ymin, ymax)
-            self._bounds = (xmin-xdelta,xmax+xdelta,ymin-ydelta,ymax+ydelta)
-            logger.info("New bounds at run %d: %s", run_number,self._bounds)
+            self._bounds = (xmin-xdelta, xmax+xdelta, ymin-ydelta, ymax+ydelta)
+            logger.info("New bounds at run %d: %s", run_number, self._bounds)
         else:
             (dxmin, dxmax, dymin, dymax) = self._bounds
             (xdelta, ydelta) = self.get_delta(xmin, xmax, ymin, ymax)
             assert xdelta >= 0 and ydelta >= 0
-            
+
             # Either the min/max has extended, or it has shrunk beyond the deltas
             if ((xmin<dxmin or xmax>dxmax or ymin<dymin or ymax>dymax)
                 or (xmin>(dxmin+xdelta) or xmax<(dxmax-xdelta) or ymin>(dymin+ydelta) or ymax<(dymax-ydelta))):
@@ -163,7 +162,6 @@ class MCHistogram2D(NAry):
                 logger.info('Updated bounds at run %s: %s', run_number, self._bounds)
                 self.reset()
                 dfslot.update(run_number)
-
 
         xmin, xmax, ymin, ymax = self._bounds
         if xmin>=xmax or ymin>=ymax:

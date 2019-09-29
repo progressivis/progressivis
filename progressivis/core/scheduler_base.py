@@ -82,7 +82,7 @@ class BaseScheduler(object):
         self._hibernate_cond = Condition()
         self._keep_running = KEEP_RUNNING
         self.dataflow = Dataflow(self)
-        self._enter_cnt = 0
+        self._enter_cnt = 1
 
     def set_interaction_opts(self, starving_mods=None, max_time=None, max_iter=None):
         if starving_mods:
@@ -290,8 +290,10 @@ class BaseScheduler(object):
     def run(self):
         "Run the modules, called by start()."
         if self.dataflow:
+            assert self._enter_cnt == 1
             self._commit(self.dataflow)
             self.dataflow = None
+            self._enter_cnt = 0
         self._stopped = False
         self._running = True
         self._start = default_timer()

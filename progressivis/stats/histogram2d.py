@@ -18,7 +18,7 @@ class Histogram2D(TableModule):
                   ('ybins',  np.dtype(int),   256),
                   ('xdelta', np.dtype(float), -5),  # means 5%
                   ('ydelta', np.dtype(float), -5),  # means 5%
-                  ('history',np.dtype(int),   3)]
+                  ('history', np.dtype(int),   3)]
 
     schema = "{" \
              "array: var * var * float64," \

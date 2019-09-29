@@ -83,6 +83,8 @@ class Module(six.with_metaclass(ModuleMeta, object)):
             scheduler = BaseScheduler.default
         self._scheduler = scheduler
         dataflow = scheduler.dataflow
+        if dataflow is None:
+            raise ProgressiveError("No valid context in scheduler")
         if name is None:
             name = dataflow.generate_name(self.pretty_typename())
         elif name in dataflow:
@@ -117,7 +119,10 @@ class Module(six.with_metaclass(ModuleMeta, object)):
         self._had_error = False
         self._parse_parameters(kwds)
         self._input_slots = self._validate_descriptors(input_descriptors)
-        self.input_descriptors = {d.name: d for d in input_descriptors}
+        self.input_descriptors = {d.name: d
+                                  for d in input_descriptors}
+        self.input_multiple = {d.name: 0
+                               for d in input_descriptors if d.multiple}
         self._output_slots = self._validate_descriptors(output_descriptors)
         self.output_descriptors = {d.name: d for d in output_descriptors}
         self.default_step_size = 100
@@ -354,6 +359,13 @@ class Module(six.with_metaclass(ModuleMeta, object)):
         # raises error is the slot is not declared
         return self._input_slots[name]
 
+    def get_input_slot_multiple(self, name):
+        if not self.input_slot_multiple(name):
+            return [self.get_input_slot(name)]
+        prefix = name+'.'
+        return [iname for iname in self.inputs
+                if iname.startswith(prefix)]
+
     def get_input_module(self, name):
         "Return the specified input module"
         return self.get_input_slot(name).output_module
@@ -367,6 +379,9 @@ class Module(six.with_metaclass(ModuleMeta, object)):
     def input_slot_required(self, name):
         return self.input_descriptors[name].required
 
+    def input_slot_multiple(self, name):
+        return self.input_descriptors[name].multiple
+
     def input_slot_names(self):
         return list(self._input_slots.keys())
 
@@ -378,35 +393,46 @@ class Module(six.with_metaclass(ModuleMeta, object)):
             if old_slot is not slot:
                 # pylint: disable=protected-access
                 assert slot.input_module is self
+                if slot.original_name:
+                    descriptor = self.input_descriptors[slot.original_name]
+                    self.input_descriptors[name] = descriptor
+                    self.inputs.append(name)
+                    logger.info('Creating multiple input slot "%s" in "%s"',
+                                name, self.name)
                 self._input_slots[name] = slot
                 if old_slot:
                     old_slot.output_module._disconnect_output(old_slot.output_name)
-                if slot:
-                    slot.output_module._connect_output(slot)
+                # if slot:  wonder why?
+                slot.output_module._connect_output(slot)
 
         for name in deleted_keys:
             old_slot = self._input_slots[name]
             if old_slot:
                 # pylint: disable=protected-access
                 old_slot.output_module._disconnect_output(old_slot.output_name)
+                if old_slot.original_name:
+                    del self.inputs[self.inputs.index(name)]
+                    del self.input_descriptors[name]
+                    logger.info('Removing multiple input slot "%s" in "%s"',
+                                name, self.name)
             self._input_slots[name] = None
 
-    def _connect_input(self, slot):
-        ret = self.get_input_slot(slot.input_name)
-        self._input_slots[slot.input_name] = slot
-        return ret
+    # def _connect_input(self, slot):
+    #     ret = self.get_input_slot(slot.input_name)
+    #     self._input_slots[slot.input_name] = slot
+    #     return ret
 
-    def validate_inputs(self):
-        "Validate the input slots"
-        # Only validate existence, the output code will test types
-        valid = True
-        for sd in self.input_descriptors.values():
-            slot = self._input_slots[sd.name]
-            if sd.required and slot is None:
-                logger.error('Missing inputs slot %s in %s',
-                             sd.name, self.name)
-                valid = False
-        return valid
+    # def validate_inputs(self):
+    #     "Validate the input slots"
+    #     # Only validate existence, the output code will test types
+    #     valid = True
+    #     for sd in self.input_descriptors.values():
+    #         slot = self._input_slots[sd.name]
+    #         if sd.required and slot is None:
+    #             logger.error('Missing inputs slot %s in %s',
+    #                          sd.name, self.name)
+    #             valid = False
+    #     return valid
 
     def has_any_output(self):
         return any(self._output_slots.values())
@@ -509,6 +535,10 @@ class Module(six.with_metaclass(ModuleMeta, object)):
         return self._state == Module.state_running
 
     def is_ready(self):
+        # Module is either a source or has buffered data to process
+        if self.state == Module.state_ready:
+            return True
+
         if self.state == Module.state_zombie:
             logger.info("%s Not ready because it turned from zombie"
                         " to terminated", self.name)
@@ -523,10 +553,6 @@ class Module(six.with_metaclass(ModuleMeta, object)):
         # source modules can be generators that
         # cannot run out of input, unless they decide so.
         if not self.has_any_input():
-            return True
-
-        # Module is either a source or has buffered data to process
-        if self.state == Module.state_ready:
             return True
 
         # Module is waiting for some input, test if some is available

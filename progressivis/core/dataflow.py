@@ -37,6 +37,7 @@ class Dataflow(object):
         self.inputs = {}
         self.outputs = {}
         self.valid = []
+        self._slot_clashes = {}
         self.reachability = None
         # add the scheduler's dataflow into self
         self.version = scheduler.version
@@ -107,7 +108,8 @@ class Dataflow(object):
         self.valid = []
 
     def _add_module(self, module):
-        assert module.name not in self.inputs
+        if module.name in self.inputs:
+            raise ProgressiveError("Module %s already exists" % module.name)
         self._modules[module.name] = module
         self.inputs[module.name] = {}
         self.outputs[module.name] = {}
@@ -132,7 +134,13 @@ class Dataflow(object):
         output_name = slot.output_name
         input_module = slot.input_module
         input_name = slot.input_name
-        if input_name in self.inputs[input_module.name]:
+        if input_module.input_slot_multiple(input_name):
+            slot.original_name = input_name
+            clashes = self._clashes(input_module, input_name)
+            input_name += '.%02d.%02d' % (self.version, clashes)
+            slot.input_name = input_name
+            assert input_name not in self.inputs[input_module.name]
+        elif input_name in self.inputs[input_module.name]:
             if slot is self.inputs[input_module.name][input_name]:
                 logger.warn("redundant connection:"
                             "Input slot %s already connected to slot %s in module %s",
@@ -157,7 +165,18 @@ class Dataflow(object):
     def connect(self, output_module, output_name, input_module, input_name):
         "Declare a connection between two modules slots"
         slot = output_module.create_slot(output_module, output_name, input_module, input_name)
+        if not slot.validate_types():
+            raise ProgressiveError('Incompatible types for slot (%s,%s) in %s', str(slot))
         self.add_connection(slot)
+
+    def _clashes(self, module_name, input_slot_name):
+        slots = self._slot_clashes.get(module_name, None)
+        if slots is None:
+            slots = {input_slot_name: 1}
+            self._slot_clashes[module_name] = slots
+            return 1  # shortcut
+        slots[input_slot_name] += 1
+        return slots[input_slot_name]
 
     def _remove_module_inputs(self, name):
         for slot in self.inputs[name].values():
@@ -224,7 +243,18 @@ class Dataflow(object):
         """
         errors = []
         for slotdesc in module.input_descriptors.values():
-            slot = inputs.get(slotdesc.name)
+            slot = None
+            if slotdesc.multiple:
+                for islot in inputs.values():
+                    if islot.original_name == slotdesc.name:
+                        slot = islot
+                        logger.info('Input slot "%s" renamed "%s" in module "%s"',
+                                    islot.original_name,
+                                    islot.input_name,
+                                    module.name)
+                        break
+            else:
+                slot = inputs.get(slotdesc.name)
             if slotdesc.required and slot is None:
                 errors.append('Input slot "%s" missing in module "%s"'%(
                     slotdesc.name, module.name))

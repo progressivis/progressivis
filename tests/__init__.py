@@ -33,6 +33,12 @@ class ProgressiveTest(TestCase):
         super(ProgressiveTest, self).__init__(*args)
         self._output = False
         self._scheduler = None
+        level = getenv("LOGLEVEL")
+        if level in self.levels:
+            level = self.levels[level]
+        if level:
+            print('Logger level for %s: ' % self, level, file=sys.stderr)
+            self.log(int(level))
 
     @staticmethod
     def terse(x):
@@ -41,14 +47,10 @@ class ProgressiveTest(TestCase):
 
     def setUp(self):
         np.random.seed(42)
-        level = getenv("LOGLEVEL")
-        if level in self.levels:
-            level = self.levels[level]
-        if level:
-            print('Logger level: ', level, file=sys.stderr)
-            self.log(int(level))
-        else:
-            self.log()
+
+    def tearDown(self):
+        # print('Logger level for %s back to ERROR' % self, file=sys.stderr)
+        self.log()
 
     @classmethod
     def cleanup(self):

@@ -7,8 +7,6 @@ import six
 from itertools import tee
 import uuid
 from functools import wraps
-from io import BytesIO
-from collections import Iterable, Mapping
 from progressivis.core.bitmap import bitmap
 try:
     import collections.abc as collections_abc  # only works on python 3.3+
@@ -19,10 +17,10 @@ from multiprocessing import Process
 from pandas.io.common import _is_url
 try:
     from pandas.io.common import _is_s3_url
-except ImportError: # pandas >=0.23.0 
+except ImportError:  # pandas >=0.23.0
     from pandas.io.common import is_s3_url
     _is_s3_url = is_s3_url
-    
+
 import requests
 import os
 import os.path
@@ -59,26 +57,33 @@ class FakeLock(object):
     def __exit__(self, exc_type, exc_val, exc_tb):
         return
 
+
 class FakeCondition(object):
     def __init__(self, lock=None):
         self._lock = lock #  still keeps pylint happy
+
     def wait(self):
         pass
+
     def notify(self):
         pass
+
     def __enter__(self):
         pass
+
     def __exit__(self, type, value, traceback):
         pass
-    
+
+
 if multi_threading:
     from threading import Thread, Lock, RLock, Condition
 else:
     Lock = FakeLock
     RLock = FakeLock
     Condition = FakeCondition
-    
-    class Thread(object):  # fake threads for debug
+
+
+class Thread(object):  # fake threads for debug
         def __init__(self, group=None, target=None, name=None,
                      args=(), kwargs=None):
             self._group = group
@@ -95,6 +100,7 @@ else:
 
         def join(self, timeout=None):
             pass
+
 
 if six.PY2:
     from itertools import izip
@@ -295,7 +301,7 @@ def fix_loc(indices):
         return slice(indices.start, indices.stop-1)  # semantic of slice .loc
     return indices
 
-# See view-source:http://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2Float
+# See http://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2Float
 
 
 def next_pow2(v):
@@ -352,11 +358,13 @@ def norm_slice(sl):
     step = 1 if sl.step is None else sl.step
     return slice(start, sl.stop, step)
 
+
 def is_full_slice(sl):
     if not isinstance(sl, slice):
         return False
     nsl = norm_slice(sl)
     return nsl.start == 0 and nsl.step == 1 and nsl.stop is None
+
 
 def inter_slice(this, that):
     bz = bitmap([])
@@ -623,6 +631,7 @@ def del_tmp_csv_fifo(file_name):
     os.remove(file_name)
     os.rmdir(dn)
 
+
 if six.PY3:
     from urllib.parse import urlparse as parse_url
     from urllib.parse import parse_qs
@@ -674,22 +683,24 @@ def s3_get_filepath_or_buffer(filepath_or_buffer, encoding=None,
         filepath_or_buffer = fs.open(_strip_schema(filepath_or_buffer))
     return filepath_or_buffer, None, compression
 
+
 def filepath_to_buffer(filepath, encoding=None,
                        compression=None, timeout=None, start_byte=0):
     if not is_str(filepath):
-        #if start_byte:
+        # if start_byte:
         #    filepath.seek(start_byte)
         return filepath, encoding, compression, filepath.size()
     if _is_url(filepath):
         headers = None
         if start_byte:
             headers = {"Range": "bytes={}-".format(start_byte)}
-        req = requests.get(filepath, stream=True, headers=headers, timeout=timeout)
+        req = requests.get(filepath, stream=True, headers=headers,
+                           timeout=timeout)
         content_encoding = req.headers.get('Content-Encoding', None)
         if content_encoding == 'gzip':
             compression = 'gzip'
         size = req.headers.get('Content-Length', 0)
-        #return HttpDesc(req.raw, filepath), encoding, compression, int(size)
+        # return HttpDesc(req.raw, filepath), encoding, compression, int(size)
         return req.raw, encoding, compression, int(size)
     if _is_s3_url(filepath):
         from pandas.io import s3
@@ -709,6 +720,7 @@ def filepath_to_buffer(filepath, encoding=None,
     if start_byte:
         stream.seek(start_byte)
     return stream, encoding, compression, size
+
 
 _compression_to_extension = {
     'gzip': '.gz',
@@ -764,9 +776,9 @@ def _infer_compression(filepath_or_buffer, compression):
     msg += '\nValid compression types are {}'.format(valid)
     raise ValueError(msg)
 
+
 def get_physical_base(t):
     return t if t.base is None else get_physical_base(t.base)
-
 
 
 def force_valid_id_columns(df):
@@ -811,9 +823,10 @@ class Dialog(object):
     def output_table(self):
         return self._module._table
 
+
 def spy(*args, **kwargs):
     import time
-    f = open(kwargs.pop('file'), "a")        
+    f = open(kwargs.pop('file'), "a")
     print(time.time(), *args, file=f, flush=True, **kwargs)
     f.close()
 
@@ -840,15 +853,20 @@ def patch_this(to_decorate, module, patch):
         return patch_wrapper
     return patch_decorator(to_decorate)
 
+
 class ModulePatch(object):
     def __init__(self, name):
         self._name = name
         self.applied = False
+
     def patch_condition(self, m):
-        if self.applied: return False
+        if self.applied:
+            return False
         return self._name == m.name
+
     def before_run_step(self, m, *args, **kwargs):
         pass
+
     def after_run_step(self, m, *args, **kwargs):
         pass
 
@@ -857,13 +875,14 @@ def decorate_module(m, patch):
     assert hasattr(m, 'run_step')
     m.run_step = patch_this(to_decorate=m.run_step, module=m, patch=patch)
     patch.applied = True
+
+
 def decorate(scheduler, patch):
     for m in scheduler.modules().values():
         if patch.patch_condition(m):
             decorate_module(m, patch)
 
 
-    
 # Returns a byte-scaled image
 # Disappeared from scipy.misc
 def bytescale(data, cmin=None, cmax=None, high=255, low=0):
@@ -894,9 +913,7 @@ def bytescale(data, cmin=None, cmax=None, high=255, low=0):
 
     Examples
     --------
-    >>> img = array([[ 91.06794177,   3.39058326,  84.4221549 ],
-                     [ 73.88003259,  80.91433048,   4.88878881],
-                     [ 51.53875334,  34.45808177,  27.5873488 ]])
+    >>> img = np.array([[ 91.06794177,   3.39058326,  84.4221549 ], [ 73.88003259,  80.91433048,   4.88878881], [ 51.53875334,  34.45808177,  27.5873488 ]])
     >>> bytescale(img)
     array([[255,   0, 236],
            [205, 225,   4],

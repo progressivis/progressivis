@@ -6,10 +6,11 @@ from .nary import NAry
 from .table import Table
 from .dshape import dshape_union
 
+
 def combine_first(table, other, name=None):
     dshape = dshape_union(table.dshape, other.dshape)
     comb_table = Table(name=name, dshape=dshape)
-    if np.all(table.index.values == other.index.values): # the gentle case
+    if np.all(table.index.values == other.index.values):  # the gentle case
         comb_table.resize(len(table.index), index=table.index)
         for cname in table.columns:
             comb_table.loc[:, [cname]] = table.loc[:, [cname]]
@@ -25,7 +26,7 @@ def combine_first(table, other, name=None):
         other_set = set(other.index.values)
         comb_idx = sorted(self_set | other_set)
         common_set = self_set & other_set
-        common_idx = sorted(common_set)
+        # common_idx = sorted(common_set)
         self_u_common_idx = sorted(self_set | common_set)
         other_u_common_idx = sorted(other_set | common_set)
         other_only_idx = sorted(other_set - self_set)
@@ -44,13 +45,10 @@ def combine_first(table, other, name=None):
     return comb_table
 
 
-
 class CombineFirst(NAry):
-    def run_step(self,run_number,step_size,howlong):
+    def run_step(self, run_number, step_size, howlong):
         frames = []
-        for name in self.inputs:
-            if not name.startswith('table'):
-                continue
+        for name in self.get_input_slot_multiple():
             slot = self.get_input_slot(name)
             with slot.lock:
                 df = slot.data()
@@ -58,7 +56,7 @@ class CombineFirst(NAry):
         df = frames[0]
         for other in frames[1:]:
             df = combine_first(df, other)
-        l = len(df)
+        steps = len(df)
         with self.lock:
             self._table = df
-        return self._return_run_step(self.state_blocked, steps_run=l)
+        return self._return_run_step(self.state_blocked, steps_run=steps)

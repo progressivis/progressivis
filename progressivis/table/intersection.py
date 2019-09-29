@@ -17,7 +17,6 @@ class Intersection(NAry):
 
     def __init__(self, **kwds):
         super(Intersection, self).__init__(**kwds)
-        #self.run_step = self.run_step_progress
         self.run_step = self.run_step_seq
 
     def predict_step_size(self, duration):
@@ -26,16 +25,14 @@ class Intersection(NAry):
     @synchronized
     def run_step_progress(self, run_number, step_size, howlong):
         _b = bitmap.asbitmap
-        to_delete = [] 
-        to_create = [] 
+        to_delete = []
+        to_create = []
         steps = 0
         tables = []
         ph_table = None
         assert len(self.inputs) > 0
         reset_ = False
-        for name in self.inputs:
-            if not name.startswith('table'):
-                continue
+        for name in self.get_input_slot_multiple():
             slot = self.get_input_slot(name)
             t = slot.data()
             assert isinstance(t, TableSelectedView)
@@ -45,7 +42,7 @@ class Intersection(NAry):
                 assert ph_table is _get_physical_table(t)
             tables.append(t)
             slot.update(run_number)
-            if reset_ or slot.updated.any() or slot.deleted.any():        
+            if reset_ or slot.updated.any() or slot.deleted.any():
                 slot.reset()
                 reset_ = True
                 steps += 1
@@ -61,7 +58,7 @@ class Intersection(NAry):
             #    #steps += 1 # indices_len(updated) + 1
             if slot.created.any():
                 created = slot.created.next(step_size)
-                bm = _b(created) #- to_delete
+                bm = _b(created)  # - to_delete
                 to_create.append(bm)
                 steps += indices_len(created)
         if steps == 0:
@@ -70,29 +67,30 @@ class Intersection(NAry):
         to_create_4sure = bitmap()
         if len(to_create) == len(tables):
             to_create_4sure = bitmap.intersection(*to_create)
-            
+
         to_create_maybe = bitmap.union(*to_create)
-        
+
         if not self._table:
             self._table = TableSelectedView(ph_table, bitmap([]))
         if reset_:
             self._table.selection = bitmap([])
-        #self._table.selection -= to_delete
+        # self._table.selection -= to_delete
         self._table.selection |= to_create_4sure
         to_create_maybe -= to_create_4sure
         eff_create = to_create_maybe
         for t in tables:
             eff_create &= t.selection
         self._table.selection |= eff_create
-        return self._return_run_step(self.next_state(self.get_input_slot(self.inputs[0])), steps_run=steps)
-    
+        # self.get_input_slot(self.inputs[0]))
+        return self._return_run_step(self.state_blocked, steps)
+
     @synchronized
     def run_step_seq(self, run_number, step_size, howlong):
         steps = 0
         tables = []
         ph_table = None
         assert len(self.inputs) > 0
-        for name in self.inputs:
+        for name in self.get_input_slot_multiple():
             if not name.startswith('table'):
                 continue
             slot = self.get_input_slot(name)
@@ -107,15 +105,17 @@ class Intersection(NAry):
             if slot.deleted.any():
                 slot.deleted.next()
                 steps += 1
-            if slot.updated.any(): 
+            if slot.updated.any():
                 slot.updated.next()
-                steps += 1                
+                steps += 1
             if slot.created.any():
-                created = slot.created.next()
+                slot.created.next()
                 steps += 1
         if steps == 0:
-            return self._return_run_step(self.state_blocked, steps_run=0)
+            return self._return_run_step(self.state_blocked, 0)
         if not self._table:
             self._table = TableSelectedView(ph_table, bitmap([]))
-        self._table.selection = bitmap.intersection(*[t.selection for t in tables])
-        return self._return_run_step(self.next_state(self.get_input_slot(self.inputs[0])), steps_run=steps)
+        self._table.selection = bitmap.intersection(*[t.selection
+                                                      for t in tables])
+        # return self._return_run_step(self.next_state(self.get_input_slot(self.inputs[0])), steps)
+        return self._return_run_step(self.state_blocked, steps)

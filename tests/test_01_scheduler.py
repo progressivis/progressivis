@@ -11,16 +11,15 @@ class TestScheduler(ProgressiveTest):
 
     def test_scheduler(self):
         s = Scheduler()
-        with s:
-            csv = CSVLoader(get_dataset('bigfile'),
-                            name="csv",
-                            index_col=False, header=None,
-                            scheduler=s)
-
+        csv = CSVLoader(get_dataset('bigfile'),
+                        name="csv",
+                        index_col=False, header=None,
+                        scheduler=s)
         self.assertIs(s["csv"], csv)
-        csv.scheduler().start()
+        s.start()
+        print('back from start')
 
-        sleep(1)
+        # sleep(1)
         self.assertTrue(csv.scheduler().is_running())
 
         def add_min():

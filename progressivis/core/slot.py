@@ -12,14 +12,14 @@ from .changemanager_base import EMPTY_BUFFER
 logger = logging.getLogger(__name__)
 
 
-class SlotDescriptor(namedtuple('SD', ['name', 'type', 'required', 'doc'])):
+class SlotDescriptor(namedtuple('SD', ['name', 'type', 'required', 'multiple', 'doc'])):
     "SlotDescriptor is used in modules to describe the input/output slots."
     __slots__ = ()
 
-    def __new__(cls, name, type=None, required=True, doc=None):
+    def __new__(cls, name, type=None, required=True, multiple=False, doc=None):
         # pylint: disable=redefined-builtin
         return super(SlotDescriptor, cls).__new__(cls, name, type,
-                                                  required, doc)
+                                                  required, multiple, doc)
 
 
 @six.python_2_unicode_compatible
@@ -30,6 +30,7 @@ class Slot(object):
         self.output_module = output_module
         self.input_name = input_name
         self.input_module = input_module
+        self.original_name = None
         self._name = None
         self.changes = None
 
@@ -69,7 +70,10 @@ class Slot(object):
         return self.input_module.last_update()
 
     def to_json(self):
-        "Return a dictionary describing this slot, meant to be serialized in json"
+        """
+        Return a dictionary describing this slot, meant to be
+        serialized in json.
+        """
         return {'output_name': self.output_name,
                 'output_module': self.output_module.name,
                 'input_name': self.input_name,

@@ -45,7 +45,6 @@ def merge_cont(left, right, merge_ctx):
     return merge_table
 
 
-
 class Merge(NAry):
     "Merge module"
     def __init__(self, **kwds):
@@ -57,11 +56,10 @@ class Merge(NAry):
         super(Merge, self).__init__(**kwds)
         self.merge_kwds = self._filter_kwds(kwds, merge)
         self._context = {}
+
     def run_step(self, run_number, step_size, howlong):
         frames = []
-        for name in self.inputs:
-            if not name.startswith('table'):
-                continue
+        for name in self.get_input_slot_multiple():
             slot = self.get_input_slot(name)
             with slot.lock:
                 df = slot.data()
@@ -69,7 +67,8 @@ class Merge(NAry):
         df = frames[0]
         for other in frames[1:]:
             if not self._context:
-                df = merge(df, other, merge_ctx=self._context, **self.merge_kwds)
+                df = merge(df, other, merge_ctx=self._context,
+                           **self.merge_kwds)
             else:
                 df = merge_cont(df, other, merge_ctx=self._context)
         length = len(df)

@@ -2,6 +2,7 @@
 from __future__ import absolute_import, division, print_function
 
 import logging
+from time import sleep
 from .synchronized import synchronized
 from .scheduler_base import BaseScheduler
 from .utils import ProgressiveError, Thread, RLock
@@ -44,6 +45,8 @@ class Scheduler(BaseScheduler):
         super(Scheduler, self).invalidate()
 
     def _before_run(self):
+        logger.info("Yielding control to another thread")
+        sleep(0)  # yield to another thread
         logger.debug("Before run %d", self._run_number)
 
     def start(self, tick_proc=None, idle_proc=None):

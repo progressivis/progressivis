@@ -170,9 +170,7 @@ class Join(NAry):
 
     def run_step(self, run_number, step_size, howlong):
         frames = []
-        for name in self.inputs:
-            if not name.startswith('table'):
-                continue
+        for name in self.get_input_slot_multiple():
             slot = self.get_input_slot(name)
             with slot.lock:
                 table = slot.data()
