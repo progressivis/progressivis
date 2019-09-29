@@ -54,7 +54,7 @@ class ScatterPlotPatch(ModulePatch):
             self._last_run = scheduler.run_number()
 
 
-@skip("Weird but to fix")
+@skip("Weird bug to fix")
 class TestScatterPlot(ProgressiveTest):
     def tearDown(self):
         TestScatterPlot.cleanup()

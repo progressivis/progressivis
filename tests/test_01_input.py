@@ -23,7 +23,6 @@ def _do_line(inp, s):
 
 
 class TestInput(ProgressiveTest):
-    @skip("Input not working yet with dataflow")
     def test_input(self):
         s = self.scheduler()
         with s:

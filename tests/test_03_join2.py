@@ -13,13 +13,11 @@ from progressivis.table.reduce import Reduce
 
 from . import ProgressiveTest, skip
 
-#from pprint import pprint
 
 def print_len(x):
     if x is not None:
         print(len(x))
 
-#log_level()
 
 class TestJoin2(ProgressiveTest):
     @skip("Need fixing")
@@ -31,7 +29,7 @@ class TestJoin2(ProgressiveTest):
         stat1.input.table = csv.output.table
         stat2 = Stats(2, reset_index=True, scheduler=s)
         stat2.input.table = csv.output.table
-        #join=Join(scheduler=s)
+        # join=Join(scheduler=s)
         # reduce_ = Reduce(BinJoin, "first", "second", "table", scheduler=s)
         # reduce_.input.table = stat1.output.stats
         # reduce_.input.table = stat2.output.stats

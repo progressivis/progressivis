@@ -544,7 +544,9 @@ class BaseScheduler(object):
         with self._hibernate_cond:
             self._keep_running = KEEP_RUNNING
             self._hibernate_cond.notify()
-        sel = self._reachability[module.name]
+        # FIXME for now, add all the modules
+        # sel = self._reachability[module.name]
+        sel = self._run_list  # FIXME once _reachability is computed
         if sel:
             if not self._module_selection:
                 logger.info('Starting input management')
@@ -570,6 +572,7 @@ class BaseScheduler(object):
         return True
 
     def _consider_module(self, module):
+        # FIxME For now, accept all modules in input management
         if not self.has_input():
             return True
         if module.name in self._module_selection:

@@ -20,21 +20,26 @@ def print_len(x):
 class TestJoin3(ProgressiveTest):
     @skip("Need fixing")
     def test_join(self):
-        s=self.scheduler()
-        csv = CSVLoader(get_dataset('bigfile'), index_col=False,header=None,scheduler=s)
-        stat1=Stats(1, reset_index=True, scheduler=s)
+        s = self.scheduler()
+        csv = CSVLoader(get_dataset('bigfile'), index_col=False, header=None,
+                        scheduler=s)
+        stat1 = Stats(1, reset_index=True, scheduler=s)
         stat1.input.table = csv.output.table
-        stat2=Stats(2, reset_index=True, scheduler=s)
+        stat2 = Stats(2, reset_index=True, scheduler=s)
         stat2.input.table = csv.output.table
-        stat3=Stats(3, reset_index=True, scheduler=s)
+        stat3 = Stats(3, reset_index=True, scheduler=s)
         stat3.input.table = csv.output.table
-        #join=Join(scheduler=s)
-        #import pdb;pdb.set_trace()
-        reduce_ = Reduce(BinJoin, "first", "second", "table", scheduler=s)
-        reduce_.input.table = stat1.output.stats
-        reduce_.input.table = stat2.output.stats
-        join = reduce_.expand()
-        pr=Print(proc=self.terse, scheduler=s)
+        # join=Join(scheduler=s)
+        # import pdb;pdb.set_trace()
+        join = Reduce.expand(BinJoin, "first", "second", "table",
+                             [stat1.output.stats,
+                              stat2.output.stats,
+                              stat3.output.stats],
+                             scheduler=s)
+        # reduce_.input.table = stat1.output.stats
+        # reduce_.input.table = stat2.output.stats
+        # join = reduce_.expand()
+        pr = Print(proc=self.terse, scheduler=s)
         pr.input.df = join.output.table
         prlen = Every(proc=self.terse, constant_time=True, scheduler=s)
         prlen.input.df = csv.output.table
@@ -43,7 +48,7 @@ class TestJoin3(ProgressiveTest):
         print(res)
 
     def test_join_simple(self):
-        s=self.scheduler()
+        s = self.scheduler()
         cst1 = Constant(Table(name='test_join_simple_cst1',
                               data=pd.DataFrame({'xmin': [1], 'xmax': [2]}),
                               create=True), scheduler=s)
