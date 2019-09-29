@@ -4,7 +4,7 @@ Main Table class
 """
 from __future__ import absolute_import, division, print_function
 
-from collections import OrderedDict, Mapping
+from collections import OrderedDict, Mapping, defaultdict
 import logging
 
 import numpy as np
@@ -24,6 +24,8 @@ from . import metadata
 from .table_base import BaseTable
 from .column import Column
 from .column_id import IdColumn
+from ..core.bitmap import bitmap
+from ..core.khash.hashtable import Int64HashTable
 
 if six.PY2:
     from itertools import imap
@@ -434,7 +436,23 @@ class Table(BaseTable):
         return Table(name=name,
                      data=OrderedDict(data),
                      indices=self._ids.values[indices])
+
     def get_panene_data(self, cols=None):
         if cols is None:
             cols = self.columns
         return [self[key].dataset.view for key in cols]
+
+    def cxx_api_raw_cols(self, cols=None):
+        if cols is None:
+            cols = self.columns
+        return cols, [self[c].dataset.base for c in cols]
+
+    def cxx_api_raw_cols2(self, cols=None):
+        if cols is None:
+            cols = self.columns
+        return [self[c].dataset.base for c in cols]
+
+    
+    def cxx_api_info_index(self):    
+        ix = Int64HashTable() if self.is_identity else self._ids._ids_dict._ht
+        return self.is_identity, ix, self.last_id
