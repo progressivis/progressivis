@@ -238,10 +238,10 @@ class InputSource(object):
     def switch_to_next(self):
         """
         """
-        print("Switch to next")
+        # print("Switch to next")
         if self._file_cnt >= len(self._seq)-1:
             return False
-        self._file_cnt += 1        
+        self._file_cnt += 1
         istream, encoding, compression, size = filepath_to_buffer(self.filepath,
                                                                   encoding=self._encoding,
                                                                   compression=self._compression)

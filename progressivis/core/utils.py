@@ -77,13 +77,13 @@ class FakeCondition(object):
 
 if multi_threading:
     from threading import Thread, Lock, RLock, Condition
+
 else:
     Lock = FakeLock
     RLock = FakeLock
     Condition = FakeCondition
 
-
-class Thread(object):  # fake threads for debug
+    class Thread(object):  # fake threads for debug
         def __init__(self, group=None, target=None, name=None,
                      args=(), kwargs=None):
             self._group = group

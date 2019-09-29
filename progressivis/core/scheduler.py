@@ -45,8 +45,6 @@ class Scheduler(BaseScheduler):
         super(Scheduler, self).invalidate()
 
     def _before_run(self):
-        logger.info("Yielding control to another thread")
-        sleep(0)  # yield to another thread
         logger.debug("Before run %d", self._run_number)
 
     def start(self, tick_proc=None, idle_proc=None):
@@ -65,7 +63,7 @@ class Scheduler(BaseScheduler):
                 self._idle_procs = [idle_proc]
             else:
                 self._idle_procs = []
-            logger.info('starting thread')
+            logger.info('Thread starting')
         self.thread.start()
 
     def _after_run(self):
@@ -73,6 +71,7 @@ class Scheduler(BaseScheduler):
 
     def done(self):
         self.thread = None
+        logger.info('Thread finished')
 
 
 if BaseScheduler.default is None:

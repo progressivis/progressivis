@@ -17,7 +17,6 @@ class TestScheduler(ProgressiveTest):
                         scheduler=s)
         self.assertIs(s["csv"], csv)
         s.start()
-        print('back from start')
 
         # sleep(1)
         self.assertTrue(csv.scheduler().is_running())
