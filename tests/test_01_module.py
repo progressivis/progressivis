@@ -35,6 +35,11 @@ class TestProgressiveModule(ProgressiveTest):
                 self.fail("Unexpected exception")
             mod2 = SimpleModule(name='b', scheduler=s)
             self.assertEqual(mod2.get_progress(), (0, 0))
+            self.assertTrue(module.is_valid())
+            self.assertFalse(module.is_visualization())
+            self.assertIsNone(module.get_visualization())
+            self.assertIsNone(module.get_data("error"))
+            self.assertIsNone(module.last_time())
             module.debug = True
             self.assertEqual(module.params.debug, True)
             module.set_current_params({'quantum': 2.0})
