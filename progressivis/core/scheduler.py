@@ -2,7 +2,6 @@
 from __future__ import absolute_import, division, print_function
 
 import logging
-from time import sleep
 from .synchronized import synchronized
 from .scheduler_base import BaseScheduler
 from .utils import ProgressiveError, Thread, RLock

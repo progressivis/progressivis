@@ -1,5 +1,6 @@
 from __future__ import absolute_import, division, print_function
 
+from abc import abstractmethod
 import logging
 import numpy as np
 
@@ -12,14 +13,18 @@ class TimePredictor(object):
     def __init__(self):
         self.name = None
 
+    @abstractmethod
     def fit(self, trace_df):
         pass
 
+    @abstractmethod
     def predict(self, duration, default_step):
         pass
 
+
 class ConstantTimePredictor(TimePredictor):
     def __init__(self, t):
+        super(ConstantTimePredictor, self).__init__()
         self.t = t
 
     def predict(self, duration, default_step):
@@ -28,6 +33,7 @@ class ConstantTimePredictor(TimePredictor):
 
 class LinearTimePredictor(TimePredictor):
     def __init__(self):
+        super(LinearTimePredictor, self).__init__()
         self.a = 0
         self.calls = 0
 
@@ -69,6 +75,7 @@ class LinearTimePredictor(TimePredictor):
         logger.debug('LinearPredictor %s: Predicts %d steps for duration %f',
                      self.name, steps, duration)
         return steps
+
 
 if TimePredictor.default is None:
     TimePredictor.default = LinearTimePredictor
