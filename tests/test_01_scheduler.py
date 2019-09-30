@@ -1,7 +1,7 @@
 from . import ProgressiveTest
 from time import sleep
 
-from progressivis import Print, Scheduler
+from progressivis import Print, Scheduler, ProgressiveError
 from progressivis.io import CSVLoader
 from progressivis.stats import Min
 from progressivis.datasets import get_dataset
@@ -10,6 +10,8 @@ from progressivis.datasets import get_dataset
 class TestScheduler(ProgressiveTest):
 
     def test_scheduler(self):
+        with self.assertRaises(ProgressiveError):
+            s = Scheduler(0)
         s = Scheduler()
         csv = CSVLoader(get_dataset('bigfile'),
                         name="csv",
@@ -33,6 +35,12 @@ class TestScheduler(ProgressiveTest):
         sleep(1)
         s.stop()
         s.join()
+        self.assertIs(s['csv'], csv)
+        json = s.to_json(short=False)
+        self.assertFalse(json['is_running'])
+        self.assertTrue(json['is_terminated'])
+        html = s._repr_html_()
+        self.assertTrue(len(html) != 0)
 
 
 if __name__ == '__main__':

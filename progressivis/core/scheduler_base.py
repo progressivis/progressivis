@@ -5,16 +5,9 @@ from __future__ import absolute_import, division, print_function
 import time
 import logging
 import functools
-#from copy import copy
-#from collections import deque
 from collections import Iterable
 from timeit import default_timer
 import six
-
-# from scipy.sparse import csr_matrix
-# from scipy.sparse.csgraph import shortest_path
-# import numpy as np
-
 
 from .dataflow import Dataflow
 from progressivis.utils.synchronized import synchronized
@@ -27,6 +20,7 @@ logger = logging.getLogger(__name__)
 __all__ = ['BaseScheduler']
 
 KEEP_RUNNING = 5
+
 
 class _InteractionOpts(object):
     def __init__(self, starving_mods=None, max_time=None, max_iter=None):
@@ -49,7 +43,7 @@ class BaseScheduler(object):
     def __init__(self, interaction_latency=1):
         if interaction_latency <= 0:
             raise ProgressiveError('Invalid interaction_latency, '
-                                   'should be strictly positive: %s' 
+                                   'should be strictly positive: %s'
                                    % interaction_latency)
         self._lock = self.create_lock()
         # same as clear below
@@ -84,14 +78,15 @@ class BaseScheduler(object):
         self.dataflow = Dataflow(self)
         self._enter_cnt = 1
 
-    def set_interaction_opts(self, starving_mods=None, max_time=None, max_iter=None):
+    def set_interaction_opts(self, starving_mods=None, max_time=None,
+                             max_iter=None):
         if starving_mods:
             if not isinstance(starving_mods, Iterable):
                 raise ValueError("starving_mods must be iterable")
             from .module import Module
             for elt in starving_mods:
                 if not isinstance(elt, Module):
-                    raise ValueError("starving_mods  requires a list of Modules")
+                    raise ValueError("starving_mods requires a list of Modules")
         if max_time:
             if not isinstance(max_time, (int, float)):
                 raise ValueError("max_time must be a float or an int")
@@ -102,7 +97,8 @@ class BaseScheduler(object):
                 raise ValueError("max_iter must be an int")
             if max_iter <= 0:
                 raise ValueError("max_iter must be positive")
-        self._interaction_opts = _InteractionOpts(starving_mods, max_time, max_iter)
+        self._interaction_opts = _InteractionOpts(starving_mods, max_time,
+                                                  max_iter)
 
     def _proc_interaction_opts(self):
         if not self.has_input():
@@ -112,7 +108,8 @@ class BaseScheduler(object):
             self._inter_cycles_cnt = 0
             return
         if self._interaction_opts.starving_mods:
-            if not sum([mod.steps_acc for mod in self._interaction_opts.starving_mods]):
+            if not sum([mod.steps_acc
+                        for mod in self._interaction_opts.starving_mods]):
                 print("Exiting shortcut mode because data "
                       "inputs on witnesses are dried",
                       self._interaction_opts.starving_mods)
@@ -121,8 +118,9 @@ class BaseScheduler(object):
                 return
         if self._interaction_opts.max_time:
             duration = default_timer()-self._start_inter
-            if  duration >= self._interaction_opts.max_time:
-                print("Exiting shortcut mode on time out, duration: ", duration)
+            if duration >= self._interaction_opts.max_time:
+                print("Exiting shortcut mode on time out, duration: ",
+                      duration)
                 self._module_selection = None
                 self._inter_cycles_cnt = 0
                 return
@@ -130,7 +128,8 @@ class BaseScheduler(object):
             if self._inter_cycles_cnt >= self._interaction_opts.max_iter:
                 self._module_selection = None
                 self._inter_cycles_cnt = 0
-                print("Exiting shortcut mode after ", self._interaction_opts.max_iter, " cycles")
+                print("Exiting shortcut mode after ",
+                      self._interaction_opts.max_iter, " cycles")
             else:
                 self._inter_cycles_cnt += 1
 
@@ -200,7 +199,7 @@ class BaseScheduler(object):
         return msg
 
     def _repr_html_(self):
-        html_head = "<div type='schedule'>";
+        html_head = "<div type='schedule'>"
         html_head = """
 <style scoped>
     .dataframe tbody tr th:only-of-type {
@@ -214,8 +213,8 @@ class BaseScheduler(object):
     .dataframe thead th {
         text-align: right;
     }
-</style>""";
-        html_end = "</div>";
+</style>"""
+        html_end = "</div>"
         html_head += """
 <table border="1" class="dataframe">
   <thead>
@@ -223,14 +222,15 @@ class BaseScheduler(object):
       <th>Id</th><th>Class</th><th>State</th><th>Last Update</th><th>Order</th>
     </tr>
   </thead>
-  <tbody>""";
-        columns = ['id', 'classname', 'state', 'last_update', 'order'];
+  <tbody>"""
+        columns = ['id', 'classname', 'state', 'last_update', 'order']
         for mod in self._run_list:
             values = mod.to_json(short=True)
-            html_head += "<tr>";
-            html_head += "".join(["<td>%s</td>"%(values[column]) for column in columns])
-        html_end = "</tbody></table>";
-        return html_head + html_end;
+            html_head += "<tr>"
+            html_head += "".join(["<td>%s</td>" %
+                                  (values[column]) for column in columns])
+        html_end = "</tbody></table>"
+        return html_head + html_end
 
     def _before_run(self):
         pass
@@ -306,13 +306,15 @@ class BaseScheduler(object):
             module.ending()
         self._running = False
         self._stopped = True
+        self._after_run()
         self.done()
 
     def _run_loop(self):
         """Main scheduler loop."""
         # pylint: disable=broad-except
         for module in self._next_module():
-            if self.no_more_data() and self.all_blocked() and self.is_waiting_for_input():
+            if self.no_more_data() and self.all_blocked() and \
+               self.is_waiting_for_input():
                 if not self._keep_running:
                     with self._hibernate_cond:
                         self._hibernate_cond.wait()
@@ -328,7 +330,7 @@ class BaseScheduler(object):
                             " because not ready and has no input",
                             module.name)
                 continue
-                 
+
             self._run_number += 1
             with self.lock:
                 self._run_tick_procs()
@@ -370,9 +372,9 @@ class BaseScheduler(object):
                 self._run_index = 0
                 first_run = self._run_number
             module = self._run_list[self._run_index]
-            self._run_index += 1 # allow it to be reset
+            self._run_index += 1  # allow it to be reset
             yield module
-            if self._run_index >= len(self._run_list): # end of modules
+            if self._run_index >= len(self._run_list):  # end of modules
                 self._end_of_modules(first_run)
                 first_run = self._run_number
 
@@ -447,15 +449,14 @@ class BaseScheduler(object):
 
     def _end_of_modules(self, first_run):
         # Reset interaction mode
-        #import pdb;pdb.set_trace()
         self._proc_interaction_opts()
         self._selection_target_time = -1
         new_list = [m for m in self._run_list if not m.is_terminated()]
         self._run_list = new_list
-        if first_run == self._run_number: # no module ready
+        if first_run == self._run_number:  # no module ready
             has_run = False
             for proc in self._idle_procs:
-                #pylint: disable=broad-except
+                # pylint: disable=broad-except
                 try:
                     logger.debug('Running idle proc')
                     proc(self, self._run_number)
@@ -468,7 +469,7 @@ class BaseScheduler(object):
         self._run_index = 0
 
     def _run_tick_procs(self):
-        #pylint: disable=broad-except
+        # pylint: disable=broad-except
         for proc in self._tick_procs:
             logger.debug('Calling tick_proc')
             try:
@@ -524,7 +525,8 @@ class BaseScheduler(object):
         if self.dataflow:
             del self.dataflow[name]
         else:
-            raise ProgressiveError('Cannot delete module %s outside a context' % name)
+            raise ProgressiveError('Cannot delete module %s'
+                                   'outside a context' % name)
 
     def __contains__(self, name):
         if self.dataflow:
@@ -557,14 +559,14 @@ class BaseScheduler(object):
                 self._module_selection.update(sel)
             logger.debug('Input selection for module: %s',
                          self._module_selection)
-            print('Input selection for module: %s'%self._module_selection)
+            print('Input selection for module: %s' % self._module_selection)
         return self.run_number()+1
 
     def has_input(self):
         "Return True of the scheduler is in input mode"
         if self._module_selection is None:
             return False
-        if not self._module_selection: # empty, cleanup
+        if not self._module_selection:  # empty, cleanup
             logger.info('Finishing input management')
             self._module_selection = None
             self._selection_target_time = -1
@@ -576,7 +578,7 @@ class BaseScheduler(object):
         if not self.has_input():
             return True
         if module.name in self._module_selection:
-            #self._module_selection.remove(module.name)
+            # self._module_selection.remove(module.name)
             logger.debug('Module %s ready for scheduling', module.name)
             return True
         logger.debug('Module %s NOT ready for scheduling', module.name)
@@ -615,80 +617,6 @@ class BaseScheduler(object):
                     mod.storagegroup is not None):
                 mod.storagegroup.close_all()
 
-    # def order_modules(self):
-    #     """Compute a topological order for the modules.
-    #     Should do something smarted with exceptions.
-    #     """
-    #     runorder = None
-    #     try:
-    #         dependencies = self._collect_dependencies()
-    #         runorder = toposort(dependencies)
-    #         #print('normal order of', dependencies, 'is', runorder, file=sys.stderr)
-    #         self._compute_reachability(dependencies)
-    #     except ValueError:  # cycle, try to break it then
-    #         # if there's still a cycle, we cannot run the first cycle
-    #         # TODO fix this
-    #         logger.info('Cycle in module dependencies, '
-    #                     'trying to drop optional fields')
-    #         dependencies = self._collect_dependencies(only_required=True)
-    #         runorder = toposort(dependencies)
-    #         #print('Filtered order of', dependencies, 'is', runorder, file=sys.stderr)
-    #         self._compute_reachability(dependencies)
-    #     return runorder
-
-    # @synchronized
-    # def _collect_dependencies(self, only_required=False):
-    #     dependencies = {}
-    #     for (mid, module) in six.iteritems(self._modules):
-    #         if not module.is_valid():
-    #             continue
-    #         outs = [m.output_module.name for m in module.input_slot_values()
-    #                 if m and (not only_required or
-    #                           module.input_slot_required(m.input_name))]
-    #         dependencies[mid] = set(outs)
-    #     return dependencies
-
-    # def _compute_reachability(self, dependencies):
-    #     # pylint: disable=too-many-locals
-    #     k = list(dependencies.keys())
-    #     size = len(k)
-    #     index = dict(zip(k, range(size)))
-    #     row = []
-    #     col = []
-    #     data = []
-    #     for (vertex1, vertices) in six.iteritems(dependencies):
-    #         for vertex2 in vertices:
-    #             col.append(index[vertex1])
-    #             row.append(index[vertex2])
-    #             data.append(1)
-    #     mat = csr_matrix((data, (row, col)), shape=(size, size))
-    #     dist = shortest_path(mat,
-    #                          directed=True,
-    #                          return_predecessors=False,
-    #                          unweighted=True)
-    #     self._reachability = {}
-    #     reach_no_vis = set()
-    #     all_vis = set(self.get_visualizations())
-    #     for index1 in range(size):
-    #         vertex1 = k[index1]
-    #         s = {vertex1}
-    #         for index2 in range(size):
-    #             vertex2 = k[index2]
-    #             dst = dist[index1, index2]
-    #             if dst not in (0, np.inf):
-    #                 s.add(vertex2)
-    #         self._reachability[vertex1] = s
-    #         if not all_vis.intersection(s):
-    #             logger.info('No visualization after module %s: %s', vertex1, s)
-    #             reach_no_vis.update(s)
-    #             if not self.module[vertex1].is_visualization():
-    #                 reach_no_vis.add(vertex1)
-    #     logger.info('Module(s) %s always after visualizations', reach_no_vis)
-    #     # filter out module that reach no vis
-    #     for (k, v) in six.iteritems(self._reachability):
-    #         v.difference_update(reach_no_vis)
-    #     logger.info('reachability map: %s', self._reachability)
-
     @staticmethod
     def _module_order(x, y):
         if 'order' in x:
@@ -698,4 +626,3 @@ class BaseScheduler(object):
         if 'order' in y:
             return -1
         return 0
-

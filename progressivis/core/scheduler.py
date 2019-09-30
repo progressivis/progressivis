@@ -3,7 +3,6 @@ from __future__ import absolute_import, division, print_function
 
 import logging
 from .scheduler_base import BaseScheduler
-from progressivis.utils.synchronized import synchronized
 from progressivis.utils.errors import ProgressiveError
 from progressivis.utils.threading import Thread, RLock
 
@@ -16,8 +15,8 @@ class Scheduler(BaseScheduler):
 
     Manage the execution of the progressive workflow in its own thread.
     """
-    def __init__(self):
-        super(Scheduler, self).__init__()
+    def __init__(self, interaction_latency=1):
+        super(Scheduler, self).__init__(interaction_latency)
         self.thread = None
         self.thread_name = "Progressive Scheduler"
 
@@ -35,14 +34,6 @@ class Scheduler(BaseScheduler):
         "Set the default scheduler."
         if not isinstance(BaseScheduler.default, Scheduler):
             BaseScheduler.default = Scheduler()
-
-    @synchronized
-    def validate(self):
-        return super(Scheduler, self).validate()
-
-    @synchronized
-    def invalidate(self):
-        super(Scheduler, self).invalidate()
 
     def _before_run(self):
         logger.debug("Before run %d", self._run_number)
