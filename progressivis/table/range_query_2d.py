@@ -1,7 +1,5 @@
 import numpy as np
 
-from progressivis.core.utils import (slice_to_arange, indices_len, fix_loc)
-                                         
 import itertools as it
 from . import Table
 from . import TableSelectedView
@@ -9,12 +7,13 @@ from ..core.slot import SlotDescriptor
 from .module import TableModule
 from ..core.bitmap import bitmap
 from .mod_impl import ModuleImpl
-from .binop import ops
 from ..io import Variable
 from ..stats import Min, Max
 from .hist_index import HistogramIndex
-from progressivis.core.synchronized import synchronized
+from progressivis.core.utils import indices_len
+from progressivis.utils.synchronized import synchronized
 from progressivis.table.paste import Paste
+
 
 class _Selection(object):
     def __init__(self, values=None):
@@ -24,26 +23,28 @@ class _Selection(object):
         self._values.update(values)
 
     def remove(self, values):
-        self._values = self._values -bitmap(values)
+        self._values = self._values - bitmap(values)
 
     def assign(self, values):
         self._values = values
 
+
 class RangeQuery2dImpl(ModuleImpl):
-    def __init__(self, column_x, column_y, hist_index_x, hist_index_y, approximate):
+    def __init__(self, column_x, column_y, hist_index_x, hist_index_y,
+                 approximate):
         super(RangeQuery2dImpl, self).__init__()
         self._table = None
         self._column_x = column_x
-        self._column_y = column_y        
+        self._column_y = column_y
         self.bins = None
         self._hist_index_x = hist_index_x
-        self._hist_index_y = hist_index_y        
+        self._hist_index_y = hist_index_y
         self._approximate = approximate
         self.result = None
         self.is_started = False
-        
-    def resume(self, lower_x, upper_x, lower_y, upper_y, limit_changed, created=None,
-                   updated=None, deleted=None):
+
+    def resume(self, lower_x, upper_x, lower_y, upper_y, limit_changed,
+               created=None, updated=None, deleted=None):
         if limit_changed:
             new_sel_x = self._hist_index_x.range_query_aslist(lower_x, upper_x,
                                                 approximate=self._approximate)
@@ -280,7 +281,7 @@ class RangeQuery2d(TableModule):
         if not self._table:
             self._table = TableSelectedView(input_table, bitmap([]))
         self._create_min_max()
-        param = self.params
+        # param = self.params
         #
         # lower/upper
         #
@@ -360,18 +361,18 @@ class RangeQuery2d(TableModule):
         # ...
         if not self._impl.is_started:
             status = self._impl.start(input_table, lower_value_x,
-                                          upper_value_x, lower_value_y,
-                                          upper_value_y, limit_changed,
-                                          created=created,
-                                          updated=updated,
-                                          deleted=deleted)
+                                      upper_value_x, lower_value_y,
+                                      upper_value_y, limit_changed,
+                                      created=created,
+                                      updated=updated,
+                                      deleted=deleted)
             self._table.selection = self._impl.result._values
         else:
             status = self._impl.resume(lower_value_x, upper_value_x,
-                                           lower_value_y, upper_value_y,
-                                           limit_changed,
-                                           created=created,
-                                           updated=updated,
-                                           deleted=deleted)
+                                       lower_value_y, upper_value_y,
+                                       limit_changed,
+                                       created=created,
+                                       updated=updated,
+                                       deleted=deleted)
             self._table.selection = self._impl.result._values
-        return self._return_run_step(self.next_state(input_slot), steps_run=steps)
+        return self._return_run_step(self.next_state(input_slot), steps)

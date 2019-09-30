@@ -9,13 +9,13 @@ import logging
 import six
 import numpy as np
 
-from progressivis.core.utils import (integer_types, 
+from progressivis.core.utils import (integer_types,
                                      all_string_or_int, all_bool,
                                      indices_len, remove_nan,
-                                     is_none_alike, inter_slice, fix_loc, get_physical_base)
+                                     is_none_alike, get_physical_base)
 from progressivis.core.config import get_option
-from progressivis.core.bitmap  import bitmap
-from .dshape import (dshape_print, dshape_join, dshape_union)
+from progressivis.core.bitmap import bitmap
+from .dshape import dshape_print
 
 if six.PY2:
     from itertools import imap
@@ -26,6 +26,7 @@ logger = logging.getLogger(__name__)
 
 
 FAST = 1
+
 
 class _BaseLoc(object):
     # pylint: disable=too-few-public-methods
@@ -41,10 +42,11 @@ class _BaseLoc(object):
         else:
             index, col_key = key, slice(None)
         locs = None
-        if self._as_loc: # i.e loc mode
+        if self._as_loc:  # i.e loc mode
             locs = index
             index = self._table.id_to_index(index)
         return index, col_key, locs
+
 
 class _Loc(_BaseLoc):
     # pylint: disable=too-few-public-methods
@@ -67,7 +69,8 @@ class _Loc(_BaseLoc):
         elif isinstance(index, Iterable):
             from .table_selected import TableSelectedView
             selection = bitmap.asbitmap(self._table.index[index])
-            return TableSelectedView(self._table, selection, col_key, self._table.name)
+            return TableSelectedView(self._table, selection, col_key,
+                                     self._table.name)
         raise ValueError('getitem not implemented for index "%s"', index)
 
     def __setitem__(self, key, value):
@@ -80,14 +83,17 @@ class _At(_BaseLoc):
     def __getitem__(self, key):
         index, col_key, _ = self.parse_key(key)
         if not isinstance(col_key, (six.string_types, integer_types)):
-            raise ValueError('At getitem not implemented for column key "%s"' % col_key)
+            raise ValueError('At getitem not implemented for column key "%s"' %
+                             col_key)
         return self._table[col_key][index]
 
     def __setitem__(self, key, value):
         index, col_key, _ = self.parse_key(key)
         if not isinstance(col_key, (six.string_types, integer_types)):
-            raise ValueError('At setitem not implemented for column key "%s"' % col_key)
+            raise ValueError('At setitem not implemented for column key "%s"' %
+                             col_key)
         self._table[col_key][index] = value
+
 
 @six.python_2_unicode_compatible
 class BaseTable(six.with_metaclass(ABCMeta, object)):

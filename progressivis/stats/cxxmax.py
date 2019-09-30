@@ -1,16 +1,13 @@
 from __future__ import absolute_import, division, print_function
 
-from progressivis.core.utils import indices_len, fix_loc
 from progressivis.table.module import TableModule
 from progressivis.table.table import Table
 from progressivis.core.slot import SlotDescriptor
-from progressivis.core.synchronized import synchronized
 try:
     from .progressivis_max import Max as CxxMax
 except:
     CxxMax = None
 
-    import time
 import numpy as np
 
 import logging

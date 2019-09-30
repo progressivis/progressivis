@@ -1,22 +1,16 @@
 import numpy as np
 
-from progressivis.core.utils import (slice_to_arange, indices_len, fix_loc)
-
 from . import Table
 from . import TableSelectedView
 from ..core.slot import SlotDescriptor
 from .module import TableModule
-from ..core.bitmap import bitmap
-from .mod_impl import ModuleImpl
-from .binop import ops
 from collections import OrderedDict
 
 
 class Percentiles(TableModule):
     """
     """
-    parameters = [('accuracy', np.dtype(float), 0.5)
-                 ]
+    parameters = [('accuracy', np.dtype(float), 0.5)]
 
     def __init__(self, hist_index, **kwds):
         """
@@ -29,7 +23,7 @@ class Percentiles(TableModule):
         self._accuracy = self.params.accuracy
         self._hist_index = hist_index
         self.default_step_size = 1000
-        
+
     def compute_percentiles(self, points, input_table):
         column = input_table[self._hist_index.column]
         hii = self._hist_index._impl
@@ -74,7 +68,6 @@ class Percentiles(TableModule):
                 ret_values.append(values[reminder])
         return OrderedDict(zip(points.keys(), ret_values))
 
-                
     def run_step(self, run_number, step_size, howlong):
         input_slot = self.get_input_slot('table')
         input_slot.update(run_number)
@@ -88,9 +81,9 @@ class Percentiles(TableModule):
         if input_slot.updated.any():
             input_slot.updated.next(step_size)
             steps = 1
-        with input_slot.lock:
-            input_table = input_slot.data()
-        param = self.params
+        # with input_slot.lock:
+        #     input_table = input_slot.data()
+        # param = self.params
         percentiles_slot = self.get_input_slot('percentiles')
         percentiles_slot.update(run_number)
         percentiles_changed = False
@@ -101,10 +94,10 @@ class Percentiles(TableModule):
             percentiles_changed = True
         if percentiles_slot.created.any():
             percentiles_slot.created.next()
-            percentiles_changed = True        
+            percentiles_changed = True
         if len(percentiles_slot.data()) == 0:
-            return self._return_run_step(self.state_blocked, steps_run=0) 
-        if steps==0 and not percentiles_changed:
+            return self._return_run_step(self.state_blocked, steps_run=0)
+        if steps == 0 and not percentiles_changed:
             return self._return_run_step(self.state_blocked, steps_run=0)
         if not self._hist_index._impl:
             return self._return_run_step(self.state_blocked, steps_run=0)
@@ -112,8 +105,9 @@ class Percentiles(TableModule):
             percentiles_slot.data().last().to_dict(ordered=True),
             input_slot.data())
         if not self._table:
-            self._table = Table(name=None, dshape=percentiles_slot.data().dshape)
+            self._table = Table(name=None,
+                                dshape=percentiles_slot.data().dshape)
             self._table.add(computed)
         else:
             self._table.loc[0, :] = list(computed.values())
-        return self._return_run_step(self.next_state(input_slot), steps_run=steps)
+        return self._return_run_step(self.next_state(input_slot), steps)

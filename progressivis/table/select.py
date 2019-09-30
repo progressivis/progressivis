@@ -1,6 +1,7 @@
 from __future__ import absolute_import, division, print_function
 
-from ..core.utils import ProgressiveError, indices_len, is_valid_identifier
+from progressivis.utils.errors import ProgressiveError
+from ..core.utils import indices_len, is_valid_identifier
 from ..core.slot import SlotDescriptor
 from .module import TableModule
 from .table import Table
@@ -9,9 +10,10 @@ from ..core.bitmap import bitmap
 import logging
 logger = logging.getLogger(__name__)
 
+
 class Select(TableModule):
     def __init__(self, **kwds):
-        self._add_slots(kwds,'input_descriptors',
+        self._add_slots(kwds, 'input_descriptors',
                         [SlotDescriptor('table', type=Table, required=True),
                          SlotDescriptor('select', type=bitmap, required=True)])
         super(Select, self).__init__(**kwds)
@@ -24,13 +26,13 @@ class Select(TableModule):
         self.max = None
         self.min_value = None
         self.max_value = None
-        
+
     def create_dependent_modules(self, input_module, input_slot, **kwds):
         from .range_query import RangeQuery
-        
+
         if self.input_module is not None:
             return self
-        scheduler=self.scheduler
+        scheduler = self.scheduler
         self.input_module = input_module
         self.input_slot = input_slot
 

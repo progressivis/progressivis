@@ -4,7 +4,7 @@ Main Table class
 """
 from __future__ import absolute_import, division, print_function
 
-from collections import OrderedDict, Mapping, defaultdict
+from collections import OrderedDict, Mapping
 import logging
 
 import numpy as np
@@ -15,7 +15,7 @@ import six
 
 from progressivis.core.utils import (integer_types, get_random_name,
                                      all_int, are_instances, gen_columns)
-from progressivis.core.fast import indices_to_slice
+from progressivis.utils.fast import indices_to_slice
 from progressivis.storage import Group
 from .dshape import (dshape_create, dshape_table_check, dshape_fields,
                      dshape_to_shape, dshape_extract, dshape_compatible,
@@ -24,8 +24,7 @@ from . import metadata
 from .table_base import BaseTable
 from .column import Column
 from .column_id import IdColumn
-from ..core.bitmap import bitmap
-from ..core.khash.hashtable import Int64HashTable
+from ..utils.khash.hashtable import Int64HashTable
 
 if six.PY2:
     from itertools import imap

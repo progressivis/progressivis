@@ -1,6 +1,7 @@
 from __future__ import absolute_import, division, print_function
 
-from progressivis.core.utils import ProgressiveError, indices_len, fix_loc
+from progressivis.utils.errors import ProgressiveError
+from progressivis.core.utils import indices_len, fix_loc
 from progressivis.table.module import TableModule
 from progressivis.table.table import Table
 from progressivis.core.slot import SlotDescriptor

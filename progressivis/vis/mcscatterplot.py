@@ -5,7 +5,7 @@ import numpy as np
 from ..table.nary import NAry
 from ..stats import MCHistogram2D, Sample
 from ..table.range_query_2d import RangeQuery2d
-from ..core import ProgressiveError
+from ..utils.errors import ProgressiveError
 from ..io import Variable, VirtualVariable
 
 from itertools import chain

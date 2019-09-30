@@ -65,7 +65,7 @@ class Binop(TableModule):
             return self._bitmap
         if name == 'table':
             self.get_input_slot('table').data()
-        return super(LessQuery, self).get_data(name)
+        return super(Binop, self).get_data(name)
 
     def run_step(self, run_number, step_size, howlong):
         arg1_slot = self.get_input_slot('table')
@@ -92,8 +92,6 @@ class Binop(TableModule):
         cr2 = arg2_slot.created.next(as_slice=False)
         up2 = arg2_slot.updated.next(as_slice=False)
         work = cr1 | up1 | cr2 | up2
-        work &= bitmap(slice(0,l))
-        indices = work.pop(step_size)
-        
-
+        work &= bitmap(slice(0, l))
+        work.pop(step_size)
         return self._return_run_step(self.state_blocked, steps_run=1)

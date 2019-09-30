@@ -1,11 +1,11 @@
 "Binary Join module."
 from __future__ import absolute_import, division, print_function
 
-from progressivis.core.utils import Dialog, indices_len
+from progressivis.core.utils import Dialog
 from progressivis.core.slot import SlotDescriptor
 from .table import Table
 from .module import TableModule
-from .join import join, join_start, join_cont, join_reset
+from .join import join
 from .dshape import dshape_join
 from collections import OrderedDict
 

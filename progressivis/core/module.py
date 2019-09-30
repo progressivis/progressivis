@@ -10,13 +10,14 @@ import logging
 import numpy as np
 import six
 
+from progressivis.utils.errors import ProgressiveError
 from progressivis.table.table_base import BaseTable
 from progressivis.table.table import Table
 from progressivis.table.dshape import dshape_from_dtype
 from progressivis.table.row import Row
 from progressivis.storage import Group
 
-from .utils import (ProgressiveError, type_fullname, get_random_name)
+from .utils import (type_fullname, get_random_name)
 from .slot import (SlotDescriptor, Slot)
 from .tracer_base import Tracer
 from .time_predictor import TimePredictor

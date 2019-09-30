@@ -2,26 +2,25 @@ from __future__ import absolute_import, division, print_function
 
 from .column_id import IdColumn
 from .column_proxy import ColumnProxy
-import numpy as np
 from ..core.bitmap import bitmap
-from ..core.utils import is_none_alike, is_full_slice
+from ..core.utils import is_full_slice
+
 
 class IdColumnSelectedView(ColumnProxy):
     def __init__(self, index, selection):
         assert isinstance(selection, bitmap)
-        super(IdColumnSelectedView, self).__init__(base=index, name=IdColumn.INTERNAL_ID)
+        super(IdColumnSelectedView, self).__init__(base=index,
+                                                   name=IdColumn.INTERNAL_ID)
         self._selection = selection
-        
 
     @property
     def selection(self):
         return self._selection
-    
+
     @property
     def value(self):
         return self.selection
 
-    
     @selection.setter
     def selection(self, selection):
         self._selection = selection
@@ -31,37 +30,38 @@ class IdColumnSelectedView(ColumnProxy):
         return self
 
     def __repr__(self):
-        return 'IdColumnSelectedView(%s,dshape=%s)' % (self.name, str(self.dshape))
+        return 'IdColumnSelectedView(%s,dshape=%s)' % (self.name,
+                                                       str(self.dshape))
 
     def id_to_index(self, loc, as_slice=True):
         if is_full_slice(loc):
             loc = self._selection
-        elif not loc in self._selection:
+        elif loc not in self._selection:
             raise KeyError('Invalid key(s) %s' % loc)
-        return self.base.id_to_index(loc) # indices in base columns for now
+        return self.base.id_to_index(loc)  # indices in base columns for now
 
     def __getitem__(self, index):
         if is_full_slice(index):
             return self._selection
         ids = self.base[index]
-        if not ids in self._selection:
+        if ids not in self._selection:
             raise KeyError('Invalid key(s) %s' % index)
         return ids
-        
+
     def __setitem__(self, index, value):
         raise RuntimeError('Setting id index not supported')
 
     def __delitem__(self, key):
         self._selection -= bitmap.asbitmap(key)
-        
+
     def __iter__(self):
         return iter(self._selection)
-    
+
     def __len__(self):
         return len(self._selection)
 
     def resize(self, _):
-        pass # ignore
+        pass  # ignore
 
     @property
     def update_mask(self):

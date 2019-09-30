@@ -1,8 +1,8 @@
-from . import ProgressiveTest, skip
+from . import ProgressiveTest
 
+from progressivis.utils.threading import Thread
 from progressivis import Print
 from progressivis.io.input import Input
-from progressivis.core.utils import Thread
 import numpy as np
 from time import sleep
 

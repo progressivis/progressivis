@@ -2,7 +2,7 @@ from __future__ import absolute_import, division, print_function
 import pandas as pd
 import numpy as np
 from ..core.utils import (filepath_to_buffer,
-                              _infer_compression, is_str, is_iter_str)
+                          _infer_compression, is_str)
 from requests.packages.urllib3.exceptions import HTTPError
 from io import BytesIO
 import time
@@ -400,7 +400,6 @@ def recovery(snapshot, previous_file_seq, **csv_kwds):
     overflow_df = snapshot['overflow_df'].encode('utf-8')
     offset = snapshot['offset']
     estimated_row_size = snapshot['estimated_row_size']
-    last_id = snapshot['last_id']
     nb_cols = snapshot['nb_cols']
     names=json.loads(snapshot['names'])
     usecols = json.loads(snapshot['usecols'])
@@ -417,9 +416,10 @@ def recovery(snapshot, previous_file_seq, **csv_kwds):
     pd_kwds = dict(csv_kwds)
     chunksize = pd_kwds['chunksize']
     del pd_kwds['chunksize']
-    if 'header' in pd_kwds:
-        header = pd_kwds.pop('header')
+    # if 'header' in pd_kwds:
+    #     header = pd_kwds.pop('header')
     return Parser(input_source, remaining=remaining,
-                        estimated_row_size=estimated_row_size,
-                        offset=offset, overflow_df=overflow_df,
-                        pd_kwds=pd_kwds, chunksize=chunksize, names=names, usecols=usecols, header=None)
+                  estimated_row_size=estimated_row_size,
+                  offset=offset, overflow_df=overflow_df,
+                  pd_kwds=pd_kwds, chunksize=chunksize, names=names,
+                  usecols=usecols, header=None)

@@ -1,7 +1,8 @@
 from . import ProgressiveTest
 
-from progressivis.core.intdict import IntDict
+from progressivis.utils.intdict import IntDict
 import numpy as np
+
 
 class TestIntDict(ProgressiveTest):
     def test_intdict(self):

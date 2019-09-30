@@ -7,7 +7,7 @@ import numpy as np
 
 from progressivis.storage import Group
 from progressivis.core.utils import integer_types, get_random_name
-from progressivis.core.fast import indices_to_slice
+from progressivis.utils.fast import indices_to_slice
 from .column_base import BaseColumn
 from .dshape import dshape_to_h5py, np_dshape, dshape_create
 from . import metadata
@@ -114,7 +114,7 @@ class Column(BaseColumn):
                 #TODO find a smarter way to allocate chunk size
                 chunks = [64]
                 for d in dims:
-                    chunks.append(d if d is not 0 else 64)
+                    chunks.append(d if d != 0 else 64)
                 chunks = tuple(chunks)
         if not isinstance(chunks, tuple):
             chunks = tuple([chunks])

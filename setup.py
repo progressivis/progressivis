@@ -10,8 +10,9 @@ from Cython.Build import cythonize
 import numpy as np
 
 PACKAGES = ['progressivis',
+            'progressivis.utils',
+            'progressivis.utils.khash',
             'progressivis.core',
-            'progressivis.core.khash',
             'progressivis.storage',
             'progressivis.io',
             'progressivis.stats',
@@ -21,7 +22,7 @@ PACKAGES = ['progressivis',
             'progressivis.metrics',
             'progressivis.server',
             'progressivis.table']
-#'stool'
+# 'stool'
 
 
 class RunBench(Command):
@@ -53,26 +54,29 @@ class RunBench(Command):
     def _run_it(self, pathname):
         if self.verbose:  # verbose is provided "automagically"
             print('Should be running bench "{0}"'.format(pathname))
-        #TODO run the command with the right arguments
+        # TODO run the command with the right arguments
+
 
 EXTENSIONS = [
     Extension(
-        "progressivis.core.fast",
-        ["progressivis/core/fast.pyx"],
-        include_dirs=[np.get_include(),],
+        "progressivis.utils.fast",
+        ["progressivis/utils/fast.pyx"],
+        include_dirs=[np.get_include()],
         extra_compile_args=['-Wfatal-errors'],
     ),
-    Extension("progressivis.core.khash.hashtable",
-              ["progressivis/core/khash/hashtable.pyx",],
-              include_dirs=['progressivis/core/khash/klib',
-                            'progressivis/core/khash',
+    Extension("progressivis.utils.khash.hashtable",
+              ["progressivis/utils/khash/hashtable.pyx"],
+              include_dirs=['progressivis/utils/khash/klib',
+                            'progressivis/utils/khash',
                             np.get_include()],
               extra_compile_args=['-Wfatal-errors'])]
+
 
 def read(fname):
     "Read the content of fname as string"
     with open(os.path.join(os.path.dirname(__file__), fname)) as infile:
         return infile.read()
+
 
 setup(
     name="progressivis",
@@ -92,7 +96,7 @@ setup(
     platforms='any',
     # Project uses reStructuredText, so ensure that the docutils get
     # installed or upgraded on the target machine
-    #install_requires=required,
+    # install_requires=required,
     install_requires=["Pillow>=4.2.0",
                       "numpy>=1.11.3",
                       "scipy>=0.18.1",
@@ -108,7 +112,7 @@ setup(
                       "datashape>=0.5.2",
                       "pyroaring>=0.2.3",
                       "msgpack-python>=0.4.8",
-                      "python-dateutil==2.6.1", # botocore wants < 2.7.0,>=2.1
+                      "python-dateutil==2.6.1",  # botocore wants < 2.7.0,>=2.1
                       "boto",
                       "s3fs",
                       "sqlalchemy",
@@ -117,9 +121,9 @@ setup(
                       "requests",
                       "fast-histogram",
                       "rangehttpserver"],
-    #"pptable",
+    # "pptable",
     setup_requires=['cython', 'numpy', 'nose>=1.3.7', 'coverage'],
-    #test_suite='tests',
+    # test_suite='tests',
     test_suite='nose.collector',
     cmdclass=versioneer.get_cmdclass({'bench': RunBench}),
     ext_modules=cythonize(EXTENSIONS),

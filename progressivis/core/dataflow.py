@@ -11,9 +11,8 @@ import six
 from scipy.sparse import csr_matrix
 from scipy.sparse.csgraph import breadth_first_order
 
-from .toposort import toposort
-
-from .utils import ProgressiveError
+from progressivis.utils.toposort import toposort
+from progressivis.utils.errors import ProgressiveError
 
 logger = logging.getLogger(__name__)
 

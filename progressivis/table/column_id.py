@@ -6,8 +6,8 @@ import numpy as np
 import logging
 
 from progressivis.core.utils import integer_types, is_none_alike, norm_slice
-from progressivis.core.fast import indices_to_slice
-from progressivis.core.intdict import IntDict
+from progressivis.utils.fast import indices_to_slice
+from progressivis.utils.intdict import IntDict
 from progressivis.core.index_update import IndexUpdate
 from progressivis.core.config import get_option
 from progressivis.core.bitmap import bitmap
@@ -15,7 +15,7 @@ from progressivis.storage.range import RangeDataset, RangeError
 
 from .loc import Loc
 from .column import Column
-from . import metadata 
+from . import metadata
 from .dshape import dshape_create, dshape_to_h5py
 
 if six.PY2:

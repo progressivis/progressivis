@@ -10,6 +10,7 @@ from progressivis.core.bitmap import bitmap
 if six.PY2:
     range = xrange
 
+
 class Loc(object):
     ITERABLE    = 8
     INT         = 1

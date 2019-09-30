@@ -8,7 +8,7 @@ if six.PY2:  # pragma no cover
 
 
 try:
-    from progressivis.core.khash.hashtable import Int64HashTable
+    from progressivis.utils.khash.hashtable import Int64HashTable
 
     class IntDict(object):
         def __init__(self, keys=None, values=None, **kwargs):
@@ -81,6 +81,9 @@ except ImportError:  # pragma no cover
             for i in range(len(key_value)):
                 key_value[i] = self[key_value[i]]
             return key_value
+
+        def get_values(self, values):
+            self.get_items(self, values)
 
         def contains_any(self, keys):
             assert isinstance(keys, np.ndarray) and keys.dtype == np.int64

@@ -29,7 +29,7 @@ import numpy as np
 
 from flask import Flask, Blueprint, request, json as flask_json
 from flask.json import JSONEncoder
-from flask_socketio import SocketIO, join_room, rooms, send
+from flask_socketio import SocketIO, join_room, send
 import eventlet
 
 from progressivis import Scheduler, Module

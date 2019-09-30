@@ -84,7 +84,6 @@ class VECLoader(TableModule):
     def run_step(self,run_number,step_size, howlong):
         if step_size==0: # bug
             logger.error('Received a step_size of 0')
-            setp_size=1
             #return self._return_run_step(self.state_ready, steps_run=0, creates=0)
         print('step_size %d'%step_size)
         if self.f is None:

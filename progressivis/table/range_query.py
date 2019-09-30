@@ -1,5 +1,8 @@
+from __future__ import absolute_import, division, print_function
+
 import numpy as np
 
+from progressivis.utils.synchronized import synchronized
 from progressivis.core.utils import indices_len
 
 from . import Table
@@ -11,7 +14,6 @@ from .mod_impl import ModuleImpl
 from ..io import Variable
 from ..stats import Min, Max
 from .hist_index import HistogramIndex
-from progressivis.core.synchronized import synchronized
 
 
 def _get_physical_table(t):

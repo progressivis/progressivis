@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 """ Computes the distance matrix from each row of a data frame.
 """
-from progressivis.core.utils import ProgressiveError, indices_len, fix_loc
+from progressivis.utils.errors import ProgressiveError
+from progressivis.utils.synchronized import synchronized
+from progressivis.core.utils import indices_len, fix_loc
 from progressivis.table.module import TableModule, SlotDescriptor
 from progressivis.table.table import Table
-from progressivis.core.synchronized import synchronized
 
 
 import numpy as np
@@ -14,17 +15,21 @@ from sklearn.metrics.pairwise import _VALID_METRICS, pairwise_distances
 import logging
 logger = logging.getLogger(__name__)
 
+
 class PairwiseDistances(TableModule):
     def __init__(self, metric='euclidean', columns=None, n_jobs=1, **kwds):
-        self._add_slots(kwds,'input_descriptors', [SlotDescriptor('table', type=Table)])
-        super(PairwiseDistances, self).__init__(dataframe_slot='distance', **kwds)
+        self._add_slots(kwds, 'input_descriptors',
+                        [SlotDescriptor('table', type=Table)])
+        super(PairwiseDistances, self).__init__(dataframe_slot='distance',
+                                                **kwds)
         self.default_step_size = kwds.get('step_Size', 100)  # initial guess
         self.columns = columns
         self._metric = metric
         self._n_jobs = n_jobs
         self._last_index = None
-        if (metric not in _VALID_METRICS and
-            not callable(metric) and metric != "precomputed"):
+        if metric not in _VALID_METRICS and \
+           not callable(metric) and \
+           metric != "precomputed":
             raise ProgressiveError('Unknown distance %s', metric)
         self._table = Table(self.generate_table_name('distance'),
                             dshape="{distance: var * real}",
@@ -40,23 +45,22 @@ class PairwiseDistances(TableModule):
         return self._table
 
     def get_data(self, name):
-        if name=='dist':
+        if name == 'dist':
             return self.dist()
         return super(PairwiseDistances, self).get_data(name)
 
     @synchronized
-    def run_step(self,run_number,step_size,howlong):
+    def run_step(self, run_number, step_size, howlong):
         dfslot = self.get_input_slot('table')
         df = dfslot.data()
         dfslot.update(run_number)
-        if dfslot.updated.any() or dfslot.deleted.any():        
+        if dfslot.updated.any() or dfslot.deleted.any():
             dfslot.reset()
             logger.info('Reseting history because of changes in the input table')
             dfslot.update(run_number)
-            #TODO: be smarter with changed values
+            # TODO: be smarter with changed values
 
         m = step_size
-        
         indices = dfslot.created.next(m)
         m = indices_len(indices)
 

@@ -8,9 +8,9 @@ import logging
 
 import numpy as np
 
+from progressivis.utils.synchronized import synchronized
 from progressivis.core.utils import indices_len, fix_loc
 from progressivis.core.slot import SlotDescriptor
-from progressivis.core.synchronized import synchronized
 from progressivis.table.module import TableModule
 from progressivis.table.table import Table
 

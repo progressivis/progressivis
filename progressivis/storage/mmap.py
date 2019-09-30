@@ -14,12 +14,10 @@ import logging
 import six
 import numpy as np
 
-from progressivis.core.utils import integer_types, get_random_name
+from progressivis.core.utils import integer_types, get_random_name, next_pow2
 from .base import StorageEngine, Dataset
 from .hierarchy import GroupImpl, AttributeImpl
 from .mmap_enc import MMapObject
-import sys
-import json
 logger = logging.getLogger(__name__)
 
 METADATA_FILE = ".metadata"

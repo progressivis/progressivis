@@ -2,9 +2,6 @@ from __future__ import absolute_import, division, print_function
 
 from .core import Expr
 from ..table.constant import Constant
-from ..table.table import Table
-from ..table.module import TableModule
-from abc import ABCMeta, abstractmethod, abstractproperty
 
 
 class TableExpr(Expr):

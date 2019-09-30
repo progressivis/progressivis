@@ -13,4 +13,5 @@ __all__ = ['Column',
            'Table',
            'BaseTable',
            'TableSelectedView',
-           'TableSelectedChangeManager']
+           'TableSelectedChangeManager',
+           'TableTracer']

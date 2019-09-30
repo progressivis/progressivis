@@ -1,17 +1,16 @@
 from __future__ import absolute_import, division, print_function
 
+from progressivis.utils.synchronized import synchronized
 from progressivis.core.utils import indices_len, fix_loc
 from progressivis.core.slot import SlotDescriptor
-from progressivis.core.synchronized import synchronized
 from progressivis.table.module import TableModule
 from progressivis.table.table import Table
-from collections import OrderedDict
 
 import numpy as np
-import pandas as pd
 
 import logging
 logger = logging.getLogger(__name__)
+
 
 # Should translate that to Cython eventually
 class OnlineVariance(object):

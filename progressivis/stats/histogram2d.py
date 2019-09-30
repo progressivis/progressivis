@@ -1,7 +1,8 @@
 from __future__ import absolute_import, division, print_function
 
 from progressivis.core.utils import (indices_len, fix_loc,
-                                     get_physical_base, bytescale)
+                                     get_physical_base)
+from progressivis.utils.bytescale import bytescale
 from progressivis.core.slot import SlotDescriptor
 from progressivis.table.module import TableModule
 from progressivis.table.table import Table

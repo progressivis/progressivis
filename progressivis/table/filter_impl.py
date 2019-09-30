@@ -4,7 +4,6 @@ import numexpr as ne
 
 from .mod_impl import ModuleImpl
 from progressivis.core.utils import indices_len, fix_loc
-import six
 from progressivis.core.bitmap  import bitmap
 
 import numpy as np

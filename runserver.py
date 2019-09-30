@@ -13,7 +13,7 @@ from progressivis import log_level
 from progressivis.server import start_server
 from progressivis.core.scheduler import Scheduler, BaseScheduler
 
-from progressivis.core.utils import Thread
+from progressivis.utils.threading import Thread
 
 ENV = {}
 

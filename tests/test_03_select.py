@@ -1,10 +1,9 @@
 from . import ProgressiveTest, skip
 
-import time
-
 from progressivis import Print, Every
 from progressivis.io import CSVLoader
 from progressivis.table.select import Select
+from progressivis.table.constant import Constant
 from progressivis.stats import Sample
 from progressivis.datasets import get_dataset
 
@@ -16,6 +15,7 @@ import pandas as pd
 def print_repr(x):
     print(repr(x))
 
+
 class TestSelect(ProgressiveTest):
     def setUp(self):
         super(TestSelect, self).setUp()
@@ -23,8 +23,9 @@ class TestSelect(ProgressiveTest):
 
     def test_select_simple(self):
         s = self.scheduler()
-        csv = CSVLoader(get_dataset('bigfile'), index_col=False,header=None,scheduler=s)
-        sample=Sample(samples=100, scheduler=s)
+        csv = CSVLoader(get_dataset('bigfile'), index_col=False, header=None,
+                        scheduler=s)
+        sample = Sample(samples=100, scheduler=s)
         sample.input.table = csv.output.table
         q=Select(scheduler=s)
         q.input.table = csv.output.table
@@ -40,9 +41,10 @@ class TestSelect(ProgressiveTest):
     @skip("Need to implement select on tables")
     def test_select(self):
         s = self.scheduler()
-        csv = CSVLoader(get_dataset('bigfile'), index_col=False,header=None,force_valid_ids=True,scheduler=s)
-        cst=Constant(pd.DataFrame({'query': ['_1 < 0.5']}),scheduler=s)
-        q=Select(scheduler=s)
+        csv = CSVLoader(get_dataset('bigfile'), index_col=False, header=None,
+                        force_valid_ids=True, scheduler=s)
+        cst = Constant(pd.DataFrame({'query': ['_1 < 0.5']}), scheduler=s)
+        q = Select(scheduler=s)
         q.input.df = csv.output.df
         q.input.query = cst.output.df
         prlen = Every(proc=self.terse, constant_time=True, scheduler=s)

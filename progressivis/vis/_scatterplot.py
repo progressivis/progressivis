@@ -4,7 +4,8 @@ import logging
 
 import numpy as np
 
-from progressivis.core import SlotDescriptor, ProgressiveError
+from progressivis.utils.errors import ProgressiveError
+from progressivis.core import SlotDescriptor
 from progressivis.table import Table
 #from progressivis.table.liteselect import LiteSelect
 from progressivis.table.module import TableModule

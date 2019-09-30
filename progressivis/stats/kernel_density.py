@@ -2,7 +2,7 @@ import numpy as np
 from ..table.module import TableModule
 from ..table import Table
 from ..core.utils import indices_len
-from progressivis import ProgressiveError, SlotDescriptor
+from progressivis import SlotDescriptor
 try:
     import pynene
     from .knnkde import KNNKernelDensity

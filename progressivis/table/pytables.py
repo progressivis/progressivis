@@ -6,9 +6,9 @@ from collections import Iterable
 import six
 import numpy as np
 
+from progressivis.utils.fast import indices_to_slice
+from progressivis.utils.intdict import IntDict
 from progressivis.core.utils import (integer_types, is_int)
-from progressivis.core.fast import indices_to_slice
-from progressivis.core.intdict import IntDict
 from .table_sliced import BaseTable, TableSlicedView
 from .dshape import dshape_from_pytable
 

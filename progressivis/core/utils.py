@@ -29,77 +29,8 @@ import tempfile
 import s3fs
 import stat as st
 
-multi_threading = True
 if six.PY2:
     range = xrange
-# multi_threading = False # use False only for debug!
-# NB: if you need to set multi_threading to False (e.g. for debugging)
-# better do it in a custom_multi_threading.py file (not versionned)
-# in order to prevent you from pushing a wrong setting to git
-# FYI: progressivis/core/custom_multi_threading.py is part of .gitignore
-try:
-    from .custom_multi_threading import multi_threading
-except:  # ModuleNotFoundError:
-    pass
-
-
-class FakeLock(object):
-    def acquire(self, blocking=1):
-        _ = blocking  # keeps pylint happy
-        return False
-
-    def release(self):
-        pass
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        return
-
-
-class FakeCondition(object):
-    def __init__(self, lock=None):
-        self._lock = lock #  still keeps pylint happy
-
-    def wait(self):
-        pass
-
-    def notify(self):
-        pass
-
-    def __enter__(self):
-        pass
-
-    def __exit__(self, type, value, traceback):
-        pass
-
-
-if multi_threading:
-    from threading import Thread, Lock, RLock, Condition
-
-else:
-    Lock = FakeLock
-    RLock = FakeLock
-    Condition = FakeCondition
-
-    class Thread(object):  # fake threads for debug
-        def __init__(self, group=None, target=None, name=None,
-                     args=(), kwargs=None):
-            self._group = group
-            self._target = target
-            self._name = name
-            self._args = args
-            self._kwargs = kwargs or {}
-
-        def run(self):
-            return self._target(*self._args, **self._kwargs)
-
-        def start(self):
-            return self.run()
-
-        def join(self, timeout=None):
-            pass
 
 
 if six.PY2:
@@ -129,13 +60,6 @@ def is_iter_str(it):
         if not is_str(s):
             return False
     return True
-
-
-class ProgressiveError(Exception):
-    "Errors from ProgressiVis."
-    def __init__(self, message=None, details=None):
-        self.message = message
-        self.details = details
 
 
 def len_none(l):
@@ -668,7 +592,6 @@ def s3_get_filepath_or_buffer(filepath_or_buffer, encoding=None,
                               compression=None):
     # pylint: disable=unused-argument
     fs = s3fs.S3FileSystem(anon=False)
-    from pandas.io import s3
     from botocore.exceptions import NoCredentialsError
     try:
         filepath_or_buffer = fs.open(_strip_schema(filepath_or_buffer))
@@ -703,7 +626,6 @@ def filepath_to_buffer(filepath, encoding=None,
         # return HttpDesc(req.raw, filepath), encoding, compression, int(size)
         return req.raw, encoding, compression, int(size)
     if _is_s3_url(filepath):
-        from pandas.io import s3
         reader, encoding, compression = s3_get_filepath_or_buffer(
             filepath,
             encoding=encoding,
@@ -881,72 +803,3 @@ def decorate(scheduler, patch):
     for m in scheduler.modules().values():
         if patch.patch_condition(m):
             decorate_module(m, patch)
-
-
-# Returns a byte-scaled image
-# Disappeared from scipy.misc
-def bytescale(data, cmin=None, cmax=None, high=255, low=0):
-    """
-    Byte scales an array (image).
-
-    Byte scaling means converting the input image to uint8 dtype and scaling
-    the range to ``(low, high)`` (default 0-255).
-    If the input image already has dtype uint8, no scaling is done.
-
-    Parameters
-    ----------
-    data : ndarray
-        PIL image data array.
-    cmin : scalar, optional
-        Bias scaling of small values. Default is ``data.min()``.
-    cmax : scalar, optional
-        Bias scaling of large values. Default is ``data.max()``.
-    high : scalar, optional
-        Scale max value to `high`.  Default is 255.
-    low : scalar, optional
-        Scale min value to `low`.  Default is 0.
-
-    Returns
-    -------
-    img_array : uint8 ndarray
-        The byte-scaled array.
-
-    Examples
-    --------
-    >>> img = np.array([[ 91.06794177,   3.39058326,  84.4221549 ], [ 73.88003259,  80.91433048,   4.88878881], [ 51.53875334,  34.45808177,  27.5873488 ]])
-    >>> bytescale(img)
-    array([[255,   0, 236],
-           [205, 225,   4],
-           [140,  90,  70]], dtype=uint8)
-    >>> bytescale(img, high=200, low=100)
-    array([[200, 100, 192],
-           [180, 188, 102],
-           [155, 135, 128]], dtype=uint8)
-    >>> bytescale(img, cmin=0, cmax=255)
-    array([[91,  3, 84],
-           [74, 81,  5],
-           [52, 34, 28]], dtype=uint8)
-
-    """
-    if data.dtype == np.uint8:
-        return data
-
-    if high < low:
-        raise ValueError("`high` should be larger than `low`.")
-
-    if cmin is None:
-        cmin = data.min()
-    if cmax is None:
-        cmax = data.max()
-
-    cscale = cmax - cmin
-    if cscale < 0:
-        raise ValueError("`cmax` should be larger than `cmin`.")
-    elif cscale == 0:
-        cscale = 1
-
-    scale = float(high - low) / cscale
-    bytedata = (data * 1.0 - cmin) * scale + 0.4999
-    bytedata[bytedata > high] = high
-    bytedata[bytedata < 0] = 0
-    return np.cast[np.uint8](bytedata) + np.cast[np.uint8](low)

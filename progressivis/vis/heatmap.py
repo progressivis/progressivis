@@ -10,7 +10,7 @@ import numpy as np
 import scipy as sp
 from PIL import Image
 
-from progressivis.core.utils import indices_len, bytescale
+from progressivis.core.utils import indices_len
 from progressivis.core.slot import SlotDescriptor
 from progressivis.table import Table
 from progressivis.table.module import TableModule
@@ -41,7 +41,7 @@ class Heatmap(TableModule):
         self.default_step_size = 1
 
         name = self.generate_table_name('Heatmap')
-        params = self.params
+        # params = self.params
         # if params.filename is None:
         #     params.filename = name+'%d.png'
         self._table = Table(name, dshape=Heatmap.schema, create=True)
@@ -100,8 +100,9 @@ class Heatmap(TableModule):
                 if re.search(r'%(0[\d])?d', filename):
                     filename = filename % (run_number)
                 filename = self.storage.fullname(self, filename)
-                 #TODO should do it atomically since it will be called 4 times with the same fn
-                image.save(filename, format='PNG') #, bits=16)
+                # TODO should do it atomically since it will be
+                # called 4 times with the same fn
+                image.save(filename, format='PNG')  # bits=16)
                 logger.debug('Saved image %s', filename)
                 image = None
             except:

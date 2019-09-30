@@ -2,9 +2,10 @@
 from __future__ import absolute_import, division, print_function
 
 import logging
-from .synchronized import synchronized
 from .scheduler_base import BaseScheduler
-from .utils import ProgressiveError, Thread, RLock
+from progressivis.utils.synchronized import synchronized
+from progressivis.utils.errors import ProgressiveError
+from progressivis.utils.threading import Thread, RLock
 
 logger = logging.getLogger(__name__)
 

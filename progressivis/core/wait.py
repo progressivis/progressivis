@@ -1,7 +1,7 @@
 from __future__ import absolute_import, division, print_function
 
-from progressivis.core.utils import ProgressiveError
-from ..core.module import Module
+from progressivis.utils.errors import ProgressiveError
+from progressivis.core.module import Module
 from progressivis.core.slot import SlotDescriptor
 
 import numpy as np

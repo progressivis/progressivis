@@ -1,6 +1,6 @@
 from __future__ import absolute_import, division, print_function
 
-from ..core.utils import ProgressiveError, indices_len, is_valid_identifier
+from ..core.utils import indices_len
 from ..core.slot import SlotDescriptor
 from .module import TableModule
 from .table import Table

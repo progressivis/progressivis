@@ -7,7 +7,7 @@ import logging
 
 import numpy as np
 
-from progressivis.core import ProgressiveError
+from progressivis.utils.errors import ProgressiveError
 from progressivis.table.module import TableModule
 from progressivis.table.table import Table
 from progressivis.core.utils import integer_types

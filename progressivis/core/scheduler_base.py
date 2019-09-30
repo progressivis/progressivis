@@ -16,10 +16,10 @@ import six
 # import numpy as np
 
 
-from .utils import ProgressiveError, FakeLock, Condition
 from .dataflow import Dataflow
-from .synchronized import synchronized
-#from .toposort import toposort
+from progressivis.utils.synchronized import synchronized
+from progressivis.utils.errors import ProgressiveError
+from progressivis.utils.threading import FakeLock, Condition
 
 
 logger = logging.getLogger(__name__)

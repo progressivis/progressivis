@@ -147,4 +147,4 @@ class Bisect(TableModule):
                                        updated=updated,
                                        deleted=deleted)
             self._table.selection = self._impl.result._values
-        return self._return_run_step(self.next_state(input_slot), steps_run=steps)
+        return self._return_run_step(self.next_state(input_slot), steps)
