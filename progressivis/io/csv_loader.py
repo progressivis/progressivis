@@ -105,12 +105,12 @@ class CSVLoader(TableModule):
         return (pos, self._input_size)
 
 
-    def validate_parser(self, run_number):
+    def async validate_parser(self, run_number):
         if self.parser is None:
             if self.filepath_or_buffer is not None:
                 if not self._recovery:
                     try:
-                        self.parser = read_csv(self.create_input_source(self.filepath_or_buffer), **self.csv_kwds)
+                        self.parser = await read_csv(self.create_input_source(self.filepath_or_buffer), **self.csv_kwds)
                     except IOError as e:
                         logger.error('Cannot open file %s: %s', self.filepath_or_buffer, e)
                         self.parser = None
@@ -156,7 +156,7 @@ class CSVLoader(TableModule):
                         logger.error('Cannot read the snapshot %s', e)
                         return self.state_terminated
                     try:
-                        self.parser = recovery(snapshot, self.filepath_or_buffer, **self.csv_kwds)
+                        self.parser = await recovery(snapshot, self.filepath_or_buffer, **self.csv_kwds)
                     except Exception as e:
                         #print('Cannot recover from snapshot {}, {}'.format(snapshot, e))
                         logger.error('Cannot recover from snapshot %s, %s', snapshot, e)
@@ -179,7 +179,7 @@ class CSVLoader(TableModule):
                             return self.state_blocked
                         filename = df.at[indices.start, 'filename']
                         try:
-                            self.parser = read_csv(self.create_input_source(filename), **self.csv_kwds)
+                            self.parser = await read_csv(self.create_input_source(filename), **self.csv_kwds)
                         except IOError as e:
                             logger.error('Cannot open file %s: %s', filename, e)
                             self.parser = None
@@ -191,11 +191,11 @@ class CSVLoader(TableModule):
             return False
         return self._table.last_id >= self._last_saved_id + self._save_step_size
 
-    def run_step(self,run_number,step_size, howlong):
+    def async run_step(self,run_number,step_size, howlong):
         if step_size==0: # bug
             logger.error('Received a step_size of 0')
             return self._return_run_step(self.state_ready, steps_run=0)
-        status = self.validate_parser(run_number)
+        status = await self.validate_parser(run_number)
         if status==self.state_terminated:
             raise StopIteration('no more filenames')
         elif status==self.state_blocked:

@@ -12,6 +12,8 @@ import six
 import json
 from collections import OrderedDict
 from pandas.core.dtypes.inference import is_file_like, is_sequence
+import asyncio
+import concurrent.futures
 
 SAMPLE_SIZE = 5
 MARGIN = 0.05
@@ -36,6 +38,13 @@ else:
                         zlib=zlib.decompressobj,
                         gzip=partial(zlib.decompressobj,
                                          zlib.MAX_WBITS|16))
+
+async def _read_csv(*args, **kwargs):
+    # cf. https://docs.python.org/3/library/asyncio-eventloop.html#asyncio.loop.run_in_executor
+    loop = asyncio.get_running_loop()
+    return await loop.run_in_executor(
+        None, pd.read_csv(*args, **kwargs))
+    
 
 def is_recoverable(inp):
     if is_str(inp):
@@ -88,7 +97,7 @@ class Parser(object):
         ret.update(check=hash(tuple(ret.values())))
         return ret
 
-    def read(self, n, flush=False):
+    def async read(self, n, flush=False):
         assert n>0
         ret = []
         n_ = n 
@@ -158,7 +167,7 @@ class Parser(object):
                 header = None
                 names = self._names
                 usecols = self._usecols
-            read_df = pd.read_csv(BytesIO(csv_bytes), header=header, names=names, usecols=usecols, **self._pd_kwds)
+            read_df = await _read_csv(BytesIO(csv_bytes), header=header, names=names, usecols=usecols, **self._pd_kwds)
             if self._names is None:
                 self._names = read_df.columns.values
                 if self._usecols:
@@ -383,7 +392,7 @@ def read_csv(input_source, silent_before=0, **csv_kwds):
         assert header is None or header == 0
     return Parser(input_source, remaining=first_row, estimated_row_size=len(first_row), pd_kwds=pd_kwds, chunksize=chunksize, usecols=usecols, header=header)
 
-def recovery(snapshot, previous_file_seq, **csv_kwds):
+def async recovery(snapshot, previous_file_seq, **csv_kwds):
     print("RECOVERY ...")
     pd_kwds = dict(csv_kwds)
     chunksize = pd_kwds['chunksize']
@@ -407,7 +416,7 @@ def recovery(snapshot, previous_file_seq, **csv_kwds):
         assert 'usecols' in csv_kwds and csv_kwds['usecols'] == usecols
     #dec_remaining = snapshot['dec_remaining'].encode('utf-8')
     if overflow_df:
-        overflow_df = pd.read_csv(BytesIO(overflow_df), **pd_kwds)
+        overflow_df = await _read_csv(BytesIO(overflow_df), **pd_kwds)
         if nb_cols != len(overflow_df.columns):
             raise ValueError("Inconsistent snapshot: wrong number of cols in df {} instead of {}".format(len(overflow_df.columns), nb_cols))
     else:
