@@ -2,19 +2,8 @@
 from __future__ import absolute_import, division, print_function
 import six
 
-multi_threading = True
-if six.PY2:
-    range = xrange
-# multi_threading = False # use False only for debug!
-# NB: if you need to set multi_threading to False (e.g. for debugging)
-# better do it in a custom_multi_threading.py file (not versionned)
-# in order to prevent you from pushing a wrong setting to git
-# FYI: progressivis/core/custom_multi_threading.py is part of .gitignore
-try:
-    from .custom_multi_threading import multi_threading
-except:  # ModuleNotFoundError:
-    pass
-
+multi_threading = False
+# multithreading is disabled and it will be removed
 
 class FakeLock(object):
     def acquire(self, blocking=1):

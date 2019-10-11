@@ -10,7 +10,7 @@ import logging
 import numpy as np
 import six
 
-from progressivis.utils.errors import ProgressiveError
+from progressivis.utils.errors import ProgressiveError, ProgressiveStopIteration
 from progressivis.table.table_base import BaseTable
 from progressivis.table.table import Table
 from progressivis.table.dshape import dshape_from_dtype
@@ -130,6 +130,7 @@ class Module(six.with_metaclass(ModuleMeta, object)):
         self.input = InputSlots(self)
         self.output = OutputSlots(self)
         self.steps_acc = 0
+        self._consumers = []
         # callbacks
         self._start_run = None
         self._end_run = None
@@ -180,6 +181,10 @@ class Module(six.with_metaclass(ModuleMeta, object)):
         """
         return 0.0
 
+    def tell_consumers(self):
+        for slot in self._consumers:
+            slot._event.set()
+            
     @staticmethod
     def _filter_kwds(kwds, function_or_method):
         argspec = getfullargspec(function_or_method)
@@ -497,7 +502,7 @@ class Module(six.with_metaclass(ModuleMeta, object)):
         return None
 
     @abstractmethod
-    def run_step(self, run_number, step_size, howlong):  # pragma no cover
+    async def run_step(self, run_number, step_size, howlong):  # pragma no cover
         """Run one step of the module, with a duration up to the 'howlong' parameter.
 
         Returns a dictionary with at least 5 pieces of information: 1)
@@ -514,6 +519,7 @@ class Module(six.with_metaclass(ModuleMeta, object)):
         """
         if slot.has_buffered():
             return Module.state_ready
+        slot._event.clear() #run_step awaiting on slot._event.wait() will now block until tell_consumers() method is called again.
         return Module.state_blocked
 
     def _return_run_step(self, next_state, steps_run):
@@ -700,7 +706,7 @@ class Module(six.with_metaclass(ModuleMeta, object)):
             self._params.add(combined)
         return v
 
-    def run(self, run_number):
+    async def run(self, run_number):
         assert not self.is_running()
         self.steps_acc = 0
         next_state = self.state
@@ -744,12 +750,12 @@ class Module(six.with_metaclass(ModuleMeta, object)):
                 tracer.before_run_step(now, run_number)
                 if self.debug:
                     import pdb; pdb.set_trace()
-                run_step_ret = self.run_step(run_number,
+                run_step_ret = await self.run_step(run_number,
                                              step_size,
                                              remaining_time)
                 next_state = run_step_ret['next_state']
                 now = self.timer()
-            except StopIteration:
+            except ProgressiveStopIteration:
                 logger.info('In Module.run(): Received a StopIteration')
                 next_state = Module.state_zombie
                 run_step_ret['next_state'] = next_state
@@ -868,7 +874,7 @@ class Every(Module):
             return 1
         return super(Every, self).predict_step_size(duration)
 
-    def run_step(self, run_number, step_size, howlong):
+    async def run_step(self, run_number, step_size, howlong):
         slot = self.get_input_slot('df')
         df = slot.data()
         if df is not None:

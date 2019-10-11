@@ -238,7 +238,7 @@ class BaseScheduler(object):
     def _after_run(self):
         pass
 
-    def start(self, tick_proc=None, idle_proc=None):
+    async def start(self, tick_proc=None, idle_proc=None):
         "Start the scheduler."
         if tick_proc:
             self._tick_procs = []
@@ -246,7 +246,7 @@ class BaseScheduler(object):
         if idle_proc:
             self._idle_procs = []
             self.on_idle(idle_proc)
-        self.run()
+        await self.run()
 
     def _step_proc(self, s, run_number):
         # pylint: disable=unused-argument
@@ -287,7 +287,7 @@ class BaseScheduler(object):
         assert callable(idle_proc)
         self._idle_procs.remove(idle_proc)
 
-    def run(self):
+    async def run(self):
         "Run the modules, called by start()."
         if self.dataflow:
             assert self._enter_cnt == 1
@@ -299,7 +299,7 @@ class BaseScheduler(object):
         self._start = default_timer()
         self._before_run()
 
-        self._run_loop()
+        await self._run_loop()
 
         modules = [self._modules[m] for m in self._runorder]
         for module in reversed(modules):
@@ -309,7 +309,7 @@ class BaseScheduler(object):
         self._after_run()
         self.done()
 
-    def _run_loop(self):
+    async def _run_loop(self):
         """Main scheduler loop."""
         # pylint: disable=broad-except
         for module in self._next_module():
@@ -332,9 +332,8 @@ class BaseScheduler(object):
                 continue
 
             self._run_number += 1
-            with self.lock:
-                self._run_tick_procs()
-                module.run(self._run_number)
+            self._run_tick_procs() # TODO to be awaited 
+            await module.run(self._run_number)
 
     def _next_module(self):
         """

@@ -27,9 +27,9 @@ class Min(TableModule):
             return True
         return super(Min, self).is_ready()
 
-    @synchronized
-    def run_step(self,run_number,step_size,howlong):
+    async def run_step(self,run_number,step_size,howlong):
         dfslot = self.get_input_slot('table')
+        await dfslot._event.wait()
         dfslot.update(run_number)
         if dfslot.updated.any() or dfslot.deleted.any():        
             dfslot.reset()
@@ -54,7 +54,8 @@ class Min(TableModule):
                 current_max = op[colname]
                 current_max[0] = np.minimum(current_max, last[colname])
             self._table.append(op)
-
+        # inform consumers that new data were produced
+        self.tell_consumers()
         #TODO manage the history in a more efficient way
         #if len(self._table) > self.params.history:
         #    self._table = self._table.loc[self._df.index[-self.params.history:]]

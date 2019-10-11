@@ -7,7 +7,7 @@ import logging
 
 import numpy as np
 
-from progressivis.utils.errors import ProgressiveError
+from progressivis.utils.errors import ProgressiveError, ProgressiveStopIteration
 from progressivis.table.module import TableModule
 from progressivis.table.table import Table
 from progressivis.core.utils import integer_types
@@ -40,7 +40,8 @@ class RandomTable(TableModule):
                             create=True)
         self.columns = self._table.columns
 
-    def run_step(self, run_number, step_size, howlong):
+    async def run_step(self, run_number, step_size, howlong):
+        #import pdb;pdb.set_trace()
         if step_size == 0: # bug
             logger.error('Received a step_size of 0')
             return self._return_run_step(self.state_ready, steps_run=0, creates=0)
@@ -49,15 +50,16 @@ class RandomTable(TableModule):
             step_size = np.min([self.throttle, step_size])
         if self.rows >= 0 and (len(self._table)+step_size) > self.rows:
             step_size = self.rows - len(self._table)
+            print("step size:", step_size)
             if step_size <= 0:
-                raise StopIteration
+                raise ProgressiveStopIteration
             logger.info('truncating to %d lines', step_size)
 
         values = OrderedDict()
         for column in self.columns:
             s = self.random(step_size)
             values[column] = s
-        with self.lock:
-            self._table.append(values)
+        self._table.append(values)
+        self.tell_consumers()
         next_state = self.state_blocked if self.throttle else self.state_ready
         return self._return_run_step(next_state, steps_run=step_size)

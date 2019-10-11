@@ -5,7 +5,7 @@ from __future__ import absolute_import, division, print_function
 
 import logging
 from collections import namedtuple
-
+import asyncio
 import six
 from .changemanager_base import EMPTY_BUFFER
 
@@ -33,6 +33,8 @@ class Slot(object):
         self.original_name = None
         self._name = None
         self.changes = None
+        self._event = asyncio.Event()
+        self.output_module._consumers.append(self)
 
     def name(self):
         "Return the name of the slot"

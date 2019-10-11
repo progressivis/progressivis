@@ -38,7 +38,7 @@ class Scheduler(BaseScheduler):
     def _before_run(self):
         logger.debug("Before run %d", self._run_number)
 
-    def start(self, tick_proc=None, idle_proc=None):
+    async def start(self, tick_proc=None, idle_proc=None):
         with self.lock:
             if self.thread is not None:
                 raise ProgressiveError('Trying to start scheduler thread'
@@ -55,7 +55,8 @@ class Scheduler(BaseScheduler):
             else:
                 self._idle_procs = []
             logger.info('Thread starting')
-        self.thread.start()
+        #self.thread.start()
+        await self.run()
 
     def _after_run(self):
         logger.debug("After run %d", self._run_number)
