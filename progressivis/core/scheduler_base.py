@@ -310,8 +310,9 @@ class BaseScheduler(object):
         self._before_run()
         if self._new_modules:
             self._update_modules()
-        producers = [asyncio.create_task(produce(n, q)) for n in range(nprod)]
-
+        # actually, the order in self._run_list is not important anymore
+        runners = [asyncio.create_task(m.module_task()) for m in self._run_list]
+        await asyncio.gather(*runners)
         modules = [self._modules[m] for m in self._runorder]
         for module in reversed(modules):
             module.ending()
