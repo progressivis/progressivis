@@ -9,6 +9,7 @@ import logging
 
 import numpy as np
 import six
+import asyncio
 
 from progressivis.utils.errors import ProgressiveError, ProgressiveStopIteration
 from progressivis.table.table_base import BaseTable
@@ -30,6 +31,8 @@ else:  # pragma no cover
     from inspect import getfullargspec
 
 logger = logging.getLogger(__name__)
+
+
 
 
 class ModuleMeta(ABCMeta):
@@ -131,6 +134,7 @@ class Module(six.with_metaclass(ModuleMeta, object)):
         self.output = OutputSlots(self)
         self.steps_acc = 0
         self._consumers = []
+        self._do_not_wait = [] # by default all slots are awaitable
         # callbacks
         self._start_run = None
         self._end_run = None
@@ -183,7 +187,18 @@ class Module(six.with_metaclass(ModuleMeta, object)):
 
     def tell_consumers(self):
         for slot in self._consumers:
-            slot._event.set()
+            slot._event.set() # cleared in next_state()
+
+    async def module_task(self):
+        while True:
+            for sname, slot in self._input_slots:
+                if sname in self._do_not_wait:
+                    continue
+                await slot._event.wait()
+            rn = await self._scheduler.new_run_number()
+            await self.run(rn)
+            if self.is_terminated():
+                break
             
     @staticmethod
     def _filter_kwds(kwds, function_or_method):
@@ -519,7 +534,7 @@ class Module(six.with_metaclass(ModuleMeta, object)):
         """
         if slot.has_buffered():
             return Module.state_ready
-        slot._event.clear() #run_step awaiting on slot._event.wait() will now block until tell_consumers() method is called again.
+        slot._event.clear() # module_run_task() awaiting on slot._event.wait() will now block until tell_consumers() method is called again.
         return Module.state_blocked
 
     def _return_run_step(self, next_state, steps_run):

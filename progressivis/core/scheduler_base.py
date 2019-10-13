@@ -8,11 +8,14 @@ import functools
 from collections import Iterable
 from timeit import default_timer
 import six
+import asyncio
 
 from .dataflow import Dataflow
 from progressivis.utils.synchronized import synchronized
 from progressivis.utils.errors import ProgressiveError
 from progressivis.utils.threading import FakeLock, Condition
+run_number_lock = 
+run_number_global = 0
 
 
 logger = logging.getLogger(__name__)
@@ -60,6 +63,7 @@ class BaseScheduler(object):
         self._new_runorder = None
         self._start = None
         self._run_number = 0
+        self._run_number_lock = asyncio.Lock()      
         self._tick_procs = []
         self._tick_once_procs = []
         self._idle_procs = []
@@ -137,6 +141,12 @@ class BaseScheduler(object):
         "Create a lock, fake in this class, real in the derived Scheduler"
         # pylint: disable=no-self-use
         return FakeLock()
+
+    async def new_run_number(self):
+        async with self._run_number_lock:
+            ret  = self._run_number
+            self._run_number += 1
+            return ret
 
     def join(self):
         "Wait for this execution thread to finish."
@@ -298,8 +308,9 @@ class BaseScheduler(object):
         self._running = True
         self._start = default_timer()
         self._before_run()
-
-        await self._run_loop()
+        if self._new_modules:
+            self._update_modules()
+        producers = [asyncio.create_task(produce(n, q)) for n in range(nprod)]
 
         modules = [self._modules[m] for m in self._runorder]
         for module in reversed(modules):
@@ -309,7 +320,7 @@ class BaseScheduler(object):
         self._after_run()
         self.done()
 
-    async def _run_loop(self):
+    def _old_stuff__run_loop(self):
         """Main scheduler loop."""
         # pylint: disable=broad-except
         for module in self._next_module():

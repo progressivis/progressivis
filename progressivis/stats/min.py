@@ -29,7 +29,7 @@ class Min(TableModule):
 
     async def run_step(self,run_number,step_size,howlong):
         dfslot = self.get_input_slot('table')
-        await dfslot._event.wait()
+        #await dfslot._event.wait()
         dfslot.update(run_number)
         if dfslot.updated.any() or dfslot.deleted.any():        
             dfslot.reset()
