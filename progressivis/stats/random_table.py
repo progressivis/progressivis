@@ -61,4 +61,4 @@ class RandomTable(TableModule):
             values[column] = s
         self._table.append(values)
         next_state = self.state_blocked if self.throttle else self.state_ready
-        return self._return_run_step(next_state, steps_run=step_size, productive=True)
+        return self._return_run_step(next_state, steps_run=step_size)
