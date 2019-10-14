@@ -545,8 +545,13 @@ class Module(six.with_metaclass(ModuleMeta, object)):
         """
         if slot.has_buffered():
             return Module.state_ready
-        slot._event.clear() # module_run_task() awaiting on slot._event.wait() will now block until tell_consumers() method is called again.
         return Module.state_blocked
+
+    @staticmethod
+    def clear_slots_if(slots):
+        for slot in slots:
+            if not slot.has_buffered():
+                slot._event.clear()
 
     def _return_run_step(self, next_state, steps_run, productive=None):
         assert (next_state >= Module.state_ready and
@@ -556,6 +561,10 @@ class Module(six.with_metaclass(ModuleMeta, object)):
             productive = steps_run
         if productive:
             self.tell_consumers()
+        for slot in self._input_slots.values():
+            if slot is None or slot.has_buffered():
+                continue
+            slot._event.clear()
         return {'next_state': next_state,
                 'steps_run': steps_run}
 
