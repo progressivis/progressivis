@@ -33,7 +33,7 @@ class Slot(object):
         self.original_name = None
         self._name = None
         self.changes = None
-        self._event = asyncio.Event()
+        self._event = None #asyncio.Event()
         self.output_module._consumers.append(self)
 
     def name(self):

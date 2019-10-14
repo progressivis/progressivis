@@ -14,8 +14,6 @@ from .dataflow import Dataflow
 from progressivis.utils.synchronized import synchronized
 from progressivis.utils.errors import ProgressiveError
 from progressivis.utils.threading import FakeLock, Condition
-run_number_lock = 
-run_number_global = 0
 
 
 logger = logging.getLogger(__name__)
@@ -63,7 +61,7 @@ class BaseScheduler(object):
         self._new_runorder = None
         self._start = None
         self._run_number = 0
-        self._run_number_lock = asyncio.Lock()      
+        self._run_number_lock = None #asyncio.Lock()      
         self._tick_procs = []
         self._tick_once_procs = []
         self._idle_procs = []
@@ -299,6 +297,8 @@ class BaseScheduler(object):
 
     async def run(self):
         "Run the modules, called by start()."
+        if self._run_number_lock is None:
+            self._run_number_lock = asyncio.Lock()      
         if self.dataflow:
             assert self._enter_cnt == 1
             self._commit(self.dataflow)
@@ -311,6 +311,7 @@ class BaseScheduler(object):
         if self._new_modules:
             self._update_modules()
         # actually, the order in self._run_list is not important anymore
+        #import pdb;pdb.set_trace()
         runners = [asyncio.create_task(m.module_task()) for m in self._run_list]
         await asyncio.gather(*runners)
         modules = [self._modules[m] for m in self._runorder]
@@ -345,7 +346,7 @@ class BaseScheduler(object):
 
             self._run_number += 1
             self._run_tick_procs() # TODO to be awaited 
-            await module.run(self._run_number)
+            module.run(self._run_number)
 
     def _next_module(self):
         """

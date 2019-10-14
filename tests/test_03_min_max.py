@@ -27,15 +27,15 @@ class TestMinMax(ProgressiveTest):
         #print('v2 = ', v2)
         self.assertTrue(np.allclose(v1, v2))
 
-    def te_st_max(self):
+    def test_max(self):
         s = self.scheduler()
         random = RandomTable(10, rows=10000, scheduler=s)
         max_=Max(name='max_'+str(hash(random)), scheduler=s)
         max_.input.table = random.output.table
         pr=Print(proc=self.terse, scheduler=s)
         pr.input.df = max_.output.table
-        s.start()
-        s.join()
+        asyncio.run(s.start())
+        #s.join()
         res1 = random.table().max()
         res2 = max_.table().last()
         self.compare(res1, res2)

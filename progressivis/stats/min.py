@@ -54,8 +54,6 @@ class Min(TableModule):
                 current_max = op[colname]
                 current_max[0] = np.minimum(current_max, last[colname])
             self._table.append(op)
-        # inform consumers that new data were produced
-        self.tell_consumers()
         #TODO manage the history in a more efficient way
         #if len(self._table) > self.params.history:
         #    self._table = self._table.loc[self._df.index[-self.params.history:]]

@@ -50,7 +50,7 @@ class RandomTable(TableModule):
             step_size = np.min([self.throttle, step_size])
         if self.rows >= 0 and (len(self._table)+step_size) > self.rows:
             step_size = self.rows - len(self._table)
-            print("step size:", step_size)
+            #print("step size:", step_size)
             if step_size <= 0:
                 raise ProgressiveStopIteration
             logger.info('truncating to %d lines', step_size)
@@ -60,6 +60,5 @@ class RandomTable(TableModule):
             s = self.random(step_size)
             values[column] = s
         self._table.append(values)
-        self.tell_consumers()
         next_state = self.state_blocked if self.throttle else self.state_ready
-        return self._return_run_step(next_state, steps_run=step_size)
+        return self._return_run_step(next_state, steps_run=step_size, productive=True)

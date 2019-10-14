@@ -187,19 +187,30 @@ class Module(six.with_metaclass(ModuleMeta, object)):
 
     def tell_consumers(self):
         for slot in self._consumers:
+            if slot._event is None:
+                slot._event = asyncio.Event()
             slot._event.set() # cleared in next_state()
 
     async def module_task(self):
+        # print("task {} launched".format(self.name))
         while True:
-            for sname, slot in self._input_slots:
-                if sname in self._do_not_wait:
+            #import pdb;pdb.set_trace()
+            for sname, slot in self._input_slots.items():
+                if sname in self._do_not_wait or slot is None:
                     continue
+                #print("module {} is waiting for {}".format(self.name, sname))
+                if slot._event is None:
+                    slot._event = asyncio.Event()
                 await slot._event.wait()
+            # print("{} module stops waiting for {}".format(self.name, sname))
             rn = await self._scheduler.new_run_number()
             await self.run(rn)
-            if self.is_terminated():
+            if not self.is_ready():
+                # print("module {} terminated, run_number {}".format(self.name, rn))
                 break
-            
+            print("module {} current state {}".format(self.name, self._state))
+            await asyncio.sleep(0)
+
     @staticmethod
     def _filter_kwds(kwds, function_or_method):
         argspec = getfullargspec(function_or_method)
@@ -537,10 +548,14 @@ class Module(six.with_metaclass(ModuleMeta, object)):
         slot._event.clear() # module_run_task() awaiting on slot._event.wait() will now block until tell_consumers() method is called again.
         return Module.state_blocked
 
-    def _return_run_step(self, next_state, steps_run):
+    def _return_run_step(self, next_state, steps_run, productive=None):
         assert (next_state >= Module.state_ready and
                 next_state <= Module.state_zombie)
         self.steps_acc += steps_run
+        if productive is None:
+            productive = steps_run
+        if productive:
+            self.tell_consumers()
         return {'next_state': next_state,
                 'steps_run': steps_run}
 
