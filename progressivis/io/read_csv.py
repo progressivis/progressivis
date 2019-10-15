@@ -321,7 +321,7 @@ class InputSource(object):
         self._decompressor = self._decompressor_class()
         if self._dec_offset != start_byte:
             raise ValueError("PB: {}!={}".format(self._dec_offset, start_byte))
-        self._read_compressed(start_byte) #seek
+        await self._read_compressed(start_byte) #seek
         return istream
 
     async def tell(self):
@@ -334,7 +334,7 @@ class InputSource(object):
         if self._compression is None:
             ret = await _asynchronize(self._stream.read, n)
         else:
-            ret = await _asynchronize(self._read_compressed, n)
+            ret = await self._read_compressed(n)
         if ret or not n:
             return ret
         tell_ = await _asynchronize(self._stream.tell)

@@ -9,6 +9,7 @@ from progressivis.core.utils import RandomBytesIO
 from multiprocessing import Process
 import time, os
 import requests
+import asyncio
 from requests.packages.urllib3.exceptions import ReadTimeoutError
 from requests.exceptions import ConnectionError
 
@@ -114,8 +115,8 @@ class TestProgressiveLoadCSVOverHTTP(ProgressiveTest):
         s=self.scheduler()
         module=CSVLoader(make_url('bigfile'), index_col=False, header=None, scheduler=s)
         self.assertTrue(module.table() is None)
-        s.start()
-        s.join()
+        asyncio.run(s.start())
+        #s.join()
         _close(module)
         self.assertEqual(len(module.table()), 1000000)
 
@@ -129,8 +130,8 @@ class TestProgressiveLoadCSVOverHTTP(ProgressiveTest):
         s=self.scheduler()
         module=CSVLoader(make_url('bigfile'), index_col=False, header=None, scheduler=s, timeout=0.01)
         self.assertTrue(module.table() is None)
-        s.start()
-        s.join()
+        asyncio.run(s.start())
+        #s.join()
         _close(module)
         #self.assertGreater(module.parser._recovery_cnt, 0)
         self.assertEqual(len(module.table()), 1000000)
@@ -148,8 +149,8 @@ class TestProgressiveLoadCSVOverHTTP(ProgressiveTest):
         cst = Constant(table=filenames, scheduler=s)
         csv = CSVLoader(index_col=False, header=None, scheduler=s, timeout=0.01)
         csv.input.filenames = cst.output.table
-        csv.start()
-        s.join()
+        asyncio.run(csv.start())
+        #s.join()
         _close(csv)        
         self.assertEqual(len(csv.table()), 60000)
 
@@ -162,7 +163,7 @@ class TestProgressiveLoadCSVOverHTTP(ProgressiveTest):
         s=self.scheduler()
         module=CSVLoader(make_url('bigfile', ext=BZ2), index_col=False, header=None, scheduler=s)
         self.assertTrue(module.table() is None)
-        s.start()
+        asyncio.run(s.start())
         s.join()
         _close(module)
         self.assertEqual(len(module.table()), 1000000)
@@ -176,8 +177,8 @@ class TestProgressiveLoadCSVOverHTTP(ProgressiveTest):
         s=self.scheduler()
         module=CSVLoader(make_url('bigfile', ext=BZ2), index_col=False, header=None, scheduler=s, timeout=0.01)
         self.assertTrue(module.table() is None)
-        s.start()
-        s.join()
+        asyncio.run(s.start())
+        #s.join()
         _close(module)
         #self.assertGreater(module.parser._recovery_cnt, 0)
         self.assertEqual(len(module.table()), 1000000)
@@ -196,8 +197,8 @@ class TestProgressiveLoadCSVOverHTTP(ProgressiveTest):
         cst = Constant(table=filenames, scheduler=s)
         csv = CSVLoader(index_col=False, header=None, scheduler=s, timeout=0.01)
         csv.input.filenames = cst.output.table
-        csv.start()
-        s.join()
+        asyncio.run(csv.start())
+        #s.join()
         _close(csv)
         self.assertEqual(len(csv.table()), 60000)
 
