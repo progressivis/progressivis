@@ -14,7 +14,7 @@ from collections import OrderedDict
 from pandas.core.dtypes.inference import is_file_like, is_sequence
 import asyncio
 import concurrent.futures
-
+import functools as ft
 SAMPLE_SIZE = 5
 MARGIN = 0.05
 MAX_RETRY = 3
@@ -23,29 +23,36 @@ SEP = ','
 ROW_MAX_LENGTH_GUESS = 10000
 HEADER_CHUNK = 50
 #DEBUG_CNT = 0
-from functools import partial
+#from functools import partial
 
 if six.PY3:
     import lzma    
     decompressors = dict(bz2=bz2.BZ2Decompressor,
                         zlib=zlib.decompressobj,
-                        gzip=partial(zlib.decompressobj,
+                        gzip=ft.partial(zlib.decompressobj,
                                          wbits=zlib.MAX_WBITS|16),
                         xz=lzma.LZMADecompressor
                         )
 else:
     decompressors = dict(bz2=bz2.BZ2Decompressor,
                         zlib=zlib.decompressobj,
-                        gzip=partial(zlib.decompressobj,
+                        gzip=ft.partial(zlib.decompressobj,
                                          zlib.MAX_WBITS|16))
 
-async def _read_csv(*args, **kwargs):
+    
+async def _asynchronize(f, *args, **kwargs):
     # cf. https://docs.python.org/3/library/asyncio-eventloop.html#asyncio.loop.run_in_executor
     loop = asyncio.get_running_loop()
+    fun = ft.partial(f, *args, **kwargs)
     return await loop.run_in_executor(
-        None, pd.read_csv(*args, **kwargs))
+        None, fun)
     
+async def _read_csv(*args, **kwargs):
+    return await _asynchronize(pd.read_csv, *args, **kwargs)
 
+async def async_filepath_to_buffer(*args, **kwargs):
+    return await _asynchronize(filepath_to_buffer, *args, **kwargs)    
+    
 def is_recoverable(inp):
     if is_str(inp):
         return True
@@ -58,6 +65,9 @@ def is_recoverable(inp):
 
 
 class Parser(object):
+    """
+    Always use Parser.create() instead of Parser() because __init__() is not awaitable
+    """    
     def __init__(self, input_source, remaining, estimated_row_size,
                      offset=None, overflow_df=None, pd_kwds={}, chunksize=0, usecols=None, names=None, header='infer'):
         self._input = input_source
@@ -65,13 +75,23 @@ class Parser(object):
         self._remaining = remaining
         self._estimated_row_size = estimated_row_size
         self._overflow_df = overflow_df
-        self._offset = self._input.tell() if offset is None else offset
+        self._offset = offset
         self._recovery_cnt = 0
         self._nb_cols = None if overflow_df is None else len(overflow_df.columns)
         self._chunksize = chunksize
         self._usecols = usecols
         self._names = names
         self._header = header
+
+    @staticmethod
+    async def create(input_source, remaining, estimated_row_size,
+                     offset=None, overflow_df=None, pd_kwds={}, chunksize=0, usecols=None, names=None, header='infer'):
+        par = Parser(input_source, remaining, estimated_row_size, offset,
+                         overflow_df, pd_kwds, chunksize, usecols, names, header)
+        if offset is None:
+            par._offset = await par._input.tell()
+        return par
+
     def get_snapshot(self, run_number, last_id, table_name):
         if not is_recoverable(self._input._seq):
             raise ValueError("Not recoverable")
@@ -97,7 +117,7 @@ class Parser(object):
         ret.update(check=hash(tuple(ret.values())))
         return ret
 
-    def async read(self, n, flush=False):
+    async def read(self, n, flush=False):
         assert n>0
         ret = []
         n_ = n 
@@ -135,19 +155,19 @@ class Parser(object):
                 nb_rows = max(n_, self._chunksize)
             size = nb_rows * row_size
             try:
-                bytes_ = self._input.read(size) # do not raise StopIteration, only returns b''
+                bytes_ = await self._input.read(size) # do not raise StopIteration, only returns b''
             except HTTPError:
                 print("HTTPError ...", self._offset)
                 if retries >= MAX_RETRY:
                     raise
                 retries += 1
                 self._recovery_cnt += 1
-                time.sleep(1)
-                self._input.reopen(self._offset)
+                await asyncio.sleep(1)
+                await self._input.reopen(self._offset)
                 n_ = recovery_n
                 print("... recovery")
                 continue
-            self._offset = self._input.tell()
+            self._offset = await self._input.tell()
             if not bytes_ and not self._remaining:
                 break # end of file
             last_nl = bytes_.rfind(NL) # stop after the last NL
@@ -194,6 +214,9 @@ class Parser(object):
         return self._overflow_df is None
 
 class InputSource(object):
+    """
+    Always use InputSource.create() instead of InputSource() because __init__() is not awaitable
+    """
     def __init__(self, inp, encoding, file_cnt=0, compression=None, dec_remaining=b'', timeout=None, start_byte=0):
         """
         NB: all inputs are supposed to have the same type, encoding, compression
@@ -217,41 +240,47 @@ class InputSource(object):
             raise ValueError("File counter out of range")
         self._seq = inp
         self._file_cnt = file_cnt
-        compression = _infer_compression(self.filepath, compression)
+
+
+    @staticmethod
+    async def create(inp, encoding, file_cnt=0, compression=None, dec_remaining=b'', timeout=None, start_byte=0):
+        isrc = InputSource(inp, encoding, file_cnt, compression, dec_remaining, timeout, start_byte)
+        compression = _infer_compression(isrc.filepath, compression)
         offs = 0 if compression else start_byte
-        istream, encoding, compression, size = filepath_to_buffer(self.filepath,
+        
+        istream, encoding, compression, size = await async_filepath_to_buffer(isrc.filepath,
                                                                   encoding=encoding,
                                                                   compression=compression,
                                                                     timeout=timeout,
                                                                       start_byte=offs)
-        self._encoding = encoding
-        self._compression = compression
-        self._input_size = size
-        self._timeout = None # for tests
-        self._decompressor_class = None
-        self._decompressor = None
-        self._dec_remaining = dec_remaining
-        self._dec_offset = 0
-        #self._compressed_offset = 0
-        self._stream = istream
-        if self._compression is not None:
-            self._decompressor_class = decompressors[self._compression]
-            self._decompressor = self._decompressor_class()
-            self._read_compressed(start_byte) #seek
-
+        isrc._encoding = encoding
+        isrc._compression = compression
+        isrc._input_size = size
+        isrc._timeout = None # for tests
+        isrc._decompressor_class = None
+        isrc._decompressor = None
+        isrc._dec_remaining = dec_remaining
+        isrc._dec_offset = 0
+        #isrc._compressed_offset = 0
+        isrc._stream = istream
+        if isrc._compression is not None:
+            isrc._decompressor_class = decompressors[isrc._compression]
+            isrc._decompressor = isrc._decompressor_class()
+            isrc._read_compressed(start_byte) #seek
+        return isrc
 
     @property
     def filepath(self):
         return self._seq[self._file_cnt]
 
-    def switch_to_next(self):
+    async def switch_to_next(self):
         """
         """
         # print("Switch to next")
         if self._file_cnt >= len(self._seq)-1:
             return False
         self._file_cnt += 1
-        istream, encoding, compression, size = filepath_to_buffer(self.filepath,
+        istream, encoding, compression, size = await async_filepath_to_buffer(self.filepath,
                                                                   encoding=self._encoding,
                                                                   compression=self._compression)
         if self._encoding != encoding:
@@ -271,11 +300,11 @@ class InputSource(object):
         self._stream = istream
         return True
 
-    def reopen(self, start_byte=0):
+    async def reopen(self, start_byte=0):
         if self._stream is not None:
             self.close()
         if self._compression is None:
-            istream, encoding, compression, size = filepath_to_buffer(filepath=self.filepath,
+            istream, encoding, compression, size = await async_filepath_to_buffer(filepath=self.filepath,
                                                                   encoding=self._encoding,
                                                                   compression=self._compression,
                                                                     timeout=self._timeout,
@@ -283,7 +312,7 @@ class InputSource(object):
             self._stream = istream
             self._input_size = size
             return istream
-        istream, encoding, compression, size = filepath_to_buffer(filepath=self.filepath,
+        istream, encoding, compression, size = await async_filepath_to_buffer(filepath=self.filepath,
                                                                 encoding=self._encoding,
                                                                 compression=self._compression,
                                                                 timeout=self._timeout,
@@ -295,30 +324,31 @@ class InputSource(object):
         self._read_compressed(start_byte) #seek
         return istream
 
-    def tell(self):
+    async def tell(self):
         if self._compression is None:
-            return self._stream.tell()
+            return await _asynchronize(self._stream.tell)
         else:
             return self._dec_offset
 
-    def read(self, n):
+    async def read(self, n):
         if self._compression is None:
-            ret = self._stream.read(n)
+            ret = await _asynchronize(self._stream.read, n)
         else:
-            ret = self._read_compressed(n)
+            ret = await _asynchronize(self._read_compressed, n)
         if ret or not n:
             return ret
-        if self._stream.tell() < self._input_size:
+        tell_ = await _asynchronize(self._stream.tell)
+        if  tell_ < self._input_size:
             raise ValueError(
                 "Inconsistent read: empty string"
-                " when position {} < size {}".format(self._stream.tell(),
+                " when position {} < size {}".format(tell_,
                                                          self._input_size))
-        if self.switch_to_next():
-            return self.read(n)
+        if await self.switch_to_next():
+            return await self.read(n)
         else:
             return b''
 
-    def _read_compressed(self, n):
+    async def _read_compressed(self, n):
         len_remaining = len(self._dec_remaining)
         if n <= len_remaining:
             ret = self._dec_remaining[:n]
@@ -332,7 +362,7 @@ class InputSource(object):
         break_ = False
         while cnt < n_:
             max_length = 1024 * 100
-            chunk =self._stream.read(int(max_length))
+            chunk = await _asynchronize(self._stream.read, int(max_length))
             if not len(chunk):
                 break_ = True
             bytes_ = b''
@@ -352,11 +382,11 @@ class InputSource(object):
             ret = ret[:n]
         return ret
 
-    def close(self):
+    async def close(self):
         if self._stream is None:
             return
         try:
-            self._stream.close()
+            await _asynchronize(self._stream.close)
             # pylint: disable=bare-except
         except:
             pass
@@ -365,11 +395,11 @@ class InputSource(object):
         self._input_compression = None
         self._input_size = 0
     
-def get_first_row(fd):
+async def get_first_row(fd):
     ret = BytesIO()
     guard = ROW_MAX_LENGTH_GUESS
     for _ in range(guard):
-        c = fd.read(1)
+        c = await fd.read(1)
         ret.write(c)
         if c == b'\n':
             break
@@ -377,12 +407,12 @@ def get_first_row(fd):
         print("Warning: row longer than {}".format(guard))
     return ret.getvalue()
 
-def read_csv(input_source, silent_before=0, **csv_kwds):
+async def read_csv(input_source, silent_before=0, **csv_kwds):
     pd_kwds = dict(csv_kwds)
     chunksize = pd_kwds['chunksize']
     del pd_kwds['chunksize']
     #pd_kwds['encoding'] = input_source._encoding
-    first_row = get_first_row(input_source)
+    first_row = await get_first_row(input_source)
     usecols = None
     if 'usecols' in pd_kwds:
         usecols = pd_kwds.pop('usecols')
@@ -390,9 +420,9 @@ def read_csv(input_source, silent_before=0, **csv_kwds):
     if 'header' in pd_kwds:
         header = pd_kwds.pop('header')
         assert header is None or header == 0
-    return Parser(input_source, remaining=first_row, estimated_row_size=len(first_row), pd_kwds=pd_kwds, chunksize=chunksize, usecols=usecols, header=header)
+    return await Parser.create(input_source, remaining=first_row, estimated_row_size=len(first_row), pd_kwds=pd_kwds, chunksize=chunksize, usecols=usecols, header=header)
 
-def async recovery(snapshot, previous_file_seq, **csv_kwds):
+async def recovery(snapshot, previous_file_seq, **csv_kwds):
     print("RECOVERY ...")
     pd_kwds = dict(csv_kwds)
     chunksize = pd_kwds['chunksize']
@@ -421,13 +451,13 @@ def async recovery(snapshot, previous_file_seq, **csv_kwds):
             raise ValueError("Inconsistent snapshot: wrong number of cols in df {} instead of {}".format(len(overflow_df.columns), nb_cols))
     else:
         overflow_df = None
-    input_source = InputSource(file_seq, encoding=encoding, compression=compression, file_cnt=file_cnt, start_byte=offset, timeout=None)
+    input_source = await InputSource.create(file_seq, encoding=encoding, compression=compression, file_cnt=file_cnt, start_byte=offset, timeout=None)
     pd_kwds = dict(csv_kwds)
     chunksize = pd_kwds['chunksize']
     del pd_kwds['chunksize']
     # if 'header' in pd_kwds:
     #     header = pd_kwds.pop('header')
-    return Parser(input_source, remaining=remaining,
+    return await Parser.create(input_source, remaining=remaining,
                   estimated_row_size=estimated_row_size,
                   offset=offset, overflow_df=overflow_df,
                   pd_kwds=pd_kwds, chunksize=chunksize, names=names,

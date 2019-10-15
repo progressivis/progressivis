@@ -4,8 +4,8 @@ import pandas as pd
 import numpy as np
 
 import logging
-
-from progressivis import ProgressiveError, SlotDescriptor
+from progressivis  import SlotDescriptor
+from progressivis.utils.errors import ProgressiveError, ProgressiveStopIteration
 from ..table.module import TableModule
 from ..table.table import Table
 from ..table.dshape import dshape_from_dataframe
@@ -17,6 +17,9 @@ logger = logging.getLogger(__name__)
 
 
 class CSVLoader(TableModule):
+    """
+    Warning : this module do not wait for "filenames"
+    """
     def __init__(self,
                  filepath_or_buffer=None,
                  filter_=None,
@@ -62,7 +65,7 @@ class CSVLoader(TableModule):
         self._save_step_size = save_step_size
         self._last_saved_id = 0
         self._table = None
-
+        self._do_not_wait = ["filenames"]
 
     def rows_read(self):
         "Return the number of rows read so far."
@@ -80,8 +83,8 @@ class CSVLoader(TableModule):
         "Return True if this module brings new data"
         return True
 
-    def create_input_source(self, filepath):
-        return InputSource(filepath, encoding=self._encoding,
+    async def create_input_source(self, filepath):
+        return await InputSource.create(filepath, encoding=self._encoding,
                                compression=self._compression,
                                timeout=self._timeout, start_byte=0)
 
@@ -105,12 +108,12 @@ class CSVLoader(TableModule):
         return (pos, self._input_size)
 
 
-    def async validate_parser(self, run_number):
+    async def validate_parser(self, run_number):
         if self.parser is None:
             if self.filepath_or_buffer is not None:
                 if not self._recovery:
                     try:
-                        self.parser = await read_csv(self.create_input_source(self.filepath_or_buffer), **self.csv_kwds)
+                        self.parser = await read_csv(await self.create_input_source(self.filepath_or_buffer), **self.csv_kwds)
                     except IOError as e:
                         logger.error('Cannot open file %s: %s', self.filepath_or_buffer, e)
                         self.parser = None
@@ -179,7 +182,7 @@ class CSVLoader(TableModule):
                             return self.state_blocked
                         filename = df.at[indices.start, 'filename']
                         try:
-                            self.parser = await read_csv(self.create_input_source(filename), **self.csv_kwds)
+                            self.parser = await read_csv(await self.create_input_source(filename), **self.csv_kwds)
                         except IOError as e:
                             logger.error('Cannot open file %s: %s', filename, e)
                             self.parser = None
@@ -191,28 +194,29 @@ class CSVLoader(TableModule):
             return False
         return self._table.last_id >= self._last_saved_id + self._save_step_size
 
-    def async run_step(self,run_number,step_size, howlong):
+    async def run_step(self,run_number,step_size, howlong):
+        #import pdb; pdb.set_trace()
         if step_size==0: # bug
             logger.error('Received a step_size of 0')
             return self._return_run_step(self.state_ready, steps_run=0)
         status = await self.validate_parser(run_number)
         if status==self.state_terminated:
-            raise StopIteration('no more filenames')
+            raise ProgressiveStopIteration('no more filenames')
         elif status==self.state_blocked:
             return self._return_run_step(status, steps_run=0)
         elif status != self.state_ready:
             logger.error('Invalid state returned by validate_parser: %d', status)
             self.close()
-            raise StopIteration('Unexpected situation')
+            raise ProgressiveStopIteration('Unexpected situation')
         logger.info('loading %d lines', step_size)
         #print("Processed bytes: ", self.parser._prev_pos)
         needs_save = self._needs_save()
         try:
             with self.lock:
-                df_list = self.parser.read(step_size, flush=needs_save) # raises StopIteration at EOF
+                df_list = await self.parser.read(step_size, flush=needs_save) # raises StopIteration at EOF
                 if not df_list:
-                    raise StopIteration
-        except StopIteration:
+                    raise ProgressiveStopIteration
+        except ProgressiveStopIteration:
             self.close()
             fn_slot = self.get_input_slot('filenames')
             if fn_slot is None or fn_slot.output_module is None:
@@ -223,7 +227,7 @@ class CSVLoader(TableModule):
         creates = df_len
         if creates == 0: # should not happen
             logger.error('Received 0 elements')
-            raise StopIteration
+            raise ProgressiveStopIteration
         if self._filter != None:
             df_list =[self._filter(df) for df in df_list]
         creates = sum([len(df) for df in df_list])

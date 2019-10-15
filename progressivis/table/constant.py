@@ -1,5 +1,5 @@
 from __future__ import absolute_import, division, print_function
-
+from progressivis.utils.errors import ProgressiveStopIteration
 from .table import Table
 from .module import TableModule
 
@@ -13,4 +13,5 @@ class Constant(TableModule):
         return 1
     
     def run_step(self,run_number,step_size,howlong):
-        raise StopIteration()
+        self.tell_consumers()
+        raise ProgressiveStopIteration()

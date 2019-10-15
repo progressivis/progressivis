@@ -192,7 +192,7 @@ class Module(six.with_metaclass(ModuleMeta, object)):
             slot._event.set() # cleared in next_state()
 
     async def module_task(self):
-        # print("task {} launched".format(self.name))
+        #print("task {} launched".format(self.name))
         while True:
             #import pdb;pdb.set_trace()
             for sname, slot in self._input_slots.items():
@@ -202,7 +202,7 @@ class Module(six.with_metaclass(ModuleMeta, object)):
                 if slot._event is None:
                     slot._event = asyncio.Event()
                 await slot._event.wait()
-            # print("{} module stops waiting for {}".format(self.name, sname))
+            #print("{} module stops waiting for {}".format(self.name, sname))
             rn = await self._scheduler.new_run_number()
             await self.run(rn)
             if not self.is_ready():
@@ -364,9 +364,9 @@ class Module(six.with_metaclass(ModuleMeta, object)):
     def __repr__(self):
         return str(self)
 
-    def start(self):
+    async def start(self):
         "Start the scheduler associated with this module"
-        self.scheduler().start()
+        await self.scheduler().start()
 
     def terminate(self):
         "Set the state to terminated for this module"

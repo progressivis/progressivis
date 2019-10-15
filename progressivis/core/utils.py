@@ -570,6 +570,7 @@ def _is_buffer_url(url):
 
 
 def _url_to_buffer(url):
+    #import pdb; pdb.set_trace()
     res = parse_url(url)
     if res.scheme != 'buffer':
         raise ValueError("Wrong buffer url: {}".format(url))
