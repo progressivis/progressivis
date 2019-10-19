@@ -42,8 +42,7 @@ class IdxMax(TableModule):
             return True
         return super(IdxMax, self).is_ready()
 
-    @synchronized
-    def run_step(self, run_number, step_size, howlong):
+    async def run_step(self, run_number, step_size, howlong):
         dfslot = self.get_input_slot('table')
         dfslot.update(run_number)
         if dfslot.updated.any() or dfslot.deleted.any():

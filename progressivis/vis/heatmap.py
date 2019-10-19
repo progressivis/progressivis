@@ -51,7 +51,7 @@ class Heatmap(TableModule):
         # Module sample is constant time (supposedly)
         return 1
 
-    def run_step(self, run_number, step_size, howlong):
+    async def run_step(self, run_number, step_size, howlong):
         dfslot = self.get_input_slot('array')
         input_df = dfslot.data()
         dfslot.update(run_number)

@@ -6,6 +6,8 @@ from progressivis.stats import  RandomTable, Min, Max
 from progressivis.core.bitmap import bitmap
 from progressivis.table.range_query import RangeQuery
 import numpy as np
+import asyncio as aio
+
 from . import ProgressiveTest, main
 class TestPaste(ProgressiveTest):    
     def test_paste(self):
@@ -20,8 +22,7 @@ class TestPaste(ProgressiveTest):
         bj.input.second = min_2.output.table
         pr=Print(proc=self.terse, scheduler=s)
         pr.input.df = bj.output.table
-        s.start()
-        s.join()
+        aio.run(s.start())
         res1 = random.table().min()
         res2 = bj.table().last().to_dict()
         self.assertAlmostEqual(res1['_1'], res2['_1'])

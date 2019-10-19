@@ -168,7 +168,7 @@ class Join(NAry):
         super(Join, self).__init__(**kwds)
         self.join_kwds = self._filter_kwds(kwds, join)
 
-    def run_step(self, run_number, step_size, howlong):
+    async def run_step(self, run_number, step_size, howlong):
         frames = []
         for name in self.get_input_slot_multiple():
             slot = self.get_input_slot(name)

@@ -2,6 +2,7 @@ from . import ProgressiveTest
 import numpy as np
 from progressivis import Print
 from progressivis.stats import IdxMax, IdxMin, Max, Min, RandomTable
+import asyncio as aio
 
 class TestIdxMax(ProgressiveTest):
     def tearDown(self):
@@ -15,8 +16,7 @@ class TestIdxMax(ProgressiveTest):
         max_.input.table = random.output.table
         pr=Print(proc=self.terse, scheduler=s)
         pr.input.df = idxmax.output.max
-        s.start()
-        s.join()
+        aio.run(s.start())
         max1 = max_.table().last().to_dict()
         #print('max1', max1)
         max2 = idxmax.max().last().to_dict()
@@ -32,8 +32,7 @@ class TestIdxMax(ProgressiveTest):
         min_.input.table = random.output.table
         pr=Print(proc=self.terse, scheduler=s)
         pr.input.df = idxmin.output.min
-        s.start()
-        s.join()        
+        aio.run(s.start())
         min1 = min_.table().last().to_dict()
         #print('min1', min1)
         min2 = idxmin.min().last().to_dict()

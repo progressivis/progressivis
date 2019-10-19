@@ -106,7 +106,7 @@ class Histogram2D(TableModule):
             logger.info('ydelta is %f', ydelta)
         return (xdelta, ydelta)
 
-    def run_step(self, run_number, step_size, howlong):
+    async def run_step(self, run_number, step_size, howlong):
         dfslot = self.get_input_slot('table')
         dfslot.update(run_number)
         min_slot = self.get_input_slot('min')

@@ -1,5 +1,5 @@
 from . import ProgressiveTest
-
+import asyncio as aio
 from progressivis import Print, Every
 from progressivis.stats import Stats
 from progressivis.io import CSVLoader
@@ -32,8 +32,7 @@ class TestJoin(ProgressiveTest):
         pr.input.df = join.output.table
         prlen = Every(proc=self.terse, constant_time=True, scheduler=s)
         prlen.input.df = csv.output.table
-        s.start()
-        s.join()
+        aio.run(s.start())
         res = join.trace_stats(max_runs=1)
         print(res)
 
@@ -48,8 +47,7 @@ class TestJoin(ProgressiveTest):
         join.input.table = cst2.output.table
         pr=Print(proc=self.terse, scheduler=s)
         pr.input.df = join.output.table
-        s.start()
-        s.join()        
+        aio.run(s.start())
         res = join.trace_stats(max_runs=1)
         print(res)
         df = join.table()

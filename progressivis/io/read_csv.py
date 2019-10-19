@@ -266,7 +266,7 @@ class InputSource(object):
         if isrc._compression is not None:
             isrc._decompressor_class = decompressors[isrc._compression]
             isrc._decompressor = isrc._decompressor_class()
-            isrc._read_compressed(start_byte) #seek
+            await isrc._read_compressed(start_byte) #seek
         return isrc
 
     @property

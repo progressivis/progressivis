@@ -1,6 +1,7 @@
 from __future__ import absolute_import, division, print_function
 
 import pandas as pd
+import asyncio as aio
 
 from progressivis import Print, Every
 from progressivis.stats import Stats
@@ -41,7 +42,7 @@ class TestJoin2(ProgressiveTest):
         pr.input.df = join.output.table
         prlen = Every(proc=self.terse, constant_time=True, scheduler=s)
         prlen.input.df = csv.output.table
-        s.start()
+        aio.run(s.start())
         res = join.trace_stats(max_runs=1)
         print(res)
 
@@ -65,8 +66,7 @@ class TestJoin2(ProgressiveTest):
         # join.input.second = cst2.output.table
         pr = Print(proc=self.terse, scheduler=s)
         pr.input.df = join.output.table
-        s.start()
-        s.join()
+        aio.run(s.start())
         res = join.trace_stats(max_runs=1)
         print(res)
         df = join.table()

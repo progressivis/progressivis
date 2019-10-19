@@ -6,6 +6,7 @@ import numpy as np
 import logging
 from progressivis  import SlotDescriptor
 from progressivis.utils.errors import ProgressiveError, ProgressiveStopIteration
+from ..core.module import AnyAll
 from ..table.module import TableModule
 from ..table.table import Table
 from ..table.dshape import dshape_from_dataframe
@@ -65,7 +66,8 @@ class CSVLoader(TableModule):
         self._save_step_size = save_step_size
         self._last_saved_id = 0
         self._table = None
-        self._do_not_wait = ["filenames"]
+        #self._do_not_wait = ["filenames"]
+        self.wait_expr = AnyAll([])
 
     def rows_read(self):
         "Return the number of rows read so far."

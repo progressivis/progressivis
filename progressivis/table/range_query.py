@@ -210,8 +210,7 @@ class RangeQuery(TableModule):
             return self._max_table
         return super(RangeQuery, self).get_data(name)
 
-    @synchronized
-    def run_step(self, run_number, step_size, howlong):
+    async def run_step(self, run_number, step_size, howlong):
         input_slot = self.get_input_slot('table')
         input_slot.update(run_number)
         steps = 0

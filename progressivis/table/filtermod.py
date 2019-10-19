@@ -19,7 +19,7 @@ class FilterMod(TableModule):
         super(FilterMod, self).__init__(**kwds)
         self._impl = FilterImpl(self.params.expr, self.params.user_dict)
 
-    def run_step(self, run_number, step_size, howlong):
+    async def run_step(self, run_number, step_size, howlong):
         input_slot = self.get_input_slot('table')
         input_slot.update(run_number)
         steps = 0

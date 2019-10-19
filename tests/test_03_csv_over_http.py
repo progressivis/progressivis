@@ -9,20 +9,17 @@ from progressivis.core.utils import RandomBytesIO
 from multiprocessing import Process
 import time, os
 import requests
-import asyncio
+import asyncio as aio
 from requests.packages.urllib3.exceptions import ReadTimeoutError
 from requests.exceptions import ConnectionError
 
 
 from RangeHTTPServer import RangeRequestHandler
 
-import six
 import shutil
 
-if six.PY3:
-    import http.server as http_srv
-else:
-    import SimpleHTTPServer as http_srv
+
+import http.server as http_srv
 
 BZ2 = 'csv.bz2'
 SLEEP = 1
@@ -62,12 +59,7 @@ def run_throttled_server(port=8000, threshold=10**6):
     _ = get_dataset_bz2('bigfile')
     os.chdir(DATA_DIR)
     ThrottledReqHandler.threshold = threshold
-    if six.PY2:
-        import sys
-        sys.argv[1] = 8000
-        http_srv.test(HandlerClass=ThrottledReqHandler)
-    else:
-        http_srv.test(HandlerClass=ThrottledReqHandler, port=port)
+    http_srv.test(HandlerClass=ThrottledReqHandler, port=port)
 
 PORT = 8000
 HOST = 'localhost'
@@ -83,15 +75,7 @@ def run_simple_server():
     _ = get_dataset_bz2('smallfile')
     _ = get_dataset_bz2('bigfile')
     os.chdir(DATA_DIR)
-    if six.PY2:
-        import SimpleHTTPServer
-        import RangeHTTPServer
-        from RangeHTTPServer import RangeRequestHandler
-        import sys
-        sys.argv[1] = 8000
-        SimpleHTTPServer.test(HandlerClass=RangeRequestHandler)
-    else:
-        import RangeHTTPServer.__main__
+    import RangeHTTPServer.__main__
         
 class TestProgressiveLoadCSVOverHTTP(ProgressiveTest):
     def setUp(self):
@@ -115,8 +99,7 @@ class TestProgressiveLoadCSVOverHTTP(ProgressiveTest):
         s=self.scheduler()
         module=CSVLoader(make_url('bigfile'), index_col=False, header=None, scheduler=s)
         self.assertTrue(module.table() is None)
-        asyncio.run(s.start())
-        #s.join()
+        aio.run(s.start())
         _close(module)
         self.assertEqual(len(module.table()), 1000000)
 
@@ -130,8 +113,7 @@ class TestProgressiveLoadCSVOverHTTP(ProgressiveTest):
         s=self.scheduler()
         module=CSVLoader(make_url('bigfile'), index_col=False, header=None, scheduler=s, timeout=0.01)
         self.assertTrue(module.table() is None)
-        asyncio.run(s.start())
-        #s.join()
+        aio.run(s.start())
         _close(module)
         #self.assertGreater(module.parser._recovery_cnt, 0)
         self.assertEqual(len(module.table()), 1000000)
@@ -149,8 +131,7 @@ class TestProgressiveLoadCSVOverHTTP(ProgressiveTest):
         cst = Constant(table=filenames, scheduler=s)
         csv = CSVLoader(index_col=False, header=None, scheduler=s, timeout=0.01)
         csv.input.filenames = cst.output.table
-        asyncio.run(csv.start())
-        #s.join()
+        aio.run(csv.start())
         _close(csv)        
         self.assertEqual(len(csv.table()), 60000)
 
@@ -163,8 +144,7 @@ class TestProgressiveLoadCSVOverHTTP(ProgressiveTest):
         s=self.scheduler()
         module=CSVLoader(make_url('bigfile', ext=BZ2), index_col=False, header=None, scheduler=s)
         self.assertTrue(module.table() is None)
-        asyncio.run(s.start())
-        s.join()
+        aio.run(s.start())
         _close(module)
         self.assertEqual(len(module.table()), 1000000)
 
@@ -177,8 +157,7 @@ class TestProgressiveLoadCSVOverHTTP(ProgressiveTest):
         s=self.scheduler()
         module=CSVLoader(make_url('bigfile', ext=BZ2), index_col=False, header=None, scheduler=s, timeout=0.01)
         self.assertTrue(module.table() is None)
-        asyncio.run(s.start())
-        #s.join()
+        aio.run(s.start())
         _close(module)
         #self.assertGreater(module.parser._recovery_cnt, 0)
         self.assertEqual(len(module.table()), 1000000)
@@ -197,8 +176,7 @@ class TestProgressiveLoadCSVOverHTTP(ProgressiveTest):
         cst = Constant(table=filenames, scheduler=s)
         csv = CSVLoader(index_col=False, header=None, scheduler=s, timeout=0.01)
         csv.input.filenames = cst.output.table
-        asyncio.run(csv.start())
-        #s.join()
+        aio.run(csv.start())
         _close(csv)
         self.assertEqual(len(csv.table()), 60000)
 

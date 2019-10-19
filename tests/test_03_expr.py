@@ -1,5 +1,5 @@
 from . import ProgressiveTest
-
+import asyncio as aio
 from progressivis.datasets import get_dataset
 from  progressivis.core import BaseScheduler, Scheduler
 
@@ -44,8 +44,7 @@ class TestExpr(ProgressiveTest):
             trace = M["_trace"]
             pv.echo(trace, proc=prtT)
             self.assertEqual(csv.scheduler(), csv.module.scheduler())
-        csv.scheduler().start()
-        csv.scheduler().join()
+        aio.run(csv.scheduler().start())
         table = csv.table
         lastm = m.table.last()
         lastM = M.table.last()
@@ -71,8 +70,7 @@ class TestExpr(ProgressiveTest):
             M = ret.fetch('max_1')
             _ = M["_trace"] | pv.echo(proc=prtT)
             self.assertEqual(csv.scheduler(), csv.module.scheduler())
-        csv.scheduler().start()
-        csv.scheduler().join()
+        aio.run(csv.scheduler().start())
         table = csv.table
         lastm = m.table.last()
         lastM = M.table.last()
@@ -99,8 +97,7 @@ class TestExpr(ProgressiveTest):
             M = ret.fetch('max_1')
             csv = ret.fetch('csv_loader_1')
             self.assertEqual(csv.scheduler(), csv.module.scheduler())
-        csv.scheduler().start()
-        csv.scheduler().join()
+        aio.run(csv.scheduler().start())
         table = csv.table
         lastm = m.table.last()
         lastM = M.table.last()

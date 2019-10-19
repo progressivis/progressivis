@@ -7,7 +7,7 @@ from progressivis.stats import RandomTable, Min, Max
 from progressivis.core.bitmap import bitmap
 from progressivis.table.range_query import RangeQuery
 from . import ProgressiveTest, main
-
+import asyncio as aio
 
 class TestRangeQuery(ProgressiveTest):
     "Test Suite for RangeQuery Module"
@@ -34,8 +34,7 @@ class TestRangeQuery(ProgressiveTest):
                                                max_value=max_value)
             prt = Print(proc=self.terse, scheduler=s)
             prt.input.df = range_qry.output.table
-        s.start()
-        s.join()
+        aio.run(s.start())
         idx = range_qry.input_module\
                        .output['table']\
                        .data().eval('(_1>0.3)&(_1<0.8)', result_object='index')
@@ -69,8 +68,7 @@ class TestRangeQuery(ProgressiveTest):
             max_.input.table = hist_index.output.max_out
             pr3=Print(proc=self.terse, scheduler=s)
             pr3.input.df = max_.output.table
-        s.start()
-        s.join()
+        aio.run(s.start())
         res1 = random.table().min()['_1']
         res2 = min_.table().last().to_dict()['_1']
         self.assertAlmostEqual(res1, res2)
@@ -105,8 +103,7 @@ class TestRangeQuery(ProgressiveTest):
                           dshape='{_1: float64}',
                           data={'_1': [0.8]})
             range_qry = self._query_min_max_impl(random, t_min, t_max, s)
-        s.start()
-        s.join()
+        aio.run(s.start())
         min_data = range_qry.output.min.data()
         max_data = range_qry.output.max.data()
         self.assertAlmostEqual(min_data['_1'].loc[0], 0.3)
@@ -124,8 +121,7 @@ class TestRangeQuery(ProgressiveTest):
                           dshape='{_1: float64}',
                           data={'_1': [float('nan')]})
             range_qry = self._query_min_max_impl(random, t_min, t_max, s)
-        s.start()
-        s.join()
+        aio.run(s.start())
         min_data = range_qry.output.min.data()
         max_data = range_qry.output.max.data()
         min_rand = random.table().min()['_1']
@@ -144,8 +140,7 @@ class TestRangeQuery(ProgressiveTest):
                           dshape='{_1: float64}',
                           data={'_1': [15000.]})
             range_qry = self._query_min_max_impl(random, t_min, t_max, s)
-        s.start()
-        s.join()
+        aio.run(s.start())
         min_data = range_qry.output.min.data()
         max_data = range_qry.output.max.data()
         max_rand = random.table().max()['_1']

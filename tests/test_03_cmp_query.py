@@ -1,5 +1,5 @@
 from . import ProgressiveTest
-
+import asyncio as aio
 from progressivis import Print
 from progressivis.table import Table
 from progressivis.table.cmp_query import CmpQueryLast
@@ -19,8 +19,8 @@ class TestCmpQuery(ProgressiveTest):
         cmp_.input.table = random.output.table
         pr=Print(proc=self.terse, scheduler=s)
         pr.input.df = cmp_.output.select
-        s.start()
-        s.join()
+        aio.run(s.start())
+        #s.join()
 
 
 if __name__ == '__main__':

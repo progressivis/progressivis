@@ -10,6 +10,7 @@ from progressivis.table.table import Table
 from progressivis.table.reduce import Reduce
 
 import pandas as pd
+import asyncio as aio
 
 
 def print_len(x):
@@ -43,7 +44,7 @@ class TestJoin3(ProgressiveTest):
         pr.input.df = join.output.table
         prlen = Every(proc=self.terse, constant_time=True, scheduler=s)
         prlen.input.df = csv.output.table
-        s.start()
+        aio.run(s.start())
         res = join.trace_stats(max_runs=1)
         print(res)
 
@@ -71,8 +72,7 @@ class TestJoin3(ProgressiveTest):
                              scheduler=s)
         pr = Print(proc=self.terse, scheduler=s)
         pr.input.df = join.output.table
-        s.start()
-        s.join()
+        aio.run(s.start())
         res = join.trace_stats(max_runs=1)
         print(res)
         df = join.table()

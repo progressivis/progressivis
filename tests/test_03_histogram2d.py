@@ -1,5 +1,5 @@
 from . import ProgressiveTest
-
+import asyncio as aio
 from progressivis import Every
 from progressivis.io import CSVLoader
 from progressivis.stats import Histogram2D, Min, Max
@@ -31,8 +31,7 @@ class TestHistogram2D(ProgressiveTest):
         # pr.input.df = heatmap.output.heatmap
         # pr.input.df = histogram2d.output.df
         pr.input.df = csv.output.table
-        csv.scheduler().start()
-        s.join()
+        aio.run(csv.scheduler().start())
         s = histogram2d.trace_stats()
 
 

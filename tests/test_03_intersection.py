@@ -6,6 +6,7 @@ from progressivis.table.bisectmod import Bisect
 from progressivis.core.bitmap import bitmap
 from progressivis.table.hist_index import HistogramIndex
 from progressivis.table.intersection import Intersection
+import asyncio as aio
 
 from . import ProgressiveTest
 
@@ -37,8 +38,7 @@ class TestIntersection(ProgressiveTest):
         inter.input.table = bisect_max.output.table
         pr = Print(proc=self.terse, scheduler=s)
         pr.input.df = inter.output.table
-        s.start()
-        s.join()
+        aio.run(s.start())
         idx = hist_index.input_module\
                         .output['table']\
                         .data().eval('(_1>0.3)&(_1<0.8)',

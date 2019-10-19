@@ -10,6 +10,7 @@ from progressivis.table.table import Table
 from progressivis.table.join import Join
 from progressivis.core.utils import get_random_name
 import pandas as pd
+import asyncio as aio
 
 def print_len(x):
     if x is not None:
@@ -24,8 +25,7 @@ class TestLastRow(ProgressiveTest):
         lr1.input.table = csv.output.table
         prlen = Every(proc=self.terse, constant_time=True, scheduler=s)
         prlen.input.df = lr1.output.table
-        s.start()
-        s.join()
+        aio.run(s.start())
         df = csv.table()
         last = df.last()
         res = lr1.table()
@@ -43,8 +43,7 @@ class TestLastRow(ProgressiveTest):
         join.input.table = cst2.output.table
         pr=Print(proc=self.terse, scheduler=s)
         pr.input.df = join.output.table
-        s.start()
-        s.join()
+        aio.run(s.start())
         #res = join.trace_stats(max_runs=1)
         #pd.set_option('display.expand_frame_repr', False)
         #print(res)

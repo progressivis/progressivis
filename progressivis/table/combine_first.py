@@ -46,7 +46,7 @@ def combine_first(table, other, name=None):
 
 
 class CombineFirst(NAry):
-    def run_step(self, run_number, step_size, howlong):
+    async def run_step(self, run_number, step_size, howlong):
         frames = []
         for name in self.get_input_slot_multiple():
             slot = self.get_input_slot(name)

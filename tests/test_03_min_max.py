@@ -1,6 +1,6 @@
 from . import ProgressiveTest
 
-import asyncio
+import asyncio as aio
 from progressivis import Print
 from progressivis.stats import Min, Max, RandomTable
 
@@ -14,7 +14,7 @@ class TestMinMax(ProgressiveTest):
         min_.input.table = random.output.table
         pr=Print(proc=self.terse, scheduler=s)
         pr.input.df = min_.output.table
-        asyncio.run(s.start())
+        aio.run(s.start())
         #s.join()
         res1 = random.table().min()
         res2 = min_.table().last()
@@ -34,7 +34,7 @@ class TestMinMax(ProgressiveTest):
         max_.input.table = random.output.table
         pr=Print(proc=self.terse, scheduler=s)
         pr.input.df = max_.output.table
-        asyncio.run(s.start())
+        aio.run(s.start())
         #s.join()
         res1 = random.table().max()
         res2 = max_.table().last()

@@ -4,7 +4,7 @@ from progressivis import Every
 from progressivis.io import VECLoader, CSVLoader
 #from progressivis.metrics import PairwiseDistances
 from progressivis.datasets import get_dataset
-
+import asyncio as aio
 import numpy as np
 from sklearn.metrics.pairwise import pairwise_distances
 
@@ -51,8 +51,7 @@ class TestPairwiseDistances(ProgressiveTest):
         cnt.input.df = vec.output.table
         global times
         times = 0
-        s.start(ten_times)
-        s.join()
+        aio.run(s.start(ten_times))
         table = vec.table()
         #print(repr(table))
 #        computed = dis.dist()

@@ -9,7 +9,7 @@ import logging
 
 import numpy as np
 import six
-import asyncio
+import asyncio as aio
 
 from progressivis.utils.errors import ProgressiveError, ProgressiveStopIteration
 from progressivis.table.table_base import BaseTable
@@ -48,7 +48,14 @@ class ModuleMeta(ABCMeta):
         cls.all_parameters = all_props
         super(ModuleMeta, cls).__init__(name, bases, attrs)
 
-
+# NB: AllAny and AnyAll are simply two "named lists"
+class AllAny:
+    def __init__(self, arg):
+        self._impl = arg
+class AnyAll:
+    def __init__(self, arg):
+        self._impl = arg
+        
 @six.python_2_unicode_compatible
 class Module(six.with_metaclass(ModuleMeta, object)):
     """The Module class is the base class for all the progressive modules.
@@ -135,6 +142,7 @@ class Module(six.with_metaclass(ModuleMeta, object)):
         self.steps_acc = 0
         self._consumers = []
         self._do_not_wait = [] # by default all slots are awaitable
+        self.wait_expr = aio.FIRST_COMPLETED
         # callbacks
         self._start_run = None
         self._end_run = None
@@ -188,28 +196,64 @@ class Module(six.with_metaclass(ModuleMeta, object)):
     def tell_consumers(self):
         for slot in self._consumers:
             if slot._event is None:
-                slot._event = asyncio.Event()
+                slot._event = aio.Event()
             slot._event.set() # cleared in next_state()
 
-    async def module_task(self):
+    def init_aio_events(self):
+        for sname, slot in self._input_slots.items():
+            if sname in self._do_not_wait or slot is None:
+                    continue
+            if slot._event is None:
+                slot._event = aio.Event()
+
+    async def wait_for_slots(self):
+        _ct = aio.create_task
+        if isinstance(self.wait_expr, str):
+            #import pdb;pdb.set_trace()
+            aws = [_ct(slot._event.wait()) for slot in self._input_slots.values() if slot is not None]
+            #names = [nm for (nm, slot) in self._input_slots.items() if slot is not None]
+            #print("APRES: ", names, aws)
+            if aws:
+                #print("wait for: ", set(aws), names)
+                await aio.wait(set(aws), return_when=self.wait_expr)
+        elif isinstance(self.wait_expr, AllAny): # all([any(), any(), ...]
+            all_aws = set()
+            for names in self.wait_expr._impl:
+                aws = [_ct(slot._event.wait()) for (sname, slot) in self._input_slots.items() if sname in names]
+                if aws:
+                    all_aws.add(aio.wait(set(aws), return_when=aio.FIRST_COMPLETED))
+            if all_aws:
+                aio.wait(all_aws, return_when=aio.ALL_COMPLETED)
+        elif isinstance(self.wait_expr, AnyAll): # any([all(), all(), ...]                
+            all_aws = set()
+            for names in self.wait_expr._impl:
+                aws = [_ct(slot._event.wait()) for (sname, slot) in self._input_slots.items() if sname in names]
+                if aws:
+                    all_aws.add(aio.wait(set(aws), return_when=aio.FIRST_COMPLETED))
+            if all_aws:
+                aio.wait(all_aws, return_when=aio.ALL_COMPLETED)
+        else:
+            raise ValueError("Unconsistent wait expression {}".format(self.wait_expr))
+
+    async def module_task(self, idx=0):
         #print("task {} launched".format(self.name))
+        #import pdb;pdb.set_trace()
+        self.init_aio_events()        
         while True:
             #import pdb;pdb.set_trace()
-            for sname, slot in self._input_slots.items():
-                if sname in self._do_not_wait or slot is None:
-                    continue
-                #print("module {} is waiting for {}".format(self.name, sname))
-                if slot._event is None:
-                    slot._event = asyncio.Event()
-                await slot._event.wait()
-            #print("{} module stops waiting for {}".format(self.name, sname))
+            await self.wait_for_slots()
+            #print("{} module stops waiting".format(self.name))
             rn = await self._scheduler.new_run_number()
+            #print("running {} : {}".format(self.name, rn))
             await self.run(rn)
+            #print("END running {} : {}".format(self.name, rn))            
             if not self.is_ready():
-                # print("module {} terminated, run_number {}".format(self.name, rn))
+                #print("module {} terminated, run_number {}".format(self.name, rn))
+                #import pdb;pdb.set_trace()
+                self.tell_consumers()
                 break
-            print("module {} current state {}".format(self.name, self._state))
-            await asyncio.sleep(0)
+            #print("module {} current state {}".format(self.name, self._state))
+            await aio.sleep(0)
 
     @staticmethod
     def _filter_kwds(kwds, function_or_method):
@@ -551,6 +595,7 @@ class Module(six.with_metaclass(ModuleMeta, object)):
     def clear_slots_if(slots):
         for slot in slots:
             if not slot.has_buffered():
+                #print("clearing {}".format(slot.name))
                 slot._event.clear()
 
     def _return_run_step(self, next_state, steps_run, productive=None):
@@ -564,6 +609,7 @@ class Module(six.with_metaclass(ModuleMeta, object)):
         for slot in self._input_slots.values():
             if slot is None or slot.has_buffered():
                 continue
+            #print("clearing {}:{}".format(self.name, slot.name))
             slot._event.clear()
         return {'next_state': next_state,
                 'steps_run': steps_run}
@@ -606,6 +652,9 @@ class Module(six.with_metaclass(ModuleMeta, object)):
         # the module is blocked, cannot run any more, so it is terminated
         # too.
         if self.state == Module.state_blocked:
+            #if isinstance(self, Print):
+            #    import pdb;pdb.set_trace()
+            #print(self, "BLOCKED")
             slots = self.input_slot_values()
             in_count = 0
             term_count = 0
@@ -914,6 +963,7 @@ class Every(Module):
         return super(Every, self).predict_step_size(duration)
 
     async def run_step(self, run_number, step_size, howlong):
+        #print("RUNSTEP EVERY")
         slot = self.get_input_slot('df')
         df = slot.data()
         if df is not None:

@@ -2,7 +2,7 @@ from progressivis.table.bin_join import BinJoin
 from progressivis import Print
 from progressivis.stats import RandomTable, Min
 from . import ProgressiveTest
-
+import asyncio as aio
 
 class TestBinJoin(ProgressiveTest):
     def test_bin_join(self):
@@ -19,8 +19,7 @@ class TestBinJoin(ProgressiveTest):
         bj.input.second = min_2.output.table
         pr = Print(proc=self.terse, scheduler=s)
         pr.input.df = bj.output.table
-        s.start()
-        s.join()
+        aio.run(s.start())
         res1 = random.table().min()
         res2 = bj.table().last().to_dict()
         self.assertAlmostEqual(res1['_1'], res2['_1'])

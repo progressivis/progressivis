@@ -1,5 +1,5 @@
 from . import ProgressiveTest
-import asyncio
+import asyncio as aio
 from progressivis.io import CSVLoader
 from progressivis.table.constant import Constant
 from progressivis.table.table import Table
@@ -42,8 +42,7 @@ class TestProgressiveLoadCSV(ProgressiveTest):
         s=self.scheduler()
         module=CSVLoader(get_dataset('bigfile'), index_col=False, header=None, scheduler=s)
         self.assertTrue(module.table() is None)
-        asyncio.run(s.start())
-        #s.join()
+        aio.run(s.start())
         self.assertEqual(len(module.table()), 1000000)
         
 
@@ -52,8 +51,7 @@ class TestProgressiveLoadCSV(ProgressiveTest):
         s=self.scheduler()
         module=CSVLoader(RandomBytesIO(cols=30, rows=1000000), index_col=False, header=None, scheduler=s)
         self.assertTrue(module.table() is None)
-        asyncio.run(s.start())
-        #s.join()
+        aio.run(s.start())
         self.assertEqual(len(module.table()), 1000000)
 
     def test_read_multiple_csv(self):
@@ -64,8 +62,7 @@ class TestProgressiveLoadCSV(ProgressiveTest):
         cst = Constant(table=filenames, scheduler=s)
         csv = CSVLoader(index_col=False, header=None, scheduler=s)
         csv.input.filenames = cst.output.table
-        asyncio.run(csv.start())
-        #s.join()
+        aio.run(csv.start())
         self.assertEqual(len(csv.table()), 60000)
 
     def test_read_multiple_fake_csv(self):
@@ -78,8 +75,7 @@ class TestProgressiveLoadCSV(ProgressiveTest):
         cst = Constant(table=filenames, scheduler=s)
         csv = CSVLoader(index_col=False, header=None, scheduler=s)
         csv.input.filenames = cst.output.table
-        asyncio.run(csv.start())
-        #s.join()        
+        aio.run(csv.start())
         self.assertEqual(len(csv.table()), 60000)
 
 

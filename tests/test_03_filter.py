@@ -1,5 +1,5 @@
 from . import ProgressiveTest, main
-
+import asyncio as aio
 from progressivis import Print, Scheduler
 from progressivis.stats import RandomTable
 from progressivis.table.filtermod import FilterMod
@@ -14,8 +14,7 @@ class TestFilter(ProgressiveTest):
         filter_.input.table = random.output.table
         pr = Print(proc=self.terse, scheduler=s)
         pr.input.df = filter_.output.table
-        s.start()
-        s.join()
+        aio.run(s.start())
         idx = filter_.get_input_slot('table')\
                      .data()\
                      .eval('_1>0.5', result_object='index')

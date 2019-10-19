@@ -1,6 +1,6 @@
 from __future__ import print_function
 from . import ProgressiveTest
-
+import asyncio as aio
 from progressivis import Print
 from progressivis.table.constant import Constant
 from progressivis.table.combine_first import CombineFirst
@@ -24,8 +24,7 @@ class TestCombineFirst(ProgressiveTest):
         cf.input.table = cst3.output.table
         pr=Print(proc=self.terse, scheduler=s)
         pr.input.df = cf.output.table
-        s.start()
-        s.join()        
+        aio.run(s.start())
         res = cf.trace_stats(max_runs=1)
         df = cf.table()
         last = df.last().to_dict() 
@@ -43,8 +42,7 @@ class TestCombineFirst(ProgressiveTest):
         cf.input.table = cst3.output.table
         pr=Print(proc=self.terse, scheduler=s)
         pr.input.df = cf.output.table
-        s.start()
-        s.join()
+        aio.run(s.start())
         df = cf.table()
         last = df.last().to_dict() 
         self.assertTrue(last['xmin']==1 and last['xmax']==2 and \

@@ -1,5 +1,5 @@
 "Test for Range Query"
-
+import asyncio as aio
 from progressivis.table.constant import Constant
 from progressivis.table.table import Table
 from progressivis import Print
@@ -35,8 +35,7 @@ class TestPercentiles(ProgressiveTest):
             percentiles.input.percentiles = which_percentiles.output.table
             prt = Print(proc=self.terse, scheduler=s)
             prt.input.df = percentiles.output.table
-        s.start()
-        s.join()
+        aio.run(s.start())
         pdict = percentiles.table().last().to_dict()
         v = random.table()['_1'].values
         p25 = np.percentile(v, 25.0)
@@ -91,8 +90,7 @@ class TestPercentiles(ProgressiveTest):
             percentiles.input.percentiles = which_percentiles.output.table
             prt = Print(proc=self.terse, scheduler=s)
             prt.input.df = percentiles.output.table
-        s.start()
-        s.join()
+        aio.run(s.start())
         pdict = percentiles.table().last().to_dict()
         v = range_qry.table()['_1'].values
         p25 = np.percentile(v, 25.0)

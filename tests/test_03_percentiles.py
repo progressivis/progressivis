@@ -4,7 +4,7 @@ from progressivis import Every
 from progressivis.stats import Percentiles
 from progressivis.io import CSVLoader
 from progressivis.datasets import get_dataset
-
+import asyncio as aio
 
 class TestPercentiles(ProgressiveTest):
     def test_percentile(self):
@@ -18,8 +18,7 @@ class TestPercentiles(ProgressiveTest):
         prt = Every(proc=self.terse, name='print', scheduler=s)
         prt.input.df = module.output.percentiles
 
-        s.start()
-        s.join()
+        aio.run(s.start())
         #ret = module.trace_stats(max_runs=1)
         #print "Done. Run time: %gs, loaded %d rows" % (s['duration'].irow(-1), len(module.df()))
         #pd.set_option('display.expand_frame_repr', False)
