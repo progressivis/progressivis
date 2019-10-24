@@ -34,7 +34,6 @@ class Slot(object):
         self._name = None
         self.changes = None
         self._event = None #asyncio.Event()
-        self.output_module._consumers.append(self)
 
     def name(self):
         "Return the name of the slot"

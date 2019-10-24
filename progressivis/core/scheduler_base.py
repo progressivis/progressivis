@@ -8,13 +8,13 @@ import functools
 from collections import Iterable
 from timeit import default_timer
 import six
-import asyncio
+import asyncio as aio
 
 from .dataflow import Dataflow
 from progressivis.utils.synchronized import synchronized
 from progressivis.utils.errors import ProgressiveError
 from progressivis.utils.threading import FakeLock, Condition
-
+#from .sentinel import Sentinel
 
 logger = logging.getLogger(__name__)
 
@@ -78,7 +78,10 @@ class BaseScheduler(object):
         self._hibernate_cond = Condition()
         self._keep_running = KEEP_RUNNING
         self.dataflow = Dataflow(self)
+        self.module_iterator = None
         self._enter_cnt = 1
+        self.prisoner = None
+        self.runners = set()
 
     def set_interaction_opts(self, starving_mods=None, max_time=None,
                              max_iter=None):
@@ -142,9 +145,10 @@ class BaseScheduler(object):
 
     async def new_run_number(self):
         async with self._run_number_lock:
-            ret  = self._run_number
+            #ret  = self._run_number
             self._run_number += 1
-            return ret
+            #return ret
+            return self._run_number
 
     def join(self):
         "Wait for this execution thread to finish."
@@ -294,11 +298,15 @@ class BaseScheduler(object):
         "Remove an idle callback."
         assert callable(idle_proc)
         self._idle_procs.remove(idle_proc)
-
+    def idle_proc(self):
+        pass
     async def run(self):
         "Run the modules, called by start()."
+        #from .sentinel import Sentinel
+        #import pdb;pdb.set_trace()
+        #sl = Sentinel(scheduler=self)        
         if self._run_number_lock is None:
-            self._run_number_lock = asyncio.Lock()      
+            self._run_number_lock = aio.Lock()      
         if self.dataflow:
             assert self._enter_cnt == 1
             self._commit(self.dataflow)
@@ -308,12 +316,17 @@ class BaseScheduler(object):
         self._running = True
         self._start = default_timer()
         self._before_run()
+        self.module_iterator = self._next_module()
         if self._new_modules:
             self._update_modules()
         # actually, the order in self._run_list is not important anymore
-        #import pdb;pdb.set_trace()
-        runners = [asyncio.create_task(m.module_task()) for m in self._run_list]
-        await asyncio.gather(*runners)
+        runners = [aio.create_task(m.module_task()) for m in self._run_list]
+        self.runners = [m.name for m in self._run_list]
+        #runners.append(aio.create_task(sl.module_task()))
+        #first_m = next(self.module_iterator)
+        #first_m.steering_evt = aio.Event()
+        #first_m.steering_evt.set()
+        await aio.gather(*runners)
         modules = [self._modules[m] for m in self._runorder]
         for module in reversed(modules):
             module.ending()
@@ -322,6 +335,47 @@ class BaseScheduler(object):
         self._after_run()
         self.done()
 
+    def _next_module(self):
+        """
+        Generator the yields a possibly infinite sequence of modules.
+        Handles order recomputation and starting logic if needed.
+        """
+        self._run_index = 0
+        first_run = self._run_number
+        input_mode = self.has_input()
+        self._start_inter = 0
+        self._inter_cycles_cnt = 0
+        while not self._stopped:
+            # Apply changes in the dataflow
+            if self._new_modules:
+                self._update_modules()
+                self._run_index = 0
+                first_run = self._run_number
+            # If run_list empty, we're done
+            if not self._run_list:
+                break
+            # Check for interactive input mode
+            if input_mode != self.has_input():
+                if input_mode: # end input mode
+                    logger.info('Ending interactive mode after %s s',
+                                default_timer()-self._start_inter)
+                    self._start_inter = 0
+                    self._inter_cycles_cnt = 0
+                    input_mode = False
+                else:
+                    self._start_inter = default_timer()
+                    logger.info('Starting interactive mode at %s',
+                                self._start_inter)
+                    input_mode = True
+                # Restart from beginning
+                self._run_index = 0
+                first_run = self._run_number
+            module = self._run_list[self._run_index]
+            self._run_index += 1  # allow it to be reset
+            yield module
+            if self._run_index >= len(self._run_list):  # end of modules
+                self._end_of_modules(first_run)
+                first_run = self._run_number
 
     def all_blocked(self):
         "Return True if all the modules are blocked, False otherwise"

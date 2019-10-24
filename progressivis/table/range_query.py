@@ -274,8 +274,10 @@ class RangeQuery(TableModule):
             return self._return_run_step(self.state_blocked, steps_run=0)
         lower_value = lower_slot.data().last(self._watched_key_lower)
         upper_value = upper_slot.data().last(self._watched_key_upper)
+        #import pdb;pdb.set_trace()
         if (lower_slot.data() is None or upper_slot.data() is None
-                or len(min_slot.data()) == 0 or len(max_slot.data()) == 0):
+            or min_slot.data() is None or max_slot.data() is None
+            or len(min_slot.data()) == 0 or len(max_slot.data()) == 0):
             return self._return_run_step(self.state_blocked, steps_run=0)
         minv = min_slot.data().last(self._watched_key_lower)
         maxv = max_slot.data().last(self._watched_key_upper)

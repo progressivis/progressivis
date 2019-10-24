@@ -140,12 +140,13 @@ class Module(six.with_metaclass(ModuleMeta, object)):
         self.input = InputSlots(self)
         self.output = OutputSlots(self)
         self.steps_acc = 0
-        self._consumers = []
-        self._do_not_wait = [] # by default all slots are awaitable
+        #self._do_not_wait = [] # by default all slots are awaitable
         self.wait_expr = aio.FIRST_COMPLETED
+        self.steering_evt = None
         # callbacks
         self._start_run = None
         self._end_run = None
+        self.my_cnt = 0
         self._synchronized_lock = self.scheduler().create_lock()
         dataflow.add_module(self)
 
@@ -193,15 +194,29 @@ class Module(six.with_metaclass(ModuleMeta, object)):
         """
         return 0.0
 
-    def tell_consumers(self):
+    def old_tell_consumers(self):
         for slot in self._consumers:
             if slot._event is None:
                 slot._event = aio.Event()
             slot._event.set() # cleared in next_state()
+    def tell_consumers(self, out_name=None):
+        print(self.name, " CALLS tell_consumers")
+        if out_name is None:
+            values_ = self._output_slots.values()
+        else:
+            values_ = [self._output_slots[out_name]]
+        for slot_list in values_:
+            if slot_list is None:
+                continue
+            for slot in slot_list:
+                if slot._event is None:
+                    slot._event = aio.Event()
+                slot._event.set()
+                print("TELL CONSUMERS: ", slot)
 
     def init_aio_events(self):
         for sname, slot in self._input_slots.items():
-            if sname in self._do_not_wait or slot is None:
+            if slot is None:
                     continue
             if slot._event is None:
                 slot._event = aio.Event()
@@ -235,25 +250,194 @@ class Module(six.with_metaclass(ModuleMeta, object)):
         else:
             raise ValueError("Unconsistent wait expression {}".format(self.wait_expr))
 
-    async def module_task(self, idx=0):
-        #print("task {} launched".format(self.name))
+    def test_slots(self):
+        if self.wait_expr==aio.FIRST_COMPLETED:
+            for slot in self._input_slots.values():
+                if slot is None or slot._event is None:
+                    continue
+                if slot._event.is_set():
+                    return True
+            return False
+        if self.wait_expr==aio.ALL_COMPLETED:
+            for slot in self._input_slots.values():
+                if slot is None or slot._event is None:
+                    continue
+                if not slot._event.is_set():
+                    return False
+            return True
+        if isinstance(self.wait_expr, AllAny) or isinstance(self.wait_expr, AnyAll): # all([any(), any(), ...]
+            if not self.wait_expr._impl:
+                return True
+            return False # TODO: consider all cases ...
+
+    def schedule_next(self):
+        self.steering_evt.clear()
+        try:
+            nxmod = next(self.scheduler().module_iterator)
+            while nxmod.is_terminated():
+                nxmod = next(self.scheduler().module_iterator)
+            if nxmod.steering_evt is None:
+                nxmod.steering_evt = aio.Event()
+            nxmod.steering_evt.set()
+            nxmod.scheduler().prev_scheduled = self
+            nxmod.scheduler().next_to_run = nxmod
+            print("Next is {}".format(nxmod))
+            return True
+        except StopIteration:
+            print("StopIteration!!!!!!!!!!!!!!!!!!!!!")
+            return False
+        
+
+        
+    async def weird_module_task(self, idx=0):
+        if self.steering_evt is None:
+            self.steering_evt = aio.Event()
+        print("task {} launched".format(self.name))
         #import pdb;pdb.set_trace()
-        self.init_aio_events()        
+        self.init_aio_events()
         while True:
-            #import pdb;pdb.set_trace()
+            if self.name == "csv_loader_1":
+                self.my_cnt += 1
+                #if self.my_cnt==6:
+                #    import pdb;pdb.set_trace()
+            print("WAITING for steering {}, {}, {}".format(self.name, self.state, self.my_cnt))
+            #if self.name == "csv_loader_1":
+            #    import pdb;pdb.set_trace()
+            #print("RUN_LIST: ", [(e, e.state, e.steering_evt) for e in self.scheduler()._run_list])
+            #for m, tk in  zip(self.scheduler()._run_list, aio.all_tasks()):
+            #    print(">>>TASK: ", m.name, m.steering_evt, m.state)
+            #    tk.print_stack(limit=1)
+            await self.steering_evt.wait()
+            print("Module {} scheduled".format(self.name))
+            self.schedule_next()
+            #if self.name.startswith("min"):
+            #    import pdb;pdb.set_trace()
+            ready = self.is_ready()
+            if not ready:
+                #if not self.schedule_next():
+                #    break
+                if self.is_terminated():
+                    break
+                print("Module {} ZOMBIFIED ({})".format(self.name, self.state))
+                aio.sleep(0)
+                print("CONTINUE Zombie")
+                continue # zombie
+            print("Module {} is READY  ({})".format(self.name, self.state))
             await self.wait_for_slots()
-            #print("{} module stops waiting".format(self.name))
+            print("{} module stops waiting".format(self.name))
             rn = await self._scheduler.new_run_number()
-            #print("running {} : {}".format(self.name, rn))
+            print("running {} : {}".format(self.name, rn))
+            #import pdb;pdb.set_trace()
             await self.run(rn)
-            #print("END running {} : {}".format(self.name, rn))            
-            if not self.is_ready():
-                #print("module {} terminated, run_number {}".format(self.name, rn))
+            print("END running {} : {}".format(self.name, rn))
+            #if not self.schedule_next():
+            #    break                        
+            #print("END running {} : {}".format(self.name, rn))
+            #print("module {} state before is_ready() {}".format(self.name, self._state))
+            """if not self.is_ready():
                 #import pdb;pdb.set_trace()
                 self.tell_consumers()
-                break
+                
+                if self._state!=Module.state_blocked:
+                    print("Module {} terminates".format(self.name))
+                    break
+                else:
+                    print("Module {} is blocked".format(self.name))
             #print("module {} current state {}".format(self.name, self._state))
+            """
+            if not self.scheduler().next_to_run.test_slots():
+                prev_scheduled = self.scheduler().next_to_run
+                prev_scheduled.steering_evt.clear()
+                print("RUN LIST: ", self.scheduler()._run_list)
+                for m in self.scheduler()._run_list:
+                    if m.is_terminated():
+                        continue
+                    if m.test_slots():
+                        m.steering_evt.set()
+                        
+                        print("FIX SCHHEDULE:", prev_scheduled, "=>", m)
+                        break
+                #else:
+                #    print("ALL BLOCKED")
+                #    raise ProgressiveError("All blocked")
             await aio.sleep(0)
+        print("task {} TER_MINATED".format(self.name))
+
+
+    def release_previous(self):
+        if self.scheduler().prisoner is not None:
+            self.scheduler().prisoner.steering_evt.set()
+            print("PRISONER", self.scheduler().prisoner, "RELEASED BY", self)
+        #if evt is not None:
+        #    evt.set()
+    async def module_task(self, idx=0):
+        def _echo(*args):
+            print(*args)
+        def echo(*args):
+            print(*args)
+        _echo("task {} launched".format(self.name))
+        #import pdb;pdb.set_trace()
+        if self.steering_evt is None:
+            self.steering_evt = aio.Event()
+        self.steering_evt.set()
+        self.init_aio_events()
+        while True:
+            _echo("Module {} scheduled".format(self.name))
+            #self.schedule_next()
+            #if self.name.startswith("min"):
+            #    import pdb;pdb.set_trace()
+            if self.name in["range_query_1", "min_1", "max_1"]:
+                import pdb;pdb.set_trace()
+            ready = self.is_ready()
+            if self.is_terminated():
+                self.tell_consumers()
+                self.scheduler().runners.remove(self.name)
+                self.release_previous()
+                break
+            #t = aio.all_tasks()
+            #_echo("ACTIVE: ", len(t), t)
+            _echo(self.name, "IS WAITING FOR", self.steering_evt)
+            await self.steering_evt.wait()            
+            self.release_previous()            
+            if not ready:
+                #if not self.schedule_next():
+                #    break
+                _echo("Module {} ZOMBIFIED ({})".format(self.name, self.state))
+                #await aio.sleep(0)
+                _echo("CONTINUE Zombie", self)
+                if len(self.scheduler().runners)>1:
+                    self.steering_evt.clear()
+                    self.scheduler().prisoner = self
+                else:
+                    assert self.name in self.scheduler().runners
+                continue # zombie
+            _echo("Module {} is READY  ({})".format(self.name, self.state))
+            _echo("Waiting for slots")
+            await self.wait_for_slots()
+            _echo("{} module stops waiting".format(self.name))
+            rn = await self._scheduler.new_run_number()
+            _echo("running {} : {}".format(self.name, rn))
+            #import pdb;pdb.set_trace()
+            await self.run(rn)
+            _echo("END running {} : {}".format(self.name, rn))
+            await aio.sleep(0)
+        _echo("task {} TERMINATED".format(self.name))
+        #if self.name in self.scheduler().runners:
+        #    self.scheduler().runners.remove(self.name)
+        #self.release_previous()
+        #self.release_previous()
+        #if self.name=="csv_loader_1":
+        #    import pdb;pdb.set_trace()
+        t = aio.all_tasks()
+        _echo("ACTIVE: ", len(t))
+        for e in t:
+            _echo(">>>TASK: ", e)
+        #_echo("Events: ", [self.scheduler()._modules[r].steering_evt for r in self.scheduler().runners])
+        _echo("RUNNERS: ", self.scheduler().runners)
+        _echo("PRISONER: ", self.scheduler().prisoner)
+        _echo("********************************************************************************************************")
+        return 0
+
 
     @staticmethod
     def _filter_kwds(kwds, function_or_method):
@@ -652,6 +836,8 @@ class Module(six.with_metaclass(ModuleMeta, object)):
         # the module is blocked, cannot run any more, so it is terminated
         # too.
         if self.state == Module.state_blocked:
+            #if self.name == 'print_1':
+            #    import pdb;pdb.set_trace()
             #if isinstance(self, Print):
             #    import pdb;pdb.set_trace()
             #print(self, "BLOCKED")
@@ -795,6 +981,7 @@ class Module(six.with_metaclass(ModuleMeta, object)):
         return v
 
     async def run(self, run_number):
+        print("RUN METHOD {}: {}".format(self.name, run_number))
         assert not self.is_running()
         self.steps_acc = 0
         next_state = self.state
@@ -817,6 +1004,7 @@ class Module(six.with_metaclass(ModuleMeta, object)):
         run_step_ret = {}
         self.start_run(run_number)
         tracer.start_run(now, run_number)
+        print("RUN {} START {} END {}".format(self.name,self._start_time, self._end_time))
         while self._start_time < self._end_time:
             remaining_time = self._end_time-self._start_time
             if remaining_time <= 0:
@@ -963,7 +1151,7 @@ class Every(Module):
         return super(Every, self).predict_step_size(duration)
 
     async def run_step(self, run_number, step_size, howlong):
-        #print("RUNSTEP EVERY")
+        print("RUNSTEP EVERY")
         slot = self.get_input_slot('df')
         df = slot.data()
         if df is not None:
