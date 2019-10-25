@@ -55,7 +55,18 @@ class AllAny:
 class AnyAll:
     def __init__(self, arg):
         self._impl = arg
-        
+
+class Prisoner:
+    def __init__(self, m, p):
+        self.module = m
+        self.penalty = max(1, p)
+    def decr(self):
+        self.penalty -= 1
+        return self.penalty<=0
+    def __str__(self):
+        return "[{}:{}]".format(self.module.name, self.penalty)
+    def __repr__(self):
+        return  self.__str__()
 @six.python_2_unicode_compatible
 class Module(six.with_metaclass(ModuleMeta, object)):
     """The Module class is the base class for all the progressive modules.
@@ -317,6 +328,25 @@ class Module(six.with_metaclass(ModuleMeta, object)):
             await aio.sleep(0)
         print("task {} TER_MINATED".format(self.name))
 
+    def confine(self, p=None):
+        if p is None:
+            p = max(1, len(self.scheduler().runners))
+        self.scheduler().jail.add(Prisoner(self, p))
+        self.steering_evt.clear()
+
+    def shorten(self):
+        new_jail = set()
+        for p in self.scheduler().jail:
+            if p.decr():
+                p.module.steering_evt.set()
+                continue
+            new_jail.add(p)
+        self.scheduler().jail = new_jail
+
+    def amnesty(self):
+        for p in self.scheduler().jail:
+            p.module.steering_evt.set()
+        self.scheduler().jail = set()
 
     def release_previous(self):
         if self.scheduler().prisoner is not None:
@@ -324,6 +354,7 @@ class Module(six.with_metaclass(ModuleMeta, object)):
             #print("PRISONER", self.scheduler().prisoner, "RELEASED BY", self)
         #if evt is not None:
         #    evt.set()
+
     async def module_task(self, idx=0):
         def _echo(*args):
             pass #print(*args)
@@ -337,8 +368,17 @@ class Module(six.with_metaclass(ModuleMeta, object)):
         self.init_aio_events()
         my_cnt = 0
         while True:
+            echo(self.name, "IS WAITING FOR", self.steering_evt, my_cnt)
+            try:
+                await aio.wait_for(aio.create_task(self.steering_evt.wait()), timeout=0.1)
+            except aio.TimeoutError:
+                self.amnesty()
+                print("Timeout on {}, {}".format(self.name, my_cnt))
+            else:
+                self.shorten()
             echo("Module {} scheduled {}".format(self.name, my_cnt))
             my_cnt += 1
+
             #self.schedule_next()
             #if self.name.startswith("min"):
             #    import pdb;pdb.set_trace()
@@ -348,26 +388,18 @@ class Module(six.with_metaclass(ModuleMeta, object)):
             if self.is_terminated():
                 self.tell_consumers()
                 self.scheduler().runners.remove(self.name)
-                self.release_previous()
+                self.shorten()
                 break
             #t = aio.all_tasks()
             #_echo("ACTIVE: ", len(t), t)
-            _echo(self.name, "IS WAITING FOR", self.steering_evt, my_cnt)
-            try:
-                await aio.wait_for(aio.create_task(self.steering_evt.wait()), timeout=0.1)
-            except aio.TimeoutError:
-                print("Timeout on {}".format(self.name))
-            self.release_previous()            
             if not ready:
                 echo("NOT READY {}, {}, {}".format(self.name, self.state, my_cnt))
                 #if not self.schedule_next():
                 #    break
                 _echo("Module {} ZOMBIFIED ({})".format(self.name, self.state))
-                await aio.sleep(0)
                 _echo("CONTINUE Zombie", self)
                 if len(self.scheduler().runners)>1:
-                    self.steering_evt.clear()
-                    self.scheduler().prisoner = self
+                    self.confine()
                 else:
                     assert self.name in self.scheduler().runners
                 continue # zombie
@@ -383,6 +415,7 @@ class Module(six.with_metaclass(ModuleMeta, object)):
             _echo("END running {} : {}".format(self.name, rn))
             await aio.sleep(0)
         echo("task {} TERMINATED".format(self.name))
+        self.confine()
         #if self.name in self.scheduler().runners:
         #    self.scheduler().runners.remove(self.name)
         #self.release_previous()
@@ -395,7 +428,7 @@ class Module(six.with_metaclass(ModuleMeta, object)):
             _echo(">>>TASK: ", e)
         #_echo("Events: ", [self.scheduler()._modules[r].steering_evt for r in self.scheduler().runners])
         _echo("RUNNERS: ", self.scheduler().runners)
-        _echo("PRISONER: ", self.scheduler().prisoner)
+        echo("PRISONERS: ", self.scheduler().jail)
         _echo("********************************************************************************************************")
         #import pdb;pdb.set_trace()
         return 0
