@@ -80,7 +80,7 @@ class BaseScheduler(object):
         self.dataflow = Dataflow(self)
         self.module_iterator = None
         self._enter_cnt = 1
-        self.prisoner = None
+        self.jail = set()
         self.runners = set()
 
     def set_interaction_opts(self, starving_mods=None, max_time=None,

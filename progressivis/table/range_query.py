@@ -271,6 +271,7 @@ class RangeQuery(TableModule):
         max_slot.deleted.next()
         if (lower_slot.data() is None or upper_slot.data() is None
                 or len(lower_slot.data()) == 0 or len(upper_slot.data()) == 0):
+            print("BLOCKED1")
             return self._return_run_step(self.state_blocked, steps_run=0)
         lower_value = lower_slot.data().last(self._watched_key_lower)
         upper_value = upper_slot.data().last(self._watched_key_upper)
@@ -278,6 +279,7 @@ class RangeQuery(TableModule):
         if (lower_slot.data() is None or upper_slot.data() is None
             or min_slot.data() is None or max_slot.data() is None
             or len(min_slot.data()) == 0 or len(max_slot.data()) == 0):
+            print("BLOCKED2")            
             return self._return_run_step(self.state_blocked, steps_run=0)
         minv = min_slot.data().last(self._watched_key_lower)
         maxv = max_slot.data().last(self._watched_key_upper)
@@ -297,6 +299,7 @@ class RangeQuery(TableModule):
         self._set_min_out(lower_value)
         self._set_max_out(upper_value)
         if steps == 0 and not limit_changed:
+            print("BLOCKED3")            
             return self._return_run_step(self.state_blocked, steps_run=0)
         # ...
         if not self._impl.is_started:
@@ -313,4 +316,5 @@ class RangeQuery(TableModule):
                               updated=updated,
                               deleted=deleted)
             self._table.selection = self._impl.result._values
+        print("UNBLOCKED", steps)            
         return self._return_run_step(self.next_state(input_slot), steps)
