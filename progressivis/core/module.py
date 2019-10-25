@@ -200,7 +200,7 @@ class Module(six.with_metaclass(ModuleMeta, object)):
                 slot._event = aio.Event()
             slot._event.set() # cleared in next_state()
     def tell_consumers(self, out_name=None):
-        print(self.name, " CALLS tell_consumers")
+        #print(self.name, " CALLS tell_consumers")
         if out_name is None:
             values_ = self._output_slots.values()
         else:
@@ -212,7 +212,7 @@ class Module(six.with_metaclass(ModuleMeta, object)):
                 if slot._event is None:
                     slot._event = aio.Event()
                 slot._event.set()
-                print("TELL CONSUMERS: ", slot)
+                #print("TELL CONSUMERS: ", slot)
 
     def init_aio_events(self):
         for sname, slot in self._input_slots.items():
@@ -289,77 +289,31 @@ class Module(six.with_metaclass(ModuleMeta, object)):
         
 
         
-    async def weird_module_task(self, idx=0):
+    async def seq_module_task(self, idx=0):
         if self.steering_evt is None:
             self.steering_evt = aio.Event()
         print("task {} launched".format(self.name))
-        #import pdb;pdb.set_trace()
         self.init_aio_events()
         while True:
-            if self.name == "csv_loader_1":
-                self.my_cnt += 1
-                #if self.my_cnt==6:
-                #    import pdb;pdb.set_trace()
-            print("WAITING for steering {}, {}, {}".format(self.name, self.state, self.my_cnt))
-            #if self.name == "csv_loader_1":
-            #    import pdb;pdb.set_trace()
-            #print("RUN_LIST: ", [(e, e.state, e.steering_evt) for e in self.scheduler()._run_list])
-            #for m, tk in  zip(self.scheduler()._run_list, aio.all_tasks()):
-            #    print(">>>TASK: ", m.name, m.steering_evt, m.state)
-            #    tk.print_stack(limit=1)
-            await self.steering_evt.wait()
-            print("Module {} scheduled".format(self.name))
-            self.schedule_next()
-            #if self.name.startswith("min"):
-            #    import pdb;pdb.set_trace()
+            #print("Module {} scheduled".format(self.name))
             ready = self.is_ready()
+            if self.is_terminated():
+                self.tell_consumers()
+                self.scheduler().runners.remove(self.name)
+                self.schedule_next()
+                break
+            try:
+                await aio.wait_for(aio.create_task(self.steering_evt.wait()), timeout=0.1)
+            except aio.TimeoutError:
+                print("Timeout on {}".format(self.name))
+            self.schedule_next()
             if not ready:
-                #if not self.schedule_next():
-                #    break
-                if self.is_terminated():
-                    break
-                print("Module {} ZOMBIFIED ({})".format(self.name, self.state))
-                aio.sleep(0)
-                print("CONTINUE Zombie")
+                print("not ready {}, {}".format(self.name, self.state))
                 continue # zombie
-            print("Module {} is READY  ({})".format(self.name, self.state))
-            await self.wait_for_slots()
-            print("{} module stops waiting".format(self.name))
+            #await self.wait_for_slots()
             rn = await self._scheduler.new_run_number()
-            print("running {} : {}".format(self.name, rn))
-            #import pdb;pdb.set_trace()
             await self.run(rn)
             print("END running {} : {}".format(self.name, rn))
-            #if not self.schedule_next():
-            #    break                        
-            #print("END running {} : {}".format(self.name, rn))
-            #print("module {} state before is_ready() {}".format(self.name, self._state))
-            """if not self.is_ready():
-                #import pdb;pdb.set_trace()
-                self.tell_consumers()
-                
-                if self._state!=Module.state_blocked:
-                    print("Module {} terminates".format(self.name))
-                    break
-                else:
-                    print("Module {} is blocked".format(self.name))
-            #print("module {} current state {}".format(self.name, self._state))
-            """
-            if not self.scheduler().next_to_run.test_slots():
-                prev_scheduled = self.scheduler().next_to_run
-                prev_scheduled.steering_evt.clear()
-                print("RUN LIST: ", self.scheduler()._run_list)
-                for m in self.scheduler()._run_list:
-                    if m.is_terminated():
-                        continue
-                    if m.test_slots():
-                        m.steering_evt.set()
-                        
-                        print("FIX SCHHEDULE:", prev_scheduled, "=>", m)
-                        break
-                #else:
-                #    print("ALL BLOCKED")
-                #    raise ProgressiveError("All blocked")
             await aio.sleep(0)
         print("task {} TER_MINATED".format(self.name))
 
@@ -367,27 +321,29 @@ class Module(six.with_metaclass(ModuleMeta, object)):
     def release_previous(self):
         if self.scheduler().prisoner is not None:
             self.scheduler().prisoner.steering_evt.set()
-            print("PRISONER", self.scheduler().prisoner, "RELEASED BY", self)
+            #print("PRISONER", self.scheduler().prisoner, "RELEASED BY", self)
         #if evt is not None:
         #    evt.set()
     async def module_task(self, idx=0):
         def _echo(*args):
-            print(*args)
+            pass #print(*args)
         def echo(*args):
             print(*args)
-        _echo("task {} launched".format(self.name))
+        echo("task {} launched".format(self.name))
         #import pdb;pdb.set_trace()
         if self.steering_evt is None:
             self.steering_evt = aio.Event()
         self.steering_evt.set()
         self.init_aio_events()
+        my_cnt = 0
         while True:
-            _echo("Module {} scheduled".format(self.name))
+            echo("Module {} scheduled {}".format(self.name, my_cnt))
+            my_cnt += 1
             #self.schedule_next()
             #if self.name.startswith("min"):
             #    import pdb;pdb.set_trace()
-            if self.name in["range_query_1", "min_1", "max_1"]:
-                import pdb;pdb.set_trace()
+            #if self.name in["range_query_1", "min_1", "max_1"]:
+            #    import pdb;pdb.set_trace()
             ready = self.is_ready()
             if self.is_terminated():
                 self.tell_consumers()
@@ -396,14 +352,18 @@ class Module(six.with_metaclass(ModuleMeta, object)):
                 break
             #t = aio.all_tasks()
             #_echo("ACTIVE: ", len(t), t)
-            _echo(self.name, "IS WAITING FOR", self.steering_evt)
-            await self.steering_evt.wait()            
+            _echo(self.name, "IS WAITING FOR", self.steering_evt, my_cnt)
+            try:
+                await aio.wait_for(aio.create_task(self.steering_evt.wait()), timeout=0.1)
+            except aio.TimeoutError:
+                print("Timeout on {}".format(self.name))
             self.release_previous()            
             if not ready:
+                echo("NOT READY {}, {}, {}".format(self.name, self.state, my_cnt))
                 #if not self.schedule_next():
                 #    break
                 _echo("Module {} ZOMBIFIED ({})".format(self.name, self.state))
-                #await aio.sleep(0)
+                await aio.sleep(0)
                 _echo("CONTINUE Zombie", self)
                 if len(self.scheduler().runners)>1:
                     self.steering_evt.clear()
@@ -412,16 +372,17 @@ class Module(six.with_metaclass(ModuleMeta, object)):
                     assert self.name in self.scheduler().runners
                 continue # zombie
             _echo("Module {} is READY  ({})".format(self.name, self.state))
-            _echo("Waiting for slots")
-            await self.wait_for_slots()
-            _echo("{} module stops waiting".format(self.name))
+            _echo("Module {} is waiting for slots".format(self.name))
+            #if len(self.scheduler().runners)>=4:
+            #await self.wait_for_slots()
+            _echo("{} module stops waiting for slots".format(self.name))
             rn = await self._scheduler.new_run_number()
-            _echo("running {} : {}".format(self.name, rn))
+            echo("running {} : {}".format(self.name, rn))
             #import pdb;pdb.set_trace()
             await self.run(rn)
             _echo("END running {} : {}".format(self.name, rn))
             await aio.sleep(0)
-        _echo("task {} TERMINATED".format(self.name))
+        echo("task {} TERMINATED".format(self.name))
         #if self.name in self.scheduler().runners:
         #    self.scheduler().runners.remove(self.name)
         #self.release_previous()
@@ -436,6 +397,7 @@ class Module(six.with_metaclass(ModuleMeta, object)):
         _echo("RUNNERS: ", self.scheduler().runners)
         _echo("PRISONER: ", self.scheduler().prisoner)
         _echo("********************************************************************************************************")
+        #import pdb;pdb.set_trace()
         return 0
 
 
@@ -981,7 +943,7 @@ class Module(six.with_metaclass(ModuleMeta, object)):
         return v
 
     async def run(self, run_number):
-        print("RUN METHOD {}: {}".format(self.name, run_number))
+        #print("RUN METHOD {}: {}".format(self.name, run_number))
         assert not self.is_running()
         self.steps_acc = 0
         next_state = self.state
