@@ -10,7 +10,7 @@ from progressivis.datasets import get_dataset
 from progressivis.core.bitmap import bitmap
 
 import pandas as pd
-
+import asyncio as aio
 
 def print_repr(x):
     print(repr(x))
@@ -32,8 +32,7 @@ class TestSelect(ProgressiveTest):
         q.input.select = sample.output.select
         prlen = Print(proc=self.terse,  scheduler=s)
         prlen.input.df = q.output.table
-        s.start()
-        s.join()
+        aio.run(s.start())
         print(repr(q.table()))
         self.assertEqual(len(q.table()), 100)
         self.assertEqual(bitmap(q.table().index), sample.get_data("select"))
@@ -49,8 +48,7 @@ class TestSelect(ProgressiveTest):
         q.input.query = cst.output.df
         prlen = Every(proc=self.terse, constant_time=True, scheduler=s)
         prlen.input.df = q.output.df
-        s.start()
-        s.join()
+        aio.run(s.start())
         self.assertTrue(len(q.table()) < 1000000)
 
 

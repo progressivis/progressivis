@@ -59,7 +59,7 @@ class Sample(TableModule):
             self._bitmap = bitmap(self._tmp_table['select']) if len_ else bitmap()
         return self._bitmap
 
-    def run_step(self,run_number,step_size,howlong):
+    async def run_step(self,run_number,step_size,howlong):
         dfslot = self.get_input_slot('table')
         if self._table is None:
             input_table = self.get_input_slot('table').data()

@@ -4,7 +4,7 @@ from progressivis import Print
 from progressivis.io import CSVLoader
 from progressivis.stats import Sample
 from progressivis.datasets import get_dataset
-
+import asyncio as aio
 
 def print_repr(x):
     print(repr(x))
@@ -21,8 +21,7 @@ class TestSample(ProgressiveTest):
         smp.input.table = csv.output.table
         prt = Print(proc=self.terse, scheduler=s)
         prt.input.df = smp.output.table
-        csv.scheduler().start()
-        s.join()
+        aio.run(csv.scheduler().start())
         #print(repr(smp.table()))
         self.assertEqual(len(smp.table()), 10)
 

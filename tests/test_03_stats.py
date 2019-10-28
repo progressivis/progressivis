@@ -5,6 +5,7 @@ from progressivis.stats import Stats
 from progressivis.io import CSVLoader
 from progressivis.core.wait import Wait
 from progressivis.datasets import get_dataset
+import asyncio as aio
 
 import numpy as np
 
@@ -23,8 +24,7 @@ class TestStats(ProgressiveTest):
         stats.input.table = csv_module.output.table
         pr = Print(proc=self.terse, name='print', scheduler=s)
         pr.input.df = stats.output.stats
-        s.start()
-        s.join()
+        aio.run(s.start())
         table = csv_module.table()
         stable = stats.table()
         last = stable.last()
