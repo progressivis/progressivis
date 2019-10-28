@@ -359,7 +359,7 @@ class Module(six.with_metaclass(ModuleMeta, object)):
         def _echo(*args):
             pass #print(*args)
         def echo(*args):
-            print(*args)
+            pass #print(*args)
         echo("task {} launched".format(self.name))
         #import pdb;pdb.set_trace()
         if self.steering_evt is None:
@@ -399,23 +399,24 @@ class Module(six.with_metaclass(ModuleMeta, object)):
                 _echo("Module {} ZOMBIFIED ({})".format(self.name, self.state))
                 _echo("CONTINUE Zombie", self)
                 if len(self.scheduler().runners)>1:
+                    #self.shorten()
                     self.confine()
                 else:
                     assert self.name in self.scheduler().runners
                 continue # zombie
             _echo("Module {} is READY  ({})".format(self.name, self.state))
-            _echo("Module {} is waiting for slots".format(self.name))
-            #if len(self.scheduler().runners)>=4:
-            #await self.wait_for_slots()
-            _echo("{} module stops waiting for slots".format(self.name))
+            #print("Module {} is waiting for slots".format(self.name))
+            await self.wait_for_slots()
+            #print("{} module stops waiting for slots".format(self.name))
             rn = await self._scheduler.new_run_number()
             echo("running {} : {}".format(self.name, rn))
             #import pdb;pdb.set_trace()
             await self.run(rn)
             _echo("END running {} : {}".format(self.name, rn))
-            await aio.sleep(0)
+            #self.shorten()
+            self.confine()
+            await aio.sleep(0)            
         echo("task {} TERMINATED".format(self.name))
-        self.confine()
         #if self.name in self.scheduler().runners:
         #    self.scheduler().runners.remove(self.name)
         #self.release_previous()
@@ -423,11 +424,11 @@ class Module(six.with_metaclass(ModuleMeta, object)):
         #if self.name=="csv_loader_1":
         #    import pdb;pdb.set_trace()
         t = aio.all_tasks()
-        _echo("ACTIVE: ", len(t))
+        echo("ACTIVE: ", len(t))
         for e in t:
-            _echo(">>>TASK: ", e)
+            echo(">>>TASK: ", e)
         #_echo("Events: ", [self.scheduler()._modules[r].steering_evt for r in self.scheduler().runners])
-        _echo("RUNNERS: ", self.scheduler().runners)
+        echo("RUNNERS: ", self.scheduler().runners)
         echo("PRISONERS: ", self.scheduler().jail)
         _echo("********************************************************************************************************")
         #import pdb;pdb.set_trace()
