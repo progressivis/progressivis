@@ -13,7 +13,7 @@ import asyncio as aio
 from .dataflow import Dataflow
 from progressivis.utils.synchronized import synchronized
 from progressivis.utils.errors import ProgressiveError
-from progressivis.utils.threading import FakeLock, Condition
+from progressivis.utils.threading import FakeLock
 #from .sentinel import Sentinel
 
 logger = logging.getLogger(__name__)
@@ -75,13 +75,14 @@ class BaseScheduler(object):
         self._start_inter = 0
         self._inter_cycles_cnt = 0
         self._interaction_opts = None
-        self._hibernate_cond = Condition()
+        self._hibernate_cond = aio.Condition()
         self._keep_running = KEEP_RUNNING
         self.dataflow = Dataflow(self)
         self.module_iterator = None
         self._enter_cnt = 1
         self.jail = set()
         self.runners = set()
+        self.coros = []
 
     def set_interaction_opts(self, starving_mods=None, max_time=None,
                              max_iter=None):
@@ -250,7 +251,7 @@ class BaseScheduler(object):
     def _after_run(self):
         pass
 
-    async def start(self, tick_proc=None, idle_proc=None):
+    async def start(self, tick_proc=None, idle_proc=None, coros=()):
         "Start the scheduler."
         if tick_proc:
             self._tick_procs = []
@@ -258,6 +259,7 @@ class BaseScheduler(object):
         if idle_proc:
             self._idle_procs = []
             self.on_idle(idle_proc)
+        self.coros = list(coros)
         await self.run()
 
     def _step_proc(self, s, run_number):
@@ -321,6 +323,9 @@ class BaseScheduler(object):
             self._update_modules()
         # actually, the order in self._run_list is not important anymore
         runners = [aio.create_task(m.module_task()) for m in self._run_list]
+        if self._idle_procs:
+            runners.append(aio.create_task(self.idle_proc_runner()))
+        runners.extend([aio.create_task(coro) for coro in self.coros])
         self.runners = [m.name for m in self._run_list]
         #runners.append(aio.create_task(sl.module_task()))
         #first_m = next(self.module_iterator)
@@ -467,6 +472,28 @@ class BaseScheduler(object):
                 time.sleep(0.2)
         self._run_index = 0
 
+    async def idle_proc_runner(self):
+        print("IDLE PROC RUNNER")
+        _ct = aio.create_task        
+        while True:
+            aws = [_ct(m.blocked_evt.wait()) for m in self._run_list]
+            await aio.wait(aws, return_when=aio.ALL_COMPLETED)
+            print("ALL BLOCKED")
+            has_run = False
+            for proc in self._idle_procs:
+                # pylint: disable=broad-except
+                try:
+                    logger.debug('Running idle proc')
+                    await proc(self, self._run_number)
+                    has_run = True
+                except Exception as exc:
+                    logger.error(exc)
+            if not has_run:
+                logger.info('sleeping %f', 0.2)
+                await aio.sleep(0.2)
+            if self._stopped:
+                break
+        
     def _run_tick_procs(self):
         # pylint: disable=broad-except
         for proc in self._tick_procs:
@@ -482,11 +509,12 @@ class BaseScheduler(object):
                 logger.warning(exc)
             self._tick_once_procs = []
 
-    def stop(self):
+    async def stop(self):
         "Stop the execution."
-        with self._hibernate_cond:
+        async with self._hibernate_cond:
             self._keep_running = KEEP_RUNNING
             self._hibernate_cond.notify()
+        print("STOPPED *************************************")
         self._stopped = True
 
     def is_running(self):
@@ -536,13 +564,13 @@ class BaseScheduler(object):
         "Return the last run number."
         return self._run_number
 
-    @synchronized
-    def for_input(self, module):
+
+    async def for_input(self, module):
         """
         Notify this scheduler that the module has received input
         that should be served fast.
         """
-        with self._hibernate_cond:
+        async with self._hibernate_cond:
             self._keep_running = KEEP_RUNNING
             self._hibernate_cond.notify()
         # FIXME for now, add all the modules
