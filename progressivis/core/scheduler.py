@@ -38,7 +38,8 @@ class Scheduler(BaseScheduler):
     def _before_run(self):
         logger.debug("Before run %d", self._run_number)
 
-    async def start(self, tick_proc=None, idle_proc=None):
+    async def start(self, tick_proc=None, idle_proc=None, coros=()):
+        self.coros=list(coros)
         if tick_proc:
             assert callable(tick_proc)
             self._tick_procs = [tick_proc]
