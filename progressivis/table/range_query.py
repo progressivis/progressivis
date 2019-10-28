@@ -212,24 +212,6 @@ class RangeQuery(TableModule):
 
     async def run_step(self, run_number, step_size, howlong):
         input_slot = self.get_input_slot('table')
-        input_slot.update(run_number)
-        steps = 0
-        deleted = None
-        if input_slot.deleted.any():
-            deleted = input_slot.deleted.next(step_size)
-            steps += indices_len(deleted)
-        created = None
-        if input_slot.created.any():
-            created = input_slot.created.next(step_size)
-            steps += indices_len(created)
-        updated = None
-        if input_slot.updated.any():
-            updated = input_slot.updated.next(step_size)
-            steps += indices_len(updated)
-        with input_slot.lock:
-            input_table = input_slot.data()
-        if not self._table:
-            self._table = TableSelectedView(input_table, bitmap([]))
         self._create_min_max()
         #
         # lower/upper
@@ -271,15 +253,12 @@ class RangeQuery(TableModule):
         max_slot.deleted.next()
         if (lower_slot.data() is None or upper_slot.data() is None
                 or len(lower_slot.data()) == 0 or len(upper_slot.data()) == 0):
-            print("BLOCKED1")
             return self._return_run_step(self.state_blocked, steps_run=0)
         lower_value = lower_slot.data().last(self._watched_key_lower)
         upper_value = upper_slot.data().last(self._watched_key_upper)
-        #import pdb;pdb.set_trace()
         if (lower_slot.data() is None or upper_slot.data() is None
             or min_slot.data() is None or max_slot.data() is None
             or len(min_slot.data()) == 0 or len(max_slot.data()) == 0):
-            print("BLOCKED2")            
             return self._return_run_step(self.state_blocked, steps_run=0)
         minv = min_slot.data().last(self._watched_key_lower)
         maxv = max_slot.data().last(self._watched_key_upper)
@@ -298,10 +277,28 @@ class RangeQuery(TableModule):
             limit_changed = True
         self._set_min_out(lower_value)
         self._set_max_out(upper_value)
-        if steps == 0 and not limit_changed:
-            print("BLOCKED3")            
+        input_slot.update(run_number)
+        if not input_slot.has_buffered() and not limit_changed:
             return self._return_run_step(self.state_blocked, steps_run=0)
         # ...
+        steps = 0
+        deleted = None
+        if input_slot.deleted.any():
+            deleted = input_slot.deleted.next(step_size)
+            steps += indices_len(deleted)
+        created = None
+        if input_slot.created.any():
+            created = input_slot.created.next(step_size)
+            steps += indices_len(created)
+        updated = None
+        if input_slot.updated.any():
+            updated = input_slot.updated.next(step_size)
+            steps += indices_len(updated)
+        with input_slot.lock:
+            input_table = input_slot.data()
+        if not self._table:
+            self._table = TableSelectedView(input_table, bitmap([]))
+        
         if not self._impl.is_started:
             self._impl.start(input_table, lower_value, upper_value,
                              limit_changed,
@@ -316,5 +313,4 @@ class RangeQuery(TableModule):
                               updated=updated,
                               deleted=deleted)
             self._table.selection = self._impl.result._values
-        print("UNBLOCKED", steps)            
         return self._return_run_step(self.next_state(input_slot), steps)
