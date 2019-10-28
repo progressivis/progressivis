@@ -154,6 +154,7 @@ class Module(six.with_metaclass(ModuleMeta, object)):
         #self._do_not_wait = [] # by default all slots are awaitable
         self.wait_expr = aio.FIRST_COMPLETED
         self.steering_evt = None
+        self.blocked_evt = None
         # callbacks
         self._start_run = None
         self._end_run = None
@@ -373,9 +374,12 @@ class Module(six.with_metaclass(ModuleMeta, object)):
                 await aio.wait_for(aio.create_task(self.steering_evt.wait()), timeout=0.1)
             except aio.TimeoutError:
                 self.amnesty()
-                print("Timeout on {}, {}".format(self.name, my_cnt))
+                #print("Timeout on {}, {}".format(self.name, my_cnt))
             else:
                 self.shorten()
+            if self.scheduler()._stopped:
+                self.tell_consumers()
+                break                
             echo("Module {} scheduled {}".format(self.name, my_cnt))
             my_cnt += 1
 
@@ -388,6 +392,7 @@ class Module(six.with_metaclass(ModuleMeta, object)):
             if self.is_terminated():
                 self.tell_consumers()
                 self.scheduler().runners.remove(self.name)
+                self.scheduler()._run_list.remove(self)                
                 self.shorten()
                 break
             #t = aio.all_tasks()
@@ -416,7 +421,7 @@ class Module(six.with_metaclass(ModuleMeta, object)):
             #self.shorten()
             self.confine()
             await aio.sleep(0)            
-        echo("task {} TERMINATED".format(self.name))
+        print("task {} TERMINATED".format(self.name))
         #if self.name in self.scheduler().runners:
         #    self.scheduler().runners.remove(self.name)
         #self.release_previous()
@@ -901,6 +906,12 @@ class Module(six.with_metaclass(ModuleMeta, object)):
                 s <= Module.state_invalid), "State %s invalid in module %s" % (
                     s, self.name)
         self._state = s
+        if self.blocked_evt is None:
+            self.blocked_evt = aio.Event()
+        if self._state == Module.state_blocked:
+            self.blocked_evt.set()
+        else:
+            self.blocked_evt.clear()
 
     def trace_stats(self, max_runs=None):
         return self.tracer.trace_stats(max_runs)
