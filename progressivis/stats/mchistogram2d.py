@@ -129,7 +129,7 @@ class MCHistogram2D(NAry):
             return None
         return (xmin, xmax, ymin, ymax, has_creation)
 
-    def run_step(self, run_number, step_size, howlong):
+    async def run_step(self, run_number, step_size, howlong):
         dfslot = self.get_input_slot('data')
         dfslot.update(run_number)
         if dfslot.updated.any():

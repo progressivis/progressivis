@@ -4,7 +4,7 @@ from progressivis import Every
 from progressivis.io import CSVLoader
 from progressivis.metrics import PairwiseDistances
 from progressivis.datasets import get_dataset
-
+import asyncio as aio
 import logging
 
 def print_len(x):
@@ -39,7 +39,7 @@ class TestMDS(ProgressiveTest):
         cnt.input.df = dis.output.dist
         global times
         times = 0
-        s.start(ten_times)
+        aio.run(s.start(ten_times))
 
 if __name__ == '__main__':
     ProgressiveTest.main()

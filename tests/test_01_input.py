@@ -4,8 +4,8 @@ from progressivis.utils.threading import Thread
 from progressivis import Print
 from progressivis.io.input import Input
 import numpy as np
-from time import sleep
-
+#from time import sleep
+import asyncio as aio
 
 def _ten_times(scheduler, run_number):
     print('ten_times %d' % run_number)
@@ -13,13 +13,13 @@ def _ten_times(scheduler, run_number):
         scheduler.stop()
 
 
-def _do_line(inp, s):
-    sleep(2)
+async def _do_line(inp, s):
+    await aio.sleep(2)
     for r in range(10):
         inp.from_input('line#%d' % r)
-        sleep(np.random.random())
-    sleep(1)
-    s.stop()
+        await aio.sleep(np.random.random())
+    await aio.sleep(1)
+    await s.stop()
 
 
 class TestInput(ProgressiveTest):
@@ -29,10 +29,8 @@ class TestInput(ProgressiveTest):
             inp = Input(scheduler=s)
             pr = Print(proc=self.terse, scheduler=s)
             pr.input.df = inp.output.table
-        t = Thread(target=_do_line, args=(inp, s))
-        t.start()
-        s.start()
-        s.join()
+        t = _do_line(inp, s)
+        aio.run(s.start(coros=[t]))
         self.assertEqual(len(inp.table()), 10)
 
 

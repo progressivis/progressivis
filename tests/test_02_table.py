@@ -13,7 +13,7 @@ from progressivis.storage import Group
 
 import numpy as np
 import pandas as pd
-
+import asyncio as aio
 
 class TestTable(ProgressiveTest):
     #pylint: disable=protected-access
@@ -341,8 +341,7 @@ class TestTable(ProgressiveTest):
                          header=None,
                          scheduler=self.scheduler)
         self.assertTrue(module.table() is None)
-        self.scheduler.start()
-        self.scheduler.join()
+        aio.run(self.scheduler.start())
         t = module.table()
         self.assertFalse(t is None)
         self.assertEqual(len(t), 30000)

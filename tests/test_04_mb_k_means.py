@@ -4,7 +4,7 @@ from progressivis import Print, Every #, log_level
 from progressivis.cluster import MBKMeans
 from progressivis.io import CSVLoader
 from progressivis.datasets import get_dataset
-
+import asyncio as aio
 
 #from sklearn.cluster import MiniBatchKMeans
 #from sklearn.utils.extmath import squared_norm
@@ -41,7 +41,7 @@ class TestMBKmeans(ProgressiveTest):
             pr.input.df = km.output.table
             e = Every(proc=self.terse, scheduler=s)
             e.input.df = km.output.labels
-        s.start()
+        aio.run(s.start())
         s.join()
         self.assertEqual(len(csv.table()), len(km.labels()))
         #mbk = MiniBatchKMeans(n_clusters=n_clusters, random_state=42, verbose=True)

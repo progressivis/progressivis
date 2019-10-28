@@ -19,7 +19,7 @@ class Input(TableModule):
     def is_ready(self):
         return len(self._table) > self._last
 
-    def run_step(self,run_number,step_size, howlong):
+    async def run_step(self,run_number,step_size, howlong):
         self._last = len(self._table)
         return self._return_run_step(self.state_blocked, steps_run=0)
         

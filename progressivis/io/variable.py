@@ -41,7 +41,7 @@ class Variable(Constant):
         self._table.add(last)
         return error
     
-    def run_step(self,run_number,step_size,howlong):
+    async def run_step(self,run_number,step_size,howlong):
         if self._table is None:
             slot = self.get_input_slot('like')
             if slot is not None:

@@ -78,7 +78,7 @@ class MBKMeans(TableModule):
             return self.labels()
         return super(MBKMeans, self).get_data(name)
 
-    def run_step(self, run_number, step_size, howlong):
+    async def run_step(self, run_number, step_size, howlong):
         dfslot = self.get_input_slot('table')
         dfslot.update(run_number)
 
