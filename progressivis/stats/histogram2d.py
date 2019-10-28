@@ -70,7 +70,7 @@ class Histogram2D(TableModule):
         min_slot.created.next()
         with min_slot.lock:
             min_df = min_slot.data()
-            if len(min_df) == 0 and self._bounds is None:
+            if min_df is None or len(min_df) == 0: # and self._bounds is None:
                 return None
             min_ = min_df.last()
             xmin = min_[self.x_column]
@@ -79,7 +79,7 @@ class Histogram2D(TableModule):
         max_slot.created.next()
         with max_slot.lock:
             max_df = max_slot.data()
-            if len(max_df) == 0 and self._bounds is None:
+            if max_df is None or len(max_df) == 0: # and self._bounds is None:
                 return None
             max_ = max_df.last()
             xmax = max_[self.x_column]
