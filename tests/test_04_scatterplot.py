@@ -4,9 +4,10 @@ from progressivis.vis import MCScatterPlot
 from progressivis.datasets import get_dataset
 from progressivis.stats import RandomTable
 from progressivis.core.utils import decorate, ModulePatch
+import asyncio as aio
 
 from . import ProgressiveTest, skip
-
+import time
 
 def print_len(x):
     if x is not None:
@@ -17,9 +18,8 @@ def print_repr(x):
     if x is not None:
         print(repr(x))
 
-
-def idle_proc(s, _):
-    s.stop()
+async def idle_proc(s, _):
+    await s.stop()
 
 
 LOWER_X = 0.2
@@ -27,34 +27,15 @@ LOWER_Y = 0.3
 UPPER_X = 0.8
 UPPER_Y = 0.7
 
+async def fake_input(sched, name, t, inp):
+    await aio.sleep(t)
+    module = sched.modules()[name]
+    await module.from_input(inp)
 
-class VariablePatch1(ModulePatch):
-    def before_run_step(self, m, *args, **kwargs):
-        if m._table:
-            m.from_input({'_1': LOWER_X, '_2': LOWER_Y})
+async def sleep_then_stop(s, t):
+    await aio.sleep(t)
+    await s.stop()
 
-
-class VariablePatch2(ModulePatch):
-    def before_run_step(self, m, *args, **kwargs):
-        if m._table:
-            m.from_input({'_1': UPPER_X, '_2': UPPER_Y})
-
-
-class ScatterPlotPatch(ModulePatch):
-    def __init__(self, n):
-        super(ScatterPlotPatch, self).__init__(n)
-        self._last_run = 0
-
-    def after_run_step(self, m, *args, **kwargs):
-        scheduler = m.scheduler()
-        # Deciding when to stop is tricky for now
-        if self._last_run+4 == scheduler.run_number():
-            m.scheduler().stop()
-        else:
-            self._last_run = scheduler.run_number()
-
-
-@skip("Weird bug to fix")
 class TestScatterPlot(ProgressiveTest):
     def tearDown(self):
         TestScatterPlot.cleanup()
@@ -73,10 +54,9 @@ class TestScatterPlot(ProgressiveTest):
             cnt.input.df = csv.output.table
             prt = Print(proc=self.terse, scheduler=s)
             prt.input.df = sp.output.table
-        csv.scheduler().start(idle_proc=idle_proc)
-        s.join()
+        aio.run(csv.scheduler().start(idle_proc=idle_proc))
         self.assertEqual(len(csv.table()), 30000)
-
+                
     def test_scatterplot2(self):
         s = self.scheduler(clean=True)
         with s:
@@ -89,11 +69,10 @@ class TestScatterPlot(ProgressiveTest):
             cnt.input.df = random.output.table
             prt = Print(proc=self.terse, scheduler=s)
             prt.input.df = sp.output.table
-            decorate(s, VariablePatch1("variable_1"))
-            decorate(s, VariablePatch2("variable_2"))
-            decorate(s, ScatterPlotPatch("mc_scatter_plot_1"))
-        sp.scheduler().start(idle_proc=idle_proc)
-        s.join()
+        finp1 = fake_input(s,"variable_1", 6, {'_1': LOWER_X, '_2': LOWER_Y})
+        finp2 = fake_input(s, "variable_2", 6, {'_1': UPPER_X, '_2': UPPER_Y})
+        sts = sleep_then_stop(s, 15)
+        aio.run(sp.scheduler().start(coros=[finp1, finp2, sts]))
         js = sp.to_json()
         x, y, _ = zip(*js['sample']['data'])
         min_x = min(x)

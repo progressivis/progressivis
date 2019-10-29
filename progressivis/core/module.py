@@ -155,6 +155,7 @@ class Module(six.with_metaclass(ModuleMeta, object)):
         self.wait_expr = aio.FIRST_COMPLETED
         self.steering_evt = None
         self.blocked_evt = None
+        self.not_ready_evt = None        
         # callbacks
         self._start_run = None
         self._end_run = None
@@ -366,6 +367,9 @@ class Module(six.with_metaclass(ModuleMeta, object)):
         if self.steering_evt is None:
             self.steering_evt = aio.Event()
         self.steering_evt.set()
+        if self.not_ready_evt is None:
+            self.not_ready_evt = aio.Event()
+        #self.not_ready_evt.set()
         self.init_aio_events()
         my_cnt = 0
         while True:
@@ -811,7 +815,7 @@ class Module(six.with_metaclass(ModuleMeta, object)):
     def is_running(self):
         return self._state == Module.state_running
 
-    def is_ready(self):
+    def _is_ready(self):
         # Module is either a source or has buffered data to process
         if self.state == Module.state_ready:
             return True
@@ -874,6 +878,14 @@ class Module(six.with_metaclass(ModuleMeta, object)):
         logger.error("%s Not ready because is in weird state %s",
                      self.name, self.state_name[self.state])
         return False
+
+    def is_ready(self):
+        ready_ = self._is_ready()
+        if ready_:
+            self.not_ready_evt.clear()
+        else:
+            self.not_ready_evt.set()
+        return ready_
 
     def cleanup_run(self, run_number):
         """Perform operations such as switching state from zombie to terminated.

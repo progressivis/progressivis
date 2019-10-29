@@ -5,7 +5,7 @@ from progressivis import Print, Scheduler, ProgressiveError
 from progressivis.io import CSVLoader
 from progressivis.stats import Min
 from progressivis.datasets import get_dataset
-
+import asyncio as aio
 
 class TestScheduler(ProgressiveTest):
 
@@ -18,11 +18,11 @@ class TestScheduler(ProgressiveTest):
                         index_col=False, header=None,
                         scheduler=s)
         self.assertIs(s["csv"], csv)
-        s.start()
+        t = aio.run(aio.create_task(s.start()))
 
         # sleep(1)
         self.assertTrue(csv.scheduler().is_running())
-
+        aio.gather({t})
         def add_min():
             with s:
                 m = Min(scheduler=s)

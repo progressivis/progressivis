@@ -75,7 +75,7 @@ class BaseScheduler(object):
         self._start_inter = 0
         self._inter_cycles_cnt = 0
         self._interaction_opts = None
-        self._hibernate_cond = aio.Condition()
+        self._hibernate_cond = None #aio.Condition()
         self._keep_running = KEEP_RUNNING
         self.dataflow = Dataflow(self)
         self.module_iterator = None
@@ -308,7 +308,9 @@ class BaseScheduler(object):
         #import pdb;pdb.set_trace()
         #sl = Sentinel(scheduler=self)        
         if self._run_number_lock is None:
-            self._run_number_lock = aio.Lock()      
+            self._run_number_lock = aio.Lock()
+        if self._hibernate_cond is None:
+            self._hibernate_cond = aio.Condition()
         if self.dataflow:
             assert self._enter_cnt == 1
             self._commit(self.dataflow)
@@ -476,9 +478,8 @@ class BaseScheduler(object):
         print("IDLE PROC RUNNER")
         _ct = aio.create_task        
         while True:
-            aws = [_ct(m.blocked_evt.wait()) for m in self._run_list]
+            aws = [_ct(m.not_ready_evt.wait()) for m in self._run_list if not m.is_terminated()]
             await aio.wait(aws, return_when=aio.ALL_COMPLETED)
-            print("ALL BLOCKED")
             has_run = False
             for proc in self._idle_procs:
                 # pylint: disable=broad-except
