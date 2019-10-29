@@ -287,9 +287,9 @@ class Dataflow(object):
         col = []
         data = []
         for (vertex1, vertices) in dependencies.items():
-            for vertex2 in vertices:
+            for vertex2 in vertices.values():
                 col.append(index[vertex1])
-                row.append(index[vertex2])
+                row.append(index[vertex2.output_module.name])
                 data.append(1)
         return csr_matrix((data, (row, col)), shape=(size, size))
 
@@ -299,6 +299,7 @@ class Dataflow(object):
         input_modules = self.get_inputs()
         k = list(dependencies.keys())
         index = dict(zip(k, range(len(k))))
+        print(index)
         graph = self._dependency_csgraph(dependencies, index)
         self.reachability = {}
         reachability = {inp: set(breadth_first_order(graph,
@@ -314,6 +315,7 @@ class Dataflow(object):
                 inp_reachability = reachability[inp]
                 if vis_index in inp_reachability:
                     inter = vis_reachability.intersection(inp_reachability)
+                    inter = {k[i] for i in inter}
                     if inp in self.reachability:
                         self.reachability[inp].update(inter)
                     else:
