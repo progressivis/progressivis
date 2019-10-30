@@ -40,8 +40,8 @@ class FilterMod(TableModule):
         if input_slot.updated.any():
             updated = input_slot.updated.next(step_size)
             steps += indices_len(updated)
-        with input_slot.lock:
-            input_table = input_slot.data()
+        #with input_slot.lock:
+        input_table = input_slot.data()
         # p = self.params
         if not self._impl.is_started:
             self._table = TableSelectedView(input_table, bitmap([]))

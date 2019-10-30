@@ -83,7 +83,8 @@ class IdxMin(TableModule):
                 elif np.isnan(min_[col]) or val < min_[col]:
                     op[col] = prev_idx[col]
                     min_[col] = val
-            with self.lock:
+            #with self.lock:
+            if True:
                 self._table.append(op, indices=[run_number])
                 self._min.append(min_, indices=[run_number])
                 if len(self._table) > self.params.history:

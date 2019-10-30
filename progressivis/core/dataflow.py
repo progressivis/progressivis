@@ -7,7 +7,6 @@ from __future__ import absolute_import, division, print_function
 import logging
 
 from uuid import uuid4
-import six
 from scipy.sparse import csr_matrix
 from scipy.sparse.csgraph import breadth_first_order
 
@@ -115,7 +114,7 @@ class Dataflow(object):
 
     def remove_module(self, module):
         "Remove the specified module"
-        if isinstance(module, six.string_types):
+        if isinstance(module, str):
             module = self._modules[module]
         if not hasattr(module, 'name'):
             return  # module is not fully created

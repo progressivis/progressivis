@@ -68,22 +68,22 @@ class Histogram2D(TableModule):
 
     def get_bounds(self, min_slot, max_slot):
         min_slot.created.next()
-        with min_slot.lock:
-            min_df = min_slot.data()
-            if min_df is None or len(min_df) == 0: # and self._bounds is None:
-                return None
-            min_ = min_df.last()
-            xmin = min_[self.x_column]
-            ymin = min_[self.y_column]
+        #with min_slot.lock:
+        min_df = min_slot.data()
+        if min_df is None or len(min_df) == 0: # and self._bounds is None:
+            return None
+        min_ = min_df.last()
+        xmin = min_[self.x_column]
+        ymin = min_[self.y_column]
 
         max_slot.created.next()
-        with max_slot.lock:
-            max_df = max_slot.data()
-            if max_df is None or len(max_df) == 0: # and self._bounds is None:
-                return None
-            max_ = max_df.last()
-            xmax = max_[self.x_column]
-            ymax = max_[self.y_column]
+        #with max_slot.lock:
+        max_df = max_slot.data()
+        if max_df is None or len(max_df) == 0: # and self._bounds is None:
+            return None
+        max_ = max_df.last()
+        xmax = max_[self.x_column]
+        ymax = max_[self.y_column]
 
         if xmax < xmin:
             xmax, xmin = xmin, xmax
@@ -218,15 +218,15 @@ class Histogram2D(TableModule):
                   'ymax': ymax,
                   'time': run_number}
         if self._with_output:
-            with self.lock:
-                table = self._table
-                table['array'].set_shape([p.ybins, p.xbins])
-                l = len(table)
-                last = table.last()
-                if l == 0 or last['time'] != run_number:
-                    table.add(values)
-                else:
-                    table.iloc[last.row] = values
+            #with self.lock:
+            table = self._table
+            table['array'].set_shape([p.ybins, p.xbins])
+            l = len(table)
+            last = table.last()
+            if l == 0 or last['time'] != run_number:
+                table.add(values)
+            else:
+                table.iloc[last.row] = values
         self.build_heatmap(values)
         return self._return_run_step(self.next_state(dfslot), steps_run=steps)
 
@@ -237,19 +237,19 @@ class Histogram2D(TableModule):
         json_ = {'columns': [self.x_column, self.y_column],
                  'xbins': p.xbins,
                  'ybins': p.ybins}
-        with self.lock:
-            row = values
-            if not (np.isnan(row['xmin']) or np.isnan(row['xmax'])
-                    or np.isnan(row['ymin']) or np.isnan(row['ymax'])):
-                json_['bounds'] = {
-                    'xmin': row['xmin'],
-                    'ymin': row['ymin'],
-                    'xmax': row['xmax'],
-                    'ymax': row['ymax']
-                }
-                data = sp.special.cbrt(row['array'])
-                json_['image'] = bytescale(data)
-                self._heatmap_cache = json_
+        #with self.lock:
+        row = values
+        if not (np.isnan(row['xmin']) or np.isnan(row['xmax'])
+                or np.isnan(row['ymin']) or np.isnan(row['ymax'])):
+            json_['bounds'] = {
+                'xmin': row['xmin'],
+                'ymin': row['ymin'],
+                'xmax': row['xmax'],
+                'ymax': row['ymax']
+            }
+            data = sp.special.cbrt(row['array'])
+            json_['image'] = bytescale(data)
+            self._heatmap_cache = json_
 
     def heatmap_to_json(self, json, short=False):
         if self._heatmap_cache:

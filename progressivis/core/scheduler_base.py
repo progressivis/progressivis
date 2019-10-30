@@ -7,13 +7,11 @@ import logging
 import functools
 from collections import Iterable
 from timeit import default_timer
-import six
 import asyncio as aio
 
 from .dataflow import Dataflow
 from progressivis.utils.synchronized import synchronized
 from progressivis.utils.errors import ProgressiveError
-from progressivis.utils.threading import FakeLock
 #from .sentinel import Sentinel
 
 logger = logging.getLogger(__name__)
@@ -46,11 +44,11 @@ class BaseScheduler(object):
             raise ProgressiveError('Invalid interaction_latency, '
                                    'should be strictly positive: %s'
                                    % interaction_latency)
-        self._lock = self.create_lock()
+
         # same as clear below
-        with self.lock:
-            BaseScheduler._last_id += 1
-            self._name = BaseScheduler._last_id
+        #with self.lock:
+        BaseScheduler._last_id += 1
+        self._name = BaseScheduler._last_id
         self._modules = {}
         self._dependencies = None
         self._running = False
@@ -59,6 +57,7 @@ class BaseScheduler(object):
         self._new_modules = None
         self._new_dependencies = None
         self._new_runorder = None
+        self._new_reachability = None        
         self._start = None
         self._run_number = 0
         self._run_number_lock = None #asyncio.Lock()      
@@ -139,11 +138,6 @@ class BaseScheduler(object):
             else:
                 self._inter_cycles_cnt += 1
 
-    def create_lock(self):
-        "Create a lock, fake in this class, real in the derived Scheduler"
-        # pylint: disable=no-self-use
-        return FakeLock()
-
     async def new_run_number(self):
         async with self._run_number_lock:
             #ret  = self._run_number
@@ -199,9 +193,9 @@ class BaseScheduler(object):
         "Return a dictionary describing the scheduler"
         msg = {}
         mods = {}
-        with self.lock:
-            for (name, module) in six.iteritems(self.modules()):
-                mods[name] = module.to_json(short=short)
+        #with self.lock:
+        for (name, module) in self.modules().items():
+            mods[name] = module.to_json(short=short)
         mods = mods.values()
         modules = sorted(mods, key=functools.cmp_to_key(self._module_order))
         msg['modules'] = modules
@@ -320,7 +314,6 @@ class BaseScheduler(object):
         self._running = True
         self._start = default_timer()
         self._before_run()
-        self.module_iterator = self._next_module()
         if self._new_modules:
             self._update_modules()
         # actually, the order in self._run_list is not important anymore
@@ -329,10 +322,6 @@ class BaseScheduler(object):
             runners.append(aio.create_task(self.idle_proc_runner()))
         runners.extend([aio.create_task(coro) for coro in self.coros])
         self.runners = [m.name for m in self._run_list]
-        #runners.append(aio.create_task(sl.module_task()))
-        #first_m = next(self.module_iterator)
-        #first_m.steering_evt = aio.Event()
-        #first_m.steering_evt.set()
         await aio.gather(*runners)
         modules = [self._modules[m] for m in self._runorder]
         for module in reversed(modules):
@@ -342,47 +331,6 @@ class BaseScheduler(object):
         self._after_run()
         self.done()
 
-    def _next_module(self):
-        """
-        Generator the yields a possibly infinite sequence of modules.
-        Handles order recomputation and starting logic if needed.
-        """
-        self._run_index = 0
-        first_run = self._run_number
-        input_mode = self.has_input()
-        self._start_inter = 0
-        self._inter_cycles_cnt = 0
-        while not self._stopped:
-            # Apply changes in the dataflow
-            if self._new_modules:
-                self._update_modules()
-                self._run_index = 0
-                first_run = self._run_number
-            # If run_list empty, we're done
-            if not self._run_list:
-                break
-            # Check for interactive input mode
-            if input_mode != self.has_input():
-                if input_mode: # end input mode
-                    logger.info('Ending interactive mode after %s s',
-                                default_timer()-self._start_inter)
-                    self._start_inter = 0
-                    self._inter_cycles_cnt = 0
-                    input_mode = False
-                else:
-                    self._start_inter = default_timer()
-                    logger.info('Starting interactive mode at %s',
-                                self._start_inter)
-                    input_mode = True
-                # Restart from beginning
-                self._run_index = 0
-                first_run = self._run_number
-            module = self._run_list[self._run_index]
-            self._run_index += 1  # allow it to be reset
-            yield module
-            if self._run_index >= len(self._run_list):  # end of modules
-                self._end_of_modules(first_run)
-                first_run = self._run_number
 
     def all_blocked(self):
         "Return True if all the modules are blocked, False otherwise"
@@ -411,6 +359,8 @@ class BaseScheduler(object):
         self._new_runorder = dataflow.order_modules()  # raises if invalid
         self._new_modules = dataflow.modules()
         self._new_dependencies = dataflow.inputs
+        dataflow._compute_reachability(self._new_dependencies)
+        self._new_reachability = dataflow.reachability
         self.dataflow.committed()
         self.version += 1  # only increment if valid
         # The slots in the module,_modules, and _runorder will be updated
@@ -435,44 +385,26 @@ class BaseScheduler(object):
             logger.info("Scheduler updated with no new module(s)")
         self._dependencies = self._new_dependencies
         self._new_dependencies = None
+        self._reachability = self._new_reachability
+        self._new_reachability = None
         logger.info("New dependencies: %s", self._dependencies)
-        for mid, slots in six.iteritems(self._dependencies):
+        for mid, slots in self._dependencies.items():
             modules[mid].reconnect(slots)
         if added:
             logger.info("Scheduler adding modules %s", added)
             for mid in added:
                 modules[mid].starting()
         self._new_modules = None
-        with self.lock:
-            self._run_list = []
-            self._runorder = self._new_runorder            
-            self._new_runorder = None
-            logger.info("New modules order: %s", self._runorder)
-            for i, mid in enumerate(self._runorder):
-                module = self._modules[mid]
-                self._run_list.append(module)
-                module.order = i
+        #with self.lock:
+        self._run_list = []
+        self._runorder = self._new_runorder            
+        self._new_runorder = None
+        logger.info("New modules order: %s", self._runorder)
+        for i, mid in enumerate(self._runorder):
+            module = self._modules[mid]
+            self._run_list.append(module)
+            module.order = i
 
-    def _end_of_modules(self, first_run):
-        # Reset interaction mode
-        self._proc_interaction_opts()
-        self._selection_target_time = -1
-        new_list = [m for m in self._run_list if not m.is_terminated()]
-        self._run_list = new_list
-        if first_run == self._run_number:  # no module ready
-            has_run = False
-            for proc in self._idle_procs:
-                # pylint: disable=broad-except
-                try:
-                    logger.debug('Running idle proc')
-                    proc(self, self._run_number)
-                    has_run = True
-                except Exception as exc:
-                    logger.error(exc)
-            if not has_run:
-                logger.info('sleeping %f', 0.2)
-                time.sleep(0.2)
-        self._run_index = 0
 
     async def idle_proc_runner(self):
         print("IDLE PROC RUNNER")
@@ -574,9 +506,10 @@ class BaseScheduler(object):
         async with self._hibernate_cond:
             self._keep_running = KEEP_RUNNING
             self._hibernate_cond.notify()
+        #import pdb;pdb.set_trace()
         # FIXME for now, add all the modules
-        # sel = self._reachability[module.name]
-        sel = self._run_list  # FIXME once _reachability is computed
+        sel = self._reachability[module.name]
+        #sel = self._run_list  # FIXME once _reachability is computed
         if sel:
             if not self._module_selection:
                 logger.info('Starting input management')
@@ -587,7 +520,7 @@ class BaseScheduler(object):
                 self._module_selection.update(sel)
             logger.debug('Input selection for module: %s',
                          self._module_selection)
-            print('Input selection for module: %s' % self._module_selection)
+            print('Input selection for module %s : %s' % (module.name, self._module_selection))
         return self.run_number()+1
 
     def has_input(self):

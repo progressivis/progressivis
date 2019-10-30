@@ -127,7 +127,8 @@ class VECLoader(TableModule):
         self._table.resize(self._rows_read+creates)
         tmp = np.zeros(dims, dtype=np.float)
         i = self._rows_read
-        with self.lock:
+        #with self.lock:
+        if True:
             for row in dataset:
                 tmp[:] = 0
                 for (col, val) in six.iteritems(row):

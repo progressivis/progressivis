@@ -79,18 +79,18 @@ class IdxMax(TableModule):
                 elif np.isnan(max_[col]) or val > max_[col]:
                     op[col] = prev_idx[col]
                     max_[col] = val
-            with self.lock:
-                self._table.append(op, indices=[run_number])
-                self._max.append(max_, indices=[run_number])
-                if len(self._table) > self.params.history:
-                    data = self._table.loc[self._table.index[-self.params.history:]]
-                    self._table = Table(self.
-                                        generate_table_name('table'),
-                                        data=data,
-                                        create=True)
-                    data = self._max.loc[self._max.index[-self.params.history:]]
-                    self._max = Table(self.
-                                      generate_table_name('_max'),
-                                      data=data,
-                                      create=True)
+            #with self.lock:
+            self._table.append(op, indices=[run_number])
+            self._max.append(max_, indices=[run_number])
+            if len(self._table) > self.params.history:
+                data = self._table.loc[self._table.index[-self.params.history:]]
+                self._table = Table(self.
+                                    generate_table_name('table'),
+                                    data=data,
+                                    create=True)
+                data = self._max.loc[self._max.index[-self.params.history:]]
+                self._max = Table(self.
+                                  generate_table_name('_max'),
+                                  data=data,
+                                  create=True)
         return self._return_run_step(self.next_state(dfslot), steps_run=steps)

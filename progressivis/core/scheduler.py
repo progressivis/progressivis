@@ -4,7 +4,7 @@ from __future__ import absolute_import, division, print_function
 import logging
 from .scheduler_base import BaseScheduler
 from progressivis.utils.errors import ProgressiveError
-from progressivis.utils.threading import Thread, RLock
+
 
 logger = logging.getLogger(__name__)
 
@@ -20,14 +20,6 @@ class Scheduler(BaseScheduler):
         self.thread = None
         self.thread_name = "Progressive Scheduler"
 
-    def create_lock(self):
-        return RLock()
-
-    def join(self):
-        with self.lock:
-            if self.thread is None:
-                return
-        self.thread.join()
 
     @staticmethod
     def set_default():

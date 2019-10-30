@@ -8,7 +8,6 @@ import re
 import logging
 
 import numpy as np
-import six
 import asyncio as aio
 
 from progressivis.utils.errors import ProgressiveError, ProgressiveStopIteration
@@ -25,28 +24,9 @@ from .time_predictor import TimePredictor
 from .storagemanager import StorageManager
 from .scheduler_base import BaseScheduler
 
-if six.PY2:  # pragma no cover
-    from inspect import getargspec as getfullargspec
-else:  # pragma no cover
-    from inspect import getfullargspec
+from inspect import getfullargspec
 
 logger = logging.getLogger(__name__)
-
-
-
-
-class ModuleMeta(ABCMeta):
-    """Module metaclass is needed to collect the input parameter list
-    in the field ``all_parameters''.
-    """
-    def __init__(cls, name, bases, attrs):
-        if "parameters" not in attrs:
-            cls.parameters = []
-        all_props = list(cls.parameters)
-        for base in bases:
-            all_props += getattr(base, "all_parameters", [])
-        cls.all_parameters = all_props
-        super(ModuleMeta, cls).__init__(name, bases, attrs)
 
 # NB: AllAny and AnyAll are simply two "named lists"
 class AllAny:
@@ -67,8 +47,22 @@ class Prisoner:
         return "[{}:{}]".format(self.module.name, self.penalty)
     def __repr__(self):
         return  self.__str__()
-@six.python_2_unicode_compatible
-class Module(six.with_metaclass(ModuleMeta, object)):
+
+class ModuleMeta(ABCMeta):
+    """Module metaclass is needed to collect the input parameter list
+    in the field ``all_parameters''.
+    """
+    def __init__(cls, name, bases, attrs):
+        if "parameters" not in attrs:
+            cls.parameters = []
+        all_props = list(cls.parameters)
+        for base in bases:
+            all_props += getattr(base, "all_parameters", [])
+        cls.all_parameters = all_props
+        super(ModuleMeta, cls).__init__(name, bases, attrs)
+
+
+class Module(metaclass=ModuleMeta):
     """The Module class is the base class for all the progressive modules.
     """
     parameters = [('quantum', np.dtype(float), .5),
@@ -155,12 +149,13 @@ class Module(six.with_metaclass(ModuleMeta, object)):
         self.wait_expr = aio.FIRST_COMPLETED
         self.steering_evt = None
         self.blocked_evt = None
-        self.not_ready_evt = None        
+        self.not_ready_evt = None
+        self._ignore_inputs = False
         # callbacks
         self._start_run = None
         self._end_run = None
         self.my_cnt = 0
-        self._synchronized_lock = self.scheduler().create_lock()
+        #self._synchronized_lock = self.scheduler().create_lock()
         dataflow.add_module(self)
 
     def scheduler(self):
@@ -207,11 +202,6 @@ class Module(six.with_metaclass(ModuleMeta, object)):
         """
         return 0.0
 
-    def old_tell_consumers(self):
-        for slot in self._consumers:
-            if slot._event is None:
-                slot._event = aio.Event()
-            slot._event.set() # cleared in next_state()
     def tell_consumers(self, out_name=None):
         #print(self.name, " CALLS tell_consumers")
         if out_name is None:
@@ -251,7 +241,7 @@ class Module(six.with_metaclass(ModuleMeta, object)):
                 if aws:
                     all_aws.add(aio.wait(set(aws), return_when=aio.FIRST_COMPLETED))
             if all_aws:
-                aio.wait(all_aws, return_when=aio.ALL_COMPLETED)
+                await aio.wait(all_aws, return_when=aio.ALL_COMPLETED)
         elif isinstance(self.wait_expr, AnyAll): # any([all(), all(), ...]                
             all_aws = set()
             for names in self.wait_expr._impl:
@@ -259,7 +249,7 @@ class Module(six.with_metaclass(ModuleMeta, object)):
                 if aws:
                     all_aws.add(aio.wait(set(aws), return_when=aio.FIRST_COMPLETED))
             if all_aws:
-                aio.wait(all_aws, return_when=aio.ALL_COMPLETED)
+                await aio.wait(all_aws, return_when=aio.ALL_COMPLETED)
         else:
             raise ValueError("Unconsistent wait expression {}".format(self.wait_expr))
 
@@ -283,53 +273,6 @@ class Module(six.with_metaclass(ModuleMeta, object)):
                 return True
             return False # TODO: consider all cases ...
 
-    def schedule_next(self):
-        self.steering_evt.clear()
-        try:
-            nxmod = next(self.scheduler().module_iterator)
-            while nxmod.is_terminated():
-                nxmod = next(self.scheduler().module_iterator)
-            if nxmod.steering_evt is None:
-                nxmod.steering_evt = aio.Event()
-            nxmod.steering_evt.set()
-            nxmod.scheduler().prev_scheduled = self
-            nxmod.scheduler().next_to_run = nxmod
-            print("Next is {}".format(nxmod))
-            return True
-        except StopIteration:
-            print("StopIteration!!!!!!!!!!!!!!!!!!!!!")
-            return False
-        
-
-        
-    async def seq_module_task(self, idx=0):
-        if self.steering_evt is None:
-            self.steering_evt = aio.Event()
-        print("task {} launched".format(self.name))
-        self.init_aio_events()
-        while True:
-            #print("Module {} scheduled".format(self.name))
-            ready = self.is_ready()
-            if self.is_terminated():
-                self.tell_consumers()
-                self.scheduler().runners.remove(self.name)
-                self.schedule_next()
-                break
-            try:
-                await aio.wait_for(aio.create_task(self.steering_evt.wait()), timeout=0.1)
-            except aio.TimeoutError:
-                print("Timeout on {}".format(self.name))
-            self.schedule_next()
-            if not ready:
-                print("not ready {}, {}".format(self.name, self.state))
-                continue # zombie
-            #await self.wait_for_slots()
-            rn = await self._scheduler.new_run_number()
-            await self.run(rn)
-            print("END running {} : {}".format(self.name, rn))
-            await aio.sleep(0)
-        print("task {} TER_MINATED".format(self.name))
-
     def confine(self, p=None):
         if p is None:
             p = max(1, len(self.scheduler().runners))
@@ -350,13 +293,6 @@ class Module(six.with_metaclass(ModuleMeta, object)):
             p.module.steering_evt.set()
         self.scheduler().jail = set()
 
-    def release_previous(self):
-        if self.scheduler().prisoner is not None:
-            self.scheduler().prisoner.steering_evt.set()
-            #print("PRISONER", self.scheduler().prisoner, "RELEASED BY", self)
-        #if evt is not None:
-        #    evt.set()
-
     async def module_task(self, idx=0):
         def _echo(*args):
             pass #print(*args)
@@ -373,7 +309,7 @@ class Module(six.with_metaclass(ModuleMeta, object)):
         self.init_aio_events()
         my_cnt = 0
         while True:
-            echo(self.name, "IS WAITING FOR", self.steering_evt, my_cnt)
+            print(self.name, "IS WAITING FOR", self.steering_evt.is_set(), my_cnt)
             try:
                 await aio.wait_for(aio.create_task(self.steering_evt.wait()), timeout=0.1)
             except aio.TimeoutError:
@@ -384,14 +320,8 @@ class Module(six.with_metaclass(ModuleMeta, object)):
             if self.scheduler()._stopped:
                 self.tell_consumers()
                 break                
-            echo("Module {} scheduled {}".format(self.name, my_cnt))
+            print("Module {} scheduled {}".format(self.name, my_cnt))
             my_cnt += 1
-
-            #self.schedule_next()
-            #if self.name.startswith("min"):
-            #    import pdb;pdb.set_trace()
-            #if self.name in["range_query_1", "min_1", "max_1"]:
-            #    import pdb;pdb.set_trace()
             ready = self.is_ready()
             if self.is_terminated():
                 self.tell_consumers()
@@ -401,24 +331,23 @@ class Module(six.with_metaclass(ModuleMeta, object)):
                 break
             #t = aio.all_tasks()
             #_echo("ACTIVE: ", len(t), t)
-            if not ready:
-                echo("NOT READY {}, {}, {}".format(self.name, self.state, my_cnt))
-                #if not self.schedule_next():
-                #    break
+            if not (ready or self.has_input()): # or self.scheduler().has_input()):
+                print("NOT READY {}, {}, {}".format(self.name, self.state, my_cnt))
                 _echo("Module {} ZOMBIFIED ({})".format(self.name, self.state))
                 _echo("CONTINUE Zombie", self)
                 if len(self.scheduler().runners)>1:
                     #self.shorten()
                     self.confine()
-                else:
-                    assert self.name in self.scheduler().runners
+                #else:
+                #    assert self.name in self.scheduler().runners
                 continue # zombie
             _echo("Module {} is READY  ({})".format(self.name, self.state))
-            #print("Module {} is waiting for slots".format(self.name))
-            await self.wait_for_slots()
-            #print("{} module stops waiting for slots".format(self.name))
+            print("Module {} is waiting for slots".format(self.name))
+            if self.has_any_input():
+                await self.wait_for_slots()
+            print("{} module stops waiting for slots".format(self.name))
             rn = await self._scheduler.new_run_number()
-            echo("running {} : {}".format(self.name, rn))
+            print("running {} : {}".format(self.name, rn))
             #import pdb;pdb.set_trace()
             await self.run(rn)
             _echo("END running {} : {}".format(self.name, rn))
@@ -449,7 +378,7 @@ class Module(six.with_metaclass(ModuleMeta, object)):
         argspec = getfullargspec(function_or_method)
         keys_ = argspec.args[len(argspec.args)-(0 if argspec.defaults is None
                                                 else len(argspec.defaults)):]
-        filtered_kwds = {k: kwds[k] for k in six.viewkeys(kwds) & keys_}
+        filtered_kwds = {k: kwds[k] for k in kwds.keys() & keys_}
         return filtered_kwds
 
     @staticmethod
@@ -485,7 +414,7 @@ class Module(six.with_metaclass(ModuleMeta, object)):
         self.params.debug = bool(value)
 
     @property
-    def lock(self):
+    def old_lock(self):
         """
         Return a recursive lock usable to lock the access and
         change of attributes.
@@ -534,17 +463,17 @@ class Module(six.with_metaclass(ModuleMeta, object)):
         if short:
             return json
 
-        with self.lock:
-            json.update({
-                'start_time': self._start_time,
-                'end_time': self._end_time,
-                'input_slots': {k: _slot_to_json(s) for (k, s) in
-                                six.iteritems(self._input_slots)},
-                'output_slots': {k: _slot_to_json(s) for (k, s) in
-                                 six.iteritems(self._output_slots)},
-                'default_step_size': self.default_step_size,
-                'parameters': self.current_params().to_json()
-            })
+        #with self.lock:
+        json.update({
+            'start_time': self._start_time,
+            'end_time': self._end_time,
+            'input_slots': {k: _slot_to_json(s) for (k, s) in
+                            self._input_slots.items()},
+            'output_slots': {k: _slot_to_json(s) for (k, s) in
+                             self._output_slots.items()},
+            'default_step_size': self.default_step_size,
+            'parameters': self.current_params().to_json()
+        })
         return json
 
     def from_input(self, msg):
@@ -592,7 +521,7 @@ class Module(six.with_metaclass(ModuleMeta, object)):
         return pretty
 
     def __str__(self):
-        return six.u('Module %s: %s' % (self.__class__.__name__, self.name))
+        return 'Module %s: %s' % (self.__class__.__name__, self.name)
 
     def __repr__(self):
         return str(self)
@@ -617,7 +546,7 @@ class Module(six.with_metaclass(ModuleMeta, object)):
 
     def has_any_input(self):
         "Return True if the module has any input"
-        return any(self._input_slots.values())
+        return any(self._input_slots.values()) and not self._ignore_inputs
 
     def get_input_slot(self, name):
         "Return the specified input slot"
@@ -992,12 +921,24 @@ class Module(six.with_metaclass(ModuleMeta, object)):
         return self._params.last()
 
     def set_current_params(self, v):
-        with self.lock:
-            current = self.current_params()
-            combined = dict(current)
-            combined.update(v)
-            self._params.add(combined)
+        #with self.lock:
+        current = self.current_params()
+        combined = dict(current)
+        combined.update(v)
+        self._params.add(combined)
         return v
+    
+    def has_input(self):
+        return False
+    
+    def me_first(self):
+        #import pdb;pdb.set_trace()
+        for module in self.scheduler()._run_list:
+            if module == self:
+                module.steering_evt.set()
+            elif not module.is_input():
+                module.steering_evt.clear()
+        print("me_first", [(m.name, m.steering_evt.is_set()) for m in self.scheduler()._run_list])
 
     async def run(self, run_number):
         #print("RUN METHOD {}: {}".format(self.name, run_number))
@@ -1023,7 +964,7 @@ class Module(six.with_metaclass(ModuleMeta, object)):
         run_step_ret = {}
         self.start_run(run_number)
         tracer.start_run(now, run_number)
-        print("RUN {} START {} END {}".format(self.name,self._start_time, self._end_time))
+        print(f"RUN {self.name} N: {run_number} START {self._start_time} END {self._end_time}")
         while self._start_time < self._end_time:
             remaining_time = self._end_time-self._start_time
             if remaining_time <= 0:
@@ -1119,7 +1060,7 @@ class InputSlots(object):
         raise ProgressiveError('Input slots cannot be read, only assigned to')
 
     def __setitem__(self, name, slot):
-        if isinstance(name, six.string_types):
+        if isinstance(name, str):
             return self.__setattr__(name, slot)
         name, meta = name
         slot.meta = meta
@@ -1174,8 +1115,8 @@ class Every(Module):
         slot = self.get_input_slot('df')
         df = slot.data()
         if df is not None:
-            with slot.lock:
-                self._proc(df)
+            #with slot.lock:
+            self._proc(df)
         return self._return_run_step(Module.state_blocked, steps_run=1)
 
 

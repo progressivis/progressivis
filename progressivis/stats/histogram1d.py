@@ -108,25 +108,25 @@ class Histogram1D(TableModule):
         elif histo is not None:
             self._histo += histo
         values = {'array': [self._histo], 'min': [curr_min], 'max': [curr_max], 'time': [run_number]}
-        with self.lock:
-            self._table['array'].set_shape((self.params.bins,))
-            self._table.append(values)
+        #with self.lock:
+        self._table['array'].set_shape((self.params.bins,))
+        self._table.append(values)
         return self._return_run_step(self.next_state(dfslot), steps_run=steps)
   
     def get_bounds(self, min_slot, max_slot):
         min_slot.created.next()
-        with min_slot.lock:
-            min_df = min_slot.data()
-            if len(min_df) == 0 and self._bounds is None:
-                return None
-            min_ = min_df.last(self.column)
+        #with min_slot.lock:
+        min_df = min_slot.data()
+        if len(min_df) == 0 and self._bounds is None:
+            return None
+        min_ = min_df.last(self.column)
   
         max_slot.created.next() 
-        with max_slot.lock:
-            max_df = max_slot.data()
-            if len(max_df) == 0 and self._bounds is None:
-                return None
-            max_ = max_df.last(self.column)
+        #with max_slot.lock:
+        max_df = max_slot.data()
+        if len(max_df) == 0 and self._bounds is None:
+            return None
+        max_ = max_df.last(self.column)
   
         return (min_, max_)
 

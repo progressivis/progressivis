@@ -74,9 +74,9 @@ class Percentiles(TableModule):
         if steps == 0:
             return self._return_run_step(self.state_blocked, steps_run=steps)
         input_df = dfslot.data()
-        with dfslot.lock:
-            x = self.filter_columns(input_df, fix_loc(indices))
-            self.tdigest.batch_update(x[0])
+        #with dfslot.lock:
+        x = self.filter_columns(input_df, fix_loc(indices))
+        self.tdigest.batch_update(x[0])
         df = self._table
         values = {}
         for n, p in zip(self._pername, self._percentiles):

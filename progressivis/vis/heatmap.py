@@ -62,8 +62,8 @@ class Heatmap(TableModule):
             steps = indices_len(indices)
             if steps == 0:
                 return self._return_run_step(self.state_blocked, steps_run=1)
-        with dfslot.lock:
-            histo = input_df.last()['array']
+        #with dfslot.lock:
+        histo = input_df.last()['array']
         if histo is None:
             return self._return_run_step(self.state_blocked, steps_run=1)
         params = self.params
@@ -118,8 +118,8 @@ class Heatmap(TableModule):
 
         if len(self._table) == 0 or self._table.last()['time'] != run_number:
             values = {'filename': filename, 'time': run_number}
-            with self.lock:
-                self._table.add(values)
+            #with self.lock:
+            self._table.add(values)
         return self._return_run_step(self.state_blocked, steps_run=1)
 
     def is_visualization(self):
@@ -138,24 +138,24 @@ class Heatmap(TableModule):
         dfslot = self.get_input_slot('array')
         histo = dfslot.output_module
         json['columns'] = [histo.x_column, histo.y_column]
-        with dfslot.lock:
-            histo_df = dfslot.data()
-            if histo_df is not None and len(histo_df) != 0:
-                row = histo_df.last()
-                if not (np.isnan(row['xmin']) or np.isnan(row['xmax'])
-                        or np.isnan(row['ymin']) or np.isnan(row['ymax'])):
-                    json['bounds'] = {
-                        'xmin': row['xmin'],
-                        'ymin': row['ymin'],
-                        'xmax': row['xmax'],
-                        'ymax': row['ymax']
-                    }
-        with self.lock:
-            df = self._table
-            if df is not None and self._last_update != 0:
-                row = df.last()
-                json['image'] = row['filename']
-                #"/progressivis/module/image/%s?run_number=%d"%(self.name, row['time'])
+        #with dfslot.lock:
+        histo_df = dfslot.data()
+        if histo_df is not None and len(histo_df) != 0:
+            row = histo_df.last()
+            if not (np.isnan(row['xmin']) or np.isnan(row['xmax'])
+                    or np.isnan(row['ymin']) or np.isnan(row['ymax'])):
+                json['bounds'] = {
+                    'xmin': row['xmin'],
+                    'ymin': row['ymin'],
+                    'xmax': row['xmax'],
+                    'ymax': row['ymax']
+                }
+        #with self.lock:
+        df = self._table
+        if df is not None and self._last_update != 0:
+            row = df.last()
+            json['image'] = row['filename']
+            #"/progressivis/module/image/%s?run_number=%d"%(self.name, row['time'])
         return json
 
     def get_image(self, run_number=None):

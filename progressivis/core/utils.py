@@ -3,7 +3,6 @@ from __future__ import absolute_import, division, print_function
 import numpy as np
 import keyword
 import re
-import six
 from itertools import tee
 import uuid
 from functools import wraps
@@ -29,16 +28,7 @@ import tempfile
 import s3fs
 import stat as st
 
-if six.PY2:
-    range = xrange
-
-
-if six.PY2:
-    from itertools import izip
-    zip = izip
-    integer_types = (six.integer_types, np.integer)
-else:
-    integer_types = (int, np.integer)
+integer_types = (int, np.integer)
 
 
 def is_int(n):
@@ -46,7 +36,7 @@ def is_int(n):
 
 
 def is_str(s):
-    return isinstance(s, six.string_types)
+    return isinstance(s, str)
 
 
 def is_iterable(it):
@@ -88,7 +78,7 @@ def remove_nan(d):
             else:
                 remove_nan(v)
     elif isinstance(d, collections_abc.Mapping):
-        for k, v in six.iteritems(d):
+        for k, v in d.items():
             if isinstance(v, float) and np.isnan(v):
                 d[k] = None
             else:
@@ -119,7 +109,7 @@ def find_nan_etc(d):
             else:
                 find_nan_etc(v)
     elif isinstance(d, collections_abc.Mapping):
-        for k, v in six.iteritems(d):
+        for k, v in d.items():
             if isinstance(v, float) and np.isnan(v):
                 print('numpy nan at %s in: %s' % (k, d))
             elif isinstance(v, np.integer):
@@ -150,7 +140,7 @@ def remove_nan_etc(d):
             else:
                 d[i] = remove_nan_etc(v)
     elif isinstance(d, collections_abc.Mapping):
-        for k, v in six.iteritems(d):
+        for k, v in d.items():
             if isinstance(v, float) and np.isnan(v):
                 d[k] = None
             elif isinstance(v, np.integer):
@@ -361,7 +351,7 @@ def get_random_name(prefix):
 
 
 def all_string(it):
-    return all([isinstance(elt, six.string_types) for elt in it])
+    return all([isinstance(elt, str) for elt in it])
 
 
 def all_int(it):
@@ -516,10 +506,7 @@ class RandomBytesIO(object):
             raise ValueError("File {} already exists!".format(file_name))
         with open(file_name, 'wb') as fd:
             for row in self:
-                if six.PY3:
-                    fd.write(bytes(row, encoding='ascii'))
-                else:
-                    fd.write(row)
+                fd.write(bytes(row, encoding='ascii'))
 
     def __str__(self):
         return "<{} cols={}, rows={} bytes={}>".format(type(self), self._cols,
@@ -556,12 +543,9 @@ def del_tmp_csv_fifo(file_name):
     os.rmdir(dn)
 
 
-if six.PY3:
-    from urllib.parse import urlparse as parse_url
-    from urllib.parse import parse_qs
-else:
-    from urlparse import urlparse as parse_url
-    from urlparse import parse_qs
+
+from urllib.parse import urlparse as parse_url
+from urllib.parse import parse_qs
 
 
 def _is_buffer_url(url):
@@ -710,11 +694,11 @@ def force_valid_id_columns(df):
     i = 0
     for c in df.columns:
         i += 1
-        if not isinstance(c, six.string_types):
+        if not isinstance(c, str):
             c = str(c)
         c = fix_identifier(c)
         while c in uniq:
-            c += ('_'+six.u(i))
+            c += ('_' + str(i))
         columns.append(c)
     df.columns = columns
 
@@ -734,8 +718,8 @@ class Dialog(object):
         return self
 
     def set_output_table(self, res):
-        with self._module.lock:
-            self._module._table = res
+        #with self._module.lock:
+        self._module._table = res
         return self
 
     @property

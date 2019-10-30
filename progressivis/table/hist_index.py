@@ -382,9 +382,9 @@ class HistogramIndex(TableModule):
         input_slot = self.get_input_slot('table')
         input_slot.update(run_number)
         steps = 0
-        with input_slot.lock:
-            input_table = input_slot.data()
-            self._input_table = input_table
+        #with input_slot.lock:
+        input_table = input_slot.data()
+        self._input_table = input_table
 
         if len(input_table) < self.params.init_threshold:
             # there are not enough rows. it's not worth building an index yet
@@ -420,9 +420,9 @@ class HistogramIndex(TableModule):
             steps += len(updated)
         if steps == 0:
             return self._return_run_step(self.state_blocked, steps_run=0)
-        with input_slot.lock:
-            input_table = input_slot.data()
-            # self._table = input_table
+        #with input_slot.lock:
+        input_table = input_slot.data()
+        # self._table = input_table
         self._impl.update_histogram(created, updated, deleted)
         return self._return_run_step(
             self.next_state(input_slot), steps_run=steps)

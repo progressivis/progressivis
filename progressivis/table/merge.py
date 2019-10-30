@@ -61,8 +61,8 @@ class Merge(NAry):
         frames = []
         for name in self.get_input_slot_multiple():
             slot = self.get_input_slot(name)
-            with slot.lock:
-                df = slot.data()
+            #with slot.lock:
+            df = slot.data()
             frames.append(df)
         df = frames[0]
         for other in frames[1:]:

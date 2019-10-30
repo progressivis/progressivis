@@ -172,13 +172,13 @@ class Join(NAry):
         frames = []
         for name in self.get_input_slot_multiple():
             slot = self.get_input_slot(name)
-            with slot.lock:
-                table = slot.data()
+            #with slot.lock:
+            table = slot.data()
             frames.append(table)
         table = frames[0]
         for other in frames[1:]:
             table = join(table, other, **self.join_kwds)
         length = len(table)
-        with self.lock:
-            self._table = table
+        #with self.lock:
+        self._table = table
         return self._return_run_step(self.state_blocked, steps_run=length)

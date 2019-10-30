@@ -1,10 +1,9 @@
 from __future__ import absolute_import, division, print_function
 
-import six
 from abc import ABCMeta, abstractmethod
 
 
-class Tracer(six.with_metaclass(ABCMeta, object)):
+class Tracer(metaclass=ABCMeta):
     default = None
 
     @abstractmethod

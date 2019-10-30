@@ -45,8 +45,8 @@ class DummyMod(TableModule):
             return self._return_run_step(self.state_blocked, steps_run=0)
         created = input_slot.created.next(step_size)
         steps = indices_len(created)
-        with input_slot.lock:
-            input_table = input_slot.data()
+        #with input_slot.lock:
+        input_table = input_slot.data()
         # p = self.params
         if self._table is None:
             self._table = Table(self.generate_table_name('dummy'), dshape=input_table.dshape, )

@@ -2,6 +2,7 @@ from __future__ import absolute_import, division, print_function
 
 import six
 import logging
+import asyncio as aio
 logger = logging.getLogger(__name__)
 
 from progressivis import ProgressiveError, SlotDescriptor
@@ -11,6 +12,7 @@ from ..core.utils import all_string
 
 class Variable(Constant):
     def __init__(self, table=None, **kwds):
+        self._has_input = False
         self._add_slots(kwds,'input_descriptors',
                         [SlotDescriptor('like', type=Table, required=False)])
         super(Variable, self).__init__(table, **kwds)
@@ -18,13 +20,20 @@ class Variable(Constant):
     def is_input(self):
         return True
 
+    def has_input(self):
+        return self._has_input
     async def from_input(self, input_):
+        print("RECEIVED FROM INPUT")
         if not isinstance(input_,dict):
             raise ProgressiveError('Expecting a dictionary')
         if self._table is None and self.get_input_slot('like') is None:
             error = 'Variable %s with no initial value and no input slot'%self.name
             logger.error(error)
             return error
+        if self._table is None:
+            error = f'Variable {self.name} have to run once before receiving input'
+            logger.error(error)
+            return error            
         last = self._table.last()
         if last is None:
             last = {v: None for v in self._table.columns}
@@ -39,6 +48,9 @@ class Variable(Constant):
         _ = await self.scheduler().for_input(self)
         #last['_update'] = run_number
         self._table.add(last)
+        self._has_input = True
+        self.me_first()
+        await aio.sleep(0)
         return error
     
     async def run_step(self,run_number,step_size,howlong):
@@ -47,11 +59,18 @@ class Variable(Constant):
             if slot is not None:
                 like = slot.data()
                 if like is not None:
-                    with slot.lock:
-                        self._table = Table(self.generate_table_name('like'),
-                                            dshape=like.dshape,
-                                            create=True)
-                        self._table.append(like.last().to_dict(ordered=True), indices=[0])
+                    #with slot.lock:
+                    self._table = Table(self.generate_table_name('like'),
+                                        dshape=like.dshape,
+                                        create=True)
+                    self._table.append(like.last().to_dict(ordered=True), indices=[0])
+                    self._ignore_inputs = True
+        #else:
+        #    import pdb;pdb.set_trace()
+        #print("VARIABLE RUN STEP: ", self.has_input())
+        #if self._table:
+        #    print("LAST: ", self._table.last().to_dict())
+        self._has_input = False
         return self._return_run_step(self.state_blocked, steps_run=1)
         #raise StopIteration()
 

@@ -58,10 +58,10 @@ class BinJoin(TableModule):
             indices = second_slot.updated.next(step_size)
             steps += indices_len(indices)
             updated["other"] = indices
-        with first_slot.lock:
-            first_table = first_slot.data()
-        with second_slot.lock:
-            second_table = second_slot.data()
+        #with first_slot.lock:
+        first_table = first_slot.data()
+        #with second_slot.lock:
+        second_table = second_slot.data()
         if not self._dialog.is_started:
             join_start(first_table, second_table,
                        dialog=self._dialog,

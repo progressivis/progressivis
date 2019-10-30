@@ -173,21 +173,21 @@ class CSVLoader(TableModule):
                 fn_slot = self.get_input_slot('filenames')
                 if fn_slot is None or fn_slot.output_module is None:
                     return self.state_terminated
-                with fn_slot.lock:
-                    fn_slot.update(run_number)
-                    if fn_slot.deleted.any() or fn_slot.updated.any():
-                        raise ProgressiveError('Cannot handle input file changes')
-                    df = fn_slot.data()
-                    while self.parser is None:
-                        indices = fn_slot.created.next(1)
-                        if indices.stop==indices.start:
-                            return self.state_blocked
-                        filename = df.at[indices.start, 'filename']
-                        try:
-                            self.parser = await read_csv(await self.create_input_source(filename), **self.csv_kwds)
-                        except IOError as e:
-                            logger.error('Cannot open file %s: %s', filename, e)
-                            self.parser = None
+                #with fn_slot.lock:
+                fn_slot.update(run_number)
+                if fn_slot.deleted.any() or fn_slot.updated.any():
+                    raise ProgressiveError('Cannot handle input file changes')
+                df = fn_slot.data()
+                while self.parser is None:
+                    indices = fn_slot.created.next(1)
+                    if indices.stop==indices.start:
+                        return self.state_blocked
+                    filename = df.at[indices.start, 'filename']
+                    try:
+                        self.parser = await read_csv(await self.create_input_source(filename), **self.csv_kwds)
+                    except IOError as e:
+                        logger.error('Cannot open file %s: %s', filename, e)
+                        self.parser = None
                         # fall through
         return self.state_ready
 
@@ -214,10 +214,10 @@ class CSVLoader(TableModule):
         #print("Processed bytes: ", self.parser._prev_pos)
         needs_save = self._needs_save()
         try:
-            with self.lock:
-                df_list = await self.parser.read(step_size, flush=needs_save) # raises StopIteration at EOF
-                if not df_list:
-                    raise ProgressiveStopIteration
+            #with self.lock:
+            df_list = await self.parser.read(step_size, flush=needs_save) # raises StopIteration at EOF
+            if not df_list:
+                raise ProgressiveStopIteration
         except ProgressiveStopIteration:
             self.close()
             fn_slot = self.get_input_slot('filenames')
@@ -241,7 +241,8 @@ class CSVLoader(TableModule):
             if self.force_valid_ids:
                 for df in df_list:
                     force_valid_id_columns(df)
-            with self.lock:
+            #with self.lock:
+            if True:
                 if self._table is None:
                     if not self._recovery:
                         self._table_params['name'] = self.generate_table_name('table')

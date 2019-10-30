@@ -44,10 +44,10 @@ class Paste(TableModule):
         second_slot.created.next(step_size)
         first_slot.updated.next(step_size)
         second_slot.updated.next(step_size)
-        with first_slot.lock:
-            first_table = first_slot.data()
-        with second_slot.lock:
-            second_table = second_slot.data()
+        #with first_slot.lock:
+        first_table = first_slot.data()
+        #with second_slot.lock:
+        second_table = second_slot.data()
         if self._table is None:
             dshape, rename = dshape_join(first_table.dshape, second_table.dshape)
             self._table = Table(name=None, dshape=dshape)

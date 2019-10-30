@@ -52,7 +52,7 @@ class MCHistogram2D(NAry):
                             dshape=MCHistogram2D.schema,
                             chunks={'array': (1, 64, 64)},
                             create=True)
-        self._table._synchronized_lock = self.scheduler().create_lock()
+        #self._table._synchronized_lock = self.scheduler().create_lock()
 
     def reset(self):
         self._histo = None
@@ -101,24 +101,24 @@ class MCHistogram2D(NAry):
                 if min_slot.created.any():
                     has_creation = True
                 min_slot.created.next()
-                with min_slot.lock:
-                    min_df = min_slot.data()
-                    if len(min_df) > 0:
-                        min_ = min_df.last()
-                        xmin = min(xmin, min_[x_column])
-                        ymin = min(ymin, min_[y_column])
+                #with min_slot.lock:
+                min_df = min_slot.data()
+                if len(min_df) > 0:
+                    min_ = min_df.last()
+                    xmin = min(xmin, min_[x_column])
+                    ymin = min(ymin, min_[y_column])
             elif meta == 'max':
                 max_slot = input_slot
                 max_slot.update(run_number)
                 if max_slot.created.any():
                     has_creation = True
                 max_slot.created.next()
-                with max_slot.lock:
-                    max_df = max_slot.data()
-                    if len(max_df) > 0:
-                        max_ = max_df.last()
-                        xmax = max(xmax, max_[x_column])
-                        ymax = max(ymax, max_[y_column])
+                #with max_slot.lock:
+                max_df = max_slot.data()
+                if len(max_df) > 0:
+                    max_ = max_df.last()
+                    xmax = max(xmax, max_[x_column])
+                    ymax = max(ymax, max_[y_column])
         if xmax < xmin:
             xmax, xmin = xmin, xmax
             logger.warning('xmax < xmin, swapped')
@@ -235,15 +235,15 @@ class MCHistogram2D(NAry):
                   'ymax': ymax,
                   'time': run_number}
         if self._with_output:
-            with self._table.lock:
-                table = self._table
-                table['array'].set_shape([p.ybins, p.xbins])
-                l = len(table)
-                last = table.last()
-                if l == 0 or last['time'] != run_number:
-                    table.add(values)
-                else:
-                    table.iloc[last.row] = values
+            #with self._table.lock:
+            table = self._table
+            table['array'].set_shape([p.ybins, p.xbins])
+            l = len(table)
+            last = table.last()
+            if l == 0 or last['time'] != run_number:
+                table.add(values)
+            else:
+                table.iloc[last.row] = values
         self.build_heatmap(values)
         return self._return_run_step(self.next_state(dfslot), steps_run=steps)
 
@@ -254,18 +254,18 @@ class MCHistogram2D(NAry):
         json_ = {'columns': [self.x_column, self.y_column], 'xbins': p.xbins,
                      'ybins':p.ybins}
         with self.lock:
-                row = values
-                if not (np.isnan(row['xmin']) or np.isnan(row['xmax'])
-                        or np.isnan(row['ymin']) or np.isnan(row['ymax'])):
-                    json_['bounds'] = {
-                        'xmin': row['xmin'],
-                        'ymin': row['ymin'],
-                        'xmax': row['xmax'],
-                        'ymax': row['ymax']
-                    }
-                    data = sp.special.cbrt(row['array'])
-                    json_['image'] = sp.misc.bytescale(data)
-                    self._heatmap_cache = json_
+            row = values
+            if not (np.isnan(row['xmin']) or np.isnan(row['xmax'])
+                    or np.isnan(row['ymin']) or np.isnan(row['ymax'])):
+                json_['bounds'] = {
+                    'xmin': row['xmin'],
+                    'ymin': row['ymin'],
+                    'xmax': row['xmax'],
+                    'ymax': row['ymax']
+                }
+                data = sp.special.cbrt(row['array'])
+                json_['image'] = sp.misc.bytescale(data)
+                self._heatmap_cache = json_
                     
     def build_heatmap(self, values):
         json_ = {}

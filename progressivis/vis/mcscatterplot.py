@@ -150,22 +150,22 @@ class MCScatterPlot(NAry):
         inp_table = inp.data()
         if inp_table is None:
             return None
-        with inp_table.lock:
-            last = inp_table.last()
-            if last is None:
-                return None
-            row = last.to_dict()
-            data = np.copy(row['array'])
-            json_ = {}
-            if not (np.isnan(row['xmin']) or np.isnan(row['xmax'])
-                    or np.isnan(row['ymin']) or np.isnan(row['ymax'])):
-                json_['bounds'] = (row['xmin'], row['ymin'],
-                                   row['xmax'], row['ymax'])
-                json_['binnedPixels'] = data
-                json_['range'] = [np.min(data), np.max(data)]
-                json_['count'] = np.sum(data)
-                json_['value'] = domain
-                return json_
+        #with inp_table.lock:
+        last = inp_table.last()
+        if last is None:
+            return None
+        row = last.to_dict()
+        data = np.copy(row['array'])
+        json_ = {}
+        if not (np.isnan(row['xmin']) or np.isnan(row['xmax'])
+                or np.isnan(row['ymin']) or np.isnan(row['ymax'])):
+            json_['bounds'] = (row['xmin'], row['ymin'],
+                               row['xmax'], row['ymax'])
+            json_['binnedPixels'] = data
+            json_['range'] = [np.min(data), np.max(data)]
+            json_['count'] = np.sum(data)
+            json_['value'] = domain
+            return json_
         return None
 
     def make_json(self, json):

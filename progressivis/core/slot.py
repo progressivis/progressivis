@@ -6,7 +6,6 @@ from __future__ import absolute_import, division, print_function
 import logging
 from collections import namedtuple
 import asyncio
-import six
 from .changemanager_base import EMPTY_BUFFER
 
 logger = logging.getLogger(__name__)
@@ -22,7 +21,6 @@ class SlotDescriptor(namedtuple('SD', ['name', 'type', 'required', 'multiple', '
                                                   required, multiple, doc)
 
 
-@six.python_2_unicode_compatible
 class Slot(object):
     "A Slot manages one connection between two modules."
     def __init__(self, output_module, output_name, input_module, input_name):
@@ -55,11 +53,11 @@ class Slot(object):
         return self.output_module.lock
 
     def __str__(self):
-        return six.u('%s(%s[%s]->%s[%s])' % (self.__class__.__name__,
+        return '%s(%s[%s]->%s[%s])' % (self.__class__.__name__,
                                              self.output_module.name,
                                              self.output_name,
                                              self.input_module.name,
-                                             self.input_name))
+                                             self.input_name)
 
     def __repr__(self):
         return str(self)
@@ -125,9 +123,9 @@ class Slot(object):
                                                buffer_deleted=buffer_deleted)
         if self.changes is None:
             return None
-        with self.lock:
-            df = self.data()
-            return self.changes.update(run_number, df, self.name())
+        #with self.lock:
+        df = self.data()
+        return self.changes.update(run_number, df, self.name())
 
     def reset(self):
         "Reset the slot"

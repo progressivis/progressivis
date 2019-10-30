@@ -5,16 +5,11 @@ from __future__ import absolute_import, division, print_function
 import array
 
 from pyroaring import BitMap
-import six
 import numpy as np
 
-if six.PY2: # pragma no cover
-    # pylint: disable=invalid-name,redefined-builtin,undefined-variable
-    range = xrange
-    _integer_types = (six.integer_types, np.integer)
-else:  # pragma no cover
-    # pylint: disable=invalid-name
-    _integer_types = (int, np.integer)
+ # pragma no cover
+ # pylint: disable=invalid-name
+ _integer_types = (int, np.integer)
 
 
 class bitmap(BitMap,object):

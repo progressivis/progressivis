@@ -66,9 +66,9 @@ class Stats(TableModule):
             new_max = np.nanmax(x)
             row = {self._min_column: np.nanmin([prev_min, new_min]),
                    self._max_column: np.nanmax([prev_max, new_max])}
-            with self.lock:
-                if run_number in df.index:
-                    df.loc[run_number] = row
-                else:
-                    df.add(row, index=run_number)
+            #with self.lock:
+            if run_number in df.index:
+                df.loc[run_number] = row
+            else:
+                df.add(row, index=run_number)
         return self._return_run_step(self.next_state(dfslot), steps)

@@ -50,13 +50,13 @@ class CombineFirst(NAry):
         frames = []
         for name in self.get_input_slot_multiple():
             slot = self.get_input_slot(name)
-            with slot.lock:
-                df = slot.data()
+            #with slot.lock:
+            df = slot.data()
             frames.append(df)
         df = frames[0]
         for other in frames[1:]:
             df = combine_first(df, other)
         steps = len(df)
-        with self.lock:
-            self._table = df
+        #with self.lock:
+        self._table = df
         return self._return_run_step(self.state_blocked, steps_run=steps)
