@@ -1,5 +1,4 @@
 
-from __future__ import absolute_import, division, print_function
 from .column_proxy import ColumnProxy
 from progressivis.core.utils import integer_types, norm_slice
 

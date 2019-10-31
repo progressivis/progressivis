@@ -1,7 +1,6 @@
 """
 Return changes inside tables/columns/bitmaps.
 """
-from __future__ import absolute_import, division, print_function
 
 from ..core.bitmap import bitmap
 

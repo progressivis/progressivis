@@ -1,7 +1,6 @@
 """
 Topological sorting of a DAG
 """
-from __future__ import absolute_import, division, print_function
 
 def _sort(graph, vertex, permanent, temporary, stack):
     if vertex in temporary:

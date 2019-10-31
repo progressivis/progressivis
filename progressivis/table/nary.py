@@ -1,5 +1,4 @@
 "Base Module for modules supporting a variable number in input slots."
-from __future__ import absolute_import, division, print_function
 
 from progressivis.table.module import TableModule
 from progressivis.table import BaseTable

@@ -1,4 +1,3 @@
-from __future__ import absolute_import, division, print_function
 
 from ..core.utils import indices_len
 from ..core.slot import SlotDescriptor

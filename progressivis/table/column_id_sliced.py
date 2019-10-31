@@ -1,4 +1,3 @@
-from __future__ import absolute_import, division, print_function
 
 from .column_sliced import ColumnSlicedView
 from .column_id import IdColumn

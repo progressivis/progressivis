@@ -1,4 +1,3 @@
-from __future__ import absolute_import, division, print_function
 
 from .table import TableExpr, Expr, Pipeable
 from progressivis.io.csv_loader import CSVLoader

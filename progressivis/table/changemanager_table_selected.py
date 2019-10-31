@@ -1,5 +1,4 @@
 "Change manager for SelectedTable"
-from __future__ import absolute_import, division, print_function
 
 from .table_selected import TableSelectedView
 from .changemanager_table import TableChangeManager

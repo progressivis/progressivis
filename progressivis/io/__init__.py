@@ -1,4 +1,3 @@
-from __future__ import absolute_import, division, print_function
 
 from .csv_loader import CSVLoader
 from .vec_loader import VECLoader

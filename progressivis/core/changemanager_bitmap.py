@@ -1,4 +1,3 @@
-from __future__ import absolute_import, division, print_function
 
 from .bitmap import bitmap
 from .index_update import IndexUpdate

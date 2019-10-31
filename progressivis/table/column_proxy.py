@@ -1,5 +1,4 @@
 "Proxy for column"
-from __future__ import absolute_import, division, print_function
 from .column_base import BaseColumn
 
 class ColumnProxy(BaseColumn):

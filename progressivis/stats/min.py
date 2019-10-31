@@ -1,4 +1,3 @@
-from __future__ import absolute_import, division, print_function
 
 from progressivis.utils.synchronized import synchronized
 from progressivis.core.utils import indices_len, fix_loc

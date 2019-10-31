@@ -1,5 +1,4 @@
 "Binary Join module."
-from __future__ import absolute_import, division, print_function
 
 from progressivis.core.utils import Dialog, indices_len
 from progressivis.core.slot import SlotDescriptor

@@ -3,7 +3,6 @@ Base class for change managers.
 Change managers are used by slots to maintain the list of changes in the data structures
 they manage, typically a Table, a Column, or a bitmap.
 """
-from __future__ import absolute_import, division, print_function
 
 from abc import ABCMeta, abstractmethod
 import logging

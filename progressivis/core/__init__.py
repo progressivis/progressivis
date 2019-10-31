@@ -1,4 +1,3 @@
-from __future__ import absolute_import, division, print_function
 
 from ._version import get_versions
 from .utils import (type_fullname, fix_loc, indices_len, integer_types)

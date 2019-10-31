@@ -1,4 +1,3 @@
-from __future__ import absolute_import, division, print_function
 
 from collections import Mapping
 from progressivis.core.utils import integer_types, remove_nan_etc

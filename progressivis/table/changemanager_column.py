@@ -1,5 +1,4 @@
 "Change manager for columns"
-from __future__ import absolute_import, division, print_function
 
 from progressivis.core.changemanager_base import BaseChangeManager
 

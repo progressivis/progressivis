@@ -4,7 +4,6 @@ to a value bin.  The first bin corresponds to half infinite values
 lower than the first specifid value, and the last bin corresponds to
 half infinite values higher than the last specified value.
 """
-from __future__ import absolute_import, division, print_function
 
 import operator
 import logging

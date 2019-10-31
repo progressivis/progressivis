@@ -1,5 +1,4 @@
 """Multi-Thread Scheduler, meant to run in its own thread."""
-from __future__ import absolute_import, division, print_function
 
 import logging
 from .scheduler_base import BaseScheduler

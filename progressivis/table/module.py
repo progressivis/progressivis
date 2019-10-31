@@ -3,7 +3,6 @@ TableModule is the base class for all the modules updating internally a Table
 and exposing it as an output slot.
 """
 
-from __future__ import absolute_import, division, print_function
 
 from ..core.module import Module
 from ..core.slot import SlotDescriptor

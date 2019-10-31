@@ -1,4 +1,3 @@
-from __future__ import absolute_import, division, print_function
 
 from ..core.tracer_base import Tracer
 from .table import Table

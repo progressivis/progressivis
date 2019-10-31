@@ -1,4 +1,3 @@
-#from __future__ import absolute_import, division, print_function
 
 ATTR_TABLE = 'PROGRESSIVE_TABLE'
 ATTR_NROWS = 'NROWS'

@@ -2,7 +2,6 @@
 # Should be adapted to return either a value in a column, or a boolean in a bitmap.
 # Should also provide an eval/select progressive module.
 
-from __future__ import absolute_import
 import numpy as np
 
 from .column import BaseColumn

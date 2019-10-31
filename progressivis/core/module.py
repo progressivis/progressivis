@@ -1,6 +1,5 @@
 """Base class for progressive modules.
 """
-from __future__ import absolute_import, division, print_function
 
 from abc import ABCMeta, abstractmethod
 from traceback import print_exc

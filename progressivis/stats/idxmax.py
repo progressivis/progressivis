@@ -1,7 +1,6 @@
 """
 Compute the index of the maximum value of one or many table columns.
 """
-from __future__ import absolute_import, division, print_function
 
 from collections import OrderedDict
 import logging

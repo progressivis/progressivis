@@ -5,7 +5,6 @@ and https://en.wikipedia.org/wiki/Reservoir_sampling
 
 Vitter, Jeffrey S. (1 March 1985). "Random sampling with a reservoir" (PDF). ACM Transactions on Mathematical Software. 11 (1): 37-57. doi:10.1145/3147.3165.
 """
-from __future__ import absolute_import, division, print_function
 
 from progressivis import SlotDescriptor
 from ..core.bitmap import bitmap

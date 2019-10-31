@@ -1,4 +1,3 @@
-from __future__ import absolute_import, division, print_function
 from progressivis.utils.errors import ProgressiveStopIteration
 from .table import Table
 from .module import TableModule

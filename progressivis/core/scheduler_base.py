@@ -1,7 +1,6 @@
 """
 Base Scheduler class, runs progressive modules.
 """
-from __future__ import absolute_import, division, print_function
 import time
 import logging
 import functools

@@ -1,7 +1,6 @@
 """
 TableChanges keep track of the changes (creation, updates, deletions) in tables/columns.
 """
-from __future__ import absolute_import, division, print_function
 
 import bisect
 import logging

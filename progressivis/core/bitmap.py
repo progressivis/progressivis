@@ -1,15 +1,14 @@
 """Manage bit sets as ordered list of integers very efficiently, relying on RoaringBitmaps.
 """
-from __future__ import absolute_import, division, print_function
 
 import array
 
 from pyroaring import BitMap
 import numpy as np
 
- # pragma no cover
- # pylint: disable=invalid-name
- _integer_types = (int, np.integer)
+# pragma no cover
+# pylint: disable=invalid-name
+_integer_types = (int, np.integer)
 
 
 class bitmap(BitMap,object):
