@@ -1,15 +1,13 @@
 """
 Use mmap to manage strings
 """
-from __future__ import absolute_import
 import mmap
 import os
 import os.path
 from resource import getpagesize
 import marshal
-import six
 import numpy as np
-#from functools import lru_cache
+from functools import lru_cache
 from ..core.bitmap import bitmap
 
 PAGESIZE = getpagesize()
@@ -79,14 +77,10 @@ class MMapObject(object):
         if lb >= MAX_SHORT:
             return self._add_long(buf, lb)
         return self._add_short(buf, lb)
-    if six.PY3:
-        from functools import lru_cache
-        @lru_cache(maxsize=LRU_MAX_SIZE)
-        def _add_short(self, buf, lb):
-            return self._add_long(buf, lb, with_reuse=False)
-    else:
-        def _add_short(self, buf, lb):
-            return self._add_long(buf, lb, with_reuse=False)
+
+    @lru_cache(maxsize=LRU_MAX_SIZE)
+    def _add_short(self, buf, lb):
+        return self._add_long(buf, lb, with_reuse=False)
         
     def release(self, idx):
         if not idx:

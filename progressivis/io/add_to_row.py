@@ -1,6 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
-import six
 import logging
 logger = logging.getLogger(__name__)
 
@@ -26,7 +23,7 @@ class AddToRow(Constant):
             return error
 
         run_number = 0
-        for (row_, value) in six.iteritems(input):
+        for (row_, value) in input.items():
             #self._df.loc[row, self.get_columns(self._df)] += value
             current_row = self._table.row(row_).to_dict(ordered=True)
             vals = np.array(list(current_row.values()))

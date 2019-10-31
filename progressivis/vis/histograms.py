@@ -1,12 +1,9 @@
 """
 Visualize a data table with histograms.
 """
-from __future__ import print_function
-
 import logging
 
 import numbers
-import six
 import numpy as np
 
 from progressivis.table.nary import NAry
@@ -101,8 +98,8 @@ class Histograms(NAry):
 
     def _histograms_to_json(self, json):
         histo_json = {}
-        for (column, value) in six.iteritems(self._histogram):
-            column = six.u(column)
+        for (column, value) in self._histogram.items():
+            column = str(column)
             histo_json[column] = value.get_histogram()
         json['histograms'] = histo_json
         return json

@@ -1,9 +1,5 @@
 "Wrapper for PyTables"
-from __future__ import absolute_import, division, print_function
-
 from collections import Iterable
-
-import six
 import numpy as np
 
 from progressivis.utils.fast import indices_to_slice
@@ -241,7 +237,7 @@ class _PTAt(object):
             raise ValueError(
                 'At getitem not implemented for row key "%s"' % row_key)
         if self._as_loc:
-            if not isinstance(col_key, six.string_types):
+            if not isinstance(col_key, str):
                 raise ValueError(
                     'At getitem not implemented for column key "%s"' % col_key)
             row_key = self._table.id_to_index(row_key)
@@ -259,7 +255,7 @@ class _PTAt(object):
             raise ValueError(
                 'At getitem not implemented for row key "%s"' % row_key)
         if self._as_loc:
-            if not isinstance(col_key, six.string_types):
+            if not isinstance(col_key, str):
                 raise ValueError(
                     'At getitem not implemented for column key "%s"' % col_key)
             row_key = self._table.id_to_index(row_key)

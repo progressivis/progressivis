@@ -1,7 +1,4 @@
-from __future__ import absolute_import, division, print_function
-
 import numpy as np
-import six
 import re
 import logging
 logger = logging.getLogger(__name__)
@@ -131,7 +128,7 @@ class VECLoader(TableModule):
         if True:
             for row in dataset:
                 tmp[:] = 0
-                for (col, val) in six.iteritems(row):
+                for (col, val) in row.items():
                     tmp[col] = val
                 documents[i] = tmp
                 i += 1

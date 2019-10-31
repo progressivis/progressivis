@@ -1,15 +1,8 @@
-from __future__ import absolute_import, division, print_function
-
 import numpy as np
-import six
 from collections import Iterable
 
 from progressivis.core.utils import integer_types
 from progressivis.core.bitmap import bitmap
-
-if six.PY2:
-    range = xrange
-
 
 class Loc(object):
     ITERABLE    = 8

@@ -2,17 +2,12 @@
 """
 Main Table class
 """
-from __future__ import absolute_import, division, print_function
-
 from collections import OrderedDict, Mapping
 import logging
 
 import numpy as np
 import pandas as pd
 import numexpr as ne
-
-import six
-
 from progressivis.core.utils import (integer_types, get_random_name,
                                      all_int, are_instances, gen_columns)
 from progressivis.utils.fast import indices_to_slice
@@ -26,10 +21,6 @@ from .column import Column
 from .column_id import IdColumn
 from ..utils.khash.hashtable import Int64HashTable
 
-if six.PY2:
-    from itertools import imap
-else:
-    imap = map
 
 logger = logging.getLogger(__name__)
 

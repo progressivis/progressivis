@@ -1,12 +1,9 @@
 """Base class for Tables
 """
-from __future__ import absolute_import, division, print_function
 from abc import ABCMeta, abstractmethod, abstractproperty
 from collections import OrderedDict, Mapping, Iterable
 import operator
 import logging
-
-import six
 import numpy as np
 
 from progressivis.core.utils import (integer_types,
@@ -17,10 +14,6 @@ from progressivis.core.config import get_option
 from progressivis.core.bitmap import bitmap
 from .dshape import dshape_print
 
-if six.PY2:
-    from itertools import imap
-else:
-    imap = map
 
 logger = logging.getLogger(__name__)
 
@@ -82,21 +75,19 @@ class _At(_BaseLoc):
     # pylint: disable=too-few-public-methods
     def __getitem__(self, key):
         index, col_key, _ = self.parse_key(key)
-        if not isinstance(col_key, (six.string_types, integer_types)):
+        if not isinstance(col_key, (str, integer_types)):
             raise ValueError('At getitem not implemented for column key "%s"' %
                              col_key)
         return self._table[col_key][index]
 
     def __setitem__(self, key, value):
         index, col_key, _ = self.parse_key(key)
-        if not isinstance(col_key, (six.string_types, integer_types)):
+        if not isinstance(col_key, (str, integer_types)):
             raise ValueError('At setitem not implemented for column key "%s"' %
                              col_key)
         self._table[col_key][index] = value
 
-
-@six.python_2_unicode_compatible
-class BaseTable(six.with_metaclass(ABCMeta, object)):
+class BaseTable(metaclass=ABCMeta):
     # pylint: disable=too-many-public-methods, too-many-instance-attributes
     """Base class for Tables.
     """
@@ -481,7 +472,7 @@ class BaseTable(six.with_metaclass(ABCMeta, object)):
         if isinstance(key, tuple):
             key = key[0]
             fast = True
-        if isinstance(key, (six.string_types, integer_types)):
+        if isinstance(key, (str, integer_types)):
             return self._column(key)
         elif isinstance(key, Iterable):
             if fast:
@@ -500,7 +491,7 @@ class BaseTable(six.with_metaclass(ABCMeta, object)):
 
     def iterrows(self):
         "Return an iterator returning rows and their ids"
-        return imap(self.row, iter(self._ids))
+        return map(self.row, iter(self._ids))
 
     def last(self, key=None):
         "Return the last row"
@@ -510,7 +501,7 @@ class BaseTable(six.with_metaclass(ABCMeta, object)):
         if key is None or isinstance(key, integer_types):
             from .row import Row
             return Row(self, key)
-        if isinstance(key, six.string_types):
+        if isinstance(key, str):
             return self._column(key)[self.index[length-1]]
         if all_string_or_int(key):
             index = self.index[length-1]
@@ -518,7 +509,7 @@ class BaseTable(six.with_metaclass(ABCMeta, object)):
         raise ValueError('last not implemented for key "%s"' % key)
 
     def setitem_2d(self, rowkey, colkey, values):
-        if isinstance(colkey, (six.string_types, integer_types)):
+        if isinstance(colkey, (str, integer_types)):
             self._setitem_key(colkey, rowkey, values)
         elif isinstance(colkey, Iterable):
             self._setitem_iterable(colkey, rowkey, values)
@@ -531,7 +522,7 @@ class BaseTable(six.with_metaclass(ABCMeta, object)):
         if isinstance(colkey, tuple):
             raise ValueError("Adding new columns ({}) via __setitem__"
                              " not implemented".format(colkey))
-        if isinstance(colkey, (six.string_types, integer_types)):
+        if isinstance(colkey, (str, integer_types)):
             # NB: on Pandas, only strings are accepted!
             self._setitem_key(colkey, None, values)
         elif isinstance(colkey, Iterable):
@@ -560,7 +551,7 @@ class BaseTable(six.with_metaclass(ABCMeta, object)):
         if not isinstance(values, Iterable):
             values = np.repeat(values, len_colnames)
         if isinstance(values, Mapping):
-            for (k, v) in six.iteritems(values):
+            for (k, v) in values.items():
                 column = self._column(k)
                 if is_none_alike(rowkey):
                     column[:] = v
@@ -595,7 +586,7 @@ class BaseTable(six.with_metaclass(ABCMeta, object)):
                     column[rowkey] = values[i]
 
     def _col_slice_to_indices(self, colkey):
-        if isinstance(colkey.start, six.string_types):
+        if isinstance(colkey.start, str):
             start = self.column_index(colkey.start)
             end = self.column_index(colkey.stop)
             colkey = slice(start, end+1, colkey.step)

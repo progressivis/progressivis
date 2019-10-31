@@ -1,14 +1,9 @@
 """
 Base class for object keeping track of changes in a Table/Column
 """
-from __future__ import absolute_import, division, print_function
-
 from abc import ABCMeta, abstractmethod
-import six
 
-
-@six.python_2_unicode_compatible
-class BaseChanges(six.with_metaclass(ABCMeta, object)):
+class BaseChanges(metaclass=ABCMeta):
     "Base class for object keeping track of changes in a Table"
     def __str__(self):
         return type(self)

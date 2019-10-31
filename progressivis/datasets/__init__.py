@@ -1,6 +1,5 @@
 import os
 import os.path
-import six
 from progressivis import ProgressiveError
 from .random import generate_random_csv, generate_random_multivariate_normal_csv
 from .wget import wget_file
@@ -31,19 +30,12 @@ def get_dataset(name, **kwds):
                          url='http://cs.joensuu.fi/sipu/datasets/%s'%fname)
     raise ProgressiveError('Unknown dataset %s'%name)
 
-if six.PY3:
-    import lzma
-    compressors = dict(bz2=dict(ext='.bz2', factory=bz2.BZ2Compressor),
-                        zlib=dict(ext='.zlib', factory=zlib.compressobj),
-                        gzip=dict(ext='.gz', factory=partial(zlib.compressobj, wbits=zlib.MAX_WBITS|16)),
-                        lzma=dict(ext='.xz', factory=lzma.LZMACompressor)
-                        )
-else:
-    compressors = dict(bz2=dict(ext='.bz2', factory=bz2.BZ2Compressor),
-                        zlib=dict(ext='.zlib', factory=zlib.compressobj),
-                        gzip=dict(ext='.gz', factory=partial(zlib.compressobj,
-                                                        zlib.Z_DEFAULT_COMPRESSION,
-                                                        zlib.DEFLATED, zlib.MAX_WBITS|16)))
+
+import lzma
+compressors = dict(bz2=dict(ext='.bz2', factory=bz2.BZ2Compressor),
+                   zlib=dict(ext='.zlib', factory=zlib.compressobj),
+                   gzip=dict(ext='.gz', factory=partial(zlib.compressobj, wbits=zlib.MAX_WBITS|16)),
+                   lzma=dict(ext='.xz', factory=lzma.LZMACompressor))
 
 
 def get_dataset_compressed(name, compressor, **kwds):
@@ -71,12 +63,8 @@ def get_dataset_zlib(name, **kwds):
 def get_dataset_gz(name, **kwds):
     return get_dataset_compressed(name, compressors['gzip'], **kwds)
 
-if six.PY3:
-    def get_dataset_lzma(name, **kwds):
-        return get_dataset_compressed(name, compressors['lzma'], **kwds)
-else:
-    def get_dataset_lzma(name, **kwds):
-        raise ValueError("lzma compression is not supported in Python 2.x")
+def get_dataset_lzma(name, **kwds):
+    return get_dataset_compressed(name, compressors['lzma'], **kwds)
 
 __all__ = ['get_dataset', 'get_dataset_bz2','get_dataset_zlib','get_dataset_gz',
                'get_dataset_lzma', 'generate_random_csv']

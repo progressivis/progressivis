@@ -16,14 +16,11 @@ updates.  Between the time the "tick" is received by the browser and the value i
 the server, many iterations may have been run.  The browser receives data as fast as it can, and
 the server sends a simple notification and serves the data as fast as it can.
 """
-from __future__ import absolute_import, division, print_function
-
 import time
 import logging
-import six
 from functools import partial
 
-from six import StringIO
+from io import StringIO
 
 import numpy as np
 
@@ -338,7 +335,7 @@ def _on_module_quality(mid):
 def _on_logger():
     managers = logging.Logger.manager.loggerDict
     ret = []
-    for (module, log) in six.iteritems(managers):
+    for (module, log) in managers.items():
         if isinstance(log, logging.Logger):
             ret.append({'module': module,
                         'level': logging.getLevelName(log.getEffectiveLevel())})

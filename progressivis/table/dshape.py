@@ -1,9 +1,6 @@
-from __future__ import absolute_import, division, print_function
-
 import datashape as ds
 import pandas as pd
 import numpy as np
-import six
 from progressivis.core.utils import integer_types, gen_columns
 
 def dshape_print(dshape):
@@ -83,7 +80,7 @@ def np_dshape(v, skip=1):
                 dshape = "%d * %s"%(d,dshape)
     elif isinstance(v, list):
         e = v[0]
-        if isinstance(e, six.string_types):
+        if isinstance(e, str):
             dshape = "string"
         elif isinstance(e, integer_types):
             dshape = "int"

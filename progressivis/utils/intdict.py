@@ -1,11 +1,5 @@
-from __future__ import absolute_import, division, print_function
-
 from progressivis.core.utils import integer_types
 import numpy as np
-import six
-if six.PY2:  # pragma no cover
-    range = xrange
-
 
 try:
     from progressivis.utils.khash.hashtable import Int64HashTable

@@ -1,15 +1,10 @@
 """
 HTTP client for ProgressiVis server.
 """
-from __future__ import absolute_import, division, print_function
-
 from os.path import join, dirname, abspath
 import logging
-
+import io
 from flask import render_template, request, send_from_directory, jsonify, abort, send_file
-
-import six
-
 from .app import progressivis_bp, path_to_module, stop_server
 
 logger = logging.getLogger(__name__)
@@ -131,12 +126,12 @@ def _module_image(mid):
     img = module.get_image(run_number)
     if img is None:
         abort(404)
-    if isinstance(img, six.string_types):
+    if isinstance(img, str):
         return send_file(img, cache_timeout=0)
     return _serve_pil_image(img)
 
 def _serve_pil_image(pil_img):
-    img_io = six.StringIO()
+    img_io = io.StringIO()
     pil_img.save(img_io, 'PNG', compress_level=1)
     img_io.seek(0)
     return send_file(img_io, mimetype='image/png', cache_timeout=0)
@@ -236,7 +231,7 @@ def _exit_():
 def _logger_page():
     managers = logging.Logger.manager.loggerDict
     ret = []
-    for (module, log) in six.iteritems(managers):
+    for (module, log) in managers.items():
         if isinstance(log, logging.Logger):
             ret.append({'module': module,
                         'level': logging.getLevelName(log.getEffectiveLevel())})
@@ -250,7 +245,7 @@ def _logger_page():
 def _logger():
     managers = logging.Logger.manager.loggerDict
     ret = []
-    for (module, log) in six.iteritems(managers):
+    for (module, log) in managers.items():
         if isinstance(log, logging.Logger):
             ret.append({'module': module,
                         'level': logging.getLevelName(log.getEffectiveLevel())})

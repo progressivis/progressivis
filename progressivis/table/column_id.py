@@ -1,7 +1,4 @@
-from __future__ import absolute_import, division, print_function
-
 from collections import Iterable
-import six
 import numpy as np
 import logging
 
@@ -18,10 +15,6 @@ from .column import Column
 from . import metadata
 from .dshape import dshape_create, dshape_to_h5py
 
-if six.PY2:
-    from itertools import imap
-else:
-    imap = map
 logger = logging.getLogger(__name__)
 
 
@@ -92,7 +85,7 @@ class IdColumn(Column):
 
     def __iter__(self):
         if self._freelist:
-            return imap(lambda x : self[x],
+            return map(lambda x : self[x],
                         bitmap(range(0, self.size))-self._freelist)
         return iter(self.value)
 

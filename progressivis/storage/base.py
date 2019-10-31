@@ -1,11 +1,7 @@
-from __future__ import absolute_import, division, print_function
-
 from abc import ABCMeta, abstractmethod, abstractproperty
 from contextlib import contextmanager
-import six
 
-
-class StorageObject(six.with_metaclass(ABCMeta, object)):
+class StorageObject(metaclass=ABCMeta):
     @abstractproperty
     def name(self):
         pass
@@ -19,7 +15,7 @@ class StorageObject(six.with_metaclass(ABCMeta, object)):
         pass
 
 
-class Attribute(six.with_metaclass(ABCMeta, object)):
+class Attribute(metaclass=ABCMeta):
     @abstractmethod
     def __getitem__(self, name):
         pass

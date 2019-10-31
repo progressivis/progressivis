@@ -1,12 +1,9 @@
-from __future__ import absolute_import, division, print_function
-
 import os
 import tempfile
 import unicodedata
 import re
 import shutil
-import six
-from six.moves import urllib
+import urllib
 import logging
 logger = logging.getLogger(__name__)
 
@@ -32,7 +29,7 @@ class StorageManager(object):
         return self.start()
 
     def module_directory(self, module):
-        mid = six.u(module.name)
+        mid = module.name
         if mid in self.moduledir:
             return self.moduledir[mid]
         dirname = os.path.join(self.start(), mid)

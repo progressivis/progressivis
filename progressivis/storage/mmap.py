@@ -2,8 +2,6 @@
 Numpy array using mmap that can resize without copy.
 See https://stackoverflow.com/questions/20932361/resizing-numpy-memmap-arrays.
 """
-from __future__ import absolute_import, division, print_function
-
 import os
 import os.path
 from resource import getpagesize
@@ -11,7 +9,6 @@ import marshal
 import shutil
 from mmap import mmap
 import logging
-import six
 import numpy as np
 
 from progressivis.core.utils import integer_types, get_random_name, next_pow2
@@ -287,7 +284,7 @@ class MMapDataset(Dataset):
 
 
 OBJECT = np.dtype('O')
-ROOT_NAME = "mmap_storage_py2" if six.PY2 else "mmap_storage"
+ROOT_NAME = "mmap_storage"
 class MMapGroup(GroupImpl):
     """
     Group of mmap-based groups and datasets.

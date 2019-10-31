@@ -1,5 +1,4 @@
 import numpy as np
-import six
 from progressivis.core.utils import (slice_to_arange, indices_len, fix_loc)
 
 from . import Table
@@ -32,7 +31,7 @@ class BisectImpl(ModuleImpl):
         self._table = None
         self._column = column
         self._op = op
-        if isinstance(op, six.string_types):
+        if isinstance(op, str):
             self._op = ops[op]
         elif op not in ops.values():
             raise ValueError("Invalid operator {}".format(op))

@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 from progressivis.core.utils import (integer_types, norm_slice)
 from .dshape import (dshape_create)
 
@@ -8,8 +6,6 @@ from .column_sliced import ColumnSlicedView
 from .column_id_sliced import IdColumnSlicedView
 
 from collections import Iterable
-import six
-
 import logging
 logger = logging.getLogger(__name__)
 
@@ -29,7 +25,7 @@ class TableSlicedView(BaseTable):
         #self._ids  = IdColumnSlicedView(update=None, target_column=table.index, view_slice=row_key)
         self._view_slice = norm_slice(row_key)
         self._ids = IdColumnSlicedView(table.index, self._view_slice)
-        if isinstance(col_key, (six.string_types, integer_types)):
+        if isinstance(col_key, (str, integer_types)):
             col_key = [col_key]
         if isinstance(col_key, slice):
             for name in table.columns[col_key]:
@@ -82,7 +78,7 @@ class TableSlicedView(BaseTable):
         raise NotImplementedError('TODO')
 
     def __getitem__(self, key):
-        if isinstance(key, (six.string_types, integer_types)):
+        if isinstance(key, (str, integer_types)):
             return self._column(key)
         elif isinstance(key, Iterable):
             return (self._column(c) for c in key)

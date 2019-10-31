@@ -1,13 +1,9 @@
 """
 Base class for columns.
 """
-from __future__ import absolute_import, division, print_function
-
 import operator
 import logging
 from abc import ABCMeta, abstractmethod, abstractproperty
-
-import six
 import numpy as np
 
 from progressivis.core.config import get_option
@@ -39,9 +35,7 @@ class _Loc(object):
         index = self.parse_loc(loc)
         self.column[index] = value
 
-
-@six.python_2_unicode_compatible
-class BaseColumn(six.with_metaclass(ABCMeta, object)):
+class BaseColumn(metaclass=ABCMeta):
     """
     Base class for columns.
     """

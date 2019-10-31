@@ -1,4 +1,3 @@
-from __future__ import absolute_import, division, print_function
 import pandas as pd
 import numpy as np
 from ..core.utils import (filepath_to_buffer,
@@ -8,7 +7,6 @@ from io import BytesIO
 import time
 import bz2
 import zlib
-import six
 import json
 from collections import OrderedDict
 from pandas.core.dtypes.inference import is_file_like, is_sequence
@@ -25,19 +23,13 @@ HEADER_CHUNK = 50
 #DEBUG_CNT = 0
 #from functools import partial
 
-if six.PY3:
-    import lzma    
-    decompressors = dict(bz2=bz2.BZ2Decompressor,
-                        zlib=zlib.decompressobj,
-                        gzip=ft.partial(zlib.decompressobj,
-                                         wbits=zlib.MAX_WBITS|16),
-                        xz=lzma.LZMADecompressor
-                        )
-else:
-    decompressors = dict(bz2=bz2.BZ2Decompressor,
-                        zlib=zlib.decompressobj,
-                        gzip=ft.partial(zlib.decompressobj,
-                                         zlib.MAX_WBITS|16))
+
+import lzma    
+decompressors = dict(bz2=bz2.BZ2Decompressor,
+                     zlib=zlib.decompressobj,
+                     gzip=ft.partial(zlib.decompressobj,
+                                     wbits=zlib.MAX_WBITS|16),
+                     xz=lzma.LZMADecompressor)
 
     
 async def _asynchronize(f, *args, **kwargs):

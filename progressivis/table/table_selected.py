@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 from progressivis.core.utils import (integer_types)
 
 from .table_base import BaseTable
@@ -9,7 +7,6 @@ from .column_selected import ColumnSelectedView
 from .column_id_selected import IdColumnSelectedView
 
 from collections import Iterable
-import six
 
 class InvalidOperationException(Exception): pass
 
@@ -23,7 +20,7 @@ class TableSelectedView(BaseTable):
         self._ids = IdColumnSelectedView(base.index, row_selection)
         if col_key is None:
             col_key = base.columns
-        if isinstance(col_key, (six.string_types, integer_types)):
+        if isinstance(col_key, (str, integer_types)):
             col_key = [col_key]
         elif isinstance(col_key, slice):
             for name in base.columns[col_key]:

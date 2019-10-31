@@ -1,6 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
-import six
 import logging
 import asyncio as aio
 logger = logging.getLogger(__name__)
@@ -40,7 +37,7 @@ class Variable(Constant):
         else:
             last = last.to_json()
         error = ''
-        for (k, v) in six.iteritems(input_):
+        for (k, v) in input_.items():
             if k in last:
                 last[k] = v
             else:
