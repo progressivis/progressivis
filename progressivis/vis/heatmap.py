@@ -4,8 +4,7 @@ Visualization of a Histogram2D as a heaatmap
 import re
 import logging
 import base64
-
-import six
+import io
 import numpy as np
 import scipy as sp
 from PIL import Image
@@ -109,11 +108,9 @@ class Heatmap(TableModule):
                 logger.error('Cannot save image %s', filename)
                 raise
         else:
-            buffered = six.BytesIO()
+            buffered = io.BytesIO()
             image.save(buffered, format='PNG', bits=16)
-            res = base64.b64encode(buffered.getvalue())
-            if six.PY3:
-                res = str(base64.b64encode(buffered.getvalue()), "ascii")
+            res = str(base64.b64encode(buffered.getvalue()), "ascii")
             filename = "data:image/png;base64,"+res
 
         if len(self._table) == 0 or self._table.last()['time'] != run_number:

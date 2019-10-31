@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 from . import ProgressiveTest, skip
 from progressivis.io import CSVLoader
 from progressivis.table.constant import Constant

@@ -3,7 +3,7 @@ from . import ProgressiveTest, skip, skipIf
 
 import logging
 import sys
-import six
+
 from progressivis.datasets import (get_dataset, get_dataset_bz2,
                                        get_dataset_gz, get_dataset_lzma,
                                        DATA_DIR)
@@ -21,7 +21,6 @@ class TestLoadDatasets(ProgressiveTest):
         _ = get_dataset_gz('smallfile')
     def test_load_bigfile_gz(self):        
         _ = get_dataset_gz('bigfile')
-    @skipIf(six.PY2, "lzma not supported in PY2, test skipped")
     def test_load_smallfile_lzma(self):
         _ = get_dataset_lzma('smallfile')
     @skip("Too slow ...")

@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 from os import getenv
 import sys
 from unittest import TestCase, skip, skipIf, main

@@ -1,4 +1,3 @@
-from __future__ import print_function
 from . import ProgressiveTest
 import asyncio as aio
 from progressivis import Print

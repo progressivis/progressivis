@@ -10,7 +10,6 @@ from progressivis.storage.base import Group, Dataset
 from progressivis.table.table import Table
 from . import ProgressiveTest, skip, skipIf
 import pandas as pd
-import six
 from progressivis.storage import IS_PERSISTENT as MMAP
 
 LONG_SIZE = MAX_SHORT *2
@@ -88,7 +87,6 @@ class TestMMap(ProgressiveTest):
         self.assertEqual(len(t),len(df))
         self._rmtree()
 
-    @skipIf(six.PY2, "Python 2.x does not provide @lru_cache, test skipped")
     def test_mmap5(self):
         #pylint: disable=protected-access
         self._rmtree()
