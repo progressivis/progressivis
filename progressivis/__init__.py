@@ -4,7 +4,7 @@ Main imports from progressivis.
 import logging
 
 from progressivis.core import (version, __version__, short_version,
-                               BaseScheduler, Scheduler,
+                               Scheduler,
                                Slot, SlotDescriptor,
                                StorageManager,
                                Module, Every, Print)
@@ -13,7 +13,7 @@ from progressivis.utils import ProgressiveError
 from progressivis.table import Table, Column, Row
 
 __all__ = ["log_level",
-           "ProgressiveError", "BaseScheduler", "Scheduler",
+           "ProgressiveError", "Scheduler",
            "version", "__version__", "short_version",
            "Slot", "SlotDescriptor", "Module", "StorageManager",
            "Every", "Print",
@@ -22,7 +22,7 @@ __all__ = ["log_level",
 
 def s():
     "Shortcut to get the default scheduler."
-    return BaseScheduler.default
+    return Scheduler.default
 
 # Avoids the message 'No handlers could be found for logger X.Y.Z'
 # logging.getLogger('progressivis').addHandler(logging.NullHandler())

@@ -55,7 +55,7 @@ class CSVLoader(TableModule):
         self._input_encoding = None
         self._input_compression = None
         self._input_size = 0 # length of the file or input stream when available
-        self._timeout = timeout
+        self._timeout_csv = timeout
         self._table_params = dict(name=self.name, fillvalues=fillvalues)
         self._save_context = True if save_context is None and is_recoverable(filepath_or_buffer) else False
         self._recovery = recovery
@@ -87,7 +87,7 @@ class CSVLoader(TableModule):
     async def create_input_source(self, filepath):
         return await InputSource.create(filepath, encoding=self._encoding,
                                compression=self._compression,
-                               timeout=self._timeout, start_byte=0)
+                               timeout=self._timeout_csv, start_byte=0)
 
     def close(self):
         if self._input_stream is None:

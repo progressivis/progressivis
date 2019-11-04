@@ -2,7 +2,6 @@
 from ._version import get_versions
 from .utils import (type_fullname, fix_loc, indices_len, integer_types)
 from .scheduler import Scheduler
-from .scheduler_base import BaseScheduler
 from .slot import Slot, SlotDescriptor
 from .storagemanager import StorageManager
 from .module import Module, Every, Print
@@ -20,7 +19,7 @@ del get_versions
 
 __all__ = ["type_fullname", "fix_loc", "indices_len",
            "integer_types", "bitmap",
-           "BaseScheduler", "Scheduler", "BitmapChangeManager",
+           "Scheduler", "BitmapChangeManager",
            "version", "__version__", "short_version",
            "Slot", "SlotDescriptor", "Module", "StorageManager",
            "Every", "Print", "Wait"]

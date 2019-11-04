@@ -40,7 +40,7 @@ class TestScatterPlot(ProgressiveTest):
     def tearDown(self):
         TestScatterPlot.cleanup()
 
-    def test_scatterplot(self):
+    def te_st_scatterplot(self):
         s = self.scheduler(clean=True)
         with s:
             csv = CSVLoader(get_dataset('smallfile'),
@@ -71,7 +71,7 @@ class TestScatterPlot(ProgressiveTest):
             prt.input.df = sp.output.table
         finp1 = fake_input(s,"variable_1", 6, {'_1': LOWER_X, '_2': LOWER_Y})
         finp2 = fake_input(s, "variable_2", 6, {'_1': UPPER_X, '_2': UPPER_Y})
-        sts = sleep_then_stop(s, 15)
+        sts = sleep_then_stop(s, 30)
         aio.run(sp.scheduler().start(coros=[finp1, finp2, sts]))
         js = sp.to_json()
         x, y, _ = zip(*js['sample']['data'])

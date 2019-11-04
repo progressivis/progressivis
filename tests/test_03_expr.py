@@ -1,7 +1,7 @@
 from . import ProgressiveTest
 import asyncio as aio
 from progressivis.datasets import get_dataset
-from  progressivis.core import BaseScheduler, Scheduler
+from  progressivis.core import Scheduler
 
 import progressivis.expr as pv
 from progressivis.expr.table import PipedInput
@@ -26,7 +26,7 @@ def prtT(x):
 class TestExpr(ProgressiveTest):
     def setUp(self):
         super(TestExpr, self).setUp()        
-        BaseScheduler.default = self.scheduler()
+        cheduler.default = self.scheduler()
 
     def tearDown(self):
         TestExpr.cleanup()
@@ -35,7 +35,7 @@ class TestExpr(ProgressiveTest):
         """
         Connecting modules via function calls
         """
-        with BaseScheduler.default:
+        with Scheduler.default:
             csv = pv.load_csv(get_dataset('bigfile'), index_col=False, header=None)
             m = pv.min(csv)
             pv.echo(m, proc=prtm)
@@ -61,7 +61,7 @@ class TestExpr(ProgressiveTest):
         """
         Connecting modules via the pipe operator ( 3 pipes)
         """
-        with BaseScheduler.default:
+        with Scheduler.default:
             ret = PipedInput(get_dataset('bigfile')) | pv.load_csv(
                 index_col=False, header=None) | pv.min() | pv.echo(proc=prtm)
             csv = ret.repipe('csv_loader_1')
@@ -87,7 +87,7 @@ class TestExpr(ProgressiveTest):
         """
         Connecting modules via the pipe operator (only one pipe)
         """
-        with BaseScheduler.default:
+        with Scheduler.default:
             ret = (PipedInput(get_dataset('bigfile'))
                    | pv.load_csv(index_col=False, header=None) | pv.min()
                    | pv.echo(proc=prtm).repipe('csv_loader_1') | pv.max()

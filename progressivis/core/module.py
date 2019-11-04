@@ -21,10 +21,13 @@ from .slot import (SlotDescriptor, Slot)
 from .tracer_base import Tracer
 from .time_predictor import TimePredictor
 from .storagemanager import StorageManager
-from .scheduler_base import BaseScheduler
+from .scheduler import Scheduler
 
 from inspect import getfullargspec
 
+FREEZE_TIMEOUT = 10
+
+#logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 # NB: AllAny and AnyAll are simply two "named lists"
@@ -46,6 +49,17 @@ class Prisoner:
         return "[{}:{}]".format(self.module.name, self.penalty)
     def __repr__(self):
         return  self.__str__()
+
+
+def _pr(*args):
+    pass #print(*args)
+
+    
+async def _unfreeze(mods):
+    await aio.sleep(FREEZE_TIMEOUT)
+    for module in mods:
+        module.set_timeout()
+        module.release()
 
 class ModuleMeta(ABCMeta):
     """Module metaclass is needed to collect the input parameter list
@@ -95,7 +109,7 @@ class Module(metaclass=ModuleMeta):
                  output_descriptors=None,
                  **kwds):
         if scheduler is None:
-            scheduler = BaseScheduler.default
+            scheduler = Scheduler.default
         self._scheduler = scheduler
         dataflow = scheduler.dataflow
         if dataflow is None:
@@ -150,6 +164,8 @@ class Module(metaclass=ModuleMeta):
         self.blocked_evt = None
         self.not_ready_evt = None
         self._ignore_inputs = False
+        self._default_timeout = 0.1
+        self._timeout = self._default_timeout        
         # callbacks
         self._start_run = None
         self._end_run = None
@@ -202,7 +218,6 @@ class Module(metaclass=ModuleMeta):
         return 0.0
 
     def tell_consumers(self, out_name=None):
-        #print(self.name, " CALLS tell_consumers")
         if out_name is None:
             values_ = self._output_slots.values()
         else:
@@ -214,7 +229,6 @@ class Module(metaclass=ModuleMeta):
                 if slot._event is None:
                     slot._event = aio.Event()
                 slot._event.set()
-                #print("TELL CONSUMERS: ", slot)
 
     def init_aio_events(self):
         for sname, slot in self._input_slots.items():
@@ -228,10 +242,7 @@ class Module(metaclass=ModuleMeta):
         if isinstance(self.wait_expr, str):
             #import pdb;pdb.set_trace()
             aws = [_ct(slot._event.wait()) for slot in self._input_slots.values() if slot is not None]
-            #names = [nm for (nm, slot) in self._input_slots.items() if slot is not None]
-            #print("APRES: ", names, aws)
             if aws:
-                #print("wait for: ", set(aws), names)
                 await aio.wait(set(aws), return_when=self.wait_expr)
         elif isinstance(self.wait_expr, AllAny): # all([any(), any(), ...]
             all_aws = set()
@@ -272,12 +283,19 @@ class Module(metaclass=ModuleMeta):
                 return True
             return False # TODO: consider all cases ...
 
-    def confine(self, p=None):
+    def incarcerate(self, p=None):
         if p is None:
             p = max(1, len(self.scheduler().runners))
         self.scheduler().jail.add(Prisoner(self, p))
         self.steering_evt.clear()
 
+    def release(self):
+        for pr in self.scheduler().jail:
+            if pr.module == self:
+                self.scheduler().jail.remove(pr)
+                break
+        self.steering_evt.set()
+        
     def shorten(self):
         new_jail = set()
         for p in self.scheduler().jail:
@@ -293,11 +311,8 @@ class Module(metaclass=ModuleMeta):
         self.scheduler().jail = set()
 
     async def module_task(self, idx=0):
-        def _echo(*args):
-            pass #print(*args)
-        def echo(*args):
-            pass #print(*args)
-        echo("task {} launched".format(self.name))
+        #import pdb;pdb.set_trace()
+        _pr("task {} launched".format(self.name))
         #import pdb;pdb.set_trace()
         if self.steering_evt is None:
             self.steering_evt = aio.Event()
@@ -308,18 +323,18 @@ class Module(metaclass=ModuleMeta):
         self.init_aio_events()
         my_cnt = 0
         while True:
-            print(self.name, "IS WAITING FOR", self.steering_evt.is_set(), my_cnt)
+            _pr(self.name, "IS WAITING FOR", self.steering_evt.is_set(), self._timeout)
             try:
-                await aio.wait_for(aio.create_task(self.steering_evt.wait()), timeout=0.1)
+                await aio.wait_for(aio.create_task(self.steering_evt.wait()), self._timeout)
             except aio.TimeoutError:
                 self.amnesty()
-                #print("Timeout on {}, {}".format(self.name, my_cnt))
+                #_pr("Timeout on {}, {}".format(self.name, my_cnt))
             else:
                 self.shorten()
             if self.scheduler()._stopped:
                 self.tell_consumers()
                 break                
-            print("Module {} scheduled {}".format(self.name, my_cnt))
+            _pr("Module {} scheduled {}".format(self.name, my_cnt))
             my_cnt += 1
             ready = self.is_ready()
             if self.is_terminated():
@@ -329,31 +344,31 @@ class Module(metaclass=ModuleMeta):
                 self.shorten()
                 break
             #t = aio.all_tasks()
-            #_echo("ACTIVE: ", len(t), t)
+            #_pr("ACTIVE: ", len(t), t)
             if not (ready or self.has_input()): # or self.scheduler().has_input()):
-                print("NOT READY {}, {}, {}".format(self.name, self.state, my_cnt))
-                _echo("Module {} ZOMBIFIED ({})".format(self.name, self.state))
-                _echo("CONTINUE Zombie", self)
+                _pr("NOT READY {}, {}, {}".format(self.name, self.state, my_cnt))
+                _pr("Module {} ZOMBIFIED ({})".format(self.name, self.state))
+                _pr("CONTINUE Zombie", self)
                 if len(self.scheduler().runners)>1:
                     #self.shorten()
-                    self.confine()
+                    self.incarcerate()
                 #else:
                 #    assert self.name in self.scheduler().runners
                 continue # zombie
-            _echo("Module {} is READY  ({})".format(self.name, self.state))
-            print("Module {} is waiting for slots".format(self.name))
+            _pr("Module {} is READY  ({})".format(self.name, self.state))
+            _pr("Module {} is waiting for slots".format(self.name))
             if self.has_any_input():
                 await self.wait_for_slots()
-            print("{} module stops waiting for slots".format(self.name))
+            _pr("{} module stops waiting for slots".format(self.name))
             rn = await self._scheduler.new_run_number()
-            print("running {} : {}".format(self.name, rn))
+            _pr("running {} : {}".format(self.name, rn))
             #import pdb;pdb.set_trace()
             await self.run(rn)
-            _echo("END running {} : {}".format(self.name, rn))
+            _pr("END running {} : {}".format(self.name, rn))
             #self.shorten()
-            self.confine()
+            self.incarcerate()
             await aio.sleep(0)            
-        print("task {} TERMINATED".format(self.name))
+        _pr("task {} TERMINATED".format(self.name))
         #if self.name in self.scheduler().runners:
         #    self.scheduler().runners.remove(self.name)
         #self.release_previous()
@@ -361,13 +376,13 @@ class Module(metaclass=ModuleMeta):
         #if self.name=="csv_loader_1":
         #    import pdb;pdb.set_trace()
         t = aio.all_tasks()
-        echo("ACTIVE: ", len(t))
+        _pr("ACTIVE: ", len(t))
         for e in t:
-            echo(">>>TASK: ", e)
-        #_echo("Events: ", [self.scheduler()._modules[r].steering_evt for r in self.scheduler().runners])
-        echo("RUNNERS: ", self.scheduler().runners)
-        echo("PRISONERS: ", self.scheduler().jail)
-        _echo("********************************************************************************************************")
+            _pr(">>>TASK: ", e)
+        #_pr("Events: ", [self.scheduler()._modules[r].steering_evt for r in self.scheduler().runners])
+        _pr("RUNNERS: ", self.scheduler().runners)
+        _pr("PRISONERS: ", self.scheduler().jail)
+        _pr("********************************************************************************************************")
         #import pdb;pdb.set_trace()
         return 0
 
@@ -411,14 +426,6 @@ class Module(metaclass=ModuleMeta):
         """
         # TODO: should change the run_number of the params
         self.params.debug = bool(value)
-
-    @property
-    def old_lock(self):
-        """
-        Return a recursive lock usable to lock the access and
-        change of attributes.
-        """
-        return self._synchronized_lock
 
     def _parse_parameters(self, kwds):
         # pylint: disable=no-member
@@ -786,7 +793,7 @@ class Module(metaclass=ModuleMeta):
                 in_ts = in_module.last_update()
                 ts = slot.last_update()
 
-                # logger.debug('for %s[%s](%d)->%s(%d)',
+                # _pr('for %s[%s](%d)->%s(%d)',
                 #              slot.input_module.name, slot.input_name, in_ts,
                 #              slot.output_name, ts)
                 if slot.has_buffered() or in_ts > ts:
@@ -929,7 +936,10 @@ class Module(metaclass=ModuleMeta):
     
     def has_input(self):
         return False
-    
+
+    def set_timeout(self, t=None):
+        self._timeout = self._default_timeout if t is None else t
+        
     def me_first(self):
         #import pdb;pdb.set_trace()
         for module in self.scheduler()._run_list:
@@ -937,7 +947,18 @@ class Module(metaclass=ModuleMeta):
                 module.steering_evt.set()
             elif not module.is_input():
                 module.steering_evt.clear()
-        print("me_first", [(m.name, m.steering_evt.is_set()) for m in self.scheduler()._run_list])
+        _pr("me_first", [(m.name, m.steering_evt.is_set()) for m in self.scheduler()._run_list])
+
+    def post_interaction_proc(self):
+        _pr(f"POST INTERACTION {self.name} °°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°")
+        s = self.scheduler()
+        _pr("module_selection", s._module_selection)        
+        mods_to_freeze = set([m for m in s._run_list if m.name not in s._module_selection and not m.is_input()])
+        _pr("TO FREEZE:", [m.name for m in mods_to_freeze])
+        for module in mods_to_freeze:
+            module.incarcerate(1000000) # a lot ...
+            module.set_timeout(FREEZE_TIMEOUT)
+        _ = aio.create_task(_unfreeze(mods_to_freeze))
 
     async def run(self, run_number):
         #print("RUN METHOD {}: {}".format(self.name, run_number))
@@ -963,21 +984,21 @@ class Module(metaclass=ModuleMeta):
         run_step_ret = {}
         self.start_run(run_number)
         tracer.start_run(now, run_number)
-        print(f"RUN {self.name} N: {run_number} START {self._start_time} END {self._end_time}")
+        _pr(f"RUN {self.name} N: {run_number} START {self._start_time} END {self._end_time}")
         while self._start_time < self._end_time:
             remaining_time = self._end_time-self._start_time
             if remaining_time <= 0:
                 logger.info('Late by %d s in module %s',
                             remaining_time, self.pretty_typename())
                 break  # no need to try to squeeze anything
-            logger.debug('Time remaining: %f in module %s',
+            _pr('Time remaining: %f in module %s',
                          remaining_time, self.pretty_typename())
             step_size = self.predict_step_size(np.min([max_time,
                                                        remaining_time]))
-            logger.debug('step_size=%d in module %s',
+            _pr('step_size=%d in module %s',
                          step_size, self.pretty_typename())
             if step_size == 0:
-                logger.debug('step_size of 0 in module %s',
+                _pr('step_size of 0 in module %s',
                              self.pretty_typename())
                 break
             # pylint: disable=broad-except
@@ -1001,7 +1022,7 @@ class Module(metaclass=ModuleMeta):
                 next_state = Module.state_zombie
                 run_step_ret['next_state'] = next_state
                 now = self.timer()
-                logger.debug("Exception in %s", self.name)
+                _pr("Exception in %s", self.name)
                 tracer.exception(now, run_number)
                 exception = e
                 self._had_error = True
@@ -1014,7 +1035,7 @@ class Module(metaclass=ModuleMeta):
                     run_step_ret['debug'] = True
                 tracer.after_run_step(now, run_number, **run_step_ret)
                 self.state = next_state
-                logger.debug('Next step is %s in module %s',
+                _pr('Next step is %s in module %s',
                              self.state_name[next_state],
                              self.pretty_typename())
 
@@ -1024,7 +1045,7 @@ class Module(metaclass=ModuleMeta):
             self._start_time = now
         self.state = next_state
         if self.state == Module.state_zombie:
-            logger.debug('Module %s zombie', self.pretty_typename())
+            _pr('Module %s zombie', self.pretty_typename())
             tracer.terminated(now, run_number)
         progress = self.get_progress()
         tracer.end_run(now, run_number,
@@ -1110,7 +1131,6 @@ class Every(Module):
         return super(Every, self).predict_step_size(duration)
 
     async def run_step(self, run_number, step_size, howlong):
-        print("RUNSTEP EVERY")
         slot = self.get_input_slot('df')
         df = slot.data()
         if df is not None:

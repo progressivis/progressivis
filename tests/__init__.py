@@ -3,7 +3,7 @@ import sys
 from unittest import TestCase, skip, skipIf, main
 
 from progressivis import (log_level, logging,
-                          Scheduler, BaseScheduler)
+                          Scheduler)
 from progressivis.storage import StorageEngine
 import numpy as np
 
@@ -70,14 +70,7 @@ class ProgressiveTest(TestCase):
 
     def scheduler(self, clean=False):
         if self._scheduler is None or clean:
-            if getenv("NOTHREAD"):
-                if not self._output:
-                    print('[Using non-threaded scheduler]',
-                          end=' ', file=sys.stderr)
-                    self._output = True
-                self._scheduler = BaseScheduler()
-            else:
-                self._scheduler = Scheduler()
+            self._scheduler = Scheduler()
         return self._scheduler
 
     @staticmethod
