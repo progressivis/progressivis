@@ -5,25 +5,18 @@ import sys
 import signal
 import logging
 from os import getenv
-
-from six.moves import input
+import asyncio as aio
 import requests
 
 from progressivis import log_level
 from progressivis.server import start_server
-from progressivis.core.scheduler import Scheduler, BaseScheduler
-
-from progressivis.utils.threading import Thread
+from progressivis.core.scheduler import Scheduler
 
 ENV = {}
 
 for filename in sys.argv[1:]:
     if filename == "nosetests":
         continue
-    if getenv("NOTHREAD"):
-        print('Disabling multithreading')
-        Scheduler.default = BaseScheduler()
-
     print("Loading '%s'" % filename)
     # pylint: disable=exec-used
     ENV['scheduler'] = Scheduler.default
@@ -36,10 +29,9 @@ def _signal_handler(signum, frame):
 
 if __name__ == '__main__':
     log_level(level=logging.NOTSET)
-    signal.signal(signal.SIGTERM, _signal_handler)
-    signal.signal(signal.SIGINT, _signal_handler)
-    THREAD = Thread(target=start_server)
-    THREAD.start()
+    #signal.signal(signal.SIGTERM, _signal_handler)
+    #signal.signal(signal.SIGINT, _signal_handler)
+    aio.run(start_server())
     print("Web Server launched!")
-    while True:
-        _ = input()
+    #while True:
+    #    _ = input()

@@ -31,6 +31,10 @@ class Paste(TableModule):
         first_slot = self.get_input_slot('first')
         first_slot.update(run_number)
         second_slot = self.get_input_slot('second')
+        first_table = first_slot.data()
+        second_table = second_slot.data()
+        if first_table is None or second_table is None:
+            return self._return_run_step(self.state_blocked, steps_run=0)
         second_slot.update(run_number)
         if first_slot.deleted.any() or second_slot.deleted.any():
             first_slot.reset()
@@ -43,10 +47,6 @@ class Paste(TableModule):
         second_slot.created.next(step_size)
         first_slot.updated.next(step_size)
         second_slot.updated.next(step_size)
-        #with first_slot.lock:
-        first_table = first_slot.data()
-        #with second_slot.lock:
-        second_table = second_slot.data()
         if self._table is None:
             dshape, rename = dshape_join(first_table.dshape, second_table.dshape)
             self._table = Table(name=None, dshape=dshape)

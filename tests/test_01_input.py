@@ -1,6 +1,5 @@
 from . import ProgressiveTest
 
-from progressivis.utils.threading import Thread
 from progressivis import Print
 from progressivis.io.input import Input
 import numpy as np

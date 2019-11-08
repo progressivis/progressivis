@@ -53,6 +53,8 @@ class Prisoner:
 
 def _pr(*args):
     pass #print(*args)
+def _pr2(*args):
+    print(*args)
 
     
 async def _unfreeze(mods):
@@ -164,7 +166,7 @@ class Module(metaclass=ModuleMeta):
         self.blocked_evt = None
         self.not_ready_evt = None
         self._ignore_inputs = False
-        self._default_timeout = 0.1
+        self._default_timeout = 0.05
         self._timeout = self._default_timeout        
         # callbacks
         self._start_run = None
@@ -870,12 +872,12 @@ class Module(metaclass=ModuleMeta):
     def starting(self):
         pass
 
-    def _stop(self, run_number):
+    async def _stop(self, run_number):
         self._end_time = self._start_time
         self._last_update = run_number
         self._start_time = None
         assert self.state != self.state_running
-        self.end_run(run_number)
+        await self.end_run(run_number)
 
     def set_start_run(self, start_run):
         if start_run is None or callable(start_run):
@@ -894,9 +896,9 @@ class Module(metaclass=ModuleMeta):
         else:
             raise ProgressiveError('value should be callable or None', end_run)
 
-    def end_run(self, run_number):
+    async def end_run(self, run_number):
         if self._end_run:
-            self._end_run(self, run_number)
+            await self._end_run(self, run_number)
 
     def ending(self):
         "Ends a module, called when it is about the be removed from the scheduler"
@@ -1051,7 +1053,7 @@ class Module(metaclass=ModuleMeta):
         tracer.end_run(now, run_number,
                        progress_current=progress[0], progress_max=progress[1],
                        quality=self.get_quality())
-        self._stop(run_number)
+        await self._stop(run_number)
         if exception:
             raise RuntimeError("{} {}".format(type(exception), exception))
 

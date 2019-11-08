@@ -98,14 +98,14 @@ class VirtualVariable(Constant):
             raise ProgressiveError('Inconsistent vocabulary')
         self._subscriptions.append((var, vocabulary))
 
-    def from_input(self, input_):
+    async def from_input(self, input_):
         if not isinstance(input_, dict):
             raise ProgressiveError('Expecting a dictionary')
         for var, vocabulary in self._subscriptions:
             translation = {vocabulary[k]: v for k, v in input_.items()}
-            var.from_input(translation)
+            await var.from_input(translation)
         return ''
 
-    def run_step(self, run_number, step_size, howlong):
+    async def run_step(self, run_number, step_size, howlong):
         return self._return_run_step(self.state_blocked, steps_run=1)
         #raise StopIteration()
