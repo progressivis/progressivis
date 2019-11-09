@@ -13,4 +13,5 @@ class Constant(TableModule):
     
     def run_step(self,run_number,step_size,howlong):
         self.tell_consumers()
+        self._frozen_forever = True
         raise ProgressiveStopIteration()

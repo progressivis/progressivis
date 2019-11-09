@@ -38,8 +38,8 @@ import socketio as sio
 import pathlib
 import jinja2
 import aiohttp_jinja2
-import aiohttp_debugtoolbar
-from aiohttp_debugtoolbar import toolbar_middleware_factory
+#import aiohttp_debugtoolbar
+#from aiohttp_debugtoolbar import toolbar_middleware_factory
 
 from progressivis import Scheduler, Module
 
@@ -153,7 +153,7 @@ class ProgressivisBlueprint(web.Application):
                               callback=partial(self._prevent_tick, sid, run_number))
             #else:
             #    #print('No tick for', sid, 'in path', path)
-        aio.sleep(0) # yield thread
+        #await aio.sleep(0) # yield ...
 
     async def tick_scheduler(self, scheduler, run_number):
         "Run at each tick"
@@ -188,8 +188,8 @@ class ProgressivisBlueprint(web.Application):
 
 PROJECT_ROOT = pathlib.Path(__file__).parent
 
-progressivis_bp = ProgressivisBlueprint(middlewares=[toolbar_middleware_factory])
-aiohttp_debugtoolbar.setup(progressivis_bp)
+progressivis_bp = ProgressivisBlueprint() #middlewares=[toolbar_middleware_factory])
+#aiohttp_debugtoolbar.setup(progressivis_bp)
 progressivis_bp.router.add_static('/static/',
                           path=PROJECT_ROOT / 'static',
                           name='static')
@@ -386,7 +386,7 @@ def app_create(config="settings.py", scheduler=None):
     if scheduler is None:
         scheduler = Scheduler.default
     app = web.Application() #middlewares=[toolbar_middleware_factory])
-    aiohttp_debugtoolbar.setup(app)
+    #aiohttp_debugtoolbar.setup(app)
     if isinstance(config, str):
         #app['config'] = get_config(config)
         pass

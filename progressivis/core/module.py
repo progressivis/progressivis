@@ -26,7 +26,7 @@ from .scheduler import Scheduler
 from inspect import getfullargspec
 
 FREEZE_TIMEOUT = 10
-
+ETERNITY = 3600*1000
 #logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
@@ -167,7 +167,8 @@ class Module(metaclass=ModuleMeta):
         self.not_ready_evt = None
         self._ignore_inputs = False
         self._default_timeout = 0.05
-        self._timeout = self._default_timeout        
+        self._timeout = self._default_timeout
+        self._frozen = False
         # callbacks
         self._start_run = None
         self._end_run = None
@@ -296,12 +297,13 @@ class Module(metaclass=ModuleMeta):
             if pr.module == self:
                 self.scheduler().jail.remove(pr)
                 break
-        self.steering_evt.set()
+        if not self._frozen:
+            self.steering_evt.set()
         
     def shorten(self):
         new_jail = set()
         for p in self.scheduler().jail:
-            if p.decr():
+            if p.decr() and not p.module._frozen:
                 p.module.steering_evt.set()
                 continue
             new_jail.add(p)
@@ -309,8 +311,22 @@ class Module(metaclass=ModuleMeta):
 
     def amnesty(self):
         for p in self.scheduler().jail:
-            p.module.steering_evt.set()
+            if not p.module._frozen:
+                p.module.steering_evt.set()
         self.scheduler().jail = set()
+
+    def get_timeout(self):
+        if self._frozen:
+            return ETERNITY
+        return self._timeout
+
+    def frozen(self):
+        self._frozen = True
+        self.steering_evt.clear()
+
+    def unfrozen(self):
+        self._frozen = False
+        self.steering_evt.set()
 
     async def module_task(self, idx=0):
         #import pdb;pdb.set_trace()
@@ -318,16 +334,17 @@ class Module(metaclass=ModuleMeta):
         #import pdb;pdb.set_trace()
         if self.steering_evt is None:
             self.steering_evt = aio.Event()
-        self.steering_evt.set()
+        if not self._frozen:
+            self.steering_evt.set()
         if self.not_ready_evt is None:
             self.not_ready_evt = aio.Event()
         #self.not_ready_evt.set()
         self.init_aio_events()
         my_cnt = 0
         while True:
-            _pr(self.name, "IS WAITING FOR", self.steering_evt.is_set(), self._timeout)
+            _pr(self.name, "IS WAITING FOR", self.steering_evt.is_set(), self.get_timeout())
             try:
-                await aio.wait_for(aio.create_task(self.steering_evt.wait()), self._timeout)
+                await aio.wait_for(aio.create_task(self.steering_evt.wait()), self.get_timeout())
             except aio.TimeoutError:
                 self.amnesty()
                 #_pr("Timeout on {}, {}".format(self.name, my_cnt))
@@ -944,10 +961,10 @@ class Module(metaclass=ModuleMeta):
         
     def me_first(self):
         #import pdb;pdb.set_trace()
+        self.unfrozen()
         for module in self.scheduler()._run_list:
-            if module == self:
-                module.steering_evt.set()
-            elif not module.is_input():
+            if module == self: continue
+            if not module.is_input():
                 module.steering_evt.clear()
         _pr("me_first", [(m.name, m.steering_evt.is_set()) for m in self.scheduler()._run_list])
 
@@ -963,7 +980,7 @@ class Module(metaclass=ModuleMeta):
         _ = aio.create_task(_unfreeze(mods_to_freeze))
 
     async def run(self, run_number):
-        #print("RUN METHOD {}: {}".format(self.name, run_number))
+        _pr("RUN METHOD {}: {}, to:{}".format(self.name, run_number, self.get_timeout()))
         assert not self.is_running()
         self.steps_acc = 0
         next_state = self.state

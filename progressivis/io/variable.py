@@ -13,7 +13,8 @@ class Variable(Constant):
         self._add_slots(kwds,'input_descriptors',
                         [SlotDescriptor('like', type=Table, required=False)])
         super(Variable, self).__init__(table, **kwds)
-
+        #self._frozen = True
+        
     def is_input(self):
         return True
 
@@ -62,6 +63,8 @@ class Variable(Constant):
                                         create=True)
                     self._table.append(like.last().to_dict(ordered=True), indices=[0])
                     self._ignore_inputs = True
+        else:
+            self.frozen()
         #else:
         #    import pdb;pdb.set_trace()
         #print("VARIABLE RUN STEP: ", self.has_input())
@@ -107,5 +110,6 @@ class VirtualVariable(Constant):
         return ''
 
     async def run_step(self, run_number, step_size, howlong):
+        self.frozen()
         return self._return_run_step(self.state_blocked, steps_run=1)
         #raise StopIteration()
