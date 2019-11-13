@@ -25,7 +25,10 @@ from .scheduler import Scheduler
 
 from inspect import getfullargspec
 
-FREEZE_TIMEOUT = 10
+DEFAULT_TIMEOUT = 1
+FREEZE_TIMEOUT = 3
+NOT_READY_MAX = 5
+
 ETERNITY = 3600*1000
 #logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -57,11 +60,12 @@ def _pr2(*args):
     print(*args)
 
     
-async def _unfreeze(mods):
+async def _unfreeze_later(s):
     await aio.sleep(FREEZE_TIMEOUT)
-    for module in mods:
-        module.set_timeout()
-        module.release()
+    #import pdb;pdb.set_trace();
+    _pr2("UNFREEZE>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+    s.unfreeze()
+    s._short_cycle = False
 
 class ModuleMeta(ABCMeta):
     """Module metaclass is needed to collect the input parameter list
@@ -166,8 +170,9 @@ class Module(metaclass=ModuleMeta):
         self.blocked_evt = None
         self.not_ready_evt = None
         self._ignore_inputs = False
-        self._default_timeout = 0.05
+        self._default_timeout = DEFAULT_TIMEOUT
         self._timeout = self._default_timeout
+        self._suspended = False
         self._frozen = False
         # callbacks
         self._start_run = None
@@ -295,37 +300,45 @@ class Module(metaclass=ModuleMeta):
     def release(self):
         for pr in self.scheduler().jail:
             if pr.module == self:
-                self.scheduler().jail.remove(pr)
+                self.scheduler().jail.remove(pr)   
                 break
-        if not self._frozen:
-            self.steering_evt.set()
+        if not self._suspended:
+            _pr("RELEASED: ", self.name)
+            self.steering_evt_set()
         
     def shorten(self):
         new_jail = set()
         for p in self.scheduler().jail:
-            if p.decr() and not p.module._frozen:
-                p.module.steering_evt.set()
+            if (p.decr() and not p.module._suspended and
+                not p.module._frozen): # TODO improve
+                p.module.steering_evt_set()
                 continue
             new_jail.add(p)
         self.scheduler().jail = new_jail
 
     def amnesty(self):
         for p in self.scheduler().jail:
-            if not p.module._frozen:
-                p.module.steering_evt.set()
+            if not p.module._suspended and not p.module._frozen:
+                p.module.steering_evt_set()
         self.scheduler().jail = set()
 
     def get_timeout(self):
-        if self._frozen:
+        if self._suspended:
             return ETERNITY
         return self._timeout
 
-    def frozen(self):
-        self._frozen = True
+    def suspend(self):
+        self._suspended = True
         self.steering_evt.clear()
 
-    def unfrozen(self):
-        self._frozen = False
+    def unsuspend(self):
+        self._suspended = False
+        self.steering_evt_set()
+
+    def steering_evt_set(self):
+        if self._frozen:  #and self.name=="histogram_index_1":
+            import pdb;pdb.set_trace()
+        _pr("steering_evt_set: ", self.name)
         self.steering_evt.set()
 
     async def module_task(self, idx=0):
@@ -334,32 +347,37 @@ class Module(metaclass=ModuleMeta):
         #import pdb;pdb.set_trace()
         if self.steering_evt is None:
             self.steering_evt = aio.Event()
-        if not self._frozen:
-            self.steering_evt.set()
+        if not self._suspended:
+            self.steering_evt_set()
         if self.not_ready_evt is None:
             self.not_ready_evt = aio.Event()
         #self.not_ready_evt.set()
         self.init_aio_events()
         my_cnt = 0
+        s = self.scheduler()
         while True:
             _pr(self.name, "IS WAITING FOR", self.steering_evt.is_set(), self.get_timeout())
             try:
                 await aio.wait_for(aio.create_task(self.steering_evt.wait()), self.get_timeout())
             except aio.TimeoutError:
                 self.amnesty()
-                #_pr("Timeout on {}, {}".format(self.name, my_cnt))
+                #self.shorten()
+                _pr("Timeout on {}, {}".format(self.name, self.get_timeout()))
             else:
                 self.shorten()
-            if self.scheduler()._stopped:
+            if s._stopped:
                 self.tell_consumers()
-                break                
-            _pr("Module {} scheduled {}".format(self.name, my_cnt))
+                break
+            if s._short_cycle:
+                _pr2("Module {} scheduled {}, {}".format(self.name, self.get_timeout(), self.steering_evt.is_set()))
             my_cnt += 1
+            #if s._short_cycle and self.name == "range_query2d_1":
+            #    import pdb;pdb.set_trace()
             ready = self.is_ready()
             if self.is_terminated():
                 self.tell_consumers()
-                self.scheduler().runners.remove(self.name)
-                self.scheduler()._run_list.remove(self)                
+                s.runners.remove(self.name)
+                s._run_list.remove(self)                
                 self.shorten()
                 break
             #t = aio.all_tasks()
@@ -368,7 +386,15 @@ class Module(metaclass=ModuleMeta):
                 _pr("NOT READY {}, {}, {}".format(self.name, self.state, my_cnt))
                 _pr("Module {} ZOMBIFIED ({})".format(self.name, self.state))
                 _pr("CONTINUE Zombie", self)
-                if len(self.scheduler().runners)>1:
+                #if self.scheduler()._short_cycle:
+                #    self.scheduler().unfreeze()
+                if s._short_cycle:
+                    if s.inactivity_overflow():
+                        s.unfreeze()
+                        _pr2("UNFREEZE cause INACTIVITY +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+                    else:
+                        s.report_inactivity()
+                if len(s.runners)>1:
                     #self.shorten()
                     self.incarcerate()
                 #else:
@@ -379,7 +405,7 @@ class Module(metaclass=ModuleMeta):
             if self.has_any_input():
                 await self.wait_for_slots()
             _pr("{} module stops waiting for slots".format(self.name))
-            rn = await self._scheduler.new_run_number()
+            rn = await s.new_run_number()
             _pr("running {} : {}".format(self.name, rn))
             #import pdb;pdb.set_trace()
             await self.run(rn)
@@ -399,8 +425,8 @@ class Module(metaclass=ModuleMeta):
         for e in t:
             _pr(">>>TASK: ", e)
         #_pr("Events: ", [self.scheduler()._modules[r].steering_evt for r in self.scheduler().runners])
-        _pr("RUNNERS: ", self.scheduler().runners)
-        _pr("PRISONERS: ", self.scheduler().jail)
+        _pr("RUNNERS: ", s.runners)
+        _pr("PRISONERS: ", s.jail)
         _pr("********************************************************************************************************")
         #import pdb;pdb.set_trace()
         return 0
@@ -954,6 +980,9 @@ class Module(metaclass=ModuleMeta):
         return v
     
     def has_input(self):
+        """Return True if the module received something via a from_input() call. 
+        Usually is a flag set by from_input() and deleted by the following run_step()
+        See Variable module"""
         return False
 
     def set_timeout(self, t=None):
@@ -961,7 +990,7 @@ class Module(metaclass=ModuleMeta):
         
     def me_first(self):
         #import pdb;pdb.set_trace()
-        self.unfrozen()
+        self.unsuspend()
         for module in self.scheduler()._run_list:
             if module == self: continue
             if not module.is_input():
@@ -969,19 +998,24 @@ class Module(metaclass=ModuleMeta):
         _pr("me_first", [(m.name, m.steering_evt.is_set()) for m in self.scheduler()._run_list])
 
     def post_interaction_proc(self):
-        _pr(f"POST INTERACTION {self.name} °°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°")
+        _pr2(f"POST INTERACTION {self.name} °°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°")
         s = self.scheduler()
-        _pr("module_selection", s._module_selection)        
-        mods_to_freeze = set([m for m in s._run_list if m.name not in s._module_selection and not m.is_input()])
-        _pr("TO FREEZE:", [m.name for m in mods_to_freeze])
-        for module in mods_to_freeze:
-            module.incarcerate(1000000) # a lot ...
-            module.set_timeout(FREEZE_TIMEOUT)
-        _ = aio.create_task(_unfreeze(mods_to_freeze))
+        s.freeze()
+         #import pdb;pdb.set_trace()
+        _ = aio.create_task(_unfreeze_later(s))
 
     async def run(self, run_number):
-        _pr("RUN METHOD {}: {}, to:{}".format(self.name, run_number, self.get_timeout()))
+        if self.scheduler()._short_cycle:
+            _pr2("RUN METHOD {}: {}, to:{}, {} {}".format(self.name,
+                                                          run_number,
+                                                          self.get_timeout(),
+                                                          self.steering_evt.is_set(),
+                                                          "self.scheduler()._run_list"))
         assert not self.is_running()
+        if not self.steering_evt.is_set() and self._frozen:
+            #import pdb;pdb.set_trace()
+            _pr2("DO NOTHING>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>", self.name)
+            return
         self.steps_acc = 0
         next_state = self.state
         exception = None

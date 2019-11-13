@@ -64,7 +64,9 @@ class Variable(Constant):
                     self._table.append(like.last().to_dict(ordered=True), indices=[0])
                     self._ignore_inputs = True
         else:
-            self.frozen()
+            #import pdb;pdb.set_trace()
+            self._table.touch_rows(self._table.last_id-1)
+            self.suspend()
         #else:
         #    import pdb;pdb.set_trace()
         #print("VARIABLE RUN STEP: ", self.has_input())
@@ -110,6 +112,6 @@ class VirtualVariable(Constant):
         return ''
 
     async def run_step(self, run_number, step_size, howlong):
-        self.frozen()
+        self.suspend()
         return self._return_run_step(self.state_blocked, steps_run=1)
         #raise StopIteration()

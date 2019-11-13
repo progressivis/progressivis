@@ -68,6 +68,8 @@ class Scheduler(object):
         self.jail = set()
         self.runners = set()
         self.coros = []
+        self._short_cycle = False
+        self._not_ready_cnt = 0
 
 
     async def new_run_number(self):
@@ -498,6 +500,32 @@ class Scheduler(object):
             if (hasattr(mod, 'storagegroup') and
                     mod.storagegroup is not None):
                 mod.storagegroup.close_all()
+
+    def freeze(self):
+        from .module import FREEZE_TIMEOUT
+        self._not_ready_cnt = 0
+        mods_to_freeze = set([m for m in self._run_list if m.name not in self._module_selection and not m.is_input()])
+        for module in mods_to_freeze:
+            module.incarcerate(1000) # a lot ...
+            module._frozen = True
+            #module.set_timeout(FREEZE_TIMEOUT)
+        self._short_cycle = True
+
+    def inactivity_overflow(self):
+        from .module import NOT_READY_MAX
+        return self._not_ready_cnt > NOT_READY_MAX
+
+    def report_inactivity(self):
+        self._not_ready_cnt += 1
+
+    def unfreeze(self):
+        self._not_ready_cnt = 0
+        for module in self._run_list:
+            if not module._frozen: continue
+            module._frozen = False
+            module.set_timeout()
+            module.release()
+        self._short_cycle = False
 
     @staticmethod
     def _module_order(x, y):
