@@ -385,7 +385,7 @@ class HistogramIndex(TableModule):
         input_table = input_slot.data()
         self._input_table = input_table
 
-        if len(input_table) < self.params.init_threshold:
+        if input_table is None or len(input_table) < self.params.init_threshold:
             # there are not enough rows. it's not worth building an index yet
             return self._return_run_step(self.state_blocked, steps_run=0)
         if self._impl is None:

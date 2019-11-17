@@ -25,9 +25,6 @@ from .scheduler import Scheduler
 
 from inspect import getfullargspec
 
-DEFAULT_TIMEOUT = 1
-FREEZE_TIMEOUT = 3
-NOT_READY_MAX = 5
 
 ETERNITY = 3600*1000
 #logging.basicConfig(level=logging.DEBUG)
@@ -41,17 +38,6 @@ class AnyAll:
     def __init__(self, arg):
         self._impl = arg
 
-class Prisoner:
-    def __init__(self, m, p):
-        self.module = m
-        self.penalty = max(1, p)
-    def decr(self):
-        self.penalty -= 1
-        return self.penalty<=0
-    def __str__(self):
-        return "[{}:{}]".format(self.module.name, self.penalty)
-    def __repr__(self):
-        return  self.__str__()
 
 
 def _pr(*args):
@@ -59,13 +45,6 @@ def _pr(*args):
 def _pr2(*args):
     print(*args)
 
-    
-async def _unfreeze_later(s):
-    await aio.sleep(FREEZE_TIMEOUT)
-    #import pdb;pdb.set_trace();
-    _pr2("UNFREEZE>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
-    s.unfreeze()
-    s._short_cycle = False
 
 class ModuleMeta(ABCMeta):
     """Module metaclass is needed to collect the input parameter list
@@ -170,14 +149,12 @@ class Module(metaclass=ModuleMeta):
         self.blocked_evt = None
         self.not_ready_evt = None
         self._ignore_inputs = False
-        self._default_timeout = DEFAULT_TIMEOUT
-        self._timeout = self._default_timeout
         self._suspended = False
         self._frozen = False
         # callbacks
         self._start_run = None
         self._end_run = None
-        self.my_cnt = 0
+        self._w8_slots = 0
         #self._synchronized_lock = self.scheduler().create_lock()
         dataflow.add_module(self)
 
@@ -271,61 +248,7 @@ class Module(metaclass=ModuleMeta):
         else:
             raise ValueError("Unconsistent wait expression {}".format(self.wait_expr))
 
-    def test_slots(self):
-        if self.wait_expr==aio.FIRST_COMPLETED:
-            for slot in self._input_slots.values():
-                if slot is None or slot._event is None:
-                    continue
-                if slot._event.is_set():
-                    return True
-            return False
-        if self.wait_expr==aio.ALL_COMPLETED:
-            for slot in self._input_slots.values():
-                if slot is None or slot._event is None:
-                    continue
-                if not slot._event.is_set():
-                    return False
-            return True
-        if isinstance(self.wait_expr, AllAny) or isinstance(self.wait_expr, AnyAll): # all([any(), any(), ...]
-            if not self.wait_expr._impl:
-                return True
-            return False # TODO: consider all cases ...
 
-    def incarcerate(self, p=None):
-        if p is None:
-            p = max(1, len(self.scheduler().runners))
-        self.scheduler().jail.add(Prisoner(self, p))
-        self.steering_evt.clear()
-
-    def release(self):
-        for pr in self.scheduler().jail:
-            if pr.module == self:
-                self.scheduler().jail.remove(pr)   
-                break
-        if not self._suspended:
-            _pr("RELEASED: ", self.name)
-            self.steering_evt_set()
-        
-    def shorten(self):
-        new_jail = set()
-        for p in self.scheduler().jail:
-            if (p.decr() and not p.module._suspended and
-                not p.module._frozen): # TODO improve
-                p.module.steering_evt_set()
-                continue
-            new_jail.add(p)
-        self.scheduler().jail = new_jail
-
-    def amnesty(self):
-        for p in self.scheduler().jail:
-            if not p.module._suspended and not p.module._frozen:
-                p.module.steering_evt_set()
-        self.scheduler().jail = set()
-
-    def get_timeout(self):
-        if self._suspended:
-            return ETERNITY
-        return self._timeout
 
     def suspend(self):
         self._suspended = True
@@ -336,12 +259,21 @@ class Module(metaclass=ModuleMeta):
         self.steering_evt_set()
 
     def steering_evt_set(self):
-        if self._frozen:  #and self.name=="histogram_index_1":
-            import pdb;pdb.set_trace()
+        #if self._frozen:  #and self.name=="histogram_index_1":
+        #    import pdb;pdb.set_trace()
         _pr("steering_evt_set: ", self.name)
         self.steering_evt.set()
 
-    async def module_task(self, idx=0):
+    def steering_evt_clear(self):
+        #if self._frozen:  #and self.name=="histogram_index_1":
+        #    import pdb;pdb.set_trace()
+        _pr("steering_evt_clear: ", self.name)
+        self.steering_evt.clear()
+
+    def is_source(self):
+        return False
+
+    async def module_task(self):
         #import pdb;pdb.set_trace()
         _pr("task {} launched".format(self.name))
         #import pdb;pdb.set_trace()
@@ -353,83 +285,42 @@ class Module(metaclass=ModuleMeta):
             self.not_ready_evt = aio.Event()
         #self.not_ready_evt.set()
         self.init_aio_events()
-        my_cnt = 0
         s = self.scheduler()
         while True:
-            _pr(self.name, "IS WAITING FOR", self.steering_evt.is_set(), self.get_timeout())
-            try:
-                await aio.wait_for(aio.create_task(self.steering_evt.wait()), self.get_timeout())
-            except aio.TimeoutError:
-                self.amnesty()
-                #self.shorten()
-                _pr("Timeout on {}, {}".format(self.name, self.get_timeout()))
+            if self.is_source() or self._frozen or self._suspended:
+                _pr(self.name, "IS WAITING FOR", self.steering_evt.is_set())
+                await self.steering_evt.wait()
             else:
-                self.shorten()
+                _pr(self.name, "not need")
             if s._stopped:
                 self.tell_consumers()
                 break
             if s._short_cycle:
-                _pr2("Module {} scheduled {}, {}".format(self.name, self.get_timeout(), self.steering_evt.is_set()))
-            my_cnt += 1
-            #if s._short_cycle and self.name == "range_query2d_1":
-            #    import pdb;pdb.set_trace()
+                _pr2("Module {} scheduled  {}".format(self.name, self.steering_evt.is_set()))
             ready = self.is_ready()
             if self.is_terminated():
                 self.tell_consumers()
                 s.runners.remove(self.name)
                 s._run_list.remove(self)                
-                self.shorten()
                 break
             #t = aio.all_tasks()
             #_pr("ACTIVE: ", len(t), t)
-            if not (ready or self.has_input()): # or self.scheduler().has_input()):
-                _pr("NOT READY {}, {}, {}".format(self.name, self.state, my_cnt))
-                _pr("Module {} ZOMBIFIED ({})".format(self.name, self.state))
-                _pr("CONTINUE Zombie", self)
-                #if self.scheduler()._short_cycle:
-                #    self.scheduler().unfreeze()
-                if s._short_cycle:
-                    if s.inactivity_overflow():
-                        s.unfreeze()
-                        _pr2("UNFREEZE cause INACTIVITY +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
-                    else:
-                        s.report_inactivity()
-                if len(s.runners)>1:
-                    #self.shorten()
-                    self.incarcerate()
-                #else:
-                #    assert self.name in self.scheduler().runners
-                continue # zombie
             _pr("Module {} is READY  ({})".format(self.name, self.state))
             _pr("Module {} is waiting for slots".format(self.name))
-            if self.has_any_input():
+            if not self.is_source() and  self.has_any_input():
+                self._w8_slots = 1
+                #print(f"W8++++++++++++++++++++++++{self.name}")
                 await self.wait_for_slots()
+                self._w8_slots = 0
+                #print(f"W8------------------------{self.name}")                
             _pr("{} module stops waiting for slots".format(self.name))
             rn = await s.new_run_number()
             _pr("running {} : {}".format(self.name, rn))
             #import pdb;pdb.set_trace()
             await self.run(rn)
-            _pr("END running {} : {}".format(self.name, rn))
-            #self.shorten()
-            self.incarcerate()
-            await aio.sleep(0)            
-        _pr("task {} TERMINATED".format(self.name))
-        #if self.name in self.scheduler().runners:
-        #    self.scheduler().runners.remove(self.name)
-        #self.release_previous()
-        #self.release_previous()
-        #if self.name=="csv_loader_1":
-        #    import pdb;pdb.set_trace()
-        t = aio.all_tasks()
-        _pr("ACTIVE: ", len(t))
-        for e in t:
-            _pr(">>>TASK: ", e)
-        #_pr("Events: ", [self.scheduler()._modules[r].steering_evt for r in self.scheduler().runners])
-        _pr("RUNNERS: ", s.runners)
-        _pr("PRISONERS: ", s.jail)
-        _pr("********************************************************************************************************")
-        #import pdb;pdb.set_trace()
-        return 0
+            if self.is_source():
+                self.steering_evt_clear()
+            await aio.sleep(0.2)            
 
 
     @staticmethod
@@ -985,8 +876,6 @@ class Module(metaclass=ModuleMeta):
         See Variable module"""
         return False
 
-    def set_timeout(self, t=None):
-        self._timeout = self._default_timeout if t is None else t
         
     def me_first(self):
         #import pdb;pdb.set_trace()
@@ -1002,13 +891,12 @@ class Module(metaclass=ModuleMeta):
         s = self.scheduler()
         s.freeze()
          #import pdb;pdb.set_trace()
-        _ = aio.create_task(_unfreeze_later(s))
+        #_ = aio.create_task(_unfreeze_later(s))
 
     async def run(self, run_number):
         if self.scheduler()._short_cycle:
-            _pr2("RUN METHOD {}: {}, to:{}, {} {}".format(self.name,
+            _pr2("RUN METHOD {}: {}, {} {}".format(self.name,
                                                           run_number,
-                                                          self.get_timeout(),
                                                           self.steering_evt.is_set(),
                                                           "self.scheduler()._run_list"))
         assert not self.is_running()

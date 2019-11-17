@@ -102,6 +102,7 @@ class MCHistogram2D(NAry):
                 min_slot.created.next()
                 #with min_slot.lock:
                 min_df = min_slot.data()
+                if min_df is None: continue
                 if len(min_df) > 0:
                     min_ = min_df.last()
                     xmin = min(xmin, min_[x_column])
@@ -114,6 +115,7 @@ class MCHistogram2D(NAry):
                 max_slot.created.next()
                 #with max_slot.lock:
                 max_df = max_slot.data()
+                if max_df is None: continue
                 if len(max_df) > 0:
                     max_ = max_df.last()
                     xmax = max(xmax, max_[x_column])

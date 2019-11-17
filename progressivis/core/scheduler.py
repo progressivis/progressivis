@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
 
 __all__ = ['Scheduler']
 
+
 class Scheduler(object):
     "Base Scheduler class, runs progressive modules"
     # pylint: disable=too-many-public-methods,too-many-instance-attributes
@@ -65,11 +66,9 @@ class Scheduler(object):
         self.dataflow = Dataflow(self)
         self.module_iterator = None
         self._enter_cnt = 1
-        self.jail = set()
         self.runners = set()
         self.coros = []
         self._short_cycle = False
-        self._not_ready_cnt = 0
 
 
     async def new_run_number(self):
@@ -184,6 +183,24 @@ class Scheduler(object):
 
     def _after_run(self):
         pass
+    async def unlocker(self):
+        #import pdb;pdb.set_trace()
+        print("INIT unlocker task")
+        while True:
+            await aio.sleep(0.5)
+            if self._short_cycle:
+                mods_selection = [m for m in self._run_list if m.name in self._module_selection]
+            else:
+                mods_selection = self._run_list
+            nb_waiters = sum([m._w8_slots for m in mods_selection])
+            nb_max_w8 = len([x for x in mods_selection if not (x.is_source() or x.has_any_input())])
+            if nb_waiters >= nb_max_w8:
+                #print("UNLOCK ALL !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+                self.unfreeze()
+                for m in self._run_list:
+                    m.steering_evt_set()
+            #else:
+            #    print("STILL LOCKED", nb_waiters, nb_max_w8)
 
     async def start(self, tick_proc=None, idle_proc=None, coros=()):
         self.coros=list(coros)
@@ -262,6 +279,8 @@ class Scheduler(object):
         if self._idle_procs:
             runners.append(aio.create_task(self.idle_proc_runner()))
         runners.extend([aio.create_task(coro) for coro in self.coros])
+        #import pdb;pdb.set_trace()
+        runners.append(aio.create_task(self.unlocker()))
         self.runners = [m.name for m in self._run_list]
         await aio.gather(*runners)
         modules = [self._modules[m] for m in self._runorder]
@@ -502,29 +521,18 @@ class Scheduler(object):
                 mod.storagegroup.close_all()
 
     def freeze(self):
-        from .module import FREEZE_TIMEOUT
-        self._not_ready_cnt = 0
         mods_to_freeze = set([m for m in self._run_list if m.name not in self._module_selection and not m.is_input()])
         for module in mods_to_freeze:
-            module.incarcerate(1000) # a lot ...
             module._frozen = True
-            #module.set_timeout(FREEZE_TIMEOUT)
+            module.steering_evt_clear()
         self._short_cycle = True
 
-    def inactivity_overflow(self):
-        from .module import NOT_READY_MAX
-        return self._not_ready_cnt > NOT_READY_MAX
-
-    def report_inactivity(self):
-        self._not_ready_cnt += 1
-
     def unfreeze(self):
-        self._not_ready_cnt = 0
         for module in self._run_list:
             if not module._frozen: continue
             module._frozen = False
-            module.set_timeout()
-            module.release()
+            module.steering_evt_set()
+            #module.release()
         self._short_cycle = False
 
     @staticmethod

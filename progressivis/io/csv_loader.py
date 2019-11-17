@@ -108,6 +108,9 @@ class CSVLoader(TableModule):
         pos = self._input_stream.tell()
         return (pos, self._input_size)
 
+    def is_source(self):
+        return True
+
 
     async def validate_parser(self, run_number):
         if self.parser is None:
@@ -196,7 +199,6 @@ class CSVLoader(TableModule):
         return self._table.last_id >= self._last_saved_id + self._save_step_size
 
     async def run_step(self,run_number,step_size, howlong):
-        #import pdb; pdb.set_trace()
         if step_size==0: # bug
             logger.error('Received a step_size of 0')
             return self._return_run_step(self.state_ready, steps_run=0)

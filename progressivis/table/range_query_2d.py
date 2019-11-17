@@ -277,6 +277,8 @@ class RangeQuery2d(TableModule):
             steps += indices_len(updated)
         #with input_slot.lock:
         input_table = input_slot.data()
+        if input_table is None:
+            return self._return_run_step(self.state_blocked, steps_run=0)
         if not self._table:
             self._table = TableSelectedView(input_table, bitmap([]))
         self._create_min_max()
