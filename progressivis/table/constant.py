@@ -12,6 +12,6 @@ class Constant(TableModule):
         return 1
     
     def run_step(self,run_number,step_size,howlong):
-        self.tell_consumers()
+        self.notify_consumers()
         self.suspend()
         raise ProgressiveStopIteration()

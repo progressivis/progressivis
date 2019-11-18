@@ -40,7 +40,7 @@ class TestScatterPlot(ProgressiveTest):
     def tearDown(self):
         TestScatterPlot.cleanup()
 
-    def te_st_scatterplot(self):
+    def test_scatterplot(self):
         s = self.scheduler(clean=True)
         with s:
             csv = CSVLoader(get_dataset('smallfile'),

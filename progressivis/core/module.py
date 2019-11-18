@@ -40,10 +40,6 @@ class AnyAll:
 
 
 
-def _pr(*args):
-    pass #print(*args)
-def _pr2(*args):
-    print(*args)
 
 
 class ModuleMeta(ABCMeta):
@@ -147,7 +143,6 @@ class Module(metaclass=ModuleMeta):
         self.wait_expr = aio.FIRST_COMPLETED
         self.steering_evt = None
         self.blocked_evt = None
-        self.not_ready_evt = None
         self._ignore_inputs = False
         self._suspended = False
         self._frozen = False
@@ -202,7 +197,7 @@ class Module(metaclass=ModuleMeta):
         """
         return 0.0
 
-    def tell_consumers(self, out_name=None):
+    def notify_consumers(self, out_name=None):
         if out_name is None:
             values_ = self._output_slots.values()
         else:
@@ -224,11 +219,13 @@ class Module(metaclass=ModuleMeta):
 
     async def wait_for_slots(self):
         _ct = aio.create_task
+        s = self.scheduler()
+        sched_w8 = _ct(s._stopped_evt.wait())
+        w8_expr = None
         if isinstance(self.wait_expr, str):
-            #import pdb;pdb.set_trace()
             aws = [_ct(slot._event.wait()) for slot in self._input_slots.values() if slot is not None]
             if aws:
-                await aio.wait(set(aws), return_when=self.wait_expr)
+                w8_expr = aio.wait(set(aws), return_when=self.wait_expr)
         elif isinstance(self.wait_expr, AllAny): # all([any(), any(), ...]
             all_aws = set()
             for names in self.wait_expr._impl:
@@ -236,7 +233,7 @@ class Module(metaclass=ModuleMeta):
                 if aws:
                     all_aws.add(aio.wait(set(aws), return_when=aio.FIRST_COMPLETED))
             if all_aws:
-                await aio.wait(all_aws, return_when=aio.ALL_COMPLETED)
+                w8_expr =  aio.wait(all_aws, return_when=aio.ALL_COMPLETED)
         elif isinstance(self.wait_expr, AnyAll): # any([all(), all(), ...]                
             all_aws = set()
             for names in self.wait_expr._impl:
@@ -244,10 +241,11 @@ class Module(metaclass=ModuleMeta):
                 if aws:
                     all_aws.add(aio.wait(set(aws), return_when=aio.FIRST_COMPLETED))
             if all_aws:
-                await aio.wait(all_aws, return_when=aio.ALL_COMPLETED)
+                w8_expr = aio.wait(all_aws, return_when=aio.ALL_COMPLETED)
         else:
             raise ValueError("Unconsistent wait expression {}".format(self.wait_expr))
-
+        if w8_expr is not None:
+            await aio.wait({sched_w8, w8_expr}, return_when=aio.FIRST_COMPLETED)
 
 
     def suspend(self):
@@ -259,68 +257,42 @@ class Module(metaclass=ModuleMeta):
         self.steering_evt_set()
 
     def steering_evt_set(self):
-        #if self._frozen:  #and self.name=="histogram_index_1":
-        #    import pdb;pdb.set_trace()
-        _pr("steering_evt_set: ", self.name)
         self.steering_evt.set()
 
     def steering_evt_clear(self):
-        #if self._frozen:  #and self.name=="histogram_index_1":
-        #    import pdb;pdb.set_trace()
-        _pr("steering_evt_clear: ", self.name)
         self.steering_evt.clear()
 
     def is_source(self):
         return False
 
     async def module_task(self):
-        #import pdb;pdb.set_trace()
-        _pr("task {} launched".format(self.name))
-        #import pdb;pdb.set_trace()
         if self.steering_evt is None:
             self.steering_evt = aio.Event()
         if not self._suspended:
             self.steering_evt_set()
-        if self.not_ready_evt is None:
-            self.not_ready_evt = aio.Event()
-        #self.not_ready_evt.set()
         self.init_aio_events()
         s = self.scheduler()
         while True:
             if self.is_source() or self._frozen or self._suspended:
-                _pr(self.name, "IS WAITING FOR", self.steering_evt.is_set())
                 await self.steering_evt.wait()
-            else:
-                _pr(self.name, "not need")
             if s._stopped:
-                self.tell_consumers()
+                self.notify_consumers()
                 break
-            if s._short_cycle:
-                _pr2("Module {} scheduled  {}".format(self.name, self.steering_evt.is_set()))
-            ready = self.is_ready()
-            if self.is_terminated():
-                self.tell_consumers()
-                s.runners.remove(self.name)
-                s._run_list.remove(self)                
+            if self.is_zombie() or self.is_terminated():
+                self.state = Module.state_terminated
                 break
-            #t = aio.all_tasks()
-            #_pr("ACTIVE: ", len(t), t)
-            _pr("Module {} is READY  ({})".format(self.name, self.state))
-            _pr("Module {} is waiting for slots".format(self.name))
             if not self.is_source() and  self.has_any_input():
                 self._w8_slots = 1
-                #print(f"W8++++++++++++++++++++++++{self.name}")
                 await self.wait_for_slots()
                 self._w8_slots = 0
-                #print(f"W8------------------------{self.name}")                
-            _pr("{} module stops waiting for slots".format(self.name))
             rn = await s.new_run_number()
-            _pr("running {} : {}".format(self.name, rn))
-            #import pdb;pdb.set_trace()
+            if self.is_terminated():
+                self.notify_consumers()
+                break
             await self.run(rn)
             if self.is_source():
                 self.steering_evt_clear()
-            await aio.sleep(0.2)            
+            await aio.sleep(0.1)            
 
 
     @staticmethod
@@ -655,7 +627,6 @@ class Module(metaclass=ModuleMeta):
     def clear_slots_if(slots):
         for slot in slots:
             if not slot.has_buffered():
-                #print("clearing {}".format(slot.name))
                 slot._event.clear()
 
     def _return_run_step(self, next_state, steps_run, productive=None):
@@ -665,11 +636,12 @@ class Module(metaclass=ModuleMeta):
         if productive is None:
             productive = steps_run
         if productive:
-            self.tell_consumers()
+            self.notify_consumers()
         for slot in self._input_slots.values():
             if slot is None or slot.has_buffered():
                 continue
-            #print("clearing {}:{}".format(self.name, slot.name))
+            if slot.output_module.is_terminated():
+                continue
             slot._event.clear()
         return {'next_state': next_state,
                 'steps_run': steps_run}
@@ -686,7 +658,7 @@ class Module(metaclass=ModuleMeta):
     def is_running(self):
         return self._state == Module.state_running
 
-    def _is_ready(self):
+    def is_ready(self):
         # Module is either a source or has buffered data to process
         if self.state == Module.state_ready:
             return True
@@ -712,11 +684,6 @@ class Module(metaclass=ModuleMeta):
         # the module is blocked, cannot run any more, so it is terminated
         # too.
         if self.state == Module.state_blocked:
-            #if self.name == 'print_1':
-            #    import pdb;pdb.set_trace()
-            #if isinstance(self, Print):
-            #    import pdb;pdb.set_trace()
-            #print(self, "BLOCKED")
             slots = self.input_slot_values()
             in_count = 0
             term_count = 0
@@ -728,10 +695,6 @@ class Module(metaclass=ModuleMeta):
                 in_module = slot.output_module
                 in_ts = in_module.last_update()
                 ts = slot.last_update()
-
-                # _pr('for %s[%s](%d)->%s(%d)',
-                #              slot.input_module.name, slot.input_name, in_ts,
-                #              slot.output_name, ts)
                 if slot.has_buffered() or in_ts > ts:
                     ready_count += 1
                 elif (in_module.is_terminated() or
@@ -750,13 +713,6 @@ class Module(metaclass=ModuleMeta):
                      self.name, self.state_name[self.state])
         return False
 
-    def is_ready(self):
-        ready_ = self._is_ready()
-        if ready_:
-            self.not_ready_evt.clear()
-        else:
-            self.not_ready_evt.set()
-        return ready_
 
     def cleanup_run(self, run_number):
         """Perform operations such as switching state from zombie to terminated.
@@ -878,32 +834,20 @@ class Module(metaclass=ModuleMeta):
 
         
     def me_first(self):
-        #import pdb;pdb.set_trace()
         self.unsuspend()
         for module in self.scheduler()._run_list:
             if module == self: continue
             if not module.is_input():
                 module.steering_evt.clear()
-        _pr("me_first", [(m.name, m.steering_evt.is_set()) for m in self.scheduler()._run_list])
 
     def post_interaction_proc(self):
-        _pr2(f"POST INTERACTION {self.name} °°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°")
         s = self.scheduler()
         s.freeze()
-         #import pdb;pdb.set_trace()
-        #_ = aio.create_task(_unfreeze_later(s))
 
     async def run(self, run_number):
-        if self.scheduler()._short_cycle:
-            _pr2("RUN METHOD {}: {}, {} {}".format(self.name,
-                                                          run_number,
-                                                          self.steering_evt.is_set(),
-                                                          "self.scheduler()._run_list"))
         assert not self.is_running()
-        if not self.steering_evt.is_set() and self._frozen:
-            #import pdb;pdb.set_trace()
-            _pr2("DO NOTHING>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>", self.name)
-            return
+        #if not self.steering_evt.is_set() and self._frozen:
+        #    return
         self.steps_acc = 0
         next_state = self.state
         exception = None
@@ -925,22 +869,15 @@ class Module(metaclass=ModuleMeta):
         run_step_ret = {}
         self.start_run(run_number)
         tracer.start_run(now, run_number)
-        _pr(f"RUN {self.name} N: {run_number} START {self._start_time} END {self._end_time}")
         while self._start_time < self._end_time:
             remaining_time = self._end_time-self._start_time
             if remaining_time <= 0:
                 logger.info('Late by %d s in module %s',
                             remaining_time, self.pretty_typename())
                 break  # no need to try to squeeze anything
-            _pr('Time remaining: %f in module %s',
-                         remaining_time, self.pretty_typename())
             step_size = self.predict_step_size(np.min([max_time,
                                                        remaining_time]))
-            _pr('step_size=%d in module %s',
-                         step_size, self.pretty_typename())
             if step_size == 0:
-                _pr('step_size of 0 in module %s',
-                             self.pretty_typename())
                 break
             # pylint: disable=broad-except
             try:
@@ -963,7 +900,6 @@ class Module(metaclass=ModuleMeta):
                 next_state = Module.state_zombie
                 run_step_ret['next_state'] = next_state
                 now = self.timer()
-                _pr("Exception in %s", self.name)
                 tracer.exception(now, run_number)
                 exception = e
                 self._had_error = True
@@ -976,9 +912,6 @@ class Module(metaclass=ModuleMeta):
                     run_step_ret['debug'] = True
                 tracer.after_run_step(now, run_number, **run_step_ret)
                 self.state = next_state
-                _pr('Next step is %s in module %s',
-                             self.state_name[next_state],
-                             self.pretty_typename())
 
             if self._start_time is None or self.state != Module.state_ready:
                 tracer.run_stopped(now, run_number)
@@ -986,7 +919,6 @@ class Module(metaclass=ModuleMeta):
             self._start_time = now
         self.state = next_state
         if self.state == Module.state_zombie:
-            _pr('Module %s zombie', self.pretty_typename())
             tracer.terminated(now, run_number)
         progress = self.get_progress()
         tracer.end_run(now, run_number,

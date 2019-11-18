@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
 
 __all__ = ['Scheduler']
 
+RATE1 = 0.8
 
 class Scheduler(object):
     "Base Scheduler class, runs progressive modules"
@@ -42,6 +43,7 @@ class Scheduler(object):
         self._dependencies = None
         self._running = False
         self._stopped = True
+        self._stopped_evt = None
         self._runorder = None
         self._new_modules = None
         self._new_dependencies = None
@@ -183,25 +185,38 @@ class Scheduler(object):
 
     def _after_run(self):
         pass
+
     async def unlocker(self):
-        #import pdb;pdb.set_trace()
-        print("INIT unlocker task")
         while True:
             await aio.sleep(0.5)
+            new_list = []
+            for m in self._run_list:
+                m.is_ready()
+                if m.is_terminated():
+                    m.notify_consumers()
+                    self.runners.remove(m.name)
+                    m.steering_evt_set()
+                    continue
+                new_list.append(m)
+            self._run_list = new_list
             if self._short_cycle:
                 mods_selection = [m for m in self._run_list if m.name in self._module_selection]
             else:
                 mods_selection = self._run_list
+            if not len(mods_selection):
+                await self.stop()
+                break
             nb_waiters = sum([m._w8_slots for m in mods_selection])
-            nb_max_w8 = len([x for x in mods_selection if not (x.is_source() or x.has_any_input())])
-            if nb_waiters >= nb_max_w8:
-                #print("UNLOCK ALL !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+            nb_max_w8 = len([x for x in mods_selection if not x.is_source() and x.has_any_input()])
+            if nb_waiters >= nb_max_w8*RATE1 or self._stopped:
+                if self._idle_procs:
+                    await self.idle_proc_runner()
                 self.unfreeze()
                 for m in self._run_list:
                     m.steering_evt_set()
-            #else:
-            #    print("STILL LOCKED", nb_waiters, nb_max_w8)
-
+                if self._stopped:
+                    break
+                      
     async def start(self, tick_proc=None, idle_proc=None, coros=()):
         self.coros=list(coros)
         if tick_proc:
@@ -254,8 +269,10 @@ class Scheduler(object):
         "Remove an idle callback."
         assert callable(idle_proc)
         self._idle_procs.remove(idle_proc)
+
     def idle_proc(self):
         pass
+
     async def run(self):
         "Run the modules, called by start()."
         #from .sentinel import Sentinel
@@ -269,17 +286,15 @@ class Scheduler(object):
             self.dataflow = None
             self._enter_cnt = 0
         self._stopped = False
+        self._stopped_evt = aio.Event()        
         self._running = True
         self._start = default_timer()
         self._before_run()
         if self._new_modules:
             self._update_modules()
-        # actually, the order in self._run_list is not important anymore
+        # currently, the order in self._run_list is not important anymore
         runners = [aio.create_task(m.module_task()) for m in self._run_list]
-        if self._idle_procs:
-            runners.append(aio.create_task(self.idle_proc_runner()))
         runners.extend([aio.create_task(coro) for coro in self.coros])
-        #import pdb;pdb.set_trace()
         runners.append(aio.create_task(self.unlocker()))
         self.runners = [m.name for m in self._run_list]
         await aio.gather(*runners)
@@ -367,25 +382,18 @@ class Scheduler(object):
 
 
     async def idle_proc_runner(self):
-        #print("IDLE PROC RUNNER")
-        _ct = aio.create_task        
-        while True:
-            aws = [_ct(m.not_ready_evt.wait()) for m in self._run_list if not m.is_terminated()]
-            await aio.wait(aws, return_when=aio.ALL_COMPLETED)
-            has_run = False
-            for proc in self._idle_procs:
-                # pylint: disable=broad-except
-                try:
-                    logger.debug('Running idle proc')
-                    await proc(self, self._run_number)
-                    has_run = True
-                except Exception as exc:
-                    logger.error(exc)
-            if not has_run:
-                logger.info('sleeping %f', 0.2)
-                await aio.sleep(0.2)
-            if self._stopped:
-                break
+        has_run = False
+        for proc in self._idle_procs:
+            # pylint: disable=broad-except
+            try:
+                logger.debug('Running idle proc')
+                await proc(self, self._run_number)
+                has_run = True
+            except Exception as exc:
+                logger.error(exc)
+        if not has_run:
+            logger.info('sleeping %f', 0.2)
+            await aio.sleep(0.2)
         
     def _run_tick_procs(self):
         # pylint: disable=broad-except
@@ -404,8 +412,8 @@ class Scheduler(object):
 
     async def stop(self):
         "Stop the execution."
-        #print("STOPPED *************************************")
         self._stopped = True
+        self._stopped_evt.set()
 
     def is_running(self):
         "Return True if the scheduler is currently running."
@@ -460,7 +468,6 @@ class Scheduler(object):
         Notify this scheduler that the module has received input
         that should be served fast.
         """
-        #print("CALL for_input %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
         sel = self._reachability[module.name]
         if sel:
             if not self._module_selection:
@@ -472,7 +479,6 @@ class Scheduler(object):
                 self._module_selection.update(sel)
             logger.debug('Input selection for module: %s',
                          self._module_selection)
-            #print('Input selection for module %s : %s' % (module.name, self._module_selection))
         return self.run_number()+1
 
     def has_input(self):
@@ -528,6 +534,8 @@ class Scheduler(object):
         self._short_cycle = True
 
     def unfreeze(self):
+        if not self._short_cycle:
+            return
         for module in self._run_list:
             if not module._frozen: continue
             module._frozen = False

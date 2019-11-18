@@ -26,7 +26,7 @@ def prtT(x):
 class TestExpr(ProgressiveTest):
     def setUp(self):
         super(TestExpr, self).setUp()        
-        cheduler.default = self.scheduler()
+        Scheduler.default = self.scheduler()
 
     def tearDown(self):
         TestExpr.cleanup()

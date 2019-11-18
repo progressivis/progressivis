@@ -40,6 +40,9 @@ class RandomTable(TableModule):
                             create=True)
         self.columns = self._table.columns
 
+    def is_source(self):
+        return True
+
     async def run_step(self, run_number, step_size, howlong):
         #import pdb;pdb.set_trace()
         if step_size == 0: # bug

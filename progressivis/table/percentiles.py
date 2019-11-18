@@ -70,6 +70,8 @@ class Percentiles(TableModule):
 
     async def run_step(self, run_number, step_size, howlong):
         input_slot = self.get_input_slot('table')
+        if input_slot.data() is None:
+            return self._return_run_step(self.state_blocked, steps_run=0)
         input_slot.update(run_number)
         steps = 0
         if input_slot.deleted.any():
@@ -85,6 +87,8 @@ class Percentiles(TableModule):
         #     input_table = input_slot.data()
         # param = self.params
         percentiles_slot = self.get_input_slot('percentiles')
+        if percentiles_slot.data() is None:
+            return self._return_run_step(self.state_blocked, steps_run=0)
         percentiles_slot.update(run_number)
         percentiles_changed = False
         if percentiles_slot.deleted.any():
