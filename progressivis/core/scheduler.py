@@ -208,7 +208,7 @@ class Scheduler(object):
                 break
             nb_waiters = sum([m._w8_slots for m in mods_selection])
             nb_max_w8 = len([x for x in mods_selection if not x.is_source() and x.has_any_input()])
-            if nb_waiters >= nb_max_w8*RATE1 or self._stopped:
+            if nb_waiters >= nb_max_w8*RATE1 or self._stopped or self._short_cycle:
                 if self._idle_procs:
                     await self.idle_proc_runner()
                 self.unfreeze()
@@ -527,6 +527,7 @@ class Scheduler(object):
                 mod.storagegroup.close_all()
 
     def freeze(self):
+        self.unfreeze()
         mods_to_freeze = set([m for m in self._run_list if m.name not in self._module_selection and not m.is_input()])
         for module in mods_to_freeze:
             module._frozen = True
@@ -537,7 +538,7 @@ class Scheduler(object):
         if not self._short_cycle:
             return
         for module in self._run_list:
-            if not module._frozen: continue
+            #if not module._frozen: continue
             module._frozen = False
             module.steering_evt_set()
             #module.release()

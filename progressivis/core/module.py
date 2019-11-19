@@ -273,8 +273,8 @@ class Module(metaclass=ModuleMeta):
         self.init_aio_events()
         s = self.scheduler()
         while True:
-            if self.is_source() or self._frozen or self._suspended:
-                await self.steering_evt.wait()
+            #if self.is_source() or self._frozen or self._suspended:
+            await self.steering_evt.wait()
             if s._stopped:
                 self.notify_consumers()
                 break
