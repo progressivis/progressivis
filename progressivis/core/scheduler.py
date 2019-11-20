@@ -17,8 +17,6 @@ logger = logging.getLogger(__name__)
 
 __all__ = ['Scheduler']
 
-RATE1 = 0.8
-
 class Scheduler(object):
     "Base Scheduler class, runs progressive modules"
     # pylint: disable=too-many-public-methods,too-many-instance-attributes
@@ -208,7 +206,7 @@ class Scheduler(object):
                 break
             nb_waiters = sum([m._w8_slots for m in mods_selection])
             nb_max_w8 = len([x for x in mods_selection if not x.is_source() and x.has_any_input()])
-            if nb_waiters >= nb_max_w8*RATE1 or self._stopped or self._short_cycle:
+            if nb_waiters >= nb_max_w8 or self._stopped or self._short_cycle:
                 if self._idle_procs:
                     await self.idle_proc_runner()
                 self.unfreeze()

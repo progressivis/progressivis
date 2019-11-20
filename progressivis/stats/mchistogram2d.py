@@ -100,6 +100,8 @@ class MCHistogram2D(NAry):
                 if min_slot.created.any():
                     has_creation = True
                 min_slot.created.next()
+                min_slot.updated.next()
+                min_slot.deleted.next()                
                 #with min_slot.lock:
                 min_df = min_slot.data()
                 if min_df is None: continue
@@ -113,6 +115,8 @@ class MCHistogram2D(NAry):
                 if max_slot.created.any():
                     has_creation = True
                 max_slot.created.next()
+                max_slot.updated.next()
+                max_slot.deleted.next()
                 #with max_slot.lock:
                 max_df = max_slot.data()
                 if max_df is None: continue

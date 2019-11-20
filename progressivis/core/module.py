@@ -640,8 +640,8 @@ class Module(metaclass=ModuleMeta):
         for slot in self._input_slots.values():
             if slot is None or slot.has_buffered():
                 continue
-            if slot.output_module.is_terminated():
-                continue
+            #if slot.output_module.is_terminated():
+            #    continue
             slot._event.clear()
         return {'next_state': next_state,
                 'steps_run': steps_run}
