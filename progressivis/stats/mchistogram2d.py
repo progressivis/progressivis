@@ -97,7 +97,7 @@ class MCHistogram2D(NAry):
             if meta == 'min':
                 min_slot = input_slot
                 min_slot.update(run_number)
-                if min_slot.created.any():
+                if min_slot.has_buffered():
                     has_creation = True
                 min_slot.created.next()
                 min_slot.updated.next()
@@ -112,7 +112,7 @@ class MCHistogram2D(NAry):
             elif meta == 'max':
                 max_slot = input_slot
                 max_slot.update(run_number)
-                if max_slot.created.any():
+                if max_slot.has_buffered():
                     has_creation = True
                 max_slot.created.next()
                 max_slot.updated.next()
