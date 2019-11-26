@@ -1,17 +1,13 @@
 """
 Base Scheduler class, runs progressive modules.
 """
-import time
 import logging
 import functools
-from collections import Iterable
 from timeit import default_timer
-import asyncio as aio
 
 from .dataflow import Dataflow
-from progressivis.utils.synchronized import synchronized
+import progressivis.core.aio as aio
 from progressivis.utils.errors import ProgressiveError
-#from .sentinel import Sentinel
 
 logger = logging.getLogger(__name__)
 
@@ -129,8 +125,7 @@ class Scheduler(object):
         #with self.lock:
         for (name, module) in self.modules().items():
             mods[name] = module.to_json(short=short)
-        mods = mods.values()
-        modules = sorted(mods, key=functools.cmp_to_key(self._module_order))
+        modules = sorted(mods.values(), key=functools.cmp_to_key(self._module_order))
         msg['modules'] = modules
         msg['is_running'] = self.is_running()
         msg['is_terminated'] = self.is_terminated()
@@ -291,9 +286,11 @@ class Scheduler(object):
         if self._new_modules:
             self._update_modules()
         # currently, the order in self._run_list is not important anymore
-        runners = [aio.create_task(m.module_task()) for m in self._run_list]
-        runners.extend([aio.create_task(coro) for coro in self.coros])
-        runners.append(aio.create_task(self.unlocker()))
+        runners = [aio.create_task(m.module_task(), m.name)
+                   for m in self._run_list]
+        runners.extend([aio.create_task(coro)
+                        for coro in self.coros])
+        runners.append(aio.create_task(self.unlocker(), "unlocker"))
         self.runners = [m.name for m in self._run_list]
         await aio.gather(*runners)
         modules = [self._modules[m] for m in self._runorder]

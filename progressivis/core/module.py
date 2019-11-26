@@ -7,7 +7,6 @@ import re
 import logging
 
 import numpy as np
-import asyncio as aio
 
 from progressivis.utils.errors import ProgressiveError, ProgressiveStopIteration
 from progressivis.table.table_base import BaseTable
@@ -15,6 +14,8 @@ from progressivis.table.table import Table
 from progressivis.table.dshape import dshape_from_dtype
 from progressivis.table.row import Row
 from progressivis.storage import Group
+import progressivis.core.aio as aio
+
 
 from .utils import (type_fullname, get_random_name)
 from .slot import (SlotDescriptor, Slot)
@@ -34,12 +35,11 @@ logger = logging.getLogger(__name__)
 class AllAny:
     def __init__(self, arg):
         self._impl = arg
+
+
 class AnyAll:
     def __init__(self, arg):
         self._impl = arg
-
-
-
 
 
 class ModuleMeta(ABCMeta):
@@ -220,16 +220,18 @@ class Module(metaclass=ModuleMeta):
     async def wait_for_slots(self):
         _ct = aio.create_task
         s = self.scheduler()
-        sched_w8 = _ct(s._stopped_evt.wait())
+        sched_w8 = _ct(s._stopped_evt.wait(), self.name+"_stopped_wait")
         w8_expr = None
         if isinstance(self.wait_expr, str):
-            aws = [_ct(slot._event.wait()) for slot in self._input_slots.values() if slot is not None]
+            aws = [_ct(slot._event.wait(), self.name+"_slot_wait_"+slot.input_name)
+                   for slot in self._input_slots.values() if slot is not None]
             if aws:
                 w8_expr = aio.wait(set(aws), return_when=self.wait_expr)
         elif isinstance(self.wait_expr, AllAny): # all([any(), any(), ...]
             all_aws = set()
             for names in self.wait_expr._impl:
-                aws = [_ct(slot._event.wait()) for (sname, slot) in self._input_slots.items() if sname in names]
+                aws = [_ct(slot._event.wait(), self.name+"_slot_wait_"+slot.input_name) 
+                       for (sname, slot) in self._input_slots.items() if sname in names]
                 if aws:
                     all_aws.add(aio.wait(set(aws), return_when=aio.FIRST_COMPLETED))
             if all_aws:
@@ -237,7 +239,8 @@ class Module(metaclass=ModuleMeta):
         elif isinstance(self.wait_expr, AnyAll): # any([all(), all(), ...]                
             all_aws = set()
             for names in self.wait_expr._impl:
-                aws = [_ct(slot._event.wait()) for (sname, slot) in self._input_slots.items() if sname in names]
+                aws = [_ct(slot._event.wait(), self.name+"_slot_wait_"+slot.input_name)
+                       for (sname, slot) in self._input_slots.items() if sname in names]
                 if aws:
                     all_aws.add(aio.wait(set(aws), return_when=aio.FIRST_COMPLETED))
             if all_aws:
@@ -281,18 +284,18 @@ class Module(metaclass=ModuleMeta):
             if self.is_zombie() or self.is_terminated():
                 self.state = Module.state_terminated
                 break
-            if not self.is_source() and  self.has_any_input():
+            if not self.is_source() and self.has_any_input():
                 self._w8_slots = 1
                 await self.wait_for_slots()
                 self._w8_slots = 0
-            rn = await s.new_run_number()
+            rn = await s.new_run_number() # jdf: why asynchronous?
             if self.is_terminated():
                 self.notify_consumers()
                 break
             await self.run(rn)
             if self.is_source():
                 self.steering_evt_clear()
-            await aio.sleep(0.1)            
+            await aio.sleep(0.1)
 
 
     @staticmethod

@@ -20,9 +20,10 @@ class Variable(Constant):
 
     def has_input(self):
         return self._has_input
+
     async def from_input(self, input_):
         #print("RECEIVED FROM INPUT")
-        if not isinstance(input_,dict):
+        if not isinstance(input_, dict):
             raise ProgressiveError('Expecting a dictionary')
         if self._table is None and self.get_input_slot('like') is None:
             error = 'Variable %s with no initial value and no input slot'%self.name
@@ -51,7 +52,7 @@ class Variable(Constant):
         await aio.sleep(0)
         return error
     
-    async def run_step(self,run_number,step_size,howlong):
+    async def run_step(self,run_number, step_size, howlong):
         if self._table is None:
             slot = self.get_input_slot('like')
             if slot is not None:
