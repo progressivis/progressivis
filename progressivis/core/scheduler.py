@@ -45,7 +45,6 @@ class Scheduler(object):
         self._new_reachability = None        
         self._start = None
         self._run_number = 0
-        self._run_number_lock = None #asyncio.Lock()      
         self._tick_procs = []
         self._tick_once_procs = []
         self._idle_procs = []
@@ -67,12 +66,9 @@ class Scheduler(object):
         self._short_cycle = False
 
 
-    async def new_run_number(self):
-        async with self._run_number_lock:
-            #ret  = self._run_number
-            self._run_number += 1
-            #return ret
-            return self._run_number
+    def new_run_number(self):
+        self._run_number += 1
+        return self._run_number
 
     def join(self):
         "Wait for this execution thread to finish."
@@ -271,8 +267,6 @@ class Scheduler(object):
         #from .sentinel import Sentinel
         #import pdb;pdb.set_trace()
         #sl = Sentinel(scheduler=self)        
-        if self._run_number_lock is None:
-            self._run_number_lock = aio.Lock()
         if self.dataflow:
             assert self._enter_cnt == 1
             self._commit(self.dataflow)

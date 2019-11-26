@@ -288,7 +288,7 @@ class Module(metaclass=ModuleMeta):
                 self._w8_slots = 1
                 await self.wait_for_slots()
                 self._w8_slots = 0
-            rn = await s.new_run_number() # jdf: why asynchronous?
+            rn = s.new_run_number()
             if self.is_terminated():
                 self.notify_consumers()
                 break
