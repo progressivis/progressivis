@@ -38,12 +38,15 @@ class Scheduler(object):
         self._running = False
         self._stopped = True
         self._stopped_evt = None
+        self._not_stopped_evt = None
         self._runorder = None
         self._new_modules = None
         self._new_dependencies = None
         self._new_runorder = None
         self._new_reachability = None        
         self._start = None
+        self._step_once = False
+        self._exit = False
         self._run_number = 0
         self._tick_procs = []
         self._tick_once_procs = []
@@ -193,7 +196,7 @@ class Scheduler(object):
             else:
                 mods_selection = self._run_list
             if not len(mods_selection):
-                await self.stop()
+                self.exit()
                 break
             nb_waiters = sum([m._w8_slots for m in mods_selection])
             nb_max_w8 = len([x for x in mods_selection if not x.is_source() and x.has_any_input()])
@@ -203,8 +206,9 @@ class Scheduler(object):
                 self.unfreeze()
                 for m in self._run_list:
                     m.steering_evt_set()
-                if self._stopped:
-                    break
+            if self._exit:
+                break
+            await self._not_stopped_evt.wait()
                       
     async def start(self, tick_proc=None, idle_proc=None, coros=()):
         self.coros=list(coros)
@@ -274,6 +278,8 @@ class Scheduler(object):
             self._enter_cnt = 0
         self._stopped = False
         self._stopped_evt = aio.Event()        
+        self._not_stopped_evt = aio.Event()
+        self._not_stopped_evt.set()
         self._running = True
         self._start = default_timer()
         self._before_run()
@@ -376,7 +382,10 @@ class Scheduler(object):
             # pylint: disable=broad-except
             try:
                 logger.debug('Running idle proc')
-                await proc(self, self._run_number)
+                if aio.iscoroutinefunction(proc):
+                    await proc(self, self._run_number)
+                else:
+                    proc(self, self._run_number)
                 has_run = True
             except Exception as exc:
                 logger.error(exc)
@@ -384,29 +393,64 @@ class Scheduler(object):
             logger.info('sleeping %f', 0.2)
             await aio.sleep(0.2)
         
-    def _run_tick_procs(self):
+    async def _run_tick_procs(self):
         # pylint: disable=broad-except
+        #import pdb;pdb.set_trace()
         for proc in self._tick_procs:
             logger.debug('Calling tick_proc')
             try:
-                proc(self, self._run_number)
+                if aio.iscoroutinefunction(proc):
+                    await proc(self, self._run_number)
+                else:
+                    proc(self, self._run_number)
             except Exception as exc:
                 logger.warning(exc)
         for proc in self._tick_once_procs:
             try:
-                proc()
+                if aio.iscoroutinefunction(proc):
+                    await proc()
+                else:
+                    proc(self, self._run_number)
             except Exception as exc:
                 logger.warning(exc)
             self._tick_once_procs = []
 
-    async def stop(self):
+
+    def exit(self, *args, **kwargs):
+        self._exit = True
+        self.resume()
+        self._stopped_evt.set()
+        # after the previous statement both _stopped_evt and _not_stopped_evt
+        # are set. The goal is allow all tasks to exit
+        for m in self._run_list:
+            m.steering_evt_set()
+
+    def stop(self):
         "Stop the execution."
         self._stopped = True
         self._stopped_evt.set()
+        self._not_stopped_evt.clear()
+
+    def resume(self, tick_proc=None):
+        "Resume the execution."
+        self._stopped = False
+        self._stopped_evt.clear()
+        self._not_stopped_evt.set()
+        self._step_once = False
+        if tick_proc:
+            assert callable(tick_proc)
+            self._tick_procs = [tick_proc]
+        else:
+            self._tick_procs = []
+
 
     def is_running(self):
         "Return True if the scheduler is currently running."
         return self._running
+
+    def is_stopped(self):
+        "Return True if the scheduler is stopped."
+        return self._stopped
 
     def is_terminated(self):
         "Return True if the scheduler is terminated."

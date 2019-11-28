@@ -278,7 +278,12 @@ class Module(metaclass=ModuleMeta):
         while True:
             #if self.is_source() or self._frozen or self._suspended:
             await self.steering_evt.wait()
-            if s._stopped:
+            await s._not_stopped_evt.wait()
+            if s._step_once:
+                print(f"step once on {self.name}")
+                s._step_once = False
+                s.stop()
+            if s._exit:
                 self.notify_consumers()
                 break
             if self.is_zombie() or self.is_terminated():
@@ -292,6 +297,7 @@ class Module(metaclass=ModuleMeta):
             if self.is_terminated():
                 self.notify_consumers()
                 break
+            await s._run_tick_procs()
             await self.run(rn)
             if self.is_source():
                 self.steering_evt_clear()

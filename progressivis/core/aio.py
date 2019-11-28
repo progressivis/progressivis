@@ -1,6 +1,6 @@
 import sys
 
-from asyncio import (sleep, Lock, Event, gather, wait, FIRST_COMPLETED, ALL_COMPLETED)
+from asyncio import (sleep, Lock, Event, gather, wait, iscoroutinefunction, FIRST_COMPLETED, ALL_COMPLETED)
 from asyncio import create_task as _create_task
 
 

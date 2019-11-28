@@ -19,7 +19,7 @@ def print_repr(x):
         print(repr(x))
 
 async def idle_proc(s, _):
-    await s.stop()
+    s.exit()
 
 
 LOWER_X = 0.2
@@ -34,7 +34,9 @@ async def fake_input(sched, name, t, inp):
 
 async def sleep_then_stop(s, t):
     await aio.sleep(t)
-    await s.stop()
+    s.exit()
+    print(s._run_list)
+
 
 class TestScatterPlot(ProgressiveTest):
     def tearDown(self):

@@ -162,16 +162,21 @@ class ProgressivisBlueprint(web.Application):
 
     async def step_tick_scheduler(self, scheduler, run_number):
         "Run at each step"
-        scheduler.stop()
+        #scheduler.stop()
+        scheduler._step_once = True
         await self.emit_tick('scheduler', run_number)
 
     def step_once(self):
         "Run once"
-        self.scheduler.start(tick_proc=self.step_tick_scheduler) # i.e. step+write_to_path
+        self.scheduler.resume(tick_proc=self.step_tick_scheduler) # i.e. step+write_to_path
 
     def start(self):
         "Run when the scheduler starts"
         self.scheduler.start(tick_proc=self.tick_scheduler)
+        
+    def resume(self):
+        "Run when the scheduler starts"
+        self.scheduler.resume(tick_proc=self.tick_scheduler)
 
     async def tick_module(self, module, run_number):
         "Run when a module has run"
@@ -241,16 +246,18 @@ def _on_disconnect(sid):
 #@on.socketio('/progressivis/scheduler/start')
 def _on_start(sid):
     scheduler = progressivis_bp.scheduler
-    if scheduler.is_running():
+    #if scheduler.is_running():
+    if not scheduler.is_stopped():
         return {'status': 'failed',
                 'reason': 'scheduler is already running'}
-    progressivis_bp.start()
+    progressivis_bp.resume()
     return {'status': 'success'}
 
 #@on.socketio('/progressivis/scheduler/stop')
 def _on_stop(sid):
     scheduler = progressivis_bp.scheduler
-    if not scheduler.is_running():
+    #if not scheduler.is_running():
+    if scheduler.is_stopped():    
         return {'status': 'failed',
                 'reason': 'scheduler is not is_running'}
     scheduler.stop()
@@ -259,11 +266,12 @@ def _on_stop(sid):
 #@on.socketio('/progressivis/scheduler/step')
 def _on_step(sid):
     scheduler = progressivis_bp.scheduler
-    if scheduler.is_running():
-        send({'status': 'failed',
-              'reason': 'scheduler is is_running'})
+    #if scheduler.is_running():
+    if not scheduler.is_stopped():    
+        return {'status': 'failed',
+              'reason': 'scheduler is is_running'}
     progressivis_bp.step_once()
-    send({'status': 'success'})
+    return {'status': 'success'}
 
 #@on.socketio('/progressivis/scheduler')
 def _on_scheduler(sid, short=False):

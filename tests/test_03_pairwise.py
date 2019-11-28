@@ -14,11 +14,12 @@ def print_len(x):
 
 times = 0
 
-def ten_times(scheduler, run_number):
+async def ten_times(scheduler, run_number):
     global times
     times += 1
+    #import pdb;pdb.set_trace()
     if times > 10:
-        scheduler.stop()
+        scheduler.exit()
 
 class TestPairwiseDistances(ProgressiveTest):
 
