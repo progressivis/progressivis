@@ -276,9 +276,9 @@ def _on_step(sid):
 #@on.socketio('/progressivis/scheduler')
 def _on_scheduler(sid, short=False):
     scheduler = progressivis_bp.scheduler
-    print('socketio scheduler called')
+    #print('socketio scheduler called')
     progressivis_bp.register_module('scheduler', sid)
-    print(progressivis_bp._sids_for_path)
+    #print(progressivis_bp._sids_for_path)
     assert sid in progressivis_bp.sids_for_path('scheduler')
     return scheduler.to_json(short)
 
@@ -502,7 +502,7 @@ async def start_server(scheduler=None, debug=False):
     await runner.setup()
     site = web.TCPSite(runner, 'localhost', 8080)
     srv =  site.start()
-    await scheduler.start(coros=[srv, aio.sleep(3600)])
+    await scheduler.start(tick_proc=progressivis_bp.tick_scheduler, coros=[srv, aio.sleep(3600)])
     #await aio.sleep(3600)
     #logging.basicConfig(level=logging.DEBUG)
 def stop_server():

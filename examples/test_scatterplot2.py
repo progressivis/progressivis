@@ -2,7 +2,6 @@
 Test loading of nyc_taxis with dynamic queries.
 """
 import time
-import six
 import pandas as pd
 import progressivis.core
 from progressivis.core import Scheduler, Every
@@ -32,10 +31,8 @@ except NameError:
 #PREFIX= 'https://storage.googleapis.com/tlc-trip-data/2015/'
 #SUFFIX= ''
 PREFIX = '../nyc-taxi/'
-if six.PY3:
-    SUFFIX = '.bz2'
-else:
-    SUFFIX = '.gz'
+
+SUFFIX = '.bz2'
 
 URLS = [
     PREFIX+'yellow_tripdata_2015-01.csv'+SUFFIX,
@@ -60,7 +57,9 @@ SCATTERPLOT = MCScatterPlot(scheduler=s,
                                               'pickup_longitude',
                                               'pickup_latitude')],
                                 approximate=True)
+
 SCATTERPLOT.create_dependent_modules(CSV, 'table')
+
 async def coro(s):
     await aio.sleep(2)
     print("awake after 2 sec.")
