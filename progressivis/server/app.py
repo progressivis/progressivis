@@ -501,6 +501,7 @@ async def start_server(scheduler=None, debug=False):
     runner = web.AppRunner(app) #, access_log=None)
     await runner.setup()
     site = web.TCPSite(runner, 'localhost', 8080)
+    print('Server started, connect to http://localhost:8080/scheduler.html')
     srv =  site.start()
     await scheduler.start(tick_proc=progressivis_bp.tick_scheduler, coros=[srv, aio.sleep(3600)])
     #await aio.sleep(3600)

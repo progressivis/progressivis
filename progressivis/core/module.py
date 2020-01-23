@@ -461,12 +461,6 @@ class Module(metaclass=ModuleMeta):
         "Create a specified output slot"
         return Slot(self, output_name, input_module, input_name)
 
-    def connect_output(self, output_name, input_module, input_name):
-        "Connect the output slot"
-        slot = self.create_slot(output_name, input_module, input_name)
-        slot.connect()
-        return slot
-
     def has_any_input(self):
         "Return True if the module has any input"
         return any(self._input_slots.values()) and not self._ignore_inputs
