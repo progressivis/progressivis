@@ -11,6 +11,7 @@ from progressivis.vis import MCScatterPlot
 from progressivis.io import CSVLoader
 #from progressivis.datasets import get_dataset
 from progressivis.table.constant import Constant
+import asyncio as aio
 
 
 def _filter(df):
@@ -64,13 +65,13 @@ MULTICLASS = MCScatterPlot(scheduler=s, classes=[
     ('pickup', 'pickup_longitude', 'pickup_latitude'),
     ('dropoff', 'dropoff_longitude', 'dropoff_latitude')], approximate=True)
 MULTICLASS.create_dependent_modules(CSV, 'table')
-s.set_interaction_opts(starving_mods=MULTICLASS.get_starving_mods(),
-                           max_iter=3, max_time=1.5)
+
+async def coro(s):
+    await aio.sleep(2)
+    print("awake after 2 sec.")
+    s.to_json()
+
+
 if __name__ == '__main__':
-    s.start()
-    while True:
-        time.sleep(2)
-        s.to_json()
-        MULTICLASS.to_json() # simulate a web query
-    s.join()
+    aio.run(s.start(coros=[coro(s), aio.sleep(3600)]))
     print(len(CSV.table()))
