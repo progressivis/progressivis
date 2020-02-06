@@ -229,7 +229,7 @@ function multiclass2d_update_vis(rawdata) {
     
     dots.enter().append("circle")
          .attr("class", "dot")
-         .attr("r", 1.5/transform.k)
+         .attr("r", 3.5/transform.k)
          .attr("cx", function(d) { return x(d[0]); }) // use untransformed x0/y0
          .attr("cy", function(d) { return y(d[1]); })
         .style("fill", function(d) { return dot_color[d[2]]}) //function(d) { return color(d.species); });

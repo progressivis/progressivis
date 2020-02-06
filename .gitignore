@@ -18,7 +18,6 @@
 .settings
 .tmp*
 .ipynb_checkpoints
-progressivis/core/custom_multi_threading.py
 __pycache__
 /.eggs
 /bin
@@ -41,3 +40,4 @@ __pycache__
 /.coverage
 /coverage
 /mmap-storage
+node_modules

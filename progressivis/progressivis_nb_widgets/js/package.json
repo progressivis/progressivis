@@ -32,9 +32,9 @@
   },
   "dependencies": {
     "@jupyter-widgets/base": "^1.1 || ^2",
-      "lodash": "^4.17.4",
-      "d3": "5.0.0",
-      "chroma-js": ""
+    "lodash": "^4.17.4",
+    "d3": "5.0.0",
+    "chroma-js": ""
   },
   "jupyterlab": {
     "extension": "lib/labplugin"
