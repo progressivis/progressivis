@@ -297,7 +297,7 @@ class Dataflow(object):
         input_modules = self.get_inputs()
         k = list(dependencies.keys())
         index = dict(zip(k, range(len(k))))
-        print(index)
+        #print(index)
         graph = self._dependency_csgraph(dependencies, index)
         self.reachability = {}
         reachability = {inp: set(breadth_first_order(graph,

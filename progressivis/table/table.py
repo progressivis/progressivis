@@ -85,7 +85,7 @@ class Table(BaseTable):
         if not (chunks is None or isinstance(chunks, (integer_types, Mapping))):
             raise ValueError('Invalid chunks (%s) should be None or a dictionary'%chunks)
         if data is not None:
-            if create is not None:
+            if create is not None and create is not True:
                 logger.warning('creating a Table with data and create=False')
             create = True
 
