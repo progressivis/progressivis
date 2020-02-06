@@ -18,7 +18,8 @@ from progressivis.nbwidgets import *
 sc = Scatterplot()
 
 # +
-MulticlassScatterplotDemo.ipynbimport time
+
+import time
 import pandas as pd
 import copy
 from progressivis.core import Scheduler, Every, JSONEncoderNp, asynchronize
