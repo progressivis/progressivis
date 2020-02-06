@@ -198,8 +198,10 @@ class Histogram2D(TableModule):
                                 bins=bins,
                                 range=[[ymin, ymax], [xmin, xmax]])
         else:
-            histo = None
-            cmax = 0
+            #histo = None
+            #cmax = 0
+            return self._return_run_step(self.state_blocked,
+                                         steps_run=0)
 
         if self._histo is None:
             self._histo = histo

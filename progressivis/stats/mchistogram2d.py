@@ -221,9 +221,10 @@ class MCHistogram2D(NAry):
                                 bins=bins,
                                 range=[[ymin, ymax], [xmin, xmax]])
         else:
-            histo = None
-            cmax = 0
-
+            #histo = None
+            #cmax = 0
+            return self._return_run_step(self.state_blocked,
+                                         steps_run=0)
         if self._histo is None:
             self._histo = histo
         elif histo is not None:
@@ -252,25 +253,6 @@ class MCHistogram2D(NAry):
         self.build_heatmap(values)
         return self._return_run_step(self.next_state(dfslot), steps_run=steps)
 
-    def old_build_heatmap(self, values):
-        if not values:
-            return
-        p = self.params
-        json_ = {'columns': [self.x_column, self.y_column], 'xbins': p.xbins,
-                     'ybins':p.ybins}
-        with self.lock:
-            row = values
-            if not (np.isnan(row['xmin']) or np.isnan(row['xmax'])
-                    or np.isnan(row['ymin']) or np.isnan(row['ymax'])):
-                json_['bounds'] = {
-                    'xmin': row['xmin'],
-                    'ymin': row['ymin'],
-                    'xmax': row['xmax'],
-                    'ymax': row['ymax']
-                }
-                data = sp.special.cbrt(row['array'])
-                json_['image'] = sp.misc.bytescale(data)
-                self._heatmap_cache = json_
                     
     def build_heatmap(self, values):
         json_ = {}
@@ -289,10 +271,6 @@ class MCHistogram2D(NAry):
             self._heatmap_cache = (json_, bounds)
         return None
     
-    def old_heatmap_to_json(self, json, short=False):
-        if self._heatmap_cache:
-            json.update(self._heatmap_cache)
-        return json
 
     def heatmap_to_json(self, json, short=False):
         if self._heatmap_cache is None:
