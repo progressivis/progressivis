@@ -1,6 +1,6 @@
 
 from ._version import get_versions
-from .utils import (type_fullname, fix_loc, indices_len, integer_types)
+from .utils import (type_fullname, fix_loc, indices_len, integer_types, JSONEncoderNp, asynchronize)
 from .scheduler import Scheduler
 from .slot import Slot, SlotDescriptor
 from .storagemanager import StorageManager
@@ -18,7 +18,7 @@ del get_versions
 
 
 __all__ = ["type_fullname", "fix_loc", "indices_len",
-           "integer_types", "bitmap",
+           "integer_types", "JSONEncoderNp", "asynchronize", "bitmap",
            "Scheduler", "BitmapChangeManager",
            "version", "__version__", "short_version",
            "Slot", "SlotDescriptor", "Module", "StorageManager",

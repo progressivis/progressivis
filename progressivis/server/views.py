@@ -12,8 +12,8 @@ from aiohttp import web
 import aiohttp_jinja2
 import jinja2
 
-from .app import progressivis_bp, path_to_module, stop_server, PROJECT_ROOT, JSONEncoder4Numpy
-
+from .app import progressivis_bp, path_to_module, stop_server, PROJECT_ROOT
+from ..core import JSONEncoderNp
 routes = web.RouteTableDef()
 
 #dumps = JSONEncoder4Numpy.dumps

@@ -32,18 +32,13 @@ decompressors = dict(bz2=bz2.BZ2Decompressor,
                      xz=lzma.LZMADecompressor)
 
     
-async def _asynchronize(f, *args, **kwargs):
-    # cf. https://docs.python.org/3/library/asyncio-eventloop.html#asyncio.loop.run_in_executor
-    loop = asyncio.get_running_loop()
-    fun = ft.partial(f, *args, **kwargs)
-    return await loop.run_in_executor(
-        None, fun)
-    
+from ..core import asynchronize
+
 async def _read_csv(*args, **kwargs):
-    return await _asynchronize(pd.read_csv, *args, **kwargs)
+    return await asynchronize(pd.read_csv, *args, **kwargs)
 
 async def async_filepath_to_buffer(*args, **kwargs):
-    return await _asynchronize(filepath_to_buffer, *args, **kwargs)    
+    return await asynchronize(filepath_to_buffer, *args, **kwargs)    
     
 def is_recoverable(inp):
     if is_str(inp):
@@ -318,18 +313,18 @@ class InputSource(object):
 
     async def tell(self):
         if self._compression is None:
-            return await _asynchronize(self._stream.tell)
+            return await asynchronize(self._stream.tell)
         else:
             return self._dec_offset
 
     async def read(self, n):
         if self._compression is None:
-            ret = await _asynchronize(self._stream.read, n)
+            ret = await asynchronize(self._stream.read, n)
         else:
             ret = await self._read_compressed(n)
         if ret or not n:
             return ret
-        tell_ = await _asynchronize(self._stream.tell)
+        tell_ = await asynchronize(self._stream.tell)
         if  tell_ < self._input_size:
             raise ValueError(
                 "Inconsistent read: empty string"
@@ -354,7 +349,7 @@ class InputSource(object):
         break_ = False
         while cnt < n_:
             max_length = 1024 * 100
-            chunk = await _asynchronize(self._stream.read, int(max_length))
+            chunk = await asynchronize(self._stream.read, int(max_length))
             if not len(chunk):
                 break_ = True
             bytes_ = b''
@@ -378,7 +373,7 @@ class InputSource(object):
         if self._stream is None:
             return
         try:
-            await _asynchronize(self._stream.close)
+            await asynchronize(self._stream.close)
             # pylint: disable=bare-except
         except:
             pass

@@ -787,3 +787,37 @@ def decorate(scheduler, patch):
     for m in scheduler.modules().values():
         if patch.patch_condition(m):
             decorate_module(m, patch)
+
+import json as js
+class JSONEncoderNp(js.JSONEncoder):
+    "Encode numpy objects"
+    def default(self, o):
+        "Handle default encoding."
+        if isinstance(o, float) and np.isnan(o):
+            return None
+        if isinstance(o, np.integer):
+            return int(o)
+        if isinstance(o, np.bool_):
+            return bool(o)
+        if isinstance(o, np.ndarray):
+            return o.tolist()
+        return js.JSONEncoder.default(self, o)
+    @staticmethod
+    def dumps(*args, **kwargs):
+        return js.dumps(*args, cls=JSONEncoderNp, **kwargs)
+    @staticmethod
+    def loads(*args, **kwargs):
+        return js.loads(*args, **kwargs)
+    @staticmethod
+    def to_json(*args, **kwargs):
+        s = JSONEncoderNp.dumps(*args, **kwargs)
+        return JSONEncoderNp.loads(s)
+
+import asyncio as aio
+import functools as ft
+async def asynchronize(f, *args, **kwargs):
+    # cf. https://docs.python.org/3/library/asyncio-eventloop.html#asyncio.loop.run_in_executor
+    loop = aio.get_running_loop()
+    fun = ft.partial(f, *args, **kwargs)
+    return await loop.run_in_executor(
+        None, fun)

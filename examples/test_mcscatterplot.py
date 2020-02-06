@@ -2,7 +2,6 @@
 Test loading of nyc_taxis with dynamic queries.
 """
 import time
-import six
 import pandas as pd
 import copy
 from progressivis.core import Scheduler, Every
@@ -36,10 +35,8 @@ except NameError:
 #PREFIX= 'https://storage.googleapis.com/tlc-trip-data/2015/'
 #SUFFIX= ''
 PREFIX = '../nyc-taxi/'
-if six.PY3:
-    SUFFIX = '.bz2'
-else:
-    SUFFIX = '.gz'
+
+SUFFIX = '.bz2'
 
 URLS = [
     PREFIX+'yellow_tripdata_2015-01.csv'+SUFFIX,
@@ -70,7 +67,6 @@ async def coro(s):
     await aio.sleep(2)
     print("awake after 2 sec.")
     s.to_json()
-
 
 if __name__ == '__main__':
     aio.run(s.start(coros=[coro(s), aio.sleep(3600)]))

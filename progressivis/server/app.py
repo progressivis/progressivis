@@ -42,32 +42,13 @@ import aiohttp_jinja2
 #from aiohttp_debugtoolbar import toolbar_middleware_factory
 
 from progressivis import Scheduler, Module
-
+from ..core import JSONEncoderNp
 
 logger = logging.getLogger(__name__)
 
 # pylint: disable=invalid-name
 socketio = None
 
-class JSONEncoder4Numpy(js.JSONEncoder):
-    "Encode numpy objects"
-    def default(self, o):
-        "Handle default encoding."
-        if isinstance(o, float) and np.isnan(o):
-            return None
-        if isinstance(o, np.integer):
-            return int(o)
-        if isinstance(o, np.bool_):
-            return bool(o)
-        if isinstance(o, np.ndarray):
-            return o.tolist()
-        return js.JSONEncoder.default(self, o)
-    @staticmethod
-    def dumps(*args, **kwargs):
-        return js.dumps(*args, cls=JSONEncoder4Numpy, **kwargs)
-    @staticmethod
-    def loads(*args, **kwargs):
-        return js.loads(*args, **kwargs)
 
 class ProgressivisBlueprint(web.Application):
     "Blueprint for ProgressiVis"
@@ -480,7 +461,7 @@ async def start_server(scheduler=None, debug=False):
     app = app_create(scheduler)
     app['debug'] = debug
     #socketio = _AsyncServer(async_mode='aiohttp')
-    socketio = _AsyncServer(async_mode='aiohttp', json=JSONEncoder4Numpy)
+    socketio = _AsyncServer(async_mode='aiohttp', json=JSONEncoderNp)
     socketio.on_event('connect', _on_connect)
     socketio.on_event('disconnect', _on_disconnect)
     socketio.on_event('join', _on_join)
@@ -501,7 +482,7 @@ async def start_server(scheduler=None, debug=False):
     runner = web.AppRunner(app) #, access_log=None)
     await runner.setup()
     site = web.TCPSite(runner, 'localhost', 8080)
-    print('Server started, connect to http://localhost:8080/scheduler.html')
+    print('Server started, connect to http://localhost:8080/progressivis/scheduler.html')
     srv =  site.start()
     await scheduler.start(tick_proc=progressivis_bp.tick_scheduler, coros=[srv, aio.sleep(3600)])
     #await aio.sleep(3600)
