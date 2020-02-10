@@ -1,6 +1,7 @@
 d3 = require("d3");
 History = require("./history");
 colormaps = require("./colormaps");
+er = require('./es6-element-ready');
 //var multiclass2d_ready = (function() { // encapsulate to avoid side effects
 var progressivis_data = null;
 var ipyView = null;
@@ -101,9 +102,8 @@ function multiclass2d_update_vis(rawdata) {
     }
     window.render = render;
     render(window.spec, data_)
-    var tOut = 300;
-    setTimeout(function() {
-    dataURL = $("#heatmapContainer canvas")[0].toDataURL();
+    er.elementReady("#heatmapContainer canvas").then((that)=>{
+    dataURL = $(that)[0].toDataURL();
     window.spec.data = {};
     imageHistory.enqueueUnique(dataURL);
     $('#map-legend').empty();
@@ -239,8 +239,10 @@ function multiclass2d_update_vis(rawdata) {
     dots .attr("cx", function(d) { return x(d[0]); })
          .attr("cy", function(d) { return y(d[1]); });
     dots.exit().remove();
-    dots.order();
-    }, tOut)}
+	dots.order();
+    });//end elementReady
+} 
+
 
 function multiclass2d_zoomed(t) {
     if (t === undefined)
@@ -252,7 +254,7 @@ function multiclass2d_zoomed(t) {
     svg.selectAll(".dot").attr("r", 3.5/transform.k);
 }
 
-
+/*
     function multiclass2d_refresh(json) {
     if(json && json.payload) {
         multiclass2d_update(json.payload);}
@@ -261,8 +263,8 @@ function multiclass2d_zoomed(t) {
         module_get(multiclass2d_update, error);
     }
         
-}
-
+    }
+*/
 function delta(d) { return d[1] - d[0]; }
 
 function compute_transform(x, y, x0, y0) {
@@ -332,12 +334,8 @@ function multiclass2d_filter() {
         max[columns[1]] = ymax;
     else
         max[columns[1]] = null;
-    
-    //module_input(min, ignore, progressivis_error, module_id+"/min_value");
-    //module_input(max, ignore, progressivis_error, module_id+"/max_value");
     console.log("min:", min);
     console.log("max:", max);
-    toto = ipyView;
     ipyView.model.set('value', {min: min, max: max});
     //ipyView.model.save_changes();
     ipyView.touch();
@@ -373,8 +371,7 @@ function multiclass2d_ready(view_) {
     colormaps.makeTableFilter(colorMap, "Default");
     $('#filter').unbind('click').click(function() { multiclass2d_filter(); });
     
-    refresh = multiclass2d_refresh; // function to call to refresh
-    //module_ready();
+    //refresh = multiclass2d_refresh; // function to call to refresh
 }
 //return multiclass2d_ready;
 //})();

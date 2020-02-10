@@ -3,6 +3,7 @@ var _ = require('lodash');
 MDM = require('./multiclass-density-maps2.js');
 html_  = require('./sc_template');
 mc2d = require('./multiclass2d');
+er = require('./es6-element-ready');
 // See example.py for the kernel counterpart to this file.
 
 
@@ -39,17 +40,15 @@ var ScatterplotModel = widgets.DOMWidgetModel.extend({
 var ScatterplotView = widgets.DOMWidgetView.extend({
     // Defines how the widget gets rendered into the DOM
     render: function() {
-	console.log("RENDER ************************************");
 	this.el.innerHTML = html_;
-	to = 500;
-	let that = this;
-	//setTimeout needed here because innerHTML set seems to be asynchronous ...
-	setTimeout(function() {
+	let that = this;	
+	er.elementReady("#prevImages").then((_)=>{
 	    mc2d.ready_(that);
-	}, to);
+	});
         // Observe changes in the value traitlet in Python, and define
         // a custom callback.
         this.model.on('change:data', this.data_changed, this);
+
     },
 
     data_changed: function() {
