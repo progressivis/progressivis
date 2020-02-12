@@ -14,14 +14,14 @@ function getOnly(dict, keys){
             </select>)
     }
     function renderHeader(title, label, dict, val, handler){
-        return (<div key={title}><h4>{title}</h4><div> <label>{label}&nbsp;</label>{renderSelect(val, dict, handler)}</div></div>)
+        return (<tbody><tr><td colspan="2" key={title}><h3>{title}</h3></td></tr><tr><td><label>{label}&nbsp;</label></td><td>{renderSelect(val, dict, handler)}</td></tr></tbody>)
     }
     function renderNamedSelect(label, dict, val, handler){
-        return (<div><label>{label}&nbsp;</label><div>{renderSelect(val, dict, handler)}</div></div>)
+        return (<tr><td><label>{label}&nbsp;</label></td><td>{renderSelect(val, dict, handler)}</td></tr>)
     }
 
     function renderInput(label, type, name, val, handler){
-        return (<div ><label>{label}&nbsp;</label><div key={name}> <input value={val} name={name} type={type} onChange={handler}/></div></div>)
+        return (<tr><td><label>{label}&nbsp;</label></td><td><input key={name} value={val} name={name} type={type} onChange={handler}/></td></tr>)
     }
 
     class Rebin extends React.Component {
@@ -173,12 +173,12 @@ function getOnly(dict, keys){
       }
      render() {
         window.spec = this.tidy();
-      return (<form>
+      return (<form><table>
         {this.renderRebin()}
         {this.renderRescale()}
         {this.renderCompose()}
         <div hidden>{JSON.stringify(this.tidy())}</div>
-      </form>)
+      </table></form>)
       }
     }
     elementReady("#root").then((_)=>{

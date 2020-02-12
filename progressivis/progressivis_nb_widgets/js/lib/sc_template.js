@@ -28,23 +28,25 @@ html_ =  `<!-- Tab panes -->
               Configure ...
             </a>       
           </div>          
-          <div  id="historyGrp" style="height:100px;">
+          <div  id="historyGrp" style="height:80px;">
             <label>History</label>
-            <span  id="prevImages"></span>
+            <table border="1"style="width:350px;height:80px;"><tr><td id="prevImages"></td></tr></table>
           </div>
+  <br/>  <br/>  <br/>  <br/>
           
         </div>
 </div>
     </div>
   </div>
   <div id="heatmapContainer" style="width:512px; height:512px;display: none;"></div>
+
     <!-- MDM form -->
 
     <div id="mdm-form" style="display: none;">
         <div >
             <div >
                 <div >
-                    <h4>Multiclass Density Map Editor</h4>
+                    <h2>Multiclass Density Map Editor</h2>
 
                 </div>
 
@@ -58,7 +60,6 @@ html_ =  `<!-- Tab panes -->
 
     </div>
     <script>
-    //$("#mdm-form").attr("style", "display: block;");
    </script>
 `;
 module.exports = html_;

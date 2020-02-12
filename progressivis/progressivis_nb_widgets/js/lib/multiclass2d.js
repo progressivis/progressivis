@@ -1,8 +1,9 @@
-d3 = require("d3");
-History = require("./history");
-colormaps = require("./colormaps");
-er = require('./es6-element-ready');
-//var multiclass2d_ready = (function() { // encapsulate to avoid side effects
+import {Config, Interpreter} from 'multiclass-density-maps';
+import * as d3 from 'd3';
+import History from "./history"
+import * as colormaps from "./colormaps"
+import {elementReady} from './es6-element-ready';
+
 var progressivis_data = null;
 var ipyView = null;
 var margin = {top: 20, right: 20, bottom: 30, left: 40},
@@ -78,7 +79,7 @@ function multiclass2d_update_vis(rawdata) {
     if (!data || !bounds) return;
     var index = data['index'];
     var dot_color = ['red', 'blue', 'green', 'cyan', 'orange']
-    data_ = rawdata['chart'];
+    var data_ = rawdata['chart'];
     if(!window.spec){
         var spec =  {
             "data": { "url": "bar" },
@@ -93,16 +94,16 @@ function multiclass2d_update_vis(rawdata) {
         window.spec = spec;
     }
     function render(spec, data) {
-        var config = new MDM.Config(spec);
+        var config = new Config(spec);
         config.loadJson(data).then(function () {
-            var interp = new MDM.Interpreter(config);
+            var interp = new Interpreter(config);
             interp.interpret();
             return interp.render(document.getElementById('heatmapContainer'))
         });
     }
     window.render = render;
     render(window.spec, data_)
-    er.elementReady("#heatmapContainer canvas").then((that)=>{
+    elementReady("#heatmapContainer canvas").then((that)=>{
     dataURL = $(that)[0].toDataURL();
     window.spec.data = {};
     imageHistory.enqueueUnique(dataURL);
@@ -154,10 +155,11 @@ function multiclass2d_update_vis(rawdata) {
             .call(yAxis);
 
         svg.call(zoom);
-        firstTime = false;
+        //firstTime = false;
     }
     else { // prevBounds != null
         var changed = false;
+	var v = null;
         for (v in prevBounds) {
             if (prevBounds[v] != bounds[v]) {
                 changed = true;
@@ -343,7 +345,6 @@ function multiclass2d_filter() {
 
 function multiclass2d_ready(view_) {
     ipyView = view_;
-    console.log("ipyView ", ipyView );
     svg = d3.select("#multiclass_scatterplot svg")
          .attr("width", width + margin.left + margin.right)
          .attr("height", height + margin.top + margin.bottom);
@@ -370,9 +371,6 @@ function multiclass2d_ready(view_) {
     makeOptions(colorMapSelect.get(0), colormaps.getTableNames());
     colormaps.makeTableFilter(colorMap, "Default");
     $('#filter').unbind('click').click(function() { multiclass2d_filter(); });
-    
-    //refresh = multiclass2d_refresh; // function to call to refresh
 }
-//return multiclass2d_ready;
-//})();
-module.exports = {update_vis: multiclass2d_update_vis, ready_: multiclass2d_ready, view: ipyView};
+
+export  {multiclass2d_update_vis as update_vis,  multiclass2d_ready as ready_, ipyView as view};

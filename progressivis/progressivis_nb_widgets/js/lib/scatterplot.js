@@ -1,6 +1,5 @@
 var widgets = require('@jupyter-widgets/base');
 var _ = require('lodash');
-MDM = require('./multiclass-density-maps2.js');
 html_  = require('./sc_template');
 mc2d = require('./multiclass2d');
 er = require('./es6-element-ready');
