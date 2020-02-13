@@ -14,14 +14,14 @@ function getOnly(dict, keys){
             </select>)
     }
     function renderHeader(title, label, dict, val, handler){
-        return (<tbody><tr><td colspan="2" key={title}><h3>{title}</h3></td></tr><tr><td><label>{label}&nbsp;</label></td><td>{renderSelect(val, dict, handler)}</td></tr></tbody>)
+        return (<tbody  key={title}><tr><td colSpan="2"><h3>{title}</h3></td></tr><tr><td><label>{label}&nbsp;</label></td><td>{renderSelect(val, dict, handler)}</td></tr></tbody>)
     }
     function renderNamedSelect(label, dict, val, handler){
-        return (<tr><td><label>{label}&nbsp;</label></td><td>{renderSelect(val, dict, handler)}</td></tr>)
+        return (<tbody key={label}><tr><td><label>{label}&nbsp;</label></td><td>{renderSelect(val, dict, handler)}</td></tr></tbody>)
     }
 
     function renderInput(label, type, name, val, handler){
-        return (<tr><td><label>{label}&nbsp;</label></td><td><input key={name} value={val} name={name} type={type} onChange={handler}/></td></tr>)
+        return (<tbody key={name}><tr><td><label>{label}&nbsp;</label></td><td><input  value={val} name={name} type={type} onChange={handler}/></td></tr></tbody>)
     }
 
     class Rebin extends React.Component {
@@ -36,7 +36,7 @@ function getOnly(dict, keys){
             let typeDict = {none: "None", square: "Square", rect: "Rect", voronoi: "Voronoi"};
             let rebinType = this.props.value['type'];
             let res = [renderHeader("Rebin", "Type", typeDict, rebinType , this.handleChange('type'))];
-            if (rebinType=="none") return  (<div>{res}</div>);
+            if (rebinType=="none") return  (<>{res}</>);
             let aggrDict = {max: 'Max', mean:'Mean', sum: 'Sum', min: 'Min'};
             res.push(renderNamedSelect("Aggregate", aggrDict, this.props.value['aggregation']  , this.handleChange('aggregation')));
             //renderInput(label, type, name, val, handler)
@@ -51,7 +51,7 @@ function getOnly(dict, keys){
                 res.push(renderInput("Size", "number", "rebinSize",this.props.value['size'] , this.handleChange('size')))
                 res.push(renderInput("Stroke", "text", "rebinStroke",this.props.value['stroke'] , this.handleChange('stroke')))
             };
-            return  (<div>{res}</div>);
+            return  (<>{res}</>);
         }
     }
     class Rescale extends React.Component {
@@ -71,7 +71,7 @@ function getOnly(dict, keys){
             if(rescaleType == 'equidepth'){
                 res.push(renderInput("Size", "number", "rescaleLevels",this.props.value['levels'] , this.handleChange('levels')))
             }
-            return  (<div>{res}</div>);
+            return  (<>{res}</>);
        }
      }
 
@@ -90,7 +90,7 @@ function getOnly(dict, keys){
                     dotdensity: "Dotdensity", time: "Time"};
             let compValue = this.props.value['mix'];
             let res = [renderHeader("Compose", "Mix", compDict, compValue, this.handleChange('mix'))];
-            if(compValue in ["none", "mean", "max", "separate"]) return  (<div>{res}</div>);
+            if(compValue in ["none", "mean", "max", "separate"]) return  (<>{res}</>);
             if(compValue == "invmin"){
                 res.push(renderInput("Threshold", "number", "compThreshold",this.props.value['threshold'] , this.handleChange('threshold')))
             }
@@ -115,7 +115,7 @@ function getOnly(dict, keys){
             if(compValue == "time"){
                 res.push(renderInput("Interval(s)", "number", "compInterval",this.props.value['interval'] , this.handleChange('interval')))
             }
-            return  (<div>{res}</div>);
+            return  (<>{res}</>);
 
 
 
@@ -177,8 +177,9 @@ function getOnly(dict, keys){
         {this.renderRebin()}
         {this.renderRescale()}
         {this.renderCompose()}
+	      </table>
         <div hidden>{JSON.stringify(this.tidy())}</div>
-      </table></form>)
+	      </form>)
       }
     }
     elementReady("#root").then((_)=>{
