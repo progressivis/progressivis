@@ -111,3 +111,9 @@ async def from_input():
 
 aio.create_task(s.start(coros=[from_input()]))
 sc
+# -
+
+gr = ModuleGraph()
+v = JSONEncoderNp.to_json(s.to_json(short=False))
+gr.data = v
+gr

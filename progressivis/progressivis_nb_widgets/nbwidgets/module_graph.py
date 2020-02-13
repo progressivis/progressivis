@@ -4,14 +4,14 @@ from traitlets import Unicode, Any
 # See js/lib/widgets.js for the frontend counterpart to this file.
 
 @widgets.register
-class Scatterplot(widgets.DOMWidget):
-    """Progressivis Scatterplot widget."""
+class ModuleGraph(widgets.DOMWidget):
+    """Progressivis ModuleGraph widget."""
 
     # Name of the widget view class in front-end
-    _view_name = Unicode('ScatterplotView').tag(sync=True)
+    _view_name = Unicode('ModuleGraphView').tag(sync=True)
 
     # Name of the widget model class in front-end
-    _model_name = Unicode('ScatterplotModel').tag(sync=True)
+    _model_name = Unicode('ModuleGraphModel').tag(sync=True)
 
     # Name of the front-end module containing widget view
     _view_module = Unicode('progressivis-nb-widgets').tag(sync=True)
@@ -29,5 +29,5 @@ class Scatterplot(widgets.DOMWidget):
     # is automatically synced to the frontend *any* time it changes in Python.
     # It is synced back to Python from the frontend *any* time the model is touched.
     data = Any('{}').tag(sync=True)
-    value =  Any('{}').tag(sync=True)
+
 

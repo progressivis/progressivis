@@ -1,4 +1,4 @@
 _ = require("./config-editor");
 // Export widget models and views, and the npm package version number.
-module.exports = require('./scatterplot.js');
+module.exports = require('./widgets.js');
 module.exports['version'] = require('../package.json').version;
