@@ -16,6 +16,7 @@
 # %gui asyncio
 from progressivis.nbwidgets import *
 sc = Scatterplot()
+gr = ModuleGraph()
 
 # +
 
@@ -46,6 +47,8 @@ def _print_len(x):
     if x is not None:
         print(len(x))
 
+def _cleanup(data):
+    return JSONEncoderNp.cleanup(data)
 
 def wait_for_change(widget, value):
     future = aio.Future()
@@ -57,14 +60,21 @@ def wait_for_change(widget, value):
     return future
            
  
-def _work(wg, val):
-    wg.data = val
 
+def feed_widget(wg, val):
+    wg.data = _cleanup(val)
+
+    
 class MyScatterPlot(MCScatterPlot):
     async def run(self, run_number):
         await super().run(run_number)
-        js_ = JSONEncoderNp.to_json(self._json_cache)
-        await asynchronize(_work, sc, js_)
+        #js_ = JSONEncoderNp.to_json(self._json_cache)
+        #graph_ = JSONEncoderNp.to_json(self.scheduler().to_json(short=False))
+        #await asynchronize(_work, sc, js_, graph_)
+        aio.create_task(asynchronize(feed_widget, sc, self._json_cache))
+        aio.create_task(asynchronize(feed_widget, gr, self.scheduler().to_json(short=False)))
+        
+                        
 
 try:
     s = scheduler
@@ -109,11 +119,12 @@ async def from_input():
         await MULTICLASS.min_value.from_input(bounds['min'])
         await MULTICLASS.max_value.from_input(bounds['max'])        
 
-aio.create_task(s.start(coros=[from_input()]))
-sc
+aio.create_task(s.start(coros=[from_input()]));
 # -
 
-gr = ModuleGraph()
-v = JSONEncoderNp.to_json(s.to_json(short=False))
-gr.data = v
-gr
+import ipywidgets as ipw
+tab = ipw.Tab()
+tab.children = [sc, gr]
+tab.set_title(0, 'Scatterplot')
+tab.set_title(1, 'Module graph')
+tab

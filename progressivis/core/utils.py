@@ -809,7 +809,7 @@ class JSONEncoderNp(js.JSONEncoder):
     def loads(*args, **kwargs):
         return js.loads(*args, **kwargs)
     @staticmethod
-    def to_json(*args, **kwargs):
+    def cleanup(*args, **kwargs):
         s = JSONEncoderNp.dumps(*args, **kwargs)
         return JSONEncoderNp.loads(s)
 
