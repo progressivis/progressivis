@@ -84,7 +84,6 @@ import * as cola from 'webcola';
   }
   
 function graph_update_vis(modules, firstTime) {
-    console.log("modules:", modules);
       var nodes = _.map(modules, function(module, index){
           return { 
               id: index, 

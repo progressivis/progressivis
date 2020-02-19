@@ -54,7 +54,7 @@ var ScatterplotView = widgets.DOMWidgetView.extend({
 
     data_changed: function() {
 	let val = this.model.get('data');
-	mc2d.update_vis(val);
+	mc2d.update_vis(JSON.parse(val));
     }
 });
 
@@ -95,7 +95,7 @@ var ModuleGraphView = widgets.DOMWidgetView.extend({
     data_changed: function() {
 	console.log("Data changed ModuleGraphView");
 	let val = this.model.get('data');
-	mg.graph_update(val);	
+	mg.graph_update(JSON.parse(val));	
 	
     }
 });

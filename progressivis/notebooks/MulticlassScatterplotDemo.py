@@ -43,12 +43,6 @@ def _filter(df):
     return df[(pklon > -74.08) & (pklon < -73.5) & (pklat > 40.55) & (pklat < 41.00) &
                   (dolon > -74.08) & (dolon < -73.5) & (dolat > 40.55) & (dolat < 41.00)]
 
-def _print_len(x):
-    if x is not None:
-        print(len(x))
-
-def _cleanup(data):
-    return JSONEncoderNp.cleanup(data)
 
 def wait_for_change(widget, value):
     future = aio.Future()
@@ -62,7 +56,7 @@ def wait_for_change(widget, value):
  
 
 def feed_widget(wg, val):
-    wg.data = _cleanup(val)
+    wg.data = JSONEncoderNp.dumps(val)
 
     
 class MyScatterPlot(MCScatterPlot):

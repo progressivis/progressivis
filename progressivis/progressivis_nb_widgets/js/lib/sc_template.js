@@ -30,7 +30,7 @@ html_ =  `<!-- Tab panes -->
           </div>          
           <div  id="historyGrp" style="height:80px;">
             <label>History</label>
-            <table border="1"style="width:350px;height:80px;"><tr><td id="prevImages"></td></tr></table>
+            <table border="1"style="width:500px;height:80px;"><tr><td id="prevImages"></td></tr></table>
           </div>
   <br/>  <br/>  <br/>  <br/>
           
