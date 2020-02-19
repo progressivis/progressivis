@@ -68,9 +68,6 @@ def feed_widget(wg, val):
 class MyScatterPlot(MCScatterPlot):
     async def run(self, run_number):
         await super().run(run_number)
-        #js_ = JSONEncoderNp.to_json(self._json_cache)
-        #graph_ = JSONEncoderNp.to_json(self.scheduler().to_json(short=False))
-        #await asynchronize(_work, sc, js_, graph_)
         aio.create_task(asynchronize(feed_widget, sc, self._json_cache))
         aio.create_task(asynchronize(feed_widget, gr, self.scheduler().to_json(short=False)))
         
