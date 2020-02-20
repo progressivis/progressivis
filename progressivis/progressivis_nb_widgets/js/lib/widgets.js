@@ -88,7 +88,6 @@ var ModuleGraphView = widgets.DOMWidgetView.extend({
         // Observe changes in the value traitlet in Python, and define
         // a custom callback.
         this.model.on('change:data', this.data_changed, this);
-	console.log("this.model done", this.model); 
 
     },
 

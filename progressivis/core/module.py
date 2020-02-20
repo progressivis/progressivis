@@ -280,7 +280,7 @@ class Module(metaclass=ModuleMeta):
             await self.steering_evt.wait()
             await s._not_stopped_evt.wait()
             if s._step_once:
-                print(f"step once on {self.name}")
+                #print(f"step once on {self.name}")
                 s._step_once = False
                 s.stop()
             if s._exit:

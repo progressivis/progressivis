@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # ---
 # jupyter:
 #   jupytext:
@@ -18,8 +19,8 @@ from progressivis.nbwidgets import *
 sc = Scatterplot()
 gr = ModuleGraph()
 
-# +
 
+# +
 import time
 import pandas as pd
 import copy
@@ -40,37 +41,29 @@ def _filter(df):
     pklat = df['pickup_latitude']
     dolon = df['dropoff_longitude']
     dolat = df['dropoff_latitude']
+
     return df[(pklon > -74.08) & (pklon < -73.5) & (pklat > 40.55) & (pklat < 41.00) &
                   (dolon > -74.08) & (dolon < -73.5) & (dolat > 40.55) & (dolat < 41.00)]
 
-
-def wait_for_change(widget, value):
-    future = aio.Future()
-    def getvalue(change):
-        # make the new value available
-        future.set_result(change.new)
-        widget.unobserve(getvalue, value)
-    widget.observe(getvalue, value)
-    return future
-           
- 
-
 def feed_widget(wg, val):
     wg.data = JSONEncoderNp.dumps(val)
-
-    
-class MyScatterPlot(MCScatterPlot):
-    async def run(self, run_number):
-        await super().run(run_number)
-        aio.create_task(asynchronize(feed_widget, sc, self._json_cache))
-        aio.create_task(asynchronize(feed_widget, gr, self.scheduler().to_json(short=False)))
-        
-                        
 
 try:
     s = scheduler
 except NameError:
     s = Scheduler()
+    
+cpanel = ControlPanel(s)
+
+class MyScatterPlot(MCScatterPlot):
+    async def run(self, run_number):
+        await super().run(run_number)
+        aio.create_task(asynchronize(feed_widget, sc, self._json_cache))
+        aio.create_task(asynchronize(feed_widget, gr, self.scheduler().to_json(short=False)))
+        aio.create_task(asynchronize(feed_widget, cpanel, run_number))        
+                        
+
+
 
 #PREFIX= 'https://storage.googleapis.com/tlc-trip-data/2015/'
 #SUFFIX= ''
@@ -98,6 +91,7 @@ CSV = CSVLoader(index_col=False, skipinitialspace=True,
 CSV.input.filenames = CST.output.table
 PR = Every(scheduler=s, proc=_quiet)
 PR.input.df = CSV.output.table
+
 MULTICLASS = MyScatterPlot(scheduler=s, classes=[
     ('pickup', 'pickup_longitude', 'pickup_latitude'),
     ('dropoff', 'dropoff_longitude', 'dropoff_latitude')], approximate=True)
@@ -108,9 +102,17 @@ async def from_input():
         await wait_for_change(sc, 'value')
         bounds = sc.value
         await MULTICLASS.min_value.from_input(bounds['min'])
-        await MULTICLASS.max_value.from_input(bounds['max'])        
+        await MULTICLASS.max_value.from_input(bounds['max'])
 
-aio.create_task(s.start(coros=[from_input()]));
+async def control_panel(action):
+    btn, cb =  cpanel.cb_args(action)
+    while True:
+        await wait_for_click(btn, cb)
+
+aio.create_task(s.start(coros=[from_input(), 
+                               control_panel("resume"),
+                               control_panel("stop"), 
+                               control_panel("step")]));
 # -
 
 import ipywidgets as ipw
@@ -118,4 +120,5 @@ tab = ipw.Tab()
 tab.children = [sc, gr]
 tab.set_title(0, 'Scatterplot')
 tab.set_title(1, 'Module graph')
-tab
+vbox = ipw.VBox([tab, cpanel])
+vbox

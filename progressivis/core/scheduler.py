@@ -228,9 +228,9 @@ class Scheduler(object):
         # pylint: disable=unused-argument
         self.stop()
 
-    def step(self):
+    async def step(self):
         "Start the scheduler for on step."
-        self.start(tick_proc=self._step_proc)
+        await self.start(tick_proc=self._step_proc)
 
     def on_tick(self, tick_proc):
         "Set a procedure to call at each tick."
