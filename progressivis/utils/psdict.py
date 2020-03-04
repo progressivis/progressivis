@@ -1,7 +1,5 @@
 from collections import defaultdict
 from ..core.bitmap import bitmap
-
-SECOND_BEGIN = 2 ** 12
             
 class PsDict(dict):
     "progressive dictionary"
@@ -15,7 +13,6 @@ class PsDict(dict):
             other = {}
         super().__init__(**other, **kwargs)
         self._index = None
-        self._cnt = SECOND_BEGIN
         
     def to_id(self, key):
         pass
@@ -26,10 +23,11 @@ class PsDict(dict):
     def fix_indices(self): # TODO find a better name ...
         if self._index is None:
             return
+        next_id = max(self.ids) + 1
         for k in self.keys():
             if k not in self._index:
-                self._index[k] = self._cnt
-                self._cnt += 1
+                self._index[k] = next_id
+                next_id += 1
     
     def new_indices(self, prev):
         if self._index is None:
