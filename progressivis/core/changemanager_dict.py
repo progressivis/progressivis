@@ -26,6 +26,7 @@ class DictChangeManager(BaseChangeManager):
         self._last_bm = None
 
     def compute_updates(self, data):
+        data.fix_indices()
         last_dict = self._last_dict
         changes = IndexUpdate()
         if last_dict is None:

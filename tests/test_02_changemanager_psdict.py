@@ -1,7 +1,7 @@
 from collections import namedtuple
 from progressivis.core.bitmap import bitmap
 from progressivis.core.changemanager_dict import DictChangeManager
-from progressivis.utils.psdict import PsDict
+from progressivis.utils.psdict import PsDict, SECOND_BEGIN
 from . import ProgressiveTest
 
 
@@ -40,5 +40,16 @@ class TestDictChangeManager(ProgressiveTest):
         self.assertEqual(cm.created.next(), slice(5, 6))
         self.assertEqual(cm.updated.next(), bitmap([2, 4]))
         self.assertEqual(cm.deleted.length(), 0)
+        del d['b']
+        d['e'] *= 2
+        d['y'] = 442
+        cm.update(4, d, mid1)
+        self.assertEqual(cm.last_update(), 4)
+        self.assertEqual(cm.deleted.length(), 1)
+        self.assertEqual(cm.created.next(), slice(SECOND_BEGIN, SECOND_BEGIN+1))
+        self.assertEqual(cm.updated.next(), slice(4, 5))
+        self.assertEqual(cm.deleted.next(), slice(1, 2))
+        #self.assertEqual(cm.deleted.length(), 0)
+        
 if __name__ == '__main__':
     ProgressiveTest.main()
