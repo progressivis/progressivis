@@ -3,7 +3,7 @@ import * as d3 from 'd3';
 import History from "./history"
 import * as colormaps from "./colormaps"
 import {elementReady} from './es6-element-ready';
-
+import $ from 'jquery';
 var progressivis_data = null;
 var ipyView = null;
 var margin = {top: 20, right: 20, bottom: 30, left: 40},

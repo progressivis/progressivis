@@ -13,20 +13,23 @@
     "widgets",
     "ipython",
     "ipywidgets",
+    "jupyterlab",
     "jupyterlab-extension"
   ],
   "files": [
     "lib/**/*.js",
+    "lib/**/*.css",
     "dist/*.js"
   ],
   "scripts": {
     "clean": "rimraf dist/",
     "prepublish": "webpack",
-    "build": "webpack",
+    "build": "webpack --mode=production",
     "watch": "webpack --watch --mode=development",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "devDependencies": {
+    "@babel/cli": "^7.8.4",
     "@babel/core": "^7.8.4",
     "@babel/preset-env": "^7.8.4",
     "@babel/preset-react": "^7.8.3",
@@ -34,16 +37,19 @@
     "css-loader": "^3.4.2",
     "rimraf": "^2.6.1",
     "style-loader": "^1.1.3",
-    "webpack": "^3.5.5"
+    "webpack": "^4.41.6",
+    "webpack-cli": "^3.3.11"
   },
   "dependencies": {
     "@jupyter-widgets/base": "^1.1 || ^2",
     "chroma-js": "",
+    "core-js": "^3.6.4",
     "d3": "5.0.0",
+    "jquery": "^3.4.1",
     "lodash": "^4.17.4",
     "multiclass-density-maps": "~0.1.5",
-    "react": "^16.12.0",
-    "react-dom": "^16.12.0",
+    "react": "^16.8.4",
+    "react-dom": "^16.8.4",
     "webcola": "^3.4.0"
   },
   "jupyterlab": {

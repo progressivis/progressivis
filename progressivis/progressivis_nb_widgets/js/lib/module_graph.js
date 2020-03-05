@@ -1,6 +1,7 @@
 "use strict";
 import * as d3 from 'd3';
 import * as cola from 'webcola';
+import $ from 'jquery';
 //var module_graph = function(){
   var d3cola;
   var firstTime = true;
