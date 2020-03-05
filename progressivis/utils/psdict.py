@@ -13,22 +13,41 @@ class PsDict(dict):
             other = {}
         super().__init__(**other, **kwargs)
         self._index = None
+        self._deleted = {}
+        self._inverse = None
+        self._inverse_del = None        
+
+    def key_of(self, id):
+        """
+        returns (key, status)
+        key: the key associated to id
+        status: {active|deleted}
+        """
+        if self._index is None:
+            return list(self.keys())[id], 'active'
+        if self._inverse is None:
+            self._inverse = {i: k for (k, i) in self._index.items()}
+        if id in self._inverse:
+            return self._inverse[id], 'active'
+        if self._inverse_del is None:
+            self._inverse_del = {i: k for (k, i) in self._deleted.items()}
+        if id in self._inverse_del:
+            return self._inverse_del[id], 'deleted'
+        raise KeyError(f"Key not found for id: {id}")
         
-    def to_id(self, key):
-        pass
-
-    def to_key(self, id):
-        pass
-
     def fix_indices(self): # TODO find a better name ...
         if self._index is None:
             return
+        self._inverse = None
+        self._inverse_del = None   
         next_id = max(self.ids) + 1
         for k in self.keys():
             if k not in self._index:
                 self._index[k] = next_id
                 next_id += 1
-    
+            if k in self._deleted: # a previously deleted key was added later
+                del self._deleted[k]
+
     def new_indices(self, prev):
         if self._index is None:
             return bitmap(range(len(self))[len(prev):])
@@ -47,14 +66,15 @@ class PsDict(dict):
         if self._index is None:
             return bitmap()
         del_keys = set(prev.keys()) - set(self.keys())
-        return bitmap((i[0] for (k, i) in self._index.items() if k in del_keys and isinstance(i, tuple)))
+        return bitmap((i for (k, i) in self._deleted.items() if k in del_keys))
 
     def __delitem__(self, key):
         if key not in self:
             raise KeyError(f"Key {key} does not exist")
         if self._index is None: # first deletion
             self._index = dict(zip(self.keys(), range(len(self))))
-        self._index[key] = (self._index[key],) # tuple([i]) => deletion mark
+        self._deleted[key] = self._index[key]
+        del self._index[key]
         super().__delitem__(key)
     
     def set_nth(self, i, val):
@@ -68,4 +88,4 @@ class PsDict(dict):
         if self._index is None:
             return range(len(self))
         #self.fix_indices()
-        return [i for i in self._index.values() if isinstance(i, int)]
+        return list(self._index.values())

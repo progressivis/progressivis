@@ -29,6 +29,8 @@ class TestDictChangeManager(ProgressiveTest):
         
         cm.update(2, d, mid1)
         self.assertEqual(cm.last_update(), 2)
+        self.assertEqual(d.key_of(3), ('d', 'active'))
+        
         self.assertEqual(cm.created.next(), slice(0, 5)) # 3 + 2 
         self.assertEqual(cm.updated.next(), slice(0, 0)) # already counted as creations
         self.assertEqual(cm.deleted.length(), 0)
@@ -45,11 +47,25 @@ class TestDictChangeManager(ProgressiveTest):
         d['y'] = 442
         cm.update(4, d, mid1)
         self.assertEqual(cm.last_update(), 4)
+        self.assertEqual(d.key_of(1), ('b', 'deleted'))
         self.assertEqual(cm.deleted.length(), 1)
         self.assertEqual(cm.created.next(), slice(6, 7))
         self.assertEqual(cm.updated.next(), slice(4, 5))
         self.assertEqual(cm.deleted.next(), slice(1, 2))
-        #self.assertEqual(cm.deleted.length(), 0)
-        
+        d['b'] = 4242
+        cm.update(5, d, mid1)
+        self.assertEqual(cm.last_update(), 5)
+        self.assertEqual(cm.created.length(), 1)
+        self.assertEqual(cm.updated.length(), 0)
+        self.assertEqual(cm.deleted.length(), 0)
+        self.assertEqual(cm.created.next(), slice(7, 8))
+        del d['c']
+        d['c'] = 424242
+        cm.update(6, d, mid1)
+        self.assertEqual(cm.last_update(), 6)
+        self.assertEqual(d.key_of(8), ('c', 'active'))
+        self.assertEqual(cm.created.length(), 0)
+        self.assertEqual(cm.updated.length(), 1)
+        self.assertEqual(cm.deleted.length(), 0)
 if __name__ == '__main__':
     ProgressiveTest.main()

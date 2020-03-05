@@ -2,6 +2,7 @@
 #from .bitmap import bitmap
 from .index_update import IndexUpdate
 from .changemanager_base import BaseChangeManager
+from ..utils.psdict import PsDict
 from .slot import Slot
 import copy
 
@@ -44,7 +45,7 @@ class DictChangeManager(BaseChangeManager):
 
     def update(self, run_number, data, mid):
         # pylint: disable=unused-argument
-        assert isinstance(data, dict)
+        assert isinstance(data, PsDict)
         if data is None or (run_number != 0 and
                             run_number <= self._last_update):
             return
@@ -57,4 +58,4 @@ class DictChangeManager(BaseChangeManager):
                                   self.deleted.buffer)
 
 
-Slot.add_changemanager_type(dict, DictChangeManager)
+Slot.add_changemanager_type(PsDict, DictChangeManager)
