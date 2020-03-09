@@ -24,7 +24,7 @@
   "scripts": {
     "clean": "rimraf dist/",
     "prepublish": "npm run build:babel",
-    "build:babel": "rm -rf lib/*.js && babel src --out-dir lib",
+    "build:babel": "rm -rf lib/*.js && babel src/*.js --out-dir lib",
     "build": "npm run build:babel && webpack",  
     "watch": "webpack --watch --mode=development",
     "test": "echo \"Error: no test specified\" && exit 1"
