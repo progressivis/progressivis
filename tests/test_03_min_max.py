@@ -21,8 +21,8 @@ class TestMinMax(ProgressiveTest):
         self.compare(res1, res2)
 
     def compare(self, res1, res2):
-        v1 = np.array(list(res1.values())).reshape(-1,)
-        v2 = np.array(list(res2.values())).reshape(-1,)
+        v1 = np.array(list(res1.values()))
+        v2 = np.array(list(res2.values()))
         #print('v1 = ', v1)
         #print('v2 = ', v2)
         self.assertTrue(np.allclose(v1, v2))

@@ -1,8 +1,8 @@
 
-from progressivis.core.utils import indices_len, fix_loc, integer_types
-from progressivis.core.slot import SlotDescriptor
-from progressivis.table.module import TableModule
-from progressivis.table.table import Table
+from ..core.utils import indices_len, fix_loc, integer_types
+from ..core.slot import SlotDescriptor
+from ..table.module import TableModule
+from ..table.table import Table
 
 import numpy as np
 
@@ -58,12 +58,10 @@ class Histogram1D(TableModule):
         if not (dfslot.created.any() or min_slot.created.any() or max_slot.created.any()):
             logger.info('Input buffers empty')
             return self._return_run_step(self.state_blocked, steps_run=0)
-  
         bounds = self.get_bounds(min_slot, max_slot)
         if bounds is None:
             logger.debug('No bounds yet at run %d', run_number)
             return self._return_run_step(self.state_blocked, steps_run=0)
-  
         bound_min, bound_max = bounds
         if self._bounds is None:
             delta = self.get_delta(*bounds)
@@ -118,14 +116,14 @@ class Histogram1D(TableModule):
         min_df = min_slot.data()
         if len(min_df) == 0 and self._bounds is None:
             return None
-        min_ = min_df.last(self.column)
+        min_ = min_df[self.column] #.last(self.column)
   
         max_slot.created.next() 
         #with max_slot.lock:
         max_df = max_slot.data()
         if len(max_df) == 0 and self._bounds is None:
             return None
-        max_ = max_df.last(self.column)
+        max_ = max_df[self.column] #.last(self.column)
   
         return (min_, max_)
 

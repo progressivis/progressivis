@@ -1,6 +1,8 @@
 from collections import defaultdict
 from ..core.bitmap import bitmap
-from progressivis.core.index_update import IndexUpdate          
+from progressivis.core.index_update import IndexUpdate
+import numpy as np
+
 class PsDict(dict):
     "progressive dictionary"
     def __init__(self, other=None, **kwargs):
@@ -29,7 +31,9 @@ class PsDict(dict):
     def fill(self, val):
         for k in self.keys():
             self[k] = val
-
+    @property
+    def array(self):
+        return np.array(list(self.values()))
     def key_of(self, id):
         """
         returns (key, status)

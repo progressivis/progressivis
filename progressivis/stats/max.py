@@ -1,9 +1,7 @@
-
-from progressivis.utils.synchronized import synchronized
-from progressivis.core.utils import indices_len, fix_loc
-from progressivis.table.module import TableModule
-from progressivis.table.table import Table
-from progressivis.core.slot import SlotDescriptor
+from ..core.utils import indices_len, fix_loc
+from ..table.module import TableModule
+from ..table.table import Table
+from ..core.slot import SlotDescriptor
 from ..utils.psdict import PsDict
 import numpy as np
 
@@ -40,7 +38,7 @@ class Max(TableModule):
         if steps==0:
             return self._return_run_step(self.state_blocked, steps_run=0)
         input_df = dfslot.data()
-        op = self.filter_columns(input_df, fix_loc(indices)).max(keepdims=True)
+        op = self.filter_columns(input_df, fix_loc(indices)).max(keepdims=False)
         if self._table is None:
             self._table = PsDict(op)
         else:
