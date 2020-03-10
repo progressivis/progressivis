@@ -1,6 +1,6 @@
 from collections import defaultdict
 from ..core.bitmap import bitmap
-            
+from progressivis.core.index_update import IndexUpdate          
 class PsDict(dict):
     "progressive dictionary"
     def __init__(self, other=None, **kwargs):
@@ -16,6 +16,15 @@ class PsDict(dict):
         self._deleted = {}
         self._inverse = None
         self._inverse_del = None        
+        self.changes = None
+        
+    def compute_updates(self, start, now, mid=None, cleanup=True):
+        if self.changes:
+            updates = self.changes.compute_updates(start, now, mid, cleanup=cleanup)
+            if updates is None:
+                updates = IndexUpdate(created=bitmap(self.ids))
+            return updates
+        return None
 
     def key_of(self, id):
         """

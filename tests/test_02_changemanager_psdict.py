@@ -26,7 +26,8 @@ class TestDictChangeManager(ProgressiveTest):
         self.assertEqual(cm.updated.length(), 0)
         self.assertEqual(cm.deleted.length(), 0)
         d = PsDict(a=1, b=2+1, c=3+1, d=4, e=5)
-        
+        slot = FakeSlot(d)
+        cm = DictChangeManager(slot)
         cm.update(2, d, mid1)
         self.assertEqual(cm.last_update(), 2)
         self.assertEqual(d.key_of(3), ('d', 'active'))

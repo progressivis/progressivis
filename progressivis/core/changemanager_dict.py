@@ -3,6 +3,7 @@
 from .index_update import IndexUpdate
 from .changemanager_base import BaseChangeManager
 from ..utils.psdict import PsDict
+from ..table.tablechanges import TableChanges
 from .slot import Slot
 import copy
 
@@ -21,11 +22,14 @@ class DictChangeManager(BaseChangeManager):
             buffer_updated,
             buffer_deleted)
         self._last_dict = None
-
+        #import pdb;pdb.set_trace()
+        data = slot.data()
+        if data.changes is None:
+            data.changes = TableChanges()
     def reset(self, name=None):
         super(DictChangeManager, self).reset(name)
-        self._last_bm = None
-
+        self._last_dict = None
+    """
     def compute_updates(self, data):
         data.fix_indices()
         last_dict = self._last_dict
@@ -42,15 +46,23 @@ class DictChangeManager(BaseChangeManager):
                 changes.deleted.update(data.deleted_indices(last_dict))
         self._last_dict = copy.copy(data)
         return changes
-
+    """
     def update(self, run_number, data, mid):
         # pylint: disable=unused-argument
         assert isinstance(data, PsDict)
         if data is None or (run_number != 0 and
                             run_number <= self._last_update):
             return
-
-        changes = self.compute_updates(data)
+        data.fix_indices()
+        last_dict = self._last_dict
+        if last_dict is None:
+            data.changes.add_created(data.ids)
+        else:
+            data.changes.add_created(data.new_indices(last_dict))
+            data.changes.add_updated(data.updated_indices(last_dict))
+            data.changes.add_deleted(data.deleted_indices(last_dict))
+        changes = data.compute_updates(self._last_update, run_number, mid)
+        self._last_dict = copy.copy(data)
         self._last_update = run_number
         self._row_changes.combine(changes,
                                   self.created.buffer,
