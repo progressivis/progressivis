@@ -1,10 +1,8 @@
-
-from progressivis.utils.synchronized import synchronized
-from progressivis.core.utils import indices_len, fix_loc
-from progressivis.table.module import TableModule
-from progressivis.table.table import Table
-from progressivis.core.slot import SlotDescriptor
-
+from ..core.utils import indices_len, fix_loc
+from ..table.module import TableModule
+from ..table.table import Table
+from ..core.slot import SlotDescriptor
+from ..utils.psdict import PsDict
 import numpy as np
 
 import logging
@@ -32,7 +30,7 @@ class Min(TableModule):
         if dfslot.updated.any() or dfslot.deleted.any():        
             dfslot.reset()
             if self._table is not None:
-                self._table.resize(0)
+                self._table.fill(np.inf)
             dfslot.update(run_number)
         indices = dfslot.created.next(step_size) # returns a slice
         steps = indices_len(indices)
@@ -41,18 +39,8 @@ class Min(TableModule):
         input_df = dfslot.data()
         op = self.filter_columns(input_df, fix_loc(indices)).min(keepdims=True)
         if self._table is None:
-            self._table = Table(self.generate_table_name('min'),
-                                data=op,
-                                create=True)
-        elif len(self._table)==0: # has been resetted
-            self._table.append(op)
+            self._table = PsDict(op)
         else:
-            last = self._table.last()
-            for colname in last:
-                current_max = op[colname]
-                current_max[0] = np.minimum(current_max, last[colname])
-            self._table.append(op)
-        #TODO manage the history in a more efficient way
-        #if len(self._table) > self.params.history:
-        #    self._table = self._table.loc[self._df.index[-self.params.history:]]
+            for k, v in self._table.items():
+                self._table[k] = np.minimum(op[k], v)
         return self._return_run_step(self.next_state(dfslot), steps_run=steps)

@@ -25,6 +25,10 @@ class PsDict(dict):
                 updates = IndexUpdate(created=bitmap(self.ids))
             return updates
         return None
+    
+    def fill(self, val):
+        for k in self.keys():
+            self[k] = val
 
     def key_of(self, id):
         """

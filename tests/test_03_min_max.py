@@ -17,12 +17,12 @@ class TestMinMax(ProgressiveTest):
         aio.run(s.start())
         #s.join()
         res1 = random.table().min()
-        res2 = min_.table().last()
+        res2 = min_.table()
         self.compare(res1, res2)
 
     def compare(self, res1, res2):
-        v1 = np.array(list(res1.values()))
-        v2 = np.array(list(res2.values()))
+        v1 = np.array(list(res1.values())).reshape(-1,)
+        v2 = np.array(list(res2.values())).reshape(-1,)
         #print('v1 = ', v1)
         #print('v2 = ', v2)
         self.assertTrue(np.allclose(v1, v2))
@@ -37,7 +37,7 @@ class TestMinMax(ProgressiveTest):
         aio.run(s.start())
         #s.join()
         res1 = random.table().max()
-        res2 = max_.table().last()
+        res2 = max_.table()
         self.compare(res1, res2)
 
 
