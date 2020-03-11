@@ -3,7 +3,7 @@ from ..core.utils import indices_len, fix_loc, integer_types
 from ..core.slot import SlotDescriptor
 from ..table.module import TableModule
 from ..table.table import Table
-
+from ..utils.psdict import PsDict
 import numpy as np
 
 import logging
@@ -21,8 +21,8 @@ class Histogram1D(TableModule):
     def __init__(self, column, **kwds):
         self._add_slots(kwds, 'input_descriptors',
                         [SlotDescriptor('table', type=Table, required=True),
-                         SlotDescriptor('min', type=Table, required=True),
-                         SlotDescriptor('max', type=Table, required=True)])
+                         SlotDescriptor('min', type=PsDict, required=True),
+                         SlotDescriptor('max', type=PsDict, required=True)])
         super(Histogram1D, self).__init__(dataframe_slot='table', **kwds)
         self.column = column
         self.total_read = 0

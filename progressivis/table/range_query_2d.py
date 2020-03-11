@@ -12,8 +12,9 @@ from ..stats import Min, Max
 from .hist_index import HistogramIndex
 from progressivis.core.utils import indices_len
 from progressivis.utils.synchronized import synchronized
-from progressivis.table.paste import Paste
-
+#from progressivis.table.paste import Paste
+from ..utils.psdict import PsDict
+from ..table.merge_dict import MergeDict
 
 class _Selection(object):
     def __init__(self, values=None):
@@ -102,8 +103,8 @@ class RangeQuery2d(TableModule):
                         [SlotDescriptor('table', type=Table, required=True),
                          SlotDescriptor('lower', type=Table, required=False),
                          SlotDescriptor('upper', type=Table, required=False),
-                         SlotDescriptor('min', type=Table, required=False),
-                         SlotDescriptor('max', type=Table, required=False)
+                         SlotDescriptor('min', type=PsDict, required=False),
+                         SlotDescriptor('max', type=PsDict, required=False)
                         ])
         self._add_slots(kwds,'output_descriptors', [
             SlotDescriptor('min', type=Table, required=False),
@@ -173,7 +174,7 @@ class RangeQuery2d(TableModule):
                             scheduler=scheduler,
                             columns=[self._column_y])
                 min_y.input.table = hist_index_y.output.min_out
-                min_ = Paste(group=self.name, scheduler=scheduler)
+                min_ = MergeDict(group=self.name, scheduler=scheduler)
                 min_.input.first = min_x.output.table
                 min_.input.second = min_y.output.table
             if max_ is None:
@@ -185,7 +186,7 @@ class RangeQuery2d(TableModule):
                             scheduler=scheduler,
                             columns=[self._column_y])
                 max_y.input.table = hist_index_y.output.max_out
-                max_ = Paste(group=self.name, scheduler=scheduler)
+                max_ = MergeDict(group=self.name, scheduler=scheduler)
                 max_.input.first = max_x.output.table
                 max_.input.second = max_y.output.table
             if min_value is None:
@@ -334,11 +335,11 @@ class RangeQuery2d(TableModule):
                 or len(min_slot.data()) == 0 or len(max_slot.data()) == 0):
             return self._return_run_step(self.state_blocked, steps_run=0)
         # X ...
-        minv_x = min_slot.data().last(self._watched_key_lower_x)
-        maxv_x = max_slot.data().last(self._watched_key_upper_x)
+        minv_x = min_slot.data().get(self._watched_key_lower_x)
+        maxv_x = max_slot.data().get(self._watched_key_upper_x)
         # Y ...
-        minv_y = min_slot.data().last(self._watched_key_lower_y)
-        maxv_y = max_slot.data().last(self._watched_key_upper_y)
+        minv_y = min_slot.data().get(self._watched_key_lower_y)
+        maxv_y = max_slot.data().get(self._watched_key_upper_y)
         # X ...
         if lower_value_x is None or np.isnan(lower_value_x) or lower_value_x < minv_x or lower_value_x>=maxv_x:
             lower_value_x = minv_x

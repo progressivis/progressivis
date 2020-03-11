@@ -1,6 +1,7 @@
 from collections import defaultdict
 from ..core.bitmap import bitmap
-from progressivis.core.index_update import IndexUpdate
+from ..core.index_update import IndexUpdate
+from ..table.dshape import dshape_extract
 import numpy as np
 
 class PsDict(dict):
@@ -31,9 +32,19 @@ class PsDict(dict):
     def fill(self, val):
         for k in self.keys():
             self[k] = val
+
     @property
     def array(self):
         return np.array(list(self.values()))
+
+    @property
+    def dshape(self):
+        return dshape_extract({k:[v] for (k, v) in self.items()})
+
+    #def last(self, *args, **kwargs):
+    #    print("LAST")
+    #    import pdb;pdb.set_trace()
+
     def key_of(self, id):
         """
         returns (key, status)

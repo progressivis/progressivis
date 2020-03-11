@@ -62,7 +62,9 @@ class Variable(Constant):
                     self._table = Table(self.generate_table_name('like'),
                                         dshape=like.dshape,
                                         create=True)
-                    self._table.append(like.last().to_dict(ordered=True), indices=[0])
+                    if isinstance(like, Table):
+                        like = like.last().to_dict(ordered=True)
+                    self._table.append(like, indices=[0])
                     self._ignore_inputs = True
         else:
             #import pdb;pdb.set_trace()
