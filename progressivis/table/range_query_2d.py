@@ -101,8 +101,8 @@ class RangeQuery2d(TableModule):
         """
         self._add_slots(kwds, 'input_descriptors',
                         [SlotDescriptor('table', type=Table, required=True),
-                         SlotDescriptor('lower', type=Table, required=False),
-                         SlotDescriptor('upper', type=Table, required=False),
+                         SlotDescriptor('lower', type=PsDict, required=False),
+                         SlotDescriptor('upper', type=PsDict, required=False),
                          SlotDescriptor('min', type=PsDict, required=False),
                          SlotDescriptor('max', type=PsDict, required=False)
                         ])
@@ -308,7 +308,7 @@ class RangeQuery2d(TableModule):
                 limit_changed = True
             if upper_slot.created.any():
                 upper_slot.created.next()
-                limit_changed = True            
+                limit_changed = True
         #
         # min/max
         #
@@ -326,11 +326,11 @@ class RangeQuery2d(TableModule):
                 or len(lower_slot.data()) == 0 or len(upper_slot.data()) == 0):
             return self._return_run_step(self.state_blocked, steps_run=0)
         # X ...
-        lower_value_x = lower_slot.data().last(self._watched_key_lower_x)
-        upper_value_x = upper_slot.data().last(self._watched_key_upper_x)
+        lower_value_x = lower_slot.data().get(self._watched_key_lower_x)
+        upper_value_x = upper_slot.data().get(self._watched_key_upper_x)
         # Y ...
-        lower_value_y = lower_slot.data().last(self._watched_key_lower_y)
-        upper_value_y = upper_slot.data().last(self._watched_key_upper_y)
+        lower_value_y = lower_slot.data().get(self._watched_key_lower_y)
+        upper_value_y = upper_slot.data().get(self._watched_key_upper_y)
         if (lower_slot.data() is None or upper_slot.data() is None
                 or len(min_slot.data()) == 0 or len(max_slot.data()) == 0):
             return self._return_run_step(self.state_blocked, steps_run=0)

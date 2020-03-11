@@ -3,6 +3,7 @@
 from .index_update import IndexUpdate
 from .changemanager_base import BaseChangeManager
 from ..utils.psdict import PsDict
+from .bitmap import bitmap
 from ..table.tablechanges import TableChanges
 from .slot import Slot
 import copy
@@ -29,24 +30,6 @@ class DictChangeManager(BaseChangeManager):
     def reset(self, name=None):
         super(DictChangeManager, self).reset(name)
         self._last_dict = None
-    """
-    def compute_updates(self, data):
-        data.fix_indices()
-        last_dict = self._last_dict
-        changes = IndexUpdate()
-        if last_dict is None:
-            if self.created.buffer:
-                changes.created.update(data.ids)
-        else:
-            if self.created.buffer:
-                changes.created.update(data.new_indices(last_dict))
-            if self.updated.buffer:
-                changes.updated.update(data.updated_indices(last_dict))
-            if self.deleted.buffer:
-                changes.deleted.update(data.deleted_indices(last_dict))
-        self._last_dict = copy.copy(data)
-        return changes
-    """
     def update(self, run_number, data, mid):
         # pylint: disable=unused-argument
         assert isinstance(data, PsDict)
@@ -56,11 +39,11 @@ class DictChangeManager(BaseChangeManager):
         data.fix_indices()
         last_dict = self._last_dict
         if last_dict is None:
-            data.changes.add_created(data.ids)
+            data.changes.add_created(bitmap(data.ids))
         else:
-            data.changes.add_created(data.new_indices(last_dict))
-            data.changes.add_updated(data.updated_indices(last_dict))
-            data.changes.add_deleted(data.deleted_indices(last_dict))
+            data.changes.add_created(bitmap(data.new_indices(last_dict)))
+            data.changes.add_updated(bitmap(data.updated_indices(last_dict)))
+            data.changes.add_deleted(bitmap(data.deleted_indices(last_dict)))
         changes = data.compute_updates(self._last_update, run_number, mid)
         self._last_dict = copy.copy(data)
         self._last_update = run_number

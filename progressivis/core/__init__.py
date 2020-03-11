@@ -9,6 +9,7 @@ from .bitmap import bitmap
 from .wait import Wait
 # pylint: disable=unused-import
 from .changemanager_bitmap import BitmapChangeManager
+from .changemanager_dict import DictChangeManager
 
 
 __version__ = get_versions()['version']
@@ -19,7 +20,7 @@ del get_versions
 
 __all__ = ["type_fullname", "fix_loc", "indices_len",
            "integer_types", "JSONEncoderNp", "asynchronize", "bitmap",
-           "Scheduler", "BitmapChangeManager",
+           "Scheduler", "BitmapChangeManager", "DictChangeManager",
            "version", "__version__", "short_version",
            "Slot", "SlotDescriptor", "Module", "StorageManager",
            "Every", "Print", "Wait"]

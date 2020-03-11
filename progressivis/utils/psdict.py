@@ -114,6 +114,6 @@ class PsDict(dict):
     @property
     def ids(self):
         if self._index is None:
-            return range(len(self))
+            return list(range(len(self)))
         #self.fix_indices()
         return list(self._index.values())

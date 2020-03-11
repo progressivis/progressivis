@@ -6,12 +6,14 @@ from progressivis import ProgressiveError, SlotDescriptor
 from progressivis.table.table import Table
 from progressivis.table.constant import Constant
 from ..core.utils import all_string
+from ..utils.psdict import PsDict
+import copy
 
 class Variable(Constant):
     def __init__(self, table=None, **kwds):
         self._has_input = False
         self._add_slots(kwds,'input_descriptors',
-                        [SlotDescriptor('like', type=Table, required=False)])
+                        [SlotDescriptor('like', type=(Table, PsDict), required=False)])
         super(Variable, self).__init__(table, **kwds)
         #self._frozen = True
         
@@ -22,7 +24,6 @@ class Variable(Constant):
         return self._has_input
 
     async def from_input(self, input_):
-        #print("RECEIVED FROM INPUT")
         if not isinstance(input_, dict):
             raise ProgressiveError('Expecting a dictionary')
         if self._table is None and self.get_input_slot('like') is None:
@@ -33,11 +34,7 @@ class Variable(Constant):
             error = f'Variable {self.name} have to run once before receiving input'
             logger.error(error)
             return error            
-        last = self._table.last()
-        if last is None:
-            last = {v: None for v in self._table.columns}
-        else:
-            last = last.to_json()
+        last = copy.copy(self._table)
         error = ''
         for (k, v) in input_.items():
             if k in last:
@@ -46,7 +43,7 @@ class Variable(Constant):
                 error += 'Invalid key %s ignored. '%k
         _ = self.scheduler().for_input(self)
         #last['_update'] = run_number
-        self._table.add(last)
+        self._table.update(last)
         self._has_input = True
         self.me_first()
         await aio.sleep(0)
@@ -58,23 +55,13 @@ class Variable(Constant):
             if slot is not None:
                 like = slot.data()
                 if like is not None:
-                    #with slot.lock:
-                    self._table = Table(self.generate_table_name('like'),
-                                        dshape=like.dshape,
-                                        create=True)
                     if isinstance(like, Table):
                         like = like.last().to_dict(ordered=True)
-                    self._table.append(like, indices=[0])
+                    self._table = copy.copy(like)
                     self._ignore_inputs = True
         else:
-            #import pdb;pdb.set_trace()
-            self._table.touch_rows(self._table.last_id-1)
+            #self._table.touch_rows(self._table.last_id-1)
             self.suspend()
-        #else:
-        #    import pdb;pdb.set_trace()
-        #print("VARIABLE RUN STEP: ", self.has_input())
-        #if self._table:
-        #    print("LAST: ", self._table.last().to_dict())
         if self._has_input:
             self._has_input = False
             self.post_interaction_proc()
