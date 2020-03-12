@@ -31,7 +31,7 @@ class TestHistogram2D(ProgressiveTest):
         # pr.input.df = heatmap.output.heatmap
         # pr.input.df = histogram2d.output.df
         pr.input.df = csv.output.table
-        aio.run(csv.scheduler().start())
+        aio.run(csv.scheduler().start(tick_proc=lambda s,r: csv.is_terminated() and s.exit()))
         s = histogram2d.trace_stats()
 
 

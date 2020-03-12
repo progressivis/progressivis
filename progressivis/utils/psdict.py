@@ -62,7 +62,11 @@ class PsDict(dict):
         if id in self._inverse_del:
             return self._inverse_del[id], 'deleted'
         raise KeyError(f"Key not found for id: {id}")
-        
+
+    def k_(self, id):
+        k, _ =  self.key_of(id)
+        return k
+    
     def fix_indices(self): # TODO find a better name ...
         if self._index is None:
             return

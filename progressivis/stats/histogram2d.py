@@ -1,10 +1,11 @@
 
 from progressivis.core.utils import (indices_len, fix_loc,
                                      get_physical_base)
-from progressivis.utils.bytescale import bytescale
-from progressivis.core.slot import SlotDescriptor
-from progressivis.table.module import TableModule
-from progressivis.table.table import Table
+from ..utils.bytescale import bytescale
+from ..core.slot import SlotDescriptor
+from ..table.module import TableModule
+from ..table.table import Table
+from ..utils.psdict import PsDict
 from fast_histogram import histogram2d
 import scipy as sp
 import numpy as np
@@ -34,8 +35,8 @@ class Histogram2D(TableModule):
     def __init__(self, x_column, y_column, with_output=True, **kwds):
         self._add_slots(kwds, 'input_descriptors',
                         [SlotDescriptor('table', type=Table, required=True),
-                         SlotDescriptor('min', type=Table, required=True),
-                         SlotDescriptor('max', type=Table, required=True)])
+                         SlotDescriptor('min', type=PsDict, required=True),
+                         SlotDescriptor('max', type=PsDict, required=True)])
         super(Histogram2D, self).__init__(dataframe_slot='table', **kwds)
         self.x_column = x_column
         self.y_column = y_column
@@ -71,18 +72,18 @@ class Histogram2D(TableModule):
         min_df = min_slot.data()
         if min_df is None or len(min_df) == 0: # and self._bounds is None:
             return None
-        min_ = min_df.last()
-        xmin = min_[self.x_column]
-        ymin = min_[self.y_column]
+        k_ = min_df.k_
+        xmin = min_df[k_(self.x_column)]
+        ymin = min_df[k_(self.y_column)]
 
         max_slot.created.next()
         #with max_slot.lock:
         max_df = max_slot.data()
         if max_df is None or len(max_df) == 0: # and self._bounds is None:
             return None
-        max_ = max_df.last()
-        xmax = max_[self.x_column]
-        ymax = max_[self.y_column]
+        k_ = max_df.k_
+        xmax = max_df[k_(self.x_column)]
+        ymax = max_df[k_(self.y_column)]
 
         if xmax < xmin:
             xmax, xmin = xmin, xmax
