@@ -13,7 +13,7 @@ from .mod_impl import ModuleImpl
 from ..io import Variable
 from ..stats import Min, Max
 from .hist_index import HistogramIndex
-
+from ..utils.psdict import PsDict
 
 def _get_physical_table(t):
     return t if t.base is None else _get_physical_table(t.base)
@@ -91,8 +91,8 @@ class RangeQuery(TableModule):
                         [SlotDescriptor('table', type=Table, required=True),
                          SlotDescriptor('lower', type=Table, required=False),
                          SlotDescriptor('upper', type=Table, required=False),
-                         SlotDescriptor('min', type=Table, required=False),
-                         SlotDescriptor('max', type=Table, required=False)])
+                         SlotDescriptor('min', type=PsDict, required=False),
+                         SlotDescriptor('max', type=PsDict, required=False)])
         self._add_slots(kwds, 'output_descriptors', [
             SlotDescriptor('min', type=Table, required=False),
             SlotDescriptor('max', type=Table, required=False)])
@@ -174,33 +174,22 @@ class RangeQuery(TableModule):
 
     def _create_min_max(self):
         if self._min_table is None:
-            self._min_table = Table(name=None,
-                                    dshape='{%s: float64}' % self._column)
+            self._min_table = PsDict({self._column: np.inf}) 
         if self._max_table is None:
-            self._max_table = Table(name=None,
-                                    dshape='{%s: float64}' % self._column)
+            self._max_table = PsDict({self._column: -np.inf})
+
+    def _set_minmax_out(self, attr_, val):
+        d = {self._column: val}
+        if getattr(self, attr_) is None:
+            setattr(self, attr_, PsDict(d))
+        else:
+            getattr(self, attr_).update(d)
 
     def _set_min_out(self, val):
-        if self._min_table is None:
-            self._min_table = Table(name=None,
-                                    dshape='{%s: float64}' % self._column)
-        if len(self._min_table) == 0:
-            self._min_table.append({self._column: val}, indices=[0])
-            return
-        if self._min_table.last(self._column) == val:
-            return
-        self._min_table[self._column].loc[0] = val
+            return self._set_minmax_out('_min_table', val)
 
     def _set_max_out(self, val):
-        if self._max_table is None:
-            self._max_table = Table(name=None,
-                                    dshape='{%s: float64}' % self._column)
-        if len(self._max_table) == 0:
-            self._max_table.append({self._column: val}, indices=[0])
-            return
-        if self._max_table.last(self._column) == val:
-            return
-        self._max_table[self._column].loc[0] = val
+            return self._set_minmax_out('_max_table', val)
 
     def get_data(self, name):
         if name == 'min':
@@ -253,14 +242,14 @@ class RangeQuery(TableModule):
         if (lower_slot.data() is None or upper_slot.data() is None
                 or len(lower_slot.data()) == 0 or len(upper_slot.data()) == 0):
             return self._return_run_step(self.state_blocked, steps_run=0)
-        lower_value = lower_slot.data().last(self._watched_key_lower)
-        upper_value = upper_slot.data().last(self._watched_key_upper)
+        lower_value = lower_slot.data().get(self._watched_key_lower)
+        upper_value = upper_slot.data().get(self._watched_key_upper)
         if (lower_slot.data() is None or upper_slot.data() is None
             or min_slot.data() is None or max_slot.data() is None
             or len(min_slot.data()) == 0 or len(max_slot.data()) == 0):
             return self._return_run_step(self.state_blocked, steps_run=0)
-        minv = min_slot.data().last(self._watched_key_lower)
-        maxv = max_slot.data().last(self._watched_key_upper)
+        minv = min_slot.data().get(self._watched_key_lower)
+        maxv = max_slot.data().get(self._watched_key_upper)
         if lower_value is None or \
            np.isnan(lower_value) or \
            lower_value < minv or \

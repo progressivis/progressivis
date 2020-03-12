@@ -5,7 +5,7 @@ from . import TableSelectedView
 from ..core.slot import SlotDescriptor
 from .module import TableModule
 from collections import OrderedDict
-
+from ..utils.psdict import PsDict
 
 class Percentiles(TableModule):
     """
@@ -17,7 +17,7 @@ class Percentiles(TableModule):
         """
         self._add_slots(kwds, 'input_descriptors',
                         [SlotDescriptor('table', type=Table, required=True),
-                         SlotDescriptor('percentiles', type=Table, required=True)])
+                         SlotDescriptor('percentiles', type=PsDict, required=True)])
         super(Percentiles, self).__init__(**kwds)
         #self._impl = PercentilesImpl(self.params.accuracy, hist_index)
         self._accuracy = self.params.accuracy
@@ -106,7 +106,7 @@ class Percentiles(TableModule):
         if not self._hist_index._impl:
             return self._return_run_step(self.state_blocked, steps_run=0)
         computed = self.compute_percentiles(
-            percentiles_slot.data().last().to_dict(ordered=True),
+            percentiles_slot.data(),
             input_slot.data())
         if not self._table:
             self._table = Table(name=None,

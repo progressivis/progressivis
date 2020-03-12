@@ -9,10 +9,13 @@ from progressivis.table.percentiles import Percentiles
 import numpy as np
 from . import ProgressiveTest, main
 from progressivis.table.range_query import RangeQuery
-
+from progressivis.utils.psdict import PsDict
 
 class TestPercentiles(ProgressiveTest):
-    "Tests for HistIndex based percentiles"
+    """Tests for HistIndex based percentiles
+    NB: another percentiles module exists in stats directory
+    which is based on T-digest
+    """
     def tearDown(self):
         TestPercentiles.cleanup()
 
@@ -24,11 +27,9 @@ class TestPercentiles(ProgressiveTest):
             random = RandomTable(2, rows=10000, scheduler=s)
             hist_index = HistogramIndex(column='_1', scheduler=s)
             hist_index.input.table = random.output.table
-            t_percentiles = Table(name=None,
-                                  dshape='{_25:float64,_50:float64,_75:float64}',
-                                  data={'_25': [25.0],
-                                        '_50': [50.0],
-                                        '_75': [75.0]})
+            t_percentiles = PsDict({'_25': 25.0,
+                                    '_50': 50.0,
+                                    '_75': 75.0})
             which_percentiles = Constant(table=t_percentiles, scheduler=s)
             percentiles = Percentiles(hist_index, accuracy=accuracy, scheduler=s)
             percentiles.input.table = random.output.table
@@ -67,11 +68,9 @@ class TestPercentiles(ProgressiveTest):
         s = self.scheduler()
         with s:
             random = RandomTable(2, rows=10000, scheduler=s)
-            t_min = Table(name=None,
-                          dshape='{_1: float64}', data={'_1': [0.3]})
+            t_min = PsDict({'_1': 0.3})
             min_value = Constant(table=t_min, scheduler=s)
-            t_max = Table(name=None,
-                          dshape='{_1: float64}', data={'_1': [0.8]})
+            t_max = PsDict({'_1': 0.8})
             max_value = Constant(table=t_max, scheduler=s)
             range_qry = RangeQuery(column='_1', scheduler=s)
             range_qry.create_dependent_modules(random, 'table',
@@ -79,11 +78,9 @@ class TestPercentiles(ProgressiveTest):
                                                max_value=max_value)
 
             hist_index = range_qry.hist_index
-            t_percentiles = Table(name=None,
-                                  dshape='{_25:float64,_50:float64,_75:float64}',
-                                  data={'_25': [25.0],
-                                        '_50': [50.0],
-                                        '_75': [75.0]})
+            t_percentiles = PsDict({'_25': 25.0,
+                                    '_50': 50.0,
+                                    '_75': 75.0})
             which_percentiles = Constant(table=t_percentiles, scheduler=s)
             percentiles = Percentiles(hist_index, accuracy=accuracy, scheduler=s)
             percentiles.input.table = range_qry.output.table
