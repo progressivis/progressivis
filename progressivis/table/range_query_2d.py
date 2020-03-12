@@ -217,42 +217,31 @@ class RangeQuery2d(TableModule):
         self.max_value = max_value
         return range_query
 
-    @property
-    def min_max_dshape(self):
-        return '{%s: float64, %s: float64}' % (self._column_x, self._column_y)
+    #@property
+    #def min_max_dshape(self):
+    #    return '{%s: float64, %s: float64}' % (self._column_x, self._column_y)
 
     def _create_min_max(self):
         if self._min_table is None:
-            self._min_table = Table(name=None, dshape=self.min_max_dshape)
+            self._min_table = PsDict({self._column_x: np.inf, self._column_y: np.inf}) #Table(name=None, dshape=self.min_max_dshape)
         if self._max_table is None:
-            self._max_table = Table(name=None, dshape=self.min_max_dshape)
+            self._max_table = PsDict({self._column_x: -np.inf, self._column_y: -np.inf}) #Table(name=None, dshape=self.min_max_dshape)
+
+    def _set_minmax_out(self, attr_, val_x, val_y):
+        d = {self._column_x: val_x, self._column_y: val_y}
+        if getattr(self, attr_) is None:
+            setattr(self, attr_, PsDict(d)) #Table(name=None, dshape=self.min_max_dshape)
+        else:
+            getattr(self, attr_).update(d)
 
     def _set_min_out(self, val_x, val_y):
-        if self._min_table is None:
-            self._min_table = Table(name=None, dshape=self.min_max_dshape)
-        if len(self._min_table) == 0:
-            self._min_table.append({self._column_x: val_x,
-                                    self._column_y: val_y}, indices=[0])
-            return
-        if self._min_table.last(self._column_x) == val_x and \
-           self._min_table.last(self._column_y) == val_y:
-            return
-        self._min_table[self._column_x].loc[0] = val_x
-        self._min_table[self._column_y].loc[0] = val_y
+            return self._set_minmax_out('_min_table', val_x, val_y)
 
     def _set_max_out(self, val_x, val_y):
-        if self._max_table is None:
-            self._max_table = Table(name=None, dshape=self.min_max_dshape)
-        if len(self._max_table) == 0:
-            self._max_table.append({self._column_x: val_x,
-                                    self._column_y: val_y}, indices=[0])
-            return
-        if self._max_table.last(self._column_x) == val_x and \
-           self._max_table.last(self._column_y) == val_y:
-            return
-        self._max_table[self._column_x].loc[0] = val_x
-        self._max_table[self._column_y].loc[0] = val_y
+            return self._set_minmax_out('_max_table', val_x, val_y)
 
+
+        
     def get_data(self, name):
         if name == 'min':
             return self._min_table

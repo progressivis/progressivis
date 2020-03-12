@@ -105,10 +105,8 @@ class MCHistogram2D(NAry):
                 #with min_slot.lock:
                 min_df = min_slot.data()
                 if min_df is None: continue
-                if len(min_df) > 0:
-                    min_ = min_df.last()
-                    xmin = min(xmin, min_[x_column])
-                    ymin = min(ymin, min_[y_column])
+                xmin = min(xmin, min_df[x_column])
+                ymin = min(ymin, min_df[y_column])
             elif meta == 'max':
                 max_slot = input_slot
                 max_slot.update(run_number)
@@ -120,10 +118,8 @@ class MCHistogram2D(NAry):
                 #with max_slot.lock:
                 max_df = max_slot.data()
                 if max_df is None: continue
-                if len(max_df) > 0:
-                    max_ = max_df.last()
-                    xmax = max(xmax, max_[x_column])
-                    ymax = max(ymax, max_[y_column])
+                xmax = max(xmax, max_df[x_column])
+                ymax = max(ymax, max_df[y_column])
         if xmax < xmin:
             xmax, xmin = xmin, xmax
             logger.warning('xmax < xmin, swapped')

@@ -39,11 +39,11 @@ class DictChangeManager(BaseChangeManager):
         data.fix_indices()
         last_dict = self._last_dict
         if last_dict is None:
-            data.changes.add_created(bitmap(data.ids))
+            data.changes.add_created(data.ids)
         else:
-            data.changes.add_created(bitmap(data.new_indices(last_dict)))
-            data.changes.add_updated(bitmap(data.updated_indices(last_dict)))
-            data.changes.add_deleted(bitmap(data.deleted_indices(last_dict)))
+            data.changes.add_created(data.new_indices(last_dict))
+            data.changes.add_updated(data.updated_indices(last_dict))
+            data.changes.add_deleted(data.deleted_indices(last_dict))
         changes = data.compute_updates(self._last_update, run_number, mid)
         self._last_dict = copy.copy(data)
         self._last_update = run_number

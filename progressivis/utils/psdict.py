@@ -114,6 +114,6 @@ class PsDict(dict):
     @property
     def ids(self):
         if self._index is None:
-            return list(range(len(self)))
+            return bitmap(range(len(self)))
         #self.fix_indices()
-        return list(self._index.values())
+        return bitmap(self._index.values())
