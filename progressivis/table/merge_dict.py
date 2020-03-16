@@ -7,11 +7,11 @@ from collections import OrderedDict
 
 class MergeDict(TableModule):
     """
-    Binary join module to join two tables and return a third one.
+    Binary join module to join two dict and return a third one.
 
     Slots:
-        first : Table module producing the first table to join
-        second : Table module producing the second table to join
+        first : Table module producing the first dict to join
+        second : Table module producing the second dict to join
     Args:
         kwds : argument to pass to the join function
     """

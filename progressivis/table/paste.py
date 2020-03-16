@@ -1,6 +1,5 @@
 "Binary Join module."
 
-from progressivis.core.utils import Dialog
 from progressivis.core.slot import SlotDescriptor
 from .table import Table
 from .module import TableModule
@@ -24,7 +23,6 @@ class Paste(TableModule):
                          SlotDescriptor('second', type=Table, required=True)])
         super(Paste, self).__init__(**kwds)
         self.join_kwds = self._filter_kwds(kwds, join)
-        self._dialog = Dialog(self)
 
     async def run_step(self, run_number, step_size, howlong):
         #import pdb;pdb.set_trace()

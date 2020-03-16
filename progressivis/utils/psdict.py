@@ -38,8 +38,11 @@ class PsDict(dict):
         return np.array(list(self.values()))
 
     @property
+    def as_row(self):
+        return {k:[v] for (k, v) in self.items()}
+    @property
     def dshape(self):
-        return dshape_extract({k:[v] for (k, v) in self.items()})
+        return dshape_extract(self.as_row)
 
     #def last(self, *args, **kwargs):
     #    print("LAST")
