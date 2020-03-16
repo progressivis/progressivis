@@ -6,6 +6,8 @@ from progressivis import Print
 from progressivis.stats import RandomTable, Min, Max
 from progressivis.core.bitmap import bitmap
 from progressivis.table.range_query import RangeQuery
+from progressivis.utils.psdict import PsDict
+
 from . import ProgressiveTest, main
 import asyncio as aio
 
@@ -20,13 +22,9 @@ class TestRangeQuery(ProgressiveTest):
         s = self.scheduler()
         with s:
             random = RandomTable(2, rows=1000, scheduler=s)
-            t_min = Table(name=None,
-                          dshape='{_1: float64}',
-                          data={'_1': [0.3]})
+            t_min = PsDict({'_1': 0.3})
             min_value = Constant(table=t_min, scheduler=s)
-            t_max = Table(name=None,
-                          dshape='{_1: float64}',
-                          data={'_1': [0.8]})
+            t_max = PsDict({'_1': 0.8})
             max_value = Constant(table=t_max, scheduler=s)
             range_qry = RangeQuery(column='_1', scheduler=s)
             range_qry.create_dependent_modules(random, 'table',
@@ -45,13 +43,9 @@ class TestRangeQuery(ProgressiveTest):
         s = self.scheduler()
         with s:
             random = RandomTable(2, rows=100000, scheduler=s)
-            t_min = Table(name=None,
-                          dshape='{_1: float64}',
-                          data={'_1': [0.3]})
+            t_min = PsDict({'_1': 0.3})
             min_value = Constant(table=t_min, scheduler=s)
-            t_max = Table(name=None,
-                          dshape='{_1: float64}',
-                          data={'_1': [0.8]})
+            t_max = PsDict({'_1': 0.8})
             max_value = Constant(table=t_max, scheduler=s)
             range_qry = RangeQuery(column='_1', scheduler=s)
             range_qry.create_dependent_modules(random, 'table',
@@ -70,10 +64,10 @@ class TestRangeQuery(ProgressiveTest):
             pr3.input.df = max_.output.table
         aio.run(s.start())
         res1 = random.table().min()['_1']
-        res2 = min_.table().last().to_dict()['_1']
+        res2 = min_.table()['_1']
         self.assertAlmostEqual(res1, res2)
         res1 = random.table().max()['_1']
-        res2 = max_.table().last().to_dict()['_1']
+        res2 = max_.table()['_1']
         self.assertAlmostEqual(res1, res2)
 
     def _query_min_max_impl(self, random, t_min, t_max, s):
@@ -96,56 +90,44 @@ class TestRangeQuery(ProgressiveTest):
         s = self.scheduler()
         with s:
             random = RandomTable(2, rows=100000, scheduler=s)
-            t_min = Table(name=None,
-                          dshape='{_1: float64}',
-                          data={'_1': [0.3]})
-            t_max = Table(name=None,
-                          dshape='{_1: float64}',
-                          data={'_1': [0.8]})
+            t_min = PsDict({'_1': 0.3})
+            t_max = PsDict({'_1': 0.8})
             range_qry = self._query_min_max_impl(random, t_min, t_max, s)
         aio.run(s.start())
         min_data = range_qry.output.min.data()
         max_data = range_qry.output.max.data()
-        self.assertAlmostEqual(min_data['_1'].loc[0], 0.3)
-        self.assertAlmostEqual(max_data['_1'].loc[0], 0.8)
+        self.assertAlmostEqual(min_data['_1'], 0.3)
+        self.assertAlmostEqual(max_data['_1'], 0.8)
 
     def test_range_query_min_max2(self):
         "Test min and max on RangeQuery output"
         s = self.scheduler()
         with s:
             random = RandomTable(2, rows=100000, scheduler=s)
-            t_min = Table(name=None,
-                          dshape='{_1: float64}',
-                          data={'_1': [0]})
-            t_max = Table(name=None,
-                          dshape='{_1: float64}',
-                          data={'_1': [float('nan')]})
+            t_min = PsDict({'_1': 0.0})
+            t_max = PsDict({'_1': float('nan')})            
             range_qry = self._query_min_max_impl(random, t_min, t_max, s)
         aio.run(s.start())
         min_data = range_qry.output.min.data()
         max_data = range_qry.output.max.data()
         min_rand = random.table().min()['_1']
-        self.assertAlmostEqual(min_data['_1'].loc[0], min_rand, delta=0.0001)
-        self.assertAlmostEqual(max_data['_1'].loc[0], 1.0, delta=0.0001)
+        self.assertAlmostEqual(min_data['_1'], min_rand, delta=0.0001)
+        self.assertAlmostEqual(max_data['_1'], 1.0, delta=0.0001)
 
     def test_range_query_min_max3(self):
         "Test min and max on RangeQuery output"
         s = self.scheduler()
         with s:
             random = RandomTable(2, rows=100000, scheduler=s)
-            t_min = Table(name=None,
-                          dshape='{_1: float64}',
-                          data={'_1': [0.3]})
-            t_max = Table(name=None,
-                          dshape='{_1: float64}',
-                          data={'_1': [15000.]})
+            t_min = PsDict({'_1': 0.3})
+            t_max = PsDict({'_1': 15000.})            
             range_qry = self._query_min_max_impl(random, t_min, t_max, s)
         aio.run(s.start())
         min_data = range_qry.output.min.data()
         max_data = range_qry.output.max.data()
         max_rand = random.table().max()['_1']
-        self.assertAlmostEqual(min_data['_1'].loc[0], 0.3)
-        self.assertAlmostEqual(max_data['_1'].loc[0], max_rand)
+        self.assertAlmostEqual(min_data['_1'], 0.3)
+        self.assertAlmostEqual(max_data['_1'], max_rand)
 
 
 if __name__ == '__main__':
