@@ -5,7 +5,7 @@ from .control_panel import ControlPanel
 from .utils import *
 from .module_graph import ModuleGraph
 from progressivis.core import JSONEncoderNp
-
+from io import StringIO
 
 commons = {}
 console = ipw.Output()
@@ -74,39 +74,40 @@ class PsBoard(ipw.VBox):
         self.btns = []
         self.msize = 0
         self.cols = ['id', 'classname', 'state', 'last_update', 'order']
+        self.htable = ipw.HTML()
         commons.update(tab=self.tab, scheduler=self.scheduler)
-        self.init_sheet()
+        #self.init_sheet()
+        #self.make_table()
         #self.tab.children = [self.sheet, self.mgraph]
         super().__init__([self.cpanel, self.tab, console])
 
-    def init_sheet(self, modules=None):
-        try:
-            self.sheet.close()
-        except:
-            pass
-        self.state = []
-        self.last_update = []
+    def make_table(self, modules=None):
+        sensitive = (0,)
         if modules is None:
             modules = self.scheduler.to_json()['modules']
         self.msize = len(modules)
+        tbl = StringIO()
+        tbl.write("<table border=1><tr>")
         titles = ['Id', 'Class', 'State', 'Last Update', 'Order']
+        for t in titles:
+            tbl.write(f"<th>{t}</th>")
+        tbl.write("</tr>")
         #cols = ['id', 'classname', 'state', 'last_update', 'order']
         col_width = [100, 100, 50, 40, 40]
-        self.sheet = ips.sheet(rows=len(modules), columns=len(self.cols),
-                               column_headers=titles, column_width=col_width)
         #self.sheet.column_width = col_width
+        
         for i, m in enumerate(modules):
+            tbl.write("<tr>")
             for j, c in enumerate(self.cols):
-                if c=='id':
-                    b_ =  _btn(m[c])
-                    cell = ips.cell(i, j,b_)
-                    self.btns.append(b_)
+                #s = str(m[c])
+                if j in sensitive:
+                    tbl.write(f"<td><button class='ps-row-btn' id='ps-row-btn_{i}_{j}' type='button' >{m[c]}</button></td>")
                 else:
-                    cell = ips.cell(i, j, str(m[c]), read_only=True)
-                if c=='state':
-                    self.state.append(cell)
-                elif c=='last_update':
-                    self.last_update.append(cell)
+                    tbl.write(f"<td>{m[c]}</td>")
+            tbl.write("</tr>")
+        tbl.write("</table>")
+        self.htable.value = tbl.getvalue()
+        
     @property
     def btn_cb(self):
         return [(b, _on_button_clicked) for b in self.btns]
@@ -129,13 +130,13 @@ class PsBoard(ipw.VBox):
         self.sheet.send_state()
     def refresh(self):
         json_ = self.scheduler.to_json(short=True)
-        self.refresh_modules(json_)
+        self.make_table(json_['modules'])
         #self.mgraph.data = JSONEncoderNp.dumps(json_)
         if len(self.tab.children)<3:
-            self.tab.children = [self.sheet, self.mgraph]
+            self.tab.children = [self.htable, self.mgraph]
         else:
             third =  self.tab.children[2]
-            self.tab.children = [self.sheet, self.mgraph, third]
+            self.tab.children = [self.htable, self.mgraph, third]
             """        
 tab.children = [sc, gr]
 tab.set_title(0, 'Modules')
