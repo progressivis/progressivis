@@ -96,6 +96,7 @@ var ModuleGraphView = widgets.DOMWidgetView.extend({
     data_changed: function() {
 	console.log("Data changed ModuleGraphView");
 	let val = this.model.get('data');
+	if(val=='{}') return;
 	mg.graph_update(JSON.parse(val));	
 	
     }

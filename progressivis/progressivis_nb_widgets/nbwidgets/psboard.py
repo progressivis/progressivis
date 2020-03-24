@@ -2,55 +2,77 @@ import ipywidgets as ipw
 import ipysheet as ips
 import numpy as np
 from .control_panel import ControlPanel
+from .sensitive_html import SensitiveHTML
 from .utils import *
 from .module_graph import ModuleGraph
 from progressivis.core import JSONEncoderNp
 from io import StringIO
+from jinja2 import Template
+
+
+jinja2_str = """<table class="table table-striped table-bordered table-hover table-condensed">
+	  <thead>
+	    <tr><th>Id</th><th>Class</th><th>State</th><th>Last Update</th><th>Order</th></tr>
+	  </thead>
+	  <tbody>
+          {% for m in modules%}
+          <tr>
+          {% for c in cols%}
+          <td>
+          {% if c!='id' %}
+          {{m[c]}}
+          {% else %}
+          <!--button class='ps-row-btn' id="ps-row-btn_{{m[c]}}" type='button' >{{m[c]}}</button-->
+          <a class='ps-row-btn' id="ps-row-btn_{{m[c]}}" type='button' >{{m[c]}}</a>
+          {% endif %}
+          </td>
+          {%endfor %}
+          </tr>
+          {%endfor %}
+	  </tbody>
+        </table>"""
 
 commons = {}
 console = ipw.Output()
+#
+# Coroutines
+#
 
-async def _btn_cb(btn, cb):
+async def module_choice(psboard):
+    while True:
+        await wait_for_change(psboard.htable, 'value')
+        with console:
+            print("Clicked: ", psboard.htable.value)
+
+async def change_tab(psboard):
+    while True:
+        await wait_for_change(psboard.tab, 'selected_index')
+        with console:
+            print("Changed: ", psboard.tab.selected_index)        
+        psboard.refresh()
+        
+async def refresh_(psboard):
+    if psboard.refresh_event is None:
+        psboard.refresh_event = aio.Event()
+    while True:
+        await psboard.refresh_event.wait()
+        psboard.refresh_event.clear()
+        psboard.refresh()
+        await aio.sleep(0.5)
+
+async def control_panel(psboard, action):
+    btn, cb =  psboard.cpanel.cb_args(action)
     while True:
         await wait_for_click(btn, cb)
 
-
-def _on_button_clicked2(b):
-    #import pdb;pdb.set_trace()
-    tab = commons['tab']
-    if len(tab.children)==2:
-        nchildren = tab.children+(ipw.Output(),)
-        tab.children = nchildren
-    tab.set_title(2, b.description)
-    with tab.children[2]:
-        print(b.description)
-def _on_button_clicked(b):
-    with console:
-        print("Clicked!")
-    try:
-        _on_button_clicked2(b)
-    except Exception as e:
-        with console:
-            print(e)
-def _btn(label):
-    btn = ipw.Button(
-        description=label,
-        disabled=False,
-        #button_style='info', # 'success', 'info', 'warning', 'danger' or ''
-        tooltip=label,
-        layout=ipw.Layout(flex='1 1 auto', width='auto')
-        #style={'textAlign': 'left'}
-        #icon='check' # (FontAwesome names without the `fa-` prefix)
-    )
-    #btn.on_click(_on_button_clicked)
-    return btn
-
-
+# end coros
 
 class PsBoard(ipw.VBox):
     def __init__(self, scheduler=None):
         global console
         self.scheduler = scheduler
+        self._cache = None
+        self._cache_js = None
         self.cpanel = ControlPanel(scheduler)
         """
         modules = scheduler.to_json()['modules']
@@ -74,73 +96,48 @@ class PsBoard(ipw.VBox):
         self.btns = []
         self.msize = 0
         self.cols = ['id', 'classname', 'state', 'last_update', 'order']
-        self.htable = ipw.HTML()
+        self.htable = SensitiveHTML()
+        self.refresh_event = None
         commons.update(tab=self.tab, scheduler=self.scheduler)
         #self.init_sheet()
         #self.make_table()
         #self.tab.children = [self.sheet, self.mgraph]
         super().__init__([self.cpanel, self.tab, console])
 
-    def make_table(self, modules=None):
-        sensitive = (0,)
-        if modules is None:
-            modules = self.scheduler.to_json()['modules']
-        self.msize = len(modules)
-        tbl = StringIO()
-        tbl.write("<table border=1><tr>")
-        titles = ['Id', 'Class', 'State', 'Last Update', 'Order']
-        for t in titles:
-            tbl.write(f"<th>{t}</th>")
-        tbl.write("</tr>")
-        #cols = ['id', 'classname', 'state', 'last_update', 'order']
-        col_width = [100, 100, 50, 40, 40]
-        #self.sheet.column_width = col_width
-        
-        for i, m in enumerate(modules):
-            tbl.write("<tr>")
-            for j, c in enumerate(self.cols):
-                #s = str(m[c])
-                if j in sensitive:
-                    tbl.write(f"<td><button class='ps-row-btn' id='ps-row-btn_{i}_{j}' type='button' >{m[c]}</button></td>")
-                else:
-                    tbl.write(f"<td>{m[c]}</td>")
-            tbl.write("</tr>")
-        tbl.write("</table>")
-        self.htable.value = tbl.getvalue()
-        
+    def make_table(self, modules):
+        tmpl = Template(jinja2_str)
+        self.htable.sensitive_css_class = 'ps-row-btn'
+        self.htable.data = tmpl.render(modules=modules, cols=self.cols)
+    
+
+    def enable_refresh(self):
+        json_ = self.scheduler.to_json(short=False)
+        self._cache = JSONEncoderNp.dumps(json_)
+        self._cache_js = None
+        if self.refresh_event is None:
+            self.refresh_event = aio.Event()
+        self.refresh_event.set()
+
     @property
-    def btn_cb(self):
-        return [(b, _on_button_clicked) for b in self.btns]
-    @property
-    def btn_coros(self):
-        return [_btn_cb(b,cb) for b, cb in self.btn_cb]
-    def refresh_modules(self, json_):
-        modules = json_['modules']
-        if len(modules)!=self.msize:
-            self.init_sheet(modules)
-        for i, m in enumerate(modules):
-            for j, c in enumerate(self.cols):
-                if c=='state' and self.state[i].value != m[c]:
-                    self.state[i].value = m[c]
-                elif c=='last_update':
-                    self.last_update[i].value = str(m[c])
-                    self.last_update[i].send_state()
-                    #with console:
-                    #    print(m[c])
-        self.sheet.send_state()
+    def coroutines(self):
+        return [module_choice(self), refresh_(self),
+                control_panel(self, "resume"),
+                control_panel(self, "stop"), 
+                control_panel(self, "step"), change_tab(self)]
+    
     def refresh(self):
-        json_ = self.scheduler.to_json(short=True)
-        self.make_table(json_['modules'])
-        #self.mgraph.data = JSONEncoderNp.dumps(json_)
+        if self._cache is None:
+            return
+        if self._cache_js is None:
+            self._cache_js = JSONEncoderNp.loads(self._cache)
+        json_ = self._cache_js
+        self.cpanel.run_nb.value = str(json_['run_number'])
+        if self.tab.selected_index == 0:
+            self.make_table(json_['modules'])
+        else:
+            self.mgraph.data = self._cache
         if len(self.tab.children)<3:
             self.tab.children = [self.htable, self.mgraph]
         else:
             third =  self.tab.children[2]
             self.tab.children = [self.htable, self.mgraph, third]
-            """        
-tab.children = [sc, gr]
-tab.set_title(0, 'Modules')
-tab.set_title(1, 'Module graph')
-vbox = ipw.VBox([tab, cpanel])
-vbox
-"""
