@@ -14,6 +14,7 @@ import jinja2
 
 from .app import progressivis_bp, path_to_module, stop_server, PROJECT_ROOT
 from ..core import JSONEncoderNp
+from ..utils.psdict import PsDict
 routes = web.RouteTableDef()
 
 #dumps = JSONEncoder4Numpy.dumps
@@ -25,7 +26,7 @@ JS_DIR = join(PROJECT_ROOT, 'static')
 
 def _json_response(*args, **kwargs):
     return web.json_response(*args,
-                             dumps=JSONEncoder4Numpy.dumps,
+                             dumps=JSONEncoderNp.dumps,
                              **kwargs)
 
 def _url_for(base_, filename=None):
@@ -222,7 +223,10 @@ def _df(request):
     if df is None:
         abort(404)
     if request.method == 'POST':
-        return _json_response({'columns':['index']+df.columns})
+        if isinstance(df, PsDict):
+            return _json_response({'columns':['index']+list(df.keys())})
+        else:
+            return _json_response({'columns':['index']+df.columns})
     print('GET df %s/%s'%(mid, slot))
     return render_template('dataframe.html', request,
                            title="DataFrame "+mid+'/'+slot,
@@ -258,12 +262,17 @@ async def _dfslice(request):
     start_ = int(form['start'])
     draw_ = int(form['draw'])
     length_ = int(form['length'])
+    if isinstance(df, PsDict):
+        return _json_response({'draw':draw_,
+                    'recordsTotal': 1,
+                    'recordsFiltered': 1,
+                               'data': [[0]+list(df.values())]})
     df_len = len(df)
     df_slice = df.iloc[start_:min(start_+length_, df_len)]
     print("reload slice", start_, 'len=', length_, 'table len=', df_len)
-    return _json_response({'draw':draw_,
-                    'recordsTotal':df_len,
-                    'recordsFiltered':df_len,
+    return _json_response({'draw': draw_,
+                    'recordsTotal': df_len,
+                    'recordsFiltered': df_len,
                             'data': df_slice.to_json(orient='datatable')})
 
 
