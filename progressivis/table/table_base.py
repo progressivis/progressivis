@@ -100,7 +100,7 @@ class BaseTable(metaclass=ABCMeta):
         self._iloc = _Loc(self, False)
         self._at = _At(self, True)
         self._iat = _At(self, False)
-        self._synchronized_lock = None
+
     @property
     def loc(self):
         "Return a `locator` object for indexing using ids"
@@ -817,7 +817,3 @@ class BaseTable(metaclass=ABCMeta):
             res[c] = self.index_to_id(ix)
         return res
 
-    @property
-    def lock(self):
-        "Return a recursive lock usable to lock the access and change of attributes"
-        return self._synchronized_lock

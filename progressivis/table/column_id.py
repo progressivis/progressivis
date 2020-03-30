@@ -431,9 +431,15 @@ class IdColumn(Column):
             ret = np.fromiter(loc, dtype=np.int64, count=count)
             ret = self._ids_dict.get_items(ret)
         elif isinstance(loc, slice):
+            loc_start = 0 if loc.start is None else loc.start
             loc_stop = self.last_id if loc.stop is None else loc.stop+1
-            ret = np.array(range(loc.start, loc_stop, loc.step or 1), dtype=np.int64)
-            ret = self._ids_dict.get_items(ret)
+            ret = np.array(range(loc_start, loc_stop, loc.step or 1), dtype=np.int64)
+            try: # EAFP
+                ret = self._ids_dict.get_items(ret)
+            except KeyError: # occurs when ret contains deleted items (-1)
+                ret_del = np.nonzero(self.index.dataset[ret]<0)[0]
+                ret = self._ids_dict.get_items(np.array(bitmap(ret)-bitmap(ret_del), dtype=np.int64))
+                                 
         else:
             raise ValueError('id_to_index not implemented for id "%s"' % loc)
         return indices_to_slice(ret) if as_slice else ret
