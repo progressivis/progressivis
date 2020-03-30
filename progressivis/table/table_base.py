@@ -134,7 +134,12 @@ class BaseTable(metaclass=ABCMeta):
 
     def info_row(self, row, width):
         "Return a description for a row, used in `repr`"
-        rep = "{0:{width}}|".format(self.index_to_id(row), width=width)
+        row_id = -1
+        try:
+            row_id = self.index_to_id(row)
+        except OverflowError:
+            pass
+        rep = "{0:{width}}|".format(row_id, width=width)
         for name in self.columns:
             col = self[name]
             v = str(col[row])
