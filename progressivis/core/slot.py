@@ -4,7 +4,6 @@ Slots between modules.
 
 import logging
 from collections import namedtuple
-import asyncio
 from .changemanager_base import EMPTY_BUFFER
 
 logger = logging.getLogger(__name__)
