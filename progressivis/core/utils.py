@@ -797,6 +797,8 @@ class JSONEncoderNp(js.JSONEncoder):
             return None
         if isinstance(o, np.integer):
             return int(o)
+        if isinstance(o, np.floating): # because np.float32 (and less) don't inherit float ...
+            return float(o)
         if isinstance(o, np.bool_):
             return bool(o)
         if isinstance(o, np.ndarray):
