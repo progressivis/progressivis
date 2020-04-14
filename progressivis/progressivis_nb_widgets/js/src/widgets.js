@@ -5,7 +5,9 @@ var html_  = require('./sc_template');
 var mc2d = require('./multiclass2d');
 var er = require('./es6-element-ready');
 var mg = require('./module_graph');
+var dt = require('./data_table');
 require('../css/module-graph.css');
+require('datatables/media/css/jquery.dataTables.css');
 var sch = require('./sensitive_html');
 // See example.py for the kernel counterpart to this file.
 
@@ -138,6 +140,45 @@ var SensitiveHTMLView = widgets.DOMWidgetView.extend({
     }
 });
 
+var DataTableModel = widgets.DOMWidgetModel.extend({
+    defaults: _.extend(widgets.DOMWidgetModel.prototype.defaults(), {
+        _model_name : 'DataTableModel',
+        _view_name : 'DataTableView',
+        _model_module : 'progressivis-nb-widgets',
+        _view_module : 'progressivis-nb-widgets',
+        _model_module_version : '0.1.0',
+        _view_module_version : '0.1.0',
+        columns: '[a, b, c]',
+        data: 'Hello DataTable!',	
+	page: '{0}',
+	dt_id: 'aDtId'
+    })
+});
+
+
+// Custom View. Renders the widget model.
+var DataTableView = widgets.DOMWidgetView.extend({
+    // Defines how the widget gets rendered into the DOM
+    render: function() {
+	this.data_changed();
+        // Observe changes in the value traitlet in Python, and define
+        // a custom callback.
+        this.model.on('change:data', this.data_changed, this);
+
+    },
+
+    data_changed: function() {
+	let dt_id = this.model.get('dt_id');
+	if(document.getElementById(dt_id)==null){
+	    this.el.innerHTML = "<table id='"+dt_id+"' class='display' style='width:100%'>";
+	}
+	let that = this;
+	er.elementReady('#'+dt_id).then((_)=>{
+	    dt.update_table(that, dt_id);
+	});
+    }
+});
+
 
 
 module.exports = {
@@ -146,5 +187,7 @@ module.exports = {
     ModuleGraphModel: ModuleGraphModel,
     ModuleGraphView: ModuleGraphView,
     SensitiveHTMLModel: SensitiveHTMLModel,
-    SensitiveHTMLView: SensitiveHTMLView
+    SensitiveHTMLView: SensitiveHTMLView,
+    DataTableModel: DataTableModel,
+    DataTableView: DataTableView
     };

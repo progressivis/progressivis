@@ -5,6 +5,7 @@ from .module_graph import *
 from .control_panel import *
 from .psboard import *
 from .sensitive_html import *
+from .data_table import *
 from .utils import *
 def _jupyter_nbextension_paths():
     """Called by Jupyter Notebook Server to detect if it is a valid nbextension and
