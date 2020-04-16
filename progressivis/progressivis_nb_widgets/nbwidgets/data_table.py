@@ -28,8 +28,8 @@ class DataTable(widgets.DOMWidget):
     # Widget properties are defined as traitlets. Any property tagged with `sync=True`
     # is automatically synced to the frontend *any* time it changes in Python.
     # It is synced back to Python from the frontend *any* time the model is touched.
-    data = Unicode('{}').tag(sync=True)
-    columns = Unicode('{}').tag(sync=True)    
-    page =  Any('{}').tag(sync=True)
+    data = Unicode('').tag(sync=True)
+    columns = Unicode('').tag(sync=True)    
+    page =  Any({}).tag(sync=True)
     dt_id = Unicode('aDT').tag(sync=True)
 

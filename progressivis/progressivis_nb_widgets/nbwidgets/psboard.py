@@ -11,7 +11,7 @@ from jinja2 import Template
 from .templates import *
 from .module_wg import *
 import json
-
+import progressivis.core.aio as aio
 commons = {}
 debug_console = ipw.Output()
 #
@@ -26,6 +26,7 @@ async def module_choice(psboard):
         if len(psboard.tab.children)<3:
             psboard.tab.children = psboard.tab.children + (psboard.current_module,)
         psboard.current_module.module_name =  psboard.htable.value[len(psboard.htable.sensitive_css_class)+1:]
+        psboard.current_module.selection_changed = True
         psboard.tab.set_title(2, psboard.current_module.module_name)
         psboard.tab.selected_index = 2
         psboard.refresh()
@@ -101,6 +102,9 @@ class PsBoard(ipw.VBox):
     
 
     def enable_refresh(self):
+        """
+        called from notebook
+        """
         json_ = self.scheduler.to_json(short=False)
         self._cache = JSONEncoderNp.dumps(json_)
         self._cache_js = None

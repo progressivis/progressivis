@@ -170,7 +170,9 @@ var DataTableView = widgets.DOMWidgetView.extend({
     data_changed: function() {
 	let dt_id = this.model.get('dt_id');
 	if(document.getElementById(dt_id)==null){
-	    this.el.innerHTML = "<table id='"+dt_id+"' class='display' style='width:100%'>";
+	    this.el.innerHTML =
+		"<div style='overflow-x:auto;'><table id='"+dt_id+
+		"' class='display' style='width:100%;'></div>";
 	}
 	let that = this;
 	er.elementReady('#'+dt_id).then((_)=>{

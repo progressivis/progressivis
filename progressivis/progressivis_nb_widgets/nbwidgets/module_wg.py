@@ -2,7 +2,7 @@ import ipywidgets as ipw
 
 from .templates import *
 from .utils import *
-from .sensitive_html import SensitiveHTML
+from .slot_wg import SlotWg
 import weakref
 import json
 debug_console = None #ipw.Output()
@@ -19,6 +19,7 @@ class ModuleWg(ipw.Tab):
         self._index = board #weakref.ref(board)
         self._main = ipw.HTML()
         self.module_name = None
+        self.selection_changed = False
         self._output_slots = ipw.Tab()
         super().__init__([self._main, self._output_slots])
         self.set_title(0, 'Main')
@@ -48,18 +49,19 @@ class ModuleWg(ipw.Tab):
                                    "parameters",
                                    "input_slots"])
         _selected_index = None
-        if not self._output_slots.children: # first refresh
-            self._output_slots.children = [ipw.HTML() for _ in range(len(m["output_slots"]))]
+        module = self._index.scheduler.modules()[self.module_name]
+        if module is None:
+            return
+        if self.selection_changed or not self._output_slots.children: # first refresh
+            self.selection_changed = False
+            self._output_slots.children = [SlotWg(module, sl) for sl in m["output_slots"].keys()]+[SlotWg(module, '_params')]
         else:
             _selected_index = self._output_slots.selected_index
-        for i, (k, v) in enumerate(m["output_slots"].items()):
+        for i, k in enumerate(m["output_slots"].keys()):
             self._output_slots.set_title(i, k)
-            v = "None"
-            module = self._index.scheduler.modules()[self.module_name]
-            if module is None:
-                self._output_slots.children[i].value = v
-            else:
-                df = module.get_data(k)
-                self._output_slots.children[i].value = str(df)
+            self._output_slots.children[i].refresh()
+        i += 1
+        self._output_slots.set_title(i, '_params')
+        self._output_slots.children[i].refresh()
         self._output_slots.selected_index = _selected_index
 
