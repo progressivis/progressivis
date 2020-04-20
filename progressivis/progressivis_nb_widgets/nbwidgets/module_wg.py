@@ -25,7 +25,7 @@ class ModuleWg(ipw.Tab):
         self.set_title(0, 'Main')
         self.set_title(1, 'Output slots')
 
-    def refresh(self):
+    async def refresh(self):
         #foo = 7/0
         _idx = self._index
         json_ = _idx._cache_js
@@ -37,7 +37,8 @@ class ModuleWg(ipw.Tab):
                      break
         assert module_json is not None
         self.set_title(0, self.module_name)
-        self._main.value = layout_dict(m, order=["classname",
+        #self._main.value = layout_dict(m, order=["classname",
+        await update_widget(self._main, 'value', layout_dict(m, order=["classname",
                                    "speed",
                                    #"output_slots",
                                    "debug",
@@ -47,21 +48,30 @@ class ModuleWg(ipw.Tab):
                                    "start_time",
                                    "end_time",
                                    "parameters",
-                                   "input_slots"])
-        _selected_index = None
+                                   "input_slots"]))
+        _selected_index = 0
         module = self._index.scheduler.modules()[self.module_name]
         if module is None:
             return
         if self.selection_changed or not self._output_slots.children: # first refresh
             self.selection_changed = False
-            self._output_slots.children = [SlotWg(module, sl) for sl in m["output_slots"].keys()]+[SlotWg(module, '_params')]
+            self.selected_index = 0
+            #self._output_slots.children = [SlotWg(module, sl) for sl in m["output_slots"].keys()]+[SlotWg(module, '_params')]
+            slots = [SlotWg(module, sl) for sl in m["output_slots"].keys()]+[SlotWg(module, '_params')]
+            await update_widget(self._output_slots, 'children', slots)
+            if module.name in self._index.viz_register:
+                for wg, label in self._index.viz_register[module.name]:
+                    self.children += (wg,)
+                    self.set_title(len(self.children)-1, label)
+            elif len(self.children) > 2:
+                self.children = self.children[:2]
         else:
             _selected_index = self._output_slots.selected_index
         for i, k in enumerate(m["output_slots"].keys()):
             self._output_slots.set_title(i, k)
-            self._output_slots.children[i].refresh()
+            await self._output_slots.children[i].refresh()
         i += 1
         self._output_slots.set_title(i, '_params')
-        self._output_slots.children[i].refresh()
+        await self._output_slots.children[i].refresh()
         self._output_slots.selected_index = _selected_index
 

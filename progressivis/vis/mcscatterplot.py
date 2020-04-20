@@ -191,7 +191,7 @@ class MCScatterPlot(NAry):
             sample_input = inputs['sample'][0]
             select = sample_input.data()
             x_column, y_column = inputs['sample'][1],  inputs['sample'][2]
-            smpl = select.to_json(orient='split', columns=[x_column, y_column])
+            smpl = select.to_json(orient='split', columns=[x_column, y_column]) if select is not None else []
             samples.append(smpl)
 
         # TODO: check consistency among classes (e.g. same xbin, ybin etc.)
@@ -249,6 +249,7 @@ class MCScatterPlot(NAry):
         json['bounds'] = dict(xmin=xmin, ymin=ymin, xmax=xmax, ymax=ymax)
         s_data = []
         for i, s in enumerate(samples):
+            if not s: continue
             d = s['data']
             for row in d:
                 row.append(i)

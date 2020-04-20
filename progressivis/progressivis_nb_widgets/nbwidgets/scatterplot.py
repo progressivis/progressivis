@@ -1,6 +1,8 @@
 import ipywidgets as widgets
 from traitlets import Unicode, Any
-
+from progressivis.core import JSONEncoderNp as JS, asynchronize
+import progressivis.core.aio as aio
+from .utils import *
 # See js/lib/widgets.js for the frontend counterpart to this file.
 
 @widgets.register
@@ -31,3 +33,16 @@ class Scatterplot(widgets.DOMWidget):
     data = Unicode('{}').tag(sync=True)
     value =  Any('{}').tag(sync=True)
 
+    def link_module(self, module):
+        def _feed_widget(wg, val):
+            wg.data = JS.dumps(val)
+        async def _after_run(m, run_number):
+            await asynchronize(_feed_widget, self, m._json_cache)
+        module.after_run_proc = _after_run
+        async def _from_input():
+            while True:
+                await wait_for_change(self, 'value')
+                bounds = self.value
+                await module.min_value.from_input(bounds['min'])
+                await module.max_value.from_input(bounds['max'])
+        return [_from_input()]

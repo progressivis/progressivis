@@ -146,6 +146,7 @@ class Module(metaclass=ModuleMeta):
         self._ignore_inputs = False
         self._suspended = False
         self._frozen = False
+        self.after_run_proc = None
         # callbacks
         self._start_run = None
         self._end_run = None
@@ -249,7 +250,15 @@ class Module(metaclass=ModuleMeta):
             raise ValueError("Unconsistent wait expression {}".format(self.wait_expr))
         if w8_expr is not None:
             await aio.wait({sched_w8, w8_expr}, return_when=aio.FIRST_COMPLETED)
-
+            
+    async def after_run(self, rn):
+        if self.after_run_proc is None:
+            return
+        proc = self.after_run_proc
+        if aio.iscoroutinefunction(proc):
+            await proc(self, rn)
+        else:
+            proc(self, rn)
 
     def suspend(self):
         self._suspended = True
@@ -299,6 +308,7 @@ class Module(metaclass=ModuleMeta):
                 break
             await s._run_tick_procs()
             await self.run(rn)
+            await self.after_run(rn)            
             if self.is_source():
                 self.steering_evt_clear()
             await aio.sleep(0.1)

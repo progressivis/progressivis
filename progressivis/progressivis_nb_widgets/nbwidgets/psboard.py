@@ -1,6 +1,7 @@
 import ipywidgets as ipw
 import ipysheet as ips
 import numpy as np
+from collections import defaultdict
 from .control_panel import ControlPanel
 from .sensitive_html import SensitiveHTML
 from .utils import *
@@ -29,22 +30,24 @@ async def module_choice(psboard):
         psboard.current_module.selection_changed = True
         psboard.tab.set_title(2, psboard.current_module.module_name)
         psboard.tab.selected_index = 2
-        psboard.refresh()
-
+        #await psboard.refresh()
+"""
 async def change_tab(psboard):
     while True:
         await wait_for_change(psboard.tab, 'selected_index')
         with debug_console:
             print("Changed: ", psboard.tab.selected_index)        
         psboard.refresh()
-        
-async def refresh_(psboard):
-    if psboard.refresh_event is None:
-        psboard.refresh_event = aio.Event()
+"""
+
+async def refresh_fun(psboard):
     while True:
-        await psboard.refresh_event.wait()
-        psboard.refresh_event.clear()
-        psboard.refresh()
+        #await psboard.refresh_event.wait()
+        #psboard.refresh_event.clear()
+        json_ = psboard.scheduler.to_json(short=False)
+        psboard._cache = JSONEncoderNp.dumps(json_)
+        psboard._cache_js = None
+        await psboard.refresh()
         await aio.sleep(0.5)
 
 async def control_panel(psboard, action):
@@ -89,21 +92,45 @@ class PsBoard(ipw.VBox):
         self.cols = ['id', 'classname', 'state', 'last_update', 'order']
         self.htable = SensitiveHTML()
         self.refresh_event = None
+        self.other_coros = []
+        self.viz_register = defaultdict(list)
         commons.update(tab=self.tab, scheduler=self.scheduler)
         #self.init_sheet()
         #self.make_table()
         #self.tab.children = [self.sheet, self.mgraph]
         super().__init__([self.cpanel, self.tab, debug_console])
 
-    def make_table_index(self, modules):
-        tmpl = Template(index_tpl)
-        self.htable.sensitive_css_class = 'ps-row-btn'
-        self.htable.data = tmpl.render(modules=modules, cols=self.cols)
-    
+    async def make_table_index(self, modules):
+        if not self.htable.html:
+            tmpl = Template(index_tpl)
+            await update_widget(self.htable, 'sensitive_css_class', 'ps-row-btn')
+            await update_widget(self.htable, 'html', tmpl.render(modules=modules, cols=self.cols))
+        else:
+            data = {}
+            for m in modules:
+                for c in self.cols:
+                    data[f"ps-cell_{m['id']}_{c}"] = m[c]
+            await update_widget(self.htable, 'data', data)
 
-    def enable_refresh(self):
+        '''
+    def tick_proc(self, s, *args):
         """
         called from notebook
+        """
+        try:
+            json_ = s.to_json(short=False)
+            self._cache = JSONEncoderNp.dumps(json_)
+            self._cache_js = None
+            if self.refresh_event is None:
+                self.refresh_event = aio.Event()
+            self.refresh_event.set()
+        except:
+            print("refresh enabling failed ...")
+            #import pdb;pdb.set_trace()
+            #json_ = s.to_json(short=False)
+    def __to_be_deleted__enable_refresh(self, *args):
+        """
+        replaced by tick_proc
         """
         json_ = self.scheduler.to_json(short=False)
         self._cache = JSONEncoderNp.dumps(json_)
@@ -111,28 +138,50 @@ class PsBoard(ipw.VBox):
         if self.refresh_event is None:
             self.refresh_event = aio.Event()
         self.refresh_event.set()
+        '''
+
+    def register_visualisation(self, widget, module, label="Visualisation", glue=None):
+        """
+        called from notebook
+
+        if module_class is None and module_id is None:
+            raise ValueError("One and only one of 'module_class' and 'module_id' args must be defined")
+        if not(module_class is None or module_id is None):
+            raise ValueError("One and only one of 'module_class' and 'module_id' args must be defined")
+        """
+        linkable = hasattr(widget, 'link_module')
+        if not linkable and glue is None:
+            raise ValueError("Registering a visualisation requires a linkable widget (i.e. which implements the "
+                             "'link_module' interface) or 'glue' arg to be provides with a valid 'glue' function")
+        if glue is not None:
+            self.other_coros += glue(widget, module)
+        else:
+            self.other_coros += widget.link_module(module)
+        self.viz_register[module.name].append((widget, label))
 
     @property
     def coroutines(self):
-        return [module_choice(self), refresh_(self),
+        return [refresh_fun(self), module_choice(self), 
                 control_panel(self, "resume"),
                 control_panel(self, "stop"), 
-                control_panel(self, "step"), change_tab(self)]
+                control_panel(self, "step")]+self.other_coros # , change_tab(self) removed here
     
-    def refresh(self):
+    async def refresh(self):
         if self._cache is None:
             return
         if self._cache_js is None:
             self._cache_js = JSONEncoderNp.loads(self._cache)
         json_ = self._cache_js
-        self.cpanel.run_nb.value = str(json_['run_number'])
+        #self.cpanel.run_nb.value = str(json_['run_number'])
+        await update_widget(self.cpanel.run_nb, 'value', str(json_['run_number']))
         if self.tab.selected_index == 0:
-            self.make_table_index(json_['modules'])
+            await self.make_table_index(json_['modules'])
         elif self.tab.selected_index == 1:
-            self.mgraph.data = self._cache
+            #self.mgraph.data = self._cache
+            await update_widget(self.mgraph, 'data', self._cache)
         else:
             assert len(self.tab.children)>2
-            self.current_module.refresh()
+            await self.current_module.refresh()
             
             """for i, m in enumerate(json_['modules']):
                 if m['id']==self.current_module_name:

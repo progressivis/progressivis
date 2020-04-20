@@ -10,7 +10,7 @@ index_tpl = """<table class="table table-striped table-bordered table-hover tabl
           {% for c in cols%}
           <td>
           {% if c!='id' %}
-          {{m[c]}}
+          <span id="ps-cell_{{m['id']}}_{{c}}">{{m[c]}}</span>
           {% else %}
           <!--button class='ps-row-btn' id="ps-row-btn_{{m[c]}}" type='button' >{{m[c]}}</button-->
           <a class='ps-row-btn' id="ps-row-btn_{{m[c]}}" type='button' >{{m[c]}}</a>

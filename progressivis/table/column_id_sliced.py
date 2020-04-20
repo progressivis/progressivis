@@ -36,7 +36,8 @@ class IdColumnSlicedView(ColumnSlicedView):
 
     def resize(self, _):
         pass  # ignore
-
+    #def __iter__(self): ## To be tested ...
+    #    return (i for i in bitmap(self._view_slice))
     @property
     def update_mask(self):
         if self._update_mask is None or \

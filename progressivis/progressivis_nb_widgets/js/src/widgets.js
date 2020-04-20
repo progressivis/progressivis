@@ -112,8 +112,9 @@ var SensitiveHTMLModel = widgets.DOMWidgetModel.extend({
         _view_module : 'progressivis-nb-widgets',
         _model_module_version : '0.1.0',
         _view_module_version : '0.1.0',
-        data : 'Hello SensitiveHTML!',
+        html : '',
 	value: '{0}',
+	data: '{}',	
 	sensitive_css_class: 'aCssClass'
     })
 });
@@ -123,19 +124,27 @@ var SensitiveHTMLModel = widgets.DOMWidgetModel.extend({
 var SensitiveHTMLView = widgets.DOMWidgetView.extend({
     // Defines how the widget gets rendered into the DOM
     render: function() {
-	this.data_changed();
+	this.html_changed();
         // Observe changes in the value traitlet in Python, and define
         // a custom callback.
+        this.model.on('change:html', this.html_changed, this);
         this.model.on('change:data', this.data_changed, this);
-
     },
 
-    data_changed: function() {
-	this.el.innerHTML = this.model.get('data');
+    html_changed: function() {
+	this.el.innerHTML = this.model.get('html');
 	let that = this;
 	let sensitive = this.model.get('sensitive_css_class');
 	er.elementReady('.'+sensitive).then((_)=>{
 	    sch.update_cb(that);
+	});
+    },
+    
+    data_changed: function() {
+	let that = this;
+	let sensitive = this.model.get('sensitive_css_class');
+	er.elementReady('.'+sensitive).then((_)=>{
+	    sch.update_data(that);
 	});
     }
 });

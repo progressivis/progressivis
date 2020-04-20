@@ -28,7 +28,8 @@ class SensitiveHTML(widgets.DOMWidget):
     # Widget properties are defined as traitlets. Any property tagged with `sync=True`
     # is automatically synced to the frontend *any* time it changes in Python.
     # It is synced back to Python from the frontend *any* time the model is touched.
-    data = Unicode('{}').tag(sync=True)
-    value =  Any('{}').tag(sync=True)
+    html = Unicode('').tag(sync=True)
+    data =  Any('{}').tag(sync=True)
+    value =  Any('{}').tag(sync=True)    
     sensitive_css_class = Unicode('aCssClass').tag(sync=True)
 

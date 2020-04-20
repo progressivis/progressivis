@@ -15,6 +15,8 @@ import jinja2
 from .app import progressivis_bp, path_to_module, stop_server, PROJECT_ROOT
 from ..core import JSONEncoderNp
 from ..utils.psdict import PsDict
+from ..table.paging_helper import PagingHelper
+
 routes = web.RouteTableDef()
 
 #dumps = JSONEncoder4Numpy.dumps
@@ -137,7 +139,8 @@ def _module(request):
     mid = request.match_info['mid']
     module = path_to_module(mid)
     if module is None:
-        abort(404)
+        #abort(404)
+        raise web.HTTPNotFound()
     module.set_end_run(progressivis_bp.tick_module) # setting it multiple time is ok
     if request.method == 'POST':
         return _json_response(module.to_json())
@@ -158,10 +161,12 @@ def _module_image(request):
     print('Requested module image for %s?run_number=%s'%(mid, run_number))
     module = path_to_module(mid)
     if module is None:
-        abort(404)
+        #abort(404)
+        raise web.HTTPNotFound()
     img = module.get_image(run_number)
     if img is None:
-        abort(404)
+        #abort(404)
+        raise web.HTTPNotFound()
     if isinstance(img, str):
         return send_file(img, cache_timeout=0)
     return _serve_pil_image(img)
@@ -177,7 +182,8 @@ def _module_set_parameter(request):
     mid = request.match_info['mid']
     module = path_to_module(mid)
     if module is None:
-        abort(404)
+        #abort(404)
+        raise web.HTTPNotFound()
     var_values = request.get_json()
     try:
         module.set_current_params(var_values)
@@ -192,7 +198,8 @@ def _module_input(request):
     path = request.match_info['path']
     module = path_to_module(path)
     if module is None:
-        abort(405)
+        #abort(405)
+        raise web.HTTPNotFound()
     var_values = request.get_json()
     msg = ''
     try:
@@ -217,11 +224,13 @@ def _df(request):
     slot = request.match_info['slot']
     module = path_to_module(mid)
     if module is None:
-        abort(404)
+        #abort(404)
+        raise web.HTTPNotFound()
     print('Getting slot "'+slot+'"')
     df = module.get_data(slot)
     if df is None:
-        abort(404)
+        #abort(404)
+        raise web.HTTPNotFound()
     if request.method == 'POST':
         if isinstance(df, PsDict):
             return _json_response({'columns':['index']+list(df.keys())})
@@ -237,12 +246,14 @@ def _qual(request):
     mid = request.match_info['mid']
     module = path_to_module(mid)
     if module is None:
-        abort(404)
+        #abort(404)
+        raise web.HTTPNotFound()
     slot = '_trace'
     print('Getting slot "'+slot+'"')
     df = module.get_data(slot)
     if df is None:
-        abort(404)
+        #abort(404)
+        raise web.HTTPNotFound()
     print('POST df %s/%s'%(mid, slot))
     qual = df['quality'].values
     return _json_response({'index':df.index.values, 'quality': qual})
@@ -262,18 +273,22 @@ async def _dfslice(request):
     start_ = int(form['start'])
     draw_ = int(form['draw'])
     length_ = int(form['length'])
+    #if slot in ('table', 'min_out', 'max_out'):
+    #    import pdb; pdb.set_trace()
     if isinstance(df, PsDict):
         return _json_response({'draw':draw_,
                     'recordsTotal': 1,
                     'recordsFiltered': 1,
                                'data': [[0]+list(df.values())]})
     df_len = len(df)
-    df_slice = df.iloc[start_:min(start_+length_, df_len)]
+    #df_slice = df.iloc[start_:min(start_+length_, df_len)]
+    helper = PagingHelper(df)
+    df_slice = helper.get_page(start_, min(start_+length_, df_len))
     print("reload slice", start_, 'len=', length_, 'table len=', df_len)
     return _json_response({'draw': draw_,
                     'recordsTotal': df_len,
                     'recordsFiltered': df_len,
-                            'data': df_slice.to_json(orient='datatable')})
+                            'data': df_slice})
 
 
 @routes.get('/exit')

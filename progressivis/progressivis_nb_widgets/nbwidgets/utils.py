@@ -1,6 +1,6 @@
 import asyncio as aio
 import ipywidgets as widgets
-
+from progressivis.core import asynchronize
 # cf. https://ipywidgets.readthedocs.io/en/latest/examples/Widget%20Asynchronous.html
 def wait_for_change(widget, value):
     future = aio.Future()
@@ -19,3 +19,8 @@ def wait_for_click(btn, cb):
         cb()
     btn.on_click(proc_)
     return future
+
+
+async def update_widget(wg, attr, val):
+    await asynchronize(setattr, wg, attr, val)
+
