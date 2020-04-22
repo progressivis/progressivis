@@ -255,7 +255,7 @@ def _qual(request):
         #abort(404)
         raise web.HTTPNotFound()
     print('POST df %s/%s'%(mid, slot))
-    qual = df['quality'].values
+    qual = df['quality'].values[np.nonzero(df['quality'].values>0)]
     return _json_response({'index':df.index.values, 'quality': qual})
 
 

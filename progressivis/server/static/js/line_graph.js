@@ -44,7 +44,7 @@ function line_graph(data){
     //console.log("qual: ", qual_data)
     x.domain(d3.extent(qual_data, function(d) { return d.step; }));
     y.domain(d3.extent(qual_data, function(d) { return d.quality; }));
-    qsvg.append("path")
+    qsvg.append("path").style("fill","none")
         .attr("class", "line")
         .attr("d", lineval(qual_data));
     // X, Y Axis
