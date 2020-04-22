@@ -3,6 +3,7 @@ import ipywidgets as ipw
 from .templates import *
 from .utils import *
 from .slot_wg import SlotWg
+from .json_html import JsonHTML
 import weakref
 import json
 debug_console = None #ipw.Output()
@@ -17,7 +18,7 @@ class ModuleWg(ipw.Tab):
         global debug_console
         debug_console = dconsole
         self._index = board #weakref.ref(board)
-        self._main = ipw.HTML()
+        self._main = JsonHTML()
         self.module_name = None
         self.selection_changed = False
         self._output_slots = ipw.Tab()
@@ -37,18 +38,18 @@ class ModuleWg(ipw.Tab):
                      break
         assert module_json is not None
         self.set_title(0, self.module_name)
-        #self._main.value = layout_dict(m, order=["classname",
-        await update_widget(self._main, 'value', layout_dict(m, order=["classname",
-                                   "speed",
-                                   #"output_slots",
-                                   "debug",
-                                   "state",
-                                   "last_update",
-                                   "default_step_size",
-                                   "start_time",
-                                   "end_time",
-                                   "parameters",
-                                   "input_slots"]))
+        await update_widget(self._main, 'data', m)
+        await update_widget(self._main, 'config', dict(order=["classname",
+                                                              "speed",
+                                                              "debug",
+                                                              "state",
+                                                              "last_update",
+                                                              "default_step_size",
+                                                              "start_time",
+                                                              "end_time",
+                                                              "parameters",
+                                                              "input_slots"],
+                                                       sparkline=["speed"]))
         _selected_index = 0
         module = self._index.scheduler.modules()[self.module_name]
         if module is None:

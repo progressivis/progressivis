@@ -49,6 +49,7 @@
     "d3": "5.0.0",
     "datatables": "^1.10.18",
     "jquery": "^3.4.1",
+    "jquery-sparkline": "^2.4.0",
     "lodash": "^4.17.4",
     "multiclass-density-maps": "~0.1.5",
     "react": "^16.8.4",

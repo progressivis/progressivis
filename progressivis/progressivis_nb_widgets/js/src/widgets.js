@@ -9,6 +9,7 @@ var dt = require('./data_table');
 require('../css/module-graph.css');
 require('datatables/media/css/jquery.dataTables.css');
 var sch = require('./sensitive_html');
+var jh = require('./layout_dict');
 // See example.py for the kernel counterpart to this file.
 
 
@@ -83,7 +84,8 @@ var ModuleGraphModel = widgets.DOMWidgetModel.extend({
 var ModuleGraphView = widgets.DOMWidgetView.extend({
     // Defines how the widget gets rendered into the DOM
     render: function() {
-	this.el.innerHTML = '<svg id="module-graph" width="960" height="500"></svg>';      var that = this;
+	this.el.innerHTML = '<svg id="module-graph" width="960" height="500"></svg>';
+	var that = this;
 	er.elementReady("#module-graph").then((_)=>{
 	    mg.graph_setup();
 	    that.data_changed();
@@ -190,6 +192,46 @@ var DataTableView = widgets.DOMWidgetView.extend({
     }
 });
 
+var JsonHTMLModel = widgets.DOMWidgetModel.extend({
+    defaults: _.extend(widgets.DOMWidgetModel.prototype.defaults(), {
+        _model_name : 'JsonHTMLModel',
+        _view_name : 'JsonHTMLView',
+        _model_module : 'progressivis-nb-widgets',
+        _view_module : 'progressivis-nb-widgets',
+        _model_module_version : '0.1.0',
+        _view_module_version : '0.1.0',
+        dom_id : 'json_html_dom_id',
+	data: '{}',
+	config: '{}'
+    })
+});
+
+
+// Custom View. Renders the widget model.
+var JsonHTMLView = widgets.DOMWidgetView.extend({
+    // Defines how the widget gets rendered into the DOM
+    render: function() {
+        let dom_id = this.model.get('dom_id');
+        this.el.innerHTML = "<div id='"+dom_id+"'></div>";
+	this.data_changed();
+        // Observe changes in the value traitlet in Python, and define
+        // a custom callback.
+        this.model.on('change:config', this.data_changed, this);
+        this.model.on('change:data', this.data_changed, this);
+    },
+
+    
+    data_changed: function() {
+	let that = this;
+        let dom_id = this.model.get('dom_id');
+   
+	er.elementReady('#'+dom_id).then((_)=>{
+	    jh.layout_dict_entry(that);
+	});
+    }
+});
+
+
 
 
 module.exports = {
@@ -199,6 +241,8 @@ module.exports = {
     ModuleGraphView: ModuleGraphView,
     SensitiveHTMLModel: SensitiveHTMLModel,
     SensitiveHTMLView: SensitiveHTMLView,
+    JsonHTMLModel: JsonHTMLModel,
+    JsonHTMLView: JsonHTMLView,
     DataTableModel: DataTableModel,
     DataTableView: DataTableView
     };

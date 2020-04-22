@@ -22,39 +22,3 @@ index_tpl = """<table class="table table-striped table-bordered table-hover tabl
 	  </tbody>
         </table>"""
 
-
-
-def layout_value(v, layout):
-    if not v:
-        return
-    if isinstance(v, list):
-        for e in v:
-            layout_value(e, layout)
-    elif isinstance(v, str) and v.startswith('<div'):
-        return
-    if isinstance(v, dict):
-        layout_dict(v, sorted(v.keys()), layout=layout)
-    else:
-        layout.write(f'<div>{v}</div>')
-
-
-
-def layout_dict(data, order=None, layout=None, value_func={}):
-    if layout is None:
-        layout = StringIO()
-    if order is None:
-        order = sorted(data.keys())
-    layout.write('<dl class="dl-horizontal">')
-    for k in order:
-        if k not in data:
-            continue
-        layout.write(f' <dt>{k}:</dt><dd>')        
-        v = data[k];
-        if k in value_func:
-            value_func[k](v, layout)
-        else:
-            layout_value(v, layout)
-        layout.write('</dd>')
-    layout.write('</dl>');
-    return layout.getvalue()
-
