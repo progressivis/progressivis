@@ -1,5 +1,4 @@
 import ipywidgets as ipw
-import ipysheet as ips
 import numpy as np
 from collections import defaultdict
 from .control_panel import ControlPanel
@@ -64,25 +63,9 @@ class PsBoard(ipw.VBox):
         self._cache = None
         self._cache_js = None
         self.cpanel = ControlPanel(scheduler)
-        #self.current_module_name = None
-        #self.current_module = SensitiveHTML()
         self.current_module = ModuleWg(self, debug_console) 
-        #self.current_module.sensitive_css_class = 'foo'
-        """
-        modules = scheduler.to_json()['modules']
-        titles = ['Id', 'Class', 'State', 'Last Update', 'Order']
-        cols = ['id', 'classname', 'state', 'last_update', 'order']
-        col_width = [100, 100, 50, 40, 40]
-        self.sheet = ips.sheet(rows=len(modules), columns=len(cols),
-                               column_headers=titles, column_width=col_width)
-        #self.sheet.column_width = col_width
-        for i, m in enumerate(modules):
-            for j, c in enumerate(cols):
-                ips.cell(i, j, str(m[c]), read_only=True)
-        """
         self.mgraph = ModuleGraph()
         self.tab = ipw.Tab()
-        #self.tab.children = [self.sheet, gr]
         self.tab.set_title(0, 'Modules')
         self.tab.set_title(1, 'Module graph')
         self.state = []
@@ -95,9 +78,6 @@ class PsBoard(ipw.VBox):
         self.other_coros = []
         self.viz_register = defaultdict(list)
         commons.update(tab=self.tab, scheduler=self.scheduler)
-        #self.init_sheet()
-        #self.make_table()
-        #self.tab.children = [self.sheet, self.mgraph]
         super().__init__([self.cpanel, self.tab, debug_console])
 
     async def make_table_index(self, modules):
@@ -112,33 +92,6 @@ class PsBoard(ipw.VBox):
                     data[f"ps-cell_{m['id']}_{c}"] = m[c]
             await update_widget(self.htable, 'data', data)
 
-        '''
-    def tick_proc(self, s, *args):
-        """
-        called from notebook
-        """
-        try:
-            json_ = s.to_json(short=False)
-            self._cache = JSONEncoderNp.dumps(json_)
-            self._cache_js = None
-            if self.refresh_event is None:
-                self.refresh_event = aio.Event()
-            self.refresh_event.set()
-        except:
-            print("refresh enabling failed ...")
-            #import pdb;pdb.set_trace()
-            #json_ = s.to_json(short=False)
-    def __to_be_deleted__enable_refresh(self, *args):
-        """
-        replaced by tick_proc
-        """
-        json_ = self.scheduler.to_json(short=False)
-        self._cache = JSONEncoderNp.dumps(json_)
-        self._cache_js = None
-        if self.refresh_event is None:
-            self.refresh_event = aio.Event()
-        self.refresh_event.set()
-        '''
 
     def register_visualisation(self, widget, module, label="Visualisation", glue=None):
         """
@@ -181,25 +134,7 @@ class PsBoard(ipw.VBox):
             await update_widget(self.mgraph, 'data', self._cache)
         else:
             assert len(self.tab.children)>2
-            await self.current_module.refresh()
-            
-            """for i, m in enumerate(json_['modules']):
-                if m['id']==self.current_module_name:
-                    self.tab.children[2].data = layout_dict(m, order=["classname",
-                                   "speed",
-                                   "output_slots",
-                                   "debug",
-                                   "state",
-                                   "last_update",
-                                   "default_step_size",
-                                   "start_time",
-                                   "end_time",
-                                   "parameters",
-                                   "input_slots"])
-                    break
-            else:
-                raise ValueError(f"Unknown module {self.current_module_name}")
-            """
+            await self.current_module.refresh()            
         if len(self.tab.children)<3:
             self.tab.children = [self.htable, self.mgraph]
         else:
