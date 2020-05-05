@@ -96,7 +96,7 @@ class MCScatterPlot(NAry):
         self._json_cache = None
         self.input_module = None
         self.input_slot = None
-        self._data_class_list = []
+        self._data_class_dict = {}
         self.min_value = None
         self.max_value = None
 
@@ -288,9 +288,12 @@ class MCScatterPlot(NAry):
                 self._add_class(*cl)
             self._finalize()
 
+    def __getitem__(self, key):
+        return self._data_class_dict[key]
+
     def _finalize(self):
-        for dc in self._data_class_list:
-            for dc2 in self._data_class_list:
+        for dc in self._data_class_dict.values():
+            for dc2 in self._data_class_dict.values():
                 x, y = dc2.x_column, dc2.y_column
                 dc.histogram2d.input['table', ('min', x, y)] = dc2.range_query_2d.output.min
                 dc.histogram2d.input['table', ('max', x, y)] = dc2.range_query_2d.output.max
@@ -309,10 +312,10 @@ class MCScatterPlot(NAry):
         sample_meta = dict(inp='sample', class_=name, **col_translation)
         self.input['table', hist_meta] = data_class.histogram2d.output.table
         self.input['table', sample_meta] = data_class.sample.output.table
-        self._data_class_list.append(data_class)
+        self._data_class_dict[name] = data_class
         self.min_value.subscribe(data_class.min_value, col_translation)
         self.max_value.subscribe(data_class.max_value, col_translation)
 
     def get_starving_mods(self):
         return chain(*[(s.histogram2d, s.sample)
-                       for s in self._data_class_list])
+                       for s in self._data_class_dict.values()])

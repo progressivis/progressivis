@@ -67,7 +67,7 @@ class RangeQuery2dImpl(ModuleImpl):
                             only_locs=updated, approximate=self._approximate)
             res_y = self._hist_index_y.restricted_range_query(lower_y, upper_y,
                             only_locs=updated, approximate=self._approximate)
-            self.result.add(res_x&res_y) # add not defined???
+            self.result.update(res_x&res_y)
         if created:
             res_x = self._hist_index_x.restricted_range_query(lower_x, upper_x,
                             only_locs=created, approximate=self._approximate)
@@ -160,10 +160,12 @@ class RangeQuery2d(TableModule):
             hist_index_x = HistogramIndex(column=params.column_x,
                                           group=self.name,
                                           scheduler=scheduler)
+            self.hist_index_x = hist_index_x
             hist_index_x.input.table = input_module.output[input_slot]
             hist_index_y = HistogramIndex(column=params.column_y,
                                           group=self.name,
                                           scheduler=scheduler)
+            self.hist_index_y = hist_index_y
             hist_index_y.input.table = input_module.output[input_slot]
             if min_ is None:
                 min_x = Min(group=self.name,

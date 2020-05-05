@@ -246,8 +246,8 @@ class BaseTable(metaclass=ABCMeta):
             ret = OrderedDict()
             for name in columns:
                 col = self[name]
-                ret[name] = dict(zip(self.index,
-                                     col.tolist()))
+                ret[name] = {int(k):v for (k, v) in dict(zip(self.index,
+                                                             col.tolist())).items()} # because a custom JSONEncoder cannot fix it later
             return ret
         if orient == 'list':
             ret = OrderedDict()
