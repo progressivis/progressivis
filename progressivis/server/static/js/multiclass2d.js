@@ -17,6 +17,35 @@ var x     = d3.scaleLinear().range([0, width]),
         //.scaleExtent([1, 32])
         .on("zoom", multiclass2d_zoomed);
 
+function elementReady(selector) {
+    // MIT Licensed
+    // Author: jwilson8767
+    
+    /**
+     * Waits for an element satisfying selector to exist, then resolves promise with the element.
+     * Useful for resolving race conditions.
+     *
+     * @param selector
+     * @returns {Promise}
+     */
+	
+  return new Promise((resolve, reject) => {
+    let el = document.querySelector(selector);
+    if (el) {resolve(el);}
+    new MutationObserver((mutationRecords, observer) => {
+      // Query for elements matching the specified selector
+      Array.from(document.querySelectorAll(selector)).forEach((element) => {
+        resolve(element);
+        //Once we have resolved we don't need the observer anymore.
+        observer.disconnect();
+      });
+    })
+      .observe(document.documentElement, {
+        childList: true,
+        subtree: true
+      });
+  });
+}
 var view, gX, gY, zoomable;
 var dataURL=null;
 const DEFAULT_SIGMA = 0;
@@ -67,8 +96,42 @@ function multiclass2d_update_vis(rawdata) {
     var data = rawdata['sample'],
         bounds = rawdata['bounds'],
         ix, iy, iw, ih;
-
     if (!data || !bounds) return;
+    ////
+    if(!window.spec){
+        var spec =  {
+            "data": { "url": "bar" },
+            "compose": {
+                "mix": "max"
+            },
+            "rescale": {
+                "type": "cbrt"
+            },
+            "legend":{}
+        }
+        window.spec = spec;
+    }
+    data_ = rawdata['chart'];
+    function render(spec, data) {
+        var config = new MDM.Config(spec);
+        config.loadJson(data).then(function () {
+            var interp = new MDM.Interpreter(config);
+            //var start = +new Date();
+            
+	    elementReady("#heatmapContainer").then((_)=>{
+		interp.interpret();
+		return interp.render(document.getElementById('heatmapContainer'));
+	    });
+            //var end = +new Date(); 
+            //console.log('took ', (end - start), 'ms')
+            //interp = null;
+        });
+    }
+    render(window.spec, data_);
+    elementReady("#heatmapContainer canvas").then((_)=>{
+	dataURL = $("#heatmapContainer canvas")[0].toDataURL();
+    
+    ////
     var index = data['index'];
     var dot_color = ['red', 'blue', 'green', 'cyan', 'orange']
     if (prevBounds == null) { // first display, not refresh
@@ -158,35 +221,6 @@ function multiclass2d_update_vis(rawdata) {
             .attr("width",  iw)
             .attr("height", ih);
     }
-    if(!window.spec){
-        var spec =  {
-            "data": { "url": "bar" },
-            "compose": {
-                "mix": "max"
-            },
-            "rescale": {
-                "type": "cbrt"
-            },
-            "legend":{}
-        }
-        window.spec = spec;
-    }
-    data_ = rawdata['chart'];
-    function render(spec, data) {
-        var config = new MDM.Config(spec);
-        config.loadJson(data).then(function () {
-            var interp = new MDM.Interpreter(config);
-            //var start = +new Date();
-            interp.interpret();
-            return interp.render(document.getElementById('heatmapContainer'))
-            //var end = +new Date(); 
-            //console.log('took ', (end - start), 'ms')
-            //interp = null;
-        });
-    }
-    window.render = render;
-    render(window.spec, data_)
-    dataURL = $("#heatmapContainer canvas")[0].toDataURL();
     window.spec.data = {};
     imageHistory.enqueueUnique(dataURL);
     $('#map-legend').empty();
@@ -237,7 +271,8 @@ function multiclass2d_update_vis(rawdata) {
     dots .attr("cx", function(d) { return x(d[0]); })
          .attr("cy", function(d) { return y(d[1]); });
     dots.exit().remove();
-    dots.order();
+	dots.order();
+    });
 }
 
 function multiclass2d_zoomed(t) {
