@@ -9,7 +9,8 @@ from progressivis.core.utils import indices_len, fix_loc
 from ..table.module import TableModule
 from ..table import Table
 from ..table.dshape import dshape_from_dtype
-
+from ..io import DynVar
+from ..utils.psdict import PsDict
 
 logger = logging.getLogger(__name__)
 
@@ -20,6 +21,8 @@ class MBKMeans(TableModule):
     """
     def __init__(self, n_clusters, columns=None, batch_size=100, tol=0.0,
                  is_input=True, random_state=None, **kwds):
+        self._add_slots(kwds, 'input_descriptors',
+                        [SlotDescriptor('moved_center', type=PsDict, required=True)])
         self._add_slots(kwds, 'input_descriptors',
                         [SlotDescriptor('table', type=Table, required=True)])
         self._add_slots(kwds, 'output_descriptors',
@@ -37,6 +40,7 @@ class MBKMeans(TableModule):
         self._remaining_inits = 10
         self._initialization_steps = 0
         self._is_input = is_input
+
 
     def reset(self, init='k-means++'):
         print("Reset, init=", init)
@@ -78,18 +82,30 @@ class MBKMeans(TableModule):
         return super(MBKMeans, self).get_data(name)
 
     async def run_step(self, run_number, step_size, howlong):
+        moved_center = self.get_input_slot('moved_center')
+        moved_center.update(run_number)
+        init_centers = 'k-means++'
+        if moved_center.has_buffered():
+            moved_center.created.next()
+            moved_center.updated.next()
+            moved_center.deleted.next()            
+            msg = moved_center.data()
+            for c in msg:
+                self.set_centroid(c, msg[c][:2])
+            init_centers = self.mbk.cluster_centers_
+            self.reset(init=init_centers)
         dfslot = self.get_input_slot('table')
         dfslot.update(run_number)
 
         if dfslot.deleted.any() or dfslot.updated.any():
             logger.debug('has deleted or updated, reseting')
-            self.reset()
+            self.reset(init=init_centers)
             dfslot.update(run_number)
 
         # print('dfslot has buffered %d elements'% dfslot.created_length())
         input_df = dfslot.data()
-        if (input_df is None or len(input_df) == 0) and \
-           dfslot.created_length() < self.mbk.n_clusters:
+        if (input_df is None or len(input_df)  < self.mbk.n_clusters): #and \
+           #dfslot.created_length() < self.mbk.n_clusters:
             # Should add more than k items per loop
             return self._return_run_step(self.state_blocked, steps_run=0)
         indices = dfslot.created.next(step_size)  # returns a slice
@@ -161,15 +177,11 @@ class MBKMeans(TableModule):
         _ = self.scheduler().for_input(self)
         centroids.loc[c, self.columns] = values
         # TODO unpack the table
-        self.mbk.cluster_centers_[c] = centroids.loc[c, self.columns]
-        return values
+        self.mbk.cluster_centers_[c] = list(centroids.loc[c, self.columns])
+        return self.mbk.cluster_centers_.tolist()
 
-    def is_input(self):
-        return self._is_input
-
-    def from_input(self, msg):
-        logger.info('Received message %s', msg)
-        for c in msg:
-            self.set_centroid(c, msg[c])
-        # self.reset(init=self.mbk.cluster_centers_)
-
+    def create_dependent_modules(self):
+        c = DynVar(group="bar", scheduler=self.scheduler())
+        self.moved_center = c
+        self.input.moved_center = c.output.table
+        

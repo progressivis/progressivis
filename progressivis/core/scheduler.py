@@ -501,7 +501,7 @@ class Scheduler(object):
         Notify this scheduler that the module has received input
         that should be served fast.
         """
-        sel = self._reachability[module.name]
+        sel = self._reachability.get(module.name, False)
         if sel:
             if not self._module_selection:
                 logger.info('Starting input management')
