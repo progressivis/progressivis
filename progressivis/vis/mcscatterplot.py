@@ -30,7 +30,7 @@ class _DataClass(object):
         self.min_value = None
         self.max_value = None
         self.sample = None
-        self.select = None
+        #self.select = None
         self.range_query_2d = None
 
     def scheduler(self):
@@ -38,7 +38,7 @@ class _DataClass(object):
 
     def create_dependent_modules(self, input_module, input_slot,
                                  histogram2d=None, heatmap=None,
-                                 sample=True, select=None, **kwds):
+                                 **kwds):
         if self.input_module is not None:
             return self
         scheduler = self.scheduler()
@@ -65,16 +65,18 @@ class _DataClass(object):
                                             group=self._group,
                                             scheduler=scheduler)
             histogram2d.input.data = range_query_2d.output.table
-            if sample is True:
-                sample = Sample(samples=100, group=self._group,
+            if self.sample == 'default':
+                self.sample = Sample(samples=100, group=self._group,
                                 scheduler=scheduler)
-            elif sample is None and select is None:
-                raise ProgressiveError("Scatterplot needs a select module")
-            if sample is not None:
-                sample.input.table = range_query_2d.output.table
+            #elif sample is None and select is None:
+            #    raise ProgressiveError("Scatterplot needs a select module")
+            #if sample is not None:
+            #    sample.input.table = range_query_2d.output.table
+            if isinstance(self.sample, Sample):
+                self.sample.input.table = range_query_2d.output.table
             self.histogram2d = histogram2d
-            self.sample = sample
-            self.select = select
+            #self.sample = sample
+            #self.select = select
             self.min = range_query_2d.min.output.table
             self.max = range_query_2d.max.output.table
             self.range_query_2d = range_query_2d
@@ -278,14 +280,18 @@ class MCScatterPlot(NAry):
         return self.make_json(json)
 
     def create_dependent_modules(self, input_module, input_slot,
-                                 sample=True, select=None, **kwds):
+                                 sample='default', **kwds):
         self.input_module = input_module
         self.input_slot = input_slot
         with self.scheduler():
             self.min_value = VirtualVariable([self._x_label, self._y_label])
             self.max_value = VirtualVariable([self._x_label, self._y_label])
             for cl in self._classes:
-                self._add_class(*cl)
+                #import pdb;pdb.set_trace()
+                if isinstance(cl, tuple):
+                    self._add_class(*cl)
+                else:
+                    self._add_class(**cl)
             self._finalize()
 
     def __getitem__(self, key):
@@ -298,7 +304,7 @@ class MCScatterPlot(NAry):
                 dc.histogram2d.input['table', ('min', x, y)] = dc2.range_query_2d.output.min
                 dc.histogram2d.input['table', ('max', x, y)] = dc2.range_query_2d.output.max
 
-    def _add_class(self, name, x_column, y_column):
+    def _add_class(self, name, x_column, y_column, sample='default'):
         if self.input_module is None or self.input_slot is None:
             raise ProgressiveError("You have to create "
                                    "the dependent modules first!")
@@ -306,6 +312,7 @@ class MCScatterPlot(NAry):
                                 y_column,
                                 approximate=self._approximate,
                                 scheduler=self._scheduler)
+        data_class.sample = sample
         data_class.create_dependent_modules(self.input_module, self.input_slot)
         col_translation = {self._x_label: x_column, self._y_label: y_column}
         hist_meta = dict(inp='hist', class_=name, **col_translation)
