@@ -32,17 +32,34 @@ class Scatterplot(widgets.DOMWidget):
     # It is synced back to Python from the frontend *any* time the model is touched.
     data = Unicode('{}').tag(sync=True)
     value =  Any('{}').tag(sync=True)
+    move_point =  Any('{}').tag(sync=True)    
 
     def link_module(self, module):
         def _feed_widget(wg, val):
             wg.data = JS.dumps(val)
+
         async def _after_run(m, run_number):
             await asynchronize(_feed_widget, self, m._json_cache)
         module.after_run_proc = _after_run
-        async def _from_input():
+        async def _from_input_value():
             while True:
                 await wait_for_change(self, 'value')
                 bounds = self.value
                 await module.min_value.from_input(bounds['min'])
                 await module.max_value.from_input(bounds['max'])
-        return [_from_input()]
+        async def _from_input_move_point():
+            while True:
+                await wait_for_change(self, 'move_point')
+                await module.move_point.from_input(self.move_point)
+        async def _awake():
+            """
+            Hack intended to force the rendering even if the data 
+            are exhausted at the time of the first display
+            """
+            while True:
+                await aio.sleep(5)
+                dummy = module._json_cache.get('dummy', 555)
+                module._json_cache['dummy'] = -dummy
+                await asynchronize(_feed_widget, self, module._json_cache)
+
+        return [_from_input_value(), _from_input_move_point(), _awake()]

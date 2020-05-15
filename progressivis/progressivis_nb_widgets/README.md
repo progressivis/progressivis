@@ -30,7 +30,7 @@ NB: When actively developing your extension, build Jupyter Lab with the command:
 
 ### As a standalone app :
 
-voila --enable_nbextensions=True
+voila --enable_nbextensions=True YourNotebook.ipynb
 
 ### As a server extension to notebook or jupyter_server
 

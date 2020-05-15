@@ -7,6 +7,7 @@ var er = require('./es6-element-ready');
 var mg = require('./module_graph');
 var dt = require('./data_table');
 var slpb = require('./sparkline_progressbar');
+var lg = require('./line_graph');
 require('../css/module-graph.css');
 require('../css/sparkline-progressbar.css');
 require('datatables/media/css/jquery.dataTables.css');
@@ -39,7 +40,8 @@ var ScatterplotModel = widgets.DOMWidgetModel.extend({
         _model_module_version : '0.1.0',
         _view_module_version : '0.1.0',
         data : 'Hello Scatterplot!',
-	value: '{0}'
+	value: '{0}',
+	move_point: '{0}'	
     })
 });
 
@@ -270,6 +272,81 @@ var SparkLineProgressBarView = widgets.DOMWidgetView.extend({
     }
 });
 
+var SparkLineProgressBarModel = widgets.DOMWidgetModel.extend({
+    defaults: _.extend(widgets.DOMWidgetModel.prototype.defaults(), {
+        _model_name : 'SparkLineProgressBarModel',
+        _view_name : 'SparkLineProgressBarView',
+        _model_module : 'progressivis-nb-widgets',
+        _view_module : 'progressivis-nb-widgets',
+        _model_module_version : '0.1.0',
+        _view_module_version : '0.1.0',
+	data: '{}'
+    })
+});
+
+// Custom View. Renders the widget model.
+var SparkLineProgressBarView = widgets.DOMWidgetView.extend({
+    // Defines how the widget gets rendered into the DOM
+    render: function() {
+
+        this.el.innerHTML = `<div style="width: 100%;">
+			<div class="slpb-bg">
+				<span id='sparkline-pb' class="slpb-fill" style="width: 70%;"></span>
+			</div>
+		</div>`;
+	this.data_changed();
+        // Observe changes in the value traitlet in Python, and define
+        // a custom callback.
+        this.model.on('change:data', this.data_changed, this);
+    },
+
+    
+    data_changed: function() {
+	let that = this;   
+	er.elementReady('#sparkline-pb').then((_)=>{
+	    slpb.update_slpb(that);
+	});
+    }
+});
+
+
+var PlottingProgressBarModel = widgets.DOMWidgetModel.extend({
+    defaults: _.extend(widgets.DOMWidgetModel.prototype.defaults(), {
+        _model_name : 'PlottingProgressBarModel',
+        _view_name : 'PlottingProgressBarView',
+        _model_module : 'progressivis-nb-widgets',
+        _view_module : 'progressivis-nb-widgets',
+        _model_module_version : '0.1.0',
+        _view_module_version : '0.1.0',
+	data: '{}'
+    })
+});
+
+// Custom View. Renders the widget model.
+var PlottingProgressBarView = widgets.DOMWidgetView.extend({
+    // Defines how the widget gets rendered into the DOM
+    render: function() {
+
+        this.el.innerHTML = `<div style="width: 100%;">
+			<div class="slpb-bg">
+				<div id='plotting-pb' class="slpb-fill" style="width: 70%;"></div>
+			</div>
+		</div>`;
+	this.data_changed();
+        // Observe changes in the value traitlet in Python, and define
+        // a custom callback.
+        this.model.on('change:data', this.data_changed, this);
+    },
+
+    
+    data_changed: function() {
+	let that = this;   
+	er.elementReady('#plotting-pb').then((_)=>{
+	    slpb.update_slpb(that);
+	});
+    }
+});
+
 
 
 
@@ -284,6 +361,8 @@ module.exports = {
     JsonHTMLView: JsonHTMLView,
     SparkLineProgressBarModel: SparkLineProgressBarModel,
     SparkLineProgressBarView: SparkLineProgressBarView,
+    PlottingProgressBarModel: PlottingProgressBarModel,
+    PlottingProgressBarView: PlottingProgressBarView,
     DataTableModel: DataTableModel,
     DataTableView: DataTableView
     };

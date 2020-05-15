@@ -36,12 +36,6 @@ function float_equal(a, b) {
     return Math.abs(a-b) < EPSILON;
 }
 
-function multiclass2d_update(data) {
-    var wt = $('#module').attr('class').indexOf("active") >= 0;
-    module_update(data, with_table=wt);
-    multiclass2d_update_vis(data);
-}
-
 function _db(b) { return b[1]-b[0]; }
 
 function multiclass2d_dragstart(d, i) {
@@ -61,7 +55,11 @@ function multiclass2d_dragend(d, i) {
     var msg = {};
     d3.select(this).classed("dragging", false);
     msg[i] = d;
-    module_input(msg, ignore, progressivis_error, module_id+"/move_point");
+    //module_input(msg, ignore, progressivis_error, module_id+"/move_point");
+    ipyView.model.set('move_point', msg);
+    //ipyView.model.save_changes();
+    ipyView.touch();
+
 }
 
 var node_drag = d3.drag()
@@ -97,8 +95,10 @@ function multiclass2d_update_vis(rawdata) {
         var config = new Config(spec);
         config.loadJson(data).then(function () {
             var interp = new Interpreter(config);
-            interp.interpret();
-            return interp.render(document.getElementById('heatmapContainer'))
+	    elementReady("#heatmapContainer").then((_)=>{
+		interp.interpret();
+		return interp.render(document.getElementById('heatmapContainer'));
+	    });
         });
     }
     window.render = render;

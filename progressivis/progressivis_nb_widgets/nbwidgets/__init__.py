@@ -8,6 +8,7 @@ from .sensitive_html import *
 from .json_html import *
 from .data_table import *
 from .sparkline_progressbar import *
+from .plotting_progressbar import *
 from .utils import *
 def _jupyter_nbextension_paths():
     """Called by Jupyter Notebook Server to detect if it is a valid nbextension and
