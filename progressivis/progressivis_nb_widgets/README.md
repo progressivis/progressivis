@@ -2,18 +2,33 @@
 
 ## Installation (by now, dev mode only)
 
-
+### Preparing conda environment
+* Start by installing miniconda, following Conda’s installation documentation :
+https://docs.conda.io/projects/conda/en/latest/user-guide/install/index.html
+* Create a conda environment [first time] :
+  $ conda create -n progressivis-ext --override-channels --strict-channel-priority -c conda-forge -c anaconda cython numpy jupyterlab nodejs git
+* Activate it :
+  $ conda activate progressivis-ext
+* Install jupyterlab=2 and ipywidgets
+  $ conda install -c conda-forge jupyterlab=2
+  $ conda install -c conda-forge ipywidgets
 ### Development installation for notebook (requires npm),
 
-    $ git clone "https://github.com/jdfekete/progressivis.git
+    $ git clone https://github.com/jdfekete/progressivis.git
+    $ cd progressivis
     $ pip install -e .
-    $ cd progressivis_nb_widgets/js
+    $ examples/create_nyc_dataset.sh
+    $ cd progressivis/progressivis_nb_widgets/js
     $ npm install 
     $ npm run build
     $ jupyter nbextension install --py --symlink --sys-prefix progressivis.progressivis_nb_widgets.nbwidgets
     $ jupyter nbextension enable --py --sys-prefix progressivis.progressivis_nb_widgets.nbwidgets
 
+
 ### Development installation for jupyterlab
+
+NB: be sure to run jupyterlab2. If needed, create a dedicated environment as explained here : 
+https://jupyterlab.readthedocs.io/en/stable/developer/extension_tutorial.html#set-up-a-development-environment
 
 In addition to previous steps (for notebook) 
 
@@ -21,18 +36,40 @@ In addition to previous steps (for notebook)
     $ jupyter labextension install js
 
 
+
+
+
+## Running examples
+
+NB: Before running examples, activate progressivis-ext :
+
+## Running under notebook
+
+$ cd progressivis/notebooks
+$ jupyter notebook
+
+## Running under jupyterlab
+
+$ cd progressivis/notebooks
+$ jupyter lab
+
+NB: install and enable @jupyter-widgets/jupyterlab-manager
+NB: in order to run progressivis examples you have to enable third-party extensions in jupyterlab extension manager
 NB: When actively developing your extension, build Jupyter Lab with the command:
+$ jupyter lab --watch
+$ conda activate progressivis-ext
 
-    $ jupyter lab --watch
+### Running under Voilà
 
+Install voilà :
 
-## Running under Voilà
+$ conda install -c conda-forge voila
 
-### As a standalone app :
+#### As a standalone app :
 
 voila --enable_nbextensions=True YourNotebook.ipynb
 
-### As a server extension to notebook or jupyter_server
+#### As a server extension to notebook or jupyter_server
 
 First, you have to enable the extension:
 
@@ -49,7 +86,7 @@ $jupyter notebook --VoilaConfiguration.enable_nbextensions=True
 
 When running the Jupyter server, the Voilà app is accessible from the base url suffixed with voila
 
-### Using a JupyterLab extension to render a notebook with voila
+#### Using a JupyterLab extension to render a notebook with voila
 
 Install the extension :
 
