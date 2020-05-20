@@ -80,11 +80,12 @@ class MBKMeans(TableModule):
         if name == 'labels':
             return self.labels()
         return super(MBKMeans, self).get_data(name)
-    def is_workaholic(self):
+
+    def is_greedy(self, slot_name):
         """
         Still needs to works after the entries have ended
         """
-        return True
+        return slot_name=="table"
 
     async def run_step(self, run_number, step_size, howlong):
         moved_center = self.get_input_slot('moved_center')

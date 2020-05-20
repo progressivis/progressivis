@@ -278,10 +278,11 @@ class Module(metaclass=ModuleMeta):
     def is_source(self):
         return False
 
-    def is_workaholic(self):
+    def is_greedy(self, slot_name):
         """
         Still needs to works after the entries have ended
         """
+        _ = slot_name
         return False
 
     def is_dataless_worker(self):
@@ -723,16 +724,14 @@ class Module(metaclass=ModuleMeta):
                 elif (in_module.is_terminated() or
                       in_module.state == Module.state_invalid):
                     term_count += 1
-
+                    if self.is_greedy(slot.input_name): # i.e. dataless work candidate
+                        self._dataless_worker = True
             # if all the input slot modules are terminated or invalid
-            if not (self.is_input() or self.is_workaholic()) and in_count != 0 and term_count == in_count:
+            if not (self.is_input() or self.is_dataless_worker()) and in_count != 0 and term_count == in_count:
                 logger.info('%s becomes zombie because all its input slots'
                             ' are terminated', self.name)
                 self.state = Module.state_zombie
                 return False
-            if self.is_workaholic() and term_count: # i.e. dataless work candidate
-                self._dataless_worker = True # TODO : replace the term_count test with something more precise\
-                                        # i.e. kind of "term_expr" following the wait_expr model?
                 
             # sources are always ready, and when 1 is ready, the module is.
             return in_count == 0 or ready_count != 0
