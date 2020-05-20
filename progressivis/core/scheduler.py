@@ -199,7 +199,7 @@ class Scheduler(object):
                 self.exit()
                 break
             nb_waiters = sum([m._w8_slots for m in mods_selection])
-            nb_max_w8 = len([x for x in mods_selection if not x.is_source() and x.has_any_input()])
+            nb_max_w8 = len([x for x in mods_selection if not (x.is_source() or x.is_dataless_worker()) and x.has_any_input()])
             if nb_waiters >= nb_max_w8-1 or self._stopped or self._short_cycle:
                 if self._idle_procs:
                     await self.idle_proc_runner()

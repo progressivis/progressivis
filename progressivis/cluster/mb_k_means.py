@@ -22,7 +22,7 @@ class MBKMeans(TableModule):
     def __init__(self, n_clusters, columns=None, batch_size=100, tol=0.0,
                  is_input=True, random_state=None, **kwds):
         self._add_slots(kwds, 'input_descriptors',
-                        [SlotDescriptor('moved_center', type=PsDict, required=True)])
+                        [SlotDescriptor('moved_center', type=PsDict, required=False)])
         self._add_slots(kwds, 'input_descriptors',
                         [SlotDescriptor('table', type=Table, required=True)])
         self._add_slots(kwds, 'output_descriptors',
@@ -80,20 +80,26 @@ class MBKMeans(TableModule):
         if name == 'labels':
             return self.labels()
         return super(MBKMeans, self).get_data(name)
+    def is_workaholic(self):
+        """
+        Still needs to works after the entries have ended
+        """
+        return True
 
     async def run_step(self, run_number, step_size, howlong):
         moved_center = self.get_input_slot('moved_center')
-        moved_center.update(run_number)
         init_centers = 'k-means++'
-        if moved_center.has_buffered():
-            moved_center.created.next()
-            moved_center.updated.next()
-            moved_center.deleted.next()            
-            msg = moved_center.data()
-            for c in msg:
-                self.set_centroid(c, msg[c][:2])
-            init_centers = self.mbk.cluster_centers_
-            self.reset(init=init_centers)
+        if moved_center is not None:
+            moved_center.update(run_number)        
+            if moved_center.has_buffered():
+                moved_center.created.next()
+                moved_center.updated.next()
+                moved_center.deleted.next()            
+                msg = moved_center.data()
+                for c in msg:
+                    self.set_centroid(c, msg[c][:2])
+                init_centers = self.mbk.cluster_centers_
+                self.reset(init=init_centers)
         dfslot = self.get_input_slot('table')
         dfslot.update(run_number)
 

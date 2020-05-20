@@ -151,6 +151,7 @@ class Module(metaclass=ModuleMeta):
         self._start_run = None
         self._end_run = None
         self._w8_slots = 0
+        self._dataless_worker = False
         #self._synchronized_lock = self.scheduler().create_lock()
         dataflow.add_module(self)
 
@@ -277,6 +278,15 @@ class Module(metaclass=ModuleMeta):
     def is_source(self):
         return False
 
+    def is_workaholic(self):
+        """
+        Still needs to works after the entries have ended
+        """
+        return False
+
+    def is_dataless_worker(self):
+        return self._dataless_worker
+
     async def module_task(self):
         if self.steering_evt is None:
             self.steering_evt = aio.Event()
@@ -298,7 +308,7 @@ class Module(metaclass=ModuleMeta):
             if self.is_zombie() or self.is_terminated():
                 self.state = Module.state_terminated
                 break
-            if not self.is_source() and self.has_any_input():
+            if not (self.is_source() or self.is_dataless_worker()) and self.has_any_input():
                 self._w8_slots = 1
                 await self.wait_for_slots()
                 self._w8_slots = 0
@@ -309,7 +319,7 @@ class Module(metaclass=ModuleMeta):
             await s._run_tick_procs()
             await self.run(rn)
             await self.after_run(rn)            
-            if self.is_source():
+            if self.is_source() or self.is_dataless_worker():
                 self.steering_evt_clear()
             await aio.sleep(0.1)
 
@@ -715,11 +725,15 @@ class Module(metaclass=ModuleMeta):
                     term_count += 1
 
             # if all the input slot modules are terminated or invalid
-            if not self.is_input() and in_count != 0 and term_count == in_count:
+            if not (self.is_input() or self.is_workaholic()) and in_count != 0 and term_count == in_count:
                 logger.info('%s becomes zombie because all its input slots'
                             ' are terminated', self.name)
                 self.state = Module.state_zombie
                 return False
+            if self.is_workaholic() and term_count: # i.e. dataless work candidate
+                self._dataless_worker = True # TODO : replace the term_count test with something more precise\
+                                        # i.e. kind of "term_expr" following the wait_expr model?
+                
             # sources are always ready, and when 1 is ready, the module is.
             return in_count == 0 or ready_count != 0
         logger.error("%s Not ready because is in weird state %s",
