@@ -21,10 +21,7 @@ PACKAGES = ['progressivis',
             'progressivis.cluster',
             'progressivis.metrics',
             'progressivis.server',
-            'progressivis.table',
-            'progressivis.nbwidgets',
-            'progressivis.progressivis_nb_widgets',
-            'progressivis.progressivis_nb_widgets.nbwidgets']
+            'progressivis.table']
 # 'stool'
 
 

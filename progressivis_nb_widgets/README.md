@@ -1,6 +1,8 @@
 # progressivis_nb_widgets: A Custom Jupyter Widget Library for Progressivis
 
 ## Installation (by now, dev mode only)
+NB: You are assumed to have previously installed *progressivis* library
+The root of the following relative path is the progressivis repository root
 
 ### Preparing conda environment
 * Start by installing miniconda, following Conda’s installation documentation :
@@ -12,25 +14,22 @@ https://docs.conda.io/projects/conda/en/latest/user-guide/install/index.html
 * Install jupyterlab=2 and ipywidgets
   $ conda install -c conda-forge jupyterlab=2
   $ conda install -c conda-forge ipywidgets
-### Development installation for notebook (requires npm),
 
-    $ git clone https://github.com/jdfekete/progressivis.git
-    $ cd progressivis
-    $ pip install -e .
-    $ examples/create_nyc_dataset.sh
-    $ cd progressivis/progressivis_nb_widgets/js
+### Development installation for notebook (requires npm),
+    $ cd progressivis_nb_widgets
+    $ pip install -e . 
+    $ cd progressivis_nb_widgets/js
     $ npm install 
     $ npm run build
-    $ jupyter nbextension install --py --symlink --sys-prefix progressivis.progressivis_nb_widgets.nbwidgets
-    $ jupyter nbextension enable --py --sys-prefix progressivis.progressivis_nb_widgets.nbwidgets
-
+    $ jupyter nbextension install --py --symlink --sys-prefix progressivis_nb_widgets.nbwidgets
+    $ jupyter nbextension enable --py --sys-prefix progressivis_nb_widgets.nbwidgets
 
 ### Development installation for jupyterlab
 
 NB: be sure to run jupyterlab2. If needed, create a dedicated environment as explained here : 
 https://jupyterlab.readthedocs.io/en/stable/developer/extension_tutorial.html#set-up-a-development-environment
 
-In addition to previous steps (for notebook) 
+In addition to previous steps (i.e. notebook steps) 
 
     $ cd progressivis_nb_widgets
     $ jupyter labextension install js
