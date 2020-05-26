@@ -1,9 +1,10 @@
 import logging
 
+from collections import deque
 import numpy as np
 from sklearn.utils import gen_batches
 from sklearn.cluster import MiniBatchKMeans
-
+from scipy.spatial import distance
 from progressivis import ProgressiveError, SlotDescriptor
 from progressivis.core.utils import indices_len, fix_loc
 from ..table.module import TableModule
@@ -19,7 +20,7 @@ class MBKMeans(TableModule):
     """
     Mini-batch k-means using the sklearn implementation.
     """
-    def __init__(self, n_clusters, columns=None, batch_size=100, tol=0.0,
+    def __init__(self, n_clusters, columns=None, batch_size=100, tol=0.1, conv_steps=3,
                  is_input=True, random_state=None, **kwds):
         self._add_slots(kwds, 'input_descriptors',
                         [SlotDescriptor('moved_center', type=PsDict, required=False)])
@@ -40,7 +41,9 @@ class MBKMeans(TableModule):
         self._remaining_inits = 10
         self._initialization_steps = 0
         self._is_input = is_input
-
+        self._tol = tol
+        self._conv_steps = conv_steps
+        self._old_centers = deque(maxlen=conv_steps)
 
     def reset(self, init='k-means++'):
         print("Reset, init=", init)
@@ -85,7 +88,19 @@ class MBKMeans(TableModule):
         """
         Still needs to works after the entries have ended
         """
-        return slot_name=="table"
+        return True if self.get_input_slot('moved_center') is None else slot_name=="table"
+
+    def _test_convergence(self):
+        last_centers = self._old_centers[-1]
+        for old_centers in list(self._old_centers)[:-1]:
+            sum = 0.0
+            for i in range(self.mbk.n_clusters):
+                sum += distance.euclidean(old_centers[i], last_centers[i])
+                if sum > self._tol:
+                    print("Convergence test failed:", sum, self._tol, old_centers[i], last_centers[i])
+                    return False
+        print("Convergence test succeeded")
+        return True
 
     async def run_step(self, run_number, step_size, howlong):
         moved_center = self.get_input_slot('moved_center')
@@ -118,6 +133,10 @@ class MBKMeans(TableModule):
         indices = dfslot.created.next(step_size)  # returns a slice
         steps = indices_len(indices)
         if steps == 0:
+            if self.is_dataless_slot('table'): # i.e. data are really finished
+                if self._test_convergence():
+                    return self._return_run_step(self.state_terminated, steps_run=1)
+            # data are not yet finished, maybe steps==0 because the network is too slow etc.
             return self._return_run_step(self.state_blocked, steps_run=0)
         cols = self.get_columns(input_df)
         if len(cols) == 0:
@@ -142,6 +161,7 @@ class MBKMeans(TableModule):
                                 create=True)
             self._table.resize(self.mbk.cluster_centers_.shape[0])
         self._table[cols] = self.mbk.cluster_centers_
+        self._old_centers.append(self.mbk.cluster_centers_.copy())
         return self._return_run_step(self.next_state(dfslot), steps_run=steps)
 
     def dshape_from_columns(self, table, columns, dshape):

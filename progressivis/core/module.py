@@ -151,7 +151,7 @@ class Module(metaclass=ModuleMeta):
         self._start_run = None
         self._end_run = None
         self._w8_slots = 0
-        self._dataless_worker = False
+        self._dataless = set()
         #self._synchronized_lock = self.scheduler().create_lock()
         dataflow.add_module(self)
 
@@ -285,8 +285,11 @@ class Module(metaclass=ModuleMeta):
         _ = slot_name
         return False
 
-    def is_dataless_worker(self):
-        return self._dataless_worker
+    def is_dataless(self):
+        return self._dataless
+
+    def is_dataless_slot(self, slname):
+        return slname in self._dataless
 
     async def module_task(self):
         if self.steering_evt is None:
@@ -309,7 +312,7 @@ class Module(metaclass=ModuleMeta):
             if self.is_zombie() or self.is_terminated():
                 self.state = Module.state_terminated
                 break
-            if not (self.is_source() or self.is_dataless_worker()) and self.has_any_input():
+            if not (self.is_source() or self.is_dataless()) and self.has_any_input():
                 self._w8_slots = 1
                 await self.wait_for_slots()
                 self._w8_slots = 0
@@ -320,7 +323,7 @@ class Module(metaclass=ModuleMeta):
             await s._run_tick_procs()
             await self.run(rn)
             await self.after_run(rn)            
-            if self.is_source() or self.is_dataless_worker():
+            if self.is_source() or self.is_dataless():
                 self.steering_evt_clear()
             await aio.sleep(0.1)
 
@@ -725,9 +728,9 @@ class Module(metaclass=ModuleMeta):
                       in_module.state == Module.state_invalid):
                     term_count += 1
                     if self.is_greedy(slot.input_name): # i.e. dataless work candidate
-                        self._dataless_worker = True
+                        self._dataless.add(slot.input_name)
             # if all the input slot modules are terminated or invalid
-            if not (self.is_input() or self.is_dataless_worker()) and in_count != 0 and term_count == in_count:
+            if not (self.is_input() or self.is_dataless()) and in_count != 0 and term_count == in_count:
                 logger.info('%s becomes zombie because all its input slots'
                             ' are terminated', self.name)
                 self.state = Module.state_zombie
