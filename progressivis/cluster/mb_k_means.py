@@ -27,7 +27,9 @@ class MBKMeans(TableModule):
         self._add_slots(kwds, 'input_descriptors',
                         [SlotDescriptor('table', type=Table, required=True)])
         self._add_slots(kwds, 'output_descriptors',
-                        [SlotDescriptor('labels', type=Table, required=False)])
+                        [SlotDescriptor('labels', type=Table, required=False),
+                         SlotDescriptor('conv', type=PsDict, required=False),
+                        ])
         super(MBKMeans, self).__init__(**kwds)
         self.mbk = MiniBatchKMeans(n_clusters=n_clusters,
                                    batch_size=batch_size,
@@ -44,7 +46,7 @@ class MBKMeans(TableModule):
         self._tol = tol
         self._conv_steps = conv_steps
         self._old_centers = deque(maxlen=conv_steps)
-
+        self._conv_out = PsDict({'convergence': 'unknown'})
     def reset(self, init='k-means++'):
         print("Reset, init=", init)
         self.mbk = MiniBatchKMeans(n_clusters=self.mbk.n_clusters,
@@ -82,6 +84,8 @@ class MBKMeans(TableModule):
     def get_data(self, name):
         if name == 'labels':
             return self.labels()
+        if name == 'conv':
+            return self._conv_out
         return super(MBKMeans, self).get_data(name)
 
     def is_greedy(self, slot_name):
@@ -135,7 +139,11 @@ class MBKMeans(TableModule):
         if steps == 0:
             if self.is_dataless_slot('table'): # i.e. data are really finished
                 if self._test_convergence():
-                    return self._return_run_step(self.state_terminated, steps_run=1)
+                    self._conv_out['convergence'] = 'yes'
+                else:
+                    self._conv_out['convergence'] = 'no'
+                self.unset_dataless_slot('table')
+                return self._return_run_step(self.state_zombie, steps_run=0)
             # data are not yet finished, maybe steps==0 because the network is too slow etc.
             return self._return_run_step(self.state_blocked, steps_run=0)
         cols = self.get_columns(input_df)

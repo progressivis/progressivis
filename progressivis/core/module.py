@@ -143,6 +143,7 @@ class Module(metaclass=ModuleMeta):
         self.wait_expr = aio.FIRST_COMPLETED
         self.steering_evt = None
         self.blocked_evt = None
+        self.dataless_evt = None
         self._ignore_inputs = False
         self._suspended = False
         self._frozen = False
@@ -223,6 +224,10 @@ class Module(metaclass=ModuleMeta):
         _ct = aio.create_task
         s = self.scheduler()
         sched_w8 = _ct(s._stopped_evt.wait(), self.name+"_stopped_wait")
+        if self.dataless_evt is None:
+            self.dataless_evt = aio.Event()
+        self.dataless_evt.clear()
+        dataless_w8 = _ct(self.dataless_evt.wait(), self.name+"_dataless_wait")
         w8_expr = None
         if isinstance(self.wait_expr, str):
             aws = [_ct(slot._event.wait(), self.name+"_slot_wait_"+slot.input_name)
@@ -250,7 +255,7 @@ class Module(metaclass=ModuleMeta):
         else:
             raise ValueError("Unconsistent wait expression {}".format(self.wait_expr))
         if w8_expr is not None:
-            await aio.wait({sched_w8, w8_expr}, return_when=aio.FIRST_COMPLETED)
+            await aio.wait({sched_w8, w8_expr, dataless_w8}, return_when=aio.FIRST_COMPLETED)
             
     async def after_run(self, rn):
         if self.after_run_proc is None:
@@ -291,6 +296,10 @@ class Module(metaclass=ModuleMeta):
     def is_dataless_slot(self, slname):
         return slname in self._dataless
 
+    def unset_dataless_slot(self, slname):
+        self._dataless.discard(slname)
+        if not self._dataless:
+            self.dataless_evt.clear()
     async def module_task(self):
         if self.steering_evt is None:
             self.steering_evt = aio.Event()
@@ -315,6 +324,7 @@ class Module(metaclass=ModuleMeta):
             if not (self.is_source() or self.is_dataless()) and self.has_any_input():
                 self._w8_slots = 1
                 await self.wait_for_slots()
+                self.dataless_evt.clear()
                 self._w8_slots = 0
             rn = s.new_run_number()
             if self.is_terminated():
@@ -729,6 +739,8 @@ class Module(metaclass=ModuleMeta):
                     term_count += 1
                     if self.is_greedy(slot.input_name): # i.e. dataless work candidate
                         self._dataless.add(slot.input_name)
+                        if self._w8_slots:
+                            self.dataless_evt.set()
             # if all the input slot modules are terminated or invalid
             if not (self.is_input() or self.is_dataless()) and in_count != 0 and term_count == in_count:
                 logger.info('%s becomes zombie because all its input slots'
