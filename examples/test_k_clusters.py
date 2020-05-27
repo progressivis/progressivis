@@ -21,8 +21,8 @@ sp = MCScatterPlot(scheduler=s, classes=[('Scatterplot', '_0', '_1', mbkmeans)],
 sp.create_dependent_modules(data,'table')
 mbkmeans.input.table = sp['Scatterplot'].range_query_2d.output.table
 mbkmeans.create_dependent_modules()
-prn = Every(scheduler=s)
-prn.input.df = mbkmeans.output.table
+prn = Every(scheduler=s, proc=print)
+prn.input.df = mbkmeans.output.conv
 
 sp.move_point = mbkmeans.moved_center # for input management
 

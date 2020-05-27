@@ -20,6 +20,7 @@ class MBKMeans(TableModule):
     """
     Mini-batch k-means using the sklearn implementation.
     """
+    DATA_CHANGED_MAX = 3
     def __init__(self, n_clusters, columns=None, batch_size=100, tol=0.1, conv_steps=3,
                  is_input=True, random_state=None, **kwds):
         self._add_slots(kwds, 'input_descriptors',
@@ -46,6 +47,7 @@ class MBKMeans(TableModule):
         self._tol = tol
         self._conv_steps = conv_steps
         self._old_centers = deque(maxlen=conv_steps)
+        self._data_changed = 0
         self._conv_out = PsDict({'convergence': 'unknown'})
     def reset(self, init='k-means++'):
         print("Reset, init=", init)
@@ -59,6 +61,7 @@ class MBKMeans(TableModule):
         self._table = None
         self._labels = None
         self.set_state(self.state_ready)
+        self._data_changed = 0
 
     def starting(self):
         super(MBKMeans, self).starting()
@@ -88,7 +91,7 @@ class MBKMeans(TableModule):
             return self._conv_out
         return super(MBKMeans, self).get_data(name)
 
-    def is_greedy(self, slot_name):
+    def __disabled_is_greedy(self, slot_name):
         """
         Still needs to works after the entries have ended
         """
@@ -136,16 +139,20 @@ class MBKMeans(TableModule):
             return self._return_run_step(self.state_blocked, steps_run=0)
         indices = dfslot.created.next(step_size)  # returns a slice
         steps = indices_len(indices)
-        if steps == 0:
-            if self.is_dataless_slot('table'): # i.e. data are really finished
+        if steps == 0 or dfslot.output_module.is_terminated():
+            self._data_changed -= 1
+            if self._data_changed==1: # or self.is_dataless_slot('table') [i.e. data are really finished]
+                
                 if self._test_convergence():
                     self._conv_out['convergence'] = 'yes'
                 else:
                     self._conv_out['convergence'] = 'no'
-                self.unset_dataless_slot('table')
-                return self._return_run_step(self.state_zombie, steps_run=0)
+                #self.unset_dataless_slot('table')
+                #return self._return_run_step(self.state_zombie, steps_run=0)
             # data are not yet finished, maybe steps==0 because the network is too slow etc.
             return self._return_run_step(self.state_blocked, steps_run=0)
+        else:
+            self._data_changed = self.DATA_CHANGED_MAX
         cols = self.get_columns(input_df)
         if len(cols) == 0:
             return self._return_run_step(self.state_blocked, steps_run=0)
