@@ -20,7 +20,7 @@ class Variable(Constant):
     def is_input(self):
         return True
 
-    def from_input(self, input_):
+    async def from_input(self, input_):
         if not isinstance(input_, dict):
             raise ProgressiveError('Expecting a dictionary')
         if self._table is None and self.get_input_slot('like') is None:
@@ -38,7 +38,7 @@ class Variable(Constant):
                 last[k] = v
             else:
                 error += 'Invalid key %s ignored. '%k
-        _ = aio.create_task(self.scheduler().for_input(self))
+        await self.scheduler().for_input(self)
         #last['_update'] = run_number
         self._table.update(last)
         return error
@@ -81,12 +81,12 @@ class VirtualVariable(Constant):
             raise ProgressiveError('Inconsistent vocabulary')
         self._subscriptions.append((var, vocabulary))
 
-    def from_input(self, input_):
+    async def from_input(self, input_):
         if not isinstance(input_, dict):
             raise ProgressiveError('Expecting a dictionary')
         for var, vocabulary in self._subscriptions:
             translation = {vocabulary[k]: v for k, v in input_.items()}
-            var.from_input(translation)
+            await var.from_input(translation)
         return ''
 
     def run_step(self, run_number, step_size, howlong):

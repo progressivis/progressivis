@@ -159,13 +159,13 @@ class ProgressivisBlueprint(web.Application):
         "Run when the scheduler starts"
         self.scheduler.resume(tick_proc=self.tick_scheduler)
 
-    async def tick_module(self, module, run_number):
+    def tick_module(self, module, run_number):
         "Run when a module has run"
         # pylint: disable=no-self-use
         payload = None
         if module.name in self.hotline_set:
             payload = module.to_json()
-        await self.emit_tick(module.name, run_number, payload=payload)
+        aio.create_task(self.emit_tick(module.name, run_number, payload=payload))
 
     def get_log(self):
         "Return the log"

@@ -30,7 +30,7 @@ UPPER_Y = 0.7
 async def fake_input(sched, name, t, inp):
     await aio.sleep(t)
     module = sched.modules()[name]
-    module.from_input(inp)
+    await module.from_input(inp)
 
 async def sleep_then_stop(s, t):
     await aio.sleep(t)
