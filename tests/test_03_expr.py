@@ -46,8 +46,8 @@ class TestExpr(ProgressiveTest):
             self.assertEqual(csv.scheduler(), csv.module.scheduler())
         aio.run(csv.scheduler().start())
         table = csv.table
-        lastm = m.table.last()
-        lastM = M.table.last()
+        lastm = m.table
+        lastM = M.table
         self.assertEqual(len(table), 1000000)
         for col in table.columns:
             #print('testing column %s'%col)
@@ -72,8 +72,8 @@ class TestExpr(ProgressiveTest):
             self.assertEqual(csv.scheduler(), csv.module.scheduler())
         aio.run(csv.scheduler().start())
         table = csv.table
-        lastm = m.table.last()
-        lastM = M.table.last()
+        lastm = m.table
+        lastM = M.table
         self.assertEqual(len(table), 1000000)
         for col in table.columns:
             #print('testing column %s'%col)
@@ -99,8 +99,8 @@ class TestExpr(ProgressiveTest):
             self.assertEqual(csv.scheduler(), csv.module.scheduler())
         aio.run(csv.scheduler().start())
         table = csv.table
-        lastm = m.table.last()
-        lastM = M.table.last()
+        lastm = m.table
+        lastM = M.table
         self.assertEqual(len(table), 1000000)
         for col in table.columns:
             #print('testing column %s'%col)

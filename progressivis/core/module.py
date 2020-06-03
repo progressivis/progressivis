@@ -358,6 +358,12 @@ class Module(metaclass=ModuleMeta):
     def create_slot(self, output_name, input_module, input_name):
         "Create a specified output slot"
         return Slot(self, output_name, input_module, input_name)
+    
+    def connect_output(self, output_name, input_module, input_name):
+        "Connect the output slot"
+        slot = self.create_slot(output_name, input_module, input_name)
+        slot.connect()
+        return slot
 
     def has_any_input(self):
         "Return True if the module has any input"
@@ -727,13 +733,6 @@ class Module(metaclass=ModuleMeta):
         See Variable module"""
         return False
 
-        
-    def me_first(self):
-        self.unsuspend()
-        for module in self.scheduler()._run_list:
-            if module == self: continue
-            if not module.is_input():
-                module.steering_evt.clear()
 
     def post_interaction_proc(self):
         s = self.scheduler()

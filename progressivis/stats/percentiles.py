@@ -60,7 +60,7 @@ class Percentiles(TableModule):
             return True
         return super(Percentiles, self).is_ready()
 
-    async def run_step(self, run_number, step_size, howlong):
+    def run_step(self, run_number, step_size, howlong):
         dfslot = self.get_input_slot('table')
         dfslot.update(run_number)
         if dfslot.updated.any() or dfslot.deleted.any():

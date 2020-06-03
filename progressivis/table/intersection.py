@@ -23,7 +23,7 @@ class Intersection(NAry):
         return 1000
 
 
-    async def run_step_progress(self, run_number, step_size, howlong):
+    def run_step_progress(self, run_number, step_size, howlong):
         _b = bitmap.asbitmap
         to_delete = []
         to_create = []
@@ -85,7 +85,7 @@ class Intersection(NAry):
         return self._return_run_step(self.state_blocked, steps)
 
 
-    async def run_step_seq(self, run_number, step_size, howlong):
+    def run_step_seq(self, run_number, step_size, howlong):
         steps = 0
         tables = []
         ph_table = None

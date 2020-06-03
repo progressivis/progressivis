@@ -117,7 +117,7 @@ class MBKMeans(TableModule):
         if res: print("Convergence test succeeded")
         self._conv_out['convergence'] = 'yes' if res else 'no'
 
-    async def run_step(self, run_number, step_size, howlong):
+    def run_step(self, run_number, step_size, howlong):
         dfslot = self.get_input_slot('table')
         moved_center = self.get_input_slot('moved_center')
         init_centers = 'k-means++'

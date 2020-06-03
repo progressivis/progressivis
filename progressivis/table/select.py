@@ -49,7 +49,7 @@ class Select(TableModule):
         self.max_value = query.max_value
         return select
 
-    async def run_step(self, run_number, step_size, howlong):
+    def run_step(self, run_number, step_size, howlong):
         table_slot = self.get_input_slot('table')
         table = table_slot.data()
         table_slot.update(run_number,

@@ -1,5 +1,6 @@
 import logging
-import asyncio as aio
+import progressivis.core.aio as aio
+
 logger = logging.getLogger(__name__)
 
 from progressivis import ProgressiveError, SlotDescriptor
@@ -11,7 +12,6 @@ import copy
 
 class Variable(Constant):
     def __init__(self, table=None, **kwds):
-        self._has_input = False
         self._add_slots(kwds,'input_descriptors',
                         [SlotDescriptor('like', type=(Table, PsDict), required=False)])
         super(Variable, self).__init__(table, **kwds)
@@ -20,10 +20,7 @@ class Variable(Constant):
     def is_input(self):
         return True
 
-    def has_input(self):
-        return self._has_input
-
-    async def from_input(self, input_):
+    def from_input(self, input_):
         if not isinstance(input_, dict):
             raise ProgressiveError('Expecting a dictionary')
         if self._table is None and self.get_input_slot('like') is None:
@@ -41,15 +38,12 @@ class Variable(Constant):
                 last[k] = v
             else:
                 error += 'Invalid key %s ignored. '%k
-        _ = self.scheduler().for_input(self)
+        _ = aio.create_task(self.scheduler().for_input(self))
         #last['_update'] = run_number
         self._table.update(last)
-        self._has_input = True
-        self.me_first()
-        await aio.sleep(0)
         return error
     
-    async def run_step(self,run_number, step_size, howlong):
+    def run_step(self,run_number, step_size, howlong):
         if self._table is None:
             slot = self.get_input_slot('like')
             if slot is not None:
@@ -59,12 +53,6 @@ class Variable(Constant):
                         like = like.last().to_dict(ordered=True)
                     self._table = copy.copy(like)
                     self._ignore_inputs = True
-        else:
-            #self._table.touch_rows(self._table.last_id-1)
-            self.suspend()
-        if self._has_input:
-            self._has_input = False
-            self.post_interaction_proc()
         return self._return_run_step(self.state_blocked, steps_run=1)
         #raise StopIteration()
 
@@ -93,15 +81,14 @@ class VirtualVariable(Constant):
             raise ProgressiveError('Inconsistent vocabulary')
         self._subscriptions.append((var, vocabulary))
 
-    async def from_input(self, input_):
+    def from_input(self, input_):
         if not isinstance(input_, dict):
             raise ProgressiveError('Expecting a dictionary')
         for var, vocabulary in self._subscriptions:
             translation = {vocabulary[k]: v for k, v in input_.items()}
-            await var.from_input(translation)
+            var.from_input(translation)
         return ''
 
-    async def run_step(self, run_number, step_size, howlong):
-        self.suspend()
+    def run_step(self, run_number, step_size, howlong):
         return self._return_run_step(self.state_blocked, steps_run=1)
         #raise StopIteration()

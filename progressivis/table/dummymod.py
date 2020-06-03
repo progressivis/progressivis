@@ -35,7 +35,7 @@ class DummyMod(TableModule):
             return True
         return len(val) > self._delete_threshold
 
-    async def run_step(self, run_number, step_size, howlong):
+    def run_step(self, run_number, step_size, howlong):
         if self.params.fixed_step_size and False:
              step_size = self.params.fixed_step_size
         input_slot = self.get_input_slot('table')

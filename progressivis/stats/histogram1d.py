@@ -40,7 +40,7 @@ class Histogram1D(TableModule):
             return True
         return super(Histogram1D, self).is_ready()
 
-    async def run_step(self, run_number, step_size, howlong):
+    def run_step(self, run_number, step_size, howlong):
         dfslot = self.get_input_slot('table')
         dfslot.update(run_number)
         min_slot = self.get_input_slot('min')

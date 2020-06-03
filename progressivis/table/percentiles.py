@@ -68,7 +68,7 @@ class Percentiles(TableModule):
                 ret_values.append(values[reminder])
         return OrderedDict(zip(points.keys(), ret_values))
 
-    async def run_step(self, run_number, step_size, howlong):
+    def run_step(self, run_number, step_size, howlong):
         input_slot = self.get_input_slot('table')
         if input_slot.data() is None:
             return self._return_run_step(self.state_blocked, steps_run=0)

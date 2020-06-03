@@ -529,7 +529,7 @@ class Scheduler(object):
             self._tick_once_procs = []
 
 
-    def exit(self, *args, **kwargs):
+    def exit_(self, *args, **kwargs):
         #import pdb;pdb.set_trace()
         self._exit = True
         self.resume()
@@ -537,14 +537,13 @@ class Scheduler(object):
         # after the previous statement both _stopped_evt and _not_stopped_evt
         # are set. The goal is allow all tasks to exit
 
-    def stop(self):
+    async def stop(self):
         "Stop the execution."
-        async def _f():
-            async with self._hibernate_cond:
-                self._keep_running = KEEP_RUNNING
-                self._hibernate_cond.notify()
-                self._stopped = True
-        aio.create_task(_f())
+        async with self._hibernate_cond:
+            self._keep_running = KEEP_RUNNING
+            self._hibernate_cond.notify()
+            self._stopped = True
+
         
 
     def resume(self, tick_proc=None):
@@ -612,12 +611,12 @@ class Scheduler(object):
         return self._run_number
 
 
-    def for_input(self, module):
+    async def for_input(self, module):
         """
         Notify this scheduler that the module has received input
         that should be served fast.
         """
-        with self._hibernate_cond:
+        async with self._hibernate_cond:
             self._keep_running = KEEP_RUNNING
             self._hibernate_cond.notify()
         sel = self._reachability.get(module.name, False)

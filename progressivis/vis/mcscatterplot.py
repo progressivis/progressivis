@@ -260,11 +260,11 @@ class MCScatterPlot(NAry):
         json['columns'] = [self._x_label, self._y_label]
         return json
 
-    async def run_step(self, run_number, step_size, howlong):
+    def run_step(self, run_number, step_size, howlong):
         return self._return_run_step(self.state_blocked, steps_run=0)
 
-    async def run(self, run_number):
-        await super(MCScatterPlot, self).run(run_number)
+    def run(self, run_number):
+        super(MCScatterPlot, self).run(run_number)
         self._json_cache = self._to_json_impl()
 
     def to_json(self, short=False):
