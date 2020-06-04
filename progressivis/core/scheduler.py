@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 __all__ = ['Scheduler']
 
-KEEP_RUNNING = 0
+KEEP_RUNNING = 5
 
 class Scheduler(object):
     "Base Scheduler class, runs progressive modules"
@@ -67,9 +67,11 @@ class Scheduler(object):
         self.dataflow = Dataflow(self)
         self.module_iterator = None
         self._enter_cnt = 1
-        self.runners = set()
+        self._lock = None
+        self._task = None
+        #self.runners = set()
         self.coros = []
-        self._short_cycle = False
+
 
     def set_interaction_opts(self, starving_mods=None, max_time=None,
                              max_iter=None):
@@ -238,6 +240,16 @@ class Scheduler(object):
 
                       
     async def start(self, tick_proc=None, idle_proc=None, coros=()):
+        if self._lock is None:
+            self._lock = aio.Lock()
+        async with self._lock:
+            if self._task is not None:
+                raise ProgressiveError('Trying to start scheduler task'
+                                       ' inside scheduler task')
+            
+            self._task = True
+            
+            
         self.coros=list(coros)
         if tick_proc:
             assert callable(tick_proc)
@@ -251,6 +263,9 @@ class Scheduler(object):
             self._idle_procs = []
         await self.run()
 
+    def task_start(self, *args, **kwargs):
+        return aio.create_task(self.start(*args, **kwargs))
+    
     def _step_proc(self, s, run_number):
         # pylint: disable=unused-argument
         self.stop()
@@ -314,10 +329,8 @@ class Scheduler(object):
         runners.extend([aio.create_task(coro)
                         for coro in self.coros])
         #runners.append(aio.create_task(self.unlocker(), "unlocker"))
-        KEEP_RUNNING = len(self._run_list) * 3 # TODO: find the "right" initialisation value ...
+        KEEP_RUNNING = min(50, len(self._run_list) * 3) # TODO: find the "right" initialisation value ...
         self._keep_running = KEEP_RUNNING
-        print("initial KEEP_RUNNING", KEEP_RUNNING)
-        self.runners = [m.name for m in self._run_list]
         await aio.gather(*runners)
         modules = [self._modules[m] for m in self._runorder]
         for module in reversed(modules):
@@ -548,20 +561,9 @@ class Scheduler(object):
             self._keep_running = KEEP_RUNNING
             self._hibernate_cond.notify()
             self._stopped = True
-
-        
-
-    def resume(self, tick_proc=None):
-        "Resume the execution."
-        self._stopped = False
-        #self._stopped_evt.clear()
-        #self._not_stopped_evt.set()
-        self._step_once = False
-        if tick_proc:
-            assert callable(tick_proc)
-            self._tick_procs = [tick_proc]
-        else:
-            self._tick_procs = []
+            
+    def task_stop(self):
+        return aio.create_task(self.stop())
 
 
     def is_running(self):
@@ -580,8 +582,8 @@ class Scheduler(object):
         return True
 
     def done(self):
-        "Called when the execution is done. Can be overridden in subclasses."
-        pass
+        self._task = None
+        logger.info('Task finished')
 
     def __len__(self):
         return len(self._modules)
@@ -692,23 +694,6 @@ class Scheduler(object):
                     mod.storagegroup is not None):
                 mod.storagegroup.close_all()
 
-    def __freeze(self):
-        self.unfreeze()
-        mods_to_freeze = set([m for m in self._run_list if m.name not in self._module_selection and not m.is_input()])
-        for module in mods_to_freeze:
-            module._frozen = True
-            module.steering_evt_clear()
-        self._short_cycle = True
-
-    def __unfreeze(self):
-        if not self._short_cycle:
-            return
-        for module in self._run_list:
-            #if not module._frozen: continue
-            module._frozen = False
-            module.steering_evt_set()
-            #module.release()
-        self._short_cycle = False
 
     @staticmethod
     def _module_order(x, y):
