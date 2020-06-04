@@ -490,8 +490,8 @@ class RandomBytesIO(object):
         self._pos += self._yield_size
         return next(self._generator)
 
-    def next(self):
-        return self.__next__()
+#    def next(self):
+#        return self.__next__()
 
     def readline(self):
         try:
