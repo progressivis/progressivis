@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 __all__ = ['Scheduler']
 
-KEEP_RUNNING = 5
+KEEP_RUNNING = 0
 
 class Scheduler(object):
     "Base Scheduler class, runs progressive modules"
@@ -96,6 +96,7 @@ class Scheduler(object):
     def _proc_interaction_opts(self):
         if not self.has_input():
             return
+        #import pdb;pdb.set_trace()
         if self._interaction_opts is None:
             self._module_selection = None
             self._inter_cycles_cnt = 0
@@ -294,6 +295,7 @@ class Scheduler(object):
 
     async def run(self):
         "Run the modules, called by start()."
+        global KEEP_RUNNING
         #from .sentinel import Sentinel
         #import pdb;pdb.set_trace()
         #sl = Sentinel(scheduler=self)        
@@ -312,6 +314,9 @@ class Scheduler(object):
         runners.extend([aio.create_task(coro)
                         for coro in self.coros])
         #runners.append(aio.create_task(self.unlocker(), "unlocker"))
+        KEEP_RUNNING = len(self._run_list) * 3 # TODO: find the "right" initialisation value ...
+        self._keep_running = KEEP_RUNNING
+        print("initial KEEP_RUNNING", KEEP_RUNNING)
         self.runners = [m.name for m in self._run_list]
         await aio.gather(*runners)
         modules = [self._modules[m] for m in self._runorder]
@@ -687,7 +692,7 @@ class Scheduler(object):
                     mod.storagegroup is not None):
                 mod.storagegroup.close_all()
 
-    def freeze(self):
+    def __freeze(self):
         self.unfreeze()
         mods_to_freeze = set([m for m in self._run_list if m.name not in self._module_selection and not m.is_input()])
         for module in mods_to_freeze:
@@ -695,7 +700,7 @@ class Scheduler(object):
             module.steering_evt_clear()
         self._short_cycle = True
 
-    def unfreeze(self):
+    def __unfreeze(self):
         if not self._short_cycle:
             return
         for module in self._run_list:

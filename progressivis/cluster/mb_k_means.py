@@ -230,7 +230,6 @@ class MBKMeans(TableModule):
         if len(values) != len(self.columns):
             raise ProgressiveError('Expected %s of values, received %s',
                                    len(self.columns), values)
-        _ = self.scheduler().for_input(self)
         centroids.loc[c, self.columns] = values
         # TODO unpack the table
         self.mbk.cluster_centers_[c] = list(centroids.loc[c, self.columns])
