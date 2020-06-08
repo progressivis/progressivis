@@ -10,7 +10,7 @@ dependencies:
   - numpy
   - cython
   - pip:
-    - -e .
-    - -e progressivis_nb_widgets
+    - install -e .
+    - install -e progressivis_nb_widgets
 
     
