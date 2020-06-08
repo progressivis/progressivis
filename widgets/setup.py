@@ -23,6 +23,8 @@ log.info('setup.py entered')
 log.info('$PATH=%s' % os.environ['PATH'])
 
 LONG_DESCRIPTION = 'A Custom Jupyter Widget Library for Progressivis'
+PACKAGES = ['progressivis_nb_widgets.nbwidgets']
+
 
 def js_prerelease(command, strict=False):
     """decorator for building minified js/css prior to another command"""
@@ -109,7 +111,7 @@ class NPM(Command):
             npmName = self.get_npm_name();
             check_call([npmName, 'install'], cwd=node_root, stdout=sys.stdout, stderr=sys.stderr)
             os.utime(self.node_modules, None)
-
+        check_call([npmName, 'run', 'build'], cwd=node_root, stdout=sys.stdout, stderr=sys.stderr)
         for t in self.targets:
             if not os.path.exists(t):
                 msg = 'Missing file: %s' % t
@@ -141,7 +143,7 @@ setup_args = {
     'install_requires': [
         'ipywidgets>=7.0.0',
     ],
-    'packages': find_packages(),
+    'packages': PACKAGES,
     'zip_safe': False,
     'cmdclass': {
         'build_py': js_prerelease(build_py),
