@@ -66,8 +66,8 @@ class NPM(Command):
     node_modules = os.path.join(node_root, 'node_modules')
 
     targets = [
-        os.path.join(here, 'nbwidgets', 'static', 'extension.js'),
-        os.path.join(here, 'nbwidgets', 'static', 'index.js')
+        os.path.join(here, 'js', 'lib', 'extension.js'),
+        os.path.join(here, 'js', 'lib', 'index.js')
     ]
 
     def initialize_options(self):

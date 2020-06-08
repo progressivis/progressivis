@@ -1,9 +1,11 @@
 name: progressivis-environment
 channels:
   - conda-forge
+  - anaconda
 dependencies:
   - python=3.8
-  - npm
+  - nodejs
+  - pkgconfig
   - pip
   - numpy
   - cython
