@@ -1,0 +1,13 @@
+name: progressivis-environment
+channels:
+  - conda-forge
+dependencies:
+  - python=3.8
+  - pip
+  - numpy
+  - cython
+  - pip:
+    - -e .
+    - -e progressivis_nb_widgets
+
+    
