@@ -7,7 +7,7 @@ fi
 for n in 01 02
 do
     if [ \! -f 'yellow_tripdata_2015-'$n'.csv.bz2' ]; then
-        wget -nc "https://s3.amazonaws.com/nyc-tlc/trip+data/yellow_tripdata_2015-${n}.csv" -O  "$NYC_TAXI/yellow_tripdata_2015-${n}.csv"
+        wget -nv -nc "https://s3.amazonaws.com/nyc-tlc/trip+data/yellow_tripdata_2015-${n}.csv" -O  "$NYC_TAXI/yellow_tripdata_2015-${n}.csv"
         bzip2 "$NYC_TAXI/yellow_tripdata_2015-${n}.csv" &
     fi
 done
