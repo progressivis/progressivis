@@ -11,8 +11,8 @@ dependencies:
   - cython
   - jupyter
   - pip:
-    - -e .
-    - -e widgets
+    - -e ../progressivis
+    - -e ../widgets
 
 
 
