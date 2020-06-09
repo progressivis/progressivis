@@ -1,0 +1,3 @@
+set -ex
+jupyter nbextension install --py --symlink --sys-prefix progressivis_nb_widgets.nbwidgets
+jupyter nbextension enable --py --sys-prefix progressivis_nb_widgets.nbwidgets

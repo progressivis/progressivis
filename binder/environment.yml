@@ -11,8 +11,9 @@ dependencies:
   - cython
   - jupyter
   - pip:
-    - install .
-    - install widgets
+    - -e .
+    - -e widgets
+
 
 
     
