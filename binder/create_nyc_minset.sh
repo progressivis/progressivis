@@ -1,5 +1,5 @@
 set -ex
-NYC_TAXI="../nyc-taxi-binder"
+NYC_TAXI="$HOME/nyc-taxi-binder"
 if [ \! -d "$NYC_TAXI" ]; then
     mkdir "$NYC_TAXI"
 fi
