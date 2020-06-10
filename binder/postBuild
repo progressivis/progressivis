@@ -1,5 +1,5 @@
 set -ex
 jupyter nbextension install --py --symlink --sys-prefix progressivis_nb_widgets.nbwidgets
 jupyter nbextension enable --py --sys-prefix progressivis_nb_widgets.nbwidgets
-here=$(dirname $0)
-bash $here/create_nyc_minset.sh
+jupyter serverextension enable voila --sys-prefix
+bash binder/create_nyc_minset.sh
