@@ -9,7 +9,7 @@ import sys
 import platform
 
 here = os.path.dirname(os.path.abspath(__file__))
-node_root = os.path.join(here, 'js')
+node_root = os.path.join(here, 'progressivis_nb_widgets', 'js')
 is_repo = os.path.exists(os.path.join(here, '.git'))
 
 npm_path = os.pathsep.join([
@@ -23,6 +23,8 @@ log.info('setup.py entered')
 log.info('$PATH=%s' % os.environ['PATH'])
 
 LONG_DESCRIPTION = 'A Custom Jupyter Widget Library for Progressivis'
+PACKAGES = ['progressivis_nb_widgets', 'progressivis_nb_widgets.nbwidgets']
+
 
 def js_prerelease(command, strict=False):
     """decorator for building minified js/css prior to another command"""
@@ -66,8 +68,8 @@ class NPM(Command):
     node_modules = os.path.join(node_root, 'node_modules')
 
     targets = [
-        os.path.join(here, 'nbwidgets', 'static', 'extension.js'),
-        os.path.join(here, 'nbwidgets', 'static', 'index.js')
+        os.path.join(here, 'progressivis_nb_widgets', 'nbwidgets', 'static', 'extension.js'),
+        os.path.join(here, 'progressivis_nb_widgets', 'nbwidgets', 'static', 'index.js')
     ]
 
     def initialize_options(self):
@@ -109,7 +111,7 @@ class NPM(Command):
             npmName = self.get_npm_name();
             check_call([npmName, 'install'], cwd=node_root, stdout=sys.stdout, stderr=sys.stderr)
             os.utime(self.node_modules, None)
-
+        check_call([npmName, 'run', 'build'], cwd=node_root, stdout=sys.stdout, stderr=sys.stderr)
         for t in self.targets:
             if not os.path.exists(t):
                 msg = 'Missing file: %s' % t
@@ -121,27 +123,27 @@ class NPM(Command):
         update_package_data(self.distribution)
 
 version_ns = {}
-with open(os.path.join(here, 'nbwidgets', '_version.py')) as f:
+with open(os.path.join(here, 'progressivis_nb_widgets', 'nbwidgets', '_version.py')) as f:
     exec(f.read(), {}, version_ns)
 
 setup_args = {
-    'name': 'nbwidgets',
+    'name': 'progressivis_nb_widgets',
     'version': version_ns['__version__'],
     'description': 'A Custom Jupyter Widget Library for Progressivis',
     'long_description': LONG_DESCRIPTION,
     'include_package_data': True,
     'data_files': [
         ('share/jupyter/nbextensions/progressivis-nb-widgets', [
-            'nbwidgets/static/extension.js',
-            'nbwidgets/static/index.js',
-            'nbwidgets/static/index.js.map',
+            'progressivis_nb_widgets/nbwidgets/static/extension.js',
+            'progressivis_nb_widgets/nbwidgets/static/index.js',
+            'progressivis_nb_widgets/nbwidgets/static/index.js.map',
         ],),
         ('etc/jupyter/nbconfig/notebook.d' ,['progressivis-nb-widgets.json'])
     ],
     'install_requires': [
         'ipywidgets>=7.0.0',
     ],
-    'packages': find_packages(),
+    'packages': PACKAGES,
     'zip_safe': False,
     'cmdclass': {
         'build_py': js_prerelease(build_py),

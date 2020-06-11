@@ -315,7 +315,7 @@ class HistogramIndex(TableModule):
     """
     parameters = [
         ('bins', np.dtype(int), 126),  # actually 128 with "-inf" and "inf"
-        ('init_threshold', int, 1000),
+        ('init_threshold', int, 1),
     ]
 
     def __init__(self, column, **kwds):

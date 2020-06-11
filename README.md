@@ -56,6 +56,13 @@ conda install progressivis
 To see examples, either look at the tests in the `tests` directory, or
 try the examples in the `examples` directory.
 
+## Live demo
+
+A live demo is available online [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/jdfekete/progressivis.git/master?filepath=notebooks%2FPsBoardDemo4Binder.ipynb)
+<!--* as **Jupyter voilà dashboard** [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/jdfekete/progressivis.git/master?filepath=%2F..%2Fvoila%2Frender%2Fnotebooks%2FPsBoardDemo4Binder.ipynb)-->
+
+
+
 ## Contribute
 
 ## Support
