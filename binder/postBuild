@@ -5,4 +5,4 @@ jupyter serverextension enable voila --sys-prefix
 echo $(jupyter --paths)
 mkdir -p $HOME/.jupyter/
 cp binder/jupyter_config.json $HOME/.jupyter/
-#bash binder/create_nyc_minset.sh
+
