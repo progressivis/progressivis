@@ -3,6 +3,6 @@ jupyter nbextension install --py --symlink --sys-prefix progressivis_nb_widgets.
 jupyter nbextension enable --py --sys-prefix progressivis_nb_widgets.nbwidgets
 jupyter serverextension enable voila --sys-prefix
 echo $(jupyter --paths)
-mkdir -p $HOME/.jupyter/
-cp binder/jupyter_config.json $HOME/.jupyter/
+#mkdir -p $HOME/.jupyter/
+#cp binder/jupyter_config.json $HOME/.jupyter/
 
