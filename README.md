@@ -58,9 +58,8 @@ try the examples in the `examples` directory.
 
 ## Live demo
 
-A live is available online:
-* as **Jupyter notebook** [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/jdfekete/progressivis.git/master?filepath=notebooks%2FPsBoardDemo4Binder.ipynb)
-* as **Jupyter voilà dashboard** [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/jdfekete/progressivis.git/master?filepath=%2F..%2Fvoila%2Frender%2Fnotebooks%2FPsBoardDemo4Binder.ipynb)
+A live is available online: as **Jupyter notebook** [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/jdfekete/progressivis.git/master?filepath=notebooks%2FPsBoardDemo4Binder.ipynb)
+<!--* as **Jupyter voilà dashboard** [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/jdfekete/progressivis.git/master?filepath=%2F..%2Fvoila%2Frender%2Fnotebooks%2FPsBoardDemo4Binder.ipynb)-->
 
 
 
