@@ -92,7 +92,8 @@ class PsDict(dict):
 
     def updated_indices(self, prev):
         if self._index is None:
-            return bitmap((i for (i, x, y) in zip(range(len(prev)), prev.values(), self.values()) if x is not y))
+            return bitmap((i for (i, x, y) in zip(range(len(prev)), prev.values(), self.values())
+                           if x is not y))
         common_keys = set(self.keys()) & set(prev.keys())
         #self.fix_indices()
         return bitmap((i for (k, i) in  self._index.items() if k in common_keys and self[k] is not prev[k]))

@@ -5,7 +5,11 @@ import re
 from itertools import tee
 import uuid
 from functools import wraps
-from progressivis.core.bitmap import bitmap
+from .bitmap import bitmap
+from ..core import aio
+import functools as ft
+import threading
+
 try:
     import collections.abc as collections_abc  # only works on python 3.3+
 except ImportError:
@@ -17,7 +21,7 @@ try:
 except ImportError:
     from pandas.io.common import is_url as _is_url
 try:
-    from pandas.io.common import _is_s3_url
+    from pandas.io.common import _is_s3_urls
 except ImportError:  # pandas >=0.23.0
     from pandas.io.common import is_s3_url as _is_s3_url
 
@@ -490,8 +494,8 @@ class RandomBytesIO(object):
         self._pos += self._yield_size
         return next(self._generator)
 
-    def next(self):
-        return self.__next__()
+#    def next(self):
+#        return self.__next__()
 
     def readline(self):
         try:
@@ -817,11 +821,23 @@ class JSONEncoderNp(js.JSONEncoder):
         s = JSONEncoderNp.dumps(*args, **kwargs)
         return JSONEncoderNp.loads(s)
 
-import asyncio as aio
-import functools as ft
 async def asynchronize(f, *args, **kwargs):
     # cf. https://docs.python.org/3/library/asyncio-eventloop.html#asyncio.loop.run_in_executor
     loop = aio.get_running_loop()
     fun = ft.partial(f, *args, **kwargs)
     return await loop.run_in_executor(
         None, fun)
+
+def gather_and_run(*args):
+    """
+    this function avoids the use on the "%gui asyncio" magic in notebook
+    """
+    async def gath():
+        await aio.gather(*args)
+    def func_():
+        loop = aio.new_event_loop()
+        aio.set_event_loop(loop)
+        loop.run_until_complete(gath())
+        loop.close()
+    thread = threading.Thread(target=func_, args=())
+    thread.start()

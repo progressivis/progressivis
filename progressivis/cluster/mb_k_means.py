@@ -117,7 +117,7 @@ class MBKMeans(TableModule):
         if res: print("Convergence test succeeded")
         self._conv_out['convergence'] = 'yes' if res else 'no'
 
-    async def run_step(self, run_number, step_size, howlong):
+    def run_step(self, run_number, step_size, howlong):
         dfslot = self.get_input_slot('table')
         moved_center = self.get_input_slot('moved_center')
         init_centers = 'k-means++'
@@ -230,7 +230,6 @@ class MBKMeans(TableModule):
         if len(values) != len(self.columns):
             raise ProgressiveError('Expected %s of values, received %s',
                                    len(self.columns), values)
-        _ = self.scheduler().for_input(self)
         centroids.loc[c, self.columns] = values
         # TODO unpack the table
         self.mbk.cluster_centers_[c] = list(centroids.loc[c, self.columns])

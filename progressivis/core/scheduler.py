@@ -3,15 +3,20 @@ Base Scheduler class, runs progressive modules.
 """
 import logging
 import functools
+from collections.abc import Iterable
 from timeit import default_timer
-
+import time
 from .dataflow import Dataflow
 import progressivis.core.aio as aio
+
 from progressivis.utils.errors import ProgressiveError
 
 logger = logging.getLogger(__name__)
 
 __all__ = ['Scheduler']
+
+KEEP_RUNNING = 5
+SHORTCUT_TIME = 3
 
 class Scheduler(object):
     "Base Scheduler class, runs progressive modules"
@@ -30,20 +35,17 @@ class Scheduler(object):
                                    % interaction_latency)
 
         # same as clear below
-        #with self.lock:
         Scheduler._last_id += 1
         self._name = Scheduler._last_id
         self._modules = {}
         self._dependencies = None
         self._running = False
         self._stopped = True
-        self._stopped_evt = None
-        self._not_stopped_evt = None
         self._runorder = None
         self._new_modules = None
         self._new_dependencies = None
         self._new_runorder = None
-        self._new_reachability = None        
+        self._new_reachability = None
         self._start = None
         self._step_once = False
         self._exit = False
@@ -59,27 +61,29 @@ class Scheduler(object):
         self.interaction_latency = interaction_latency
         self._reachability = {}
         self._start_inter = 0
-        self._inter_cycles_cnt = 0
-        self._interaction_opts = None
+        self._hibernate_cond = None
+        self._keep_running = KEEP_RUNNING
         self.dataflow = Dataflow(self)
         self.module_iterator = None
         self._enter_cnt = 1
-        self.runners = set()
+        self._lock = None
+        self._task = None
+        #self.runners = set()
+        self.shortcut_evt = None
         self.coros = []
-        self._short_cycle = False
 
-
+    async def shortcut_manager(self):
+        if self.shortcut_evt is None:
+            self.shortcut_evt = aio.Event()
+        while True:
+            await self.shortcut_evt.wait()
+            await aio.sleep(SHORTCUT_TIME)
+            self._module_selection = None
+            self.shortcut_evt.clear()
+            
     def new_run_number(self):
         self._run_number += 1
         return self._run_number
-
-    def join(self):
-        "Wait for this execution thread to finish."
-
-    @property
-    def lock(self):
-        "Return the scheduler lock."
-        return self._lock
 
     def __enter__(self):
         if self.dataflow is None:
@@ -121,10 +125,10 @@ class Scheduler(object):
         "Return a dictionary describing the scheduler"
         msg = {}
         mods = {}
-        #with self.lock:
         for (name, module) in self.modules().items():
             mods[name] = module.to_json(short=short)
-        modules = sorted(mods.values(), key=functools.cmp_to_key(self._module_order))
+        modules = sorted(mods.values(),
+                         key=functools.cmp_to_key(self._module_order))
         msg['modules'] = modules
         msg['is_running'] = self.is_running()
         msg['is_terminated'] = self.is_terminated()
@@ -178,39 +182,16 @@ class Scheduler(object):
     def _after_run(self):
         pass
 
-    async def unlocker(self):
-        while True:
-            await aio.sleep(0.5)
-            new_list = []
-            for m in self._run_list:
-                m.is_ready()
-                if m.is_terminated():
-                    m.notify_consumers()
-                    self.runners.remove(m.name)
-                    m.steering_evt_set()
-                    continue
-                new_list.append(m)
-            self._run_list = new_list
-            if self._short_cycle:
-                mods_selection = [m for m in self._run_list if m.name in self._module_selection]
-            else:
-                mods_selection = self._run_list
-            if not len(mods_selection):
-                self.exit()
-                break
-            nb_waiters = sum([m._w8_slots for m in mods_selection])
-            nb_max_w8 = len([x for x in mods_selection if not (x.is_source() or x.is_dataless()) and x.has_any_input()])
-            if nb_waiters >= nb_max_w8-1 or self._stopped or self._short_cycle:
-                if self._idle_procs:
-                    await self.idle_proc_runner()
-                self.unfreeze()
-                for m in self._run_list:
-                    m.steering_evt_set()
-            if self._exit:
-                break
-            await self._not_stopped_evt.wait()
-                      
     async def start(self, tick_proc=None, idle_proc=None, coros=()):
+
+        if self._lock is None:
+            self._lock = aio.Lock()
+        async with self._lock:
+            if self._task is not None:
+                raise ProgressiveError('Trying to start scheduler task'
+                                       ' inside scheduler task')
+            
+            self._task = True            
         self.coros=list(coros)
         if tick_proc:
             assert callable(tick_proc)
@@ -224,6 +205,9 @@ class Scheduler(object):
             self._idle_procs = []
         await self.run()
 
+    def task_start(self, *args, **kwargs):
+        return aio.create_task(self.start(*args, **kwargs))
+    
     def _step_proc(self, s, run_number):
         # pylint: disable=unused-argument
         self.stop()
@@ -268,30 +252,27 @@ class Scheduler(object):
 
     async def run(self):
         "Run the modules, called by start()."
-        #from .sentinel import Sentinel
-        #import pdb;pdb.set_trace()
-        #sl = Sentinel(scheduler=self)        
+        global KEEP_RUNNING
+        # from .sentinel import Sentinel
+        # sl = Sentinel(scheduler=self)
         if self.dataflow:
             assert self._enter_cnt == 1
             self._commit(self.dataflow)
             self.dataflow = None
             self._enter_cnt = 0
         self._stopped = False
-        self._stopped_evt = aio.Event()        
-        self._not_stopped_evt = aio.Event()
-        self._not_stopped_evt.set()
         self._running = True
         self._start = default_timer()
         self._before_run()
-        if self._new_modules:
-            self._update_modules()
-        # currently, the order in self._run_list is not important anymore
-        runners = [aio.create_task(m.module_task(), m.name)
-                   for m in self._run_list]
+        # if self._new_modules:
+        #    self._update_modules()
+        runners = [self._run_loop(), self.shortcut_manager()]
         runners.extend([aio.create_task(coro)
                         for coro in self.coros])
-        runners.append(aio.create_task(self.unlocker(), "unlocker"))
-        self.runners = [m.name for m in self._run_list]
+        # runners.append(aio.create_task(self.unlocker(), "unlocker"))
+        # TODO: find the "right" initialisation value ...
+        KEEP_RUNNING =  min(50, len(self._run_list) * 3)
+        self._keep_running = KEEP_RUNNING
         await aio.gather(*runners)
         modules = [self._modules[m] for m in self._runorder]
         for module in reversed(modules):
@@ -301,6 +282,74 @@ class Scheduler(object):
         self._after_run()
         self.done()
 
+    async def _run_loop(self):
+        """Main scheduler loop."""
+        # pylint: disable=broad-except
+        if self._hibernate_cond is None:
+            self._hibernate_cond = aio.Condition()
+        for module in self._next_module():
+            if self.no_more_data() and self.all_blocked() and \
+               self.is_waiting_for_input():
+                if not self._keep_running:
+                    async with self._hibernate_cond:
+                        await self._hibernate_cond.wait()
+            if self._keep_running:
+                self._keep_running -= 1
+            if not self._consider_module(module):
+                logger.info("Module %s not scheduled"
+                            " because of interactive mode",
+                            module.name)
+                continue
+            if not(module.is_ready() or self.has_input()):
+                logger.info("Module %s not scheduled"
+                            " because not ready and has no input",
+                            module.name)
+                continue
+
+            self._run_number += 1
+            await self._run_tick_procs()
+            module.run(self._run_number)
+            await aio.sleep(0)
+
+    def _next_module(self):
+        """
+        Generator the yields a possibly infinite sequence of modules.
+        Handles order recomputation and starting logic if needed.
+        """
+        self._run_index = 0
+        first_run = self._run_number
+        input_mode = self.has_input()
+        self._start_inter = 0
+        while not self._stopped:
+            # Apply changes in the dataflow
+            if self._new_modules:
+                self._update_modules()
+                self._run_index = 0
+                first_run = self._run_number
+            # If run_list empty, we're done
+            if not self._run_list:
+                break
+            # Check for interactive input mode
+            if input_mode != self.has_input():
+                if input_mode:  # end input mode
+                    logger.info('Ending interactive mode after %s s',
+                                default_timer()-self._start_inter)
+                    self._start_inter = 0
+                    input_mode = False
+                else:
+                    self._start_inter = default_timer()
+                    logger.info('Starting interactive mode at %s',
+                                self._start_inter)
+                    input_mode = True
+                # Restart from beginning
+                self._run_index = 0
+                first_run = self._run_number
+            module = self._run_list[self._run_index]
+            self._run_index += 1  # allow it to be reset
+            yield module
+            if self._run_index >= len(self._run_list):  # end of modules
+                self._end_of_modules(first_run)
+                first_run = self._run_number
 
     def all_blocked(self):
         "Return True if all the modules are blocked, False otherwise"
@@ -365,9 +414,8 @@ class Scheduler(object):
             for mid in added:
                 modules[mid].starting()
         self._new_modules = None
-        #with self.lock:
         self._run_list = []
-        self._runorder = self._new_runorder            
+        self._runorder = self._new_runorder
         self._new_runorder = None
         logger.info("New modules order: %s", self._runorder)
         for i, mid in enumerate(self._runorder):
@@ -375,6 +423,26 @@ class Scheduler(object):
             self._run_list.append(module)
             module.order = i
 
+    def _end_of_modules(self, first_run):
+        # Reset interaction mode
+        #self._proc_interaction_opts()
+        self._selection_target_time = -1
+        new_list = [m for m in self._run_list if not m.is_terminated()]
+        self._run_list = new_list
+        if first_run == self._run_number:  # no module ready
+            has_run = False
+            for proc in self._idle_procs:
+                # pylint: disable=broad-except
+                try:
+                    logger.debug('Running idle proc')
+                    proc(self, self._run_number)
+                    has_run = True
+                except Exception as exc:
+                    logger.error(exc)
+            if not has_run:
+                logger.info('sleeping %f', 0.2)
+                time.sleep(0.2)
+        self._run_index = 0
 
     async def idle_proc_runner(self):
         has_run = False
@@ -392,10 +460,9 @@ class Scheduler(object):
         if not has_run:
             logger.info('sleeping %f', 0.2)
             await aio.sleep(0.2)
-        
+
     async def _run_tick_procs(self):
         # pylint: disable=broad-except
-        #import pdb;pdb.set_trace()
         for proc in self._tick_procs:
             logger.debug('Calling tick_proc')
             try:
@@ -415,34 +482,23 @@ class Scheduler(object):
                 logger.warning(exc)
             self._tick_once_procs = []
 
-
-    def exit(self, *args, **kwargs):
+    def exit_(self, *args, **kwargs):
         self._exit = True
         self.resume()
-        self._stopped_evt.set()
+        # self._stopped_evt.set()
         # after the previous statement both _stopped_evt and _not_stopped_evt
         # are set. The goal is allow all tasks to exit
-        for m in self._run_list:
-            m.steering_evt_set()
 
-    def stop(self):
+    async def stop(self):
         "Stop the execution."
-        self._stopped = True
-        self._stopped_evt.set()
-        self._not_stopped_evt.clear()
+        async with self._hibernate_cond:
+            self._keep_running = KEEP_RUNNING
+            self._hibernate_cond.notify()
+            self._stopped = True
 
-    def resume(self, tick_proc=None):
-        "Resume the execution."
-        self._stopped = False
-        self._stopped_evt.clear()
-        self._not_stopped_evt.set()
-        self._step_once = False
-        if tick_proc:
-            assert callable(tick_proc)
-            self._tick_procs = [tick_proc]
-        else:
-            self._tick_procs = []
-
+            
+    def task_stop(self):
+        return aio.create_task(self.stop())
 
     def is_running(self):
         "Return True if the scheduler is currently running."
@@ -460,8 +516,8 @@ class Scheduler(object):
         return True
 
     def done(self):
-        "Called when the execution is done. Can be overridden in subclasses."
-        pass
+        self._task = None
+        logger.info('Task finished')
 
     def __len__(self):
         return len(self._modules)
@@ -495,12 +551,14 @@ class Scheduler(object):
         "Return the last run number."
         return self._run_number
 
-
-    def for_input(self, module):
+    async def for_input(self, module):
         """
         Notify this scheduler that the module has received input
         that should be served fast.
         """
+        async with self._hibernate_cond:
+            self._keep_running = KEEP_RUNNING
+            self._hibernate_cond.notify()
         sel = self._reachability.get(module.name, False)
         if sel:
             if not self._module_selection:
@@ -512,6 +570,7 @@ class Scheduler(object):
                 self._module_selection.update(sel)
             logger.debug('Input selection for module: %s',
                          self._module_selection)
+        self.shortcut_evt.set()
         return self.run_number()+1
 
     def has_input(self):
@@ -525,6 +584,16 @@ class Scheduler(object):
             return False
         return True
 
+    def _consider_module(self, module):
+        # FIxME For now, accept all modules in input management
+        if not self.has_input():
+            return True
+        if module.name in self._module_selection:
+            # self._module_selection.remove(module.name)
+            logger.debug('Module %s ready for scheduling', module.name)
+            return True
+        logger.debug('Module %s NOT ready for scheduling', module.name)
+        return False
 
     def time_left(self):
         "Return the time left to run for this slot."
@@ -559,23 +628,6 @@ class Scheduler(object):
                     mod.storagegroup is not None):
                 mod.storagegroup.close_all()
 
-    def freeze(self):
-        self.unfreeze()
-        mods_to_freeze = set([m for m in self._run_list if m.name not in self._module_selection and not m.is_input()])
-        for module in mods_to_freeze:
-            module._frozen = True
-            module.steering_evt_clear()
-        self._short_cycle = True
-
-    def unfreeze(self):
-        if not self._short_cycle:
-            return
-        for module in self._run_list:
-            #if not module._frozen: continue
-            module._frozen = False
-            module.steering_evt_set()
-            #module.release()
-        self._short_cycle = False
 
     @staticmethod
     def _module_order(x, y):
@@ -586,6 +638,7 @@ class Scheduler(object):
         if 'order' in y:
             return -1
         return 0
+
 
 if Scheduler.default is None:
     Scheduler.default = Scheduler()

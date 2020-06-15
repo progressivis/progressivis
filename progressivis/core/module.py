@@ -139,20 +139,10 @@ class Module(metaclass=ModuleMeta):
         self.input = InputSlots(self)
         self.output = OutputSlots(self)
         self.steps_acc = 0
-        #self._do_not_wait = [] # by default all slots are awaitable
         self.wait_expr = aio.FIRST_COMPLETED
-        self.steering_evt = None
-        self.blocked_evt = None
-        self.dataless_evt = None
-        self._ignore_inputs = False
-        self._suspended = False
-        self._frozen = False
-        self.after_run_proc = None
         # callbacks
         self._start_run = None
         self._end_run = None
-        self._w8_slots = 0
-        self._dataless = set()
         #self._synchronized_lock = self.scheduler().create_lock()
         dataflow.add_module(self)
 
@@ -200,142 +190,6 @@ class Module(metaclass=ModuleMeta):
         """
         return 0.0
 
-    def notify_consumers(self, out_name=None):
-        if out_name is None:
-            values_ = self._output_slots.values()
-        else:
-            values_ = [self._output_slots[out_name]]
-        for slot_list in values_:
-            if slot_list is None:
-                continue
-            for slot in slot_list:
-                if slot._event is None:
-                    slot._event = aio.Event()
-                slot._event.set()
-
-    def init_aio_events(self):
-        for sname, slot in self._input_slots.items():
-            if slot is None:
-                    continue
-            if slot._event is None:
-                slot._event = aio.Event()
-
-    async def wait_for_slots(self):
-        _ct = aio.create_task
-        s = self.scheduler()
-        sched_w8 = _ct(s._stopped_evt.wait(), self.name+"_stopped_wait")
-        if self.dataless_evt is None:
-            self.dataless_evt = aio.Event()
-        self.dataless_evt.clear()
-        dataless_w8 = _ct(self.dataless_evt.wait(), self.name+"_dataless_wait")
-        w8_expr = None
-        if isinstance(self.wait_expr, str):
-            aws = [_ct(slot._event.wait(), self.name+"_slot_wait_"+slot.input_name)
-                   for slot in self._input_slots.values() if slot is not None]
-            if aws:
-                w8_expr = aio.wait(set(aws), return_when=self.wait_expr)
-        elif isinstance(self.wait_expr, AllAny): # all([any(), any(), ...]
-            all_aws = set()
-            for names in self.wait_expr._impl:
-                aws = [_ct(slot._event.wait(), self.name+"_slot_wait_"+slot.input_name) 
-                       for (sname, slot) in self._input_slots.items() if sname in names]
-                if aws:
-                    all_aws.add(aio.wait(set(aws), return_when=aio.FIRST_COMPLETED))
-            if all_aws:
-                w8_expr =  aio.wait(all_aws, return_when=aio.ALL_COMPLETED)
-        elif isinstance(self.wait_expr, AnyAll): # any([all(), all(), ...]                
-            all_aws = set()
-            for names in self.wait_expr._impl:
-                aws = [_ct(slot._event.wait(), self.name+"_slot_wait_"+slot.input_name)
-                       for (sname, slot) in self._input_slots.items() if sname in names]
-                if aws:
-                    all_aws.add(aio.wait(set(aws), return_when=aio.FIRST_COMPLETED))
-            if all_aws:
-                w8_expr = aio.wait(all_aws, return_when=aio.ALL_COMPLETED)
-        else:
-            raise ValueError("Unconsistent wait expression {}".format(self.wait_expr))
-        if w8_expr is not None:
-            await aio.wait({sched_w8, w8_expr, dataless_w8}, return_when=aio.FIRST_COMPLETED)
-            
-    async def after_run(self, rn):
-        if self.after_run_proc is None:
-            return
-        proc = self.after_run_proc
-        if aio.iscoroutinefunction(proc):
-            await proc(self, rn)
-        else:
-            proc(self, rn)
-
-    def suspend(self):
-        self._suspended = True
-        self.steering_evt.clear()
-
-    def unsuspend(self):
-        self._suspended = False
-        self.steering_evt_set()
-
-    def steering_evt_set(self):
-        self.steering_evt.set()
-
-    def steering_evt_clear(self):
-        self.steering_evt.clear()
-
-    def is_source(self):
-        return False
-
-    def is_greedy(self, slot_name):
-        """
-        Still needs to works after the entries have ended
-        """
-        _ = slot_name
-        return False
-
-    def is_dataless(self):
-        return self._dataless
-
-    def is_dataless_slot(self, slname):
-        return slname in self._dataless
-
-    def unset_dataless_slot(self, slname):
-        self._dataless.discard(slname)
-        if not self._dataless:
-            self.dataless_evt.clear()
-    async def module_task(self):
-        if self.steering_evt is None:
-            self.steering_evt = aio.Event()
-        if not self._suspended:
-            self.steering_evt_set()
-        self.init_aio_events()
-        s = self.scheduler()
-        while True:
-            #if self.is_source() or self._frozen or self._suspended:
-            await self.steering_evt.wait()
-            await s._not_stopped_evt.wait()
-            if s._step_once:
-                #print(f"step once on {self.name}")
-                s._step_once = False
-                s.stop()
-            if s._exit:
-                self.notify_consumers()
-                break
-            if self.is_zombie() or self.is_terminated():
-                self.state = Module.state_terminated
-                break
-            if not (self.is_source() or self.is_dataless()) and self.has_any_input():
-                self._w8_slots = 1
-                await self.wait_for_slots()
-                self.dataless_evt.clear()
-                self._w8_slots = 0
-            rn = s.new_run_number()
-            if self.is_terminated():
-                self.notify_consumers()
-                break
-            await s._run_tick_procs()
-            await self.run(rn)
-            await self.after_run(rn)            
-            if self.is_source() or self.is_dataless():
-                self.steering_evt_clear()
-            await aio.sleep(0.1)
 
 
     @staticmethod
@@ -494,10 +348,16 @@ class Module(metaclass=ModuleMeta):
     def create_slot(self, output_name, input_module, input_name):
         "Create a specified output slot"
         return Slot(self, output_name, input_module, input_name)
+    
+    def connect_output(self, output_name, input_module, input_name):
+        "Connect the output slot"
+        slot = self.create_slot(output_name, input_module, input_name)
+        slot.connect()
+        return slot
 
     def has_any_input(self):
         "Return True if the module has any input"
-        return any(self._input_slots.values()) and not self._ignore_inputs
+        return any(self._input_slots.values())
 
     def get_input_slot(self, name):
         "Return the specified input slot"
@@ -641,7 +501,7 @@ class Module(metaclass=ModuleMeta):
         return None
 
     @abstractmethod
-    async def run_step(self, run_number, step_size, howlong):  # pragma no cover
+    def run_step(self, run_number, step_size, howlong):  # pragma no cover
         """Run one step of the module, with a duration up to the 'howlong' parameter.
 
         Returns a dictionary with at least 5 pieces of information: 1)
@@ -670,16 +530,6 @@ class Module(metaclass=ModuleMeta):
         assert (next_state >= Module.state_ready and
                 next_state <= Module.state_zombie)
         self.steps_acc += steps_run
-        if productive is None:
-            productive = steps_run
-        if productive:
-            self.notify_consumers()
-        for slot in self._input_slots.values():
-            if slot is None or slot.has_buffered():
-                continue
-            #if slot.output_module.is_terminated():
-            #    continue
-            slot._event.clear()
         return {'next_state': next_state,
                 'steps_run': steps_run}
 
@@ -732,22 +582,22 @@ class Module(metaclass=ModuleMeta):
                 in_module = slot.output_module
                 in_ts = in_module.last_update()
                 ts = slot.last_update()
+
+                # logger.debug('for %s[%s](%d)->%s(%d)',
+                #              slot.input_module.name, slot.input_name, in_ts,
+                #              slot.output_name, ts)
                 if slot.has_buffered() or in_ts > ts:
                     ready_count += 1
                 elif (in_module.is_terminated() or
                       in_module.state == Module.state_invalid):
                     term_count += 1
-                    if self.is_greedy(slot.input_name): # i.e. dataless work candidate
-                        self._dataless.add(slot.input_name)
-                        if self._w8_slots:
-                            self.dataless_evt.set()
+
             # if all the input slot modules are terminated or invalid
-            if not (self.is_input() or self.is_dataless()) and in_count != 0 and term_count == in_count:
+            if not self.is_input() and in_count != 0 and term_count == in_count:
                 logger.info('%s becomes zombie because all its input slots'
                             ' are terminated', self.name)
                 self.state = Module.state_zombie
                 return False
-                
             # sources are always ready, and when 1 is ready, the module is.
             return in_count == 0 or ready_count != 0
         logger.error("%s Not ready because is in weird state %s",
@@ -786,12 +636,6 @@ class Module(metaclass=ModuleMeta):
                 s <= Module.state_invalid), "State %s invalid in module %s" % (
                     s, self.name)
         self._state = s
-        if self.blocked_evt is None:
-            self.blocked_evt = aio.Event()
-        if self._state == Module.state_blocked:
-            self.blocked_evt.set()
-        else:
-            self.blocked_evt.clear()
 
     def trace_stats(self, max_runs=None):
         return self.tracer.trace_stats(max_runs)
@@ -803,12 +647,12 @@ class Module(metaclass=ModuleMeta):
     def starting(self):
         pass
 
-    async def _stop(self, run_number):
+    def _stop(self, run_number):
         self._end_time = self._start_time
         self._last_update = run_number
         self._start_time = None
         assert self.state != self.state_running
-        await self.end_run(run_number)
+        self.end_run(run_number)
 
     def set_start_run(self, start_run):
         if start_run is None or callable(start_run):
@@ -827,9 +671,9 @@ class Module(metaclass=ModuleMeta):
         else:
             raise ProgressiveError('value should be callable or None', end_run)
 
-    async def end_run(self, run_number):
+    def end_run(self, run_number):
         if self._end_run:
-            await self._end_run(self, run_number)
+            self._end_run(self, run_number)
 
     def ending(self):
         "Ends a module, called when it is about the be removed from the scheduler"
@@ -873,19 +717,12 @@ class Module(metaclass=ModuleMeta):
         See Variable module"""
         return False
 
-        
-    def me_first(self):
-        self.unsuspend()
-        for module in self.scheduler()._run_list:
-            if module == self: continue
-            if not module.is_input():
-                module.steering_evt.clear()
 
     def post_interaction_proc(self):
         s = self.scheduler()
         s.freeze()
 
-    async def run(self, run_number):
+    def run(self, run_number):
         assert not self.is_running()
         #if not self.steering_evt.is_set() and self._frozen:
         #    return
@@ -925,7 +762,7 @@ class Module(metaclass=ModuleMeta):
                 tracer.before_run_step(now, run_number)
                 if self.debug:
                     import pdb; pdb.set_trace()
-                run_step_ret = await self.run_step(run_number,
+                run_step_ret = self.run_step(run_number,
                                              step_size,
                                              remaining_time)
                 next_state = run_step_ret['next_state']
@@ -965,10 +802,12 @@ class Module(metaclass=ModuleMeta):
         tracer.end_run(now, run_number,
                        progress_current=progress[0], progress_max=progress[1],
                        quality=self.get_quality())
-        await self._stop(run_number)
+        self._stop(run_number)
         if exception:
             raise RuntimeError("{} {}".format(type(exception), exception))
 
+    def is_source(self):
+        return False
 
 class InputSlots(object):
     # pylint: disable=too-few-public-methods
@@ -1044,7 +883,7 @@ class Every(Module):
             return 1
         return super(Every, self).predict_step_size(duration)
 
-    async def run_step(self, run_number, step_size, howlong):
+    def run_step(self, run_number, step_size, howlong):
         slot = self.get_input_slot('df')
         df = slot.data()
         if df is not None:

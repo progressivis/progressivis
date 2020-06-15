@@ -44,7 +44,7 @@ class CmpQueryLast(TableModule):
             self.get_input_slot('table').data()
         return super(CmpQueryLast, self).get_data(name)
 
-    async def run_step(self, run_number, step_size, howlong):
+    def run_step(self, run_number, step_size, howlong):
         table_slot = self.get_input_slot('table')
         table_slot.update(run_number)
         table_data = table_slot.data()

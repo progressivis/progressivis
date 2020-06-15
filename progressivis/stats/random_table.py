@@ -43,7 +43,7 @@ class RandomTable(TableModule):
     def is_source(self):
         return True
 
-    async def run_step(self, run_number, step_size, howlong):
+    def run_step(self, run_number, step_size, howlong):
         #import pdb;pdb.set_trace()
         if step_size == 0: # bug
             logger.error('Received a step_size of 0')

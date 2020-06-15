@@ -23,7 +23,7 @@ class MergeDict(TableModule):
         #self.join_kwds = self._filter_kwds(kwds, join)
         self._dialog = Dialog(self)
 
-    async def run_step(self, run_number, step_size, howlong):
+    def run_step(self, run_number, step_size, howlong):
         first_slot = self.get_input_slot('first')
         first_slot.update(run_number)
         second_slot = self.get_input_slot('second')

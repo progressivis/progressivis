@@ -24,7 +24,7 @@ class Paste(TableModule):
         super(Paste, self).__init__(**kwds)
         self.join_kwds = self._filter_kwds(kwds, join)
 
-    async def run_step(self, run_number, step_size, howlong):
+    def run_step(self, run_number, step_size, howlong):
         #import pdb;pdb.set_trace()
         first_slot = self.get_input_slot('first')
         first_slot.update(run_number)

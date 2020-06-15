@@ -48,5 +48,5 @@ class Wait(Module):
     def predict_step_size(self, duration):
         return 1
 
-    async def run_step(self, run_number, step_size, howlong):
+    def run_step(self, run_number, step_size, howlong):
         return self._return_run_step(self.state_blocked, steps_run=1)

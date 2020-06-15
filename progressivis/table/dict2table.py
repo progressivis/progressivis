@@ -18,7 +18,7 @@ class Dict2Table(TableModule):
         super().__init__(**kwds)
         #self.join_kwds = self._filter_kwds(kwds, join)
 
-    async def run_step(self, run_number, step_size, howlong):
+    def run_step(self, run_number, step_size, howlong):
         dict_slot = self.get_input_slot('dict_')
         dict_slot.update(run_number)
         dict_ = dict_slot.data()

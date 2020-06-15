@@ -93,7 +93,7 @@ class Bisect(TableModule):
         self._impl = BisectImpl(self.params.column,
                                 self.params.op, hist_index) 
         self.default_step_size = 1000
-    async def run_step(self, run_number, step_size, howlong):
+    def run_step(self, run_number, step_size, howlong):
         input_slot = self.get_input_slot('table')
         input_slot.update(run_number)
         steps = 0

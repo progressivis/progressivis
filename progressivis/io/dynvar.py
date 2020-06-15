@@ -21,11 +21,7 @@ class DynVar(TableModule):
     def has_input(self):
         return self._has_input
 
-    async def run_step(self,run_number, step_size, howlong):
-        self.suspend()
-        if self._has_input:
-            self._has_input = False
-            self.post_interaction_proc()
+    def run_step(self,run_number, step_size, howlong):
         return self._return_run_step(self.state_blocked, steps_run=1)
         #raise StopIteration()
 
@@ -39,10 +35,9 @@ class DynVar(TableModule):
             values = {self._vocabulary[k]: v for k, v in values.items()}
         for (k, v) in input_.items():
             last[k] = v
-        _ = self.scheduler().for_input(self)
+        await self.scheduler().for_input(self)
         #last['_update'] = run_number
         self._table.update(values)
         self._has_input = True
-        self.me_first()
         await aio.sleep(0)
         return ''

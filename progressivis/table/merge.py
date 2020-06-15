@@ -56,7 +56,7 @@ class Merge(NAry):
         self.merge_kwds = self._filter_kwds(kwds, merge)
         self._context = {}
 
-    async def run_step(self, run_number, step_size, howlong):
+    def run_step(self, run_number, step_size, howlong):
         frames = []
         for name in self.get_input_slot_multiple():
             slot = self.get_input_slot(name)

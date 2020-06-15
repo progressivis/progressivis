@@ -18,7 +18,7 @@ async def _do_line(inp, s):
         inp.from_input('line#%d' % r)
         await aio.sleep(np.random.random())
     await aio.sleep(1)
-    s.exit()
+    s.stop()
 
 
 class TestInput(ProgressiveTest):

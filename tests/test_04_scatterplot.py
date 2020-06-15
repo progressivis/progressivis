@@ -18,8 +18,8 @@ def print_repr(x):
     if x is not None:
         print(repr(x))
 
-async def idle_proc(s, _):
-    s.exit()
+#async def idle_proc(s, _):
+#    await s.stop()
 
 
 LOWER_X = 0.2
@@ -34,7 +34,7 @@ async def fake_input(sched, name, t, inp):
 
 async def sleep_then_stop(s, t):
     await aio.sleep(t)
-    s.exit()
+    await s.stop()
     print(s._run_list)
 
 
@@ -56,7 +56,8 @@ class TestScatterPlot(ProgressiveTest):
             cnt.input.df = csv.output.table
             prt = Print(proc=self.terse, scheduler=s)
             prt.input.df = sp.output.table
-        aio.run(csv.scheduler().start(idle_proc=idle_proc))
+            sts = sleep_then_stop(s, 5)
+        aio.run(csv.scheduler().start(coros=[sts]))
         self.assertEqual(len(csv.table()), 30000)
                 
     def test_scatterplot2(self):

@@ -39,5 +39,5 @@ class NAry(TableModule):
     #     self._input_slots[slot.input_name] = slot
     #     return ret
 
-    async def run_step(self, run_number, step_size, howlong):  # pragma no cover
+    def run_step(self, run_number, step_size, howlong):  # pragma no cover
         raise NotImplementedError('run_step not defined')

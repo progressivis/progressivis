@@ -20,7 +20,6 @@ import time
 import logging
 import logging.config
 from functools import partial
-
 from io import StringIO
 
 import numpy as np
@@ -30,8 +29,6 @@ import numpy as np
 #from flask_socketio import SocketIO, join_room, send
 #import eventlet
 import json as js
-
-import asyncio as aio
 import aiohttp
 from aiohttp import web
 import socketio as sio
@@ -41,6 +38,7 @@ import aiohttp_jinja2
 #import aiohttp_debugtoolbar
 #from aiohttp_debugtoolbar import toolbar_middleware_factory
 
+import progressivis.core.aio as aio
 from progressivis import Scheduler, Module
 from ..core import JSONEncoderNp
 
@@ -143,29 +141,25 @@ class ProgressivisBlueprint(web.Application):
 
     async def step_tick_scheduler(self, scheduler, run_number):
         "Run at each step"
-        #scheduler.stop()
-        scheduler._step_once = True
+        await scheduler.stop()
         await self.emit_tick('scheduler', run_number)
 
     def step_once(self):
         "Run once"
-        self.scheduler.resume(tick_proc=self.step_tick_scheduler) # i.e. step+write_to_path
+        #self.scheduler.resume(tick_proc=self.step_tick_scheduler) # i.e. step+write_to_path
+        self.scheduler.task_start(tick_proc=self.step_tick_scheduler) # i.e. step+write_to_path
 
     def start(self):
         "Run when the scheduler starts"
-        self.scheduler.start(tick_proc=self.tick_scheduler)
+        self.scheduler.task_start(tick_proc=self.tick_scheduler)
         
-    def resume(self):
-        "Run when the scheduler starts"
-        self.scheduler.resume(tick_proc=self.tick_scheduler)
-
-    async def tick_module(self, module, run_number):
+    def tick_module(self, module, run_number):
         "Run when a module has run"
         # pylint: disable=no-self-use
         payload = None
         if module.name in self.hotline_set:
             payload = module.to_json()
-        await self.emit_tick(module.name, run_number, payload=payload)
+        aio.create_task(self.emit_tick(module.name, run_number, payload=payload))
 
     def get_log(self):
         "Return the log"
@@ -231,7 +225,7 @@ def _on_start(sid):
     if not scheduler.is_stopped():
         return {'status': 'failed',
                 'reason': 'scheduler is already running'}
-    progressivis_bp.resume()
+    progressivis_bp.start()
     return {'status': 'success'}
 
 #@on.socketio('/progressivis/scheduler/stop')
@@ -241,7 +235,7 @@ def _on_stop(sid):
     if scheduler.is_stopped():    
         return {'status': 'failed',
                 'reason': 'scheduler is not is_running'}
-    scheduler.stop()
+    scheduler.task_stop()
     return {'status': 'success'}
 
 #@on.socketio('/progressivis/scheduler/step')
@@ -450,6 +444,11 @@ class _AsyncServer(sio.AsyncServer):
     def on_event(self, message, handler, namespace=None):
         self.on(message, namespace=namespace)(handler)
 
+async def _inf_loop(n):
+    while True:
+        await aio.sleep(n)
+        print(":")
+        
 async def start_server(scheduler=None, debug=False):
     "Start the server"
     # pylint: disable=global-statement
@@ -484,7 +483,9 @@ async def start_server(scheduler=None, debug=False):
     site = web.TCPSite(runner, 'localhost', 8080)
     print('Server started, connect to http://localhost:8080/progressivis/scheduler.html')
     srv =  site.start()
-    await scheduler.start(tick_proc=progressivis_bp.tick_scheduler, coros=[srv, aio.sleep(3600)])
+    #await scheduler.start(tick_proc=progressivis_bp.tick_scheduler, coros=[srv, aio.sleep(3600)])
+    sch_task = scheduler.start(tick_proc=progressivis_bp.tick_scheduler)
+    await aio.gather(srv, sch_task, _inf_loop(3600))
     #await aio.sleep(3600)
     #logging.basicConfig(level=logging.DEBUG)
 def stop_server():

@@ -42,23 +42,24 @@ class ControlPanel(widgets.HBox):
         self.run_nb.value = str(val)
 
     def stop(self):
-        self.scheduler.stop()
+        self.scheduler.task_stop()
         self.status = "stop"
         self.bstop.disabled = True
         self.bstart.disabled = False
         self.bstep.disabled = False
 
     def step(self):
-        def _step_once(sched, run_nb):
-            sched._step_once = True
-        self.scheduler.resume(tick_proc=_step_once)
+        async def _step_once(sched, run_nb):
+            #sched._step_once = True
+            await sched.stop()
+        self.scheduler.task_start(tick_proc=_step_once)
         self.status = "stop"
         self.bstop.disabled = True
         self.bstart.disabled = False
         self.bstep.disabled = False
 
     def resume(self):
-        self.scheduler.resume()
+        self.scheduler.task_start()
         self.status = "run"
         self.bstop.disabled = False
         self.bstart.disabled = True
