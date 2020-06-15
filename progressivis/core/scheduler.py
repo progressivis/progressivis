@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 __all__ = ['Scheduler']
 
 KEEP_RUNNING = 5
-
+SHORTCUT_TIME = 4
 
 class _InteractionOpts(object):
     def __init__(self, starving_mods=None, max_time=None, max_iter=None):
@@ -79,6 +79,7 @@ class Scheduler(object):
         self._lock = None
         self._task = None
         #self.runners = set()
+        self.shortcut_evt = None
         self.coros = []
 
 
@@ -138,6 +139,15 @@ class Scheduler(object):
             else:
                 self._inter_cycles_cnt += 1
 
+    async def shortcut_manager(self):
+        if self.shortcut_evt is None:
+            self.shortcut_evt = aio.Event()
+        while True:
+            await self.shortcut_evt.wait()
+            await aio.sleep(SHORTCUT_TIME)
+            self._module_selection = None
+            self.shortcut_evt.clear()
+            
     def new_run_number(self):
         self._run_number += 1
         return self._run_number
@@ -323,7 +333,7 @@ class Scheduler(object):
         self._before_run()
         # if self._new_modules:
         #    self._update_modules()
-        runners = [self._run_loop()]
+        runners = [self._run_loop(), self.shortcut_manager()]
         runners.extend([aio.create_task(coro)
                         for coro in self.coros])
         # runners.append(aio.create_task(self.unlocker(), "unlocker"))
@@ -484,7 +494,7 @@ class Scheduler(object):
 
     def _end_of_modules(self, first_run):
         # Reset interaction mode
-        self._proc_interaction_opts()
+        #self._proc_interaction_opts()
         self._selection_target_time = -1
         new_list = [m for m in self._run_list if not m.is_terminated()]
         self._run_list = new_list
@@ -629,6 +639,7 @@ class Scheduler(object):
                 self._module_selection.update(sel)
             logger.debug('Input selection for module: %s',
                          self._module_selection)
+        self.shortcut_evt.set()
         return self.run_number()+1
 
     def has_input(self):
