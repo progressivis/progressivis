@@ -320,7 +320,6 @@ class Scheduler(object):
         first_run = self._run_number
         input_mode = self.has_input()
         self._start_inter = 0
-        #self._inter_cycles_cnt = 0
         while not self._stopped:
             # Apply changes in the dataflow
             if self._new_modules:
@@ -336,7 +335,6 @@ class Scheduler(object):
                     logger.info('Ending interactive mode after %s s',
                                 default_timer()-self._start_inter)
                     self._start_inter = 0
-                    #self._inter_cycles_cnt = 0
                     input_mode = False
                 else:
                     self._start_inter = default_timer()
