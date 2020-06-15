@@ -139,20 +139,10 @@ class Module(metaclass=ModuleMeta):
         self.input = InputSlots(self)
         self.output = OutputSlots(self)
         self.steps_acc = 0
-        #self._do_not_wait = [] # by default all slots are awaitable
         self.wait_expr = aio.FIRST_COMPLETED
-        self.steering_evt = None
-        self.blocked_evt = None
-        self.dataless_evt = None
-        self._ignore_inputs = False
-        self._suspended = False
-        self._frozen = False
-        self.after_run_proc = None
         # callbacks
         self._start_run = None
         self._end_run = None
-        self._w8_slots = 0
-        self._dataless = set()
         #self._synchronized_lock = self.scheduler().create_lock()
         dataflow.add_module(self)
 
@@ -367,7 +357,7 @@ class Module(metaclass=ModuleMeta):
 
     def has_any_input(self):
         "Return True if the module has any input"
-        return any(self._input_slots.values()) and not self._ignore_inputs
+        return any(self._input_slots.values())
 
     def get_input_slot(self, name):
         "Return the specified input slot"
@@ -646,12 +636,6 @@ class Module(metaclass=ModuleMeta):
                 s <= Module.state_invalid), "State %s invalid in module %s" % (
                     s, self.name)
         self._state = s
-        if self.blocked_evt is None:
-            self.blocked_evt = aio.Event()
-        if self._state == Module.state_blocked:
-            self.blocked_evt.set()
-        else:
-            self.blocked_evt.clear()
 
     def trace_stats(self, max_runs=None):
         return self.tracer.trace_stats(max_runs)
@@ -822,6 +806,8 @@ class Module(metaclass=ModuleMeta):
         if exception:
             raise RuntimeError("{} {}".format(type(exception), exception))
 
+    def is_source(self):
+        return False
 
 class InputSlots(object):
     # pylint: disable=too-few-public-methods
