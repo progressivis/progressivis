@@ -16,15 +16,7 @@ logger = logging.getLogger(__name__)
 __all__ = ['Scheduler']
 
 KEEP_RUNNING = 5
-SHORTCUT_TIME = 4
-
-class _InteractionOpts(object):
-    def __init__(self, starving_mods=None, max_time=None, max_iter=None):
-        # TODO: checks ...
-        self.starving_mods = starving_mods
-        self.max_time = max_time
-        self.max_iter = max_iter
-
+SHORTCUT_TIME = 3
 
 class Scheduler(object):
     "Base Scheduler class, runs progressive modules"
@@ -69,8 +61,6 @@ class Scheduler(object):
         self.interaction_latency = interaction_latency
         self._reachability = {}
         self._start_inter = 0
-        self._inter_cycles_cnt = 0
-        self._interaction_opts = None
         self._hibernate_cond = None
         self._keep_running = KEEP_RUNNING
         self.dataflow = Dataflow(self)
@@ -81,63 +71,6 @@ class Scheduler(object):
         #self.runners = set()
         self.shortcut_evt = None
         self.coros = []
-
-
-    def set_interaction_opts(self, starving_mods=None, max_time=None,
-                             max_iter=None):
-        if starving_mods:
-            if not isinstance(starving_mods, Iterable):
-                raise ValueError("starving_mods must be iterable")
-            from .module import Module
-            for elt in starving_mods:
-                if not isinstance(elt, Module):
-                    raise ValueError("starving_mods requires a list of Modules")
-        if max_time:
-            if not isinstance(max_time, (int, float)):
-                raise ValueError("max_time must be a float or an int")
-            if max_time <= 0:
-                raise ValueError("max_time must be positive")
-        if max_iter:
-            if not isinstance(max_iter, int):
-                raise ValueError("max_iter must be an int")
-            if max_iter <= 0:
-                raise ValueError("max_iter must be positive")
-        self._interaction_opts = _InteractionOpts(starving_mods,
-                                                  max_time,
-                                                  max_iter)
-
-    def _proc_interaction_opts(self):
-        if not self.has_input():
-            return
-        if self._interaction_opts is None:
-            self._module_selection = None
-            self._inter_cycles_cnt = 0
-            return
-        if self._interaction_opts.starving_mods:
-            if not sum([mod.steps_acc
-                        for mod in self._interaction_opts.starving_mods]):
-                print("Exiting shortcut mode because data "
-                      "inputs on witnesses are dried",
-                      self._interaction_opts.starving_mods)
-                self._module_selection = None
-                self._inter_cycles_cnt = 0
-                return
-        if self._interaction_opts.max_time:
-            duration = default_timer()-self._start_inter
-            if duration >= self._interaction_opts.max_time:
-                print("Exiting shortcut mode on time out, duration: ",
-                      duration)
-                self._module_selection = None
-                self._inter_cycles_cnt = 0
-                return
-        if self._interaction_opts.max_iter:
-            if self._inter_cycles_cnt >= self._interaction_opts.max_iter:
-                self._module_selection = None
-                self._inter_cycles_cnt = 0
-                print("Exiting shortcut mode after ",
-                      self._interaction_opts.max_iter, " cycles")
-            else:
-                self._inter_cycles_cnt += 1
 
     async def shortcut_manager(self):
         if self.shortcut_evt is None:
@@ -387,7 +320,7 @@ class Scheduler(object):
         first_run = self._run_number
         input_mode = self.has_input()
         self._start_inter = 0
-        self._inter_cycles_cnt = 0
+        #self._inter_cycles_cnt = 0
         while not self._stopped:
             # Apply changes in the dataflow
             if self._new_modules:
@@ -403,7 +336,7 @@ class Scheduler(object):
                     logger.info('Ending interactive mode after %s s',
                                 default_timer()-self._start_inter)
                     self._start_inter = 0
-                    self._inter_cycles_cnt = 0
+                    #self._inter_cycles_cnt = 0
                     input_mode = False
                 else:
                     self._start_inter = default_timer()
