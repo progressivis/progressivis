@@ -27,8 +27,6 @@ from .scheduler import Scheduler
 from inspect import getfullargspec
 
 
-ETERNITY = 3600*1000
-#logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 # NB: AllAny and AnyAll are simply two "named lists"
@@ -519,12 +517,6 @@ class Module(metaclass=ModuleMeta):
         if slot.has_buffered():
             return Module.state_ready
         return Module.state_blocked
-
-    @staticmethod
-    def clear_slots_if(slots):
-        for slot in slots:
-            if not slot.has_buffered():
-                slot._event.clear()
 
     def _return_run_step(self, next_state, steps_run, productive=None):
         assert (next_state >= Module.state_ready and
