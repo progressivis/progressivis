@@ -86,7 +86,7 @@ class _DataClass(object):
 
 class MCScatterPlot(NAry):
     "Module executing multiclass."
-    def __init__(self, classes, x_label="x", y_label="y", approximate=False,
+    def __init__(self, classes, x_label="x", y_label="y", approximate=False,ipydata=False, 
                  **kwds):
         """Multiclass ...
         """
@@ -101,6 +101,8 @@ class MCScatterPlot(NAry):
         self._data_class_dict = {}
         self.min_value = None
         self.max_value = None
+        self._ipydata = ipydata
+        self.hist_tensor = None
 
     def forget_changes(self, input_slot):
         changes = False
@@ -147,7 +149,7 @@ class MCScatterPlot(NAry):
             })
         return changes, ret
 
-    def build_heatmap(self, inp, domain):
+    def build_heatmap(self, inp, domain, plan):
         inp_table = inp.data()
         if inp_table is None:
             return None
@@ -156,13 +158,20 @@ class MCScatterPlot(NAry):
         if last is None:
             return None
         row = last.to_dict()
-        data = np.copy(row['array'])
         json_ = {}
         if not (np.isnan(row['xmin']) or np.isnan(row['xmax'])
                 or np.isnan(row['ymin']) or np.isnan(row['ymax'])):
+            #import pdb;pdb.set_trace()
+            data = row['array']
             json_['bounds'] = (row['xmin'], row['ymin'],
                                row['xmax'], row['ymax'])
-            json_['binnedPixels'] = data
+            if self._ipydata:
+                assert isinstance(plan, int)
+                json_['binnedPixels'] = plan
+                self.hist_tensor[:,:,plan] = row['array']
+            else:
+                data = np.copy(row['array'])
+                json_['binnedPixels'] = data
             json_['range'] = [np.min(data), np.max(data)]
             json_['count'] = np.sum(data)
             json_['value'] = domain
@@ -177,9 +186,17 @@ class MCScatterPlot(NAry):
         xmin = ymin = - np.inf
         xmax = ymax = np.inf
         changes, grouped_inputs = self.group_inputs()
-        for cname, inputs in grouped_inputs.items():
+        if self._ipydata and self.hist_tensor is None:
+            z = len(grouped_inputs)
+            for sl in grouped_inputs.values():
+                hi = sl['hist'][0]
+                xbins = hi.output_module.params.xbins
+                ybins = hi.output_module.params.ybins
+                self.hist_tensor = np.zeros((xbins, ybins, z), dtype='int32')
+                break
+        for i, (cname, inputs) in enumerate(grouped_inputs.items()):
             hist_input = inputs['hist'][0]
-            buff = self.build_heatmap(hist_input, cname)
+            buff = self.build_heatmap(hist_input, cname, i)
             if buff is None:
                 return json
             xmin_, ymin_, xmax_, ymax_ = buff.pop('bounds')
@@ -193,11 +210,15 @@ class MCScatterPlot(NAry):
             sample_input = inputs['sample'][0]
             select = sample_input.data()
             x_column, y_column = inputs['sample'][1],  inputs['sample'][2]
+            """if select is not None:
+                #import pdb;pdb.set_trace()
+                # select.loc[:,['pickup_longitude','pickup_latitude']].to_array()
+                print("samples", len(select))"""
             smpl = select.to_json(orient='split', columns=[x_column, y_column]) if select is not None else []
             samples.append(smpl)
 
         # TODO: check consistency among classes (e.g. same xbin, ybin etc.)
-        xbins, ybins = buffers[0]['binnedPixels'].shape
+        xbins, ybins = self.hist_tensor.shape[:-1] if self._ipydata else buffers[0]['binnedPixels'].shape
         encoding = {
             "x": {
                 "bin": {
@@ -258,6 +279,8 @@ class MCScatterPlot(NAry):
             s_data.extend(d)
         json['sample'] = dict(data=s_data, index=list(range(len(s_data))))
         json['columns'] = [self._x_label, self._y_label]
+        if self._ipydata:
+            json[('hist_tensor',)] = self.hist_tensor # tuple key can be skipped by json.dumps with skipkeys=True
         return json
 
     def run_step(self, run_number, step_size, howlong):

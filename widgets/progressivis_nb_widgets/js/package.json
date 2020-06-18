@@ -51,8 +51,12 @@
     "datatables": "^1.10.18",
     "jquery": "^3.4.1",
     "jquery-sparkline": "^2.4.0",
+    "jupyter-dataserializers": "^2.2.0",
+    "jupyter-datawidgets": "^5.3.0",
     "lodash": "^4.17.4",
     "multiclass-density-maps": "~0.1.5",
+    "ndarray": "^1.0.18",
+    "ndarray-unpack": "^1.0.0",
     "react": "^16.8.4",
     "react-dom": "^16.8.4",
     "webcola": "^3.4.0"

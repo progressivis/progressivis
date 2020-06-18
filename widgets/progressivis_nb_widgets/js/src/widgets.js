@@ -13,6 +13,14 @@ require('../css/sparkline-progressbar.css');
 require('datatables/media/css/jquery.dataTables.css');
 var sch = require('./sensitive_html');
 var jh = require('./layout_dict');
+
+import {
+    ISerializers, data_union_serialization, getArray,
+    listenToUnion
+} from 'jupyter-dataserializers';
+
+var ndarray = require('ndarray');
+window.ndarray = ndarray;
 // See example.py for the kernel counterpart to this file.
 
 
@@ -39,28 +47,52 @@ var ScatterplotModel = widgets.DOMWidgetModel.extend({
         _view_module : 'progressivis-nb-widgets',
         _model_module_version : '0.1.0',
         _view_module_version : '0.1.0',
+	h1: ndarray([]),
         data : 'Hello Scatterplot!',
 	value: '{0}',
 	move_point: '{0}'	
     })
+    
+}, {
+    serializers: _.extend({
+        h1: data_union_serialization,
+    }, widgets.DOMWidgetModel.serializers),
 });
-
+/*
+ScatterplotModel.serializers =  _.extend({
+    h1: {
+        serialize: array_serialization
+    }
+}, widgets.DOMWidgetModel.prototype.serializers)
+*/
 
 // Custom View. Renders the widget model.
 var ScatterplotView = widgets.DOMWidgetView.extend({
+    /*initialize: function(parameters) {
+	widgets.DOMWidgetView.prototype.initialize(parameters);
+	listenToUnion(this.model, 'h1', this.update.bind(this), true);
+    },*/
+
     // Defines how the widget gets rendered into the DOM
     render: function() {
 	this.el.innerHTML = html_;
 	let that = this;	
 	er.elementReady("#prevImages").then((_)=>{
 	    mc2d.ready_(that);
-	});
+	    });
+	listenToUnion(this.model, 'h1', this.update.bind(this), true);
         // Observe changes in the value traitlet in Python, and define
         // a custom callback.
         this.model.on('change:data', this.data_changed, this);
+        //this.model.on('change:h1', this.h1_changed, this);	
 
     },
-
+    h1_changed: function(){
+	// only for debugging purposes
+	console.log("h1_changed");
+	console.log("h1", this.model.get('h1'));
+	
+    },
     data_changed: function() {
 	let val = this.model.get('data');
 	mc2d.update_vis(JSON.parse(val));

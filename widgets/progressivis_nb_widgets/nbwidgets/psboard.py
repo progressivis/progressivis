@@ -44,7 +44,7 @@ async def refresh_fun(psboard):
         #await psboard.refresh_event.wait()
         #psboard.refresh_event.clear()
         json_ = psboard.scheduler.to_json(short=False)
-        psboard._cache = JSONEncoderNp.dumps(json_)
+        psboard._cache = JSONEncoderNp.dumps(json_, skipkeys=True)
         psboard._cache_js = None
         await psboard.refresh()
         await aio.sleep(0.5)

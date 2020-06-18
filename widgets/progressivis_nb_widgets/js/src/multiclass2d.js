@@ -4,6 +4,8 @@ import History from "./history"
 import * as colormaps from "./colormaps"
 import {elementReady} from './es6-element-ready';
 import $ from 'jquery';
+//import * as ndarray_unpack from "ndarray-unpack";
+var ndarray_unpack = require("ndarray-unpack");
 var progressivis_data = null;
 var ipyView = null;
 var margin = {top: 20, right: 20, bottom: 30, left: 40},
@@ -78,6 +80,12 @@ function multiclass2d_update_vis(rawdata) {
     var index = data['index'];
     var dot_color = ['red', 'blue', 'green', 'cyan', 'orange']
     var data_ = rawdata['chart'];
+    var hist_tensor = ipyView.model.get('h1');
+    for(let s in data_['buffers']){
+	let i = parseInt(s);
+	var h_pick = hist_tensor.pick(null, null, i);
+	data_['buffers'][i]['binnedPixels'] = ndarray_unpack(h_pick);
+    }
     if(!window.spec){
         var spec =  {
             "data": { "url": "bar" },

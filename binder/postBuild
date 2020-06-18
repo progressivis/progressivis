@@ -1,4 +1,6 @@
 set -ex
+jupyter nbextension install --py --sys-prefix ipydatawidgets
+jupyter nbextension enable --py --sys-prefix ipydatawidgets
 jupyter nbextension install --py --symlink --sys-prefix progressivis_nb_widgets.nbwidgets
 jupyter nbextension enable --py --sys-prefix progressivis_nb_widgets.nbwidgets
 jupyter serverextension enable voila --sys-prefix
