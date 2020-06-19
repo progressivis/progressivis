@@ -33,10 +33,14 @@ class Scatterplot(DataWidget, widgets.DOMWidget):
     # Widget properties are defined as traitlets. Any property tagged with `sync=True`
     # is automatically synced to the frontend *any* time it changes in Python.
     # It is synced back to Python from the frontend *any* time the model is touched.
-    #h1 = NDArray(np.zeros(0, dtype='uint8')).tag(sync=True, dtype='uint8', shape_constraint=shape_constraints(None, None, 4), **array_serialization)
-    h1 = DataUnion(
+    hists = DataUnion(
         [],
         dtype='int32',
+        #shape_constraint=shape_constraints(None, None),  
+    ).tag(sync=True, **data_union_serialization)
+    samples = DataUnion(
+        [],
+        dtype='float32',
         #shape_constraint=shape_constraints(None, None),  
     ).tag(sync=True, **data_union_serialization)
     data = Unicode('{}').tag(sync=True)
@@ -45,8 +49,11 @@ class Scatterplot(DataWidget, widgets.DOMWidget):
 
     def link_module(self, module):
         def _feed_widget(wg, val):
-            wg.h1 = val[('hist_tensor',)]
-            wg.data = JS.dumps(val, skipkeys=True)
+            wg.hists = val.pop('hist_tensor')
+            st = val.pop('sample_tensor')
+            if st is not None:
+                wg.samples = st
+            wg.data = JS.dumps(val)
 
         async def _after_run(m, run_number):
             await asynchronize(_feed_widget, self, m._json_cache)

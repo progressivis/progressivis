@@ -75,12 +75,19 @@ function multiclass2d_update_vis(rawdata) {
     var data = rawdata['sample'],
         bounds = rawdata['bounds'],
         ix, iy, iw, ih;
-
     if (!data || !bounds) return;
-    var index = data['index'];
+    var st =  ipyView.model.get('samples');
+    var index = [...Array(st.shape[0]*st.shape[2]).keys()];
+    var rows = Array();
+    for(let z in [...Array(st.shape[2])]){
+	z = parseInt(z);
+	for(let i in [...Array(st.shape[0])]){
+	    rows.push([st.get(i,0,z), st.get(i,1,z),z]);
+	}
+    }
     var dot_color = ['red', 'blue', 'green', 'cyan', 'orange']
     var data_ = rawdata['chart'];
-    var hist_tensor = ipyView.model.get('h1');
+    var hist_tensor = ipyView.model.get('hists');
     for(let s in data_['buffers']){
 	let i = parseInt(s);
 	var h_pick = hist_tensor.pick(null, null, i);
@@ -235,7 +242,7 @@ function multiclass2d_update_vis(rawdata) {
 
     var dots = zoomable
             .selectAll(".dot")
-             .data(data['data'], function(d, i) { return index[i]; });
+             .data(rows, function(d, i) { return index[i]; });
     
     dots.enter().append("circle")
          .attr("class", "dot")

@@ -6,7 +6,7 @@ from ..stats import MCHistogram2D, Sample
 from ..table.range_query_2d import RangeQuery2d
 from ..utils.errors import ProgressiveError
 from ..io import Variable, VirtualVariable
-
+import time
 from itertools import chain
 
 from collections import defaultdict
@@ -86,7 +86,8 @@ class _DataClass(object):
 
 class MCScatterPlot(NAry):
     "Module executing multiclass."
-    def __init__(self, classes, x_label="x", y_label="y", approximate=False,ipydata=False, 
+    def __init__(self, classes, x_label="x", y_label="y", approximate=False,
+                 ipydata=False, 
                  **kwds):
         """Multiclass ...
         """
@@ -103,6 +104,7 @@ class MCScatterPlot(NAry):
         self.max_value = None
         self._ipydata = ipydata
         self.hist_tensor = None
+        self.sample_tensor = None
 
     def forget_changes(self, input_slot):
         changes = False
@@ -161,7 +163,6 @@ class MCScatterPlot(NAry):
         json_ = {}
         if not (np.isnan(row['xmin']) or np.isnan(row['xmax'])
                 or np.isnan(row['ymin']) or np.isnan(row['ymax'])):
-            #import pdb;pdb.set_trace()
             data = row['array']
             json_['bounds'] = (row['xmin'], row['ymin'],
                                row['xmax'], row['ymax'])
@@ -193,6 +194,9 @@ class MCScatterPlot(NAry):
                 xbins = hi.output_module.params.xbins
                 ybins = hi.output_module.params.ybins
                 self.hist_tensor = np.zeros((xbins, ybins, z), dtype='int32')
+                sam = sl['sample'][0]
+                nsam = sam.output_module.params.samples
+                self.sample_tensor = np.zeros((nsam, 2, z), dtype='float32')
                 break
         for i, (cname, inputs) in enumerate(grouped_inputs.items()):
             hist_input = inputs['hist'][0]
@@ -210,11 +214,14 @@ class MCScatterPlot(NAry):
             sample_input = inputs['sample'][0]
             select = sample_input.data()
             x_column, y_column = inputs['sample'][1],  inputs['sample'][2]
-            """if select is not None:
-                #import pdb;pdb.set_trace()
-                # select.loc[:,['pickup_longitude','pickup_latitude']].to_array()
-                print("samples", len(select))"""
-            smpl = select.to_json(orient='split', columns=[x_column, y_column]) if select is not None else []
+            if self._ipydata:
+                smpl = []
+                if select is not None:
+                    assert self.sample_tensor.shape[0] == len(select)
+                    self.sample_tensor[:,0,i] = select[x_column].value
+                    self.sample_tensor[:,1,i] = select[y_column].value                    
+            else:
+                smpl = select.to_json(orient='split', columns=[x_column, y_column]) if select is not None else []
             samples.append(smpl)
 
         # TODO: check consistency among classes (e.g. same xbin, ybin etc.)
@@ -280,7 +287,8 @@ class MCScatterPlot(NAry):
         json['sample'] = dict(data=s_data, index=list(range(len(s_data))))
         json['columns'] = [self._x_label, self._y_label]
         if self._ipydata:
-            json[('hist_tensor',)] = self.hist_tensor # tuple key can be skipped by json.dumps with skipkeys=True
+            json['hist_tensor'] = self.hist_tensor 
+            json['sample_tensor'] = self.sample_tensor
         return json
 
     def run_step(self, run_number, step_size, howlong):
