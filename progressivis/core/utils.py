@@ -841,3 +841,11 @@ def gather_and_run(*args):
         loop.close()
     thread = threading.Thread(target=func_, args=())
     thread.start()
+def is_notebook():
+    try:
+        from IPython import get_ipython
+        return get_ipython().__class__.__name__=='ZMQInteractiveShell'
+    except:
+        pass
+    print("not in notebook")
+    return False

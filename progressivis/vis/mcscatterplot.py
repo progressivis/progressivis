@@ -5,6 +5,7 @@ from ..table.nary import NAry
 from ..stats import MCHistogram2D, Sample
 from ..table.range_query_2d import RangeQuery2d
 from ..utils.errors import ProgressiveError
+from ..core.utils import is_notebook
 from ..io import Variable, VirtualVariable
 import time
 from itertools import chain
@@ -87,7 +88,6 @@ class _DataClass(object):
 class MCScatterPlot(NAry):
     "Module executing multiclass."
     def __init__(self, classes, x_label="x", y_label="y", approximate=False,
-                 ipydata=False, 
                  **kwds):
         """Multiclass ...
         """
@@ -102,7 +102,7 @@ class MCScatterPlot(NAry):
         self._data_class_dict = {}
         self.min_value = None
         self.max_value = None
-        self._ipydata = ipydata
+        self._ipydata = is_notebook()
         self.hist_tensor = None
         self.sample_tensor = None
 
