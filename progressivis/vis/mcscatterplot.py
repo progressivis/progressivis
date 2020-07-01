@@ -5,7 +5,7 @@ from ..table.nary import NAry
 from ..stats import MCHistogram2D, Sample
 from ..table.range_query_2d import RangeQuery2d
 from ..utils.errors import ProgressiveError
-from ..core.utils import is_notebook
+from ..core.utils import is_notebook, get_physical_base
 from ..io import Variable, VirtualVariable
 import time
 from itertools import chain
@@ -218,8 +218,11 @@ class MCScatterPlot(NAry):
                 smpl = []
                 if select is not None:
                     assert self.sample_tensor.shape[0] == len(select)
-                    self.sample_tensor[:,0,i] = select[x_column].value
-                    self.sample_tensor[:,1,i] = select[y_column].value                    
+                    ph_x = get_physical_base(select[x_column])
+                    self.sample_tensor[:,0,i] = ph_x.loc[select[x_column].index.values]
+                    ph_y = get_physical_base(select[y_column])
+                    self.sample_tensor[:,1,i] = ph_y.loc[select[y_column].index.values]
+                    
             else:
                 smpl = select.to_json(orient='split', columns=[x_column, y_column]) if select is not None else []
             samples.append(smpl)

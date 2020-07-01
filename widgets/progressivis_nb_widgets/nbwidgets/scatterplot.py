@@ -49,6 +49,8 @@ class Scatterplot(DataWidget, widgets.DOMWidget):
 
     def link_module(self, module):
         def _feed_widget(wg, val):
+            if 'hist_tensor' not in val:
+                return
             wg.hists = val.pop('hist_tensor')
             st = val.pop('sample_tensor')
             if st is not None:

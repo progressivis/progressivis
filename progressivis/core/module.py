@@ -138,6 +138,7 @@ class Module(metaclass=ModuleMeta):
         self.output = OutputSlots(self)
         self.steps_acc = 0
         self.wait_expr = aio.FIRST_COMPLETED
+        self.after_run_proc = None
         # callbacks
         self._start_run = None
         self._end_run = None
@@ -188,6 +189,14 @@ class Module(metaclass=ModuleMeta):
         """
         return 0.0
 
+    async def after_run(self, rn):
+        if self.after_run_proc is None:
+            return
+        proc = self.after_run_proc
+        if aio.iscoroutinefunction(proc):
+            await proc(self, rn)
+        else:
+            proc(self, rn)
 
 
     @staticmethod

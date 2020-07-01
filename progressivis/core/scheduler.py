@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 __all__ = ['Scheduler']
 
 KEEP_RUNNING = 5
-SHORTCUT_TIME = 3
+SHORTCUT_TIME = 1.5
 
 class Scheduler(object):
     "Base Scheduler class, runs progressive modules"
@@ -309,6 +309,7 @@ class Scheduler(object):
             self._run_number += 1
             await self._run_tick_procs()
             module.run(self._run_number)
+            await module.after_run(self._run_number)
             await aio.sleep(0)
 
     def _next_module(self):

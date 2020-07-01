@@ -29,7 +29,6 @@ class Slot(object):
         self.original_name = None
         self._name = None
         self.changes = None
-        self._event = None #asyncio.Event()
 
     def name(self):
         "Return the name of the slot"
