@@ -4,9 +4,14 @@ from progressivis.core import JSONEncoderNp as JS, asynchronize
 import progressivis.core.aio as aio
 from .utils import *
 import numpy as np
-from ipydatawidgets import NDArray, shape_constraints, array_serialization, DataUnion, data_union_serialization
+from ipydatawidgets import (NDArray, shape_constraints,
+                            array_serialization, DataUnion,
+                            data_union_serialization)
+from ipydatawidgets.ndarray.serializers import compressed_array_serialization
 from ipydatawidgets.widgets import DataWidget
 # See js/lib/widgets.js for the frontend counterpart to this file.
+
+_serialization = compressed_array_serialization
 
 @widgets.register
 class Scatterplot(DataWidget, widgets.DOMWidget):
@@ -37,12 +42,12 @@ class Scatterplot(DataWidget, widgets.DOMWidget):
         [],
         dtype='int32',
         #shape_constraint=shape_constraints(None, None),  
-    ).tag(sync=True, **data_union_serialization)
+    ).tag(sync=True, **_serialization)
     samples = DataUnion(
         [],
         dtype='float32',
         #shape_constraint=shape_constraints(None, None),  
-    ).tag(sync=True, **data_union_serialization)
+    ).tag(sync=True, **_serialization)
     data = Unicode('{}').tag(sync=True)
     value =  Any('{}').tag(sync=True)
     move_point =  Any('{}').tag(sync=True)    
