@@ -7,11 +7,10 @@ import numpy as np
 from ipydatawidgets import (NDArray, shape_constraints,
                             array_serialization, DataUnion,
                             data_union_serialization)
-from ipydatawidgets.ndarray.serializers import compressed_array_serialization
 from ipydatawidgets.widgets import DataWidget
 # See js/lib/widgets.js for the frontend counterpart to this file.
 
-_serialization = compressed_array_serialization
+_serialization = data_union_serialization_compress
 
 @widgets.register
 class Scatterplot(DataWidget, widgets.DOMWidget):
