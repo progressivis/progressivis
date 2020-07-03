@@ -52,7 +52,8 @@ class Scatterplot(DataWidget, widgets.DOMWidget):
     move_point =  Any('{}').tag(sync=True)    
 
     def link_module(self, module):
-        def _feed_widget(wg, val):
+        def _feed_widget(wg, m):
+            val = m.to_json()
             if 'hist_tensor' not in val:
                 return
             wg.hists = val.pop('hist_tensor')
@@ -62,7 +63,7 @@ class Scatterplot(DataWidget, widgets.DOMWidget):
             wg.data = JS.dumps(val)
 
         async def _after_run(m, run_number):
-            await asynchronize(_feed_widget, self, m._json_cache)
+            await asynchronize(_feed_widget, self, m)
         module.after_run_proc = _after_run
         async def _from_input_value():
             while True:
@@ -81,8 +82,10 @@ class Scatterplot(DataWidget, widgets.DOMWidget):
             """
             while True:
                 await aio.sleep(5)
+                if module._json_cache is None:
+                    continue
                 dummy = module._json_cache.get('dummy', 555)
                 module._json_cache['dummy'] = -dummy
-                await asynchronize(_feed_widget, self, module._json_cache)
+                await asynchronize(_feed_widget, self, module)
 
         return [_from_input_value(), _from_input_move_point(), _awake()]

@@ -295,16 +295,30 @@ class MCScatterPlot(NAry):
         return json
 
     def run_step(self, run_number, step_size, howlong):
+        for name in self.get_input_slot_multiple():
+            slot = self.get_input_slot(name)
+            slot.update(run_number)
+            if slot.has_buffered():
+                slot.created.next()
+                slot.updated.next()
+                slot.deleted.next()
+                self._json_cache = None
+                #print("SLOT has buffered", slot)
         return self._return_run_step(self.state_blocked, steps_run=0)
 
     def run(self, run_number):
         super(MCScatterPlot, self).run(run_number)
+        if self._ipydata:
+            return
+        if self._json_cache is not None:
+            return
         self._json_cache = self._to_json_impl()
 
     def to_json(self, short=False):
         if self._json_cache:
             return self._json_cache
-        return self._to_json_impl(short)
+        self._json_cache = self._to_json_impl(short)
+        return self._json_cache
 
     def _to_json_impl(self, short=False):
         self.image = None
