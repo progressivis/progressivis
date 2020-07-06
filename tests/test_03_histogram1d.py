@@ -30,7 +30,7 @@ class TestHistogram1D(ProgressiveTest):
         #pr = Print(scheduler=s)
         pr = Every(proc=self.terse, scheduler=s)
         pr.input.df = csv.output.table
-        aio.run(s.start(tick_proc=lambda s,r: csv.is_terminated() and s.stop()))
+        aio.run(s.start(tick_proc=lambda s,r: csv.is_terminated() and s.task_stop()))
         s = histogram1d.trace_stats()
         #print "Done. Run time: %gs, loaded %d rows" % (s['duration'].irow(-1), len(module.df()))
         #pd.set_option('display.expand_frame_repr', False)

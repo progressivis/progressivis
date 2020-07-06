@@ -48,7 +48,6 @@ class Scheduler(object):
         self._new_reachability = None
         self._start = None
         self._step_once = False
-        self._exit = False
         self._run_number = 0
         self._tick_procs = []
         self._tick_once_procs = []
@@ -77,6 +76,8 @@ class Scheduler(object):
             self.shortcut_evt = aio.Event()
         while True:
             await self.shortcut_evt.wait()
+            if self._stopped:
+                break
             await aio.sleep(SHORTCUT_TIME)
             self._module_selection = None
             self.shortcut_evt.clear()
@@ -483,15 +484,10 @@ class Scheduler(object):
                 logger.warning(exc)
             self._tick_once_procs = []
 
-    def exit_(self, *args, **kwargs):
-        self._exit = True
-        self.resume()
-        # self._stopped_evt.set()
-        # after the previous statement both _stopped_evt and _not_stopped_evt
-        # are set. The goal is allow all tasks to exit
-
     async def stop(self):
         "Stop the execution."
+        if self.shortcut_evt is not None:
+            self.shortcut_evt.set()
         async with self._hibernate_cond:
             self._keep_running = KEEP_RUNNING
             self._hibernate_cond.notify()
