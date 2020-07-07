@@ -139,6 +139,7 @@ class Module(metaclass=ModuleMeta):
         self.steps_acc = 0
         self.wait_expr = aio.FIRST_COMPLETED
         self.after_run_proc = None
+        self.context = None
         # callbacks
         self._start_run = None
         self._end_run = None
