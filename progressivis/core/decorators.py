@@ -1,27 +1,24 @@
 from functools import wraps, partial
 
-class NoGo(Exception): pass
-
 class _CtxImpl:
     def __init__(self):
-        self._has_buffered = []
+        self._has_buffered = set()
 
 class _Context:
     def __init__(self):
         self._impl = _CtxImpl()
         self._parsed = False
+        self._checked = False
         self._slot_policy = None
         self._slot_expr = []
         
     def reset(self):
-        print("Reset ctx")
         self._impl = _CtxImpl()
 
     def __enter__(self):
         self._parsed = True
-        #import pdb;pdb.set_trace()
-        #raise NoGo()
-        print("ENTER", self._slot_policy, self._slot_expr)
+        if not self._checked:
+            raise ValueError("mandatory @check_slots decorator is missing!")
         return self._impl
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.reset()
@@ -41,9 +38,6 @@ def process_slot(name, reset_if=True, exit_if=False, reset_cb=None):
             """
             decoration
             """
-            #if not "create_context_magic" in kwargs:
-            #    raise ValueError("context not found")
-            print("process slot", name)
             if self.context is None:
                 self.context = _Context()
             slot = self.get_input_slot(name)
@@ -59,38 +53,8 @@ def process_slot(name, reset_if=True, exit_if=False, reset_cb=None):
                     reset_cb(self)
             setattr(self.context._impl, name, slot)
             if slot.has_buffered():
-                #import pdb;pdb.set_trace()
-                self.context._impl._has_buffered.append(name)
+                self.context._impl._has_buffered.add(name)
             calc = run_step_(self, run_number, step_size, howlong) 
-            # NB: "run_step_" fait partie de la fermeture
-            return calc
-        return run_step_wrapper
-    return run_step_decorator
-
-def slot_expr(expr):
-    def run_step_decorator(run_step_):
-        """
-        run_step() decorator
-        """
-        @wraps(run_step_)
-        def run_step_wrapper(self, run_number, step_size, howlong):
-            """
-            """
-            if expr == "ANY":
-                for k in self.input_descriptors.keys():
-                    if k in self.context._impl._has_buffered:
-                        print("buffered", k)
-                        break
-                else: # for
-                    print("NOT ANY")
-                    return self._return_run_step(self.state_blocked, steps_run=0)
-            elif expr == "ALL":
-                for k in self.input_descriptors.keys():
-                    if k not in self.context._impl._has_buffered:
-                        return self._return_run_step(self.state_blocked, steps_run=0)
-            else:
-                raise ValueError("Not yet implemented")
-            calc = run_step_(self, run_number, step_size, howlong)
             # NB: "run_step_" fait partie de la fermeture
             return calc
         return run_step_wrapper
@@ -115,19 +79,19 @@ def _slot_policy_rule(decname, *slots):
             """
             this function makes the decoration
             """
-            #import pdb;pdb.set_trace()
             if self.context is None:
                     raise ValueError("context not found. consider processing slots before")
             if not self.context._parsed:
-                print(f"Process {decname}")
                 if self.context._slot_policy is None:
                     if not accepted_first(decname):
                         raise ValueError(f"{decname} must follow {_INV_RULES[decname]}")
                     self.context._slot_policy = decname
-                elif decname != _RULES[self.context._slot_policy]: # first exists
+                elif decname != _RULES[self.context._slot_policy]: # first exists and is not compatble
                     raise ValueError(f"{decname} cannot follow {self.context._slot_policy}")
-                elif not len(slots):
-                    raise ValueError(f"run_if_all without arguments must be unique")
+                elif self.context._slot_expr == [tuple()]:
+                    raise ValueError(f"{decname} without arguments must be unique")
+                elif not accepted_first(decname) and not slots:
+                    raise ValueError(f"{decname} requires arguments")
                 self.context._slot_expr.append(slots)
             return to_decorate(self, *args, **kwargs) 
         return decoration_
@@ -135,22 +99,49 @@ def _slot_policy_rule(decname, *slots):
 
 
 run_if_all = partial(_slot_policy_rule, "run_if_all")
-or_if_all = partial(_slot_policy_rule, "or_if_all")
+or_all = partial(_slot_policy_rule, "or_if_all")
 run_if_any = partial(_slot_policy_rule, "run_if_any")
-and_if_any = partial(_slot_policy_rule, "and_if_any")
+and_any = partial(_slot_policy_rule, "and_if_any")
 
+
+def run_step_required(self_):
+    policy = self_.context._slot_policy
+    slot_expr = self_.context._slot_expr
+    if slot_expr == [tuple()]:
+        slot_expr = [[k for k in self_.input_descriptors.keys() if k!='_params']]
+        self_.context._slot_expr = slot_expr
+    if policy == "run_if_all": # i.e. all() or all() ...
+        for grp in slot_expr:
+            grp_test = True
+            for elt in grp:
+                if elt not in self_.context._impl._has_buffered:
+                    grp_test = False
+                    break
+            if grp_test:
+                return True
+        return False
+    elif policy == "run_if_any": # i.e. any() and any()
+        for grp in slot_expr:
+            grp_test = False
+            for elt in grp:
+                if elt in self_.context._impl._has_buffered:
+                    grp_test = True
+                    break
+            if not grp_test:
+                return False
+        return True
+    else:
+        raise ValueError("Unknown slot policy")
 
 def check_slots(to_decorate):
     """
     """
-    def simple_wrapper(self, run_number, step_size, howlong):
+    def simple_wrapper(self_, run_number, step_size, howlong):
         """
-        Cette fonction constitue
-        la décoration
         """
-        test = False
-        self._parsed = True
-        if test:
-            return to_decorate(self, run_number, step_size, howlong)
-        return self._return_run_step(self.state_blocked, steps_run=0)
+        self_.context._parsed = True
+        self_.context._checked = True
+        if run_step_required(self_):
+            return to_decorate(self_, run_number, step_size, howlong)
+        return self_._return_run_step(self_.state_blocked, steps_run=0)
     return simple_wrapper
