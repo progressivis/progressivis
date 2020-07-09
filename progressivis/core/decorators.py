@@ -25,7 +25,7 @@ class _Context:
 
 
 
-def process_slot(name, reset_if=True, exit_if=False, reset_cb=None):
+def process_slot(*names, reset_if=True, exit_if=False, reset_cb=None):
     """
     this function includes reset_if, exit_if,  reset_cb in the closure
     """
@@ -40,20 +40,21 @@ def process_slot(name, reset_if=True, exit_if=False, reset_cb=None):
             """
             if self.context is None:
                 self.context = _Context()
-            slot = self.get_input_slot(name)
-            slot.update(run_number)
-            if exit_if and not slot.has_buffered():
-                return self._return_run_step(self.state_blocked, steps_run=0)            
-            if reset_if and (slot.updated.any() or slot.deleted.any()):
-                slot.reset()
+            for name in names:
+                slot = self.get_input_slot(name)
                 slot.update(run_number)
-                if isinstance(reset_cb, str):
-                    getattr(self, reset_cb)(self)
-                else:
-                    reset_cb(self)
-            setattr(self.context._impl, name, slot)
-            if slot.has_buffered():
-                self.context._impl._has_buffered.add(name)
+                if exit_if and not slot.has_buffered():
+                    return self._return_run_step(self.state_blocked, steps_run=0)            
+                if reset_if and (slot.updated.any() or slot.deleted.any()):
+                    slot.reset()
+                    slot.update(run_number)
+                    if isinstance(reset_cb, str):
+                        getattr(self, reset_cb)(self)
+                    else:
+                        reset_cb(self)
+                setattr(self.context._impl, name, slot)
+                if slot.has_buffered():
+                    self.context._impl._has_buffered.add(name)
             calc = run_step_(self, run_number, step_size, howlong) 
             # NB: "run_step_" fait partie de la fermeture
             return calc
@@ -93,10 +94,9 @@ def _slot_policy_rule(decname, *slots):
                 elif not accepted_first(decname) and not slots:
                     raise ValueError(f"{decname} requires arguments")
                 self.context._slot_expr.append(slots)
-            return to_decorate(self, *args, **kwargs) 
+            return to_decorate(self, *args, **kwargs)
         return decoration_
     return decorator_
-
 
 run_if_all = partial(_slot_policy_rule, "run_if_all")
 or_all = partial(_slot_policy_rule, "or_if_all")

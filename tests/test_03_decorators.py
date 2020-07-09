@@ -29,10 +29,7 @@ class FooABC(TableModule):
         return self._return_run_step(self.state_blocked, steps_run=0)
         
 class RunIfAll(FooABC):
-    @process_slot("a", reset_if=False)    
-    @process_slot("b", reset_if=False)
-    @process_slot("c", reset_if=False)
-    @process_slot("d", reset_if=False)
+    @process_slot("a", "b", "c", "d", reset_if=False)    
     @run_if_all()
     @check_slots
     def run_step(self, run_number, step_size, howlong):
@@ -40,10 +37,7 @@ class RunIfAll(FooABC):
             return self.run_step_impl(ctx, run_number, step_size)
 
 class RunIfAllacOrAllbd(FooABC):
-    @process_slot("a", reset_if=False)    
-    @process_slot("b", reset_if=False)
-    @process_slot("c", reset_if=False)
-    @process_slot("d", reset_if=False)
+    @process_slot("a", "b", "c", "d", reset_if=False)    
     @run_if_all('a', 'c')
     @or_all('b', 'd')
     @check_slots
@@ -52,10 +46,7 @@ class RunIfAllacOrAllbd(FooABC):
             return self.run_step_impl(ctx, run_number, step_size)
 
 class RunIfAllabOrAllcd(FooABC):
-    @process_slot("a", reset_if=False)    
-    @process_slot("b", reset_if=False)
-    @process_slot("c", reset_if=False)
-    @process_slot("d", reset_if=False)
+    @process_slot("a", "b", "c", "d", reset_if=False)    
     @run_if_all('a', 'b')
     @or_all('c', 'd')
     @check_slots
@@ -64,10 +55,7 @@ class RunIfAllabOrAllcd(FooABC):
             return self.run_step_impl(ctx, run_number, step_size)
 
 class RunIfAny(FooABC):
-    @process_slot("a", reset_if=False)    
-    @process_slot("b", reset_if=False)
-    @process_slot("c", reset_if=False)
-    @process_slot("d", reset_if=False)
+    @process_slot("a", "b", "c", "d", reset_if=False)    
     @run_if_any()
     @check_slots
     def run_step(self, run_number, step_size, howlong):
@@ -75,10 +63,7 @@ class RunIfAny(FooABC):
             return self.run_step_impl(ctx, run_number, step_size)
 
 class RunIfAnyAndAny(FooABC):
-    @process_slot("a", reset_if=False)    
-    @process_slot("b", reset_if=False)
-    @process_slot("c", reset_if=False)
-    @process_slot("d", reset_if=False)
+    @process_slot("a", "b", "c", "d", reset_if=False)    
     @run_if_any('a', 'c')
     @and_any('b', 'd')
     @check_slots
@@ -87,10 +72,7 @@ class RunIfAnyAndAny(FooABC):
             return self.run_step_impl(ctx, run_number, step_size)
 
 class InvalidNoCheck(FooABC):
-    @process_slot("a", reset_if=False)    
-    @process_slot("b", reset_if=False)
-    @process_slot("c", reset_if=False)
-    @process_slot("d", reset_if=False)
+    @process_slot("a", "b", "c", "d", reset_if=False)    
     @run_if_any('a', 'c')
     @and_any('b', 'd')
     #@check_slots
@@ -99,10 +81,7 @@ class InvalidNoCheck(FooABC):
             return self.run_step_impl(ctx, run_number, step_size)
 
 class InvalidDoubleRun(FooABC):
-    @process_slot("a", reset_if=False)    
-    @process_slot("b", reset_if=False)
-    @process_slot("c", reset_if=False)
-    @process_slot("d", reset_if=False)
+    @process_slot("a", "b", "c", "d", reset_if=False)    
     @run_if_any('a', 'c')
     @run_if_any('b', 'd')
     @check_slots
@@ -182,7 +161,7 @@ class TestDecorators(ProgressiveTest):
         self.assertTrue(module.table() is not None) # evidence that run_step_impl() was called
         self.assertEqual(module.context._slot_policy, 'run_if_any')
         self.assertEqual(module.context._slot_expr, [('a', 'c'), ('b', 'd')])
-#@skip
+@skip
 class TestDecoratorsWithConst(ProgressiveTest):
     def test_decorators_all(self):
         s = self.scheduler()
@@ -228,7 +207,7 @@ class TestDecoratorsWithConst(ProgressiveTest):
         self.assertTrue(module.table() is not None) # evidence that run_step_impl() was called
         self.assertEqual(module.context._slot_policy, 'run_if_any')
         self.assertEqual(module.context._slot_expr, [('a', 'c'), ('b', 'd')])
-
+@skip
 class TestDecoratorsInvalid(ProgressiveTest):
     def test_invalid_no_check(self):
         with self.assertRaises(RuntimeError) as cm:

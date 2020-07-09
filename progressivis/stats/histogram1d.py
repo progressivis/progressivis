@@ -44,8 +44,7 @@ class Histogram1D(TableModule):
         return super(Histogram1D, self).is_ready()
 
     @process_slot("table", reset_cb="reset")
-    @process_slot("min", reset_if=False)
-    @process_slot("max", reset_if=False)
+    @process_slot("min", "max", reset_if=False)
     @run_if_any()
     @check_slots
     def run_step(self, run_number, step_size, howlong):
