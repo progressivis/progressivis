@@ -1,15 +1,15 @@
 import asyncio as aio
 import ipywidgets as widgets
 from progressivis.core import asynchronize
-from ipydatawidgets import data_union_serialization
 from ipydatawidgets.ndarray.serializers import (
-    compressed_array_serialization,
     array_to_compressed_json,
     array_from_compressed_json)
+
 
 # cf. https://ipywidgets.readthedocs.io/en/latest/examples/Widget%20Asynchronous.html
 def wait_for_change(widget, value):
     future = aio.Future()
+
     def getvalue(change):
         # make the new value available
         future.set_result(change.new)
@@ -17,8 +17,10 @@ def wait_for_change(widget, value):
     widget.observe(getvalue, value)
     return future
 
+
 def wait_for_click(btn, cb):
     future = aio.Future()
+
     def proc_(_):
         future.set_result(True)
         btn.on_click(proc_, remove=True)
@@ -36,17 +38,19 @@ async def update_widget(wg, attr, val):
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
 #
+
+
 def data_union_to_json_compress(value, widget):
     """Serializer for union of NDArray and NDArrayWidget"""
     if isinstance(value, widgets.Widget):
-        return widget_serialization['to_json'](value, widget)
+        return widgets.widget_serialization['to_json'](value, widget)
     return array_to_compressed_json(value, widget)
 
 
 def data_union_from_json_compress(value, widget):
     """Deserializer for union of NDArray and NDArrayWidget"""
-    if isinstance(value, string_types) and value.startswith('IPY_MODEL_'):
-        return widget_serialization['from_json'](value, widget)
+    if isinstance(value, str) and value.startswith('IPY_MODEL_'):
+        return widgets.widget_serialization['from_json'](value, widget)
     return array_from_compressed_json(value, widget)
 
 

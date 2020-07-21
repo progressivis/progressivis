@@ -42,14 +42,14 @@ class TestMBKmeans(ProgressiveTest):
             e = Every(proc=self.terse, scheduler=s)
             e.input.df = km.output.labels
         aio.run(s.start())
-        s.join()
+        # s.join()
         self.assertEqual(len(csv.table()), len(km.labels()))
-        #mbk = MiniBatchKMeans(n_clusters=n_clusters, random_state=42, verbose=True)
-        #X = csv.df()[km.columns]
-        #mbk.partial_fit(X)
-        #print mbk.cluster_centers_
-        #print km.mbk.cluster_centers_
-        #self.assertTrue(np.allclose(mbk.cluster_centers_, km.mbk.cluster_centers_))
+        # mbk = MiniBatchKMeans(n_clusters=n_clusters, random_state=42, verbose=True)
+        # X = csv.df()[km.columns]
+        # mbk.partial_fit(X)
+        # print mbk.cluster_centers_
+        # print km.mbk.cluster_centers_
+        # self.assertTrue(np.allclose(mbk.cluster_centers_, km.mbk.cluster_centers_))
 
 
 if __name__ == '__main__':

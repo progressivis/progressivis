@@ -92,11 +92,13 @@ class PsDict(dict):
 
     def updated_indices(self, prev):
         if self._index is None:
-            return bitmap((i for (i, x, y) in zip(range(len(prev)), prev.values(), self.values())
+            return bitmap((i for (i, x, y) in zip(range(len(prev)),
+                                                  prev.values(),
+                                                  self.values())
                            if x is not y))
         common_keys = set(self.keys()) & set(prev.keys())
-        #self.fix_indices()
-        return bitmap((i for (k, i) in  self._index.items() if k in common_keys and self[k] is not prev[k]))
+        return bitmap((i for (k, i) in self._index.items()
+                       if k in common_keys and self[k] is not prev[k]))
 
     def deleted_indices(self, prev):
         if self._index is None:
@@ -107,15 +109,15 @@ class PsDict(dict):
     def __delitem__(self, key):
         if key not in self:
             raise KeyError(f"Key {key} does not exist")
-        if self._index is None: # first deletion
+        if self._index is None:  # first deletion
             self._index = dict(zip(self.keys(), range(len(self))))
         self._deleted[key] = self._index[key]
         del self._index[key]
         super().__delitem__(key)
-    
+
     def set_nth(self, i, val):
         self[list(self)[i]] = val
-        
+
     def get_nth(self, i):
         return self[list(self)[i]]
 
@@ -123,5 +125,4 @@ class PsDict(dict):
     def ids(self):
         if self._index is None:
             return bitmap(range(len(self)))
-        #self.fix_indices()
         return bitmap(self._index.values())

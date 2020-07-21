@@ -1,4 +1,4 @@
-"Multiclass Module."
+"Multiclass Scatterplot Module."
 
 import numpy as np
 from ..table.nary import NAry
@@ -7,7 +7,6 @@ from ..table.range_query_2d import RangeQuery2d
 from ..utils.errors import ProgressiveError
 from ..core.utils import is_notebook, get_physical_base
 from ..io import Variable, VirtualVariable
-import time
 from itertools import chain
 
 from collections import defaultdict
@@ -31,7 +30,6 @@ class _DataClass(object):
         self.min_value = None
         self.max_value = None
         self.sample = None
-        #self.select = None
         self.range_query_2d = None
 
     def scheduler(self):
@@ -68,16 +66,16 @@ class _DataClass(object):
             histogram2d.input.data = range_query_2d.output.table
             if self.sample == 'default':
                 self.sample = Sample(samples=100, group=self._group,
-                                scheduler=scheduler)
-            #elif sample is None and select is None:
+                                     scheduler=scheduler)
+            # elif sample is None and select is None:
             #    raise ProgressiveError("Scatterplot needs a select module")
-            #if sample is not None:
+            # if sample is not None:
             #    sample.input.table = range_query_2d.output.table
             if isinstance(self.sample, Sample):
                 self.sample.input.table = range_query_2d.output.table
             self.histogram2d = histogram2d
-            #self.sample = sample
-            #self.select = select
+            # self.sample = sample
+            # self.select = select
             self.min = range_query_2d.min.output.table
             self.max = range_query_2d.max.output.table
             self.range_query_2d = range_query_2d
@@ -331,11 +329,13 @@ class MCScatterPlot(NAry):
                                  sample='default', **kwds):
         self.input_module = input_module
         self.input_slot = input_slot
-        with self.scheduler():
-            self.min_value = VirtualVariable([self._x_label, self._y_label])
-            self.max_value = VirtualVariable([self._x_label, self._y_label])
+        scheduler = self.scheduler()
+        with scheduler:
+            self.min_value = VirtualVariable([self._x_label, self._y_label],
+                                             scheduler=scheduler)
+            self.max_value = VirtualVariable([self._x_label, self._y_label],
+                                             scheduler=scheduler)
             for cl in self._classes:
-                #import pdb;pdb.set_trace()
                 if isinstance(cl, tuple):
                     self._add_class(*cl)
                 else:

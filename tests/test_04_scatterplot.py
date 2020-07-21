@@ -3,11 +3,10 @@ from progressivis.io import CSVLoader
 from progressivis.vis import MCScatterPlot
 from progressivis.datasets import get_dataset
 from progressivis.stats import RandomTable
-from progressivis.core.utils import decorate, ModulePatch
 import asyncio as aio
 
-from . import ProgressiveTest, skip
-import time
+from . import ProgressiveTest
+
 
 def print_len(x):
     if x is not None:
@@ -27,10 +26,12 @@ LOWER_Y = 0.3
 UPPER_X = 0.8
 UPPER_Y = 0.7
 
+
 async def fake_input(sched, name, t, inp):
     await aio.sleep(t)
     module = sched.modules()[name]
     await module.from_input(inp)
+
 
 async def sleep_then_stop(s, t):
     await aio.sleep(t)
@@ -59,7 +60,7 @@ class TestScatterPlot(ProgressiveTest):
             sts = sleep_then_stop(s, 5)
         aio.run(csv.scheduler().start(coros=[sts]))
         self.assertEqual(len(csv.table()), 30000)
-                
+
     def test_scatterplot2(self):
         s = self.scheduler(clean=True)
         with s:
@@ -72,7 +73,7 @@ class TestScatterPlot(ProgressiveTest):
             cnt.input.df = random.output.table
             prt = Print(proc=self.terse, scheduler=s)
             prt.input.df = sp.output.table
-        finp1 = fake_input(s,"variable_1", 6, {'_1': LOWER_X, '_2': LOWER_Y})
+        finp1 = fake_input(s, "variable_1", 6, {'_1': LOWER_X, '_2': LOWER_Y})
         finp2 = fake_input(s, "variable_2", 6, {'_1': UPPER_X, '_2': UPPER_Y})
         sts = sleep_then_stop(s, 30)
         aio.run(sp.scheduler().start(coros=[finp1, finp2, sts]))
