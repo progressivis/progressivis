@@ -25,10 +25,16 @@ class _Context:
 
 
 
-def process_slot(*names, reset_if=True, exit_if=False, reset_cb=None):
+def process_slot(*names, reset_if=('update', 'delete'), exit_if=False, reset_cb=None):
     """
     this function includes reset_if, exit_if,  reset_cb in the closure
     """
+    #import pdb;pdb.set_trace()
+    if isinstance(reset_if, str):
+        assert reset_if in ('update', 'delete')
+        reset_if = (reset_if,)
+    else:
+        assert reset_if is False or set(reset_if) == set(('update', 'delete'))
     def run_step_decorator(run_step_):
         """
         run_step() decorator
@@ -43,13 +49,14 @@ def process_slot(*names, reset_if=True, exit_if=False, reset_cb=None):
             for name in names:
                 slot = self.get_input_slot(name)
                 slot.update(run_number)
-                if exit_if and not slot.has_buffered():
+                if exit_if and (slot.data() is None or not slot.has_buffered()):
                     return self._return_run_step(self.state_blocked, steps_run=0)            
-                if reset_if and (slot.updated.any() or slot.deleted.any()):
+                if ('update' in reset_if and slot.updated.any()) or\
+                        ('delete' in reset_if and slot.deleted.any()):
                     slot.reset()
                     slot.update(run_number)
                     if isinstance(reset_cb, str):
-                        getattr(self, reset_cb)(self)
+                        getattr(self, reset_cb)()
                     else:
                         reset_cb(self)
                 setattr(self.context._impl, name, slot)
@@ -141,6 +148,7 @@ def run_step_required(self_):
 def check_slots(to_decorate):
     """
     """
+    @wraps(to_decorate)
     def simple_wrapper(self_, run_number, step_size, howlong):
         """
         """
