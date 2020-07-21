@@ -1,7 +1,7 @@
 import {Config, Interpreter} from 'multiclass-density-maps';
 import * as d3 from 'd3';
-import History from "./history"
-import * as colormaps from "./colormaps"
+import History from "./history";
+import * as colormaps from "./colormaps";
 import {elementReady} from './es6-element-ready';
 import $ from 'jquery';
 //import * as ndarray_unpack from "ndarray-unpack";
@@ -85,7 +85,7 @@ function multiclass2d_update_vis(rawdata) {
 	    rows.push([st.get(i,0,z), st.get(i,1,z),z]);
 	}
     }
-    var dot_color = ['red', 'blue', 'green', 'cyan', 'orange']
+    var dot_color = ['red', 'blue', 'green', 'cyan', 'orange'];
     var data_ = rawdata['chart'];
     var hist_tensor = ipyView.model.get('hists');
     for(let s in data_['buffers']){
@@ -103,7 +103,7 @@ function multiclass2d_update_vis(rawdata) {
                 "type": "cbrt"
             },
             "legend":{}
-        }
+        };
         window.spec = spec;
     }
     function render(spec, data) {
@@ -117,7 +117,7 @@ function multiclass2d_update_vis(rawdata) {
         });
     }
     window.render = render;
-    render(window.spec, data_)
+    render(window.spec, data_);
     elementReady("#heatmapContainer canvas").then((that)=>{
     dataURL = $(that)[0].toDataURL();
     window.spec.data = {};
@@ -249,7 +249,7 @@ function multiclass2d_update_vis(rawdata) {
          .attr("r", 3.5/transform.k)
          .attr("cx", function(d) { return x(d[0]); }) // use untransformed x0/y0
          .attr("cy", function(d) { return y(d[1]); })
-        .style("fill", function(d) { return dot_color[d[2]]}) //function(d) { return color(d.species); });
+         .style("fill", function(d) { return dot_color[d[2]]; })
          .call(node_drag)
         .append("title")
         .text(function(d, i) { return index[i]; });
