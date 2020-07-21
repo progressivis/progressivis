@@ -33,8 +33,10 @@ def process_slot(*names, reset_if=('update', 'delete'), exit_if=False, reset_cb=
     if isinstance(reset_if, str):
         assert reset_if in ('update', 'delete')
         reset_if = (reset_if,)
+    elif not reset_if:
+        reset_if = tuple()
     else:
-        assert reset_if is False or set(reset_if) == set(('update', 'delete'))
+        assert set(reset_if) == set(('update', 'delete'))
     def run_step_decorator(run_step_):
         """
         run_step() decorator
