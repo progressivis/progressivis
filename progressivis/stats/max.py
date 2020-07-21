@@ -3,6 +3,7 @@ from ..table.module import TableModule
 from ..table.table import Table
 from ..core.slot import SlotDescriptor
 from ..utils.psdict import PsDict
+from ..core.decorators import *
 import numpy as np
 
 import logging
@@ -24,8 +25,27 @@ class Max(TableModule):
             return True
         return super(Max, self).is_ready()
 
+    def reset(self):
+        if self._table is not None:
+            self._table.fill(-np.inf)
 
-    def run_step(self,run_number,step_size,howlong):
+    @process_slot("table", reset_cb="reset")
+    @run_if_any
+    @check_slots    
+    def run_step(self, run_number, step_size, howlong):
+        with self.context as ctx:
+            indices = ctx.table.created.next(step_size) # returns a slice
+            steps = indices_len(indices)
+            input_df = ctx.table.data()
+            op = self.filter_columns(input_df, fix_loc(indices)).max(keepdims=False)
+            if self._table is None:
+                self._table = PsDict(op)
+            else:
+                for k, v in self._table.items():
+                    self._table[k] = np.maximum(op[k], v)
+            return self._return_run_step(self.next_state(ctx.table), steps_run=steps)
+
+    def old_run_step(self,run_number,step_size,howlong):
         dfslot = self.get_input_slot('table')
         dfslot.update(run_number)
         if dfslot.updated.any() or dfslot.deleted.any():
