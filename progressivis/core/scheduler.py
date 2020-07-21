@@ -76,7 +76,7 @@ class Scheduler(object):
             self.shortcut_evt = aio.Event()
         while True:
             await self.shortcut_evt.wait()
-            if self._stopped:
+            if self._stopped or not self._run_list:
                 break
             await aio.sleep(SHORTCUT_TIME)
             self._module_selection = None
@@ -312,6 +312,8 @@ class Scheduler(object):
             module.run(self._run_number)
             await module.after_run(self._run_number)
             await aio.sleep(0)
+        if self.shortcut_evt is not None:
+            self.shortcut_evt.set()
 
     def _next_module(self):
         """
