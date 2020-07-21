@@ -30,7 +30,7 @@ class FooABC(TableModule):
         
 class RunIfAll(FooABC):
     @process_slot("a", "b", "c", "d", reset_if=False)    
-    @run_if_all()
+    @run_if_all
     @check_slots
     def run_step(self, run_number, step_size, howlong):
         with self.context as ctx:
@@ -161,7 +161,7 @@ class TestDecorators(ProgressiveTest):
         self.assertTrue(module.table() is not None) # evidence that run_step_impl() was called
         self.assertEqual(module.context._slot_policy, 'run_if_any')
         self.assertEqual(module.context._slot_expr, [('a', 'c'), ('b', 'd')])
-@skip
+#@skip
 class TestDecoratorsWithConst(ProgressiveTest):
     def test_decorators_all(self):
         s = self.scheduler()
@@ -207,7 +207,7 @@ class TestDecoratorsWithConst(ProgressiveTest):
         self.assertTrue(module.table() is not None) # evidence that run_step_impl() was called
         self.assertEqual(module.context._slot_policy, 'run_if_any')
         self.assertEqual(module.context._slot_expr, [('a', 'c'), ('b', 'd')])
-@skip
+#@skip
 class TestDecoratorsInvalid(ProgressiveTest):
     def test_invalid_no_check(self):
         with self.assertRaises(RuntimeError) as cm:

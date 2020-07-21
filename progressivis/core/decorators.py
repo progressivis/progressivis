@@ -66,10 +66,13 @@ _INV_RULES = {v:k for (k, v) in _RULES.items()}
 def accepted_first(s):
     return s in _RULES
 
-def _slot_policy_rule(decname, *slots):
+def _slot_policy_rule(decname, *slots_maybe):
     """
-    this function include *args in the closure
+    this function includes *args in the closure
     """
+    called_with_args = (not slots_maybe) or isinstance(slots_maybe[0], str)
+    slots = slots_maybe if called_with_args else tuple([])
+    assert called_with_args or callable(slots_maybe[0])
     def decorator_(to_decorate):
         """
         this is the decorator.  it combines the decoration
@@ -96,7 +99,9 @@ def _slot_policy_rule(decname, *slots):
                 self.context._slot_expr.append(slots)
             return to_decorate(self, *args, **kwargs)
         return decoration_
-    return decorator_
+    if called_with_args:
+        return decorator_
+    return decorator_(slots_maybe[0])
 
 run_if_all = partial(_slot_policy_rule, "run_if_all")
 or_all = partial(_slot_policy_rule, "or_if_all")
