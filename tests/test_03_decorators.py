@@ -225,5 +225,27 @@ class TestDecoratorsInvalid(ProgressiveTest):
             aio.run(s.start(tick_proc=_fun))
         self.assertTrue('run_if_any cannot follow run_if_any' in cm.exception.args[0])
 
+"""
++class TestDecoratorsDelModule(ProgressiveTest):
++    def test_decorators_del_module(self):
++        s = self.scheduler()
++        with s:
++        #if True:
++            module = RunIfAllabOrAllcd(scheduler=s)
++            _fun = _2_csv_2_const_scenario(module, s)
++            async def _remove_module(sch):
++                await aio.sleep(1)
++                print("AWAKED!")
++                import pdb;pdb.set_trace()
++                #m = s._modules['constant_1']
++                #s.dataflow.remove_module(m)
++                del sch['constant_1']
++            #s.start()
++            async def _gather(s):
++                await aio.gather(s.start(tick_proc=_fun), _remove_module(s) )
++            aio.run(_gather(s))    
++
+"""
+        
 if __name__ == '__main__':
     ProgressiveTest.main()
