@@ -3,7 +3,8 @@ python:
   - 3.7
   - 3.8
 
-install: 
+install:
+  - pip install cython
   - pip install -e .  
 
 script: python setup.py nosetests
