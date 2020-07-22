@@ -1,12 +1,9 @@
 language: python
 python:
-  - 3.6
   - 3.7
+  - 3.8
 
 install: 
-  - pip install -r requirements.txt
-  - pip install -r requirements-dask.txt
-  - export LD_LIBRARY_PATH="`pwd`/croaring:$LD_LIBRARY_PATH"
-  - python setup.py install
+  - pip install -e .  
 
 script: python setup.py nosetests
