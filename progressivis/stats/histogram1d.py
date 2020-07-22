@@ -45,8 +45,7 @@ class Histogram1D(TableModule):
 
     @process_slot("table", reset_cb="reset")
     @process_slot("min", "max", reset_if=False)
-    @run_if_any()
-    @check_slots
+    @run_if_any
     def run_step(self, run_number, step_size, howlong):
         with self.context as ctx:
             dfslot = ctx.table

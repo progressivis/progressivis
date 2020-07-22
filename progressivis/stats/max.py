@@ -31,7 +31,6 @@ class Max(TableModule):
 
     @process_slot("table", reset_cb="reset")
     @run_if_any
-    @check_slots    
     def run_step(self, run_number, step_size, howlong):
         with self.context as ctx:
             indices = ctx.table.created.next(step_size) # returns a slice

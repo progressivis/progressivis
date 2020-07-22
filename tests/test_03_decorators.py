@@ -31,7 +31,6 @@ class FooABC(TableModule):
 class RunIfAll(FooABC):
     @process_slot("a", "b", "c", "d", reset_if=False)    
     @run_if_all
-    @check_slots
     def run_step(self, run_number, step_size, howlong):
         with self.context as ctx:
             return self.run_step_impl(ctx, run_number, step_size)
@@ -40,7 +39,6 @@ class RunIfAllacOrAllbd(FooABC):
     @process_slot("a", "b", "c", "d", reset_if=False)    
     @run_if_all('a', 'c')
     @or_all('b', 'd')
-    @check_slots
     def run_step(self, run_number, step_size, howlong):
         with self.context as ctx:
             return self.run_step_impl(ctx, run_number, step_size)
@@ -49,7 +47,6 @@ class RunIfAllabOrAllcd(FooABC):
     @process_slot("a", "b", "c", "d", reset_if=False)    
     @run_if_all('a', 'b')
     @or_all('c', 'd')
-    @check_slots
     def run_step(self, run_number, step_size, howlong):
         with self.context as ctx:
             return self.run_step_impl(ctx, run_number, step_size)
@@ -57,7 +54,6 @@ class RunIfAllabOrAllcd(FooABC):
 class RunIfAny(FooABC):
     @process_slot("a", "b", "c", "d", reset_if=False)    
     @run_if_any()
-    @check_slots
     def run_step(self, run_number, step_size, howlong):
         with self.context as ctx:
             return self.run_step_impl(ctx, run_number, step_size)
@@ -66,16 +62,14 @@ class RunIfAnyAndAny(FooABC):
     @process_slot("a", "b", "c", "d", reset_if=False)    
     @run_if_any('a', 'c')
     @and_any('b', 'd')
-    @check_slots
     def run_step(self, run_number, step_size, howlong):
         with self.context as ctx:
             return self.run_step_impl(ctx, run_number, step_size)
 
-class InvalidNoCheck(FooABC):
-    @process_slot("a", "b", "c", "d", reset_if=False)    
+class InvalidProcessAfterRun(FooABC):
     @run_if_any('a', 'c')
+    @process_slot("a", "b", "c", "d", reset_if=False)        
     @and_any('b', 'd')
-    #@check_slots
     def run_step(self, run_number, step_size, howlong):
         with self.context as ctx:
             return self.run_step_impl(ctx, run_number, step_size)
@@ -84,7 +78,6 @@ class InvalidDoubleRun(FooABC):
     @process_slot("a", "b", "c", "d", reset_if=False)    
     @run_if_any('a', 'c')
     @run_if_any('b', 'd')
-    @check_slots
     def run_step(self, run_number, step_size, howlong):
         with self.context as ctx:
             return self.run_step_impl(ctx, run_number, step_size)
@@ -209,13 +202,13 @@ class TestDecoratorsWithConst(ProgressiveTest):
         self.assertEqual(module.context._slot_expr, [('a', 'c'), ('b', 'd')])
 #@skip
 class TestDecoratorsInvalid(ProgressiveTest):
-    def test_invalid_no_check(self):
+    def test_invalid_process_after_run(self):
         with self.assertRaises(RuntimeError) as cm:
             s = self.scheduler()
-            module = InvalidNoCheck(scheduler=s)
+            module = InvalidProcessAfterRun(scheduler=s)
             _fun = _4_csv_scenario(module, s)
             aio.run(s.start(tick_proc=_fun))
-        self.assertTrue('check_slots decorator is missing' in cm.exception.args[0])
+        self.assertTrue('context not found. consider processing slots before' in cm.exception.args[0])
 
     def test_invalid_double_run(self):
         with self.assertRaises(RuntimeError) as cm:

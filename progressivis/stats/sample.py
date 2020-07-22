@@ -61,7 +61,6 @@ class Sample(TableModule):
 
     @process_slot("table", reset_if='delete', reset_cb="reset")
     @run_if_any
-    @check_slots  
     def run_step(self,run_number,step_size,howlong):
         with self.context as ctx:
             if self._table is None:

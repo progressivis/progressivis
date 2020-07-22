@@ -18,7 +18,7 @@ class _Context:
     def __enter__(self):
         self._parsed = True
         if not self._checked:
-            raise ValueError("mandatory @check_slots decorator is missing!")
+            raise ValueError("mandatory @run_if_... decorator is missing!")
         return self._impl
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.reset()
@@ -41,11 +41,13 @@ def process_slot(*names, reset_if=('update', 'delete'), exit_if=False, reset_cb=
         """
         run_step() decorator
         """
+        #print("process slot deco", names)
         @wraps(run_step_)
         def run_step_wrapper(self, run_number, step_size, howlong):
             """
             decoration
             """
+            #print("process slot wrapper", names, run_number)
             if self.context is None:
                 self.context = _Context()
             for name in names:
@@ -87,11 +89,15 @@ def _slot_policy_rule(decname, *slots_maybe):
         this is the decorator.  it combines the decoration
         with the function to be decorated
         """
+        #print("policy deco", slots_maybe)
+        has_hidden_attr = hasattr(to_decorate, "_hidden_progressivis_attr")
         @wraps(to_decorate)
         def decoration_(self, *args, **kwargs):
             """
             this function makes the decoration
             """
+            #import pdb;pdb.set_trace()
+            #print("policy wrapper", decname, slots_maybe, args, to_decorate.__name__, has_hidden_attr)     
             if self.context is None:
                     raise ValueError("context not found. consider processing slots before")
             if not self.context._parsed:
@@ -106,7 +112,13 @@ def _slot_policy_rule(decname, *slots_maybe):
                 elif not accepted_first(decname) and not slots:
                     raise ValueError(f"{decname} requires arguments")
                 self.context._slot_expr.append(slots)
+            if not has_hidden_attr: # i.e. to_decorate is the genuine run_step
+                self.context._parsed = True
+                self.context._checked = True
+                if not run_step_required(self):
+                    return self._return_run_step(self.state_blocked, steps_run=0)
             return to_decorate(self, *args, **kwargs)
+        decoration_._hidden_progressivis_attr = True
         return decoration_
     if called_with_args:
         return decorator_
@@ -146,17 +158,3 @@ def run_step_required(self_):
         return True
     else:
         raise ValueError("Unknown slot policy")
-
-def check_slots(to_decorate):
-    """
-    """
-    @wraps(to_decorate)
-    def simple_wrapper(self_, run_number, step_size, howlong):
-        """
-        """
-        self_.context._parsed = True
-        self_.context._checked = True
-        if run_step_required(self_):
-            return to_decorate(self_, run_number, step_size, howlong)
-        return self_._return_run_step(self_.state_blocked, steps_run=0)
-    return simple_wrapper
