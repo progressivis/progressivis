@@ -8,6 +8,7 @@ from progressivis.stats import Min
 from progressivis.datasets import get_dataset
 import asyncio as aio
 
+
 class TestScheduler(ProgressiveTest):
     @skip("Needs fixing")
     def test_scheduler(self):

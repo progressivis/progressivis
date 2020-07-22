@@ -98,6 +98,7 @@ setup(
     # installed or upgraded on the target machine
     # install_requires=required,
     install_requires=["Pillow>=4.2.0",
+                      "cython",
                       "numpy>=1.11.3",
                       "scipy>=0.18.1",
                       "numexpr>=2.6.1",
@@ -105,9 +106,6 @@ setup(
                       "pandas>=0.19.1",
                       "scikit-learn>=0.18.1",
                       "tdigest>=0.4.1.0",
-                      #"flask>=0.12.1",
-                      #"eventlet>=0.22.0",
-                      #"flask-socketio>=2.9.0",
                       "numcodecs>=0.5.5",
                       "datashape>=0.5.2",
                       "pyroaring>=0.2.3",

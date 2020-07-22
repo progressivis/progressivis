@@ -243,29 +243,31 @@ class Table(BaseTable):
         if data is None:
             return None
         if isinstance(data, Mapping):
-            if are_instances(data.values(), np.ndarray) or are_instances(data.values(), list):
-                return data # Table can parse this
+            if are_instances(data.values(), np.ndarray) or \
+              are_instances(data.values(), list):
+                return data  # Table can parse this
         if isinstance(data, (np.ndarray, Mapping)):
             # delegate creation of structured data to pandas for now
             data = pd.DataFrame(data, columns=self.columns, index=indices)
-        return data # hoping it works
+        return data  # hoping it works
 
     def append(self, data, indices=None):
         """
         Append Table-like data to the Table.
-        The data has to be compatible. It can be from multiple sources [more details needed].
+        The data has to be compatible. It can be from multiple sources
+        [more details needed].
         """
         if data is None:
             return
         data = self.parse_data(data, indices)
         dshape = dshape_extract(data)
         if not dshape_compatible(dshape, self.dshape):
-            raise ValueError("{shape} incompatible data shape in append".format(shape=str(dshape)))
+            raise ValueError(f"{dshape} incompatible data shape in append")
         length = -1
         all_arrays = True
         for colname in self:
             fromcol = data[colname]
-            if length is -1:
+            if length == -1:
                 length = len(fromcol)
             elif length != len(fromcol):
                 raise ValueError('Cannot append ragged values')
@@ -295,12 +297,12 @@ class Table(BaseTable):
         if isinstance(row, Mapping):
             for colname in self:
                 if colname not in row:
-                    raise ValueError('Missing value for column "%s" from row'%colname)
+                    raise ValueError(f'Missing value for column "{colname}"')
         if index is None:
             index = self._allocate(1)
         else:
             index = self._allocate(1, [index])
-        #start = self.id_to_index(index[0], as_slice=False)
+        # start = self.id_to_index(index[0], as_slice=False)
         start = index[0]
 
         if isinstance(row, Mapping):
@@ -317,13 +319,15 @@ class Table(BaseTable):
         return Table(None, data=res, create=True)
 
     @staticmethod
-    def from_array(array, name=None, columns=None, offsets=None, dshape=None, **kwds):
+    def from_array(array, name=None, columns=None, offsets=None, dshape=None,
+                   **kwds):
         """offsets is a list of indices or pairs. """
         if offsets is None:
             offsets = [(i, i+1) for i in range(array.shape[1])]
         if offsets is not None:
             if all_int(offsets):
-                offsets = [(offsets[i], offsets[i+1]) for i in range(len(offsets)-1)]
+                offsets = [(offsets[i], offsets[i+1])
+                           for i in range(len(offsets)-1)]
             elif not all([isinstance(elt, tuple) for elt in offsets]):
                 raise ValueError('Badly formed offset list %s', offsets)
 
@@ -332,12 +336,13 @@ class Table(BaseTable):
                 columns = gen_columns(len(offsets))
             else:
                 dshape = dshape_create(dshape)
-                columns = [fieldname for (fieldname, _) in dshape_fields(dshape)]
+                columns = [fieldname
+                           for (fieldname, _) in dshape_fields(dshape)]
         if dshape is None:
             dshape_type = dshape_from_dtype(array.dtype)
-            dims = ["" if (off[0]+1 == off[1]) else "%d *"%(off[1] - off[0])
+            dims = ["" if (off[0]+1 == off[1]) else "%d *" % (off[1] - off[0])
                     for off in offsets]
-            dshapes = ["%s: %s %s"%(column, dim, dshape_type)
+            dshapes = ["%s: %s %s" % (column, dim, dshape_type)
                        for column, dim in zip(columns, dims)]
             dshape = "{" + ", ".join(dshapes) + "}"
         data = OrderedDict()
@@ -348,7 +353,8 @@ class Table(BaseTable):
                 data[nam] = array[:, off[0]:off[1]]
         return Table(name, data=data, dshape=dshape, **kwds)
 
-    def eval(self, expr, inplace=False, name=None, result_object=None, user_dict=None, as_slice=True):
+    def eval(self, expr, inplace=False, name=None, result_object=None,
+             user_dict=None, as_slice=True):
         """Evaluate the ``expr`` on columns and return the result.
 
         Args:
@@ -367,7 +373,7 @@ class Table(BaseTable):
                - NA i.e. always None when inplace=True, otherwise a new table is returned
         """
         if inplace and result_object:
-            raise ValueError("'inplace' and 'result_object' options are not compatible")
+            raise ValueError("incompatible options 'inplace' and 'result_object'")
         if user_dict is None:
             context = {key: self[key].values for key in self.columns}
         else:
@@ -398,7 +404,7 @@ class Table(BaseTable):
             if inplace:
                 self[l_col] = res
                 return
-            # then not inplace ...
+
             def cval(key):
                 return res if key == l_col else self[key].values
             data = [(cname, cval(cname)) for cname in self.columns]
@@ -442,7 +448,6 @@ class Table(BaseTable):
             cols = self.columns
         return [self[c].dataset.base for c in cols]
 
-    
-    def cxx_api_info_index(self):    
+    def cxx_api_info_index(self):
         ix = Int64HashTable() if self.is_identity else self._ids._ids_dict._ht
         return self.is_identity, ix, self.last_id

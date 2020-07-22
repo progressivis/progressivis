@@ -9,6 +9,7 @@ var dt = require('./data_table');
 var slpb = require('./sparkline_progressbar');
 var lg = require('./line_graph');
 require('../css/module-graph.css');
+require('../css/multiclass2d.css');
 require('../css/sparkline-progressbar.css');
 require('datatables/media/css/jquery.dataTables.css');
 var sch = require('./sensitive_html');

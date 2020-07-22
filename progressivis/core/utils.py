@@ -1,3 +1,6 @@
+import json as js
+from urllib.parse import urlparse as parse_url
+from urllib.parse import parse_qs
 
 import numpy as np
 import keyword
@@ -10,6 +13,7 @@ from ..core import aio
 import functools as ft
 import threading
 
+
 try:
     import collections.abc as collections_abc  # only works on python 3.3+
 except ImportError:
@@ -21,7 +25,7 @@ try:
 except ImportError:
     from pandas.io.common import is_url as _is_url
 try:
-    from pandas.io.common import _is_s3_urls
+    from pandas.io.common import _is_s3_urls as _is_s3_url
 except ImportError:  # pandas >=0.23.0
     from pandas.io.common import is_s3_url as _is_s3_url
 
@@ -57,8 +61,8 @@ def is_iter_str(it):
     return True
 
 
-def len_none(l):
-    return 0 if l is None else len(l)
+def len_none(item):
+    return 0 if item is None else len(item)
 
 
 def pairwise(iterator):
@@ -69,7 +73,8 @@ def pairwise(iterator):
 
 def is_sorted(iterator, compare=None):
     if compare is None:
-        compare = lambda a, b: a <= b
+        def compare(a, b):
+            return a <= b
     return all(compare(a, b) for a, b in pairwise(iterator))
 
 
@@ -548,18 +553,12 @@ def del_tmp_csv_fifo(file_name):
     os.rmdir(dn)
 
 
-
-from urllib.parse import urlparse as parse_url
-from urllib.parse import parse_qs
-
-
 def _is_buffer_url(url):
     res = parse_url(url)
     return res.scheme == 'buffer'
 
 
 def _url_to_buffer(url):
-    #import pdb; pdb.set_trace()
     res = parse_url(url)
     if res.scheme != 'buffer':
         raise ValueError("Wrong buffer url: {}".format(url))
@@ -723,7 +722,6 @@ class Dialog(object):
         return self
 
     def set_output_table(self, res):
-        #with self._module.lock:
         self._module._table = res
         return self
 
@@ -794,7 +792,7 @@ def decorate(scheduler, patch):
         if patch.patch_condition(m):
             decorate_module(m, patch)
 
-import json as js
+
 class JSONEncoderNp(js.JSONEncoder):
     "Encode numpy objects"
     def default(self, o):
@@ -803,23 +801,27 @@ class JSONEncoderNp(js.JSONEncoder):
             return None
         if isinstance(o, np.integer):
             return int(o)
-        if isinstance(o, np.floating): # because np.float32 (and less) don't inherit float ...
+        if isinstance(o, np.floating):  # np.float32 don't inherit from float
             return float(o)
         if isinstance(o, np.bool_):
             return bool(o)
         if isinstance(o, np.ndarray):
             return o.tolist()
         return js.JSONEncoder.default(self, o)
+
     @staticmethod
     def dumps(*args, **kwargs):
         return js.dumps(*args, cls=JSONEncoderNp, **kwargs)
+
     @staticmethod
     def loads(*args, **kwargs):
         return js.loads(*args, **kwargs)
+
     @staticmethod
     def cleanup(*args, **kwargs):
         s = JSONEncoderNp.dumps(*args, **kwargs)
         return JSONEncoderNp.loads(s)
+
 
 async def asynchronize(f, *args, **kwargs):
     # cf. https://docs.python.org/3/library/asyncio-eventloop.html#asyncio.loop.run_in_executor
@@ -828,12 +830,14 @@ async def asynchronize(f, *args, **kwargs):
     return await loop.run_in_executor(
         None, fun)
 
+
 def gather_and_run(*args):
     """
     this function avoids the use on the "%gui asyncio" magic in notebook
     """
     async def gath():
         await aio.gather(*args)
+
     def func_():
         loop = aio.new_event_loop()
         aio.set_event_loop(loop)
@@ -841,11 +845,13 @@ def gather_and_run(*args):
         loop.close()
     thread = threading.Thread(target=func_, args=())
     thread.start()
+
+
 def is_notebook():
     try:
         from IPython import get_ipython
-        return get_ipython().__class__.__name__=='ZMQInteractiveShell'
-    except:
+        return get_ipython().__class__.__name__ == 'ZMQInteractiveShell'
+    except ImportError:
         pass
     print("not in notebook")
     return False

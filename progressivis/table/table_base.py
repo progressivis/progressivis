@@ -696,11 +696,11 @@ class BaseTable(metaclass=ABCMeta):
     def __rand__(self, other):
         return other.binary(operator.and_, self)
 
-    def __div__(self, other):
-        return self.binary(operator.div, other)
+    # def __div__(self, other):
+    #     return self.binary(operator.div, other)
 
-    def __rdiv__(self, other):
-        return other.binary(operator.div, self)
+    # def __rdiv__(self, other):
+    #     return other.binary(operator.div, self)
 
     def __eq__(self, other):
         return self.binary(operator.eq, other)

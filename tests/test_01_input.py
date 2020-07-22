@@ -3,13 +3,7 @@ from . import ProgressiveTest
 from progressivis import Print
 from progressivis.io.input import Input
 import numpy as np
-#from time import sleep
 import asyncio as aio
-
-def _ten_times(scheduler, run_number):
-    print('ten_times %d' % run_number)
-    if run_number > 20:
-        scheduler.stop()
 
 
 async def _do_line(inp, s):
@@ -18,7 +12,7 @@ async def _do_line(inp, s):
         inp.from_input('line#%d' % r)
         await aio.sleep(np.random.random())
     await aio.sleep(1)
-    s.stop()
+    await s.stop()
 
 
 class TestInput(ProgressiveTest):

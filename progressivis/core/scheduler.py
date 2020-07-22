@@ -3,7 +3,6 @@ Base Scheduler class, runs progressive modules.
 """
 import logging
 import functools
-from collections.abc import Iterable
 from timeit import default_timer
 import time
 from .dataflow import Dataflow
@@ -18,11 +17,13 @@ __all__ = ['Scheduler']
 KEEP_RUNNING = 5
 SHORTCUT_TIME = 1.5
 
+
 class Scheduler(object):
     "Base Scheduler class, runs progressive modules"
     # pylint: disable=too-many-public-methods,too-many-instance-attributes
     default = None
     _last_id = 0
+
     @classmethod
     def or_default(cls, scheduler):
         "Return the specified scheduler of, in None, the default one."
@@ -67,7 +68,7 @@ class Scheduler(object):
         self._enter_cnt = 1
         self._lock = None
         self._task = None
-        #self.runners = set()
+        # self.runners = set()
         self.shortcut_evt = None
         self.coros = []
 
@@ -81,7 +82,7 @@ class Scheduler(object):
             await aio.sleep(SHORTCUT_TIME)
             self._module_selection = None
             self.shortcut_evt.clear()
-            
+
     def new_run_number(self):
         self._run_number += 1
         return self._run_number
@@ -191,9 +192,8 @@ class Scheduler(object):
             if self._task is not None:
                 raise ProgressiveError('Trying to start scheduler task'
                                        ' inside scheduler task')
-            
-            self._task = True            
-        self.coros=list(coros)
+            self._task = True
+        self.coros = list(coros)
         if tick_proc:
             assert callable(tick_proc)
             self._tick_procs = [tick_proc]
@@ -208,10 +208,10 @@ class Scheduler(object):
 
     def task_start(self, *args, **kwargs):
         return aio.create_task(self.start(*args, **kwargs))
-    
+
     def _step_proc(self, s, run_number):
         # pylint: disable=unused-argument
-        self.stop()
+        self.task_stop()
 
     async def step(self):
         "Start the scheduler for on step."
@@ -495,9 +495,9 @@ class Scheduler(object):
             self._hibernate_cond.notify()
             self._stopped = True
 
-            
     def task_stop(self):
-        return aio.create_task(self.stop())
+        if self.is_running():
+            return aio.create_task(self.stop())
 
     def is_running(self):
         "Return True if the scheduler is currently running."
