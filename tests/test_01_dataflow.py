@@ -1,7 +1,8 @@
 from progressivis import Print
 from progressivis.io import CSVLoader
-from progressivis.stats import Min
+from progressivis.stats import Min, Max
 from progressivis.datasets import get_dataset
+import asyncio as aio
 
 from . import ProgressiveTest
 
@@ -81,6 +82,42 @@ class TestDataflow(ProgressiveTest):
 
             prt.input.df = m.output.table
         scheduler._update_modules()  # force modules in the main loop
+
+    def test_dataflow_dynamic(self):
+        scheduler = self.scheduler(clean=True)
+
+        csv = CSVLoader(get_dataset('bigfile'), name='csv',
+                        index_col=False, header=None,
+                        scheduler=scheduler)
+        m = Min(name="min", scheduler=scheduler)
+        prt = Print(proc=self.terse,
+                    name='print_min',
+                    scheduler=scheduler)
+        m.input.table = csv.output.table
+        prt.input.df = m.output.table
+        started = False
+
+        def proc(x):
+            nonlocal started
+            print("proc max called")
+            started = True
+
+        t = _add_max(csv, scheduler, proc=proc)
+        aio.run(scheduler.start(coros=[t]))
+        self.assertTrue(started)
+
+
+async def _add_max(csv, scheduler, proc):
+    await aio.sleep(2)
+    with scheduler:
+        print('adding new modules')
+        m = Max(name="max", scheduler=scheduler)
+        prt = Print(name='print_max',
+                    proc=proc,
+                    scheduler=scheduler)
+        m.input.table = csv.output.table
+        prt.input.df = m.output.table
+
 
 if __name__ == '__main__':
     ProgressiveTest.main()

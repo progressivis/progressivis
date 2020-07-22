@@ -42,7 +42,8 @@ class TestBitmap(ProgressiveTest):
         res = bitmap([1, 2, 4])
         self.assertEqual(res.to_slice_maybe(), res)
         bm = bitmap(range(1000))
-        self.assertEqual(repr(bm), 'bitmap([0, 1, 2, 3, 4, 5...(1000)...999)])')
+        self.assertEqual(repr(bm),
+                         'bitmap([0, 1, 2, 3, 4, 5...(1000)...999)])')
         self.assertEqual(bm | None, bm)
         bm |= None
         self.assertEqual(len(bm), 1000)
@@ -54,6 +55,23 @@ class TestBitmap(ProgressiveTest):
             bm = bm & 10
         with self.assertRaises(TypeError):
             bm = bm + "hello"
+        with self.assertRaises(TypeError):
+            bm.update(10)
+        bm = bitmap(range(100))
+        self.assertEqual(bm & None, bm & bitmap())
+        self.assertEqual(bm ^ None, bm ^ bitmap())
+        self.assertEqual(bm - None, bm - bitmap())
+        bm2 = bm.copy()
+        bm2 &= None
+        self.assertEqual(bm & None, bm2)
+        bm2 = bm.copy()
+        bm2 ^= None
+        self.assertEqual(bm ^ None, bm2)
+        bm2 = bm.copy()
+        bm2 -= None
+        self.assertEqual(bm - None, bm2)
+        self.assertEqual(bitmap([1, 2]).flip(0, 4), bitmap([0, 3]))
+
 
 if __name__ == '__main__':
     ProgressiveTest.main()
