@@ -98,6 +98,7 @@ setup(
     # installed or upgraded on the target machine
     # install_requires=required,
     install_requires=["Pillow>=4.2.0",
+                      "cython",
                       "numpy>=1.11.3",
                       "scipy>=0.18.1",
                       "numexpr>=2.6.1",
