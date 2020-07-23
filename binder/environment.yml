@@ -10,7 +10,6 @@ dependencies:
   - numpy
   - cython
   - voila
-  - ipydatawidgets
   - pip:
     - -e ..
     - -e ../widgets

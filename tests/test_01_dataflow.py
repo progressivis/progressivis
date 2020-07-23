@@ -2,7 +2,7 @@ from progressivis import Print
 from progressivis.io import CSVLoader
 from progressivis.stats import Min, Max
 from progressivis.datasets import get_dataset
-import asyncio as aio
+from progressivis.core import aio
 
 from . import ProgressiveTest
 
@@ -103,7 +103,7 @@ class TestDataflow(ProgressiveTest):
             started = True
 
         t = _add_max(csv, scheduler, proc=proc)
-        aio.run(scheduler.start(coros=[t]))
+        aio.run_gather(scheduler.start(), t)
         self.assertTrue(started)
 
 
