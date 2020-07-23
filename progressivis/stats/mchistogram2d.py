@@ -1,15 +1,13 @@
 
 from ..core.utils import indices_len, fix_loc, get_physical_base
 from ..core.slot import SlotDescriptor
-#from ..table.module import TableModule
 from ..table.table import Table
 from ..table.nary import NAry
 from ..core.module import Module
 from fast_histogram import histogram2d
-#from timeit import default_timer
 import numpy as np
-import scipy as sp
 import logging
+
 logger = logging.getLogger(__name__)
 
 
@@ -19,6 +17,7 @@ class MCHistogram2D(NAry):
                   ('xdelta', np.dtype(float), -5),  # means 5%
                   ('ydelta', np.dtype(float), -5),  # means 5%
                   ('history', np.dtype(int),   3)]
+    inputs = [SlotDescriptor('data', type=Table, required=True)]
 
     schema = "{" \
              "array: var * var * float64," \
@@ -32,10 +31,6 @@ class MCHistogram2D(NAry):
              "}"
 
     def __init__(self, x_column, y_column, with_output=True, **kwds):
-        self._add_slots(kwds, 'input_descriptors',
-                        [SlotDescriptor('data', type=Table, required=True)])
-        # SlotDescriptor('min', type=Table, required=False),
-        # SlotDescriptor('max', type=Table, required=False)])
         super(MCHistogram2D, self).__init__(dataframe_slot='data', **kwds)
         self.x_column = x_column
         self.y_column = y_column
@@ -51,7 +46,6 @@ class MCHistogram2D(NAry):
                             dshape=MCHistogram2D.schema,
                             chunks={'array': (1, 64, 64)},
                             create=True)
-        #self._table._synchronized_lock = self.scheduler().create_lock()
 
     def reset(self):
         self._histo = None
@@ -101,10 +95,10 @@ class MCHistogram2D(NAry):
                     has_creation = True
                 min_slot.created.next()
                 min_slot.updated.next()
-                min_slot.deleted.next()                
-                #with min_slot.lock:
+                min_slot.deleted.next()
                 min_df = min_slot.data()
-                if min_df is None: continue
+                if min_df is None:
+                    continue
                 xmin = min(xmin, min_df[x_column])
                 ymin = min(ymin, min_df[y_column])
             elif meta == 'max':
@@ -115,9 +109,9 @@ class MCHistogram2D(NAry):
                 max_slot.created.next()
                 max_slot.updated.next()
                 max_slot.deleted.next()
-                #with max_slot.lock:
                 max_df = max_slot.data()
-                if max_df is None: continue
+                if max_df is None:
+                    continue
                 xmax = max(xmax, max_df[x_column])
                 ymax = max(ymax, max_df[y_column])
         if xmax < xmin:
@@ -327,16 +321,14 @@ class MCHistogram2D(NAry):
             }
         }
         source = {"program": "progressivis",
-                "type": "python",
-                "rows": count
-                }
+                  "type": "python",
+                  "rows": count}
         json['chart'] = dict(buffers=buffers, encoding=encoding, source=source)
         json['bounds'] = dict(xmin=xmin, ymin=ymin, xmax=xmax, ymax=ymax)
         json['sample'] = dict(data=[], index=[])
         json['columns'] = [x_label, y_label]
         return json
-    
-    
+
     def is_visualization(self):
         return True
 

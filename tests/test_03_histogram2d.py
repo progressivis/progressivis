@@ -28,7 +28,7 @@ class TestHistogram2D(ProgressiveTest):
         heatmap.input.array = histogram2d.output.table
         # pr = Print(scheduler=s)
         pr = Every(proc=self.terse, scheduler=s)
-        # pr.input.df = heatmap.output.heatmap
+        # pr.input.df = heatmap.output.table
         # pr.input.df = histogram2d.output.df
         pr.input.df = csv.output.table
         aio.run(csv.scheduler().start(

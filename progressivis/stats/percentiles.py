@@ -22,13 +22,12 @@ def _pretty_name(x):
 class Percentiles(TableModule):
     parameters = [('percentiles', object, [0.25, 0.5, 0.75]),
                   ('history', np.dtype(int), 3)]
+    inputs = [SlotDescriptor('table', type=Table)]
 
     def __init__(self, column, percentiles=None, **kwds):
         if not column:
             raise ProgressiveError('Need a column name')
-        self._add_slots(kwds, 'input_descriptors',
-                        [SlotDescriptor('table', type=Table)])
-        super(Percentiles, self).__init__(table_slot='percentiles', **kwds)
+        super(Percentiles, self).__init__(**kwds)
         self._columns = [column]
         self.default_step_size = 1000
         self.tdigest = TDigest()
@@ -73,7 +72,6 @@ class Percentiles(TableModule):
         if steps == 0:
             return self._return_run_step(self.state_blocked, steps_run=steps)
         input_df = dfslot.data()
-        #with dfslot.lock:
         x = self.filter_columns(input_df, fix_loc(indices))
         self.tdigest.batch_update(x[0])
         df = self._table

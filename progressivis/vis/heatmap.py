@@ -26,6 +26,7 @@ class Heatmap(TableModule):
                   ('low', np.dtype(int), 0),
                   ('filename', np.dtype(object), None),
                   ('history', np.dtype(int), 3)]
+    inputs = [SlotDescriptor('array', type=Table)]
 
     # schema = [('image', np.dtype(object), None),
     #           ('filename', np.dtype(object), None),
@@ -33,9 +34,7 @@ class Heatmap(TableModule):
     schema = "{filename: string, time: int64}"
 
     def __init__(self, colormap=None, **kwds):
-        self._add_slots(kwds, 'input_descriptors',
-                        [SlotDescriptor('array', type=Table)])
-        super(Heatmap, self).__init__(table_slot='heatmap', **kwds)
+        super(Heatmap, self).__init__(**kwds)
         self.colormap = colormap
         self.default_step_size = 1
 
@@ -61,7 +60,6 @@ class Heatmap(TableModule):
             steps = indices_len(indices)
             if steps == 0:
                 return self._return_run_step(self.state_blocked, steps_run=1)
-        #with dfslot.lock:
         histo = input_df.last()['array']
         if histo is None:
             return self._return_run_step(self.state_blocked, steps_run=1)
@@ -115,7 +113,6 @@ class Heatmap(TableModule):
 
         if len(self._table) == 0 or self._table.last()['time'] != run_number:
             values = {'filename': filename, 'time': run_number}
-            #with self.lock:
             self._table.add(values)
         return self._return_run_step(self.state_blocked, steps_run=1)
 
@@ -135,7 +132,6 @@ class Heatmap(TableModule):
         dfslot = self.get_input_slot('array')
         histo = dfslot.output_module
         json['columns'] = [histo.x_column, histo.y_column]
-        #with dfslot.lock:
         histo_df = dfslot.data()
         if histo_df is not None and len(histo_df) != 0:
             row = histo_df.last()
@@ -147,12 +143,10 @@ class Heatmap(TableModule):
                     'xmax': row['xmax'],
                     'ymax': row['ymax']
                 }
-        #with self.lock:
         df = self._table
         if df is not None and self._last_update != 0:
             row = df.last()
             json['image'] = row['filename']
-            #"/progressivis/module/image/%s?run_number=%d"%(self.name, row['time'])
         return json
 
     def get_image(self, run_number=None):

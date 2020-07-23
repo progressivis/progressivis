@@ -10,11 +10,10 @@ logger = logging.getLogger(__name__)
 
 
 class Min(TableModule):
-    #parameters = [('history', np.dtype(int), 3)]
+    # parameters = [('history', np.dtype(int), 3)]
+    inputs = [SlotDescriptor('table', type=Table, required=True)]
 
     def __init__(self, columns=None, **kwds):
-        self._add_slots(kwds,'input_descriptors',
-                        [SlotDescriptor('table', type=Table, required=True)])
         super(Min, self).__init__(**kwds)
         self._columns = columns
         self.default_step_size = 10000
@@ -24,20 +23,21 @@ class Min(TableModule):
             return True
         return super(Min, self).is_ready()
 
-    def run_step(self,run_number,step_size,howlong):
+    def run_step(self, run_number, step_size, howlong):
         dfslot = self.get_input_slot('table')
         dfslot.update(run_number)
-        if dfslot.updated.any() or dfslot.deleted.any():        
+        if dfslot.updated.any() or dfslot.deleted.any():
             dfslot.reset()
             if self._table is not None:
                 self._table.fill(np.inf)
             dfslot.update(run_number)
-        indices = dfslot.created.next(step_size) # returns a slice
+        indices = dfslot.created.next(step_size)  # returns a slice
         steps = indices_len(indices)
-        if steps==0:
+        if steps == 0:
             return self._return_run_step(self.state_blocked, steps_run=0)
         input_df = dfslot.data()
-        op = self.filter_columns(input_df, fix_loc(indices)).min(keepdims=False)
+        op = self.filter_columns(input_df,
+                                 fix_loc(indices)).min(keepdims=False)
         if self._table is None:
             self._table = PsDict(op)
         else:

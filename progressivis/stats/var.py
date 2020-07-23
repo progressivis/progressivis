@@ -45,10 +45,9 @@ class Var(TableModule):
     Compute the variance of the columns of an input dataframe.
     """
     parameters = [('history', np.dtype(int), 3)]
+    inputs = [SlotDescriptor('table', type=Table, required=True)]
 
     def __init__(self, columns=None, **kwds):
-        self._add_slots(kwds,'input_descriptors',
-                        [SlotDescriptor('table', type=Table, required=True)])
         super(Var, self).__init__(dataframe_slot='table', **kwds)
         self._columns = columns
         self._data = {}
@@ -71,21 +70,22 @@ class Var(TableModule):
             ret[c] = data.variance
         return ret
 
-    def run_step(self,run_number,step_size,howlong):
+    def run_step(self, run_number, step_size, howlong):
         dfslot = self.get_input_slot('table')
         dfslot.update(run_number)
-        if dfslot.updated.any() or dfslot.deleted.any():        
+        if dfslot.updated.any() or dfslot.deleted.any():
             dfslot.reset()
             self._table = None
             dfslot.update(run_number)
-        indices = dfslot.created.next(step_size) # returns a slice
+        indices = dfslot.created.next(step_size)  # returns a slice
         steps = indices_len(indices)
-        if steps==0:
+        if steps == 0:
             return self._return_run_step(self.state_blocked, steps_run=0)
         input_df = dfslot.data()
-        op = self.op(self.filter_columns(input_df,fix_loc(indices)))
+        op = self.op(self.filter_columns(input_df, fix_loc(indices)))
         if self._table is None:
-            self._table = Table(self.generate_table_name('var'), dshape=input_df.dshape,
+            self._table = Table(self.generate_table_name('var'),
+                                dshape=input_df.dshape,
                                 create=True)
         self._table.append(op, indices=[run_number])
         print(self._table)

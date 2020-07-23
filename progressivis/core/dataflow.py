@@ -14,6 +14,7 @@ from progressivis.utils.errors import ProgressiveError
 
 logger = logging.getLogger(__name__)
 
+
 class Dataflow(object):
     """Class managing a Dataflow, a configuration of modules and slots
     constructed by the user to be run by a Scheduler.
@@ -140,7 +141,8 @@ class Dataflow(object):
         elif input_name in self.inputs[input_module.name]:
             if slot is self.inputs[input_module.name][input_name]:
                 logger.warn("redundant connection:"
-                            "Input slot %s already connected to slot %s in module %s",
+                            "Input slot %s already connected to "
+                            "slot %s in module %s",
                             input_name,
                             self.inputs[input_module.name][input_name],
                             input_module.name)
@@ -157,13 +159,15 @@ class Dataflow(object):
             self.outputs[output_module.name][output_name] = [slot]
         else:
             self.outputs[output_module.name][output_name].append(slot)
-        self.valid = [] # Not sure
+        self.valid = []  # Not sure
 
     def connect(self, output_module, output_name, input_module, input_name):
         "Declare a connection between two modules slots"
-        slot = output_module.create_slot(output_module, output_name, input_module, input_name)
+        slot = output_module.create_slot(output_module, output_name,
+                                         input_module, input_name)
         if not slot.validate_types():
-            raise ProgressiveError('Incompatible types for slot (%s,%s) in %s', str(slot))
+            raise ProgressiveError('Incompatible types for slot (%s,%s) in %s',
+                                   str(slot))
         self.add_connection(slot)
 
     def _clashes(self, module_name, input_slot_name):
@@ -190,7 +194,7 @@ class Dataflow(object):
         for (sname, slots) in module_slots.items():
             nslots = [s for s in slots if s.input_module.name != name]
             if nslots == slots:
-                continue # no need to change, weird
+                continue  # no need to change, weird
             elif nslots:
                 module_slots[sname] = nslots
             else:
@@ -218,7 +222,10 @@ class Dataflow(object):
         return dependencies
 
     def validate(self):
-        "Validate the Dataflow, returning [] if it is valid or the invalid modules otherwise."
+        '''
+        Validate the Dataflow, returning [] if it is valid
+        or the invalid modules otherwise.
+        '''
         errors = []
         if not self.valid:
             valid = []
@@ -245,7 +252,8 @@ class Dataflow(object):
                 for islot in inputs.values():
                     if islot.original_name == slotdesc.name:
                         slot = islot
-                        logger.info('Input slot "%s" renamed "%s" in module "%s"',
+                        logger.info('Input slot "%s" renamed "%s" '
+                                    'in module "%s"',
                                     islot.original_name,
                                     islot.input_name,
                                     module.name)
@@ -253,7 +261,7 @@ class Dataflow(object):
             else:
                 slot = inputs.get(slotdesc.name)
             if slotdesc.required and slot is None:
-                errors.append('Input slot "%s" missing in module "%s"'%(
+                errors.append('Input slot "%s" missing in module "%s"' % (
                     slotdesc.name, module.name))
         return errors
 
@@ -266,7 +274,7 @@ class Dataflow(object):
         for slotdesc in module.output_descriptors.values():
             slot = outputs.get(slotdesc.name)
             if slotdesc.required and slot is None:
-                errors.append('Output slot "%s" missing in module "%s"'%(
+                errors.append('Output slot "%s" missing in module "%s"' % (
                     slotdesc.name, module.name))
         return errors
 
@@ -274,10 +282,12 @@ class Dataflow(object):
         """Validate a module in the dataflow.
         Return a list of errors, empty if no error occured.
         """
-        errors = self.validate_module_inputs(module, self.inputs[module.name])
-        errors += self.validate_module_outputs(module, self.inputs[module.name])
+        errors = self.validate_module_inputs(module,
+                                             self.inputs[module.name])
+        errors += self.validate_module_outputs(module,
+                                               self.inputs[module.name])
         return errors
-    
+
     @staticmethod
     def _dependency_csgraph(dependencies, index):
         size = len(index)
@@ -297,7 +307,6 @@ class Dataflow(object):
         input_modules = self.get_inputs()
         k = list(dependencies.keys())
         index = dict(zip(k, range(len(k))))
-        #print(index)
         graph = self._dependency_csgraph(dependencies, index)
         self.reachability = {}
         reachability = {inp: set(breadth_first_order(graph,

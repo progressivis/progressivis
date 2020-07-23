@@ -185,7 +185,6 @@ class Scheduler(object):
         pass
 
     async def start(self, tick_proc=None, idle_proc=None, coros=()):
-
         if self._lock is None:
             self._lock = aio.Lock()
         async with self._lock:

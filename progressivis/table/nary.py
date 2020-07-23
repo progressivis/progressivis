@@ -7,10 +7,10 @@ from progressivis.core.slot import SlotDescriptor
 
 class NAry(TableModule):
     "Base class for modules supporting a variable number of input slots."
+    inputs = [SlotDescriptor('table', type=BaseTable, required=True,
+                             multiple=True)]
+
     def __init__(self, nary='table', **kwds):
-        self._add_slots(kwds, 'input_descriptors',
-                        [SlotDescriptor('table', type=BaseTable, required=True,
-                                        multiple=True)])
         super(NAry, self).__init__(**kwds)
         self.nary = nary
         self.inputs = [nary]

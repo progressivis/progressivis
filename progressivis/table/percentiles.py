@@ -7,19 +7,14 @@ from .module import TableModule
 from collections import OrderedDict
 from ..utils.psdict import PsDict
 
+
 class Percentiles(TableModule):
-    """
-    """
     parameters = [('accuracy', np.dtype(float), 0.5)]
+    inputs = [SlotDescriptor('table', type=Table, required=True),
+              SlotDescriptor('percentiles', type=PsDict, required=True)]
 
     def __init__(self, hist_index, **kwds):
-        """
-        """
-        self._add_slots(kwds, 'input_descriptors',
-                        [SlotDescriptor('table', type=Table, required=True),
-                         SlotDescriptor('percentiles', type=PsDict, required=True)])
         super(Percentiles, self).__init__(**kwds)
-        #self._impl = PercentilesImpl(self.params.accuracy, hist_index)
         self._accuracy = self.params.accuracy
         self._hist_index = hist_index
         self.default_step_size = 1000
@@ -27,12 +22,13 @@ class Percentiles(TableModule):
     def compute_percentiles(self, points, input_table):
         column = input_table[self._hist_index.column]
         hii = self._hist_index._impl
+
         def _filter_tsv(bm):
             return bm & input_table.selection
+
         def _no_filtering(bm):
             return bm
-        _filter = _filter_tsv if isinstance(input_table,
-                                        TableSelectedView) else _no_filtering
+        _filter = _filter_tsv if isinstance(input_table, TableSelectedView) else _no_filtering
         len_ = len(input_table)
         k_points = [p*(len_+1)*0.01 for p in points.values()]
         max_k = max(k_points)
@@ -51,18 +47,15 @@ class Percentiles(TableModule):
             acc_list[i] = acc
             bm_list.append(fbm)
             if acc > max_k:
-                break # just avoids unnecessary computes
+                break  # just avoids unnecessary computes
         acc_list = acc_list[:i+1]
-        #import pdb;pdb.set_trace()        
         for k in k_points:
-            i = (acc_list>=k).nonzero()[0][0]
+            i = (acc_list >= k).nonzero()[0][0]
             reminder = int(acc_list[i] - k)
-            assert sz_list[i] > reminder >= 0 
+            assert sz_list[i] > reminder >= 0
             if sz_list[i] < k_accuracy:
-                #print("the fast way")
                 ret_values.append(column[bm_list[i][0]])
             else:
-                #print("the accurate way")
                 values = column.loc[bm_list[i]]
                 part = np.partition(values, reminder)
                 ret_values.append(values[reminder])

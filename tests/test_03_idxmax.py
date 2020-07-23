@@ -15,7 +15,7 @@ class TestIdxMax(ProgressiveTest):
         max_=Max(scheduler=s)
         max_.input.table = random.output.table
         pr=Print(proc=self.terse, scheduler=s)
-        pr.input.df = idxmax.output.max
+        pr.input.df = idxmax.output.table
         aio.run(s.start())
         max1 = max_.table()
         #print('max1', max1)
@@ -31,7 +31,7 @@ class TestIdxMax(ProgressiveTest):
         min_=Min(scheduler=s)
         min_.input.table = random.output.table
         pr=Print(proc=self.terse, scheduler=s)
-        pr.input.df = idxmin.output.min
+        pr.input.df = idxmin.output.table
         aio.run(s.start())
         min1 = min_.table()
         #print('min1', min1)

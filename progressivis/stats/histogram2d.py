@@ -20,6 +20,11 @@ class Histogram2D(TableModule):
                   ('xdelta', np.dtype(float), -5),  # means 5%
                   ('ydelta', np.dtype(float), -5),  # means 5%
                   ('history', np.dtype(int),   3)]
+    inputs = [
+        SlotDescriptor('table', type=Table, required=True),
+        SlotDescriptor('min', type=PsDict, required=True),
+        SlotDescriptor('max', type=PsDict, required=True)
+    ]
 
     schema = "{" \
              "array: var * var * float64," \
@@ -33,10 +38,6 @@ class Histogram2D(TableModule):
              "}"
 
     def __init__(self, x_column, y_column, with_output=True, **kwds):
-        self._add_slots(kwds, 'input_descriptors',
-                        [SlotDescriptor('table', type=Table, required=True),
-                         SlotDescriptor('min', type=PsDict, required=True),
-                         SlotDescriptor('max', type=PsDict, required=True)])
         super(Histogram2D, self).__init__(dataframe_slot='table', **kwds)
         self.x_column = x_column
         self.y_column = y_column
@@ -68,18 +69,16 @@ class Histogram2D(TableModule):
 
     def get_bounds(self, min_slot, max_slot):
         min_slot.created.next()
-        #with min_slot.lock:
         min_df = min_slot.data()
-        if min_df is None or len(min_df) == 0: # and self._bounds is None:
+        if min_df is None or len(min_df) == 0:
             return None
         k_ = min_df.k_
         xmin = min_df[k_(self.x_column)]
         ymin = min_df[k_(self.y_column)]
 
         max_slot.created.next()
-        #with max_slot.lock:
         max_df = max_slot.data()
-        if max_df is None or len(max_df) == 0: # and self._bounds is None:
+        if max_df is None or len(max_df) == 0:
             return None
         k_ = max_df.k_
         xmax = max_df[k_(self.x_column)]
@@ -138,10 +137,10 @@ class Histogram2D(TableModule):
             (xdelta, ydelta) = self.get_delta(*bounds)
             assert xdelta >= 0 and ydelta >= 0
 
-            # Either the min/max has extended, or it has shrunk beyond the deltas
-            if ((xmin < dxmin or xmax > dxmax or ymin < dymin or ymax > dymax) or
-                (xmin > (dxmin+xdelta) or xmax < (dxmax-xdelta) or
-                 ymin > (dymin+ydelta) or ymax < (dymax-ydelta))):
+            # Either the min/max has extended, or has shrunk beyond the deltas
+            if ((xmin < dxmin or xmax > dxmax or ymin < dymin or ymax > dymax)
+                or (xmin > (dxmin+xdelta) or xmax < (dxmax-xdelta)
+                    or ymin > (dymin+ydelta) or ymax < (dymax-ydelta))):
                 self._bounds = (xmin-xdelta, xmax+xdelta,
                                 ymin-ydelta, ymax+ydelta)
                 logger.info('Updated bounds at run %s: %s',
@@ -199,8 +198,6 @@ class Histogram2D(TableModule):
                                 bins=bins,
                                 range=[[ymin, ymax], [xmin, xmax]])
         else:
-            #histo = None
-            #cmax = 0
             return self._return_run_step(self.state_blocked,
                                          steps_run=0)
 
@@ -220,12 +217,10 @@ class Histogram2D(TableModule):
                   'ymax': ymax,
                   'time': run_number}
         if self._with_output:
-            #with self.lock:
             table = self._table
             table['array'].set_shape([p.ybins, p.xbins])
-            l = len(table)
             last = table.last()
-            if l == 0 or last['time'] != run_number:
+            if len(table) == 0 or last['time'] != run_number:
                 table.add(values)
             else:
                 table.iloc[last.row] = values
@@ -239,7 +234,6 @@ class Histogram2D(TableModule):
         json_ = {'columns': [self.x_column, self.y_column],
                  'xbins': p.xbins,
                  'ybins': p.ybins}
-        #with self.lock:
         row = values
         if not (np.isnan(row['xmin']) or np.isnan(row['xmax'])
                 or np.isnan(row['ymin']) or np.isnan(row['ymax'])):
