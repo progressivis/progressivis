@@ -142,6 +142,7 @@ setup_args = {
     ],
     'install_requires': [
         'ipywidgets>=7.0.0',
+        'ipydatawidgets'
     ],
     'packages': PACKAGES,
     'zip_safe': False,

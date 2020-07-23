@@ -3,8 +3,7 @@ from . import ProgressiveTest
 from progressivis import Print
 from progressivis.io.input import Input
 import numpy as np
-import asyncio as aio
-
+from progressivis.core import aio
 
 async def _do_line(inp, s):
     await aio.sleep(2)
@@ -22,8 +21,7 @@ class TestInput(ProgressiveTest):
             inp = Input(scheduler=s)
             pr = Print(proc=self.terse, scheduler=s)
             pr.input.df = inp.output.table
-        t = _do_line(inp, s)
-        aio.run(s.start(coros=[t]))
+        aio.run_gather(s.start(), _do_line(inp, s))
         self.assertEqual(len(inp.table()), 10)
 
 

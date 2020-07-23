@@ -6,11 +6,10 @@ from progressivis import Print, Scheduler, ProgressiveError
 from progressivis.io import CSVLoader
 from progressivis.stats import Min
 from progressivis.datasets import get_dataset
-import asyncio as aio
-
+from progressivis.core import aio
 
 class TestScheduler(ProgressiveTest):
-    @skip("Needs fixing")
+    #@skip("Needs fixing")
     def test_scheduler(self):
         with self.assertRaises(ProgressiveError):
             s = Scheduler(0)
@@ -20,10 +19,13 @@ class TestScheduler(ProgressiveTest):
                         index_col=False, header=None,
                         scheduler=s)
         self.assertIs(s["csv"], csv)
-        aio.run(s.start(coros=[aio.sleep(10)]))
-
-        # sleep(1)
-        self.assertTrue(csv.scheduler().is_running())
+        check_running = False
+        async def _is_running():
+            nonlocal check_running
+            check_running = csv.scheduler().is_running()
+        aio.run_gather(s.start(), _is_running())
+        #sleep(1)
+        self.assertTrue(check_running)
         def add_min():
             with s:
                 m = Min(scheduler=s)
@@ -34,8 +36,8 @@ class TestScheduler(ProgressiveTest):
         s.on_tick_once(add_min)
 
         sleep(1)
-        s.stop()
-        s.join()
+        s.task_stop()
+        #s.join()
         self.assertIs(s['csv'], csv)
         json = s.to_json(short=False)
         self.assertFalse(json['is_running'])
