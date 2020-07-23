@@ -3,8 +3,7 @@ from progressivis.io import CSVLoader
 from progressivis.vis import MCScatterPlot
 from progressivis.datasets import get_dataset
 from progressivis.stats import RandomTable
-import asyncio as aio
-
+from progressivis.core import aio
 from . import ProgressiveTest
 
 
@@ -58,7 +57,7 @@ class TestScatterPlot(ProgressiveTest):
             prt = Print(proc=self.terse, scheduler=s)
             prt.input.df = sp.output.table
             sts = sleep_then_stop(s, 5)
-        aio.run(csv.scheduler().start(coros=[sts]))
+        aio.run_gather(csv.scheduler().start(), sts)
         self.assertEqual(len(csv.table()), 30000)
 
     def test_scatterplot2(self):
@@ -76,7 +75,7 @@ class TestScatterPlot(ProgressiveTest):
         finp1 = fake_input(s, "variable_1", 6, {'_1': LOWER_X, '_2': LOWER_Y})
         finp2 = fake_input(s, "variable_2", 6, {'_1': UPPER_X, '_2': UPPER_Y})
         sts = sleep_then_stop(s, 30)
-        aio.run(sp.scheduler().start(coros=[finp1, finp2, sts]))
+        aio.run_gather(sp.scheduler().start(), finp1, finp2, sts)
         js = sp.to_json()
         x, y, _ = zip(*js['sample']['data'])
         min_x = min(x)
