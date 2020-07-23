@@ -8,9 +8,8 @@ from progressivis.table.bin_join import BinJoin
 from progressivis.table.constant import Constant
 from progressivis.table.table import Table
 from progressivis.table.reduce import Reduce
-
+from progressivis.core import aio
 import pandas as pd
-import asyncio as aio
 
 
 def print_len(x):

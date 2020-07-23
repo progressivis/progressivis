@@ -1,5 +1,5 @@
 from . import ProgressiveTest
-import asyncio as aio
+from progressivis.core import aio
 from progressivis.io import CSVLoader
 from progressivis.table.constant import Constant
 from progressivis.table.table import Table

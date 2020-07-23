@@ -6,11 +6,11 @@ from progressivis.table.select import Select
 from progressivis.table.constant import Constant
 from progressivis.stats import Sample
 from progressivis.datasets import get_dataset
-
+from progressivis.core import aio
 from progressivis.core.bitmap import bitmap
 
 import pandas as pd
-import asyncio as aio
+
 
 def print_repr(x):
     print(repr(x))

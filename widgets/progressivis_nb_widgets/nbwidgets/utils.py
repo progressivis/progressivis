@@ -1,6 +1,5 @@
-import asyncio as aio
 import ipywidgets as widgets
-from progressivis.core import asynchronize
+from progressivis.core import asynchronize, aio
 from ipydatawidgets.ndarray.serializers import (
     array_to_compressed_json,
     array_from_compressed_json)

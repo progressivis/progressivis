@@ -4,7 +4,7 @@ from progressivis import Every
 from progressivis.stats import Percentiles
 from progressivis.io import CSVLoader
 from progressivis.datasets import get_dataset
-import asyncio as aio
+from progressivis.core import aio
 
 class TestPercentiles(ProgressiveTest):
     def test_percentile(self):

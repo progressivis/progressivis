@@ -4,7 +4,7 @@ from progressivis import Print
 from progressivis.io import CSVLoader
 from progressivis.stats import Sample
 from progressivis.datasets import get_dataset
-import asyncio as aio
+from progressivis.core import aio
 
 def print_repr(x):
     print(repr(x))

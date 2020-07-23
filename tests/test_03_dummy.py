@@ -1,9 +1,9 @@
 from . import ProgressiveTest
-import asyncio as aio
 from progressivis import Print, Scheduler
 from progressivis.stats import  RandomTable, Max
 from progressivis.table.dummymod import DummyMod
 from progressivis.core.bitmap import bitmap
+from progressivis.core import aio
 
 import numpy as np
 

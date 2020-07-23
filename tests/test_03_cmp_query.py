@@ -1,5 +1,5 @@
 from . import ProgressiveTest
-import asyncio as aio
+from progressivis.core import aio
 from progressivis import Print
 from progressivis.table import Table
 from progressivis.table.cmp_query import CmpQueryLast

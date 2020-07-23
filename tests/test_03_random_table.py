@@ -1,5 +1,5 @@
 from . import ProgressiveTest
-import asyncio as aio
+from progressivis.core import aio
 from progressivis import Every
 from progressivis.stats.random_table import RandomTable
 

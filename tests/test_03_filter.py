@@ -1,5 +1,5 @@
 from . import ProgressiveTest, main
-import asyncio as aio
+from progressivis.core import aio
 from progressivis import Print, Scheduler
 from progressivis.stats import RandomTable
 from progressivis.table.filtermod import FilterMod

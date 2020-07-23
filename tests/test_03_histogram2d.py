@@ -1,5 +1,5 @@
 from . import ProgressiveTest
-import asyncio as aio
+from progressivis.core import aio
 from progressivis import Every
 from progressivis.io import CSVLoader
 from progressivis.stats import Histogram2D, Min, Max

@@ -7,7 +7,7 @@ from progressivis.table.merge import Merge
 from progressivis.table.constant import Constant
 from progressivis.table.table import Table
 from progressivis.datasets import get_dataset
-import asyncio as aio
+from progressivis.core import aio
 import pandas as pd
 #from pprint import pprint
 

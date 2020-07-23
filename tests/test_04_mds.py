@@ -4,7 +4,7 @@ from progressivis import Every
 from progressivis.io import CSVLoader
 from progressivis.metrics import PairwiseDistances
 from progressivis.datasets import get_dataset
-import asyncio as aio
+from progressivis.core import aio
 import logging
 
 def print_len(x):

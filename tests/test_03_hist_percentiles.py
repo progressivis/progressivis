@@ -1,5 +1,5 @@
 "Test for Range Query"
-import asyncio as aio
+from progressivis.core import aio
 from progressivis.table.constant import Constant
 from progressivis import Print
 from progressivis.stats import RandomTable

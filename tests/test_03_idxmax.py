@@ -2,7 +2,7 @@ from . import ProgressiveTest
 import numpy as np
 from progressivis import Print
 from progressivis.stats import IdxMax, IdxMin, Max, Min, RandomTable
-import asyncio as aio
+from progressivis.core import aio
 
 class TestIdxMax(ProgressiveTest):
     def tearDown(self):

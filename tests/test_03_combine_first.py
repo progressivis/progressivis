@@ -1,9 +1,9 @@
 from . import ProgressiveTest
-import asyncio as aio
 from progressivis import Print
 from progressivis.table.constant import Constant
 from progressivis.table.combine_first import CombineFirst
 from progressivis.table.table import Table
+from progressivis.core import aio
 
 
 import pandas as pd

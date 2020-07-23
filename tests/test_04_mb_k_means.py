@@ -4,7 +4,8 @@ from progressivis import Print, Every #, log_level
 from progressivis.cluster import MBKMeans
 from progressivis.io import CSVLoader
 from progressivis.datasets import get_dataset
-import asyncio as aio
+from progressivis.core import aio
+
 
 #from sklearn.cluster import MiniBatchKMeans
 #from sklearn.utils.extmath import squared_norm
