@@ -7,7 +7,6 @@ import logging
 
 import numpy as np
 
-from progressivis.utils.synchronized import synchronized
 from progressivis.core.utils import indices_len, fix_loc
 from progressivis.core.slot import SlotDescriptor
 from progressivis.table.module import TableModule
@@ -18,12 +17,10 @@ logger = logging.getLogger(__name__)
 
 class IdxMin(TableModule):
     parameters = [('history', np.dtype(int), 3)]
+    inputs = [SlotDescriptor('table', type=Table, required=True)]
+    outputs = [SlotDescriptor('min', type=Table, required=False)]
 
     def __init__(self, **kwds):
-        self._add_slots(kwds, 'input_descriptors',
-                        [SlotDescriptor('table', type=Table, required=True)])
-        self._add_slots(kwds, 'output_descriptors',
-                        [SlotDescriptor('min', type=Table, required=False)])
         super(IdxMin, self).__init__(**kwds)
         self._min = None
         self.default_step_size = 10000
@@ -48,21 +45,17 @@ class IdxMin(TableModule):
             dfslot.reset()
             self._table = None
             dfslot.update(run_number)
-        indices = dfslot.created.next(step_size) # returns a slice
+        indices = dfslot.created.next(step_size)  # returns a slice
         steps = indices_len(indices)
         if steps == 0:
             return self._return_run_step(self.state_blocked, steps_run=0)
         input_table = dfslot.data()
         op = self.filter_columns(input_table, fix_loc(indices)).idxmin()
-        #if not op.index.equals(self._columns):
-        #    # some columns are not numerical
-        #    self._columns = op.index
-
 
         if self._min is None:
             min_ = OrderedDict(zip(op.keys(), [np.nan]*len(op.keys())))
             for col, ix in op.items():
-                min_[col] = input_table.at[ix, col] # lookup value, is there a better way?
+                min_[col] = input_table.at[ix, col]  # lookup value, is there a better way?
             self._min = Table(self.generate_table_name('_min'),
                               dshape=input_table.dshape,
                               create=True)
@@ -82,7 +75,6 @@ class IdxMin(TableModule):
                 elif np.isnan(min_[col]) or val < min_[col]:
                     op[col] = prev_idx[col]
                     min_[col] = val
-            #with self.lock:
             if True:
                 self._table.append(op, indices=[run_number])
                 self._min.append(min_, indices=[run_number])

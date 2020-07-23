@@ -7,14 +7,11 @@ import numpy as np
 from progressivis.utils.errors import ProgressiveError
 from progressivis.core import SlotDescriptor
 from progressivis.table import Table
-#from progressivis.table.liteselect import LiteSelect
 from progressivis.table.module import TableModule
 
 from progressivis.stats import Histogram2D, Sample
-#from progressivis.vis import Heatmap
 from ..table.range_query_2d import RangeQuery2d
 from ..table.bisectmod import _get_physical_table
-#from progressivis.table.paste import Paste #bin_join import BinJoin
 from ..table import TableSelectedView
 from ..core.bitmap import bitmap
 from ..io import Variable
@@ -27,13 +24,13 @@ class ScatterPlot(TableModule):
                   ('xmax', np.dtype(float), 1),
                   ('ymin', np.dtype(float), 0),
                   ('ymax', np.dtype(float), 1)]
+    inputs = [
+        # SlotDescriptor('heatmap', type=Table),
+        SlotDescriptor('table', type=Table),
+        SlotDescriptor('select', type=Table)
+    ]
 
     def __init__(self, x_column, y_column, approximate=False, **kwds):
-        self._add_slots(kwds, 'input_descriptors',
-                        [
-                         # SlotDescriptor('heatmap', type=Table),
-                         SlotDescriptor('table', type=Table),
-                         SlotDescriptor('select', type=Table)])
         super(ScatterPlot, self).__init__(quantum=0.1, **kwds)
         self.x_column = x_column
         self.y_column = y_column
@@ -92,10 +89,10 @@ class ScatterPlot(TableModule):
         histogram2d.input.table = range_query_2d.output.table
         histogram2d.input.min = range_query_2d.output.min
         histogram2d.input.max = range_query_2d.output.max
-        #if heatmap is None:
+        # if heatmap is None:
         #    heatmap = Heatmap(group=self.name, # filename='heatmap%d.png',
         #                      history=100, scheduler=scheduler)
-        #heatmap.input.array = histogram2d.output.table
+        # heatmap.input.array = histogram2d.output.table
         if sample is True:
             sample = Sample(samples=100, group=self.name, scheduler=scheduler)
         elif sample is None and select is None:
@@ -103,19 +100,18 @@ class ScatterPlot(TableModule):
         if sample is not None:
             sample.input.table = range_query_2d.output.table
         scatterplot = self
-        #scatterplot.input.heatmap = heatmap.output.heatmap
+        # scatterplot.input.heatmap = heatmap.output.heatmap
         scatterplot.input.table = input_module.output[input_slot]
         scatterplot.input.select = sample.output.table
         self.histogram2d = histogram2d
-        #self.heatmap = heatmap
+        # self.heatmap = heatmap
         self.sample = sample
         self.select = select
         self.min = range_query_2d.min.output.table
         self.max = range_query_2d.max.output.table
         self.range_query_2d = range_query_2d
         self.histogram2d = histogram2d
-        #self.heatmap = heatmap
-
+        # self.heatmap = heatmap
         return scatterplot
 
     def predict_step_size(self, duration):
@@ -149,13 +145,14 @@ class ScatterPlot(TableModule):
         with self.lock:
             select = self.get_input_slot('select').data()
             if select is not None:
-                #select = self._cleanup(select)
+                # select = self._cleanup(select)
                 json['scatterplot'] = select.to_json(orient='split',
-                                                     columns=[self.x_column, self.y_column])
+                                                     columns=[self.x_column,
+                                                              self.y_column])
             else:
                 logger.debug('Select data not found')
 
-        #heatmap = self.get_input_module('heatmap')
+        # heatmap = self.get_input_module('heatmap')
         return self.histogram2d.heatmap_to_json(json, short)
 
     def get_image(self, run_number=None):

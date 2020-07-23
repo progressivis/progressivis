@@ -15,10 +15,9 @@ logger = logging.getLogger(__name__)
 
 class Max(TableModule):
     parameters = [('history', np.dtype(int), 3)]
+    inputs = [SlotDescriptor('table', type=Table, required=True)]
 
     def __init__(self, columns=None, **kwds):
-        self._add_slots(kwds,'input_descriptors',
-                        [SlotDescriptor('table', type=Table, required=True)])
         super(Max, self).__init__(**kwds)
         self._columns = columns
         self.default_step_size = 10000

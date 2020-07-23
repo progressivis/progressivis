@@ -19,6 +19,8 @@ class CSVLoader(TableModule):
     """
     Warning : this module do not wait for "filenames"
     """
+    inputs = [SlotDescriptor('filenames', type=Table, required=False)]
+
     def __init__(self,
                  filepath_or_buffer=None,
                  filter_=None,
@@ -30,8 +32,6 @@ class CSVLoader(TableModule):
                  recovery_table_size=3,
                  save_step_size=100000,
                  **kwds):
-        self._add_slots(kwds, 'input_descriptors',
-                        [SlotDescriptor('filenames', type=Table, required=False)])
         super(CSVLoader, self).__init__(**kwds)
         self.default_step_size = kwds.get('chunksize', 1000)  # initial guess
         kwds.setdefault('chunksize', self.default_step_size)
@@ -313,8 +313,8 @@ def extract_params_docstring(fn, only_defaults=False):
 CSV_DOCSTRING = "CSVLoader(" \
   + extract_params_docstring(pd.read_csv) \
   + ","+extract_params_docstring(CSVLoader.__init__, only_defaults=True) \
-  + ",force_valid_ids=False,id=None,tracer=None,predictor=None,storage=None" \
-  + ",input_descriptors=[],output_descriptors=[])"
+  + ",force_valid_ids=False,id=None,tracer=None,predictor=None,storage=None)"
+
 try:
     CSVLoader.__init__.__func__.__doc__ = CSV_DOCSTRING
 except AttributeError:

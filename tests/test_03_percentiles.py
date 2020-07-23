@@ -16,7 +16,7 @@ class TestPercentiles(ProgressiveTest):
                              scheduler=s)
         module.input.table = csv_module.output.table
         prt = Every(proc=self.terse, name='print', scheduler=s)
-        prt.input.df = module.output.percentiles
+        prt.input.df = module.output.table
 
         aio.run(s.start())
         #ret = module.trace_stats(max_runs=1)

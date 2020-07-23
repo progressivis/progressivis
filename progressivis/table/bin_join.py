@@ -17,10 +17,12 @@ class BinJoin(TableModule):
     Args:
         kwds : argument to pass to the join function
     """
+    inputs = [
+        SlotDescriptor('first', type=Table, required=True),
+        SlotDescriptor('second', type=Table, required=True)
+    ]
+
     def __init__(self, **kwds):
-        self._add_slots(kwds, 'input_descriptors',
-                        [SlotDescriptor('first', type=Table, required=True),
-                         SlotDescriptor('second', type=Table, required=True)])
         super(BinJoin, self).__init__(**kwds)
         self.join_kwds = self._filter_kwds(kwds, join)
         self._dialog = Dialog(self)
@@ -57,9 +59,7 @@ class BinJoin(TableModule):
             indices = second_slot.updated.next(step_size)
             steps += indices_len(indices)
             updated["other"] = indices
-        #with first_slot.lock:
         first_table = first_slot.data()
-        #with second_slot.lock:
         second_table = second_slot.data()
         if not self._dialog.is_started:
             join_start(first_table, second_table,

@@ -12,11 +12,10 @@ class Dict2Table(TableModule):
     Args:
         kwds : argument to pass to the join function
     """
+    inputs = [SlotDescriptor('dict_', type=PsDict, required=True)]
+
     def __init__(self, history=False, **kwds):
-        self._add_slots(kwds, 'input_descriptors',
-                        [SlotDescriptor('dict_', type=PsDict, required=True)])
         super().__init__(**kwds)
-        #self.join_kwds = self._filter_kwds(kwds, join)
 
     def run_step(self, run_number, step_size, howlong):
         dict_slot = self.get_input_slot('dict_')
@@ -33,7 +32,7 @@ class Dict2Table(TableModule):
         dict_slot.deleted.next()
         if self._table is None:
             self._table = Table(name=None, dshape=dict_.dshape)
-        if len(self._table)==0 or history:
+        if len(self._table) == 0:  # or history:
             self._table.append(dict_.as_row)
         else:
             self._table.loc[0] = dict_.array

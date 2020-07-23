@@ -23,7 +23,7 @@ class TestStats(ProgressiveTest):
         stats.input._params = wait.output.out
         stats.input.table = csv_module.output.table
         pr = Print(proc=self.terse, name='print', scheduler=s)
-        pr.input.df = stats.output.stats
+        pr.input.df = stats.output.table
         aio.run(s.start())
         table = csv_module.table()
         stable = stats.table()

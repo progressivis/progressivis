@@ -14,12 +14,11 @@ logger = logging.getLogger(__name__)
 
 class Stats(TableModule):
     parameters = [('history', np.dtype(int), 3)]
+    inputs = [SlotDescriptor('table', type=Table, required=True)]
 
     def __init__(self, column, min_column=None, max_column=None,
                  reset_index=False, **kwds):
-        self._add_slots(kwds, 'input_descriptors',
-                        [SlotDescriptor('table', type=Table, required=True)])
-        super(Stats, self).__init__(table_slot='stats', **kwds)
+        super(Stats, self).__init__(**kwds)
         self._column = column
         self.default_step_size = 10000
 
@@ -66,7 +65,6 @@ class Stats(TableModule):
             new_max = np.nanmax(x)
             row = {self._min_column: np.nanmin([prev_min, new_min]),
                    self._max_column: np.nanmax([prev_max, new_max])}
-            #with self.lock:
             if run_number in df.index:
                 df.loc[run_number] = row
             else:

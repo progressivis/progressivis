@@ -8,14 +8,12 @@ from ..core.bitmap import bitmap
 
 
 class FilterMod(TableModule):
-    """
-    """
     parameters = [('expr', str, "unknown"),
                   ('user_dict', object, None)]
 
+    inputs = [SlotDescriptor('table', type=Table, required=True)]
+
     def __init__(self, **kwds):
-        self._add_slots(kwds, 'input_descriptors',
-                        [SlotDescriptor('table', type=Table, required=True)])
         super(FilterMod, self).__init__(**kwds)
         self._impl = FilterImpl(self.params.expr, self.params.user_dict)
 
@@ -40,9 +38,7 @@ class FilterMod(TableModule):
         if input_slot.updated.any():
             updated = input_slot.updated.next(step_size)
             steps += indices_len(updated)
-        #with input_slot.lock:
         input_table = input_slot.data()
-        # p = self.params
         if not self._impl.is_started:
             self._table = TableSelectedView(input_table, bitmap([]))
             status = self._impl.start(input_table,

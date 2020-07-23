@@ -18,14 +18,12 @@ class Histograms(NAry):
     "Visualize a table with multiple histograms"
     parameters = [('bins', np.dtype(int), 128),
                   ('delta', np.dtype(float), -5)]  # 5%
+    inputs = [SlotDescriptor('min', type=BaseTable, required=True),
+              SlotDescriptor('max', type=BaseTable, required=True)]
+    outputs = [SlotDescriptor('min', type=BaseTable, required=False),
+               SlotDescriptor('max', type=BaseTable, required=False)]
 
     def __init__(self, columns=None, **kwds):
-        self._add_slots(kwds, 'input_descriptors',
-                        [SlotDescriptor('min', type=BaseTable, required=True),
-                         SlotDescriptor('max', type=BaseTable, required=True)])
-        self._add_slots(kwds, 'output_descriptors',
-                        [SlotDescriptor('min', type=BaseTable, required=False),
-                         SlotDescriptor('max', type=BaseTable, required=False)])
         super(Histograms, self).__init__(**kwds)
         self.default_step_size = 1
         self._columns = columns

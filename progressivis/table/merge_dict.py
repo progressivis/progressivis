@@ -3,7 +3,7 @@ from progressivis.core.slot import SlotDescriptor
 
 from ..table.module import TableModule
 from ..utils.psdict import PsDict
-from collections import OrderedDict
+
 
 class MergeDict(TableModule):
     """
@@ -15,12 +15,12 @@ class MergeDict(TableModule):
     Args:
         kwds : argument to pass to the join function
     """
+    inputs = [SlotDescriptor('first', type=PsDict, required=True),
+              SlotDescriptor('second', type=PsDict, required=True)]
+
     def __init__(self, **kwds):
-        self._add_slots(kwds, 'input_descriptors',
-                        [SlotDescriptor('first', type=PsDict, required=True),
-                         SlotDescriptor('second', type=PsDict, required=True)])
         super().__init__(**kwds)
-        #self.join_kwds = self._filter_kwds(kwds, join)
+        # self.join_kwds = self._filter_kwds(kwds, join)
         self._dialog = Dialog(self)
 
     def run_step(self, run_number, step_size, howlong):
