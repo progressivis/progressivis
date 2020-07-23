@@ -55,35 +55,33 @@ class bitmap(BitMap,object):
     #     return BitMap.__binary_op_inplace__(self, other, function)
 
     def __getitem__(self, values):
-        #import pdb;pdb.set_trace()
         bm = BitMap.__getitem__(self, values)
         return bitmap(bm) if isinstance(bm, BitMap) else bm
 
-    def __eq__(self, other):
-        if isinstance(other, BitMap):
-            return BitMap.__eq__(other, self)
-        return BitMap.__eq__(self, other)
+    # def __eq__(self, other):
+    #     if isinstance(other, BitMap):
+    #         return BitMap.__eq__(other, self)
+    #     return BitMap.__eq__(self, other)
 
     def update(self, values):
-        "Add new values from either a bitmap, an array, a slice, or an Iterable"
+        '''
+        Add new values from either a bitmap, an array, a slice, or an Iterable
+        '''
         try:
             BitMap.update(self, values)
         except TypeError:
             if values is None:
                 return
             # NP check the copy here for slice
-            if not isinstance(values, (bitmap, BitMap, array.array)):
-                if isinstance(values, slice):
-                    values = range(*values.indices(values.stop+1))
-                # do not call bitmap constructor here cause
-                # BitMap constructor calls update=>infinite recursion
-                values = array.array('I', values)
-                BitMap.update(self, values)
-            else:
-                raise
+            if isinstance(values, slice):
+                values = range(*values.indices(values.stop+1))
+            # do not call bitmap constructor here cause
+            # BitMap constructor calls update=>infinite recursion
+            values = array.array('I', values)
+            BitMap.update(self, values)
+
     def pop(self, length=1):
         "Remove one or many items and return them as a bitmap"
-        #import pdb;pdb.set_trace()
         if length >= len(self):
             ret = bitmap(self)
             self &= NIL_BITMAP

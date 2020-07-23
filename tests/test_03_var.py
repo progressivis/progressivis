@@ -2,7 +2,7 @@ from . import ProgressiveTest
 
 from progressivis import Print
 from progressivis.stats import Var, RandomTable
-import asyncio as aio
+from progressivis.core import aio
 import numpy as np
 
 

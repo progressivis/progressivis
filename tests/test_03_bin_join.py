@@ -2,9 +2,9 @@ from progressivis.table.bin_join import BinJoin
 from progressivis import Print
 from progressivis.stats import RandomTable, Min
 from progressivis.table.dict2table import Dict2Table
+from progressivis.core import aio
 
 from . import ProgressiveTest
-import asyncio as aio
 
 class TestBinJoin(ProgressiveTest):
     def test_bin_join(self):

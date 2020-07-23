@@ -1,5 +1,5 @@
 from . import ProgressiveTest
-import asyncio as aio
+
 from progressivis import Print, Every
 from progressivis.stats import Stats
 from progressivis.io import CSVLoader
@@ -7,7 +7,7 @@ from progressivis.datasets import get_dataset
 from progressivis.table.join import Join
 from progressivis.table.constant import Constant
 from progressivis.table.table import Table
-
+from progressivis.core import aio
 import pandas as pd
 #from pprint import pprint
 
@@ -26,8 +26,8 @@ class TestJoin(ProgressiveTest):
         stat2=Stats(2, reset_index=True, scheduler=s)
         stat2.input.table = csv.output.table
         join=Join(scheduler=s)
-        join.input.table = stat1.output.stats
-        join.input.table = stat2.output.stats
+        join.input.table = stat1.output.table
+        join.input.table = stat2.output.table
         pr=Print(proc=self.terse, scheduler=s)
         pr.input.df = join.output.table
         prlen = Every(proc=self.terse, constant_time=True, scheduler=s)

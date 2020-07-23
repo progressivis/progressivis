@@ -8,15 +8,17 @@ from ..core.module import Module
 from ..core.slot import SlotDescriptor
 from .table import Table
 
+
 # pylint: disable=abstract-method
 class TableModule(Module):
     "Base class for modules managing tables."
-    def __init__(self, table_slot='table', columns=None, **kwds):
-        self._add_slots(kwds, 'output_descriptors',
-                        [SlotDescriptor(table_slot, type=Table, required=False)])
+    outputs = [SlotDescriptor('table', type=Table, required=False)]
+
+    def __init__(self, columns=None, **kwds):
         super(TableModule, self).__init__(**kwds)
+        if 'table_slot' in kwds:
+            raise RuntimeError("don't use table_slot")
         self._columns = columns
-        self._table_slot = table_slot
         self._table = None
 
     def table(self):
@@ -24,7 +26,7 @@ class TableModule(Module):
         return self._table
 
     def get_data(self, name):
-        if name == self._table_slot:
+        if name == "table":
             return self.table()
         return super(TableModule, self).get_data(name)
 
@@ -32,10 +34,10 @@ class TableModule(Module):
         """
         Return all the columns of interest from the specified table.
 
-        If the module has been created without a list of columns, then all the columns
-        of the table are returned.
-        Otherwise, the interesection between the specified list and the existing columns
-        is returned.
+        If the module has been created without a list of columns, then all
+        the columns of the table are returned.
+        Otherwise, the interesection between the specified list and the
+        existing columns is returned.
         """
         if df is None:
             return None
@@ -45,13 +47,13 @@ class TableModule(Module):
             cols = set(self._columns)
             diff = cols.difference(df.columns)
             for column in diff:
-                self._columns.remove(column) # maintain the order
+                self._columns.remove(column)  # maintain the order
         return self._columns
 
     def filter_columns(self, df, indices=None):
         """
-        Return the specified table filtered by the specified indices and limited to the
-        columns of interest.
+        Return the specified table filtered by the specified indices and
+        limited to the columns of interest.
         """
         if self._columns is None:
             if indices is None:

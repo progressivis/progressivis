@@ -5,7 +5,8 @@ from progressivis.stats import  RandomTable
 from progressivis.table.bisectmod import Bisect
 from progressivis.core.bitmap import bitmap
 from progressivis.table.hist_index import HistogramIndex
-import asyncio as aio
+from progressivis.core import aio
+
 from . import ProgressiveTest
 
 

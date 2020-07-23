@@ -9,8 +9,8 @@ from progressivis.datasets import get_dataset
 from progressivis.table.table import Table
 from progressivis.table.join import Join
 from progressivis.core.utils import get_random_name
+from progressivis.core import aio
 import pandas as pd
-import asyncio as aio
 
 def print_len(x):
     if x is not None:

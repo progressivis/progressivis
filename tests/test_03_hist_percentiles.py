@@ -1,7 +1,6 @@
 "Test for Range Query"
-import asyncio as aio
+from progressivis.core import aio
 from progressivis.table.constant import Constant
-from progressivis.table.table import Table
 from progressivis import Print
 from progressivis.stats import RandomTable
 from progressivis.table.hist_index import HistogramIndex
@@ -11,7 +10,9 @@ from . import ProgressiveTest, main
 from progressivis.table.range_query import RangeQuery
 from progressivis.utils.psdict import PsDict
 
+
 class TestPercentiles(ProgressiveTest):
+
     """Tests for HistIndex based percentiles
     NB: another percentiles module exists in stats directory
     which is based on T-digest

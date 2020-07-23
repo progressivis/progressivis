@@ -8,7 +8,7 @@ from progressivis.core.utils import RandomBytesIO
 from multiprocessing import Process
 import time, os
 import requests
-import asyncio as aio
+from progressivis.core import aio
 from requests.packages.urllib3.exceptions import ReadTimeoutError
 from requests.exceptions import ConnectionError
 

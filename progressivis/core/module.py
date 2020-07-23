@@ -47,10 +47,20 @@ class ModuleMeta(ABCMeta):
     def __init__(cls, name, bases, attrs):
         if "parameters" not in attrs:
             cls.parameters = []
-        all_props = list(cls.parameters)
+        if "inputs" not in attrs:
+            cls.inputs = []
+        if "outputs" not in attrs:
+            cls.outputs = []
+        all_parameters = list(cls.parameters)
+        all_inputs = list(cls.inputs)
+        all_outputs = list(cls.outputs)
         for base in bases:
-            all_props += getattr(base, "all_parameters", [])
-        cls.all_parameters = all_props
+            all_parameters += getattr(base, "all_parameters", [])
+            all_inputs += getattr(base, "all_inputs", [])
+            all_outputs += getattr(base, "all_outputs", [])
+        cls.all_parameters = all_parameters
+        cls.all_inputs = all_inputs
+        cls.all_outputs = all_outputs
         super(ModuleMeta, cls).__init__(name, bases, attrs)
 
 
@@ -61,6 +71,8 @@ class Module(metaclass=ModuleMeta):
                   ('debug', np.dtype(bool), False)]
     TRACE_SLOT = '_trace'
     PARAMETERS_SLOT = '_params'
+    inputs = [SlotDescriptor(PARAMETERS_SLOT, type=BaseTable, required=False)]
+    outputs = [SlotDescriptor(TRACE_SLOT, type=BaseTable, required=False)]
 
     state_created = 0
     state_ready = 1
@@ -84,8 +96,6 @@ class Module(metaclass=ModuleMeta):
                  group=None,
                  scheduler=None,
                  storagegroup=None,
-                 input_descriptors=None,
-                 output_descriptors=None,
                  **kwds):
         if scheduler is None:
             scheduler = Scheduler.default
@@ -108,15 +118,6 @@ class Module(metaclass=ModuleMeta):
             storagegroup = Group.default_internal(get_random_name(name+'_tracer'))
         tracer = Tracer.default(name, storagegroup)
 
-        # always present
-        input_descriptors = input_descriptors or []
-        output_descriptors = output_descriptors or []
-        output_descriptors += [SlotDescriptor(Module.TRACE_SLOT,
-                                              type=BaseTable,
-                                              required=False)]
-        input_descriptors += [SlotDescriptor(Module.PARAMETERS_SLOT,
-                                             type=BaseTable,
-                                             required=False)]
         self.order = None
         self.group = group
         self.tracer = tracer
@@ -126,6 +127,10 @@ class Module(metaclass=ModuleMeta):
         self._state = Module.state_created
         self._had_error = False
         self._parse_parameters(kwds)
+
+        # always present
+        input_descriptors = self.all_inputs
+        output_descriptors = self.all_outputs
         self._input_slots = self._validate_descriptors(input_descriptors)
         self.input_descriptors = {d.name: d
                                   for d in input_descriptors}
@@ -874,8 +879,9 @@ def _print_len(x):
 
 class Every(Module):
     "Module running a function at eatch iteration"
+    inputs = [SlotDescriptor('df')]
+
     def __init__(self, proc=_print_len, constant_time=True, **kwds):
-        self._add_slots(kwds, 'input_descriptors', [SlotDescriptor('df')])
         super(Every, self).__init__(**kwds)
         self._proc = proc
         self._constant_time = constant_time
@@ -889,7 +895,6 @@ class Every(Module):
         slot = self.get_input_slot('df')
         df = slot.data()
         if df is not None:
-            #with slot.lock:
             self._proc(df)
         return self._return_run_step(Module.state_blocked, steps_run=1)
 
@@ -905,12 +910,14 @@ class Print(Every):
             kwds['proc'] = _prt
         super(Print, self).__init__(quantum=0.1, constant_time=True, **kwds)
 
+
 def _slot_to_json(slot):
     if slot is None:
         return None
     if isinstance(slot, list):
         return [_slot_to_json(s) for s in slot]
     return slot.to_json()
+
 
 def _slot_to_dataflow(slot):
     if slot is None:
@@ -919,15 +926,17 @@ def _slot_to_dataflow(slot):
         return [_slot_to_dataflow(s) for s in slot]
     return (slot.output_module.name, slot.output_name)
 
+
 def _create_table(tname, columns):
     dshape = ""
     data = {}
     for (name, dtype, val) in columns:
         if dshape:
             dshape += ','
-        dshape += '%s: %s'%(name, dshape_from_dtype(dtype))
+        dshape += '%s: %s' % (name, dshape_from_dtype(dtype))
         data[name] = val
     dshape = '{'+dshape+'}'
-    table = Table(tname, dshape=dshape, storagegroup=Group.default_internal(tname))
+    table = Table(tname, dshape=dshape,
+                  storagegroup=Group.default_internal(tname))
     table.add(data)
     return table

@@ -6,7 +6,7 @@ from progressivis.table.bisectmod import Bisect
 from progressivis.core.bitmap import bitmap
 from progressivis.table.hist_index import HistogramIndex
 from progressivis.table.intersection import Intersection
-import asyncio as aio
+from progressivis.core import aio
 
 from . import ProgressiveTest
 

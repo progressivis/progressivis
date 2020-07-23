@@ -8,7 +8,7 @@ from progressivis.datasets import (get_dataset, get_dataset_bz2,
 from progressivis.core.utils import RandomBytesIO
 from progressivis.stats.counter import Counter
 from progressivis.storage import IS_PERSISTENT
-import asyncio as aio
+from progressivis.core import aio
 #import logging, sys
 from multiprocessing import Process
 import time, os

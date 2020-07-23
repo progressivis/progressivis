@@ -18,12 +18,10 @@ logger = logging.getLogger(__name__)
 
 class IdxMax(TableModule):
     parameters = [('history', np.dtype(int), 3)]
+    inputs = [SlotDescriptor('table', type=Table, required=True)]
+    outouts = [SlotDescriptor('max', type=Table, required=False)]
 
     def __init__(self, **kwds):
-        self._add_slots(kwds, 'input_descriptors',
-                        [SlotDescriptor('table', type=Table, required=True)])
-        self._add_slots(kwds, 'output_descriptors',
-                        [SlotDescriptor('max', type=Table, required=False)])
         super(IdxMax, self).__init__(**kwds)
         self._max = None
         self.default_step_size = 10000
@@ -48,7 +46,7 @@ class IdxMax(TableModule):
             dfslot.reset()
             self._table = None
             dfslot.update(run_number)
-        indices = dfslot.created.next(step_size) # returns a slice
+        indices = dfslot.created.next(step_size)
         steps = indices_len(indices)
         if steps == 0:
             return self._return_run_step(self.state_blocked, steps_run=0)
@@ -58,7 +56,7 @@ class IdxMax(TableModule):
         if self._max is None:
             max_ = OrderedDict(zip(op.keys(), [np.nan]*len(op.keys())))
             for col, ix in op.items():
-                max_[col] = input_df.at[ix, col] # lookup value, is there a better way?
+                max_[col] = input_df.at[ix, col]  # lookup value, is there a better way?
             self._max = Table(self.generate_table_name('_max'),
                               dshape=input_df.dshape,
                               create=True)
@@ -78,7 +76,6 @@ class IdxMax(TableModule):
                 elif np.isnan(max_[col]) or val > max_[col]:
                     op[col] = prev_idx[col]
                     max_[col] = val
-            #with self.lock:
             self._table.append(op, indices=[run_number])
             self._max.append(max_, indices=[run_number])
             if len(self._table) > self.params.history:

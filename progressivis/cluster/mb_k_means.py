@@ -20,17 +20,18 @@ class MBKMeans(TableModule):
     """
     Mini-batch k-means using the sklearn implementation.
     """
+    inputs = [
+        SlotDescriptor('moved_center', type=PsDict, required=False),
+        SlotDescriptor('table', type=Table, required=True)
+    ]
+    outputs = [
+        SlotDescriptor('labels', type=Table, required=False),
+        SlotDescriptor('conv', type=PsDict, required=False)
+    ]
+
     DATA_CHANGED_MAX = 3
     def __init__(self, n_clusters, columns=None, batch_size=100, tol=0.1, conv_steps=3,
                  is_input=True, random_state=None, **kwds):
-        self._add_slots(kwds, 'input_descriptors',
-                        [SlotDescriptor('moved_center', type=PsDict, required=False)])
-        self._add_slots(kwds, 'input_descriptors',
-                        [SlotDescriptor('table', type=Table, required=True)])
-        self._add_slots(kwds, 'output_descriptors',
-                        [SlotDescriptor('labels', type=Table, required=False),
-                         SlotDescriptor('conv', type=PsDict, required=False),
-                        ])
         super(MBKMeans, self).__init__(**kwds)
         self.mbk = MiniBatchKMeans(n_clusters=n_clusters,
                                    batch_size=batch_size,

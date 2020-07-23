@@ -6,8 +6,9 @@ from progressivis import Print
 from progressivis.stats import  RandomTable, Min, Max
 from progressivis.core.bitmap import bitmap
 from progressivis.table.range_query import RangeQuery
+from progressivis.core import aio
 import numpy as np
-import asyncio as aio
+
 
 from . import ProgressiveTest, main
 class TestPaste(ProgressiveTest):    

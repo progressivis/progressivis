@@ -12,10 +12,9 @@ logger = logging.getLogger(__name__)
 
 class Max(TableModule):
     parameters = [('history', np.dtype(int), 3)]
+    inputs = [SlotDescriptor('table', type=Table, required=True)]
 
     def __init__(self, columns=None, **kwds):
-        self._add_slots(kwds,'input_descriptors',
-                        [SlotDescriptor('table', type=Table, required=True)])
         super(Max, self).__init__(**kwds)
         self._columns = columns
         self.default_step_size = 10000
@@ -52,12 +51,13 @@ class Max(TableModule):
             if self._table is not None:
                 self._table.fill(-np.inf)
             dfslot.update(run_number)
-        indices = dfslot.created.next(step_size) # returns a slice
+        indices = dfslot.created.next(step_size)  # returns a slice
         steps = indices_len(indices)
-        if steps==0:
+        if steps == 0:
             return self._return_run_step(self.state_blocked, steps_run=0)
         input_df = dfslot.data()
-        op = self.filter_columns(input_df, fix_loc(indices)).max(keepdims=False)
+        op = self.filter_columns(input_df,
+                                 fix_loc(indices)).max(keepdims=False)
         if self._table is None:
             self._table = PsDict(op)
         else:

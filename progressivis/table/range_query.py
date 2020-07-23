@@ -1,7 +1,6 @@
 
 import numpy as np
 
-from progressivis.utils.synchronized import synchronized
 from progressivis.core.utils import indices_len
 
 from . import Table
@@ -14,6 +13,7 @@ from ..io import Variable
 from ..stats import Min, Max
 from .hist_index import HistogramIndex
 from ..utils.psdict import PsDict
+
 
 def _get_physical_table(t):
     return t if t.base is None else _get_physical_table(t.base)
@@ -53,7 +53,7 @@ class RangeQueryImpl(ModuleImpl):
             return
         if updated:
             self.result.remove(updated)
-            #res = self._eval_to_ids(limit, updated)
+            # res = self._eval_to_ids(limit, updated)
             res = self._hist_index.restricted_range_query(lower, upper,
                                                           only_locs=updated,
                                                           approximate=self._approximate)
@@ -66,7 +66,7 @@ class RangeQueryImpl(ModuleImpl):
         if deleted:
             self.result.remove(deleted)
 
-    def start(self, table, lower, upper, limit_changed, 
+    def start(self, table, lower, upper, limit_changed,
               created=None, updated=None, deleted=None):
         self._table = table
         self.result = _Selection()
@@ -82,20 +82,16 @@ class RangeQuery(TableModule):
                   ("watched_key_lower", str, ""),
                   ("watched_key_upper", str, ""),
                   # ('hist_index', object, None) # to improve ...
-    ]
+                  ]
+    inputs = [SlotDescriptor('table', type=Table, required=True),
+              SlotDescriptor('lower', type=Table, required=False),
+              SlotDescriptor('upper', type=Table, required=False),
+              SlotDescriptor('min', type=PsDict, required=False),
+              SlotDescriptor('max', type=PsDict, required=False)]
+    outputs = [SlotDescriptor('min', type=Table, required=False),
+               SlotDescriptor('max', type=Table, required=False)]
 
     def __init__(self, hist_index=None, approximate=False, **kwds):
-        """
-        """
-        self._add_slots(kwds, 'input_descriptors',
-                        [SlotDescriptor('table', type=Table, required=True),
-                         SlotDescriptor('lower', type=Table, required=False),
-                         SlotDescriptor('upper', type=Table, required=False),
-                         SlotDescriptor('min', type=PsDict, required=False),
-                         SlotDescriptor('max', type=PsDict, required=False)])
-        self._add_slots(kwds, 'output_descriptors', [
-            SlotDescriptor('min', type=Table, required=False),
-            SlotDescriptor('max', type=Table, required=False)])
         super(RangeQuery, self).__init__(**kwds)
         self._impl = None  # RangeQueryImpl(self.params.column, hist_index)
         self._hist_index = None
@@ -174,7 +170,7 @@ class RangeQuery(TableModule):
 
     def _create_min_max(self):
         if self._min_table is None:
-            self._min_table = PsDict({self._column: np.inf}) 
+            self._min_table = PsDict({self._column: np.inf})
         if self._max_table is None:
             self._max_table = PsDict({self._column: -np.inf})
 
@@ -186,10 +182,10 @@ class RangeQuery(TableModule):
             getattr(self, attr_).update(d)
 
     def _set_min_out(self, val):
-            return self._set_minmax_out('_min_table', val)
+        return self._set_minmax_out('_min_table', val)
 
     def _set_max_out(self, val):
-            return self._set_minmax_out('_max_table', val)
+        return self._set_minmax_out('_max_table', val)
 
     def get_data(self, name):
         if name == 'min':
@@ -244,9 +240,9 @@ class RangeQuery(TableModule):
             return self._return_run_step(self.state_blocked, steps_run=0)
         lower_value = lower_slot.data().get(self._watched_key_lower)
         upper_value = upper_slot.data().get(self._watched_key_upper)
-        if (lower_slot.data() is None or upper_slot.data() is None
-            or min_slot.data() is None or max_slot.data() is None
-            or len(min_slot.data()) == 0 or len(max_slot.data()) == 0):
+        if lower_slot.data() is None or upper_slot.data() is None \
+           or min_slot.data() is None or max_slot.data() is None \
+           or len(min_slot.data()) == 0 or len(max_slot.data()) == 0:
             return self._return_run_step(self.state_blocked, steps_run=0)
         minv = min_slot.data().get(self._watched_key_lower)
         maxv = max_slot.data().get(self._watched_key_upper)
@@ -282,11 +278,10 @@ class RangeQuery(TableModule):
         if input_slot.updated.any():
             updated = input_slot.updated.next(step_size)
             steps += indices_len(updated)
-        #with input_slot.lock:
         input_table = input_slot.data()
         if not self._table:
             self._table = TableSelectedView(input_table, bitmap([]))
-        
+
         if not self._impl.is_started:
             self._impl.start(input_table, lower_value, upper_value,
                              limit_changed,

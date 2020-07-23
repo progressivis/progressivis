@@ -4,9 +4,9 @@ from progressivis import Every, StorageManager
 from progressivis.io import CSVLoader
 from progressivis.stats import Histogram1D, Min, Max
 from progressivis.datasets import get_dataset
-
+from progressivis.core import aio
 import pandas as pd
-import asyncio as aio
+
 import logging
 #logging.basicConfig(level=logging.DEBUG)
 logging.basicConfig(level=logging.WARNING)

@@ -19,26 +19,25 @@ import numpy as np
 import logging
 logger = logging.getLogger(__name__)
 
+
 def has_len(d):
     return hasattr(d, '__len__')
 
+
 class Sample(TableModule):
     parameters = [('samples',  np.dtype(int), 50)]
+    inputs = [SlotDescriptor('table', type=Table)]
+    outputs = [SlotDescriptor('select', type=bitmap, required=False)]
 
     def __init__(self, **kwds):
-        self._add_slots(kwds,'input_descriptors',
-                        [SlotDescriptor('table', type=Table)])
-        self._add_slots(kwds,'output_descriptors',
-                        [SlotDescriptor('select', type=bitmap, required=False)])
-        
         super(Sample, self).__init__(**kwds)
         self._tmp_table = Table(self.generate_table_name('sample'),
-                            dshape='{select: int64}',
-                            create=True)
-        self._size = 0 # holds the size consumed from the input table so far
+                                dshape='{select: int64}',
+                                create=True)
+        self._size = 0  # holds the size consumed from the input table so far
         self._bitmap = None
         self._table = None
-        
+
     def reset(self):
         self._tmp_table.resize(0)
         self._size = 0
@@ -46,11 +45,11 @@ class Sample(TableModule):
         self.get_input_slot('table').reset()
 
     def get_data(self, name):
-        if name=='select':
+        if name == 'select':
             return self.get_bitmap()
         if self._table is not None:
             self._table.selection = self.get_bitmap()
-        return super(Sample,self).get_data(name)
+        return super(Sample, self).get_data(name)
 
     def get_bitmap(self):
         if self._bitmap is None:
@@ -143,13 +142,13 @@ class Sample(TableModule):
 
         indices = dfslot.created.next(step_size, as_slice=False)
         steps = indices_len(indices)
-        if steps==0:
+        if steps == 0:
             return self._return_run_step(self.state_blocked, steps_run=0)
-        
+
         k = int(self.params.samples)
         reservoir = self._tmp_table
         res = reservoir['select']
-        size = self._size # cache in local variable
+        size = self._size  # cache in local variable
         if size < k:
             logger.info('Filling the reservoir %d/%d', size, k)
             # fill the reservoir array until it contains k elements
@@ -157,7 +156,7 @@ class Sample(TableModule):
             reservoir.append({'select': rest})
             size = len(reservoir)
 
-        if len(indices)==0: # nothing else to do
+        if len(indices) == 0:  # nothing else to do
             self._size = size
             if steps:
                 self._bitmap = None
@@ -167,17 +166,17 @@ class Sample(TableModule):
         # Threshold (t) determines when to start fast sampling
         # logic. The optimal value for (t) may vary depending on RNG
         # performance characteristics.
-        
-        if size < t and len(indices)!=0:
+
+        if size < t and len(indices) != 0:
             logger.info('Normal sampling from %d to %d', size, t)
-        while size < t and len(indices)!=0:
+        while size < t and len(indices) != 0:
             # Normal reservoir sampling is fastest up to (t) samples
             j = np.random.randint(size)
             if j < k:
                 res[j] = indices.pop()[0]
             size += 1
 
-        if len(indices)==0:
+        if len(indices) == 0:
             self._size = size
             if steps:
                 self._bitmap = None

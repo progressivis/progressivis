@@ -1,7 +1,6 @@
 
 import operator
 import logging
-logger = logging.getLogger(__name__)
 
 import numpy as np
 
@@ -10,6 +9,7 @@ from .module import TableModule
 from ..core.bitmap import bitmap
 from .table import Table
 
+logger = logging.getLogger(__name__)
 
 ops = {"<":   operator.__lt__,
        "<=":  operator.__le__,
@@ -22,13 +22,13 @@ ops = {"<":   operator.__lt__,
        "!=":  operator.__ne__
        }
 
+
 class CmpQueryLast(TableModule):
+    inputs = [SlotDescriptor('table', type=Table, required=True),
+              SlotDescriptor('cmp', type=Table, required=True)]
+    outputs = [SlotDescriptor('select', type=bitmap, required=False)]
+
     def __init__(self, op="<", combine="and", **kwds):
-        self._add_slots(kwds, 'input_descriptors',
-                        [SlotDescriptor('table', type=Table, required=True),
-                         SlotDescriptor('cmp', type=Table, required=True)])
-        self._add_slots(kwds, 'output_descriptors',
-                        [SlotDescriptor('select', type=bitmap, required=False)])
         super(CmpQueryLast, self).__init__(**kwds)
         self.default_step_size = 1000
         self.op = op
@@ -53,7 +53,10 @@ class CmpQueryLast(TableModule):
         cmp_slot.clear_buffers()
         cmp_data = cmp_slot.data()
 
-        if table_data is None or len(table_data)==0 or cmp_data is None or len(cmp_data)==0:
+        if table_data is None \
+           or len(table_data) == 0 \
+           or cmp_data is None \
+           or len(cmp_data) == 0:
             # nothing to do if no filter is specified
             self._bitmap = None
             return self._return_run_step(self.state_blocked, steps_run=1)
@@ -96,5 +99,5 @@ class CmpQueryLast(TableModule):
             self._bitmap -= bitmap(indices)
             self._bitmap |= results
 
-        return self._return_run_step(self.next_state(table_slot), steps_run=steps)
-
+        return self._return_run_step(self.next_state(table_slot),
+                                     steps_run=steps)

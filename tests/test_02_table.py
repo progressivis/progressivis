@@ -10,10 +10,10 @@ from progressivis.table.table_selected import TableSelectedView
 from progressivis.io.csv_loader import CSVLoader
 from progressivis.datasets import get_dataset
 from progressivis.storage import Group
-
+from progressivis.core import aio
 import numpy as np
 import pandas as pd
-import asyncio as aio
+
 
 class TestTable(ProgressiveTest):
     #pylint: disable=protected-access

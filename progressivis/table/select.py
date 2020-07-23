@@ -11,10 +11,10 @@ logger = logging.getLogger(__name__)
 
 
 class Select(TableModule):
+    inputs = [SlotDescriptor('table', type=Table, required=True),
+              SlotDescriptor('select', type=bitmap, required=True)]
+
     def __init__(self, **kwds):
-        self._add_slots(kwds, 'input_descriptors',
-                        [SlotDescriptor('table', type=Table, required=True),
-                         SlotDescriptor('select', type=bitmap, required=True)])
         super(Select, self).__init__(**kwds)
         self.default_step_size = 1000
         # dependant modules

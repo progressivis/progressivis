@@ -6,7 +6,7 @@ from os.path import join, dirname, abspath
 import logging
 import io
 #from flask import render_template, request, send_from_directory, jsonify, abort, send_file
-import asyncio as aio
+from progressivis.core import aio
 import aiohttp
 from aiohttp import web
 import aiohttp_jinja2

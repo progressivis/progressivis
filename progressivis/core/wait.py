@@ -9,12 +9,10 @@ import numpy as np
 class Wait(Module):
     parameters = [('delay', np.dtype(float), np.nan),
                   ('reads', np.dtype(int), -1)]
+    inputs = [SlotDescriptor('inp', required=True)]
+    outputs = [SlotDescriptor('out', required=False)]
 
     def __init__(self, **kwds):
-        self._add_slots(kwds, 'input_descriptors',
-                        [SlotDescriptor('inp', required=True)])
-        self._add_slots(kwds, 'output_descriptors',
-                        [SlotDescriptor('out', required=False)])
         super(Wait, self).__init__(**kwds)
         if np.isnan(self.params.delay) and self.params.reads == -1:
             raise ProgressiveError('Module %s needs either a delay or '

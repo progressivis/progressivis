@@ -7,9 +7,9 @@ from progressivis.stats import RandomTable, Min, Max
 from progressivis.core.bitmap import bitmap
 from progressivis.table.range_query import RangeQuery
 from progressivis.utils.psdict import PsDict
-
+from progressivis.core import aio
 from . import ProgressiveTest, main
-import asyncio as aio
+
 
 class TestRangeQuery(ProgressiveTest):
     "Test Suite for RangeQuery Module"

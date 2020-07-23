@@ -1,6 +1,6 @@
 from . import ProgressiveTest
 
-import asyncio as aio
+from progressivis.core import aio
 from progressivis import Print
 from progressivis.stats import Min, Max, RandomTable
 

@@ -317,17 +317,13 @@ class HistogramIndex(TableModule):
         ('bins', np.dtype(int), 126),  # actually 128 with "-inf" and "inf"
         ('init_threshold', int, 1),
     ]
+    inputs = [SlotDescriptor('table', type=Table, required=True)]
+    outputs = [
+        SlotDescriptor('min_out', type=Table, required=False),
+        SlotDescriptor('max_out', type=Table, required=False)
+    ]
 
     def __init__(self, column, **kwds):
-        self._add_slots(kwds, 'input_descriptors', [
-            SlotDescriptor('table', type=Table, required=True),
-            # SlotDescriptor('min', type=Table, required=True),
-            # SlotDescriptor('max', type=Table, required=True)
-        ])
-        self._add_slots(kwds, 'output_descriptors', [
-            SlotDescriptor('min_out', type=Table, required=False),
-            SlotDescriptor('max_out', type=Table, required=False)])
-
         super(HistogramIndex, self).__init__(**kwds)
         self.column = column
         self._impl = None  # will be created when the init_threshold is reached
@@ -381,11 +377,11 @@ class HistogramIndex(TableModule):
         input_slot = self.get_input_slot('table')
         input_slot.update(run_number)
         steps = 0
-        #with input_slot.lock:
         input_table = input_slot.data()
         self._input_table = input_table
 
-        if input_table is None or len(input_table) < self.params.init_threshold:
+        if input_table is None \
+           or len(input_table) < self.params.init_threshold:
             # there are not enough rows. it's not worth building an index yet
             return self._return_run_step(self.state_blocked, steps_run=0)
         if self._impl is None:
@@ -419,7 +415,6 @@ class HistogramIndex(TableModule):
             steps += len(updated)
         if steps == 0:
             return self._return_run_step(self.state_blocked, steps_run=0)
-        #with input_slot.lock:
         input_table = input_slot.data()
         # self._table = input_table
         self._impl.update_histogram(created, updated, deleted)
@@ -449,6 +444,7 @@ class HistogramIndex(TableModule):
         # there are no histogram because init_threshold wasn't be reached yet
         # so we query the input table directly
         return self._eval_to_ids(operator_, limit)
+
     def restricted_query(self, operator_, limit, only_locs, approximate=APPROX):
         """
         Return the list of rows matching the query.

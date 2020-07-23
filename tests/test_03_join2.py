@@ -1,6 +1,6 @@
 import pandas as pd
-import asyncio as aio
 
+from progressivis.core import aio
 from progressivis import Print, Every
 from progressivis.stats import Stats
 from progressivis.io import CSVLoader

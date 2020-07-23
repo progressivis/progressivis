@@ -17,9 +17,9 @@ logger = logging.getLogger(__name__)
 
 
 class PairwiseDistances(TableModule):
+    inputs = [SlotDescriptor('table', type=Table)]
+
     def __init__(self, metric='euclidean', columns=None, n_jobs=1, **kwds):
-        self._add_slots(kwds, 'input_descriptors',
-                        [SlotDescriptor('table', type=Table)])
         super(PairwiseDistances, self).__init__(dataframe_slot='distance',
                                                 **kwds)
         self.default_step_size = kwds.get('step_Size', 100)  # initial guess

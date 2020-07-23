@@ -7,7 +7,7 @@ from progressivis.table.merge import Merge
 from progressivis.table.constant import Constant
 from progressivis.table.table import Table
 from progressivis.datasets import get_dataset
-import asyncio as aio
+from progressivis.core import aio
 import pandas as pd
 #from pprint import pprint
 
@@ -21,8 +21,8 @@ class TestMerge(ProgressiveTest):
         stat2=Stats(2, scheduler=s)
         stat2.input.table = csv.output.table
         merge=Merge(left_index=True,right_index=True,scheduler=s)
-        merge.input.table = stat1.output.stats
-        merge.input.table = stat2.output.stats
+        merge.input.table = stat1.output.table
+        merge.input.table = stat2.output.table
         pr=Print(proc=self.terse, scheduler=s)
         pr.input.df = merge.output.table
         prlen = Every(proc=self.terse, constant_time=True, scheduler=s)

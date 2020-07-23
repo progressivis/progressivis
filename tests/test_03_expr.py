@@ -1,5 +1,5 @@
 from . import ProgressiveTest
-import asyncio as aio
+from progressivis.core import aio
 from progressivis.datasets import get_dataset
 from  progressivis.core import Scheduler
 

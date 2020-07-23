@@ -41,10 +41,12 @@ if "__truediv__" in operator.__dict__:
     
 
 class Binop(TableModule):
+    inputs = [
+        SlotDescriptor('arg1', type=Table, required=True),
+        SlotDescriptor('arg2', type=Table, required=True)
+    ]
+
     def __init__(self, binop, combine=None, **kwds):
-        self._add_slots(kwds, 'input_descriptors',
-                        [SlotDescriptor('arg1', type=Table, required=True),
-                         SlotDescriptor('arg2', type=Table, required=True)])
         super(Binop, self).__init__(**kwds)
         self.default_step_size = 1000
         self.op = binop
@@ -74,7 +76,10 @@ class Binop(TableModule):
         arg2_slot.update(run_number)
         arg2_data = arg1_slot.data()
 
-        if arg1_data is None or len(arg1_data)==0 or arg2_data is None or len(arg2_data)==0:
+        if arg1_data is None \
+           or len(arg1_data) == 0 \
+           or arg2_data is None \
+           or len(arg2_data) == 0:
             # nothing to do if no filter is specified
             self._bitmap = None
             return self._return_run_step(self.state_blocked, steps_run=1)
