@@ -11,14 +11,11 @@ from progressivis.core.decorators import *
 import asyncio as aio
 
 class FooABC(TableModule):
-    def __init__(self, **kwds):
-        self._add_slots(kwds, 'input_descriptors',
-                        [SlotDescriptor('a', type=Table, required=True),
-                         SlotDescriptor('b', type=Table, required=True),
-                         SlotDescriptor('c', type=Table, required=True),
-                         SlotDescriptor('d', type=Table, required=True),
-                        ])
-        super().__init__(**kwds)
+    inputs = [SlotDescriptor('a', type=Table, required=True),
+              SlotDescriptor('b', type=Table, required=True),
+              SlotDescriptor('c', type=Table, required=True),
+              SlotDescriptor('d', type=Table, required=True),
+    ]
     def run_step_impl(self, ctx, run_number, step_size):
         if self._table is None:
             self._table = Table(self.generate_table_name('Foo'),
@@ -31,6 +28,13 @@ class FooABC(TableModule):
 class RunIfAll(FooABC):
     @process_slot("a", "b", "c", "d", reset_if=False)    
     @run_if_all
+    def run_step(self, run_number, step_size, howlong):
+        with self.context as ctx:
+            return self.run_step_impl(ctx, run_number, step_size)
+
+class RunAlways(FooABC):
+    @process_slot("a", "b", "c", "d", reset_if=False)    
+    @run_always
     def run_step(self, run_number, step_size, howlong):
         with self.context as ctx:
             return self.run_step_impl(ctx, run_number, step_size)
@@ -100,6 +104,21 @@ def _4_csv_scenario(module, s):
                 s.task_stop()
         return _fun
     
+def _4_const_scenario(module, s):
+        table_ = Table('const_4_scenario', dshape="{a: int}", create=True)
+        const_a = Constant(table=table_, scheduler=s)
+        const_b = Constant(table=table_, scheduler=s)
+        const_c = Constant(table=table_, scheduler=s)
+        const_d = Constant(table=table_, scheduler=s)
+        module.input.a = const_a.output.table
+        module.input.b = const_b.output.table
+        module.input.c = const_c.output.table
+        module.input.d = const_d.output.table        
+        def _fun(s,r):
+            if r>10:
+                s.task_stop()
+        return _fun
+
 def _2_csv_2_const_scenario(module, s):
         csv_a = CSVLoader(get_dataset('bigfile'), index_col=False,
                                header=None, scheduler=s)
@@ -155,7 +174,7 @@ class TestDecorators(ProgressiveTest):
         self.assertEqual(module.context._slot_policy, 'run_if_any')
         self.assertEqual(module.context._slot_expr, [('a', 'c'), ('b', 'd')])
 #@skip
-class TestDecoratorsWithConst(ProgressiveTest):
+class TestDecoratorsWith2CSV2Const(ProgressiveTest):
     def test_decorators_all(self):
         s = self.scheduler()
         module = RunIfAll(scheduler=s)
@@ -164,7 +183,6 @@ class TestDecoratorsWithConst(ProgressiveTest):
         self.assertTrue(module.table() is None) # evidence that run_step_impl() was NOT called
         self.assertEqual(module.context._slot_policy, 'run_if_all')
         self.assertEqual(module.context._slot_expr, [['a', 'b', 'c', 'd']])
-
     def test_decorators_all_or_all(self):
         s = self.scheduler()
         module = RunIfAllacOrAllbd(scheduler=s)
@@ -200,6 +218,28 @@ class TestDecoratorsWithConst(ProgressiveTest):
         self.assertTrue(module.table() is not None) # evidence that run_step_impl() was called
         self.assertEqual(module.context._slot_policy, 'run_if_any')
         self.assertEqual(module.context._slot_expr, [('a', 'c'), ('b', 'd')])
+
+#@skip
+class TestDecoratorsWith4Const(ProgressiveTest):
+    def test_decorators_any(self):
+        s = self.scheduler()
+        module = RunIfAny(scheduler=s)
+        _fun = _4_const_scenario(module, s)
+        aio.run(s.start(tick_proc=_fun))
+        self.assertTrue(module.table() is None) # evidence that run_step_impl() was NOT called
+        self.assertEqual(module.context._slot_policy, 'run_if_any')
+        self.assertEqual(module.context._slot_expr, [['a', 'b', 'c', 'd']])
+
+    def test_decorators_always(self):
+        s = self.scheduler()
+        module = RunAlways(scheduler=s)
+        _fun = _4_const_scenario(module, s)
+        aio.run(s.start(tick_proc=_fun))
+        self.assertTrue(module.table() is not None) # evidence that run_step_impl() was called despite slots inactivity
+        self.assertEqual(module.context._slot_policy, 'run_always')
+        self.assertEqual(module.context._slot_expr, [['a', 'b', 'c', 'd']])
+
+
 #@skip
 class TestDecoratorsInvalid(ProgressiveTest):
     def test_invalid_process_after_run(self):

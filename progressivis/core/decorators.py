@@ -72,7 +72,7 @@ def process_slot(*names, reset_if=('update', 'delete'), exit_if=False, reset_cb=
         return run_step_wrapper
     return run_step_decorator
 
-_RULES = dict(run_if_all="or_if_all", run_if_any="and_if_any")
+_RULES = dict(run_if_all="or_if_all", run_if_any="and_if_any", run_always="run_always")
 _INV_RULES = {v:k for (k, v) in _RULES.items()}
 def accepted_first(s):
     return s in _RULES
@@ -105,7 +105,8 @@ def _slot_policy_rule(decname, *slots_maybe):
                     if not accepted_first(decname):
                         raise ValueError(f"{decname} must follow {_INV_RULES[decname]}")
                     self.context._slot_policy = decname
-                elif decname != _RULES[self.context._slot_policy]: # first exists and is not compatble
+                elif (self.context._slot_policy == "run_always" or
+                      decname != _RULES[self.context._slot_policy]): # first exists and is not compatble
                     raise ValueError(f"{decname} cannot follow {self.context._slot_policy}")
                 elif self.context._slot_expr == [tuple()]:
                     raise ValueError(f"{decname} without arguments must be unique")
@@ -128,6 +129,7 @@ run_if_all = partial(_slot_policy_rule, "run_if_all")
 or_all = partial(_slot_policy_rule, "or_if_all")
 run_if_any = partial(_slot_policy_rule, "run_if_any")
 and_any = partial(_slot_policy_rule, "and_if_any")
+run_always = partial(_slot_policy_rule, "run_always")
 
 
 def run_step_required(self_):
@@ -155,6 +157,8 @@ def run_step_required(self_):
                     break
             if not grp_test:
                 return False
+        return True
+    elif policy == "run_always":
         return True
     else:
         raise ValueError("Unknown slot policy")
