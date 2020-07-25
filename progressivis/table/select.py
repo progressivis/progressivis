@@ -11,8 +11,14 @@ logger = logging.getLogger(__name__)
 
 
 class Select(TableModule):
-    inputs = [SlotDescriptor('table', type=Table, required=True),
-              SlotDescriptor('select', type=bitmap, required=True)]
+    inputs = [SlotDescriptor('table', type=Table, required=True,
+                             buffer_created=False,
+                             buffer_updated=True,
+                             buffer_deleted=False),
+              SlotDescriptor('select', type=bitmap, required=True,
+                             buffer_created=True,
+                             buffer_updated=False,
+                             buffer_deleted=True)]
 
     def __init__(self, **kwds):
         super(Select, self).__init__(**kwds)
@@ -32,6 +38,7 @@ class Select(TableModule):
         if self.input_module is not None:
             return self
         scheduler = self.scheduler
+        kwds['scheduler'] = scheduler  # make sure we pass it
         self.input_module = input_module
         self.input_slot = input_slot
 
@@ -52,16 +59,16 @@ class Select(TableModule):
     def run_step(self, run_number, step_size, howlong):
         table_slot = self.get_input_slot('table')
         table = table_slot.data()
-        table_slot.update(run_number,
-                          buffer_created=False,
-                          buffer_updated=True,
-                          buffer_deleted=False,
-                          manage_columns=False)
+        # table_slot.update(run_number,
+        #                   buffer_created=False,
+        #                   buffer_updated=True,
+        #                   buffer_deleted=False,
+        #                   manage_columns=False)
         select_slot = self.get_input_slot('select')
-        select_slot.update(run_number,
-                           buffer_created=True,
-                           buffer_updated=False,
-                           buffer_deleted=True)
+        # select_slot.update(run_number,
+        #                    buffer_created=True,
+        #                    buffer_updated=False,
+        #                    buffer_deleted=True)
         steps = 0
         if self._table is None:
             if self._columns is None:

@@ -72,7 +72,7 @@ class Var(TableModule):
 
     def run_step(self, run_number, step_size, howlong):
         dfslot = self.get_input_slot('table')
-        dfslot.update(run_number)
+        # dfslot.update(run_number)
         if dfslot.updated.any() or dfslot.deleted.any():
             dfslot.reset()
             self._table = None

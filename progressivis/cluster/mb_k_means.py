@@ -135,7 +135,7 @@ class MBKMeans(TableModule):
                 init_centers = self.mbk.cluster_centers_
                 self.reset(init=init_centers)
 
-        dfslot.update(run_number)
+        # dfslot.update(run_number)
 
         if dfslot.deleted.any() or dfslot.updated.any():
             logger.debug('has deleted or updated, reseting')

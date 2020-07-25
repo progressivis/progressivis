@@ -64,7 +64,7 @@ class Sample(TableModule):
             if input_table is None:
                 return self._return_run_step(self.state_blocked, steps_run=0)
             self._table = TableSelectedView(input_table, bitmap([]))
-        dfslot.update(run_number)
+        # dfslot.update(run_number)
         # do not produce another sample is nothing has changed
         if dfslot.deleted.any():
             self.reset()

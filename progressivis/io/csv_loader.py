@@ -1,10 +1,10 @@
 import pandas as pd
 import numpy as np
-
 import logging
-from progressivis  import SlotDescriptor
-from progressivis.utils.errors import ProgressiveError, ProgressiveStopIteration
-from ..core.module import AnyAll
+
+from progressivis import SlotDescriptor
+from progressivis.utils.errors import (ProgressiveError,
+                                       ProgressiveStopIteration)
 from ..table.module import TableModule
 from ..table.table import Table
 from ..table.dshape import dshape_from_dataframe
@@ -65,7 +65,7 @@ class CSVLoader(TableModule):
         self._last_saved_id = 0
         self._table = None
         #self._do_not_wait = ["filenames"]
-        self.wait_expr = AnyAll([])
+        # self.wait_expr = AnyAll([])
 
     def rows_read(self):
         "Return the number of rows read so far."
@@ -170,18 +170,17 @@ class CSVLoader(TableModule):
                         return self.state_terminated
                     self.filepath_or_buffer = None
 
-            else: # this case does not support recovery
+            else:  # this case does not support recovery
                 fn_slot = self.get_input_slot('filenames')
                 if fn_slot is None or fn_slot.output_module is None:
                     return self.state_terminated
-                #with fn_slot.lock:
-                fn_slot.update(run_number)
+                # fn_slot.update(run_number)
                 if fn_slot.deleted.any() or fn_slot.updated.any():
                     raise ProgressiveError('Cannot handle input file changes')
                 df = fn_slot.data()
                 while self.parser is None:
                     indices = fn_slot.created.next(1)
-                    if indices.stop==indices.start:
+                    if indices.stop == indices.start:
                         return self.state_blocked
                     filename = df.at[indices.start, 'filename']
                     try:

@@ -271,7 +271,7 @@ class Scheduler(object):
                         for coro in self.coros])
         # runners.append(aio.create_task(self.unlocker(), "unlocker"))
         # TODO: find the "right" initialisation value ...
-        KEEP_RUNNING =  min(50, len(self._run_list) * 3)
+        KEEP_RUNNING = min(50, len(self._run_list) * 3)
         self._keep_running = KEEP_RUNNING
         await aio.gather(*runners)
         modules = [self._modules[m] for m in self._runorder]
@@ -300,13 +300,16 @@ class Scheduler(object):
                             " because of interactive mode",
                             module.name)
                 continue
+            # increment the run number, even if we don't call the module
+            self._run_number += 1
+            # import pdb; pdb.set_trace()
+            module.prepare_run(self._run_number)
             if not(module.is_ready() or self.has_input()):
                 logger.info("Module %s not scheduled"
                             " because not ready and has no input",
                             module.name)
                 continue
 
-            self._run_number += 1
             await self._run_tick_procs()
             module.run(self._run_number)
             await module.after_run(self._run_number)

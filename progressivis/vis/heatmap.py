@@ -52,7 +52,7 @@ class Heatmap(TableModule):
     def run_step(self, run_number, step_size, howlong):
         dfslot = self.get_input_slot('array')
         input_df = dfslot.data()
-        dfslot.update(run_number)
+        # dfslot.update(run_number)
         indices = dfslot.created.next()
         steps = indices_len(indices)
         if steps == 0:

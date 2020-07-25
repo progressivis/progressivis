@@ -60,6 +60,8 @@ class IndexUpdate(object):
     def combine(self, other,
                 update_created=True, update_updated=True, update_deleted=True):
         "Combine this IndexUpdate with another IndexUpdate"
+        if other is None:
+            return
         if other.deleted:
             # if not created yet, no need to delete
             toignore = other.deleted & self.created

@@ -201,7 +201,7 @@ class RangeQuery(TableModule):
         # lower/upper
         #
         lower_slot = self.get_input_slot('lower')
-        lower_slot.update(run_number)
+        # lower_slot.update(run_number)
         upper_slot = self.get_input_slot('upper')
         limit_changed = False
         if lower_slot.deleted.any():
@@ -213,7 +213,7 @@ class RangeQuery(TableModule):
             lower_slot.created.next()
             limit_changed = True
         if not (lower_slot is upper_slot):
-            upper_slot.update(run_number)
+            # upper_slot.update(run_number)
             if upper_slot.deleted.any():
                 upper_slot.deleted.next()
             if upper_slot.updated.any():
@@ -226,15 +226,17 @@ class RangeQuery(TableModule):
         # min/max
         #
         min_slot = self.get_input_slot('min')
-        min_slot.update(run_number)
-        min_slot.created.next()
-        min_slot.updated.next()
-        min_slot.deleted.next()
+        min_slot.clear_buffers()
+        # min_slot.update(run_number)
+        # min_slot.created.next()
+        # min_slot.updated.next()
+        # min_slot.deleted.next()
         max_slot = self.get_input_slot('max')
-        max_slot.update(run_number)
-        max_slot.created.next()
-        max_slot.updated.next()
-        max_slot.deleted.next()
+        max_slot.clear_buffers()
+        # max_slot.update(run_number)
+        # max_slot.created.next()
+        # max_slot.updated.next()
+        # max_slot.deleted.next()
         if (lower_slot.data() is None or upper_slot.data() is None
                 or len(lower_slot.data()) == 0 or len(upper_slot.data()) == 0):
             return self._return_run_step(self.state_blocked, steps_run=0)
@@ -261,7 +263,7 @@ class RangeQuery(TableModule):
             limit_changed = True
         self._set_min_out(lower_value)
         self._set_max_out(upper_value)
-        input_slot.update(run_number)
+        # input_slot.update(run_number)
         if not input_slot.has_buffered() and not limit_changed:
             return self._return_run_step(self.state_blocked, steps_run=0)
         # ...

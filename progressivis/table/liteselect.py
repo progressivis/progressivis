@@ -27,10 +27,10 @@ class LiteSelect(TableModule):
         #                  buffer_deleted=False,
         #                  manage_columns=False)
         select_slot = self.get_input_slot('select')
-        select_slot.update(run_number,
-                           buffer_created=True,
-                           buffer_updated=False,
-                           buffer_deleted=True)
+        # select_slot.update(run_number,
+        #                    buffer_created=True,
+        #                    buffer_updated=False,
+        #                    buffer_deleted=True)
 
         steps = 0
         if self._table is None:

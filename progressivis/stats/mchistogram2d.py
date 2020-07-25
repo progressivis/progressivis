@@ -90,12 +90,13 @@ class MCHistogram2D(NAry):
             meta, x_column, y_column = meta
             if meta == 'min':
                 min_slot = input_slot
-                min_slot.update(run_number)
+                # min_slot.update(run_number)
                 if min_slot.has_buffered():
                     has_creation = True
-                min_slot.created.next()
-                min_slot.updated.next()
-                min_slot.deleted.next()
+                min_slot.clear_buffers()
+                # min_slot.created.next()
+                # min_slot.updated.next()
+                # min_slot.deleted.next()
                 min_df = min_slot.data()
                 if min_df is None:
                     continue
@@ -103,12 +104,13 @@ class MCHistogram2D(NAry):
                 ymin = min(ymin, min_df[y_column])
             elif meta == 'max':
                 max_slot = input_slot
-                max_slot.update(run_number)
+                # max_slot.update(run_number)
                 if max_slot.has_buffered():
                     has_creation = True
-                max_slot.created.next()
-                max_slot.updated.next()
-                max_slot.deleted.next()
+                max_slot.clear_buffers()
+                # max_slot.created.next()
+                # max_slot.updated.next()
+                # max_slot.deleted.next()
                 max_df = max_slot.data()
                 if max_df is None:
                     continue
@@ -126,7 +128,7 @@ class MCHistogram2D(NAry):
 
     def run_step(self, run_number, step_size, howlong):
         dfslot = self.get_input_slot('data')
-        dfslot.update(run_number)
+        # dfslot.update(run_number)
         if dfslot.updated.any():
             logger.debug('reseting histogram')
             self.reset()

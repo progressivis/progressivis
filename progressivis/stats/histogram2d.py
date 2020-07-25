@@ -107,11 +107,11 @@ class Histogram2D(TableModule):
 
     def run_step(self, run_number, step_size, howlong):
         dfslot = self.get_input_slot('table')
-        dfslot.update(run_number)
+        # dfslot.update(run_number)
         min_slot = self.get_input_slot('min')
-        min_slot.update(run_number)
+        # min_slot.update(run_number)
         max_slot = self.get_input_slot('max')
-        max_slot.update(run_number)
+        # max_slot.update(run_number)
         if dfslot.updated.any():
             logger.debug('reseting histogram')
             self.reset()

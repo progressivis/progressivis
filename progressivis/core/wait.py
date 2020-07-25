@@ -47,4 +47,5 @@ class Wait(Module):
         return 1
 
     def run_step(self, run_number, step_size, howlong):
+        self.get_input_slot("inp").clear_buffers()
         return self._return_run_step(self.state_blocked, steps_run=1)

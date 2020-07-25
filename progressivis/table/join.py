@@ -191,6 +191,7 @@ class Join(NAry):
         for name in self.get_input_slot_multiple():
             slot = self.get_input_slot(name)
             table = slot.data()
+            slot.clear_buffers()
             frames.append(table)
         table = frames[0]
         for other in frames[1:]:

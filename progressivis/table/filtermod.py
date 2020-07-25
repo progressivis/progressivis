@@ -1,3 +1,5 @@
+import logging
+
 from . import Table
 from . import TableSelectedView
 from ..core.slot import SlotDescriptor
@@ -5,6 +7,9 @@ from .module import TableModule
 from ..core.utils import indices_len
 from .filter_impl import FilterImpl
 from ..core.bitmap import bitmap
+
+
+logger = logging.getLogger(__name__)
 
 
 class FilterMod(TableModule):
@@ -19,7 +24,7 @@ class FilterMod(TableModule):
 
     def run_step(self, run_number, step_size, howlong):
         input_slot = self.get_input_slot('table')
-        input_slot.update(run_number)
+        # input_slot.update(run_number)
         steps = 0
         if input_slot.updated.any():
             input_slot.reset()
@@ -41,14 +46,9 @@ class FilterMod(TableModule):
         input_table = input_slot.data()
         if not self._impl.is_started:
             self._table = TableSelectedView(input_table, bitmap([]))
-            status = self._impl.start(input_table,
-                                      created=created,
-                                      updated=updated,
-                                      deleted=deleted)
-            self._table.selection = self._impl.result._values
-        else:
-            status = self._impl.resume(created=created,
-                                       updated=updated,
-                                       deleted=deleted)
-            self._table.selection = self._impl.result._values
+        self._impl.start(input_table,
+                         created=created,
+                         updated=updated,
+                         deleted=deleted)
+        self._table.selection = self._impl.result._values
         return self._return_run_step(self.next_state(input_slot), steps)

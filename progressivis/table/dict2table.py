@@ -3,6 +3,7 @@ from .module import TableModule
 from ..utils.psdict import PsDict
 from .table import Table
 
+
 class Dict2Table(TableModule):
     """
     dict to table convertor
@@ -19,7 +20,7 @@ class Dict2Table(TableModule):
 
     def run_step(self, run_number, step_size, howlong):
         dict_slot = self.get_input_slot('dict_')
-        dict_slot.update(run_number)
+        # dict_slot.update(run_number)
         dict_ = dict_slot.data()
         if dict_ is None:
             return self._return_run_step(self.state_blocked, steps_run=0)

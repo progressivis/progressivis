@@ -16,6 +16,7 @@ class LastRow(TableModule):
 
     def run_step(self, run_number, step_size, howlong):
         slot = self.get_input_slot('table')
+        slot.clear_buffers()
         df = slot.data()
 
         if df is not None:
