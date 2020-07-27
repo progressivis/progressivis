@@ -20,6 +20,7 @@ class MBKMeans(TableModule):
     """
     Mini-batch k-means using the sklearn implementation.
     """
+    parameters = [('samples',  np.dtype(int), 50)]
     inputs = [
         SlotDescriptor('moved_center', type=PsDict, required=False),
         SlotDescriptor('table', type=Table, required=True)
@@ -50,6 +51,7 @@ class MBKMeans(TableModule):
         self._old_centers = deque(maxlen=conv_steps)
         self._data_changed = 0
         self._conv_out = PsDict({'convergence': 'unknown'})
+        self.params.samples = n_clusters
 
     def predict_step_size(self, duration):
         p = super().predict_step_size(duration)
