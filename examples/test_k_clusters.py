@@ -8,7 +8,8 @@ from progressivis.io import CSVLoader
 from progressivis.vis import MCScatterPlot
 from progressivis.datasets import get_dataset
 from progressivis.stats import RandomTable
-
+from progressivis.utils.psdict import PsDict
+import numpy as np
 try:
     s = scheduler
 except NameError:
@@ -19,6 +20,8 @@ data = CSVLoader(get_dataset('cluster:s1'),sep='\\s+',skipinitialspace=True,head
 mbkmeans = MBKMeans(columns=['_0', '_1'], n_clusters=15, batch_size=100, is_input=False, scheduler=s)
 sp = MCScatterPlot(scheduler=s, classes=[('Scatterplot', '_0', '_1', mbkmeans)], approximate=True)
 sp.create_dependent_modules(data,'table')
+sp['Scatterplot'].min_value._table = PsDict({'_0': -np.inf, '_1': -np.inf})
+sp['Scatterplot'].max_value._table = PsDict({'_0': np.inf, '_1': np.inf})
 mbkmeans.input.table = sp['Scatterplot'].range_query_2d.output.table
 mbkmeans.create_dependent_modules()
 prn = Every(scheduler=s, proc=print)
