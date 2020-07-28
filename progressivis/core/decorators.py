@@ -52,7 +52,7 @@ def process_slot(*names, reset_if=('update', 'delete'), exit_if=False, reset_cb=
                 self.context = _Context()
             for name in names:
                 slot = self.get_input_slot(name)
-                slot.update(run_number)
+                # slot.update(run_number)
                 if exit_if and (slot.data() is None or not slot.has_buffered()):
                     return self._return_run_step(self.state_blocked, steps_run=0)            
                 if ('update' in reset_if and slot.updated.any()) or\
