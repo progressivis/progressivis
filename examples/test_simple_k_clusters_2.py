@@ -22,7 +22,7 @@ file_name = "/tmp/foobar.csv"
 gen_csv(file_name, rows=999999, reset=True) #, header='_0,_1', reset=False)
 data = CSVLoader(file_name, skipinitialspace=True, header=None, index_col=False,scheduler=s)
 mbkmeans = MBKMeans(columns=['_0', '_1'], n_clusters=3, batch_size=100, tol=0.01, is_input=False, scheduler=s)
-sp = MCScatterPlot(scheduler=s, classes=[('Scatterplot', '_0', '_1', mbkmeans)], approximate=True)
+sp = MCScatterPlot(scheduler=s, classes=[('Scatterplot', '_0', '_1', mbkmeans)])
 sp.create_dependent_modules(data,'table')
 sp['Scatterplot'].min_value._table = PsDict({'_0': -np.inf, '_1': -np.inf})
 sp['Scatterplot'].max_value._table = PsDict({'_0': np.inf, '_1': np.inf})
