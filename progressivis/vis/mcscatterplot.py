@@ -301,8 +301,8 @@ class MCScatterPlot(NAry):
                 # slot.created.next()
                 # slot.updated.next()
                 # slot.deleted.next()
-                self._json_cache = None
                 #print("SLOT has buffered", slot)
+        self._json_cache = None                
         return self._return_run_step(self.state_blocked, steps_run=0)
 
     def run(self, run_number):
