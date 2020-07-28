@@ -27,13 +27,13 @@ class Paste(TableModule):
 
     def run_step(self, run_number, step_size, howlong):
         first_slot = self.get_input_slot('first')
-        first_slot.update(run_number)
+        # first_slot.update(run_number)
         second_slot = self.get_input_slot('second')
         first_table = first_slot.data()
         second_table = second_slot.data()
         if first_table is None or second_table is None:
             return self._return_run_step(self.state_blocked, steps_run=0)
-        second_slot.update(run_number)
+        # second_slot.update(run_number)
         if first_slot.deleted.any() or second_slot.deleted.any():
             first_slot.reset()
             second_slot.reset()

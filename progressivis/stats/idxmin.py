@@ -50,7 +50,6 @@ class IdxMin(TableModule):
                 return self._return_run_step(self.state_blocked, steps_run=0)
             input_table = dfslot.data()
             op = self.filter_columns(input_table, fix_loc(indices)).idxmin()
-
             if self._min is None:
                 min_ = OrderedDict(zip(op.keys(), [np.nan]*len(op.keys())))
                 for col, ix in op.items():

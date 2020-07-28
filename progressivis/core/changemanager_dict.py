@@ -1,12 +1,10 @@
 
-#from .bitmap import bitmap
-from .index_update import IndexUpdate
 from .changemanager_base import BaseChangeManager
 from ..utils.psdict import PsDict
-from .bitmap import bitmap
 from ..table.tablechanges import TableChanges
 from .slot import Slot
 import copy
+
 
 class DictChangeManager(BaseChangeManager):
     """
@@ -23,13 +21,14 @@ class DictChangeManager(BaseChangeManager):
             buffer_updated,
             buffer_deleted)
         self._last_dict = None
-        #import pdb;pdb.set_trace()
         data = slot.data()
         if data.changes is None:
             data.changes = TableChanges()
+
     def reset(self, name=None):
         super(DictChangeManager, self).reset(name)
         self._last_dict = None
+
     def update(self, run_number, data, mid):
         # pylint: disable=unused-argument
         assert isinstance(data, PsDict)

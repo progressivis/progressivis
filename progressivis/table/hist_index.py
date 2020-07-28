@@ -375,7 +375,7 @@ class HistogramIndex(TableModule):
 
     def run_step(self, run_number, step_size, howlong):
         input_slot = self.get_input_slot('table')
-        input_slot.update(run_number)
+        # input_slot.update(run_number)
         steps = 0
         input_table = input_slot.data()
         self._input_table = input_table

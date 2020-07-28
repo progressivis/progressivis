@@ -1,10 +1,9 @@
 """
 Base class for change managers.
-Change managers are used by slots to maintain the list of changes in the data structures
-they manage, typically a Table, a Column, or a bitmap.
+Change managers are used by slots to maintain the list of changes in the data
+structures they manage, typically a Table, a Column, or a bitmap.
 """
 
-from abc import ABCMeta, abstractmethod
 import logging
 from .index_update import IndexUpdate
 from .bitmap import bitmap
@@ -14,7 +13,6 @@ logger = logging.getLogger(__name__)
 
 class BaseChangeManager(object):
     "Base class for change managers"
-    __metaclass__ = ABCMeta
 
     def __init__(self,
                  slot,
@@ -76,7 +74,6 @@ class BaseChangeManager(object):
         "Return the date of the last update"
         return self._last_update
 
-    @abstractmethod
     def update(self, run_number, data, mid):  # pragma no cover
         """
         Compute the changes from the last_update to the specified run_number.
@@ -142,5 +139,6 @@ class _buffer(object):
         "Adds a sset of items in the buffer"
         if self.buffer:
             self.changes |= bm
+
 
 EMPTY_BUFFER = _buffer(False, bitmap())

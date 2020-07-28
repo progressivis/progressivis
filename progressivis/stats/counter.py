@@ -23,6 +23,7 @@ class Counter(TableModule):
             return True
         return super(Counter, self).is_ready()
 
+
     def reset(self):
         if self._table is not None:
                 self._table.resize(0)

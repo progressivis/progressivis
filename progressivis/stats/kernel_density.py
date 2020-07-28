@@ -25,7 +25,7 @@ class KernelDensity(TableModule):
 
     def run_step(self, run_number, step_size, howlong):
         dfslot = self.get_input_slot('table')
-        dfslot.update(run_number)
+        # dfslot.update(run_number)
         if dfslot.deleted.any():
             raise ValueError("Not implemented yet")
         if not dfslot.created.any():

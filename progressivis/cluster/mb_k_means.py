@@ -20,6 +20,7 @@ class MBKMeans(TableModule):
     """
     Mini-batch k-means using the sklearn implementation.
     """
+    parameters = [('samples',  np.dtype(int), 50)]
     inputs = [
         SlotDescriptor('moved_center', type=PsDict, required=False),
         SlotDescriptor('table', type=Table, required=True)
@@ -30,7 +31,7 @@ class MBKMeans(TableModule):
     ]
 
     DATA_CHANGED_MAX = 3
-    def __init__(self, n_clusters, columns=None, batch_size=100, tol=0.1, conv_steps=3,
+    def __init__(self, n_clusters, columns=None, batch_size=100, tol=0.01, conv_steps=2,
                  is_input=True, random_state=None, **kwds):
         super(MBKMeans, self).__init__(**kwds)
         self.mbk = MiniBatchKMeans(n_clusters=n_clusters,
@@ -50,7 +51,10 @@ class MBKMeans(TableModule):
         self._old_centers = deque(maxlen=conv_steps)
         self._data_changed = 0
         self._conv_out = PsDict({'convergence': 'unknown'})
-
+        self.params.samples = n_clusters
+        self._min_p = None
+        self._max_p = None
+        
     def predict_step_size(self, duration):
         p = super().predict_step_size(duration)
         return max(p, self.n_clusters)
@@ -68,6 +72,7 @@ class MBKMeans(TableModule):
         self._labels = None
         self.set_state(self.state_ready)
         self._data_changed = 0
+        self._old_centers.clear()
 
     def starting(self):
         super(MBKMeans, self).starting()
@@ -104,14 +109,16 @@ class MBKMeans(TableModule):
         return True if self.get_input_slot('moved_center') is None else slot_name=="table"
 
     def _test_convergence(self):
+        ampl = distance.euclidean(self._min_p, self._max_p)
+        eps_ = ampl*self._tol
         last_centers = self._old_centers[-1]
         def _loop_fun(): # avoids a double break on False case
             for old_centers in list(self._old_centers)[:-1]:
                 sum = 0.0
                 for i in range(self.mbk.n_clusters):
                     sum += distance.euclidean(old_centers[i], last_centers[i])
-                    if sum > self._tol:
-                        print("Convergence test failed:", sum, self._tol, old_centers[i], last_centers[i])
+                    if sum > eps_:
+                        print("Convergence test failed:", sum, self._tol, old_centers[i], last_centers[i], i)
                         return False
             return True
         res = _loop_fun()
@@ -134,8 +141,8 @@ class MBKMeans(TableModule):
                     self.set_centroid(c, msg[c][:2])
                 init_centers = self.mbk.cluster_centers_
                 self.reset(init=init_centers)
-
-        dfslot.update(run_number)
+                dfslot.update(run_number)
+        # dfslot.update(run_number)
 
         if dfslot.deleted.any() or dfslot.updated.any():
             logger.debug('has deleted or updated, reseting')
@@ -153,11 +160,12 @@ class MBKMeans(TableModule):
         if steps == 0:
             self._data_changed -= 1
             trm = dfslot.output_module.is_terminated()
-            if self._data_changed==1 or trm:
+            # it seems that the following (stringified) test is useless ...
+            """if self._data_changed==1 or trm:
                 print("DATA CHANGED", self._data_changed, dfslot.output_module.is_terminated())
                 self._test_convergence()
                 args = (self.state_blocked,0) if trm  else (self.state_ready, 1)
-                return self._return_run_step(*args)
+                return self._return_run_step(*args)"""
             return self._return_run_step(self.state_blocked, steps_run=0)
         elif steps >= self.n_clusters:
             self._data_changed = self.DATA_CHANGED_MAX
@@ -172,10 +180,20 @@ class MBKMeans(TableModule):
             indices = np.arange(indices.start, indices.stop)
 
         X = input_df.to_array(columns=cols, locs=locs)
+        _min = np.min(X, axis=0)
+        _max = np.max(X, axis=0)
+        if self._min_p is None:
+            self._min_p = _min
+            self._max_p = _max
+        else:
+            self._min_p = np.minimum(self._min_p, _min)
+            self._max_p = np.maximum(self._max_p, _max)
+            
         batch_size = self.mbk.batch_size or 100
-        #print("STEPS...", steps, batch_size)        
+        # print("STEPS...", steps, batch_size)        
         for batch in gen_batches(steps, batch_size):
             self.mbk.partial_fit(X[batch])
+            self._old_centers.append(self.mbk.cluster_centers_.copy())
             if self._labels is not None:
                 self._labels.append({'labels': self.mbk.labels_},
                                     indices=indices[batch])
@@ -187,11 +205,9 @@ class MBKMeans(TableModule):
                                 create=True)
             self._table.resize(self.mbk.cluster_centers_.shape[0])
         self._table[cols] = self.mbk.cluster_centers_
-        self._old_centers.append(self.mbk.cluster_centers_.copy())
-        if dfslot.output_module.is_terminated():
-            print("CONVERGENCE ON TERMINATION")
+        if not dfslot.has_buffered():
             self._test_convergence()
-            #return self._return_run_step(self.state_ready, steps_run=1)        
+            #return self._return_run_step(self.state_ready, steps_run=1)
         return self._return_run_step(self.next_state(dfslot), steps_run=steps)
 
     def dshape_from_columns(self, table, columns, dshape):

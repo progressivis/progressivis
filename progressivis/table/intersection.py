@@ -22,7 +22,6 @@ class Intersection(NAry):
     def predict_step_size(self, duration):
         return 1000
 
-
     def run_step_progress(self, run_number, step_size, howlong):
         _b = bitmap.asbitmap
         to_delete = []
@@ -41,7 +40,7 @@ class Intersection(NAry):
             else:
                 assert ph_table is _get_physical_table(t)
             tables.append(t)
-            slot.update(run_number)
+            # slot.update(run_number)
             if reset_ or slot.updated.any() or slot.deleted.any():
                 slot.reset()
                 reset_ = True
@@ -84,7 +83,6 @@ class Intersection(NAry):
         # self.get_input_slot(self.inputs[0]))
         return self._return_run_step(self.state_blocked, steps)
 
-
     def run_step_seq(self, run_number, step_size, howlong):
         steps = 0
         tables = []
@@ -101,7 +99,7 @@ class Intersection(NAry):
             else:
                 assert ph_table is _get_physical_table(t)
             tables.append(t)
-            slot.update(run_number)
+            # slot.update(run_number)
             if slot.deleted.any():
                 slot.deleted.next()
                 steps += 1

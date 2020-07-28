@@ -5,18 +5,29 @@ Slots between modules.
 import logging
 from collections import namedtuple
 from .changemanager_base import EMPTY_BUFFER
+from .changemanager_literal import LiteralChangeManager
 
 logger = logging.getLogger(__name__)
 
 
-class SlotDescriptor(namedtuple('SD', ['name', 'type', 'required', 'multiple', 'doc'])):
+class SlotDescriptor(namedtuple('SD',
+                                ['name', 'type', 'required', 'multiple',
+                                 'buffer_created',
+                                 'buffer_updated',
+                                 'buffer_deleted'])):
     "SlotDescriptor is used in modules to describe the input/output slots."
     __slots__ = ()
 
-    def __new__(cls, name, type=None, required=True, multiple=False, doc=None):
+    def __new__(cls, name, type=None, required=True, multiple=False,
+                buffer_created=True,
+                buffer_updated=True,
+                buffer_deleted=True):
         # pylint: disable=redefined-builtin
         return super(SlotDescriptor, cls).__new__(cls, name, type,
-                                                  required, multiple, doc)
+                                                  required, multiple,
+                                                  buffer_created,
+                                                  buffer_updated,
+                                                  buffer_deleted)
 
 
 class Slot(object):
@@ -44,17 +55,20 @@ class Slot(object):
         "Return the scheduler associated with this slot"
         return self.output_module.scheduler()
 
-    @property
-    def lock(self):
-        "Return a context manager locking this slot for multi-threaded access"
-        return self.output_module.lock
+    def input_descriptor(self):
+        if self.original_name:
+            return self.input_module.input_slot_descriptor(self.original_name)
+        return self.input_module.input_slot_descriptor(self.input_name)
+
+    def output_descriptor(self):
+        return self.output_module.output_slot_descriptor(self.output_name)
 
     def __str__(self):
         return '%s(%s[%s]->%s[%s])' % (self.__class__.__name__,
-                                             self.output_module.name,
-                                             self.output_name,
-                                             self.input_module.name,
-                                             self.input_name)
+                                       self.output_module.name,
+                                       self.output_name,
+                                       self.input_module.name,
+                                       self.input_name)
 
     def __repr__(self):
         return str(self)
@@ -115,14 +129,15 @@ class Slot(object):
         # pylint: disable=too-many-arguments
         "Compute the changes that occur since this slot has been updated."
         if self.changes is None:
-            self.changes = self.create_changes(buffer_created=buffer_created,
-                                               buffer_updated=buffer_updated,
-                                               buffer_deleted=buffer_deleted)
-        if self.changes is None:
-            return None
-        #with self.lock:
-        df = self.data()
-        return self.changes.update(run_number, df, self.name())
+            desc = self.input_descriptor()
+            # create_changes always return a ChangeManager
+            self.changes = self.create_changes(
+                buffer_created=desc.buffer_created,
+                buffer_updated=desc.buffer_updated,
+                buffer_deleted=desc.buffer_deleted)
+        if self.changes:
+            df = self.data()
+            self.changes.update(run_number, df, self.name())
 
     def reset(self):
         "Reset the slot"
@@ -174,29 +189,32 @@ class Slot(object):
         """
         # pylint: disable=too-many-arguments
         logger.debug('create_changemanager(%s, %s)', datatype, slot)
-        if datatype is not None:
-            queue = [datatype]
-            processed = set()
-            while queue:
-                datatype = queue.pop()
-                if datatype in processed:
-                    continue
-                processed.add(datatype)
-                cls = Slot.changemanager_classes.get(datatype)
-                if cls is not None:
-                    logger.info('Creating changemanager %s for datatype %s'
-                                ' of slot %s', cls, datatype, slot)
-                    return cls(slot,
-                               buffer_created,
-                               buffer_updated,
-                               buffer_deleted)
-                if hasattr(datatype, '__base__'):
-                    queue.append(datatype.__base__)
-                elif hasattr(datatype, '__bases__'):
-                    queue += datatype.__bases__
-        logger.info('Creating no changemanager for datatype %s of slot %s',
+        queue = [datatype]
+        processed = set()
+        while queue:
+            datatype = queue.pop()
+            if datatype in processed:
+                continue
+            processed.add(datatype)
+            cls = Slot.changemanager_classes.get(datatype)
+            if cls is not None:
+                logger.info('Creating changemanager %s for datatype %s'
+                            ' of slot %s', cls, datatype, slot)
+                return cls(slot,
+                           buffer_created,
+                           buffer_updated,
+                           buffer_deleted)
+            if hasattr(datatype, '__base__'):
+                queue.append(datatype.__base__)
+            elif hasattr(datatype, '__bases__'):
+                queue += datatype.__bases__
+        logger.info('Creating LiteralChangeManager for datatype %s of slot %s',
                     datatype, slot)
         return None
+        return LiteralChangeManager(slot,
+                                    buffer_created,
+                                    buffer_updated,
+                                    buffer_deleted)
 
     @staticmethod
     def add_changemanager_type(datatype, cls):

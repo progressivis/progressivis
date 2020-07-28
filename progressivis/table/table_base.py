@@ -246,8 +246,11 @@ class BaseTable(metaclass=ABCMeta):
             ret = OrderedDict()
             for name in columns:
                 col = self[name]
-                ret[name] = {int(k):v for (k, v) in dict(zip(self.index,
-                                                             col.tolist())).items()} # because a custom JSONEncoder cannot fix it later
+                ret[name] = {
+                    int(k): v
+                    for (k, v) in dict(zip(self.index,
+                                           col.tolist())).items()
+                }  # because a custom JSONEncoder cannot fix it
             return ret
         if orient == 'list':
             ret = OrderedDict()
@@ -263,24 +266,12 @@ class BaseTable(metaclass=ABCMeta):
             for i in self.index:
                 line = []
                 for col in cols:
-                    #col_i = col[i]
-                    #if isinstance(col_i, np.ndarray):
-                    #    col_i = col_i.tolist()
-
                     line.append(get_physical_base(col).loc[i])
                 data.append(line)
             ret['data'] = data
             return ret
-        #if orient == 'rows':
-        #    data = []
-        #    cols = [self[c] for c in columns]
-        #    for i in self.index:
-        #        line = [i]
-        #        for col in cols:
-        #            line.append(str(col[i]))
-        #        data.append(dict(zip(columns, line)))
-        #    return data
-        if orient == 'datatable': # not a pandas compliant mode but useful for JS DataTable
+        if orient == 'datatable':
+            # not a pandas compliant mode but useful for JS DataTable
             ret = []
             for i in self.index:
                 line = [i]
@@ -295,7 +286,6 @@ class BaseTable(metaclass=ABCMeta):
                 line = OrderedDict()
                 for name in columns:
                     col = self[name]
-                    #line[name] = remove_nan_etc(col.values[i])
                     line[name] = get_physical_base(col).loc[i]
                 ret.append(line)
             return ret
@@ -305,13 +295,12 @@ class BaseTable(metaclass=ABCMeta):
                 line = {}
                 for name in columns:
                     col = self[name]
-                    #line[name] = remove_nan_etc(col.values[i])
                     line[name] = col.loc[id_]
                 ret[int(id_)] = line
             return ret
-        raise ValueError("to_dict(orient) not implemented for orient={}".format(orient))
+        raise ValueError(f"to_dict({orient}) not implemented")
 
-    def to_csv(self, filename, columns=None, sep=','): # TODO: to be improved
+    def to_csv(self, filename, columns=None, sep=','):  # TODO: to be improved
         if columns is None:
             columns = self.columns
         with open(filename, 'wb') as f:
@@ -473,7 +462,8 @@ class BaseTable(metaclass=ABCMeta):
         return self._ids.compute_updates(start, now, mid)
 
     def __getitem__(self, key):
-        fast = False # hack, use t[['a', 'b'], 1] to get a list instead of a TableView
+        # hack, use t[['a', 'b'], 1] to get a list instead of a TableView
+        fast = False
         if isinstance(key, tuple):
             key = key[0]
             fast = True
@@ -541,8 +531,9 @@ class BaseTable(metaclass=ABCMeta):
 
     def _setitem_key(self, colkey, rowkey, values):
         if is_none_alike(rowkey) and len(values) != len(self):
-            raise ValueError("Length of values (%d) different than length of table (%d)" % (
-                len(values), len(self)))
+            raise ValueError("Length of values (%d) different "
+                             "than length of table (%d)" % (
+                                 len(values), len(self)))
         column = self._column(colkey)
         if is_none_alike(rowkey):
             column[:] = values
@@ -565,8 +556,9 @@ class BaseTable(metaclass=ABCMeta):
         elif hasattr(values, 'shape'):
             shape = values.shape
             if len(shape) > 1 and shape[1] != self.width(colnames):
-                #and not isinstance(values, BaseTable):
-                raise ValueError('Shape [1] (width)) of columns and value shape do not match')
+                # and not isinstance(values, BaseTable):
+                raise ValueError('Shape [1] (width)) of columns and '
+                                 'value shape do not match')
 
             if rowkey is None:
                 rowkey = slice(None, None)
@@ -575,10 +567,10 @@ class BaseTable(metaclass=ABCMeta):
                 if len(column.shape) > 1:
                     wid = column.shape[1]
                     column[rowkey, 0:wid] = values[i:i+wid]
-                else: # i.e. len(column.shape) == 1
+                else:  # i.e. len(column.shape) == 1
                     if isinstance(values, BaseTable):
                         column[rowkey] = values[i]
-                    elif len(shape) == 1: # values is a row
+                    elif len(shape) == 1:  # values is a row
                         column[rowkey] = values[i]
                     else:
                         column[rowkey] = values[:, i]
@@ -601,7 +593,6 @@ class BaseTable(metaclass=ABCMeta):
         indices = self._col_slice_to_indices(colkey)
         self._setitem_iterable(indices, rowkey, values)
 
-
     def to_array(self, locs=None, columns=None):
         """Convert this table to a numpy array
 
@@ -621,7 +612,7 @@ class BaseTable(metaclass=ABCMeta):
         dtypes = [self[c].dtype for c in columns]
         dtype = np.find_common_type(dtypes, [])
         indices = None
-        #TODO split the copy in chunks
+        # TODO split the copy in chunks
         if locs is None:
             if self._ids.has_freelist():
                 indices = self._ids[:]
@@ -651,7 +642,8 @@ class BaseTable(metaclass=ABCMeta):
         return arr
 
     def unary(self, op, **kwargs):
-        axis = kwargs.get('axis', 0) # get() is cheeper than pop(), it avoids to update unused kwargs
+        axis = kwargs.get('axis', 0)
+        # get() is cheaper than pop(), it avoids to update unused kwargs
         keepdims = kwargs.get('keepdims', False)
         # ignore other kwargs, maybe raise error in the future
         res = OrderedDict()
@@ -669,7 +661,7 @@ class BaseTable(metaclass=ABCMeta):
 
     def binary(self, op, other, **kwargs):
         axis = kwargs.pop('axis', 0)
-        assert(axis==0)
+        assert axis == 0
         res = OrderedDict()
         isscalar = (np.isscalar(other) or isinstance(other, np.ndarray))
         for col in self._columns:
@@ -821,4 +813,3 @@ class BaseTable(metaclass=ABCMeta):
         for c, ix in res.items():
             res[c] = self.index_to_id(ix)
         return res
-

@@ -29,9 +29,9 @@ class BinJoin(TableModule):
 
     def run_step(self, run_number, step_size, howlong):
         first_slot = self.get_input_slot('first')
-        first_slot.update(run_number)
+        # first_slot.update(run_number)
         second_slot = self.get_input_slot('second')
-        second_slot.update(run_number)
+        # second_slot.update(run_number)
         steps = 0
         if first_slot.deleted.any() or second_slot.deleted.any():
             first_slot.reset()

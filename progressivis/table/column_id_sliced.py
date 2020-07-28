@@ -8,7 +8,8 @@ from ..core.bitmap import bitmap
 
 class IdColumnSlicedView(ColumnSlicedView):
     def __init__(self, base, view_slice):
-        super(IdColumnSlicedView, self).__init__(IdColumn.INTERNAL_ID, base, None, view_slice)
+        super(IdColumnSlicedView, self).__init__(IdColumn.INTERNAL_ID, base,
+                                                 None, view_slice)
         self._update_mask = None
 
     # def __delitem__(self, index):
@@ -17,7 +18,8 @@ class IdColumnSlicedView(ColumnSlicedView):
     #     self._base._delete_ids(index)
 
     def __repr__(self):
-        return 'IdColumnSlicedView(%s,dshape=%s)' % (self.name, str(self.dshape))
+        return 'IdColumnSlicedView(%s,dshape=%s)' % (
+            self.name, str(self.dshape))
 
     def id_to_index(self, loc, as_slice=True):
         res = self._base.id_to_index(loc, as_slice)
@@ -25,10 +27,10 @@ class IdColumnSlicedView(ColumnSlicedView):
 
     def __contains__(self, loc):
         start = self._view_slice.start
-        stop =  self._view_slice.stop or self.base.size
+        stop = self._view_slice.stop or self.base.size
         ids = self.base.index.id_to_index(loc, True)
         v = Loc.dispatch(ids)
-        if v == Loc.INT:            
+        if v == Loc.INT:
             return start <= ids and ids < stop
         if v == Loc.SLICE:
             return start <= ids.start and ids.stop <= stop
@@ -36,14 +38,14 @@ class IdColumnSlicedView(ColumnSlicedView):
 
     def resize(self, _):
         pass  # ignore
-    #def __iter__(self): ## To be tested ...
-    #    return (i for i in bitmap(self._view_slice))
+
     @property
     def update_mask(self):
         if self._update_mask is None or \
-          (self._view_slice.stop is None and self._update_mask.max() != self.size-1):
+          (self._view_slice.stop is None
+           and self._update_mask.max() != self.size-1):
             self._update_mask = bitmap(self._base[self.view_slice])
-        
+
         return self._update_mask
 
 

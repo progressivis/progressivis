@@ -27,13 +27,14 @@ class IdColumn(Column):
     INVALID_ID = -1
 
     def __init__(self, storagegroup=None):
-        super(IdColumn, self).__init__(IdColumn.INTERNAL_ID, None, storagegroup=storagegroup)
+        super(IdColumn, self).__init__(IdColumn.INTERNAL_ID, None,
+                                       storagegroup=storagegroup)
         self._index = self
         self._is_identity = True
         self._ids_dict = None
         self._last_id = 0
         self._changes = None
-        self._cached_index = IdColumn # hack
+        self._cached_index = IdColumn  # hack
         self._freelist = bitmap()
 
     @property
@@ -209,17 +210,17 @@ class IdColumn(Column):
             return None
         elif oldsize > newsize:
             todelete = self[newsize:]
-            try: #EAFP
+            try:  # EAFP
                 newsize_bm = bitmap(todelete)
                 newsize = self._delete_ids(newsize_bm)
             except OverflowError:
-                newsize_ = todelete[todelete>=0]
+                newsize_ = todelete[todelete >= 0]
                 newsize = self._delete_ids(newsize_)
             if newsize is not None:
                 super(IdColumn, self).resize(newsize)
                 self._flush_cache()
             return None
-        else: # oldsize < newsize
+        else:  # oldsize < newsize
             incr = newsize - oldsize
             assert indices is None or len(indices) == incr
             self._flush_cache()
@@ -227,9 +228,9 @@ class IdColumn(Column):
                 newindices = np.arange(oldsize, newsize)
                 # if the new indices are not the same
                 # as expected, allocate the hashtable-based storage.
-                if (indices is not None and
-                    not np.array_equal(indices, newindices)):
-                    self._really_create_dataset() #  indices=indices)
+                if indices is not None \
+                   and not np.array_equal(indices, newindices):
+                    self._really_create_dataset()  # indices=indices)
                     return self.resize(newsize, indices)
                 # indices is None or == newindices, super.resize works
                 super(IdColumn, self).resize(newsize)
@@ -244,8 +245,8 @@ class IdColumn(Column):
                 indices = np.arange(self._last_id, last_id, dtype=np.int64)
             else:
                 indices = np.asarray(indices, dtype=np.int64)
-                if (self._ids_dict is not None and
-                    self._ids_dict.contains_any(indices)):
+                if self._ids_dict is not None \
+                   and self._ids_dict.contains_any(indices):
                     raise ValueError('Indices would contain duplicates')
                 last_id = max(self._last_id, int(np.max(indices)+1))
             # TODO reuse free list
@@ -269,7 +270,7 @@ class IdColumn(Column):
             self._really_create_dataset()
         else:
             new_locs = self[start:end] if locs is None else locs
-            self._ids_dict.update(new_locs,range(start, end))
+            self._ids_dict.update(new_locs, range(start, end))
             self.add_created(new_locs)
 
     def _delete_ids(self, locs, index=None):
@@ -445,7 +446,7 @@ class IdColumn(Column):
         return indices_to_slice(ret) if as_slice else ret
 
     def remove_module(self, mid):
-        #TODO
+        # TODO
         pass
 
     def _normalize_locs(self, locs):
@@ -460,7 +461,7 @@ class IdColumn(Column):
 
     # begin(Change management)
     def _flush_cache(self):
-        self._cached_index = IdColumn # hack
+        self._cached_index = IdColumn  # hack
 
     def touch(self, index=None):
         if index is self._cached_index:
@@ -486,11 +487,13 @@ class IdColumn(Column):
     def compute_updates(self, start, now, mid=None, cleanup=True):
         if self._changes:
             self._flush_cache()
-            updates = self._changes.compute_updates(start, now, mid, cleanup=cleanup)
+            updates = self._changes.compute_updates(start, now, mid,
+                                                    cleanup=cleanup)
             if updates is None:
-                try: # EAFP
+                try:  # EAFP
                     updates = IndexUpdate(created=bitmap(self.dataset[:]))
-                except OverflowError: # because rows could be created then removed in the same step
+                except OverflowError:
+                    # because rows could be created then removed in same step
                     ids = self.dataset[:]
                     updates = IndexUpdate(created=bitmap(ids[ids >= 0]))
             return updates
@@ -500,4 +503,3 @@ class IdColumn(Column):
         if self is other:
             return True
         return np.all(self.values == other.values)
-

@@ -11,10 +11,9 @@ from ..io import Variable
 from ..stats import Min, Max
 from .hist_index import HistogramIndex
 from progressivis.core.utils import indices_len
-from progressivis.utils.synchronized import synchronized
-#from progressivis.table.paste import Paste
 from ..utils.psdict import PsDict
 from ..table.merge_dict import MergeDict
+
 
 class _Selection(object):
     def __init__(self, values=None):
@@ -239,7 +238,7 @@ class RangeQuery2d(TableModule):
 
     def run_step(self, run_number, step_size, howlong):
         input_slot = self.get_input_slot('table')
-        input_slot.update(run_number)
+        # input_slot.update(run_number)
         steps = 0
         deleted = None
         if input_slot.deleted.any():
@@ -264,7 +263,7 @@ class RangeQuery2d(TableModule):
         # lower/upper
         #
         lower_slot = self.get_input_slot('lower')
-        lower_slot.update(run_number)
+        # lower_slot.update(run_number)
         upper_slot = self.get_input_slot('upper')
         limit_changed = False
         if lower_slot.deleted.any():
@@ -276,7 +275,7 @@ class RangeQuery2d(TableModule):
             lower_slot.created.next()
             limit_changed = True
         if not (lower_slot is upper_slot):
-            upper_slot.update(run_number)
+            # upper_slot.update(run_number)
             if upper_slot.deleted.any():
                 upper_slot.deleted.next()
             if upper_slot.updated.any():
@@ -289,15 +288,17 @@ class RangeQuery2d(TableModule):
         # min/max
         #
         min_slot = self.get_input_slot('min')
-        min_slot.update(run_number)
-        min_slot.created.next()
-        min_slot.updated.next()
-        min_slot.deleted.next()
+        min_slot.clear_buffers()
+        # min_slot.update(run_number)
+        # min_slot.created.next()
+        # min_slot.updated.next()
+        # min_slot.deleted.next()
         max_slot = self.get_input_slot('max')
-        max_slot.update(run_number)
-        max_slot.created.next()
-        max_slot.updated.next()
-        max_slot.deleted.next()
+        max_slot.clear_buffers()
+        # max_slot.update(run_number)
+        # max_slot.created.next()
+        # max_slot.updated.next()
+        # max_slot.deleted.next()
         if (lower_slot.data() is None or upper_slot.data() is None
                 or len(lower_slot.data()) == 0 or len(upper_slot.data()) == 0):
             return self._return_run_step(self.state_blocked, steps_run=0)

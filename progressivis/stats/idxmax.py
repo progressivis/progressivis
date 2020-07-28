@@ -43,6 +43,7 @@ class IdxMax(TableModule):
     @process_slot("table")
     @run_if_any
     def run_step(self, run_number, step_size, howlong):
+
         with self.context as ctx:
             dfslot = ctx.table
             indices = dfslot.created.next(step_size)
@@ -51,7 +52,6 @@ class IdxMax(TableModule):
                 return self._return_run_step(self.state_blocked, steps_run=0)
             input_df = dfslot.data()
             op = self.filter_columns(input_df, fix_loc(indices)).idxmax()
-
             if self._max is None:
                 max_ = OrderedDict(zip(op.keys(), [np.nan]*len(op.keys())))
                 for col, ix in op.items():

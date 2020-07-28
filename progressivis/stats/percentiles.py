@@ -60,6 +60,7 @@ class Percentiles(TableModule):
             return True
         return super(Percentiles, self).is_ready()
 
+
     def reset(self):
         self.tdigest = TDigest()
 

@@ -295,11 +295,12 @@ class MCScatterPlot(NAry):
     def run_step(self, run_number, step_size, howlong):
         for name in self.get_input_slot_multiple():
             slot = self.get_input_slot(name)
-            slot.update(run_number)
+            # slot.update(run_number)
             if slot.has_buffered():
-                slot.created.next()
-                slot.updated.next()
-                slot.deleted.next()
+                slot.clear_buffers()
+                # slot.created.next()
+                # slot.updated.next()
+                # slot.deleted.next()
                 self._json_cache = None
                 #print("SLOT has buffered", slot)
         return self._return_run_step(self.state_blocked, steps_run=0)

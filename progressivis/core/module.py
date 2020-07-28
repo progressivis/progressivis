@@ -1,14 +1,17 @@
-"""Base class for progressive modules.
+"""
+Base class for progressive modules.
 """
 
 from abc import ABCMeta, abstractmethod
 from traceback import print_exc
 import re
 import logging
+import pdb
 
 import numpy as np
 
-from progressivis.utils.errors import ProgressiveError, ProgressiveStopIteration
+from progressivis.utils.errors import (ProgressiveError,
+                                       ProgressiveStopIteration)
 from progressivis.table.table_base import BaseTable
 from progressivis.table.table import Table
 from progressivis.table.dshape import dshape_from_dtype
@@ -28,16 +31,6 @@ from inspect import getfullargspec
 
 
 logger = logging.getLogger(__name__)
-
-# NB: AllAny and AnyAll are simply two "named lists"
-class AllAny:
-    def __init__(self, arg):
-        self._impl = arg
-
-
-class AnyAll:
-    def __init__(self, arg):
-        self._impl = arg
 
 
 class ModuleMeta(ABCMeta):
@@ -115,7 +108,8 @@ class Module(metaclass=ModuleMeta):
         storage = StorageManager.default
         self.storage = storage
         if storagegroup is None:
-            storagegroup = Group.default_internal(get_random_name(name+'_tracer'))
+            storagegroup = Group.default_internal(
+                get_random_name(name+'_tracer'))
         tracer = Tracer.default(name, storagegroup)
 
         self.order = None
@@ -148,7 +142,6 @@ class Module(metaclass=ModuleMeta):
         # callbacks
         self._start_run = None
         self._end_run = None
-        #self._synchronized_lock = self.scheduler().create_lock()
         dataflow.add_module(self)
 
     def scheduler(self):
@@ -204,7 +197,6 @@ class Module(metaclass=ModuleMeta):
         else:
             proc(self, rn)
 
-
     @staticmethod
     def _filter_kwds(kwds, function_or_method):
         argspec = getfullargspec(function_or_method)
@@ -256,7 +248,7 @@ class Module(metaclass=ModuleMeta):
 
     def generate_table_name(self, name):
         "Return a uniq name for this module"
-        return "s{}_{}_{}".format(self.scheduler().name, self.name, name)
+        return f"s{self.scheduler().name}_{self.name}_{name}"
 
     def timer(self):
         "Return the timer associated with this module"
@@ -287,7 +279,6 @@ class Module(metaclass=ModuleMeta):
         if short:
             return json
 
-        #with self.lock:
         json.update({
             'start_time': self._start_time,
             'end_time': self._end_time,
@@ -361,7 +352,7 @@ class Module(metaclass=ModuleMeta):
     def create_slot(self, output_name, input_module, input_name):
         "Create a specified output slot"
         return Slot(self, output_name, input_module, input_name)
-    
+
     def connect_output(self, output_name, input_module, input_name):
         "Connect the output slot"
         slot = self.create_slot(output_name, input_module, input_name)
@@ -391,6 +382,9 @@ class Module(metaclass=ModuleMeta):
     def input_slot_values(self):
         return list(self._input_slots.values())
 
+    def input_slot_descriptor(self, name):
+        return self.input_descriptors[name]
+
     def input_slot_type(self, name):
         return self.input_descriptors[name].type
 
@@ -419,8 +413,8 @@ class Module(metaclass=ModuleMeta):
                                 name, self.name)
                 self._input_slots[name] = slot
                 if old_slot:
-                    old_slot.output_module._disconnect_output(old_slot.output_name)
-                # if slot:  wonder why?
+                    old_slot.output_module._disconnect_output(
+                        old_slot.output_name)
                 slot.output_module._connect_output(slot)
 
         for name in deleted_keys:
@@ -435,29 +429,15 @@ class Module(metaclass=ModuleMeta):
                                 name, self.name)
             self._input_slots[name] = None
 
-    # def _connect_input(self, slot):
-    #     ret = self.get_input_slot(slot.input_name)
-    #     self._input_slots[slot.input_name] = slot
-    #     return ret
-
-    # def validate_inputs(self):
-    #     "Validate the input slots"
-    #     # Only validate existence, the output code will test types
-    #     valid = True
-    #     for sd in self.input_descriptors.values():
-    #         slot = self._input_slots[sd.name]
-    #         if sd.required and slot is None:
-    #             logger.error('Missing inputs slot %s in %s',
-    #                          sd.name, self.name)
-    #             valid = False
-    #     return valid
-
     def has_any_output(self):
         return any(self._output_slots.values())
 
     def get_output_slot(self, name):
         # raise error is the slot is not declared
         return self._output_slots[name]
+
+    def output_slot_descriptor(self, name):
+        return self.output_descriptors[name]
 
     def output_slot_type(self, name):
         return self.output_descriptors[name].type
@@ -467,23 +447,6 @@ class Module(metaclass=ModuleMeta):
 
     def output_slot_names(self):
         return list(self._output_slots.keys())
-
-    # def validate_outputs(self):
-    #     valid = True
-    #     for slotd in self.output_descriptors.values():
-    #         slots = self._output_slots[slotd.name]
-    #         if slots.required and (slots is None or not slots):
-    #             logger.error('Missing required output slot %s in %s',
-    #                          slots.name, self.name)
-    #             valid = False
-    #         if slots:
-    #             for slot in slots:
-    #                 if not slot.validate_types():
-    #                     valid = False
-    #     return valid
-
-    # def validate_inouts(self):
-    #     return self.validate_inputs() and self.validate_outputs()
 
     def validate(self):
         "called when the module have been validated"
@@ -546,22 +509,30 @@ class Module(metaclass=ModuleMeta):
     def get_visualization(self):
         return None
 
+    def is_source(self):
+        return False
+
     def is_created(self):
         return self._state == Module.state_created
 
     def is_running(self):
         return self._state == Module.state_running
 
+    def prepare_run(self, run_number):
+        "Switch from zombie to terminated, or update slots."
+        if self.state == Module.state_zombie:
+            self.state = Module.state_terminated
+            return
+        for slot in self.input_slot_values():
+            if slot is None:
+                continue
+            slot.update(run_number)
+
     def is_ready(self):
         # Module is either a source or has buffered data to process
         if self.state == Module.state_ready:
             return True
 
-        if self.state == Module.state_zombie:
-            logger.info("%s Not ready because it turned from zombie"
-                        " to terminated", self.name)
-            self.state = Module.state_terminated
-            return False
         if self.state == Module.state_terminated:
             logger.info("%s Not ready because it terminated", self.name)
             return False
@@ -590,9 +561,6 @@ class Module(metaclass=ModuleMeta):
                 in_ts = in_module.last_update()
                 ts = slot.last_update()
 
-                # logger.debug('for %s[%s](%d)->%s(%d)',
-                #              slot.input_module.name, slot.input_name, in_ts,
-                #              slot.output_name, ts)
                 if slot.has_buffered() or in_ts > ts:
                     ready_count += 1
                 elif (in_module.is_terminated() or
@@ -600,7 +568,9 @@ class Module(metaclass=ModuleMeta):
                     term_count += 1
 
             # if all the input slot modules are terminated or invalid
-            if not self.is_input() and in_count != 0 and term_count == in_count:
+            if not self.is_input() \
+               and in_count != 0 \
+               and term_count == in_count:
                 logger.info('%s becomes zombie because all its input slots'
                             ' are terminated', self.name)
                 self.state = Module.state_zombie
@@ -610,7 +580,6 @@ class Module(metaclass=ModuleMeta):
         logger.error("%s Not ready because is in weird state %s",
                      self.name, self.state_name[self.state])
         return False
-
 
     def cleanup_run(self, run_number):
         """Perform operations such as switching state from zombie to terminated.
@@ -683,7 +652,9 @@ class Module(metaclass=ModuleMeta):
             self._end_run(self, run_number)
 
     def ending(self):
-        "Ends a module, called when it is about the be removed from the scheduler"
+        '''Ends a module.
+        called when it is about the be removed from the scheduler
+        '''
         self._state = Module.state_terminated
         #  self._input_slots = None
         #  self._output_slots = None
@@ -711,19 +682,19 @@ class Module(metaclass=ModuleMeta):
         return self._params.last()
 
     def set_current_params(self, v):
-        #with self.lock:
         current = self.current_params()
         combined = dict(current)
         combined.update(v)
         self._params.add(combined)
         return v
-    
-    def has_input(self):
-        """Return True if the module received something via a from_input() call. 
-        Usually is a flag set by from_input() and deleted by the following run_step()
-        See Variable module"""
-        return False
 
+    def has_input(self):
+        """Return True if the module received something via a from_input() call.
+        Usually is a flag set by from_input() and deleted by the following
+        run_step().
+        See Variable module
+        """
+        return False
 
     def post_interaction_proc(self):
         s = self.scheduler()
@@ -731,8 +702,6 @@ class Module(metaclass=ModuleMeta):
 
     def run(self, run_number):
         assert not self.is_running()
-        #if not self.steering_evt.is_set() and self._frozen:
-        #    return
         self.steps_acc = 0
         next_state = self.state
         exception = None
@@ -748,30 +717,18 @@ class Module(metaclass=ModuleMeta):
         self._end_time = self._start_time + quantum
         self._update_params(run_number)
 
-        # TODO Forcing 3 steps, not sure, change when the predictor improves
-        max_time = quantum / 3.0
-
         run_step_ret = {}
         self.start_run(run_number)
         tracer.start_run(now, run_number)
-        while self._start_time < self._end_time:
-            remaining_time = self._end_time-self._start_time
-            if remaining_time <= 0:
-                logger.info('Late by %d s in module %s',
-                            remaining_time, self.pretty_typename())
-                break  # no need to try to squeeze anything
-            step_size = self.predict_step_size(np.min([max_time,
-                                                       remaining_time]))
-            if step_size == 0:
-                break
+        step_size = self.predict_step_size(quantum)
+        logger.info(f'{self.name}: step_size={step_size}')
+        if step_size != 0:
             # pylint: disable=broad-except
             try:
                 tracer.before_run_step(now, run_number)
                 if self.debug:
-                    import pdb; pdb.set_trace()
-                run_step_ret = self.run_step(run_number,
-                                             step_size,
-                                             remaining_time)
+                    pdb.set_trace()
+                run_step_ret = self.run_step(run_number, step_size, quantum)
                 next_state = run_step_ret['next_state']
                 now = self.timer()
             except ProgressiveStopIteration:
@@ -779,7 +736,6 @@ class Module(metaclass=ModuleMeta):
                 next_state = Module.state_zombie
                 run_step_ret['next_state'] = next_state
                 now = self.timer()
-                break
             except Exception as e:
                 print_exc()
                 next_state = Module.state_zombie
@@ -789,7 +745,6 @@ class Module(metaclass=ModuleMeta):
                 exception = e
                 self._had_error = True
                 self._start_time = now
-                break
             finally:
                 assert (run_step_ret is not None), "Error: %s run_step_ret"\
                   " not returning a dict" % self.pretty_typename()
@@ -800,7 +755,6 @@ class Module(metaclass=ModuleMeta):
 
             if self._start_time is None or self.state != Module.state_ready:
                 tracer.run_stopped(now, run_number)
-                break
             self._start_time = now
         self.state = next_state
         if self.state == Module.state_zombie:
@@ -813,8 +767,6 @@ class Module(metaclass=ModuleMeta):
         if exception:
             raise RuntimeError("{} {}".format(type(exception), exception))
 
-    def is_source(self):
-        return False
 
 class InputSlots(object):
     # pylint: disable=too-few-public-methods
@@ -896,6 +848,7 @@ class Every(Module):
         df = slot.data()
         if df is not None:
             self._proc(df)
+        slot.clear_buffers()
         return self._return_run_step(Module.state_blocked, steps_run=1)
 
 

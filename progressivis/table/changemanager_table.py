@@ -7,6 +7,7 @@ from .tablechanges import TableChanges
 from ..core.slot import Slot
 from ..core.column_update import ColumnUpdate
 
+
 class TableChangeManager(BaseChangeManager):
     """
     Manage changes that occured in a Table between runs.
@@ -28,9 +29,10 @@ class TableChangeManager(BaseChangeManager):
             data.changes = TableChanges()
 
     def update(self, run_number, data, mid):
-        assert isinstance(data, BaseTable)
-        if data is None or (run_number != 0 and run_number <= self._last_update):
+        if data is None or (run_number != 0
+                            and run_number <= self._last_update):
             return
+        assert isinstance(data, BaseTable)
         changes = data.compute_updates(self._last_update, run_number, mid)
         self._last_update = run_number
         self._row_changes.combine(changes,

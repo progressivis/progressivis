@@ -1,4 +1,4 @@
-from . import ProgressiveTest
+from . import ProgressiveTest, skip
 
 from progressivis import Print
 from progressivis.stats import Stats
@@ -9,16 +9,16 @@ from progressivis.core import aio
 
 import numpy as np
 
-class TestStats(ProgressiveTest):
-#    def setUp(self):
-#        log_level(logging.DEBUG,'progressivis.core')
 
+class TestStats(ProgressiveTest):
     def test_stats(self):
         s = self.scheduler()
-        csv_module = CSVLoader(get_dataset('smallfile'), index_col=False,header=None,
+        csv_module = CSVLoader(get_dataset('smallfile'),
+                               index_col=False,
+                               header=None,
                                scheduler=s)
-        stats=Stats('_1', name='test_stats', scheduler=s)
-        wait=Wait(name='wait', delay=3, scheduler=s)
+        stats = Stats('_1', name='test_stats', scheduler=s)
+        wait = Wait(name='wait', delay=3, scheduler=s)
         wait.input.inp = csv_module.output.table
         stats.input._params = wait.output.out
         stats.input.table = csv_module.output.table
@@ -32,6 +32,7 @@ class TestStats(ProgressiveTest):
         self.assertTrue(np.isclose(tmin, last['__1_min']))
         tmax = table['_1'].max()
         self.assertTrue(np.isclose(tmax, last['__1_max']))
+
 
 if __name__ == '__main__':
     ProgressiveTest.main()

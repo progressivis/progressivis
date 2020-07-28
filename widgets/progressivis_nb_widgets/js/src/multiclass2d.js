@@ -72,10 +72,9 @@ var node_drag = d3.drag()
 
 function multiclass2d_update_vis(rawdata) {
     progressivis_data = rawdata;
-    var data = rawdata['sample'],
-        bounds = rawdata['bounds'],
+    var bounds = rawdata['bounds'],
         ix, iy, iw, ih;
-    if (!data || !bounds) return;
+    if (!bounds) return;
     var st =  ipyView.model.get('samples');
     var index = [...Array(st.shape[0]*st.shape[2]).keys()];
     var rows = Array();

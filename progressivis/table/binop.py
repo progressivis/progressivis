@@ -17,7 +17,7 @@ ops = {"<":   operator.__lt__,
        "or":  operator.__or__,
        "|":   operator.__or__,
        "xor": operator.__xor__,
-       "^":   operator.__xor__,       
+       "^":   operator.__xor__,
        "==":  operator.__eq__,
        "=":   operator.__eq__,
        "!=":  operator.__ne__,
@@ -31,14 +31,14 @@ ops = {"<":   operator.__lt__,
        ">>":  operator.__rshift__,
        "-":   operator.__sub__,
        }
-inv_ops = {v:k for k, v in ops.items()}
+inv_ops = {v: k for k, v in ops.items()}
 
 if "__div__" in operator.__dict__:
     ops["/"] = operator.__div__
-    
+
 if "__truediv__" in operator.__dict__:
     ops["/"] = operator.__truediv__
-    
+
 
 class Binop(TableModule):
     inputs = [
@@ -70,10 +70,10 @@ class Binop(TableModule):
 
     def run_step(self, run_number, step_size, howlong):
         arg1_slot = self.get_input_slot('table')
-        arg1_slot.update(run_number)
+        # arg1_slot.update(run_number)
         arg1_data = arg1_slot.data()
         arg2_slot = self.get_input_slot('cmp')
-        arg2_slot.update(run_number)
+        # arg2_slot.update(run_number)
         arg2_data = arg1_slot.data()
 
         if arg1_data is None \

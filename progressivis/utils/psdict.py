@@ -1,8 +1,8 @@
-from collections import defaultdict
 from ..core.bitmap import bitmap
 from ..core.index_update import IndexUpdate
 from ..table.dshape import dshape_extract
 import numpy as np
+
 
 class PsDict(dict):
     "progressive dictionary"
@@ -18,17 +18,18 @@ class PsDict(dict):
         self._index = None
         self._deleted = {}
         self._inverse = None
-        self._inverse_del = None        
+        self._inverse_del = None
         self.changes = None
-        
+
     def compute_updates(self, start, now, mid=None, cleanup=True):
         if self.changes:
-            updates = self.changes.compute_updates(start, now, mid, cleanup=cleanup)
+            updates = self.changes.compute_updates(start, now, mid,
+                                                   cleanup=cleanup)
             if updates is None:
                 updates = IndexUpdate(created=bitmap(self.ids))
             return updates
         return None
-    
+
     def fill(self, val):
         for k in self.keys():
             self[k] = val
@@ -39,12 +40,13 @@ class PsDict(dict):
 
     @property
     def as_row(self):
-        return {k:[v] for (k, v) in self.items()}
+        return {k: [v] for (k, v) in self.items()}
+
     @property
     def dshape(self):
         return dshape_extract(self.as_row)
 
-    #def last(self, *args, **kwargs):
+    # def last(self, *args, **kwargs):
     #    print("LAST")
     #    import pdb;pdb.set_trace()
 
@@ -67,27 +69,26 @@ class PsDict(dict):
         raise KeyError(f"Key not found for id: {id}")
 
     def k_(self, id):
-        k, _ =  self.key_of(id)
+        k, _ = self.key_of(id)
         return k
-    
-    def fix_indices(self): # TODO find a better name ...
+
+    def fix_indices(self):  # TODO find a better name ...
         if self._index is None:
             return
         self._inverse = None
-        self._inverse_del = None   
+        self._inverse_del = None
         next_id = max(self.ids) + 1
         for k in self.keys():
             if k not in self._index:
                 self._index[k] = next_id
                 next_id += 1
-            if k in self._deleted: # a previously deleted key was added later
+            if k in self._deleted:  # a previously deleted key was added later
                 del self._deleted[k]
 
     def new_indices(self, prev):
         if self._index is None:
             return bitmap(range(len(self))[len(prev):])
         new_keys = set(self.keys()) - set(prev.keys())
-        #self.fix_indices()
         return bitmap((i for (k, i) in self._index.items() if k in new_keys))
 
     def updated_indices(self, prev):

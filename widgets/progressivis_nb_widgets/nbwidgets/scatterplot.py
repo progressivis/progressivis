@@ -43,7 +43,7 @@ class Scatterplot(DataWidget, widgets.DOMWidget):
         #shape_constraint=shape_constraints(None, None),  
     ).tag(sync=True, **_serialization)
     samples = DataUnion(
-        [],
+        np.zeros((0, 0, 0), dtype='float32'),
         dtype='float32',
         #shape_constraint=shape_constraints(None, None),  
     ).tag(sync=True, **_serialization)
@@ -54,13 +54,15 @@ class Scatterplot(DataWidget, widgets.DOMWidget):
     def link_module(self, module):
         def _feed_widget(wg, m):
             val = m.to_json()
-            if 'hist_tensor' not in val:
-                return
-            wg.hists = val.pop('hist_tensor')
-            st = val.pop('sample_tensor')
+            data_ = {k:v for (k, v) in val.items() if k not in ('hist_tensor',
+                                                                'sample_tensor')}
+            ht = val.get('hist_tensor', None)
+            if ht is not None:
+                wg.hists = ht
+            st = val.get('sample_tensor', None)
             if st is not None:
                 wg.samples = st
-            wg.data = JS.dumps(val)
+            wg.data = JS.dumps(data_)
 
         async def _after_run(m, run_number):
             await asynchronize(_feed_widget, self, m)

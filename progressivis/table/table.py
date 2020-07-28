@@ -171,7 +171,7 @@ class Table(BaseTable):
             shape = dshape_to_shape(dshape)
             fillvalue = fillvalues.get(name, None)
             chunks = self._chunks_for(name)
-            #TODO compute chunks according to the shape
+            # TODO compute chunks according to the shape
             column = self._create_column(name)
             column.create_dataset(dshape=dshape,
                                   chunks=chunks,

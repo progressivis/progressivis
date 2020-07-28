@@ -128,7 +128,6 @@ class Histogram2D(TableModule):
                 (dxmin, dxmax, dymin, dymax) = self._bounds
                 (xdelta, ydelta) = self.get_delta(*bounds)
                 assert xdelta >= 0 and ydelta >= 0
-
                 # Either the min/max has extended, or has shrunk beyond the deltas
                 if ((xmin < dxmin or xmax > dxmax or ymin < dymin or ymax > dymax)
                     or (xmin > (dxmin+xdelta) or xmax < (dxmax-xdelta)

@@ -30,12 +30,15 @@ def s():
 
 def log_level(level=logging.DEBUG, package='progressivis'):
     "Set the logging level for progressivis."
+    logger = logging.getLogger(package)
+    if logger.handlers:
+        return
     stream = logging.StreamHandler()
     stream.setLevel(level)
     formatter = logging.Formatter('%(asctime)s - %(name)s -'
                                   '%(levelname)s - %(message)s')
     stream.setFormatter(formatter)
-    logging.getLogger(package).addHandler(stream)
+    logger.addHandler(stream)
     logging.getLogger(package).setLevel(level)
 
 # Usage example
