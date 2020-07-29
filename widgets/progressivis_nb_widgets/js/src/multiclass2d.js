@@ -368,7 +368,8 @@ function multiclass2d_filter() {
 function move_centroids(){
     var txt = $('#init_centroids').html();
     if(txt == "Selection"){
-        $('#init_centroids').html("Click when ready");
+        $('#init_centroids').html("Commit");
+	$('#cancel_centroids').show();
         collection_in_progress = true;
         centroid_selection = {};
 	ipyView.model.set('modal', true);
@@ -379,8 +380,19 @@ function move_centroids(){
 	ipyView.model.set('move_point', centroid_selection);
         centroid_selection = {};
 	ipyView.model.set('modal', false);
+	$('#cancel_centroids').hide();
     }
-    ipyView.touch()	    
+    ipyView.touch();	    
+}
+
+function cancel_centroids(){
+    $('#init_centroids').html("Selection");
+    collection_in_progress = false;
+    console.log("Cancel ...");
+    centroid_selection = {};
+    ipyView.model.set('modal', false);
+    ipyView.touch();
+    $('#cancel_centroids').hide();
 }
 
 function multiclass2d_ready(view_) {
@@ -412,6 +424,7 @@ function multiclass2d_ready(view_) {
     colormaps.makeTableFilter(colorMap, "Default");
     $('#filter').unbind('click').click(function() { multiclass2d_filter(); });
     $('#init_centroids').click(function(d) { move_centroids(); });
+    $('#cancel_centroids').click(function(d) { cancel_centroids(); }).hide();
 }
 
 export  {multiclass2d_update_vis as update_vis,  multiclass2d_ready as ready_, ipyView as view};
