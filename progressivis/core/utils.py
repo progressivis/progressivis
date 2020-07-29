@@ -24,10 +24,10 @@ try:
     from pandas.io.common import _is_url
 except ImportError:
     from pandas.io.common import is_url as _is_url
-try:
-    from pandas.io.common import _is_s3_urls as _is_s3_url
-except ImportError:  # pandas >=0.23.0
-    from pandas.io.common import is_s3_url as _is_s3_url
+    try:
+        from pandas.io.common import _is_s3_urls as _is_s3_url
+    except ImportError:  # pandas >=0.23.0
+        from pandas.io.common import is_s3_url as _is_s3_url
 
 import requests
 import os
