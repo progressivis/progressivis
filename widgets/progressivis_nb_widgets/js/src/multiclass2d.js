@@ -424,7 +424,9 @@ function multiclass2d_ready(view_) {
     $('#filter').unbind('click').click(function() { multiclass2d_filter(); });
     $('#init_centroids').click(function(d) { move_centroids(); });
     $('#cancel_centroids').click(function(d) { cancel_centroids(); }).hide();
-    let mode = ipyView.model.get('modal')
+    let mode = ipyView.model.get('modal');
+    let to_hide = ipyView.model.get('to_hide');
+    for(let i in to_hide) $('#'+to_hide[i]).hide();
     ipyView.model.set('modal', !mode);
     ipyView.touch();
     ipyView.model.set('modal', mode);

@@ -53,7 +53,8 @@ var ScatterplotModel = widgets.DOMWidgetModel.extend({
         data : 'Hello Scatterplot!',
 	value: '{0}',
 	move_point: '{0}',
-	modal: false
+	modal: false,
+	to_hide: []
     })
     
 }, {

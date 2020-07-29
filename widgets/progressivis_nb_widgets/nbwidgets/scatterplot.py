@@ -51,6 +51,7 @@ class Scatterplot(DataWidget, widgets.DOMWidget):
     value =  Any('{}').tag(sync=True)
     move_point =  Any('{}').tag(sync=True)    
     modal = Bool(False).tag(sync=True)
+    to_hide = Any('[]').tag(sync=True)
 
     def link_module(self, module):
         def _feed_widget(wg, m):
@@ -66,7 +67,8 @@ class Scatterplot(DataWidget, widgets.DOMWidget):
             wg.data = JS.dumps(data_)
 
         async def _after_run(m, run_number):
-            await asynchronize(_feed_widget, self, m)
+            if not self.modal:
+                await asynchronize(_feed_widget, self, m)
         module.after_run_proc = _after_run
         async def _from_input_value():
             while True:
@@ -91,3 +93,6 @@ class Scatterplot(DataWidget, widgets.DOMWidget):
                 module._json_cache['dummy'] = -dummy
                 await asynchronize(_feed_widget, self, module)
         return [_from_input_value(), _from_input_move_point(), _awake()]
+    def __init__(self, *, disable=tuple()):
+        super().__init__()
+        self.to_hide = list(disable)
