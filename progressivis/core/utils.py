@@ -20,15 +20,7 @@ except ImportError:
     import collections as collections_abc
 
 from multiprocessing import Process
-try:
-    from pandas.io.common import _is_url
-except ImportError:
-    from pandas.io.common import is_url as _is_url
-    try:
-        from pandas.io.common import _is_s3_urls as _is_s3_url
-    except ImportError:  # pandas >=0.23.0
-        from pandas.io.common import is_s3_url as _is_s3_url
-
+from pandas.io.common import is_s3_url, is_url
 import requests
 import os
 import os.path
@@ -602,7 +594,7 @@ def filepath_to_buffer(filepath, encoding=None,
         # if start_byte:
         #    filepath.seek(start_byte)
         return filepath, encoding, compression, filepath.size()
-    if _is_url(filepath):
+    if is_url(filepath):
         headers = None
         if start_byte:
             headers = {"Range": "bytes={}-".format(start_byte)}
@@ -614,7 +606,7 @@ def filepath_to_buffer(filepath, encoding=None,
         size = req.headers.get('Content-Length', 0)
         # return HttpDesc(req.raw, filepath), encoding, compression, int(size)
         return req.raw, encoding, compression, int(size)
-    if _is_s3_url(filepath):
+    if is_s3_url(filepath):
         reader, encoding, compression = s3_get_filepath_or_buffer(
             filepath,
             encoding=encoding,

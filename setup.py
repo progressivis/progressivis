@@ -103,7 +103,7 @@ setup(
                       "scipy>=0.18.1",
                       "numexpr>=2.6.1",
                       "tables>=3.3.0",
-                      "pandas>=0.19.1",
+                      "pandas>=1.0.0",
                       "scikit-learn>=0.18.1",
                       "tdigest>=0.4.1.0",
                       "numcodecs>=0.5.5",
