@@ -3,7 +3,8 @@ var margin = {top: 20, right: 20, bottom: 30, left: 40},
     width = 960 - margin.left - margin.right,
     height = 500 - margin.top - margin.bottom,
     svg, prevBounds = null, transform = d3.zoomIdentity;
-
+    var centroid_selection = {};
+    var collection_in_progress = false;
 var x     = d3.scaleLinear().range([0, width]),
     y     = d3.scaleLinear().range([height, 0]),
     color = d3.scaleOrdinal(d3.schemeCategory10),
@@ -82,8 +83,13 @@ function multiclass2d_dragmove(d, i) {
 function multiclass2d_dragend(d, i) {
     var msg = {};
     d3.select(this).classed("dragging", false);
-    msg[i] = d;
-    module_input(msg, ignore, progressivis_error, module_id+"/move_point");
+    if(collection_in_progress){
+	d3.select(this).style("fill", function(d) { return "green";});
+	centroid_selection[i] = d;
+    } else {
+	msg[i] = d;
+	module_input(msg, ignore, progressivis_error, module_id+"/move_point");
+    }
 }
 
 var node_drag = d3.drag()
@@ -269,7 +275,7 @@ function multiclass2d_update_vis(rawdata) {
         .append("title")
         .text(function(d, i) { return index[i]; });
     dots .attr("cx", function(d) { return x(d[0]); })
-         .attr("cy", function(d) { return y(d[1]); });
+         .attr("cy", function(d) { return y(d[1]); }).style("fill", function(d) { return dot_color[d[2]]});
     dots.exit().remove();
 	dots.order();
     });
@@ -364,7 +370,22 @@ function multiclass2d_filter() {
     module_input(min, ignore, progressivis_error, module_id+"/min_value");
     module_input(max, ignore, progressivis_error, module_id+"/max_value");
 }
+    function move_centroids(){
+	var txt = $('#init_centroids').html();
+	if(txt == "Selection"){
+	    $('#init_centroids').html("Click when ready");
+	    collection_in_progress = true;
+	    centroid_selection = {};
+	} else {
+	    $('#init_centroids').html("Selection");
+	    collection_in_progress = false;
+	    console.log(centroid_selection);
+	    module_input(centroid_selection, ignore, progressivis_error, module_id+"/move_point");
+	    centroid_selection = {};
+	}
 
+
+    }
 function multiclass2d_ready() {
     svg = d3.select("#multiclass_scatterplot svg")
          .attr("width", width + margin.left + margin.right)
@@ -392,7 +413,7 @@ function multiclass2d_ready() {
     makeOptions(colorMapSelect.get(0), colormaps.getTableNames());
     colormaps.makeTableFilter(colorMap, "Default");
     $('#filter').click(function() { multiclass2d_filter(); });
-    
+    $('#init_centroids').click(function(d) { move_centroids(); });    
     refresh = multiclass2d_refresh; // function to call to refresh
     module_ready();
 }

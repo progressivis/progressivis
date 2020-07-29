@@ -1,5 +1,5 @@
 import ipywidgets as widgets
-from traitlets import Unicode, Any
+from traitlets import Unicode, Any, Bool
 from progressivis.core import JSONEncoderNp as JS, asynchronize
 import progressivis.core.aio as aio
 from .utils import *
@@ -50,6 +50,7 @@ class Scatterplot(DataWidget, widgets.DOMWidget):
     data = Unicode('{}').tag(sync=True)
     value =  Any('{}').tag(sync=True)
     move_point =  Any('{}').tag(sync=True)    
+    modal = Bool(False).tag(sync=True)
 
     def link_module(self, module):
         def _feed_widget(wg, m):
@@ -84,10 +85,9 @@ class Scatterplot(DataWidget, widgets.DOMWidget):
             """
             while True:
                 await aio.sleep(5)
-                if module._json_cache is None:
+                if module._json_cache is None or self.modal:
                     continue
                 dummy = module._json_cache.get('dummy', 555)
                 module._json_cache['dummy'] = -dummy
                 await asynchronize(_feed_widget, self, module)
-
         return [_from_input_value(), _from_input_move_point(), _awake()]

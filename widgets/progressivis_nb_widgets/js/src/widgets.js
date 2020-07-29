@@ -52,7 +52,8 @@ var ScatterplotModel = widgets.DOMWidgetModel.extend({
 	samples: ndarray([]),	
         data : 'Hello Scatterplot!',
 	value: '{0}',
-	move_point: '{0}'	
+	move_point: '{0}',
+	modal: false
     })
     
 }, {

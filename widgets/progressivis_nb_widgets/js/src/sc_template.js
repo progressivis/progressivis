@@ -15,6 +15,7 @@ var html_ =  `<!-- Tab panes -->
         <br/>
         <div class="form-inline">
           <button class='btn btn-default' id='filter' type="button" aria-label='Filter button'>Filter to viewport</button>
+          <button class='btn btn-default' id='init_centroids' type="button" aria-label='Centroids selection'>Selection</button>
           <div class="form-group">
             <label>Blur radius</label>
             <input class="form-control" id="filterSlider" type="range" value="0" min="0" max="5" step="0.1"></input>
