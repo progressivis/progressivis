@@ -2,7 +2,6 @@
 """ Computes the distance matrix from each row of a data frame.
 """
 from progressivis.utils.errors import ProgressiveError
-from progressivis.utils.synchronized import synchronized
 from progressivis.core.utils import indices_len, fix_loc
 from progressivis.table.module import TableModule, SlotDescriptor
 from progressivis.table.table import Table
@@ -49,14 +48,13 @@ class PairwiseDistances(TableModule):
             return self.dist()
         return super(PairwiseDistances, self).get_data(name)
 
-    @synchronized
     def run_step(self, run_number, step_size, howlong):
         dfslot = self.get_input_slot('table')
         df = dfslot.data()
         # dfslot.update(run_number)
         if dfslot.updated.any() or dfslot.deleted.any():
             dfslot.reset()
-            logger.info('Reseting history because of changes in the input table')
+            logger.info('Reseting history because of changes in the input')
             dfslot.update(run_number)
             # TODO: be smarter with changed values
 

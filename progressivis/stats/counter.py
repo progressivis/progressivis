@@ -1,5 +1,4 @@
 
-from progressivis.utils.synchronized import synchronized
 from progressivis.core.utils import indices_len
 from progressivis.table.module import TableModule
 from progressivis.table.table import Table
@@ -22,7 +21,6 @@ class Counter(TableModule):
             return True
         return super(Counter, self).is_ready()
 
-    @synchronized
     def run_step(self, run_number, step_size, howlong):
         dfslot = self.get_input_slot('table')
         # dfslot.update(run_number)

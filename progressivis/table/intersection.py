@@ -3,7 +3,6 @@ Range Query module.
 
 """
 
-from progressivis.utils.synchronized import synchronized
 from progressivis.table.nary import NAry
 from progressivis.core.utils import indices_len
 from .bisectmod import _get_physical_table
