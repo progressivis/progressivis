@@ -84,7 +84,7 @@ class Scatterplot(DataWidget, widgets.DOMWidget):
             are exhausted at the time of the first display
             """
             while True:
-                await aio.sleep(5)
+                await wait_for_change(self, 'modal')
                 if module._json_cache is None or self.modal:
                     continue
                 dummy = module._json_cache.get('dummy', 555)

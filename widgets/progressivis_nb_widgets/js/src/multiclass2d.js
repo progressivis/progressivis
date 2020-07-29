@@ -424,6 +424,11 @@ function multiclass2d_ready(view_) {
     $('#filter').unbind('click').click(function() { multiclass2d_filter(); });
     $('#init_centroids').click(function(d) { move_centroids(); });
     $('#cancel_centroids').click(function(d) { cancel_centroids(); }).hide();
+    let mode = ipyView.model.get('modal')
+    ipyView.model.set('modal', !mode);
+    ipyView.touch();
+    ipyView.model.set('modal', mode);
+    ipyView.touch();
 }
 
 export  {multiclass2d_update_vis as update_vis,  multiclass2d_ready as ready_, ipyView as view};
