@@ -1,18 +1,22 @@
+import os
+import os.path
+import io
+import tempfile
 import json as js
+import re
+from itertools import tee
+from functools import wraps
+import functools as ft
+import threading
+
 from urllib.parse import urlparse as parse_url
 from urllib.parse import parse_qs
 
 import numpy as np
 import keyword
-import re
-from itertools import tee
 import uuid
-from functools import wraps
 from .bitmap import bitmap
 from ..core import aio
-import functools as ft
-import threading
-
 
 try:
     import collections.abc as collections_abc  # only works on python 3.3+
@@ -20,12 +24,9 @@ except ImportError:
     import collections as collections_abc
 
 from multiprocessing import Process
-from pandas.io.common import is_s3_url, is_url
+from pandas.io.common import is_url
+
 import requests
-import os
-import os.path
-import io
-import tempfile
 import s3fs
 import stat as st
 
@@ -543,6 +544,13 @@ def del_tmp_csv_fifo(file_name):
     dn = os.path.dirname(file_name)
     os.remove(file_name)
     os.rmdir(dn)
+
+
+def is_s3_url(url) -> bool:
+    """Check for an s3, s3n, or s3a url"""
+    if not isinstance(url, str):
+        return False
+    return parse_url(url).scheme in ["s3", "s3n", "s3a"]
 
 
 def _is_buffer_url(url):
