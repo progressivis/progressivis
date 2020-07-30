@@ -394,6 +394,7 @@ function cancel_centroids(){
     ipyView.touch();
     $('#cancel_centroids').hide();
 }
+
 function multiclass2d_ready(view_) {
     ipyView = view_;
     svg = d3.select("#multiclass_scatterplot svg")

@@ -1,8 +1,9 @@
+from ..core.utils import indices_len, fix_loc
+from ..core.slot import SlotDescriptor
+from ..table.module import TableModule
+from ..table.table import Table
+from ..core.decorators import *
 
-from progressivis.core.utils import indices_len, fix_loc
-from progressivis.core.slot import SlotDescriptor
-from progressivis.table.module import TableModule
-from progressivis.table.table import Table
 
 import numpy as np
 
@@ -69,26 +70,27 @@ class Var(TableModule):
             ret[c] = data.variance
         return ret
 
-    def run_step(self, run_number, step_size, howlong):
-        dfslot = self.get_input_slot('table')
-        # dfslot.update(run_number)
-        if dfslot.updated.any() or dfslot.deleted.any():
-            dfslot.reset()
-            self._table = None
-            dfslot.update(run_number)
-        indices = dfslot.created.next(step_size)  # returns a slice
-        steps = indices_len(indices)
-        if steps == 0:
-            return self._return_run_step(self.state_blocked, steps_run=0)
-        input_df = dfslot.data()
-        op = self.op(self.filter_columns(input_df, fix_loc(indices)))
-        if self._table is None:
-            self._table = Table(self.generate_table_name('var'),
-                                dshape=input_df.dshape,
-                                create=True)
-        self._table.append(op, indices=[run_number])
-        print(self._table)
+    def reset(self):
+        self._table = None
 
-        if len(self._table) > self.params.history:
-            self._table = self._table.loc[self._table.index[-self.params.history:]]
-        return self._return_run_step(self.next_state(dfslot), steps_run=steps)
+    @process_slot("table", reset_cb="reset")
+    @run_if_any
+    def run_step(self, run_number, step_size, howlong):
+        with self.context as ctx:
+            dfslot = ctx.table        
+            indices = dfslot.created.next(step_size)  # returns a slice
+            steps = indices_len(indices)
+            if steps == 0:
+                return self._return_run_step(self.state_blocked, steps_run=0)
+            input_df = dfslot.data()
+            op = self.op(self.filter_columns(input_df, fix_loc(indices)))
+            if self._table is None:
+                self._table = Table(self.generate_table_name('var'),
+                                    dshape=input_df.dshape,
+                                    create=True)
+            self._table.append(op, indices=[run_number])
+            print(self._table)
+
+            if len(self._table) > self.params.history:
+                self._table = self._table.loc[self._table.index[-self.params.history:]]
+            return self._return_run_step(self.next_state(dfslot), steps_run=steps)

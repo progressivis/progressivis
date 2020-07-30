@@ -4,11 +4,11 @@ from ..core.slot import SlotDescriptor
 from ..table.module import TableModule
 from ..table.table import Table
 from ..utils.psdict import PsDict
+from ..core.decorators import *
 import numpy as np
 
 import logging
 logger = logging.getLogger(__name__)
-
 
 class Histogram1D(TableModule):
     """
@@ -34,86 +34,71 @@ class Histogram1D(TableModule):
                             dshape=Histogram1D.schema,
                             chunks={'array': (16384, 128)},
                             create=True)
+    def reset(self):
+        self._histo = None
+        self._edges = None
 
     def is_ready(self):
         if self._bounds and self.get_input_slot('table').created.any():
             return True
         return super(Histogram1D, self).is_ready()
 
+    @process_slot("table", reset_cb="reset")
+    @process_slot("min", "max", reset_if=False)
+    @run_if_any
     def run_step(self, run_number, step_size, howlong):
-        dfslot = self.get_input_slot('table')
-        # dfslot.update(run_number)
-        min_slot = self.get_input_slot('min')
-        # min_slot.update(run_number)
-        max_slot = self.get_input_slot('max')
-        # max_slot.update(run_number)
-
-        if dfslot.updated.any() or dfslot.deleted.any():
-            logger.debug('reseting histogram')
-            dfslot.reset()
-            self._histo = None
-            self._edges = None
-            dfslot.update(run_number)
-
-        if not (dfslot.created.any()
-                or min_slot.created.any()
-                or max_slot.created.any()):
-            logger.info('Input buffers empty')
-            return self._return_run_step(self.state_blocked, steps_run=0)
-        bounds = self.get_bounds(min_slot, max_slot)
-        if bounds is None:
-            logger.debug('No bounds yet at run %d', run_number)
-            return self._return_run_step(self.state_blocked, steps_run=0)
-        bound_min, bound_max = bounds
-        if self._bounds is None:
-            delta = self.get_delta(*bounds)
-            self._bounds = (bound_min - delta, bound_max + delta)
-            logger.info("New bounds at run %d: %s", run_number, self._bounds)
-        else:
-            (old_min, old_max) = self._bounds
-            delta = self.get_delta(*bounds)
-            if (bound_min < old_min or bound_max > old_max) \
-               or bound_min > (old_min + delta) \
-               or bound_max < (old_max - delta):
+        with self.context as ctx:
+            dfslot = ctx.table
+            min_slot = ctx.min
+            max_slot = ctx.max
+            bounds = self.get_bounds(min_slot, max_slot)
+            if bounds is None:
+                logger.debug('No bounds yet at run %d', run_number)
+                return self._return_run_step(self.state_blocked, steps_run=0)
+            bound_min, bound_max = bounds
+            if self._bounds is None:
+                delta = self.get_delta(*bounds)
                 self._bounds = (bound_min - delta, bound_max + delta)
-                logger.info('Updated bounds at run %d: %s', run_number,
-                            self._bounds)
-                dfslot.reset()
-                dfslot.update(run_number)
-                self._histo = None
-                self._edges = None
-
-        (curr_min, curr_max) = self._bounds
-        if curr_min >= curr_max:
-            logger.error('Invalid bounds: %s', self._bounds)
-            return self._return_run_step(self.state_blocked, steps_run=0)
-
-        input_df = dfslot.data()
-        indices = dfslot.created.next(step_size)  # returns a slice or ... ?
-        steps = indices_len(indices)
-        logger.info('Read %d rows', steps)
-        self.total_read += steps
-        column = input_df[self.column]
-        column = column.loc[fix_loc(indices)]
-        bins = self._edges if self._edges is not None else self.params.bins
-        histo = None
-        if len(column) > 0:
-            histo, self._edges = np.histogram(column,
-                                              bins=bins,
-                                              range=[curr_min, curr_max],
-                                              normed=False,
-                                              density=False)
-        if self._histo is None:
-            self._histo = histo
-        elif histo is not None:
-            self._histo += histo
-        values = {'array': [self._histo],
-                  'min': [curr_min],
-                  'max': [curr_max],
-                  'time': [run_number]}
-        self._table['array'].set_shape((self.params.bins,))
-        self._table.append(values)
-        return self._return_run_step(self.next_state(dfslot), steps_run=steps)
+                logger.info("New bounds at run %d: %s", run_number, self._bounds)
+            else:
+                (old_min, old_max) = self._bounds
+                delta = self.get_delta(*bounds)
+                if(bound_min < old_min or bound_max > old_max) \
+                  or bound_min > (old_min + delta) or bound_max < (old_max - delta):
+                    self._bounds = (bound_min - delta, bound_max + delta)
+                    logger.info('Updated bounds at run %d: %s', run_number, self._bounds)
+                    dfslot.reset()
+                    dfslot.update(run_number)
+                    self._histo = None
+                    self._edges = None
+            (curr_min, curr_max) = self._bounds
+            if curr_min >= curr_max:
+                logger.error('Invalid bounds: %s', self._bounds)
+                return self._return_run_step(self.state_blocked, steps_run=0)
+            input_df = dfslot.data()
+            indices = dfslot.created.next(step_size) # returns a slice or ... ?
+            steps = indices_len(indices)
+            logger.info('Read %d rows', steps)
+            self.total_read += steps
+            column = input_df[self.column]
+            column = column.loc[fix_loc(indices)]
+            bins = self._edges if self._edges is not None else self.params.bins
+            histo = None
+            if len(column) > 0:
+                histo, self._edges = np.histogram(column,
+                                                  bins=bins,
+                                                  range=[curr_min, curr_max],
+                                                  density=False)
+            if self._histo is None:
+                self._histo = histo
+            elif histo is not None:
+                self._histo += histo
+            values = {'array': [self._histo], 'min': [curr_min], 'max': [curr_max], 'time': [run_number]}
+            #with self.lock:
+            self._table['array'].set_shape((self.params.bins,))
+            self._table.append(values)
+            return self._return_run_step(self.next_state(dfslot), steps_run=steps)
+  
 
     def get_bounds(self, min_slot, max_slot):
         min_slot.created.next()
