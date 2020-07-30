@@ -42,4 +42,3 @@ class Max(TableModule):
                 for k, v in self._table.items():
                     self._table[k] = np.maximum(op[k], v)
             return self._return_run_step(self.next_state(ctx.table), steps_run=steps)
-
