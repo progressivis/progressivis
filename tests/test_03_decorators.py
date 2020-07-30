@@ -219,7 +219,7 @@ class TestDecoratorsWith2CSV2Const(ProgressiveTest):
         self.assertEqual(module.context._slot_policy, 'run_if_any')
         self.assertEqual(module.context._slot_expr, [('a', 'c'), ('b', 'd')])
 
-#@skip
+@skip
 class TestDecoratorsWith4Const(ProgressiveTest):
     def test_decorators_any(self):
         s = self.scheduler()
@@ -229,7 +229,6 @@ class TestDecoratorsWith4Const(ProgressiveTest):
         self.assertTrue(module.table() is None) # evidence that run_step_impl() was NOT called
         self.assertEqual(module.context._slot_policy, 'run_if_any')
         self.assertEqual(module.context._slot_expr, [['a', 'b', 'c', 'd']])
-
     def test_decorators_always(self):
         s = self.scheduler()
         module = RunAlways(scheduler=s)
