@@ -829,7 +829,7 @@ def _print_len(x):
 
 
 class Every(Module):
-    "Module running a function at eatch iteration"
+    "Module running a function at each iteration"
     inputs = [SlotDescriptor('df')]
 
     def __init__(self, proc=_print_len, constant_time=True, **kwds):
