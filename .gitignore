@@ -19,6 +19,7 @@
 .tmp*
 .ipynb_checkpoints
 __pycache__
+mmap_storage
 /.eggs
 /bin
 /build
