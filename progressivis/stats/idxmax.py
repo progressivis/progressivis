@@ -7,7 +7,6 @@ import logging
 
 import numpy as np
 
-from ..utils.synchronized import synchronized
 from ..core.utils import indices_len, fix_loc
 from ..core.slot import SlotDescriptor
 from ..table.module import TableModule
