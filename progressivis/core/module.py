@@ -532,44 +532,33 @@ class Module(metaclass=ModuleMeta):
             slot.update(run_number)
 
     def is_ready(self):
-        # Module is either a source or has buffered data to process
-        if self.state == Module.state_ready:
-            return True
-
         if self.state == Module.state_terminated:
             logger.info("%s Not ready because it terminated", self.name)
             return False
         if self.state == Module.state_invalid:
             logger.info("%s Not ready because it is invalid", self.name)
             return False
-        # source modules can be generators that
-        # cannot run out of input, unless they decide so.
-        if not self.has_any_input():
-            return True
 
-        # Module is waiting for some input, test if some is available
-        # to let it run. If all the input modules are terminated,
-        # the module is blocked, cannot run any more, so it is terminated
-        # too.
+        # Always process the input slots to have the buffers valid
+        slots = self.input_slot_values()
+        in_count = 0
+        term_count = 0
+        ready_count = 0
+        for slot in slots:
+            if slot is None:  # slot not required and not connected
+                continue
+            in_count += 1
+            in_module = slot.output_module
+            in_ts = in_module.last_update()
+            ts = slot.last_update()
+
+            if slot.has_buffered() or in_ts > ts:
+                ready_count += 1
+            elif (in_module.is_terminated() or
+                  in_module.state == Module.state_invalid):
+                term_count += 1
+
         if self.state == Module.state_blocked:
-            slots = self.input_slot_values()
-            in_count = 0
-            term_count = 0
-            ready_count = 0
-            for slot in slots:
-                if slot is None:  # slot not required and not connected
-                    continue
-                in_count += 1
-                in_module = slot.output_module
-                in_ts = in_module.last_update()
-                ts = slot.last_update()
-
-                if slot.has_buffered() or in_ts > ts:
-                    ready_count += 1
-                elif (in_module.is_terminated() or
-                      in_module.state == Module.state_invalid):
-                    term_count += 1
-
             # if all the input slot modules are terminated or invalid
             if not self.is_input() \
                and in_count != 0 \
@@ -580,6 +569,20 @@ class Module(metaclass=ModuleMeta):
                 return False
             # sources are always ready, and when 1 is ready, the module is.
             return in_count == 0 or ready_count != 0
+
+        # Module is either a source or has buffered data to process
+        if self.state == Module.state_ready:
+            return True
+
+        # source modules can be generators that
+        # cannot run out of input, unless they decide so.
+        if not self.has_any_input():
+            return True
+
+        # Module is waiting for some input, test if some is available
+        # to let it run. If all the input modules are terminated,
+        # the module is blocked, cannot run any more, so it is terminated
+        # too.
         logger.error("%s Not ready because is in weird state %s",
                      self.name, self.state_name[self.state])
         return False
