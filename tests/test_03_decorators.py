@@ -33,6 +33,9 @@ class RunIfAll(FooABC):
             return self.run_step_impl(ctx, run_number, step_size)
 
 class RunAlways(FooABC):
+    def is_greedy(self):
+        return True
+
     @process_slot("a", "b", "c", "d", reset_if=False)    
     @run_always
     def run_step(self, run_number, step_size, howlong):
@@ -56,6 +59,9 @@ class RunIfAllabOrAllcd(FooABC):
             return self.run_step_impl(ctx, run_number, step_size)
 
 class RunIfAny(FooABC):
+    def is_greedy(self):
+        return True
+
     @process_slot("a", "b", "c", "d", reset_if=False)    
     @run_if_any()
     def run_step(self, run_number, step_size, howlong):
@@ -219,7 +225,7 @@ class TestDecoratorsWith2CSV2Const(ProgressiveTest):
         self.assertEqual(module.context._slot_policy, 'run_if_any')
         self.assertEqual(module.context._slot_expr, [('a', 'c'), ('b', 'd')])
 
-@skip
+#@skip
 class TestDecoratorsWith4Const(ProgressiveTest):
     def test_decorators_any(self):
         s = self.scheduler()

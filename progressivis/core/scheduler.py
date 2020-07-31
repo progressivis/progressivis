@@ -304,12 +304,11 @@ class Scheduler(object):
             self._run_number += 1
             # import pdb; pdb.set_trace()
             module.prepare_run(self._run_number)
-            if not(module.is_ready() or self.has_input()):
+            if not(module.is_ready() or self.has_input() or module.is_greedy()):
                 logger.info("Module %s not scheduled"
                             " because not ready and has no input",
                             module.name)
                 continue
-
             await self._run_tick_procs()
             module.run(self._run_number)
             await module.after_run(self._run_number)

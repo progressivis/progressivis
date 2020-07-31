@@ -512,6 +512,9 @@ class Module(metaclass=ModuleMeta):
     def is_source(self):
         return False
 
+    def is_greedy(self):
+        return False
+
     def is_created(self):
         return self._state == Module.state_created
 
