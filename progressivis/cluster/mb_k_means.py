@@ -30,7 +30,7 @@ class MBKMeans(TableModule):
         SlotDescriptor('conv', type=PsDict, required=False)
     ]
 
-    DATA_CHANGED_MAX = 3
+    DATA_CHANGED_MAX = 4
     def __init__(self, n_clusters, columns=None, batch_size=100, tol=0.01, conv_steps=2,
                  is_input=True, random_state=None, **kwds):
         super(MBKMeans, self).__init__(**kwds)
@@ -101,11 +101,8 @@ class MBKMeans(TableModule):
             return self._conv_out
         return super(MBKMeans, self).get_data(name)
 
-    def __disabled_is_greedy(self, slot_name):
-        """
-        Still needs to works after the entries have ended
-        """
-        return True if self.get_input_slot('moved_center') is None else slot_name=="table"
+    def is_greedy(self):
+        return True
 
     def _test_convergence(self):
         ampl = distance.euclidean(self._min_p, self._max_p)
@@ -158,15 +155,16 @@ class MBKMeans(TableModule):
         steps = indices_len(indices)
         if steps == 0:
             self._data_changed -= 1
-            trm = dfslot.output_module.is_terminated()
-            # it seems that the following (stringified) test is useless ...
-            """if self._data_changed==1 or trm:
-                print("DATA CHANGED", self._data_changed, dfslot.output_module.is_terminated())
+            #print("ZERO STEPS", self._data_changed)
+            trm = dfslot.output_module.is_terminated() or dfslot.output_module.is_zombie()
+            if self._data_changed==1 or trm:
+                print("DATA CHANGED", self._data_changed, trm)
                 self._test_convergence()
                 args = (self.state_blocked,0) if trm  else (self.state_ready, 1)
-                return self._return_run_step(*args)"""
+                return self._return_run_step(*args)
             return self._return_run_step(self.state_blocked, steps_run=0)
         elif steps >= self.n_clusters:
+            #print("DATA_CHANGED_MAX")
             self._data_changed = self.DATA_CHANGED_MAX
         else: # n_samples should be larger than k
             print("n_samples should be larger than k", steps, self.n_clusters, step_size)
@@ -204,9 +202,6 @@ class MBKMeans(TableModule):
                                 create=True)
             self._table.resize(self.mbk.cluster_centers_.shape[0])
         self._table[cols] = self.mbk.cluster_centers_
-        if not dfslot.has_buffered():
-            self._test_convergence()
-            #return self._return_run_step(self.state_ready, steps_run=1)
         return self._return_run_step(self.next_state(dfslot), steps_run=steps)
 
     def dshape_from_columns(self, table, columns, dshape):
