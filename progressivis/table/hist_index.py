@@ -128,7 +128,10 @@ class _HistogramIndexImpl(object):
             samples = ids
         s_vals = self.column.loc[samples]
         v = np.median(s_vals)
-        assert self.bins[i-1] < v < self.bins[i] if i > 0 else v < self.bins[i]
+        if i >= len(self.bins):
+            assert self.bins[i-1] < v
+        else:
+            assert self.bins[i-1] < v < self.bins[i] if i > 0 else v < self.bins[i]
         values = self.column.loc[ids]
         lower_bin = bitmap(ids[values < v])
         upper_bin = self.bitmaps[i] - lower_bin
@@ -139,11 +142,11 @@ class _HistogramIndexImpl(object):
             print("DIFF: ", lower_len, upper_len,
                   float(abs(lower_len - upper_len))/len(ids))
         self.bins = np.insert(self.bins, i, v)
-        try:
+        if i+1 >= len(self.bins):
+            assert self.bins[i-1] < self.bins[i]
+        else:
             assert (self.bins[i-1] < self.bins[i] < self.bins[i+1] if i > 0
                     else self.bins[i] < self.bins[i+1])
-        except AssertionError:
-            import pdb; pdb.set_trace()
         self.bitmaps.insert(i, lower_bin)
         self.bitmaps[i+1] = upper_bin
         print('*', end='')

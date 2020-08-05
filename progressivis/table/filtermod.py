@@ -44,6 +44,8 @@ class FilterMod(TableModule):
             updated = input_slot.updated.next(step_size)
             steps += indices_len(updated)
         input_table = input_slot.data()
+        if input_table is None:
+            return self._return_run_step(self.state_blocked, steps_run=0)
         if not self._impl.is_started:
             self._table = TableSelectedView(input_table, bitmap([]))
         self._impl.start(input_table,
