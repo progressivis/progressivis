@@ -209,9 +209,13 @@ class MCScatterPlot(NAry):
             buffers.append(buff)
             count += buff['count']
             domain.append(cname)
-            sample_input = inputs['sample'][0]
-            select = sample_input.data()
-            x_column, y_column = inputs['sample'][1],  inputs['sample'][2]
+            if 'sample' in inputs:
+                sample_input = inputs['sample'][0]
+                select = sample_input.data()
+                x_column, y_column = inputs['sample'][1],  inputs['sample'][2]
+            else:
+                select = None
+
             if self._ipydata:
                 smpl = []
                 if select is not None:
@@ -326,7 +330,7 @@ class MCScatterPlot(NAry):
             return json
         return self.make_json(json)
 
-    def create_dependent_modules(self, input_module, input_slot,
+    def create_dependent_modules(self, input_module=None, input_slot=None,
                                  sample='default', **kwds):
         self.input_module = input_module
         self.input_slot = input_slot
@@ -353,21 +357,29 @@ class MCScatterPlot(NAry):
                 dc.histogram2d.input['table', ('min', x, y)] = dc2.range_query_2d.output.min
                 dc.histogram2d.input['table', ('max', x, y)] = dc2.range_query_2d.output.max
 
-    def _add_class(self, name, x_column, y_column, sample='default'):
-        if self.input_module is None or self.input_slot is None:
-            raise ProgressiveError("You have to create "
-                                   "the dependent modules first!")
+    def _add_class(self, name, x_column, y_column, sample='default', input_module=None, input_slot=None):
+        if self.input_module is None and input_module is None:
+            raise ProgressiveError("Input module is not defined!")            
+        if self.input_module is not None and input_module is not None:
+            raise ProgressiveError("Input module is defined twice!")            
+        if self.input_slot is None and input_slot is None:
+            raise ProgressiveError("Input slot is not defined!")            
+        if self.input_slot is not None and input_slot is not None:
+            raise ProgressiveError("Input slot is defined twice!")            
         data_class = _DataClass(name, self.name, x_column,
                                 y_column,
                                 approximate=self._approximate,
                                 scheduler=self._scheduler)
         data_class.sample = sample
-        data_class.create_dependent_modules(self.input_module, self.input_slot)
+        input_module = input_module or self.input_module
+        input_slot = input_slot or self.input_slot
+        data_class.create_dependent_modules(input_module, input_slot)
         col_translation = {self._x_label: x_column, self._y_label: y_column}
         hist_meta = dict(inp='hist', class_=name, **col_translation)
-        sample_meta = dict(inp='sample', class_=name, **col_translation)
         self.input['table', hist_meta] = data_class.histogram2d.output.table
-        self.input['table', sample_meta] = data_class.sample.output.table
+        if sample is not None:
+            sample_meta = dict(inp='sample', class_=name, **col_translation)        
+            self.input['table', sample_meta] = data_class.sample.output.table
         self._data_class_dict[name] = data_class
         self.min_value.subscribe(data_class.min_value, col_translation)
         self.max_value.subscribe(data_class.max_value, col_translation)

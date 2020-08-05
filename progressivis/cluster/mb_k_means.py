@@ -8,10 +8,12 @@ from scipy.spatial import distance
 from progressivis import ProgressiveError, SlotDescriptor
 from progressivis.core.utils import indices_len, fix_loc
 from ..table.module import TableModule
-from ..table import Table
+from ..table import Table, TableSelectedView
 from ..table.dshape import dshape_from_dtype
 from ..io import DynVar
 from ..utils.psdict import PsDict
+from ..core.decorators import *
+from ..table.filtermod import FilterMod
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +35,7 @@ class MBKMeans(TableModule):
     DATA_CHANGED_MAX = 4
     def __init__(self, n_clusters, columns=None, batch_size=100, tol=0.01, conv_steps=2,
                  is_input=True, random_state=None, **kwds):
-        super(MBKMeans, self).__init__(**kwds)
+        super().__init__(**kwds)
         self.mbk = MiniBatchKMeans(n_clusters=n_clusters,
                                    batch_size=batch_size,
                                    verbose=True,
@@ -74,7 +76,7 @@ class MBKMeans(TableModule):
         self._old_centers.clear()
 
     def starting(self):
-        super(MBKMeans, self).starting()
+        super().starting()
         opt_slot = self.get_output_slot('labels')
         if opt_slot:
             logger.debug('Maintaining labels')
@@ -99,7 +101,7 @@ class MBKMeans(TableModule):
             return self.labels()
         if name == 'conv':
             return self._conv_out
-        return super(MBKMeans, self).get_data(name)
+        return super().get_data(name)
 
     def is_greedy(self):
         return True
@@ -153,6 +155,7 @@ class MBKMeans(TableModule):
             return self._return_run_step(self.state_blocked, steps_run=0)
         indices = dfslot.created.next(step_size)  # returns a slice
         steps = indices_len(indices)
+        print("STEPS", steps)
         if steps == 0:
             self._data_changed -= 1
             #print("ZERO STEPS", self._data_changed)
@@ -219,7 +222,7 @@ class MBKMeans(TableModule):
         return False
 
     def to_json(self, short=False):
-        json = super(MBKMeans, self).to_json(short)
+        json = super().to_json(short)
         if short:
             return json
         return self._centers_to_json(json)
@@ -251,3 +254,45 @@ class MBKMeans(TableModule):
         self.moved_center = c
         self.input.moved_center = c.output.table
         
+
+class MBKMeansFilter(TableModule):
+    """
+    Filters data corresponding to a specific label
+    """
+    inputs = [
+        SlotDescriptor('table', type=Table, required=True),
+        SlotDescriptor('labels', type=Table, required=True)        
+    ]
+
+    def __init__(self, sel, **kwds):
+        self._sel = sel
+        super().__init__(**kwds)
+
+    @process_slot("table", "labels")
+    @run_if_any
+    def run_step(self, run_number, step_size, howlong):
+        #import pdb;pdb.set_trace()
+        with self.context as ctx:
+            indices_t = ctx.table.created.next(step_size) # returns a slice
+            steps_t = indices_len(indices_t)
+            ctx.table.clear_buffers()
+            indices_l = ctx.labels.created.next(step_size) # returns a slice
+            steps_l = indices_len(indices_l)
+            ctx.labels.clear_buffers()
+            steps = steps_t + steps_l
+            if steps == 0:
+                return self._return_run_step(self.state_blocked, steps_run=0)
+            if self._table is None:
+                self._table = TableSelectedView(ctx.table.data(),
+                                                ctx.labels.data().selection)
+            else:
+                self._table.selection = ctx.labels.data().selection
+            return self._return_run_step(self.next_state(ctx.table),
+                                         steps_run=steps)
+    def create_dependent_modules(self, mbkmeans, data_module, data_slot):
+        scheduler = self.scheduler()
+        filter_ = FilterMod(expr=f'labels=={self._sel}', scheduler=scheduler)
+        filter_.input.table = mbkmeans.output.labels
+        self.filter = filter_
+        self.input.labels = filter_.output.table
+        self.input.table = data_module.output[data_slot]

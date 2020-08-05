@@ -30,7 +30,7 @@ def generate_random_multivariate_normal_csv(filename, rows, seed=1234, header=No
     Author: Jaemin Jo
     Date: February 2019
     """
-    if os.path.exists(filename) and not reset:
+    if isinstance(filename, str) and os.path.exists(filename) and not reset:
         return filename
     def mv(n, mean, cov):
         return np.random.multivariate_normal(mean, cov, size=(n)).astype(np.float32)
