@@ -23,7 +23,6 @@ class Unary(TableModule):
     @run_if_any
     def run_step(self, run_number, step_size, howlong):
         with self.context as ctx:
-            print("run_step", step_size)
             data_in = ctx.table.data()
             if self._table is None:
                 self._table = Table(self.generate_table_name('elementwise1'),
@@ -45,3 +44,5 @@ def make_unary(cname, ufunc):
     return cls
 
 Log = make_unary("Log", np.log)
+Log2 = make_unary("Log2", np.log2)
+Log10 = make_unary("Log10", np.log10)
