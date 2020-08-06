@@ -57,11 +57,6 @@ function multiclass2d_dragmove(d, i) {
 function multiclass2d_dragend(d, i) {
     var msg = {};
     d3.select(this).classed("dragging", false);
-    //msg[i] = d;
-    //module_input(msg, ignore, progressivis_error, module_id+"/move_point");
-    //ipyView.model.set('move_point', msg);
-    //ipyView.model.save_changes();
-    //ipyView.touch();
     if(collection_in_progress){
 	d3.select(this).style("fill", function(d) { return "green";});
 	centroid_selection[i] = d;
@@ -83,12 +78,15 @@ function multiclass2d_update_vis(rawdata) {
     var bounds = rawdata['bounds'],
         ix, iy, iw, ih;
     if (!bounds) return;
+    var sc = rawdata['samples_counter'];
+    var sc_sum = sc.reduce((a, b) => a + b, 0);
     var st =  ipyView.model.get('samples');
-    var index = [...Array(st.shape[0]*st.shape[2]).keys()];
+    var index = [...Array(sc_sum).keys()];
     var rows = Array();
     for(let z in [...Array(st.shape[2])]){
 	z = parseInt(z);
-	for(let i in [...Array(st.shape[0])]){
+	let nsam = sc[z]
+	for(let i in [...Array(nsam)]){
 	    rows.push([st.get(i,0,z), st.get(i,1,z),z]);
 	}
     }
@@ -278,17 +276,7 @@ function multiclass2d_zoomed(t) {
     svg.selectAll(".dot").attr("r", 3.5/transform.k);
 }
 
-/*
-    function multiclass2d_refresh(json) {
-    if(json && json.payload) {
-        multiclass2d_update(json.payload);}
-    else {
-        module_set_hotline(true);
-        module_get(multiclass2d_update, error);
-    }
-        
-    }
-*/
+
 function delta(d) { return d[1] - d[0]; }
 
 function compute_transform(x, y, x0, y0) {

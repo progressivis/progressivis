@@ -67,10 +67,6 @@ class _DataClass(object):
             if self.sample == 'default':
                 self.sample = Sample(samples=100, group=self._group,
                                      scheduler=scheduler)
-            # elif sample is None and select is None:
-            #    raise ProgressiveError("Scatterplot needs a select module")
-            # if sample is not None:
-            #    sample.input.table = range_query_2d.output.table
             if isinstance(self.sample, Sample):
                 self.sample.input.table = range_query_2d.output.table
             self.histogram2d = histogram2d
@@ -185,16 +181,13 @@ class MCScatterPlot(NAry):
         xmin = ymin = - np.inf
         xmax = ymax = np.inf
         changes, grouped_inputs = self.group_inputs()
+        z = len(grouped_inputs)
         if self._ipydata and self.hist_tensor is None:
-            z = len(grouped_inputs)
             for sl in grouped_inputs.values():
                 hi = sl['hist'][0]
                 xbins = hi.output_module.params.xbins
                 ybins = hi.output_module.params.ybins
                 self.hist_tensor = np.zeros((xbins, ybins, z), dtype='int32')
-                sam = sl['sample'][0]
-                nsam = sam.output_module.params.samples
-                self.sample_tensor = np.zeros((nsam, 2, z), dtype='float32')
                 break
         for i, (cname, inputs) in enumerate(grouped_inputs.items()):
             hist_input = inputs['hist'][0]
@@ -219,16 +212,30 @@ class MCScatterPlot(NAry):
             if self._ipydata:
                 smpl = []
                 if select is not None:
-                    assert self.sample_tensor.shape[0] == len(select)
                     ph_x = get_physical_base(select[x_column])
-                    self.sample_tensor[:,0,i] = ph_x.loc[select[x_column].index.values]
                     ph_y = get_physical_base(select[y_column])
-                    self.sample_tensor[:,1,i] = ph_y.loc[select[y_column].index.values]
+                    smpl = ph_x.loc[select[x_column].index.values],  ph_y.loc[select[y_column].index.values]
+                else:
+                    smpl = [], []
                     
             else:
                 smpl = select.to_json(orient='split', columns=[x_column, y_column]) if select is not None else []
             samples.append(smpl)
-
+        if self._ipydata:
+            samples_counter = []
+            for vx, vy in samples:
+                len_s = len(vx)
+                assert len_s == len(vy)
+                samples_counter.append(len_s)
+            nsam = max(samples_counter)
+            self.sample_tensor = np.zeros((nsam, 2, z), dtype='float32')
+            for i, (vx, vy) in enumerate(samples):
+                if not len(vx):
+                    continue
+                self.sample_tensor[:,0,i] = vx
+                self.sample_tensor[:,1,i] = vy
+            json['samples_counter'] = samples_counter
+            samples = []
         # TODO: check consistency among classes (e.g. same xbin, ybin etc.)
         xbins, ybins = self.hist_tensor.shape[:-1] if self._ipydata else buffers[0]['binnedPixels'].shape
         encoding = {
