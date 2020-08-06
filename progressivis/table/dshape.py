@@ -62,6 +62,18 @@ def dshape_extract(data, columns=None):
         return dshape_from_dict(data)
     return None
 
+def dshape_from_columns(table, columns, dshape):
+    dshapes = []
+    for colname in columns:
+        col = table._column(colname)
+        if len(col.shape) > 1:
+            dshapes.append("%s: %d * %s" %
+                           (col.name, col.shape[1], dshape))
+        else:
+            dshapes.append("%s: %s" % (col.name, dshape))
+    return "{" + ",".join(dshapes)+"}"
+
+
 def dataframe_dshape(dtype):
     if dtype == OBJECT:
         return "string"

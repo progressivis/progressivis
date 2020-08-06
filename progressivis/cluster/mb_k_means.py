@@ -9,7 +9,7 @@ from progressivis import ProgressiveError, SlotDescriptor
 from progressivis.core.utils import indices_len, fix_loc
 from ..table.module import TableModule
 from ..table import Table, TableSelectedView
-from ..table.dshape import dshape_from_dtype
+from ..table.dshape import dshape_from_dtype, dshape_from_columns
 from ..io import DynVar
 from ..utils.psdict import PsDict
 from ..core.decorators import *
@@ -155,7 +155,6 @@ class MBKMeans(TableModule):
             return self._return_run_step(self.state_blocked, steps_run=0)
         indices = dfslot.created.next(step_size)  # returns a slice
         steps = indices_len(indices)
-        print("STEPS", steps)
         if steps == 0:
             self._data_changed -= 1
             #print("ZERO STEPS", self._data_changed)
@@ -198,7 +197,7 @@ class MBKMeans(TableModule):
                 self._labels.append({'labels': self.mbk.labels_},
                                     indices=indices[batch])
         if self._table is None:
-            dshape = self.dshape_from_columns(input_df, cols,
+            dshape = dshape_from_columns(input_df, cols,
                                               dshape_from_dtype(X.dtype))
             self._table = Table(self.generate_table_name('centers'),
                                 dshape=dshape,
@@ -206,17 +205,6 @@ class MBKMeans(TableModule):
             self._table.resize(self.mbk.cluster_centers_.shape[0])
         self._table[cols] = self.mbk.cluster_centers_
         return self._return_run_step(self.next_state(dfslot), steps_run=steps)
-
-    def dshape_from_columns(self, table, columns, dshape):
-        dshapes = []
-        for colname in columns:
-            col = table._column(colname)
-            if len(col.shape) > 1:
-                dshapes.append("%s: %d * %s" %
-                               (col.name, col.shape[1], dshape))
-            else:
-                dshapes.append("%s: %s" % (col.name, dshape))
-        return "{" + ",".join(dshapes)+"}"
 
     def is_visualization(self):
         return False
