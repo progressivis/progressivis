@@ -36,7 +36,7 @@ class TestMBKmeans(ProgressiveTest):
                             index_col=False,
                             scheduler=s)
             km = MBKMeans(n_clusters=n_clusters, random_state=42,
-                          is_input=False, scheduler=s)
+                          is_input=False, is_greedy=False, scheduler=s)
             km.input.table = csv.output.table
             pr = Print(proc=self.terse, scheduler=s)
             pr.input.df = km.output.table

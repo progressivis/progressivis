@@ -34,7 +34,7 @@ class MBKMeans(TableModule):
 
     DATA_CHANGED_MAX = 4
     def __init__(self, n_clusters, columns=None, batch_size=100, tol=0.01, conv_steps=2,
-                 is_input=True, random_state=None, **kwds):
+                 is_input=True, is_greedy=True, random_state=None, **kwds):
         super().__init__(**kwds)
         self.mbk = MiniBatchKMeans(n_clusters=n_clusters,
                                    batch_size=batch_size,
@@ -56,6 +56,7 @@ class MBKMeans(TableModule):
         self.params.samples = n_clusters
         self._min_p = None
         self._max_p = None
+        self._is_greedy = is_greedy
         
     def predict_step_size(self, duration):
         p = super().predict_step_size(duration)
@@ -104,7 +105,7 @@ class MBKMeans(TableModule):
         return super().get_data(name)
 
     def is_greedy(self):
-        return True
+        return self._is_greedy
 
     def _test_convergence(self):
         ampl = distance.euclidean(self._min_p, self._max_p)
