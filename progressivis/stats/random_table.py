@@ -7,10 +7,12 @@ import logging
 
 import numpy as np
 
-from progressivis.utils.errors import ProgressiveError, ProgressiveStopIteration
-from progressivis.table.module import TableModule
-from progressivis.table.table import Table
-from progressivis.core.utils import integer_types
+from ..utils.errors import ProgressiveError, ProgressiveStopIteration
+from ..table.module import TableModule
+from ..table.table import Table
+from ..table.constant import Constant
+from ..utils.psdict import PsDict
+from ..core.utils import integer_types
 
 logger = logging.getLogger(__name__)
 
@@ -69,3 +71,9 @@ class RandomTable(TableModule):
         else:
             next_state = self.state_ready
         return self._return_run_step(next_state, steps_run=step_size)
+
+class RandomDict(Constant):
+        def __init__(self, columns, **kwds):
+            keys = [f'_{i}' for i in range(1, columns+1)]
+            vals = np.random.rand(columns)
+            super().__init__(PsDict(dict(zip(keys, vals))), **kwds)

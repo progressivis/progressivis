@@ -109,28 +109,36 @@ class Binary(TableModule):
         self._kwds = {} #self._filter_kwds(kwds, ufunc)
 
     def reset(self):
-        self._table.resize(0)
+        if self._table is not None:
+            self._table.resize(0)
 
     @process_slot("first", "second", reset_cb="reset")
-    @run_if_all
+    @run_if_any
     def run_step(self, run_number, step_size, howlong):
         with self.context as ctx:
             data = ctx.first.data()
-            data2 = ctx.second.data()            
-            if self._table is None:
-                dshape_ = dshape_projection(data, self._columns)
-                self._table = Table(self.generate_table_name(f'binary_{self._ufunc.__name__}'),
-                                    dshape=dshape_, create=True)
-            step_size = min(ctx.first.created.length(), ctx.second.created.length(), step_size)
-            indices = ctx.first.created.next(step_size)
-            steps = indices_len(indices)
-            indices2 = ctx.second.created.next(step_size)
-            steps2 = indices_len(indices2)
+            data2 = ctx.second.data()
+            _t2t = isinstance(data2, Table)
+            if _t2t:
+                step_size = min(ctx.first.created.length(), ctx.second.created.length(), step_size)
+            else:
+                step_size = min(ctx.first.created.length(), step_size)
+            indices = indices2 = ctx.first.created.next(step_size)
+            steps = steps2 = indices_len(indices)
+            if _t2t:    
+                indices2 = ctx.second.created.next(step_size)
+                steps2 = indices_len(indices2)
+            else:
+                ctx.second.created.next()
             assert steps == steps2
             if steps == 0:
                 return self._return_run_step(self.state_blocked, steps_run=0)
-            other = _filter_cols(data2, self._columns2, fix_loc(indices2))
+            other = _filter_cols(data2, self._columns2, fix_loc(indices2)) if _t2t else data2
             vec = _binary(self.filter_columns(data, fix_loc(indices)), self._ufunc, other, self._columns2, **self._kwds)
+            if self._table is None:
+                dshape_ = dshape_projection(data, self._columns)
+                self._table = Table(self.generate_table_name(f'binary_{self._ufunc.__name__}'),
+                                    dshape=dshape_, create=True)            
             self._table.append(vec)
             return self._return_run_step(self.next_state(ctx.first), steps_run=steps)
 
