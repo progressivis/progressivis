@@ -50,7 +50,7 @@ class TestUnary(ProgressiveTest):
         self.assertEqual(module.name, mod_name)
         self.assertTrue(np.allclose(res1, res2))
 
-def add_un_test(k, ufunc):
+def add_un_tst(k, ufunc):
     cls = k.capitalize()
     mod_name = k+'_1'
     def _f(self_):
@@ -58,7 +58,7 @@ def add_un_test(k, ufunc):
     setattr(TestUnary, 'test_'+k, _f)
 
 for k, ufunc in unary_dict.items():
-    add_un_test(k, ufunc)
+    add_un_tst(k, ufunc)
 
 
 class TestBinary(ProgressiveTest):
@@ -129,7 +129,7 @@ class TestBinary(ProgressiveTest):
         self.assertEqual(module.name, mod_name)
         self.assertTrue(np.allclose(res1, res2))
 
-def add_bin_test(c, k, ufunc):
+def add_bin_tst(c, k, ufunc):
     cls = k.capitalize()
     mod_name = k+'_1'
     def _f(self_):
@@ -137,7 +137,7 @@ def add_bin_test(c, k, ufunc):
     setattr(c, 'test_'+k, _f)
     
 for k, ufunc in binary_dict.items():
-     add_bin_test(TestBinary, k, ufunc)
+     add_bin_tst(TestBinary, k, ufunc)
 
 
 class TestBinaryTD(ProgressiveTest):
@@ -212,7 +212,7 @@ class TestBinaryTD(ProgressiveTest):
         self.assertTrue(np.allclose(res1, res2))
 
 for k, ufunc in binary_dict.items():
-     add_bin_test(TestBinaryTD, k, ufunc)
+     add_bin_tst(TestBinaryTD, k, ufunc)
 
 class TestReduce(ProgressiveTest):
     def test_reduce(self):
@@ -254,7 +254,7 @@ class TestReduce(ProgressiveTest):
         self.assertTrue(np.allclose(res1, res2, equal_nan=True))
 
 
-def add_reduce_test(c, k, ufunc):
+def add_reduce_tst(c, k, ufunc):
     cls = f"{k.capitalize()}Reduce"
     mod_name = f'{k}_reduce_1'
     def _f(self_):
@@ -262,4 +262,4 @@ def add_reduce_test(c, k, ufunc):
     setattr(c, f'test_{k}', _f)
     
 for k, ufunc in binary_dict.items():
-    add_reduce_test(TestReduce, k, ufunc)
+    add_reduce_tst(TestReduce, k, ufunc)
