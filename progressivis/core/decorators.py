@@ -25,9 +25,9 @@ class _Context:
 
 
 
-def process_slot(*names, reset_if=('update', 'delete'), exit_if=False, reset_cb=None):
+def process_slot(*names, reset_if=('update', 'delete'), reset_cb=None):
     """
-    this function includes reset_if, exit_if,  reset_cb in the closure
+    this function includes reset_if, reset_cb in the closure
     """
     #import pdb;pdb.set_trace()
     if isinstance(reset_if, str):
@@ -50,19 +50,29 @@ def process_slot(*names, reset_if=('update', 'delete'), exit_if=False, reset_cb=
             #print("process slot wrapper", names, run_number)
             if self.context is None:
                 self.context = _Context()
+            reset_all = False
+            # check if at least one slot fill the reset condition
             for name in names:
                 slot = self.get_input_slot(name)
                 # slot.update(run_number)
-                if exit_if and (slot.data() is None or not slot.has_buffered()):
-                    return self._return_run_step(self.state_blocked, steps_run=0)            
                 if ('update' in reset_if and slot.updated.any()) or\
                         ('delete' in reset_if and slot.deleted.any()):
+                    reset_all = True
+                    break
+            # if True (reset_all) thel all slots are reseted
+            if reset_all:
+                for name in names:
+                    slot = self.get_input_slot(name)
+                    # slot.update(run_number)
                     slot.reset()
                     slot.update(run_number)
-                    if isinstance(reset_cb, str):
-                        getattr(self, reset_cb)()
-                    else:
-                        reset_cb(self)
+                if isinstance(reset_cb, str):
+                    getattr(self, reset_cb)()
+                else:
+                    reset_cb(self)
+            # all slots are added to the context
+            for name in names:
+                slot = self.get_input_slot(name)
                 setattr(self.context._impl, name, slot)
                 if slot.has_buffered():
                     self.context._impl._has_buffered.add(name)
