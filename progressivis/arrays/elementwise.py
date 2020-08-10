@@ -31,7 +31,8 @@ class Unary(TableModule):
         self._kwds = {} #self._filter_kwds(kwds, ufunc)
 
     def reset(self):
-        self._table.resize(0)
+        if self._table is not None:
+            self._table.resize(0)
 
     @process_slot("table", reset_cb="reset")
     @run_if_any
@@ -51,10 +52,10 @@ class Unary(TableModule):
             self._table.append(vec)
             return self._return_run_step(self.next_state(ctx.table), steps_run=steps)
 
-def make_unary(cname, ufunc):
+def make_subclass(super_, cname, ufunc):
     def _init_func(self_, *args, **kwds):
-        Unary.__init__(self_, ufunc, *args, **kwds)
-    cls = type(cname, (Unary,), {})
+        super_.__init__(self_, ufunc, *args, **kwds)
+    cls = type(cname, (super_,), {})
     cls.__init__ = _init_func
     return cls
 
@@ -62,7 +63,7 @@ _g = globals()
 
 for k, v in unary_dict.items():
     name = k.capitalize()
-    _g[name] = make_unary(name, v)
+    _g[name] = make_subclass(Unary, name, v)
 
 def _filter_cols(df, columns=None, indices=None):
     """
@@ -142,13 +143,49 @@ class Binary(TableModule):
             self._table.append(vec)
             return self._return_run_step(self.next_state(ctx.first), steps_run=steps)
 
-def make_binary(cname, ufunc):
-    def _init_func(self_, *args, **kwds):
-        Binary.__init__(self_, ufunc, *args, **kwds)
-    cls = type(cname, (Binary,), {})
-    cls.__init__ = _init_func
-    return cls
-
 for k, v in binary_dict.items():
     name = k.capitalize()
-    _g[name] = make_binary(name, v)
+    _g[name] = make_subclass(Binary, name, v)
+
+def _reduce(tbl, op, initial, **kwargs):
+    res = {}
+    for col in tbl._columns:
+        cn =  col.name
+        res[cn] = op(col.values, initial=initial.get(cn), **kwargs)
+    return res
+
+
+class Reduce(TableModule):
+    inputs = [SlotDescriptor('table', type=Table, required=True)]
+
+    def __init__(self, ufunc, columns=None, **kwds):
+        assert ufunc.nin == 2
+        super().__init__(**kwds)
+        self._ufunc = getattr(ufunc, 'reduce')
+        self._columns = columns
+        self._kwds = {} #self._filter_kwds(kwds, ufunc)
+
+    def reset(self):
+        if self._table is not None:
+            self._table.clear() # is a PsDict
+
+    @process_slot("table", reset_cb="reset")
+    @run_if_any
+    def run_step(self, run_number, step_size, howlong):
+        with self.context as ctx:
+            data_in = ctx.table.data()
+            if self._table is None:
+                self._table = PsDict()
+            cols = self.get_columns(data_in)
+            if len(cols) == 0:
+                return self._return_run_step(self.state_blocked, steps_run=0)
+            indices = ctx.table.created.next(step_size)
+            steps = indices_len(indices)
+            #import pdb;pdb.set_trace()
+            rdict = _reduce(self.filter_columns(data_in, fix_loc(indices)), self._ufunc, self._table, **self._kwds)
+            self._table.update(rdict)
+            return self._return_run_step(self.next_state(ctx.table), steps_run=steps)
+
+for k, v in binary_dict.items():
+    name = f"{k.capitalize()}Reduce"
+    _g[name] = make_subclass(Reduce, name, v)
