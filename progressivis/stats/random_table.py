@@ -21,7 +21,7 @@ RAND = np.random.rand
 
 class RandomTable(TableModule):
     "Random table generator module"
-    def __init__(self, columns, rows=-1, random=RAND, throttle=False, **kwds):
+    def __init__(self, columns, rows=-1, random=RAND, dtype='float64',throttle=False, **kwds):
         super(RandomTable, self).__init__(**kwds)
         self.default_step_size = 1000
         if isinstance(columns, integer_types):
@@ -36,7 +36,7 @@ class RandomTable(TableModule):
             self.throttle = throttle
         else:
             self.throttle = False
-        dshape = ", ".join([f"{col}: float64" for col in self.columns])
+        dshape = ", ".join([f"{col}: {dtype}" for col in self.columns])
         dshape = "{" + dshape + "}"
         self._table = Table(self.generate_table_name('table'),
                             dshape=dshape,

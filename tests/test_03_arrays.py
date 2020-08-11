@@ -4,15 +4,15 @@ from progressivis.core import aio
 from progressivis import Print
 from progressivis.arrays import (Unary, Binary, Reduce,
                                  func2class_name, make_unary,
-                                 make_binary, make_reduce,
-                                 unary_dict, binary_dict)
+                                 make_binary, make_reduce, binary_dict_int_tst,
+                                 unary_dict_gen_tst, binary_dict_gen_tst)
 import progressivis.arrays as arr
 #from progressivis.table.constant import Constant
 from progressivis.stats import RandomTable, RandomDict
 #from progressivis.utils.psdict import PsDict
 import numpy as np
 
-@skip
+#@skip
 class TestUnary(ProgressiveTest):
     def test_unary(self):
         s = self.scheduler()
@@ -60,10 +60,10 @@ def add_un_tst(k, ufunc):
         TestUnary._t_impl(self_, arr.__dict__[cls], ufunc, mod_name)
     setattr(TestUnary, 'test_'+k, _f)
 
-for k, ufunc in unary_dict.items():
+for k, ufunc in unary_dict_gen_tst.items():
     add_un_tst(k, ufunc)
 
-@skip
+#@skip
 class TestBinary(ProgressiveTest):
     def test_binary(self):
         s = self.scheduler()
@@ -139,10 +139,10 @@ def add_bin_tst(c, k, ufunc):
         c._t_impl(self_, arr.__dict__[cls], ufunc, mod_name)
     setattr(c, 'test_'+k, _f)
     
-for k, ufunc in binary_dict.items():
+for k, ufunc in binary_dict_gen_tst.items():
      add_bin_tst(TestBinary, k, ufunc)
 
-@skip
+#@skip
 class TestBinaryTD(ProgressiveTest):
     def test_binary(self):
         s = self.scheduler()
@@ -214,9 +214,9 @@ class TestBinaryTD(ProgressiveTest):
         self.assertEqual(module.name, mod_name)
         self.assertTrue(np.allclose(res1, res2))
 
-for k, ufunc in binary_dict.items():
+for k, ufunc in binary_dict_gen_tst.items():
      add_bin_tst(TestBinaryTD, k, ufunc)
-@skip
+#@skip
 class TestReduce(ProgressiveTest):
     def test_reduce(self):
         s = self.scheduler()
@@ -264,10 +264,10 @@ def add_reduce_tst(c, k, ufunc):
         c._t_impl(self_, arr.__dict__[cls], ufunc, mod_name)
     setattr(c, f'test_{k}', _f)
     
-for k, ufunc in binary_dict.items():
+for k, ufunc in binary_dict_gen_tst.items():
     add_reduce_tst(TestReduce, k, ufunc)
 
-class CustomFunctions(ProgressiveTest):
+class TestCustomFunctions(ProgressiveTest):
 
     def test_custom_unary(self):
         def dummy_unary(x):
@@ -319,3 +319,159 @@ class CustomFunctions(ProgressiveTest):
         res2 = np.array(list(module.table().values()))
         self.assertEqual(module.name, "dummy_binary_reduce_1")
         self.assertTrue(np.allclose(res1, res2))
+
+from progressivis.arrays import Arccosh, Invert, BitwiseNot
+class TestOtherUnaries(ProgressiveTest):
+    def test_arccosh(self):
+        #from progressivis.arrays import Arccosh
+        module_name = "arccosh_1"
+        print("Testing", module_name)
+        s = self.scheduler()
+        random = RandomTable(10, random=lambda x: np.random.rand(x)*10000.0,
+                             rows=100000, scheduler=s)
+        module = Arccosh(scheduler=s)
+        module.input.table = random.output.table
+        pr=Print(proc=self.terse, scheduler=s)
+        pr.input.df = module.output.table
+        aio.run(s.start())
+        res1 = np.arccosh(random.table().to_array())
+        res2 = module.table().to_array()
+        #print(res1)
+        #print("=============================")
+        #print(res2)
+        self.assertEqual(module.name, module_name)
+        self.assertTrue(np.allclose(res1, res2, equal_nan=True))
+    def test_invert(self):
+        #from progressivis.arrays import Invert
+        module_name = "invert_1"
+        print("Testing", module_name)
+        s = self.scheduler()
+        random = RandomTable(10, random=lambda x: np.random.randint(100000, size=x),
+                             dtype='int64',
+                             rows=100000, scheduler=s)
+        module = Invert(scheduler=s)
+        module.input.table = random.output.table
+        pr=Print(proc=self.terse, scheduler=s)
+        pr.input.df = module.output.table
+        aio.run(s.start())
+        res1 = np.invert(random.table().to_array())
+        res2 = module.table().to_array()
+        #print(res1)
+        #print("=============================")
+        #print(res2)
+        self.assertEqual(module.name, module_name)
+        self.assertTrue(np.allclose(res1, res2, equal_nan=True))
+    def test_bitwise_not(self):
+        #from progressivis.arrays import Invert
+        module_name = 'bitwise_not_1'
+        print("Testing", module_name)
+        s = self.scheduler()
+        random = RandomTable(10, random=lambda x: np.random.randint(100000, size=x),
+                             dtype='int64',
+                             rows=100000, scheduler=s)
+        module = BitwiseNot(scheduler=s)
+        module.input.table = random.output.table
+        pr=Print(proc=self.terse, scheduler=s)
+        pr.input.df = module.output.table
+        aio.run(s.start())
+        res1 = np.bitwise_not(random.table().to_array())
+        res2 = module.table().to_array()
+        #print(res1)
+        #print("=============================")
+        #print(res2)
+        self.assertEqual(module.name, module_name)
+        self.assertTrue(np.allclose(res1, res2, equal_nan=True))
+
+
+from progressivis.arrays import Ldexp
+class TestOtherBinaries(ProgressiveTest):
+    def _t_impl(self, cls, ufunc, mod_name):
+        print("Testing", mod_name)
+        s = self.scheduler()
+        random1 = RandomTable(3, rows=100000, scheduler=s, random=lambda x: np.random.randint(10, size=x),
+                             dtype='int64')
+        random2 = RandomTable(3, rows=100000, scheduler=s, random=lambda x: np.random.randint(10, size=x),
+                             dtype='int64')
+        module = cls(scheduler=s)
+        module.input.first = random1.output.table
+        module.input.second = random2.output.table        
+        pr=Print(proc=self.terse, scheduler=s)
+        pr.input.df = module.output.table
+        aio.run(s.start())
+        res1 = ufunc(random1.table().to_array(),
+                      random2.table().to_array())
+        res2 = module.table().to_array()
+        #print(res1)
+        #print("=============================")
+        #print(res2)
+        self.assertEqual(module.name, mod_name)
+        self.assertTrue(np.allclose(res1, res2, equal_nan=True))
+    def test_ldexp(self):
+        cls, ufunc, mod_name = Ldexp, np.ldexp, 'ldexp_1'
+        print("Testing", mod_name)
+        s = self.scheduler()
+        random1 = RandomTable(3, rows=100000, scheduler=s)
+        random2 = RandomTable(3, rows=100000, scheduler=s, random=lambda x: np.random.randint(10, size=x),
+                             dtype='int64')
+        module = cls(scheduler=s)
+        module.input.first = random1.output.table
+        module.input.second = random2.output.table        
+        pr=Print(proc=self.terse, scheduler=s)
+        pr.input.df = module.output.table
+        aio.run(s.start())
+        res1 = ufunc(random1.table().to_array(),
+                      random2.table().to_array())
+        res2 = module.table().to_array()
+        #print(res1)
+        #print("=============================")
+        #print(res2)
+        self.assertEqual(module.name, mod_name)
+        self.assertTrue(np.allclose(res1, res2, equal_nan=True))
+
+def add_other_bin_tst(c, k, ufunc):
+    cls = func2class_name(k)
+    mod_name = k+'_1'
+    def _f(self_):
+        c._t_impl(self_, arr.__dict__[cls], ufunc, mod_name)
+    setattr(c, 'test_'+k, _f)
+    
+for k, ufunc in binary_dict_int_tst.items():
+    if k == 'ldexp':
+        continue
+    add_other_bin_tst(TestOtherBinaries, k, ufunc)
+
+#for c in ["TestUnary", "TestBinary", "TestBinaryTD",
+#          "TestReduce", "TestCustomFunctions", "TestOtherUnaries", "TestOtherBinaries"]: del globals()[c]
+
+class TestOtherReduces(ProgressiveTest):
+    def _t_impl(self, cls, ufunc, mod_name):
+        print("Testing", mod_name)
+        s = self.scheduler()
+        random = RandomTable(3, rows=100000, scheduler=s, random=lambda x: np.random.randint(10, size=x),
+                             dtype='int64')
+        module = cls(scheduler=s)
+        module.input.table = random.output.table
+        pr=Print(proc=self.terse, scheduler=s)
+        pr.input.df = module.output.table
+        aio.run(s.start())
+        res1 = getattr(ufunc, 'reduce')(random.table().to_array())
+        res2 = np.array(list(module.table().values()))
+        #print(res1)
+        #print("=============================")
+        #print(res2)
+        self.assertEqual(module.name, mod_name)
+        self.assertTrue(np.allclose(res1, res2, equal_nan=True))
+        self.assertEqual(module.name, mod_name)
+        self.assertTrue(np.allclose(res1, res2, equal_nan=True))
+
+def add_other_reduce_tst(c, k, ufunc):
+    cls = f"{func2class_name(k)}Reduce"
+    mod_name = f'{k}_reduce_1'
+    def _f(self_):
+        c._t_impl(self_, arr.__dict__[cls], ufunc, mod_name)
+    setattr(c, f'test_{k}', _f)
+    
+for k, ufunc in binary_dict_int_tst.items():
+    if k == 'ldexp':
+        continue
+    add_other_reduce_tst(TestOtherReduces, k, ufunc)

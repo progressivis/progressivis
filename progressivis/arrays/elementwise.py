@@ -8,18 +8,37 @@ from .. import ProgressiveError, SlotDescriptor
 from ..utils.psdict import PsDict
 from collections import OrderedDict
 
-unary_except = ('arccosh', 'invert', 'isnat', 'modf', 'frexp', 'bitwise_not')
-binary_except = ('bitwise_and', 'bitwise_or', 'bitwise_xor', 'divmod', 'gcd',
-                 'lcm', 'ldexp', 'left_shift', 'matmul', 'right_shift')
+not_tested_unaries = ('isnat', # input array with datetime or timedelta data type.
+                    'modf', # two outputs
+                    'frexp', # two outputs
+                    'bitwise_not')
+other_tested_unaries = ('arccosh', 'invert', 'bitwise_not')
+unary_except = not_tested_unaries + other_tested_unaries
 
-unary_dict = {k:v for(k, v) in np.__dict__.items()
-           if k not in unary_except and isinstance(v, np.ufunc) and v.nin==1}
-binary_dict = {k:v for(k, v) in np.__dict__.items()
-            if k not in binary_except and isinstance(v, np.ufunc) and v.nin==2}
+not_tested_binaries = ( 'divmod', # two outputs
+                      'matmul' # ...
+                      )
+other_tested_binaries = ('bitwise_and', 'bitwise_or', 'bitwise_xor', 'gcd',
+                       'lcm', 'ldexp', 'left_shift', 'right_shift')
+binary_except = not_tested_binaries + other_tested_binaries
+
+
+unary_dict_all =  {k:v for(k, v) in np.__dict__.items() if isinstance(v, np.ufunc) and v.nin==1}
+binary_dict_all = {k:v for(k, v) in np.__dict__.items() if isinstance(v, np.ufunc) and v.nin==2 and k!='matmul'}
+
+unary_dict_gen_tst = {k:v for(k, v) in unary_dict_all.items() if k not in unary_except}
+binary_dict_gen_tst = {k:v for(k, v) in binary_dict_all.items() if k not in binary_except}
+binary_dict_int_tst = {k:v for(k, v) in binary_dict_all.items() if k in other_tested_binaries}
+
+unary_modules = []
+binary_modules = []
+reduce_modules = []
+
+
 def info():
-    print("unary dict", unary_dict)
+    print("unary dict", unary_dict_all)
     print("*************************************************")
-    print("binary dict", binary_dict)
+    print("binary dict", binary_dict_all)
 
 class Unary(TableModule):
     inputs = [SlotDescriptor('table', type=Table, required=True)]
@@ -64,9 +83,10 @@ _g = globals()
 def func2class_name(s):
     return "".join([e.capitalize() for e in s.split('_')])
 
-for k, v in unary_dict.items():
+for k, v in unary_dict_all.items():
     name = func2class_name(k)
     _g[name] = make_subclass(Unary, name, v)
+    unary_modules.append(_g[name])
 
 def _filter_cols(df, columns=None, indices=None):
     """
@@ -146,9 +166,10 @@ class Binary(TableModule):
             self._table.append(vec)
             return self._return_run_step(self.next_state(ctx.first), steps_run=steps)
 
-for k, v in binary_dict.items():
+for k, v in binary_dict_all.items():
     name = func2class_name(k)
     _g[name] = make_subclass(Binary, name, v)
+    binary_modules.append(_g[name])
 
 def _reduce(tbl, op, initial, **kwargs):
     res = {}
@@ -189,9 +210,10 @@ class Reduce(TableModule):
             self._table.update(rdict)
             return self._return_run_step(self.next_state(ctx.table), steps_run=steps)
 
-for k, v in binary_dict.items():
+for k, v in binary_dict_all.items():
     name = f"{func2class_name(k)}Reduce"
     _g[name] = make_subclass(Reduce, name, v)
+    reduce_modules.append(_g[name])
 
 def make_unary(func, name=None):
     if not isinstance(func, np.ufunc):
