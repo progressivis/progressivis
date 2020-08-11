@@ -2,14 +2,17 @@ from . import ProgressiveTest, skip, skipIf
 
 from progressivis.core import aio
 from progressivis import Print
-from progressivis.arrays import Unary, Binary, Reduce, unary_dict, binary_dict
+from progressivis.arrays import (Unary, Binary, Reduce,
+                                 func2class_name, make_unary,
+                                 make_binary, make_reduce,
+                                 unary_dict, binary_dict)
 import progressivis.arrays as arr
 #from progressivis.table.constant import Constant
 from progressivis.stats import RandomTable, RandomDict
 #from progressivis.utils.psdict import PsDict
 import numpy as np
 
-
+@skip
 class TestUnary(ProgressiveTest):
     def test_unary(self):
         s = self.scheduler()
@@ -51,7 +54,7 @@ class TestUnary(ProgressiveTest):
         self.assertTrue(np.allclose(res1, res2))
 
 def add_un_tst(k, ufunc):
-    cls = k.capitalize()
+    cls = func2class_name(k)
     mod_name = k+'_1'
     def _f(self_):
         TestUnary._t_impl(self_, arr.__dict__[cls], ufunc, mod_name)
@@ -60,7 +63,7 @@ def add_un_tst(k, ufunc):
 for k, ufunc in unary_dict.items():
     add_un_tst(k, ufunc)
 
-
+@skip
 class TestBinary(ProgressiveTest):
     def test_binary(self):
         s = self.scheduler()
@@ -130,7 +133,7 @@ class TestBinary(ProgressiveTest):
         self.assertTrue(np.allclose(res1, res2))
 
 def add_bin_tst(c, k, ufunc):
-    cls = k.capitalize()
+    cls = func2class_name(k)
     mod_name = k+'_1'
     def _f(self_):
         c._t_impl(self_, arr.__dict__[cls], ufunc, mod_name)
@@ -139,7 +142,7 @@ def add_bin_tst(c, k, ufunc):
 for k, ufunc in binary_dict.items():
      add_bin_tst(TestBinary, k, ufunc)
 
-
+@skip
 class TestBinaryTD(ProgressiveTest):
     def test_binary(self):
         s = self.scheduler()
@@ -213,7 +216,7 @@ class TestBinaryTD(ProgressiveTest):
 
 for k, ufunc in binary_dict.items():
      add_bin_tst(TestBinaryTD, k, ufunc)
-
+@skip
 class TestReduce(ProgressiveTest):
     def test_reduce(self):
         s = self.scheduler()
@@ -255,7 +258,7 @@ class TestReduce(ProgressiveTest):
 
 
 def add_reduce_tst(c, k, ufunc):
-    cls = f"{k.capitalize()}Reduce"
+    cls = f"{func2class_name(k)}Reduce"
     mod_name = f'{k}_reduce_1'
     def _f(self_):
         c._t_impl(self_, arr.__dict__[cls], ufunc, mod_name)
@@ -263,3 +266,56 @@ def add_reduce_tst(c, k, ufunc):
     
 for k, ufunc in binary_dict.items():
     add_reduce_tst(TestReduce, k, ufunc)
+
+class CustomFunctions(ProgressiveTest):
+
+    def test_custom_unary(self):
+        def dummy_unary(x):
+            return (x+np.sin(x))/(x+np.cos(x))
+        DummyUnary = make_unary(dummy_unary)
+        s = self.scheduler()
+        random = RandomTable(10, rows=100000, scheduler=s)
+        module = DummyUnary(scheduler=s)
+        module.input.table = random.output.table
+        pr=Print(proc=self.terse, scheduler=s)
+        pr.input.df = module.output.table
+        aio.run(s.start())
+        res1 = np.array(module._ufunc(random.table().to_array()), dtype='float64')
+        res2 = module.table().to_array()
+        self.assertEqual(module.name, "dummy_unary_1")
+        self.assertTrue(np.allclose(res1, res2))
+    
+    def test_custom_binary(self):
+        def dummy_binary(x, y):
+            return (x+np.sin(y))/(x+np.cos(y))
+        DummyBinary = make_binary(dummy_binary)
+        s = self.scheduler()
+        random1 = RandomTable(3, rows=100000, scheduler=s)
+        random2 = RandomTable(3, rows=100000, scheduler=s)
+        module = DummyBinary(scheduler=s)
+        module.input.first = random1.output.table
+        module.input.second = random2.output.table        
+        pr=Print(proc=self.terse, scheduler=s)
+        pr.input.df = module.output.table
+        aio.run(s.start())
+        res1 = np.array(module._ufunc(random1.table().to_array(),
+                      random2.table().to_array()), dtype='float64')
+        res2 = module.table().to_array()
+        self.assertEqual(module.name, "dummy_binary_1")
+        self.assertTrue(np.allclose(res1, res2))
+
+    def test_custom_reduce(self):
+        def dummy_binary(x, y):
+            return (x+np.sin(y))/(x+np.cos(y))
+        DummyBinaryReduce = make_reduce(dummy_binary)
+        s = self.scheduler()
+        random = RandomTable(10, rows=100000, scheduler=s)
+        module = DummyBinaryReduce(scheduler=s)
+        module.input.table = random.output.table
+        pr=Print(proc=self.terse, scheduler=s)
+        pr.input.df = module.output.table
+        aio.run(s.start())
+        res1 = np.array(module._ufunc(random.table().to_array()), dtype='float64')
+        res2 = np.array(list(module.table().values()))
+        self.assertEqual(module.name, "dummy_binary_reduce_1")
+        self.assertTrue(np.allclose(res1, res2))

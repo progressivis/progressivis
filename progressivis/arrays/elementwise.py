@@ -61,8 +61,11 @@ def make_subclass(super_, cname, ufunc):
 
 _g = globals()
 
+def func2class_name(s):
+    return "".join([e.capitalize() for e in s.split('_')])
+
 for k, v in unary_dict.items():
-    name = k.capitalize()
+    name = func2class_name(k)
     _g[name] = make_subclass(Unary, name, v)
 
 def _filter_cols(df, columns=None, indices=None):
@@ -144,7 +147,7 @@ class Binary(TableModule):
             return self._return_run_step(self.next_state(ctx.first), steps_run=steps)
 
 for k, v in binary_dict.items():
-    name = k.capitalize()
+    name = func2class_name(k)
     _g[name] = make_subclass(Binary, name, v)
 
 def _reduce(tbl, op, initial, **kwargs):
@@ -187,5 +190,32 @@ class Reduce(TableModule):
             return self._return_run_step(self.next_state(ctx.table), steps_run=steps)
 
 for k, v in binary_dict.items():
-    name = f"{k.capitalize()}Reduce"
+    name = f"{func2class_name(k)}Reduce"
     _g[name] = make_subclass(Reduce, name, v)
+
+def make_unary(func, name=None):
+    if not isinstance(func, np.ufunc):
+        if name is None:
+            name = func2class_name(func.__name__)
+        func =  np.frompyfunc(func, 1, 1)
+    else:
+        assert name is not None
+    return make_subclass(Unary, name, func)
+
+def make_binary(func, name=None):
+    if not isinstance(func, np.ufunc):
+        if name is None:
+            name = func2class_name(func.__name__)
+        func =  np.frompyfunc(func, 2, 1)
+    else:
+        assert name is not None
+    return make_subclass(Binary, name, func)
+
+def make_reduce(func, name=None):
+    if not isinstance(func, np.ufunc):
+        if name is None:
+            name = f"{func2class_name(func.__name__)}Reduce"
+        func =  np.frompyfunc(func, 2, 1)
+    else:
+        assert name is not None
+    return make_subclass(Reduce, name, func)
