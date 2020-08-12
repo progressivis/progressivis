@@ -75,6 +75,7 @@ def make_subclass(super_, cname, ufunc):
     def _init_func(self_, *args, **kwds):
         super_.__init__(self_, ufunc, *args, **kwds)
     cls = type(cname, (super_,), {})
+    cls.__module__ = globals()['__name__'] # avoids cls to be part of abc module ...
     cls.__init__ = _init_func
     return cls
 
