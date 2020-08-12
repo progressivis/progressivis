@@ -3,9 +3,13 @@ from . import ProgressiveTest, skip, skipIf
 from progressivis.core import aio
 from progressivis import Print
 from progressivis.arrays import (Unary, Binary, Reduce,
-                                 func2class_name, make_unary,
-                                 make_binary, make_reduce, binary_dict_int_tst,
-                                 unary_dict_gen_tst, binary_dict_gen_tst)
+                                 func2class_name,
+                                 unary_module, make_unary,
+                                 binary_module, make_binary,
+                                 reduce_module, make_reduce,
+                                 binary_dict_int_tst,
+                                 unary_dict_gen_tst,
+                                 binary_dict_gen_tst)
 import progressivis.arrays as arr
 #from progressivis.table.constant import Constant
 from progressivis.stats import RandomTable, RandomDict
@@ -440,8 +444,6 @@ for k, ufunc in binary_dict_int_tst.items():
         continue
     add_other_bin_tst(TestOtherBinaries, k, ufunc)
 
-#for c in ["TestUnary", "TestBinary", "TestBinaryTD",
-#          "TestReduce", "TestCustomFunctions", "TestOtherUnaries", "TestOtherBinaries"]: del globals()[c]
 
 class TestOtherReduces(ProgressiveTest):
     def _t_impl(self, cls, ufunc, mod_name):
@@ -475,3 +477,60 @@ for k, ufunc in binary_dict_int_tst.items():
     if k == 'ldexp':
         continue
     add_other_reduce_tst(TestOtherReduces, k, ufunc)
+
+#for c in ["TestUnary", "TestBinary", "TestBinaryTD",
+#          "TestReduce", "TestCustomFunctions",
+#          "TestOtherUnaries", "TestOtherBinaries", "TestOtherReduces"]: del globals()[c]
+
+class TestDecorators(ProgressiveTest):
+
+    def test_decorator_unary(self):
+        @unary_module
+        def DummyUnary(x):
+            return (x+np.sin(x))/(x+np.cos(x))
+        s = self.scheduler()
+        random = RandomTable(10, rows=100000, scheduler=s)
+        module = DummyUnary(scheduler=s)
+        module.input.table = random.output.table
+        pr=Print(proc=self.terse, scheduler=s)
+        pr.input.df = module.output.table
+        aio.run(s.start())
+        res1 = np.array(module._ufunc(random.table().to_array()), dtype='float64')
+        res2 = module.table().to_array()
+        self.assertEqual(module.name, "dummy_unary_1")
+        self.assertTrue(np.allclose(res1, res2))
+
+    def test_decorator_binary(self):
+        @binary_module
+        def DummyBinary(x, y):
+            return (x+np.sin(y))/(x+np.cos(y))
+        s = self.scheduler()
+        random1 = RandomTable(3, rows=100000, scheduler=s)
+        random2 = RandomTable(3, rows=100000, scheduler=s)
+        module = DummyBinary(scheduler=s)
+        module.input.first = random1.output.table
+        module.input.second = random2.output.table        
+        pr=Print(proc=self.terse, scheduler=s)
+        pr.input.df = module.output.table
+        aio.run(s.start())
+        res1 = np.array(module._ufunc(random1.table().to_array(),
+                      random2.table().to_array()), dtype='float64')
+        res2 = module.table().to_array()
+        self.assertEqual(module.name, "dummy_binary_1")
+        self.assertTrue(np.allclose(res1, res2))
+
+    def test_decorator_reduce(self):
+        @reduce_module
+        def DummyBinaryReduce(x, y):
+            return (x+np.sin(y))/(x+np.cos(y))
+        s = self.scheduler()
+        random = RandomTable(10, rows=100000, scheduler=s)
+        module = DummyBinaryReduce(scheduler=s)
+        module.input.table = random.output.table
+        pr=Print(proc=self.terse, scheduler=s)
+        pr.input.df = module.output.table
+        aio.run(s.start())
+        res1 = np.array(module._ufunc(random.table().to_array()), dtype='float64')
+        res2 = np.array(list(module.table().values()))
+        self.assertEqual(module.name, "dummy_binary_reduce_1")
+        self.assertTrue(np.allclose(res1, res2))

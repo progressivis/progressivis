@@ -206,7 +206,6 @@ class Reduce(TableModule):
                 return self._return_run_step(self.state_blocked, steps_run=0)
             indices = ctx.table.created.next(step_size)
             steps = indices_len(indices)
-            #import pdb;pdb.set_trace()
             rdict = _reduce(self.filter_columns(data_in, fix_loc(indices)), self._ufunc, self._table, **self._kwds)
             self._table.update(rdict)
             return self._return_run_step(self.next_state(ctx.table), steps_run=steps)
@@ -225,6 +224,15 @@ def make_unary(func, name=None):
         assert name is not None
     return make_subclass(Unary, name, func)
 
+def unary_module(func):
+    name = func.__name__
+    if isinstance(func, np.ufunc): # it should never happen
+        raise ValueError("Universal functions (numpy.ufunc) cannot "
+                         "be decorated. Use make_unary() instead")
+    else:
+        func =  np.frompyfunc(func, 1, 1)
+    return make_subclass(Unary, name, func)
+
 def make_binary(func, name=None):
     if not isinstance(func, np.ufunc):
         if name is None:
@@ -234,6 +242,15 @@ def make_binary(func, name=None):
         assert name is not None
     return make_subclass(Binary, name, func)
 
+def binary_module(func):
+    name = func.__name__    
+    if isinstance(func, np.ufunc): # it should never happen
+        raise ValueError("Universal functions (numpy.ufunc) cannot "
+                         "be decorated. Use make_binary() instead")
+    else:
+        func =  np.frompyfunc(func, 2, 1)
+    return make_subclass(Binary, name, func)
+
 def make_reduce(func, name=None):
     if not isinstance(func, np.ufunc):
         if name is None:
@@ -241,4 +258,13 @@ def make_reduce(func, name=None):
         func =  np.frompyfunc(func, 2, 1)
     else:
         assert name is not None
+    return make_subclass(Reduce, name, func)
+
+def reduce_module(func):
+    name = func.__name__    
+    if isinstance(func, np.ufunc): # it should never happen
+        raise ValueError("Universal functions (numpy.ufunc) cannot "
+                         "be decorated. Use make_reduce() instead")
+    else:
+        func =  np.frompyfunc(func, 2, 1)
     return make_subclass(Reduce, name, func)
