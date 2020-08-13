@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"Dummy module for torturing progressivis."
+"Stirrer module for torturing progressivis."
 
 import random
 import numpy as np
@@ -11,7 +11,7 @@ from .module import TableModule
 from . import Table
 
 
-class DummyMod(TableModule):
+class Stirrer(TableModule):
     parameters = [('update_column', str, ""),
                   ('update_rows', object, None),
                   ('delete_rows', object, None),
@@ -23,7 +23,7 @@ class DummyMod(TableModule):
     inputs = [SlotDescriptor('table', type=Table, required=True)]
 
     def __init__(self, **kwds):
-        super(DummyMod, self).__init__(**kwds)
+        super().__init__(**kwds)
         self._update_column = self.params.update_column
         self._update_rows = self.params.update_rows
         self._delete_rows = self.params.delete_rows
@@ -48,7 +48,7 @@ class DummyMod(TableModule):
         steps = indices_len(created)
         input_table = input_slot.data()
         if self._table is None:
-            self._table = Table(self.generate_table_name('dummy'),
+            self._table = Table(self.generate_table_name('stirrer'),
                                 dshape=input_table.dshape, )
         raw_ids = self._table.index.values
         before_ = bitmap(raw_ids[raw_ids >= 0])
