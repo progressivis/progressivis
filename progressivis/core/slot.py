@@ -167,6 +167,11 @@ class Slot(object):
         return self.changes.updated if self.changes else EMPTY_BUFFER
 
     @property
+    def updated_cols(self):
+        "Return the updated cols set"
+        return self.changemanager.updated_cols if self.changes else set()
+
+    @property
     def deleted(self):
         "Return the buffer for deleted rows"
         return self.changes.deleted if self.changes else EMPTY_BUFFER

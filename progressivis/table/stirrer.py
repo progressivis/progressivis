@@ -50,10 +50,10 @@ class Stirrer(TableModule):
         if self._table is None:
             self._table = Table(self.generate_table_name('stirrer'),
                                 dshape=input_table.dshape, )
-        raw_ids = self._table.index.values
-        before_ = bitmap(raw_ids[raw_ids >= 0])
         v = input_table.loc[fix_loc(created), :]
         self._table.append(v)  # indices=bitmap(created))
+        raw_ids = self._table.index.values
+        before_ = bitmap(raw_ids[raw_ids >= 0])
         delete = []
         if self._delete_rows and self.test_delete_threshold(before_):
             if isinstance(self._delete_rows, int):

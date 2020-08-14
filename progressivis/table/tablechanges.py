@@ -97,6 +97,14 @@ class TableChanges(BaseChanges):
             return
         update.add_updated(locs)
 
+    def add_updated_col(self, colname, locs):
+        update = self._last_update()
+        if update is None:
+            return
+        if locs in update.created:
+            return
+        update.add_updated_col(colname)
+
     def add_deleted(self, locs):
         update = self._last_update()
         if update is None:

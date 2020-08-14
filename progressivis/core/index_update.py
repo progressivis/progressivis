@@ -10,23 +10,27 @@ class IndexUpdate(object):
     IndexUpdate is used to keep track of chages occuring in linear data structures
     such as tables, columns, or bitmaps.
     """
-    def __init__(self, created=None, updated=None, deleted=None):
+    def __init__(self, created=None, updated=None, deleted=None, updated_cols=None):
         created = created if isinstance(created, bitmap) else bitmap(created)
         updated = updated if isinstance(updated, bitmap) else bitmap(updated)
         deleted = deleted if isinstance(deleted, bitmap) else bitmap(deleted)
+        #updated_attr = updated_attr if isinstance(updated_attr, set) else set(updated_attr)
         self.created = created
         self.updated = updated
         self.deleted = deleted
+        self.updated_cols = updated_cols or set()
 
     def __repr__(self):
-        return "IndexUpdate(created=%s,updated=%s,deleted=%s)" % (
-            repr(self.created), repr(self.updated), repr(self.deleted))
+        return "IndexUpdate(created=%s,updated=%s,deleted=%s,updated_cols=%s)" % (
+            repr(self.created), repr(self.updated),
+            repr(self.deleted), repr(self.updated_cols))
 
     def clear(self):
         "Clear the changes"
         self.created.clear()
         self.updated.clear()
         self.deleted.clear()
+        self.updated_cols.clear()
 
     def test(self, verbose=False):
         "Test if the IndexUpdate is valid"
@@ -50,6 +54,15 @@ class IndexUpdate(object):
         self.updated.update(bm)
         self.updated -= self.created
         self.updated -= self.deleted
+
+    def add_updated_col(self, colname):
+        "Add updated column (all items combined)"
+        if not self.updated and self.updated_cols:
+            # hack : the right place for this stuff
+            # is in BaseChangeManager.updated.next()
+            # when BaseChangeManager.updated is emptied
+            self.updated_cols.clear()
+        self.updated_cols.add(colname)
 
     def add_deleted(self, bm):
         "Add deleted items"
@@ -83,6 +96,7 @@ class IndexUpdate(object):
         if other.updated and update_updated:
             toignore = self.created
             self.updated |= other.updated
+            self.updated_cols |= other.updated_cols
             self.updated -= toignore
         assert self.test()  # test invariant
         return
@@ -91,6 +105,7 @@ class IndexUpdate(object):
         return self is other or \
           (self.created == other.created and
            self.updated == other.updated and
+           self.updated_cols == other.updated_cols and
            self.deleted == other.deleted)
 
     def __ne__(self, other):
@@ -100,6 +115,7 @@ class IndexUpdate(object):
         "Copy this Indexupdate"
         return IndexUpdate(created=bitmap(self.created),
                            updated=bitmap(self.updated),
-                           deleted=bitmap(self.deleted))
+                           deleted=bitmap(self.deleted),
+                           updated_cols=set(self.updated_cols))
 
 NIL_IU = IndexUpdate()

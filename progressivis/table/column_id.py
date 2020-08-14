@@ -463,7 +463,8 @@ class IdColumn(Column):
     def _flush_cache(self):
         self._cached_index = IdColumn  # hack
 
-    def touch(self, index=None):
+    def touch(self, colname, index=None):
+        self.add_updated_col(colname, index) # TODO : cache it!
         if index is self._cached_index:
             return
         self._cached_index = index
@@ -478,6 +479,10 @@ class IdColumn(Column):
         if self._changes:
             locs = self._normalize_locs(locs)
             self._changes.add_updated(locs)
+
+    def add_updated_col(self, colname, index):
+        if self._changes:
+            self._changes.add_updated_col(colname, index)
 
     def add_deleted(self, locs):
         if self._changes:

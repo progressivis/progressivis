@@ -44,6 +44,11 @@ class BaseChangeManager(object):
         return self._updated
 
     @property
+    def updated_cols(self):
+        "Return information of columns updated"
+        return set()
+
+    @property
     def deleted(self):
         "Return information of items deleted"
         return self._deleted

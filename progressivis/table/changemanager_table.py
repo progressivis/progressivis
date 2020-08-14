@@ -51,5 +51,9 @@ class TableChangeManager(BaseChangeManager):
         return ColumnUpdate(created=self._column_changes,
                             updated=set(), deleted=set())
 
+    @property
+    def updated_cols(self):
+        "Return information of columns updated"
+        return self._row_changes.updated_cols
 
 Slot.add_changemanager_type(BaseTable, TableChangeManager)

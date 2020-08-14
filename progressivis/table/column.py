@@ -245,7 +245,7 @@ class Column(BaseColumn):
                             self.dataset[e] = val
                 else:
                     raise
-        self.index.touch(index)
+        self.index.touch(self.name, index)
 
     def resize(self, newsize):
         assert isinstance(newsize, integer_types)

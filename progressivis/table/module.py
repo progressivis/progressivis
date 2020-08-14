@@ -65,3 +65,12 @@ class TableModule(Module):
         if indices is None:
             return df[cols]
         return df.loc[indices, cols]
+
+    def reset_if_updated(self, slot):
+        """
+        When a (non-empty) list of names is returned
+        it avoids a reset even when updates exist but
+        only on columns non-member of the returned list
+        NB: invoked by process_slot decorator
+        """
+        return []

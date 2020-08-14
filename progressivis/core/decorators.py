@@ -29,7 +29,6 @@ def process_slot(*names, reset_if=('update', 'delete'), reset_cb=None):
     """
     this function includes reset_if, reset_cb in the closure
     """
-    #import pdb;pdb.set_trace()
     if isinstance(reset_if, str):
         assert reset_if in ('update', 'delete')
         reset_if = (reset_if,)
@@ -37,6 +36,7 @@ def process_slot(*names, reset_if=('update', 'delete'), reset_cb=None):
         reset_if = tuple()
     else:
         assert set(reset_if) == set(('update', 'delete'))
+
     def run_step_decorator(run_step_):
         """
         run_step() decorator
@@ -55,10 +55,18 @@ def process_slot(*names, reset_if=('update', 'delete'), reset_cb=None):
             for name in names:
                 slot = self.get_input_slot(name)
                 # slot.update(run_number)
-                if ('update' in reset_if and slot.updated.any()) or\
-                        ('delete' in reset_if and slot.deleted.any()):
+                if 'delete' in reset_if and slot.deleted.any():
                     reset_all = True
                     break
+                if 'update' in reset_if and slot.updated.any():
+                    updated_cols = slot.updated_cols
+                    reset_if_updated = set(self.reset_if_updated(slot))
+                    if not updated_cols: # it should never hapen ...
+                        reset_all = True
+                        break
+                    if reset_if_updated and (reset_if_updated & updated_cols):
+                        reset_all = True
+                        break
             # if True (reset_all) thel all slots are reseted
             if reset_all:
                 for name in names:
@@ -106,7 +114,6 @@ def _slot_policy_rule(decname, *slots_maybe):
             """
             this function makes the decoration
             """
-            #import pdb;pdb.set_trace()
             #print("policy wrapper", decname, slots_maybe, args, to_decorate.__name__, has_hidden_attr)     
             if self.context is None:
                     raise ValueError("context not found. consider processing slots before")
