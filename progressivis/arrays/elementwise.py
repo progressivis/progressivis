@@ -1,5 +1,5 @@
 import numpy as np
-from ..core.utils import indices_len, fix_loc
+from ..core.utils import indices_len, fix_loc, filter_cols
 from ..table.module import TableModule
 from ..table.table import Table
 from ..table.dshape import dshape_projection
@@ -89,21 +89,7 @@ for k, v in unary_dict_all.items():
     _g[name] = make_subclass(Unary, name, v)
     unary_modules.append(_g[name])
 
-def _filter_cols(df, columns=None, indices=None):
-    """
-    Return the specified table filtered by the specified indices and
-    limited to the columns of interest.
-    """
-    if columns is None:
-        if indices is None:
-            return df
-        return df.loc[indices]
-    cols = columns
-    if cols is None:
-        return None
-    if indices is None:
-        return df[cols]
-    return df.loc[indices, cols]
+
 
 def _binary(tbl, op, other, other_cols=None, **kwargs):
     if other_cols is None:
@@ -158,7 +144,7 @@ class Binary(TableModule):
             assert steps == steps2
             if steps == 0:
                 return self._return_run_step(self.state_blocked, steps_run=0)
-            other = _filter_cols(data2, self._columns2, fix_loc(indices2)) if _t2t else data2
+            other = filter_cols(data2, self._columns2, fix_loc(indices2)) if _t2t else data2
             vec = _binary(self.filter_columns(data, fix_loc(indices)), self._ufunc, other, self._columns2, **self._kwds)
             if self._table is None:
                 dshape_ = dshape_projection(data, self._columns)

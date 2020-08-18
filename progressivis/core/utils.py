@@ -855,3 +855,20 @@ def is_notebook():
         pass
     print("not in notebook")
     return False
+
+def filter_cols(df, columns=None, indices=None):
+    """
+    Return the specified table filtered by the specified indices and
+    limited to the columns of interest.
+    """
+    if columns is None:
+        if indices is None:
+            return df
+        return df.loc[indices]
+    cols = columns
+    if cols is None:
+        return None
+    if indices is None:
+        indices = slice(0, None)
+    return df.loc[indices, cols]
+
