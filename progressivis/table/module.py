@@ -18,9 +18,26 @@ class TableModule(Module):
         super(TableModule, self).__init__(**kwds)
         if 'table_slot' in kwds:
             raise RuntimeError("don't use table_slot")
-        self._columns = columns
+        self._columns = None
+        self._columns_dict = {}
+        if isinstance(columns, dict):
+            assert len(columns)
+            for v in columns.values():
+                self._columns = v
+                break
+            self._columns_dict = columns
+        elif isinstance(columns, list): # backward compatibility
+            self._columns = columns
+            for k in self._input_slots.keys():
+                self._columns_dict = {k: columns}
+                break
+            else:
+                assert columns is None
         self._table = None
-
+    def get_first_input_slot(self):
+        for k in self._input_slots.keys():
+            return k
+        
     def table(self):
         "Return the table"
         return self._table
@@ -30,7 +47,7 @@ class TableModule(Module):
             return self.table()
         return super(TableModule, self).get_data(name)
 
-    def get_columns(self, df):
+    def get_columns(self, df, slot=None):
         """
         Return all the columns of interest from the specified table.
 
@@ -41,27 +58,67 @@ class TableModule(Module):
         """
         if df is None:
             return None
-        if self._columns is None:
-            self._columns = list(df.columns)
+        if slot is None:
+            _columns = self._columns
         else:
-            cols = set(self._columns)
-            diff = cols.difference(df.columns)
+            _columns = self._columns_dict.get(slot)
+        df_columns = df.columns if isinstance(df, Table) else df.keys()
+        if _columns is None:
+            _columns = list(df_columns)
+        else:
+            cols = set(_columns)
+            diff = cols.difference(df_columns)
             for column in diff:
-                self._columns.remove(column)  # maintain the order
-        return self._columns
+                _columns.remove(column)  # maintain the order
+        return _columns
 
-    def filter_columns(self, df, indices=None):
+    def filter_columns(self, df, indices=None, slot=None):
         """
         Return the specified table filtered by the specified indices and
         limited to the columns of interest.
         """
-        if self._columns is None:
+        if self._columns is None or (slot is not None and
+                                     slot not in self._columns_dict):
             if indices is None:
                 return df
             return df.loc[indices]
-        cols = self.get_columns(df)
+        cols = self.get_columns(df, slot)
         if cols is None:
             return None
         if indices is None:
             return df[cols]
         return df.loc[indices, cols]
+
+    def get_slot_columns(self, name):
+        cols = self._columns_dict.get(name)
+        if cols is None:
+            cols = self.get_input_slot(name).data().columns
+        return cols
+    def get_output_datashape(self, name="table"):
+        for osl in self.all_outputs:
+            if osl.name == name:
+                output_ = osl
+                break
+        else:
+            raise ValueError("Output slot not declared")
+        if osl.datashape is None:
+            raise ValueError("datashape not defined on {} output slot")
+        dshapes = []
+        for k, v in osl.datashape.items():
+            isl = self.get_input_slot(k)
+            table = isl.data()
+            if v == "#columns":
+                colsn = self.get_slot_columns(k)
+            elif v == "#all":
+                colsn = table._columns
+            else:
+                assert isinstance(v, list)
+                colsn = v
+            for colname in colsn:
+                col = table._column(colname)
+                if len(col.shape) > 1:
+                    dshapes.append(f"{col.name}: {col.shape[1]} * {col.dshape}")
+                else:
+                    dshapes.append(f"{col.name}: {col.dshape}") 
+        return "{" + ",".join(dshapes) + "}"
+            

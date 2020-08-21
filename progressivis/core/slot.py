@@ -9,22 +9,21 @@ from .changemanager_literal import LiteralChangeManager
 
 logger = logging.getLogger(__name__)
 
-
 class SlotDescriptor(namedtuple('SD',
-                                ['name', 'type', 'required', 'multiple',
+                                ['name', 'type', 'required', 'multiple', 'datashape',
                                  'buffer_created',
                                  'buffer_updated',
                                  'buffer_deleted'])):
     "SlotDescriptor is used in modules to describe the input/output slots."
     __slots__ = ()
 
-    def __new__(cls, name, type=None, required=True, multiple=False,
+    def __new__(cls, name, type=None, required=True, multiple=False, datashape=None,
                 buffer_created=True,
                 buffer_updated=True,
                 buffer_deleted=True):
         # pylint: disable=redefined-builtin
         return super(SlotDescriptor, cls).__new__(cls, name, type,
-                                                  required, multiple,
+                                                  required, multiple, datashape,
                                                   buffer_created,
                                                   buffer_updated,
                                                   buffer_deleted)

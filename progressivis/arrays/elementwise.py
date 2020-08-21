@@ -1,11 +1,11 @@
 import numpy as np
-from ..core.utils import indices_len, fix_loc, filter_cols
+from ..core.utils import indices_len, fix_loc
 from ..table.module import TableModule
 from ..table.table import Table
-from ..table.dshape import dshape_projection
 from ..core.decorators import *
 from .. import ProgressiveError, SlotDescriptor
 from ..utils.psdict import PsDict
+from ..core.module import ModuleMeta
 from collections import OrderedDict
 
 not_tested_unaries = ('isnat', # input array with datetime or timedelta data type.
@@ -42,11 +42,11 @@ def info():
 
 class Unary(TableModule):
     inputs = [SlotDescriptor('table', type=Table, required=True)]
-
-    def __init__(self, ufunc, columns=None, **kwds):
+    outputs = [SlotDescriptor('table', type=Table, required=False,
+                              datashape={'table': "#columns"})]
+    def __init__(self, ufunc, **kwds):
         super().__init__(**kwds)
         self._ufunc = ufunc
-        self._columns = columns
         self._kwds = {} #self._filter_kwds(kwds, ufunc)
 
     def reset(self):
@@ -59,7 +59,7 @@ class Unary(TableModule):
         with self.context as ctx:
             data_in = ctx.table.data()
             if self._table is None:
-                dshape_ = dshape_projection(data_in, self._columns)
+                dshape_ = self.get_output_datashape("table")
                 self._table = Table(self.generate_table_name(f'unary_{self._ufunc.__name__}'),
                                     dshape=dshape_, create=True)
             cols = self.get_columns(data_in)
@@ -74,7 +74,8 @@ class Unary(TableModule):
 def make_subclass(super_, cname, ufunc):
     def _init_func(self_, *args, **kwds):
         super_.__init__(self_, ufunc, *args, **kwds)
-    cls = type(cname, (super_,), {})
+    #cls = type(cname, (super_,), {})
+    cls = ModuleMeta(cname, (super_,), {})
     cls.__module__ = globals()['__name__'] # avoids cls to be part of abc module ...
     cls.__init__ = _init_func
     return cls
@@ -111,13 +112,17 @@ def _binary(tbl, op, other, other_cols=None, **kwargs):
 class Binary(TableModule):
     inputs = [SlotDescriptor('first', type=Table, required=True),
               SlotDescriptor('second', type=(Table, PsDict), required=True)]
-
-    def __init__(self, ufunc, columns=None, columns2=None, **kwds):
+    outputs = [SlotDescriptor('table', type=Table, required=False,
+                              datashape={'first': "#columns"})]
+    def __init__(self, ufunc, **kwds):
         super().__init__(**kwds)
         self._ufunc = ufunc
-        self._columns = columns 
-        self._columns2 = columns2
         self._kwds = {} #self._filter_kwds(kwds, ufunc)
+        _assert = self._columns is None or ("first" in
+                                             self._columns_dict
+                                             and "second"
+                                             in self._columns_dict)
+        assert _assert
 
     def reset(self):
         if self._table is not None:
@@ -144,10 +149,11 @@ class Binary(TableModule):
             assert steps == steps2
             if steps == 0:
                 return self._return_run_step(self.state_blocked, steps_run=0)
-            other = filter_cols(data2, self._columns2, fix_loc(indices2)) if _t2t else data2
-            vec = _binary(self.filter_columns(data, fix_loc(indices)), self._ufunc, other, self._columns2, **self._kwds)
+            other = self.filter_columns(data2, fix_loc(indices2), "second") if _t2t else data2
+            vec = _binary(self.filter_columns(data, fix_loc(indices), "first"),
+                          self._ufunc, other, self.get_columns(data2, "second"), **self._kwds)
             if self._table is None:
-                dshape_ = dshape_projection(data, self._columns)
+                dshape_ = self.get_output_datashape("table")
                 self._table = Table(self.generate_table_name(f'binary_{self._ufunc.__name__}'),
                                     dshape=dshape_, create=True)            
             self._table.append(vec)

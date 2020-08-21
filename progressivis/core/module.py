@@ -9,7 +9,6 @@ import logging
 import pdb
 
 import numpy as np
-
 from progressivis.utils.errors import (ProgressiveError,
                                        ProgressiveStopIteration)
 from progressivis.table.table_base import BaseTable
@@ -46,16 +45,20 @@ class ModuleMeta(ABCMeta):
             cls.outputs = []
         all_parameters = list(cls.parameters)
         all_inputs = list(cls.inputs)
-        all_outputs = list(cls.outputs)
+        #all_outputs = list(cls.outputs)
+        all_outputs = {c.name:c for c in cls.outputs} 
         for base in bases:
             all_parameters += getattr(base, "all_parameters", [])
             all_inputs += getattr(base, "all_inputs", [])
-            all_outputs += getattr(base, "all_outputs", [])
+            #all_outputs += getattr(base, "all_outputs", [])
+            for outp in getattr(base, "all_outputs", []):
+                assert isinstance(outp, SlotDescriptor)
+                if outp.name not in all_outputs:
+                    all_outputs[outp.name] = outp #.append(outp)
         cls.all_parameters = all_parameters
         cls.all_inputs = all_inputs
-        cls.all_outputs = all_outputs
+        cls.all_outputs = list(all_outputs.values())
         super(ModuleMeta, cls).__init__(name, bases, attrs)
-
 
 class Module(metaclass=ModuleMeta):
     """The Module class is the base class for all the progressive modules.
