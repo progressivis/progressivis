@@ -62,7 +62,7 @@ class TableModule(Module):
             _columns = self._columns
         else:
             _columns = self._columns_dict.get(slot)
-        df_columns = df.columns if isinstance(df, Table) else df.keys()
+        df_columns = df.keys() if isinstance(df, dict) else df.columns
         if _columns is None:
             _columns = list(df_columns)
         else:
