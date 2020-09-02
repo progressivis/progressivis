@@ -11,10 +11,9 @@ class LinearMap(TableModule):
     inputs = [SlotDescriptor('vectors', type=Table, required=True),
               SlotDescriptor('transformation', type=Table, required=True)]
 
-    def __init__(self, columns=None, transf_columns=None, **kwds):
+    def __init__(self, transf_columns=None, **kwds):
         super().__init__(**kwds)
-        self._columns = columns
-        self._k_dim = len(columns) if columns else None
+        self._k_dim = len(self._columns) if self._columns else None
         self._transf_columns = transf_columns
         self._kwds = {} #self._filter_kwds(kwds, ufunc)
         self._transf_cache = None
@@ -33,6 +32,7 @@ class LinearMap(TableModule):
         result:  (n, m) 
         """    
         with self.context as ctx:
+            import pdb;pdb.set_trace()
             vectors = ctx.vectors.data()
             if not self._k_dim:
                 self._k_dim = len(vectors.columns)
@@ -41,7 +41,7 @@ class LinearMap(TableModule):
             if len(transformation) < self._k_dim:
                 if ctx.transformation.output_module.state <= self.state_blocked:
                     return self._return_run_step(self.state_blocked, steps_run=0)
-                else: # transformation.output_module iz zombie etc.=> no hope
+                else: # transformation.output_module is zombie etc.=> no hope
                     raise ValueError("vectors size don't match the transformation matrix shape")
             elif len(transformation) > self._k_dim:
                 raise ValueError("vectors size don't match the transformation matrix shape (2)")
