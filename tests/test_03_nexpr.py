@@ -18,13 +18,20 @@ class NumExprSample(NumExprABC):
     expr = {'_1': '{first._2}+2*{second._3}',
             '_2': '{first._3}-5*{second._2}'}    
 
+class NumExprSample2(NumExprABC):
+    inputs = [SlotDescriptor('first', type=Table, required=True),
+              SlotDescriptor('second', type=Table, required=True)]
+    outputs = [SlotDescriptor('table', type=Table, required=False)]
+    expr = {'_1:float64': '{first._2}+2*{second._3}',
+            '_2:float64': '{first._3}-5*{second._2}'}    
+
 
 class TestNumExpr(ProgressiveTest):
-    def test_num_expr(self):
+    def t_num_expr_impl(self, cls):
         s = self.scheduler()
         random1 = RandomTable(10, rows=100000, scheduler=s)
         random2 = RandomTable(10, rows=100000, scheduler=s)        
-        module = NumExprSample(columns={'first': ['_1', '_2', '_3'],
+        module = cls(columns={'first': ['_1', '_2', '_3'],
                                          'second': ['_1', '_2', '_3']},
                         scheduler=s)
  
@@ -43,4 +50,10 @@ class TestNumExpr(ProgressiveTest):
         ne_2 = ne.evaluate('first_3-5*second_2')
         res = module.table().to_array()
         self.assertTrue(np.allclose(res[:,0], ne_1, equal_nan=True))
-        self.assertTrue(np.allclose(res[:,1], ne_2, equal_nan=True))        
+        self.assertTrue(np.allclose(res[:,1], ne_2, equal_nan=True))
+
+    def test_num_expr(self):
+        return self.t_num_expr_impl(NumExprSample)
+
+    def test_num_expr2(self):
+        return self.t_num_expr_impl(NumExprSample2)

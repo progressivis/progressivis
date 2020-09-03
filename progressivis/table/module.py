@@ -94,6 +94,15 @@ class TableModule(Module):
         if cols is None:
             cols = self.get_input_slot(name).data().columns
         return cols
+
+    def has_output_datashape(self, name="table"):
+        for osl in self.all_outputs:
+            if osl.name == name:
+                break
+        else:
+            raise ValueError("Output slot not declared")
+        return osl.datashape is not None
+
     def get_output_datashape(self, name="table"):
         for osl in self.all_outputs:
             if osl.name == name:
@@ -121,4 +130,8 @@ class TableModule(Module):
                 else:
                     dshapes.append(f"{col.name}: {col.dshape}") 
         return "{" + ",".join(dshapes) + "}"
-            
+
+    def get_datashape_from_expr(self):
+        if not hasattr(type(self), "expr"):
+            raise ValueError("expr attribute not defined")
+        return "{{{cols}}}".format(cols=",".join(self.expr.keys()))
