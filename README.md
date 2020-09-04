@@ -37,6 +37,32 @@ structures that can grow and adapt to progressive computation.
 
 ## Installation
 
+### With miniconda/anaconda:
+
+Currently, the easiest way to install *progressivis* is as follows:
+
+1. Install the latest version of miniconda (if not yet done)
+
+2. Create a conda environment with the following command
+
+NB: by default it will create an environment called *progressivis-environment*. If you want you can change in the file  environment.yml before runninng the command
+
+```
+conda env create -f binder / environment.yml
+```
+3. Activate this environment:
+
+```
+conda activate progressivis-environment
+```
+4. Execute the following commands:
+```
+jupyter nbextension install --py --symlink --sys-prefix progressivis_nb_widgets.nbwidgets
+jupyter nbextension enable --py --sys-prefix progressivis_nb_widgets.nbwidgets
+```
+
+### With pip (without the Jupyter interface)
+
 ProgressiVis can be installed with pip with or without virtualenv.
 From a virtualenv or from the global environment, install it with:
 ```
@@ -44,17 +70,22 @@ pip install -e requirements.txt
 python setup.py install
 ```
 
-or, with anaconda:
-
-```
-conda config --add channels progressivis
-conda install progressivis
-```
 
 ## Examples
 
 To see examples, either look at the tests in the `tests` directory, or
 try the examples in the `examples` directory.
+
+## Running demos (on your comuter)
+
+After installing progressivis **with miniconda/anaconda**, do:
+```
+cd notebooks
+jupyter notebook
+```
+then run the notebooks of your choice
+
+
 
 ## Live demo
 
