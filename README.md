@@ -37,18 +37,18 @@ structures that can grow and adapt to progressive computation.
 
 ## Installation
 
-### With miniconda/anaconda:
+### With miniconda/anaconda (recommended):
 
 Currently, the easiest way to install *progressivis* is as follows:
 
 1. Install the latest version of miniconda (if not yet done)
 
-2. Create a conda environment with the following command
+2. Create a conda environment with the following command:
 
-NB: by default it will create an environment called *progressivis-environment*. If you want you can change in the file  environment.yml before runninng the command
+NB: by default it will create an environment called *progressivis-environment*. If you want, you can change this name in the file *environment.yml* before runninng the command and remember to reflect this change in the following commands.
 
 ```
-conda env create -f binder / environment.yml
+conda env create -f binder/environment.yml
 ```
 3. Activate this environment:
 
