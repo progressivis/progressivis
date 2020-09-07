@@ -7,13 +7,13 @@ import numexpr as ne
 def make_local(df, px):
     arr = df.to_array()
     result = {}
-    class _Dummy: pass
-    dummy = _Dummy()
+    class _Aux: pass
+    aux = _Aux()
     for i, n in enumerate(df.columns):
         key = f'_{px}__{i}'
         result[key] = arr[:, i]
-        setattr(dummy, n, key)
-    return dummy, result
+        setattr(aux, n, key)
+    return aux, result
 
 class NumExprABC(TableModule):
     def __init__(self, *args, **kwargs):

@@ -2,7 +2,7 @@ from . import ProgressiveTest, skip, skipIf
 
 from progressivis.core import aio
 from progressivis import Print
-from progressivis.arrays import NumExprABC
+from progressivis.linalg import NumExprABC
 import numpy as np
 from progressivis.stats import RandomTable
 from progressivis.table.table import Table

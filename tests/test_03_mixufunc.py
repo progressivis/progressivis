@@ -2,7 +2,7 @@ from . import ProgressiveTest, skip, skipIf
 
 from progressivis.core import aio
 from progressivis import Print
-from progressivis.arrays import MixUfuncABC
+from progressivis.linalg import MixUfuncABC
 import numpy as np
 from progressivis.stats import RandomTable, RandomDict
 from progressivis.table.table import Table
@@ -25,10 +25,11 @@ class MixUfuncSample2(MixUfuncABC):
     expr = {'_1:float64': (np.add, 'first._2', 'second._3'),
             '_2:float64': (np.log, 'second._3')}    
 
-def dummy_unary(x):
+# https://stackoverflow.com/questions/6768245/difference-between-frompyfunc-and-vectorize-in-numpy
+def custom_unary(x):
     return (x+np.sin(x))/(x+np.cos(x))
 
-dummy_unary_ufunc = np.frompyfunc(dummy_unary, 1, 1)
+custom_unary_ufunc = np.frompyfunc(custom_unary, 1, 1)
 
 
 class MixUfuncCustomUnary(MixUfuncABC):
@@ -36,18 +37,18 @@ class MixUfuncCustomUnary(MixUfuncABC):
               SlotDescriptor('second', type=Table, required=True)]
     outputs = [SlotDescriptor('table', type=Table, required=False)]
     expr = {'_1:float64': (np.add, 'first._2', 'second._3'),
-            '_2:float64': (dummy_unary_ufunc, 'second._3')}    
+            '_2:float64': (custom_unary_ufunc, 'second._3')}    
 
-def dummy_binary(x, y):
+def custom_binary(x, y):
     return (x+np.sin(y))/(x+np.cos(y))
 
-dummy_binary_ufunc = np.frompyfunc(dummy_binary, 2, 1)
+custom_binary_ufunc = np.frompyfunc(custom_binary, 2, 1)
 
 class MixUfuncCustomBinary(MixUfuncABC):
     inputs = [SlotDescriptor('first', type=Table, required=True),
               SlotDescriptor('second', type=Table, required=True)]
     outputs = [SlotDescriptor('table', type=Table, required=False)]
-    expr = {'_1:float64': (dummy_binary_ufunc, 'first._2', 'second._3'),
+    expr = {'_1:float64': (custom_binary_ufunc, 'first._2', 'second._3'),
             '_2:float64': (np.log, 'second._3')}    
 
 class TestMixUfunc(ProgressiveTest):
@@ -108,10 +109,10 @@ class TestMixUfunc(ProgressiveTest):
         return self.t_mix_ufunc_impl(MixUfuncSample2)
 
     def test_mix_custom1(self):
-        return self.t_mix_ufunc_impl(MixUfuncCustomUnary, ufunc1=dummy_unary_ufunc)
+        return self.t_mix_ufunc_impl(MixUfuncCustomUnary, ufunc1=custom_unary_ufunc)
 
     def test_mix_custom2(self):
-        return self.t_mix_ufunc_impl(MixUfuncCustomBinary, ufunc2=dummy_binary_ufunc)
+        return self.t_mix_ufunc_impl(MixUfuncCustomBinary, ufunc2=custom_binary_ufunc)
 
     def test_mix_ufunc3(self):
         return self.t_mix_ufunc_table_dict_impl(MixUfuncSample2)

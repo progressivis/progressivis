@@ -32,7 +32,6 @@ class LinearMap(TableModule):
         result:  (n, m) 
         """    
         with self.context as ctx:
-            import pdb;pdb.set_trace()
             vectors = ctx.vectors.data()
             if not self._k_dim:
                 self._k_dim = len(vectors.columns)

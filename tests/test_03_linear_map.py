@@ -2,7 +2,7 @@ from . import ProgressiveTest, skip, skipIf
 
 from progressivis.core import aio
 from progressivis import Print
-from progressivis.arrays import LinearMap
+from progressivis.linalg import LinearMap
 import numpy as np
 from progressivis.stats import RandomTable
 
