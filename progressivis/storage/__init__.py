@@ -5,10 +5,10 @@ from .base import Group, StorageEngine
 __all__ = ["Group"]
 
 from .numpy import NumpyStorageEngine
-numpyengine = NumpyStorageEngine()
+#numpyengine = NumpyStorageEngine()
 
 from .mmap import MMapStorageEngine
-mmapengine = MMapStorageEngine()
+#mmapengine = MMapStorageEngine()
 
 if get_option('storage.default'):
     StorageEngine.default = get_option('storage.default')

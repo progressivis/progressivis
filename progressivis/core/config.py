@@ -80,8 +80,4 @@ if len(options) == 0:
     register_option('display.column_space', 12)
     register_option('display.max_rows', 12)
     register_option('display.max_columns', 20)
-    register_option('storage.default', 'mmap')
-    register_option('storage.hdf5.open', {'driver': 'core',
-                                          'backing_store': False})
-    register_option('storage.hdf5.compression', {"compression": 'none'})
-    register_option('storage.zarr.compression', {"compression": 'none'})
+    register_option('storage.default', 'numpy')
