@@ -38,12 +38,11 @@ class Max(TableModule):
             if self._table is not None:
                 self._table.resize(0)
             slot.update(run_number)
-        indices = slot.created.next(step_size) # /!\ 
+        indices = slot.created.next(step_size) 
         steps = indices_len(indices)
         if steps==0:
             return self._return_run_step(self.state_blocked, steps_run=0)
         data = slot.data()
-        import pdb;pdb.set_trace()
         op = data.loc[fix_loc(indices)].max(keepdims=False)
         if self._table is None:
             self._table = PsDict(op)
@@ -55,7 +54,7 @@ class Max(TableModule):
 
 class MaxDec(TableModule):
     """
-    Simplified Max, usefull for documentation
+    Simplified Max with decorated run_step(), adapted for documentation
     """
     inputs = [SlotDescriptor('table', type=Table, required=True)]
 
