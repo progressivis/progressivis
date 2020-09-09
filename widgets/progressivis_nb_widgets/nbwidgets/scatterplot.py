@@ -53,7 +53,7 @@ class Scatterplot(DataWidget, widgets.DOMWidget):
     modal = Bool(False).tag(sync=True)
     to_hide = Any('[]').tag(sync=True)
 
-    def link_module(self, module):
+    def link_module(self, module, refresh=True):
         def _feed_widget(wg, m):
             val = m.to_json()
             data_ = {k:v for (k, v) in val.items() if k not in ('hist_tensor',
@@ -65,7 +65,9 @@ class Scatterplot(DataWidget, widgets.DOMWidget):
             if st is not None:
                 wg.samples = st
             wg.data = JS.dumps(data_)
-
+        async def _refresh():
+            while True:
+                await aio.sleep(0.5)
         async def _after_run(m, run_number):
             if not self.modal:
                 await asynchronize(_feed_widget, self, m)
@@ -92,7 +94,8 @@ class Scatterplot(DataWidget, widgets.DOMWidget):
                 dummy = module._json_cache.get('dummy', 555)
                 module._json_cache['dummy'] = -dummy
                 await asynchronize(_feed_widget, self, module)
-        return [_from_input_value(), _from_input_move_point(), _awake()]
+        return ([_refresh()] if refresh else [])+[_from_input_value(),
+                                                _from_input_move_point(), _awake()]
     def __init__(self, *, disable=tuple()):
         super().__init__()
         self.to_hide = list(disable)

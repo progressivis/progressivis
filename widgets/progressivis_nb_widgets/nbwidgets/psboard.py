@@ -117,7 +117,7 @@ class PsBoard(ipw.VBox):
         if glue is not None:
             self.other_coros += glue(widget, module)
         else:
-            self.other_coros += widget.link_module(module)
+            self.other_coros += widget.link_module(module, refresh=False)
         self.viz_register[module.name].append((widget, label))
 
     @property
