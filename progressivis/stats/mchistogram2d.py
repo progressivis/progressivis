@@ -80,6 +80,7 @@ class MCHistogram2D(NAry):
         xmin = ymin = np.inf
         xmax = ymax = -np.inf
         has_creation = False
+        min_found = max_found = False
         for name in self.inputs:
             input_slot = self.get_input_slot(name)
             if input_slot is None:
@@ -102,6 +103,7 @@ class MCHistogram2D(NAry):
                     continue
                 xmin = min(xmin, min_df[x_column])
                 ymin = min(ymin, min_df[y_column])
+                min_found = True
             elif meta == 'max':
                 max_slot = input_slot
                 # max_slot.update(run_number)
@@ -116,6 +118,9 @@ class MCHistogram2D(NAry):
                     continue
                 xmax = max(xmax, max_df[x_column])
                 ymax = max(ymax, max_df[y_column])
+                max_found = True
+        if not (min_found and max_found):
+            return None
         if xmax < xmin:
             xmax, xmin = xmin, xmax
             logger.warning('xmax < xmin, swapped')
