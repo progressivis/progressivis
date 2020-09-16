@@ -39,7 +39,11 @@ class IdxMin(TableModule):
             return True
         return super(IdxMin, self).is_ready()
 
-    @process_slot("table")
+    def reset(self):
+        self._table = None
+        self._min = None
+
+    @process_slot("table", reset_cb='reset')
     @run_if_any
     def run_step(self, run_number, step_size, howlong):
         with self.context as ctx:

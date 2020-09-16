@@ -80,3 +80,16 @@ class TableSelectedView(BaseTable):
     def dshape(self):
         return self.base.dshape
     
+    def idxmax(self, **kwargs):
+        res = self.argmax(**kwargs)
+        ph_index = self.index.id_to_index(self.selection)
+        for c, ix in res.items():
+            res[c] = self.index_to_id(ph_index[int(ix)])
+        return res
+
+    def idxmin(self, **kwargs):
+        res = self.argmin(**kwargs)
+        ph_index = self.index.id_to_index(self.selection)
+        for c, ix in res.items():
+            res[c] = self.index_to_id(ph_index[int(ix)])
+        return res
