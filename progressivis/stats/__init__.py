@@ -1,7 +1,7 @@
 
 from .stats import Stats
 from .min import Min
-from .max import Max
+from .max import Max, ScalarMax
 from .idxmax import IdxMax
 from .idxmin import IdxMin
 from .var import Var
