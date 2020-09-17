@@ -1,6 +1,6 @@
 
 from .stats import Stats
-from .min import Min
+from .min import Min, ScalarMin
 from .max import Max, ScalarMax
 from .idxmax import IdxMax
 from .idxmin import IdxMin
