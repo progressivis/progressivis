@@ -82,16 +82,17 @@ class ScalarMax(TableModule):
                 self.reset_all(slot, run_number)
             # else : deletes are not sensitive, just ignore them
         if slot.updated.any():
-            update_ids = slot.updated.next(step_size, as_slice=False)
-            if update_ids & sensitive_ids_bm:
+            if slot.updated.changes & sensitive_ids_bm:
                 self.reset_all(slot, run_number)
             else:
                 # updates are not sensitive BUT some values
                 # might become greater than the current MAX
                 # so we will process these updates as creations
                 # and we avoid a reset
-                indices = update_ids
+                indices = slot.updated.next(step_size, as_slice=False)
         if indices is None:
+            if not slot.created.any():
+                return self._return_run_step(self.state_blocked, steps_run=0)
             indices = slot.created.next(step_size) # returns a slice
         steps = indices_len(indices)
         input_df = slot.data()

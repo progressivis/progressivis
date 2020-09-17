@@ -114,7 +114,7 @@ class TestRepairMax(ProgressiveTest):
         res2 = max_.table()
         self.compare(res1, res2)
         
-    def te_st_repair_max3(self):
+    def test_repair_max3(self):
         """
         runs with NON-sensitive ids deletion
         """
