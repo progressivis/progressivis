@@ -78,7 +78,8 @@ class MyStirrer(TableModule):
 class TestRepairMax(ProgressiveTest):
     def test_repair_max(self):
         """
-        no disruption
+        test_repair_max()
+        max without deletes/updates
         """
         s=Scheduler()
         random = RandomTable(2, rows=100000, scheduler=s)
@@ -93,6 +94,7 @@ class TestRepairMax(ProgressiveTest):
 
     def test_repair_max2(self):
         """
+        test_repair_max2()
         runs with sensitive ids deletion
         """
         s=Scheduler()
@@ -112,6 +114,7 @@ class TestRepairMax(ProgressiveTest):
         
     def test_repair_max3(self):
         """
+        test_repair_max3()
         runs with NON-sensitive ids deletion
         """
         s=Scheduler()
@@ -131,6 +134,7 @@ class TestRepairMax(ProgressiveTest):
 
     def test_repair_max4(self):
         """
+        test_repair_max4()
         runs with sensitive ids update
         """
         s=Scheduler()
@@ -150,6 +154,7 @@ class TestRepairMax(ProgressiveTest):
 
     def test_repair_max5(self):
         """
+        test_repair_max5()
         runs with NON-sensitive ids updates
         """
         s=Scheduler()
@@ -179,7 +184,8 @@ class TestRepairMax(ProgressiveTest):
 class TestRepairMin(ProgressiveTest):
     def test_repair_min(self):
         """
-        no disruption
+        test_repair_min()
+        min without deletes/updates
         """
         s=Scheduler()
         random = RandomTable(2, rows=100000, scheduler=s)
@@ -193,6 +199,7 @@ class TestRepairMin(ProgressiveTest):
         self.compare(res1, res2)
     def test_repair_min2(self):
         """
+        test_repair_min2()
         runs with sensitive ids deletion
         """
         s=Scheduler()
@@ -212,6 +219,7 @@ class TestRepairMin(ProgressiveTest):
         
     def test_repair_min3(self):
         """
+        test_repair_min3()
         runs with NON-sensitive ids deletion
         """
         s=Scheduler()
@@ -231,6 +239,7 @@ class TestRepairMin(ProgressiveTest):
 
     def test_repair_min4(self):
         """
+        test_repair_min4()
         runs with sensitive ids update
         """
         s=Scheduler()
@@ -250,6 +259,7 @@ class TestRepairMin(ProgressiveTest):
 
     def test_repair_min5(self):
         """
+        test_repair_min5()
         runs with NON-sensitive ids updates
         """
         s=Scheduler()

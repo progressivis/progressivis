@@ -1,5 +1,5 @@
 from ..core.utils import indices_len, fix_loc
-from ..core import bitmap
+from ..core.bitmap import bitmap
 from ..table.module import TableModule
 from ..table.table import Table
 from ..core.slot import SlotDescriptor
