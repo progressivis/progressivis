@@ -72,6 +72,9 @@ class ScalarMax(TableModule):
         slot.update(run_number)
 
     def are_critical(self, updated_ids, data):
+        """
+        check if updates really question/nullify current max
+        """
         for col, id in self._sensitive_ids.items():
             if id not in updated_ids:
                 continue
