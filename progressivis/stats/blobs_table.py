@@ -52,7 +52,7 @@ class BlobsTableABC(TableModule):
     kw_fun = None
     def __init__(self, columns, rows=-1, dtype='float64', seed=0, throttle=False, **kwds):
         super().__init__(**kwds)
-        self._kwds = self._filter_kwds(kwds, self.kw_fun)
+        self._kwds = {} #self._filter_kwds(kwds, self.kw_fun)
         """assert 'centers' in self._kwds
         assert 'n_samples' not in self._kwds
         assert 'n_features' not in self._kwds
@@ -160,12 +160,13 @@ class BlobsTable(BlobsTableABC):
         #import pdb;pdb.set_trace()
         super().__init__(*args, **kwds)
         #assert 'centers' in self._kwds
+        self.centers =  kwds['centers']
         assert 'n_samples' not in self._kwds
         assert 'n_features' not in self._kwds
         assert 'random_state' not in self._kwds
 
     def fill_reservoir(self):
-        X, y = make_blobs(n_samples=RESERVOIR_SIZE, random_state=self.seed, **self._kwds)
+        X, y = make_blobs(n_samples=RESERVOIR_SIZE, random_state=self.seed, centers=self.centers, **self._kwds)
         self.seed += 1
         self._reservoir = (X, y)
         self._reservoir_idx = 0
