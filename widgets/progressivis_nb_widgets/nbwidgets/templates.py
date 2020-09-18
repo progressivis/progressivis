@@ -1,6 +1,6 @@
 from io import StringIO
 
-index_tpl = """<table class="table table-striped table-bordered table-hover table-condensed">
+index_tpl = """<table id="mysortedtable" class="table table-striped table-bordered table-hover table-condensed">
 	  <thead>
 	    <tr><th>Id</th><th>Class</th><th>State</th><th>Last Update</th><th>Order</th></tr>
 	  </thead>

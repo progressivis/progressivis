@@ -32,4 +32,4 @@ class SensitiveHTML(widgets.DOMWidget):
     data =  Any('{}').tag(sync=True)
     value =  Any('{}').tag(sync=True)    
     sensitive_css_class = Unicode('aCssClass').tag(sync=True)
-
+    sort_table_ids = Any([]).tag(sync=True)

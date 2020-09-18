@@ -89,6 +89,7 @@ class PsBoard(ipw.VBox):
             tmpl = Template(index_tpl)
             await update_widget(self.htable,
                                 'sensitive_css_class', 'ps-row-btn')
+            await update_widget(self.htable, 'sort_table_ids', ['mysortedtable'])
             await update_widget(self.htable,
                                 'html', tmpl.render(modules=modules,
                                                     cols=self.cols))

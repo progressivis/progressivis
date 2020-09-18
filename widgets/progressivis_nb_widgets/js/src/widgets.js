@@ -8,6 +8,7 @@ var mg = require('./module_graph');
 var dt = require('./data_table');
 var slpb = require('./sparkline_progressbar');
 var lg = require('./line_graph');
+require('sorttable');
 require('../css/module-graph.css');
 require('../css/multiclass2d.css');
 require('../css/sparkline-progressbar.css');
@@ -141,7 +142,8 @@ var SensitiveHTMLModel = widgets.DOMWidgetModel.extend({
         html : '',
 	value: '{0}',
 	data: '{}',	
-	sensitive_css_class: 'aCssClass'
+	sensitive_css_class: 'aCssClass',
+	sort_table_ids: []
     })
 });
 
@@ -163,6 +165,12 @@ var SensitiveHTMLView = widgets.DOMWidgetView.extend({
 	let sensitive = this.model.get('sensitive_css_class');
 	er.elementReady('.'+sensitive).then((_)=>{
 	    sch.update_cb(that);
+	    let sort_table_ids = this.model.get('sort_table_ids');
+	    for(let i in sort_table_ids){
+		let tid = sort_table_ids[i];
+		let tobj = document.getElementById(tid);
+		sorttable.makeSortable(tobj);
+	    }
 	});
     },
     

@@ -59,6 +59,7 @@
     "ndarray-unpack": "^1.0.0",
     "react": "^16.8.4",
     "react-dom": "^16.8.4",
+    "sorttable": "^1.0.2",
     "webcola": "^3.4.0"
   },
   "jupyterlab": {
