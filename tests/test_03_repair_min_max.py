@@ -28,12 +28,13 @@ ScalarMin.reset = _reset_func
 class MyStirrer(TableModule):
     inputs = [SlotDescriptor('table', type=Table, required=True)]
 
-    def __init__(self, watched, proc_sensitive=True, mode='delete', **kwds):
+    def __init__(self, watched, proc_sensitive=True, mode='delete', value=9999.0, **kwds):
         super().__init__(**kwds)
         self.watched = watched
         self.proc_sensitive = proc_sensitive
         self.mode = mode
         self.default_step_size = 100
+        self.value = value
         self.done = False
 
     def run_step(self, run_number, step_size, howlong):
@@ -59,7 +60,7 @@ class MyStirrer(TableModule):
                         del self._table.loc[sensitive_ids]
                     else:
                         #print('update sensitive', sensitive_ids)
-                        self._table.loc[sensitive_ids, 0] = 99999.0
+                        self._table.loc[sensitive_ids, 0] = self.value
                     self.done = True
                 else: # non sensitive
                     if len(self._table) > 10:
@@ -69,7 +70,7 @@ class MyStirrer(TableModule):
                                 if self.mode == 'delete':
                                     del self._table.loc[id_]
                                 else:
-                                    self._table.loc[id_, 0] = 99999.0
+                                    self._table.loc[id_, 0] = self.value
                                 self.done = True
 
         return self._return_run_step(self.next_state(input_slot),
@@ -141,7 +142,27 @@ class TestRepairMax(ProgressiveTest):
         ScalarMax._reset_calls_counter = 0
         random = RandomTable(2, rows=100000, scheduler=s)
         max_=ScalarMax(name='max_repair_test4', scheduler=s)
-        stirrer = MyStirrer(watched='max_repair_test4', mode='update', scheduler=s)
+        stirrer = MyStirrer(watched='max_repair_test4', mode='update', value=9999.0, scheduler=s)
+        stirrer.input.table = random.output.table
+        max_.input.table = stirrer.output.table
+        pr=Print(proc=self.terse, scheduler=s)
+        pr.input.df = max_.output.table
+        aio.run(s.start())
+        self.assertEqual(ScalarMax._reset_calls_counter, 0)
+        res1 = stirrer.table().max()
+        res2 = max_.table()
+        self.compare(res1, res2)
+
+    def test_repair_max5(self):
+        """
+        test_repair_max5()
+        runs with sensitive ids update (critical)
+        """
+        s=Scheduler()
+        ScalarMax._reset_calls_counter = 0
+        random = RandomTable(2, rows=100000, scheduler=s)
+        max_=ScalarMax(name='max_repair_test4', scheduler=s)
+        stirrer = MyStirrer(watched='max_repair_test4', mode='update', value=-9999.0, scheduler=s)
         stirrer.input.table = random.output.table
         max_.input.table = stirrer.output.table
         pr=Print(proc=self.terse, scheduler=s)
@@ -152,9 +173,9 @@ class TestRepairMax(ProgressiveTest):
         res2 = max_.table()
         self.compare(res1, res2)
 
-    def test_repair_max5(self):
+    def test_repair_max6(self):
         """
-        test_repair_max5()
+        test_repair_max6()
         runs with NON-sensitive ids updates
         """
         s=Scheduler()
@@ -246,7 +267,27 @@ class TestRepairMin(ProgressiveTest):
         ScalarMin._reset_calls_counter = 0
         random = RandomTable(2, rows=100000, scheduler=s)
         min_=ScalarMin(name='min_repair_test4', scheduler=s)
-        stirrer = MyStirrer(watched='min_repair_test4', mode='update', scheduler=s)
+        stirrer = MyStirrer(watched='min_repair_test4', mode='update', value=-9999.0, scheduler=s)
+        stirrer.input.table = random.output.table
+        min_.input.table = stirrer.output.table
+        pr=Print(proc=self.terse, scheduler=s)
+        pr.input.df = min_.output.table
+        aio.run(s.start())
+        self.assertEqual(ScalarMin._reset_calls_counter, 0)
+        res1 = stirrer.table().min()
+        res2 = min_.table()
+        self.compare(res1, res2)
+
+    def test_repair_min5(self):
+        """
+        test_repair_min5()
+        runs with sensitive ids update (critical)
+        """
+        s=Scheduler()
+        ScalarMin._reset_calls_counter = 0
+        random = RandomTable(2, rows=100000, scheduler=s)
+        min_=ScalarMin(name='min_repair_test4', scheduler=s)
+        stirrer = MyStirrer(watched='min_repair_test4', mode='update', value=9999.0, scheduler=s)
         stirrer.input.table = random.output.table
         min_.input.table = stirrer.output.table
         pr=Print(proc=self.terse, scheduler=s)
@@ -257,9 +298,9 @@ class TestRepairMin(ProgressiveTest):
         res2 = min_.table()
         self.compare(res1, res2)
 
-    def test_repair_min5(self):
+    def test_repair_min6(self):
         """
-        test_repair_min5()
+        test_repair_min6()
         runs with NON-sensitive ids updates
         """
         s=Scheduler()

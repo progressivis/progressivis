@@ -69,7 +69,18 @@ class ScalarMin(TableModule):
     def reset_all(self, slot, run_number):
         slot.reset()
         self.reset()
-        slot.update(run_number)        
+        slot.update(run_number)
+
+    def are_critical(self, updated_ids, data):
+        """
+        check if updates really question/nullify current min
+        """
+        for col, id in self._sensitive_ids.items():
+            if id not in updated_ids:
+                continue
+            if data.loc[id, col] > self._table[col]:
+                return True
+        return False
 
     def run_step(self, run_number, step_size, howlong):
         slot = self.get_input_slot('table')
@@ -82,7 +93,9 @@ class ScalarMin(TableModule):
                 self.reset_all(slot, run_number)
             # else : deletes are not sensitive, just ignore them
         if slot.updated.any():
-            if slot.updated.changes & sensitive_ids_bm:
+            #if slot.updated.changes & sensitive_ids_bm:
+            sensitive_update_ids = slot.updated.changes & sensitive_ids_bm
+            if self.are_critical(sensitive_update_ids, slot.data()):
                 self.reset_all(slot, run_number)
             else:
                 # updates are not sensitive BUT some values
