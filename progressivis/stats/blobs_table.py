@@ -159,7 +159,7 @@ class BlobsTable(BlobsTableABC):
     def __init__(self, *args, **kwds):
         #import pdb;pdb.set_trace()
         super().__init__(*args, **kwds)
-        assert 'centers' in self._kwds
+        #assert 'centers' in self._kwds
         assert 'n_samples' not in self._kwds
         assert 'n_features' not in self._kwds
         assert 'random_state' not in self._kwds
