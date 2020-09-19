@@ -73,7 +73,7 @@ class ScalarMax(TableModule):
 
     def are_critical(self, updated_ids, data):
         """
-        check if updates really question/nullify current max
+        check if updates invalidate the current max
         """
         for col, id in self._sensitive_ids.items():
             if id not in updated_ids:
@@ -98,7 +98,7 @@ class ScalarMax(TableModule):
                     sensitive_update_ids, slot.data()):
                 self.reset_all(slot, run_number)
             else:
-                # updates are not sensitive BUT some values
+                # updates are not critical BUT some values
                 # might become greater than the current MAX
                 # so we will process these updates as creations
                 # and we avoid a reset

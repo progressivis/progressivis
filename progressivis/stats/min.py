@@ -73,7 +73,7 @@ class ScalarMin(TableModule):
 
     def are_critical(self, updated_ids, data):
         """
-        check if updates really question/nullify current min
+        check if updates invalidate the current min
         """
         for col, id in self._sensitive_ids.items():
             if id not in updated_ids:
@@ -93,13 +93,12 @@ class ScalarMin(TableModule):
                 self.reset_all(slot, run_number)
             # else : deletes are not sensitive, just ignore them
         if slot.updated.any():
-            #if slot.updated.changes & sensitive_ids_bm:
             sensitive_update_ids = slot.updated.changes & sensitive_ids_bm
             if sensitive_update_ids and self.are_critical(
                     sensitive_update_ids, slot.data()):
                 self.reset_all(slot, run_number)
             else:
-                # updates are not sensitive BUT some values
+                # updates are not critical BUT some values
                 # might become greater than the current MIN
                 # so we will process these updates as creations
                 # and we avoid a reset
