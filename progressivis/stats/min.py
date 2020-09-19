@@ -95,7 +95,8 @@ class ScalarMin(TableModule):
         if slot.updated.any():
             #if slot.updated.changes & sensitive_ids_bm:
             sensitive_update_ids = slot.updated.changes & sensitive_ids_bm
-            if self.are_critical(sensitive_update_ids, slot.data()):
+            if sensitive_update_ids and self.are_critical(
+                    sensitive_update_ids, slot.data()):
                 self.reset_all(slot, run_number)
             else:
                 # updates are not sensitive BUT some values
