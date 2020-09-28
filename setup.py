@@ -121,7 +121,7 @@ setup(
                       "rangehttpserver",
                       "aiohttp",
                       "aiohttp_jinja2",
-                      "python_socketio"],
+                      "python_socketio", "click"],
     # "pptable",
     setup_requires=['cython', 'numpy', 'nose>=1.3.7', 'coverage'],
     # test_suite='tests',

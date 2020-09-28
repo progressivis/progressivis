@@ -178,6 +178,9 @@ class Parser(object):
             if self._names is None:
                 self._names = read_df.columns.values
                 if self._usecols:
+                    if callable(self._usecols):
+                        f_ = self._usecols
+                        self._usecols = [c for c in read_df.columns if f_(c)]
                     read_df = read_df.loc[:, self._usecols]
             if self._nb_cols is None:
                 self._nb_cols = len(read_df.columns)
@@ -204,7 +207,7 @@ class InputSource(object):
     """
     Always use InputSource.create() instead of InputSource() because __init__() is not awaitable
     """
-    def __init__(self, inp, encoding, file_cnt=0, compression=None, dec_remaining=b'', timeout=None, start_byte=0):
+    def __init__(self, inp, encoding, file_cnt=0, compression=None, dec_remaining=b'', timeout=None, start_byte=0, usecols=None):
         """
         NB: all inputs are supposed to have the same type, encoding, compression
         TODO: check that for encoding and compression
@@ -227,11 +230,12 @@ class InputSource(object):
             raise ValueError("File counter out of range")
         self._seq = inp
         self._file_cnt = file_cnt
+        self._usecols = usecols
 
 
     @staticmethod
-    def create(inp, encoding, file_cnt=0, compression=None, dec_remaining=b'', timeout=None, start_byte=0):
-        isrc = InputSource(inp, encoding, file_cnt, compression, dec_remaining, timeout, start_byte)
+    def create(inp, encoding, file_cnt=0, compression=None, dec_remaining=b'', timeout=None, start_byte=0, usecols=None):
+        isrc = InputSource(inp, encoding, file_cnt, compression, dec_remaining, timeout, start_byte, usecols=usecols)
         compression = _infer_compression(isrc.filepath, compression)
         offs = 0 if compression else start_byte
         

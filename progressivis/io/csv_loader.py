@@ -84,9 +84,11 @@ class CSVLoader(TableModule):
         return True
 
     def create_input_source(self, filepath):
+        usecols = self.csv_kwds.get('usecols')
         return InputSource.create(filepath, encoding=self._encoding,
                                compression=self._compression,
-                               timeout=self._timeout_csv, start_byte=0)
+                                  timeout=self._timeout_csv, start_byte=0,
+                                  usecols=usecols)
 
     def close(self):
         if self._input_stream is None:

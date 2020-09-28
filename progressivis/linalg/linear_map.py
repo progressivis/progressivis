@@ -57,7 +57,7 @@ class LinearMap(TableModule):
             res = np.matmul(vs, self._transf_cache)
             if self._table is None:
                 dshape_ = dshape_projection(transformation, self._transf_columns)
-                self._table = Table(self.generate_table_name(f'linear_map'),
+                self._table = Table(self.generate_table_name('linear_map'),
                                     dshape=dshape_, create=True)
             self._table.append(res)
             return self._return_run_step(self.next_state(ctx.vectors), steps_run=steps)

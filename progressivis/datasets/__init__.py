@@ -24,6 +24,12 @@ def get_dataset(name, **kwds):
         return wget_file(filename='%s/warlogs.vec.bz2'%DATA_DIR,
                          url='http://www.cs.ubc.ca/labs/imager/video/2014/QSNE/warlogs.vec.bz2',
                          **kwds)
+    if name == 'mnist_784':
+        # This file [mnist_784.csv] is made available under the Public Domain 
+        # Dedication and License v1.0 whose full text can be found at: http://opendatacommons.org/licenses/pddl/1.0/
+        return wget_file(filename='%s/mnist_784.csv'%DATA_DIR,
+                         url='https://datahub.io/machine-learning/mnist_784/r/mnist_784.csv',
+                         **kwds)
     if name.startswith('cluster:'):
         fname = name[len('cluster:'):] + ".txt"
         return wget_file(filename='%s/%s'%(DATA_DIR, fname),
