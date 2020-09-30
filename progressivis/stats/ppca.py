@@ -1,3 +1,4 @@
+import logging
 import numpy as np
 import copy
 from ..core.utils import indices_len, fix_loc, filter_cols
@@ -14,6 +15,8 @@ from sklearn.decomposition import IncrementalPCA
 from scipy.spatial import distance as dist
 import numexpr as ne
 
+logger = logging.getLogger(__name__)
+
 class PPCA(TableModule):
     parameters = [('n_components',  np.dtype(int), 2)]    
     inputs = [SlotDescriptor('table', type=Table, required=True)]
@@ -24,8 +27,12 @@ class PPCA(TableModule):
         self.inc_pca = None # IncrementalPCA(n_components=self.params.n_components)
         self.inc_pca_wtn = None
         self._transformer = PsDict()
-        self.default_step_size = 10000
-        
+        #self.default_step_size = 10000
+
+    def predict_step_size(self, duration):
+        p = super().predict_step_size(duration)
+        return max(p, self.params.n_components+1)
+
     def reset(self):
         print("RESET PPCA")
         self.inc_pca = IncrementalPCA(n_components=self.params.n_components)
@@ -77,6 +84,8 @@ class PPCATransformer(TableModule):
     inputs = [SlotDescriptor('table', type=Table, required=True),
               SlotDescriptor('samples', type=Table, required=True),
               SlotDescriptor('transformer', type=PsDict, required=True)]
+    outputs = [SlotDescriptor('samples', type=Table, required=False),
+               SlotDescriptor('prev_samples', type=Table, required=False)]
 
     def __init__(self, atol=0.0, rtol=0.001, trace=False, **kwds):
         super().__init__(**kwds)
@@ -86,6 +95,10 @@ class PPCATransformer(TableModule):
         self._trace_df = None
         self.inc_pca_wtn = None
         self._table = None
+        self._samples = None
+        self._samples_flag = False
+        self._prev_samples = None
+        self._prev_samples_flag = False
 
     def create_dependent_modules(self, input_slot):
         scheduler = self.scheduler()
@@ -115,7 +128,9 @@ class PPCATransformer(TableModule):
     def needs_reset(self, inc_pca, inc_pca_wtn, input_table, samples):
         data = self.filter_columns(input_table, samples).to_array()
         transf_wtn = inc_pca_wtn.transform(data)
+        self.maintain_prev_samples(transf_wtn)
         transf_now = inc_pca.transform(data)
+        self.maintain_samples(transf_now)
         explained_variance = inc_pca.explained_variance_
         dist = np.sqrt(ne.evaluate("((transf_wtn-transf_now)**2)/explained_variance").sum(axis=1))
         mean = np.mean(dist)
@@ -126,6 +141,54 @@ class PPCATransformer(TableModule):
     def reset(self):
         if self._table is not None:
             self._table.resize(0)
+
+    def starting(self):
+        super().starting()
+        samples_slot = self.get_output_slot('samples')
+        if samples_slot:
+            logger.debug('Maintaining samples')
+            self._samples_flag = True
+        else:
+            logger.debug('Not maintaining samples')
+            self._samples_flag = False
+        prev_samples_slot = self.get_output_slot('prev_samples')
+        if prev_samples_slot:
+            logger.debug('Maintaining prev samples')
+            self._prev_samples_flag = True
+        else:
+            logger.debug('Not maintaining prev samples')
+            self._prev_samples_flag = False
+
+    def maintain_samples(self, vec):
+        if not self._samples_flag:
+            return
+        if isinstance(self._samples, Table):
+            self._samples.loc[:,:] = vec
+        else:
+            df = self._make_df(vec)
+            self._samples = Table(self.generate_table_name('s_ppca'),
+                                data=df, create=True)
+            
+    def maintain_prev_samples(self, vec):
+        if not self._prev_samples_flag:
+            return
+        if isinstance(self._prev_samples, Table):
+            self._prev_samples.loc[:,:] = vec
+        else:
+            df = self._make_df(vec)
+            self._prev_samples = Table(self.generate_table_name('ps_ppca'),
+                                data=df, create=True)
+
+    def get_data(self, name):
+        if name == 'samples':
+            return self._samples
+        if name == 'prev_samples':
+            return self._prev_samples
+        return super().get_data(name)
+
+    def _make_df(self, data):
+        cols = [f"_pc{i}" for i in range(data.shape[1])]
+        return pd.DataFrame(data, columns=cols)
 
     @process_slot("table", reset_cb="reset")
     @process_slot("samples", reset_if=False)
@@ -160,8 +223,7 @@ class PPCATransformer(TableModule):
             data = self.filter_columns(input_table, fix_loc(indices)).to_array()
             reduced = inc_pca.transform(data)
             if self._table is None:
-                cols = [f"_pc{i}" for i in range(reduced.shape[1])]
-                df = pd.DataFrame(reduced, columns=cols)
+                df = self._make_df(reduced)
                 self._table = Table(self.generate_table_name('ppca'),
                                     data=df, create=True)
             else:

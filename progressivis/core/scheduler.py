@@ -194,7 +194,7 @@ class Scheduler(object):
             self._task = True
         self.coros = list(coros)
         if tick_proc:
-            assert callable(tick_proc)
+            assert callable(tick_proc) or aio.iscoroutinefunction(tick_proc)
             self._tick_procs = [tick_proc]
         else:
             self._tick_procs = []

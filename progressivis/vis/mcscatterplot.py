@@ -364,7 +364,7 @@ class MCScatterPlot(NAry):
                 dc.histogram2d.input['table', ('min', x, y)] = dc2.range_query_2d.output.min
                 dc.histogram2d.input['table', ('max', x, y)] = dc2.range_query_2d.output.max
 
-    def _add_class(self, name, x_column, y_column, sample='default', input_module=None, input_slot=None):
+    def _add_class(self, name, x_column, y_column, sample='default', sample_slot='table', input_module=None, input_slot=None):
         if self.input_module is None and input_module is None:
             raise ProgressiveError("Input module is not defined!")            
         if self.input_module is not None and input_module is not None:
@@ -386,7 +386,7 @@ class MCScatterPlot(NAry):
         self.input['table', hist_meta] = data_class.histogram2d.output.table
         if sample is not None:
             sample_meta = dict(inp='sample', class_=name, **col_translation)        
-            self.input['table', sample_meta] = data_class.sample.output.table
+            self.input['table', sample_meta] = data_class.sample.output[sample_slot]
         self._data_class_dict[name] = data_class
         self.min_value.subscribe(data_class.min_value, col_translation)
         self.max_value.subscribe(data_class.max_value, col_translation)
