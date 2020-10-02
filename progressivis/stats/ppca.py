@@ -70,8 +70,9 @@ class PPCA(TableModule):
                 self._table.selection |= bitmap(indices)
             return self._return_run_step(self.next_state(ctx.table), steps_run=steps)
 
-    def create_dependent_modules(self, atol=0.0, rtol=0.001,
-                                 trace=False, threshold=None):
+    def create_dependent_modules_buggy(self, atol=0.0, rtol=0.001,
+                                 trace=False, threshold=None, resetter=None,
+                                 resetter_slot='table'):
         scheduler = self.scheduler()
         with scheduler:
             self.reduced = PPCATransformer(scheduler=scheduler,
@@ -80,24 +81,46 @@ class PPCA(TableModule):
                                            threshold=threshold,
                                            group=self.name)
             self.reduced.input.table = self.output.table
-            #import pdb;pdb.set_trace()
             self.reduced.input.transformer = self.output.transformer
+            if resetter is not None:
+                resetter = resetter(scheduler=scheduler)
+                resetter.input.table = self.output.table
+                self.reduced.input.resetter = resetter.output[resetter_slot]
             self.reduced.create_dependent_modules(self.output.table)
+    def create_dependent_modules(self, atol=0.0, rtol=0.001,
+                                 trace=False, threshold=None, resetter=None,
+                                 resetter_slot='table', resetter_func=None):
+        s = self.scheduler()
+        self.reduced = PPCATransformer(scheduler=s,
+                                       atol=atol, rtol=rtol,
+                                       trace=trace,
+                                       threshold=threshold,
+                                       resetter_func=resetter_func,
+                                       group=self.name)
+        self.reduced.input.table = self.output.table
+        self.reduced.input.transformer = self.output.transformer
+        if resetter is not None:
+            assert callable(resetter_func)
+            self.reduced.input.resetter = resetter.output[resetter_slot]
+        self.reduced.create_dependent_modules(self.output.table)
 
 class PPCATransformer(TableModule):
     inputs = [SlotDescriptor('table', type=Table, required=True),
               SlotDescriptor('samples', type=Table, required=True),
-              SlotDescriptor('transformer', type=PsDict, required=True)]
+              SlotDescriptor('transformer', type=PsDict, required=True),
+              SlotDescriptor('resetter', type=PsDict, required=False)]    
     outputs = [SlotDescriptor('samples', type=Table, required=False),
                SlotDescriptor('prev_samples', type=Table, required=False)]
 
-    def __init__(self, atol=0.0, rtol=0.001, trace=False, threshold=None, **kwds):
+    def __init__(self, atol=0.0, rtol=0.001, trace=False, threshold=None,
+                 resetter_func=None, **kwds):
         super().__init__(**kwds)
         self._atol = atol
         self._rtol = rtol
         self._trace = trace
         self._trace_df = None
         self._threshold = threshold
+        self._resetter_func = resetter_func
         self.inc_pca_wtn = None
         self._table = None
         self._samples = None
@@ -126,6 +149,11 @@ class PPCATransformer(TableModule):
         return ret
 
     def needs_reset(self, inc_pca, inc_pca_wtn, input_table, samples):
+        resetter = self.get_input_slot('resetter')
+        if resetter:
+            resetter.clear_buffers()
+            if not self._resetter_func(resetter):
+                return self.trace_if(False, 0.0, -1.0, len(input_table))
         if self._threshold is not None and len(input_table)>=self._threshold:
             return self.trace_if(False, 0.0, 0.0, len(input_table))
         data = self.filter_columns(input_table, samples).to_array()
