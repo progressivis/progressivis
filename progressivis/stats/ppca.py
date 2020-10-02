@@ -70,11 +70,15 @@ class PPCA(TableModule):
                 self._table.selection |= bitmap(indices)
             return self._return_run_step(self.next_state(ctx.table), steps_run=steps)
 
-    def create_dependent_modules(self, atol=0.0, rtol=0.001, trace=False):
+    def create_dependent_modules(self, atol=0.0, rtol=0.001,
+                                 trace=False, threshold=None):
         scheduler = self.scheduler()
         with scheduler:
             self.reduced = PPCATransformer(scheduler=scheduler,
-                                           atol=atol, rtol=rtol, trace=trace, group=self.name)
+                                           atol=atol, rtol=rtol,
+                                           trace=trace,
+                                           threshold=threshold,
+                                           group=self.name)
             self.reduced.input.table = self.output.table
             #import pdb;pdb.set_trace()
             self.reduced.input.transformer = self.output.transformer
@@ -87,12 +91,13 @@ class PPCATransformer(TableModule):
     outputs = [SlotDescriptor('samples', type=Table, required=False),
                SlotDescriptor('prev_samples', type=Table, required=False)]
 
-    def __init__(self, atol=0.0, rtol=0.001, trace=False, **kwds):
+    def __init__(self, atol=0.0, rtol=0.001, trace=False, threshold=None, **kwds):
         super().__init__(**kwds)
         self._atol = atol
         self._rtol = rtol
         self._trace = trace
         self._trace_df = None
+        self._threshold = threshold
         self.inc_pca_wtn = None
         self._table = None
         self._samples = None
@@ -118,14 +123,11 @@ class PPCATransformer(TableModule):
                 self._trace_df = self._trace_df.append(row, ignore_index=True)
             if self._trace == "verbose":
                 print(row)
-            """if ret:
-                print(f"RESET, {mean:.4f}<={self._rtol}, {max_:.4f} data length :{len_}")
-            else:
-                print(f"FINE, {mean:.4f}<={self._rtol}, {max_:.4f} data length :{len_}")
-            """
         return ret
 
     def needs_reset(self, inc_pca, inc_pca_wtn, input_table, samples):
+        if self._threshold is not None and len(input_table)>=self._threshold:
+            return self.trace_if(False, 0.0, 0.0, len(input_table))
         data = self.filter_columns(input_table, samples).to_array()
         transf_wtn = inc_pca_wtn.transform(data)
         self.maintain_prev_samples(transf_wtn)
