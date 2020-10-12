@@ -56,9 +56,19 @@ conda env create -f binder/environment.yml
 conda activate progressivis-environment
 ```
 4. Execute the following commands:
+
 ```
 jupyter nbextension install --py --symlink --sys-prefix progressivis_nb_widgets.nbwidgets
 jupyter nbextension enable --py --sys-prefix progressivis_nb_widgets.nbwidgets
+```
+
+Or, if you use jupyterlab:
+
+```
+jupyter labextension install @jupyter-widgets/jupyterlab-manager
+jupyter labextension install @jupyter-widgets/jupyterlab-sidecar
+jupyter labextension install jupyterlab-datawidgets
+jupyter labextension install widgets/progressivis_nb_widgets/js
 ```
 
 ### With pip (without the Jupyter interface)

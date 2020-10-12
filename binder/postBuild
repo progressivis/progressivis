@@ -1,6 +1,10 @@
 set -ex
 jupyter nbextension install --py --symlink --sys-prefix progressivis_nb_widgets.nbwidgets
 jupyter nbextension enable --py --sys-prefix progressivis_nb_widgets.nbwidgets
+jupyter labextension install @jupyter-widgets/jupyterlab-manager
+jupyter labextension install @jupyter-widgets/jupyterlab-sidecar
+jupyter labextension install jupyterlab-datawidgets
+jupyter labextension install widgets/progressivis_nb_widgets/js
 jupyter serverextension enable voila --sys-prefix
 echo $(jupyter --paths)
 mkdir -p $HOME/.jupyter/
