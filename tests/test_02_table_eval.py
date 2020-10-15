@@ -38,6 +38,28 @@ class TestTableEval(ProgressiveTest):
         small_fun('(b>10) & (b <80)', 'table')
         small_fun('a>=b', 'table')
         small_fun('(a>10) & (a <80)', 'view')
+
+    def test_filtering2(self):
+        t = Table('table_filtering', dshape="{a: int, b: float32}", create=True)
+        sz = 1000
+        sz_del = 100
+        t.resize(sz)
+        np.random.seed(42)
+        ivalues = np.random.randint(100,size=sz)
+        t['a'] = ivalues
+        fvalues = np.random.rand(sz)*100
+        t['b'] = fvalues
+        df = pd.DataFrame(t.to_dict())
+        to_del = np.random.randint(sz_del)
+        del t.loc[to_del]
+        df = df.drop(to_del)
+        self.assertListEqual(list(t.index), list(df.index))
+        def small_fun_index(expr):
+            ix = t.eval(expr)
+            dfe = df.eval(expr)
+            self.assertSetEqual(set(ix), set(df.index[dfe]))
+        small_fun_index('(a>10) & (a <80)')
+
     def test_assign(self):
         t = Table('table_eval_assign', dshape="{a: int, b: float32}", create=True)
         t.resize(20)
@@ -53,7 +75,8 @@ class TestTableEval(ProgressiveTest):
         t.eval('b = a+2*b', inplace=True)
         df.eval('b = a+2*b', inplace=True)
         self.assertTrue(np.allclose(t['a'], df['a']))
-        self.assertTrue(np.allclose(t['b'], df['b']))        
+        self.assertTrue(np.allclose(t['b'], df['b']))
+
     def test_user_dict(self):
         t = Table('table_user_dict', dshape="{a: int, b: float32}", create=True)
         t.resize(20)

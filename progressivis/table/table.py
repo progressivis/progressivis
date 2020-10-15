@@ -354,7 +354,7 @@ class Table(BaseTable):
         return Table(name, data=data, dshape=dshape, **kwds)
 
     def eval(self, expr, inplace=False, name=None, result_object=None,
-             user_dict=None, as_slice=True):
+             as_slice=True):
         """Evaluate the ``expr`` on columns and return the result.
 
         Args:
@@ -374,10 +374,8 @@ class Table(BaseTable):
         """
         if inplace and result_object:
             raise ValueError("incompatible options 'inplace' and 'result_object'")
-        if user_dict is None:
-            context = {key: self[key].values for key in self.columns}
-        else:
-            context = user_dict
+        indices = self.index.to_array()
+        context =  {k:self.to_array(locs=indices, columns=[k]).reshape(-1) for k in self.columns}
         is_assign = False
         try:
             res = ne.evaluate(expr, local_dict=context)
@@ -410,6 +408,7 @@ class Table(BaseTable):
             data = [(cname, cval(cname)) for cname in self.columns]
             return Table(name=name, data=OrderedDict(data), indices=self.index)
         # not an assign ...
+        
         if res.dtype != 'bool':
             raise ValueError(
                 'expr must be an assignment '
@@ -419,7 +418,7 @@ class Table(BaseTable):
                              'not implemented!')
         if result_object == 'raw_numexpr':
             return res
-        indices = np.where(res)[0]
+        indices = indices[res]
         if not as_slice and result_object == 'index':
             return indices
         ix_slice = indices_to_slice(indices)

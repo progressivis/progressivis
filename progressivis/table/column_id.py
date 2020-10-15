@@ -459,6 +459,14 @@ class IdColumn(Column):
             locs = [locs]
         return bitmap(locs)
 
+    def to_array(self):
+        if not self.has_freelist():
+            return self.dataset[:]
+        indices = self.dataset[:]
+        mask = np.ones(len(indices), dtype=np.bool)
+        mask[self.freelist()] = False
+        return indices[mask]
+
     # begin(Change management)
     def _flush_cache(self):
         self._cached_index = IdColumn  # hack

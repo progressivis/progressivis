@@ -593,7 +593,7 @@ class BaseTable(metaclass=ABCMeta):
         indices = self._col_slice_to_indices(colkey)
         self._setitem_iterable(indices, rowkey, values)
 
-    def to_array(self, locs=None, columns=None):
+    def to_array(self, locs=None, columns=None, returns_indices=False):
         """Convert this table to a numpy array
 
         Parameters
@@ -616,9 +616,10 @@ class BaseTable(metaclass=ABCMeta):
         if locs is None:
             if self._ids.has_freelist():
                 indices = self._ids[:]
-                mask = np.one(locs.shape, dtype=np.bool)
+                mask = np.ones(len(indices), dtype=np.bool)
                 mask[self._ids.freelist()] = False
-                indices = np.ma.masked_array(indices, mask)
+                #indices = np.ma.masked_array(indices, mask)
+                indices = np.nonzero(mask)[0]
             else:
                 indices = slice(0, self.size)
         elif isinstance(locs, (list, np.ndarray)):
@@ -639,6 +640,8 @@ class BaseTable(metaclass=ABCMeta):
                 col.read_direct(arr, indices, dest_sel=np.s_[:, offsets[i]])
             else:
                 col.read_direct(arr, indices, dest_sel=np.s_[:, offsets[i]:offsets[i+1]])
+        if returns_indices:
+            return indices, arr
         return arr
 
     def unary(self, op, **kwargs):
