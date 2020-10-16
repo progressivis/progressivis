@@ -353,7 +353,7 @@ class Table(BaseTable):
                 data[nam] = array[:, off[0]:off[1]]
         return Table(name, data=data, dshape=dshape, **kwds)
 
-    def eval(self, expr, inplace=False, name=None, result_object=None,
+    def eval(self, expr, inplace=False, name=None, result_object=None, locs=None,
              as_slice=True):
         """Evaluate the ``expr`` on columns and return the result.
 
@@ -374,7 +374,9 @@ class Table(BaseTable):
         """
         if inplace and result_object:
             raise ValueError("incompatible options 'inplace' and 'result_object'")
-        indices = self.index.to_array()
+        indices = locs
+        if indices is None:
+            indices = self.index.to_array()
         context =  {k:self.to_array(locs=indices, columns=[k]).reshape(-1) for k in self.columns}
         is_assign = False
         try:

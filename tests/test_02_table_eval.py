@@ -1,4 +1,4 @@
-from . import ProgressiveTest
+from . import ProgressiveTest, skip
 
 from progressivis import Scheduler
 from progressivis.table.table import Table
@@ -50,7 +50,7 @@ class TestTableEval(ProgressiveTest):
         fvalues = np.random.rand(sz)*100
         t['b'] = fvalues
         df = pd.DataFrame(t.to_dict())
-        to_del = np.random.randint(sz_del)
+        to_del = np.random.randint(len(t)-1, size=sz_del)
         del t.loc[to_del]
         df = df.drop(to_del)
         self.assertListEqual(list(t.index), list(df.index))
@@ -76,7 +76,7 @@ class TestTableEval(ProgressiveTest):
         df.eval('b = a+2*b', inplace=True)
         self.assertTrue(np.allclose(t['a'], df['a']))
         self.assertTrue(np.allclose(t['b'], df['b']))
-
+    @skip 
     def test_user_dict(self):
         t = Table('table_user_dict', dshape="{a: int, b: float32}", create=True)
         t.resize(20)
@@ -87,7 +87,7 @@ class TestTableEval(ProgressiveTest):
         df = pd.DataFrame(t.to_dict())
         t2 = t.eval('a = a+2*b', inplace=False)
         df2 = df.eval('x = a.loc[3]+2*b.loc[3]', inplace=False)
-        print(df2.x)
+        #print(df2.x)
         #self.assertTrue(np.allclose(t2['a'], df2['a']))
         #self.assertTrue(np.allclose(t2['b'], df2['b']))
         #t.eval('b = a+2*b', inplace=True)

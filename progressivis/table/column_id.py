@@ -418,7 +418,8 @@ class IdColumn(Column):
                 ret = ret.to_slice_maybe()
             return ret
         if isinstance(loc, np.ndarray) and loc.dtype==np.int:
-            ret = self._ids_dict.get_items(loc)
+            # NB: ALWAYS pass a COPY here (and below) because get_items() provides the result INPLACE!!!
+            ret = self._ids_dict.get_items(loc.copy()) 
         elif isinstance(loc, integer_types):
             if loc < 0:
                 loc = self._last_id+loc
@@ -459,12 +460,16 @@ class IdColumn(Column):
             locs = [locs]
         return bitmap(locs)
 
-    def to_array(self):
-        if not self.has_freelist():
-            return self.dataset[:]
+    def nonfree(self):
         indices = self.dataset[:]
         mask = np.ones(len(indices), dtype=np.bool)
         mask[self.freelist()] = False
+        return indices, mask
+
+    def to_array(self):
+        if not self.has_freelist():
+            return self.dataset[:]
+        indices, mask = self.nonfree()
         return indices[mask]
 
     # begin(Change management)
