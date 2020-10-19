@@ -27,6 +27,9 @@ class _Selection(object):
     def assign(self, values):
         self._values = values
 
+    def add(self, values):
+        self._values |= values
+
 
 class BisectImpl(ModuleImpl):
     def __init__(self, column, op, hist_index):

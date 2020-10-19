@@ -15,6 +15,7 @@ from progressivis.core.utils import (slice_to_arange, fix_loc)
 from .module import TableModule
 from . import Table
 from . import TableSelectedView
+from ..core.utils import indices_len, fix_loc
 
 APPROX = False
 logger = logging.getLogger(__name__)
@@ -389,6 +390,8 @@ class HistogramIndex(TableModule):
             return self._return_run_step(self.state_blocked, steps_run=0)
         if self._impl is None:
             input_slot.reset()
+            input_slot.update(run_number)
+            input_slot.clear_buffers()
             bound_min, bound_max = self.compute_bounds(input_table)
             self._impl = _HistogramIndexImpl(self.column,
                                              input_table,
@@ -406,16 +409,19 @@ class HistogramIndex(TableModule):
             deleted = input_slot.deleted.next(as_slice=False)
             # steps += indices_len(deleted) # deleted are constant time
             steps = 1
+            deleted = fix_loc(deleted)
             self.selection -= deleted
         created = None
         if input_slot.created.any():
             created = input_slot.created.next(step_size, as_slice=False)
-            steps += len(created)
+            created = fix_loc(created)
+            steps += indices_len(created)
             self.selection |= created
         updated = None
         if input_slot.updated.any():
             updated = input_slot.updated.next(step_size, as_slice=False)
-            steps += len(updated)
+            updated = fix_loc(updated)
+            steps += indices_len(updated)
         if steps == 0:
             return self._return_run_step(self.state_blocked, steps_run=0)
         input_table = input_slot.data()
