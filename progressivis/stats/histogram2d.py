@@ -107,7 +107,7 @@ class Histogram2D(TableModule):
             logger.info('ydelta is %f', ydelta)
         return (xdelta, ydelta)
 
-    @process_slot('table', reset_if='update', reset_cb='reset')
+    @process_slot('table', reset_cb='reset')
     @process_slot('min', 'max', reset_if=False)
     @run_if_any
     def run_step(self, run_number, step_size, howlong):
@@ -115,6 +115,11 @@ class Histogram2D(TableModule):
             dfslot = ctx.table
             min_slot = ctx.min
             max_slot = ctx.max
+            if not (dfslot.created.any() or min_slot.has_buffered() or max_slot.has_buffered()):
+                logger.info('Input buffers empty')
+                return self._return_run_step(self.state_blocked, steps_run=0)
+            min_slot.clear_buffers()
+            max_slot.clear_buffers()
             bounds = self.get_bounds(min_slot, max_slot)
             if bounds is None:
                 logger.debug('No bounds yet at run %d', run_number)
@@ -137,7 +142,12 @@ class Histogram2D(TableModule):
                     logger.info('Updated bounds at run %s: %s',
                                 run_number, self._bounds)
                     self.reset()
+                    dfslot.reset()
                     dfslot.update(run_number)
+                    min_slot.reset()
+                    min_slot.update(run_number)
+                    max_slot.reset()
+                    max_slot.update(run_number)
 
             xmin, xmax, ymin, ymax = self._bounds
             if xmin >= xmax or ymin >= ymax:
@@ -169,7 +179,8 @@ class Histogram2D(TableModule):
                     self._histo -= histo
             # if there are new creations, build a partial histogram with them then
             # add it to the main histogram
-            input_df = dfslot.data()
+            #input_df = dfslot.data()
+            input_df = get_physical_base(dfslot.data())
             indices = dfslot.created.next(step_size)
             steps += indices_len(indices)
             logger.info('Read %d rows', steps)
@@ -177,9 +188,10 @@ class Histogram2D(TableModule):
 
             x = input_df[self.x_column]
             y = input_df[self.y_column]
-            idx = input_df.id_to_index(fix_loc(indices))
-            x = x[idx]
-            y = y[idx]
+            #idx = input_df.id_to_index(fix_loc(indices))
+            idx= fix_loc(indices)
+            x = x.loc[idx]
+            y = y.loc[idx]
             if self._xedges is not None:
                 bins = [self._xedges, self._yedges]
             else:

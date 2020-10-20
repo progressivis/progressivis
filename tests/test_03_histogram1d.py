@@ -15,7 +15,25 @@ class TestHistogram1D(ProgressiveTest):
     #def tearDown(self):
         #StorageManager.default.end()
 
+
     def test_histogram1d(self):
+        s=self.scheduler()
+        csv = CSVLoader(get_dataset('bigfile'), index_col=False,header=None,scheduler=s)
+        min_ = Min(scheduler=s)
+        min_.input.table = csv.output.table
+        max_ = Max(scheduler=s)
+        max_.input.table = csv.output.table
+        histogram1d=Histogram1D('_2', scheduler=s) # columns are called 1..30
+        histogram1d.input.table = csv.output.table
+        histogram1d.input.min = min_.output.table
+        histogram1d.input.max = max_.output.table
+        pr = Every(proc=self.terse, scheduler=s)
+        pr.input.df = csv.output.table
+        aio.run(s.start())
+        s = histogram1d.trace_stats()
+
+
+    def test_histogram1d1(self):
         s=self.scheduler()
         csv = CSVLoader(get_dataset('bigfile'), index_col=False,header=None,scheduler=s)
         min_ = Min(scheduler=s)
@@ -41,8 +59,7 @@ class TestHistogram1D(ProgressiveTest):
     def t_histogram1d_impl(self, **kw):
         s=self.scheduler()
         csv = CSVLoader(get_dataset('bigfile'), index_col=False,header=None,scheduler=s)
-        stirrer = Stirrer(update_column='_2', #delete_rows=5,
-                        #update_rows=5,
+        stirrer = Stirrer(update_column='_2',
                           fixed_step_size=1000, scheduler=s, **kw)
         stirrer.input.table = csv.output.table
         min_ = Min(scheduler=s)
