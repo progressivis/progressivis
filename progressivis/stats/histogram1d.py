@@ -30,6 +30,7 @@ class Histogram1D(TableModule):
         self._histo = None
         self._edges = None
         self._bounds = None
+        self._h_cnt = 0
         self._table = Table(self.generate_table_name('Histogram1D'),
                             dshape=Histogram1D.schema,
                             chunks={'array': (16384, 128)},
@@ -37,6 +38,11 @@ class Histogram1D(TableModule):
     def reset(self):
         self._histo = None
         self._edges = None
+        self._bounds = None
+        self.total_read = 0
+        self._h_cnt = 0
+        if self._table:
+            self._table.resize(0)
 
     def is_ready(self):
         if self._bounds and self.get_input_slot('table').created.any():
@@ -51,6 +57,11 @@ class Histogram1D(TableModule):
             dfslot = ctx.table
             min_slot = ctx.min
             max_slot = ctx.max
+            if not (dfslot.created.any() or min_slot.has_buffered() or max_slot.has_buffered()):
+                logger.info('Input buffers empty')
+                return self._return_run_step(self.state_blocked, steps_run=0)
+            min_slot.clear_buffers()
+            max_slot.clear_buffers()
             bounds = self.get_bounds(min_slot, max_slot)
             if bounds is None:
                 logger.debug('No bounds yet at run %d', run_number)
@@ -69,8 +80,12 @@ class Histogram1D(TableModule):
                     logger.info('Updated bounds at run %d: %s', run_number, self._bounds)
                     dfslot.reset()
                     dfslot.update(run_number)
-                    self._histo = None
-                    self._edges = None
+                    min_slot.reset()
+                    min_slot.update(run_number)
+                    max_slot.reset()
+                    max_slot.update(run_number)
+                    self.reset()
+                    return self._return_run_step(self.state_blocked, steps_run=0)
             (curr_min, curr_max) = self._bounds
             if curr_min >= curr_max:
                 logger.error('Invalid bounds: %s', self._bounds)
@@ -89,25 +104,22 @@ class Histogram1D(TableModule):
                                                   bins=bins,
                                                   range=[curr_min, curr_max],
                                                   density=False)
+                self._h_cnt += len(column)
             if self._histo is None:
                 self._histo = histo
             elif histo is not None:
                 self._histo += histo
             values = {'array': [self._histo], 'min': [curr_min], 'max': [curr_max], 'time': [run_number]}
-            #with self.lock:
             self._table['array'].set_shape((self.params.bins,))
             self._table.append(values)
             return self._return_run_step(self.next_state(dfslot), steps_run=steps)
   
 
     def get_bounds(self, min_slot, max_slot):
-        min_slot.created.next()
         min_df = min_slot.data()
         if len(min_df) == 0 and self._bounds is None:
             return None
         min_ = min_df[self.column]
-
-        max_slot.created.next()
         max_df = max_slot.data()
         if len(max_df) == 0 and self._bounds is None:
             return None

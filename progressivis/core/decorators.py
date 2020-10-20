@@ -68,7 +68,7 @@ def process_slot(*names, reset_if=('update', 'delete'), reset_cb=None):
                     slot.update(run_number)
                 if isinstance(reset_cb, str):
                     getattr(self, reset_cb)()
-                else:
+                elif reset_cb is not None:
                     reset_cb(self)
             # all slots are added to the context
             for name in names:
