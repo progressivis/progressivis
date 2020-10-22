@@ -4,6 +4,7 @@ from .column_id import IdColumn
 from .loc import Loc
 
 from ..core.bitmap import bitmap
+import numpy as np
 
 
 class IdColumnSlicedView(ColumnSlicedView):
@@ -48,6 +49,8 @@ class IdColumnSlicedView(ColumnSlicedView):
 
         return self._update_mask
 
+    def to_array(self):
+        return np.array(bitmap(self._view_slice))
 
     def compute_updates(self, start, now, mid=None, cleanup=True):
         #TODO the mask should be maintained in ID space, not index space

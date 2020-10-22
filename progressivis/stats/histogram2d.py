@@ -107,7 +107,7 @@ class Histogram2D(TableModule):
             logger.info('ydelta is %f', ydelta)
         return (xdelta, ydelta)
 
-    @process_slot('table', reset_cb='reset')
+    @process_slot('table', reset_if='update', reset_cb='reset')
     @process_slot('min', 'max', reset_if=False)
     @run_if_any
     def run_step(self, run_number, step_size, howlong):
@@ -161,16 +161,23 @@ class Histogram2D(TableModule):
             steps = 0
             # if there are new deletions, build the histogram of the deleted pairs
             # then subtract it from the main histogram
-            if dfslot.deleted.any() and self._histo is not None:
-                input_df = get_physical_base(dfslot.data())
-                indices = dfslot.deleted.next(step_size)
+            if isinstance(dfslot.data(), Table) and dfslot.deleted.any():
+                self.reset()
+                dfslot.reset()
+                dfslot.update(run_number)
+                min_slot.reset()
+                min_slot.update(run_number)
+                max_slot.reset()
+                max_slot.update(run_number)
+            elif dfslot.deleted.any() and self._histo is not None: # i.e. TableSelectedView, TableSlicedView
+                input_df = get_physical_base(dfslot.data()) # the original table
+                raw_indices = dfslot.deleted.next(step_size) # we assume that deletions are only local to the view
+                # and the related records still exist in the original table ...
+                # TODO : test this hypothesis and reset if false
+                indices = fix_loc(raw_indices)
                 steps += indices_len(indices)
-                logger.info('Read %d rows', steps)
-                x = input_df[self.x_column]
-                y = input_df[self.y_column]
-                idx = input_df.id_to_index(fix_loc(indices))
-                x = x[idx]
-                y = y[idx]
+                x = input_df.to_array(locs=indices, columns=[self.x_column]).reshape(-1)
+                y = input_df.to_array(locs=indices, columns=[self.y_column]).reshape(-1)
                 bins = [p.ybins, p.xbins]
                 if len(x) > 0:
                     histo = histogram2d(y, x,
@@ -180,18 +187,16 @@ class Histogram2D(TableModule):
             # if there are new creations, build a partial histogram with them then
             # add it to the main histogram
             #input_df = dfslot.data()
-            input_df = get_physical_base(dfslot.data())
-            indices = dfslot.created.next(step_size)
+            if not dfslot.created.any():
+                return self._return_run_step(self.state_blocked, steps_run=0)
+            input_df = dfslot.data()
+            raw_indices = dfslot.created.next(step_size)
+            indices = fix_loc(raw_indices)
             steps += indices_len(indices)
             logger.info('Read %d rows', steps)
             self.total_read += steps
-
-            x = input_df[self.x_column]
-            y = input_df[self.y_column]
-            #idx = input_df.id_to_index(fix_loc(indices))
-            idx= fix_loc(indices)
-            x = x.loc[idx]
-            y = y.loc[idx]
+            x = input_df.to_array(locs=indices, columns=[self.x_column]).reshape(-1)
+            y = input_df.to_array(locs=indices, columns=[self.y_column]).reshape(-1)
             if self._xedges is not None:
                 bins = [self._xedges, self._yedges]
             else:
@@ -208,7 +213,6 @@ class Histogram2D(TableModule):
                 self._histo = histo
             elif histo is not None:
                 self._histo += histo
-
             if self._histo is not None:
                 cmax = self._histo.max()
             values = {'array': np.flip(self._histo, axis=0),

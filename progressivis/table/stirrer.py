@@ -8,8 +8,7 @@ from progressivis.core.utils import indices_len, fix_loc
 from progressivis.core.bitmap import bitmap
 from progressivis.core.slot import SlotDescriptor
 from .module import TableModule
-from . import Table
-
+from . import Table, TableSelectedView
 
 class Stirrer(TableModule):
     parameters = [('update_column', str, ""),
@@ -81,5 +80,55 @@ class Stirrer(TableModule):
             v = np.random.rand(len(updated))
             if updated:
                 self._table.loc[fix_loc(updated), [self._update_column]] = [v]
+        return self._return_run_step(self.next_state(input_slot),
+                                     steps_run=steps)
+class StirrerView(TableModule):
+    parameters = [('update_column', str, ""),
+                  ('delete_rows', object, None),
+                  ('delete_threshold', object, None),
+                  ('fixed_step_size', int, 0),
+                  ('mode', str, "random"),]
+    inputs = [SlotDescriptor('table', type=Table, required=True)]
+
+    def __init__(self, **kwds):
+        super().__init__(**kwds)
+        self._update_column = self.params.update_column
+        self._delete_rows = self.params.delete_rows
+        self._delete_threshold = self.params.delete_threshold
+        self._mode = self.params.mode
+
+    def test_delete_threshold(self, val):
+        if self._delete_threshold is None:
+            return True
+        return len(val) > self._delete_threshold
+
+    def run_step(self, run_number, step_size, howlong):
+        if self.params.fixed_step_size and False:
+            step_size = self.params.fixed_step_size
+        input_slot = self.get_input_slot('table')
+        # input_slot.update(run_number)
+        steps = 0
+        if not input_slot.created.any():
+            return self._return_run_step(self.state_blocked, steps_run=0)
+        created = input_slot.created.next(step_size, as_slice=False)
+        created = fix_loc(created)
+        steps = indices_len(created)
+        input_table = input_slot.data()
+        if self._table is None:
+            self._table = TableSelectedView(input_table, bitmap([]))
+        before_ = bitmap(self._table.selection)
+        self._table.selection |= created
+        delete = []
+        if self._delete_rows and self.test_delete_threshold(before_):
+            if isinstance(self._delete_rows, int):
+                delete = random.sample(tuple(before_), min(self._delete_rows,
+                                                           len(before_)))
+            elif self._delete_rows == 'half':
+                delete = random.sample(tuple(before_), len(before_)//2)
+            elif self._delete_rows == 'all':
+                delete = before_
+            else:
+                delete = self._delete_rows
+            self._table.selection -= bitmap(delete)
         return self._return_run_step(self.next_state(input_slot),
                                      steps_run=steps)

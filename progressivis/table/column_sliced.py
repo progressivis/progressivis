@@ -1,9 +1,8 @@
 
 from .column_proxy import ColumnProxy
-from progressivis.core.utils import integer_types, norm_slice
-
-import numpy as np
+from ..core.utils import integer_types, norm_slice
 from collections import Iterable
+import numpy as np
 
 import logging
 logger = logging.getLogger(__name__)

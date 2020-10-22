@@ -3,7 +3,7 @@ from .column_id import IdColumn
 from .column_proxy import ColumnProxy
 from ..core.bitmap import bitmap
 from ..core.utils import is_full_slice
-
+import numpy as np
 
 class IdColumnSelectedView(ColumnProxy):
     def __init__(self, index, selection):
@@ -46,6 +46,9 @@ class IdColumnSelectedView(ColumnProxy):
         if ids not in self._selection:
             raise KeyError('Invalid key(s) %s' % index)
         return ids
+
+    def to_array(self):
+        return np.array(self._selection)
 
     def __setitem__(self, index, value):
         raise RuntimeError('Setting id index not supported')

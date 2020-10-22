@@ -614,6 +614,12 @@ class BaseTable(metaclass=ABCMeta):
         indices = None
         # TODO split the copy in chunks
         if locs is None:
+            """
+            # this cannot work ...
+            # because after many creations/deletions
+            # some indices may be >self.size
+            # and self._freelist may be empty
+            # because holes were filled by new creations
             if self._ids.has_freelist():
                 indices = self._ids[:]
                 mask = np.ones(len(indices), dtype=np.bool)
@@ -622,6 +628,9 @@ class BaseTable(metaclass=ABCMeta):
                 indices = np.nonzero(mask)[0]
             else:
                 indices = slice(0, self.size)
+            """
+            indices = self.index.to_array()
+            indices = self.id_to_index(indices)
         elif isinstance(locs, (list, np.ndarray)):
             indices = np.asarray(locs, np.int64)
             indices = self.id_to_index(indices)

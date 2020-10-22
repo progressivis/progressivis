@@ -411,13 +411,22 @@ class IdColumn(Column):
         if self._ids_dict is None:
             self._update_ids_dict()
         if is_none_alike(loc): # return everything
+            """
+            # this cannot work
+            # because after many creations/deletions
+            # some indices may be >self.size
+            # and self._freelist may be empty
+            # because holes were filled by new creations
             ret = bitmap(range(0, self.size))
             if self._freelist:
                 ret -= self._freelist
             if as_slice:
                 ret = ret.to_slice_maybe()
             return ret
-        if isinstance(loc, np.ndarray) and loc.dtype==np.int:
+            """
+            loc = self.to_array()
+            ret = self._ids_dict.get_items(loc) # no loc.copy() is needed here 
+        elif isinstance(loc, np.ndarray) and loc.dtype==np.int:
             # NB: ALWAYS pass a COPY here (and below) because get_items() provides the result INPLACE!!!
             ret = self._ids_dict.get_items(loc.copy()) 
         elif isinstance(loc, integer_types):

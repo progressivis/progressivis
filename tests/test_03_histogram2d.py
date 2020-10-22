@@ -5,7 +5,7 @@ from progressivis.io import CSVLoader
 from progressivis.stats import Histogram2D, Min, Max
 from progressivis.vis import Heatmap
 from progressivis.datasets import get_dataset
-from progressivis.table.stirrer import Stirrer
+from progressivis.table.stirrer import Stirrer, StirrerView
 import pandas as pd
 import numpy as np
 import fast_histogram as fh
@@ -89,13 +89,46 @@ class TestHistogram2D(ProgressiveTest):
         last = histogram2d._table.last().to_dict()
         h1 = last['array']
         bounds =  [[last['ymin'], last['ymax']], [last['xmin'], last['xmax']]]
+        t = stirrer._table.loc[:, ['_1', '_2']]
+        v = t.to_array()
+        bins = [histogram2d.params.ybins, histogram2d.params.xbins]
+        h2 = fh.histogram2d(v[:,1], v[:,0], bins=bins, range=bounds)
+        h2 = np.flip(h2, axis=0)
+        self.assertEqual(np.sum(h1), np.sum(h2))
+        self.assertListEqual(h1.reshape(-1).tolist(), h2.reshape(-1).tolist())
+
+    def test_histogram2d4(self):
+        s = self.scheduler()
+        csv = CSVLoader(get_dataset('bigfile'),
+                        index_col=False,
+                        header=None,
+                        scheduler=s)
+        stirrer = StirrerView(update_column='_2',
+                              fixed_step_size=1000, scheduler=s, delete_rows=5)
+        stirrer.input.table = csv.output.table
+        min_ = Min(scheduler=s)
+        min_.input.table = stirrer.output.table
+        max_ = Max(scheduler=s)
+        max_.input.table = stirrer.output.table
+        histogram2d = Histogram2D(1, 2, xbins=100, ybins=100,
+                                  scheduler=s)  # columns are called 1..30
+        histogram2d.input.table = stirrer.output.table
+        histogram2d.input.min = min_.output.table
+        histogram2d.input.max = max_.output.table
+        heatmap = Heatmap(filename='histo_%03d.png', scheduler=s)
+        heatmap.input.array = histogram2d.output.table
+        pr = Every(proc=self.terse, scheduler=s)
+        pr.input.df = stirrer.output.table
+        aio.run(s.start())
+        last = histogram2d._table.last().to_dict()
+        h1 = last['array']
+        bounds =  [[last['ymin'], last['ymax']], [last['xmin'], last['xmax']]]
         v = stirrer._table.loc[:, ['_1', '_2']].to_array()
         bins = [histogram2d.params.ybins, histogram2d.params.xbins]
         h2 = fh.histogram2d(v[:,1], v[:,0], bins=bins, range=bounds)
         h2 = np.flip(h2, axis=0)
         self.assertEqual(np.sum(h1), np.sum(h2))
-        self.assertTrue(np.allclose(h1, h2, atol=1.0))
-
+        self.assertListEqual(h1.reshape(-1).tolist(), h2.reshape(-1).tolist())        
 
     def test_histogram2d2(self):
         return self.t_histogram2d_impl(delete_rows=5)
