@@ -82,7 +82,8 @@ class TestHistogram1D(ProgressiveTest):
         v = stirrer._table.loc[:, ['_2']].to_array().reshape(-1)
         h2, _ = np.histogram(v, bins=histogram1d.params.bins, density=False, range=bounds)
         self.assertEqual(np.sum(h1), np.sum(h2))
-        self.assertTrue(np.allclose(h1, h2, atol=1.0))
+        self.assertListEqual(h1.tolist(), h2.tolist())
+
 
     def test_histogram1d2(self):
         return self.t_histogram1d_impl(delete_rows=5)
