@@ -87,6 +87,7 @@ class _At(_BaseLoc):
                              col_key)
         self._table[col_key][index] = value
 
+
 class BaseTable(metaclass=ABCMeta):
     # pylint: disable=too-many-public-methods, too-many-instance-attributes
     """Base class for Tables.
@@ -123,14 +124,15 @@ class BaseTable(metaclass=ABCMeta):
         return self._iat
 
     def __repr__(self):
-        return str(self)+ self.info_contents()
+        return str(self) + self.info_contents()
 
     def __str__(self):
         classname = self.__class__.__name__
         length = len(self)
         return u'%s("%s", dshape="%s")[%d]' % (classname,
                                                self.name,
-                                               dshape_print(self.dshape), length)
+                                               dshape_print(self.dshape),
+                                               length)
 
     def info_row(self, row, width):
         "Return a description for a row, used in `repr`"
@@ -204,16 +206,17 @@ class BaseTable(metaclass=ABCMeta):
     def width(self, colnames=None):
         """Return the number of effective width (number of columns) of the table
 
-        Since a column can be multidimensional, the effective width of a table is
-        the sum of the effective width of each of its columns.
+        Since a column can be multidimensional, the effective width of a table
+        is the sum of the effective width of each of its columns.
 
         Parameters
         ----------
         colnames : list or `None`
-            The optional list of columns to use for counting, or all the columns
-            when not specified or `None`.
+            The optional list of columns to use for counting, or all the
+            columns when not specified or `None`.
         """
-        columns = self._columns if colnames is None else [self[name] for name in colnames]
+        columns = self._columns if colnames is None else [self[name]
+                                                          for name in colnames]
         width = 0
         for col in columns:
             width += col.shape[1] if len(col.shape) > 1 else 1
@@ -314,7 +317,9 @@ class BaseTable(metaclass=ABCMeta):
                 f.write(b'\n')
 
     def column_offsets(self, columns, shapes=None):
-        "Return the offsets of each column considering columns can have multiple dimensions"
+        '''Return the offsets of each column considering columns can have
+        multiple dimensions
+        '''
         if shapes is None:
             shapes = [self[c].shape for c in columns]
         offsets = [0]
@@ -322,7 +327,8 @@ class BaseTable(metaclass=ABCMeta):
         for shape in shapes:
             dims = len(shape)
             if dims > 2:
-                raise ValueError('Cannot convert table to numpy array because of shape %s', shape)
+                raise ValueError('Cannot convert table to numpy array because'
+                                 'of shape %s', shape)
             dim2 += dims
             offsets.append(dim2)
         return offsets
@@ -351,21 +357,24 @@ class BaseTable(metaclass=ABCMeta):
         ix: the specification of an index or a list of indices
             The list can be specified with multiple formats: integer, list,
             numpy array, Iterable, or slice.  A similar format is return,
-            except that slices and Iterables may return expanded as lists or arrays.
+            except that slices and Iterables may return expanded as lists or
+            arrays.
         """
         return self._ids[ix]
 
-    def id_to_index(self, loc, as_slice=True): # to be reimplemented with LRU-dict+pyroaring
+    def id_to_index(self, loc, as_slice=True):
+        # to be reimplemented with LRU-dict+pyroaring
         """Return the indices of the specified id or ids
 
         Parameters
         ----------
         loc : an id or list of ids
             The format can be: integer, list, numpy array, Iterable, or slice.
-            Note that a bitmap is an list, and array, and a bitmap are all Iterables but
-            are managed in an efficient way.
+            Note that a bitmap is an list, and array, and a bitmap are all
+            Iterables but are managed in an efficient way.
         as_slice : boolean
-            If True, try to convert the result into a slice if possible and not too expensive.
+            If True, try to convert the result into a slice if possible and
+            not too expensive.
         """
         return self._ids.id_to_index(loc, as_slice)
 
@@ -397,9 +406,10 @@ class BaseTable(metaclass=ABCMeta):
             the new size of this table, which can be larger or shorter than the
             current size
         index: list of ids or None
-            ids to associate to the newly created rows.  The ids should be unique
-            in the table, and the list of ids should be the same length as the
-            number of newly created rows.  If None, the ids are created automatically.
+            ids to associate to the newly created rows.  The ids should be
+            unique in the table, and the list of ids should be the same length
+            as the number of newly created rows.  If None, the ids are created
+            automatically.
         """
         pass
 
@@ -435,7 +445,7 @@ class BaseTable(metaclass=ABCMeta):
 
     @changes.setter
     def changes(self, tablechange):
-        "Set the TableChange manager associated with this table, or unset with None"
+        "Set the TableChange manager, or unset with None"
         if self._ids is None:
             raise RuntimeError('Table has no index')
         self._ids.changes = tablechange
@@ -646,9 +656,11 @@ class BaseTable(metaclass=ABCMeta):
             col = self._column(column)
             shape = shapes[i]
             if len(shape) == 1:
-                col.read_direct(arr, indices, dest_sel=np.s_[:, offsets[i]])
+                col.read_direct(arr, indices,
+                                dest_sel=np.s_[:, offsets[i]])
             else:
-                col.read_direct(arr, indices, dest_sel=np.s_[:, offsets[i]:offsets[i+1]])
+                col.read_direct(arr, indices,
+                                dest_sel=np.s_[:, offsets[i]:offsets[i+1]])
         if returns_indices:
             return indices, arr
         return arr
@@ -813,7 +825,7 @@ class BaseTable(metaclass=ABCMeta):
 
     def argmax(self, **kwargs):
         return self.raw_unary(np.argmax, **kwargs)
-    
+
     def idxmin(self, **kwargs):
         res = self.argmin(**kwargs)
         for c, ix in res.items():
