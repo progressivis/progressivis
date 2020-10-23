@@ -856,6 +856,7 @@ def is_notebook():
     print("not in notebook")
     return False
 
+
 def filter_cols(df, columns=None, indices=None):
     """
     Return the specified table filtered by the specified indices and
@@ -871,4 +872,3 @@ def filter_cols(df, columns=None, indices=None):
     if indices is None:
         indices = slice(0, None)
     return df.loc[indices, cols]
-
