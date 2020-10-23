@@ -62,6 +62,8 @@ class Histogram2D(TableModule):
         self._yedges = None
         self.total_read = 0
         self.get_input_slot('table').reset()
+        if self._table:
+            self._table.resize(0)
 
     def is_ready(self):
         # If we have created data but no valid min/max, we can only wait
@@ -142,12 +144,7 @@ class Histogram2D(TableModule):
                     logger.info('Updated bounds at run %s: %s',
                                 run_number, self._bounds)
                     self.reset()
-                    dfslot.reset()
                     dfslot.update(run_number)
-                    min_slot.reset()
-                    min_slot.update(run_number)
-                    max_slot.reset()
-                    max_slot.update(run_number)
 
             xmin, xmax, ymin, ymax = self._bounds
             if xmin >= xmax or ymin >= ymax:
@@ -163,12 +160,7 @@ class Histogram2D(TableModule):
             # then subtract it from the main histogram
             if isinstance(dfslot.data(), Table) and dfslot.deleted.any():
                 self.reset()
-                dfslot.reset()
                 dfslot.update(run_number)
-                min_slot.reset()
-                min_slot.update(run_number)
-                max_slot.reset()
-                max_slot.update(run_number)
             elif dfslot.deleted.any() and self._histo is not None: # i.e. TableSelectedView, TableSlicedView
                 input_df = get_physical_base(dfslot.data()) # the original table
                 raw_indices = dfslot.deleted.next(step_size) # we assume that deletions are only local to the view
