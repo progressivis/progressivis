@@ -223,6 +223,7 @@ class IdColumn(Column):
                 newsize_bm = bitmap(todelete)
                 newsize = self._delete_ids(newsize_bm)
             except OverflowError:
+                # TODO it means we need to clean the freelist
                 newsize_ = todelete[todelete >= 0]
                 newsize = self._delete_ids(newsize_)
             if newsize is not None:
@@ -396,12 +397,12 @@ class IdColumn(Column):
                 v = Loc.ITERABLE
         if Loc.isiterable(v):
             if self._is_identity:
-                for l in loc:
-                    if l < 0 or l >= end:
+                for ind in loc:
+                    if ind < 0 or ind >= end:
                         return False
             else:
-                for l in loc:
-                    if not l in ids:
+                for ind in loc:
+                    if ind not in ids:
                         return False
             return True
         else:

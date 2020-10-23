@@ -8,7 +8,10 @@ from .column_id_selected import IdColumnSelectedView
 
 from collections import Iterable
 
-class InvalidOperationException(Exception): pass
+
+class InvalidOperationException(Exception):
+    pass
+
 
 class TableSelectedView(BaseTable):
     def __init__(self, base, row_selection, col_key=None, name=None):
@@ -32,9 +35,11 @@ class TableSelectedView(BaseTable):
                 self._create_column(col.name, col)
         else:
             raise ValueError('getitem not implemented for key "%s"' % col_key)
-        self._dshape = dshape_create('{'\
-                      +','.join(["{}:{}".format(c.name,c.dshape) for c in self._columns])\
-                      +'}')
+        self._dshape = dshape_create(
+            '{'
+            + ','.join(["{}:{}".format(c.name, c.dshape)
+                       for c in self._columns])
+            + '}')
 
     @property
     def selection(self):
@@ -71,7 +76,7 @@ class TableSelectedView(BaseTable):
             self.index.selection = sel-locs
         else:
             raise ValueError('Invalid indices')
-        
+
     @property
     def name(self):
         return self._name
@@ -79,7 +84,7 @@ class TableSelectedView(BaseTable):
     @property
     def dshape(self):
         return self.base.dshape
-    
+
     def idxmax(self, **kwargs):
         res = self.argmax(**kwargs)
         ph_index = self.index.id_to_index(self.selection)

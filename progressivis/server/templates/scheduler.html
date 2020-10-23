@@ -6,6 +6,7 @@ Progressivis Server
 
 {% block head %}
   {{ super() }}
+  <link href="{{ url_for('progressivis.server.progressivis_file', filename='css/scheduler.css') }}" rel="stylesheet">
   <link href="{{ url_for('progressivis.server.progressivis_file', filename='css/module-graph.css') }}" rel="stylesheet">
 {% endblock %}
 
