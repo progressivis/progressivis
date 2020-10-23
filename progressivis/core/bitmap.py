@@ -18,8 +18,12 @@ class bitmap(BitMap,object):
     """
     def __new__(cls, values=None, copy_on_write=False, optimize=True, no_init=False):
         if isinstance(values, slice):
-            values = range(values.start, values.stop, (values.step or 1))
-        return super(bitmap, cls).__new__(cls, values, copy_on_write, optimize, no_init)
+            values = range(values.start, values.stop,
+                           (values.step if values.step else 1))
+        return super(bitmap, cls).__new__(cls, values,
+                                          copy_on_write,
+                                          optimize,
+                                          no_init)
         #BitMap.__init__(self, values, copy_on_write)
 
     def clear(self):

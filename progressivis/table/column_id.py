@@ -72,12 +72,11 @@ class IdColumn(Column):
             return '[IDENTITY]'
         rep = '['
         max_rows = get_option('display.max_rows')
-            
         for i, rid in enumerate(self):
             if i == max_rows:
                 rep += "..."
                 break
-            rep += ("%d "%(rid))
+            rep += ("%d " % (rid))
         rep += ']'
         return rep
 
@@ -86,31 +85,33 @@ class IdColumn(Column):
 
     def __iter__(self):
         if self._freelist:
-            return map(lambda x : self[x],
-                        bitmap(range(0, self.size))-self._freelist)
+            return map(lambda x: self[x],
+                       bitmap(range(0, self.size))-self._freelist)
         return iter(self.value)
 
-    def create_dataset(self, dshape=None, fillvalue=-1, shape=None, chunks=None):
-        assert(fillvalue==-1)
+    def create_dataset(self, dshape=None, fillvalue=-1,
+                       shape=None, chunks=None):
+        assert fillvalue == -1
         if dshape is None:
-            dshape=IdColumn.ID_DSHAPE
+            dshape = IdColumn.ID_DSHAPE
         else:
-            assert(dshape==IdColumn.ID_DSHAPE)
-        assert(fillvalue==-1)
+            assert dshape == IdColumn.ID_DSHAPE
+
         if not self._is_identity:
-            dataset = super(IdColumn, self).create_dataset(dshape,
-                                                           fillvalue,
-                                                           shape=shape,
-                                                           chunks=self.CHUNK_SIZE)
+            dataset = super(IdColumn, self).create_dataset(
+                dshape,
+                fillvalue,
+                shape=shape,
+                chunks=self.CHUNK_SIZE)
             self._last_id = 0
             dataset.attrs[IdColumn.ATTR_LAST_ID] = self._last_id
             return dataset
 
-        # we copy Column.create_dataset because we want to avoid allocating a real dataset until
-        # the ids are not the same as the indices
+        # we copy Column.create_dataset because we want to avoid allocating a
+        # real dataset until the ids are not the same as the indices
         self._dshape = dshape
         self._last_id = 0
-        dataset = RangeDataset(self.name, shape=shape)        
+        dataset = RangeDataset(self.name, shape=shape)
         dataset.attrs[IdColumn.ATTR_LAST_ID] = self._last_id
         dataset.attrs[metadata.ATTR_COLUMN] = True
         dataset.attrs[metadata.ATTR_VERSION] = metadata.VALUE_VERSION
@@ -121,14 +122,16 @@ class IdColumn(Column):
     def _really_create_dataset(self, indices=None):
         logger.info('# Creating a real index for %s', self.name)
         olddataset = self.dataset
-        dataset = super(IdColumn, self).create_dataset(self._dshape, -1,
-                                                       shape=None,
-                                                       chunks=(self.CHUNK_SIZE,))
+        dataset = super(IdColumn, self).create_dataset(
+            self._dshape,
+            -1,
+            shape=None,
+            chunks=(self.CHUNK_SIZE,))
         dataset.resize(olddataset.size)
         for start in range(0, self.size-1, self.CHUNK_SIZE):
-            chunk=np.arange(start,
-                            min(self.size, start+self.CHUNK_SIZE),
-                            dtype=np.int64)
+            chunk = np.arange(start,
+                              min(self.size, start+self.CHUNK_SIZE),
+                              dtype=np.int64)
             dataset[chunk] = chunk
         dataset.attrs[IdColumn.ATTR_LAST_ID] = self._last_id
         dataset.attrs[metadata.ATTR_COLUMN] = True
@@ -140,13 +143,16 @@ class IdColumn(Column):
             self._ids_dict = IntDict(valid_ids, valid_ids)
         else:
             self._ids_dict = IntDict(valid_ids, np.arange(self.size))
+            # TODO why not
+            # self._ids_dict = IntDict(valid_ids, dataset)?
 
     def load_dataset(self, dshape, nrow, shape=None):
         if dshape is None:
-            dshape=IdColumn.ID_DSHAPE
+            dshape = IdColumn.ID_DSHAPE
         else:
-            assert(dshape==IdColumn.ID_DSHAPE)
-        dataset = super(IdColumn, self).load_dataset(dshape, nrow, shape, is_id=True)
+            assert dshape == IdColumn.ID_DSHAPE
+        dataset = super(IdColumn, self).load_dataset(dshape, nrow, shape,
+                                                     is_id=True)
         if dataset is None:
             self._is_identity = True
             dataset = self.create_dataset(dshape, -1, shape=shape)
@@ -171,11 +177,13 @@ class IdColumn(Column):
                         raise ValueError('Indices contain duplicates')
                     # reboot the IDColumn to use a standard dataset
                     self._really_create_dataset()
-                    return self._allocate(count, indices) # recursive call since we morphed
+                    # recursive call since we morphed
+                    return self._allocate(count, indices)
             return self.resize(self.size+count)
         # standard code using dataset/hash table
         if indices is None:
-            indices = np.arange(self._last_id, self._last_id+count, dtype=np.int64)
+            indices = np.arange(self._last_id, self._last_id+count,
+                                dtype=np.int64)
         else:
             indices = np.asarray(indices, dtype=np.int64)
         if self._ids_dict is not None and self._ids_dict.contains_any(indices):
@@ -187,12 +195,13 @@ class IdColumn(Column):
             alloc = self._freelist.pop(count)
             for i in alloc:
                 newid = indices[off]
-                self.dataset[i] = newid # filling the hole
+                self.dataset[i] = newid  # filling the hole
                 self._last_id = max(self._last_id, newid+1)
                 indices[off] = i
                 off += 1
-                self._update_ids_dict(i,i+1)
-        if off < count: # there are no holes OR there are more creations than holes
+                self._update_ids_dict(i, i+1)
+        if off < count:
+            # there are no holes OR there are more creations than holes
             # resize sets _last_id to max(indeices)+1
             new_indices = self.resize(self.size+count-off, indices[off:])
             indices[off:] = new_indices
@@ -206,7 +215,7 @@ class IdColumn(Column):
         # pylint: disable=arguments-differ
         oldsize = self.size
         if oldsize == newsize:
-            assert (indices is None or len(indices)==0)
+            assert indices is None or len(indices) == 0
             return None
         elif oldsize > newsize:
             todelete = self[newsize:]
@@ -214,6 +223,7 @@ class IdColumn(Column):
                 newsize_bm = bitmap(todelete)
                 newsize = self._delete_ids(newsize_bm)
             except OverflowError:
+                # TODO it means we need to clean the freelist
                 newsize_ = todelete[todelete >= 0]
                 newsize = self._delete_ids(newsize_)
             if newsize is not None:
@@ -285,9 +295,9 @@ class IdColumn(Column):
                     return end-1
             elif isinstance(locs, slice):
                 locs = norm_slice(locs)
-                start, stop, step = locs.start, locs.stop, locs.step 
-                if stop==end and step==1:
-                    if start==stop:
+                start, stop, step = locs.start, locs.stop, locs.step
+                if stop == end and step == 1:
+                    if start == stop:
                         return end
                     self.add_deleted(slice(start, stop, step))
                     super(IdColumn, self).resize(start)
@@ -297,9 +307,9 @@ class IdColumn(Column):
                 if start == stop:
                     return 0
             elif isinstance(locs, bitmap):
-                if len(locs)==0:
+                if len(locs) == 0:
                     return 0
-                if locs==bitmap(range(end-len(locs), end)):
+                if locs == bitmap(range(end-len(locs), end)):
                     self.add_deleted(locs)
                     super(IdColumn, self).resize(locs.min())
                     return end-len(locs)
@@ -308,7 +318,7 @@ class IdColumn(Column):
             elif isinstance(locs, Iterable):
                 locs = np.asarray(locs)  # turn iterable into array
             if isinstance(locs, np.ndarray):
-                if len(locs)==0:
+                if len(locs) == 0:
                     return end
                 if np.all(locs == np.arange(end-len(locs), end)):
                     self.add_deleted(locs)
@@ -331,11 +341,13 @@ class IdColumn(Column):
         elif isinstance(locs, slice):
             locs = range(*locs.indices(end))
         if isinstance(index, np.ndarray):
-            index = np.nditer(index)  # Beware, nditer flattens the array, which is ok here
+            # Beware, nditer flattens the array, which is ok here
+            index = np.nditer(index)
         elif isinstance(index, slice):
-            index = range(index.start, index.stop, index.step if index.step else 1)
+            index = range(index.start, index.stop,
+                          index.step if index.step else 1)
         try:
-            for loc,idx in zip(locs, index):
+            for loc, idx in zip(locs, index):
                 idx = int(idx)
                 if idx == IdColumn.INVALID_ID:
                     logger.error('Invalid index -1 for id[%d] to delete', loc)
@@ -350,7 +362,6 @@ class IdColumn(Column):
         except TypeError:
             logger.error('Unrecognized locs(%s) or index(%s) types',
                          locs, index)
-            
         # Shrink the dataset if possible
         end -= 1
         old_end = end
@@ -374,24 +385,24 @@ class IdColumn(Column):
                 return loc in ids
         if v == Loc.SLICE:
             if self._is_identity:
-                return loc.start >= 0 and (loc.end==None or loc.end==end)
+                return loc.start >= 0 and (loc.end is None or loc.end == end)
             else:
                 loc = range(*loc.index(end))
                 v = Loc.ITERABLE
         elif v == Loc.BITMAP:
             if self._is_identity:
                 inside = bitmap(range(0, end))
-                return loc.difference_cardinality(inside)==0
+                return loc.difference_cardinality(inside) == 0
             else:
                 v = Loc.ITERABLE
         if Loc.isiterable(v):
             if self._is_identity:
-                for l in loc:
-                    if l < 0 or l >= end:
+                for ind in loc:
+                    if ind < 0 or ind >= end:
                         return False
             else:
-                for l in loc:
-                    if not l in ids:
+                for ind in loc:
+                    if ind not in ids:
                         return False
             return True
         else:
@@ -399,18 +410,18 @@ class IdColumn(Column):
 
     def id_to_index(self, loc, as_slice=True):
         if self._is_identity:
-            if isinstance(loc, slice): # slices are inclusive
-                if loc.stop != None:
+            if isinstance(loc, slice):  # slices are inclusive
+                if loc.stop is not None:
                     return slice(loc.start, loc.stop+1, loc.step)
             if is_none_alike(loc):
-                loc=slice(0, self.size, 1)
+                loc = slice(0, self.size, 1)
             elif isinstance(loc, integer_types):
                 if loc < 0:
                     loc += self._last_id
             return loc
         if self._ids_dict is None:
             self._update_ids_dict()
-        if is_none_alike(loc): # return everything
+        if is_none_alike(loc):  # return everything
             """
             # this cannot work
             # because after many creations/deletions
@@ -425,10 +436,12 @@ class IdColumn(Column):
             return ret
             """
             loc = self.to_array()
-            ret = self._ids_dict.get_items(loc) # no loc.copy() is needed here 
-        elif isinstance(loc, np.ndarray) and loc.dtype==np.int:
-            # NB: ALWAYS pass a COPY here (and below) because get_items() provides the result INPLACE!!!
-            ret = self._ids_dict.get_items(loc.copy()) 
+            # no loc.copy() is needed here
+            ret = self._ids_dict.get_items(loc)
+        elif isinstance(loc, np.ndarray) and loc.dtype == np.int:
+            # NB: ALWAYS pass a COPY here (and below) because get_items()
+            # provides the result INPLACE!!!
+            ret = self._ids_dict.get_items(loc.copy())
         elif isinstance(loc, integer_types):
             if loc < 0:
                 loc = self._last_id+loc
@@ -437,20 +450,21 @@ class IdColumn(Column):
             try:
                 count = len(loc)
                 # pylint: disable=bare-except
-            except:
-                count=-1
+            except TypeError:
+                count = -1
             ret = np.fromiter(loc, dtype=np.int64, count=count)
             ret = self._ids_dict.get_items(ret)
         elif isinstance(loc, slice):
             loc_start = 0 if loc.start is None else loc.start
             loc_stop = self.last_id if loc.stop is None else loc.stop+1
-            ret = np.array(range(loc_start, loc_stop, loc.step or 1), dtype=np.int64)
-            try: # EAFP
+            ret = np.array(range(loc_start, loc_stop, loc.step or 1),
+                           dtype=np.int64)
+            try:  # EAFP
                 ret = self._ids_dict.get_items(ret)
-            except KeyError: # occurs when ret contains deleted items (-1)
-                ret_del = np.nonzero(self.index.dataset[ret]<0)[0]
-                ret = self._ids_dict.get_items(np.array(bitmap(ret)-bitmap(ret_del), dtype=np.int64))
-                                 
+            except KeyError:  # occurs when ret contains deleted items (-1)
+                ret_del = np.nonzero(self.index.dataset[ret] < 0)[0]
+                ret = self._ids_dict.get_items(
+                    np.array(bitmap(ret)-bitmap(ret_del), dtype=np.int64))
         else:
             raise ValueError('id_to_index not implemented for id "%s"' % loc)
         return indices_to_slice(ret) if as_slice else ret

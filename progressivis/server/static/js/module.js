@@ -3,6 +3,7 @@ var module_id = null;
 function module_get(success, error) {
     return progressivis_get('/progressivis/module/get', success, error, module_id);
 }
+
 function module_set_hotline(status, error) {
     if(status){
         return progressivis_get('/progressivis/module/hotline_on', function(_){}, error, module_id);
@@ -55,12 +56,13 @@ function module_show_dataframe(slot) {
 }
 
 function speed_disp(v){
-    var SIZE = 15
+    var SIZE = 15;
     var last = v[v.length-1];
     last = last.toFixed(0);
     last = last+"&nbsp;".repeat(SIZE-last.length);
-    return "<table><tr><td>"+last+"</td><td><span class='speedsparkline'>...</span></td></tr></table>"
+    return "<table><tr><td>"+last+"</td><td><span class='speedsparkline'>...</span></td></tr></table>";
 }
+
 function module_update_table(data) {
     var slots = data['output_slots'],
         buttons = '<div class="btn-group" role="group" aria-label="DataFrames">\n';

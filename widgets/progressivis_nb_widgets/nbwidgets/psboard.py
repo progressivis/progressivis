@@ -76,11 +76,13 @@ class PsBoard(ipw.VBox):
         self.last_update = []
         self.btns = []
         self.msize = 0
-        self.cols = ['id', 'classname', 'state', 'last_update', 'order']
-        self.htable = SensitiveHTML()
+        self.cols = ['is_visualization', 'id', 'classname', 'state',
+                     'last_update', 'order']
+        self.htable = SensitiveHTML(layout=ipw.Layout(height='500px',
+                                                      overflow='auto'))
         self.refresh_event = None
         self.other_coros = []
-        self.viz_register = defaultdict(list)
+        self.vis_register = defaultdict(list)
         commons.update(tab=self.tab, scheduler=self.scheduler)
         super().__init__([self.cpanel, self.tab, debug_console])
 
@@ -89,18 +91,26 @@ class PsBoard(ipw.VBox):
             tmpl = Template(index_tpl)
             await update_widget(self.htable,
                                 'sensitive_css_class', 'ps-row-btn')
-            await update_widget(self.htable, 'sort_table_ids', ['mysortedtable'])
             await update_widget(self.htable,
-                                'html', tmpl.render(modules=modules,
-                                                    cols=self.cols))
+                                'sort_table_ids', ['mysortedtable'])
+            html = tmpl.render(modules=modules, cols=self.cols)
+            # print(html)
+            await update_widget(self.htable,
+                                'html', html)
         else:
             data = {}
             for m in modules:
                 for c in self.cols:
-                    data[f"ps-cell_{m['id']}_{c}"] = m[c]
+                    dataid = f"ps-cell_{m['id']}_{c}"
+                    if c == 'is_visualization':
+                        # Show an Unicode eye next to visualizations
+                        data[dataid] = '\U0001F441' if m[c] else ' '
+                    else:
+                        data[dataid] = m[c]
             await update_widget(self.htable, 'data', data)
 
-    def register_visualisation(self, widget, module, label="Visualisation", glue=None):
+    def register_visualisation(self, widget, module,
+                               label="Visualisation", glue=None):
         """
         called from notebook
 
@@ -119,14 +129,15 @@ class PsBoard(ipw.VBox):
             self.other_coros += glue(widget, module)
         else:
             self.other_coros += widget.link_module(module, refresh=False)
-        self.viz_register[module.name].append((widget, label))
+        self.vis_register[module.name].append((widget, label))
 
     @property
     def coroutines(self):
         return [refresh_fun(self), module_choice(self),
                 control_panel(self, "resume"),
                 control_panel(self, "stop"),
-                control_panel(self, "step")]+self.other_coros  # , change_tab(self) removed here
+                control_panel(self, "step")]+self.other_coros
+    # , change_tab(self) removed here
 
     async def refresh(self):
         if self._cache is None:
