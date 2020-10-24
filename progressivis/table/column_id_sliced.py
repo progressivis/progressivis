@@ -52,7 +52,7 @@ class IdColumnSlicedView(ColumnSlicedView):
     def to_array(self):
         start = self._view_slice.start
         stop = self._view_slice.stop or self.base.size
-        return np.array(bitmap(range(start, stop, 1)))
+        return np.array(range(start, stop, 1))
 
     def compute_updates(self, start, now, mid=None, cleanup=True):
         # TODO the mask should be maintained in ID space, not index space
