@@ -1,4 +1,3 @@
-
 from ..core.utils import indices_len, fix_loc, get_physical_base
 from ..core.slot import SlotDescriptor
 from ..table.table import Table
@@ -53,6 +52,8 @@ class MCHistogram2D(NAry):
         self._yedges = None
         self.total_read = 0
         self.get_input_slot('data').reset()
+        if self._table:
+            self._table.resize(0)
 
     def predict_step_size(self, duration):
         return Module. predict_step_size(self, duration)
@@ -95,9 +96,6 @@ class MCHistogram2D(NAry):
                 if min_slot.has_buffered():
                     has_creation = True
                 min_slot.clear_buffers()
-                # min_slot.created.next()
-                # min_slot.updated.next()
-                # min_slot.deleted.next()
                 min_df = min_slot.data()
                 if min_df is None:
                     continue
@@ -110,9 +108,6 @@ class MCHistogram2D(NAry):
                 if max_slot.has_buffered():
                     has_creation = True
                 max_slot.clear_buffers()
-                # max_slot.created.next()
-                # max_slot.updated.next()
-                # max_slot.deleted.next()
                 max_df = max_slot.data()
                 if max_df is None:
                     continue
@@ -174,40 +169,43 @@ class MCHistogram2D(NAry):
         # or to update the previous if is still exists (i.e. no reset)
         p = self.params
         steps = 0
+        # dfslot.data() is a Table() then deleted records are not available
+        # anymore => reset
+        if isinstance(dfslot.data(), Table) and dfslot.deleted.any():
+            self.reset()
+            dfslot.update(run_number)
+        # else if dfslot.data() is a view and
         # if there are new deletions, build the histogram of the deleted pairs
-        # then subtract it from the main histogram
-        if dfslot.deleted.any() and self._histo is not None:
-            input_df = get_physical_base(dfslot.data())
-            indices = dfslot.deleted.next(step_size)
+        # then subtract it from the main histogram            
+        elif dfslot.deleted.any() and self._histo is not None:
+            input_df = get_physical_base(dfslot.data()) # the original table
+            raw_indices = dfslot.deleted.next(step_size) # we assume that deletions are only local to the view
+            # and the related records still exist in the original table ...
+            # TODO : test this hypothesis and reset if false
+            indices = fix_loc(raw_indices)
             steps += indices_len(indices)
-            #print('Histogram2D steps :%d'% steps)
-            logger.info('Read %d rows', steps)
-            x = input_df[self.x_column]
-            y = input_df[self.y_column]
-            idx = input_df.id_to_index(fix_loc(indices))
-            #print(idx)
-            x = x[idx]
-            y = y[idx]
+            x = input_df.to_array(locs=indices, columns=[self.x_column]).reshape(-1)
+            y = input_df.to_array(locs=indices, columns=[self.y_column]).reshape(-1)
             bins = [p.ybins, p.xbins]
-            if len(x)>0:
+            if len(x) > 0:
                 histo = histogram2d(y, x,
                                     bins=bins,
                                     range=[[ymin, ymax], [xmin, xmax]])
                 self._histo -= histo
         # if there are new creations, build a partial histogram with them then
         # add it to the main histogram
+        #input_df = dfslot.data()
+        if not dfslot.created.any():
+            return self._return_run_step(self.state_blocked, steps_run=0)
         input_df = dfslot.data()
-        indices = dfslot.created.next(step_size)
+        raw_indices = dfslot.created.next(step_size)
+        indices = fix_loc(raw_indices)
         steps += indices_len(indices)
-        #print('Histogram2D steps :%d'% steps)
         logger.info('Read %d rows', steps)
         self.total_read += steps
-        
-        x = input_df[self.x_column]
-        y = input_df[self.y_column]
-        idx = input_df.id_to_index(fix_loc(indices))
-        x = x[idx]
-        y = y[idx]
+        x = input_df.to_array(locs=indices, columns=[self.x_column]).reshape(-1)
+        y = input_df.to_array(locs=indices, columns=[self.y_column]).reshape(-1)
+
         if self._xedges is not None:
             bins = [self._xedges, self._yedges]
         else:
@@ -238,7 +236,6 @@ class MCHistogram2D(NAry):
                   'ymax': ymax,
                   'time': run_number}
         if self._with_output:
-            #with self._table.lock:
             table = self._table
             table['array'].set_shape([p.ybins, p.xbins])
             l = len(table)
