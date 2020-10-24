@@ -41,6 +41,7 @@ class MyResetter(TableModule):
             self._table['reset'] = False
         return self._return_run_step(self.next_state(input_slot), steps_run=step_size)
 
+@skip # this test is too expensive for the CI
 class TestPPCA(ProgressiveTest):
     def _common(self, rtol, threshold=None, resetter=None, resetter_func=None, scheduler=None):
         global KNN, LABELS, INDICES
