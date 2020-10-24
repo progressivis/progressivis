@@ -2,6 +2,7 @@ from . import ProgressiveTest
 from progressivis.core import aio
 from progressivis import Every
 from progressivis.io import CSVLoader
+from progressivis.stats import RandomTable
 from progressivis.stats import MCHistogram2D, Min, Max
 from progressivis.vis import Heatmap
 from progressivis.datasets import get_dataset
@@ -67,13 +68,10 @@ class TestMCHistogram2D(ProgressiveTest):
 
     def t_histogram2d_impl(self, **kw):
         s = self.scheduler()
-        csv = CSVLoader(get_dataset('bigfile'),
-                        index_col=False,
-                        header=None,
-                        scheduler=s)
+        random = RandomTable(2, rows=100000, scheduler=s)
         stirrer = Stirrer(update_column='_2',
                           fixed_step_size=1000, scheduler=s, **kw)
-        stirrer.input.table = csv.output.table
+        stirrer.input.table = random.output.table
         min_ = Min(scheduler=s)
         min_.input.table = stirrer.output.table
         max_ = Max(scheduler=s)
@@ -101,13 +99,10 @@ class TestMCHistogram2D(ProgressiveTest):
 
     def test_histogram2d4(self):
         s = self.scheduler()
-        csv = CSVLoader(get_dataset('bigfile'),
-                        index_col=False,
-                        header=None,
-                        scheduler=s)
+        random = RandomTable(2, rows=100000, scheduler=s)
         stirrer = StirrerView(update_column='_2',
                               fixed_step_size=1000, scheduler=s, delete_rows=5)
-        stirrer.input.table = csv.output.table
+        stirrer.input.table = random.output.table
         min_ = Min(scheduler=s)
         min_.input.table = stirrer.output.table
         max_ = Max(scheduler=s)
