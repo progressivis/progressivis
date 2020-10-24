@@ -35,7 +35,7 @@ class IdColumnSlicedView(ColumnSlicedView):
             return start <= ids and ids < stop
         if v == Loc.SLICE:
             return start <= ids.start and ids.stop <= stop
-        return ids in bitmap(self._view_slice)
+        return ids in bitmap(range(start, stop, 1))  # self._view_slice)
 
     def resize(self, _):
         pass  # ignore
@@ -50,10 +50,12 @@ class IdColumnSlicedView(ColumnSlicedView):
         return self._update_mask
 
     def to_array(self):
-        return np.array(bitmap(self._view_slice))
+        start = self._view_slice.start
+        stop = self._view_slice.stop or self.base.size
+        return np.array(bitmap(range(start, stop, 1)))
 
     def compute_updates(self, start, now, mid=None, cleanup=True):
-        #TODO the mask should be maintained in ID space, not index space
+        # TODO the mask should be maintained in ID space, not index space
         mask = self.update_mask
         updates = self._base.compute_updates(start, now, mid, cleanup=True)
         updates.created &= mask
