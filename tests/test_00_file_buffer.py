@@ -1,5 +1,5 @@
 from progressivis.core.utils import filepath_to_buffer
-from . import ProgressiveTest
+from . import ProgressiveTest, skip, skipIf
 import requests, tempfile, os
 
 HTTP_URL = ('http://s3.amazonaws.com/h2o-release/h2o/master'
@@ -7,6 +7,7 @@ HTTP_URL = ('http://s3.amazonaws.com/h2o-release/h2o/master'
 S3_URL = ('s3://h2o-release/h2o/master/1193/docs-website'
               '/resources/publicdata.html')
 
+@skipIf(os.getenv('TRAVIS'),'skipped on Travis=>avoids: "certificate verify failed: IP address mismatch, certificate is not valid"')
 class TestFileBuffer(ProgressiveTest):
     def setUp(self):
         req = requests.get(HTTP_URL)
@@ -41,6 +42,14 @@ class TestFileBuffer(ProgressiveTest):
         _ = reader_file.read(n2)
         _ = reader_file.read(n3)
         self.assertEqual(reader_file.tell(), n1 + n2 + n3)
-        
+        try:
+            reader_s3.close()
+        except:
+            pass
+        try:
+            reader_file.close()
+        except:
+            pass
+            
 if __name__ == '__main__':
     ProgressiveTest.main()
