@@ -31,6 +31,9 @@ class _Selection(object):
 
     def assign(self, values):
         self._values = values
+        
+    def add(self, values):
+        self._values |= values
 
 
 class RangeQueryImpl(ModuleImpl):
@@ -57,7 +60,7 @@ class RangeQueryImpl(ModuleImpl):
             res = self._hist_index.restricted_range_query(lower, upper,
                                                           only_locs=updated,
                                                           approximate=self._approximate)
-            self.result.add(res)  # add not defined???
+            self.result.add(res)
         if created:
             res = self._hist_index.restricted_range_query(lower, upper,
                                                           only_locs=created,
