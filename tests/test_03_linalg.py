@@ -2,6 +2,7 @@ from . import ProgressiveTest, skip, skipIf
 
 from progressivis.core import aio
 from progressivis import Print
+from progressivis.table.stirrer import Stirrer
 from progressivis.linalg import (Unary, Binary, Reduce,
                                  func2class_name,
                                  unary_module, make_unary,
@@ -20,7 +21,7 @@ import numpy as np
 class TestUnary(ProgressiveTest):
     def test_unary(self):
         s = self.scheduler()
-        random = RandomTable(10, rows=100000, scheduler=s)
+        random = RandomTable(10, rows=100_000, scheduler=s)
         module = Unary(np.log, scheduler=s)
         module.input.table = random.output.table
         pr=Print(proc=self.terse, scheduler=s)
@@ -30,9 +31,10 @@ class TestUnary(ProgressiveTest):
         res2 = module.table().to_array()
         self.assertEqual(module.name, "unary_1")
         self.assertTrue(np.allclose(res1, res2, equal_nan=True))
+
     def test_unary2(self):
         s = self.scheduler()
-        random = RandomTable(10, rows=100000, scheduler=s)
+        random = RandomTable(10, rows=100_000, scheduler=s)
         module = Unary(np.log, columns=['_3', '_5', '_7'], scheduler=s)
         module.input.table = random.output.table
         pr=Print(proc=self.terse, scheduler=s)
@@ -42,6 +44,32 @@ class TestUnary(ProgressiveTest):
         res2 = module.table().to_array()
         self.assertEqual(module.name, "unary_1")
         self.assertTrue(np.allclose(res1, res2, equal_nan=True))
+
+    def _t_stirred_unary(self, **kw):
+        s = self.scheduler()
+        random = RandomTable(10, rows=100_000, scheduler=s)
+        stirrer = Stirrer(update_column='_3',
+                          fixed_step_size=1000, scheduler=s, **kw)
+        stirrer.input.table = random.output.table
+        module = Unary(np.log, columns=['_3', '_5', '_7'], scheduler=s)
+        module.input.table = stirrer.output.table
+        pr=Print(proc=self.terse, scheduler=s)
+        pr.input.df = module.output.table
+        aio.run(s.start())
+        res1 = np.log(stirrer.table().to_array()[:, [2, 4, 6]])
+        ix1 = stirrer.table().index.to_array()
+        res1 = res1[ix1.argsort()]
+        res2 = module.table().to_array()
+        ix2 =  module.table().index.to_array()
+        res2 = res2[ix2.argsort()]
+        self.assertEqual(module.name, "unary_1")
+        self.assertTrue(np.allclose(res1, res2, equal_nan=True))
+
+    def test_unary3(self):
+        self._t_stirred_unary(delete_rows=5)
+
+    def test_unary4(self):
+        self._t_stirred_unary(update_rows=5)
 
     def _t_impl(self, cls, ufunc, mod_name):
         print("Testing", mod_name)
@@ -204,6 +232,7 @@ class TestBinaryTD(ProgressiveTest):
 
 for k, ufunc in binary_dict_gen_tst.items():
      add_bin_tst(TestBinaryTD, k, ufunc)
+
 #@skip
 class TestReduce(ProgressiveTest):
     def test_reduce(self):
@@ -255,6 +284,7 @@ def add_reduce_tst(c, k, ufunc):
 for k, ufunc in binary_dict_gen_tst.items():
     add_reduce_tst(TestReduce, k, ufunc)
 
+#@skip
 class TestCustomFunctions(ProgressiveTest):
 
     def test_custom_unary(self):
@@ -309,6 +339,8 @@ class TestCustomFunctions(ProgressiveTest):
         self.assertTrue(np.allclose(res1, res2, equal_nan=True))
 
 from progressivis.linalg import Arccosh, Invert, BitwiseNot
+
+@skip
 class TestOtherUnaries(ProgressiveTest):
     def test_arccosh(self):
         #from progressivis.linalg import Arccosh
@@ -372,6 +404,8 @@ class TestOtherUnaries(ProgressiveTest):
 
 
 from progressivis.linalg import Ldexp
+
+#@skip
 class TestOtherBinaries(ProgressiveTest):
     def _t_impl(self, cls, ufunc, mod_name):
         print("Testing", mod_name)
@@ -428,7 +462,7 @@ for k, ufunc in binary_dict_int_tst.items():
         continue
     add_other_bin_tst(TestOtherBinaries, k, ufunc)
 
-
+#@skip
 class TestOtherReduces(ProgressiveTest):
     def _t_impl(self, cls, ufunc, mod_name):
         print("Testing", mod_name)
@@ -465,7 +499,7 @@ for k, ufunc in binary_dict_int_tst.items():
 #for c in ["TestUnary", "TestBinary", "TestBinaryTD",
 #          "TestReduce", "TestCustomFunctions",
 #          "TestOtherUnaries", "TestOtherBinaries", "TestOtherReduces"]: del globals()[c]
-
+#@skip
 class TestDecorators(ProgressiveTest):
 
     def test_decorator_unary(self):

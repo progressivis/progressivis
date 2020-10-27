@@ -333,16 +333,13 @@ def slice_to_array(sl):
         return bitmap(sl)
     return sl
 
-
 def slice_to_bitmap(sl):
-    ret = slice_to_array(sl)
-    if isinstance(ret, bitmap):
-        return ret
-    return bitmap(ret)
-
+    assert is_int(sl.stop)
+    return bitmap(range(*sl.indices(sl.stop)))
 
 def slice_to_arange(sl):
     if isinstance(sl, slice):
+        assert is_int(sl.stop)
         return np.arange(*sl.indices(sl.stop))
     if isinstance(sl, np.ndarray):
         return sl

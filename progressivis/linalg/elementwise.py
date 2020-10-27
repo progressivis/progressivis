@@ -68,7 +68,7 @@ class Unary(TableModule):
             indices = ctx.table.created.next(step_size)
             steps = indices_len(indices)
             vec = self.filter_columns(data_in, fix_loc(indices)).raw_unary(self._ufunc, **self._kwds)
-            self._table.append(vec)
+            self._table.append(vec, indices=indices)
             return self._return_run_step(self.next_state(ctx.table), steps_run=steps)
 
 def make_subclass(super_, cname, ufunc):

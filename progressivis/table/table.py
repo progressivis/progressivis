@@ -8,7 +8,7 @@ import logging
 import numpy as np
 import pandas as pd
 import numexpr as ne
-from progressivis.core.utils import (integer_types, get_random_name,
+from progressivis.core.utils import (integer_types, get_random_name, slice_to_bitmap,
                                      all_int, are_instances, gen_columns)
 from progressivis.utils.fast import indices_to_slice
 from progressivis.storage import Group
@@ -274,6 +274,8 @@ class Table(BaseTable):
             all_arrays |= isinstance(fromcol, np.ndarray)
         if length == 0:
             return
+        if isinstance(indices, slice):
+            indices = slice_to_bitmap(indices)
         if indices is not None and len(indices) != length:
             raise ValueError('Bad index length (%d/%d)', len(indices), length)
         indices = self._allocate(length, indices)
