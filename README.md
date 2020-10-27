@@ -86,7 +86,7 @@ python setup.py install
 To see examples, either look at the tests in the `tests` directory, or
 try the examples in the `examples` directory.
 
-## Running demos (on your comuter)
+## Running demos (on your computer)
 
 After installing progressivis **with miniconda/anaconda**, do:
 ```
