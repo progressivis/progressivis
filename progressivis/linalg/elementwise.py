@@ -1,7 +1,7 @@
 import numpy as np
 from ..core.utils import indices_len, fix_loc
 from ..table.module import TableModule
-from ..table.table import Table
+from ..table import Table, BaseTable
 from ..core.decorators import *
 from .. import ProgressiveError, SlotDescriptor
 from ..utils.psdict import PsDict
@@ -128,35 +128,59 @@ class Binary(TableModule):
         if self._table is not None:
             self._table.resize(0)
 
+    def _if_orphans(self, frst, sec):
+        if (frst.output_module.state > self.state_blocked or
+                    sec.output_module.state > self.state_blocked):
+            frst.clear_buffers()
+            sec.clear_buffers()
+
     @process_slot("first", "second", reset_cb="reset")
     @run_if_any
     def run_step(self, run_number, step_size, howlong):
         with self.context as ctx:
             data = ctx.first.data()
             data2 = ctx.second.data()
-            _t2t = isinstance(data2, Table)
+            if not (data and data2):
+                return self._return_run_step(self.state_blocked, steps_run=0)
+            _t2t = isinstance(data2, BaseTable)
             if _t2t:
-                step_size = min(ctx.first.created.length(), ctx.second.created.length(), step_size)
-            else:
-                step_size = min(ctx.first.created.length(), step_size)
-            indices = indices2 = ctx.first.created.next(step_size)
-            steps = steps2 = indices_len(indices)
-            if _t2t:    
-                indices2 = ctx.second.created.next(step_size)
-                steps2 = indices_len(indices2)
-            else:
-                ctx.second.created.next()
-            assert steps == steps2
+                if not (ctx.first.created.any() and ctx.second.created.any()):
+                    self._if_orphans(ctx.first, ctx.second)
+                    return self._return_run_step(self.state_blocked, steps_run=0)
+                #step_size = min(ctx.first.created.length(), ctx.second.created.length(), step_size)
+                first_created = ctx.first.created.changes
+                second_created = ctx.second.created.changes
+                common_ids = first_created & second_created
+                if not common_ids:
+                    self._if_orphans(ctx.first, ctx.second)
+                    return self._return_run_step(self.state_blocked, steps_run=0)
+                flush = True
+                if len(common_ids) > step_size:
+                    flush = False
+                    common_ids = common_ids[:step_size]
+                ctx.first.created.changes -= common_ids
+                ctx.second.created.changes -= common_ids
+                steps = len(common_ids)
+                if flush:
+                    self._if_orphans(ctx.first, ctx.second)
+            else: # i.e. second is a dict
+                common_ids = ctx.first.created.next(step_size)
+                steps = indices_len(common_ids)
+                ctx.second.clear_buffers()
             if steps == 0:
                 return self._return_run_step(self.state_blocked, steps_run=0)
-            other = self.filter_columns(data2, fix_loc(indices2), "second") if _t2t else data2
-            vec = _binary(self.filter_columns(data, fix_loc(indices), "first"),
+            try:
+                other = self.filter_columns(data2, fix_loc(common_ids), "second") if _t2t else data2
+            except:
+                import pdb;pdb.set_trace()
+                other = self.filter_columns(data2, fix_loc(common_ids), "second") if _t2t else data2
+            vec = _binary(self.filter_columns(data, fix_loc(common_ids), "first"),
                           self._ufunc, other, self.get_columns(data2, "second"), **self._kwds)
             if self._table is None:
                 dshape_ = self.get_output_datashape("table")
                 self._table = Table(self.generate_table_name(f'binary_{self._ufunc.__name__}'),
                                     dshape=dshape_, create=True)            
-            self._table.append(vec)
+            self._table.append(vec, indices=common_ids)
             return self._return_run_step(self.next_state(ctx.first), steps_run=steps)
 
 for k, v in binary_dict_all.items():
