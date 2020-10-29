@@ -6,6 +6,7 @@ from ..core.decorators import *
 from .. import ProgressiveError, SlotDescriptor
 from ..utils.psdict import PsDict
 from ..core.module import ModuleMeta
+from ..table.dshape import dshape_projection
 from collections import OrderedDict
 
 not_tested_unaries = ('isnat', # input array with datetime or timedelta data type.
@@ -23,12 +24,20 @@ other_tested_binaries = ('bitwise_and', 'bitwise_or', 'bitwise_xor', 'gcd',
 binary_except = not_tested_binaries + other_tested_binaries
 
 
-unary_dict_all =  {k:v for(k, v) in np.__dict__.items() if isinstance(v, np.ufunc) and v.nin==1}
-binary_dict_all = {k:v for(k, v) in np.__dict__.items() if isinstance(v, np.ufunc) and v.nin==2 and k!='matmul'}
+unary_dict_all =  {k:v for(k, v) in np.__dict__.items()
+                   if isinstance(v, np.ufunc) and v.nin==1}
 
-unary_dict_gen_tst = {k:v for(k, v) in unary_dict_all.items() if k not in unary_except}
-binary_dict_gen_tst = {k:v for(k, v) in binary_dict_all.items() if k not in binary_except}
-binary_dict_int_tst = {k:v for(k, v) in binary_dict_all.items() if k in other_tested_binaries}
+binary_dict_all = {k:v for(k, v) in np.__dict__.items()
+                   if isinstance(v, np.ufunc) and v.nin==2 and k!='matmul'}
+
+unary_dict_gen_tst = {k:v for(k, v) in unary_dict_all.items()
+                      if k not in unary_except}
+
+binary_dict_gen_tst = {k:v for(k, v) in binary_dict_all.items()
+                       if k not in binary_except}
+
+binary_dict_int_tst = {k:v for(k, v) in binary_dict_all.items()
+                       if k in other_tested_binaries}
 
 unary_modules = []
 binary_modules = []
@@ -67,6 +76,8 @@ class Unary(TableModule):
                 return self._return_run_step(self.state_blocked, steps_run=0)
             indices = ctx.table.created.next(step_size)
             steps = indices_len(indices)
+            if steps == 0:
+                return self._return_run_step(self.state_blocked, steps_run=0)
             vec = self.filter_columns(data_in, fix_loc(indices)).raw_unary(self._ufunc, **self._kwds)
             self._table.append(vec, indices=indices)
             return self._return_run_step(self.next_state(ctx.table), steps_run=steps)
@@ -92,6 +103,54 @@ for k, v in unary_dict_all.items():
 
 
 
+def _simple_binary(tbl, op, cols1, cols2, cols_out, **kwargs):
+    axis = kwargs.pop('axis', 0)
+    assert axis == 0
+    res = OrderedDict()
+    for cn1, cn2, co in zip(cols1, cols2, cols_out):
+        col1 = tbl[cn1]
+        col2 = tbl[cn2]
+        value = op(col1, col2)
+        res[co] = value
+    return res
+
+class ColsBinary(TableModule):
+    inputs = [SlotDescriptor('table', type=Table, required=True)]
+    outputs = [SlotDescriptor('table', type=Table, required=False)]
+    def __init__(self, ufunc, first, second, cols_out=None, **kwds):
+        super().__init__(**kwds)
+        self._ufunc = ufunc
+        self._first = first
+        self._second = second
+        self._cols_out = cols_out
+        self._kwds = {} #self._filter_kwds(kwds, ufunc)
+        if self._columns is None:
+            self._columns = first + second
+
+    def reset(self):
+        if self._table is not None:
+            self._table.resize(0)
+    @process_slot("table", reset_cb="reset")
+    @run_if_any
+    def run_step(self, run_number, step_size, howlong):
+        with self.context as ctx:
+            data_in = ctx.table.data()
+            if self._cols_out is None:
+                self._cols_out = self._first
+            if self._table is None:
+                #import pdb;pdb.set_trace()
+                dshape_ = dshape_projection(data_in, self._first, self._cols_out)
+                self._table = Table(self.generate_table_name(f'simple_binary_{self._ufunc.__name__}'),
+                                    dshape=dshape_, create=True)
+            indices = ctx.table.created.next(step_size)
+            steps = indices_len(indices)
+            if steps == 0:
+                return self._return_run_step(self.state_blocked, steps_run=0)
+            view = data_in.loc[fix_loc(indices)]
+            vec = _simple_binary(view, self._ufunc, self._first, self._second, self._cols_out, **self._kwds)
+            self._table.append(vec, indices=indices)
+            return self._return_run_step(self.next_state(ctx.table), steps_run=steps)
+
 def _binary(tbl, op, other, other_cols=None, **kwargs):
     if other_cols is None:
         other_cols = tbl.columns
@@ -108,6 +167,12 @@ def _binary(tbl, op, other, other_cols=None, **kwargs):
             value = op(col, other[name2])
         res[name] = value
     return res
+
+for k, v in binary_dict_all.items():
+    name = f"Cols{func2class_name(k)}"
+    _g[name] = make_subclass(ColsBinary, name, v)
+    binary_modules.append(_g[name])
+
 
 class Binary(TableModule):
     inputs = [SlotDescriptor('first', type=Table, required=True),
@@ -169,11 +234,7 @@ class Binary(TableModule):
                 ctx.second.clear_buffers()
             if steps == 0:
                 return self._return_run_step(self.state_blocked, steps_run=0)
-            try:
-                other = self.filter_columns(data2, fix_loc(common_ids), "second") if _t2t else data2
-            except:
-                import pdb;pdb.set_trace()
-                other = self.filter_columns(data2, fix_loc(common_ids), "second") if _t2t else data2
+            other = self.filter_columns(data2, fix_loc(common_ids), "second") if _t2t else data2
             vec = _binary(self.filter_columns(data, fix_loc(common_ids), "first"),
                           self._ufunc, other, self.get_columns(data2, "second"), **self._kwds)
             if self._table is None:

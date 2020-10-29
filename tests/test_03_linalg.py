@@ -3,7 +3,7 @@ from . import ProgressiveTest, skip, skipIf
 from progressivis.core import aio
 from progressivis import Print
 from progressivis.table.stirrer import Stirrer
-from progressivis.linalg import (Unary, Binary, Reduce,
+from progressivis.linalg import (Unary, Binary, ColsBinary, Reduce,
                                  func2class_name,
                                  unary_module, make_unary,
                                  binary_module, make_binary,
@@ -157,6 +157,167 @@ class TestOtherUnaries(ProgressiveTest):
         #print(res2)
         self.assertEqual(module.name, module_name)
         self.assertTrue(np.allclose(res1, res2, equal_nan=True))
+
+#@skip
+class TestColsBinary(ProgressiveTest):
+    def test_cols_binary(self):
+        s = self.scheduler()
+        cols = 10
+        random = RandomTable(cols, rows=100_000, scheduler=s)
+        module = ColsBinary(np.add, first=['_3', '_5', '_7'],
+                              second=['_4', '_6', '_8'], scheduler=s)
+        module.input.table = random.output.table
+        pr=Print(proc=self.terse, scheduler=s)
+        pr.input.df = module.output.table
+        aio.run(s.start())
+        self.assertListEqual(module.table().columns,
+                             ['_3', '_5', '_7'])
+        arr = random.table().to_array()
+        res1 = np.add(arr[:, [2, 4, 6]],
+                      arr[:, [3, 5, 7]])
+        res2 = module.table().to_array()
+        self.assertEqual(module.name, "cols_binary_1")
+        self.assertTrue(np.allclose(res1, res2, equal_nan=True))
+
+    def test_cols_binary2(self):
+        s = self.scheduler()
+        cols = 10
+        random = RandomTable(cols, rows=100, scheduler=s)
+        module = ColsBinary(np.add, first=['_3', '_5', '_7'],
+                            second=['_4', '_6', '_8'],
+                            cols_out=['x', 'y', 'z'],
+                            scheduler=s)
+        module.input.table = random.output.table
+        pr=Print(proc=self.terse, scheduler=s)
+        pr.input.df = module.output.table
+        aio.run(s.start())
+        self.assertListEqual(module.table().columns,
+                             ['x', 'y', 'z'])
+
+    def t_stirred_cols_binary(self, **kw):
+        s = self.scheduler()
+        cols = 10
+        random = RandomTable(cols, rows=10_000, scheduler=s)
+        stirrer = Stirrer(update_column='_3',
+                          fixed_step_size=1000, scheduler=s, **kw)
+        stirrer.input.table = random.output.table
+        module = ColsBinary(np.add, first=['_3', '_5', '_7'],
+                              second=['_4', '_6', '_8'], scheduler=s)
+        module.input.table = stirrer.output.table
+        pr=Print(proc=self.terse, scheduler=s)
+        pr.input.df = module.output.table
+        aio.run(s.start())
+        self.assertListEqual(module.table().columns,
+                             ['_3', '_5', '_7'])
+        arr = stirrer.table().to_array()
+        res1 = np.add(arr[:, [2, 4, 6]],
+                      arr[:, [3, 5, 7]])
+        ix1 = stirrer.table().index.to_array()
+        res1 = res1[ix1.argsort()]
+        res2 = module.table().to_array()
+        ix2 = module.table().index.to_array()
+        res2 = res2[ix2.argsort()]
+        self.assertEqual(module.name, "cols_binary_1")
+        self.assertTrue(np.allclose(res1, res2, equal_nan=True))
+
+    def test_cols_binary3(self):
+        self.t_stirred_cols_binary(delete_rows=5)
+
+    def test_cols_binary4(self):
+        self.t_stirred_cols_binary(update_rows=5)
+
+    def _t_impl(self, cls, ufunc, mod_name):
+        print("Testing", mod_name)
+        s = self.scheduler()
+        random = RandomTable(10, rows=10_000, scheduler=s)
+        module = cls(first=['_3', '_5', '_7'],
+                     second=['_4', '_6', '_8'],
+                     cols_out=['x', 'y', 'z'], scheduler=s)
+        module.input.table = random.output.table
+        pr=Print(proc=self.terse, scheduler=s)
+        pr.input.df = module.output.table
+        aio.run(s.start())
+        self.assertListEqual(module.table().columns,
+                             ['x', 'y', 'z'])
+        arr = random.table().to_array()
+        res1 = ufunc(arr[:, [2, 4, 6]],
+                      arr[:, [3, 5, 7]])
+        res2 = module.table().to_array()
+        self.assertEqual(module.name, mod_name)
+        self.assertTrue(np.allclose(res1, res2, equal_nan=True))
+
+def add_cols_bin_tst(c, k, ufunc):
+    cls = f"Cols{func2class_name(k)}"
+    mod_name = f'cols_{k}_1'
+    def _f(self_):
+        c._t_impl(self_, arr.__dict__[cls], ufunc, mod_name)
+    setattr(c, 'test_'+k, _f)
+
+for k, ufunc in binary_dict_gen_tst.items():
+     add_cols_bin_tst(TestColsBinary, k, ufunc)
+
+from progressivis.linalg import ColsLdexp
+#@skip
+class TestOtherColsBinaries(ProgressiveTest):
+    def _t_impl(self, cls, ufunc, mod_name):
+        print("Testing", mod_name)
+        s = self.scheduler()
+        cols = 10
+        random = RandomTable(cols, rows=10_000, scheduler=s,
+                              random=lambda x: np.random.randint(10, size=x),
+                             dtype='int64')
+        module = cls(first=['_3', '_5', '_7'],
+                     second=['_4', '_6', '_8'],
+                     cols_out=['x', 'y', 'z'], scheduler=s)
+        module.input.table = random.output.table
+        pr=Print(proc=self.terse, scheduler=s)
+        pr.input.df = module.output.table
+        aio.run(s.start())
+        self.assertListEqual(module.table().columns,
+                             ['x', 'y', 'z'])
+        arr = random.table().to_array()
+        res1 = ufunc(arr[:, [2, 4, 6]],
+                      arr[:, [3, 5, 7]])
+        res2 = module.table().to_array()
+        self.assertEqual(module.name, mod_name)
+        self.assertTrue(np.allclose(res1, res2, equal_nan=True))
+
+    def test_ldexp(self):
+        cls, ufunc, mod_name = ColsLdexp, np.ldexp, 'cols_ldexp_1'
+        print("Testing", mod_name)
+        s = self.scheduler()
+        cols = 10
+        random = RandomTable(cols, rows=10_000, scheduler=s,
+                              random=lambda x: np.random.randint(10, size=x),
+                             dtype='int64')
+        module = cls(first=['_3', '_5', '_7'],
+                     second=['_4', '_6', '_8'],
+                     cols_out=['x', 'y', 'z'], scheduler=s)
+        module.input.table = random.output.table
+        pr=Print(proc=self.terse, scheduler=s)
+        pr.input.df = module.output.table
+        aio.run(s.start())
+        self.assertListEqual(module.table().columns,
+                             ['x', 'y', 'z'])
+        arr = random.table().to_array()
+        res1 = ufunc(arr[:, [2, 4, 6]],
+                      arr[:, [3, 5, 7]])
+        res2 = module.table().to_array()
+        self.assertEqual(module.name, mod_name)
+        self.assertTrue(np.allclose(res1, res2, equal_nan=True))
+
+
+def add_other_cols_bin_tst(c, k, ufunc):
+    cls = f"Cols{func2class_name(k)}"
+    mod_name = f"cols_{k}_1"
+    def _f(self_):
+        c._t_impl(self_, arr.__dict__[cls], ufunc, mod_name)
+    setattr(c, f"test_cols_{k}", _f)
+    
+for k, ufunc in binary_dict_int_tst.items():
+    if k == 'ldexp':
+        continue
+    add_other_cols_bin_tst(TestOtherColsBinaries, k, ufunc)
 
 #@skip
 class TestBinary(ProgressiveTest):
@@ -339,9 +500,11 @@ class TestOtherBinaries(ProgressiveTest):
     def _t_impl(self, cls, ufunc, mod_name):
         print("Testing", mod_name)
         s = self.scheduler()
-        random1 = RandomTable(3, rows=100000, scheduler=s, random=lambda x: np.random.randint(10, size=x),
+        random1 = RandomTable(3, rows=100_000, scheduler=s,
+                              random=lambda x: np.random.randint(10, size=x),
                              dtype='int64')
-        random2 = RandomTable(3, rows=100000, scheduler=s, random=lambda x: np.random.randint(10, size=x),
+        random2 = RandomTable(3, rows=100_000, scheduler=s,
+                              random=lambda x: np.random.randint(10, size=x),
                              dtype='int64')
         module = cls(scheduler=s)
         module.input.first = random1.output.table
@@ -361,8 +524,9 @@ class TestOtherBinaries(ProgressiveTest):
         cls, ufunc, mod_name = Ldexp, np.ldexp, 'ldexp_1'
         print("Testing", mod_name)
         s = self.scheduler()
-        random1 = RandomTable(3, rows=100000, scheduler=s)
-        random2 = RandomTable(3, rows=100000, scheduler=s, random=lambda x: np.random.randint(10, size=x),
+        random1 = RandomTable(3, rows=100_000, scheduler=s)
+        random2 = RandomTable(3, rows=100_000, scheduler=s,
+                              random=lambda x: np.random.randint(10, size=x),
                              dtype='int64')
         module = cls(scheduler=s)
         module.input.first = random1.output.table
