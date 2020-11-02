@@ -1,4 +1,4 @@
-from . import ProgressiveTest
+from . import ProgressiveTest, skip
 
 from progressivis import Every, StorageManager
 from progressivis.io import CSVLoader
@@ -10,7 +10,8 @@ import pandas as pd
 import logging
 #logging.basicConfig(level=logging.DEBUG)
 logging.basicConfig(level=logging.WARNING)
-    
+
+@skip # essay
 class TestHistogram1D(ProgressiveTest):
 
     def tearDown(self):
