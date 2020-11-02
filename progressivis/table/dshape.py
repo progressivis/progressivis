@@ -62,17 +62,20 @@ def dshape_extract(data, columns=None):
         return dshape_from_dict(data)
     return None
 
-def dshape_projection(table, columns=None):
-    if columns == None:
+def dshape_projection(table, columns=None, names=None):
+    if columns is None and names is None:
         return table.dshape
     dshapes = []
-    for colname in columns:
+    if names is None:
+        names = columns
+    assert len(columns) == len(names)
+    for colname, newname in zip(columns, names):
         col = table._column(colname)
         if len(col.shape) > 1:
             dshapes.append("%s: %d * %s" %
-                           (col.name, col.shape[1], col.dshape))
+                           (newname, col.shape[1], col.dshape))
         else:
-            dshapes.append("%s: %s" % (col.name, col.dshape))
+            dshapes.append("%s: %s" % (newname, col.dshape))
     return "{" + ",".join(dshapes)+"}"
 
 def dshape_from_columns(table, columns, dshape):
