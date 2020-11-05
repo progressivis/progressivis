@@ -7,7 +7,7 @@ and exposing it as an output slot.
 from ..core.module import Module
 from ..core.slot import SlotDescriptor
 from .table import Table
-
+from .slot_join import SlotJoin
 
 # pylint: disable=abstract-method
 class TableModule(Module):
@@ -37,7 +37,7 @@ class TableModule(Module):
     def get_first_input_slot(self):
         for k in self._input_slots.keys():
             return k
-        
+
     def table(self):
         "Return the table"
         return self._table
@@ -128,10 +128,13 @@ class TableModule(Module):
                 if len(col.shape) > 1:
                     dshapes.append(f"{col.name}: {col.shape[1]} * {col.dshape}")
                 else:
-                    dshapes.append(f"{col.name}: {col.dshape}") 
+                    dshapes.append(f"{col.name}: {col.dshape}")
         return "{" + ",".join(dshapes) + "}"
 
     def get_datashape_from_expr(self):
         if not hasattr(type(self), "expr"):
             raise ValueError("expr attribute not defined")
         return "{{{cols}}}".format(cols=",".join(self.expr.keys()))
+
+    def make_slot_join(self, *slots):
+        return SlotJoin(self, *slots)

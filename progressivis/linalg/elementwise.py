@@ -3,11 +3,15 @@ from ..core.utils import indices_len, fix_loc
 from ..table.module import TableModule
 from ..table import Table, BaseTable
 from ..core.decorators import *
-from .. import ProgressiveError, SlotDescriptor
+from ..core.bitmap import bitmap
+
+from .. import ProgressiveError, SlotDescriptor, Slot
 from ..utils.psdict import PsDict
 from ..core.module import ModuleMeta
 from ..table.dshape import dshape_projection
 from collections import OrderedDict
+import operator
+from functools import reduce
 
 not_tested_unaries = ('isnat', # input array with datetime or timedelta data type.
                     'modf', # two outputs
@@ -62,25 +66,43 @@ class Unary(TableModule):
         if self._table is not None:
             self._table.resize(0)
 
-    @process_slot("table", reset_cb="reset")
-    @run_if_any
     def run_step(self, run_number, step_size, howlong):
-        with self.context as ctx:
-            data_in = ctx.table.data()
-            if self._table is None:
-                dshape_ = self.get_output_datashape("table")
-                self._table = Table(self.generate_table_name(f'unary_{self._ufunc.__name__}'),
-                                    dshape=dshape_, create=True)
-            cols = self.get_columns(data_in)
-            if len(cols) == 0:
-                return self._return_run_step(self.state_blocked, steps_run=0)
-            indices = ctx.table.created.next(step_size)
-            steps = indices_len(indices)
-            if steps == 0:
-                return self._return_run_step(self.state_blocked, steps_run=0)
+        slot = self.get_input_slot('table')
+        data_in = slot.data()
+        if not data_in:
+            return self._return_run_step(self.state_blocked, steps_run=0)
+        if self._table is None:
+            dshape_ = self.get_output_datashape("table")
+            self._table = Table(self.generate_table_name(f'unary_{self._ufunc.__name__}'),
+                                dshape=dshape_, create=True)
+        cols = self.get_columns(data_in)
+        if len(cols) == 0:
+            #return self._return_run_step(self.state_blocked, steps_run=0)
+            raise ValueError("Empty list of columns")
+        steps = 0
+        steps_todo = step_size
+        if slot.deleted.any():
+            indices = slot.deleted.next(steps_todo, as_slice=False)
+            del self._table.loc[indices]
+            steps += len(indices)
+            steps_todo -= len(indices)
+            if steps_todo <= 0:
+                return self._return_run_step(self.next_state(slot), steps_run=steps)
+        if slot.updated.any():
+            indices = slot.updated.next(steps_todo, as_slice=False)
             vec = self.filter_columns(data_in, fix_loc(indices)).raw_unary(self._ufunc, **self._kwds)
-            self._table.append(vec, indices=indices)
-            return self._return_run_step(self.next_state(ctx.table), steps_run=steps)
+            self._table.loc[indices, cols] = vec
+            steps += len(indices)
+            steps_todo -= len(indices)
+            if steps_todo <= 0:
+                return self._return_run_step(self.next_state(slot), steps_run=steps)
+        if not slot.created.any():
+            return self._return_run_step(self.next_state(slot), steps_run=steps)
+        indices = slot.created.next(step_size)
+        steps += indices_len(indices)
+        vec = self.filter_columns(data_in, fix_loc(indices)).raw_unary(self._ufunc, **self._kwds)
+        self._table.append(vec, indices=indices)
+        return self._return_run_step(self.next_state(slot), steps_run=steps)
 
 def make_subclass(super_, cname, ufunc):
     def _init_func(self_, *args, **kwds):
@@ -130,26 +152,46 @@ class ColsBinary(TableModule):
     def reset(self):
         if self._table is not None:
             self._table.resize(0)
-    @process_slot("table", reset_cb="reset")
-    @run_if_any
+
     def run_step(self, run_number, step_size, howlong):
-        with self.context as ctx:
-            data_in = ctx.table.data()
-            if self._cols_out is None:
-                self._cols_out = self._first
-            if self._table is None:
-                #import pdb;pdb.set_trace()
-                dshape_ = dshape_projection(data_in, self._first, self._cols_out)
-                self._table = Table(self.generate_table_name(f'simple_binary_{self._ufunc.__name__}'),
-                                    dshape=dshape_, create=True)
-            indices = ctx.table.created.next(step_size)
-            steps = indices_len(indices)
-            if steps == 0:
-                return self._return_run_step(self.state_blocked, steps_run=0)
+        slot = self.get_input_slot('table')
+        data_in = slot.data()
+        if not data_in:
+            return self._return_run_step(self.state_blocked, steps_run=0)
+        if self._cols_out is None:
+            self._cols_out = self._first
+        if self._table is None:
+            dshape_ = dshape_projection(data_in, self._first, self._cols_out)
+            self._table = Table(self.generate_table_name(f'simple_binary_{self._ufunc.__name__}'),
+                                dshape=dshape_, create=True)
+        steps = 0
+        steps_todo = step_size
+        if slot.deleted.any():
+            indices = slot.deleted.next(steps_todo, as_slice=False)
+            del self._table.loc[indices]
+            steps += len(indices)
+            steps_todo -= len(indices)
+            if steps_todo <= 0:
+                return self._return_run_step(self.next_state(slot), steps_run=steps)
+        if slot.updated.any():
+            indices = slot.updated.next(steps_todo, as_slice=False)
             view = data_in.loc[fix_loc(indices)]
             vec = _simple_binary(view, self._ufunc, self._first, self._second, self._cols_out, **self._kwds)
-            self._table.append(vec, indices=indices)
-            return self._return_run_step(self.next_state(ctx.table), steps_run=steps)
+            self._table.loc[indices, self._cols_out] = vec
+            steps += len(indices)
+            steps_todo -= len(indices)
+            if steps_todo <= 0:
+                return self._return_run_step(self.next_state(slot), steps_run=steps)
+        if not slot.created.any():
+            return self._return_run_step(self.next_state(slot), steps_run=steps)
+        indices = slot.created.next(step_size)
+        steps = indices_len(indices)
+        if steps == 0:
+            return self._return_run_step(self.state_blocked, steps_run=0)
+        view = data_in.loc[fix_loc(indices)]
+        vec = _simple_binary(view, self._ufunc, self._first, self._second, self._cols_out, **self._kwds)
+        self._table.append(vec, indices=indices)
+        return self._return_run_step(self.next_state(slot), steps_run=steps)
 
 def _binary(tbl, op, other, other_cols=None, **kwargs):
     if other_cols is None:
@@ -174,6 +216,8 @@ for k, v in binary_dict_all.items():
     binary_modules.append(_g[name])
 
 
+
+
 class Binary(TableModule):
     inputs = [SlotDescriptor('first', type=Table, required=True),
               SlotDescriptor('second', type=(Table, PsDict), required=True)]
@@ -188,61 +232,63 @@ class Binary(TableModule):
                                              and "second"
                                              in self._columns_dict)
         assert _assert
+        self._join = None
 
     def reset(self):
         if self._table is not None:
             self._table.resize(0)
 
-    def _if_orphans(self, frst, sec):
-        if (frst.output_module.state > self.state_blocked or
-                    sec.output_module.state > self.state_blocked):
-            frst.clear_buffers()
-            sec.clear_buffers()
-
-    @process_slot("first", "second", reset_cb="reset")
-    @run_if_any
     def run_step(self, run_number, step_size, howlong):
-        with self.context as ctx:
-            data = ctx.first.data()
-            data2 = ctx.second.data()
-            if not (data and data2):
-                return self._return_run_step(self.state_blocked, steps_run=0)
-            _t2t = isinstance(data2, BaseTable)
-            if _t2t:
-                if not (ctx.first.created.any() and ctx.second.created.any()):
-                    self._if_orphans(ctx.first, ctx.second)
-                    return self._return_run_step(self.state_blocked, steps_run=0)
-                #step_size = min(ctx.first.created.length(), ctx.second.created.length(), step_size)
-                first_created = ctx.first.created.changes
-                second_created = ctx.second.created.changes
-                common_ids = first_created & second_created
-                if not common_ids:
-                    self._if_orphans(ctx.first, ctx.second)
-                    return self._return_run_step(self.state_blocked, steps_run=0)
-                flush = True
-                if len(common_ids) > step_size:
-                    flush = False
-                    common_ids = common_ids[:step_size]
-                ctx.first.created.changes -= common_ids
-                ctx.second.created.changes -= common_ids
-                steps = len(common_ids)
-                if flush:
-                    self._if_orphans(ctx.first, ctx.second)
-            else: # i.e. second is a dict
-                common_ids = ctx.first.created.next(step_size)
-                steps = indices_len(common_ids)
-                ctx.second.clear_buffers()
-            if steps == 0:
-                return self._return_run_step(self.state_blocked, steps_run=0)
-            other = self.filter_columns(data2, fix_loc(common_ids), "second") if _t2t else data2
-            vec = _binary(self.filter_columns(data, fix_loc(common_ids), "first"),
+        first = self.get_input_slot('first')
+        second = self.get_input_slot('second')
+        data = first.data()
+        data2 = second.data()
+        if not (data and data2):
+            return self._return_run_step(self.state_blocked, steps_run=0)
+        _t2t = isinstance(data2, BaseTable)
+        if not _t2t and second.has_buffered(): # i.e. second is a dict
+            first.reset()
+            second.reset()
+            self.reset()
+            first.update(run_number)
+            second.update(run_number)
+            second.clear_buffers()
+        steps = 0
+        steps_todo = step_size
+        if self._table is None:
+            dshape_ = self.get_output_datashape("table")
+            self._table = Table(self.generate_table_name(f'binary_{self._ufunc.__name__}'),
+                                dshape=dshape_, create=True)
+        if self._join is None:
+            slots_ = (first, second) if isinstance(data2, BaseTable) else (first,)
+            self._join = self.make_slot_join(*slots_)
+        with self._join as join:
+            if join.has_deleted():
+                indices = join.next_deleted(steps_todo)
+                del self._table.loc[indices]
+                steps += len(indices)
+                steps_todo -= len(indices)
+                if steps_todo <= 0:
+                    return self._return_run_step(self.next_state(first), steps_run=steps)
+            if join.has_updated():
+                indices = join.next_updated(steps_todo)
+                other = self.filter_columns(data2, fix_loc(indices), "second") if _t2t else data2
+                vec = _binary(self.filter_columns(data, fix_loc(indices), "first"),
+                              self._ufunc, other, self.get_columns(data2, "second"), **self._kwds)
+                self._table.loc[indices, :] = vec
+                steps += len(indices)
+                steps_todo -= len(indices)
+                if steps_todo <= 0:
+                    return self._return_run_step(self.next_state(first), steps_run=steps)
+            if (not join.has_created()) or steps_todo <= 0:
+                return self._return_run_step(self.next_state(first), steps_run=steps)
+            indices = join.next_created(steps_todo)
+            steps += len(indices)
+            other = self.filter_columns(data2, fix_loc(indices), "second") if _t2t else data2
+            vec = _binary(self.filter_columns(data, fix_loc(indices), "first"),
                           self._ufunc, other, self.get_columns(data2, "second"), **self._kwds)
-            if self._table is None:
-                dshape_ = self.get_output_datashape("table")
-                self._table = Table(self.generate_table_name(f'binary_{self._ufunc.__name__}'),
-                                    dshape=dshape_, create=True)            
-            self._table.append(vec, indices=common_ids)
-            return self._return_run_step(self.next_state(ctx.first), steps_run=steps)
+            self._table.append(vec, indices=indices)
+            return self._return_run_step(self.next_state(first), steps_run=steps)
 
 for k, v in binary_dict_all.items():
     name = func2class_name(k)
@@ -320,7 +366,7 @@ def make_binary(func, name=None):
     return make_subclass(Binary, name, func)
 
 def binary_module(func):
-    name = func.__name__    
+    name = func.__name__
     if isinstance(func, np.ufunc): # it should never happen
         raise ValueError("Universal functions (numpy.ufunc) cannot "
                          "be decorated. Use make_binary() instead")
@@ -338,7 +384,7 @@ def make_reduce(func, name=None):
     return make_subclass(Reduce, name, func)
 
 def reduce_module(func):
-    name = func.__name__    
+    name = func.__name__
     if isinstance(func, np.ufunc): # it should never happen
         raise ValueError("Universal functions (numpy.ufunc) cannot "
                          "be decorated. Use make_reduce() instead")
