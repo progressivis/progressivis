@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"Stirrer module for torturing progressivis."
+"Stirrer module for torturing progressivis in tests."
 
 import random
 import numpy as np
@@ -10,6 +10,7 @@ from progressivis.core.slot import SlotDescriptor
 from .module import TableModule
 from . import Table, TableSelectedView
 
+
 class Stirrer(TableModule):
     parameters = [('update_column', str, ""),
                   ('update_rows', object, None),
@@ -18,7 +19,7 @@ class Stirrer(TableModule):
                   ('update_threshold', object, None),
                   ('del_twice', bool, False),
                   ('fixed_step_size', int, 0),
-                  ('mode', str, "random"),]
+                  ('mode', str, "random")]
     inputs = [SlotDescriptor('table', type=Table, required=True)]
 
     def __init__(self, **kwds):
@@ -82,12 +83,14 @@ class Stirrer(TableModule):
                 self._table.loc[fix_loc(updated), [self._update_column]] = [v]
         return self._return_run_step(self.next_state(input_slot),
                                      steps_run=steps)
+
+
 class StirrerView(TableModule):
     parameters = [('update_column', str, ""),
                   ('delete_rows', object, None),
                   ('delete_threshold', object, None),
                   ('fixed_step_size', int, 0),
-                  ('mode', str, "random"),]
+                  ('mode', str, "random")]
     inputs = [SlotDescriptor('table', type=Table, required=True)]
 
     def __init__(self, **kwds):
