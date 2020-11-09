@@ -1,4 +1,4 @@
-name: progressivis-environment
+name: progressivis
 channels:
   - conda-forge
   - anaconda
