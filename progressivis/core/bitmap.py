@@ -5,7 +5,7 @@ import array
 
 from pyroaring import BitMap
 import numpy as np
-
+from  collections.abc import Iterable
 # pragma no cover
 # pylint: disable=invalid-name
 _integer_types = (int, np.integer)
@@ -60,8 +60,17 @@ class bitmap(BitMap,object):
 
     def __getitem__(self, values):
         bm = BitMap.__getitem__(self, values)
-        return bitmap(bm) if isinstance(bm, BitMap) else bm
+        if isinstance(bm, BitMap):
+            return bitmap(bm)
+        if (isinstance(bm, TypeError) and isinstance(values, Iterable)):
+            bmval = bitmap(values)
+            if bmval in self:
+                return bmval
+        if isinstance(bm, Exception):
+            raise bm
+        raise KeyError(f"wrong key{values}")
 
+                
     # def __eq__(self, other):
     #     if isinstance(other, BitMap):
     #         return BitMap.__eq__(other, self)
@@ -112,6 +121,8 @@ class bitmap(BitMap,object):
             return NIL_BITMAP
         if isinstance(x, bitmap):
             return x
+        if isinstance(x, _integer_types):
+            return bitmap([x])
         return bitmap(x)
 
     def __or__(self, other):
