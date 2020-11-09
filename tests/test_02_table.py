@@ -28,6 +28,7 @@ class TestTable(ProgressiveTest):
         self.fill_table()
         self.update_table()
         self.delete_table()
+        # self.delete_table2() # buggy
         self.append_dataframe()
         self.append_direct()
         self.load_csv()
@@ -246,6 +247,10 @@ class TestTable(ProgressiveTest):
         t = Table('table', storagegroup=self.storagegroup)
         self._delete_table(t)
 
+    def delete_table2(self):
+        t = Table('table', storagegroup=self.storagegroup)
+        self._delete_table2(t)
+
     def _update_table(self, t):
         #pylint: disable=protected-access
         self.assertEqual(len(t),10)
@@ -269,6 +274,12 @@ class TestTable(ProgressiveTest):
             cnt += 1
         self.assertEqual(len(t), cnt)
 
+    def _delete_table2(self, t):
+        with self.assertRaises(KeyError):
+            c = t.loc[2]
+            print(c)
+
+        
     def append_dataframe(self):
         #pylint: disable=protected-access
         #self.scheduler._run_number = 1
