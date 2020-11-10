@@ -96,11 +96,12 @@ class BaseTable(metaclass=ABCMeta):
         self._base = base
         self._columns = []
         self._columndict = OrderedDict()
-        self._ids = None
+        self._index = bitmap
         self._loc = _Loc(self, True)
-        self._iloc = _Loc(self, False)
         self._at = _At(self, True)
-        self._iat = _At(self, False)
+        self._changes = None
+        self._is_identity = True
+
 
     @property
     def loc(self):
@@ -108,20 +109,10 @@ class BaseTable(metaclass=ABCMeta):
         return self._loc
 
     @property
-    def iloc(self):
-        "Return a `locator` object for indexing using indices"
-        return self._iloc
-
-    @property
     def at(self):
         # pylint: disable=invalid-name
         "Return an object for indexing values using ids"
         return self._at
-
-    @property
-    def iat(self):
-        "Return an object for indexing values using indices"
-        return self._iat
 
     def __repr__(self):
         return str(self) + self.info_contents()
@@ -196,12 +187,12 @@ class BaseTable(metaclass=ABCMeta):
     @property
     def is_identity(self):
         "Return True if the index is using the identity mapping"
-        return self._ids.is_identity
+        return self._is_identity
 
     @property
     def last_id(self):
         "Return the last id of this table"
-        return self._ids.last_id
+        return (self._index and self._index.max()) or 0
 
     def width(self, colnames=None):
         """Return the number of effective width (number of columns) of the table
@@ -348,10 +339,10 @@ class BaseTable(metaclass=ABCMeta):
         if isinstance(name, integer_types):
             return name
         return self._columndict[name]
-
+    
     def index_to_id(self, ix):
         """Return the ids of the specified indices
-
+        NB: useless for this implementation. kept for compat.
         Parameters
         ----------
         ix: the specification of an index or a list of indices
@@ -360,12 +351,14 @@ class BaseTable(metaclass=ABCMeta):
             except that slices and Iterables may return expanded as lists or
             arrays.
         """
-        return self._ids[ix]
-
+        locs =  self._any_to_bitmap(ix)
+        assert locs in self._index
+        return locs
+                      
     def id_to_index(self, loc, as_slice=True):
         # to be reimplemented with LRU-dict+pyroaring
         """Return the indices of the specified id or ids
-
+        NB: useless for this implementation. kept for compat.
         Parameters
         ----------
         loc : an id or list of ids
@@ -376,50 +369,54 @@ class BaseTable(metaclass=ABCMeta):
             If True, try to convert the result into a slice if possible and
             not too expensive.
         """
-        return self._ids.id_to_index(loc, as_slice)
+        return self.index_to_id(loc)
 
     @property
     def index(self):
         "Return the object in change of indexing this table"
-        return self._ids
-
+        return self._index
+                      
     @property
     def ncol(self):
         "Return the number of columns (same as `len(table.columns()`)"
         return len(self._columns)
-
-    @abstractproperty
+                      
+    @property
     def nrow(self):
         "Return the number of rows (same as `len(table)`)"
-        pass
-
+        return len(self._index)
+                      
     def __len__(self):
         return self.nrow
-
-    @abstractmethod
-    def resize(self, newsize, index=None):
-        """Resize this table
-
-        Parameters
-        ----------
-        newsize: integer
-            the new size of this table, which can be larger or shorter than the
-            current size
-        index: list of ids or None
-            ids to associate to the newly created rows.  The ids should be
-            unique in the table, and the list of ids should be the same length
-            as the number of newly created rows.  If None, the ids are created
-            automatically.
-        """
-        pass
-
-    @abstractmethod
+                      
+    def _slice_to_bitmap(self, sl):
+        nsl = norm_slice(sl)
+        if nsl.stop is None:
+            nsl.stop = self.last_id +1
+        else:
+            nsl.stop += 1
+        return bitmap(nsl)
+                      
+    def _any_to_bitmap(self, locs, copy=True):
+        if isinstance(locs, bitmap):
+            return locs[:] if copy else locs
+        if isinstance(locs, integer_types):
+            return bitmap([locs])
+        if isinstance(locs, Iterable):
+            if all_bool(locs):
+                return bitmap(np.nonzero(locs))
+            else:
+                return bitmap(locs)
+        if isinstance(locs, slice):
+            return self._slice_to_bitmap(locs)
+        raise KeyError(f"Invalid type {type(locs)} for key {locs}")
+                      
+                      
     def __delitem__(self, key):
-        pass
+        self._index -= self._any_to_bitmap(key)
 
-    @abstractmethod
-    def drop(self, index, locs=None):
-        pass
+    def drop(self, index):
+        self.__delitem__(key)
 
     @abstractproperty
     def name(self):
@@ -439,18 +436,18 @@ class BaseTable(metaclass=ABCMeta):
     @property
     def changes(self):
         "Return the TableChange manager associated with this table or None"
-        if self._ids is None:
+        if not self._index:
             return None
-        return self._ids.changes
+        return self._changes
 
     @changes.setter
     def changes(self, tablechange):
         "Set the TableChange manager, or unset with None"
-        if self._ids is None:
+        if not self._index:
             raise RuntimeError('Table has no index')
-        self._ids.changes = tablechange
+        self._changes = tablechange
 
-    def compute_updates(self, start, now, mid):
+    def compute_updates(self, start, now, mid=None, cleanup=True):
         """Compute the updates (delta) that happened to this table since the last call.
 
         Parameters
@@ -467,9 +464,16 @@ class BaseTable(metaclass=ABCMeta):
         updates: None or an IndexUpdate structure which describes the list
              of rows created, updated, and deleted.
         """
-        if self._ids is None:
+        if not self._index:
             return None
-        return self._ids.compute_updates(start, now, mid)
+        if self._changes:
+            updates = self._changes.compute_updates(start, now, mid,
+                                                    cleanup=cleanup)
+            if updates is None:
+                updates = IndexUpdate(created=bitmap(self._index)) # pass an index copy ...
+            return updates
+        return None
+
 
     def __getitem__(self, key):
         # hack, use t[['a', 'b'], 1] to get a list instead of a TableView
@@ -496,7 +500,7 @@ class BaseTable(metaclass=ABCMeta):
 
     def iterrows(self):
         "Return an iterator returning rows and their ids"
-        return map(self.row, iter(self._ids))
+        return map(self.row, iter(self._index))
 
     def last(self, key=None):
         "Return the last row"
@@ -624,33 +628,9 @@ class BaseTable(metaclass=ABCMeta):
         indices = None
         # TODO split the copy in chunks
         if locs is None:
-            """
-            # this cannot work ...
-            # because after many creations/deletions
-            # some indices may be >self.size
-            # and self._freelist may be empty
-            # because holes were filled by new creations
-            if self._ids.has_freelist():
-                indices = self._ids[:]
-                mask = np.ones(len(indices), dtype=np.bool)
-                mask[self._ids.freelist()] = False
-                #indices = np.ma.masked_array(indices, mask)
-                indices = np.nonzero(mask)[0]
-            else:
-                indices = slice(0, self.size)
-            """
-            indices = self.index.to_array()
-            indices = self.id_to_index(indices)
-        elif isinstance(locs, (list, np.ndarray)):
-            indices = np.asarray(locs, np.int64)
-            indices = self.id_to_index(indices)
-        elif isinstance(locs, Iterable):
-            indices = self.id_to_index(locs)
-        elif isinstance(locs, integer_types):
-            indices = self.id_to_index(slice(locs, locs+1, 1))
-        elif isinstance(locs, slice):
-            indices = self.id_to_index(locs)
-
+            indices = self._index
+        else:
+            indices = self._any_to_bitmap(locs)
         arr = np.empty((indices_len(indices), offsets[-1]), dtype=dtype)
         for i, column in enumerate(columns):
             col = self._column(column)
