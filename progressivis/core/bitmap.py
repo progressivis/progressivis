@@ -62,14 +62,9 @@ class bitmap(BitMap,object):
         bm = BitMap.__getitem__(self, values)
         if isinstance(bm, BitMap):
             return bitmap(bm)
-        if (isinstance(bm, TypeError) and isinstance(values, Iterable)):
-            bmval = bitmap(values)
-            if bmval in self:
-                return bmval
         if isinstance(bm, Exception):
             raise bm
         return bm
-
 
                 
     # def __eq__(self, other):
