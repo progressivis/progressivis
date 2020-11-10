@@ -68,7 +68,8 @@ class bitmap(BitMap,object):
                 return bmval
         if isinstance(bm, Exception):
             raise bm
-        raise KeyError(f"wrong key{values}")
+        return bm
+
 
                 
     # def __eq__(self, other):
