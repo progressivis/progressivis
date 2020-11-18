@@ -224,6 +224,7 @@ class Table(BaseTable):
         start = self.last_id+1
         newsize = start+count
         index = bitmap(range(start, start+count)) if index is None else index
+        self.add_created(index)
         self._storagegroup.attrs[metadata.ATTR_NROWS] = newsize
         for column in self._columns:
             column.resize(newsize)
