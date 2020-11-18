@@ -5,15 +5,16 @@ from collections import OrderedDict, Mapping, Iterable
 import operator
 import logging
 import numpy as np
-
-from progressivis.core.utils import (integer_types,
+from progressivis.core.index_update import IndexUpdate
+from progressivis.core.utils import (integer_types, norm_slice, is_slice,
+                                     slice_to_bitmap, is_int, is_str,
+                                     all_int, all_string, is_iterable,
                                      all_string_or_int, all_bool,
                                      indices_len, remove_nan,
                                      is_none_alike, get_physical_base)
 from progressivis.core.config import get_option
 from progressivis.core.bitmap import bitmap
 from .dshape import dshape_print
-
 
 logger = logging.getLogger(__name__)
 
@@ -37,33 +38,54 @@ class _BaseLoc(object):
         locs = None
         if self._as_loc:  # i.e loc mode
             locs = index
-            index = self._table.id_to_index(index)
+            index = self._table._any_to_bitmap(index)
         return index, col_key, locs
+
+    def parse_key_to_bitmap(self, key):
+        if isinstance(key, tuple):
+            if len(key) != 2:
+                raise ValueError('getitem not implemented for key "%s"' % key)
+            raw_index, col_key = key
+        else:
+            raw_index, col_key = key, slice(None)
+        index = self._table._any_to_bitmap(raw_index)
+        return index, col_key, raw_index
 
 
 class _Loc(_BaseLoc):
     # pylint: disable=too-few-public-methods
     def __delitem__(self, key):
-        index, col_key, locs = self.parse_key(key)
-        if col_key != slice(None):
+        index, col_key, raw_index = self.parse_key_to_bitmap(key)
+        if not is_none_alike(col_key):
             raise ValueError('Cannot delete key "%s"' % key)
-        self._table.drop(index, locs)
+        self._table.drop(index, raw_index)
 
     def __getitem__(self, key):
-        index, col_key, _ = self.parse_key(key)
-        if isinstance(index, integer_types):
-            row = self._table.row(index)
+        index, col_key, raw_index = self.parse_key_to_bitmap(key)
+        if not (is_slice(raw_index) or index in self._table._index):
+            diff_ = index - self._table._index
+            raise KeyError(f"Not existing indices {diff_}")
+        if isinstance(raw_index, integer_types):
+            row = self._table.row(raw_index)
             if col_key != slice(None):
                 return row[col_key]
             return row
-        if isinstance(index, slice) and index.step in (None, 1):
-            from .table_sliced import TableSlicedView
-            return TableSlicedView(self._table, index, col_key)
+        #if isinstance(raw_index, slice) and index.step in (None, 1):
+        #    from .table_sliced import TableSlicedView
+        #    return TableSlicedView(self._table, index, col_key)
         elif isinstance(index, Iterable):
-            from .table_selected import TableSelectedView
-            selection = bitmap.asbitmap(self._table.index[index])
-            return TableSelectedView(self._table, selection, col_key,
-                                     self._table.name)
+            #from .table_selected import TableSelectedView
+            #selection = bitmap.asbitmap(self._table.index)
+            #return TableSelectedView(self._table, selection, col_key,
+            #                         self._table.name)
+            index = bitmap.asbitmap(index)
+            btab = BaseTable(index=index)
+            columns, columndict = self._table.make_projection(col_key, btab)
+            btab._columns = columns
+            btab._columndict = columndict
+            return btab
+            #return BaseTable(index=index, columns=columns,
+            #                 columndict=columndict)
         raise ValueError('getitem not implemented for index "%s"', index)
 
     def __setitem__(self, key, value):
@@ -73,16 +95,30 @@ class _Loc(_BaseLoc):
 
 class _At(_BaseLoc):
     # pylint: disable=too-few-public-methods
+    def parse_key(self, key):
+        if isinstance(key, tuple):
+            if len(key) != 2:
+                raise ValueError('getitem not implemented for key "%s"' % key)
+            index, col_key = key
+        else:
+            raise KeyError(f"Invalid key {key}")
+        if not is_int(index):
+            raise KeyError(f"Invalid row key {index}")
+        if not (is_str(col_key) or is_int(col_key)):
+            raise KeyError(f"Invalid column key {col_key}")
+        return index, col_key
+
     def __getitem__(self, key):
-        index, col_key, _ = self.parse_key(key)
-        if not isinstance(col_key, (str, integer_types)):
-            raise ValueError('At getitem not implemented for column key "%s"' %
-                             col_key)
+        index, col_key = self.parse_key(key)
+        if index not in self._table._index:
+            raise ValueError(f"Not existing indice {index}")
         return self._table[col_key][index]
 
     def __setitem__(self, key, value):
-        index, col_key, _ = self.parse_key(key)
-        if not isinstance(col_key, (str, integer_types)):
+        index, col_key = self.parse_key(key)
+        if not is_int(index):
+            raise KeyError(f"Invalid row key {index}")
+        if not  (is_str(col_key) or is_int(col_key)):
             raise ValueError('At setitem not implemented for column key "%s"' %
                              col_key)
         self._table[col_key][index] = value
@@ -92,16 +128,17 @@ class BaseTable(metaclass=ABCMeta):
     # pylint: disable=too-many-public-methods, too-many-instance-attributes
     """Base class for Tables.
     """
-    def __init__(self, base=None):
+    def __init__(self, base=None, index=None, columns=None, columndict=None):
         self._base = base
-        self._columns = []
-        self._columndict = OrderedDict()
-        self._index = bitmap
+        self._columns = [] if columns is None else columns
+        self._columndict = OrderedDict() if columndict is None else columndict
+        self._index = bitmap() if index is None else index
         self._loc = _Loc(self, True)
         self._at = _At(self, True)
         self._changes = None
         self._is_identity = True
-
+        self._cached_index = BaseTable # hack
+        self._last_id = -1
 
     @property
     def loc(self):
@@ -192,7 +229,11 @@ class BaseTable(metaclass=ABCMeta):
     @property
     def last_id(self):
         "Return the last id of this table"
-        return (self._index and self._index.max()) or 0
+        if not self._index:
+            assert self._last_id == -1
+        elif self._last_id < self._index.max():
+            self._last_id = self._index.max()
+        return self._last_id
 
     def width(self, colnames=None):
         """Return the number of effective width (number of columns) of the table
@@ -221,6 +262,33 @@ class BaseTable(metaclass=ABCMeta):
     def to_json(self, **kwds):
         "Return a dictionary describing the contents of this columns."
         return self.to_dict(**kwds)
+    def make_col_view(self, col, index):
+        from .column_selected import ColumnSelectedView
+        return ColumnSelectedView(base=col, index=index)
+    def make_projection(self, cols, index):
+        dict_ = self._make_columndict_projection(cols)
+        columns = [self.make_col_view(c, index) for (i, c) in enumerate(self._columns) if i in  dict_.values()]
+        columndict = OrderedDict(zip(dict_.keys(), range(len(dict_))))
+        return columns, columndict
+
+    def _make_columndict_projection(self, cols):
+        if is_none_alike(cols):
+            return self._columndict
+        if isinstance(cols, slice):
+            assert is_int(cols.start) # for the moment ...
+            nsl = norm_slice(cols, stop=len(self._columndict))
+            return OrderedDict({k:v for (i, (k,v)) in enumerate(self._columndict.items())
+                    if i in range(*nsl.indices(nsl.stop))})
+        if is_int(cols) or is_str(cols):
+            cols = [cols]
+        if is_iterable(cols):
+            if all_int(cols):
+                return OrderedDict({k:v for (i, (k,v)) in enumerate(self._columndict.items())
+                                    if i in cols})
+            if all_string(cols):
+                return OrderedDict({k:v for (k,v) in self._columndict.items()
+                    if k in cols})
+        raise ValueError(f"Invalid column projection {cols}")
 
     def to_dict(self, orient='dict', columns=None):
         # pylint: disable=too-many-branches
@@ -339,7 +407,7 @@ class BaseTable(metaclass=ABCMeta):
         if isinstance(name, integer_types):
             return name
         return self._columndict[name]
-    
+
     def index_to_id(self, ix):
         """Return the ids of the specified indices
         NB: useless for this implementation. kept for compat.
@@ -351,10 +419,12 @@ class BaseTable(metaclass=ABCMeta):
             except that slices and Iterables may return expanded as lists or
             arrays.
         """
+        if is_int(ix):
+            return ix
         locs =  self._any_to_bitmap(ix)
         assert locs in self._index
         return locs
-                      
+
     def id_to_index(self, loc, as_slice=True):
         # to be reimplemented with LRU-dict+pyroaring
         """Return the indices of the specified id or ids
@@ -375,28 +445,25 @@ class BaseTable(metaclass=ABCMeta):
     def index(self):
         "Return the object in change of indexing this table"
         return self._index
-                      
+
     @property
     def ncol(self):
         "Return the number of columns (same as `len(table.columns()`)"
         return len(self._columns)
-                      
+
     @property
     def nrow(self):
         "Return the number of rows (same as `len(table)`)"
         return len(self._index)
-                      
+
     def __len__(self):
         return self.nrow
-                      
+
     def _slice_to_bitmap(self, sl):
-        nsl = norm_slice(sl)
-        if nsl.stop is None:
-            nsl.stop = self.last_id +1
-        else:
-            nsl.stop += 1
-        return bitmap(nsl)
-                      
+        stop = sl.stop or self.last_id
+        nsl = norm_slice(sl, fix_loc=True, stop=stop)
+        return bitmap(nsl) & self._index
+
     def _any_to_bitmap(self, locs, copy=True):
         if isinstance(locs, bitmap):
             return locs[:] if copy else locs
@@ -410,20 +477,29 @@ class BaseTable(metaclass=ABCMeta):
         if isinstance(locs, slice):
             return self._slice_to_bitmap(locs)
         raise KeyError(f"Invalid type {type(locs)} for key {locs}")
-                      
-                      
+
+
     def __delitem__(self, key):
-        self._index -= self._any_to_bitmap(key)
+        bm = self._any_to_bitmap(key)
+        if isinstance(key, Iterable):
+            assert bm in self._index
+        self._index -= bm
 
-    def drop(self, index):
-        self.__delitem__(key)
+    def drop(self, index, raw_index):
+        "index is useless by now"
+        if is_int(raw_index):
+            #self.__delitem__(raw_index)
+            self._index.remove(raw_index)
+        else:
+            #self.__delitem__(index)
+            self._index -= index
 
-    @abstractproperty
+    @property
     def name(self):
         "Return the name of this table"
         pass
 
-    @abstractproperty
+    @property
     def dshape(self):
         "Return the datashape of this table"
         pass
@@ -479,7 +555,7 @@ class BaseTable(metaclass=ABCMeta):
         # hack, use t[['a', 'b'], 1] to get a list instead of a TableView
         fast = False
         if isinstance(key, tuple):
-            key = key[0]
+            key = key[0] # i.e. columns
             fast = True
         if isinstance(key, (str, integer_types)):
             return self._column(key)
@@ -817,3 +893,73 @@ class BaseTable(metaclass=ABCMeta):
         for c, ix in res.items():
             res[c] = self.index_to_id(ix)
         return res
+
+
+
+
+    def remove_module(self, mid):
+        # TODO
+        pass
+
+    def _normalize_locs(self, locs):
+        if locs is None:
+            if bool(self._freelist):
+                locs = iter(self)
+            else:
+                locs = iter(self.dataset)
+        elif isinstance(locs, integer_types):
+            locs = [locs]
+        return bitmap(locs)
+
+    def nonfree(self):
+        indices = self.dataset[:]
+        mask = np.ones(len(indices), dtype=np.bool)
+        mask[self.freelist()] = False
+        return indices, mask
+
+    def ___old_idcolumn_to_array(self):
+        import pdb;pdb.set_trace()
+        if not self.has_freelist():
+            return self.dataset[:]
+        indices, mask = self.nonfree()
+        return indices[mask]
+
+    # begin(Change management)
+    def _flush_cache(self):
+        self._cached_index = BaseTable
+
+    def touch(self, index=None):
+        if index is self._cached_index:
+            return
+        self._cached_index = index
+        self.add_updated(index)
+
+    def add_created(self, locs):
+        if self._changes:
+            locs = self._normalize_locs(locs)
+            self._changes.add_created(locs)
+
+    def add_updated(self, locs):
+        if self._changes:
+            locs = self._normalize_locs(locs)
+            self._changes.add_updated(locs)
+
+    def add_deleted(self, locs):
+        if self._changes:
+            locs = self._normalize_locs(locs)
+            self._changes.add_deleted(locs)
+
+    def compute_updates(self, start, now, mid=None, cleanup=True):
+        if self._changes:
+            self._flush_cache()
+            updates = self._changes.compute_updates(start, now, mid,
+                                                    cleanup=cleanup)
+            if updates is None:
+                updates = IndexUpdate(created=bitmap(self._index))
+            return updates
+        return None
+
+    def equals(self, other):
+        if self is other:
+            return True
+        return np.all(self.values == other.values)

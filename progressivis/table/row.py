@@ -42,7 +42,7 @@ class Row(Mapping):
         table = self.table
         if isinstance(key, (list, tuple)):
             return (self[k] for k in key) # recursive call
-        return table.iat[self.row, table.column_index(key)]
+        return table.at[self.row, table.column_index(key)]
 
     def __setitem__(self, key, value):
         table = self.table

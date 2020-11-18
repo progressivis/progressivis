@@ -31,3 +31,7 @@ class ColumnSelectedView(ColumnProxy):
         return self._base[self.index.id_to_index(slice(None, None, None))]
 
 
+    def __getitem__(self, index):
+        #import pdb;pdb.set_trace()
+        bm = self.index._any_to_bitmap(index)
+        return self._base[bm]

@@ -18,9 +18,9 @@ from .dshape import (dshape_create, dshape_table_check, dshape_fields,
 from . import metadata
 from .table_base import BaseTable
 from .column import Column
-from .column_id import IdColumn
+#from .column_id import IdColumn
 from ..utils.khash.hashtable import Int64HashTable
-
+from progressivis.core.bitmap import bitmap
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +28,7 @@ __all__ = ["Table"]
 
 
 class Table(BaseTable):
-    """Create a Table data structure, made of a collection of columns.
+    """Create a Table data structure, made of a collectifrom progressivis.core.bitmap import bitmapon of columns.
 
     A Table is similar to Python Pandas or R DataFrame, but
     column-based and supporting fast addition of items.
@@ -109,6 +109,7 @@ class Table(BaseTable):
         else:
             self._dshape = dshape_create(dshape)
             assert dshape_table_check(self._dshape)
+        #import pdb;pdb.set_trace()
         if create and self._dshape is None:
             raise ValueError('Cannot create a table without a dshape')
         if self._dshape is None or (not create and metadata.ATTR_TABLE in self._storagegroup.attrs):
@@ -149,8 +150,9 @@ class Table(BaseTable):
         nrow = node.attrs[metadata.ATTR_NROWS]
         self._dshape = dshape_create(node.attrs[metadata.ATTR_DATASHAPE])
         assert dshape_table_check(self._dshape)
-        self._ids = IdColumn()
-        self._ids.load_dataset(dshape=None, nrow=nrow)
+        #self._ids = IdColumn(table=self)
+        #self._ids.load_dataset(dshape=None, nrow=nrow)
+        self._index = bitmap(range(nrow)) # buggy, but it reflects the current behaviour
         for (name, dshape) in dshape_fields(self._dshape):
             column = self._create_column(name)
             column.load_dataset(dshape=dshape,
@@ -164,8 +166,8 @@ class Table(BaseTable):
         node.attrs[metadata.ATTR_DATASHAPE] = str(self._dshape)
         node.attrs[metadata.ATTR_NROWS] = 0
         # create internal id dataset
-        self._ids = IdColumn(storagegroup=self.storagegroup)
-        self._ids.create_dataset(dshape=None, fillvalue=-1)
+        # self._ids = IdColumn(table=self, storagegroup=self.storagegroup)
+        # self._ids.create_dataset(dshape=None, fillvalue=-1)
         for (name, dshape) in dshape_fields(self._dshape):
             assert name not in self._columndict
             shape = dshape_to_shape(dshape)
@@ -178,8 +180,9 @@ class Table(BaseTable):
                                   fillvalue=fillvalue,
                                   shape=shape)
 
+
     def _create_column(self, name):
-        column = Column(name, self._ids, storagegroup=self.storagegroup)
+        column = Column(name, self, storagegroup=self.storagegroup)
         index = len(self._columns)
         self._columndict[name] = index
         self._columns.append(column)
@@ -201,7 +204,12 @@ class Table(BaseTable):
         return colname in self._columndict
 
     def _resize_rows(self, newsize, index=None):
-        self._ids.resize(newsize, index)
+        #self._ids.resize(newsize, index)
+        if index is not None:
+            self._index |= self._any_to_bitmap(index)
+        else:
+            #assert self._is_identity
+            self._index |= bitmap(range(self.last_id+1, newsize))
 
     def resize(self, newsize, index=None):
         self._resize_rows(newsize, index)
@@ -210,8 +218,12 @@ class Table(BaseTable):
             column.resize(newsize)
 
     def _allocate(self, count, index=None):
-        index = self._ids._allocate(count, index)
-        newsize = self._ids.size
+        #import pdb;pdb.set_trace()
+        #index = self._ids._allocate(count, index)
+        #newsize = self._ids.size
+        start = self.last_id+1
+        newsize = start+count
+        index = bitmap(range(start, start+count)) if index is None else index
         self._storagegroup.attrs[metadata.ATTR_NROWS] = newsize
         for column in self._columns:
             column.resize(newsize)
@@ -219,13 +231,13 @@ class Table(BaseTable):
 
     def touch_rows(self, loc=None):
         "Signals that the values at loc have been changed"
-        self._ids.touch(loc)
+        self.touch(loc)
 
-    def __delitem__(self, col):
+    def __old_delitem__(self, col):
         raise NotImplementedError("Cannot delete column(s) '%s' yet", col)
         #del self._ids[key]
 
-    def drop(self, index, locs=None):
+    def __old_drop(self, index, locs=None):
         # for column in self._columns:
         #     val = column[index]
         #     val = column.fillvalue
@@ -412,7 +424,7 @@ class Table(BaseTable):
             data = [(cname, cval(cname)) for cname in self.columns]
             return Table(name=name, data=OrderedDict(data), indices=self.index)
         # not an assign ...
-        
+
         if res.dtype != 'bool':
             raise ValueError(
                 'expr must be an assignment '
@@ -434,7 +446,7 @@ class Table(BaseTable):
         data = [(cname, self[cname].values[indices]) for cname in self.columns]
         return Table(name=name,
                      data=OrderedDict(data),
-                     indices=self._ids.values[indices])
+                     indices=indices)
 
     def get_panene_data(self, cols=None):
         if cols is None:

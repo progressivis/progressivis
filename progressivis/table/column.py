@@ -10,7 +10,7 @@ from progressivis.utils.fast import indices_to_slice
 from .column_base import BaseColumn
 from .dshape import dshape_to_h5py, np_dshape, dshape_create
 from . import metadata
-
+from .table_base import BaseTable
 logger = logging.getLogger(__name__)
 
 __all__ = ["Column"]
@@ -85,17 +85,18 @@ class Column(BaseColumn):
                 dshape = np_dshape(data)
             else:
                 raise ValueError('Cannot create column "%s" from data %s', self.name, data)
-        dshape = dshape_create(dshape) # make sure it is valid 
+        dshape = dshape_create(dshape) # make sure it is valid
         if shape is None and data is not None:
             shape=dshape.shape
         from .column_id import IdColumn
-        self._index = IdColumn(self._storagegroup)
-        self._index.create_dataset()
+        #self._index = IdColumn(self._storagegroup)
+        #self._index.create_dataset()
+        self._index = BaseTable()
         self.create_dataset(dshape=dshape, fillvalue=fillvalue,
                             shape=shape, chunks=chunks)
 
     def create_dataset(self, dshape, fillvalue, shape=None, chunks=None):
-        dshape = dshape_create(dshape) # make sure it is valid 
+        dshape = dshape_create(dshape) # make sure it is valid
         self._dshape = dshape
         dtype = dshape_to_h5py(dshape)
         if shape is None:
@@ -124,7 +125,7 @@ class Column(BaseColumn):
         if self.name in group:
             logger.warning('Deleting dataset named "%s"', self.name)
             del group[self.name]
-        dataset = group.create_dataset(self.name, 
+        dataset = group.create_dataset(self.name,
                                        shape=shape,
                                        dtype=dtype,
                                        chunks=chunks,
@@ -144,7 +145,7 @@ class Column(BaseColumn):
             shape=tuple([nrow]+shape)
         dtype = dshape_to_h5py(dshape)
         group = self._storagegroup
-        if is_id and not self.name in group: # for lazy ID column creation 
+        if is_id and not self.name in group: # for lazy ID column creation
             return None
         dataset = group.require_dataset(self.name,
                                         dtype=dtype,
@@ -223,7 +224,7 @@ class Column(BaseColumn):
 
     def __setitem__(self, index, val):
         if isinstance(index, integer_types):
-            self.dataset[index] = val 
+            self.dataset[index] = val
         else:
             if hasattr(val, 'values') and isinstance(val.values, np.ndarray):
                 val = val.values

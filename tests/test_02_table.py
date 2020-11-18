@@ -4,9 +4,9 @@ import datashape as ds
 
 from collections import OrderedDict
 from progressivis import Scheduler
-from progressivis.table.table import Table
-from progressivis.table.table_sliced import TableSlicedView
-from progressivis.table.table_selected import TableSelectedView
+from progressivis.table.table import Table, BaseTable
+#from progressivis.table.table_sliced import TableSlicedView
+#from progressivis.table.table_selected import TableSelectedView
 from progressivis.io.csv_loader import CSVLoader
 from progressivis.datasets import get_dataset
 from progressivis.storage import Group
@@ -28,6 +28,7 @@ class TestTable(ProgressiveTest):
         self.fill_table()
         self.update_table()
         self.delete_table()
+        self.examine_table()
         self.append_dataframe()
         self.append_direct()
         self.load_csv()
@@ -35,6 +36,7 @@ class TestTable(ProgressiveTest):
 
     def test_loc_tableview(self):
         t = Table('table_loc', dshape="{a: int, b: float32}", create=True)
+        #import pdb;pdb.set_trace()
         t.resize(10)
         ivalues = np.random.randint(100,size=20)
         t['a'] = ivalues[:10]
@@ -42,17 +44,17 @@ class TestTable(ProgressiveTest):
         t['b'] = fvalues[:10]
         t.append({'a': ivalues[10:], 'b': fvalues[10:]})
         view = t.loc[2:11]
-        self.assertEqual(type(view), TableSlicedView)
+        self.assertEqual(type(view), BaseTable)
         self.assertTrue(np.array_equal(view._column(0)[:], ivalues[2:12]))
-        view_view = view.iloc[3:7]
+        view_view = view.loc[3:7]
         self.assertTrue(np.array_equal(view_view._column(0)[:], view._column(0)[3:7]))
         view_view = view.loc[3:6]
         self.assertTrue(np.array_equal(view_view._column(0)[:], view._column(0)[view.id_to_index(slice(3,6))]))
-        table_view = view.iloc[[3,4,6,9]]
-        self.assertEqual(type(table_view),TableSelectedView)
+        table_view = view.loc[[3,4,6,9]]
+        self.assertEqual(type(table_view),BaseTable)
         self.assertTrue(np.array_equal(table_view._column(0).values, view._column(0)[[3,4,6,9]]))
         table_view = view.loc[[3,4,6,9]]
-        self.assertEqual(type(table_view),TableSelectedView)
+        self.assertEqual(type(table_view),BaseTable)
         self.assertTrue(np.array_equal(table_view._column(0).values, view._column(0)[view.id_to_index([3,4,6,9])]))
 
     def test_set_loc(self):
@@ -71,7 +73,7 @@ class TestTable(ProgressiveTest):
         t.loc[3:7,['a','b']] = [1004, 1005]
         self.assertTrue(np.array_equal(t._column(0)[3:8], np.repeat(1004, 5)))
         self.assertTrue(np.array_equal(t._column(1)[3:8], np.repeat(1005, 5)))
-        t.iloc[3:7,['a','b']] = [1006, 1007]
+        t.loc[3:7,['a','b']] = [1006, 1007] # previous iloc test
         self.assertTrue(np.array_equal(t._column(0)[3:7], np.repeat(1006, 4)))
         self.assertTrue(np.array_equal(t._column(1)[3:7], np.repeat(1007, 4)))
         view = t.loc[2:11]
@@ -102,12 +104,12 @@ class TestTable(ProgressiveTest):
         t['b'] = fvalues
         at_ = t.at[3,'a']
         self.assertEqual(at_, t._column(0)[3])
-        iat_ = t.iat[3, 1]
+        iat_ = t.at[3, 1]
         self.assertEqual(iat_, t._column(1)[3])
         view = t.loc[2:11]
         at_ = view.at[3,'a']
         self.assertEqual(at_, view._column(0)[view.id_to_index(3)])
-        iat_ = view.iat[3, 1]
+        iat_ = view.at[3, 1]
         self.assertEqual(iat_, view._column(1)[3])
 
     def test_set_at(self):
@@ -121,7 +123,7 @@ class TestTable(ProgressiveTest):
         self.assertEqual(t._column(0)[3], 1001)
         t.at[3, 'a'] = 1001
         self.assertEqual(t._column(0)[3], 1001)
-        t.iat[3, 0] = 1002
+        t.at[3, 0] = 1002
         self.assertEqual(t._column(0)[3], 1002)
         view = t.loc[2:11]
         view.loc[3, 'a'] = 1003
@@ -131,7 +133,7 @@ class TestTable(ProgressiveTest):
         view_view.at[3, 'a'] = 1004
         self.assertEqual(view_view._column(0)[view_view.id_to_index(3)], 1004)
         self.assertEqual(t._column(0)[3], 1004)
-        view_view.iat[2, 0] = 1005
+        view_view.at[2, 0] = 1005
         self.assertEqual(view_view._column(0)[2], 1005)
         self.assertEqual(t._column(0)[t.id_to_index(view_view.index_to_id(2))], 1005)
 
@@ -246,6 +248,11 @@ class TestTable(ProgressiveTest):
         t = Table('table', storagegroup=self.storagegroup)
         self._delete_table(t)
 
+    def examine_table(self):
+        t = Table('table', storagegroup=self.storagegroup)
+        #import pdb;pdb.set_trace()
+        pass
+
     def _update_table(self, t):
         #pylint: disable=protected-access
         self.assertEqual(len(t),10)
@@ -253,7 +260,11 @@ class TestTable(ProgressiveTest):
         t['a'] = np.arange(10)
         #t.scheduler._run_number = 2
         t.loc[2:3, 'a'] = np.arange(2) # loc is inclusive
-
+        v1 = t.loc[2:3, 'a']
+        v11 = v1.loc[2,'a']
+        v12 = v1.loc[2,:]
+        v2 = t.loc[:, 'a']
+        v3 = t.loc[:]
     def _delete_table(self, t):
         self.assertEqual(t.index_to_id(2), 2)
         a = t['a']
@@ -273,7 +284,6 @@ class TestTable(ProgressiveTest):
         #pylint: disable=protected-access
         #self.scheduler._run_number = 1
         df = pd.DataFrame({'a': [1, 2, 3], 'b': [0.1, 0.2, 0.3], 'c': ['a', 'b', 'cd']})
-
         t = Table('table_2', data=df)
         self.assertEqual(len(t),len(df))
         for colname in df:
@@ -281,7 +291,6 @@ class TestTable(ProgressiveTest):
             colt = t[colname]
             self.assertEqual(len(coldf), len(colt))
             self.assertTrue(np.all(coldf.values==colt.values))
-
         #self.scheduler._run_number = 2
         t.append(df)
         self.assertEqual(len(t),2*len(df))
@@ -406,7 +415,7 @@ class TestTable(ProgressiveTest):
         # Keys
         key = slice(2,7)
         arr = t.to_array(key)
-        key = t.id_to_index(key) # slices contain their bounds
+        key = t.id_to_index(key).to_slice_maybe() # slices contain their bounds
         self.assertEqual(arr.dtype, np.float64)
         self.assertEqual(arr.shape[0], key.stop-key.start)
         self.assertEqual(arr.shape[1], 3)
