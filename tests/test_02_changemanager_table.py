@@ -6,6 +6,7 @@ from collections import namedtuple
 from progressivis.table.table import Table
 from progressivis.table.changemanager_table import TableChangeManager
 from progressivis.table.tablechanges import TableChanges
+from progressivis.core.bitmap import bitmap
 
 from . import ProgressiveTest
 
@@ -122,11 +123,11 @@ class TestTableChangeManager(ProgressiveTest):
         col_b[0] = 0.11
         col_b[2] = 0.32
         table.append({'a': [6], 'b': [0.6]})
-
         tableview = table.loc[1:2]
+        tableview.changes = TableChanges()
         last3 = s._run_number
         cm3.update(last3, tableview, mid=mid3)
-        self.assertEqual(cm3.created.next(), slice(1, 3)) # ids, not indices
+        self.assertEqual(cm3.created.next(), slice(1, 3))
         self.assertEqual(cm2.updated.length(), 0)
         self.assertEqual(cm2.deleted.length(), 0)
 
@@ -139,7 +140,6 @@ class TestTableChangeManager(ProgressiveTest):
         self.assertEqual(changemanager.created.next(), slice(5, 6))
         self.assertEqual(changemanager.updated.next(), slice(0, 3))
         self.assertEqual(changemanager.deleted.length(), 0)
-
         s._run_number += 1
         last2 = s._run_number
         cm2.update(last2, table, mid=mid2)
@@ -167,7 +167,7 @@ class TestTableChangeManager(ProgressiveTest):
         changemanager.update(last, table, mid=mid1)
         self.assertEqual(changemanager.last_update(), last)
         self.assertEqual(changemanager.created.length(), 0)
-        self.assertEqual(changemanager.updated.length(), 0)
+        self.assertEqual(changemanager.updated.length(), 1) # new behaviour prev. 0
         self.assertEqual(changemanager.deleted.next(), slice(2, 3))
         with self.assertRaises(KeyError):
             table.loc[2]
@@ -183,7 +183,7 @@ class TestTableChangeManager(ProgressiveTest):
         cm2.update(last2, table, mid=mid2)
         self.assertEqual(cm2.last_update(), last2)
         self.assertEqual(cm2.created.next(), slice(6, 8))
-        self.assertEqual(cm2.updated.next(), slice(5, 6))
+        self.assertEqual(cm2.updated.next(), bitmap([0, 5])) # new behaviour, prev. slice(5, 6)
         self.assertEqual(list(cm2.deleted.next()), [2, 4])
 
         #TODO test reset

@@ -5,6 +5,7 @@ from collections import OrderedDict, Mapping, Iterable
 import operator
 import logging
 import numpy as np
+import weakref
 from progressivis.core.index_update import IndexUpdate
 from progressivis.core.utils import (integer_types, norm_slice, is_slice,
                                      slice_to_bitmap, is_int, is_str,
@@ -70,22 +71,14 @@ class _Loc(_BaseLoc):
             if col_key != slice(None):
                 return row[col_key]
             return row
-        #if isinstance(raw_index, slice) and index.step in (None, 1):
-        #    from .table_sliced import TableSlicedView
-        #    return TableSlicedView(self._table, index, col_key)
         elif isinstance(index, Iterable):
-            #from .table_selected import TableSelectedView
-            #selection = bitmap.asbitmap(self._table.index)
-            #return TableSelectedView(self._table, selection, col_key,
-            #                         self._table.name)
             index = bitmap.asbitmap(index)
             btab = BaseTable(index=index)
             columns, columndict = self._table.make_projection(col_key, btab)
             btab._columns = columns
             btab._columndict = columndict
+            btab.observe(self._table)
             return btab
-            #return BaseTable(index=index, columns=columns,
-            #                 columndict=columndict)
         raise ValueError('getitem not implemented for index "%s"', index)
 
     def __setitem__(self, key, value):
@@ -139,7 +132,8 @@ class BaseTable(metaclass=ABCMeta):
         self._is_identity = True
         self._cached_index = BaseTable # hack
         self._last_id = -1
-
+        self._observed = None
+        self._observers = []
     @property
     def loc(self):
         "Return a `locator` object for indexing using ids"
@@ -161,6 +155,17 @@ class BaseTable(metaclass=ABCMeta):
                                                self.name,
                                                dshape_print(self.dshape),
                                                length)
+
+    def observe(self, other):
+        if self._observed:
+            raise ValueError("Observed table already set")
+        self._observed = other
+        other._observers.append(weakref.ref(self))
+
+    def get_original(self):
+        if self._observed is None:
+            return self
+        return self._observed.get_original()
 
     def info_row(self, row, width):
         "Return a description for a row, used in `repr`"
@@ -484,6 +489,7 @@ class BaseTable(metaclass=ABCMeta):
         if isinstance(key, Iterable):
             assert bm in self._index
         self._index -= bm
+        self.add_deleted(index)
 
     def drop(self, index, raw_index):
         "index is useless by now"
@@ -493,7 +499,7 @@ class BaseTable(metaclass=ABCMeta):
         else:
             #self.__delitem__(index)
             self._index -= index
-
+        self.add_deleted(index)
     @property
     def name(self):
         "Return the name of this table"
@@ -934,20 +940,46 @@ class BaseTable(metaclass=ABCMeta):
         self._cached_index = index
         self.add_updated(index)
 
+    def notify_observers(self, mode, locs):
+        garbage = []
+        for wr in self._observers:
+            obs = wr()
+            if obs is None:
+                garbage.append(wr)
+            else:
+                obs.notification(mode, locs)
+        for elt in garbage:
+            self._observers.remove(elt)
+
     def add_created(self, locs):
+        # self.notify_observers('created', locs)
         if self._changes:
             locs = self._normalize_locs(locs)
             self._changes.add_created(locs)
 
     def add_updated(self, locs):
+        self.notify_observers('updated', locs)
         if self._changes:
             locs = self._normalize_locs(locs)
             self._changes.add_updated(locs)
 
     def add_deleted(self, locs):
+        self.notify_observers('deleted', locs)
         if self._changes:
             locs = self._normalize_locs(locs)
             self._changes.add_deleted(locs)
+
+    def notification(self, mode, locs):
+        #if mode == 'created':
+        #    pass
+        locs = self._normalize_locs(locs)
+        if mode == 'updated':
+            self.add_updated(locs & self._index)
+        elif mode == 'deleted':
+            self.add_deleted(locs & self._index)
+            self._index -= locs
+        else:
+            raise ValueError(f"Unknown mode {mode}")
 
     def compute_updates(self, start, now, mid=None, cleanup=True):
         if self._changes:
