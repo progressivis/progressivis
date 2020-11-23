@@ -46,7 +46,7 @@ class Row(Mapping):
 
     def __setitem__(self, key, value):
         table = self.table
-        table.iat[self.row, table.column_index(key)] = value
+        table.at[self.row, table.column_index(key)] = value
 
     def dtype(self, key):
         table = self.table

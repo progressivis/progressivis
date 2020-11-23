@@ -40,6 +40,9 @@ def is_int(n):
 def is_str(s):
     return isinstance(s, str)
 
+def is_slice(s):
+    return isinstance(s, slice)
+
 
 def is_iterable(it):
     return isinstance(it, collections_abc.Iterable)
@@ -268,12 +271,17 @@ def iter_to_slices(indices, fix_loc=False):
     return slices
 
 
-def norm_slice(sl):
+def norm_slice(sl, fix_loc=False, stop=None):
     if (sl.start is not None and sl.step == 1):
         return sl
     start = 0 if sl.start is None else sl.start
     step = 1 if sl.step is None else sl.step
-    return slice(start, sl.stop, step)
+    if stop is None:
+        stop = sl.stop
+    if fix_loc:
+        assert stop is not None
+        stop += 1
+    return slice(start, stop , step)
 
 
 def is_full_slice(sl):
@@ -333,9 +341,10 @@ def slice_to_array(sl):
         return bitmap(sl)
     return sl
 
-def slice_to_bitmap(sl):
-    assert is_int(sl.stop)
-    return bitmap(range(*sl.indices(sl.stop)))
+def slice_to_bitmap(sl, stop=None):
+    stop = sl.stop if stop is None else stop
+    assert is_int(stop)
+    return bitmap(range(*sl.indices(stop)))
 
 def slice_to_arange(sl):
     if isinstance(sl, slice):

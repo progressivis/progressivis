@@ -11,7 +11,6 @@ from ..core.bitmap import bitmap
 from ..table import Table
 from ..table.module import TableModule
 from ..core.utils import indices_len
-from ..table import TableSelectedView
 from ..core.decorators import *
 
 import numpy as np
@@ -63,7 +62,7 @@ class Sample(TableModule):
     def run_step(self,run_number,step_size,howlong):
         with self.context as ctx:
             if self._table is None:
-                self._table = TableSelectedView(ctx.table.data(), bitmap([]))
+                self._table = ctx.table.data().loc[bitmap([]), :]
             indices = ctx.table.created.next(step_size, as_slice=False)
             steps = indices_len(indices)
             k = int(self.params.samples)

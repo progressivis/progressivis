@@ -435,7 +435,7 @@ class Table(BaseTable):
                              'not implemented!')
         if result_object == 'raw_numexpr':
             return res
-        indices = indices[res]
+        #indices = indices[res]
         if not as_slice and result_object == 'index':
             return indices
         ix_slice = indices_to_slice(indices)

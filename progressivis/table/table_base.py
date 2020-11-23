@@ -269,7 +269,7 @@ class BaseTable(metaclass=ABCMeta):
         return self.to_dict(**kwds)
     def make_col_view(self, col, index):
         from .column_selected import ColumnSelectedView
-        return ColumnSelectedView(base=col, index=index)
+        return ColumnSelectedView(base=col, index=index, name=col.name)
     def make_projection(self, cols, index):
         dict_ = self._make_columndict_projection(cols)
         columns = [self.make_col_view(c, index) for (i, c) in enumerate(self._columns) if i in  dict_.values()]
@@ -491,8 +491,10 @@ class BaseTable(metaclass=ABCMeta):
         self._index -= bm
         self.add_deleted(index)
 
-    def drop(self, index, raw_index):
+    def drop(self, index, raw_index=None):
         "index is useless by now"
+        if raw_index is None:
+            raw_index = index
         if is_int(raw_index):
             #self.__delitem__(raw_index)
             self._index.remove(raw_index)
