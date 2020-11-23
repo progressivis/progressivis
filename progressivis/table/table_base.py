@@ -104,7 +104,7 @@ class _At(_BaseLoc):
     def __getitem__(self, key):
         index, col_key = self.parse_key(key)
         if index not in self._table._index:
-            raise ValueError(f"Not existing indice {index}")
+            raise KeyError(f"Not existing indice {index}")
         return self._table[col_key][index]
 
     def __setitem__(self, key, value):
@@ -527,8 +527,8 @@ class BaseTable(metaclass=ABCMeta):
     @changes.setter
     def changes(self, tablechange):
         "Set the TableChange manager, or unset with None"
-        if not self._index:
-            raise RuntimeError('Table has no index')
+        #if not self._index:
+        #    raise RuntimeError('Table has no index')
         self._changes = tablechange
 
     def compute_updates(self, start, now, mid=None, cleanup=True):
