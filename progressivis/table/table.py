@@ -208,19 +208,20 @@ class Table(BaseTable):
         self._resize_rows(newsize, index)
         self._storagegroup.attrs[metadata.ATTR_NROWS] = newsize
         for column in self._columns:
-            column.resize(newsize)
+            column._resize(newsize)
 
     def _allocate(self, count, index=None):
         #import pdb;pdb.set_trace()
         #index = self._ids._allocate(count, index)
         #newsize = self._ids.size
         start = self.last_id+1
-        newsize = start+count
-        index = bitmap(range(start, start+count)) if index is None else index
+        index = bitmap(range(start, start+count)) if index is None else bitmap.asbitmap(index)
+        newsize = index.max()+1
         self.add_created(index)
         self._storagegroup.attrs[metadata.ATTR_NROWS] = newsize
         for column in self._columns:
-            column.resize(newsize)
+            column._resize(newsize)
+        self._resize_rows(newsize, index)
         return index
 
     def touch_rows(self, loc=None):
@@ -384,7 +385,7 @@ class Table(BaseTable):
             raise ValueError("incompatible options 'inplace' and 'result_object'")
         indices = locs
         if indices is None:
-            indices = self.index.to_array()
+            indices = np.array(self.index)
         context =  {k:self.to_array(locs=indices, columns=[k]).reshape(-1) for k in self.columns}
         is_assign = False
         try:
@@ -428,14 +429,14 @@ class Table(BaseTable):
                              'not implemented!')
         if result_object == 'raw_numexpr':
             return res
-        #indices = indices[res]
+        indices = indices[res]
         if not as_slice and result_object == 'index':
             return indices
         ix_slice = indices_to_slice(indices)
         if result_object == 'index':
             return ix_slice
         if result_object == 'view':
-            return self.iloc[ix_slice, :]
+            return self.loc[ix_slice, :]
         # as a new table ...
         data = [(cname, self[cname].values[indices]) for cname in self.columns]
         return Table(name=name,

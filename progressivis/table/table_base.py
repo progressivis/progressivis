@@ -326,7 +326,7 @@ class BaseTable(metaclass=ABCMeta):
                 ret[name] = col.tolist()
             return ret
         if orient == 'split':
-            ret = {'index': self.index.tolist(),
+            ret = {'index': list(self.index),
                    'columns': columns}
             data = []
             cols = [self[c] for c in columns]

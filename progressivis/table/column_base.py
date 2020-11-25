@@ -128,10 +128,7 @@ class BaseColumn(metaclass=ABCMeta):
 
     def tolist(self):
         "Return a list from the values of the column"
-        if not self.index.has_freelist():
-            return self.values.tolist()
-        _, mask = self.index.nonfree()
-        return self.values[mask].tolist()
+        return self.values.tolist()
 
     def read_direct(self, array, source_sel=None, dest_sel=None):
         """ Read data from column into an existing NumPy array.

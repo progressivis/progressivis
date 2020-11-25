@@ -204,7 +204,7 @@ class Column(BaseColumn):
 
     @property
     def value(self):
-        return self.dataset[:]
+        return self.dataset[self.index.index.to_slice_maybe()]
 
     def __getitem__(self, index):
         if isinstance(index, np.ndarray):
@@ -252,7 +252,7 @@ class Column(BaseColumn):
                     raise
         self.index.touch(index)
 
-    def resize(self, newsize):
+    def _resize(self, newsize):
         assert isinstance(newsize, integer_types)
         if self.size==newsize:
             return
@@ -262,6 +262,9 @@ class Column(BaseColumn):
         else:
             shape = tuple([newsize]+list(shape[1:]))
             self.dataset.resize(shape)
+
+    def resize(self, newsize):
+        self._resize(newsize)
         if self.index is not None:
             self.index._resize_rows(newsize)
 
