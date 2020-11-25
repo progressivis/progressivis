@@ -203,13 +203,6 @@ class Table(BaseTable):
     def __contains__(self, colname):
         return colname in self._columndict
 
-    def _resize_rows(self, newsize, index=None):
-        #self._ids.resize(newsize, index)
-        if index is not None:
-            self._index |= self._any_to_bitmap(index)
-        else:
-            #assert self._is_identity
-            self._index |= bitmap(range(self.last_id+1, newsize))
 
     def resize(self, newsize, index=None):
         self._resize_rows(newsize, index)

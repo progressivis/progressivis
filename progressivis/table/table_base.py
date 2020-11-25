@@ -451,6 +451,23 @@ class BaseTable(metaclass=ABCMeta):
         "Return the object in change of indexing this table"
         return self._index
 
+    @index.setter
+    def index(self, indices):
+        "Modify the object in change of indexing this table"
+        if self._observed is None:
+            raise ValueError("Cannot modify the index of a physical table this way. Use append instead")
+        indices = self._any_to_bitmap(indices)
+        if indices not in self._observed.index:
+            raise ValueError(f"Not existing indices {indices-self._observed.index}")
+        created_ = indices - self._index
+        if created_:
+            self.add_created(created_)
+        deleted_ = self._index - indices
+        if deleted_:
+            self.add_deleted(deleted_)
+        self._index = indices
+        return self._index
+
     @property
     def ncol(self):
         "Return the number of columns (same as `len(table.columns()`)"
@@ -489,7 +506,7 @@ class BaseTable(metaclass=ABCMeta):
         if isinstance(key, Iterable):
             assert bm in self._index
         self._index -= bm
-        self.add_deleted(index)
+        self.add_deleted(bm)
 
     def drop(self, index, raw_index=None):
         "index is useless by now"
@@ -502,6 +519,15 @@ class BaseTable(metaclass=ABCMeta):
             #self.__delitem__(index)
             self._index -= index
         self.add_deleted(index)
+
+    def _resize_rows(self, newsize, index=None):
+        #self._ids.resize(newsize, index)
+        if index is not None:
+            self._index |= self._any_to_bitmap(index)
+        else:
+            #assert self._is_identity
+            self._index |= bitmap(range(self.last_id+1, newsize))
+
     @property
     def name(self):
         "Return the name of this table"
@@ -520,8 +546,8 @@ class BaseTable(metaclass=ABCMeta):
     @property
     def changes(self):
         "Return the TableChange manager associated with this table or None"
-        if not self._index:
-            return None
+        #if not self._index:
+        #    return None
         return self._changes
 
     @changes.setter
@@ -910,16 +936,17 @@ class BaseTable(metaclass=ABCMeta):
         pass
 
     def _normalize_locs(self, locs):
-        if locs is None:
+        return self._any_to_bitmap(locs)
+        """if locs is None:
             if bool(self._freelist):
                 locs = iter(self)
             else:
                 locs = iter(self.dataset)
         elif isinstance(locs, integer_types):
             locs = [locs]
-        return bitmap(locs)
+        return bitmap(locs)"""
 
-    def nonfree(self):
+    def __old_nonfree(self):
         indices = self.dataset[:]
         mask = np.ones(len(indices), dtype=np.bool)
         mask[self.freelist()] = False
@@ -956,6 +983,7 @@ class BaseTable(metaclass=ABCMeta):
     def add_created(self, locs):
         # self.notify_observers('created', locs)
         if self._changes:
+            #import pdb;pdb.set_trace()
             locs = self._normalize_locs(locs)
             self._changes.add_created(locs)
 

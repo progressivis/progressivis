@@ -3,7 +3,7 @@ from collections import Iterable
 import logging
 
 import numpy as np
-
+from collections import OrderedDict
 from progressivis.storage import Group
 from progressivis.core.utils import integer_types, get_random_name
 from progressivis.utils.fast import indices_to_slice
@@ -11,6 +11,8 @@ from .column_base import BaseColumn
 from .dshape import dshape_to_h5py, np_dshape, dshape_create
 from . import metadata
 from .table_base import BaseTable
+from ..core.bitmap import bitmap
+
 logger = logging.getLogger(__name__)
 
 __all__ = ["Column"]
@@ -47,9 +49,11 @@ class Column(BaseColumn):
         return self._storagegroup
 
     def _allocate(self, count, indices=None):
-        indices = self.index._allocate(count, indices)
-        newsize = self.index.size
+        start = self.index.last_id+1
+        newsize = start+count
         self.resize(newsize)
+        indices = bitmap(range(start, start+count)) if indices is None else indices
+        self.index.add_created(indices)
         return indices
 
     def append(self, data, indices=None):
@@ -88,7 +92,7 @@ class Column(BaseColumn):
         dshape = dshape_create(dshape) # make sure it is valid
         if shape is None and data is not None:
             shape=dshape.shape
-        from .column_id import IdColumn
+        #from .column_id import IdColumn
         #self._index = IdColumn(self._storagegroup)
         #self._index.create_dataset()
         self._index = BaseTable()
@@ -259,7 +263,7 @@ class Column(BaseColumn):
             shape = tuple([newsize]+list(shape[1:]))
             self.dataset.resize(shape)
         if self.index is not None:
-            self.index.resize(newsize)
+            self.index._resize_rows(newsize)
 
     def __delitem__(self, index):
         del self.index[index]
