@@ -18,8 +18,8 @@ def merge(left, right, name=None, how='inner', on=None,
     dshape, rename = dshape_join(left.dshape, right.dshape, lsuffix, rsuffix)
     merge_table = Table(name=name, dshape=dshape)
     if how == 'inner':
-        merge_ids = sorted(set(left.index.values) & set(right.index.values))
-        new_ids = left.index[merge_ids]
+        merge_ids = left.index & right.index
+        new_ids = left.index & merge_ids
         merge_table.resize(len(new_ids), index=new_ids)
         left_cols = [rename['left'].get(c, c) for c in left.columns]
         right_cols = [rename['right'].get(c, c) for c in right.columns]
@@ -36,8 +36,8 @@ def merge(left, right, name=None, how='inner', on=None,
 def merge_cont(left, right, merge_ctx):
     "merge continuation function"
     merge_table = Table(name=None, dshape=merge_ctx['dshape'])
-    merge_ids = sorted(set(left.index.values) & set(right.index.values))
-    new_ids = left.index[merge_ids]
+    merge_ids = left.index & right.index
+    new_ids = left.index & merge_ids
     merge_table.resize(len(new_ids), index=new_ids)
     merge_table.loc[merge_ids, merge_ctx['left_cols']] = left.loc[merge_ids, left.columns]
     merge_table.loc[merge_ids, merge_ctx['right_cols']] = right.loc[merge_ids, right.columns]

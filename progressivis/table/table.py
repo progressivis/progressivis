@@ -204,7 +204,13 @@ class Table(BaseTable):
         return colname in self._columndict
 
 
-    def resize(self, newsize, index=None):
+    def resize(self, newsize=None, index=None):
+        if index is not None:
+            index = bitmap.asbitmap(index)
+            newsize_ = index.max() + 1
+            if newsize < newsize_:
+                print(f"Wrong newsize {newsize}, fixed to {newsize_}")
+                newsize = newsize_
         self._resize_rows(newsize, index)
         self._storagegroup.attrs[metadata.ATTR_NROWS] = newsize
         for column in self._columns:
