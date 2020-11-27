@@ -24,7 +24,7 @@ class ColumnSelectedView(ColumnProxy):
         return tuple(tshape)
 
     def __len__(self):
-        return len(self.index)
+        return self.index.last_id+1
 
     @property
     def value(self):

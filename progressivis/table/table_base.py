@@ -15,7 +15,7 @@ from progressivis.core.utils import (integer_types, norm_slice, is_slice,
                                      is_none_alike, get_physical_base)
 from progressivis.core.config import get_option
 from progressivis.core.bitmap import bitmap
-from .dshape import dshape_print
+from .dshape import dshape_print, dshape_create
 
 logger = logging.getLogger(__name__)
 
@@ -77,6 +77,11 @@ class _Loc(_BaseLoc):
             columns, columndict = self._table.make_projection(col_key, btab)
             btab._columns = columns
             btab._columndict = columndict
+            btab._dshape = dshape_create(
+            '{'
+            + ','.join(["{}:{}".format(c.name, c.dshape)
+                       for c in btab._columns])
+            + '}')
             btab.observe(self._table)
             return btab
         raise ValueError('getitem not implemented for index "%s"', index)
@@ -536,7 +541,7 @@ class BaseTable(metaclass=ABCMeta):
     @property
     def dshape(self):
         "Return the datashape of this table"
-        pass
+        return self._dshape
 
     @property
     def base(self):

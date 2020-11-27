@@ -2,7 +2,7 @@ import numpy as np
 from progressivis.core.utils import (slice_to_arange, indices_len, fix_loc)
 
 from . import Table
-from . import TableSelectedView
+#from . import TableSelectedView
 from ..core.slot import SlotDescriptor
 from .module import TableModule
 from ..core.bitmap import bitmap
@@ -49,12 +49,6 @@ class BisectImpl(ModuleImpl):
         self._hist_index = hist_index
         self.result = None
 
-    def _eval_to_ids(self, limit, input_ids):
-        x = self._table.loc[fix_loc(input_ids)][self._column].values
-        mask_ = self._op(x, limit)
-        arr = slice_to_arange(input_ids)
-        return bitmap(arr[np.nonzero(mask_)[0]])  # maybe fancy indexing ...
-
     def resume(self, limit, limit_changed,
                created=None, updated=None, deleted=None):
         if limit_changed:
@@ -98,8 +92,10 @@ class Bisect(TableModule):
         self._impl = BisectImpl(self.params.column,
                                 self.params.op, hist_index)
         self.default_step_size = 1000
+        self._run_once = False
 
     def run_step(self, run_number, step_size, howlong):
+        self._run_once = True
         input_slot = self.get_input_slot('table')
         # input_slot.update(run_number)
         steps = 0
@@ -116,8 +112,10 @@ class Bisect(TableModule):
             updated = input_slot.updated.next(step_size)
             steps += indices_len(updated)
         input_table = input_slot.data()
+        if input_table is None:
+            return self._return_run_step(self.state_blocked, steps_run=0)
         if not self._table:
-            self._table = TableSelectedView(input_table, bitmap([]))
+            self._table = input_table.loc[bitmap([]), :] # TableSelectedView(input_table, bitmap([]))
         if steps == 0:
             return self._return_run_step(self.state_blocked, steps_run=0)
         param = self.params
@@ -143,11 +141,11 @@ class Bisect(TableModule):
                                       created=created,
                                       updated=updated,
                                       deleted=deleted)
-            self._table.selection = self._impl.result._values
+            self._table.index = self._impl.result._values
         else:
             status = self._impl.resume(limit_value, limit_changed,
                                        created=created,
                                        updated=updated,
                                        deleted=deleted)
-            self._table.selection = self._impl.result._values
+            self._table.index = self._impl.result._values
         return self._return_run_step(self.next_state(input_slot), steps)

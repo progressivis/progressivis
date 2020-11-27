@@ -209,7 +209,7 @@ class Table(BaseTable):
             index = bitmap.asbitmap(index)
             newsize_ = index.max() + 1
             if newsize < newsize_:
-                print(f"Wrong newsize {newsize}, fixed to {newsize_}")
+                print(f"Wrong newsize={newsize}, fixed to {newsize_}")
                 newsize = newsize_
         self._resize_rows(newsize, index)
         self._storagegroup.attrs[metadata.ATTR_NROWS] = newsize
@@ -284,7 +284,7 @@ class Table(BaseTable):
                 length = len(fromcol)
             elif length != len(fromcol):
                 raise ValueError('Cannot append ragged values')
-            all_arrays |= isinstance(fromcol, np.ndarray)
+            all_arrays &= isinstance(fromcol, np.ndarray)
         if length == 0:
             return
         if isinstance(indices, slice):
@@ -293,11 +293,12 @@ class Table(BaseTable):
             raise ValueError('Bad index length (%d/%d)', len(indices), length)
         indices = self._allocate(length, indices)
         if all_arrays:
+            from_ind = data.index.index if isinstance(data, BaseTable) else slice(0, length)
             indices = indices_to_slice(indices)
             for colname in self:
                 tocol = self._column(colname)
                 fromcol = data[colname]
-                tocol[indices] = fromcol[0:length]
+                tocol[indices] = fromcol[from_ind]
         else:
             for colname in self:
                 tocol = self._column(colname)

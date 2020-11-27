@@ -158,7 +158,7 @@ def join_cont(table, other, dialog, created=None, updated=None,
                                                                     first.columns]
         if second_ids:
             if join_table.is_identity:
-                xisting_ = slice(0, join_table.last_id, 1)
+                xisting_ = slice(0, join_table.last_id+1, 1)
             else:
                 xisting_ = existing_ids
             _, common, _ = inter_slice(second_ids, xisting_)

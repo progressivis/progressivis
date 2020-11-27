@@ -14,7 +14,6 @@ from progressivis.core.slot import SlotDescriptor
 from progressivis.core.utils import (slice_to_arange, fix_loc)
 from .module import TableModule
 from . import Table
-from . import TableSelectedView
 from ..core.utils import indices_len, fix_loc
 
 APPROX = False
@@ -353,16 +352,16 @@ class HistogramIndex(TableModule):
             if self.get_min_bin() is None:
                 return None
             if self._min_table is None:
-                self._min_table = TableSelectedView(self._input_table,
-                                                    bitmap([]))
+                self._min_table = self._input_table.loc[bitmap([]),:]
+                #TableSelectedView(self._input_table,bitmap([]))
             self._min_table.selection = self.get_min_bin()
             return self._min_table
         if name == 'max_out':
             if self.get_max_bin() is None:
                 return None
             if self._max_table is None:
-                self._max_table = TableSelectedView(self._input_table,
-                                                    bitmap([]))
+                self._max_table = self._input_table.loc[bitmap([]),:]
+                # TableSelectedView(self._input_table,bitmap([]))
             self._max_table.selection = self.get_max_bin()
             return self._max_table
         return super(HistogramIndex, self).get_data(name)
@@ -398,7 +397,8 @@ class HistogramIndex(TableModule):
                                              bound_min, bound_max,
                                              self.params.bins)
             self.selection = bitmap(input_table.index)
-            self._table = TableSelectedView(input_table, self.selection)
+            self._table = self._input_table.loc[self.selection,:]
+            # TableSelectedView(input_table, self.selection)
             return self._return_run_step(self.state_blocked,
                                          len(self.selection))
         else:
@@ -427,6 +427,7 @@ class HistogramIndex(TableModule):
         input_table = input_slot.data()
         # self._table = input_table
         self._impl.update_histogram(created, updated, deleted)
+        self._table.index = self.selection
         return self._return_run_step(
             self.next_state(input_slot), steps_run=steps)
 
