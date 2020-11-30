@@ -75,6 +75,13 @@ class _HistogramIndexImpl(object):
         for i, bm in enumerate(self.bitmaps):
             print(i, len(bm), "="*len(bm))
 
+    def find_bin(self, elt):
+        res = []
+        for i, bm in enumerate(self.bitmaps):
+            if elt in bm:
+                res.append(i)
+        return res # if len(res)>1: BUG
+
     def _is_merging_required(self):
         return len(self.bitmaps) > self._max_hist_size
 
@@ -164,8 +171,8 @@ class _HistogramIndexImpl(object):
         #     self._tdigest_is_valid = False
         if deleted or updated:
             to_remove = updated | deleted
-            for bm in self.bitmaps:
-                bm -= to_remove
+            for i, bm in enumerate(self.bitmaps):
+                self.bitmaps[i] = bm - to_remove
         if created or updated:
             to_add = created | updated
             ids = np.array(to_add, np.int64)
@@ -397,8 +404,8 @@ class HistogramIndex(TableModule):
                                              bound_min, bound_max,
                                              self.params.bins)
             self.selection = bitmap(input_table.index)
-            self._table = self._input_table.loc[self.selection,:]
-            # TableSelectedView(input_table, self.selection)
+            self._table = self._input_table.loc[bitmap(),:]
+            self._table.index = self.selection
             return self._return_run_step(self.state_blocked,
                                          len(self.selection))
         else:

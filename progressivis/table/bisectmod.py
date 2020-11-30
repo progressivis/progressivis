@@ -101,8 +101,8 @@ class Bisect(TableModule):
         steps = 0
         deleted = None
         if input_slot.deleted.any():
-            deleted = input_slot.deleted.next(step_size)
-            steps += indices_len(deleted)
+            deleted = input_slot.deleted.next()
+            steps += 1 #indices_len(deleted)
         created = None
         if input_slot.created.any():
             created = input_slot.created.next(step_size)
@@ -114,8 +114,9 @@ class Bisect(TableModule):
         input_table = input_slot.data()
         if input_table is None:
             return self._return_run_step(self.state_blocked, steps_run=0)
-        if not self._table:
+        if self._table is None:
             self._table = input_table.loc[bitmap([]), :] # TableSelectedView(input_table, bitmap([]))
+            #self._table.foobar = "Bisect"
         if steps == 0:
             return self._return_run_step(self.state_blocked, steps_run=0)
         param = self.params
@@ -141,11 +142,10 @@ class Bisect(TableModule):
                                       created=created,
                                       updated=updated,
                                       deleted=deleted)
-            self._table.index = self._impl.result._values
         else:
             status = self._impl.resume(limit_value, limit_changed,
                                        created=created,
                                        updated=updated,
                                        deleted=deleted)
-            self._table.index = self._impl.result._values
+        self._table.index = self._impl.result._values&self._table._observed._index
         return self._return_run_step(self.next_state(input_slot), steps)

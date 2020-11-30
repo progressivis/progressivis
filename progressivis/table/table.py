@@ -291,9 +291,18 @@ class Table(BaseTable):
             indices = slice_to_bitmap(indices)
         if indices is not None and len(indices) != length:
             raise ValueError('Bad index length (%d/%d)', len(indices), length)
+        init_indices = indices
+        prev_last_id = self.last_id
         indices = self._allocate(length, indices)
-        if all_arrays:
-            from_ind = data.index.index if isinstance(data, BaseTable) else slice(0, length)
+        if isinstance(data, BaseTable):
+            if init_indices is None:
+                start = prev_last_id+1
+                left_ind = slice(start, start+len(data)-1)
+            else:
+                left_ind = indices
+            self.loc[left_ind,:] = data
+        elif all_arrays:
+            from_ind = slice(0, length)
             indices = indices_to_slice(indices)
             for colname in self:
                 tocol = self._column(colname)

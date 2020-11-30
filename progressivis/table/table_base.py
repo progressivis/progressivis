@@ -139,6 +139,7 @@ class BaseTable(metaclass=ABCMeta):
         self._last_id = -1
         self._observed = None
         self._observers = []
+
     @property
     def loc(self):
         "Return a `locator` object for indexing using ids"
@@ -486,12 +487,15 @@ class BaseTable(metaclass=ABCMeta):
     def __len__(self):
         return self.nrow
 
-    def _slice_to_bitmap(self, sl):
+    def _slice_to_bitmap(self, sl, fix_loc=True, existing_only=True):
         stop = sl.stop or self.last_id
-        nsl = norm_slice(sl, fix_loc=True, stop=stop)
-        return bitmap(nsl) & self._index
+        nsl = norm_slice(sl, fix_loc, stop=stop)
+        ret = bitmap(nsl)
+        if existing_only:
+            ret &= self._index
+        return ret
 
-    def _any_to_bitmap(self, locs, copy=True):
+    def _any_to_bitmap(self, locs, copy=True, fix_loc=True, existing_only=True):
         if isinstance(locs, bitmap):
             return locs[:] if copy else locs
         if isinstance(locs, integer_types):
@@ -502,7 +506,7 @@ class BaseTable(metaclass=ABCMeta):
             else:
                 return bitmap(locs)
         if isinstance(locs, slice):
-            return self._slice_to_bitmap(locs)
+            return self._slice_to_bitmap(locs, fix_loc, existing_only)
         raise KeyError(f"Invalid type {type(locs)} for key {locs}")
 
 
@@ -988,7 +992,6 @@ class BaseTable(metaclass=ABCMeta):
     def add_created(self, locs):
         # self.notify_observers('created', locs)
         if self._changes:
-            #import pdb;pdb.set_trace()
             locs = self._normalize_locs(locs)
             self._changes.add_created(locs)
 
