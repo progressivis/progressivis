@@ -24,8 +24,8 @@ class TestTableEval(ProgressiveTest):
         def small_fun(expr, r):
             te = t.eval(expr, result_object=r)
             dfe = df.eval(expr)
-            self.assertTrue(np.array_equal(te['a'], df[dfe]['a']))
-            self.assertTrue(np.allclose(te['b'], df[dfe]['b']))
+            self.assertTrue(np.array_equal(te['a'].loc[:], df[dfe]['a']))
+            self.assertTrue(np.allclose(te['b'].loc[:], df[dfe]['b']))
         def small_fun_ne(expr):
             r = 'raw_numexpr'
             te = t.eval(expr, result_object=r)

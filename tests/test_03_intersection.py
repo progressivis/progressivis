@@ -44,7 +44,7 @@ class TestIntersection(ProgressiveTest):
                         .output['table']\
                         .data().eval('(_1>0.3)&(_1<0.8)',
                                      result_object='index')
-        self.assertEqual(inter.table().selection, bitmap(idx))
+        self.assertEqual(inter.table().index, bitmap(idx))
 
     def _impl_stirred_tst_intersection(self, **kw):
         s = self.scheduler()
@@ -80,7 +80,7 @@ class TestIntersection(ProgressiveTest):
                         .output['table']\
                         .data().eval('(_1>0.3)&(_1<0.8)',
                                      result_object='index')
-        self.assertEqual(inter.table().selection, bitmap(idx))
+        self.assertEqual(inter.table().index, bitmap(idx))
 
     def test_intersection2(self):
         self._impl_stirred_tst_intersection(delete_rows=5)

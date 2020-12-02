@@ -5,10 +5,13 @@ Range Query module.
 
 from progressivis.table.nary import NAry
 from progressivis.core.utils import indices_len
-from .bisectmod import _get_physical_table
-from . import TableSelectedView
+from . import BaseTable
 from ..core.bitmap import bitmap
 
+
+
+def _get_physical_table(t):
+    return t.get_original()
 
 class Intersection(NAry):
     "Intersection Module"
@@ -33,7 +36,7 @@ class Intersection(NAry):
         for name in self.get_input_slot_multiple():
             slot = self.get_input_slot(name)
             t = slot.data()
-            assert isinstance(t, TableSelectedView)
+            assert isinstance(t, BaseTable)
             if ph_table is None:
                 ph_table = _get_physical_table(t)
             else:
@@ -69,16 +72,16 @@ class Intersection(NAry):
         to_create_maybe = bitmap.union(*to_create)
 
         if not self._table:
-            self._table = TableSelectedView(ph_table, bitmap([]))
+            self._table = ph_table.loc[bitmap([]), :]
         if reset_:
-            self._table.selection = bitmap([])
+            self._table.index = bitmap([])
         # self._table.selection -= to_delete
-        self._table.selection |= to_create_4sure
+        self._table.index = self._table.index|to_create_4sure
         to_create_maybe -= to_create_4sure
         eff_create = to_create_maybe
         for t in tables:
-            eff_create &= t.selection
-        self._table.selection |= eff_create
+            eff_create &= t.index
+        self._table.index = self._table.index|eff_create
         # self.get_input_slot(self.inputs[0]))
         return self._return_run_step(self.state_blocked, steps)
 
@@ -92,7 +95,7 @@ class Intersection(NAry):
                 continue
             slot = self.get_input_slot(name)
             t = slot.data()
-            assert isinstance(t, TableSelectedView)
+            assert isinstance(t, BaseTable)
             if ph_table is None:
                 ph_table = _get_physical_table(t)
             else:
@@ -111,8 +114,8 @@ class Intersection(NAry):
         if steps == 0:
             return self._return_run_step(self.state_blocked, 0)
         if not self._table:
-            self._table = TableSelectedView(ph_table, bitmap([]))
-        self._table.selection = bitmap.intersection(*[t.selection
+            self._table = ph_table.loc[bitmap([]), :]
+        self._table.index = bitmap.intersection(*[t.index
                                                       for t in tables])
         # return self._return_run_step(self.next_state(self.get_input_slot(self.inputs[0])), steps)
         return self._return_run_step(self.state_blocked, steps)

@@ -272,6 +272,8 @@ class Table(BaseTable):
         """
         if data is None:
             return
+        if data is self:
+            data = data.to_dict(orient='list')
         data = self.parse_data(data, indices)
         dshape = dshape_extract(data)
         if not dshape_compatible(dshape, self.dshape):
