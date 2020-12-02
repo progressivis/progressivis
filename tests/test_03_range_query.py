@@ -36,7 +36,7 @@ class TestRangeQuery(ProgressiveTest):
         idx = range_qry.input_module\
                        .output['table']\
                        .data().eval('(_1>0.3)&(_1<0.8)', result_object='index')
-        self.assertEqual(range_qry.table().selection, bitmap(idx))
+        self.assertEqual(range_qry.table().index, bitmap(idx))
 
     def test_hist_index_min_max(self):
         "Test min_out and max_out on HistogramIndex"

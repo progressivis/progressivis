@@ -2,7 +2,6 @@ import numpy as np
 
 import itertools as it
 from . import Table
-from . import TableSelectedView
 from ..core.slot import SlotDescriptor
 from .module import TableModule
 from ..core.bitmap import bitmap
@@ -256,7 +255,7 @@ class RangeQuery2d(TableModule):
         if input_table is None:
             return self._return_run_step(self.state_blocked, steps_run=0)
         if not self._table:
-            self._table = TableSelectedView(input_table, bitmap([]))
+            self._table = input_table.loc[bitmap([]),:]
         self._create_min_max()
         # param = self.params
         #

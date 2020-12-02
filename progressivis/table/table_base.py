@@ -240,9 +240,9 @@ class BaseTable(metaclass=ABCMeta):
     @property
     def last_id(self):
         "Return the last id of this table"
-        if not self._index:
-            assert self._last_id == -1
-        elif self._last_id < self._index.max():
+        #if not self._index:
+        #    assert self._last_id == -1
+        if self._index and self._last_id < self._index.max():
             self._last_id = self._index.max()
         return self._last_id
 
@@ -532,10 +532,19 @@ class BaseTable(metaclass=ABCMeta):
     def _resize_rows(self, newsize, index=None):
         #self._ids.resize(newsize, index)
         if index is not None:
-            self._index |= self._any_to_bitmap(index)
+            index = self._any_to_bitmap(index)
+            if index.min() > self.last_id:
+                self._index |= index
+            else:
+                assert index in self._index
+                self._index = index
         else:
             #assert self._is_identity
-            self._index |= bitmap(range(self.last_id+1, newsize))
+            if newsize >= self.last_id+1:
+                self._index |= bitmap(range(self.last_id+1, newsize))
+            else:
+                self._index &=  bitmap(range(0, newsize))
+
 
     @property
     def name(self):
@@ -630,9 +639,9 @@ class BaseTable(metaclass=ABCMeta):
             from .row import Row
             return Row(self, key)
         if isinstance(key, str):
-            return self._column(key)[self.index[length-1]]
+            return self._column(key)[self.last_id]
         if all_string_or_int(key):
-            index = self.index[length-1]
+            index = self.last_id
             return (self._column(c)[index] for c in key)
         raise ValueError('last not implemented for key "%s"' % key)
 

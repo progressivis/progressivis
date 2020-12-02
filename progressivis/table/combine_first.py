@@ -4,17 +4,17 @@ import numpy as np
 from .nary import NAry
 from .table import Table
 from .dshape import dshape_union
-
+from ..core.bitmap import bitmap
 
 def combine_first(table, other, name=None):
     dshape = dshape_union(table.dshape, other.dshape)
     comb_table = Table(name=name, dshape=dshape)
-    if np.all(table.index.values == other.index.values):  # the gentle case
+    if np.all(table.index == other.index):  # the gentle case
         comb_table.resize(len(table.index), index=table.index)
         for cname in table.columns:
             comb_table.loc[:, [cname]] = table.loc[:, [cname]]
             if cname in other.columns:
-                nans = table.index.values[np.isnan(table._column(cname).values)]
+                nans = bitmap(np.nonzero(np.isnan(table._column(cname).values))[0])
                 comb_table.loc[nans, [cname]] = other.loc[nans, [cname]]
         for cname in other.columns:
             if cname in table.columns:

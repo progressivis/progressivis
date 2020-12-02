@@ -1,7 +1,7 @@
 import logging
 
 from . import Table
-from . import TableSelectedView
+#from . import TableSelectedView
 from ..core.slot import SlotDescriptor
 from .module import TableModule
 from ..core.utils import indices_len, fix_loc
@@ -24,7 +24,7 @@ class FilterMod(TableModule):
 
     def reset(self):
         if self._table is not None:
-             self._table.selection = bitmap([])
+             self._table.index = bitmap([])
     def run_step(self, run_number, step_size, howlong):
         input_slot = self.get_input_slot('table')
         # input_slot.update(run_number)
@@ -32,7 +32,7 @@ class FilterMod(TableModule):
         if input_table is None:
             return self._return_run_step(self.state_blocked, steps_run=0)
         if self._table is None:
-            self._table = TableSelectedView(input_table, bitmap([]))
+            self._table = input_table.loc[bitmap([]), :] # TableSelectedView(input_table, bitmap([]))
         steps = 0
         if input_slot.updated.any():
             input_slot.reset()
@@ -40,7 +40,7 @@ class FilterMod(TableModule):
             self.reset()
         if input_slot.deleted.any():
             deleted = input_slot.deleted.next(step_size, as_slice=False)
-            self._table.selection -= deleted
+            self._table.index -= deleted
             steps += indices_len(deleted)
         if input_slot.created.any():
             created = input_slot.created.next(step_size, as_slice=False)
@@ -48,7 +48,7 @@ class FilterMod(TableModule):
             steps += indices_len(created)
             eval_idx = input_table.eval(expr=self.params.expr, locs=np.array(indices),
                                         as_slice=False,result_object='index')
-            self._table.selection |=  bitmap(eval_idx)
+            self._table.index |=  bitmap(eval_idx)
         if not steps:
             return self._return_run_step(self.state_blocked, steps_run=0)
         return self._return_run_step(self.next_state(input_slot), steps)

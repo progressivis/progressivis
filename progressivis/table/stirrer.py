@@ -8,7 +8,7 @@ from progressivis.core.utils import indices_len, fix_loc
 from progressivis.core.bitmap import bitmap
 from progressivis.core.slot import SlotDescriptor
 from .module import TableModule
-from . import Table #, TableSelectedView
+from . import Table
 
 
 class Stirrer(TableModule):
@@ -124,9 +124,10 @@ class StirrerView(TableModule):
         steps = indices_len(created)
         input_table = input_slot.data()
         if self._table is None:
-            self._table = self._input_table.loc[bitmap([]),:] # TableSelectedView(input_table, bitmap([]))
-        before_ = bitmap(self._table.selection)
-        self._table.selection |= created
+            self._table = input_table.loc[bitmap([]),:]
+        before_ = bitmap(self._table.index)
+        self._table.index = self._table.index|created
+        print(len(self._table.index))
         delete = []
         if self._delete_rows and self.test_delete_threshold(before_):
             if isinstance(self._delete_rows, int):
@@ -138,6 +139,6 @@ class StirrerView(TableModule):
                 delete = before_
             else:
                 delete = self._delete_rows
-            self._table.selection -= bitmap(delete)
+            self._table.index = self._table.index - bitmap(delete)
         return self._return_run_step(self.next_state(input_slot),
                                      steps_run=steps)

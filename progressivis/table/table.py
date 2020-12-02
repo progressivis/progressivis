@@ -196,9 +196,9 @@ class Table(BaseTable):
     def ncol(self):
         return len(self._columns)
 
-    @property
-    def nrow(self):
-        return len(self.index)
+    #@property
+    #def nrow(self):
+    #    return len(self.index)
 
     def __contains__(self, colname):
         return colname in self._columndict
@@ -278,13 +278,18 @@ class Table(BaseTable):
             raise ValueError(f"{dshape} incompatible data shape in append")
         length = -1
         all_arrays = True
+        def _len(c):
+            if isinstance(data, BaseTable):
+                return len(c.value)
+            return len(c)
         for colname in self:
             fromcol = data[colname]
             if length == -1:
-                length = len(fromcol)
-            elif length != len(fromcol):
+                length = _len(fromcol)
+            elif length != _len(fromcol):
                 raise ValueError('Cannot append ragged values')
-            all_arrays &= isinstance(fromcol, np.ndarray)
+            all_arrays |= isinstance(fromcol, np.ndarray)
+            #print(type(fromcol))
         if length == 0:
             return
         if isinstance(indices, slice):
@@ -313,7 +318,11 @@ class Table(BaseTable):
                 tocol = self._column(colname)
                 fromcol = data[colname]
                 for i in range(length):
-                    tocol[indices[i]] = fromcol[i]
+                    try:
+                        tocol[indices[i]] = fromcol[i]
+                    except:
+                        import pdb;pdb.set_trace()
+                        tocol[indices[i]] = fromcol[i]
 
     def add(self, row, index=None):
         "Add one row to the Table"

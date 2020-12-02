@@ -1,7 +1,6 @@
 import numpy as np
 
-from . import Table
-from . import TableSelectedView
+from . import Table, BaseTable
 from ..core.slot import SlotDescriptor
 from .module import TableModule
 from collections import OrderedDict
@@ -24,11 +23,11 @@ class Percentiles(TableModule):
         hii = self._hist_index._impl
 
         def _filter_tsv(bm):
-            return bm & input_table.selection
+            return bm & input_table.index
 
         def _no_filtering(bm):
             return bm
-        _filter = _filter_tsv if isinstance(input_table, TableSelectedView) else _no_filtering
+        _filter = _filter_tsv if isinstance(input_table, BaseTable) else _no_filtering
         len_ = len(input_table)
         k_points = [p*(len_+1)*0.01 for p in points.values()]
         max_k = max(k_points)

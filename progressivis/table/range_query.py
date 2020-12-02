@@ -4,7 +4,6 @@ import numpy as np
 from progressivis.core.utils import indices_len
 
 from . import Table
-from . import TableSelectedView
 from ..core.slot import SlotDescriptor
 from .module import TableModule
 from ..core.bitmap import bitmap
@@ -285,20 +284,18 @@ class RangeQuery(TableModule):
             steps += indices_len(updated)
         input_table = input_slot.data()
         if not self._table:
-            self._table = TableSelectedView(input_table, bitmap([]))
-
+            self._table = input_table.loc[bitmap([]), :]
         if not self._impl.is_started:
             self._impl.start(input_table, lower_value, upper_value,
                              limit_changed,
                              created=created,
                              updated=updated,
                              deleted=deleted)
-            self._table.selection = self._impl.result._values
         else:
             self._impl.resume(lower_value, upper_value,
                               limit_changed,
                               created=created,
                               updated=updated,
                               deleted=deleted)
-            self._table.selection = self._impl.result._values
+        self._table.index = self._impl.result._values
         return self._return_run_step(self.next_state(input_slot), steps)

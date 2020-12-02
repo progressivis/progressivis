@@ -361,7 +361,7 @@ class HistogramIndex(TableModule):
             if self._min_table is None:
                 self._min_table = self._input_table.loc[bitmap([]),:]
                 #TableSelectedView(self._input_table,bitmap([]))
-            self._min_table.selection = self.get_min_bin()
+            self._min_table.index = self.get_min_bin()
             return self._min_table
         if name == 'max_out':
             if self.get_max_bin() is None:
@@ -369,7 +369,7 @@ class HistogramIndex(TableModule):
             if self._max_table is None:
                 self._max_table = self._input_table.loc[bitmap([]),:]
                 # TableSelectedView(self._input_table,bitmap([]))
-            self._max_table.selection = self.get_max_bin()
+            self._max_table.index = self.get_max_bin()
             return self._max_table
         return super(HistogramIndex, self).get_data(name)
 

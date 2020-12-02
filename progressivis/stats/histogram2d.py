@@ -222,7 +222,7 @@ class Histogram2D(TableModule):
                 if len(table) == 0 or last['time'] != run_number:
                     table.add(values)
                 else:
-                    table.iloc[last.row] = values
+                    table.loc[last.row] = values
             self.build_heatmap(values)
             return self._return_run_step(self.next_state(dfslot), steps_run=steps)
 
