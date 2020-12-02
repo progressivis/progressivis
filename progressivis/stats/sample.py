@@ -47,7 +47,7 @@ class Sample(TableModule):
         if name == 'select':
             return self.get_bitmap()
         if self._table is not None:
-            self._table.selection = self.get_bitmap()
+            self._table.index = self.get_bitmap()
         return super(Sample, self).get_data(name)
 
     def get_bitmap(self):

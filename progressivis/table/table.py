@@ -207,7 +207,7 @@ class Table(BaseTable):
     def resize(self, newsize=None, index=None):
         if index is not None:
             index = bitmap.asbitmap(index)
-            newsize_ = index.max() + 1
+            newsize_ = index.max() + 1 if index else 0
             if newsize < newsize_:
                 print(f"Wrong newsize={newsize}, fixed to {newsize_}")
                 newsize = newsize_

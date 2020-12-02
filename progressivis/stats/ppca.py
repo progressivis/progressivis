@@ -4,7 +4,7 @@ import copy
 from ..core.utils import indices_len, fix_loc, filter_cols
 from ..core.bitmap import bitmap
 from ..table.module import TableModule
-from ..table import Table, TableSelectedView
+from ..table import Table #, TableSelectedView
 from ..table.dshape import dshape_projection
 from ..core.decorators import *
 from .. import ProgressiveError, SlotDescriptor
@@ -38,7 +38,7 @@ class PPCA(TableModule):
         self.inc_pca = IncrementalPCA(n_components=self.params.n_components)
         self.inc_pca_wtn = None
         if self._table is not None:
-            self._table.selection = bitmap()
+            self._table.index = bitmap()
 
     def get_data(self, name):
         if name == 'transformer':
@@ -65,9 +65,9 @@ class PPCA(TableModule):
                 self._transformer['inc_pca'] = self.inc_pca
             self.inc_pca.partial_fit(vs)
             if self._table is None:
-                self._table = TableSelectedView(table, bitmap(indices))
+                self._table = table.loc[bitmap(indices), :]
             else:
-                self._table.selection |= bitmap(indices)
+                self._table.index = self._table.index|bitmap(indices)
             return self._return_run_step(self.next_state(ctx.table), steps_run=steps)
 
     def create_dependent_modules_buggy(self, atol=0.0, rtol=0.001,

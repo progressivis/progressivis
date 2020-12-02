@@ -50,10 +50,10 @@ class Stats(TableModule):
             dfslot.update(run_number)
         else:
             df = self._table
-            prev = len(df)-1
+            prev = df.last_id
             if prev > 0:
-                prev_min = df.iat[prev, self._min_column]
-                prev_max = df.iat[prev, self._max_column]
+                prev_min = df.at[prev, self._min_column]
+                prev_max = df.at[prev, self._max_column]
 
         indices = dfslot.created.next(step_size)  # returns a slice
         input_df = dfslot.data()

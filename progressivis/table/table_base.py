@@ -533,7 +533,7 @@ class BaseTable(metaclass=ABCMeta):
         #self._ids.resize(newsize, index)
         if index is not None:
             index = self._any_to_bitmap(index)
-            if index.min() > self.last_id:
+            if index and index.min() > self.last_id:
                 self._index |= index
             else:
                 assert index in self._index

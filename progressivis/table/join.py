@@ -19,7 +19,7 @@ def join(table, other, name=None, on=None, how='left', lsuffix='', rsuffix='', s
     dshape, rename = dshape_join(table.dshape, other.dshape, lsuffix, rsuffix)
     join_table = Table(name=name, dshape=dshape)
     if how == 'left':
-        if np.array_equal(table.index.values, other.index.values):
+        if np.array_equal(table.index, other.index):
             join_table.resize(len(table), index=table.index)
             left_cols = [rename['left'].get(c, c) for c in table.columns]
             right_cols = [rename['right'].get(c, c) for c in other.columns]
