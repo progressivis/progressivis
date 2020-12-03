@@ -356,7 +356,7 @@ class RangeQuery2d(TableModule):
                                       created=created,
                                       updated=updated,
                                       deleted=deleted)
-            self._table.selection = self._impl.result._values
+            self._table.index = self._impl.result._values
         else:
             status = self._impl.resume(lower_value_x, upper_value_x,
                                        lower_value_y, upper_value_y,
@@ -364,5 +364,5 @@ class RangeQuery2d(TableModule):
                                        created=created,
                                        updated=updated,
                                        deleted=deleted)
-            self._table.selection = self._impl.result._values
+            self._table.index = self._impl.result._values
         return self._return_run_step(self.next_state(input_slot), steps)

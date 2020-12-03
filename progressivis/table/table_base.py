@@ -12,7 +12,7 @@ from progressivis.core.utils import (integer_types, norm_slice, is_slice,
                                      all_int, all_string, is_iterable,
                                      all_string_or_int, all_bool,
                                      indices_len, remove_nan,
-                                     is_none_alike, get_physical_base)
+                                     is_none_alike, )
 from progressivis.core.config import get_option
 from progressivis.core.bitmap import bitmap
 from .dshape import dshape_print, dshape_create
@@ -21,6 +21,8 @@ logger = logging.getLogger(__name__)
 
 
 FAST = 1
+def get_physical_base(c):
+    return c
 
 
 class _BaseLoc(object):
