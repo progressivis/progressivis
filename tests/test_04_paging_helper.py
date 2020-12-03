@@ -1,7 +1,6 @@
 from . import ProgressiveTest
 from progressivis.table.paging_helper import PagingHelper
 from progressivis.table.table import Table
-from progressivis.table.table_selected import TableSelectedView
 from progressivis.core.bitmap import bitmap
 
 import numpy as np
@@ -29,7 +28,7 @@ class TestPagingHelper(ProgressiveTest):
         self.assertEqual(page[-1][0], 10)
         sel = bitmap(range(10, 75, 2))
         print(sel)
-        view = TableSelectedView(t, sel, None)
+        view = t.loc[sel, :]
         ph_t = PagingHelper(view)
         page = ph_t.get_page(10, 20)
         self.assertEqual(page[0][0], 30)

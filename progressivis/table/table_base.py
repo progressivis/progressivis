@@ -134,7 +134,7 @@ class BaseTable(metaclass=ABCMeta):
         self._loc = _Loc(self, True)
         self._at = _At(self, True)
         self._changes = None
-        self._is_identity = True
+        #self._is_identity = True
         self._cached_index = BaseTable # hack
         self._last_id = -1
         self._observed = None
@@ -175,11 +175,7 @@ class BaseTable(metaclass=ABCMeta):
 
     def info_row(self, row, width):
         "Return a description for a row, used in `repr`"
-        row_id = -1
-        try:
-            row_id = self.index_to_id(row)
-        except OverflowError:
-            pass
+        row_id = row if row in self._index else -1
         rep = "{0:{width}}|".format(row_id, width=width)
         for name in self.columns:
             col = self[name]
@@ -224,6 +220,12 @@ class BaseTable(metaclass=ABCMeta):
                 rep += self.info_row(row, width)
         return rep
 
+    def index_to_mask(self):
+        return np.array(((elt in self._index) for elt in range(self.last_id+1)))
+
+    def index_to_array(self):
+        return np.array(self._index, dtype='int32')
+
     def __iter__(self):
         return iter(self._columndict.keys())
 
@@ -235,7 +237,10 @@ class BaseTable(metaclass=ABCMeta):
     @property
     def is_identity(self):
         "Return True if the index is using the identity mapping"
-        return self._is_identity
+        sl = self._index.to_slice_maybe()
+        if not isinstance(sl, slice):
+            return False
+        return sl == slice(0, self.last_id+1, None)
 
     @property
     def last_id(self):
@@ -929,10 +934,22 @@ class BaseTable(metaclass=ABCMeta):
         return self.raw_unary(np.var, **kwargs)
 
     def argmin(self, **kwargs):
-        return self.raw_unary(np.argmin, **kwargs)
+        argmin_ = self.raw_unary(np.argmin, **kwargs)
+        if self.is_identity:
+            return argmin_
+        index_array= self.index_to_array()
+        for k, v in argmin_.items():
+             argmin_[k] = index_array[v]
+        return argmin_
 
     def argmax(self, **kwargs):
-        return self.raw_unary(np.argmax, **kwargs)
+        argmax_ = self.raw_unary(np.argmax, **kwargs)
+        if self.is_identity:
+            return argmax_
+        index_array= self.index_to_array()
+        for k, v in argmax_.items():
+             argmax_[k] = index_array[v]
+        return argmax_
 
     def idxmin(self, **kwargs):
         res = self.argmin(**kwargs)

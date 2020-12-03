@@ -8,7 +8,7 @@ class PagingHelper:
         if not isinstance(tbl, Table):
             self._index = np.array(list(self._table.index))
         elif not tbl.is_identity:
-            self._index = self._table.index.loc[:]
+            self._index = self._table.index
 
     def get_page(self, start, end):
         ret = []

@@ -279,7 +279,7 @@ class CSVLoader(TableModule):
                     self._recovery_table.add(snapshot)
                     if len(self._recovery_table) > self._recovery_table_size:
                         oldest = self._recovery_table.argmin()['offset']
-                        self._recovery_table.drop(np.argmin(oldest))
+                        self._recovery_table.drop(oldest)
                     self._last_saved_id = self._table.last_id
         return self._return_run_step(self.state_ready, steps_run=creates)
 
