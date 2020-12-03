@@ -695,7 +695,8 @@ def _infer_compression(filepath_or_buffer, compression):
 
 
 def get_physical_base(t):
-    return t if t.base is None else get_physical_base(t.base)
+    # TODO: obsolete, to be removed
+    return t
 
 
 def force_valid_id_columns(df):

@@ -56,11 +56,7 @@ class TestUnary(ProgressiveTest):
         pr.input.df = module.output.table
         aio.run(s.start())
         res1 = np.log(stirrer.table().to_array()[:, [2, 4, 6]])
-        ix1 = stirrer.table().index.to_array()
-        res1 = res1[ix1.argsort()]
         res2 = module.table().to_array()
-        ix2 =  module.table().index.to_array()
-        res2 = res2[ix2.argsort()]
         self.assertEqual(module.name, "unary_1")
         self.assertTrue(np.allclose(res1, res2, equal_nan=True))
 
@@ -212,11 +208,7 @@ class TestColsBinary(ProgressiveTest):
         arr = stirrer.table().to_array()
         res1 = np.add(arr[:, [2, 4, 6]],
                       arr[:, [3, 5, 7]])
-        ix1 = stirrer.table().index.to_array()
-        res1 = res1[ix1.argsort()]
         res2 = module.table().to_array()
-        ix2 = module.table().index.to_array()
-        res2 = res2[ix2.argsort()]
         self.assertEqual(module.name, "cols_binary_1")
         self.assertTrue(np.allclose(res1, res2, equal_nan=True))
 
@@ -388,8 +380,6 @@ class TestBinary(ProgressiveTest):
         t2 = stirrer2.table().loc[common,:].to_array()[:, [3, 5, 7]]
         res1 = np.add(t1, t2)
         res2 = module.table().to_array()
-        ix = module.table().index.to_array()
-        res2 = res2[ix.argsort()]
         self.assertEqual(module.name, "binary_1")
         self.assertTrue(np.allclose(res1, res2, equal_nan=True))
 

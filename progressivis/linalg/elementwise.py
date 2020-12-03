@@ -132,7 +132,7 @@ def _simple_binary(tbl, op, cols1, cols2, cols_out, **kwargs):
     for cn1, cn2, co in zip(cols1, cols2, cols_out):
         col1 = tbl[cn1]
         col2 = tbl[cn2]
-        value = op(col1, col2)
+        value = op(col1.value, col2.value)
         res[co] = value
     return res
 
@@ -199,14 +199,15 @@ def _binary(tbl, op, other, other_cols=None, **kwargs):
     axis = kwargs.pop('axis', 0)
     assert axis == 0
     res = OrderedDict()
-    isscalar = (np.isscalar(other) or isinstance(other, np.ndarray))
+    isscalar = isinstance(other, dict)
+    def _value(c):
+        if isscalar:
+            return c
+        return c.value
     for i, col in enumerate(tbl._columns):
         name = col.name
-        if isscalar:
-            value = op(col, other)
-        else:
-            name2 = other_cols[i]
-            value = op(col, other[name2])
+        name2 = other_cols[i]
+        value = op(col.value, _value(other[name2]))
         res[name] = value
     return res
 

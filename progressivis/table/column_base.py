@@ -78,10 +78,8 @@ class BaseColumn(metaclass=ABCMeta):
     def id_to_index(self, loc, as_slice=True):
         "Convert an identifier to an index"
         # pylint: disable=unused-argument
-        if self.index:
-            #return self.index[loc]
-            return self.index.id_to_index(loc, as_slice)
-        raise KeyError('Cannot map key %s to index'% loc)
+        return self.index.id_to_index(loc, as_slice)
+
 
     def update(self):
         """

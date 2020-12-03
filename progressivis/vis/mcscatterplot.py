@@ -214,7 +214,7 @@ class MCScatterPlot(NAry):
                 if select is not None:
                     ph_x = get_physical_base(select[x_column])
                     ph_y = get_physical_base(select[y_column])
-                    smpl = ph_x.loc[select[x_column].index.values],  ph_y.loc[select[y_column].index.values]
+                    smpl = ph_x.loc[select[x_column].index.index],  ph_y.loc[select[y_column].index.index]
                 else:
                     smpl = [], []
                     
