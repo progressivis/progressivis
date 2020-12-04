@@ -36,10 +36,8 @@ class Hadamard(TableModule):
         data1 = x1.data().loc[fix_loc(x1_indices)]
         data2 = x2.data().loc[fix_loc(x2_indices)]
         assert data1.columns == data2.columns
-        #import pdb;pdb.set_trace()
         for col in  data1.columns:
-            res[col] = np.multiply(data1[col],
-                              data2[col])
+            res[col] = np.multiply(data1[col].value, data2[col].value)
         if self._table is None:
             self._table = Table(name='simple_hadamard', data=res, create=True)
         else:
