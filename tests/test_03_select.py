@@ -19,8 +19,8 @@ def print_repr(x):
 class TestSelect(ProgressiveTest):
     def setUp(self):
         super(TestSelect, self).setUp()
-#        self.log(self.INFO)
-
+        #        self.log(self.INFO)
+    @skip
     def test_select_simple(self):
         s = self.scheduler()
         csv = CSVLoader(get_dataset('bigfile'), index_col=False, header=None,
