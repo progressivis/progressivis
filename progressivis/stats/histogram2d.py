@@ -1,6 +1,5 @@
 
-from ..core.utils import (indices_len, fix_loc,
-                          get_physical_base)
+from ..core.utils import (indices_len, fix_loc)
 from ..utils.bytescale import bytescale
 from ..core.slot import SlotDescriptor
 from ..table.module import TableModule
@@ -162,7 +161,7 @@ class Histogram2D(TableModule):
                 self.reset()
                 dfslot.update(run_number)
             elif dfslot.deleted.any() and self._histo is not None: # i.e. TableSelectedView, TableSlicedView
-                input_df = get_physical_base(dfslot.data()) # the original table
+                input_df = dfslot.data().get_original() # the original table
                 raw_indices = dfslot.deleted.next(step_size) # we assume that deletions are only local to the view
                 # and the related records still exist in the original table ...
                 # TODO : test this hypothesis and reset if false
