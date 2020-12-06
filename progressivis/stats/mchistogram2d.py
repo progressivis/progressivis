@@ -178,7 +178,7 @@ class MCHistogram2D(NAry):
         # if there are new deletions, build the histogram of the deleted pairs
         # then subtract it from the main histogram            
         elif dfslot.deleted.any() and self._histo is not None:
-            input_df = get_physical_base(dfslot.data()) # the original table
+            input_df = dfslot.data().get_original() # the original table
             raw_indices = dfslot.deleted.next(step_size) # we assume that deletions are only local to the view
             # and the related records still exist in the original table ...
             # TODO : test this hypothesis and reset if false
