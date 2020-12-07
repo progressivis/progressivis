@@ -86,7 +86,9 @@ class _Loc(_BaseLoc):
         raise ValueError('getitem not implemented for index "%s"', index)
 
     def __setitem__(self, key, value):
-        index, col_key, _ = self.parse_key(key)
+        index, col_key, raw_index = self.parse_key_to_bitmap(key)
+        if isinstance(raw_index, integer_types):
+            index = raw_index
         return self._table.setitem_2d(index, col_key, value)
 
 
@@ -178,7 +180,13 @@ class BaseTable(metaclass=ABCMeta):
         rep = "{0:{width}}|".format(row_id, width=width)
         for name in self.columns:
             col = self[name]
-            v = str(col[row])
+            try:
+                v = str(col[row])
+            except ValueError:
+                if row_id == -1:
+                    v = '?'*width
+                else:
+                    raise
             if len(v) > width:
                 if col.dshape == "string":
                     v = v[0:width-3]+'...'
@@ -189,7 +197,7 @@ class BaseTable(metaclass=ABCMeta):
 
     def info_contents(self):
         "Return a description of the contents of this table"
-        length = len(self)
+        length = self.last_id + 1 #len(self)
         rep = ''
         max_rows = min(length, get_option('display.max_rows'))
         if max_rows == 0:
@@ -532,6 +540,8 @@ class BaseTable(metaclass=ABCMeta):
             #self.__delitem__(index)
             self._index -= index
         self.add_deleted(index)
+        if self._storagegroup is not None:
+            self._storagegroup.release(index)
 
     def _resize_rows(self, newsize, index=None):
         #self._ids.resize(newsize, index)

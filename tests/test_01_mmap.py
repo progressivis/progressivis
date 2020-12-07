@@ -152,10 +152,10 @@ class TestMMap(ProgressiveTest):
         self.assertEqual(len(t), 97)
         self.assertEqual(_free_chunk_nb(t), 3)
         del t.loc[30:40] # 40 is deleted too
-        self.assertEqual(len(t), 87)
+        self.assertEqual(len(t), 86)
         self.assertEqual(_free_chunk_nb(t), 14)
         del t.loc[80:]
-        self.assertEqual(len(t), 67)
+        self.assertEqual(len(t), 66)
         self.assertEqual(_free_chunk_nb(t), 34)
 
     def _create_table(self, group):
