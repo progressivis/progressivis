@@ -64,7 +64,7 @@ class Table(BaseTable):
 
     Example:
         >>> from progressivis.table import Table
-        >>> t = Table('my-table', dshape='{a: int32, b: float32, c: bool}')
+        >>> t = Table('my-table', dshape='{a: int32, b: float32, c: bool}', create=True)
         >>> len(t)
         0
         >>> t.columns
