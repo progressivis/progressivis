@@ -467,7 +467,7 @@ class MMapStorageEngine(StorageEngine, MMapGroup):
             #if not isinstance(grp, MMapGroup):
             #     raise ValueError("{} already exists and is not a group".format(name))
             #return grp
-        if not create:
+        if create is False:
             raise ValueError(f"group {name} does not exist")
         return MMapGroup(name, parent=root)
 
