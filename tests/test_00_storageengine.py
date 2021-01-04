@@ -1,10 +1,11 @@
-from . import ProgressiveTest
+from . import ProgressiveTest, skip
 
 from progressivis.storage.base import StorageEngine, Group, Dataset #, Attribute
 from progressivis.table.table import Table
 
 import numpy as np
 
+@skip
 class TestStorageEngine(ProgressiveTest):
     def test_storage_engine(self):
         e = StorageEngine.default
