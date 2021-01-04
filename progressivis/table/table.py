@@ -4,7 +4,7 @@ Main Table class
 """
 from collections import OrderedDict, Mapping
 import logging
-
+import base64 as b64
 import numpy as np
 import pandas as pd
 import numexpr as ne
@@ -150,9 +150,9 @@ class Table(BaseTable):
         nrow = node.attrs[metadata.ATTR_NROWS]
         self._dshape = dshape_create(node.attrs[metadata.ATTR_DATASHAPE])
         assert dshape_table_check(self._dshape)
-        #self._ids = IdColumn(table=self)
-        #self._ids.load_dataset(dshape=None, nrow=nrow)
-        self._index = bitmap(range(nrow)) # buggy, but it reflects the current behaviour
+        self._index = bitmap.deserialize(b64.b64decode(self._storagegroup.attrs[metadata.ATTR_INDEX].encode()))
+        self._last_id = node.attrs[metadata.ATTR_LAST_ID]
+        #self._index = bitmap.deserialize(self._storagegroup.attrs[metadata.ATTR_INDEX].encode())
         for (name, dshape) in dshape_fields(self._dshape):
             column = self._create_column(name)
             column.load_dataset(dshape=dshape,
@@ -160,11 +160,15 @@ class Table(BaseTable):
                                 shape=dshape_to_shape(dshape))
 
     def _create_table(self, fillvalues):
+        #import pdb;pdb.set_trace()
         node = self.storagegroup
         node.attrs[metadata.ATTR_TABLE] = self.name
         node.attrs[metadata.ATTR_VERSION] = metadata.VALUE_VERSION
         node.attrs[metadata.ATTR_DATASHAPE] = str(self._dshape)
         node.attrs[metadata.ATTR_NROWS] = 0
+        node.attrs[metadata.ATTR_INDEX] = b64.b64encode(self._index.serialize()).decode()
+        node.attrs[metadata.ATTR_LAST_ID] = self.last_id
+        #node.attrs[metadata.ATTR_INDEX] = self._index.serialize().decode()
         # create internal id dataset
         # self._ids = IdColumn(table=self, storagegroup=self.storagegroup)
         # self._ids.create_dataset(dshape=None, fillvalue=-1)
@@ -180,6 +184,8 @@ class Table(BaseTable):
                                   fillvalue=fillvalue,
                                   shape=shape)
 
+    def get_index_str(self):
+        return b64.b64encode(self._index.serialize()).decode()
 
     def _create_column(self, name):
         column = Column(name, self, storagegroup=self.storagegroup)
@@ -203,14 +209,30 @@ class Table(BaseTable):
     def __contains__(self, colname):
         return colname in self._columndict
 
+    def drop(self, index, raw_index=None, truncate=False):
+        super().drop(index, raw_index, truncate)
+        self._storagegroup.attrs[metadata.ATTR_INDEX] = b64.b64encode(self._index.serialize()).decode()
+        self._storagegroup.attrs[metadata.ATTR_LAST_ID] = self.last_id
+        #self._storagegroup.attrs[metadata.ATTR_INDEX] = self._index.serialize().decode()
+
+    def _resize_rows(self, newsize, index=None):
+        super()._resize_rows(newsize, index)
+        self._storagegroup.attrs[metadata.ATTR_INDEX] = b64.b64encode(self._index.serialize()).decode()
+        self._storagegroup.attrs[metadata.ATTR_LAST_ID] = self.last_id
+        #self._storagegroup.attrs[metadata.ATTR_INDEX] = self._index.serialize().decode()
 
     def resize(self, newsize=None, index=None):
+        # NB: newsize means how many active rows the table must contain
         if index is not None:
             index = bitmap.asbitmap(index)
             newsize_ = index.max() + 1 if index else 0
             if newsize < newsize_:
                 print(f"Wrong newsize={newsize}, fixed to {newsize_}")
                 newsize = newsize_
+        delta = newsize-len(self.index)
+        if delta < 0:
+            return
+        newsize = self.last_id + delta +1
         self._resize_rows(newsize, index)
         self._storagegroup.attrs[metadata.ATTR_NROWS] = newsize
         for column in self._columns:
@@ -233,24 +255,6 @@ class Table(BaseTable):
     def touch_rows(self, loc=None):
         "Signals that the values at loc have been changed"
         self.touch(loc)
-
-    def __old_delitem__(self, col):
-        raise NotImplementedError("Cannot delete column(s) '%s' yet", col)
-        #del self._ids[key]
-
-    def __old_drop(self, index, locs=None):
-        # for column in self._columns:
-        #     val = column[index]
-        #     val = column.fillvalue
-        #     column[index] = val
-        if locs is None:
-            locs = self.index[index]
-        self._ids._delete_ids(locs, index)
-        if self._storagegroup is not None:
-            self._storagegroup.release(index)
-        #del
-        # for column in self._columns:
-        #    column.update()
 
     def parse_data(self, data, indices=None):
         if data is None:

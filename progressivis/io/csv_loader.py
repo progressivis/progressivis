@@ -60,12 +60,34 @@ class CSVLoader(TableModule):
         self._recovery = recovery
         self._recovery_table_size = recovery_table_size
         self._recovery_table = None
+        self._recovery_table_name = 'csv_loader_recovery'
         self._recovery_table_inv = None
+        self._recovery_table_inv_name = 'csv_loader_recovery_invariant'
         self._save_step_size = save_step_size
         self._last_saved_id = 0
         self._table = None
         #self._do_not_wait = ["filenames"]
         # self.wait_expr = AnyAll([])
+        if not self._recovery:
+            self.trunc_recovery_tables()
+
+    def trunc_recovery_tables(self):
+        len_ = 0
+        try:
+            rt = Table(name=self._recovery_table_name, create=False)
+            len_ = len(rt)
+        except:
+            pass
+        if len_:
+            rt.drop(slice(None,None,None), truncate=True)
+        len_ = 0
+        try:
+            rt = Table(name=self._recovery_table_inv_name, create=False)
+            len_ = len(rt)
+        except:
+            pass
+        if len_:
+            rt.drop(slice(None,None,None), truncate=True)
 
     def rows_read(self):
         "Return the number of rows read so far."
@@ -127,15 +149,16 @@ class CSVLoader(TableModule):
                 else: # do recovery
                     try:
                         if self._recovery_table is None:
-                            self._recovery_table = Table(name='csv_loader_recovery', create=False)
+                            self._recovery_table = Table(name=self._recovery_table_name, create=False)
                         if self._recovery_table_inv is None:
-                            self._recovery_table_inv = Table(name='csv_loader_recovery_invariant', create=False)
+                            self._recovery_table_inv = Table(name=self._recovery_table_inv_name, create=False)
                         if self._table is None:
                             self._table_params['name'] = self._recovery_table_inv['table_name'].loc[0]
                             self._table_params['create'] = False
                             self._table = Table(**self._table_params)
+                            self._table.last_id
                     except Exception as e: # TODO: specify the exception?
-                        logger.error('Cannot acces recovery table %s', e)
+                        logger.error(f"Cannot acces recovery table {e}")
                         return self.state_terminated
                     try:
                         last_ = self._recovery_table.eval("last_id=={}".format(len(self._table)), as_slice=False)
@@ -156,9 +179,9 @@ class CSVLoader(TableModule):
                                 if check_snapshot(sn) and sn['last_id'] > max_:
                                     max_, snapshot = sn['last_id'], sn
                             if max_ < 0:
-                                logger.error('Cannot acces recovery table')
+                                #logger.error('Cannot acces recovery table (max_<0)')
                                 return self.state_terminated
-                            self._table.drop(slice(max_, None, None))
+                            self._table.drop(slice(max_+1, None, None), truncate=True)
                         self._recovered_csv_table_name = snapshot['table_name']
                     except Exception as e:
                         logger.error('Cannot read the snapshot %s', e)
@@ -166,7 +189,6 @@ class CSVLoader(TableModule):
                     try:
                         self.parser = recovery(snapshot, self.filepath_or_buffer, **self.csv_kwds)
                     except Exception as e:
-                        #print('Cannot recover from snapshot {}, {}'.format(snapshot, e))
                         logger.error('Cannot recover from snapshot %s, %s', snapshot, e)
                         self.parser = None
                         return self.state_terminated
@@ -212,10 +234,8 @@ class CSVLoader(TableModule):
             self.close()
             raise ProgressiveStopIteration('Unexpected situation')
         logger.info('loading %d lines', step_size)
-        #print("Processed bytes: ", self.parser._prev_pos)
         needs_save = self._needs_save()
         try:
-            #with self.lock:
             df_list = self.parser.read(step_size, flush=needs_save) # raises StopIteration at EOF
             if not df_list:
                 raise ProgressiveStopIteration
@@ -242,45 +262,43 @@ class CSVLoader(TableModule):
             if self.force_valid_ids:
                 for df in df_list:
                     force_valid_id_columns(df)
-            #with self.lock:
-            if True:
-                if self._table is None:
-                    if not self._recovery:
-                        self._table_params['name'] = self.generate_table_name('table')
-                        self._table_params['dshape'] = dshape_from_dataframe(df_list[0])
-                        self._table_params['create'] = True
-                        self._table_params['data'] = pd.concat(df_list)
-                        self._table = Table(**self._table_params)
-                    else:
-                        self._table_params['name'] = self._recovered_csv_table_name
-                        self._table_params['create'] = False
-                        self._table = Table(**self._table_params)
-                        self._table.append(pd.concat(df_list))
+            if self._table is None:
+                if not self._recovery:
+                    self._table_params['name'] = self.generate_table_name('table')
+                    self._table_params['dshape'] = dshape_from_dataframe(df_list[0])
+                    self._table_params['create'] = True
+                    self._table_params['data'] = pd.concat(df_list)
+                    self._table = Table(**self._table_params)
                 else:
-                    for df in df_list:
-                        self._table.append(df)
-                if self.parser.is_flushed() and needs_save \
-                   and self._recovery_table is None and self._save_context:
-                    snapshot = self.parser.get_snapshot(run_number=run_number,
-                                                        table_name=self._table._name,
-                                                        last_id=self._table.last_id)
-                    self._recovery_table = Table(name='csv_loader_recovery',
-                        data = pd.DataFrame(snapshot, index=[0]), create=True)
-                    self._recovery_table_inv = Table(
-                        name='csv_loader_recovery_invariant',
-                        data=pd.DataFrame(dict(table_name=self._table._name,
-                                            csv_input=self.filepath_or_buffer),
-                                              index=[0]), create=True)
-                    self._last_saved_id = self._table.last_id
-                elif self.parser.is_flushed() and needs_save and self._save_context:
-                    snapshot = self.parser.get_snapshot(
-                        run_number=run_number,
-                        last_id=self._table.last_id, table_name=self._table._name)
-                    self._recovery_table.add(snapshot)
-                    if len(self._recovery_table) > self._recovery_table_size:
-                        oldest = self._recovery_table.argmin()['offset']
-                        self._recovery_table.drop(oldest)
-                    self._last_saved_id = self._table.last_id
+                    self._table_params['name'] = self._recovered_csv_table_name
+                    self._table_params['create'] = False
+                    self._table = Table(**self._table_params)
+                    self._table.append(pd.concat(df_list))
+            else:
+                for df in df_list:
+                    self._table.append(df)
+            if self.parser.is_flushed() and needs_save \
+               and self._recovery_table is None and self._save_context:
+                snapshot = self.parser.get_snapshot(run_number=run_number,
+                                                    table_name=self._table._name,
+                                                    last_id=self._table.last_id)
+                self._recovery_table = Table(name=self._recovery_table_name,
+                    data = pd.DataFrame(snapshot, index=[0]), create=True)
+                self._recovery_table_inv = Table(
+                    name=self._recovery_table_inv_name,
+                    data=pd.DataFrame(dict(table_name=self._table._name,
+                                        csv_input=self.filepath_or_buffer),
+                                          index=[0]), create=True)
+                self._last_saved_id = self._table.last_id
+            elif self.parser.is_flushed() and needs_save and self._save_context:
+                snapshot = self.parser.get_snapshot(
+                    run_number=run_number,
+                    last_id=self._table.last_id, table_name=self._table._name)
+                self._recovery_table.add(snapshot)
+                if len(self._recovery_table) > self._recovery_table_size:
+                    oldest = self._recovery_table.argmin()['offset']
+                    self._recovery_table.drop(oldest)
+                self._last_saved_id = self._table.last_id
         return self._return_run_step(self.state_ready, steps_run=creates)
 
 

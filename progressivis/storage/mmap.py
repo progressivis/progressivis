@@ -7,6 +7,7 @@ import os.path
 from resource import getpagesize
 import marshal
 import shutil
+from tempfile import mkdtemp
 from mmap import mmap
 import logging
 import numpy as np
@@ -14,13 +15,42 @@ import numpy as np
 from progressivis.core.utils import integer_types, get_random_name, next_pow2
 from .base import StorageEngine, Dataset
 from .hierarchy import GroupImpl, AttributeImpl
+from ..core.settings import VARS
 from .mmap_enc import MMapObject
 logger = logging.getLogger(__name__)
 
+
+TEMP_DIR_PREFIX = 'progressivis_tmp_dir_'
+
+ROOT_NAME = "mmap_storage"
 METADATA_FILE = ".metadata"
+
 PAGESIZE = getpagesize()
 FACTOR = 1
 
+def init_temp_dir_if():
+    if VARS.get('TEMP_DIR') is None:
+        VARS['TEMP_DIR'] = mkdtemp(prefix=TEMP_DIR_PREFIX)
+        #import pdb;pdb.set_trace()
+        #print("MKDTEMP", VARS['TEMP_DIR'])
+        return True
+    return False
+
+def cleanup_temp_dir():
+    if VARS.get('TEMP_DIR') is None:
+        return
+    if StorageEngine.default == 'mmap':
+        root = StorageEngine.engines()['mmap']
+        if root.has_files():
+            #import pdb;pdb.set_trace()
+            root.close_all()
+            root.delete_children()
+            root.dict = {}
+        shutil.rmtree(VARS.get('TEMP_DIR'))
+        VARS['TEMP_DIR'] = None
+
+def temp_dir():
+    return VARS.get('TEMP_DIR')
 
 def _shape_len(shape):
     length = 1
@@ -39,7 +69,7 @@ class MMapDataset(Dataset):
         self._name = name
         self._filename = os.path.join(path, name)
         self._metafile = os.path.join(path, METADATA_FILE+'.'+name)
-        self._attrs = AttributeImpl()        
+        self._attrs = AttributeImpl()
         length = 0
         if dtype is not None:
             dtype = np.dtype(dtype)
@@ -120,7 +150,7 @@ class MMapDataset(Dataset):
             self.view[start:end] = np.asarray(data)
 
     def append(self, val):
-        assert self._buffer is not None        
+        assert self._buffer is not None
         #assert isinstance(val, bytes)
         assert isinstance(self.shape, tuple) and len(self.shape) == 1
         assert self.dtype == np.int8
@@ -186,7 +216,7 @@ class MMapDataset(Dataset):
     @property
     def size(self):
         return self.view.shape[0]
-    
+
     def resize(self, size, axis=None):
         assert self._buffer is not None
         shape = self.base.shape
@@ -284,7 +314,7 @@ class MMapDataset(Dataset):
 
 
 OBJECT = np.dtype('O')
-ROOT_NAME = "mmap_storage"
+
 class MMapGroup(GroupImpl):
     """
     Group of mmap-based groups and datasets.
@@ -294,6 +324,18 @@ class MMapGroup(GroupImpl):
         if name is None:
             name = get_random_name("mmapstorage_")
         super(MMapGroup, self).__init__(name, parent=parent)
+        #self._directory = self.path()
+        #import pdb;pdb.set_trace()
+        #metadata = os.path.join(self._directory, METADATA_FILE)
+        #self._metadata = metadata
+        if parent is not None:
+            if name in parent.dict:
+                raise ValueError('Cannot create group {}, already exists'.format(name))
+            parent.dict[name] = self
+        self._is_init = False
+    def _init_dirs(self):
+        if self._is_init:
+            return
         self._directory = self.path()
         metadata = os.path.join(self._directory, METADATA_FILE)
         self._metadata = metadata
@@ -307,23 +349,24 @@ class MMapGroup(GroupImpl):
         else:
             os.makedirs(self._directory) # can raise exceptions
             _write_attributes(self._attrs.attrs, metadata)
-        if parent is not None:
-            if name in parent.dict:
-                raise ValueError('Cannot create group {}, already exists'.format(name))
-            parent.dict[name] = self
-            
+        self._is_init = True
+
     def path(self):
         "Return the path of the directory for that group"
         if self.parent is None:
-            return self._name
+            init_temp_dir_if()
+            return os.path.join(VARS.get('TEMP_DIR'), self._name)
         return os.path.join(self.parent.path(), self._name)
     def has_files(self):
+        if not self._is_init:
+            return False
         if not os.path.isdir(self._directory):
             return False
         if not os.path.isfile(self._metadata):
             return False
         return True
     def create_dataset(self, name, shape=None, dtype=None, data=None, **kwds):
+        self._init_dirs()
         if name in self.dict:
             raise KeyError('name %s already defined' % name)
         chunks = kwds.pop('chunks', None)
@@ -357,17 +400,22 @@ class MMapGroup(GroupImpl):
         return arr
 
     def _create_group(self, name, parent):
+        self._init_dirs()
         return MMapGroup(name, parent=parent)
 
     def delete(self):
+        if not self._is_init:
+            return
         "Delete the group and resources associated. Do it at your own risk"
         if os.path.exists(self._directory):
             shutil.rmtree(self._directory)
         if self.parent is not None and self in self.parent.dict:
             del self.parent.dict[self]
 
-            
+
     def delete_children(self):
+        if not self._is_init:
+            return
         for f in os.listdir(self._directory):
             if f == '.metadata':
                 continue
@@ -376,8 +424,10 @@ class MMapGroup(GroupImpl):
                 shutil.rmtree(child)
             else:
                 os.unlink(child)
-            
+
     def close_all(self):
+        if not self._is_init:
+            return
         for ds in self.dict.values():
             if isinstance(ds, MMapDataset):
                 ds.close()
@@ -391,8 +441,8 @@ class MMapGroup(GroupImpl):
             ds.release(ids)
 
 
-    
-            
+
+
 
 class MMapStorageEngine(StorageEngine, MMapGroup):
     "StorageEngine for mmap-based storage"
@@ -403,7 +453,7 @@ class MMapStorageEngine(StorageEngine, MMapGroup):
         StorageEngine.__init__(self, "mmap")
         MMapGroup.__init__(self, root, None)
 
-        
+
     @staticmethod
     def create_group(name=None, create=True):
         root = StorageEngine.engines()['mmap']
@@ -417,8 +467,10 @@ class MMapStorageEngine(StorageEngine, MMapGroup):
             #if not isinstance(grp, MMapGroup):
             #     raise ValueError("{} already exists and is not a group".format(name))
             #return grp
+        if not create:
+            raise ValueError(f"group {name} does not exist")
         return MMapGroup(name, parent=root)
-    
+
     def __contains__(self, name):
         return MMapGroup.__contains__(self, name)
 

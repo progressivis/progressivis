@@ -174,7 +174,8 @@ class Parser(object):
                 header = None
                 names = self._names
                 usecols = self._usecols
-            read_df = pd.read_csv(BytesIO(csv_bytes), header=header, names=names, usecols=usecols, **self._pd_kwds)
+            kwds = {k:v for (k, v) in self._pd_kwds.items() if k not in ['header', 'names', 'usecols']}
+            read_df = pd.read_csv(BytesIO(csv_bytes), header=header, names=names, usecols=usecols, **kwds)
             if self._names is None:
                 self._names = read_df.columns.values
                 if self._usecols:

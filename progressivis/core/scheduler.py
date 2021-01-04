@@ -6,10 +6,9 @@ import functools
 from timeit import default_timer
 import time
 from .dataflow import Dataflow
-import progressivis.core.aio as aio
-
-from progressivis.utils.errors import ProgressiveError
-
+from . import aio
+from .settings import VARS
+from ..utils.errors import ProgressiveError
 logger = logging.getLogger(__name__)
 
 __all__ = ['Scheduler']
@@ -184,7 +183,7 @@ class Scheduler(object):
     def _after_run(self):
         pass
 
-    async def start(self, tick_proc=None, idle_proc=None, coros=()):
+    async def start_impl(self, tick_proc=None, idle_proc=None, coros=()):
         if self._lock is None:
             self._lock = aio.Lock()
         async with self._lock:
@@ -204,6 +203,17 @@ class Scheduler(object):
         else:
             self._idle_procs = []
         await self.run()
+
+    async def start(self, tick_proc=None, idle_proc=None, coros=(), persist=False):
+        try:
+            from ..storage import init_temp_dir_if, cleanup_temp_dir, temp_dir
+            itd_flag = init_temp_dir_if()
+            if itd_flag:
+                print("Init TEMP_DIR in start()", temp_dir())
+            return await self.start_impl(tick_proc, idle_proc, coros)
+        finally:
+            if itd_flag:
+                cleanup_temp_dir()
 
     def task_start(self, *args, **kwargs):
         return aio.create_task(self.start(*args, **kwargs))

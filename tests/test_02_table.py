@@ -18,7 +18,7 @@ import pandas as pd
 class TestTable(ProgressiveTest):
     #pylint: disable=protected-access
     def setUp(self):
-        super(TestTable, self).setUp()        
+        super(TestTable, self).setUp()
         self.scheduler = Scheduler.default
         self.storagegroup = Group.default()
 
@@ -36,7 +36,6 @@ class TestTable(ProgressiveTest):
 
     def test_loc_tableview(self):
         t = Table('table_loc', dshape="{a: int, b: float32}", create=True)
-        #import pdb;pdb.set_trace()
         t.resize(10)
         ivalues = np.random.randint(100,size=20)
         t['a'] = ivalues[:10]
@@ -94,7 +93,7 @@ class TestTable(ProgressiveTest):
             view_view.id_to_index(slice(3,6))], np.repeat(1011, 4)))
         self.assertTrue(np.array_equal(t._column(0)[3:7], np.repeat(1010, 4)))
         self.assertTrue(np.array_equal(t._column(1)[3:7], np.repeat(1011, 4)))
-       
+
     def test_at(self):
         t = Table('table_at', dshape="{a: int, b: float32}", create=True)
         t.resize(20)
@@ -128,7 +127,7 @@ class TestTable(ProgressiveTest):
         view = t.loc[2:11]
         view.loc[3, 'a'] = 1003
         self.assertEqual(view._column(0)[view.id_to_index(3)], 1003)
-        self.assertEqual(t._column(0)[3], 1003)        
+        self.assertEqual(t._column(0)[3], 1003)
         view_view = view.loc[3:6]
         view_view.at[3, 'a'] = 1004
         self.assertEqual(view_view._column(0)[view_view.id_to_index(3)], 1004)
@@ -150,7 +149,7 @@ class TestTable(ProgressiveTest):
         self.assertEqual(last_a, t._column(0)[-1])
         last_a_b = t.last(['a','b'])
         self.assertEqual(list(last_a_b),last_)
-        
+
     def create_table(self):
         t = Table('table',
                   storagegroup=self.storagegroup,
@@ -185,22 +184,25 @@ class TestTable(ProgressiveTest):
         # Fill one column with a simple list
         ivalues = range(10)
         t['a'] = ivalues # Table._setitem_key
-        icol = t['a']
+        icol = t['a'].value
         for i in range(len(ivalues)):
             self.assertEqual(ivalues[i], icol[i])
 
         ivalues = np.random.randint(100,size=10)
         t['a'] = ivalues
+        icol = t['a'].value
+
         for i in range(len(ivalues)):
             self.assertEqual(ivalues[i], icol[i])
-        
-        fcol = t['b']
         t['b'] = ivalues
+        fcol = t['b'].value
+
         for i in range(len(ivalues)):
             self.assertEqual(ivalues[i], fcol[i])
 
         fvalues = np.random.rand(10)
         t['b'] = fvalues
+        fcol = t['b'].value
         for i in range(len(fvalues)):
             self.assertAlmostEqual(fvalues[i], fcol[i])
 
@@ -211,17 +213,19 @@ class TestTable(ProgressiveTest):
             pass
         else:
             self.fail('ExpectedException not raised')
-
         # Fill multiple colums with
         ivalues = np.random.randint(100,size=10)
         fvalues = np.random.rand(10)
         t[['a', 'b']] = [ivalues, fvalues]
+        icol = t['a'].value
+        fcol = t['b'].value
         for i in range(len(fvalues)):
             self.assertEqual(ivalues[i], icol[i])
             self.assertAlmostEqual(fvalues[i], fcol[i])
-
         values = np.random.randint(100,size=(10, 2))
         t[['a', 'b']] = values
+        icol = t['a'].value
+        fcol = t['b'].value
         for i in range(len(fvalues)):
             self.assertEqual(values[i, 0], icol[i])
             self.assertEqual(values[i, 1], fcol[i])
@@ -230,7 +234,7 @@ class TestTable(ProgressiveTest):
         try:
             t[['a','b']] = values[:,1:]
         except TypeError: # h5py raises a TypeError
-            pass 
+            pass
         except ValueError: # numpy would raise a ValueError
             pass
         #pylint: disable=broad-except
@@ -250,7 +254,6 @@ class TestTable(ProgressiveTest):
 
     def examine_table(self):
         t = Table('table', storagegroup=self.storagegroup)
-        #import pdb;pdb.set_trace()
         pass
 
     def _update_table(self, t):
@@ -308,7 +311,7 @@ class TestTable(ProgressiveTest):
             colt = t[colname]
             self.assertEqual(4*len(coldf), len(colt))
             self.assertTrue(np.all(colt[0:2*len(df)]==colt[2*len(df):len(t)]))
-        
+
 
 
     def append_direct(self):
@@ -350,7 +353,7 @@ class TestTable(ProgressiveTest):
                          header=None,
                          scheduler=self.scheduler)
         self.assertTrue(module.table() is None)
-        aio.run(self.scheduler.start())
+        aio.run(self.scheduler.start(persist=True))
         t = module.table()
         self.assertFalse(t is None)
         self.assertEqual(len(t), 30000)
@@ -378,7 +381,7 @@ class TestTable(ProgressiveTest):
         gvalues = np.empty(10, dtype=b.dtype)
         b.read_direct(gvalues, np.s_[0:10], np.s_[0:10])
         self.assertTrue(np.allclose(fvalues, gvalues))
-        
+
         a.read_direct(jvalues, np.s_[2:7], np.s_[5:10])
         self.assertTrue(np.all(ivalues[2:7]==jvalues[5:10]))
         b.read_direct(gvalues, np.s_[2:7], np.s_[5:10])
@@ -411,7 +414,7 @@ class TestTable(ProgressiveTest):
         self.assertEqual(arr.shape[1], 2)
         self.assertTrue(np.allclose(a[:], arr[:, 0]))
         self.assertTrue(np.allclose(b[:], arr[:, 1]))
-        
+
         # Keys
         key = slice(2,7)
         arr = t.to_array(key)
@@ -433,7 +436,7 @@ class TestTable(ProgressiveTest):
         self.assertTrue(np.allclose(a[indices], arr[:, 0]))
         self.assertTrue(np.allclose(b[indices], arr[:, 1]))
         self.assertTrue(np.allclose(c[indices], arr[:, 2]))
-        
+
         #TODO more tests multidimensional columns and deleted rows
 
     def test_convert(self):
@@ -443,7 +446,7 @@ class TestTable(ProgressiveTest):
         self.assertIsNotNone(t)
         self.assertEqual(len(t.columns), arr.shape[1])
         self.assertEqual(t.columns, ['_1', '_2', '_3', '_4', '_5'])
-        
+
         arr2 = t.to_array()
         self.assertTrue(np.allclose(arr, arr2))
 
@@ -452,7 +455,7 @@ class TestTable(ProgressiveTest):
         self.assertIsNotNone(t)
         self.assertEqual(len(t.columns), 3)
         self.assertEqual(t.columns, columns)
-        
+
 
 if __name__ == '__main__':
     ProgressiveTest.main()

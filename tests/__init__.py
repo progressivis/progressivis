@@ -4,7 +4,7 @@ from unittest import TestCase, skip, skipIf, main
 
 from progressivis import (log_level, logging,
                           Scheduler)
-from progressivis.storage import StorageEngine
+from progressivis.storage import StorageEngine, init_temp_dir_if, cleanup_temp_dir, temp_dir
 import numpy as np
 
 _ = skip  # shut-up pylint
@@ -31,6 +31,7 @@ class ProgressiveTest(TestCase):
         super(ProgressiveTest, self).__init__(*args)
         self._output = False
         self._scheduler = None
+        self._temp_dir_flag = False
         level = getenv("LOGLEVEL")
         if level in self.levels:
             level = self.levels[level]
@@ -51,22 +52,13 @@ class ProgressiveTest(TestCase):
         self.log()
 
     @classmethod
-    def cleanup(self):
-        if StorageEngine.default == 'mmap':
-            root = StorageEngine.engines()['mmap']
-            if not root.has_files():
-                return
-            root.close_all()
-            root.delete_children()
-            root.dict = {}
-
-    @classmethod
     def setUpClass(cls):
-        cls.cleanup()
+        cleanup_temp_dir()
+        init_temp_dir_if()
 
     @classmethod
     def tearDownClass(cls):
-        cls.cleanup()
+        cleanup_temp_dir()
 
     def scheduler(self, clean=False):
         if self._scheduler is None or clean:

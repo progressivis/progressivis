@@ -529,7 +529,7 @@ class BaseTable(metaclass=ABCMeta):
         self._index -= bm
         self.add_deleted(bm)
 
-    def drop(self, index, raw_index=None):
+    def drop(self, index, raw_index=None, truncate=False):
         "index is useless by now"
         if raw_index is None:
             raw_index = index
@@ -538,7 +538,10 @@ class BaseTable(metaclass=ABCMeta):
             self._index.remove(raw_index)
         else:
             #self.__delitem__(index)
+            index = self._any_to_bitmap(index)
             self._index -= index
+        if truncate: # useful 4 csv recovery
+            self._last_id = self._index.max() if self._index else -1
         self.add_deleted(index)
         if self._storagegroup is not None:
             self._storagegroup.release(index)
@@ -558,6 +561,7 @@ class BaseTable(metaclass=ABCMeta):
                 self._index |= bitmap(range(self.last_id+1, newsize))
             else:
                 self._index &=  bitmap(range(0, newsize))
+
 
 
     @property
@@ -692,7 +696,7 @@ class BaseTable(metaclass=ABCMeta):
                                  len(values), len(self)))
         column = self._column(colkey)
         if is_none_alike(rowkey):
-            column[:] = values
+            column[self.index] = values
         else:
             column[rowkey] = values
 
@@ -706,7 +710,7 @@ class BaseTable(metaclass=ABCMeta):
             for (k, v) in values.items():
                 column = self._column(k)
                 if is_none_alike(rowkey):
-                    column[:] = v
+                    column[self.index] = v
                 else:
                     column[rowkey] = v
         elif hasattr(values, 'shape'):
@@ -717,7 +721,7 @@ class BaseTable(metaclass=ABCMeta):
                                  'value shape do not match')
 
             if rowkey is None:
-                rowkey = slice(None, None)
+                rowkey = self.index.to_slice_maybe() #slice(None, None)
             for i, colname in enumerate(colnames):
                 column = self._column(colname)
                 if len(column.shape) > 1:
@@ -734,7 +738,7 @@ class BaseTable(metaclass=ABCMeta):
             for i, colname, v in zip(range(len_colnames), colnames, values):
                 column = self._column(colname)
                 if is_none_alike(rowkey):
-                    column[:] = v
+                    column[self.index] = v
                 else:
                     column[rowkey] = values[i]
 

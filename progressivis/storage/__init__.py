@@ -7,7 +7,7 @@ __all__ = ["Group"]
 from .numpy import NumpyStorageEngine
 numpyengine = NumpyStorageEngine()
 
-from .mmap import MMapStorageEngine
+from .mmap import MMapStorageEngine, init_temp_dir_if, cleanup_temp_dir, temp_dir
 mmapengine = MMapStorageEngine()
 
 if get_option('storage.default'):

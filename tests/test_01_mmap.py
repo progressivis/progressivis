@@ -11,7 +11,7 @@ from progressivis.table.table import Table
 from . import ProgressiveTest, skip, skipIf
 import pandas as pd
 from progressivis.storage import IS_PERSISTENT as MMAP
-
+from progressivis.storage import cleanup_temp_dir, temp_dir
 LONG_SIZE = MAX_SHORT *2
 
 class TestMMap(ProgressiveTest):
@@ -22,8 +22,7 @@ class TestMMap(ProgressiveTest):
         self._rmtree()
         super(TestMMap, self).tearDown()
     def _rmtree(self):
-        if os.path.exists(self.tmp):
-            shutil.rmtree(self.tmp)
+        cleanup_temp_dir()
 
     def test_mmap(self):
         "Actual test"
