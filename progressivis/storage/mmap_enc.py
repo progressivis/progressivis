@@ -1,7 +1,7 @@
 """
 Use mmap to manage strings
 """
-import mmap
+import mmap as mm
 import os
 import os.path
 from resource import getpagesize
@@ -9,7 +9,6 @@ import marshal
 import numpy as np
 from functools import lru_cache
 from ..core.bitmap import bitmap
-
 PAGESIZE = getpagesize()
 WB = 4
 MAX_SHORT = 32
@@ -29,8 +28,8 @@ class MMapObject(object):
         else:
             self._file = open(filename, "wb+")
             os.ftruncate(self._file.fileno(), PAGESIZE)
-            self._new_file = True            
-        self.mmap = mmap.mmap(self._file.fileno(), 0)
+            self._new_file = True
+        self.mmap = mm.mmap(self._file.fileno(), 0)
         self.sizes = np.frombuffer(self.mmap, np.uint32)
         if self._new_file:
             self.sizes[0] = 1

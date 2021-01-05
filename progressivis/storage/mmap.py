@@ -8,10 +8,10 @@ from resource import getpagesize
 import marshal
 import shutil
 from tempfile import mkdtemp
-from mmap import mmap
+#from mmap import mmap
+import mmap as mm
 import logging
 import numpy as np
-
 from progressivis.core.utils import integer_types, get_random_name, next_pow2
 from .base import StorageEngine, Dataset
 from .hierarchy import GroupImpl, AttributeImpl
@@ -31,8 +31,6 @@ FACTOR = 1
 def init_temp_dir_if():
     if VARS.get('TEMP_DIR') is None:
         VARS['TEMP_DIR'] = mkdtemp(prefix=TEMP_DIR_PREFIX)
-        #import pdb;pdb.set_trace()
-        #print("MKDTEMP", VARS['TEMP_DIR'])
         return True
     return False
 
@@ -41,13 +39,14 @@ def cleanup_temp_dir():
         return
     if StorageEngine.default == 'mmap':
         root = StorageEngine.engines()['mmap']
-        if root.has_files():
-            #import pdb;pdb.set_trace()
-            root.close_all()
-            root.delete_children()
-            root.dict = {}
+        for tbl in root.dict.values():
+            if tbl.has_files():
+                tbl.close_all()
+                tbl.delete_children()
+        root.dict = {}
         shutil.rmtree(VARS.get('TEMP_DIR'))
         VARS['TEMP_DIR'] = None
+
 
 def temp_dir():
     return VARS.get('TEMP_DIR')
@@ -108,7 +107,7 @@ class MMapDataset(Dataset):
         else:
             self._file = open(self._filename, 'wb+') # can raise many exceptions
             os.ftruncate(self._file.fileno(), length)
-        self._buffer = mmap(self._file.fileno(), 0)
+        self._buffer = mm.mmap(self._file.fileno(), 0)
 
         if 'maxshape' in kwds:
             #TODO check if another dimension than 0 is growable to raise an exception
@@ -324,15 +323,12 @@ class MMapGroup(GroupImpl):
         if name is None:
             name = get_random_name("mmapstorage_")
         super(MMapGroup, self).__init__(name, parent=parent)
-        #self._directory = self.path()
-        #import pdb;pdb.set_trace()
-        #metadata = os.path.join(self._directory, METADATA_FILE)
-        #self._metadata = metadata
         if parent is not None:
             if name in parent.dict:
                 raise ValueError('Cannot create group {}, already exists'.format(name))
             parent.dict[name] = self
         self._is_init = False
+
     def _init_dirs(self):
         if self._is_init:
             return
