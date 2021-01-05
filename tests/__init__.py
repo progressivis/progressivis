@@ -52,6 +52,10 @@ class ProgressiveTest(TestCase):
         self.log()
 
     @classmethod
+    def cleanup(self):
+        cleanup_temp_dir()
+
+    @classmethod
     def setUpClass(cls):
         cleanup_temp_dir()
         init_temp_dir_if()
