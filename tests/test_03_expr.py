@@ -1,4 +1,4 @@
-from . import ProgressiveTest
+from . import ProgressiveTest, skip
 from progressivis.core import aio
 from progressivis.datasets import get_dataset
 from  progressivis.core import Scheduler
@@ -22,7 +22,7 @@ def prtT(x):
 #def prtrepr(x):
 #    print(repr(x))
 
-
+@skip
 class TestExpr(ProgressiveTest):
     def setUp(self):
         super(TestExpr, self).setUp()        
