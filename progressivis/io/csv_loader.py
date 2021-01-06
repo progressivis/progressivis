@@ -29,6 +29,7 @@ class CSVLoader(TableModule):
                  timeout=None,
                  save_context=None,
                  recovery=0,
+                 recovery_tag='',
                  recovery_table_size=3,
                  save_step_size=100000,
                  **kwds):
@@ -60,9 +61,9 @@ class CSVLoader(TableModule):
         self._recovery = recovery
         self._recovery_table_size = recovery_table_size
         self._recovery_table = None
-        self._recovery_table_name = 'csv_loader_recovery'
+        self._recovery_table_name = "csv_loader_recovery_{recovery_tag}"
         self._recovery_table_inv = None
-        self._recovery_table_inv_name = 'csv_loader_recovery_invariant'
+        self._recovery_table_inv_name = "csv_loader_recovery_invariant_{recovery_tag}"
         self._save_step_size = save_step_size
         self._last_saved_id = 0
         self._table = None

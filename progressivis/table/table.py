@@ -230,10 +230,12 @@ class Table(BaseTable):
                 print(f"Wrong newsize={newsize}, fixed to {newsize_}")
                 newsize = newsize_
         delta = newsize-len(self.index)
-        if delta < 0:
-            return
+        #if delta < 0:
+        #    return
         newsize = self.last_id + delta +1
         self._resize_rows(newsize, index)
+        if delta < 0:
+            return        
         self._storagegroup.attrs[metadata.ATTR_NROWS] = newsize
         for column in self._columns:
             column._resize(newsize)
