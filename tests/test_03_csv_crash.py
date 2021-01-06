@@ -44,13 +44,14 @@ def _close(module):
 async def sleep_then_stop(s, t):
     await aio.sleep(t)
     await s.stop()
+    #trace_after_stop(s)
+
+def trace_after_stop(s):
     t = s.modules()['csv_loader_1']._table
     print("crashed when len(_table) ==", len(t), "last_id:", t._last_id)
     i = t._last_id
     print("border row i:", t.loc[i-1,:].to_dict())
     print("border row i+1:", t.loc[i,:].to_dict())    
-    #import pdb;pdb.set_trace()
-    #print(s._run_list)
 
 def make_url(name, ext='csv'):
     return 'http://{host}:{port}/{name}.{ext}'.format(host=HOST,
@@ -289,7 +290,7 @@ class TestProgressiveLoadCSVCrash3(ProgressiveLoadCSVCrashRoot):
         s=self.scheduler()
         module=CSVLoader(file_list, index_col=False, recovery_tag=tag, header=None, scheduler=s)
         self.assertTrue(module.table() is None)
-        sts = sleep_then_stop(s, 2)
+        sts = sleep_then_stop(s, 3)
         aio.run_gather(s.start(), sts)
         _close(module)
         s=self.scheduler(clean=True)
@@ -301,17 +302,17 @@ class TestProgressiveLoadCSVCrash3(ProgressiveLoadCSVCrashRoot):
     @skipIf(not IS_PERSISTENT, "transient storage, test skipped")
     def test_10_read_multi_csv_file_bz2_with_crash(self):
         file_list = [get_dataset_bz2('bigfile')]*2
-        self._tst_10_read_multi_csv_file_compress_with_crash(file_list, 't1')
+        self._tst_10_read_multi_csv_file_compress_with_crash(file_list, 't10_1')
 
     @skipIf(not IS_PERSISTENT, "transient storage, test skipped")
     def test_10_read_multi_csv_file_gzip_with_crash(self):
         file_list = [get_dataset_gz('bigfile')]*2
-        self._tst_10_read_multi_csv_file_compress_with_crash(file_list, 't2')
+        self._tst_10_read_multi_csv_file_compress_with_crash(file_list, 't10_2')
 
     @skip("Too slow ...")
     def test_10_read_multi_csv_file_lzma_with_crash(self):
         file_list = [get_dataset_lzma('bigfile')]*2
-        self._tst_10_read_multi_csv_file_compress_with_crash(file_list, 't3')
+        self._tst_10_read_multi_csv_file_compress_with_crash(file_list, 't10_3')
 
 if __name__ == '__main__':
     ProgressiveTest.main()
