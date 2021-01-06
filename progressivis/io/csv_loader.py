@@ -69,8 +69,27 @@ class CSVLoader(TableModule):
         self._table = None
         #self._do_not_wait = ["filenames"]
         # self.wait_expr = AnyAll([])
+        if self._recovery and self.recovery_tables_exist():
+            self._recovery = False
         if not self._recovery:
             self.trunc_recovery_tables()
+
+    def recovery_tables_exist(self):
+        try:
+            Table(name=self._recovery_table_name, create=False)
+        except ValueError as ve:
+            if 'exist' in ve.args[0]:
+                print('WARNING: recovery table does not exist')
+                return False
+            raise
+        try:
+            Table(name=self._recovery_table_inv_name, create=False)
+        except:
+            if 'exist' in ve.args[0]:
+                print('WARNING: recovery table invariant does not exist')
+                return False
+            raise
+        return True
 
     def trunc_recovery_tables(self):
         len_ = 0

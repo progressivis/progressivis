@@ -93,13 +93,13 @@ class InvalidDoubleRun(FooABC):
             return self.run_step_impl(ctx, run_number, step_size)
 
 def _4_csv_scenario(module, s):
-        csv_a = CSVLoader(get_dataset('bigfile'), index_col=False,
+        csv_a = CSVLoader(get_dataset('smallfile'), index_col=False,
                                header=None, scheduler=s)
-        csv_b = CSVLoader(get_dataset('bigfile'), index_col=False,
+        csv_b = CSVLoader(get_dataset('smallfile'), index_col=False,
                                header=None, scheduler=s)
-        csv_c = CSVLoader(get_dataset('bigfile'), index_col=False,
+        csv_c = CSVLoader(get_dataset('smallfile'), index_col=False,
                                header=None, scheduler=s)
-        csv_d = CSVLoader(get_dataset('bigfile'), index_col=False,
+        csv_d = CSVLoader(get_dataset('smallfile'), index_col=False,
                                header=None, scheduler=s)
         module.input.a = csv_a.output.table
         module.input.b = csv_b.output.table
@@ -126,9 +126,9 @@ def _4_const_scenario(module, s):
         return _fun
 
 def _2_csv_2_const_scenario(module, s):
-        csv_a = CSVLoader(get_dataset('bigfile'), index_col=False,
+        csv_a = CSVLoader(get_dataset('smallfile'), index_col=False,
                                header=None, scheduler=s)
-        csv_b = CSVLoader(get_dataset('bigfile'), index_col=False,
+        csv_b = CSVLoader(get_dataset('smallfile'), index_col=False,
                                header=None, scheduler=s)
         table_c = Table('const_c_2_csv_2_const_scenario', dshape="{a: int}", create=True)
         const_c = Constant(table=table_c, scheduler=s)
@@ -207,6 +207,7 @@ class TestDecoratorsWith2CSV2Const(ProgressiveTest):
         self.assertEqual(module.context._slot_policy, 'run_if_all')
         self.assertEqual(module.context._slot_expr, [('a', 'b'), ('c', 'd')])
 
+class TestDecoratorsWith2CSV2Const2(ProgressiveTest):
     def test_decorators_any(self):
         s = self.scheduler()
         module = RunIfAny(scheduler=s)
