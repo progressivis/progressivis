@@ -69,7 +69,7 @@ class CSVLoader(TableModule):
         self._table = None
         #self._do_not_wait = ["filenames"]
         # self.wait_expr = AnyAll([])
-        if self._recovery and self.recovery_tables_exist():
+        if self._recovery and not self.recovery_tables_exist():
             self._recovery = False
         if not self._recovery:
             self.trunc_recovery_tables()
