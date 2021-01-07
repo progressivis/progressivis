@@ -22,14 +22,11 @@ def prtT(x):
 #def prtrepr(x):
 #    print(repr(x))
 
-@skip
+
 class TestExpr(ProgressiveTest):
     def setUp(self):
         super(TestExpr, self).setUp()        
         Scheduler.default = self.scheduler()
-
-    def tearDown(self):
-        TestExpr.cleanup()
 
     def test_load_csv(self):
         """
