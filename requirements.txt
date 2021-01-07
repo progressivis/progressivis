@@ -1,9 +1,9 @@
 Pillow>=4.2.0
-numpy>=1.11.3
+numpy>=1.16.5
 scipy>=0.18.1
 numexpr>=2.6.1
 #pytables>=3.3.0
-pandas>=0.19.1
+pandas>=1.0.0
 scikit-learn>=0.18.1
 # tdigest>=0.4.1.0
 numcodecs>=0.5.5

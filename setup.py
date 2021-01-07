@@ -99,7 +99,7 @@ setup(
     # install_requires=required,
     install_requires=["Pillow>=4.2.0",
                       "cython",
-                      "numpy>=1.11.3",
+                      "numpy>=1.16.5",
                       "scipy>=0.18.1",
                       "numexpr>=2.6.1",
                       "tables>=3.3.0",
