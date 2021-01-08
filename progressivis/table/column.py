@@ -28,7 +28,7 @@ class Column(BaseColumn):
         """
         super(Column, self).__init__(name, index, base=base)
         if storagegroup is None:
-            if index is not None:
+            if index is not None and hasattr(index, 'storagegroup'): # i.e. isinstance(index, Table)
                 storagegroup = index.storagegroup
             else:
                 storagegroup = Group.default(name=get_random_name('column_'))
@@ -50,10 +50,17 @@ class Column(BaseColumn):
 
     def _allocate(self, count, indices=None):
         start = self.index.last_id+1
-        newsize = start+count
-        self.resize(newsize)
-        indices = bitmap(range(start, start+count)) if indices is None else indices
-        self.index.add_created(indices)
+        if indices is not None:
+            indices = self.index._any_to_bitmap(indices)
+            assert indices
+            if indices & self.index.index:
+                raise ValueError('Indices contain duplicates')
+            newsize = start+indices.max()+1
+        else:
+            newsize = start+count
+            indices = bitmap(range(start, newsize))
+        self._resize(newsize)
+        self.index._resize_rows(newsize, indices)
         return indices
 
     def append(self, data, indices=None):

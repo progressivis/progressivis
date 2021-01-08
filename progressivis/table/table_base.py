@@ -140,7 +140,7 @@ class BaseTable(metaclass=ABCMeta):
         self._last_id = -1
         self._observed = None
         self._observers = []
-
+        self._dshape = {} # for __str__()
     @property
     def loc(self):
         "Return a `locator` object for indexing using ids"
@@ -247,7 +247,8 @@ class BaseTable(metaclass=ABCMeta):
         sl = self._index.to_slice_maybe()
         if not isinstance(sl, slice):
             return False
-        return sl == slice(0, self.last_id+1, None)
+        #return sl == slice(0, self.last_id+1, None)
+        return sl.start == 0
 
     @property
     def last_id(self):
@@ -523,7 +524,16 @@ class BaseTable(metaclass=ABCMeta):
 
 
     def __delitem__(self, key):
-        bm = self._any_to_bitmap(key)
+        bm = self._any_to_bitmap(key, fix_loc=False, existing_only=False)
+        if not bm:
+            return
+        #if not (bm in self.index or isinstance(key, slice)):
+        #    raise ValueError('Invalid locs')
+        if isinstance(key, slice):
+            if not (bm.min() in self._index and bm.max() in self._index):
+                raise ValueError('Invalid locs') # when key is a slice we accept holes
+        elif bm not in self.index: # when key is not a slice it must be exhaustive
+            raise ValueError('Invalid locs')
         if isinstance(key, Iterable):
             assert bm in self._index
         self._index -= bm
@@ -553,8 +563,9 @@ class BaseTable(metaclass=ABCMeta):
             if index and index.min() > self.last_id:
                 self._index |= index
             else:
-                assert index in self._index
-                self._index = index
+                #assert index in self._index #TODO: check with JDF
+                #self._index = index
+                self._index |= index
         else:
             #assert self._is_identity
             if newsize >= self.last_id+1:
@@ -567,7 +578,7 @@ class BaseTable(metaclass=ABCMeta):
     @property
     def name(self):
         "Return the name of this table"
-        pass
+        return "anonymous"
 
     @property
     def dshape(self):
