@@ -205,6 +205,8 @@ class Scheduler(object):
         await self.run()
 
     async def start(self, tick_proc=None, idle_proc=None, coros=(), persist=False):
+        if not persist:
+            return await self.start_impl(tick_proc, idle_proc, coros)
         try:
             from ..storage import init_temp_dir_if, cleanup_temp_dir, temp_dir
             itd_flag = init_temp_dir_if()

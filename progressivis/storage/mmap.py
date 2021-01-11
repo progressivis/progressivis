@@ -17,6 +17,7 @@ from .base import StorageEngine, Dataset
 from .hierarchy import GroupImpl, AttributeImpl
 from ..core.settings import VARS
 from .mmap_enc import MMapObject
+import atexit
 logger = logging.getLogger(__name__)
 
 
@@ -46,6 +47,14 @@ def cleanup_temp_dir():
         root.dict = {}
         shutil.rmtree(VARS.get('TEMP_DIR'))
         VARS['TEMP_DIR'] = None
+
+@atexit.register
+def cleanup_at_exit():
+    if VARS.get('REMOVE_TEMP_DIR_AT_EXIT') is not None:
+        try:
+            cleanup_temp_dir()
+        except:
+            pass
 
 
 def temp_dir():
@@ -351,6 +360,7 @@ class MMapGroup(GroupImpl):
         "Return the path of the directory for that group"
         if self.parent is None:
             init_temp_dir_if()
+            VARS['REMOVE_TEMP_DIR_AT_EXIT'] = True
             return os.path.join(VARS.get('TEMP_DIR'), self._name)
         return os.path.join(self.parent.path(), self._name)
     def has_files(self):
@@ -482,3 +492,13 @@ def _read_attributes(attrs, filename):
 def _write_attributes(attrs, filename):
     with open(filename, 'wb') as outf:
         marshal.dump(attrs, outf)
+
+class Persist:
+    def __init__(self, cleanup=True):
+        self._itd_flag = None
+        self._cleanup = cleanup
+    def __enter__(self):
+        self._itd_flag = init_temp_dir_if()
+    def __exit__(self, exc_type, exc_value, traceback):
+        if self._itd_flag:
+            cleanup_temp_dir()
