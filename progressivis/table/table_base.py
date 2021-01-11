@@ -558,8 +558,10 @@ class BaseTable(metaclass=ABCMeta):
 
     def _resize_rows(self, newsize, index=None):
         #self._ids.resize(newsize, index)
+        created = bitmap()
         if index is not None:
             index = self._any_to_bitmap(index)
+            created =  index-self._index
             if index and index.min() > self.last_id:
                 self._index |= index
             else:
@@ -569,10 +571,13 @@ class BaseTable(metaclass=ABCMeta):
         else:
             #assert self._is_identity
             if newsize >= self.last_id+1:
-                self._index |= bitmap(range(self.last_id+1, newsize))
+                new_ids = bitmap(range(self.last_id+1, newsize))
+                created = new_ids-self._index
+                self._index |= new_ids
             else:
                 self._index &=  bitmap(range(0, newsize))
-
+        if created:
+             self.add_created(created)
 
 
     @property
