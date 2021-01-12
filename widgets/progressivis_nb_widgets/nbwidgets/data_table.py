@@ -3,6 +3,7 @@ from traitlets import Unicode, Any
 
 # See js/lib/widgets.js for the frontend counterpart to this file.
 
+
 @widgets.register
 class DataTable(widgets.DOMWidget):
     """Progressivis DataTable widget."""
@@ -29,7 +30,6 @@ class DataTable(widgets.DOMWidget):
     # is automatically synced to the frontend *any* time it changes in Python.
     # It is synced back to Python from the frontend *any* time the model is touched.
     data = Unicode('').tag(sync=True)
-    columns = Unicode('').tag(sync=True)    
-    page =  Any({}).tag(sync=True)
+    columns = Unicode('').tag(sync=True)
+    page = Any({}).tag(sync=True)
     dt_id = Unicode('aDT').tag(sync=True)
-

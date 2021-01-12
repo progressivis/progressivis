@@ -1,14 +1,13 @@
 "use strict";
-var widgets = require('@jupyter-widgets/base');
-var _ = require('lodash');
-var html_  = require('./sc_template');
-var mc2d = require('./multiclass2d');
-var er = require('./es6-element-ready');
+import * as widgets from '@jupyter-widgets/base';
+import _ from 'lodash';
+import { elementReady } from './es6-element-ready';
+//var mc2d = require('./multiclass2d');
 var mg = require('./module_graph');
 var dt = require('./data_table');
 var slpb = require('./sparkline_progressbar');
-var lg = require('./line_graph');
 require('sorttable');
+require('./line_graph');
 require('../css/module-graph.css');
 require('../css/multiclass2d.css');
 require('../css/sparkline-progressbar.css');
@@ -16,15 +15,22 @@ require('datatables/media/css/jquery.dataTables.css');
 var sch = require('./sensitive_html');
 var jh = require('./layout_dict');
 
+//import { _template } from './sc_template';
+import { Scatterplot } from './scatterplot';
 import {
-    ISerializers, data_union_serialization, getArray,
-    listenToUnion
+  data_union_serialization, 
+  listenToUnion
 } from 'jupyter-dataserializers';
 
 var ndarray = require('ndarray');
 window.ndarray = ndarray;
 // See example.py for the kernel counterpart to this file.
 
+let newid = 1;
+
+function new_id() {
+  return newid++;
+}
 
 // Custom Model. Custom widgets models must at least provide default values
 // for model attributes, including
@@ -42,355 +48,308 @@ window.ndarray = ndarray;
 // When serialiazing the entire widget state for embedding, only values that
 // differ from the defaults will be specified.
 var ScatterplotModel = widgets.DOMWidgetModel.extend({
-    defaults: _.extend(widgets.DOMWidgetModel.prototype.defaults(), {
-        _model_name : 'ScatterplotModel',
-        _view_name : 'ScatterplotView',
-        _model_module : 'progressivis-nb-widgets',
-        _view_module : 'progressivis-nb-widgets',
-        _model_module_version : '0.1.0',
-        _view_module_version : '0.1.0',
-	hists: ndarray([]),
-	samples: ndarray([]),	
-        data : 'Hello Scatterplot!',
-	value: '{0}',
-	move_point: '{0}',
-	modal: false,
-	to_hide: []
-    })
-    
+  defaults: _.extend(widgets.DOMWidgetModel.prototype.defaults(), {
+    _model_name : 'ScatterplotModel',
+    _view_name : 'ScatterplotView',
+    _model_module : 'progressivis-nb-widgets',
+    _view_module : 'progressivis-nb-widgets',
+    _model_module_version : '0.1.0',
+    _view_module_version : '0.1.0',
+    hists: ndarray([]),
+    samples: ndarray([]),	
+    data : 'Hello Scatterplot!',
+    value: '{0}',
+    move_point: '{0}',
+    modal: false,
+    to_hide: []
+  })
+  
 }, {
-    serializers: _.extend({
-        hists: data_union_serialization,
-        samples: data_union_serialization,	
-    }, widgets.DOMWidgetModel.serializers),
+  serializers: _.extend({
+    hists: data_union_serialization,
+    samples: data_union_serialization,	
+  }, widgets.DOMWidgetModel.serializers),
 });
 
 // Custom View. Renders the widget model.
 var ScatterplotView = widgets.DOMWidgetView.extend({
-    // Defines how the widget gets rendered into the DOM
-    render: function() {
-	this.el.innerHTML = html_;
-	let that = this;	
-	er.elementReady("#prevImages").then((_)=>{
-	    mc2d.ready_(that);
-	    });
-	listenToUnion(this.model, 'hists', this.update.bind(this), true);
-	listenToUnion(this.model, 'samples', this.update.bind(this), true);	
-        // Observe changes in the value traitlet in Python, and define
-        // a custom callback.
-        this.model.on('change:data', this.data_changed, this);
+  // Defines how the widget gets rendered into the DOM
+  render: function() {
+    this.id = 'view_'+new_id();
+    const scatterplot = Scatterplot(this);
+    this.scatterplot = scatterplot;
+    this.scatterplot.template(this.el);
+    let that = this;	
+    elementReady('#'+scatterplot.with_id('prevImages'))
+      .then(()=> scatterplot.ready(that));
+    listenToUnion(this.model, 'hists', this.update.bind(this), true);
+    listenToUnion(this.model, 'samples', this.update.bind(this), true);	
+    // Observe changes in the value traitlet in Python, and define
+    // a custom callback.
+    this.model.on('change:data', this.data_changed, this);
 
-    },
-    data_changed: function() {
-	console.log("data_changed");
-	let val = this.model.get('data');
-	mc2d.update_vis(JSON.parse(val));
-    }
+  },
+  data_changed: function() {
+    //console.log("data_changed");
+    const val = this.model.get('data');
+    this.scatterplot.update_vis(JSON.parse(val));
+  }
 });
 
 
 // When serialiazing the entire widget state for embedding, only values that
 // differ from the defaults will be specified.
 var ModuleGraphModel = widgets.DOMWidgetModel.extend({
-    defaults: _.extend(widgets.DOMWidgetModel.prototype.defaults(), {
-        _model_name : 'ModuleGraphModel',
-        _view_name : 'ModuleGraphView',
-        _model_module : 'progressivis-nb-widgets',
-        _view_module : 'progressivis-nb-widgets',
-        _model_module_version : '0.1.0',
-        _view_module_version : '0.1.0',
-        data : 'Hello ModuleGraph!'
-	//value: '{0}'
-    })
+  defaults: _.extend(widgets.DOMWidgetModel.prototype.defaults(), {
+    _model_name : 'ModuleGraphModel',
+    _view_name : 'ModuleGraphView',
+    _model_module : 'progressivis-nb-widgets',
+    _view_module : 'progressivis-nb-widgets',
+    _model_module_version : '0.1.0',
+    _view_module_version : '0.1.0',
+    data : 'Hello ModuleGraph!'
+    //value: '{0}'
+  })
 });
 
 
 // Custom View. Renders the widget model.
 var ModuleGraphView = widgets.DOMWidgetView.extend({
-    // Defines how the widget gets rendered into the DOM
-    render: function() {
-	this.el.innerHTML = '<svg id="module-graph" width="960" height="500"></svg>';
-	var that = this;
-	er.elementReady("#module-graph").then((_)=>{
-	    mg.graph_setup();
-	    that.data_changed();
-	});
-	console.log("REnder ModuleGraphView");
-        // Observe changes in the value traitlet in Python, and define
-        // a custom callback.
-        this.model.on('change:data', this.data_changed, this);
+  // Defines how the widget gets rendered into the DOM
+  render: function() {
+    this.el.innerHTML = '<svg id="module-graph" width="960" height="500"></svg>';
+    var that = this;
+    elementReady("#module-graph").then(()=>{
+      mg.graph_setup();
+      that.data_changed();
+    });
+    console.log("REnder ModuleGraphView");
+    // Observe changes in the value traitlet in Python, and define
+    // a custom callback.
+    this.model.on('change:data', this.data_changed, this);
+  },
 
-    },
-
-    data_changed: function() {
-	console.log("Data changed ModuleGraphView");
-	let val = this.model.get('data');
-	if(val=='{}') return;
-	mg.graph_update(JSON.parse(val));	
-	
-    }
+  data_changed: function() {
+    console.log("Data changed ModuleGraphView");
+    let val = this.model.get('data');
+    if(val=='{}') return;
+    mg.graph_update(JSON.parse(val));	
+    
+  }
 });
 
 var SensitiveHTMLModel = widgets.DOMWidgetModel.extend({
-    defaults: _.extend(widgets.DOMWidgetModel.prototype.defaults(), {
-        _model_name : 'SensitiveHTMLModel',
-        _view_name : 'SensitiveHTMLView',
-        _model_module : 'progressivis-nb-widgets',
-        _view_module : 'progressivis-nb-widgets',
-        _model_module_version : '0.1.0',
-        _view_module_version : '0.1.0',
-        html : '',
-	value: '{0}',
-	data: '{}',	
-	sensitive_css_class: 'aCssClass',
-	sort_table_ids: []
-    })
+  defaults: _.extend(widgets.DOMWidgetModel.prototype.defaults(), {
+    _model_name : 'SensitiveHTMLModel',
+    _view_name : 'SensitiveHTMLView',
+    _model_module : 'progressivis-nb-widgets',
+    _view_module : 'progressivis-nb-widgets',
+    _model_module_version : '0.1.0',
+    _view_module_version : '0.1.0',
+    html : '',
+    value: '{0}',
+    data: '{}',	
+    sensitive_css_class: 'aCssClass',
+    sort_table_ids: []
+  })
 });
 
 
 // Custom View. Renders the widget model.
 var SensitiveHTMLView = widgets.DOMWidgetView.extend({
-    // Defines how the widget gets rendered into the DOM
-    render: function() {
-	this.html_changed();
-        // Observe changes in the value traitlet in Python, and define
-        // a custom callback.
-        this.model.on('change:html', this.html_changed, this);
-        this.model.on('change:data', this.data_changed, this);
-    },
+  // Defines how the widget gets rendered into the DOM
+  render: function() {
+    this.html_changed();
+    // Observe changes in the value traitlet in Python, and define
+    // a custom callback.
+    this.model.on('change:html', this.html_changed, this);
+    this.model.on('change:data', this.data_changed, this);
+  },
 
-    html_changed: function() {
-	this.el.innerHTML = this.model.get('html');
-	let that = this;
-	let sensitive = this.model.get('sensitive_css_class');
-	er.elementReady('.'+sensitive).then((_)=>{
-	    sch.update_cb(that);
-	    let sort_table_ids = this.model.get('sort_table_ids');
-	    for(let i in sort_table_ids){
-		let tid = sort_table_ids[i];
-		let tobj = document.getElementById(tid);
-		sorttable.makeSortable(tobj);
-	    }
-	});
-    },
-    
-    data_changed: function() {
-	let that = this;
-	let sensitive = this.model.get('sensitive_css_class');
-	er.elementReady('.'+sensitive).then((_)=>{
-	    sch.update_data(that);
-	});
-    }
+  html_changed: function() {
+    this.el.innerHTML = this.model.get('html');
+    let that = this;
+    let sensitive = this.model.get('sensitive_css_class');
+    elementReady('.'+sensitive).then(()=>{
+      sch.update_cb(that);
+      let sort_table_ids = this.model.get('sort_table_ids');
+      for(let i in sort_table_ids){
+        let tid = sort_table_ids[i];
+        let tobj = document.getElementById(tid);
+        sorttable.makeSortable(tobj);
+      }
+    });
+  },
+  
+  data_changed: function() {
+    let that = this;
+    let sensitive = this.model.get('sensitive_css_class');
+    elementReady('.'+sensitive).then(()=>sch.update_data(that));
+  }
 });
 
 var DataTableModel = widgets.DOMWidgetModel.extend({
-    defaults: _.extend(widgets.DOMWidgetModel.prototype.defaults(), {
-        _model_name : 'DataTableModel',
-        _view_name : 'DataTableView',
-        _model_module : 'progressivis-nb-widgets',
-        _view_module : 'progressivis-nb-widgets',
-        _model_module_version : '0.1.0',
-        _view_module_version : '0.1.0',
-        columns: '[a, b, c]',
-        data: 'Hello DataTable!',	
-	page: '{0}',
-	dt_id: 'aDtId'
-    })
+  defaults: _.extend(widgets.DOMWidgetModel.prototype.defaults(), {
+    _model_name : 'DataTableModel',
+    _view_name : 'DataTableView',
+    _model_module : 'progressivis-nb-widgets',
+    _view_module : 'progressivis-nb-widgets',
+    _model_module_version : '0.1.0',
+    _view_module_version : '0.1.0',
+    columns: '[a, b, c]',
+    data: 'Hello DataTable!',	
+    page: '{0}',
+    dt_id: 'aDtId'
+  })
 });
 
 
 // Custom View. Renders the widget model.
 var DataTableView = widgets.DOMWidgetView.extend({
-    // Defines how the widget gets rendered into the DOM
-    render: function() {
-	this.data_changed();
-        // Observe changes in the value traitlet in Python, and define
-        // a custom callback.
-        this.model.on('change:data', this.data_changed, this);
+  // Defines how the widget gets rendered into the DOM
+  render: function() {
+    this.id = 'datatable_'+this.model.get('dt_id')+new_id();
+    this.data_table = null;
+    this.data_changed();
+    // Observe changes in the value traitlet in Python, and define
+    // a custom callback.
+    this.model.on('change:data', this.data_changed, this);
 
-    },
+  },
 
-    data_changed: function() {
-	let dt_id = this.model.get('dt_id');
-	if(document.getElementById(dt_id)==null){
-	    this.el.innerHTML =
-		"<div style='overflow-x:auto;'><table id='"+dt_id+
-		"' class='display' style='width:100%;'></div>";
-	}
-	let that = this;
-	er.elementReady('#'+dt_id).then((_)=>{
-	    dt.update_table(that, dt_id);
-	});
+  data_changed: function() {
+    //const dt_id = this.model.get('dt_id');
+    const dt_id = this.id;
+    if(document.getElementById(this.id)==null) {
+      this.el.innerHTML =
+        `<div style='overflow-x:auto;'><table id='${dt_id}' class='display' style='width:100%;'></div>`;
     }
+    let that = this;
+    elementReady('#'+this.id).then(()=>dt.update_table(that, dt_id));
+  }
 });
 
 var JsonHTMLModel = widgets.DOMWidgetModel.extend({
-    defaults: _.extend(widgets.DOMWidgetModel.prototype.defaults(), {
-        _model_name : 'JsonHTMLModel',
-        _view_name : 'JsonHTMLView',
-        _model_module : 'progressivis-nb-widgets',
-        _view_module : 'progressivis-nb-widgets',
-        _model_module_version : '0.1.0',
-        _view_module_version : '0.1.0',
-        dom_id : 'json_html_dom_id',
-	data: '{}',
-	config: '{}'
-    })
+  defaults: _.extend(widgets.DOMWidgetModel.prototype.defaults(), {
+    _model_name : 'JsonHTMLModel',
+    _view_name : 'JsonHTMLView',
+    _model_module : 'progressivis-nb-widgets',
+    _view_module : 'progressivis-nb-widgets',
+    _model_module_version : '0.1.0',
+    _view_module_version : '0.1.0',
+    dom_id : 'json_html_dom_id',
+    data: '{}',
+    config: '{}'
+  })
 });
 
 
 // Custom View. Renders the widget model.
 var JsonHTMLView = widgets.DOMWidgetView.extend({
-    // Defines how the widget gets rendered into the DOM
-    render: function() {
-        let dom_id = this.model.get('dom_id');
-        this.el.innerHTML = "<div id='"+dom_id+"'></div>";
-	this.data_changed();
-        // Observe changes in the value traitlet in Python, and define
-        // a custom callback.
-        this.model.on('change:config', this.data_changed, this);
-        this.model.on('change:data', this.data_changed, this);
-    },
+  // Defines how the widget gets rendered into the DOM
+  render: function() {
+    let dom_id = this.model.get('dom_id');
+    this.el.innerHTML = "<div id='"+dom_id+"'></div>";
+    this.data_changed();
+    // Observe changes in the value traitlet in Python, and define
+    // a custom callback.
+    this.model.on('change:config', this.data_changed, this);
+    this.model.on('change:data', this.data_changed, this);
+  },
 
+  
+  data_changed: function() {
+    const that = this;
+    const dom_id = this.model.get('dom_id');
     
-    data_changed: function() {
-	let that = this;
-        let dom_id = this.model.get('dom_id');
-   
-	er.elementReady('#'+dom_id).then((_)=>{
-	    jh.layout_dict_entry(that);
-	});
-    }
+    elementReady('#'+dom_id).then(()=>jh.layout_dict_entry(that));
+  }
 });
 
 var SparkLineProgressBarModel = widgets.DOMWidgetModel.extend({
-    defaults: _.extend(widgets.DOMWidgetModel.prototype.defaults(), {
-        _model_name : 'SparkLineProgressBarModel',
-        _view_name : 'SparkLineProgressBarView',
-        _model_module : 'progressivis-nb-widgets',
-        _view_module : 'progressivis-nb-widgets',
-        _model_module_version : '0.1.0',
-        _view_module_version : '0.1.0',
-	data: '{}'
-    })
+  defaults: _.extend(widgets.DOMWidgetModel.prototype.defaults(), {
+    _model_name : 'SparkLineProgressBarModel',
+    _view_name : 'SparkLineProgressBarView',
+    _model_module : 'progressivis-nb-widgets',
+    _view_module : 'progressivis-nb-widgets',
+    _model_module_version : '0.1.0',
+    _view_module_version : '0.1.0',
+    data: '{}'
+  })
 });
 
 // Custom View. Renders the widget model.
 var SparkLineProgressBarView = widgets.DOMWidgetView.extend({
-    // Defines how the widget gets rendered into the DOM
-    render: function() {
-
-        this.el.innerHTML = `<div style="width: 100%;">
-			<div class="slpb-bg">
-				<span id='sparkline-pb' class="slpb-fill" style="width: 70%;"></span>
-			</div>
-		</div>`;
-	this.data_changed();
-        // Observe changes in the value traitlet in Python, and define
-        // a custom callback.
-        this.model.on('change:data', this.data_changed, this);
-    },
-
-    
-    data_changed: function() {
-	let that = this;   
-	er.elementReady('#sparkline-pb').then((_)=>{
-	    slpb.update_slpb(that);
-	});
-    }
-});
-
-var SparkLineProgressBarModel = widgets.DOMWidgetModel.extend({
-    defaults: _.extend(widgets.DOMWidgetModel.prototype.defaults(), {
-        _model_name : 'SparkLineProgressBarModel',
-        _view_name : 'SparkLineProgressBarView',
-        _model_module : 'progressivis-nb-widgets',
-        _view_module : 'progressivis-nb-widgets',
-        _model_module_version : '0.1.0',
-        _view_module_version : '0.1.0',
-	data: '{}'
-    })
-});
-
-// Custom View. Renders the widget model.
-var SparkLineProgressBarView = widgets.DOMWidgetView.extend({
-    // Defines how the widget gets rendered into the DOM
-    render: function() {
-
-        this.el.innerHTML = `<div style="width: 100%;">
-			<div class="slpb-bg">
-				<span id='sparkline-pb' class="slpb-fill" style="width: 70%;"></span>
-			</div>
-		</div>`;
-	this.data_changed();
-        // Observe changes in the value traitlet in Python, and define
-        // a custom callback.
-        this.model.on('change:data', this.data_changed, this);
-    },
-
-    
-    data_changed: function() {
-	let that = this;   
-	er.elementReady('#sparkline-pb').then((_)=>{
-	    slpb.update_slpb(that);
-	});
-    }
+  // Defines how the widget gets rendered into the DOM
+  render: function() {
+    this.id = 'sparklink-bp_'+new_id();
+    this.el.innerHTML = `<div style="width: 100%;"><div class="slpb-bg">
+<span id='${this.id}' class="slpb-fill" style="width: 70%;"></span>
+</div></div>`;
+    this.data_changed();
+    // Observe changes in the value traitlet in Python, and define
+    // a custom callback.
+    this.model.on('change:data', this.data_changed, this);
+  },
+  data_changed: function() {
+    const that = this;
+    elementReady('#'+that.id).then(()=>slpb.update_slpb(that));
+  }
 });
 
 
 var PlottingProgressBarModel = widgets.DOMWidgetModel.extend({
-    defaults: _.extend(widgets.DOMWidgetModel.prototype.defaults(), {
-        _model_name : 'PlottingProgressBarModel',
-        _view_name : 'PlottingProgressBarView',
-        _model_module : 'progressivis-nb-widgets',
-        _view_module : 'progressivis-nb-widgets',
-        _model_module_version : '0.1.0',
-        _view_module_version : '0.1.0',
-	data: '{}'
-    })
+  defaults: _.extend(widgets.DOMWidgetModel.prototype.defaults(), {
+    _model_name : 'PlottingProgressBarModel',
+    _view_name : 'PlottingProgressBarView',
+    _model_module : 'progressivis-nb-widgets',
+    _view_module : 'progressivis-nb-widgets',
+    _model_module_version : '0.1.0',
+    _view_module_version : '0.1.0',
+    data: '{}'
+  })
 });
 
 // Custom View. Renders the widget model.
 var PlottingProgressBarView = widgets.DOMWidgetView.extend({
-    // Defines how the widget gets rendered into the DOM
-    render: function() {
+  // Defines how the widget gets rendered into the DOM
+  render: function() {
 
-        this.el.innerHTML = `<div style="width: 100%;">
-			<div class="slpb-bg">
-				<div id='plotting-pb' class="slpb-fill" style="width: 70%;"></div>
-			</div>
-		</div>`;
-	this.data_changed();
-        // Observe changes in the value traitlet in Python, and define
-        // a custom callback.
-        this.model.on('change:data', this.data_changed, this);
-    },
+    this.el.innerHTML =
+      `<div style="width: 100%;">
+         <div class="slpb-bg">
+           <div id='plotting-pb' class="slpb-fill" style="width: 70%;"></div>
+         </div>
+        </div>`;
+    this.data_changed();
+    // Observe changes in the value traitlet in Python, and define
+    // a custom callback.
+    this.model.on('change:data', this.data_changed, this);
+  },
 
-    
-    data_changed: function() {
-	let that = this;   
-	er.elementReady('#plotting-pb').then((_)=>{
-	    slpb.update_slpb(that);
-	});
-    }
+  
+  data_changed: function() {
+    let that = this;   
+    elementReady('#plotting-pb').then(()=>slpb.update_slpb(that));
+  }
 });
 
 
 
 
 module.exports = {
-    ScatterplotModel: ScatterplotModel,
-    ScatterplotView: ScatterplotView,
-    ModuleGraphModel: ModuleGraphModel,
-    ModuleGraphView: ModuleGraphView,
-    SensitiveHTMLModel: SensitiveHTMLModel,
-    SensitiveHTMLView: SensitiveHTMLView,
-    JsonHTMLModel: JsonHTMLModel,
-    JsonHTMLView: JsonHTMLView,
-    SparkLineProgressBarModel: SparkLineProgressBarModel,
-    SparkLineProgressBarView: SparkLineProgressBarView,
-    PlottingProgressBarModel: PlottingProgressBarModel,
-    PlottingProgressBarView: PlottingProgressBarView,
-    DataTableModel: DataTableModel,
-    DataTableView: DataTableView
-    };
+  ScatterplotModel: ScatterplotModel,
+  ScatterplotView: ScatterplotView,
+  ModuleGraphModel: ModuleGraphModel,
+  ModuleGraphView: ModuleGraphView,
+  SensitiveHTMLModel: SensitiveHTMLModel,
+  SensitiveHTMLView: SensitiveHTMLView,
+  JsonHTMLModel: JsonHTMLModel,
+  JsonHTMLView: JsonHTMLView,
+  SparkLineProgressBarModel: SparkLineProgressBarModel,
+  SparkLineProgressBarView: SparkLineProgressBarView,
+  PlottingProgressBarModel: PlottingProgressBarModel,
+  PlottingProgressBarView: PlottingProgressBarView,
+  DataTableModel: DataTableModel,
+  DataTableView: DataTableView
+};

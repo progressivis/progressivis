@@ -42,5 +42,4 @@ History.prototype.enqueueUnique = function(item){
 History.prototype.getItems = function(){
   return this.prevItems.slice(0,-1);
 }
-module.exports = History
-
+module.exports = History;

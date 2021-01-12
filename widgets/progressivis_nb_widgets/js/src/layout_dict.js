@@ -19,9 +19,9 @@ function layout_value(v) {
     if (Array.isArray(v)) {
 	if (v.length === 0) return "";
 	for (i = 0; i < v.length; i++) {
-	    if (layout.length != 0)
+            if (layout.length != 0)
 		layout += "<br>";
-	    layout += layout_value(v[i]);
+            layout += layout_value(v[i]);
 	}
         return layout;
     }
@@ -61,7 +61,7 @@ function layout_dict(dict, order, value_func={}) {
     if(value_func[k]){
 	layout += value_func[k](v, k);            
     } else {
-	    layout += layout_value(v);
+        layout += layout_value(v);
     }
 	layout += '</dd>';
     }
@@ -83,9 +83,9 @@ function layout_dict_entry(view_){
 	procs[k] = sparkline_disp;
     }
     $(jq_id).html(layout_dict(data, order, procs));
-    elementReady('.ps-sparkline').then((_)=>{
+    elementReady('.ps-sparkline').then(()=>{
 	for(k of sparkl){
-	    $('#'+makeSparkId(k)).sparkline(data[k]);
+            $('#'+makeSparkId(k)).sparkline(data[k]);
 	}
     });
     

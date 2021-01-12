@@ -1,5 +1,5 @@
-var widgets = require('@jupyter-widgets/base');
-var _ = require('lodash');
+import * as widgets from '@jupyter-widgets/base';
+import _ from 'lodash';
 
 // See example.py for the kernel counterpart to this file.
 
@@ -19,7 +19,7 @@ var _ = require('lodash');
 
 // When serialiazing the entire widget state for embedding, only values that
 // differ from the defaults will be specified.
-var HelloModel = widgets.DOMWidgetModel.extend({
+export const HelloModel = widgets.DOMWidgetModel.extend({
     defaults: _.extend(widgets.DOMWidgetModel.prototype.defaults(), {
         _model_name : 'HelloModel',
         _view_name : 'HelloView',
@@ -33,7 +33,7 @@ var HelloModel = widgets.DOMWidgetModel.extend({
 
 
 // Custom View. Renders the widget model.
-var HelloView = widgets.DOMWidgetView.extend({
+export const HelloView = widgets.DOMWidgetView.extend({
     // Defines how the widget gets rendered into the DOM
     render: function() {
         this.value_changed();
@@ -48,8 +48,3 @@ var HelloView = widgets.DOMWidgetView.extend({
     }
 });
 
-
-module.exports = {
-    HelloModel: HelloModel,
-    HelloView: HelloView
-};

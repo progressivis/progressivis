@@ -16,7 +16,7 @@ var centroid_selection = {};
 var collection_in_progress = false;
 var x     = d3.scaleLinear().range([0, width]),
     y     = d3.scaleLinear().range([height, 0]),
-    color = d3.scaleOrdinal(d3.schemeCategory10),
+    //color = d3.scaleOrdinal(d3.schemeCategory10),
     xAxis = d3.axisBottom(x)
         .tickSize(height)
         .tickPadding(8 - height),
@@ -27,26 +27,21 @@ var x     = d3.scaleLinear().range([0, width]),
         //.scaleExtent([1, 32])
         .on("zoom", multiclass2d_zoomed);
 
-var view, gX, gY, zoomable;
+var gX, gY, zoomable;
 var dataURL=null;
 const DEFAULT_SIGMA = 0;
 const DEFAULT_FILTER = "default";
 const MAX_PREV_IMAGES = 3;
 var imageHistory = new History(MAX_PREV_IMAGES);
 
-const EPSILON = 1e-6;
-function float_equal(a, b) {
-    return Math.abs(a-b) < EPSILON;
-}
+//const EPSILON = 1e-6;
 
-function _db(b) { return b[1]-b[0]; }
-
-function multiclass2d_dragstart(d, i) {
+function multiclass2d_dragstart(/* d, i*/) {
     d3.event.sourceEvent.stopPropagation();
     d3.select(this).classed("dragging", true);
 }
 
-function multiclass2d_dragmove(d, i) {
+function multiclass2d_dragmove(d) {
     d[0] = xAxis.scale().invert(d3.event.x);
     d[1] = yAxis.scale().invert(d3.event.y);
     d3.select(this)
@@ -58,7 +53,7 @@ function multiclass2d_dragend(d, i) {
     var msg = {};
     d3.select(this).classed("dragging", false);
     if(collection_in_progress){
-	d3.select(this).style("fill", function(d) { return "green";});
+	d3.select(this).style("fill", "green");
 	centroid_selection[i] = d;
     } else {
 	msg[i] = d;
@@ -85,9 +80,9 @@ function multiclass2d_update_vis(rawdata) {
     var rows = Array();
     for(let z in [...Array(st.shape[2])]){
 	z = parseInt(z);
-	let nsam = sc[z]
+	let nsam = sc[z];
 	for(let i in [...Array(nsam)]){
-	    rows.push([st.get(i,0,z), st.get(i,1,z),z]);
+            rows.push([st.get(i,0,z), st.get(i,1,z),z]);
 	}
     }
     var dot_color = ['red', 'blue', 'green', 'cyan', 'orange'];
@@ -115,10 +110,10 @@ function multiclass2d_update_vis(rawdata) {
         var config = new Config(spec);
         config.loadJson(data).then(function () {
             var interp = new Interpreter(config);
-	    elementReady("#heatmapContainer").then((_)=>{
+            elementReady("#heatmapContainer").then(()=>{
 		interp.interpret();
 		return interp.render(document.getElementById('heatmapContainer'));
-	    });
+            });
         });
     }
     window.render = render;
@@ -187,8 +182,6 @@ function multiclass2d_update_vis(rawdata) {
             }
         }
         if (changed) {
-            var x_bounds = [prevBounds.xmin, prevBounds.xmax],
-                y_bounds = [prevBounds.ymin, prevBounds.ymax];
             console.log('Bounds have changed');
             prevBounds = bounds;
             x.domain([bounds['xmin'], bounds['xmax']]).nice();
@@ -230,10 +223,10 @@ function multiclass2d_update_vis(rawdata) {
             .attr("xlink:href", d)
             .attr("visibility", "inherit");
         })
-        .on("mouseout", function(d){
-          d3.select(".heatmapCompare")
-            .attr("visibility", "hidden");
-        });
+            .on("mouseout", () => {
+                d3.select(".heatmapCompare")
+                    .attr("visibility", "hidden");
+            });
 
     prevImgElements.transition().duration(500)
         .attr("src", function(d){ return d; })
@@ -308,13 +301,11 @@ function makeOptions(select, names){
   });
 }
 
-function ignore(data) {}
-
-function multiclass2d_filter_debug() {
-    ipyView.model.set('value', 333);
-    //ipyView.model.save_changes();
-    ipyView.touch();
-}
+// function multiclass2d_filter_debug() {
+//     ipyView.model.set('value', 333);
+//     //ipyView.model.save_changes();
+//     ipyView.touch();
+// }
 function multiclass2d_filter() {
     console.log("call multiclass2d_filter");
     var xscale = xAxis.scale(),
@@ -385,7 +376,8 @@ function cancel_centroids(){
 
 function multiclass2d_ready(view_) {
     ipyView = view_;
-    svg = d3.select("#multiclass_scatterplot svg")
+    const id_prefix = view_.id;
+    svg = d3.select(`#${id_prefix}_multiclass_scatterplot svg`)
          .attr("width", width + margin.left + margin.right)
          .attr("height", height + margin.top + margin.bottom);
 
@@ -411,8 +403,8 @@ function multiclass2d_ready(view_) {
     makeOptions(colorMapSelect.get(0), colormaps.getTableNames());
     colormaps.makeTableFilter(colorMap, "Default");
     $('#filter').unbind('click').click(function() { multiclass2d_filter(); });
-    $('#init_centroids').click(function(d) { move_centroids(); });
-    $('#cancel_centroids').click(function(d) { cancel_centroids(); }).hide();
+    $('#init_centroids').click(() => move_centroids());
+    $('#cancel_centroids').click(() => cancel_centroids()).hide();
     let mode = ipyView.model.get('modal');
     let to_hide = ipyView.model.get('to_hide');
     for(let i in to_hide) $('#'+to_hide[i]).hide();

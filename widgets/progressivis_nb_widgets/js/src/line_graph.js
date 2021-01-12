@@ -1,7 +1,8 @@
-import * as d3 from 'd3';
-
+//import * as d3 from 'd3';
+import $ from 'jquery';
 // Canvas props
 
+/*
 var margin = {top: 30, right: 20, bottom: 30, left: 50},
     width = 600 - margin.left - margin.right,
     height = 200 - margin.top - margin.bottom;
@@ -25,8 +26,10 @@ var lineval = d3.line()
 function line_graph(data){
     try{
         d3.select("#d3quality svg").remove();
-    } catch(e) {};
-    qsvg = d3.select("#d3quality").append("svg")
+    } catch(e) {
+        //console.log('removed non-existing svg');
+    }
+    let qsvg = d3.select("#d3quality").append("svg")
         .attr("width", width + margin.left + margin.right)
         .attr("height", height + margin.top + margin.bottom)
     .append("g")
@@ -36,9 +39,9 @@ function line_graph(data){
     // reshape the data
     var idx = data.index;
     var qual_data = []; 
-    for(i in idx){
-        obj = {step: parseFloat(i),
-               quality: data.quality[i]};
+    for(const i in idx){
+        const obj = {step: parseFloat(i),
+                     quality: data.quality[i]};
         qual_data.push(obj);
     }
     //console.log("qual: ", qual_data)
@@ -56,14 +59,14 @@ function line_graph(data){
     qsvg.append("g")
         .attr("class", "y axis")
         .call(yAxis);
-    
-
 }
+*/
 
 function update_pb(view_){
-    let data = view_.model.get('data');
-    let values = data.values;
-    let progress = data.progress;
+    const data = view_.model.get('data');
+    const values = data.values;
+    const progress = data.progress;
+    const type_ = data.type||'line';    
 
     $('#plotting-pb').css('width', progress+'%');
     $('#plotting-pb').sparkline(values, {type: type_, height: '100%', width: '100%'});
