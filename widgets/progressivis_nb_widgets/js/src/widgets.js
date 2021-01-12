@@ -2,18 +2,19 @@
 import * as widgets from '@jupyter-widgets/base';
 import _ from 'lodash';
 import { elementReady } from './es6-element-ready';
-var mg = require('./module_graph');
 var dt = require('./data_table');
 var slpb = require('./sparkline_progressbar');
 require('sorttable');
 require('../css/module-graph.css');
-require('../css/multiclass2d.css');
+require('../css/scatterplot.css');
 require('../css/sparkline-progressbar.css');
 require('datatables/media/css/jquery.dataTables.css');
 var sch = require('./sensitive_html');
 var jh = require('./layout_dict');
 
 import { Scatterplot } from './scatterplot';
+import { module_graph } from './module_graph';
+
 import {
   data_union_serialization, 
   listenToUnion
@@ -114,10 +115,12 @@ var ModuleGraphModel = widgets.DOMWidgetModel.extend({
 var ModuleGraphView = widgets.DOMWidgetView.extend({
   // Defines how the widget gets rendered into the DOM
   render: function() {
-    this.el.innerHTML = '<svg id="module-graph" width="960" height="500"></svg>';
+    this.id = "module_graph_"+new_id();
+    this.module_graph = module_graph(this);
+    this.el.innerHTML = `<svg id="${this.id}" width="960" height="500"></svg>`;
     var that = this;
-    elementReady("#module-graph").then(()=>{
-      mg.graph_setup();
+    elementReady('#'+this.id).then(()=>{
+      that.module_graph.ready();
       that.data_changed();
     });
     console.log("REnder ModuleGraphView");
@@ -130,8 +133,7 @@ var ModuleGraphView = widgets.DOMWidgetView.extend({
     console.log("Data changed ModuleGraphView");
     let val = this.model.get('data');
     if(val=='{}') return;
-    mg.graph_update(JSON.parse(val));	
-    
+    this.module_graph.update_vis(JSON.parse(val));	
   }
 });
 

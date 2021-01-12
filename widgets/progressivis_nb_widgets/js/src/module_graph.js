@@ -3,7 +3,9 @@ import * as d3 from 'd3';
 import * as cola from 'webcola';
 import $ from 'jquery';
 import _ from 'lodash';
-//var module_graph = function(){
+
+export function module_graph(view) {
+  const id = view.id;
   var d3cola;
   var firstTime = true;
   
@@ -11,8 +13,8 @@ import _ from 'lodash';
   const margin=10, pad=12;
 
   
-  function graph_setup() {
-      var outer = d3.select("#module-graph")
+  function graph_ready() {
+      var outer = d3.select('#'+id)
               .attr('width', width)
               .attr('height', height)
               .attr("pointer-events", "all");
@@ -26,7 +28,7 @@ import _ from 'lodash';
       var vis = outer.append('g');
 
       outer.append('svg:defs').append('svg:marker')
-          .attr('id','end-arrow')
+          .attr('id','end-arrow')  // used from module_graph.css
           .attr('viewBox','0 -5 10 10')
           .attr('refX',8)
           .attr('markerWidth',6)
@@ -99,7 +101,7 @@ function graph_update_vis(modules, firstTime) {
         return acc;
     }, {});
     
-    var vis = d3.select("#module-graph g");
+    var vis = d3.select('#'+id+' g');
     
     var node = vis.selectAll(".node")
         .data(nodes, function (d) { return d.id; });
@@ -177,18 +179,16 @@ function graph_update_vis(modules, firstTime) {
     }
 }
   
-/*
   return {
     ready: graph_ready,
-    setup: graph_setup,
-    update: graph_update,
-    update_vis: graph_update_vis
+    update_vis: graph_update
   };
-}();
+}
 
+/*
 module.exports =  {
     graph_update: graph_update,
     graph_setup: graph_setup
   };
-*/
 export {graph_update, graph_setup}
+*/
