@@ -9,23 +9,23 @@
  * @returns {Promise}
  */
 export function elementReady(selector) {
-    return new Promise((resolve) => {
-        const el = document.querySelector(selector);
-        if (el) {
-            resolve(el);
-            return;
-        }
-        new MutationObserver((mutationRecords, observer) => {
-            // Query for elements matching the specified selector
-            const el = document.querySelector(selector);
-            if (el) {
-                resolve(el);
-                observer.disconnect();
-            }
-        })
-            .observe(document.documentElement, {
-                childList: true,
-                subtree: true
-            });
-    });
+  return new Promise((resolve) => {
+    const el = document.querySelector(selector);
+    if (el) {
+      resolve(el);
+      return;
+    }
+    new MutationObserver((mutationRecords, observer) => {
+      // Query for elements matching the specified selector
+      const el = document.querySelector(selector);
+      if (el) {
+        resolve(el);
+        observer.disconnect();
+      }
+    })
+      .observe(document.documentElement, {
+        childList: true,
+        subtree: true
+      });
+  });
 }

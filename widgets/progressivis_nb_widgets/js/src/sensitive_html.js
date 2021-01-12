@@ -1,5 +1,6 @@
 import $ from 'jquery';
 var ipyView = null;
+
 function onclick_fun(){
     console.log("click on row:", this.id);
     ipyView.model.set('value', this.id);

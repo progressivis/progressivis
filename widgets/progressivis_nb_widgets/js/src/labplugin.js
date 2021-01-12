@@ -4,12 +4,12 @@ var base = require('@jupyter-widgets/base');
 module.exports = {
   id: 'progressivis-nb-widgets',
   requires: [base.IJupyterWidgetRegistry],
-  activate: function(app, widgets) {
-      widgets.registerWidget({
-          name: 'progressivis-nb-widgets',
-          version: plugin.version,
-          exports: plugin
-      });
+  activate: (app, widgets) => {
+    widgets.registerWidget({
+      name: 'progressivis-nb-widgets',
+      version: plugin.version,
+      exports: plugin
+    });
   },
   autoStart: true
 };

@@ -2,12 +2,10 @@
 import * as widgets from '@jupyter-widgets/base';
 import _ from 'lodash';
 import { elementReady } from './es6-element-ready';
-//var mc2d = require('./multiclass2d');
 var mg = require('./module_graph');
 var dt = require('./data_table');
 var slpb = require('./sparkline_progressbar');
 require('sorttable');
-require('./line_graph');
 require('../css/module-graph.css');
 require('../css/multiclass2d.css');
 require('../css/sparkline-progressbar.css');
@@ -15,7 +13,6 @@ require('datatables/media/css/jquery.dataTables.css');
 var sch = require('./sensitive_html');
 var jh = require('./layout_dict');
 
-//import { _template } from './sc_template';
 import { Scatterplot } from './scatterplot';
 import {
   data_union_serialization, 
@@ -173,7 +170,7 @@ var SensitiveHTMLView = widgets.DOMWidgetView.extend({
     elementReady('.'+sensitive).then(()=>{
       sch.update_cb(that);
       let sort_table_ids = this.model.get('sort_table_ids');
-      for(let i in sort_table_ids){
+      for(const i in sort_table_ids){
         let tid = sort_table_ids[i];
         let tobj = document.getElementById(tid);
         sorttable.makeSortable(tobj);
@@ -314,11 +311,11 @@ var PlottingProgressBarModel = widgets.DOMWidgetModel.extend({
 var PlottingProgressBarView = widgets.DOMWidgetView.extend({
   // Defines how the widget gets rendered into the DOM
   render: function() {
-
+    this.id = 'plotting-pb'+new_id();
     this.el.innerHTML =
       `<div style="width: 100%;">
          <div class="slpb-bg">
-           <div id='plotting-pb' class="slpb-fill" style="width: 70%;"></div>
+           <div id='${this.id}' class="slpb-fill" style="width: 70%;"></div>
          </div>
         </div>`;
     this.data_changed();
@@ -330,7 +327,7 @@ var PlottingProgressBarView = widgets.DOMWidgetView.extend({
   
   data_changed: function() {
     let that = this;   
-    elementReady('#plotting-pb').then(()=>slpb.update_slpb(that));
+    elementReady('#'+that.id).then(()=>slpb.update_slpb(that));
   }
 });
 
