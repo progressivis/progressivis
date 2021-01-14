@@ -13,8 +13,15 @@ mmapengine = MMapStorageEngine()
 
 if get_option('storage.default'):
     StorageEngine.default = get_option('storage.default')
+else:
+    StorageEngine.default = 'numpy'
 
-Group.default = staticmethod(MMapStorageEngine.create_group)
+if StorageEngine.default == 'mmap':
+    Group.default = staticmethod(MMapStorageEngine.create_group)
+elif StorageEngine.default == 'numpy':
+    Group.default = staticmethod(NumpyStorageEngine.create_group)
+else:
+    raise ValueError(f"Unknown storage {StorageEngine.default}")
 Group.default_internal = staticmethod(NumpyStorageEngine.create_group)
 #Group.default = staticmethod(MMapStorageEngine.create_group)
-IS_PERSISTENT = Group.default.__module__=='progressivis.storage.mmap' # TODO consider all other persistent storage (HDF5 etc.)
+IS_PERSISTENT = Group.default.__module__=='progressivis.storage.mmap'

@@ -32,6 +32,5 @@ class ColumnSelectedView(ColumnProxy):
 
 
     def __getitem__(self, index):
-        #import pdb;pdb.set_trace()
         bm = self.index._any_to_bitmap(index)
         return self._base[bm]

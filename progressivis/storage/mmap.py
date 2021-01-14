@@ -30,6 +30,9 @@ PAGESIZE = getpagesize()
 FACTOR = 1
 
 def init_temp_dir_if():
+    from . import IS_PERSISTENT
+    if not IS_PERSISTENT:
+        return False
     if VARS.get('TEMP_DIR') is None:
         VARS['TEMP_DIR'] = mkdtemp(prefix=TEMP_DIR_PREFIX)
         return True
