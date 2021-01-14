@@ -1,4 +1,4 @@
-
+import os
 from contextlib import contextmanager
 
 options = {}
@@ -74,10 +74,14 @@ def config_prefix(prefix):
     get_option = __get_option
     register_option = __register_option
 
+storage_ = os.getenv('PROGRESSIVIS_STORAGE')
+if storage_ is None:
+    storage_ = 'numpy'
+    
 if len(options) == 0:
     register_option('display.precision', 6)
     register_option('display.float_format', None)
     register_option('display.column_space', 12)
     register_option('display.max_rows', 12)
     register_option('display.max_columns', 20)
-    register_option('storage.default', 'numpy')
+    register_option('storage.default', storage_)

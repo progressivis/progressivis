@@ -1,11 +1,14 @@
 language: python
 cache: pip
 python:
-  - 3.7
   - 3.8
 
 install:
   - pip install cython
   - pip install -e .  
+
+env:
+  - PROGRESSIVIS_STORAGE='numpy'
+  - PROGRESSIVIS_STORAGE='mmap'  
 
 script: python setup.py nosetests

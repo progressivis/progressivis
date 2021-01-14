@@ -14,6 +14,7 @@ from progressivis.storage import IS_PERSISTENT as MMAP
 from progressivis.storage import cleanup_temp_dir, temp_dir
 LONG_SIZE = MAX_SHORT *2
 
+@skipIf(not MMAP, "storage is not mmap, test skipped")
 class TestMMap(ProgressiveTest):
     "Test mmap-based file storage"
     tmp = 'test_mmap'
