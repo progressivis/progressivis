@@ -80,4 +80,4 @@ if len(options) == 0:
     register_option('display.column_space', 12)
     register_option('display.max_rows', 12)
     register_option('display.max_columns', 20)
-    register_option('storage.default', 'mmap')
+    register_option('storage.default', 'numpy')
