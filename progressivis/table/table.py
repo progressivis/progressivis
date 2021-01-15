@@ -4,7 +4,6 @@ Main Table class
 """
 from collections import OrderedDict, Mapping
 import logging
-import base64 as b64
 import numpy as np
 import pandas as pd
 import numexpr as ne
@@ -150,9 +149,8 @@ class Table(BaseTable):
         nrow = node.attrs[metadata.ATTR_NROWS]
         self._dshape = dshape_create(node.attrs[metadata.ATTR_DATASHAPE])
         assert dshape_table_check(self._dshape)
-        self._index = bitmap.deserialize(b64.b64decode(self._storagegroup.attrs[metadata.ATTR_INDEX].encode()))
+        self._index = bitmap.deserialize(self._storagegroup.attrs[metadata.ATTR_INDEX])
         self._last_id = node.attrs[metadata.ATTR_LAST_ID]
-        #self._index = bitmap.deserialize(self._storagegroup.attrs[metadata.ATTR_INDEX].encode())
         for (name, dshape) in dshape_fields(self._dshape):
             column = self._create_column(name)
             column.load_dataset(dshape=dshape,
@@ -166,9 +164,8 @@ class Table(BaseTable):
         node.attrs[metadata.ATTR_VERSION] = metadata.VALUE_VERSION
         node.attrs[metadata.ATTR_DATASHAPE] = str(self._dshape)
         node.attrs[metadata.ATTR_NROWS] = 0
-        node.attrs[metadata.ATTR_INDEX] = b64.b64encode(self._index.serialize()).decode()
+        node.attrs[metadata.ATTR_INDEX] = self._index.serialize()
         node.attrs[metadata.ATTR_LAST_ID] = self.last_id
-        #node.attrs[metadata.ATTR_INDEX] = self._index.serialize().decode()
         # create internal id dataset
         # self._ids = IdColumn(table=self, storagegroup=self.storagegroup)
         # self._ids.create_dataset(dshape=None, fillvalue=-1)
@@ -183,9 +180,6 @@ class Table(BaseTable):
                                   chunks=chunks,
                                   fillvalue=fillvalue,
                                   shape=shape)
-
-    def get_index_str(self):
-        return b64.b64encode(self._index.serialize()).decode()
 
     def _create_column(self, name):
         column = Column(name, self, storagegroup=self.storagegroup)
@@ -211,15 +205,13 @@ class Table(BaseTable):
 
     def drop(self, index, raw_index=None, truncate=False):
         super().drop(index, raw_index, truncate)
-        self._storagegroup.attrs[metadata.ATTR_INDEX] = b64.b64encode(self._index.serialize()).decode()
+        self._storagegroup.attrs[metadata.ATTR_INDEX] = self._index.serialize()
         self._storagegroup.attrs[metadata.ATTR_LAST_ID] = self.last_id
-        #self._storagegroup.attrs[metadata.ATTR_INDEX] = self._index.serialize().decode()
 
     def _resize_rows(self, newsize, index=None):
         super()._resize_rows(newsize, index)
-        self._storagegroup.attrs[metadata.ATTR_INDEX] = b64.b64encode(self._index.serialize()).decode()
+        self._storagegroup.attrs[metadata.ATTR_INDEX] = self._index.serialize()
         self._storagegroup.attrs[metadata.ATTR_LAST_ID] = self.last_id
-        #self._storagegroup.attrs[metadata.ATTR_INDEX] = self._index.serialize().decode()
 
     def resize(self, newsize=None, index=None):
         # NB: newsize means how many active rows the table must contain
@@ -235,7 +227,7 @@ class Table(BaseTable):
         newsize = self.last_id + delta +1
         self._resize_rows(newsize, index)
         if delta < 0:
-            return        
+            return
         self._storagegroup.attrs[metadata.ATTR_NROWS] = newsize
         for column in self._columns:
             column._resize(newsize)

@@ -76,8 +76,8 @@ def config_prefix(prefix):
 
 storage_ = os.getenv('PROGRESSIVIS_STORAGE')
 if storage_ is None:
-    storage_ = 'numpy'
-    
+    storage_ = 'mmap'
+
 if len(options) == 0:
     register_option('display.precision', 6)
     register_option('display.float_format', None)
