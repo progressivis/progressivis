@@ -18,9 +18,9 @@ function layout_value(v) {
   if (v == null) return '';
   if (Array.isArray(v)) {
     if (v.length === 0) return '';
-    for (let i = 0; i < v.length; i++) {
+    for (const i of v) {
       if (layout.length != 0) layout += '<br>';
-      layout += layout_value(v[i]);
+      layout += layout_value(i);
     }
     return layout;
   }
@@ -52,8 +52,8 @@ function layout_dict(dict, order, value_func = {}) {
 
   if (!order) order = Object.keys(dict).sort();
   layout += '<dl class="dl-horizontal">';
-  for (let i = 0; i < order.length; i++) {
-    const k = order[i];
+
+  for (const k of order) {
     const v = dict[k];
     layout += ' <dt>' + k.toString() + ':</dt>';
     layout += ' <dd>';
@@ -64,6 +64,7 @@ function layout_dict(dict, order, value_func = {}) {
     }
     layout += '</dd>';
   }
+
   layout += '</dl>';
   return layout;
 }

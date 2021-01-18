@@ -133,8 +133,8 @@ export function Scatterplot(ipyView) {
     const templateClone = temp.content.cloneNode(true);
     const with_ids = templateClone.querySelectorAll('[id]');
     const ids = new Set();
-    for (let i = 0; i < with_ids.length; i++) {
-      const element = with_ids[i];
+
+    for (const element of with_ids) {
       const eid = element.id ? with_id(element.id) : with_id('Scatterplot');
       if (ids.has(eid)) {
         console.log(`Error in Scatterplot.template(), duplicate id '${eid}'`);
@@ -142,6 +142,7 @@ export function Scatterplot(ipyView) {
       }
       element.id = eid;
     }
+
     element.appendChild(templateClone);
     register_config_editor(id);
   }
