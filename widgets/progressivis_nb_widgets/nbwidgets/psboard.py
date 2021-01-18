@@ -6,7 +6,6 @@ from .utils import wait_for_change, wait_for_click, update_widget
 from .module_graph import ModuleGraph
 from progressivis.core import JSONEncoderNp
 from jinja2 import Template
-from .templates import index_tpl
 from .module_wg import ModuleWg
 import progressivis.core.aio as aio
 
@@ -17,6 +16,29 @@ debug_console = ipw.Output()
 # Coroutines
 #
 
+INDEX_TEMPLATE = """
+<table id="mysortedtable" class="table table-striped table-bordered table-hover table-condensed">
+<thead><tr><th></th><th>Id</th><th>Class</th><th>State</th><th>Last Update</th><th>Order</th></tr></thead>
+<tbody>
+{% for m in modules%}
+  <tr>
+  {% for c in cols%}
+  <td>
+  {% if c=='id' %}
+  <a class='ps-row-btn' id="ps-row-btn_{{m[c]}}" type='button' >{{m[c]}}</a>
+  {% elif c=='is_visualization' %}
+  <span id="ps-cell_{{m['id']}}_{{c}}">{{'a' if m[c] else ' '}}</span>
+  {% else %}
+  <span id="ps-cell_{{m['id']}}_{{c}}">{{m[c]}}</span>
+  {% endif %}
+  </td>
+  {%endfor %}
+  </tr>
+{%endfor %}
+</tbody>
+</table>
+"""
+
 
 async def module_choice(psboard):
     while True:
@@ -25,7 +47,8 @@ async def module_choice(psboard):
         #    print("Clicked: ", psboard.htable.value)
         if len(psboard.tab.children) < 3:
             psboard.tab.children += (psboard.current_module,)
-        psboard.current_module.module_name = psboard.htable.value[len(psboard.htable.sensitive_css_class)+1:]
+        psboard.current_module.module_name = psboard.htable.value[
+            len(psboard.htable.sensitive_css_class)+1:]
         psboard.current_module.selection_changed = True
         psboard.tab.set_title(2, psboard.current_module.module_name)
         psboard.tab.selected_index = 2
@@ -88,7 +111,7 @@ class PsBoard(ipw.VBox):
 
     async def make_table_index(self, modules):
         if not self.htable.html:
-            tmpl = Template(index_tpl)
+            tmpl = Template(INDEX_TEMPLATE)
             await update_widget(self.htable,
                                 'sensitive_css_class', 'ps-row-btn')
             await update_widget(self.htable,
@@ -137,7 +160,6 @@ class PsBoard(ipw.VBox):
                 control_panel(self, "resume"),
                 control_panel(self, "stop"),
                 control_panel(self, "step")]+self.other_coros
-    # , change_tab(self) removed here
 
     async def refresh(self):
         if self._cache is None:

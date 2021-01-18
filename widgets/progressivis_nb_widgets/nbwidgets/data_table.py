@@ -25,10 +25,6 @@ class DataTable(widgets.DOMWidget):
     # Version of the front-end module containing widget model
     _model_module_version = Unicode('^0.1.0').tag(sync=True)
 
-    # Widget specific property.
-    # Widget properties are defined as traitlets. Any property tagged with `sync=True`
-    # is automatically synced to the frontend *any* time it changes in Python.
-    # It is synced back to Python from the frontend *any* time the model is touched.
     data = Unicode('').tag(sync=True)
     columns = Unicode('').tag(sync=True)
     page = Any({}).tag(sync=True)
