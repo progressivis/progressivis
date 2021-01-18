@@ -168,9 +168,9 @@ export function Scatterplot(ipyView) {
   function multiclass2d_update_vis(rawdata) {
     progressivis_data = rawdata;
     const heatmapContainer = with_id('heatmapContainer');
-    const bounds = rawdata['bounds'];
+    const bounds = rawdata.bounds;
     if (!bounds) return;
-    const sc = rawdata['samples_counter'];
+    const sc = rawdata.samples_counter;
     const sc_sum = sc.reduce((a, b) => a + b, 0);
     const st = ipyView.model.get('samples');
     const index = [...Array(sc_sum).keys()];
@@ -183,12 +183,12 @@ export function Scatterplot(ipyView) {
       }
     }
     const dot_color = ['red', 'blue', 'green', 'cyan', 'orange'];
-    const data_ = rawdata['chart'];
+    const data_ = rawdata.chart;
     const hist_tensor = ipyView.model.get('hists');
-    for (let s in data_['buffers']) {
+    for (let s in data_.buffers) {
       let i = parseInt(s);
       const h_pick = hist_tensor.pick(null, null, i);
-      data_['buffers'][i]['binnedPixels'] = ndarray_unpack(h_pick);
+      data_.buffers[i].binnedPixels = ndarray_unpack(h_pick);
     }
     if (!window.spec) {
       const spec = {
@@ -233,8 +233,8 @@ export function Scatterplot(ipyView) {
       if (prevBounds == null) {
         // first display, not refresh
         prevBounds = bounds;
-        x.domain([bounds['xmin'], bounds['xmax']]).nice();
-        y.domain([bounds['ymin'], bounds['ymax']]).nice();
+        x.domain([bounds.xmin, bounds.xmax]).nice();
+        y.domain([bounds.ymin, bounds.ymax]).nice();
         zoomable = svg
           .append('g')
           .attr('id', with_id('zoomable'))
@@ -243,16 +243,15 @@ export function Scatterplot(ipyView) {
             'translate(' + margin.left + ',' + margin.top + ')'
           );
 
-        const ix = x(bounds['xmin']);
-        const iy = y(bounds['ymax']);
-        const iw = x(bounds['xmax']) - ix;
-        const ih = y(bounds['ymin']) - iy;
+        const ix = x(bounds.xmin);
+        const iy = y(bounds.ymax);
+        const iw = x(bounds.xmax) - ix;
+        const ih = y(bounds.ymin) - iy;
 
         zoomable
           .append('image')
           .attr('class', 'heatmap')
           .style('pointer-events', 'none')
-          //.attr("xlink:href", rawdata['image'])
           .attr('xlink:href', dataURL)
           .attr('preserveAspectRatio', 'none')
           .attr('x', ix)
@@ -290,24 +289,23 @@ export function Scatterplot(ipyView) {
         if (changed) {
           console.log('Bounds have changed');
           prevBounds = bounds;
-          x.domain([bounds['xmin'], bounds['xmax']]).nice();
-          y.domain([bounds['ymin'], bounds['ymax']]).nice();
+          x.domain([bounds.xmin, bounds.xmax]).nice();
+          y.domain([bounds.ymin, bounds.ymax]).nice();
           transform = compute_transform(x, y, xAxis.scale(), yAxis.scale());
           svg.__zoom = transform; // HACK
           multiclass2d_zoomed(transform);
         }
 
-        const ix = x(bounds['xmin']);
-        const iy = y(bounds['ymax']);
-        const iw = x(bounds['xmax']) - ix;
-        const ih = y(bounds['ymin']) - iy;
+        const ix = x(bounds.xmin);
+        const iy = y(bounds.ymax);
+        const iw = x(bounds.xmax) - ix;
+        const ih = y(bounds.ymin) - iy;
         svg
           .select('.heatmap')
           .attr('x', ix)
           .attr('y', iy)
           .attr('width', iw)
           .attr('height', ih)
-          //.attr("xlink:href", rawdata['image']);
           .attr('xlink:href', dataURL);
 
         svg
@@ -426,19 +424,19 @@ export function Scatterplot(ipyView) {
     const ymin = yscale.invert(height);
     const ymax = yscale.invert(0);
     const bounds = prevBounds;
-    const columns = progressivis_data['columns'];
+    const columns = progressivis_data.columns;
     const min = {};
     const max = {};
 
-    if (xmin != bounds['xmin']) min[columns[0]] = xmin;
+    if (xmin != bounds.xmin) min[columns[0]] = xmin;
     else min[columns[0]] = null; // NaN means bump to min
-    if (xmax != bounds['xmax']) max[columns[0]] = xmax;
+    if (xmax != bounds.xmax) max[columns[0]] = xmax;
     else max[columns[0]] = null;
 
-    if (ymin != bounds['ymin']) min[columns[1]] = ymin;
+    if (ymin != bounds.ymin) min[columns[1]] = ymin;
     else min[columns[1]] = null;
 
-    if (ymax != bounds['ymax']) max[columns[1]] = ymax;
+    if (ymax != bounds.ymax) max[columns[1]] = ymax;
     else max[columns[1]] = null;
     console.log('min:', min);
     console.log('max:', max);

@@ -28,6 +28,7 @@
     "build": "npm run build:babel && webpack",
     "watch": "webpack --watch --mode=development",
     "eslint": "eslint src",
+    "jshint": "jshint src/*.js",
     "prettier": "prettier --write src/*.js*",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -69,7 +70,35 @@
   "jupyterlab": {
     "extension": "lib/labplugin"
   },
+   "jshintConfig": {
+      "esversion": 6,
+      "node": true,
+      "laxbreak": true,
+      "varstmt": true,
+      "undef": true,
+      "unused": true,
+      "globals": {
+         "console": false
+      }
+   },
   "prettier": {
     "singleQuote": true
-  }  
+  },
+  "jshintConfig": {
+    "esversion": 6,
+    "node": true,
+    "laxbreak": true,
+    "varstmt": true,
+    "undef": true,
+    "unused": true,
+    "globals": {
+      "console": false,
+      "document": false,
+      "module": true,
+      "window": false,
+      "MutationObserver": false,
+      "__webpack_public_path__": true,
+      "sorttable": false
+    }
+  }
 }

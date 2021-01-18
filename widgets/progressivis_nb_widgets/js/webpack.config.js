@@ -41,7 +41,8 @@ module.exports = [
         module: {
             rules: rules
         },
-        externals: ['@jupyter-widgets/base']
+        externals: ['@jupyter-widgets/base'],
+        mode: 'production'
     },
     {// Embeddable progressivis-nb-widgets bundle
      //
@@ -68,6 +69,7 @@ module.exports = [
         module: {
             rules: rules
         },
-        externals: ['@jupyter-widgets/base']
+        externals: ['@jupyter-widgets/base'],
+        mode: 'production'
     }
 ];

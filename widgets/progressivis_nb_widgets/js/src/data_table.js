@@ -3,7 +3,7 @@ import $ from 'jquery';
 
 function change_page(wobj) {
   const info = wobj.data_table.page.info();
-  info['draw'] = wobj.data_table.context[0].oAjaxData.draw + 1;
+  info.draw = wobj.data_table.context[0].oAjaxData.draw + 1;
   wobj.model.set('page', info);
   wobj.touch();
 }

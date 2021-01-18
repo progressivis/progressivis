@@ -2,8 +2,8 @@ import $ from 'jquery';
 import 'jquery-sparkline';
 import { elementReady } from './es6-element-ready';
 
-var ipyView = null;
-var dom_id = null;
+let ipyView = null;
+let dom_id = null;
 
 function makeSparkId(k) {
   return 'ps-spark_' + dom_id + '_' + k;
@@ -14,12 +14,11 @@ function escapeHTML(s) {
 }
 
 function layout_value(v) {
-  var i,
-    layout = '';
+  let layout = '';
   if (v == null) return '';
   if (Array.isArray(v)) {
     if (v.length === 0) return '';
-    for (i = 0; i < v.length; i++) {
+    for (let i = 0; i < v.length; i++) {
       if (layout.length != 0) layout += '<br>';
       layout += layout_value(v[i]);
     }
@@ -29,7 +28,7 @@ function layout_value(v) {
     return v;
   }
   if (typeof v === 'object') {
-    var keys = Object.keys(v);
+    const keys = Object.keys(v);
     if (keys.length == 0) return '';
     return layout_dict(v, keys.sort());
   }
@@ -37,8 +36,8 @@ function layout_value(v) {
 }
 
 function sparkline_disp(v, k) {
-  var SIZE = 15;
-  var last = v[v.length - 1];
+  const SIZE = 15;
+  let last = v[v.length - 1];
   last = last.toFixed(0);
   last = last + '&nbsp;'.repeat(SIZE - last.length);
   return `<table>
@@ -49,16 +48,13 @@ function sparkline_disp(v, k) {
 }
 
 function layout_dict(dict, order, value_func = {}) {
-  var i,
-    k,
-    v,
-    layout = '';
+  let layout = '';
 
   if (!order) order = Object.keys(dict).sort();
   layout += '<dl class="dl-horizontal">';
-  for (i = 0; i < order.length; i++) {
-    k = order[i];
-    v = dict[k];
+  for (let i = 0; i < order.length; i++) {
+    const k = order[i];
+    const v = dict[k];
     layout += ' <dt>' + k.toString() + ':</dt>';
     layout += ' <dd>';
     if (value_func[k]) {

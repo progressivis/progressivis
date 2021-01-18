@@ -1,5 +1,5 @@
 import $ from 'jquery';
-var ipyView = null;
+let ipyView = null;
 
 function onclick_fun() {
   console.log('click on row:', this.id);

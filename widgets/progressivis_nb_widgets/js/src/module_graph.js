@@ -6,8 +6,8 @@ import _ from 'lodash';
 
 export function module_graph(view) {
   const id = view.id;
-  var d3cola;
-  var firstTime = true;
+  let d3cola;
+  let firstTime = true;
 
   const width = 960,
     height = 500;
@@ -15,7 +15,7 @@ export function module_graph(view) {
     pad = 12;
 
   function graph_ready() {
-    var outer = d3
+    const outer = d3
       .select('#' + id)
       .attr('width', width)
       .attr('height', height)
@@ -28,7 +28,7 @@ export function module_graph(view) {
       .attr('height', '100%')
       .call(d3.zoom().on('zoom', zoom));
 
-    var vis = outer.append('g');
+    const vis = outer.append('g');
 
     outer
       .append('svg:defs')
@@ -83,7 +83,7 @@ export function module_graph(view) {
    * @param name2id - map of progressivis module id to numerical index (cola requires numerical IDs)
    */
   function collect_edges(modules, name2id) {
-    var retval = [];
+    const retval = [];
     $.each(modules, function (i, module) {
       $.each(module.output_slots, function (name, slot) {
         if (slot) {
@@ -102,7 +102,7 @@ export function module_graph(view) {
   }
 
   function graph_update_vis(modules, firstTime) {
-    var nodes = _.map(modules, function (module, index) {
+    const nodes = _.map(modules, function (module, index) {
       return {
         id: index,
         name: module.id,
@@ -110,7 +110,7 @@ export function module_graph(view) {
       };
     });
 
-    var name2id = _.reduce(
+    const name2id = _.reduce(
       nodes,
       function (acc, node) {
         acc[node.name] = node.id;
@@ -119,14 +119,14 @@ export function module_graph(view) {
       {}
     );
 
-    var vis = d3.select('#' + id + ' g');
+    const vis = d3.select('#' + id + ' g');
 
-    var node = vis.selectAll('.node').data(nodes, function (d) {
+    const node = vis.selectAll('.node').data(nodes, function (d) {
       return d.id;
     });
 
     if (firstTime) {
-      var edges = collect_edges(modules, name2id);
+      const edges = collect_edges(modules, name2id);
 
       node
         .enter()
@@ -137,7 +137,7 @@ export function module_graph(view) {
         .attr('rx', 5)
         .attr('ry', 5);
 
-      var label = vis
+      const label = vis
         .selectAll('.label')
         .data(nodes)
         .enter()
@@ -147,15 +147,15 @@ export function module_graph(view) {
           return d.name;
         })
         .each(function (d) {
-          var b = this.getBBox();
-          var extra = 2 * margin + 2 * pad;
+          const b = this.getBBox();
+          const extra = 2 * margin + 2 * pad;
           d.width = b.width + extra;
           d.height = b.height + extra;
         });
 
-      var link = vis.selectAll('.link').data(edges);
+      const link = vis.selectAll('.link').data(edges);
 
-      var lineFunction = d3
+      const lineFunction = d3
         .line()
         .x(function (d) {
           return d.x;
@@ -164,7 +164,7 @@ export function module_graph(view) {
           return d.y;
         });
 
-      var routeEdges = function () {
+      const routeEdges = () => {
         d3cola.prepareEdgeRouting(margin / 3);
 
         link
@@ -203,7 +203,7 @@ export function module_graph(view) {
             });
 
           link.attr('d', function (d) {
-            var route = cola.makeEdgeBetween(
+            const route = cola.makeEdgeBetween(
               d.source.innerBounds,
               d.target.innerBounds,
               5
@@ -231,4 +231,3 @@ export function module_graph(view) {
     update_vis: graph_update,
   };
 }
-

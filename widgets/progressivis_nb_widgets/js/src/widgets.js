@@ -2,15 +2,15 @@
 import * as widgets from '@jupyter-widgets/base';
 import _ from 'lodash';
 import { elementReady } from './es6-element-ready';
-var dt = require('./data_table');
-var slpb = require('./sparkline_progressbar');
+const dt = require('./data_table');
+const slpb = require('./sparkline_progressbar');
 require('sorttable');
 require('../css/module-graph.css');
 require('../css/scatterplot.css');
 require('../css/sparkline-progressbar.css');
 require('datatables/media/css/jquery.dataTables.css');
-var sch = require('./sensitive_html');
-var jh = require('./layout_dict');
+const sch = require('./sensitive_html');
+const jh = require('./layout_dict');
 
 import { Scatterplot } from './scatterplot';
 import { module_graph } from './module_graph';
@@ -20,7 +20,7 @@ import {
   listenToUnion,
 } from 'jupyter-dataserializers';
 
-var ndarray = require('ndarray');
+const ndarray = require('ndarray');
 window.ndarray = ndarray;
 // See example.py for the kernel counterpart to this file.
 
@@ -45,7 +45,7 @@ function new_id() {
 
 // When serialiazing the entire widget state for embedding, only values that
 // differ from the defaults will be specified.
-var ScatterplotModel = widgets.DOMWidgetModel.extend(
+const ScatterplotModel = widgets.DOMWidgetModel.extend(
   {
     defaults: _.extend(widgets.DOMWidgetModel.prototype.defaults(), {
       _model_name: 'ScatterplotModel',
@@ -75,7 +75,7 @@ var ScatterplotModel = widgets.DOMWidgetModel.extend(
 );
 
 // Custom View. Renders the widget model.
-var ScatterplotView = widgets.DOMWidgetView.extend({
+const ScatterplotView = widgets.DOMWidgetView.extend({
   // Defines how the widget gets rendered into the DOM
   render: function () {
     this.id = 'view_' + new_id();
@@ -101,7 +101,7 @@ var ScatterplotView = widgets.DOMWidgetView.extend({
 
 // When serialiazing the entire widget state for embedding, only values that
 // differ from the defaults will be specified.
-var ModuleGraphModel = widgets.DOMWidgetModel.extend({
+const ModuleGraphModel = widgets.DOMWidgetModel.extend({
   defaults: _.extend(widgets.DOMWidgetModel.prototype.defaults(), {
     _model_name: 'ModuleGraphModel',
     _view_name: 'ModuleGraphView',
@@ -115,13 +115,13 @@ var ModuleGraphModel = widgets.DOMWidgetModel.extend({
 });
 
 // Custom View. Renders the widget model.
-var ModuleGraphView = widgets.DOMWidgetView.extend({
+const ModuleGraphView = widgets.DOMWidgetView.extend({
   // Defines how the widget gets rendered into the DOM
   render: function () {
     this.id = 'module_graph_' + new_id();
     this.module_graph = module_graph(this);
     this.el.innerHTML = `<svg id="${this.id}" width="960" height="500"></svg>`;
-    var that = this;
+    const that = this;
     elementReady('#' + this.id).then(() => {
       that.module_graph.ready();
       that.data_changed();
@@ -140,7 +140,7 @@ var ModuleGraphView = widgets.DOMWidgetView.extend({
   },
 });
 
-var SensitiveHTMLModel = widgets.DOMWidgetModel.extend({
+const SensitiveHTMLModel = widgets.DOMWidgetModel.extend({
   defaults: _.extend(widgets.DOMWidgetModel.prototype.defaults(), {
     _model_name: 'SensitiveHTMLModel',
     _view_name: 'SensitiveHTMLView',
@@ -157,7 +157,7 @@ var SensitiveHTMLModel = widgets.DOMWidgetModel.extend({
 });
 
 // Custom View. Renders the widget model.
-var SensitiveHTMLView = widgets.DOMWidgetView.extend({
+const SensitiveHTMLView = widgets.DOMWidgetView.extend({
   // Defines how the widget gets rendered into the DOM
   render: function () {
     this.html_changed();
@@ -189,7 +189,7 @@ var SensitiveHTMLView = widgets.DOMWidgetView.extend({
   },
 });
 
-var DataTableModel = widgets.DOMWidgetModel.extend({
+const DataTableModel = widgets.DOMWidgetModel.extend({
   defaults: _.extend(widgets.DOMWidgetModel.prototype.defaults(), {
     _model_name: 'DataTableModel',
     _view_name: 'DataTableView',
@@ -205,7 +205,7 @@ var DataTableModel = widgets.DOMWidgetModel.extend({
 });
 
 // Custom View. Renders the widget model.
-var DataTableView = widgets.DOMWidgetView.extend({
+const DataTableView = widgets.DOMWidgetView.extend({
   // Defines how the widget gets rendered into the DOM
   render: function () {
     this.id = 'datatable_' + this.model.get('dt_id') + new_id();
@@ -227,7 +227,7 @@ var DataTableView = widgets.DOMWidgetView.extend({
   },
 });
 
-var JsonHTMLModel = widgets.DOMWidgetModel.extend({
+const JsonHTMLModel = widgets.DOMWidgetModel.extend({
   defaults: _.extend(widgets.DOMWidgetModel.prototype.defaults(), {
     _model_name: 'JsonHTMLModel',
     _view_name: 'JsonHTMLView',
@@ -242,7 +242,7 @@ var JsonHTMLModel = widgets.DOMWidgetModel.extend({
 });
 
 // Custom View. Renders the widget model.
-var JsonHTMLView = widgets.DOMWidgetView.extend({
+const JsonHTMLView = widgets.DOMWidgetView.extend({
   // Defines how the widget gets rendered into the DOM
   render: function () {
     let dom_id = this.model.get('dom_id');
@@ -262,7 +262,7 @@ var JsonHTMLView = widgets.DOMWidgetView.extend({
   },
 });
 
-var SparkLineProgressBarModel = widgets.DOMWidgetModel.extend({
+const SparkLineProgressBarModel = widgets.DOMWidgetModel.extend({
   defaults: _.extend(widgets.DOMWidgetModel.prototype.defaults(), {
     _model_name: 'SparkLineProgressBarModel',
     _view_name: 'SparkLineProgressBarView',
@@ -275,7 +275,7 @@ var SparkLineProgressBarModel = widgets.DOMWidgetModel.extend({
 });
 
 // Custom View. Renders the widget model.
-var SparkLineProgressBarView = widgets.DOMWidgetView.extend({
+const SparkLineProgressBarView = widgets.DOMWidgetView.extend({
   // Defines how the widget gets rendered into the DOM
   render: function () {
     this.id = 'sparklink-bp_' + new_id();
@@ -293,7 +293,7 @@ var SparkLineProgressBarView = widgets.DOMWidgetView.extend({
   },
 });
 
-var PlottingProgressBarModel = widgets.DOMWidgetModel.extend({
+const PlottingProgressBarModel = widgets.DOMWidgetModel.extend({
   defaults: _.extend(widgets.DOMWidgetModel.prototype.defaults(), {
     _model_name: 'PlottingProgressBarModel',
     _view_name: 'PlottingProgressBarView',
@@ -306,7 +306,7 @@ var PlottingProgressBarModel = widgets.DOMWidgetModel.extend({
 });
 
 // Custom View. Renders the widget model.
-var PlottingProgressBarView = widgets.DOMWidgetView.extend({
+const PlottingProgressBarView = widgets.DOMWidgetView.extend({
   // Defines how the widget gets rendered into the DOM
   render: function () {
     this.id = 'plotting-pb' + new_id();

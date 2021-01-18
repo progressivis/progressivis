@@ -1,5 +1,5 @@
-var plugin = require('./index');
-var base = require('@jupyter-widgets/base');
+const plugin = require('./index');
+const base = require('@jupyter-widgets/base');
 
 module.exports = {
   id: 'progressivis-nb-widgets',

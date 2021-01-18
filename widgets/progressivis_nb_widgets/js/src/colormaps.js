@@ -38,7 +38,7 @@ function tableFromChroma(chromaTable) {
   const btab = [];
 
   chromaTable.forEach((chromaElt) => {
-    var rgb = chroma(chromaElt).get('rgb');
+    const rgb = chroma(chromaElt).get('rgb');
     rtab.push(rgb[0] / 255);
     gtab.push(rgb[1] / 255);
     btab.push(rgb[2] / 255);
