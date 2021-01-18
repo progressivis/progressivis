@@ -8,9 +8,8 @@ module.exports = {
     widgets.registerWidget({
       name: 'progressivis-nb-widgets',
       version: plugin.version,
-      exports: plugin
+      exports: plugin,
     });
   },
-  autoStart: true
+  autoStart: true,
 };
-

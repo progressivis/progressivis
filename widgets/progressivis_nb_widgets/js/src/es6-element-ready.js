@@ -22,10 +22,9 @@ export function elementReady(selector) {
         resolve(el);
         observer.disconnect();
       }
-    })
-      .observe(document.documentElement, {
-        childList: true,
-        subtree: true
-      });
+    }).observe(document.documentElement, {
+      childList: true,
+      subtree: true,
+    });
   });
 }
