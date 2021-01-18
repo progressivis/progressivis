@@ -1,13 +1,13 @@
-import ipywidgets as ipw
 from collections import defaultdict
+import ipywidgets as ipw
+from jinja2 import Template
+from progressivis.core import JSONEncoderNp
+import progressivis.core.aio as aio
 from .control_panel import ControlPanel
 from .sensitive_html import SensitiveHTML
 from .utils import wait_for_change, wait_for_click, update_widget
 from .module_graph import ModuleGraph
-from progressivis.core import JSONEncoderNp
-from jinja2 import Template
 from .module_wg import ModuleWg
-import progressivis.core.aio as aio
 
 
 commons = {}
@@ -54,14 +54,12 @@ async def module_choice(psboard):
         psboard.tab.selected_index = 2
         # await psboard.refresh()
 
-"""
-async def change_tab(psboard):
-    while True:
-        await wait_for_change(psboard.tab, 'selected_index')
-        with debug_console:
-            print("Changed: ", psboard.tab.selected_index)        
-        psboard.refresh()
-"""
+# async def change_tab(psboard):
+#     while True:
+#         await wait_for_change(psboard.tab, 'selected_index')
+#         with debug_console:
+#             print("Changed: ", psboard.tab.selected_index)
+#         psboard.refresh()
 
 
 async def refresh_fun(psboard):
@@ -69,6 +67,7 @@ async def refresh_fun(psboard):
         # await psboard.refresh_event.wait()
         # psboard.refresh_event.clear()
         json_ = psboard.scheduler.to_json(short=False)
+        # pylint: disable=protected-access
         psboard._cache = JSONEncoderNp.dumps(json_, skipkeys=True)
         psboard._cache_js = None
         await psboard.refresh()
@@ -76,16 +75,16 @@ async def refresh_fun(psboard):
 
 
 async def control_panel(psboard, action):
-    btn, cb = psboard.cpanel.cb_args(action)
+    btn, cbk = psboard.cpanel.cb_args(action)
     while True:
-        await wait_for_click(btn, cb)
+        await wait_for_click(btn, cbk)
 
 # end coros
 
 
-class PsBoard(ipw.VBox):
+class PsBoard(ipw.VBox):  # pylint: disable=too-many-ancestors,too-many-instance-attributes
     def __init__(self, scheduler=None):
-        global debug_console
+        global debug_console  # pylint: disable=global-statement
         self.scheduler = scheduler
         self._cache = None
         self._cache_js = None

@@ -70,17 +70,6 @@
   "jupyterlab": {
     "extension": "lib/labplugin"
   },
-   "jshintConfig": {
-      "esversion": 6,
-      "node": true,
-      "laxbreak": true,
-      "varstmt": true,
-      "undef": true,
-      "unused": true,
-      "globals": {
-         "console": false
-      }
-   },
   "prettier": {
     "singleQuote": true
   },

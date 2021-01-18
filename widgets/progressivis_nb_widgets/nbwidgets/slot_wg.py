@@ -1,7 +1,7 @@
-from .utils import wait_for_change, update_widget
-from .data_table import DataTable
 from progressivis.core import JSONEncoderNp as JSON
 from progressivis.table.paging_helper import PagingHelper
+from .utils import wait_for_change, update_widget
+from .data_table import DataTable
 
 
 debug_console = None
@@ -27,7 +27,7 @@ async def pagination(dt, tbl):
 
 class SlotWg(DataTable):
     def __init__(self, module, slot_name, dconsole=None):
-        global debug_console
+        global debug_console  # pylint: disable=global-statement
         debug_console = dconsole
         self.module = module
         self.slot_name = slot_name

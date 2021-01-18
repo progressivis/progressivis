@@ -62,9 +62,10 @@ export function module_graph(view) {
   function deep_uniq(coll) {
     return _.reduce(
       coll,
-      (results, item) => _.some(results, result => _.isEqual(result, item))
-        ? results
-        : results.concat([item]),
+      (results, item) =>
+        _.some(results, (result) => _.isEqual(result, item))
+          ? results
+          : results.concat([item]),
       []
     );
   }
@@ -101,7 +102,7 @@ export function module_graph(view) {
     const nodes = _.map(modules, (module, index) => ({
       id: index,
       name: module.id,
-      state: module.state
+      state: module.state,
     }));
 
     const name2id = _.reduce(
@@ -115,7 +116,7 @@ export function module_graph(view) {
 
     const vis = d3.select('#' + id + ' g');
 
-    const node = vis.selectAll('.node').data(nodes, d => d.id);
+    const node = vis.selectAll('.node').data(nodes, (d) => d.id);
 
     if (firstTime) {
       const edges = collect_edges(modules, name2id);
@@ -123,7 +124,7 @@ export function module_graph(view) {
       node
         .enter()
         .append('rect')
-        .attr('class', d => 'node ' + d.state)
+        .attr('class', (d) => 'node ' + d.state)
         .attr('rx', 5)
         .attr('ry', 5);
 
@@ -133,7 +134,7 @@ export function module_graph(view) {
         .enter()
         .append('text')
         .attr('class', 'label')
-        .text(d => d.name)
+        .text((d) => d.name)
         .each(function (d) {
           const b = this.getBBox();
           const extra = 2 * margin + 2 * pad;
@@ -145,8 +146,8 @@ export function module_graph(view) {
 
       const lineFunction = d3
         .line()
-        .x(d => d.x)
-        .y(d => d.y);
+        .x((d) => d.x)
+        .y((d) => d.y);
 
       const routeEdges = () => {
         d3cola.prepareEdgeRouting(margin / 3);
@@ -155,7 +156,7 @@ export function module_graph(view) {
           .enter()
           .append('path')
           .attr('class', 'link')
-          .attr('d', d => lineFunction(d3cola.routeEdge(d)));
+          .attr('d', (d) => lineFunction(d3cola.routeEdge(d)));
       };
 
       d3cola
@@ -165,16 +166,16 @@ export function module_graph(view) {
         .on('tick', () => {
           vis
             .selectAll('.node')
-            .data(nodes, d => d.id)
-            .each(d => {
+            .data(nodes, (d) => d.id)
+            .each((d) => {
               d.innerBounds = d.bounds.inflate(-margin);
             })
-            .attr('x', d => d.innerBounds.x)
-            .attr('y', d => d.innerBounds.y)
-            .attr('width', d => d.innerBounds.width())
-            .attr('height', d => d.innerBounds.height());
+            .attr('x', (d) => d.innerBounds.x)
+            .attr('y', (d) => d.innerBounds.y)
+            .attr('width', (d) => d.innerBounds.width())
+            .attr('height', (d) => d.innerBounds.height());
 
-          link.attr('d', d => {
+          link.attr('d', (d) => {
             const route = cola.makeEdgeBetween(
               d.source.innerBounds,
               d.target.innerBounds,
@@ -183,12 +184,12 @@ export function module_graph(view) {
             return lineFunction([route.sourceIntersection, route.arrowStart]);
           });
           label
-            .attr('x', d => d.x)
-            .attr('y', d => d.y + (margin + pad) / 2);
+            .attr('x', (d) => d.x)
+            .attr('y', (d) => d.y + (margin + pad) / 2);
         })
         .on('end', routeEdges);
     } else {
-      node.attr('class', d => 'node ' + d.state);
+      node.attr('class', (d) => 'node ' + d.state);
     }
   }
 

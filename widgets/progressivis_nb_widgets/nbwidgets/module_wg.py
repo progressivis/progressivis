@@ -14,9 +14,9 @@ debug_console = None  # ipw.Output()
 """
 
 
-class ModuleWg(ipw.Tab):
+class ModuleWg(ipw.Tab):  # pylint: disable=too-many-ancestors
     def __init__(self, board, dconsole=None):
-        global debug_console
+        global debug_console  # pylint: disable=global-statement
         debug_console = dconsole
         self._index = board
         self._main = JsonHTML()
@@ -29,9 +29,11 @@ class ModuleWg(ipw.Tab):
 
     async def refresh(self):
         _idx = self._index
+        # pylint: disable=protected-access
         json_ = _idx._cache_js
         assert json_ is not None
         module_json = None
+        m = None
         for i, m in enumerate(json_['modules']):
             if m['id'] == self.module_name:
                 module_json = m

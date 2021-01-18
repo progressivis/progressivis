@@ -9,7 +9,7 @@ require('../css/module-graph.css');
 require('../css/scatterplot.css');
 require('../css/sparkline-progressbar.css');
 require('datatables/media/css/jquery.dataTables.css');
-const sch = require('./sensitive_html');
+import { SensitiveHTML } from './sensitive_html';
 const jh = require('./layout_dict');
 
 import { Scatterplot } from './scatterplot';
@@ -160,6 +160,7 @@ const SensitiveHTMLModel = widgets.DOMWidgetModel.extend({
 const SensitiveHTMLView = widgets.DOMWidgetView.extend({
   // Defines how the widget gets rendered into the DOM
   render: function () {
+    this.sensitive = SensitiveHTML(this);
     this.html_changed();
     // Observe changes in the value traitlet in Python, and define
     // a custom callback.
@@ -170,9 +171,9 @@ const SensitiveHTMLView = widgets.DOMWidgetView.extend({
   html_changed: function () {
     this.el.innerHTML = this.model.get('html');
     let that = this;
-    let sensitive = this.model.get('sensitive_css_class');
-    elementReady('.' + sensitive).then(() => {
-      sch.update_cb(that);
+    let sensitive_class = this.model.get('sensitive_css_class');
+    elementReady('.' + sensitive_class).then(() => {
+      that.sensitive.update_cb();
       let sort_table_ids = this.model.get('sort_table_ids');
       for (const i in sort_table_ids) {
         let tid = sort_table_ids[i];
@@ -184,8 +185,10 @@ const SensitiveHTMLView = widgets.DOMWidgetView.extend({
 
   data_changed: function () {
     let that = this;
-    let sensitive = this.model.get('sensitive_css_class');
-    elementReady('.' + sensitive).then(() => sch.update_data(that));
+    let sensitive_class = this.model.get('sensitive_css_class');
+    elementReady('.' + sensitive_class).then(() =>
+      that.sensitive.update_data()
+    );
   },
 });
 

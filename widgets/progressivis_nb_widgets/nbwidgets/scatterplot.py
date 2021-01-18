@@ -1,11 +1,11 @@
+import numpy as np
 import ipywidgets as widgets
+from ipydatawidgets import DataUnion
+from ipydatawidgets.widgets import DataWidget
 from traitlets import Unicode, Any, Bool
 from progressivis.core import JSONEncoderNp as JS, asynchronize
 import progressivis.core.aio as aio
 from .utils import data_union_serialization_compress, wait_for_change
-import numpy as np
-from ipydatawidgets import DataUnion
-from ipydatawidgets.widgets import DataWidget
 # See js/lib/widgets.js for the frontend counterpart to this file.
 
 _serialization = data_union_serialization_compress
@@ -63,7 +63,7 @@ class Scatterplot(DataWidget, widgets.DOMWidget):
             while True:
                 await aio.sleep(0.5)
 
-        async def _after_run(m, run_number):
+        async def _after_run(m, run_number):  # pylint: disable=unused-argument
             if not self.modal:
                 await asynchronize(_feed_widget, self, m)
 
@@ -88,6 +88,7 @@ class Scatterplot(DataWidget, widgets.DOMWidget):
             """
             while True:
                 await wait_for_change(self, 'modal')
+                # pylint: disable=protected-access
                 if module._json_cache is None or self.modal:
                     continue
                 dummy = module._json_cache.get('dummy', 555)
