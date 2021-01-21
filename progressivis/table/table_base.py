@@ -16,7 +16,7 @@ from progressivis.core.utils import (integer_types, norm_slice, is_slice,
 from progressivis.core.config import get_option
 from progressivis.core.bitmap import bitmap
 from .dshape import dshape_print, dshape_create
-
+from .tablechanges import TableChanges
 logger = logging.getLogger(__name__)
 
 
@@ -258,7 +258,11 @@ class BaseTable(metaclass=ABCMeta):
         if self._index and self._last_id < self._index.max():
             self._last_id = self._index.max()
         return self._last_id
-
+    @property
+    def last_xid(self):
+        'Return the last eXisting id of this table'
+        self.last_id #only for refreshing self._last_id
+        return self._index.max()
     def width(self, colnames=None):
         """Return the number of effective width (number of columns) of the table
 
@@ -446,7 +450,7 @@ class BaseTable(metaclass=ABCMeta):
         if is_int(ix):
             return ix
         locs =  self._any_to_bitmap(ix)
-        assert locs in self._index
+        #assert locs in self._index
         return locs
 
     def id_to_index(self, loc, as_slice=True):
@@ -501,7 +505,7 @@ class BaseTable(metaclass=ABCMeta):
         return self.nrow
 
     def _slice_to_bitmap(self, sl, fix_loc=True, existing_only=True):
-        stop = sl.stop or self.last_id
+        stop = sl.stop or self.last_xid
         nsl = norm_slice(sl, fix_loc, stop=stop)
         ret = bitmap(nsl)
         if existing_only:
@@ -629,12 +633,22 @@ class BaseTable(metaclass=ABCMeta):
         if not self._index:
             return None
         if self._changes:
+            self._flush_cache()
             updates = self._changes.compute_updates(start, now, mid,
                                                     cleanup=cleanup)
             if updates is None:
                 updates = IndexUpdate(created=bitmap(self._index)) # pass an index copy ...
             return updates
         return None
+    """def compute_updates(self, start, now, mid=None, cleanup=True):
+        if self._changes:
+            self._flush_cache()
+            updates = self._changes.compute_updates(start, now, mid,
+                                                    cleanup=cleanup)
+            if updates is None:
+                updates = IndexUpdate(created=bitmap(self._index))
+            return updates
+        return None"""
 
 
     def __getitem__(self, key):
@@ -673,9 +687,9 @@ class BaseTable(metaclass=ABCMeta):
             from .row import Row
             return Row(self, key)
         if isinstance(key, str):
-            return self._column(key)[self.last_id]
+            return self._column(key)[self.last_xid]
         if all_string_or_int(key):
-            index = self.last_id
+            index = self.last_xid
             return (self._column(c)[index] for c in key)
         raise ValueError('last not implemented for key "%s"' % key)
 
@@ -1010,19 +1024,6 @@ class BaseTable(metaclass=ABCMeta):
             locs = [locs]
         return bitmap(locs)"""
 
-    def __old_nonfree(self):
-        indices = self.dataset[:]
-        mask = np.ones(len(indices), dtype=np.bool)
-        mask[self.freelist()] = False
-        return indices, mask
-
-    def ___old_idcolumn_to_array(self):
-        import pdb;pdb.set_trace()
-        if not self.has_freelist():
-            return self.dataset[:]
-        indices, mask = self.nonfree()
-        return indices[mask]
-
     # begin(Change management)
     def _flush_cache(self):
         self._cached_index = BaseTable
@@ -1045,22 +1046,25 @@ class BaseTable(metaclass=ABCMeta):
             self._observers.remove(elt)
 
     def add_created(self, locs):
-        # self.notify_observers('created', locs)
-        if self._changes:
-            locs = self._normalize_locs(locs)
-            self._changes.add_created(locs)
+        #self.notify_observers('created', locs)
+        if self._changes is None:
+            self._changes = TableChanges()
+        locs = self._normalize_locs(locs)
+        self._changes.add_created(locs)
 
     def add_updated(self, locs):
         self.notify_observers('updated', locs)
-        if self._changes:
-            locs = self._normalize_locs(locs)
-            self._changes.add_updated(locs)
+        if self._changes is None:
+            self._changes = TableChanges()
+        locs = self._normalize_locs(locs)
+        self._changes.add_updated(locs)
 
     def add_deleted(self, locs):
         self.notify_observers('deleted', locs)
-        if self._changes:
-            locs = self._normalize_locs(locs)
-            self._changes.add_deleted(locs)
+        if self._changes is None:
+            self._changes = TableChanges()
+        locs = self._normalize_locs(locs)
+        self._changes.add_deleted(locs)
 
     def notification(self, mode, locs):
         #if mode == 'created':
@@ -1074,15 +1078,6 @@ class BaseTable(metaclass=ABCMeta):
         else:
             raise ValueError(f"Unknown mode {mode}")
 
-    def compute_updates(self, start, now, mid=None, cleanup=True):
-        if self._changes:
-            self._flush_cache()
-            updates = self._changes.compute_updates(start, now, mid,
-                                                    cleanup=cleanup)
-            if updates is None:
-                updates = IndexUpdate(created=bitmap(self._index))
-            return updates
-        return None
 
     def equals(self, other):
         if self is other:

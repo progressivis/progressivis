@@ -348,7 +348,7 @@ def _on_module_quality(sid, mid):
         return {'status': 'failed',
                 'reason': 'invalid data'}
     qual = df['quality'].values[np.nonzero(df['quality'].values>0)]
-    return {'index':df.index.values, 'quality': qual}
+    return {'index':df.index, 'quality': qual}
 
 #@on.socketio('/progressivis/logger')
 def _on_logger(sid):

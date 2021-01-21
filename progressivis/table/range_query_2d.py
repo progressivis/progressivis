@@ -76,7 +76,7 @@ class RangeQuery2dImpl(ModuleImpl):
             self.result.remove(deleted)
 
     def start(self, table, lower_x, upper_x, lower_y, upper_y, limit_changed, created=None, updated=None, deleted=None):
-        self._table = table
+        #self._table = table
         self.result = _Selection()
         self.is_started = True
         return self.resume(lower_x, upper_x, lower_y, upper_y, limit_changed, created, updated, deleted)

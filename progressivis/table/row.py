@@ -32,7 +32,7 @@ class Row(Mapping):
     def row(self):
         table = self.table
         index = self.index
-        return table.last_id if index is None else index
+        return table.last_xid if index is None else index
 
     def __len__(self):
         table = self.table

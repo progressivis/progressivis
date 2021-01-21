@@ -108,7 +108,6 @@ class Table(BaseTable):
         else:
             self._dshape = dshape_create(dshape)
             assert dshape_table_check(self._dshape)
-        #import pdb;pdb.set_trace()
         if create and self._dshape is None:
             raise ValueError('Cannot create a table without a dshape')
         if self._dshape is None or (not create and metadata.ATTR_TABLE in self._storagegroup.attrs):
@@ -158,7 +157,6 @@ class Table(BaseTable):
                                 shape=dshape_to_shape(dshape))
 
     def _create_table(self, fillvalues):
-        #import pdb;pdb.set_trace()
         node = self.storagegroup
         node.attrs[metadata.ATTR_TABLE] = self.name
         node.attrs[metadata.ATTR_VERSION] = metadata.VALUE_VERSION
@@ -225,7 +223,11 @@ class Table(BaseTable):
         #if delta < 0:
         #    return
         newsize = self.last_id + delta +1
+        crt_index = bitmap(self._index)
         self._resize_rows(newsize, index)
+        del_index = crt_index - self._index
+        if del_index:
+            self.add_deleted(del_index)
         if delta < 0:
             return
         self._storagegroup.attrs[metadata.ATTR_NROWS] = newsize
@@ -233,9 +235,6 @@ class Table(BaseTable):
             column._resize(newsize)
 
     def _allocate(self, count, index=None):
-        #import pdb;pdb.set_trace()
-        #index = self._ids._allocate(count, index)
-        #newsize = self._ids.size
         start = self.last_id+1
         index = bitmap(range(start, start+count)) if index is None else bitmap.asbitmap(index)
         newsize = index.max()+1
@@ -318,11 +317,7 @@ class Table(BaseTable):
                 tocol = self._column(colname)
                 fromcol = data[colname]
                 for i in range(length):
-                    try:
-                        tocol[indices[i]] = fromcol[i]
-                    except:
-                        import pdb;pdb.set_trace()
-                        tocol[indices[i]] = fromcol[i]
+                    tocol[indices[i]] = fromcol[i]
 
     def add(self, row, index=None):
         "Add one row to the Table"

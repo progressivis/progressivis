@@ -53,7 +53,7 @@ class MCHistogram2D(NAry):
         self.total_read = 0
         self.get_input_slot('data').reset()
         if self._table:
-            self._table.resize(0)
+            self._table.resize(1)
 
     def predict_step_size(self, duration):
         return Module. predict_step_size(self, duration)
@@ -176,7 +176,7 @@ class MCHistogram2D(NAry):
             dfslot.update(run_number)
         # else if dfslot.data() is a view and
         # if there are new deletions, build the histogram of the deleted pairs
-        # then subtract it from the main histogram            
+        # then subtract it from the main histogram
         elif dfslot.deleted.any() and self._histo is not None:
             input_df = dfslot.data().get_original() # the original table
             raw_indices = dfslot.deleted.next(step_size) # we assume that deletions are only local to the view
@@ -243,11 +243,11 @@ class MCHistogram2D(NAry):
             if l == 0 or last['time'] != run_number:
                 table.add(values)
             else:
-                table.iloc[last.row] = values
+                table.loc[last.row] = values
         self.build_heatmap(values)
         return self._return_run_step(self.next_state(dfslot), steps_run=steps)
 
-                    
+
     def build_heatmap(self, values):
         json_ = {}
         row = values
@@ -264,7 +264,7 @@ class MCHistogram2D(NAry):
             #return json_
             self._heatmap_cache = (json_, bounds)
         return None
-    
+
 
     def heatmap_to_json(self, json, short=False):
         if self._heatmap_cache is None:

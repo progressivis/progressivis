@@ -814,6 +814,8 @@ class JSONEncoderNp(js.JSONEncoder):
             return bool(o)
         if isinstance(o, np.ndarray):
             return o.tolist()
+        if isinstance(o, bitmap):
+            return list(o)
         return js.JSONEncoder.default(self, o)
 
     @staticmethod
