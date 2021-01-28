@@ -15,12 +15,16 @@ class LiteralChangeManager(BaseChangeManager):
                  slot,
                  buffer_created=True,
                  buffer_updated=False,
-                 buffer_deleted=True):
+                 buffer_deleted=True,
+                 buffer_exposed=False,
+                 buffer_masked=False):
         super(LiteralChangeManager, self).__init__(
             slot,
             buffer_created,
             buffer_updated,
-            buffer_deleted)
+            buffer_deleted,
+            buffer_exposed,
+            buffer_masked)
         self._last_value = None
 
     def reset(self, name=None):

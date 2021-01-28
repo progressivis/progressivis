@@ -1,7 +1,8 @@
 
 from .column import Column
 from .row import Row
-from .table import Table, BaseTable
+from .table import Table
+from .table_base import BaseTable, IndexTable
 #from .table_selected import TableSelectedView
 #from .changemanager_table_selected import TableSelectedChangeManager
 from .changemanager_table import TableChangeManager

@@ -7,7 +7,7 @@ import logging
 import numpy as np
 import weakref
 from progressivis.core.index_update import IndexUpdate
-from progressivis.core.utils import (integer_types, norm_slice, is_slice,
+from progressivis.core.utils import (integer_types, norm_slice, is_slice, is_full_slice,
                                      slice_to_bitmap, is_int, is_str,
                                      all_int, all_string, is_iterable,
                                      all_string_or_int, all_bool,
@@ -17,6 +17,7 @@ from progressivis.core.config import get_option
 from progressivis.core.bitmap import bitmap
 from .dshape import dshape_print, dshape_create
 from .tablechanges import TableChanges
+
 logger = logging.getLogger(__name__)
 
 
@@ -62,8 +63,8 @@ class _Loc(_BaseLoc):
 
     def __getitem__(self, key):
         index, col_key, raw_index = self.parse_key_to_bitmap(key)
-        if not (is_slice(raw_index) or index in self._table._index):
-            diff_ = index - self._table._index
+        if not (is_slice(raw_index) or index in self._table.index):
+            diff_ = index - self._table.index
             raise KeyError(f"Not existing indices {diff_}")
         if isinstance(raw_index, integer_types):
             row = self._table.row(raw_index)
@@ -71,8 +72,9 @@ class _Loc(_BaseLoc):
                 return row[col_key]
             return row
         elif isinstance(index, Iterable):
-            index = bitmap.asbitmap(index)
-            btab = BaseTable(index=index)
+            #index = bitmap.asbitmap(index)
+            base = self._table.get_original_base()
+            btab = BaseTable(mask=raw_index, base=base)
             columns, columndict = self._table.make_projection(col_key, btab)
             btab._columns = columns
             btab._columndict = columndict
@@ -81,7 +83,7 @@ class _Loc(_BaseLoc):
             + ','.join(["{}:{}".format(c.name, c.dshape)
                        for c in btab._columns])
             + '}')
-            btab.observe(self._table)
+            btab._masked = self._table
             return btab
         raise ValueError('getitem not implemented for index "%s"', index)
 
@@ -109,7 +111,7 @@ class _At(_BaseLoc):
 
     def __getitem__(self, key):
         index, col_key = self.parse_key(key)
-        if index not in self._table._index:
+        if index not in self._table.index:
             raise KeyError(f"Not existing indice {index}")
         return self._table[col_key][index]
 
@@ -127,19 +129,19 @@ class BaseTable(metaclass=ABCMeta):
     # pylint: disable=too-many-public-methods, too-many-instance-attributes
     """Base class for Tables.
     """
-    def __init__(self, base=None, index=None, columns=None, columndict=None):
-        self._base = base
+    def __init__(self, base=None, mask=slice(0, None), columns=None, columndict=None):
+        self._base = base if (base is None or base._base is None) else base._base
+        self._mask = mask
         self._columns = [] if columns is None else columns
         self._columndict = OrderedDict() if columndict is None else columndict
-        self._index = bitmap() if index is None else index
+        #self._index = bitmap() if index is None else index
         self._loc = _Loc(self, True)
         self._at = _At(self, True)
-        self._changes = None
+        self._masked = base
+        #self._changes = None
         #self._is_identity = True
-        self._cached_index = BaseTable # hack
-        self._last_id = -1
-        self._observed = None
-        self._observers = []
+        #self._cached_index = BaseTable # hack
+        #self._last_id = -1
         self._dshape = {} # for __str__()
     @property
     def loc(self):
@@ -163,20 +165,15 @@ class BaseTable(metaclass=ABCMeta):
                                                dshape_print(self.dshape),
                                                length)
 
-    def observe(self, other):
-        if self._observed:
-            raise ValueError("Observed table already set")
-        self._observed = other
-        other._observers.append(weakref.ref(self))
-
-    def get_original(self):
-        if self._observed is None:
+    def get_original_base(self):
+        if self._base is None:
             return self
-        return self._observed.get_original()
+        return self._base
+
 
     def info_row(self, row, width):
         "Return a description for a row, used in `repr`"
-        row_id = row if row in self._index else -1
+        row_id = row if row in self.index else -1
         rep = "{0:{width}}|".format(row_id, width=width)
         for name in self.columns:
             col = self[name]
@@ -228,10 +225,10 @@ class BaseTable(metaclass=ABCMeta):
         return rep
 
     def index_to_mask(self):
-        return np.array(((elt in self._index) for elt in range(self.last_id+1)))
+        return np.array(((elt in self.index) for elt in range(self.last_id+1)))
 
     def index_to_array(self):
-        return np.array(self._index, dtype='int32')
+        return np.array(self.index, dtype='int32')
 
     def __iter__(self):
         return iter(self._columndict.keys())
@@ -244,7 +241,7 @@ class BaseTable(metaclass=ABCMeta):
     @property
     def is_identity(self):
         "Return True if the index is using the identity mapping"
-        sl = self._index.to_slice_maybe()
+        sl = self.index.to_slice_maybe()
         if not isinstance(sl, slice):
             return False
         #return sl == slice(0, self.last_id+1, None)
@@ -255,14 +252,13 @@ class BaseTable(metaclass=ABCMeta):
         "Return the last id of this table"
         #if not self._index:
         #    assert self._last_id == -1
-        if self._index and self._last_id < self._index.max():
-            self._last_id = self._index.max()
-        return self._last_id
+        return self._base.last_id
+
     @property
     def last_xid(self):
         'Return the last eXisting id of this table'
-        self.last_id #only for refreshing self._last_id
-        return self._index.max()
+        return self._base.last_xid #only for refreshing self._last_id
+
     def width(self, colnames=None):
         """Return the number of effective width (number of columns) of the table
 
@@ -472,24 +468,7 @@ class BaseTable(metaclass=ABCMeta):
     @property
     def index(self):
         "Return the object in change of indexing this table"
-        return self._index
-
-    @index.setter
-    def index(self, indices):
-        "Modify the object in change of indexing this table"
-        if self._observed is None:
-            raise ValueError("Cannot modify the index of a physical table this way. Use append instead")
-        indices = self._any_to_bitmap(indices)
-        if indices not in self._observed.index:
-            raise ValueError(f"Not existing indices {indices-self._observed.index}")
-        created_ = indices - self._index
-        if created_:
-            self.add_created(created_)
-        deleted_ = self._index - indices
-        if deleted_:
-            self.add_deleted(deleted_)
-        self._index = indices
-        return self._index
+        return self._base._any_to_bitmap(self._mask)
 
     @property
     def ncol(self):
@@ -499,7 +478,7 @@ class BaseTable(metaclass=ABCMeta):
     @property
     def nrow(self):
         "Return the number of rows (same as `len(table)`)"
-        return len(self._index)
+        return len(self.index)
 
     def __len__(self):
         return self.nrow
@@ -509,7 +488,7 @@ class BaseTable(metaclass=ABCMeta):
         nsl = norm_slice(sl, fix_loc, stop=stop)
         ret = bitmap(nsl)
         if existing_only:
-            ret &= self._index
+            ret &= self.index
         return ret
 
     def _any_to_bitmap(self, locs, copy=True, fix_loc=True, existing_only=True):
@@ -1034,17 +1013,56 @@ class BaseTable(metaclass=ABCMeta):
         self._cached_index = index
         self.add_updated(index)
 
-    def notify_observers(self, mode, locs):
-        garbage = []
-        for wr in self._observers:
-            obs = wr()
-            if obs is None:
-                garbage.append(wr)
-            else:
-                obs.notification(mode, locs)
-        for elt in garbage:
-            self._observers.remove(elt)
 
+
+    def equals(self, other):
+        if self is other:
+            return True
+        return np.all(self.values == other.values)
+
+
+class IndexTable(BaseTable):
+    def __init__(self, index=None):
+        super().__init__()
+        self._index = bitmap() if index is None else index
+        self._cached_index = BaseTable # hack
+        self._last_id = -1
+        self._changes = None
+
+    @property
+    def index(self):
+        "Return the object in change of indexing this table"
+        return bitmap(self._index) # returns a copy to prevent unwanted
+
+    @index.setter
+    def index(self, indices):
+        "Modify the object in change of indexing this table"
+        indices = self._any_to_bitmap(indices)
+        if indices not in self._observed.index:
+            raise ValueError(f"Not existing indices {indices-self._observed.index}")
+        created_ = indices - self._index
+        if created_:
+            self.add_created(created_)
+        deleted_ = self._index - indices
+        if deleted_:
+            self.add_deleted(deleted_)
+        self._index = indices
+        return self._index
+
+    @property
+    def last_id(self):
+        "Return the last id of this table"
+        #if not self._index:
+        #    assert self._last_id == -1
+        if self.index and self._last_id < self.index.max():
+            self._last_id = self.index.max()
+        return self._last_id
+
+    @property
+    def last_xid(self):
+        'Return the last eXisting id of this table'
+        self.last_id #only for refreshing self._last_id
+        return self.index.max()
     def add_created(self, locs):
         #self.notify_observers('created', locs)
         if self._changes is None:
@@ -1053,33 +1071,41 @@ class BaseTable(metaclass=ABCMeta):
         self._changes.add_created(locs)
 
     def add_updated(self, locs):
-        self.notify_observers('updated', locs)
+        #self.notify_observers('updated', locs)
         if self._changes is None:
             self._changes = TableChanges()
         locs = self._normalize_locs(locs)
         self._changes.add_updated(locs)
 
     def add_deleted(self, locs):
-        self.notify_observers('deleted', locs)
+        #self.notify_observers('deleted', locs)
         if self._changes is None:
             self._changes = TableChanges()
         locs = self._normalize_locs(locs)
         self._changes.add_deleted(locs)
 
-    def notification(self, mode, locs):
-        #if mode == 'created':
-        #    pass
-        locs = self._normalize_locs(locs)
-        if mode == 'updated':
-            self.add_updated(locs & self._index)
-        elif mode == 'deleted':
-            self.add_deleted(locs & self._index)
-            self._index -= locs
-        else:
-            raise ValueError(f"Unknown mode {mode}")
+class TableSelectedView(BaseTable):
+    def __init__(self, base=None, mask=slice(0, None), columns=None, columndict=None):
+        super().__init__(base, mask, columns, columndict)
 
+    @property
+    def mask(self):
+        return bitmap(self._mask)
 
-    def equals(self, other):
-        if self is other:
-            return True
-        return np.all(self.values == other.values)
+    @mask.setter
+    def mask(self, bm):
+        assert isinstance(bm, bitmap)
+        self._mask = bm[:]
+
+    @property
+    def selection(self):
+        res = self._any_to_bitmap(self._mask)
+        prev = self._masked
+        #import pdb;pdb.set_trace()
+        while prev is not None:
+            #if is_full_slice(prev._mask):
+            #    continue
+            bm = self._any_to_bitmap(prev._mask)
+            res &= bm
+            prev = prev._masked
+        return res

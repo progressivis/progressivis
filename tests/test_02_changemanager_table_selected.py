@@ -1,22 +1,21 @@
 from . import ProgressiveTest
-
-#from progressivis.table.table_selected import TableSelectedView
+from progressivis.table.table_base import TableSelectedView
 from progressivis.table.table import Table
 from progressivis.core.bitmap import bitmap
-from progressivis.table.changemanager_table import TableChangeManager
+from progressivis.table.changemanager_table_selected import TableSelectedChangeManager, FakeSlot
 from progressivis.table.tablechanges import TableChanges
 import numpy as np
 
-class FakeSlot(object):
+class __FakeSlot(object):
     def __init__(self, table):
         self.table = table
 
     def data(self):
         return self.table
 
-class TestTableChangeManager(ProgressiveTest):
+class TestTableSelectedChangeManager(ProgressiveTest):
     def setUp(self):
-        super(TestTableChangeManager, self).setUp()
+        super(TestTableSelectedChangeManager, self).setUp()
         self.s = self.scheduler()
 
     def test_tablechangemanager(self):
@@ -24,44 +23,49 @@ class TestTableChangeManager(ProgressiveTest):
         table = Table('test_changemanager_table_selected',
                       data={'a': [ 1, 2, 3], 'b': [10.1, 0.2, 0.3]})
         selection = bitmap([1,2])
-        table_selected = table.loc[selection, :] #TableSelectedView(table, selection)
-        table_selected.changes = TableChanges()
+        table_selected = TableSelectedView(table, selection)
+
         s = self.s
         s._run_number = 1
         last = s._run_number
         slot = FakeSlot(table_selected)
 
         mid1 = 1
-        cm = TableChangeManager(slot,
+        cm = TableSelectedChangeManager(slot,
+                                        buffer_exposed=True,
                                         buffer_updated=True,
-                                        buffer_deleted=True)
+                                        buffer_deleted=True,
+                                        buffer_masked=True)
         self.assertEqual(cm.last_update(), 0)
         self.assertEqual(cm.created.length(), 0)
         self.assertEqual(cm.updated.length(), 0)
         self.assertEqual(cm.deleted.length(), 0)
 
         mid2 = 2
-        cm2 = TableChangeManager(slot,
+        cm2 = TableSelectedChangeManager(slot,
+                                         buffer_exposed=True,
                                          buffer_updated=True,
-                                         buffer_deleted=True)
+                                         buffer_deleted=True,
+                                         buffer_masked=True)
         self.assertEqual(cm2.last_update(), 0)
         self.assertEqual(cm2.created.length(), 0)
         self.assertEqual(cm2.updated.length(), 0)
         self.assertEqual(cm2.deleted.length(), 0)
 
         mid3 = 3
-        cm3 = TableChangeManager(slot,
+        cm3 = TableSelectedChangeManager(slot,
+                                         buffer_exposed=True,
                                          buffer_updated=True,
-                                         buffer_deleted=True)
+                                         buffer_deleted=True,
+                                         buffer_masked=True)
         self.assertEqual(cm3.last_update(), 0)
         self.assertEqual(cm3.created.length(), 0)
         self.assertEqual(cm3.updated.length(), 0)
         self.assertEqual(cm3.deleted.length(), 0)
-
         cm.update(last, table_selected, mid=mid1)
         self.assertEqual(cm.last_update(), last)
-        #self.assertEqual(cm.created.next(),slice(0, 3)) without the mask
-        self.assertEqual(cm.created.next(),slice(1, 3))
+        self.assertEqual(cm.created.next(),slice(0, 3)) # without the mask
+        self.assertEqual(cm.exposed.next(),slice(1, 3))
         self.assertEqual(cm.updated.length(), 0)
         self.assertEqual(cm.deleted.length(), 0)
 
@@ -70,34 +74,32 @@ class TestTableChangeManager(ProgressiveTest):
         table.append({'a': [ 4], 'b': [0.5]}) # invisible since id=3
         cm.update(last, table_selected, mid=mid1)
         self.assertEqual(cm.last_update(), last)
-        self.assertEqual(cm.created.length(), 0)
+        self.assertEqual(cm.created.length(), 1)
+        self.assertEqual(cm.exposed.length(), 0)
         self.assertEqual(cm.updated.length(), 0)
         self.assertEqual(cm.deleted.length(), 0)
 
         s._run_number += 1
         last = s._run_number
         table.append({'a': [ 5, 6, 7, 8], 'b': [0.5, 0.6, 0.7, 0.8] })
-        table_selected.index = bitmap(range(1,8))
+        table_selected.mask = bitmap(range(1,8))
         cm.update(last, table_selected, mid=mid1)
         self.assertEqual(cm.last_update(), last)
         self.assertEqual(cm.created.next(),slice(3, 8))
+        self.assertEqual(cm.exposed.next(),slice(3, 8))
         self.assertEqual(cm.updated.length(), 0)
         self.assertEqual(cm.deleted.length(), 0)
 
         s._run_number += 1
         last = s._run_number
         del table.loc[[1,2,3]]
-        # table_selected.index = bitmap([3,4]) # i.e 1,2,5,6,7 were deleted in selection
-        # new behaviour : the previous statement was wrong because 3 does not belong
-        # to table.index anymore
-        # from now on table_selected follows deletions operated in table so its content became
-        # 4, 5, 6, 7  after 3 deletions (1,2,3 were deleted in table_selected too)
-        table_selected.index = bitmap([4, 5]) # i.e 6,7 were deleted in selection
+        table_selected.mask = bitmap([3,4]) # i.e 1,2,5,6,7 were deleted in selection
         cm.update(last, table_selected, mid=mid1)
         self.assertEqual(cm.last_update(), last)
         self.assertEqual(cm.created.length(), 0)
         self.assertEqual(cm.updated.length(), 0)
-        self.assertEqual(cm.deleted.length(), 5) # 1, 2, 3, 6, 7
+        self.assertEqual(cm.deleted.length(), 3) # 1, 2, 3
+        self.assertEqual(cm.masked.length(), 5) # 1, 2, 5, 6, 7
 
         # s._run_number += 1
         # a[3] = 42

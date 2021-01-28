@@ -14,12 +14,16 @@ class ColumnChangeManager(BaseChangeManager):
                  slot,
                  buffer_created=True,
                  buffer_updated=False,
-                 buffer_deleted=False):
+                 buffer_deleted=False,
+                 buffer_exposed=False,
+                 buffer_masked=False):
         super(ColumnChangeManager, self).__init__(
             slot,
             buffer_created,
             buffer_updated,
-            buffer_deleted)
+            buffer_deleted,
+            buffer_exposed,
+            buffer_masked)
         data = slot.data()
         if data.changes is None:
             data.changes = TableChanges()

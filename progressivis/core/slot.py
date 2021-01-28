@@ -13,20 +13,26 @@ class SlotDescriptor(namedtuple('SD',
                                 ['name', 'type', 'required', 'multiple', 'datashape',
                                  'buffer_created',
                                  'buffer_updated',
-                                 'buffer_deleted'])):
+                                 'buffer_deleted',
+                                 'buffer_exposed',
+                                 'buffer_masked'])):
     "SlotDescriptor is used in modules to describe the input/output slots."
     __slots__ = ()
 
     def __new__(cls, name, type=None, required=True, multiple=False, datashape=None,
                 buffer_created=True,
                 buffer_updated=True,
-                buffer_deleted=True):
+                buffer_deleted=True,
+                buffer_exposed=True,
+                buffer_masked=True):
         # pylint: disable=redefined-builtin
         return super(SlotDescriptor, cls).__new__(cls, name, type,
                                                   required, multiple, datashape,
                                                   buffer_created,
                                                   buffer_updated,
-                                                  buffer_deleted)
+                                                  buffer_deleted,
+                                                  buffer_exposed,
+                                                  buffer_masked)
 
 
 class Slot(object):
@@ -112,19 +118,23 @@ class Slot(object):
     def create_changes(self,
                        buffer_created=True,
                        buffer_updated=False,
-                       buffer_deleted=False):
+                       buffer_deleted=False,
+                       buffer_exposed=False,
+                       buffer_masked=False):
         "Create a ChangeManager associated with the type of the slot's data."
         data = self.data()
         if data is not None:
             return self.create_changemanager(type(data), self,
                                              buffer_created=buffer_created,
                                              buffer_updated=buffer_updated,
-                                             buffer_deleted=buffer_deleted)
+                                             buffer_deleted=buffer_deleted,
+                                             buffer_exposed=buffer_exposed,
+                                             buffer_masked=buffer_masked)
         return None
 
     def update(self, run_number,
                buffer_created=True, buffer_updated=True, buffer_deleted=True,
-               manage_columns=True):
+               buffer_exposed=True, buffer_masked=True, manage_columns=True):
         # pylint: disable=too-many-arguments
         "Compute the changes that occur since this slot has been updated."
         if self.changes is None:
@@ -133,7 +143,9 @@ class Slot(object):
             self.changes = self.create_changes(
                 buffer_created=desc.buffer_created,
                 buffer_updated=desc.buffer_updated,
-                buffer_deleted=desc.buffer_deleted)
+                buffer_deleted=desc.buffer_deleted,
+                buffer_exposed=desc.buffer_exposed,
+                buffer_masked=desc.buffer_masked)
         if self.changes:
             df = self.data()
             self.changes.update(run_number, df, self.name())
@@ -181,7 +193,9 @@ class Slot(object):
     def create_changemanager(datatype, slot,
                              buffer_created,
                              buffer_updated,
-                             buffer_deleted):
+                             buffer_deleted,
+                             buffer_exposed,
+                             buffer_masked):
         """
         Create the ChangeManager responsible for this slot type or
         None if no ChangeManager is registered for that type.
@@ -202,7 +216,9 @@ class Slot(object):
                 return cls(slot,
                            buffer_created,
                            buffer_updated,
-                           buffer_deleted)
+                           buffer_deleted,
+                           buffer_exposed,
+                           buffer_masked)
             if hasattr(datatype, '__base__'):
                 queue.append(datatype.__base__)
             elif hasattr(datatype, '__bases__'):
@@ -213,7 +229,9 @@ class Slot(object):
         return LiteralChangeManager(slot,
                                     buffer_created,
                                     buffer_updated,
-                                    buffer_deleted)
+                                    buffer_deleted,
+                                    buffer_exposed,
+                                    buffer_masked)
 
     @staticmethod
     def add_changemanager_type(datatype, cls):

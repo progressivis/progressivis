@@ -18,14 +18,19 @@ class BaseChangeManager(object):
                  slot,
                  buffer_created=True,
                  buffer_updated=False,
-                 buffer_deleted=False):
+                 buffer_deleted=False,
+                 buffer_exposed=False,
+                 buffer_masked=False):
         _ = slot
         self._row_changes = IndexUpdate()
+        self._mask_changes = IndexUpdate()
         # The bitmaps are shared between _row_changes and the buffers.
         # To remain shared, they should never be assigned to, only updated.
         self._created = _buffer(buffer_created, self._row_changes.created)
         self._updated = _buffer(buffer_updated, self._row_changes.updated)
         self._deleted = _buffer(buffer_deleted, self._row_changes.deleted)
+        self._exposed = _buffer(buffer_exposed, self._mask_changes.created)
+        self._masked = _buffer(buffer_masked, self._mask_changes.deleted)
         self._last_update = 0
 
     @property
@@ -59,16 +64,32 @@ class BaseChangeManager(object):
         logger.debug('reset(%d)', self._last_update)
 
     @property
+    def exposed(self):
+        "Return information of items exposed"
+        return self._exposed
+
+    @property
+    def masked(self):
+        "Return information of items masked"
+        return self._masked
+
+    @property
     def row_changes(self):
         "Return the IndexUpdate keeping track of the row changes"
         return self._row_changes
+
+    @property
+    def mask_changes(self):
+        "Return the IndexUpdate keeping track of the mask changes"
+        return self._mask_changes
 
     def has_buffered(self):
         """
         If the change manager has something buffered, then the module is
         ready to run immediately.
         """
-        return self.created.any() or self.updated.any() or self.deleted.any()
+        return (self.created.any() or self.updated.any() or self.deleted.any()
+                or self.exposed.any() or self.masked.any())
 
     def last_update(self):
         "Return the date of the last update"
@@ -83,9 +104,10 @@ class BaseChangeManager(object):
     def clear(self):
         """
         removed all the buffered information from the
-        created/updated/deleted information
+        created/updated/deleted/exposed/masked information
         """
         self._row_changes.clear()
+        self._mask_changes.clear()
 
 
 def _next(bm, length, as_slice):

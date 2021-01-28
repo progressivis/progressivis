@@ -10,7 +10,7 @@ from progressivis.utils.fast import indices_to_slice
 from .column_base import BaseColumn
 from .dshape import dshape_to_h5py, np_dshape, dshape_create
 from . import metadata
-from .table_base import BaseTable
+from .table_base import IndexTable
 from ..core.bitmap import bitmap
 
 logger = logging.getLogger(__name__)
@@ -102,7 +102,7 @@ class Column(BaseColumn):
         #from .column_id import IdColumn
         #self._index = IdColumn(self._storagegroup)
         #self._index.create_dataset()
-        self._index = BaseTable()
+        self._index = IndexTable()
         self.create_dataset(dshape=dshape, fillvalue=fillvalue,
                             shape=shape, chunks=chunks)
 

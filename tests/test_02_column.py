@@ -2,7 +2,7 @@ from . import ProgressiveTest, skip
 
 from progressivis.table.column import Column
 #from progressivis.table.column_id import IdColumn
-from progressivis.table.table_base import BaseTable
+from progressivis.table.table_base import IndexTable
 from progressivis.core.bitmap import bitmap
 
 import numpy as np
@@ -10,7 +10,7 @@ import numpy as np
 #@skip # TODO: adapt for the new tables (without IdColumn)
 class TestColumn(ProgressiveTest):
     def test_column(self):
-        index = BaseTable('Index')
+        index = IndexTable()
         self.assertTrue(index.is_identity)
         self.assertEqual(index.last_id, -1)
         self.assertEqual(index.changes, None)
@@ -24,11 +24,11 @@ class TestColumn(ProgressiveTest):
         a = np.arange(10)
         col2 = Column("col2", None, data=a)
         self.assertEqual(col2.name, "col2")
-        self.assertIsInstance(col2.index, BaseTable)
+        self.assertIsInstance(col2.index, IndexTable)
         self.assertEqual(col2.size, 10)
         self.assertEqual(col2.shape, (10,))
         self.assertTrue(np.array_equal(col2.dataset[:], a))
-        self.assertEqual(str(col2.index), 'BaseTable("anonymous", dshape="{}")[10]')
+        self.assertEqual(str(col2.index), 'IndexTable("anonymous", dshape="{}")[10]')
         #self.assertEqual(repr(col2.index), 'IdColumn("_ID", dshape=int64)[10][IDENTITY]')
 
         with self.assertRaises(ValueError):
@@ -38,7 +38,7 @@ class TestColumn(ProgressiveTest):
         with self.assertRaises(ValueError):
             col2 = Column("col2.3", None, data=[1,2,3]) # not handled yet
         col2a = Column("col2a", None, data=col2)
-        self.assertIsInstance(col2a.index, BaseTable)
+        self.assertIsInstance(col2a.index, IndexTable)
         self.assertTrue(col2a.index.is_identity)
         self.assertEqual(col2a.size, 10)
         self.assertEqual(col2a.shape, (10,))
@@ -122,7 +122,7 @@ class TestColumn(ProgressiveTest):
 
         col3 = Column("col3", None, dshape="float64", fillvalue=0)
         self.assertEqual(col3.name, "col3")
-        self.assertIsInstance(col3.index, BaseTable)
+        self.assertIsInstance(col3.index, IndexTable)
         self.assertEqual(col3.shape, (0,))
         self.assertIsInstance(col3.chunks, tuple)
 

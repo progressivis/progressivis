@@ -2,7 +2,7 @@
 
 from progressivis.core.changemanager_base import BaseChangeManager
 
-from .table_base import BaseTable
+from .table import Table
 from .tablechanges import TableChanges
 from ..core.slot import Slot
 from ..core.column_update import ColumnUpdate
@@ -16,12 +16,16 @@ class TableChangeManager(BaseChangeManager):
                  slot,
                  buffer_created=True,
                  buffer_updated=False,
-                 buffer_deleted=False):
+                 buffer_deleted=False,
+                 buffer_exposed=False,
+                 buffer_masked=False):
         super(TableChangeManager, self).__init__(
             slot,
             buffer_created,
             buffer_updated,
-            buffer_deleted)
+            buffer_deleted,
+            buffer_exposed,
+            buffer_masked)
         self._columns = set()
         self._column_changes = set()
         data = slot.data()
@@ -32,7 +36,7 @@ class TableChangeManager(BaseChangeManager):
         if data is None or (run_number != 0
                             and run_number <= self._last_update):
             return
-        assert isinstance(data, BaseTable)
+        assert isinstance(data, Table)
         changes = data.compute_updates(self._last_update, run_number, mid)
         self._last_update = run_number
         self._row_changes.combine(changes,
@@ -52,4 +56,4 @@ class TableChangeManager(BaseChangeManager):
                             updated=set(), deleted=set())
 
 
-Slot.add_changemanager_type(BaseTable, TableChangeManager)
+Slot.add_changemanager_type(Table, TableChangeManager)

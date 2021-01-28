@@ -15,8 +15,9 @@ from .dshape import (dshape_create, dshape_table_check, dshape_fields,
                      dshape_to_shape, dshape_extract, dshape_compatible,
                      dshape_from_dtype)
 from . import metadata
-from .table_base import BaseTable
+from .table_base import IndexTable, BaseTable
 from .column import Column
+
 #from .column_id import IdColumn
 from ..utils.khash.hashtable import Int64HashTable
 from progressivis.core.bitmap import bitmap
@@ -26,7 +27,9 @@ logger = logging.getLogger(__name__)
 __all__ = ["Table"]
 
 
-class Table(BaseTable):
+
+
+class Table(IndexTable):
     """Create a Table data structure, made of a collectifrom progressivis.core.bitmap import bitmapon of columns.
 
     A Table is similar to Python Pandas or R DataFrame, but
@@ -116,6 +119,7 @@ class Table(BaseTable):
             self._create_table(fillvalues or {})
         if data is not None:
             self.append(data, indices=indices)
+
 
     @property
     def name(self):
@@ -278,7 +282,7 @@ class Table(BaseTable):
         length = -1
         all_arrays = True
         def _len(c):
-            if isinstance(data, BaseTable):
+            if isinstance(data, IndexTable):
                 return len(c.value)
             return len(c)
         for colname in self:
@@ -298,7 +302,7 @@ class Table(BaseTable):
         init_indices = indices
         prev_last_id = self.last_id
         indices = self._allocate(length, indices)
-        if isinstance(data, BaseTable):
+        if isinstance(data, IndexTable):
             if init_indices is None:
                 start = prev_last_id+1
                 left_ind = slice(start, start+len(data)-1)
