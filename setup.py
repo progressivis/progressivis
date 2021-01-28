@@ -108,7 +108,7 @@ setup(
                       "tdigest>=0.4.1.0",
                       "numcodecs>=0.5.5",
                       "datashape>=0.5.2",
-                      "pyroaring>=0.2.3",
+                      "pyroaring==0.2.9",
                       "msgpack-python>=0.4.8",
                       "python-dateutil>=2.6.1",  # botocore wants < 2.7.0,>=2.1
                       "boto",
