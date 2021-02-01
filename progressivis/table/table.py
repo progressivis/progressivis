@@ -282,7 +282,7 @@ class Table(IndexTable):
         length = -1
         all_arrays = True
         def _len(c):
-            if isinstance(data, IndexTable):
+            if isinstance(data, BaseTable):
                 return len(c.value)
             return len(c)
         for colname in self:
@@ -302,7 +302,7 @@ class Table(IndexTable):
         init_indices = indices
         prev_last_id = self.last_id
         indices = self._allocate(length, indices)
-        if isinstance(data, IndexTable):
+        if isinstance(data, BaseTable):
             if init_indices is None:
                 start = prev_last_id+1
                 left_ind = slice(start, start+len(data)-1)

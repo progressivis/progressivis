@@ -53,6 +53,16 @@ class BaseChangeManager(object):
         "Return information of items deleted"
         return self._deleted
 
+    @property
+    def perm_deleted(self):
+        "Return information of items deleted"
+        return self._deleted
+
+    @property
+    def masked(self):
+        "Return information of items masked"
+        return self._masked
+
     def reset(self, name=None):
         """
         Reset the change manager so changes will come as if the managed data
@@ -63,15 +73,6 @@ class BaseChangeManager(object):
         self.clear()
         logger.debug('reset(%d)', self._last_update)
 
-    @property
-    def exposed(self):
-        "Return information of items exposed"
-        return self._exposed
-
-    @property
-    def masked(self):
-        "Return information of items masked"
-        return self._masked
 
     @property
     def row_changes(self):
@@ -89,7 +90,7 @@ class BaseChangeManager(object):
         ready to run immediately.
         """
         return (self.created.any() or self.updated.any() or self.deleted.any()
-                or self.exposed.any() or self.masked.any())
+                or self.perm_deleted.any() or self.masked.any())
 
     def last_update(self):
         "Return the date of the last update"

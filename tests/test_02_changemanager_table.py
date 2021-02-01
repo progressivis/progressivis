@@ -123,13 +123,13 @@ class TestTableChangeManager(ProgressiveTest):
         col_b[0] = 0.11
         col_b[2] = 0.32
         table.append({'a': [6], 'b': [0.6]})
-        tableview = table.loc[1:2]
-        tableview.changes = TableChanges()
-        last3 = s._run_number
-        cm3.update(last3, tableview, mid=mid3)
-        self.assertEqual(cm3.created.next(), slice(1, 3))
-        self.assertEqual(cm2.updated.length(), 0)
-        self.assertEqual(cm2.deleted.length(), 0)
+        #tableview = table.loc[1:2]
+        #tableview.changes = TableChanges()
+        #last3 = s._run_number
+        #cm3.update(last3, tableview, mid=mid3)
+        #self.assertEqual(cm3.created.next(), slice(1, 3))
+        #self.assertEqual(cm2.updated.length(), 0)
+        #self.assertEqual(cm2.deleted.length(), 0)
 
         s._run_number += 1
         last = s._run_number
@@ -153,11 +153,11 @@ class TestTableChangeManager(ProgressiveTest):
         col_b[0] = 0.11
         col_b[2] = 0.22
         last3 = s._run_number
-        cm3.update(last3, tableview, mid=mid3)
-        self.assertEqual(cm3.last_update(), last3)
-        self.assertEqual(cm3.created.length(), 0)
-        self.assertEqual(cm3.updated.next(), slice(2, 3))
-        self.assertEqual(cm3.deleted.length(), 0)
+        #cm3.update(last3, tableview, mid=mid3)
+        #self.assertEqual(cm3.last_update(), last3)
+        #self.assertEqual(cm3.created.length(), 0)
+        #self.assertEqual(cm3.updated.next(), slice(2, 3))
+        #self.assertEqual(cm3.deleted.length(), 0)
 
 
         # test deletes

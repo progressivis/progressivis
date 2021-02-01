@@ -3,7 +3,7 @@ from ..core.utils import (indices_len, fix_loc)
 from ..utils.bytescale import bytescale
 from ..core.slot import SlotDescriptor
 from ..table.module import TableModule
-from ..table.table import Table
+from ..table import Table, TableSelectedView
 from ..utils.psdict import PsDict
 from fast_histogram import histogram2d
 from ..core.decorators import *
@@ -157,11 +157,11 @@ class Histogram2D(TableModule):
             steps = 0
             # if there are new deletions, build the histogram of the deleted pairs
             # then subtract it from the main histogram
-            if isinstance(dfslot.data(), Table) and dfslot.deleted.any():
+            if dfslot.perm_deleted.any():
                 self.reset()
                 dfslot.update(run_number)
-            elif dfslot.deleted.any() and self._histo is not None: # i.e. TableSelectedView, TableSlicedView
-                input_df = dfslot.data().get_original() # the original table
+            elif dfslot.masked.any() and self._histo is not None: # i.e. TableSelectedView
+                input_df = dfslot.data().base # the original table
                 raw_indices = dfslot.deleted.next(step_size) # we assume that deletions are only local to the view
                 # and the related records still exist in the original table ...
                 # TODO : test this hypothesis and reset if false

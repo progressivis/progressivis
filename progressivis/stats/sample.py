@@ -12,7 +12,7 @@ from ..table import Table
 from ..table.module import TableModule
 from ..core.utils import indices_len
 from ..core.decorators import *
-
+from ..table import TableSelectedView
 import numpy as np
 
 import logging
@@ -47,7 +47,7 @@ class Sample(TableModule):
         if name == 'select':
             return self.get_bitmap()
         if self._table is not None:
-            self._table.index = self.get_bitmap()
+            self._table.mask = self.get_bitmap()
         return super(Sample, self).get_data(name)
 
     def get_bitmap(self):
@@ -62,7 +62,7 @@ class Sample(TableModule):
     def run_step(self,run_number,step_size,howlong):
         with self.context as ctx:
             if self._table is None:
-                self._table = ctx.table.data().loc[bitmap([]), :]
+                self._table = TableSelectedView(ctx.table.data(), bitmap([]))
             indices = ctx.table.created.next(step_size, as_slice=False)
             steps = indices_len(indices)
             k = int(self.params.samples)

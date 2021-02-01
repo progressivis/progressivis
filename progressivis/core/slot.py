@@ -172,6 +172,7 @@ class Slot(object):
         "Return the buffer for created rows"
         return self.changes.created if self.changes else EMPTY_BUFFER
 
+
     @property
     def updated(self):
         "Return the buffer for updated rows"
@@ -181,6 +182,22 @@ class Slot(object):
     def deleted(self):
         "Return the buffer for deleted rows"
         return self.changes.deleted if self.changes else EMPTY_BUFFER
+
+    @property
+    def perm_deleted(self):
+        "Return the buffer for deleted rows"
+        return self.changes.perm_deleted if self.changes else EMPTY_BUFFER
+
+    @property
+    def masked(self):
+        "Return the buffer for deleted rows"
+        return self.changes.masked if self.changes else EMPTY_BUFFER
+
+    @property
+    def deleted_masked(self):
+        "Return the buffer for deleted rows"
+        return self.changes.deleted_masked if self.changes else EMPTY_BUFFER
+
 
     @property
     def changemanager(self):

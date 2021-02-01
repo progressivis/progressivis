@@ -7,11 +7,11 @@ from progressivis.table.nary import NAry
 from progressivis.core.utils import indices_len
 from . import BaseTable
 from ..core.bitmap import bitmap
-
+from . import TableSelectedView
 
 
 def _get_physical_table(t):
-    return t.get_original()
+    return t.base or t
 
 class Intersection(NAry):
     "Intersection Module"
@@ -72,16 +72,16 @@ class Intersection(NAry):
         to_create_maybe = bitmap.union(*to_create)
 
         if not self._table:
-            self._table = ph_table.loc[bitmap([]), :]
+            self._table = TableSelectedView(ph_table, bitmap([]))
         if reset_:
-            self._table.index = bitmap([])
+            self._table.mask = bitmap([])
         # self._table.selection -= to_delete
-        self._table.index = self._table.index|to_create_4sure
+        self._table.mask = self._table.index|to_create_4sure
         to_create_maybe -= to_create_4sure
         eff_create = to_create_maybe
         for t in tables:
             eff_create &= t.index
-        self._table.index = self._table.index|eff_create
+        self._table.mask = self._table.index|eff_create
         # self.get_input_slot(self.inputs[0]))
         return self._return_run_step(self.state_blocked, steps)
 
@@ -114,8 +114,8 @@ class Intersection(NAry):
         if steps == 0:
             return self._return_run_step(self.state_blocked, 0)
         if not self._table:
-            self._table = ph_table.loc[bitmap([]), :]
-        self._table.index = bitmap.intersection(*[t.index
+            self._table = TableSelectedView(ph_table, bitmap([]))
+        self._table.mask = bitmap.intersection(*[t.index
                                                       for t in tables])
         # return self._return_run_step(self.next_state(self.get_input_slot(self.inputs[0])), steps)
         return self._return_run_step(self.state_blocked, steps)

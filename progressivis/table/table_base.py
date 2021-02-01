@@ -465,10 +465,24 @@ class BaseTable(metaclass=ABCMeta):
         """
         return self.index_to_id(loc)
 
+    def _comp_selection(self):
+        res = self._base._any_to_bitmap(self._mask)
+        prev = self._masked
+        #import pdb;pdb.set_trace()
+        while prev is not None:
+            #if is_full_slice(prev._mask):
+            #    continue
+            bm = self._base._any_to_bitmap(prev._mask)
+            res &= bm
+            prev = prev._masked
+        return res
+
+
     @property
     def index(self):
         "Return the object in change of indexing this table"
-        return self._base._any_to_bitmap(self._mask)
+        #return self._base._any_to_bitmap(self._mask)
+        return self._comp_selection()
 
     @property
     def ncol(self):
@@ -506,61 +520,6 @@ class BaseTable(metaclass=ABCMeta):
         raise KeyError(f"Invalid type {type(locs)} for key {locs}")
 
 
-    def __delitem__(self, key):
-        bm = self._any_to_bitmap(key, fix_loc=False, existing_only=False)
-        if not bm:
-            return
-        #if not (bm in self.index or isinstance(key, slice)):
-        #    raise ValueError('Invalid locs')
-        if isinstance(key, slice):
-            if not (bm.min() in self._index and bm.max() in self._index):
-                raise ValueError('Invalid locs') # when key is a slice we accept holes
-        elif bm not in self.index: # when key is not a slice it must be exhaustive
-            raise ValueError('Invalid locs')
-        if isinstance(key, Iterable):
-            assert bm in self._index
-        self._index -= bm
-        self.add_deleted(bm)
-
-    def drop(self, index, raw_index=None, truncate=False):
-        "index is useless by now"
-        if raw_index is None:
-            raw_index = index
-        if is_int(raw_index):
-            #self.__delitem__(raw_index)
-            self._index.remove(raw_index)
-        else:
-            #self.__delitem__(index)
-            index = self._any_to_bitmap(index)
-            self._index -= index
-        if truncate: # useful 4 csv recovery
-            self._last_id = self._index.max() if self._index else -1
-        self.add_deleted(index)
-        if self._storagegroup is not None:
-            self._storagegroup.release(index)
-
-    def _resize_rows(self, newsize, index=None):
-        #self._ids.resize(newsize, index)
-        created = bitmap()
-        if index is not None:
-            index = self._any_to_bitmap(index)
-            created =  index-self._index
-            if index and index.min() > self.last_id:
-                self._index |= index
-            else:
-                #assert index in self._index #TODO: check with JDF
-                #self._index = index
-                self._index |= index
-        else:
-            #assert self._is_identity
-            if newsize >= self.last_id+1:
-                new_ids = bitmap(range(self.last_id+1, newsize))
-                created = new_ids-self._index
-                self._index |= new_ids
-            else:
-                self._index &=  bitmap(range(0, newsize))
-        if created:
-             self.add_created(created)
 
 
     @property
@@ -671,6 +630,22 @@ class BaseTable(metaclass=ABCMeta):
             index = self.last_xid
             return (self._column(c)[index] for c in key)
         raise ValueError('last not implemented for key "%s"' % key)
+
+    def __delitem__(self, key):
+        bm = self._any_to_bitmap(key, fix_loc=False, existing_only=False)
+        if not bm:
+            return
+        #if not (bm in self.index or isinstance(key, slice)):
+        #    raise ValueError('Invalid locs')
+        if isinstance(key, slice):
+            if not (bm.min() in self._index and bm.max() in self._mask):
+                raise ValueError('Invalid locs') # when key is a slice we accept holes
+        elif bm not in self.index: # when key is not a slice it must be exhaustive
+            raise ValueError('Invalid locs')
+        if isinstance(key, Iterable):
+            assert bm in self._mask
+        self._mask -= bm
+
 
     def setitem_2d(self, rowkey, colkey, values):
         if isinstance(colkey, (str, integer_types)):
@@ -783,7 +758,7 @@ class BaseTable(metaclass=ABCMeta):
         indices = None
         # TODO split the copy in chunks
         if locs is None:
-            indices = self._index
+            indices = self.index
         else:
             indices = self._any_to_bitmap(locs)
         arr = np.empty((indices_len(indices), offsets[-1]), dtype=dtype)
@@ -1084,9 +1059,73 @@ class IndexTable(BaseTable):
         locs = self._normalize_locs(locs)
         self._changes.add_deleted(locs)
 
+    def __delitem__(self, key):
+        bm = self._any_to_bitmap(key, fix_loc=False, existing_only=False)
+        if not bm:
+            return
+        #if not (bm in self.index or isinstance(key, slice)):
+        #    raise ValueError('Invalid locs')
+        if isinstance(key, slice):
+            if not (bm.min() in self._index and bm.max() in self._index):
+                raise ValueError('Invalid locs') # when key is a slice we accept holes
+        elif bm not in self.index: # when key is not a slice it must be exhaustive
+            raise ValueError('Invalid locs')
+        if isinstance(key, Iterable):
+            assert bm in self._index
+        self._index -= bm
+        self.add_deleted(bm)
+
+    def drop(self, index, raw_index=None, truncate=False):
+        "index is useless by now"
+        if raw_index is None:
+            raw_index = index
+        if is_int(raw_index):
+            #self.__delitem__(raw_index)
+            self._index.remove(raw_index)
+        else:
+            #self.__delitem__(index)
+            index = self._any_to_bitmap(index)
+            self._index -= index
+        if truncate: # useful 4 csv recovery
+            self._last_id = self._index.max() if self._index else -1
+        self.add_deleted(index)
+        if self._storagegroup is not None:
+            self._storagegroup.release(index)
+
+    def _resize_rows(self, newsize, index=None):
+        #self._ids.resize(newsize, index)
+        created = bitmap()
+        if index is not None:
+            index = self._any_to_bitmap(index)
+            created =  index-self._index
+            if index and index.min() > self.last_id:
+                self._index |= index
+            else:
+                #assert index in self._index #TODO: check with JDF
+                #self._index = index
+                self._index |= index
+        else:
+            #assert self._is_identity
+            if newsize >= self.last_id+1:
+                new_ids = bitmap(range(self.last_id+1, newsize))
+                created = new_ids-self._index
+                self._index |= new_ids
+            else:
+                self._index &=  bitmap(range(0, newsize))
+        if created:
+             self.add_created(created)
+
 class TableSelectedView(BaseTable):
     def __init__(self, base=None, mask=slice(0, None), columns=None, columndict=None):
         super().__init__(base, mask, columns, columndict)
+        columns, columndict = self._base.make_projection(columns, self)
+        self._columns = columns
+        self._columndict = columndict
+        self._dshape = dshape_create(
+            '{'
+            + ','.join(["{}:{}".format(c.name, c.dshape)
+                        for c in self._columns])
+            + '}')
 
     @property
     def mask(self):
@@ -1098,7 +1137,7 @@ class TableSelectedView(BaseTable):
         self._mask = bm[:]
 
     @property
-    def selection(self):
+    def __old_selection(self):
         res = self._any_to_bitmap(self._mask)
         prev = self._masked
         #import pdb;pdb.set_trace()
@@ -1109,3 +1148,7 @@ class TableSelectedView(BaseTable):
             res &= bm
             prev = prev._masked
         return res
+
+    @property
+    def selection(self):
+        return self._comp_selection()

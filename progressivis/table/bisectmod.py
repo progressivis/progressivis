@@ -1,7 +1,7 @@
 import numpy as np
 from progressivis.core.utils import (slice_to_arange, indices_len, fix_loc)
 
-from . import Table
+from . import Table, TableSelectedView
 #from . import TableSelectedView
 from ..core.slot import SlotDescriptor
 from .module import TableModule
@@ -115,8 +115,7 @@ class Bisect(TableModule):
         if input_table is None:
             return self._return_run_step(self.state_blocked, steps_run=0)
         if self._table is None:
-            self._table = input_table.loc[bitmap([]), :] # TableSelectedView(input_table, bitmap([]))
-            #self._table.foobar = "Bisect"
+            self._table = TableSelectedView(input_table, bitmap([]))
         if steps == 0:
             return self._return_run_step(self.state_blocked, steps_run=0)
         param = self.params
@@ -147,5 +146,5 @@ class Bisect(TableModule):
                                        created=created,
                                        updated=updated,
                                        deleted=deleted)
-        self._table.index = self._impl.result._values&self._table._observed._index
+        self._table.mask = self._impl.result._values #&self._table.base.index
         return self._return_run_step(self.next_state(input_slot), steps)

@@ -64,8 +64,7 @@ class TestTableSelectedChangeManager(ProgressiveTest):
         self.assertEqual(cm3.deleted.length(), 0)
         cm.update(last, table_selected, mid=mid1)
         self.assertEqual(cm.last_update(), last)
-        self.assertEqual(cm.created.next(),slice(0, 3)) # without the mask
-        self.assertEqual(cm.exposed.next(),slice(1, 3))
+        self.assertEqual(cm.created.next(),slice(1, 3)) # without the mask
         self.assertEqual(cm.updated.length(), 0)
         self.assertEqual(cm.deleted.length(), 0)
 
@@ -74,8 +73,7 @@ class TestTableSelectedChangeManager(ProgressiveTest):
         table.append({'a': [ 4], 'b': [0.5]}) # invisible since id=3
         cm.update(last, table_selected, mid=mid1)
         self.assertEqual(cm.last_update(), last)
-        self.assertEqual(cm.created.length(), 1)
-        self.assertEqual(cm.exposed.length(), 0)
+        self.assertEqual(cm.created.length(), 0)
         self.assertEqual(cm.updated.length(), 0)
         self.assertEqual(cm.deleted.length(), 0)
 
@@ -86,7 +84,6 @@ class TestTableSelectedChangeManager(ProgressiveTest):
         cm.update(last, table_selected, mid=mid1)
         self.assertEqual(cm.last_update(), last)
         self.assertEqual(cm.created.next(),slice(3, 8))
-        self.assertEqual(cm.exposed.next(),slice(3, 8))
         self.assertEqual(cm.updated.length(), 0)
         self.assertEqual(cm.deleted.length(), 0)
 
@@ -98,8 +95,10 @@ class TestTableSelectedChangeManager(ProgressiveTest):
         self.assertEqual(cm.last_update(), last)
         self.assertEqual(cm.created.length(), 0)
         self.assertEqual(cm.updated.length(), 0)
-        self.assertEqual(cm.deleted.length(), 3) # 1, 2, 3
+
+        self.assertEqual(cm.perm_deleted.length(), 3) # 1, 2, 3
         self.assertEqual(cm.masked.length(), 5) # 1, 2, 5, 6, 7
+        self.assertEqual(cm.deleted.length(), 6) # 1, 2, 3, 5, 6, 7
 
         # s._run_number += 1
         # a[3] = 42
