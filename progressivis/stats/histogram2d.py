@@ -157,14 +157,12 @@ class Histogram2D(TableModule):
             steps = 0
             # if there are new deletions, build the histogram of the deleted pairs
             # then subtract it from the main histogram
-            if dfslot.perm_deleted.any():
+            if dfslot.base.deleted.any():
                 self.reset()
                 dfslot.update(run_number)
-            elif dfslot.masked.any() and self._histo is not None: # i.e. TableSelectedView
+            elif dfslot.selection.deleted.any() and self._histo is not None: # i.e. TableSelectedView
                 input_df = dfslot.data().base # the original table
-            elif dfslot.masked.any() and self._histo is not None: # i.e. TableSelectedView
-                input_df = dfslot.data().base # the original table
-                raw_indices = dfslot.masked.next(step_size) # we assume that deletions are only local to the view
+                raw_indices = dfslot.selection.deleted.next(step_size) # we assume that deletions are only local to the view
                 # and the related records still exist in the original table ...
                 # TODO : test this hypothesis and reset if false
                 indices = fix_loc(raw_indices)

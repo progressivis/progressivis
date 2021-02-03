@@ -89,7 +89,7 @@ class TableSelectedChangeManager(BaseChangeManager):
         from .changemanager_table import TableChangeManager
         self._table_cm = TableChangeManager(
             tbslot,
-            buffer_created=False, # buffer_created,
+            buffer_created=buffer_created,
             buffer_updated=buffer_updated,
             buffer_deleted=buffer_deleted,
             buffer_exposed=False,
@@ -118,7 +118,7 @@ class TableSelectedChangeManager(BaseChangeManager):
         table_changes.deleted &= (selection|self._selection_changes.deleted)
         
         self._row_changes.combine(table_changes,
-                                  update_created=False, #self.created.buffer,
+                                  update_created=self.created.buffer,
                                   update_updated=self.updated.buffer,
                                   update_deleted=self.deleted.buffer)
         table_changes.clear()
@@ -149,13 +149,6 @@ class TableSelectedChangeManager(BaseChangeManager):
         if self._selection is None:
             self._selection = _base_accessor(self._mask_cm)
         return self._selection
-    
-
-
-    @property
-    def masked(self):
-        "Return information of items masked"
-        return self._mask_cm._deleted
 
     @property
     def perm_deleted(self):

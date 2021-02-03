@@ -91,15 +91,32 @@ class TestTableSelectedChangeManager(ProgressiveTest):
         last = s._run_number
         del table.loc[[1,2,3]]
         table_selected.selection = bitmap([3,4]) # i.e 1,2,5,6,7 were deleted in selection
-        import pdb;pdb.set_trace()        
         cm.update(last, table_selected, mid=mid1)
         self.assertEqual(cm.last_update(), last)
         self.assertEqual(cm.created.length(), 0)
         self.assertEqual(cm.updated.length(), 0)
-        self.assertEqual(cm.perm_deleted.length(), 3) # 1, 2, 3
-        self.assertEqual(cm.selection.deleted.length(), 5) # 1, 2, 5, 6, 7
+        self.assertEqual(cm.base.deleted.length(), 3) # 1, 2, 3
+        self.assertEqual(cm.selection.deleted.length(), 6) # 1, 2, 5, 6, 7[+3 removed because it was perm.deleted]
         self.assertEqual(cm.deleted.length(), 6) # 1, 2, 3, 5, 6, 7
-
+        cm.base.deleted.next()
+        cm.selection.deleted.next()
+        s._run_number += 1
+        last = s._run_number
+        table.append({'a': [ 15, 16, 17, 18], 'b': [0.51, 0.61, 0.71, 0.81] })
+        table_selected.selection = slice(5, None)
+        cm.update(last, table_selected, mid=mid1)
+        self.assertEqual(cm.last_update(), last)
+        self.assertEqual(cm.base.created.changes, bitmap([8, 9, 10, 11]))
+        self.assertEqual(cm.selection.created.changes, bitmap([5, 6, 7, 8, 9, 10, 11]))
+        self.assertEqual(cm.selection.deleted.changes, bitmap([4]))
+        self.assertEqual(cm.updated.length(), 0)
+        self.assertEqual(cm.base.deleted.length(), 0)
+        self.assertEqual(cm.deleted.length(), 1)
+        cm.deleted.next()
+        self.assertEqual(cm.deleted.length(), 0)
+        cm.created.next()
+        self.assertEqual(cm.base.created.length(), 0)
+        self.assertEqual(cm.selection.created.length(), 0)
         # s._run_number += 1
         # a[3] = 42
         # b[3] = 0.42

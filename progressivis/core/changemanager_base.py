@@ -115,16 +115,6 @@ class BaseChangeManager(object):
             self._selection = _selection_accessor(self)
         return self._selection
     
-    @property
-    def perm_deleted(self):
-        "Return information of items deleted"
-        return self._deleted
-
-    @property
-    def masked(self):
-        "Return information of items masked"
-        return self._masked
-
     def reset(self, name=None):
         """
         Reset the change manager so changes will come as if the managed data
@@ -152,7 +142,7 @@ class BaseChangeManager(object):
         ready to run immediately.
         """
         return (self.created.any() or self.updated.any() or self.deleted.any()
-                or self.perm_deleted.any() or self.masked.any())
+                or self.base.deleted.any() or self.selection.deleted.any())
 
     def last_update(self):
         "Return the date of the last update"

@@ -184,19 +184,15 @@ class Slot(object):
         return self.changes.deleted if self.changes else EMPTY_BUFFER
 
     @property
-    def perm_deleted(self):
-        "Return the buffer for deleted rows"
-        return self.changes.perm_deleted if self.changes else EMPTY_BUFFER
+    def base(self):
+        "Return an accessor"
+        return self.changes.base if self.changes else EMPTY_BUFFER
 
     @property
-    def masked(self):
-        "Return the buffer for deleted rows"
-        return self.changes.masked if self.changes else EMPTY_BUFFER
+    def selection(self):
+        "Return an accessor"
+        return self.changes.selection if self.changes else EMPTY_BUFFER
 
-    @property
-    def deleted_masked(self):
-        "Return the buffer for deleted rows"
-        return self.changes.deleted_masked if self.changes else EMPTY_BUFFER
 
 
     @property

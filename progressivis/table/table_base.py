@@ -466,24 +466,20 @@ class BaseTable(metaclass=ABCMeta):
         """
         return self.index_to_id(loc)
 
-    def _comp_selection(self):
+    def _compute_index(self):
         res = self._base._any_to_bitmap(self._selection)
         prev = self._masked
-        #import pdb;pdb.set_trace()
         while prev is not None:
-            #if is_full_slice(prev._mask):
-            #    continue
             bm = self._base._any_to_bitmap(prev._selection)
             res &= bm
             prev = prev._masked
         return res
-
-
+    
     @property
     def index(self):
         "Return the object in change of indexing this table"
         #return self._base._any_to_bitmap(self._mask)
-        return self._comp_selection()
+        return self._compute_index()
 
     @property
     def ncol(self):
@@ -1121,7 +1117,11 @@ class TableSelectedView(BaseTable):
         return bitmap(self._selection)
 
     @selection.setter
-    def selection(self, bm):
-        assert isinstance(bm, bitmap)
-        self._selection = bm[:]
+    def selection(self, sel):
+        if isinstance(sel, bitmap):
+            self._selection = sel[:]
+        elif isinstance(sel, slice):
+            self._selection = sel
+        else:
+            raise ValueError("Selection must be a bitmap or a slice")
 
