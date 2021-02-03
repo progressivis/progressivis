@@ -314,6 +314,7 @@ class BaseTable(metaclass=ABCMeta):
                     if k in cols})
         raise ValueError(f"Invalid column projection {cols}")
 
+
     def to_dict(self, orient='dict', columns=None):
         # pylint: disable=too-many-branches
         """
@@ -568,8 +569,6 @@ class BaseTable(metaclass=ABCMeta):
         updates: None or an IndexUpdate structure which describes the list
              of rows created, updated, and deleted.
         """
-        if not self._index:
-            return None
         if self._changes:
             self._flush_cache()
             updates = self._changes.compute_updates(start, now, mid,
@@ -578,16 +577,6 @@ class BaseTable(metaclass=ABCMeta):
                 updates = IndexUpdate(created=bitmap(self._index)) # pass an index copy ...
             return updates
         return None
-    """def compute_updates(self, start, now, mid=None, cleanup=True):
-        if self._changes:
-            self._flush_cache()
-            updates = self._changes.compute_updates(start, now, mid,
-                                                    cleanup=cleanup)
-            if updates is None:
-                updates = IndexUpdate(created=bitmap(self._index))
-            return updates
-        return None"""
-
 
     def __getitem__(self, key):
         # hack, use t[['a', 'b'], 1] to get a list instead of a TableView
