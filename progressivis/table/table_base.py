@@ -74,7 +74,7 @@ class _Loc(_BaseLoc):
         elif isinstance(index, Iterable):
             #index = bitmap.asbitmap(index)
             base = self._table.get_original_base()
-            btab = BaseTable(mask=raw_index, base=base)
+            btab = BaseTable(selection=raw_index, base=base)
             columns, columndict = self._table.make_projection(col_key, btab)
             btab._columns = columns
             btab._columndict = columndict
@@ -129,9 +129,9 @@ class BaseTable(metaclass=ABCMeta):
     # pylint: disable=too-many-public-methods, too-many-instance-attributes
     """Base class for Tables.
     """
-    def __init__(self, base=None, mask=slice(0, None), columns=None, columndict=None):
+    def __init__(self, base=None, selection=slice(0, None), columns=None, columndict=None):
         self._base = base if (base is None or base._base is None) else base._base
-        self._mask = mask
+        self._selection = selection
         self._columns = [] if columns is None else columns
         self._columndict = OrderedDict() if columndict is None else columndict
         #self._index = bitmap() if index is None else index
@@ -467,13 +467,13 @@ class BaseTable(metaclass=ABCMeta):
         return self.index_to_id(loc)
 
     def _comp_selection(self):
-        res = self._base._any_to_bitmap(self._mask)
+        res = self._base._any_to_bitmap(self._selection)
         prev = self._masked
         #import pdb;pdb.set_trace()
         while prev is not None:
             #if is_full_slice(prev._mask):
             #    continue
-            bm = self._base._any_to_bitmap(prev._mask)
+            bm = self._base._any_to_bitmap(prev._selection)
             res &= bm
             prev = prev._masked
         return res
@@ -627,13 +627,13 @@ class BaseTable(metaclass=ABCMeta):
         #if not (bm in self.index or isinstance(key, slice)):
         #    raise ValueError('Invalid locs')
         if isinstance(key, slice):
-            if not (bm.min() in self._index and bm.max() in self._mask):
+            if not (bm.min() in self._index and bm.max() in self._selection):
                 raise ValueError('Invalid locs') # when key is a slice we accept holes
         elif bm not in self.index: # when key is not a slice it must be exhaustive
             raise ValueError('Invalid locs')
         if isinstance(key, Iterable):
-            assert bm in self._mask
-        self._mask -= bm
+            assert bm in self._selection
+        self._selection -= bm
 
 
     def setitem_2d(self, rowkey, colkey, values):
@@ -1105,8 +1105,8 @@ class IndexTable(BaseTable):
              self.add_created(created)
 
 class TableSelectedView(BaseTable):
-    def __init__(self, base=None, mask=slice(0, None), columns=None, columndict=None):
-        super().__init__(base, mask, columns, columndict)
+    def __init__(self, base=None, selection=slice(0, None), columns=None, columndict=None):
+        super().__init__(base, selection, columns, columndict)
         columns, columndict = self._base.make_projection(columns, self)
         self._columns = columns
         self._columndict = columndict
@@ -1117,27 +1117,11 @@ class TableSelectedView(BaseTable):
             + '}')
 
     @property
-    def mask(self):
-        return bitmap(self._mask)
-
-    @mask.setter
-    def mask(self, bm):
-        assert isinstance(bm, bitmap)
-        self._mask = bm[:]
-
-    @property
-    def __old_selection(self):
-        res = self._any_to_bitmap(self._mask)
-        prev = self._masked
-        #import pdb;pdb.set_trace()
-        while prev is not None:
-            #if is_full_slice(prev._mask):
-            #    continue
-            bm = self._any_to_bitmap(prev._mask)
-            res &= bm
-            prev = prev._masked
-        return res
-
-    @property
     def selection(self):
-        return self._comp_selection()
+        return bitmap(self._selection)
+
+    @selection.setter
+    def selection(self, bm):
+        assert isinstance(bm, bitmap)
+        self._selection = bm[:]
+

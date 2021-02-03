@@ -146,5 +146,5 @@ class Bisect(TableModule):
                                        created=created,
                                        updated=updated,
                                        deleted=deleted)
-        self._table.mask = self._impl.result._values #&self._table.base.index
+        self._table.selection = self._impl.result._values #&self._table.base.index
         return self._return_run_step(self.next_state(input_slot), steps)

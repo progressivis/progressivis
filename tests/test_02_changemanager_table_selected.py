@@ -80,7 +80,7 @@ class TestTableSelectedChangeManager(ProgressiveTest):
         s._run_number += 1
         last = s._run_number
         table.append({'a': [ 5, 6, 7, 8], 'b': [0.5, 0.6, 0.7, 0.8] })
-        table_selected.mask = bitmap(range(1,8))
+        table_selected.selection = bitmap(range(1,8))
         cm.update(last, table_selected, mid=mid1)
         self.assertEqual(cm.last_update(), last)
         self.assertEqual(cm.created.next(),slice(3, 8))
@@ -90,14 +90,14 @@ class TestTableSelectedChangeManager(ProgressiveTest):
         s._run_number += 1
         last = s._run_number
         del table.loc[[1,2,3]]
-        table_selected.mask = bitmap([3,4]) # i.e 1,2,5,6,7 were deleted in selection
+        table_selected.selection = bitmap([3,4]) # i.e 1,2,5,6,7 were deleted in selection
+        import pdb;pdb.set_trace()        
         cm.update(last, table_selected, mid=mid1)
         self.assertEqual(cm.last_update(), last)
         self.assertEqual(cm.created.length(), 0)
         self.assertEqual(cm.updated.length(), 0)
-
         self.assertEqual(cm.perm_deleted.length(), 3) # 1, 2, 3
-        self.assertEqual(cm.masked.length(), 5) # 1, 2, 5, 6, 7
+        self.assertEqual(cm.selection.deleted.length(), 5) # 1, 2, 5, 6, 7
         self.assertEqual(cm.deleted.length(), 6) # 1, 2, 3, 5, 6, 7
 
         # s._run_number += 1

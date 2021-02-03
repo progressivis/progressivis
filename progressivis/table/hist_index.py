@@ -361,15 +361,14 @@ class HistogramIndex(TableModule):
             if self._min_table is None:
                 self._min_table = TableSelectedView(self._input_table,
                                                     bitmap([]))
-            self._min_table.mask = self.get_min_bin()
+            self._min_table.selection = self.get_min_bin()
             return self._min_table
         if name == 'max_out':
             if self.get_max_bin() is None:
                 return None
             if self._max_table is None:
-                #import pdb;pdb.set_trace()
                 self._max_table = TableSelectedView(self._input_table,bitmap([]))
-            self._max_table.mask = self.get_max_bin()
+            self._max_table.selection = self.get_max_bin()
             return self._max_table
         return super(HistogramIndex, self).get_data(name)
 
@@ -433,7 +432,7 @@ class HistogramIndex(TableModule):
         input_table = input_slot.data()
         # self._table = input_table
         self._impl.update_histogram(created, updated, deleted)
-        self._table.mask = self.selection
+        self._table.selection = self.selection
         return self._return_run_step(
             self.next_state(input_slot), steps_run=steps)
 

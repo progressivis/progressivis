@@ -25,7 +25,8 @@ class FilterMod(TableModule):
 
     def reset(self):
         if self._table is not None:
-             self._table.mask = bitmap([])
+             self._table.selection = bitmap([])
+
     def run_step(self, run_number, step_size, howlong):
         input_slot = self.get_input_slot('table')
         # input_slot.update(run_number)
@@ -41,7 +42,7 @@ class FilterMod(TableModule):
             self.reset()
         if input_slot.deleted.any():
             deleted = input_slot.deleted.next(step_size, as_slice=False)
-            self._table.mask -= deleted
+            self._table.selection -= deleted
             steps += indices_len(deleted)
         if input_slot.created.any():
             created = input_slot.created.next(step_size, as_slice=False)
@@ -49,7 +50,7 @@ class FilterMod(TableModule):
             steps += indices_len(created)
             eval_idx = input_table.eval(expr=self.params.expr, locs=np.array(indices),
                                         as_slice=False,result_object='index')
-            self._table.mask |=  bitmap(eval_idx)
+            self._table.selection |=  bitmap(eval_idx)
         if not steps:
             return self._return_run_step(self.state_blocked, steps_run=0)
         return self._return_run_step(self.next_state(input_slot), steps)

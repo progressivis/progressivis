@@ -126,7 +126,7 @@ class StirrerView(TableModule):
         if self._table is None:
             self._table = TableSelectedView(input_table, bitmap([]))
         before_ = bitmap(self._table.index)
-        self._table.mask |= created
+        self._table.selection |= created
         print(len(self._table.index))
         delete = []
         if self._delete_rows and self.test_delete_threshold(before_):
@@ -139,6 +139,6 @@ class StirrerView(TableModule):
                 delete = before_
             else:
                 delete = self._delete_rows
-            self._table.mask -= bitmap(delete)
+            self._table.selection -= bitmap(delete)
         return self._return_run_step(self.next_state(input_slot),
                                      steps_run=steps)

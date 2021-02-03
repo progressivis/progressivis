@@ -7,9 +7,57 @@ structures they manage, typically a Table, a Column, or a bitmap.
 import logging
 from .index_update import IndexUpdate
 from .bitmap import bitmap
+import weakref as wr
 
 logger = logging.getLogger(__name__)
 
+class _accessor:
+    def __init__(self, parent):
+        self._parent_wr = wr.ref(parent)
+    @property
+    def _parent(self):
+        return self._parent_wr()
+    @property
+    def created(self):
+        "Return information of items created"
+        return self._parent._created
+
+    @property
+    def updated(self):
+        "Return information of items updated"
+        return self._parent._updated
+
+    @property
+    def deleted(self):
+        "Return information of items deleted"
+        return self._parent._deleted
+    
+class _base_accessor(_accessor):
+    @property
+    def created(self):
+        "Return information of items created"
+        return self._parent._created
+
+    @property
+    def updated(self):
+        "Return information of items updated"
+        return self._parent._updated
+
+    @property
+    def deleted(self):
+        "Return information of items deleted"
+        return self._parent._deleted
+
+class _selection_accessor(_accessor):
+    @property
+    def created(self):
+        "Return information of items created"
+        return self._parent._exposed
+
+    @property
+    def deleted(self):
+        "Return information of items deleted"
+        return self._parent._masked
 
 class BaseChangeManager(object):
     "Base class for change managers"
@@ -23,14 +71,16 @@ class BaseChangeManager(object):
                  buffer_masked=False):
         _ = slot
         self._row_changes = IndexUpdate()
-        self._mask_changes = IndexUpdate()
+        self._selection_changes = IndexUpdate()
+        self._base = None
+        self._selection = None
         # The bitmaps are shared between _row_changes and the buffers.
         # To remain shared, they should never be assigned to, only updated.
         self._created = _buffer(buffer_created, self._row_changes.created)
         self._updated = _buffer(buffer_updated, self._row_changes.updated)
         self._deleted = _buffer(buffer_deleted, self._row_changes.deleted)
-        self._exposed = _buffer(buffer_exposed, self._mask_changes.created)
-        self._masked = _buffer(buffer_masked, self._mask_changes.deleted)
+        self._exposed = _buffer(buffer_exposed, self._selection_changes.created)
+        self._masked = _buffer(buffer_masked, self._selection_changes.deleted)
         self._last_update = 0
 
     @property
@@ -53,6 +103,18 @@ class BaseChangeManager(object):
         "Return information of items deleted"
         return self._deleted
 
+    @property
+    def base(self):
+        if self._base is None:
+            self._base = _base_accessor(self)
+        return self._base
+    
+    @property
+    def selection(self):
+        if self._selection is None:
+            self._selection = _selection_accessor(self)
+        return self._selection
+    
     @property
     def perm_deleted(self):
         "Return information of items deleted"
@@ -82,7 +144,7 @@ class BaseChangeManager(object):
     @property
     def mask_changes(self):
         "Return the IndexUpdate keeping track of the mask changes"
-        return self._mask_changes
+        return self._selection_changes
 
     def has_buffered(self):
         """
@@ -108,7 +170,7 @@ class BaseChangeManager(object):
         created/updated/deleted/exposed/masked information
         """
         self._row_changes.clear()
-        self._mask_changes.clear()
+        self._selection_changes.clear()
 
 
 def _next(bm, length, as_slice):

@@ -8,7 +8,7 @@ from scipy.spatial import distance
 from progressivis import ProgressiveError, SlotDescriptor
 from progressivis.core.utils import indices_len, fix_loc
 from ..table.module import TableModule
-from ..table import Table
+from ..table import Table, TableSelectedView
 from ..table.dshape import dshape_from_dtype, dshape_from_columns
 from ..io import DynVar
 from ..utils.psdict import PsDict
@@ -272,9 +272,10 @@ class MBKMeansFilter(TableModule):
             if steps == 0:
                 return self._return_run_step(self.state_blocked, steps_run=0)
             if self._table is None:
-                self._table = ctx.table.data().loc[ctx.labels.data().index, :]
+                self._table = TableSelectedView(ctx.table.data(),
+                                                ctx.labels.data().selection)
             else:
-                self._table.index = ctx.labels.data().index
+                self._table.selection = ctx.labels.data().selection
             return self._return_run_step(self.next_state(ctx.table),
                                          steps_run=steps)
     def create_dependent_modules(self, mbkmeans, data_module, data_slot):

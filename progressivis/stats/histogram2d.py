@@ -162,7 +162,9 @@ class Histogram2D(TableModule):
                 dfslot.update(run_number)
             elif dfslot.masked.any() and self._histo is not None: # i.e. TableSelectedView
                 input_df = dfslot.data().base # the original table
-                raw_indices = dfslot.deleted.next(step_size) # we assume that deletions are only local to the view
+            elif dfslot.masked.any() and self._histo is not None: # i.e. TableSelectedView
+                input_df = dfslot.data().base # the original table
+                raw_indices = dfslot.masked.next(step_size) # we assume that deletions are only local to the view
                 # and the related records still exist in the original table ...
                 # TODO : test this hypothesis and reset if false
                 indices = fix_loc(raw_indices)

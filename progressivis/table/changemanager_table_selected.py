@@ -1,11 +1,12 @@
 "Change manager for SelectedTable"
 
 from .table_base import TableSelectedView
-from ..core.changemanager_base import BaseChangeManager
+from ..core.changemanager_base import BaseChangeManager,  _base_accessor
 from ..core.changemanager_bitmap import BitmapChangeManager
 from ..core.slot import Slot
 from ..core.bitmap import bitmap
 import copy
+
 
 class FakeSlot(object):
     # pylint: disable=too-few-public-methods
@@ -16,23 +17,23 @@ class FakeSlot(object):
     def data(self):
         return self._data
 
-class _mix_deleted:
-    def __init__(self, deleted, masked):
-        self._deleted = deleted
-        self._masked = masked
+class _double_buffer:
+    def __init__(self, first, second):
+        self._first = first
+        self._second = second
         self.buffer = True
 
     def clear(self):
         "Clear the buffer"
-        self._deleted.clear()
-        self._masked.clear()
+        self._first.clear()
+        self._second.clear()
 
     def make_result(self, res, as_slice):
         return res.to_slice_maybe() if as_slice else res
 
     def __len__(self):
         "Return the buffer length"
-        return len(self._deleted.changes|self._masked.changes)
+        return len(self._first.changes|self._second.changes)
 
     def length(self):
         "Return the buffer length"
@@ -40,20 +41,20 @@ class _mix_deleted:
 
     def any(self): # TODO: improve
         "Return True if there is anything in the buffer"
-        return self._deleted.any() or self._masked.any()
+        return self._first.any() or self._second.any()
 
     def next(self, length=None, as_slice=True):
         if length is None:
-            length = len(self._deleted.changes|self._masked.changes)
+            length = len(self._first.changes|self._second.changes)
         "Return the next items in the buffer"
         acc = bitmap()
-        while length and self._deleted.any():
-            new_ids = (self._deleted.next(length, as_slice=False)
-                    - self._masked.changes) # prevents to return masked ids twice
+        while length and self._first.any():
+            new_ids = (self._first.next(length, as_slice=False)
+                    - self._second.changes) # prevents to return second ids twice
             length -= len(new_ids)
             acc |= new_ids
-        if length and self._masked.any():
-            acc |= self._masked.next(length, as_slice=False)
+        if length and self._second.any():
+            acc |= self._second.next(length, as_slice=False)
         return self.make_result(acc, as_slice)
 
 class TableSelectedChangeManager(BaseChangeManager):
@@ -69,7 +70,7 @@ class TableSelectedChangeManager(BaseChangeManager):
                  buffer_masked=False):
         data = slot.data()
         assert isinstance(data, TableSelectedView)
-        bmslot = FakeSlot(data.selection) # not required formally
+        bmslot = FakeSlot(data.index) # not required formally
         tbslot = FakeSlot(data._base)
         super().__init__(
             slot,
@@ -94,7 +95,7 @@ class TableSelectedChangeManager(BaseChangeManager):
             buffer_exposed=False,
             buffer_masked=False)
         #self._row_changes = self._table_cm._row_changes
-        self._mask_changes = self._mask_cm._row_changes
+        self._selection_changes = self._mask_cm._row_changes
 
     def reset(self, name=None):
         super().reset(name)
@@ -106,7 +107,7 @@ class TableSelectedChangeManager(BaseChangeManager):
         if data is None or (run_number != 0 and run_number <= self._last_update):
             return
         table = data.base
-        selection = data.selection
+        selection = data.index
         #super().update(run_number, selection, mid)
         self._mask_cm.update(run_number, selection, mid)
         self._table_cm.update(run_number, table, mid)
@@ -114,8 +115,8 @@ class TableSelectedChangeManager(BaseChangeManager):
         # Mask table changes with current selection.
         table_changes.created &= selection
         table_changes.updated &= selection
-        table_changes.deleted &= (selection|self._mask_changes.deleted)
-
+        table_changes.deleted &= (selection|self._selection_changes.deleted)
+        
         self._row_changes.combine(table_changes,
                                   update_created=False, #self.created.buffer,
                                   update_updated=self.updated.buffer,
@@ -128,7 +129,9 @@ class TableSelectedChangeManager(BaseChangeManager):
     def created(self):
         "Return information of items created"
         #return self._table_cm._created
-        return self._mask_cm._created # i.e. exposed
+        #return self._mask_cm._created # i.e. exposed
+        return _double_buffer(first=self._created,
+                              second=self._mask_cm._created)
 
     @property
     def updated(self):
@@ -138,8 +141,16 @@ class TableSelectedChangeManager(BaseChangeManager):
     @property
     def deleted(self):
         "Return information of items deleted"
-        return _mix_deleted(deleted=self._deleted,
-                            masked=self._mask_cm._deleted)
+        return _double_buffer(first=self._deleted,
+                            second=self._mask_cm._deleted)
+
+    @property
+    def selection(self):
+        if self._selection is None:
+            self._selection = _base_accessor(self._mask_cm)
+        return self._selection
+    
+
 
     @property
     def masked(self):
