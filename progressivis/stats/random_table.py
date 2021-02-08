@@ -38,10 +38,10 @@ class RandomTable(TableModule):
             self.throttle = False
         dshape = ", ".join([f"{col}: {dtype}" for col in self.columns])
         dshape = "{" + dshape + "}"
-        self._table = Table(self.generate_table_name('table'),
+        self.result = Table(self.generate_table_name('table'),
                             dshape=dshape,
                             create=True)
-        self.columns = self._table.columns
+        self.columns = self.result.columns
 
     def is_source(self):
         return True
@@ -53,8 +53,8 @@ class RandomTable(TableModule):
         logger.info('generating %d lines', step_size)
         if self.throttle:
             step_size = np.min([self.throttle, step_size])
-        if self.rows >= 0 and (len(self._table)+step_size) > self.rows:
-            step_size = self.rows - len(self._table)
+        if self.rows >= 0 and (len(self.result)+step_size) > self.rows:
+            step_size = self.rows - len(self.result)
             logger.info('truncating to %d lines', step_size)
             if step_size <= 0:
                 raise ProgressiveStopIteration
@@ -63,8 +63,8 @@ class RandomTable(TableModule):
         for column in self.columns:
             s = self.random(step_size)
             values[column] = s
-        self._table.append(values)
-        if len(self._table) == self.rows:
+        self.result.append(values)
+        if len(self.result) == self.rows:
             next_state = self.state_zombie
         elif self.throttle:
             next_state = self.state_blocked

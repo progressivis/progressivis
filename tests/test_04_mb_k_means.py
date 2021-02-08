@@ -44,7 +44,7 @@ class TestMBKmeans(ProgressiveTest):
             e.input.df = km.output.labels
         aio.run(s.start())
         # s.join()
-        self.assertEqual(len(csv.table()), len(km.labels()))
+        self.assertEqual(len(csv.result), len(km.labels()))
         # mbk = MiniBatchKMeans(n_clusters=n_clusters, random_state=42, verbose=True)
         # X = csv.df()[km.columns]
         # mbk.partial_fit(X)

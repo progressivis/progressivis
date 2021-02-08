@@ -114,8 +114,8 @@ class Bisect(TableModule):
         input_table = input_slot.data()
         if input_table is None:
             return self._return_run_step(self.state_blocked, steps_run=0)
-        if self._table is None:
-            self._table = TableSelectedView(input_table, bitmap([]))
+        if self.result is None:
+            self.result = TableSelectedView(input_table, bitmap([]))
         if steps == 0:
             return self._return_run_step(self.state_blocked, steps_run=0)
         param = self.params
@@ -146,5 +146,5 @@ class Bisect(TableModule):
                                        created=created,
                                        updated=updated,
                                        deleted=deleted)
-        self._table.selection = self._impl.result._values #&self._table.base.index
+        self.result.selection = self._impl.result._values #&self._table.base.index
         return self._return_run_step(self.next_state(input_slot), steps)

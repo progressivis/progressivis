@@ -34,7 +34,7 @@ class Stats(TableModule):
         self.schema = ('{' +
                        self._min_column+': float64, ' +
                        self._max_column+': float64}')
-        self._table = Table(get_random_name('stats_'), dshape=self.schema)
+        self.result = Table(get_random_name('stats_'), dshape=self.schema)
 
     def is_ready(self):
         if self.get_input_slot('table').created.any():
@@ -49,7 +49,7 @@ class Stats(TableModule):
             dfslot.reset()
             dfslot.update(run_number)
         else:
-            df = self._table
+            df = self.result
             prev = df.last_id
             if prev > 0:
                 prev_min = df.at[prev, self._min_column]

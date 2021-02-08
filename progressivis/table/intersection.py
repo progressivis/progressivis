@@ -71,17 +71,17 @@ class Intersection(NAry):
 
         to_create_maybe = bitmap.union(*to_create)
 
-        if not self._table:
-            self._table = TableSelectedView(ph_table, bitmap([]))
+        if not self.result:
+            self.result = TableSelectedView(ph_table, bitmap([]))
         if reset_:
-            self._table.selection = bitmap([])
+            self.result.selection = bitmap([])
         # self._table.selection -= to_delete
-        self._table.selection = self._table.index|to_create_4sure
+        self.result.selection = self.result.index|to_create_4sure
         to_create_maybe -= to_create_4sure
         eff_create = to_create_maybe
         for t in tables:
             eff_create &= t.index
-        self._table.selection = self._table.index|eff_create
+        self.result.selection = self.result.index|eff_create
         # self.get_input_slot(self.inputs[0]))
         return self._return_run_step(self.state_blocked, steps)
 
@@ -113,9 +113,9 @@ class Intersection(NAry):
                 steps += 1
         if steps == 0:
             return self._return_run_step(self.state_blocked, 0)
-        if not self._table:
-            self._table = TableSelectedView(ph_table, bitmap([]))
-        self._table.selection = bitmap.intersection(*[t.index
+        if not self.result:
+            self.result = TableSelectedView(ph_table, bitmap([]))
+        self.result.selection = bitmap.intersection(*[t.index
                                                       for t in tables])
         # return self._return_run_step(self.next_state(self.get_input_slot(self.inputs[0])), steps)
         return self._return_run_step(self.state_blocked, steps)

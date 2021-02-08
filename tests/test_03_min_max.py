@@ -16,8 +16,8 @@ class TestMinMax(ProgressiveTest):
         pr.input.df = min_.output.table
         aio.run(s.start())
         #s.join()
-        res1 = random.table().min()
-        res2 = min_.table()
+        res1 = random.result.min()
+        res2 = min_.result
         self.compare(res1, res2)
 
     def compare(self, res1, res2):
@@ -36,8 +36,8 @@ class TestMinMax(ProgressiveTest):
         pr.input.df = max_.output.table
         aio.run(s.start())
         #s.join()
-        res1 = random.table().max()
-        res2 = max_.table()
+        res1 = random.result.max()
+        res2 = max_.result
         self.compare(res1, res2)
 
 

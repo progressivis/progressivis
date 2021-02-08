@@ -17,7 +17,7 @@ class TableExpr(Expr):
 
     @property
     def table(self):
-        return self._module.table()
+        return self._module.result
 
     def select(self, columns):
         return TableExpr(Constant, self.table.loc[:, columns])

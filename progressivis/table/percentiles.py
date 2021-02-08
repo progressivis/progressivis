@@ -100,10 +100,10 @@ class Percentiles(TableModule):
         computed = self.compute_percentiles(
             percentiles_slot.data(),
             input_slot.data())
-        if not self._table:
-            self._table = Table(name=None,
+        if not self.result:
+            self.result = Table(name=None,
                                 dshape=percentiles_slot.data().dshape)
-            self._table.add(computed)
+            self.result.add(computed)
         else:
-            self._table.loc[0, :] = list(computed.values())
+            self.result.loc[0, :] = list(computed.values())
         return self._return_run_step(self.next_state(input_slot), steps)

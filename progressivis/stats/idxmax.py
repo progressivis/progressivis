@@ -41,8 +41,8 @@ class IdxMax(TableModule):
         return super(IdxMax, self).is_ready()
 
     def reset(self):
-        if self._table is not None:
-            self._table.resize(0)
+        if self.result is not None:
+            self.result.resize(0)
         if self._max is not None:
             self._max.resize(0)
 
@@ -58,8 +58,8 @@ class IdxMax(TableModule):
                 return self._return_run_step(self.state_blocked, steps_run=0)
             input_df = dfslot.data()
             op = self.filter_columns(input_df, fix_loc(indices)).idxmax()
-            if self._table is None:
-                self._table = Table(self.generate_table_name('table'),
+            if self.result is None:
+                self.result = Table(self.generate_table_name('table'),
                                     dshape=input_df.dshape,
                                     create=True)
 
@@ -72,10 +72,10 @@ class IdxMax(TableModule):
                                       dshape=input_df.dshape,
                     create=True)
                 self._max.append(max_, indices=[run_number])
-                self._table.append(op, indices=[run_number])
+                self.result.append(op, indices=[run_number])
             else:
                 prev_max = self._max.last()
-                prev_idx = self._table.last()
+                prev_idx = self.result.last()
                 max_ = OrderedDict(prev_max.items())
                 for col, ix in op.items():
                     val = input_df.at[ix, col]
@@ -84,12 +84,12 @@ class IdxMax(TableModule):
                     elif np.isnan(max_[col]) or val > max_[col]:
                         op[col] = prev_idx[col]
                         max_[col] = val
-                self._table.append(op, indices=[run_number])
+                self.result.append(op, indices=[run_number])
                 self._max.append(max_, indices=[run_number])
-                if len(self._table) > self.params.history:
-                    data = self._table.loc[self._table.index[-self.params.history:]].to_dict(orient='list')
-                    self._table.resize(0)
-                    self._table.append(data)
+                if len(self.result) > self.params.history:
+                    data = self.result.loc[self.result.index[-self.params.history:]].to_dict(orient='list')
+                    self.result.resize(0)
+                    self.result.append(data)
                     data = self._max.loc[self._max.index[-self.params.history:]].to_dict(orient='list')
                     self._max.resize(0)
                     self._max.append(data)

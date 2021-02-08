@@ -729,7 +729,7 @@ class Dialog(object):
         return self
 
     def set_output_table(self, res):
-        self._module._table = res
+        self._module.result = res
         return self
 
     @property
@@ -738,7 +738,7 @@ class Dialog(object):
 
     @property
     def output_table(self):
-        return self._module._table
+        return self._module.result
 
 
 def spy(*args, **kwargs):

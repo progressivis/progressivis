@@ -23,9 +23,9 @@ class TestLastRow(ProgressiveTest):
         prlen = Every(proc=self.terse, constant_time=True, scheduler=s)
         prlen.input.df = lr1.output.table
         aio.run(s.start())
-        df = csv.table()
+        df = csv.result
         last = df.last()
-        res = lr1.table()
+        res = lr1.result
         self.assertEqual(res.at[0, '_1'], last['_1'])
 
     def test_last_row_simple(self):
@@ -45,7 +45,7 @@ class TestLastRow(ProgressiveTest):
         # res = join.trace_stats(max_runs=1)
         # pd.set_option('display.expand_frame_repr', False)
         # print(res)
-        df = join.table()
+        df = join.result
         last = df.last()
         self.assertTrue(last['xmin'] == 1 and last['xmax'] == 2 and
                         last['ymin'] == 3 and last['ymax'] == 4)

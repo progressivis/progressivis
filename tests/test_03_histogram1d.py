@@ -48,7 +48,7 @@ class TestHistogram1D(ProgressiveTest):
         pr.input.df = csv.output.table
         aio.run(s.start())
         s = histogram1d.trace_stats()
-        last = histogram1d._table.last().to_dict()
+        last = histogram1d.result.last().to_dict()
         h1 = last['array']
         bounds = (last['min'], last['max'])
         df = pd.read_csv(get_dataset('bigfile'), header=None, usecols=[2])
@@ -76,10 +76,10 @@ class TestHistogram1D(ProgressiveTest):
         pr.input.df = stirrer.output.table
         aio.run(s.start())
         s = histogram1d.trace_stats()
-        last = histogram1d._table.last().to_dict()
+        last = histogram1d.result.last().to_dict()
         h1 = last['array']
         bounds = (last['min'], last['max'])
-        v = stirrer._table.loc[:, ['_2']].to_array().reshape(-1)
+        v = stirrer.result.loc[:, ['_2']].to_array().reshape(-1)
         h2, _ = np.histogram(v, bins=histogram1d.params.bins, density=False, range=bounds)
         self.assertEqual(np.sum(h1), np.sum(h2))
         self.assertListEqual(h1.tolist(), h2.tolist())

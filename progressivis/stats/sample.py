@@ -35,7 +35,7 @@ class Sample(TableModule):
                                 create=True)
         self._size = 0  # holds the size consumed from the input table so far
         self._bitmap = None
-        self._table = None
+        self.result = None
 
     def reset(self):
         self._tmp_table.resize(0)
@@ -46,8 +46,8 @@ class Sample(TableModule):
     def get_data(self, name):
         if name == 'select':
             return self.get_bitmap()
-        if self._table is not None:
-            self._table.selection = self.get_bitmap()
+        if self.result is not None:
+            self.result.selection = self.get_bitmap()
         return super(Sample, self).get_data(name)
 
     def get_bitmap(self):
@@ -61,8 +61,8 @@ class Sample(TableModule):
     @run_if_any
     def run_step(self,run_number,step_size,howlong):
         with self.context as ctx:
-            if self._table is None:
-                self._table = TableSelectedView(ctx.table.data(), bitmap([]))
+            if self.result is None:
+                self.result = TableSelectedView(ctx.table.data(), bitmap([]))
             indices = ctx.table.created.next(step_size, as_slice=False)
             steps = indices_len(indices)
             k = int(self.params.samples)

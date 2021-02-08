@@ -31,10 +31,10 @@ class Dict2Table(TableModule):
         dict_slot.created.next()
         dict_slot.updated.next()
         dict_slot.deleted.next()
-        if self._table is None:
-            self._table = Table(name=None, dshape=dict_.dshape)
-        if len(self._table) == 0:  # or history:
-            self._table.append(dict_.as_row)
+        if self.result is None:
+            self.result = Table(name=None, dshape=dict_.dshape)
+        if len(self.result) == 0:  # or history:
+            self.result.append(dict_.as_row)
         else:
-            self._table.loc[0] = dict_.array
+            self.result.loc[0] = dict_.array
         return self._return_run_step(self.next_state(dict_slot), steps_run=1)

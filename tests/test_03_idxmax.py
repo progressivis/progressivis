@@ -20,7 +20,7 @@ class TestIdxMax(ProgressiveTest):
         pr=Print(proc=self.terse, scheduler=s)
         pr.input.df = idxmax.output.table
         aio.run(s.start())
-        max1 = max_.table()
+        max1 = max_.result
         #print('max1', max1)
         max2 = idxmax.max().last().to_dict()
         #print('max2', max2)
@@ -40,7 +40,7 @@ class TestIdxMax(ProgressiveTest):
         pr.input.df = idxmax.output.table
         aio.run(s.start())
         #import pdb;pdb.set_trace()
-        max1 = max_.table()
+        max1 = max_.result
         #print('max1', max1)
         max2 = idxmax.max().last().to_dict()
         #print('max2', max2)
@@ -56,7 +56,7 @@ class TestIdxMax(ProgressiveTest):
         pr=Print(proc=self.terse, scheduler=s)
         pr.input.df = idxmin.output.table
         aio.run(s.start())
-        min1 = min_.table()
+        min1 = min_.result
         #print('min1', min1)
         min2 = idxmin.min().last().to_dict()
         #print('min2', min2)
@@ -75,7 +75,7 @@ class TestIdxMax(ProgressiveTest):
         pr=Print(proc=self.terse, scheduler=s)
         pr.input.df = idxmin.output.table
         aio.run(s.start())
-        min1 = min_.table()
+        min1 = min_.result
         #print('min1', min1)
         min2 = idxmin.min().last().to_dict()
         #print('min2', min2)

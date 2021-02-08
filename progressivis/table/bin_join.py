@@ -36,8 +36,8 @@ class BinJoin(TableModule):
         if first_slot.deleted.any() or second_slot.deleted.any():
             first_slot.reset()
             second_slot.reset()
-            if self._table is not None:
-                self._table.resize(0)
+            if self.result is not None:
+                self.result.resize(0)
                 join_reset(self._dialog)
             first_slot.update(run_number)
             second_slot.update(run_number)

@@ -21,17 +21,17 @@ class LastRow(TableModule):
 
         if df is not None:
             last = df.last()
-            if self._table is None:
-                self._table = Table(self.generate_table_name('LastRow'),
+            if self.result is None:
+                self.result = Table(self.generate_table_name('LastRow'),
                                     dshape=df.dshape)
                 if self._reset_index:
-                    self._table.add(last)
+                    self.result.add(last)
                 else:
-                    self._table.add(last, last.index)
+                    self.result.add(last, last.index)
             elif self._reset_index:
-                self._table.loc[0] = last
+                self.result.loc[0] = last
             else:
-                del self._table.loc[0]
-                self._table.add(last, last.index)
+                del self.result.loc[0]
+                self.result.add(last, last.index)
 
         return self._return_run_step(self.state_blocked, steps_run=1)

@@ -15,8 +15,8 @@ class Testvar(ProgressiveTest):
         pr=Print(proc=self.terse, scheduler=s)
         pr.input.df = var.output.table
         aio.run(s.start())
-        res1 = np.array([float(e) for e in random.table().var(ddof=1).values()])
-        res2 = np.array([float(e) for e in var.table().last().to_dict(ordered=True).values()])
+        res1 = np.array([float(e) for e in random.result.var(ddof=1).values()])
+        res2 = np.array([float(e) for e in var.result.last().to_dict(ordered=True).values()])
         print('res1:', res1)
         print('res2:', res2)
         self.assertTrue(np.allclose(res1, res2))

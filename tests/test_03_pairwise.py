@@ -36,7 +36,7 @@ class TestPairwiseDistances(ProgressiveTest):
         global times
         times = 0
         s.start()
-        table = vec.table()
+        table = vec.result
         #print(table)
 #        computed = dis.dist()
 #        self.assertEquals(computed.shape[0], len(df))
@@ -54,7 +54,7 @@ class TestPairwiseDistances(ProgressiveTest):
         global times
         times = 0
         aio.run(s.start(ten_times))
-        table = vec.table()
+        table = vec.result
         #print(repr(table))
 #        computed = dis.dist()
         #self.assertEquals(computed.shape[0], len(df))

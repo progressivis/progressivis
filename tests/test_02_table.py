@@ -352,9 +352,9 @@ class TestTable(ProgressiveTest):
                          index_col=False,
                          header=None,
                          scheduler=self.scheduler)
-        self.assertTrue(module.table() is None)
+        self.assertTrue(module.result is None)
         aio.run(self.scheduler.start(persist=True))
-        t = module.table()
+        t = module.result
         self.assertFalse(t is None)
         self.assertEqual(len(t), 30000)
         df = pd.read_csv(filepath_or_buffer=get_dataset('smallfile'),

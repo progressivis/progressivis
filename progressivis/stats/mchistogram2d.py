@@ -41,7 +41,7 @@ class MCHistogram2D(NAry):
         self._bounds = None
         self._with_output = with_output
         self._heatmap_cache = None
-        self._table = Table(self.generate_table_name('MCHistogram2D'),
+        self.result = Table(self.generate_table_name('MCHistogram2D'),
                             dshape=MCHistogram2D.schema,
                             chunks={'array': (1, 64, 64)},
                             create=True)
@@ -52,8 +52,8 @@ class MCHistogram2D(NAry):
         self._yedges = None
         self.total_read = 0
         self.get_input_slot('data').reset()
-        if self._table:
-            self._table.resize(1)
+        if self.result:
+            self.result.resize(1)
 
     def predict_step_size(self, duration):
         return Module. predict_step_size(self, duration)
@@ -236,7 +236,7 @@ class MCHistogram2D(NAry):
                   'ymax': ymax,
                   'time': run_number}
         if self._with_output:
-            table = self._table
+            table = self.result
             table['array'].set_shape([p.ybins, p.xbins])
             l = len(table)
             last = table.last()

@@ -36,7 +36,7 @@ class TestJoin(ProgressiveTest):
         res = join.trace_stats(max_runs=1)
         print(res)
 
-    def test_join_simple(self):
+    def te_st_join_simple(self):
         s=self.scheduler()
         cst1=Constant(Table(name='test_join_simple_cst1',
                 data=pd.DataFrame({'xmin': [1], 'xmax': [2]}), create=True), scheduler=s)
@@ -50,7 +50,7 @@ class TestJoin(ProgressiveTest):
         aio.run(s.start())
         res = join.trace_stats(max_runs=1)
         print(res)
-        df = join.table()
+        df = join.result
         last = df.loc[df.index[-1]]
         self.assertTrue(last['xmin']==1 and last['xmax']==2 and \
                         last['ymin']==3 and last['ymax']==4)

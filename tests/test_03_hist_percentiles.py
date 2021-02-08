@@ -38,8 +38,8 @@ class TestPercentiles(ProgressiveTest):
             prt = Print(proc=self.terse, scheduler=s)
             prt.input.df = percentiles.output.table
         aio.run(s.start())
-        pdict = percentiles.table().last().to_dict()
-        v = random.table()['_1'].values
+        pdict = percentiles.result.last().to_dict()
+        v = random.result['_1'].values
         p25 = np.percentile(v, 25.0)
         p50 = np.percentile(v, 50.0)
         p75 = np.percentile(v, 75.0)
@@ -72,10 +72,10 @@ class TestPercentiles(ProgressiveTest):
             prt = Print(proc=self.terse, scheduler=s)
             prt.input.df = percentiles.output.table
         aio.run(s.start())
-        pdict = percentiles.table().last().to_dict()
+        pdict = percentiles.result.last().to_dict()
         #v = random.table()['_1'].values
         #import pdb;pdb.set_trace()
-        v = stirrer.table().to_array(columns=['_1']).reshape(-1)
+        v = stirrer.result.to_array(columns=['_1']).reshape(-1)
         p25 = np.percentile(v, 25.0)
         p50 = np.percentile(v, 50.0)
         p75 = np.percentile(v, 75.0)
@@ -149,8 +149,8 @@ class TestPercentiles(ProgressiveTest):
             prt = Print(proc=self.terse, scheduler=s)
             prt.input.df = percentiles.output.table
         aio.run(s.start())
-        pdict = percentiles.table().last().to_dict()
-        v = range_qry.table()['_1'].values
+        pdict = percentiles.result.last().to_dict()
+        v = range_qry.result['_1'].values
         p25 = np.percentile(v, 25.0)
         p50 = np.percentile(v, 50.0)
         p75 = np.percentile(v, 75.0)
@@ -191,8 +191,8 @@ class TestPercentiles(ProgressiveTest):
             prt = Print(proc=self.terse, scheduler=s)
             prt.input.df = percentiles.output.table
         aio.run(s.start())
-        pdict = percentiles.table().last().to_dict()
-        v = range_qry.table()['_1'].values
+        pdict = percentiles.result.last().to_dict()
+        v = range_qry.result['_1'].values
         p25 = np.percentile(v, 25.0)
         p50 = np.percentile(v, 50.0)
         p75 = np.percentile(v, 75.0)

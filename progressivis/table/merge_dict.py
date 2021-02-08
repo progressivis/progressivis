@@ -38,9 +38,9 @@ class MergeDict(TableModule):
         second_slot.updated.next()
         first_slot.deleted.next()
         second_slot.deleted.next()
-        if self._table is None:
-            self._table = PsDict(**first_dict, **second_dict)
+        if self.result is None:
+            self.result = PsDict(**first_dict, **second_dict)
         else:
-            self._table.update(first_dict)
-            self._table.update(second_dict)
+            self.result.update(first_dict)
+            self.result.update(second_dict)
         return self._return_run_step(self.next_state(first_slot), steps_run=1)

@@ -36,7 +36,7 @@ class TestRangeQuery(ProgressiveTest):
         idx = range_qry.input_module\
                        .output['table']\
                        .data().eval('(_1>0.3)&(_1<0.8)', result_object='index')
-        self.assertEqual(range_qry.table().index, bitmap(idx))
+        self.assertEqual(range_qry.result.index, bitmap(idx))
 
     def test_hist_index_min_max(self):
         "Test min_out and max_out on HistogramIndex"
@@ -63,11 +63,11 @@ class TestRangeQuery(ProgressiveTest):
             pr3=Print(proc=self.terse, scheduler=s)
             pr3.input.df = max_.output.table
         aio.run(s.start())
-        res1 = random.table().min()['_1']
-        res2 = min_.table()['_1']
+        res1 = random.result.min()['_1']
+        res2 = min_.result['_1']
         self.assertAlmostEqual(res1, res2)
-        res1 = random.table().max()['_1']
-        res2 = max_.table()['_1']
+        res1 = random.result.max()['_1']
+        res2 = max_.result['_1']
         self.assertAlmostEqual(res1, res2)
 
     def _query_min_max_impl(self, random, t_min, t_max, s):
@@ -110,7 +110,7 @@ class TestRangeQuery(ProgressiveTest):
         aio.run(s.start())
         min_data = range_qry.output.min.data()
         max_data = range_qry.output.max.data()
-        min_rand = random.table().min()['_1']
+        min_rand = random.result.min()['_1']
         self.assertAlmostEqual(min_data['_1'], min_rand, delta=0.0001)
         self.assertAlmostEqual(max_data['_1'], 1.0, delta=0.0001)
 
@@ -125,7 +125,7 @@ class TestRangeQuery(ProgressiveTest):
         aio.run(s.start())
         min_data = range_qry.output.min.data()
         max_data = range_qry.output.max.data()
-        max_rand = random.table().max()['_1']
+        max_rand = random.result.max()['_1']
         self.assertAlmostEqual(min_data['_1'], 0.3)
         self.assertAlmostEqual(max_data['_1'], max_rand)
 

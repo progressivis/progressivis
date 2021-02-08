@@ -33,18 +33,29 @@ class TableModule(Module):
                 break
             else:
                 assert columns is None
-        self._table = None
+        #self._table = None
+        self.__result = None
+
     def get_first_input_slot(self):
         for k in self._input_slots.keys():
             return k
 
-    def table(self):
-        "Return the table"
-        return self._table
+    #def table(self):
+    #    "Return the table"
+    #    return self._table
+    @property
+    def result(self):
+        return self.__result
+
+    @result.setter
+    def result(self, val):
+        if self.__result is not None:
+            raise KeyError("result cannot be assigned more than once")
+        self.__result = val
 
     def get_data(self, name):
-        if name == "table":
-            return self.table()
+        if name in ('result', 'table'):
+            return self.result
         return super(TableModule, self).get_data(name)
 
     def get_columns(self, df, slot=None):

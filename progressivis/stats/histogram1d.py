@@ -31,7 +31,7 @@ class Histogram1D(TableModule):
         self._edges = None
         self._bounds = None
         self._h_cnt = 0
-        self._table = Table(self.generate_table_name('Histogram1D'),
+        self.result = Table(self.generate_table_name('Histogram1D'),
                             dshape=Histogram1D.schema,
                             chunks={'array': (16384, 128)},
                             create=True)
@@ -41,8 +41,8 @@ class Histogram1D(TableModule):
         self._bounds = None
         self.total_read = 0
         self._h_cnt = 0
-        if self._table:
-            self._table.resize(0)
+        if self.result:
+            self.result.resize(0)
 
     def is_ready(self):
         if self._bounds and self.get_input_slot('table').created.any():
@@ -110,8 +110,8 @@ class Histogram1D(TableModule):
             elif histo is not None:
                 self._histo += histo
             values = {'array': [self._histo], 'min': [curr_min], 'max': [curr_max], 'time': [run_number]}
-            self._table['array'].set_shape((self.params.bins,))
-            self._table.append(values)
+            self.result['array'].set_shape((self.params.bins,))
+            self.result.append(values)
             return self._return_run_step(self.next_state(dfslot), steps_run=steps)
   
 

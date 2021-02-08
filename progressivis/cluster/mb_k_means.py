@@ -197,14 +197,14 @@ class MBKMeans(TableModule):
             if self._labels is not None:
                 self._labels.append({'labels': self.mbk.labels_},
                                     indices=indices[batch])
-        if self._table is None:
+        if self.result is None:
             dshape = dshape_from_columns(input_df, cols,
                                               dshape_from_dtype(X.dtype))
-            self._table = Table(self.generate_table_name('centers'),
+            self.result = Table(self.generate_table_name('centers'),
                                 dshape=dshape,
                                 create=True)
-            self._table.resize(self.mbk.cluster_centers_.shape[0])
-        self._table[cols] = self.mbk.cluster_centers_
+            self.result.resize(self.mbk.cluster_centers_.shape[0])
+        self.result[cols] = self.mbk.cluster_centers_
         return self._return_run_step(self.next_state(dfslot), steps_run=steps)
 
     def is_visualization(self):
@@ -217,8 +217,8 @@ class MBKMeans(TableModule):
         return self._centers_to_json(json)
 
     def _centers_to_json(self, json):
-        if self._table is not None:
-            json['cluster_centers'] = self._table.to_json()
+        if self.result is not None:
+            json['cluster_centers'] = self.result.to_json()
         return json
 
     def set_centroid(self, c, values):
@@ -227,7 +227,7 @@ class MBKMeans(TableModule):
         except ValueError:
             pass
 
-        centroids = self._table
+        centroids = self.result
         # idx = centroids.id_to_index(c)
 
         if len(values) != len(self.columns):
@@ -271,11 +271,11 @@ class MBKMeansFilter(TableModule):
             steps = steps_t + steps_l
             if steps == 0:
                 return self._return_run_step(self.state_blocked, steps_run=0)
-            if self._table is None:
-                self._table = TableSelectedView(ctx.table.data(),
+            if self.result is None:
+                self.result = TableSelectedView(ctx.table.data(),
                                                 ctx.labels.data().selection)
             else:
-                self._table.selection = ctx.labels.data().selection
+                self.result.selection = ctx.labels.data().selection
             return self._return_run_step(self.next_state(ctx.table),
                                          steps_run=steps)
     def create_dependent_modules(self, mbkmeans, data_module, data_slot):

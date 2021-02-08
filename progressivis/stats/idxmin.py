@@ -40,8 +40,8 @@ class IdxMin(TableModule):
         return super(IdxMin, self).is_ready()
 
     def reset(self):
-        if self._table is not None:
-            self._table.resize(0)
+        if self.result is not None:
+            self.result.resize(0)
         if self._min is not None:
             self._min.resize(0)
 
@@ -56,8 +56,8 @@ class IdxMin(TableModule):
                 return self._return_run_step(self.state_blocked, steps_run=0)
             input_table = dfslot.data()
             op = self.filter_columns(input_table, fix_loc(indices)).idxmin()
-            if self._table is None:
-                self._table = Table(self.generate_table_name('table'),
+            if self.result is None:
+                self.result = Table(self.generate_table_name('table'),
                                     dshape=input_table.dshape,
                                     create=True)
             if not self._min: # None or len()==0
@@ -69,10 +69,10 @@ class IdxMin(TableModule):
                                       dshape=input_table.dshape,
                     create=True)
                 self._min.append(min_, indices=[run_number])
-                self._table.append(op, indices=[run_number])
+                self.result.append(op, indices=[run_number])
             else:
                 prev_min = self._min.last()
-                prev_idx = self._table.last()
+                prev_idx = self.result.last()
                 min_ = OrderedDict(prev_min.items())
                 for col, ix in op.items():
                     val = input_table.at[ix, col]
@@ -81,12 +81,12 @@ class IdxMin(TableModule):
                     elif np.isnan(min_[col]) or val < min_[col]:
                         op[col] = prev_idx[col]
                         min_[col] = val
-                self._table.append(op, indices=[run_number])
+                self.result.append(op, indices=[run_number])
                 self._min.append(min_, indices=[run_number])
-                if len(self._table) > self.params.history:
-                    data = self._table.loc[self._table.index[-self.params.history:]].to_dict(orient='list')
-                    self._table.resize(0)
-                    self._table.append(data)
+                if len(self.result) > self.params.history:
+                    data = self.result.loc[self.result.index[-self.params.history:]].to_dict(orient='list')
+                    self.result.resize(0)
+                    self.result.append(data)
                     data = self._min.loc[self._min.index[-self.params.history:]].to_dict(orient='list')
                     self._min.resize(0)
                     self._min.append(data)

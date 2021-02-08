@@ -283,8 +283,8 @@ class RangeQuery(TableModule):
             updated = input_slot.updated.next(step_size)
             steps += indices_len(updated)
         input_table = input_slot.data()
-        if not self._table:
-            self._table = TableSelectedView(input_table, bitmap([]))
+        if not self.result:
+            self.result = TableSelectedView(input_table, bitmap([]))
         if not self._impl.is_started:
             self._impl.start(input_table, lower_value, upper_value,
                              limit_changed,
@@ -297,5 +297,5 @@ class RangeQuery(TableModule):
                               created=created,
                               updated=updated,
                               deleted=deleted)
-        self._table.selection = self._impl.result._values
+        self.result.selection = self._impl.result._values
         return self._return_run_step(self.next_state(input_slot), steps)

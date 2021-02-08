@@ -403,7 +403,7 @@ class HistogramIndex(TableModule):
                                              bound_min, bound_max,
                                              self.params.bins)
             self.selection = bitmap(input_table.index)
-            self._table = TableSelectedView(input_table, self.selection)
+            self.result = TableSelectedView(input_table, self.selection)
             return self._return_run_step(self.state_blocked,
                                          len(self.selection))
         else:
@@ -432,7 +432,7 @@ class HistogramIndex(TableModule):
         input_table = input_slot.data()
         # self._table = input_table
         self._impl.update_histogram(created, updated, deleted)
-        self._table.selection = self.selection
+        self.result.selection = self.selection
         return self._return_run_step(
             self.next_state(input_slot), steps_run=steps)
 

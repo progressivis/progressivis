@@ -26,8 +26,8 @@ class Min(TableModule):
         return super(Min, self).is_ready()
 
     def reset(self):
-        if self._table is not None:
-            self._table.fill(np.inf)
+        if self.result is not None:
+            self.result.fill(np.inf)
 
     @process_slot("table", reset_cb="reset")
     @run_if_any
@@ -37,11 +37,11 @@ class Min(TableModule):
             steps = indices_len(indices)
             input_df = ctx.table.data()
             op = self.filter_columns(input_df, fix_loc(indices)).min(keepdims=False)
-            if self._table is None:
-                self._table = PsDict(op)
+            if self.result is None:
+                self.result = PsDict(op)
             else:
-                for k, v in self._table.items():
-                    self._table[k] = np.minimum(op[k], v)
+                for k, v in self.result.items():
+                    self.result[k] = np.minimum(op[k], v)
             return self._return_run_step(self.next_state(ctx.table), steps_run=steps)
 
 def minimum_val_id(candidate_val, candidate_id, current_val, current_id):
@@ -63,8 +63,8 @@ class ScalarMin(TableModule):
         return super().is_ready()
 
     def reset(self):
-        if self._table is not None:
-            self._table.fill(np.inf)
+        if self.result is not None:
+            self.result.fill(np.inf)
 
     def reset_all(self, slot, run_number):
         slot.reset()
@@ -78,7 +78,7 @@ class ScalarMin(TableModule):
         for col, id in self._sensitive_ids.items():
             if id not in updated_ids:
                 continue
-            if data.loc[id, col] > self._table[col]:
+            if data.loc[id, col] > self.result[col]:
                 return True
         return False
 
@@ -112,18 +112,18 @@ class ScalarMin(TableModule):
         idxop = self.filter_columns(input_df, fix_loc(indices)).idxmin()
         if not self._sensitive_ids:
             self._sensitive_ids.update(idxop)
-        if self._table is None:
+        if self.result is None:
             op = {k:input_df.loc[i, k] for (k, i) in idxop.items()}    
-            self._table = PsDict(op)
+            self.result = PsDict(op)
         else:
             rich_op = {k:(input_df.loc[i, k], i) for (k, i) in idxop.items()}
-            for k, v in self._table.items():
+            for k, v in self.result.items():
                 candidate_val, candidate_id = rich_op[k]
-                current_val = self._table[k]
+                current_val = self.result[k]
                 current_id = self._sensitive_ids[k]
                 new_val, new_id, tst = minimum_val_id(candidate_val, candidate_id,
                                                       current_val, current_id)
                 if tst:
-                    self._table[k] = new_val
+                    self.result[k] = new_val
                     self._sensitive_ids[k] = new_id
         return self._return_run_step(self.next_state(slot), steps_run=steps)

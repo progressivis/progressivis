@@ -20,7 +20,7 @@ class TestFilter(ProgressiveTest):
         idx = filter_.get_input_slot('table')\
                      .data()\
                      .eval('_1>0.5', result_object='index')
-        self.assertEqual(filter_._table.index, bitmap(idx))
+        self.assertEqual(filter_.result.index, bitmap(idx))
 
     def test_filter2(self):
         s = Scheduler()
@@ -36,10 +36,10 @@ class TestFilter(ProgressiveTest):
         aio.run(s.start())
         tbl = filter_.get_input_slot('table').data()
         idx = tbl.eval('_1>0.5', result_object='index')
-        self.assertEqual(filter_._table.index, bitmap(idx))
+        self.assertEqual(filter_.result.index, bitmap(idx))
         df = pd.DataFrame(tbl.to_dict(),index=tbl.index.to_array())
         dfe = df.eval('_1>0.5')
-        self.assertEqual(filter_._table.index, bitmap(df.index[dfe]))
+        self.assertEqual(filter_.result.index, bitmap(df.index[dfe]))
 
     def test_filter3(self):
         s = Scheduler()
@@ -55,10 +55,10 @@ class TestFilter(ProgressiveTest):
         aio.run(s.start())
         tbl = filter_.get_input_slot('table').data()
         idx = tbl.eval('_1>0.5', result_object='index')
-        self.assertEqual(filter_._table.index, bitmap(idx))
+        self.assertEqual(filter_.result.index, bitmap(idx))
         df = pd.DataFrame(tbl.to_dict(),index=tbl.index.to_array())
         dfe = df.eval('_1>0.5')
-        self.assertEqual(filter_._table.index, bitmap(df.index[dfe]))
+        self.assertEqual(filter_.result.index, bitmap(df.index[dfe]))
 
 if __name__ == '__main__':
     main()

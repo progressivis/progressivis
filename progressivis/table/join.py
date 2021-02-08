@@ -197,5 +197,6 @@ class Join(NAry):
         for other in frames[1:]:
             table = join(table, other, **self.join_kwds)
         length = len(table)
-        self._table = table
+        if self.result is None:
+            self.result = table
         return self._return_run_step(self.state_blocked, steps_run=length)

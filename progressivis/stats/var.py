@@ -71,7 +71,7 @@ class Var(TableModule):
         return ret
 
     def reset(self):
-        self._table = None
+        self.result = None
 
     @process_slot("table", reset_cb="reset")
     @run_if_any
@@ -84,13 +84,13 @@ class Var(TableModule):
                 return self._return_run_step(self.state_blocked, steps_run=0)
             input_df = dfslot.data()
             op = self.op(self.filter_columns(input_df, fix_loc(indices)))
-            if self._table is None:
-                self._table = Table(self.generate_table_name('var'),
+            if self.result is None:
+                self.result = Table(self.generate_table_name('var'),
                                     dshape=input_df.dshape,
                                     create=True)
-            self._table.append(op, indices=[run_number])
-            print(self._table)
+            self.result.append(op, indices=[run_number])
+            print(self.result)
 
-            if len(self._table) > self.params.history:
-                self._table = self._table.loc[self._table.index[-self.params.history:]]
+            if len(self.result) > self.params.history:
+                self.result = self.result.loc[self.result.index[-self.params.history:]]
             return self._return_run_step(self.next_state(dfslot), steps_run=steps)

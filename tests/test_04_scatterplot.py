@@ -58,7 +58,7 @@ class TestScatterPlot(ProgressiveTest):
             prt.input.df = sp.output.table
             sts = sleep_then_stop(s, 5)
         aio.run_gather(csv.scheduler().start(), sts)
-        self.assertEqual(len(csv.table()), 30000)
+        self.assertEqual(len(csv.result), 30000)
 
     def test_scatterplot2(self):
         s = self.scheduler(clean=True)

@@ -50,7 +50,7 @@ class Histogram2D(TableModule):
         self._bounds = None
         self._with_output = with_output
         self._heatmap_cache = None
-        self._table = Table(self.generate_table_name('Histogram2D'),
+        self.result = Table(self.generate_table_name('Histogram2D'),
                             dshape=Histogram2D.schema,
                             chunks={'array': (1, 64, 64)},
                             create=True)
@@ -61,8 +61,8 @@ class Histogram2D(TableModule):
         self._yedges = None
         self.total_read = 0
         self.get_input_slot('table').reset()
-        if self._table:
-            self._table.resize(0)
+        if self.result:
+            self.result.resize(0)
 
     def is_ready(self):
         # If we have created data but no valid min/max, we can only wait
@@ -215,7 +215,7 @@ class Histogram2D(TableModule):
                       'ymax': ymax,
                       'time': run_number}
             if self._with_output:
-                table = self._table
+                table = self.result
                 table['array'].set_shape([p.ybins, p.xbins])
                 last = table.last()
                 if len(table) == 0 or last['time'] != run_number:

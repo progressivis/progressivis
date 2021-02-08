@@ -22,7 +22,7 @@ class TestInput(ProgressiveTest):
             pr = Print(proc=self.terse, scheduler=s)
             pr.input.df = inp.output.table
         aio.run_gather(s.start(), _do_line(inp, s))
-        self.assertEqual(len(inp.table()), 10)
+        self.assertEqual(len(inp.result), 10)
 
 
 if __name__ == '__main__':

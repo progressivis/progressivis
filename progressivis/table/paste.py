@@ -37,30 +37,30 @@ class Paste(TableModule):
         if first_slot.deleted.any() or second_slot.deleted.any():
             first_slot.reset()
             second_slot.reset()
-            if self._table is not None:
-                self._table.resize(0)
+            if self.result is not None:
+                self.result.resize(0)
             first_slot.update(run_number)
             second_slot.update(run_number)
         first_slot.created.next(step_size)
         second_slot.created.next(step_size)
         first_slot.updated.next(step_size)
         second_slot.updated.next(step_size)
-        if self._table is None:
+        if self.result is None:
             dshape, rename = dshape_join(first_table.dshape,
                                          second_table.dshape)
-            self._table = Table(name=None, dshape=dshape)
+            self.result = Table(name=None, dshape=dshape)
         if len(first_table) == 0 or len(second_table) == 0:
             return self._return_run_step(self.state_blocked, steps_run=0)
         col_0 = first_table.columns[0]
         col_1 = second_table.columns[0]
-        if len(self._table) == 0:
-            self._table.append(OrderedDict([(col_0, first_table.last(col_0)),
+        if len(self.result) == 0:
+            self.result.append(OrderedDict([(col_0, first_table.last(col_0)),
                                             (col_1, second_table.last(col_1))]),
                                indices=[0])
         else:
-            assert len(self._table) == 1
-            if first_table.last(col_0) != self._table.last(col_0):
-                self._table[col_0].loc[0] = first_table.last(col_0)
-            if second_table.last(col_1) != self._table.last(col_1):
-                self._table[col_1].loc[0] = second_table.last(col_1)
+            assert len(self.result) == 1
+            if first_table.last(col_0) != self.result.last(col_0):
+                self.result[col_0].loc[0] = first_table.last(col_0)
+            if second_table.last(col_1) != self.result.last(col_1):
+                self.result[col_1].loc[0] = second_table.last(col_1)
         return self._return_run_step(self.next_state(first_slot), steps_run=1)

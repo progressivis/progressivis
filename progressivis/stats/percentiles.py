@@ -51,7 +51,7 @@ class Percentiles(TableModule):
         self._percentiles = percentiles
         self._pername = [_pretty_name(x) for x in self._percentiles]
         dshape = "{" + ",".join(["%s: real" % n for n in self._pername]) + "}"
-        self._table = Table(self.generate_table_name('percentiles'),
+        self.result = Table(self.generate_table_name('percentiles'),
                             dshape=dshape,
                             create=True)
 
@@ -76,7 +76,7 @@ class Percentiles(TableModule):
             input_df = dfslot.data()
             x = self.filter_columns(input_df, fix_loc(indices))
             self.tdigest.batch_update(x[0])
-            df = self._table
+            df = self.result
             values = {}
             for n, p in zip(self._pername, self._percentiles):
                 values[n] = self.tdigest.percentile(p*100)

@@ -57,7 +57,7 @@ class VECLoader(TableModule):
         # When created with a specified chunksize, it returns the parser
         self._rows_read = 0
         self._csr_matrix = None
-        self._table = Table(self.generate_table_name('documents'),
+        self.result = Table(self.generate_table_name('documents'),
                             dshape="{document: var * float32}",
                             fillvalues={'document': 0},
                             storagegroup=self.storagegroup)
@@ -111,7 +111,7 @@ class VECLoader(TableModule):
             raise StopIteration()
 
         dims += 1
-        documents = self._table['document']
+        documents = self.result['document']
         if self._rows_read == 0:
             documents.set_shape((dims,))
         else:
@@ -121,7 +121,7 @@ class VECLoader(TableModule):
             else:
                 dims = current_dims
 
-        self._table.resize(self._rows_read+creates)
+        self.result.resize(self._rows_read+creates)
         tmp = np.zeros(dims, dtype=np.float)
         i = self._rows_read
         #with self.lock:

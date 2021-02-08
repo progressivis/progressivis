@@ -8,7 +8,7 @@ class Constant(TableModule):
     def __init__(self, table, **kwds):
         super(Constant, self).__init__(**kwds)
         assert table is None or isinstance(table, (Table, PsDict))
-        self._table = table
+        self.result = table
 
     def predict_step_size(self, duration):
         return 1

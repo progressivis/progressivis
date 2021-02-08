@@ -74,7 +74,7 @@ class TestJoin3(ProgressiveTest):
         aio.run(s.start())
         res = join.trace_stats(max_runs=1)
         print(res)
-        df = join.table()
+        df = join.result
         last = df.loc[df.index[-1]]
         self.assertTrue(last['xmin'] == 1 and last['xmax'] == 2 and
                         last['ymin'] == 3 and last['ymax'] == 4 and

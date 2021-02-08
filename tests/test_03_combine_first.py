@@ -36,7 +36,7 @@ class TestCombineFirst(ProgressiveTest):
         pr.input.df = cf.output.table
         aio.run(s.start())
         # res = cf.trace_stats(max_runs=1)
-        df = cf.table()
+        df = cf.result
         last = df.last().to_dict()
         self.assertTrue(last['xmin'] == 1 and last['xmax'] == 2 and
                         last['ymin'] == 5 and last['ymax'] == 6)
@@ -65,7 +65,7 @@ class TestCombineFirst(ProgressiveTest):
         pr = Print(proc=self.terse, scheduler=s)
         pr.input.df = cf.output.table
         aio.run(s.start())
-        df = cf.table()
+        df = cf.result
         last = df.last().to_dict()
         self.assertTrue(last['xmin'] == 1 and last['xmax'] == 2 and
                         last['ymin'] == 3 and last['ymax'] == 4)
