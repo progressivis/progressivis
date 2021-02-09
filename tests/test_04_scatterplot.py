@@ -51,7 +51,7 @@ class TestScatterPlot(ProgressiveTest):
             sp = MCScatterPlot(scheduler=s,
                                classes=[('Scatterplot', '_1', '_2')],
                                approximate=True)
-            sp.create_dependent_modules(csv, 'table')
+            sp.create_dependent_modules(csv, 'result')
             cnt = Every(proc=self.terse, constant_time=True, scheduler=s)
             cnt.input.df = csv.output.result
             prt = Print(proc=self.terse, scheduler=s)
@@ -67,7 +67,7 @@ class TestScatterPlot(ProgressiveTest):
             sp = MCScatterPlot(scheduler=s,
                                classes=[('Scatterplot', '_1', '_2')],
                                approximate=True)
-            sp.create_dependent_modules(random, 'table', with_sampling=False)
+            sp.create_dependent_modules(random, 'result', with_sampling=False)
             cnt = Every(proc=self.terse, constant_time=True, scheduler=s)
             cnt.input.df = random.output.result
             prt = Print(proc=self.terse, scheduler=s)

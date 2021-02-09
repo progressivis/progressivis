@@ -134,7 +134,7 @@ class TestPercentiles(ProgressiveTest):
             t_max = PsDict({'_1': 0.8})
             max_value = Constant(table=t_max, scheduler=s)
             range_qry = RangeQuery(column='_1', scheduler=s)
-            range_qry.create_dependent_modules(random, 'table',
+            range_qry.create_dependent_modules(random, 'result',
                                                min_value=min_value,
                                                max_value=max_value)
 
@@ -176,7 +176,7 @@ class TestPercentiles(ProgressiveTest):
             t_max = PsDict({'_1': 0.8})
             max_value = Constant(table=t_max, scheduler=s)
             range_qry = RangeQuery(column='_1', scheduler=s)
-            range_qry.create_dependent_modules(stirrer, 'table',
+            range_qry.create_dependent_modules(stirrer, 'result',
                                                min_value=min_value,
                                                max_value=max_value)
 

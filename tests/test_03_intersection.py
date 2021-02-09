@@ -23,7 +23,7 @@ class TestIntersection(ProgressiveTest):
                       dshape='{_1: float64}', data={'_1': [0.8]})
         max_value = Constant(table=t_max, scheduler=s)
         hist_index = HistogramIndex(column='_1', scheduler=s)
-        hist_index.create_dependent_modules(random, 'table')
+        hist_index.create_dependent_modules(random, 'result')
         bisect_min = Bisect(column='_1', op='>', hist_index=hist_index,
                             scheduler=s)
         bisect_min.input.table = hist_index.output.result
@@ -41,7 +41,7 @@ class TestIntersection(ProgressiveTest):
         pr.input.df = inter.output.result
         aio.run(s.start())
         idx = hist_index.input_module\
-                        .output['table']\
+                        .output['result']\
                         .data().eval('(_1>0.3)&(_1<0.8)',
                                      result_object='index')
         self.assertEqual(inter.result.index, bitmap(idx))
@@ -59,7 +59,7 @@ class TestIntersection(ProgressiveTest):
                       dshape='{_1: float64}', data={'_1': [0.8]})
         max_value = Constant(table=t_max, scheduler=s)
         hist_index = HistogramIndex(column='_1', scheduler=s)
-        hist_index.create_dependent_modules(stirrer, 'table')
+        hist_index.create_dependent_modules(stirrer, 'result')
         bisect_min = Bisect(column='_1', op='>', hist_index=hist_index,
                             scheduler=s)
         bisect_min.input.table = hist_index.output.result
@@ -77,7 +77,7 @@ class TestIntersection(ProgressiveTest):
         pr.input.df = inter.output.result
         aio.run(s.start())
         idx = hist_index.input_module\
-                        .output['table']\
+                        .output['result']\
                         .data().eval('(_1>0.3)&(_1<0.8)',
                                      result_object='index')
         self.assertEqual(inter.result.index, bitmap(idx))

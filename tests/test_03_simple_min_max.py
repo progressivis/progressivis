@@ -28,15 +28,15 @@ class Max(TableModule):
         return super().is_ready()
 
     def reset(self):
-        if self._table is not None:
-            self._table.fill(-np.inf)
+        if self.result is not None:
+            self.result.fill(-np.inf)
 
     def run_step(self, run_number, step_size, howlong):
         slot = self.get_input_slot('table')
         if slot.updated.any() or slot.deleted.any():
             slot.reset()
-            if self._table is not None:
-                self._table.resize(0)
+            if self.result is not None:
+                self.result.resize(0)
             slot.update(run_number)
         indices = slot.created.next(step_size)
         steps = indices_len(indices)
@@ -44,11 +44,11 @@ class Max(TableModule):
             return self._return_run_step(self.state_blocked, steps_run=0)
         data = slot.data()
         op = data.loc[fix_loc(indices)].max(keepdims=False)
-        if self._table is None:
-            self._table = PsDict(op)
+        if self.result is None:
+            self.result = PsDict(op)
         else:
-            for k, v in self._table.items():
-                self._table[k] = np.maximum(op[k], v)
+            for k, v in self.result.items():
+                self.result[k] = np.maximum(op[k], v)
         return self._return_run_step(self.next_state(slot), steps_run=steps)
 
 
@@ -68,8 +68,8 @@ class MaxDec(TableModule):
         return super().is_ready()
 
     def reset(self):
-        if self._table is not None:
-            self._table.fill(-np.inf)
+        if self.result is not None:
+            self.result.fill(-np.inf)
 
     @process_slot("table", reset_cb="reset")
     @run_if_any
@@ -79,11 +79,11 @@ class MaxDec(TableModule):
             steps = indices_len(indices)
             input_df = ctx.table.data()
             op = input_df.loc[fix_loc(indices)].max(keepdims=False)
-            if self._table is None:
-                self._table = PsDict(op)
+            if self.result is None:
+                self.result = PsDict(op)
             else:
-                for k, v in self._table.items():
-                    self._table[k] = np.maximum(op[k], v)
+                for k, v in self.result.items():
+                    self.result[k] = np.maximum(op[k], v)
             return self._return_run_step(self.next_state(ctx.table), steps_run=steps)
 
 class TestMinMax(ProgressiveTest):
@@ -96,8 +96,8 @@ class TestMinMax(ProgressiveTest):
         pr.input.df = min_.output.result
         aio.run(s.start())
         #s.join()
-        res1 = random.table().min()
-        res2 = min_.table()
+        res1 = random.result.min()
+        res2 = min_.result
         self.compare(res1, res2)
 
     def compare(self, res1, res2):
@@ -116,8 +116,8 @@ class TestMinMax(ProgressiveTest):
         pr.input.df = max_.output.result
         aio.run(s.start())
         #s.join()
-        res1 = random.table().max()
-        res2 = max_.table()
+        res1 = random.result.max()
+        res2 = max_.result
         self.compare(res1, res2)
 
 

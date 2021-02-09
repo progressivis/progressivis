@@ -20,7 +20,7 @@ class TestProgressiveLoadCSV(ProgressiveTest):
 
     def runit(self, module):
         module.run(1)
-        table = module.table()
+        table = module.result
         self.assertFalse(table is None)
         l = len(table)
         cnt = 2
@@ -29,30 +29,30 @@ class TestProgressiveLoadCSV(ProgressiveTest):
             module.run(cnt)
             cnt += 1
             #s = module.trace_stats(max_runs=1)
-            table = module.table()
+            table = module.result
             ln = len(table)
             #print "Run time: %gs, loaded %d rows" % (s['duration'].irow(-1), ln)
             #self.assertEqual(ln-l, len(df[df[module.UPDATE_COLUMN]==module.last_update()]))
             l =  ln
         s = module.trace_stats(max_runs=1)
-        #print("Done. Run time: %gs, loaded %d rows" % (s['duration'][-1], len(module.table())))
+        #print("Done. Run time: %gs, loaded %d rows" % (s['duration'][-1], len(module.result)))
         return cnt
 
     def test_read_csv(self):
         s=self.scheduler()
         module=CSVLoader(get_dataset('bigfile'), index_col=False, header=None, scheduler=s)
-        self.assertTrue(module.table() is None)
+        self.assertTrue(module.result is None)
         aio.run(s.start())
-        self.assertEqual(len(module.table()), 1000000)
+        self.assertEqual(len(module.result), 1000000)
 
 
 
     def test_read_fake_csv(self):
         s=self.scheduler()
         module=CSVLoader(RandomBytesIO(cols=30, rows=1000000), index_col=False, header=None, scheduler=s)
-        self.assertTrue(module.table() is None)
+        self.assertTrue(module.result is None)
         aio.run(s.start())
-        self.assertEqual(len(module.table()), 1000000)
+        self.assertEqual(len(module.result), 1000000)
 
     def test_read_multiple_csv(self):
         s=self.scheduler()
@@ -63,7 +63,7 @@ class TestProgressiveLoadCSV(ProgressiveTest):
         csv = CSVLoader(index_col=False, header=None, scheduler=s)
         csv.input.filenames = cst.output.result
         aio.run(csv.start())
-        self.assertEqual(len(csv.table()), 60000)
+        self.assertEqual(len(csv.result), 60000)
 
     def test_read_multiple_fake_csv(self):
         s=self.scheduler()
@@ -76,7 +76,7 @@ class TestProgressiveLoadCSV(ProgressiveTest):
         csv = CSVLoader(index_col=False, header=None, scheduler=s)
         csv.input.filenames = cst.output.result
         aio.run(csv.start())
-        self.assertEqual(len(csv.table()), 60000)
+        self.assertEqual(len(csv.result), 60000)
 
 
 

@@ -97,10 +97,10 @@ class TestProgressiveLoadCSVOverHTTP(ProgressiveTest):
         time.sleep(SLEEP)
         s=self.scheduler()
         module=CSVLoader(make_url('bigfile'), index_col=False, header=None, scheduler=s)
-        self.assertTrue(module.table() is None)
+        self.assertTrue(module.result is None)
         aio.run(s.start())
         _close(module)
-        self.assertEqual(len(module.table()), 1000000)
+        self.assertEqual(len(module.result), 1000000)
 
 
     def test_02_read_http_csv_crash_recovery(self):
@@ -111,11 +111,11 @@ class TestProgressiveLoadCSVOverHTTP(ProgressiveTest):
         time.sleep(SLEEP)
         s=self.scheduler()
         module=CSVLoader(make_url('bigfile'), index_col=False, header=None, scheduler=s, timeout=0.01)
-        self.assertTrue(module.table() is None)
+        self.assertTrue(module.result is None)
         aio.run(s.start())
         _close(module)
         #self.assertGreater(module.parser._recovery_cnt, 0)
-        self.assertEqual(len(module.table()), 1000000)
+        self.assertEqual(len(module.result), 1000000)
 
     def test_03_read_multiple_csv_crash_recovery(self):
         #if TRAVIS: return
@@ -132,7 +132,7 @@ class TestProgressiveLoadCSVOverHTTP(ProgressiveTest):
         csv.input.filenames = cst.output.result
         aio.run(csv.start())
         _close(csv)
-        self.assertEqual(len(csv.table()), 60000)
+        self.assertEqual(len(csv.result), 60000)
 
     def test_04_read_http_csv_bz2_no_crash(self):
         #if TRAVIS: return
@@ -142,10 +142,10 @@ class TestProgressiveLoadCSVOverHTTP(ProgressiveTest):
         time.sleep(SLEEP)
         s=self.scheduler()
         module=CSVLoader(make_url('bigfile', ext=BZ2), index_col=False, header=None, scheduler=s)
-        self.assertTrue(module.table() is None)
+        self.assertTrue(module.result is None)
         aio.run(s.start())
         _close(module)
-        self.assertEqual(len(module.table()), 1000000)
+        self.assertEqual(len(module.result), 1000000)
 
     def test_05_read_http_csv_bz2_crash_recovery(self):
         #if TRAVIS: return
@@ -155,11 +155,11 @@ class TestProgressiveLoadCSVOverHTTP(ProgressiveTest):
         time.sleep(SLEEP)
         s=self.scheduler()
         module=CSVLoader(make_url('bigfile', ext=BZ2), index_col=False, header=None, scheduler=s, timeout=0.01)
-        self.assertTrue(module.table() is None)
+        self.assertTrue(module.result is None)
         aio.run(s.start())
         _close(module)
         #self.assertGreater(module.parser._recovery_cnt, 0)
-        self.assertEqual(len(module.table()), 1000000)
+        self.assertEqual(len(module.result), 1000000)
 
     def test_06_read_multiple_csv_bz2_crash_recovery(self):
         #if TRAVIS: return
@@ -177,7 +177,7 @@ class TestProgressiveLoadCSVOverHTTP(ProgressiveTest):
         csv.input.filenames = cst.output.result
         aio.run(csv.start())
         _close(csv)
-        self.assertEqual(len(csv.table()), 60000)
+        self.assertEqual(len(csv.result), 60000)
 
 
 if __name__ == '__main__':

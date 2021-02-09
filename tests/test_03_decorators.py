@@ -17,12 +17,12 @@ class FooABC(TableModule):
               SlotDescriptor('d', type=Table, required=True),
     ]
     def run_step_impl(self, ctx, run_number, step_size):
-        if self._table is None:
-            self._table = Table(self.generate_table_name('Foo'),
+        if self.result is None:
+            self.result = Table(self.generate_table_name('Foo'),
                                 dshape="{a: int, b: int}", create=True)
         for sn in "abcd":
             getattr(ctx, sn).created.next()
-        self._table.append({'a': [run_number], 'b': [step_size]})
+        self.result.append({'a': [run_number], 'b': [step_size]})
         return self._return_run_step(self.state_blocked, steps_run=0)
 
 class RunIfAll(FooABC):
