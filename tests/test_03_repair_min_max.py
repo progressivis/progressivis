@@ -85,9 +85,9 @@ class TestRepairMax(ProgressiveTest):
         s=Scheduler()
         random = RandomTable(2, rows=100000, scheduler=s)
         max_=ScalarMax(name='max_'+str(hash(random)), scheduler=s)
-        max_.input.table = random.output.table
+        max_.input.table = random.output.result
         pr=Print(proc=self.terse, scheduler=s)
-        pr.input.df = max_.output.table
+        pr.input.df = max_.output.result
         aio.run(s.start())
         res1 = random.table().max()
         res2 = max_.table()
@@ -103,16 +103,16 @@ class TestRepairMax(ProgressiveTest):
         random = RandomTable(2, rows=100000, scheduler=s)
         max_=ScalarMax(name='max_repair_test2', scheduler=s)
         stirrer = MyStirrer(watched='max_repair_test2', scheduler=s)
-        stirrer.input.table = random.output.table
-        max_.input.table = stirrer.output.table
+        stirrer.input.table = random.output.result
+        max_.input.table = stirrer.output.result
         pr=Print(proc=self.terse, scheduler=s)
-        pr.input.df = max_.output.table
+        pr.input.df = max_.output.result
         aio.run(s.start())
         self.assertEqual(ScalarMax._reset_calls_counter, 1)
         res1 = stirrer.table().max()
         res2 = max_.table()
         self.compare(res1, res2)
-        
+
     def test_repair_max3(self):
         """
         test_repair_max3()
@@ -123,10 +123,10 @@ class TestRepairMax(ProgressiveTest):
         random = RandomTable(2, rows=100000, scheduler=s)
         max_=ScalarMax(name='max_repair_test3', scheduler=s)
         stirrer = MyStirrer(watched='max_repair_test3', proc_sensitive=False, scheduler=s)
-        stirrer.input.table = random.output.table
-        max_.input.table = stirrer.output.table
+        stirrer.input.table = random.output.result
+        max_.input.table = stirrer.output.result
         pr=Print(proc=self.terse, scheduler=s)
-        pr.input.df = max_.output.table
+        pr.input.df = max_.output.result
         aio.run(s.start())
         self.assertEqual(ScalarMax._reset_calls_counter, 0)
         res1 = stirrer.table().max()
@@ -143,10 +143,10 @@ class TestRepairMax(ProgressiveTest):
         random = RandomTable(2, rows=100000, scheduler=s)
         max_=ScalarMax(name='max_repair_test4', scheduler=s)
         stirrer = MyStirrer(watched='max_repair_test4', mode='update', value=9999.0, scheduler=s)
-        stirrer.input.table = random.output.table
-        max_.input.table = stirrer.output.table
+        stirrer.input.table = random.output.result
+        max_.input.table = stirrer.output.result
         pr=Print(proc=self.terse, scheduler=s)
-        pr.input.df = max_.output.table
+        pr.input.df = max_.output.result
         aio.run(s.start())
         self.assertEqual(ScalarMax._reset_calls_counter, 0)
         res1 = stirrer.table().max()
@@ -163,10 +163,10 @@ class TestRepairMax(ProgressiveTest):
         random = RandomTable(2, rows=100000, scheduler=s)
         max_=ScalarMax(name='max_repair_test4', scheduler=s)
         stirrer = MyStirrer(watched='max_repair_test4', mode='update', value=-9999.0, scheduler=s)
-        stirrer.input.table = random.output.table
-        max_.input.table = stirrer.output.table
+        stirrer.input.table = random.output.result
+        max_.input.table = stirrer.output.result
         pr=Print(proc=self.terse, scheduler=s)
-        pr.input.df = max_.output.table
+        pr.input.df = max_.output.result
         aio.run(s.start())
         self.assertEqual(ScalarMax._reset_calls_counter, 1)
         res1 = stirrer.table().max()
@@ -184,10 +184,10 @@ class TestRepairMax(ProgressiveTest):
         max_=ScalarMax(name='max_repair_test5', scheduler=s)
         stirrer = MyStirrer(watched='max_repair_test5', proc_sensitive=False,
                             mode='update', scheduler=s)
-        stirrer.input.table = random.output.table
-        max_.input.table = stirrer.output.table
+        stirrer.input.table = random.output.result
+        max_.input.table = stirrer.output.result
         pr=Print(proc=self.terse, scheduler=s)
-        pr.input.df = max_.output.table
+        pr.input.df = max_.output.result
         aio.run(s.start())
         self.assertEqual(ScalarMax._reset_calls_counter, 0)
         res1 = stirrer.table().max()
@@ -211,9 +211,9 @@ class TestRepairMin(ProgressiveTest):
         s=Scheduler()
         random = RandomTable(2, rows=100000, scheduler=s)
         min_=ScalarMin(name='min_'+str(hash(random)), scheduler=s)
-        min_.input.table = random.output.table
+        min_.input.table = random.output.result
         pr=Print(proc=self.terse, scheduler=s)
-        pr.input.df = min_.output.table
+        pr.input.df = min_.output.result
         aio.run(s.start())
         res1 = random.table().min()
         res2 = min_.table()
@@ -228,16 +228,16 @@ class TestRepairMin(ProgressiveTest):
         random = RandomTable(2, rows=100000, scheduler=s)
         min_=ScalarMin(name='min_repair_test2', scheduler=s)
         stirrer = MyStirrer(watched='min_repair_test2', scheduler=s)
-        stirrer.input.table = random.output.table
-        min_.input.table = stirrer.output.table
+        stirrer.input.table = random.output.result
+        min_.input.table = stirrer.output.result
         pr=Print(proc=self.terse, scheduler=s)
-        pr.input.df = min_.output.table
+        pr.input.df = min_.output.result
         aio.run(s.start())
         self.assertEqual(ScalarMin._reset_calls_counter, 1)
         res1 = stirrer.table().min()
         res2 = min_.table()
         self.compare(res1, res2)
-        
+
     def test_repair_min3(self):
         """
         test_repair_min3()
@@ -248,10 +248,10 @@ class TestRepairMin(ProgressiveTest):
         random = RandomTable(2, rows=100000, scheduler=s)
         min_=ScalarMin(name='min_repair_test3', scheduler=s)
         stirrer = MyStirrer(watched='min_repair_test3', proc_sensitive=False, scheduler=s)
-        stirrer.input.table = random.output.table
-        min_.input.table = stirrer.output.table
+        stirrer.input.table = random.output.result
+        min_.input.table = stirrer.output.result
         pr=Print(proc=self.terse, scheduler=s)
-        pr.input.df = min_.output.table
+        pr.input.df = min_.output.result
         aio.run(s.start())
         self.assertEqual(ScalarMin._reset_calls_counter, 0)
         res1 = stirrer.table().min()
@@ -268,10 +268,10 @@ class TestRepairMin(ProgressiveTest):
         random = RandomTable(2, rows=100000, scheduler=s)
         min_=ScalarMin(name='min_repair_test4', scheduler=s)
         stirrer = MyStirrer(watched='min_repair_test4', mode='update', value=-9999.0, scheduler=s)
-        stirrer.input.table = random.output.table
-        min_.input.table = stirrer.output.table
+        stirrer.input.table = random.output.result
+        min_.input.table = stirrer.output.result
         pr=Print(proc=self.terse, scheduler=s)
-        pr.input.df = min_.output.table
+        pr.input.df = min_.output.result
         aio.run(s.start())
         self.assertEqual(ScalarMin._reset_calls_counter, 0)
         res1 = stirrer.table().min()
@@ -288,10 +288,10 @@ class TestRepairMin(ProgressiveTest):
         random = RandomTable(2, rows=100000, scheduler=s)
         min_=ScalarMin(name='min_repair_test4', scheduler=s)
         stirrer = MyStirrer(watched='min_repair_test4', mode='update', value=9999.0, scheduler=s)
-        stirrer.input.table = random.output.table
-        min_.input.table = stirrer.output.table
+        stirrer.input.table = random.output.result
+        min_.input.table = stirrer.output.result
         pr=Print(proc=self.terse, scheduler=s)
-        pr.input.df = min_.output.table
+        pr.input.df = min_.output.result
         aio.run(s.start())
         self.assertEqual(ScalarMin._reset_calls_counter, 1)
         res1 = stirrer.table().min()
@@ -309,16 +309,16 @@ class TestRepairMin(ProgressiveTest):
         min_=ScalarMin(name='min_repair_test5', scheduler=s)
         stirrer = MyStirrer(watched='min_repair_test5', proc_sensitive=False,
                             mode='update', scheduler=s)
-        stirrer.input.table = random.output.table
-        min_.input.table = stirrer.output.table
+        stirrer.input.table = random.output.result
+        min_.input.table = stirrer.output.result
         pr=Print(proc=self.terse, scheduler=s)
-        pr.input.df = min_.output.table
+        pr.input.df = min_.output.result
         aio.run(s.start())
         self.assertEqual(ScalarMin._reset_calls_counter, 0)
         res1 = stirrer.table().min()
         res2 = min_.table()
         self.compare(res1, res2)
-        
+
     def compare(self, res1, res2):
         v1 = np.array(list(res1.values()))
         v2 = np.array(list(res2.values()))

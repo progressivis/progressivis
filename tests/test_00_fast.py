@@ -37,7 +37,7 @@ class TestFast(ProgressiveTest):
         a.sort()
         c = check_contiguity(a)
         self.assertEqual(c,PROP_MONOTONIC_INC)
-        
+
         np.random.shuffle(a)
         c = check_contiguity(a)
         self.assertEqual(c,0)

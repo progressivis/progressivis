@@ -24,7 +24,7 @@ class TestProgressiveLoadCSV(ProgressiveTest):
         self.assertFalse(table is None)
         l = len(table)
         cnt = 2
-        
+
         while not module.is_zombie():
             module.run(cnt)
             cnt += 1
@@ -44,7 +44,7 @@ class TestProgressiveLoadCSV(ProgressiveTest):
         self.assertTrue(module.table() is None)
         aio.run(s.start())
         self.assertEqual(len(module.table()), 1000000)
-        
+
 
 
     def test_read_fake_csv(self):
@@ -61,7 +61,7 @@ class TestProgressiveLoadCSV(ProgressiveTest):
                           data={'filename': [get_dataset('smallfile'), get_dataset('smallfile')]})
         cst = Constant(table=filenames, scheduler=s)
         csv = CSVLoader(index_col=False, header=None, scheduler=s)
-        csv.input.filenames = cst.output.table
+        csv.input.filenames = cst.output.result
         aio.run(csv.start())
         self.assertEqual(len(csv.table()), 60000)
 
@@ -74,7 +74,7 @@ class TestProgressiveLoadCSV(ProgressiveTest):
                               'buffer://fake2?cols=10&rows=30000']})
         cst = Constant(table=filenames, scheduler=s)
         csv = CSVLoader(index_col=False, header=None, scheduler=s)
-        csv.input.filenames = cst.output.table
+        csv.input.filenames = cst.output.result
         aio.run(csv.start())
         self.assertEqual(len(csv.table()), 60000)
 

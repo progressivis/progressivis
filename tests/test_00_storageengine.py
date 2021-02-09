@@ -14,14 +14,14 @@ class TestStorageEngine(ProgressiveTest):
         g = se['/']
         self.assertIsNotNone(g)
         self.assertIsInstance(g, Group)
-        
+
         g2 = g.create_group('g2')
         self.assertIsNotNone(g2)
         self.assertIsInstance(g2, Group)
         d1 = g.create_dataset('d1', shape=(10,), dtype=np.int32)
         self.assertIsNotNone(d1)
         self.assertIsInstance(d1, Dataset)
-        
+
     def test_storage_engines(self):
         print('Engines detected: ', list(StorageEngine.engines().keys()))
         for e in StorageEngine.engines():
@@ -30,7 +30,7 @@ class TestStorageEngine(ProgressiveTest):
             g = s['/']
             self.assertIsNotNone(g)
             self.assertIsInstance(g, Group)
-        
+
             g2 = g.create_group('g_'+e)
             self.assertIsNotNone(g2)
             self.assertIsInstance(g2, Group)
@@ -65,4 +65,4 @@ class TestStorageEngine(ProgressiveTest):
                       storagegroup=group)
         self.assertEqual(len(t), 3)
         return t
-        
+

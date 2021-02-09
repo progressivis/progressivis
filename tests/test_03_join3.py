@@ -24,11 +24,11 @@ class TestJoin3(ProgressiveTest):
         csv = CSVLoader(get_dataset('bigfile'), index_col=False, header=None,
                         scheduler=s)
         stat1 = Stats(1, reset_index=True, scheduler=s)
-        stat1.input.table = csv.output.table
+        stat1.input.table = csv.output.result
         stat2 = Stats(2, reset_index=True, scheduler=s)
-        stat2.input.table = csv.output.table
+        stat2.input.table = csv.output.result
         stat3 = Stats(3, reset_index=True, scheduler=s)
-        stat3.input.table = csv.output.table
+        stat3.input.table = csv.output.result
         # join=Join(scheduler=s)
         # import pdb;pdb.set_trace()
         join = Reduce.expand(BinJoin, "first", "second", "table",
@@ -40,9 +40,9 @@ class TestJoin3(ProgressiveTest):
         # reduce_.input.table = stat2.output.stats
         # join = reduce_.expand()
         pr = Print(proc=self.terse, scheduler=s)
-        pr.input.df = join.output.table
+        pr.input.df = join.output.result
         prlen = Every(proc=self.terse, constant_time=True, scheduler=s)
-        prlen.input.df = csv.output.table
+        prlen.input.df = csv.output.result
         aio.run(s.start())
         res = join.trace_stats(max_runs=1)
         print(res)
@@ -60,17 +60,17 @@ class TestJoin3(ProgressiveTest):
                               create=True), scheduler=s)
         # join=Join(scheduler=s)
         # reduce_ = Reduce(BinJoin, "first", "second", "table", scheduler=s)
-        # reduce_.input.table = cst1.output.table
-        # reduce_.input.table = cst2.output.table
-        # reduce_.input.table = cst3.output.table
+        # reduce_.input.table = cst1.output.result
+        # reduce_.input.table = cst2.output.result
+        # reduce_.input.table = cst3.output.result
         # join = reduce_.expand()
         join = Reduce.expand(BinJoin, "first", "second", "table",
-                             [cst1.output.table,
-                              cst2.output.table,
-                              cst3.output.table],
+                             [cst1.output.result,
+                              cst2.output.result,
+                              cst3.output.result],
                              scheduler=s)
         pr = Print(proc=self.terse, scheduler=s)
-        pr.input.df = join.output.table
+        pr.input.df = join.output.result
         aio.run(s.start())
         res = join.trace_stats(max_runs=1)
         print(res)

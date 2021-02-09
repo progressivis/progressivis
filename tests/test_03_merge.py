@@ -17,16 +17,16 @@ class TestMerge(ProgressiveTest):
         s = self.scheduler()
         csv = CSVLoader(get_dataset('bigfile'), index_col=False,header=None,scheduler=s)
         stat1=Stats(1, scheduler=s)
-        stat1.input.table = csv.output.table
+        stat1.input.table = csv.output.result
         stat2=Stats(2, scheduler=s)
-        stat2.input.table = csv.output.table
+        stat2.input.table = csv.output.result
         merge=Merge(left_index=True,right_index=True,scheduler=s)
-        merge.input.table = stat1.output.table
-        merge.input.table = stat2.output.table
+        merge.input.table = stat1.output.result
+        merge.input.table = stat2.output.result
         pr=Print(proc=self.terse, scheduler=s)
-        pr.input.df = merge.output.table
+        pr.input.df = merge.output.result
         prlen = Every(proc=self.terse, constant_time=True, scheduler=s)
-        prlen.input.df = csv.output.table
+        prlen.input.df = csv.output.result
         aio.run(s.start())
         res = merge.trace_stats(max_runs=1)
         #pd.set_option('display.expand_frame_repr', False)
@@ -37,10 +37,10 @@ class TestMerge(ProgressiveTest):
         cst1=Constant(Table(name=None, data=pd.DataFrame({'xmin': [1], 'xmax': [2]})), scheduler=s)
         cst2=Constant(Table(name=None, data=pd.DataFrame({'ymin': [3], 'ymax': [4]})), scheduler=s)
         merge=Merge(left_index=True,right_index=True,scheduler=s)
-        merge.input.table = cst1.output.table
-        merge.input.table = cst2.output.table
+        merge.input.table = cst1.output.result
+        merge.input.table = cst2.output.result
         pr=Print(proc=self.terse, scheduler=s)
-        pr.input.df = merge.output.table
+        pr.input.df = merge.output.result
         aio.run(s.start())
         res = merge.trace_stats(max_runs=1)
         #pd.set_option('display.expand_frame_repr', False)

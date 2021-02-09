@@ -17,9 +17,9 @@ class TestBlobsTable(ProgressiveTest):
         module=BlobsTable(['a', 'b'], centers=centers, rows=10000, scheduler=s)
         self.assertEqual(module.table().columns[0],'a')
         self.assertEqual(module.table().columns[1],'b')
-        self.assertEqual(len(module.table().columns), 2) 
+        self.assertEqual(len(module.table().columns), 2)
         prlen = Every(proc=self.terse, constant_time=True, scheduler=s)
-        prlen.input.df = module.output.table
+        prlen.input.df = module.output.result
         aio.run(s.start())
         #s.join()
         self.assertEqual(len(module.table()), 10000)
@@ -33,10 +33,10 @@ class TestBlobsTable(ProgressiveTest):
         blob2=BlobsTable(['a', 'b'], centers=centers,  cluster_std=0.2, rows=sz, scheduler=s)
         blob2.default_step_size = 200
         add = Add(scheduler=s)
-        add.input.first = blob1.output.table
-        add.input.second = blob2.output.table        
+        add.input.first = blob1.output.result
+        add.input.second = blob2.output.result
         prlen = Every(proc=self.terse, constant_time=True, scheduler=s)
-        prlen.input.df = add.output.table
+        prlen.input.df = add.output.result
         aio.run(s.start())
         #s.join()
         self.assertEqual(len(blob1.table()), sz)
@@ -54,9 +54,9 @@ class TestMVBlobsTable(ProgressiveTest):
         module=MVBlobsTable(['a', 'b'], means=means, covs=covs, rows=10000, scheduler=s)
         self.assertEqual(module.table().columns[0],'a')
         self.assertEqual(module.table().columns[1],'b')
-        self.assertEqual(len(module.table().columns), 2) 
+        self.assertEqual(len(module.table().columns), 2)
         prlen = Every(proc=self.terse, constant_time=True, scheduler=s)
-        prlen.input.df = module.output.table
+        prlen.input.df = module.output.result
         aio.run(s.start())
         #s.join()
         self.assertEqual(len(module.table()), 10000)
@@ -69,10 +69,10 @@ class TestMVBlobsTable(ProgressiveTest):
         blob2=MVBlobsTable(['a', 'b'], means=means, covs=covs, rows=sz, scheduler=s)
         blob2.default_step_size = 200
         add = Add(scheduler=s)
-        add.input.first = blob1.output.table
-        add.input.second = blob2.output.table        
+        add.input.first = blob1.output.result
+        add.input.second = blob2.output.result
         prlen = Every(proc=self.terse, constant_time=True, scheduler=s)
-        prlen.input.df = add.output.table
+        prlen.input.df = add.output.result
         aio.run(s.start())
         #s.join()
         self.assertEqual(len(blob1.table()), sz)

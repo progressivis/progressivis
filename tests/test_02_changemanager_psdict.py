@@ -31,8 +31,8 @@ class TestDictChangeManager(ProgressiveTest):
         cm.update(2, d, mid1)
         self.assertEqual(cm.last_update(), 2)
         self.assertEqual(d.key_of(3), ('d', 'active'))
-        
-        self.assertEqual(cm.created.next(), slice(0, 5)) # 3 + 2 
+
+        self.assertEqual(cm.created.next(), slice(0, 5)) # 3 + 2
         self.assertEqual(cm.updated.next(), slice(0, 0)) # already counted as creations
         self.assertEqual(cm.deleted.length(), 0)
         d['c'] *= 2

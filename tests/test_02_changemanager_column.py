@@ -16,7 +16,7 @@ class TestColumnChangeManager(ProgressiveTest):
     def setUp(self):
         super(TestColumnChangeManager, self).setUp()
         self.scheduler = self.scheduler()
-    
+
     def test_columnchangemanager(self):
         #pylint: disable=protected-access
         column = Column('test_changemanager_column', None, data=np.array([ 1, 2, 3]))
@@ -93,7 +93,7 @@ class TestColumnChangeManager(ProgressiveTest):
         last2 = 0
         column[2] = 22
         column[1] = 0.12
-        
+
         last2 = s._run_number
         cm2.update(last2, column, mid=mid2)
         self.assertEqual(cm2.last_update(), last2)
@@ -168,9 +168,9 @@ class TestColumnChangeManager(ProgressiveTest):
         #TODO test reset
         cm.reset()
         self.assertEqual(cm.last_update(), 0)
-        
-        
-        
+
+
+
 
 
 

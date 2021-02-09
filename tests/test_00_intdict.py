@@ -30,23 +30,23 @@ class TestIntDict(ProgressiveTest):
         d[5] = 15 # put it back
         d.get_values(keys) # overrides keys
         self.assertTrue((keys==values).all())
-        
+
         keys = np.arange(10, 20, dtype=np.int64)
         values = keys+10
         d.update(keys, values)
-        
+
         self.assertEqual(len(d), 20)
         with self.assertRaises(KeyError):
             x = d[21]
             #print(x)
         for (k, v) in zip(keys, values):
             self.assertEqual(d[k], v)
-        
+
         rk = np.random.choice(np.arange(20, dtype=np.int64), 5)
         rv = rk+10
         d.get_items(rk)
         self.assertTrue((rk==rv).all())
-        
+
         self.assertTrue(10 in d)
         self.assertFalse(22 in d)
 

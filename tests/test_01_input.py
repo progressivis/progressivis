@@ -20,7 +20,7 @@ class TestInput(ProgressiveTest):
         with s:
             inp = Input(scheduler=s)
             pr = Print(proc=self.terse, scheduler=s)
-            pr.input.df = inp.output.table
+            pr.input.df = inp.output.result
         aio.run_gather(s.start(), _do_line(inp, s))
         self.assertEqual(len(inp.result), 10)
 

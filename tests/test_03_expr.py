@@ -25,7 +25,7 @@ def prtT(x):
 
 class TestExpr(ProgressiveTest):
     def setUp(self):
-        super(TestExpr, self).setUp()        
+        super(TestExpr, self).setUp()
         Scheduler.default = self.scheduler()
 
     def test_load_csv(self):

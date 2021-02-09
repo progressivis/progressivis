@@ -10,7 +10,7 @@ class TestRange(ProgressiveTest):
             r = RangeDataset('range', shape=(10,10))
         with self.assertRaises(TypeError):
             r = RangeDataset('range', shape=(10,), dtype=np.float32)
-        
+
         r = RangeDataset('range', shape=(10,))
         self.assertEqual(r.shape, (10,))
         self.assertEqual(r.size, 10)
@@ -34,7 +34,7 @@ class TestRange(ProgressiveTest):
             _ = r[np.array([8,9,10])]
 
         # should not raise anything
-        r[9] = 9 
+        r[9] = 9
         r[4:5] = [4]
         r[[1,2,3]] = [1,2,3]
         r[[1,2,3]] = np.array([1,2,3])

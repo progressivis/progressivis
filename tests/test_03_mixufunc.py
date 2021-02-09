@@ -16,14 +16,14 @@ class MixUfuncSample(MixUfuncABC):
     outputs = [SlotDescriptor('result', type=Table, required=False,
                               datashape={'first': ['_1', '_2']})]
     expr = {'_1': (np.add, 'first._2', 'second._3'),
-            '_2': (np.log, 'second._3')}    
+            '_2': (np.log, 'second._3')}
 
 class MixUfuncSample2(MixUfuncABC):
     inputs = [SlotDescriptor('first', type=Table, required=True),
               SlotDescriptor('second', type=Table, required=True)]
     outputs = [SlotDescriptor('result', type=Table, required=False)]
     expr = {'_1:float64': (np.add, 'first._2', 'second._3'),
-            '_2:float64': (np.log, 'second._3')}    
+            '_2:float64': (np.log, 'second._3')}
 
 # https://stackoverflow.com/questions/6768245/difference-between-frompyfunc-and-vectorize-in-numpy
 def custom_unary(x):
@@ -37,7 +37,7 @@ class MixUfuncCustomUnary(MixUfuncABC):
               SlotDescriptor('second', type=Table, required=True)]
     outputs = [SlotDescriptor('table', type=Table, required=False)]
     expr = {'_1:float64': (np.add, 'first._2', 'second._3'),
-            '_2:float64': (custom_unary_ufunc, 'second._3')}    
+            '_2:float64': (custom_unary_ufunc, 'second._3')}
 
 def custom_binary(x, y):
     return (x+np.sin(y))/(x+np.cos(y))
@@ -49,17 +49,17 @@ class MixUfuncCustomBinary(MixUfuncABC):
               SlotDescriptor('second', type=Table, required=True)]
     outputs = [SlotDescriptor('table', type=Table, required=False)]
     expr = {'_1:float64': (custom_binary_ufunc, 'first._2', 'second._3'),
-            '_2:float64': (np.log, 'second._3')}    
+            '_2:float64': (np.log, 'second._3')}
 
 class TestMixUfunc(ProgressiveTest):
     def t_mix_ufunc_impl(self, cls, ufunc1=np.log, ufunc2=np.add):
         s = self.scheduler()
         random1 = RandomTable(10, rows=100000, scheduler=s)
-        random2 = RandomTable(10, rows=100000, scheduler=s)        
+        random2 = RandomTable(10, rows=100000, scheduler=s)
         module = cls(columns={'first': ['_1', '_2', '_3'],
                                          'second': ['_1', '_2', '_3']},
                         scheduler=s)
- 
+
         module.input.first = random1.output.result
         module.input.second = random2.output.result
         pr=Print(proc=self.terse, scheduler=s)
@@ -79,12 +79,12 @@ class TestMixUfunc(ProgressiveTest):
 
     def t_mix_ufunc_table_dict_impl(self, cls):
         s = self.scheduler()
-        random1 = RandomDict(10, scheduler=s)        
+        random1 = RandomDict(10, scheduler=s)
         random2 = RandomTable(10, rows=100000, scheduler=s)
         module = cls(columns={'first': ['_1', '_2', '_3'],
                                          'second': ['_1', '_2', '_3']},
                         scheduler=s)
- 
+
         module.input.first = random1.output.result
         module.input.second = random2.output.result
         pr=Print(proc=self.terse, scheduler=s)

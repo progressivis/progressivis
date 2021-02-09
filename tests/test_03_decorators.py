@@ -24,9 +24,9 @@ class FooABC(TableModule):
             getattr(ctx, sn).created.next()
         self._table.append({'a': [run_number], 'b': [step_size]})
         return self._return_run_step(self.state_blocked, steps_run=0)
-        
+
 class RunIfAll(FooABC):
-    @process_slot("a", "b", "c", "d", reset_if=False)    
+    @process_slot("a", "b", "c", "d", reset_if=False)
     @run_if_all
     def run_step(self, run_number, step_size, howlong):
         with self.context as ctx:
@@ -36,14 +36,14 @@ class RunAlways(FooABC):
     def is_greedy(self):
         return True
 
-    @process_slot("a", "b", "c", "d", reset_if=False)    
+    @process_slot("a", "b", "c", "d", reset_if=False)
     @run_always
     def run_step(self, run_number, step_size, howlong):
         with self.context as ctx:
             return self.run_step_impl(ctx, run_number, step_size)
 
 class RunIfAllacOrAllbd(FooABC):
-    @process_slot("a", "b", "c", "d", reset_if=False)    
+    @process_slot("a", "b", "c", "d", reset_if=False)
     @run_if_all('a', 'c')
     @or_all('b', 'd')
     def run_step(self, run_number, step_size, howlong):
@@ -51,7 +51,7 @@ class RunIfAllacOrAllbd(FooABC):
             return self.run_step_impl(ctx, run_number, step_size)
 
 class RunIfAllabOrAllcd(FooABC):
-    @process_slot("a", "b", "c", "d", reset_if=False)    
+    @process_slot("a", "b", "c", "d", reset_if=False)
     @run_if_all('a', 'b')
     @or_all('c', 'd')
     def run_step(self, run_number, step_size, howlong):
@@ -62,14 +62,14 @@ class RunIfAny(FooABC):
     def is_greedy(self):
         return True
 
-    @process_slot("a", "b", "c", "d", reset_if=False)    
+    @process_slot("a", "b", "c", "d", reset_if=False)
     @run_if_any()
     def run_step(self, run_number, step_size, howlong):
         with self.context as ctx:
             return self.run_step_impl(ctx, run_number, step_size)
 
 class RunIfAnyAndAny(FooABC):
-    @process_slot("a", "b", "c", "d", reset_if=False)    
+    @process_slot("a", "b", "c", "d", reset_if=False)
     @run_if_any('a', 'c')
     @and_any('b', 'd')
     def run_step(self, run_number, step_size, howlong):
@@ -78,14 +78,14 @@ class RunIfAnyAndAny(FooABC):
 
 class InvalidProcessAfterRun(FooABC):
     @run_if_any('a', 'c')
-    @process_slot("a", "b", "c", "d", reset_if=False)        
+    @process_slot("a", "b", "c", "d", reset_if=False)
     @and_any('b', 'd')
     def run_step(self, run_number, step_size, howlong):
         with self.context as ctx:
             return self.run_step_impl(ctx, run_number, step_size)
 
 class InvalidDoubleRun(FooABC):
-    @process_slot("a", "b", "c", "d", reset_if=False)    
+    @process_slot("a", "b", "c", "d", reset_if=False)
     @run_if_any('a', 'c')
     @run_if_any('b', 'd')
     def run_step(self, run_number, step_size, howlong):
@@ -101,25 +101,25 @@ def _4_csv_scenario(module, s):
                                header=None, scheduler=s)
         csv_d = CSVLoader(get_dataset('smallfile'), index_col=False,
                                header=None, scheduler=s)
-        module.input.a = csv_a.output.table
-        module.input.b = csv_b.output.table
-        module.input.c = csv_c.output.table
-        module.input.d = csv_d.output.table        
+        module.input.a = csv_a.output.result
+        module.input.b = csv_b.output.result
+        module.input.c = csv_c.output.result
+        module.input.d = csv_d.output.result
         def _fun(s,r):
             if r>10:
                 s.task_stop()
         return _fun
-    
+
 def _4_const_scenario(module, s):
         table_ = Table('const_4_scenario', dshape="{a: int}", create=True)
         const_a = Constant(table=table_, scheduler=s)
         const_b = Constant(table=table_, scheduler=s)
         const_c = Constant(table=table_, scheduler=s)
         const_d = Constant(table=table_, scheduler=s)
-        module.input.a = const_a.output.table
-        module.input.b = const_b.output.table
-        module.input.c = const_c.output.table
-        module.input.d = const_d.output.table        
+        module.input.a = const_a.output.result
+        module.input.b = const_b.output.result
+        module.input.c = const_c.output.result
+        module.input.d = const_d.output.result
         def _fun(s,r):
             if r>10:
                 s.task_stop()
@@ -134,15 +134,15 @@ def _2_csv_2_const_scenario(module, s):
         const_c = Constant(table=table_c, scheduler=s)
         table_d = Table('const_d_2_csv_2_const_scenario', dshape="{a: int}", create=True)
         const_d = Constant(table=table_d, scheduler=s)
-        module.input.a = csv_a.output.table
-        module.input.b = csv_b.output.table
-        module.input.c = const_c.output.table
-        module.input.d = const_d.output.table        
+        module.input.a = csv_a.output.result
+        module.input.b = csv_b.output.result
+        module.input.c = const_c.output.result
+        module.input.d = const_d.output.result
         def _fun(s,r):
             if r>10:
                 s.task_stop()
         return _fun
-#@skip    
+#@skip
 class TestDecorators(ProgressiveTest):
     def test_decorators_all(self):
         s = self.scheduler()
@@ -282,9 +282,9 @@ class TestDecoratorsInvalid(ProgressiveTest):
 +            #s.start()
 +            async def _gather(s):
 +                await aio.gather(s.start(tick_proc=_fun), _remove_module(s) )
-+            aio.run(_gather(s))    
++            aio.run(_gather(s))
 +
 """
-        
+
 if __name__ == '__main__':
     ProgressiveTest.main()

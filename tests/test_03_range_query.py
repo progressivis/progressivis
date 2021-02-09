@@ -27,14 +27,14 @@ class TestRangeQuery(ProgressiveTest):
             t_max = PsDict({'_1': 0.8})
             max_value = Constant(table=t_max, scheduler=s)
             range_qry = RangeQuery(column='_1', scheduler=s)
-            range_qry.create_dependent_modules(random, 'table',
+            range_qry.create_dependent_modules(random, 'result',
                                                min_value=min_value,
                                                max_value=max_value)
             prt = Print(proc=self.terse, scheduler=s)
-            prt.input.df = range_qry.output.table
+            prt.input.df = range_qry.output.result
         aio.run(s.start())
         idx = range_qry.input_module\
-                       .output['table']\
+                       .output['result']\
                        .data().eval('(_1>0.3)&(_1<0.8)', result_object='index')
         self.assertEqual(range_qry.result.index, bitmap(idx))
 
@@ -48,20 +48,20 @@ class TestRangeQuery(ProgressiveTest):
             t_max = PsDict({'_1': 0.8})
             max_value = Constant(table=t_max, scheduler=s)
             range_qry = RangeQuery(column='_1', scheduler=s)
-            range_qry.create_dependent_modules(random, 'table',
+            range_qry.create_dependent_modules(random, 'result',
                                                min_value=min_value,
                                                max_value=max_value)
             prt = Print(proc=self.terse, scheduler=s)
-            prt.input.df = range_qry.output.table
+            prt.input.df = range_qry.output.result
             hist_index = range_qry.hist_index
             min_=Min(name='min_'+str(hash(hist_index)), scheduler=s)
             min_.input.table = hist_index.output.min_out
             prt2 = Print(proc=self.terse, scheduler=s)
-            prt2.input.df = min_.output.table
+            prt2.input.df = min_.output.result
             max_=Max(name='max_'+str(hash(hist_index)), scheduler=s)
             max_.input.table = hist_index.output.max_out
             pr3=Print(proc=self.terse, scheduler=s)
-            pr3.input.df = max_.output.table
+            pr3.input.df = max_.output.result
         aio.run(s.start())
         res1 = random.result.min()['_1']
         res2 = min_.result['_1']
@@ -74,11 +74,11 @@ class TestRangeQuery(ProgressiveTest):
         min_value = Constant(table=t_min, scheduler=s)
         max_value = Constant(table=t_max, scheduler=s)
         range_qry = RangeQuery(column='_1', scheduler=s)
-        range_qry.create_dependent_modules(random, 'table',
+        range_qry.create_dependent_modules(random, 'result',
                                            min_value=min_value,
                                            max_value=max_value)
         prt = Print(proc=self.terse, scheduler=s)
-        prt.input.df = range_qry.output.table
+        prt.input.df = range_qry.output.result
         prt2 = Print(proc=self.terse, scheduler=s)
         prt2.input.df = range_qry.output.min
         pr3 = Print(proc=self.terse, scheduler=s)
@@ -105,7 +105,7 @@ class TestRangeQuery(ProgressiveTest):
         with s:
             random = RandomTable(2, rows=100000, scheduler=s)
             t_min = PsDict({'_1': 0.0})
-            t_max = PsDict({'_1': float('nan')})            
+            t_max = PsDict({'_1': float('nan')})
             range_qry = self._query_min_max_impl(random, t_min, t_max, s)
         aio.run(s.start())
         min_data = range_qry.output.min.data()
@@ -120,7 +120,7 @@ class TestRangeQuery(ProgressiveTest):
         with s:
             random = RandomTable(2, rows=100000, scheduler=s)
             t_min = PsDict({'_1': 0.3})
-            t_max = PsDict({'_1': 15000.})            
+            t_max = PsDict({'_1': 15000.})
             range_qry = self._query_min_max_impl(random, t_min, t_max, s)
         aio.run(s.start())
         min_data = range_qry.output.min.data()

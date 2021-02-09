@@ -32,5 +32,5 @@ class TestPagingHelper(ProgressiveTest):
         ph_t = PagingHelper(view)
         page = ph_t.get_page(10, 20)
         self.assertEqual(page[0][0], 30)
-        self.assertEqual(page[-1][0], 48)        
+        self.assertEqual(page[-1][0], 48)
         print(page)

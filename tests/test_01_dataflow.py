@@ -31,8 +31,8 @@ class TestDataflow(ProgressiveTest):
             self.assertEqual(dataflow.validate_module(prt),
                              ['Input slot "df" missing in module "print"'])
 
-            m.input.table = csv.output.table
-            prt.input.df = m.output.table
+            m.input.table = csv.output.result
+            prt.input.df = m.output.result
 
             self.assertEqual(len(dataflow), 3)
             errors = dataflow.validate()
@@ -80,7 +80,7 @@ class TestDataflow(ProgressiveTest):
             self.assertEqual(dataflow.validate_module(prt),
                              ['Input slot "df" missing in module "print"'])
 
-            prt.input.df = m.output.table
+            prt.input.df = m.output.result
         scheduler._update_modules()  # force modules in the main loop
 
     def test_dataflow_dynamic(self):
@@ -93,8 +93,8 @@ class TestDataflow(ProgressiveTest):
         prt = Print(proc=self.terse,
                     name='print_min',
                     scheduler=scheduler)
-        m.input.table = csv.output.table
-        prt.input.df = m.output.table
+        m.input.table = csv.output.result
+        prt.input.df = m.output.result
         started = False
 
         def proc(x):
@@ -115,8 +115,8 @@ async def _add_max(csv, scheduler, proc):
         prt = Print(name='print_max',
                     proc=proc,
                     scheduler=scheduler)
-        m.input.table = csv.output.table
-        prt.input.df = m.output.table
+        m.input.table = csv.output.result
+        prt.input.df = m.output.result
 
 
 if __name__ == '__main__':

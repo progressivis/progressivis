@@ -31,9 +31,9 @@ class TestScheduler(ProgressiveTest):
         def add_min():
             with s:
                 m = Min(scheduler=s)
-                m.input.table = csv.output.table
+                m.input.table = csv.output.result
                 prt = Print(proc=self.terse, scheduler=s)
-                prt.input.df = m.output.table
+                prt.input.df = m.output.result
 
         s.on_tick_once(add_min)
 

@@ -50,6 +50,6 @@ class TestFileBuffer(ProgressiveTest):
             reader_file.close()
         except:
             pass
-            
+
 if __name__ == '__main__':
     ProgressiveTest.main()

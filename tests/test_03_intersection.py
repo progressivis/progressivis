@@ -26,19 +26,19 @@ class TestIntersection(ProgressiveTest):
         hist_index.create_dependent_modules(random, 'table')
         bisect_min = Bisect(column='_1', op='>', hist_index=hist_index,
                             scheduler=s)
-        bisect_min.input.table = hist_index.output.table
-        # bisect_.input.table = random.output.table
-        bisect_min.input.limit = min_value.output.table
+        bisect_min.input.table = hist_index.output.result
+        # bisect_.input.table = random.output.result
+        bisect_min.input.limit = min_value.output.result
         bisect_max = Bisect(column='_1', op='<', hist_index=hist_index,
                             scheduler=s)
-        bisect_max.input.table = hist_index.output.table
-        # bisect_.input.table = random.output.table
-        bisect_max.input.limit = max_value.output.table
+        bisect_max.input.table = hist_index.output.result
+        # bisect_.input.table = random.output.result
+        bisect_max.input.limit = max_value.output.result
         inter = Intersection(scheduler=s)
-        inter.input.table = bisect_min.output.table
-        inter.input.table = bisect_max.output.table
+        inter.input.table = bisect_min.output.result
+        inter.input.table = bisect_max.output.result
         pr = Print(proc=self.terse, scheduler=s)
-        pr.input.df = inter.output.table
+        pr.input.df = inter.output.result
         aio.run(s.start())
         idx = hist_index.input_module\
                         .output['table']\
@@ -51,7 +51,7 @@ class TestIntersection(ProgressiveTest):
         random = RandomTable(2, rows=100000, scheduler=s)
         stirrer = Stirrer(update_column='_2',
                           fixed_step_size=1000, scheduler=s, **kw)
-        stirrer.input.table = random.output.table
+        stirrer.input.table = random.output.result
         t_min = Table(name=None,
                       dshape='{_1: float64}', data={'_1': [0.3]})
         min_value = Constant(table=t_min, scheduler=s)
@@ -62,19 +62,19 @@ class TestIntersection(ProgressiveTest):
         hist_index.create_dependent_modules(stirrer, 'table')
         bisect_min = Bisect(column='_1', op='>', hist_index=hist_index,
                             scheduler=s)
-        bisect_min.input.table = hist_index.output.table
-        # bisect_.input.table = random.output.table
-        bisect_min.input.limit = min_value.output.table
+        bisect_min.input.table = hist_index.output.result
+        # bisect_.input.table = random.output.result
+        bisect_min.input.limit = min_value.output.result
         bisect_max = Bisect(column='_1', op='<', hist_index=hist_index,
                             scheduler=s)
-        bisect_max.input.table = hist_index.output.table
-        # bisect_.input.table = random.output.table
-        bisect_max.input.limit = max_value.output.table
+        bisect_max.input.table = hist_index.output.result
+        # bisect_.input.table = random.output.result
+        bisect_max.input.limit = max_value.output.result
         inter = Intersection(scheduler=s)
-        inter.input.table = bisect_min.output.table
-        inter.input.table = bisect_max.output.table
+        inter.input.table = bisect_min.output.result
+        inter.input.table = bisect_max.output.result
         pr = Print(proc=self.terse, scheduler=s)
-        pr.input.df = inter.output.table
+        pr.input.df = inter.output.result
         aio.run(s.start())
         idx = hist_index.input_module\
                         .output['table']\

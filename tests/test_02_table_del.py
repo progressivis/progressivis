@@ -9,7 +9,7 @@ import pandas as pd
 
 class TestTableDel(ProgressiveTest):
     def setUp(self):
-        super().setUp()        
+        super().setUp()
         self.scheduler = Scheduler.default
 
     def test_del(self):

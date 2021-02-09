@@ -21,17 +21,17 @@ class TestHistogram1D(ProgressiveTest):
         s= self.scheduler()
         csv = CSVLoader(get_dataset('bigfile'), force_valid_ids=True, index_col=False,header=None,scheduler=s)
         min_ = Min(scheduler=s)
-        min_.input.table = csv.output.table
+        min_.input.table = csv.output.result
         max_ = Max(scheduler=s)
-        max_.input.table = csv.output.table
+        max_.input.table = csv.output.result
         histogram1d=Histogram1D('_2', scheduler=s) # columns are called 1..30
-        histogram1d.input.table = csv.output.table
-        histogram1d.input.min = min_.output.table
-        histogram1d.input.max = max_.output.table
-   
+        histogram1d.input.table = csv.output.result
+        histogram1d.input.min = min_.output.result
+        histogram1d.input.max = max_.output.result
+
         #pr = Print(scheduler=s)
         pr = Every(proc=self.terse, scheduler=s)
-        pr.input.df = csv.output.table
+        pr.input.df = csv.output.result
         aio.run(s.start())
         #s = histogram1d.trace_stats()
         #print "Done. Run time: %gs, loaded %d rows" % (s['duration'].irow(-1), len(module.df()))

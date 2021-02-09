@@ -26,12 +26,12 @@ class TestSelect(ProgressiveTest):
         csv = CSVLoader(get_dataset('bigfile'), index_col=False, header=None,
                         scheduler=s)
         sample = Sample(samples=100, scheduler=s)
-        sample.input.table = csv.output.table
+        sample.input.table = csv.output.result
         q=Select(scheduler=s)
-        q.input.table = csv.output.table
+        q.input.table = csv.output.result
         q.input.select = sample.output.select
         prlen = Print(proc=self.terse,  scheduler=s)
-        prlen.input.df = q.output.table
+        prlen.input.df = q.output.result
         aio.run(s.start())
         print(repr(q.table()))
         self.assertEqual(len(q.table()), 100)

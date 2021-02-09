@@ -55,18 +55,18 @@ class TestPPCA(ProgressiveTest):
         data = CSVLoader(dataset, index_col=False,
                      usecols=lambda x: x!='class', scheduler=s)
         ppca = PPCA(scheduler=s)
-        ppca.input.table = data.output.table
+        ppca.input.table = data.output.result
         ppca.params.n_components = N_COMPONENTS
         if resetter:
             assert callable(resetter_func)
-            resetter.input.table = ppca.output.table
+            resetter.input.table = ppca.output.result
         ppca.create_dependent_modules(rtol=rtol, trace=TRACE,
                                       threshold=threshold,
                                       resetter=resetter,
                                       resetter_func=resetter_func)
-        
+
         prn = Every(scheduler=s, proc=_print)
-        prn.input.df = ppca.reduced.output.table    
+        prn.input.df = ppca.reduced.output.result
         aio.run(s.start())
         pca_ = ppca._transformer['inc_pca']
         recovered = pca_.inverse_transform(ppca.reduced._table.to_array())
@@ -83,7 +83,7 @@ class TestPPCA(ProgressiveTest):
                                                  n_samples=PREDICT_SAMPLE_SIZE,
                                                  random_state=RANDOM_STATE*2+1)
         return KNN.score(recovered[indices_p], LABELS[indices_p])
-    
+
     def test_always_reset(self):
         """
         test_always_reset()
@@ -99,7 +99,7 @@ class TestPPCA(ProgressiveTest):
         score = self._common(100.0)
         print("never reset=>score", score)
         self.assertGreater(score, 0.77)
-        
+
     def test_reset_threshold_30k(self):
         """
         test_reset_threshold_30k ()
@@ -115,7 +115,7 @@ class TestPPCA(ProgressiveTest):
         score = self._common(0.1, threshold=40000)
         print("reset when threshold 40K=>score", score)
         self.assertGreater(score, 0.77)
-        
+
     def test_reset_threshold_50k(self):
         """
         test_reset_threshold_50k()
@@ -123,7 +123,7 @@ class TestPPCA(ProgressiveTest):
         score = self._common(0.1, threshold=50000)
         print("reset when threshold 50K=>score", score)
         self.assertGreater(score, 0.77)
-        
+
     def test_reset_threshold_60k(self):
         """
         test_reset_threshold_60k()

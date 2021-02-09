@@ -51,7 +51,7 @@ def trace_after_stop(s):
     print("crashed when len(_table) ==", len(t), "last_id:", t._last_id)
     i = t._last_id
     print("border row i:", t.loc[i-1,:].to_dict())
-    print("border row i+1:", t.loc[i,:].to_dict())    
+    print("border row i+1:", t.loc[i,:].to_dict())
 
 def make_url(name, ext='csv'):
     return 'http://{host}:{port}/{name}.{ext}'.format(host=HOST,
@@ -95,11 +95,11 @@ class _HttpSrv(object):
         self.stop()
         self.start()
 
-#IS_PERSISTENT = False   
+#IS_PERSISTENT = False
 class ProgressiveLoadCSVCrashRoot(ProgressiveTest):
     _http_srv = None
     def setUp(self):
-        super().setUp()        
+        super().setUp()
         #self._http_srv = None
         cleanup_temp_dir()
         init_temp_dir_if()
@@ -119,7 +119,7 @@ class ProgressiveLoadCSVCrashRoot(ProgressiveTest):
     def get_tag(self):
         return id(self._http_srv)
 
-#IS_PERSISTENT = False   
+#IS_PERSISTENT = False
 class TestProgressiveLoadCSVCrash1(ProgressiveLoadCSVCrashRoot):
     @skipIf(not IS_PERSISTENT, "transient storage, test skipped")
     def test_01_read_http_csv_with_crash(self):
@@ -140,14 +140,14 @@ class TestProgressiveLoadCSVCrash1(ProgressiveLoadCSVCrashRoot):
         self.assertEqual(len(module.table()), 1000000)
         arr1 = module.table().loc[:, 0].to_array().reshape(-1)
         arr2 = BIGFILE_DF.loc[:, 0].values
-        #import pdb;pdb.set_trace()        
+        #import pdb;pdb.set_trace()
         self.assertTrue(np.allclose(arr1, arr2))
 
     @skipIf(not IS_PERSISTENT, "transient storage, test skipped")
     def test_01_read_http_csv_with_crash_and_counter(self):
         #if TRAVIS: return
         self._http_srv =  _HttpSrv()
-        tag = self.get_tag()        
+        tag = self.get_tag()
         s=self.scheduler()
         url = make_url('bigfile')
         module=CSVLoader(url, index_col=False, recovery_tag=tag, header=None, scheduler=s)
@@ -158,7 +158,7 @@ class TestProgressiveLoadCSVCrash1(ProgressiveLoadCSVCrashRoot):
         s=self.scheduler(clean=True)
         csv=CSVLoader(url, recovery=True, index_col=False, recovery_tag=tag, header=None, scheduler=s)
         counter = Counter(scheduler=s)
-        counter.input.table = csv.output.table
+        counter.input.table = csv.output.result
         self.assertTrue(csv.table() is None)
         aio.run(s.start())
         self.assertEqual(len(csv.table()), 1000000)

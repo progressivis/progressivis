@@ -13,9 +13,9 @@ class TestFilter(ProgressiveTest):
         s = Scheduler()
         random = RandomTable(2, rows=100000, scheduler=s)
         filter_ = FilterMod(expr='_1 > 0.5', scheduler=s)
-        filter_.input.table = random.output.table
+        filter_.input.table = random.output.result
         pr = Print(proc=self.terse, scheduler=s)
-        pr.input.df = filter_.output.table
+        pr.input.df = filter_.output.result
         aio.run(s.start())
         idx = filter_.get_input_slot('table')\
                      .data()\
@@ -28,11 +28,11 @@ class TestFilter(ProgressiveTest):
         stirrer = Stirrer(update_column='_1', delete_rows=5,
                           #update_rows=5,
                           fixed_step_size=100, scheduler=s)
-        stirrer.input.table = random.output.table
+        stirrer.input.table = random.output.result
         filter_ = FilterMod(expr='_1 > 0.5', scheduler=s)
-        filter_.input.table = stirrer.output.table
+        filter_.input.table = stirrer.output.result
         pr = Print(proc=self.terse, scheduler=s)
-        pr.input.df = filter_.output.table
+        pr.input.df = filter_.output.result
         aio.run(s.start())
         tbl = filter_.get_input_slot('table').data()
         idx = tbl.eval('_1>0.5', result_object='index')
@@ -47,11 +47,11 @@ class TestFilter(ProgressiveTest):
         stirrer = Stirrer(update_column='_1',
                           update_rows=5,
                           fixed_step_size=100, scheduler=s)
-        stirrer.input.table = random.output.table
+        stirrer.input.table = random.output.result
         filter_ = FilterMod(expr='_1 > 0.5', scheduler=s)
-        filter_.input.table = stirrer.output.table
+        filter_.input.table = stirrer.output.result
         pr = Print(proc=self.terse, scheduler=s)
-        pr.input.df = filter_.output.table
+        pr.input.df = filter_.output.result
         aio.run(s.start())
         tbl = filter_.get_input_slot('table').data()
         idx = tbl.eval('_1>0.5', result_object='index')

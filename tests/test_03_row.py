@@ -22,4 +22,4 @@ class TestRow(ProgressiveTest):
         self.assertEqual(len(row), 2) # 2 values
         self.assertEqual(row['a'], 5)
         self.assertEqual(row['b'], 0.5)
-        
+

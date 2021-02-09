@@ -14,11 +14,11 @@ class TestIdxMax(ProgressiveTest):
         s=self.scheduler()
         random = RandomTable(10, rows=10000,throttle=1000, scheduler=s)
         idxmax=IdxMax(scheduler=s)
-        idxmax.input.table = random.output.table
+        idxmax.input.table = random.output.result
         max_=Max(scheduler=s)
-        max_.input.table = random.output.table
+        max_.input.table = random.output.result
         pr=Print(proc=self.terse, scheduler=s)
-        pr.input.df = idxmax.output.table
+        pr.input.df = idxmax.output.result
         aio.run(s.start())
         max1 = max_.result
         #print('max1', max1)
@@ -31,13 +31,13 @@ class TestIdxMax(ProgressiveTest):
         random = RandomTable(10, rows=10000,throttle=1000, scheduler=s)
         stirrer = Stirrer(update_column='_1', delete_rows=5,
                           fixed_step_size=100, scheduler=s)
-        stirrer.input.table = random.output.table
+        stirrer.input.table = random.output.result
         idxmax=IdxMax(scheduler=s)
-        idxmax.input.table = stirrer.output.table
+        idxmax.input.table = stirrer.output.result
         max_=Max(scheduler=s)
-        max_.input.table = stirrer.output.table
+        max_.input.table = stirrer.output.result
         pr=Print(proc=self.terse, scheduler=s)
-        pr.input.df = idxmax.output.table
+        pr.input.df = idxmax.output.result
         aio.run(s.start())
         #import pdb;pdb.set_trace()
         max1 = max_.result
@@ -50,11 +50,11 @@ class TestIdxMax(ProgressiveTest):
         s=self.scheduler()
         random = RandomTable(10, rows=10000,throttle=1000, scheduler=s)
         idxmin=IdxMin(scheduler=s)
-        idxmin.input.table = random.output.table
+        idxmin.input.table = random.output.result
         min_=Min(scheduler=s)
-        min_.input.table = random.output.table
+        min_.input.table = random.output.result
         pr=Print(proc=self.terse, scheduler=s)
-        pr.input.df = idxmin.output.table
+        pr.input.df = idxmin.output.result
         aio.run(s.start())
         min1 = min_.result
         #print('min1', min1)
@@ -67,13 +67,13 @@ class TestIdxMax(ProgressiveTest):
         random = RandomTable(10, rows=10000,throttle=1000, scheduler=s)
         stirrer = Stirrer(update_column='_1', delete_rows=5,
                           fixed_step_size=100, scheduler=s)
-        stirrer.input.table = random.output.table
+        stirrer.input.table = random.output.result
         idxmin=IdxMin(scheduler=s)
-        idxmin.input.table = stirrer.output.table
+        idxmin.input.table = stirrer.output.result
         min_=Min(scheduler=s)
-        min_.input.table = stirrer.output.table
+        min_.input.table = stirrer.output.result
         pr=Print(proc=self.terse, scheduler=s)
-        pr.input.df = idxmin.output.table
+        pr.input.df = idxmin.output.result
         aio.run(s.start())
         min1 = min_.result
         #print('min1', min1)

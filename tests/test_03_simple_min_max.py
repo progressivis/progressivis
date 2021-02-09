@@ -38,7 +38,7 @@ class Max(TableModule):
             if self._table is not None:
                 self._table.resize(0)
             slot.update(run_number)
-        indices = slot.created.next(step_size) 
+        indices = slot.created.next(step_size)
         steps = indices_len(indices)
         if steps==0:
             return self._return_run_step(self.state_blocked, steps_run=0)
@@ -91,9 +91,9 @@ class TestMinMax(ProgressiveTest):
         s = self.scheduler()
         random = RandomTable(10, rows=10000, scheduler=s)
         min_=Min(name='min_'+str(hash(random)), scheduler=s)
-        min_.input.table = random.output.table
+        min_.input.table = random.output.result
         pr=Print(proc=self.terse, scheduler=s)
-        pr.input.df = min_.output.table
+        pr.input.df = min_.output.result
         aio.run(s.start())
         #s.join()
         res1 = random.table().min()
@@ -111,9 +111,9 @@ class TestMinMax(ProgressiveTest):
         s = self.scheduler()
         random = RandomTable(10, rows=10000, scheduler=s)
         max_=Max(name='max_'+str(hash(random)), scheduler=s)
-        max_.input.table = random.output.table
+        max_.input.table = random.output.result
         pr=Print(proc=self.terse, scheduler=s)
-        pr.input.df = max_.output.table
+        pr.input.df = max_.output.result
         aio.run(s.start())
         #s.join()
         res1 = random.table().max()

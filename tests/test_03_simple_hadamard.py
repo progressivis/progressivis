@@ -12,13 +12,13 @@ from progressivis.utils.psdict import PsDict
 import numpy as np
 
 class Hadamard(TableModule):
-    inputs = [SlotDescriptor('x1', type=Table, required=True), 
+    inputs = [SlotDescriptor('x1', type=Table, required=True),
               SlotDescriptor('x2', type=Table, required=True)]
 
     def reset(self):
         if self._table is not None:
             self._table.resize(0)
-    
+
     def run_step(self, run_number, step_size, howlong):
         x1 = self.get_input_slot('x1')
         x2 = self.get_input_slot('x2')
@@ -27,11 +27,11 @@ class Hadamard(TableModule):
             x2.reset()
             if self._table is not None:
                 self._table.resize(0)
-            x1.update(run_number)        
+            x1.update(run_number)
             x2.update(run_number)
         step_size = min(x1.created.length(), x2.created.length(), step_size)
         x1_indices = x1.created.next(step_size)
-        x2_indices = x2.created.next(step_size) 
+        x2_indices = x2.created.next(step_size)
         res = {}
         data1 = x1.data().loc[fix_loc(x1_indices)]
         data2 = x2.data().loc[fix_loc(x2_indices)]
@@ -50,10 +50,10 @@ class TestHadamard(ProgressiveTest):
         random1 = RandomTable(3, rows=100000, scheduler=s)
         random2 = RandomTable(3, rows=100000, scheduler=s)
         module = Hadamard(scheduler=s)
-        module.input.x1 = random1.output.table
-        module.input.x2 = random2.output.table        
+        module.input.x1 = random1.output.result
+        module.input.x2 = random2.output.result
         pr=Print(proc=self.terse, scheduler=s)
-        pr.input.df = module.output.table
+        pr.input.df = module.output.result
         aio.run(s.start())
         res1 = np.multiply(random1.table().to_array(),
                       random2.table().to_array())

@@ -32,7 +32,7 @@ class TestPairwiseDistances(ProgressiveTest):
 #        dis.input.array = vec.output.array
         cnt = Every(proc=self.terse,constant_time=True,scheduler=s)
 #        cnt.input.df = dis.output.dist
-        cnt.input.df = vec.output.table
+        cnt.input.df = vec.output.result
         global times
         times = 0
         s.start()
@@ -50,7 +50,7 @@ class TestPairwiseDistances(ProgressiveTest):
 #        dis.input.df = vec.output.df
         cnt = Every(proc=self.terse,constant_time=True,scheduler=s)
 #        cnt.input.df = dis.output.dist
-        cnt.input.df = vec.output.table
+        cnt.input.df = vec.output.result
         global times
         times = 0
         aio.run(s.start(ten_times))

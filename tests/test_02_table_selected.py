@@ -10,7 +10,7 @@ import numpy as np
 
 class TestTableSelected(ProgressiveTest):
     def setUp(self):
-        super(TestTableSelected, self).setUp()        
+        super(TestTableSelected, self).setUp()
         self.scheduler = Scheduler.default
 
     def test_loc_table_selection(self):
@@ -31,4 +31,4 @@ class TestTableSelected(ProgressiveTest):
             self.assertEqual(view.at[4, 'a'], ivalues[4])
         with self.assertRaises(KeyError):
             self.assertEqual(view.at[8, 'a'], ivalues[8])
-        
+

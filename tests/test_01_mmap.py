@@ -165,7 +165,7 @@ class TestMMap(ProgressiveTest):
                       storagegroup=group)
         self.assertEqual(len(table), 3)
         return table
-    
+
     def _create_table2(self, group):
         t = Table('table',
                   dshape="{a: int, b: float32, c: string, d: 10*int}", create=True, storagegroup=group)

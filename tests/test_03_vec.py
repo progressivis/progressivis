@@ -3,7 +3,7 @@ from . import ProgressiveTest, skip
 from progressivis.io import VECLoader
 from progressivis.datasets import get_dataset
 
-    
+
 class TestProgressiveLoadVEC(ProgressiveTest):
 
     @skip("Need to implement sparse columns")
@@ -18,7 +18,7 @@ class TestProgressiveLoadVEC(ProgressiveTest):
         l = len(df)
         #self.assertEqual(l, len(df[df[UPDATE_COLUMN]==module.last_update()]))
         cnt = 1
-        
+
         while not module.is_zombie():
             module.run(cnt)
             cnt += 1
