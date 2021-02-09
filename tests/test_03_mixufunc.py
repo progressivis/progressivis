@@ -13,7 +13,7 @@ from progressivis.core import  SlotDescriptor
 class MixUfuncSample(MixUfuncABC):
     inputs = [SlotDescriptor('first', type=Table, required=True),
               SlotDescriptor('second', type=Table, required=True)]
-    outputs = [SlotDescriptor('table', type=Table, required=False,
+    outputs = [SlotDescriptor('result', type=Table, required=False,
                               datashape={'first': ['_1', '_2']})]
     expr = {'_1': (np.add, 'first._2', 'second._3'),
             '_2': (np.log, 'second._3')}    
@@ -21,7 +21,7 @@ class MixUfuncSample(MixUfuncABC):
 class MixUfuncSample2(MixUfuncABC):
     inputs = [SlotDescriptor('first', type=Table, required=True),
               SlotDescriptor('second', type=Table, required=True)]
-    outputs = [SlotDescriptor('table', type=Table, required=False)]
+    outputs = [SlotDescriptor('result', type=Table, required=False)]
     expr = {'_1:float64': (np.add, 'first._2', 'second._3'),
             '_2:float64': (np.log, 'second._3')}    
 
@@ -60,20 +60,20 @@ class TestMixUfunc(ProgressiveTest):
                                          'second': ['_1', '_2', '_3']},
                         scheduler=s)
  
-        module.input.first = random1.output.table
-        module.input.second = random2.output.table
+        module.input.first = random1.output.result
+        module.input.second = random2.output.result
         pr=Print(proc=self.terse, scheduler=s)
-        pr.input.df = module.output.table
+        pr.input.df = module.output.result
         aio.run(s.start())
-        first = random1.table().to_array()
+        first = random1.result.to_array()
         first_2 = first[:, 1]
         first_3 = first[:, 2]
-        second = random2.table().to_array()
+        second = random2.result.to_array()
         second_2 = second[:, 1]
         second_3 = second[:, 2]
         ne_1 = ufunc2(first_2, second_3).astype("float64")
         ne_2 = ufunc1(second_3).astype("float64")
-        res = module.table().to_array()
+        res = module.result.to_array()
         self.assertTrue(np.allclose(res[:,0], ne_1, equal_nan=True))
         self.assertTrue(np.allclose(res[:,1], ne_2, equal_nan=True))
 
@@ -85,20 +85,20 @@ class TestMixUfunc(ProgressiveTest):
                                          'second': ['_1', '_2', '_3']},
                         scheduler=s)
  
-        module.input.first = random1.output.table
-        module.input.second = random2.output.table
+        module.input.first = random1.output.result
+        module.input.second = random2.output.result
         pr=Print(proc=self.terse, scheduler=s)
-        pr.input.df = module.output.table
+        pr.input.df = module.output.result
         aio.run(s.start())
-        first = list(random1.table().values())
+        first = list(random1.result.values())
         first_2 = first[1]
         first_3 = first[2]
-        second = random2.table().to_array()
+        second = random2.result.to_array()
         second_2 = second[:, 1]
         second_3 = second[:, 2]
         ne_1 = np.add(first_2, second_3)
         ne_2 = np.log(second_3)
-        res = module.table().to_array()
+        res = module.result.to_array()
         self.assertTrue(np.allclose(res[:,0], ne_1, equal_nan=True))
         self.assertTrue(np.allclose(res[:,1], ne_2, equal_nan=True))
 

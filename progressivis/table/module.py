@@ -12,7 +12,7 @@ from .slot_join import SlotJoin
 # pylint: disable=abstract-method
 class TableModule(Module):
     "Base class for modules managing tables."
-    outputs = [SlotDescriptor('table', type=Table, required=False)]
+    outputs = [SlotDescriptor('result', type=Table, required=False)]
 
     def __init__(self, columns=None, **kwds):
         super(TableModule, self).__init__(**kwds)

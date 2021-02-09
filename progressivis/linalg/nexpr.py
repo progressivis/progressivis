@@ -20,8 +20,8 @@ class NumExprABC(TableModule):
         super().__init__(*args, **kwargs)
         self.ref_expr = self.expr        
     def reset(self):
-        if self._table is not None:
-            self._table.resize(0)
+        if self.result is not None:
+            self.result.resize(0)
 
     def run_step(self, run_number, step_size, howlong):
         """
@@ -43,13 +43,13 @@ class NumExprABC(TableModule):
                 continue
             if not slot.has_buffered():
                 return self._return_run_step(self.state_blocked, steps_run=0)
-        if self._table is None:
-            if self.has_output_datashape("table"):
-                dshape_ = self.get_output_datashape("table")
+        if self.result is None:
+            if self.has_output_datashape("result"):
+                dshape_ = self.get_output_datashape("result")
             else:
                 dshape_ = self.get_datashape_from_expr()
                 self.ref_expr = {k.split(":")[0]:v for (k, v) in self.expr.items()}
-            self._table = Table(self.generate_table_name(f'num_expr'),
+            self.result = Table(self.generate_table_name(f'num_expr'),
                                 dshape=dshape_, create=True)
         local_env = {}
         vars_dict = {}
@@ -73,12 +73,12 @@ class NumExprABC(TableModule):
             vars_dict[n] = fobj
         result = {}
         steps = None
-        for c in self._table.columns:
+        for c in self.result.columns:
             col_expr_ = self.ref_expr[c]
 
             col_expr_ = col_expr_.format(**vars_dict)
             result[c] = ne.evaluate(col_expr_, local_dict=local_env)
             if steps is None:
                 steps = len(result[c])
-        self._table.append(result)
+        self.result.append(result)
         return self._return_run_step(self.next_state(first_slot), steps_run=steps)

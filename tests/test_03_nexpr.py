@@ -13,7 +13,7 @@ import numexpr as ne
 class NumExprSample(NumExprABC):
     inputs = [SlotDescriptor('first', type=Table, required=True),
               SlotDescriptor('second', type=Table, required=True)]
-    outputs = [SlotDescriptor('table', type=Table, required=False,
+    outputs = [SlotDescriptor('result', type=Table, required=False,
                               datashape={'first': ['_1', '_2']})]
     expr = {'_1': '{first._2}+2*{second._3}',
             '_2': '{first._3}-5*{second._2}'}    
@@ -35,20 +35,20 @@ class TestNumExpr(ProgressiveTest):
                                          'second': ['_1', '_2', '_3']},
                         scheduler=s)
  
-        module.input.first = random1.output.table
-        module.input.second = random2.output.table
+        module.input.first = random1.output.result
+        module.input.second = random2.output.result
         pr=Print(proc=self.terse, scheduler=s)
-        pr.input.df = module.output.table
+        pr.input.df = module.output.result
         aio.run(s.start())
-        first = random1.table().to_array()
+        first = random1.result.to_array()
         first_2 = first[:, 1]
         first_3 = first[:, 2]
-        second = random2.table().to_array()
+        second = random2.result.to_array()
         second_2 = second[:, 1]
         second_3 = second[:, 2]
         ne_1 = ne.evaluate('first_2+2*second_3')
         ne_2 = ne.evaluate('first_3-5*second_2')
-        res = module.table().to_array()
+        res = module.result.to_array()
         self.assertTrue(np.allclose(res[:,0], ne_1, equal_nan=True))
         self.assertTrue(np.allclose(res[:,1], ne_2, equal_nan=True))
 

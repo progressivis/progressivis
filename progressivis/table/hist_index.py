@@ -512,6 +512,6 @@ class HistogramIndex(TableModule):
         self.input_slot = input_slot
         hist_index = self
         hist_index.input.table = input_module.output[input_slot]
-        # hist_index.input.min = min_.output.table
-        # hist_index.input.max = max_.output.table
+        # hist_index.input.min = min_.output.result
+        # hist_index.input.max = max_.output.result
         return hist_index

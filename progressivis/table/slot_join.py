@@ -51,7 +51,7 @@ class SlotJoin:
             if todo <= 0:
                 break
         if not raw:
-            existing = bitmap(self._module._table.index)
+            existing = bitmap(self._module.result.index)
             return res & existing
         return res
 
@@ -73,7 +73,7 @@ class SlotJoin:
         changes_ = [slot.deleted.changes for slot in self._slots]
         res = reduce(operator.or_, changes_)
         if not raw:
-            existing = bitmap(self._module._table.index)
+            existing = bitmap(self._module.result.index)
             res &= existing
         return res != bitmap()
 

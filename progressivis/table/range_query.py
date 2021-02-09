@@ -148,21 +148,21 @@ class RangeQuery(TableModule):
                 max_.input.table = hist_index.output.max_out
             if min_value is None:
                 min_value = Variable(group=self.name, scheduler=scheduler)
-                min_value.input.like = min_.output.table
+                min_value.input.like = min_.output.result
 
             if max_value is None:
                 max_value = Variable(group=self.name, scheduler=scheduler)
-                max_value.input.like = max_.output.table
+                max_value.input.like = max_.output.result
 
             range_query = self
             range_query.hist_index = hist_index
-            range_query.input.table = hist_index.output.table
+            range_query.input.table = hist_index.output.result
             if min_value:
-                range_query.input.lower = min_value.output.table
+                range_query.input.lower = min_value.output.result
             if max_value:
-                range_query.input.upper = max_value.output.table
-            range_query.input.min = min_.output.table
-            range_query.input.max = max_.output.table
+                range_query.input.upper = max_value.output.result
+            range_query.input.min = min_.output.result
+            range_query.input.max = max_.output.result
 
         self.min = min_
         self.max = max_

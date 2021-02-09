@@ -162,8 +162,8 @@ class RangeQuery2d(TableModule):
                             columns=[self._column_y])
                 min_y.input.table = hist_index_y.output.min_out
                 min_ = MergeDict(group=self.name, scheduler=scheduler)
-                min_.input.first = min_x.output.table
-                min_.input.second = min_y.output.table
+                min_.input.first = min_x.output.result
+                min_.input.second = min_y.output.result
             if max_ is None:
                 max_x = Max(group=self.name,
                             scheduler=scheduler,
@@ -174,29 +174,29 @@ class RangeQuery2d(TableModule):
                             columns=[self._column_y])
                 max_y.input.table = hist_index_y.output.max_out
                 max_ = MergeDict(group=self.name, scheduler=scheduler)
-                max_.input.first = max_x.output.table
-                max_.input.second = max_y.output.table
+                max_.input.first = max_x.output.result
+                max_.input.second = max_y.output.result
             if min_value is None:
                 min_value = Variable(group=self.name,
                                      scheduler=scheduler)
-                min_value.input.like = min_.output.table
+                min_value.input.like = min_.output.result
             if max_value is None:
                 max_value = Variable(group=self.name,
                                      scheduler=scheduler)
-                max_value.input.like = max_.output.table
+                max_value.input.like = max_.output.result
 
             range_query = self
             # range_query.hist_index = hist_index
             self._impl = RangeQuery2dImpl(self._column_x, self._column_y,
                                           hist_index_x, hist_index_y,
                                           approximate=self._approximate)
-            range_query.input.table = hist_index_x.output.table  # don't care
+            range_query.input.table = hist_index_x.output.result  # don't care
             if min_value:
-                range_query.input.lower = min_value.output.table
+                range_query.input.lower = min_value.output.result
             if max_value:
-                range_query.input.upper = max_value.output.table
-            range_query.input.min = min_.output.table
-            range_query.input.max = max_.output.table
+                range_query.input.upper = max_value.output.result
+            range_query.input.min = min_.output.result
+            range_query.input.max = max_.output.result
 
         self.min = min_
         self.max = max_

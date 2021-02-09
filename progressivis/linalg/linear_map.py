@@ -19,8 +19,8 @@ class LinearMap(TableModule):
         self._transf_cache = None
 
     def reset(self):
-        if self._table is not None:
-            self._table.resize(0)
+        if self.result is not None:
+            self.result.resize(0)
         self._transf_cache = None
 
     @process_slot("vectors", "transformation", reset_cb="reset")
@@ -59,11 +59,11 @@ class LinearMap(TableModule):
             vs = self.filter_columns(vectors, fix_loc(indices))
             vs = vs.to_array()
             res = np.matmul(vs, self._transf_cache)
-            if self._table is None:
+            if self.result is None:
                 dshape_ = dshape_projection(transformation,
                                             self._transf_columns)
-                self._table = Table(self.generate_table_name('linear_map'),
+                self.result = Table(self.generate_table_name('linear_map'),
                                     dshape=dshape_, create=True)
-            self._table.append(res)
+            self.result.append(res)
             return self._return_run_step(self.next_state(ctx.vectors),
                                          steps_run=steps)
