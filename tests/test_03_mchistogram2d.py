@@ -56,7 +56,7 @@ class TestMCHistogram2D(ProgressiveTest):
         pr = Every(proc=self.terse, scheduler=s)
         pr.input.df = csv.output.result
         aio.run(csv.scheduler().start())
-        last = histogram2d._table.last().to_dict()
+        last = histogram2d.result.last().to_dict()
         h1 = last['array']
         bounds =  [[last['ymin'], last['ymax']], [last['xmin'], last['xmax']]]
         df = pd.read_csv(get_dataset('bigfile'), header=None, usecols=[1, 2])
@@ -86,10 +86,10 @@ class TestMCHistogram2D(ProgressiveTest):
         pr = Every(proc=self.terse, scheduler=s)
         pr.input.df = stirrer.output.result
         aio.run(s.start())
-        last = histogram2d._table.last().to_dict()
+        last = histogram2d.result.last().to_dict()
         h1 = last['array']
         bounds =  [[last['ymin'], last['ymax']], [last['xmin'], last['xmax']]]
-        t = stirrer._table.loc[:, ['_1', '_2']]
+        t = stirrer.result.loc[:, ['_1', '_2']]
         v = t.to_array()
         bins = [histogram2d.params.ybins, histogram2d.params.xbins]
         h2 = fh.histogram2d(v[:,1], v[:,0], bins=bins, range=bounds)
@@ -117,10 +117,10 @@ class TestMCHistogram2D(ProgressiveTest):
         pr = Every(proc=self.terse, scheduler=s)
         pr.input.df = stirrer.output.result
         aio.run(s.start())
-        last = histogram2d._table.last().to_dict()
+        last = histogram2d.result.last().to_dict()
         h1 = last['array']
         bounds =  [[last['ymin'], last['ymax']], [last['xmin'], last['xmax']]]
-        v = stirrer._table.loc[:, ['_1', '_2']].to_array()
+        v = stirrer.result.loc[:, ['_1', '_2']].to_array()
         bins = [histogram2d.params.ybins, histogram2d.params.xbins]
         h2 = fh.histogram2d(v[:,1], v[:,0], bins=bins, range=bounds)
         h2 = np.flip(h2, axis=0)

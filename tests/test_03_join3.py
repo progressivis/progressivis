@@ -31,7 +31,7 @@ class TestJoin3(ProgressiveTest):
         stat3.input.table = csv.output.result
         # join=Join(scheduler=s)
         # import pdb;pdb.set_trace()
-        join = Reduce.expand(BinJoin, "first", "second", "table",
+        join = Reduce.expand(BinJoin, "first", "second", "result",
                              [stat1.output.stats,
                               stat2.output.stats,
                               stat3.output.stats],
@@ -64,7 +64,7 @@ class TestJoin3(ProgressiveTest):
         # reduce_.input.table = cst2.output.result
         # reduce_.input.table = cst3.output.result
         # join = reduce_.expand()
-        join = Reduce.expand(BinJoin, "first", "second", "table",
+        join = Reduce.expand(BinJoin, "first", "second", "result",
                              [cst1.output.result,
                               cst2.output.result,
                               cst3.output.result],
