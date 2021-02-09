@@ -241,7 +241,7 @@ class MBKMeans(TableModule):
     def create_dependent_modules(self):
         c = DynVar(group="bar", scheduler=self.scheduler())
         self.moved_center = c
-        self.input.moved_center = c.output.table
+        self.input.moved_center = c.output.result
         
 
 class MBKMeansFilter(TableModule):
@@ -283,5 +283,5 @@ class MBKMeansFilter(TableModule):
         filter_ = FilterMod(expr=f'labels=={self._sel}', scheduler=scheduler)
         filter_.input.table = mbkmeans.output.labels
         self.filter = filter_
-        self.input.labels = filter_.output.table
+        self.input.labels = filter_.output.result
         self.input.table = data_module.output[data_slot]

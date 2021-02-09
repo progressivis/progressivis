@@ -54,26 +54,26 @@ class _DataClass(object):
                                                     min_value=False,
                                                     max_value=False)
             self.min_value = Variable(group=self._group, scheduler=scheduler)
-            self.min_value.input.like = range_query_2d.min.output.table
-            range_query_2d.input.lower = self.min_value.output.table
+            self.min_value.input.like = range_query_2d.min.output.result
+            range_query_2d.input.lower = self.min_value.output.result
             self.max_value = Variable(group=self._group, scheduler=scheduler)
-            self.max_value.input.like = range_query_2d.max.output.table
-            range_query_2d.input.upper = self.max_value.output.table
+            self.max_value.input.like = range_query_2d.max.output.result
+            range_query_2d.input.upper = self.max_value.output.result
             if histogram2d is None:
                 histogram2d = MCHistogram2D(self.x_column, self.y_column,
                                             group=self._group,
                                             scheduler=scheduler)
-            histogram2d.input.data = range_query_2d.output.table
+            histogram2d.input.data = range_query_2d.output.result
             if self.sample == 'default':
                 self.sample = Sample(samples=100, group=self._group,
                                      scheduler=scheduler)
             if isinstance(self.sample, Sample):
-                self.sample.input.table = range_query_2d.output.table
+                self.sample.input.table = range_query_2d.output.result
             self.histogram2d = histogram2d
             # self.sample = sample
             # self.select = select
-            self.min = range_query_2d.min.output.table
-            self.max = range_query_2d.max.output.table
+            self.min = range_query_2d.min.output.result
+            self.max = range_query_2d.max.output.result
             self.range_query_2d = range_query_2d
         scatterplot = self
         return scatterplot
@@ -383,7 +383,7 @@ class MCScatterPlot(NAry):
         data_class.create_dependent_modules(input_module, input_slot)
         col_translation = {self._x_label: x_column, self._y_label: y_column}
         hist_meta = dict(inp='hist', class_=name, **col_translation)
-        self.input['table', hist_meta] = data_class.histogram2d.output.table
+        self.input['table', hist_meta] = data_class.histogram2d.output.result
         if sample is not None:
             sample_meta = dict(inp='sample', class_=name, **col_translation)        
             self.input['table', sample_meta] = data_class.sample.output[sample_slot]

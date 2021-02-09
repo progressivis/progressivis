@@ -80,13 +80,13 @@ class PPCA(TableModule):
                                            trace=trace,
                                            threshold=threshold,
                                            group=self.name)
-            self.reduced.input.table = self.output.table
+            self.reduced.input.table = self.output.result
             self.reduced.input.transformer = self.output.transformer
             if resetter is not None:
                 resetter = resetter(scheduler=scheduler)
-                resetter.input.table = self.output.table
+                resetter.input.table = self.output.result
                 self.reduced.input.resetter = resetter.output[resetter_slot]
-            self.reduced.create_dependent_modules(self.output.table)
+            self.reduced.create_dependent_modules(self.output.result)
     def create_dependent_modules(self, atol=0.0, rtol=0.001,
                                  trace=False, threshold=None, resetter=None,
                                  resetter_slot='table', resetter_func=None):
@@ -97,12 +97,12 @@ class PPCA(TableModule):
                                        threshold=threshold,
                                        resetter_func=resetter_func,
                                        group=self.name)
-        self.reduced.input.table = self.output.table
+        self.reduced.input.table = self.output.result
         self.reduced.input.transformer = self.output.transformer
         if resetter is not None:
             assert callable(resetter_func)
             self.reduced.input.resetter = resetter.output[resetter_slot]
-        self.reduced.create_dependent_modules(self.output.table)
+        self.reduced.create_dependent_modules(self.output.result)
 
 class PPCATransformer(TableModule):
     inputs = [SlotDescriptor('table', type=Table, required=True),

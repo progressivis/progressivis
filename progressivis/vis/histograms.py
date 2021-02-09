@@ -69,9 +69,9 @@ class Histograms(NAry):
             histo = Histogram1D(group=self.name, column=column,
                                 bins=bins, delta=delta,
                                 scheduler=self.scheduler)
-            histo.input.table = inp.output.table
-            histo.input.min = minmod.output.table
-            histo.input.max = maxmod.output.table
+            histo.input.table = inp.output.result
+            histo.input.min = minmod.output.result
+            histo.input.max = maxmod.output.result
             self.input.table = histo.output._trace  # will become table.1 ...
             self._histogram[column] = histo
 
