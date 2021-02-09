@@ -46,31 +46,31 @@ class MyStirrer(TableModule):
         created = input_slot.created.next(step_size)
         steps = indices_len(created)
         input_table = input_slot.data()
-        if self._table is None:
-            self._table = Table(self.generate_table_name('stirrer'),
+        if self.result is None:
+            self.result = Table(self.generate_table_name('stirrer'),
                                 dshape=input_table.dshape, )
         v = input_table.loc[fix_loc(created), :]
-        self._table.append(v)
+        self.result.append(v)
         if not self.done:
             sensitive_ids = bitmap(self.scheduler().modules()[self.watched]._sensitive_ids.values())
             if sensitive_ids:
                 if self.proc_sensitive:
                     if self.mode == 'delete':
                         #print('delete sensitive', sensitive_ids)
-                        del self._table.loc[sensitive_ids]
+                        del self.result.loc[sensitive_ids]
                     else:
                         #print('update sensitive', sensitive_ids)
-                        self._table.loc[sensitive_ids, 0] = self.value
+                        self.result.loc[sensitive_ids, 0] = self.value
                     self.done = True
                 else: # non sensitive
-                    if len(self._table) > 10:
+                    if len(self.result) > 10:
                         for i in range(10):
-                            id_ = self._table.index[i]
+                            id_ = self.result.index[i]
                             if id_ not in sensitive_ids:
                                 if self.mode == 'delete':
-                                    del self._table.loc[id_]
+                                    del self.result.loc[id_]
                                 else:
-                                    self._table.loc[id_, 0] = self.value
+                                    self.result.loc[id_, 0] = self.value
                                 self.done = True
 
         return self._return_run_step(self.next_state(input_slot),
@@ -89,8 +89,8 @@ class TestRepairMax(ProgressiveTest):
         pr=Print(proc=self.terse, scheduler=s)
         pr.input.df = max_.output.result
         aio.run(s.start())
-        res1 = random.table().max()
-        res2 = max_.table()
+        res1 = random.result.max()
+        res2 = max_.result
         self.compare(res1, res2)
 
     def test_repair_max2(self):
@@ -109,8 +109,8 @@ class TestRepairMax(ProgressiveTest):
         pr.input.df = max_.output.result
         aio.run(s.start())
         self.assertEqual(ScalarMax._reset_calls_counter, 1)
-        res1 = stirrer.table().max()
-        res2 = max_.table()
+        res1 = stirrer.result.max()
+        res2 = max_.result
         self.compare(res1, res2)
 
     def test_repair_max3(self):
@@ -129,8 +129,8 @@ class TestRepairMax(ProgressiveTest):
         pr.input.df = max_.output.result
         aio.run(s.start())
         self.assertEqual(ScalarMax._reset_calls_counter, 0)
-        res1 = stirrer.table().max()
-        res2 = max_.table()
+        res1 = stirrer.result.max()
+        res2 = max_.result
         self.compare(res1, res2)
 
     def test_repair_max4(self):
@@ -149,8 +149,8 @@ class TestRepairMax(ProgressiveTest):
         pr.input.df = max_.output.result
         aio.run(s.start())
         self.assertEqual(ScalarMax._reset_calls_counter, 0)
-        res1 = stirrer.table().max()
-        res2 = max_.table()
+        res1 = stirrer.result.max()
+        res2 = max_.result
         self.compare(res1, res2)
 
     def test_repair_max5(self):
@@ -169,8 +169,8 @@ class TestRepairMax(ProgressiveTest):
         pr.input.df = max_.output.result
         aio.run(s.start())
         self.assertEqual(ScalarMax._reset_calls_counter, 1)
-        res1 = stirrer.table().max()
-        res2 = max_.table()
+        res1 = stirrer.result.max()
+        res2 = max_.result
         self.compare(res1, res2)
 
     def test_repair_max6(self):
@@ -190,8 +190,8 @@ class TestRepairMax(ProgressiveTest):
         pr.input.df = max_.output.result
         aio.run(s.start())
         self.assertEqual(ScalarMax._reset_calls_counter, 0)
-        res1 = stirrer.table().max()
-        res2 = max_.table()
+        res1 = stirrer.result.max()
+        res2 = max_.result
         self.compare(res1, res2)
 
     def compare(self, res1, res2):
@@ -215,8 +215,8 @@ class TestRepairMin(ProgressiveTest):
         pr=Print(proc=self.terse, scheduler=s)
         pr.input.df = min_.output.result
         aio.run(s.start())
-        res1 = random.table().min()
-        res2 = min_.table()
+        res1 = random.result.min()
+        res2 = min_.result
         self.compare(res1, res2)
     def test_repair_min2(self):
         """
@@ -234,8 +234,8 @@ class TestRepairMin(ProgressiveTest):
         pr.input.df = min_.output.result
         aio.run(s.start())
         self.assertEqual(ScalarMin._reset_calls_counter, 1)
-        res1 = stirrer.table().min()
-        res2 = min_.table()
+        res1 = stirrer.result.min()
+        res2 = min_.result
         self.compare(res1, res2)
 
     def test_repair_min3(self):
@@ -254,8 +254,8 @@ class TestRepairMin(ProgressiveTest):
         pr.input.df = min_.output.result
         aio.run(s.start())
         self.assertEqual(ScalarMin._reset_calls_counter, 0)
-        res1 = stirrer.table().min()
-        res2 = min_.table()
+        res1 = stirrer.result.min()
+        res2 = min_.result
         self.compare(res1, res2)
 
     def test_repair_min4(self):
@@ -274,8 +274,8 @@ class TestRepairMin(ProgressiveTest):
         pr.input.df = min_.output.result
         aio.run(s.start())
         self.assertEqual(ScalarMin._reset_calls_counter, 0)
-        res1 = stirrer.table().min()
-        res2 = min_.table()
+        res1 = stirrer.result.min()
+        res2 = min_.result
         self.compare(res1, res2)
 
     def test_repair_min5(self):
@@ -294,8 +294,8 @@ class TestRepairMin(ProgressiveTest):
         pr.input.df = min_.output.result
         aio.run(s.start())
         self.assertEqual(ScalarMin._reset_calls_counter, 1)
-        res1 = stirrer.table().min()
-        res2 = min_.table()
+        res1 = stirrer.result.min()
+        res2 = min_.result
         self.compare(res1, res2)
 
     def test_repair_min6(self):
@@ -315,8 +315,8 @@ class TestRepairMin(ProgressiveTest):
         pr.input.df = min_.output.result
         aio.run(s.start())
         self.assertEqual(ScalarMin._reset_calls_counter, 0)
-        res1 = stirrer.table().min()
-        res2 = min_.table()
+        res1 = stirrer.result.min()
+        res2 = min_.result
         self.compare(res1, res2)
 
     def compare(self, res1, res2):

@@ -16,8 +16,8 @@ class Hadamard(TableModule):
               SlotDescriptor('x2', type=Table, required=True)]
 
     def reset(self):
-        if self._table is not None:
-            self._table.resize(0)
+        if self.result is not None:
+            self.result.resize(0)
 
     def run_step(self, run_number, step_size, howlong):
         x1 = self.get_input_slot('x1')
@@ -25,8 +25,8 @@ class Hadamard(TableModule):
         if x1.updated.any() or x1.deleted.any() or x2.updated.any() or x2.deleted.any():
             x1.reset()
             x2.reset()
-            if self._table is not None:
-                self._table.resize(0)
+            if self.result is not None:
+                self.result.resize(0)
             x1.update(run_number)
             x2.update(run_number)
         step_size = min(x1.created.length(), x2.created.length(), step_size)
@@ -38,10 +38,10 @@ class Hadamard(TableModule):
         assert data1.columns == data2.columns
         for col in  data1.columns:
             res[col] = np.multiply(data1[col].value, data2[col].value)
-        if self._table is None:
-            self._table = Table(name='simple_hadamard', data=res, create=True)
+        if self.result is None:
+            self.result = Table(name='simple_hadamard', data=res, create=True)
         else:
-            self._table.append(res)
+            self.result.append(res)
         return self._return_run_step(self.next_state(x1), steps_run=step_size)
 
 class TestHadamard(ProgressiveTest):
@@ -55,9 +55,9 @@ class TestHadamard(ProgressiveTest):
         pr=Print(proc=self.terse, scheduler=s)
         pr.input.df = module.output.result
         aio.run(s.start())
-        res1 = np.multiply(random1.table().to_array(),
-                      random2.table().to_array())
-        res2 = module.table().to_array()
+        res1 = np.multiply(random1.result.to_array(),
+                      random2.result.to_array())
+        res2 = module.result.to_array()
         self.assertTrue(np.allclose(res1, res2, equal_nan=True))
 
 

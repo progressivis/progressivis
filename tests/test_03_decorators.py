@@ -149,7 +149,7 @@ class TestDecorators(ProgressiveTest):
         module = RunIfAll(scheduler=s)
         _fun = _4_csv_scenario(module, s)
         aio.run(s.start(tick_proc=_fun))
-        self.assertTrue(module.table() is not None) # evidence that run_step_impl() was called
+        self.assertTrue(module.result is not None) # evidence that run_step_impl() was called
         self.assertEqual(module.context._slot_policy, 'run_if_all')
         self.assertEqual(module.context._slot_expr, [['a', 'b', 'c', 'd']])
 
@@ -158,7 +158,7 @@ class TestDecorators(ProgressiveTest):
         module = RunIfAllacOrAllbd(scheduler=s)
         _fun = _4_csv_scenario(module, s)
         aio.run(s.start(tick_proc=_fun))
-        self.assertTrue(module.table() is not None) # evidence that run_step_impl() was called
+        self.assertTrue(module.result is not None) # evidence that run_step_impl() was called
         self.assertEqual(module.context._slot_policy, 'run_if_all')
         self.assertEqual(module.context._slot_expr, [('a', 'c'), ('b', 'd')])
 
@@ -167,7 +167,7 @@ class TestDecorators(ProgressiveTest):
         module = RunIfAny(scheduler=s)
         _fun = _4_csv_scenario(module, s)
         aio.run(s.start(tick_proc=_fun))
-        self.assertTrue(module.table() is not None) # evidence that run_step_impl() was called
+        self.assertTrue(module.result is not None) # evidence that run_step_impl() was called
         self.assertEqual(module.context._slot_policy, 'run_if_any')
         self.assertEqual(module.context._slot_expr, [['a', 'b', 'c', 'd']])
 
@@ -176,7 +176,7 @@ class TestDecorators(ProgressiveTest):
         module = RunIfAnyAndAny(scheduler=s)
         _fun = _4_csv_scenario(module, s)
         aio.run(s.start(tick_proc=_fun))
-        self.assertTrue(module.table() is not None) # evidence that run_step_impl() was called
+        self.assertTrue(module.result is not None) # evidence that run_step_impl() was called
         self.assertEqual(module.context._slot_policy, 'run_if_any')
         self.assertEqual(module.context._slot_expr, [('a', 'c'), ('b', 'd')])
 #@skip
@@ -186,7 +186,7 @@ class TestDecoratorsWith2CSV2Const(ProgressiveTest):
         module = RunIfAll(scheduler=s)
         _fun = _2_csv_2_const_scenario(module, s)
         aio.run(s.start(tick_proc=_fun))
-        self.assertTrue(module.table() is None) # evidence that run_step_impl() was NOT called
+        self.assertTrue(module.result is None) # evidence that run_step_impl() was NOT called
         self.assertEqual(module.context._slot_policy, 'run_if_all')
         self.assertEqual(module.context._slot_expr, [['a', 'b', 'c', 'd']])
     def test_decorators_all_or_all(self):
@@ -194,7 +194,7 @@ class TestDecoratorsWith2CSV2Const(ProgressiveTest):
         module = RunIfAllacOrAllbd(scheduler=s)
         _fun = _2_csv_2_const_scenario(module, s)
         aio.run(s.start(tick_proc=_fun))
-        self.assertTrue(module.table() is None) # evidence that run_step_impl() was NOT called
+        self.assertTrue(module.result is None) # evidence that run_step_impl() was NOT called
         self.assertEqual(module.context._slot_policy, 'run_if_all')
         self.assertEqual(module.context._slot_expr, [('a', 'c'), ('b', 'd')])
 
@@ -203,7 +203,7 @@ class TestDecoratorsWith2CSV2Const(ProgressiveTest):
         module = RunIfAllabOrAllcd(scheduler=s)
         _fun = _2_csv_2_const_scenario(module, s)
         aio.run(s.start(tick_proc=_fun))
-        self.assertTrue(module.table() is not None) # evidence that run_step_impl() was called
+        self.assertTrue(module.result is not None) # evidence that run_step_impl() was called
         self.assertEqual(module.context._slot_policy, 'run_if_all')
         self.assertEqual(module.context._slot_expr, [('a', 'b'), ('c', 'd')])
 
@@ -213,7 +213,7 @@ class TestDecoratorsWith2CSV2Const2(ProgressiveTest):
         module = RunIfAny(scheduler=s)
         _fun = _2_csv_2_const_scenario(module, s)
         aio.run(s.start(tick_proc=_fun))
-        self.assertTrue(module.table() is not None) # evidence that run_step_impl() was called
+        self.assertTrue(module.result is not None) # evidence that run_step_impl() was called
         self.assertEqual(module.context._slot_policy, 'run_if_any')
         self.assertEqual(module.context._slot_expr, [['a', 'b', 'c', 'd']])
 
@@ -222,7 +222,7 @@ class TestDecoratorsWith2CSV2Const2(ProgressiveTest):
         module = RunIfAnyAndAny(scheduler=s)
         _fun = _4_csv_scenario(module, s)
         aio.run(s.start(tick_proc=_fun))
-        self.assertTrue(module.table() is not None) # evidence that run_step_impl() was called
+        self.assertTrue(module.result is not None) # evidence that run_step_impl() was called
         self.assertEqual(module.context._slot_policy, 'run_if_any')
         self.assertEqual(module.context._slot_expr, [('a', 'c'), ('b', 'd')])
 
@@ -233,7 +233,7 @@ class TestDecoratorsWith4Const(ProgressiveTest):
         module = RunIfAny(scheduler=s)
         _fun = _4_const_scenario(module, s)
         aio.run(s.start(tick_proc=_fun))
-        self.assertTrue(module.table() is None) # evidence that run_step_impl() was NOT called
+        self.assertTrue(module.result is None) # evidence that run_step_impl() was NOT called
         self.assertEqual(module.context._slot_policy, 'run_if_any')
         self.assertEqual(module.context._slot_expr, [['a', 'b', 'c', 'd']])
     def test_decorators_always(self):
@@ -241,7 +241,7 @@ class TestDecoratorsWith4Const(ProgressiveTest):
         module = RunAlways(scheduler=s)
         _fun = _4_const_scenario(module, s)
         aio.run(s.start(tick_proc=_fun))
-        self.assertTrue(module.table() is not None) # evidence that run_step_impl() was called despite slots inactivity
+        self.assertTrue(module.result is not None) # evidence that run_step_impl() was called despite slots inactivity
         self.assertEqual(module.context._slot_policy, 'run_always')
         self.assertEqual(module.context._slot_expr, [['a', 'b', 'c', 'd']])
 
