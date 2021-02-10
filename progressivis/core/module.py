@@ -354,6 +354,10 @@ class Module(metaclass=ModuleMeta):
 
     def create_slot(self, output_name, input_module, input_name):
         "Create a specified output slot"
+        if isinstance(output_name, int):
+            pos = output_name
+            slot_desc = self.all_outputs[pos]
+            output_name = slot_desc.name
         return Slot(self, output_name, input_module, input_name)
 
     def connect_output(self, output_name, input_module, input_name):
@@ -796,8 +800,8 @@ class InputSlots(object):
             desc = [(k, sd.required) for (k, sd) in slot.input_module.input_descriptors.items()]
             assert pos < len(desc)
             name_, req = desc[pos]
-            assert req
-            assert set([r for (_, r) in desc[:pos+1]]) == set([True]) # all slots before pos are required
+            # pos slot and all slots before pos have to be "required"
+            assert set([r for (_, r) in desc[:pos+1]]) == set([True]) 
             slot.input_name = name_
         else:
             slot.input_name = name
