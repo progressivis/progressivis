@@ -181,7 +181,7 @@ class CSVLoader(TableModule):
                         logger.error(f"Cannot acces recovery table {e}")
                         return self.state_terminated
                     try:
-                        last_ = self._recovery_table.eval("last_id=={}".format(len(self._table)), as_slice=False)
+                        last_ = self._recovery_table.eval("last_id=={}".format(len(self.result)), as_slice=False)
                         len_last = len(last_)
                         if len_last > 1:
                             logger.error("Inconsistent recovery table")
@@ -194,7 +194,7 @@ class CSVLoader(TableModule):
                                 snapshot = None
                         if snapshot is None: # i.e. snapshot not yet found or inconsistent
                             max_ = -1
-                            for i in self._recovery_table.eval("last_id<{}".format(len(self._table)), as_slice=False):
+                            for i in self._recovery_table.eval("last_id<{}".format(len(self.result)), as_slice=False):
                                 sn = self._recovery_table.row(i).to_dict(ordered=True)
                                 if check_snapshot(sn) and sn['last_id'] > max_:
                                     max_, snapshot = sn['last_id'], sn

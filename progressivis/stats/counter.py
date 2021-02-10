@@ -22,8 +22,8 @@ class Counter(TableModule):
         return super(Counter, self).is_ready()
 
     def reset(self):
-        if self._table is not None:
-                self._table.resize(0)
+        if self.result is not None:
+                self.result.resize(0)
 
     @process_slot("table", reset_cb="reset")
     @run_if_any
@@ -35,12 +35,12 @@ class Counter(TableModule):
             if steps == 0:
                 return self._return_run_step(self.state_blocked, steps_run=0)
             data = pd.DataFrame(dict(counter=steps), index=[0])
-            if self._table is None:
-                self._table = Table(self.generate_table_name('counter'),
+            if self.result is None:
+                self.result = Table(self.generate_table_name('counter'),
                                     data=data,
                                     create=True)
-            elif len(self._table) == 0:
-                self._table.append(data)
+            elif len(self.result) == 0:
+                self.result.append(data)
             else:
-                self._table['counter'].loc[0] += steps
+                self.result['counter'].loc[0] += steps
             return self._return_run_step(self.next_state(dfslot), steps_run=steps)
