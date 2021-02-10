@@ -25,13 +25,13 @@ class TestJoin2(ProgressiveTest):
         csv = CSVLoader(get_dataset('bigfile'), index_col=False, header=None,
                         scheduler=s)
         stat1 = Stats(1, reset_index=True, scheduler=s)
-        stat1.input.table = csv.output.result
+        stat1.input[0] = csv.output.result
         stat2 = Stats(2, reset_index=True, scheduler=s)
-        stat2.input.table = csv.output.result
+        stat2.input[0] = csv.output.result
         # join=Join(scheduler=s)
         # reduce_ = Reduce(BinJoin, "first", "second", "table", scheduler=s)
-        # reduce_.input.table = stat1.output.stats
-        # reduce_.input.table = stat2.output.stats
+        # reduce_.input[0] = stat1.output.stats
+        # reduce_.input[0] = stat2.output.stats
         # join = reduce_.expand()
         join = Reduce.expand(BinJoin, "first", "second", "table",
                              [stat1.output.stats, stat2.output.stats],
@@ -56,8 +56,8 @@ class TestJoin2(ProgressiveTest):
                              [cst1.output.result, cst2.output.result],
                              scheduler=s)
         # reduce_ = Reduce(BinJoin, "first", "second", "table", scheduler=s)
-        # reduce_.input.table = cst1.output.result
-        # reduce_.input.table = cst2.output.result
+        # reduce_.input[0] = cst1.output.result
+        # reduce_.input[0] = cst2.output.result
         # join = reduce_.expand()
         # join = BinJoin(scheduler=s)
         # join.input.first = cst1.output.result

@@ -14,7 +14,7 @@ class TestPercentiles(ProgressiveTest):
         module = Percentiles('_1', name='test_percentile',
                              percentiles=[0.1, 0.25, 0.5, 0.75, 0.9],
                              scheduler=s)
-        module.input.table = csv_module.output.result
+        module.input[0] = csv_module.output.result
         prt = Every(proc=self.terse, name='print', scheduler=s)
         prt.input.df = module.output.result
 

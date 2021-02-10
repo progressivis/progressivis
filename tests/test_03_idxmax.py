@@ -14,9 +14,9 @@ class TestIdxMax(ProgressiveTest):
         s=self.scheduler()
         random = RandomTable(10, rows=10000,throttle=1000, scheduler=s)
         idxmax=IdxMax(scheduler=s)
-        idxmax.input.table = random.output.result
+        idxmax.input[0] = random.output.result
         max_=Max(scheduler=s)
-        max_.input.table = random.output.result
+        max_.input[0] = random.output.result
         pr=Print(proc=self.terse, scheduler=s)
         pr.input.df = idxmax.output.result
         aio.run(s.start())
@@ -31,11 +31,11 @@ class TestIdxMax(ProgressiveTest):
         random = RandomTable(10, rows=10000,throttle=1000, scheduler=s)
         stirrer = Stirrer(update_column='_1', delete_rows=5,
                           fixed_step_size=100, scheduler=s)
-        stirrer.input.table = random.output.result
+        stirrer.input[0] = random.output.result
         idxmax=IdxMax(scheduler=s)
-        idxmax.input.table = stirrer.output.result
+        idxmax.input[0] = stirrer.output.result
         max_=Max(scheduler=s)
-        max_.input.table = stirrer.output.result
+        max_.input[0] = stirrer.output.result
         pr=Print(proc=self.terse, scheduler=s)
         pr.input.df = idxmax.output.result
         aio.run(s.start())
@@ -50,9 +50,9 @@ class TestIdxMax(ProgressiveTest):
         s=self.scheduler()
         random = RandomTable(10, rows=10000,throttle=1000, scheduler=s)
         idxmin=IdxMin(scheduler=s)
-        idxmin.input.table = random.output.result
+        idxmin.input[0] = random.output.result
         min_=Min(scheduler=s)
-        min_.input.table = random.output.result
+        min_.input[0] = random.output.result
         pr=Print(proc=self.terse, scheduler=s)
         pr.input.df = idxmin.output.result
         aio.run(s.start())
@@ -67,11 +67,11 @@ class TestIdxMax(ProgressiveTest):
         random = RandomTable(10, rows=10000,throttle=1000, scheduler=s)
         stirrer = Stirrer(update_column='_1', delete_rows=5,
                           fixed_step_size=100, scheduler=s)
-        stirrer.input.table = random.output.result
+        stirrer.input[0] = random.output.result
         idxmin=IdxMin(scheduler=s)
-        idxmin.input.table = stirrer.output.result
+        idxmin.input[0] = stirrer.output.result
         min_=Min(scheduler=s)
-        min_.input.table = stirrer.output.result
+        min_.input[0] = stirrer.output.result
         pr=Print(proc=self.terse, scheduler=s)
         pr.input.df = idxmin.output.result
         aio.run(s.start())

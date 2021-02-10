@@ -24,8 +24,8 @@ class MBKMeans(TableModule):
     """
     parameters = [('samples',  np.dtype(int), 50)]
     inputs = [
-        SlotDescriptor('moved_center', type=PsDict, required=False),
-        SlotDescriptor('table', type=Table, required=True)
+        SlotDescriptor('table', type=Table, required=True),
+        SlotDescriptor('moved_center', type=PsDict, required=False)        
     ]
     outputs = [
         SlotDescriptor('labels', type=Table, required=False),

@@ -791,7 +791,16 @@ class InputSlots(object):
         assert slot.output_module is not None
         assert slot.output_name is not None
         slot.input_module = self.__dict__['module']
-        slot.input_name = name
+        if isinstance(name, int):
+            pos = name
+            desc = [(k, sd.required) for (k, sd) in slot.input_module.input_descriptors.items()]
+            assert pos < len(desc)
+            name_, req = desc[pos]
+            assert req
+            assert set([r for (_, r) in desc[:pos+1]]) == set([True]) # all slots before pos are required
+            slot.input_name = name_
+        else:
+            slot.input_name = name
         slot.connect()
 
     def __getattr__(self, name):
@@ -801,7 +810,7 @@ class InputSlots(object):
         raise ProgressiveError('Input slots cannot be read, only assigned to')
 
     def __setitem__(self, name, slot):
-        if isinstance(name, str):
+        if isinstance(name, (str, int)):
             return self.__setattr__(name, slot)
         name, meta = name
         slot.meta = meta

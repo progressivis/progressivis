@@ -12,9 +12,9 @@ class TestStirrer(ProgressiveTest):
         s=Scheduler()
         random = RandomTable(2, rows=100000, scheduler=s)
         stirrer = Stirrer(update_column='_1', delete_rows=5, update_rows=5, fixed_step_size=100, scheduler=s)
-        stirrer.input.table = random.output.result
+        stirrer.input[0] = random.output.result
         max_=Max(name='max_'+str(hash(random)), scheduler=s)
-        max_.input.table = stirrer.output.result
+        max_.input[0] = stirrer.output.result
         pr=Print(proc=self.terse, scheduler=s)
         pr.input.df = max_.output.result
         aio.run(s.start())

@@ -22,7 +22,7 @@ class TestUnary(ProgressiveTest):
         s = self.scheduler()
         random = RandomTable(10, rows=100_000, scheduler=s)
         module = Unary(np.log, scheduler=s)
-        module.input.table = random.output.result
+        module.input[0] = random.output.result
         pr=Print(proc=self.terse, scheduler=s)
         pr.input.df = module.output.result
         aio.run(s.start())
@@ -35,7 +35,7 @@ class TestUnary(ProgressiveTest):
         s = self.scheduler()
         random = RandomTable(10, rows=100_000, scheduler=s)
         module = Unary(np.log, columns=['_3', '_5', '_7'], scheduler=s)
-        module.input.table = random.output.result
+        module.input[0] = random.output.result
         pr=Print(proc=self.terse, scheduler=s)
         pr.input.df = module.output.result
         aio.run(s.start())
@@ -49,9 +49,9 @@ class TestUnary(ProgressiveTest):
         random = RandomTable(10, rows=100_000, scheduler=s)
         stirrer = Stirrer(update_column='_3',
                           fixed_step_size=1000, scheduler=s, **kw)
-        stirrer.input.table = random.output.result
+        stirrer.input[0] = random.output.result
         module = Unary(np.log, columns=['_3', '_5', '_7'], scheduler=s)
-        module.input.table = stirrer.output.result
+        module.input[0] = stirrer.output.result
         pr=Print(proc=self.terse, scheduler=s)
         pr.input.df = module.output.result
         aio.run(s.start())
@@ -71,7 +71,7 @@ class TestUnary(ProgressiveTest):
         s = self.scheduler()
         random = RandomTable(10, rows=10_000, scheduler=s)
         module = cls(scheduler=s)
-        module.input.table = random.output.result
+        module.input[0] = random.output.result
         pr=Print(proc=self.terse, scheduler=s)
         pr.input.df = module.output.result
         aio.run(s.start())
@@ -102,7 +102,7 @@ class TestOtherUnaries(ProgressiveTest):
         random = RandomTable(10, random=lambda x: np.random.rand(x)*10000.0,
                              rows=100_000, scheduler=s)
         module = Arccosh(scheduler=s)
-        module.input.table = random.output.result
+        module.input[0] = random.output.result
         pr=Print(proc=self.terse, scheduler=s)
         pr.input.df = module.output.result
         aio.run(s.start())
@@ -122,7 +122,7 @@ class TestOtherUnaries(ProgressiveTest):
                              dtype='int64',
                              rows=100_000, scheduler=s)
         module = Invert(scheduler=s)
-        module.input.table = random.output.result
+        module.input[0] = random.output.result
         pr=Print(proc=self.terse, scheduler=s)
         pr.input.df = module.output.result
         aio.run(s.start())
@@ -142,7 +142,7 @@ class TestOtherUnaries(ProgressiveTest):
                              dtype='int64',
                              rows=100_000, scheduler=s)
         module = BitwiseNot(scheduler=s)
-        module.input.table = random.output.result
+        module.input[0] = random.output.result
         pr=Print(proc=self.terse, scheduler=s)
         pr.input.df = module.output.result
         aio.run(s.start())
@@ -162,7 +162,7 @@ class TestColsBinary(ProgressiveTest):
         random = RandomTable(cols, rows=100_000, scheduler=s)
         module = ColsBinary(np.add, first=['_3', '_5', '_7'],
                               second=['_4', '_6', '_8'], scheduler=s)
-        module.input.table = random.output.result
+        module.input[0] = random.output.result
         pr=Print(proc=self.terse, scheduler=s)
         pr.input.df = module.output.result
         aio.run(s.start())
@@ -183,7 +183,7 @@ class TestColsBinary(ProgressiveTest):
                             second=['_4', '_6', '_8'],
                             cols_out=['x', 'y', 'z'],
                             scheduler=s)
-        module.input.table = random.output.result
+        module.input[0] = random.output.result
         pr=Print(proc=self.terse, scheduler=s)
         pr.input.df = module.output.result
         aio.run(s.start())
@@ -196,10 +196,10 @@ class TestColsBinary(ProgressiveTest):
         random = RandomTable(cols, rows=10_000, scheduler=s)
         stirrer = Stirrer(update_column='_3',
                           fixed_step_size=1000, scheduler=s, **kw)
-        stirrer.input.table = random.output.result
+        stirrer.input[0] = random.output.result
         module = ColsBinary(np.add, first=['_3', '_5', '_7'],
                               second=['_4', '_6', '_8'], scheduler=s)
-        module.input.table = stirrer.output.result
+        module.input[0] = stirrer.output.result
         pr=Print(proc=self.terse, scheduler=s)
         pr.input.df = module.output.result
         aio.run(s.start())
@@ -225,7 +225,7 @@ class TestColsBinary(ProgressiveTest):
         module = cls(first=['_3', '_5', '_7'],
                      second=['_4', '_6', '_8'],
                      cols_out=['x', 'y', 'z'], scheduler=s)
-        module.input.table = random.output.result
+        module.input[0] = random.output.result
         pr=Print(proc=self.terse, scheduler=s)
         pr.input.df = module.output.result
         aio.run(s.start())
@@ -261,7 +261,7 @@ class TestOtherColsBinaries(ProgressiveTest):
         module = cls(first=['_3', '_5', '_7'],
                      second=['_4', '_6', '_8'],
                      cols_out=['x', 'y', 'z'], scheduler=s)
-        module.input.table = random.output.result
+        module.input[0] = random.output.result
         pr=Print(proc=self.terse, scheduler=s)
         pr.input.df = module.output.result
         aio.run(s.start())
@@ -285,7 +285,7 @@ class TestOtherColsBinaries(ProgressiveTest):
         module = cls(first=['_3', '_5', '_7'],
                      second=['_4', '_6', '_8'],
                      cols_out=['x', 'y', 'z'], scheduler=s)
-        module.input.table = random.output.result
+        module.input[0] = random.output.result
         pr=Print(proc=self.terse, scheduler=s)
         pr.input.df = module.output.result
         aio.run(s.start())
@@ -361,10 +361,10 @@ class TestBinary(ProgressiveTest):
         random2 = RandomTable(10, rows=100000, scheduler=s)
         stirrer1 = Stirrer(update_column='_3',
                           fixed_step_size=1000, scheduler=s, **kw)
-        stirrer1.input.table = random1.output.result
+        stirrer1.input[0] = random1.output.result
         stirrer2 = Stirrer(update_column='_3',
                           fixed_step_size=1000, scheduler=s, **kw)
-        stirrer2.input.table = random2.output.result
+        stirrer2.input[0] = random2.output.result
         module = Binary(np.add, columns={'first': ['_3', '_5', '_7'],
                                          'second': ['_4', '_6', '_8']},
                         scheduler=s)
@@ -551,7 +551,7 @@ class TestReduce(ProgressiveTest):
         s = self.scheduler()
         random = RandomTable(10, rows=100_000, scheduler=s)
         module = Reduce(np.add, scheduler=s)
-        module.input.table = random.output.result
+        module.input[0] = random.output.result
         pr=Print(proc=self.terse, scheduler=s)
         pr.input.df = module.output.result
         aio.run(s.start())
@@ -563,7 +563,7 @@ class TestReduce(ProgressiveTest):
         s = self.scheduler()
         random = RandomTable(10,  rows=100_000, scheduler=s)
         module = Reduce(np.add, columns=['_3', '_5', '_7'], scheduler=s)
-        module.input.table = random.output.result
+        module.input[0] = random.output.result
         pr=Print(proc=self.terse, scheduler=s)
         pr.input.df = module.output.result
         aio.run(s.start())
@@ -576,7 +576,7 @@ class TestReduce(ProgressiveTest):
         s = self.scheduler()
         random = RandomTable(10, rows=10_000, scheduler=s)
         module = cls(scheduler=s)
-        module.input.table = random.output.result
+        module.input[0] = random.output.result
         pr=Print(proc=self.terse, scheduler=s)
         pr.input.df = module.output.result
         aio.run(s.start())
@@ -606,7 +606,7 @@ class TestCustomFunctions(ProgressiveTest):
         s = self.scheduler()
         random = RandomTable(10, rows=100_000, scheduler=s)
         module = CustomUnary(scheduler=s)
-        module.input.table = random.output.result
+        module.input[0] = random.output.result
         pr=Print(proc=self.terse, scheduler=s)
         pr.input.df = module.output.result
         aio.run(s.start())
@@ -641,7 +641,7 @@ class TestCustomFunctions(ProgressiveTest):
         s = self.scheduler()
         random = RandomTable(10, rows=100_000, scheduler=s)
         module = CustomBinaryReduce(scheduler=s)
-        module.input.table = random.output.result
+        module.input[0] = random.output.result
         pr=Print(proc=self.terse, scheduler=s)
         pr.input.df = module.output.result
         aio.run(s.start())
@@ -662,7 +662,7 @@ class TestOtherReduces(ProgressiveTest):
         random = RandomTable(3, rows=10_000, scheduler=s, random=lambda x: np.random.randint(10, size=x),
                              dtype='int64')
         module = cls(scheduler=s)
-        module.input.table = random.output.result
+        module.input[0] = random.output.result
         pr=Print(proc=self.terse, scheduler=s)
         pr.input.df = module.output.result
         aio.run(s.start())
@@ -701,7 +701,7 @@ class TestDecorators(ProgressiveTest):
         s = self.scheduler()
         random = RandomTable(10, rows=100_000, scheduler=s)
         module = CustomUnary(scheduler=s)
-        module.input.table = random.output.result
+        module.input[0] = random.output.result
         pr=Print(proc=self.terse, scheduler=s)
         pr.input.df = module.output.result
         aio.run(s.start())
@@ -736,7 +736,7 @@ class TestDecorators(ProgressiveTest):
         s = self.scheduler()
         random = RandomTable(10, rows=100_000, scheduler=s)
         module = CustomBinaryReduce(scheduler=s)
-        module.input.table = random.output.result
+        module.input[0] = random.output.result
         pr=Print(proc=self.terse, scheduler=s)
         pr.input.df = module.output.result
         aio.run(s.start())

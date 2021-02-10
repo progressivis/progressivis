@@ -37,7 +37,7 @@ class TestMBKmeans(ProgressiveTest):
                             scheduler=s)
             km = MBKMeans(n_clusters=n_clusters, random_state=42,
                           is_input=False, is_greedy=False, scheduler=s)
-            km.input.table = csv.output.result
+            km.input[0] = csv.output.result
             pr = Print(proc=self.terse, scheduler=s)
             pr.input.df = km.output.result
             e = Every(proc=self.terse, scheduler=s)

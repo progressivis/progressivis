@@ -26,17 +26,17 @@ class TestIntersection(ProgressiveTest):
         hist_index.create_dependent_modules(random, 'result')
         bisect_min = Bisect(column='_1', op='>', hist_index=hist_index,
                             scheduler=s)
-        bisect_min.input.table = hist_index.output.result
-        # bisect_.input.table = random.output.result
+        bisect_min.input[0] = hist_index.output.result
+        # bisect_.input[0] = random.output.result
         bisect_min.input.limit = min_value.output.result
         bisect_max = Bisect(column='_1', op='<', hist_index=hist_index,
                             scheduler=s)
-        bisect_max.input.table = hist_index.output.result
-        # bisect_.input.table = random.output.result
+        bisect_max.input[0] = hist_index.output.result
+        # bisect_.input[0] = random.output.result
         bisect_max.input.limit = max_value.output.result
         inter = Intersection(scheduler=s)
-        inter.input.table = bisect_min.output.result
-        inter.input.table = bisect_max.output.result
+        inter.input[0] = bisect_min.output.result
+        inter.input[0] = bisect_max.output.result
         pr = Print(proc=self.terse, scheduler=s)
         pr.input.df = inter.output.result
         aio.run(s.start())
@@ -51,7 +51,7 @@ class TestIntersection(ProgressiveTest):
         random = RandomTable(2, rows=100000, scheduler=s)
         stirrer = Stirrer(update_column='_2',
                           fixed_step_size=1000, scheduler=s, **kw)
-        stirrer.input.table = random.output.result
+        stirrer.input[0] = random.output.result
         t_min = Table(name=None,
                       dshape='{_1: float64}', data={'_1': [0.3]})
         min_value = Constant(table=t_min, scheduler=s)
@@ -62,17 +62,17 @@ class TestIntersection(ProgressiveTest):
         hist_index.create_dependent_modules(stirrer, 'result')
         bisect_min = Bisect(column='_1', op='>', hist_index=hist_index,
                             scheduler=s)
-        bisect_min.input.table = hist_index.output.result
-        # bisect_.input.table = random.output.result
+        bisect_min.input[0] = hist_index.output.result
+        # bisect_.input[0] = random.output.result
         bisect_min.input.limit = min_value.output.result
         bisect_max = Bisect(column='_1', op='<', hist_index=hist_index,
                             scheduler=s)
-        bisect_max.input.table = hist_index.output.result
-        # bisect_.input.table = random.output.result
+        bisect_max.input[0] = hist_index.output.result
+        # bisect_.input[0] = random.output.result
         bisect_max.input.limit = max_value.output.result
         inter = Intersection(scheduler=s)
-        inter.input.table = bisect_min.output.result
-        inter.input.table = bisect_max.output.result
+        inter.input[0] = bisect_min.output.result
+        inter.input[0] = bisect_max.output.result
         pr = Print(proc=self.terse, scheduler=s)
         pr.input.df = inter.output.result
         aio.run(s.start())

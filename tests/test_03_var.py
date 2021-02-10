@@ -11,7 +11,7 @@ class Testvar(ProgressiveTest):
         s = self.scheduler()
         random = RandomTable(1, rows=1000, scheduler=s)
         var=Var(scheduler=s)
-        var.input.table = random.output.result
+        var.input[0] = random.output.result
         pr=Print(proc=self.terse, scheduler=s)
         pr.input.df = var.output.result
         aio.run(s.start())

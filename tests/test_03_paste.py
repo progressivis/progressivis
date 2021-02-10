@@ -16,11 +16,11 @@ class TestPaste(ProgressiveTest):
         s = self.scheduler()
         random = RandomTable(10, rows=10000, scheduler=s)
         min_1 = Min(name='min_1'+str(hash(random)), scheduler=s, columns=['_1'])
-        min_1.input.table = random.output.result
+        min_1.input[0] = random.output.result
         d2t_1 = Dict2Table(scheduler=s)
         d2t_1.input.dict_ = min_1.output.result
         min_2 = Min(name='min_2'+str(hash(random)), scheduler=s, columns=['_2'])
-        min_2.input.table = random.output.result
+        min_2.input[0] = random.output.result
         d2t_2 = Dict2Table(scheduler=s)
         d2t_2.input.dict_ = min_2.output.result
         bj = Paste(scheduler=s)

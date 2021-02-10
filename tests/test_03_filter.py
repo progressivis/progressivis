@@ -13,7 +13,7 @@ class TestFilter(ProgressiveTest):
         s = Scheduler()
         random = RandomTable(2, rows=100000, scheduler=s)
         filter_ = FilterMod(expr='_1 > 0.5', scheduler=s)
-        filter_.input.table = random.output.result
+        filter_.input[0] = random.output.result
         pr = Print(proc=self.terse, scheduler=s)
         pr.input.df = filter_.output.result
         aio.run(s.start())
@@ -28,9 +28,9 @@ class TestFilter(ProgressiveTest):
         stirrer = Stirrer(update_column='_1', delete_rows=5,
                           #update_rows=5,
                           fixed_step_size=100, scheduler=s)
-        stirrer.input.table = random.output.result
+        stirrer.input[0] = random.output.result
         filter_ = FilterMod(expr='_1 > 0.5', scheduler=s)
-        filter_.input.table = stirrer.output.result
+        filter_.input[0] = stirrer.output.result
         pr = Print(proc=self.terse, scheduler=s)
         pr.input.df = filter_.output.result
         aio.run(s.start())
@@ -47,9 +47,9 @@ class TestFilter(ProgressiveTest):
         stirrer = Stirrer(update_column='_1',
                           update_rows=5,
                           fixed_step_size=100, scheduler=s)
-        stirrer.input.table = random.output.result
+        stirrer.input[0] = random.output.result
         filter_ = FilterMod(expr='_1 > 0.5', scheduler=s)
-        filter_.input.table = stirrer.output.result
+        filter_.input[0] = stirrer.output.result
         pr = Print(proc=self.terse, scheduler=s)
         pr.input.df = filter_.output.result
         aio.run(s.start())

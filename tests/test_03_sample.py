@@ -18,7 +18,7 @@ class TestSample(ProgressiveTest):
         s = self.scheduler()
         csv = CSVLoader(get_dataset('bigfile'), index_col=False, header=None, scheduler=s)
         smp = Sample(samples=10,scheduler=s)
-        smp.input.table = csv.output.result
+        smp.input[0] = csv.output.result
         prt = Print(proc=self.terse, scheduler=s)
         prt.input.df = smp.output.result
         aio.run(csv.scheduler().start())

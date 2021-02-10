@@ -55,11 +55,11 @@ class TestRangeQuery(ProgressiveTest):
             prt.input.df = range_qry.output.result
             hist_index = range_qry.hist_index
             min_=Min(name='min_'+str(hash(hist_index)), scheduler=s)
-            min_.input.table = hist_index.output.min_out
+            min_.input[0] = hist_index.output.min_out
             prt2 = Print(proc=self.terse, scheduler=s)
             prt2.input.df = min_.output.result
             max_=Max(name='max_'+str(hash(hist_index)), scheduler=s)
-            max_.input.table = hist_index.output.max_out
+            max_.input[0] = hist_index.output.max_out
             pr3=Print(proc=self.terse, scheduler=s)
             pr3.input.df = max_.output.result
         aio.run(s.start())

@@ -158,7 +158,7 @@ class TestProgressiveLoadCSVCrash1(ProgressiveLoadCSVCrashRoot):
         s=self.scheduler(clean=True)
         csv=CSVLoader(url, recovery=True, index_col=False, recovery_tag=tag, header=None, scheduler=s)
         counter = Counter(scheduler=s)
-        counter.input.table = csv.output.result
+        counter.input[0] = csv.output.result
         self.assertTrue(csv.result is None)
         aio.run(s.start())
         self.assertEqual(len(csv.result), 1000000)

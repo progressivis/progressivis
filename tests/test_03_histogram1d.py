@@ -20,11 +20,11 @@ class TestHistogram1D(ProgressiveTest):
         s=self.scheduler()
         csv = CSVLoader(get_dataset('bigfile'), index_col=False,header=None,scheduler=s)
         min_ = Min(scheduler=s)
-        min_.input.table = csv.output.result
+        min_.input[0] = csv.output.result
         max_ = Max(scheduler=s)
-        max_.input.table = csv.output.result
+        max_.input[0] = csv.output.result
         histogram1d=Histogram1D('_2', scheduler=s) # columns are called 1..30
-        histogram1d.input.table = csv.output.result
+        histogram1d.input[0] = csv.output.result
         histogram1d.input.min = min_.output.result
         histogram1d.input.max = max_.output.result
         pr = Every(proc=self.terse, scheduler=s)
@@ -37,11 +37,11 @@ class TestHistogram1D(ProgressiveTest):
         s=self.scheduler()
         csv = CSVLoader(get_dataset('bigfile'), index_col=False,header=None,scheduler=s)
         min_ = Min(scheduler=s)
-        min_.input.table = csv.output.result
+        min_.input[0] = csv.output.result
         max_ = Max(scheduler=s)
-        max_.input.table = csv.output.result
+        max_.input[0] = csv.output.result
         histogram1d=Histogram1D('_2', scheduler=s) # columns are called 1..30
-        histogram1d.input.table = csv.output.result
+        histogram1d.input[0] = csv.output.result
         histogram1d.input.min = min_.output.result
         histogram1d.input.max = max_.output.result
         pr = Every(proc=self.terse, scheduler=s)
@@ -61,13 +61,13 @@ class TestHistogram1D(ProgressiveTest):
         csv = CSVLoader(get_dataset('bigfile'), index_col=False,header=None,scheduler=s)
         stirrer = Stirrer(update_column='_2',
                           fixed_step_size=1000, scheduler=s, **kw)
-        stirrer.input.table = csv.output.result
+        stirrer.input[0] = csv.output.result
         min_ = Min(scheduler=s)
-        min_.input.table = stirrer.output.result
+        min_.input[0] = stirrer.output.result
         max_ = Max(scheduler=s)
-        max_.input.table = stirrer.output.result
+        max_.input[0] = stirrer.output.result
         histogram1d=Histogram1D('_2', scheduler=s) # columns are called 1..30
-        histogram1d.input.table = stirrer.output.result
+        histogram1d.input[0] = stirrer.output.result
         histogram1d.input.min = min_.output.result
         histogram1d.input.max = max_.output.result
 

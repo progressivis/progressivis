@@ -55,11 +55,11 @@ class TestPPCA(ProgressiveTest):
         data = CSVLoader(dataset, index_col=False,
                      usecols=lambda x: x!='class', scheduler=s)
         ppca = PPCA(scheduler=s)
-        ppca.input.table = data.output.result
+        ppca.input[0] = data.output.result
         ppca.params.n_components = N_COMPONENTS
         if resetter:
             assert callable(resetter_func)
-            resetter.input.table = ppca.output.result
+            resetter.input[0] = ppca.output.result
         ppca.create_dependent_modules(rtol=rtol, trace=TRACE,
                                       threshold=threshold,
                                       resetter=resetter,

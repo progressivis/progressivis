@@ -20,9 +20,9 @@ class TestMCHistogram2D(ProgressiveTest):
                         header=None,
                         scheduler=s)
         min_ = Min(scheduler=s)
-        min_.input.table = csv.output.result
+        min_.input[0] = csv.output.result
         max_ = Max(scheduler=s)
-        max_.input.table = csv.output.result
+        max_.input[0] = csv.output.result
         histogram2d = MCHistogram2D('_1', '_2', xbins=100, ybins=100,
                                   scheduler=s)  # columns are called 1..30
         histogram2d.input.data = csv.output.result
@@ -43,9 +43,9 @@ class TestMCHistogram2D(ProgressiveTest):
                         header=None,
                         scheduler=s)
         min_ = Min(scheduler=s)
-        min_.input.table = csv.output.result
+        min_.input[0] = csv.output.result
         max_ = Max(scheduler=s)
-        max_.input.table = csv.output.result
+        max_.input[0] = csv.output.result
         histogram2d = MCHistogram2D('_1', '_2', xbins=100, ybins=100,
                                   scheduler=s)  # columns are called 1..30
         histogram2d.input.data = csv.output.result
@@ -71,11 +71,11 @@ class TestMCHistogram2D(ProgressiveTest):
         random = RandomTable(2, rows=100000, scheduler=s)
         stirrer = Stirrer(update_column='_2',
                           fixed_step_size=1000, scheduler=s, **kw)
-        stirrer.input.table = random.output.result
+        stirrer.input[0] = random.output.result
         min_ = Min(scheduler=s)
-        min_.input.table = stirrer.output.result
+        min_.input[0] = stirrer.output.result
         max_ = Max(scheduler=s)
-        max_.input.table = stirrer.output.result
+        max_.input[0] = stirrer.output.result
         histogram2d = MCHistogram2D('_1', '_2', xbins=100, ybins=100,
                                   scheduler=s)  # columns are called 1..30
         histogram2d.input.data = stirrer.output.result
@@ -102,11 +102,11 @@ class TestMCHistogram2D(ProgressiveTest):
         random = RandomTable(2, rows=100000, scheduler=s)
         stirrer = StirrerView(update_column='_2',
                               fixed_step_size=1000, scheduler=s, delete_rows=5)
-        stirrer.input.table = random.output.result
+        stirrer.input[0] = random.output.result
         min_ = Min(scheduler=s)
-        min_.input.table = stirrer.output.result
+        min_.input[0] = stirrer.output.result
         max_ = Max(scheduler=s)
-        max_.input.table = stirrer.output.result
+        max_.input[0] = stirrer.output.result
         histogram2d = MCHistogram2D('_1', '_2', xbins=100, ybins=100,
                                   scheduler=s)  # columns are called 1..30
         histogram2d.input.data = stirrer.output.result

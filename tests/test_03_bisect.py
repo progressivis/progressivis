@@ -20,8 +20,8 @@ class TestBisect(ProgressiveTest):
         hist_index = HistogramIndex(column='_1', scheduler=s)
         hist_index.create_dependent_modules(random, 'result')
         bisect_ = Bisect(column='_1', op='>', hist_index=hist_index, scheduler=s)
-        bisect_.input.table = hist_index.output.result
-        #bisect_.input.table = random.output.result
+        bisect_.input[0] = hist_index.output.result
+        #bisect_.input[0] = random.output.result
         bisect_.input.limit = min_value.output.result
         pr = Print(proc=self.terse, scheduler=s)
         pr.input.df = bisect_.output.result
@@ -37,14 +37,14 @@ class TestBisect(ProgressiveTest):
                           #update_rows=5,
                           #fixed_step_size=100,
                           scheduler=s)
-        stirrer.input.table = random.output.result
+        stirrer.input[0] = random.output.result
         t = Table(name=None, dshape='{value: string}', data={'value':[0.5]})
         min_value = Constant(table=t, scheduler=s)
         hist_index = HistogramIndex(column='_1', scheduler=s)
         hist_index.create_dependent_modules(stirrer, 'result')
         bisect_ = Bisect(column='_1', op='>', hist_index=hist_index, scheduler=s)
-        bisect_.input.table = hist_index.output.result
-        #bisect_.input.table = random.output.result
+        bisect_.input[0] = hist_index.output.result
+        #bisect_.input[0] = random.output.result
         bisect_.input.limit = min_value.output.result
         pr = Print(proc=self.terse, scheduler=s)
         pr.input.df = bisect_.output.result
@@ -57,14 +57,14 @@ class TestBisect(ProgressiveTest):
         random = RandomTable(2, rows=100_000, scheduler=s)
         stirrer = Stirrer(update_column='_1', update_rows=100,
                           fixed_step_size=100, scheduler=s)
-        stirrer.input.table = random.output.result
+        stirrer.input[0] = random.output.result
         t = Table(name=None, dshape='{value: string}', data={'value':[0.5]})
         min_value = Constant(table=t, scheduler=s)
         hist_index = HistogramIndex(column='_1', scheduler=s)
         hist_index.create_dependent_modules(stirrer, 'result')
         bisect_ = Bisect(column='_1', op='>', hist_index=hist_index, scheduler=s)
-        bisect_.input.table = hist_index.output.result
-        #bisect_.input.table = random.output.result
+        bisect_.input[0] = hist_index.output.result
+        #bisect_.input[0] = random.output.result
         bisect_.input.limit = min_value.output.result
         pr = Print(proc=self.terse, scheduler=s)
         pr.input.df = bisect_.output.result

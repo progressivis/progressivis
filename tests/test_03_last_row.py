@@ -19,7 +19,7 @@ class TestLastRow(ProgressiveTest):
                         header=None,
                         scheduler=s)
         lr1 = LastRow(scheduler=s)
-        lr1.input.table = csv.output.result
+        lr1.input[0] = csv.output.result
         prlen = Every(proc=self.terse, constant_time=True, scheduler=s)
         prlen.input.df = lr1.output.result
         aio.run(s.start())
@@ -37,8 +37,8 @@ class TestLastRow(ProgressiveTest):
         cst1 = Constant(t1, scheduler=s)
         cst2 = Constant(t2, scheduler=s)
         join = Join(scheduler=s)
-        join.input.table = cst1.output.result
-        join.input.table = cst2.output.result
+        join.input[0] = cst1.output.result
+        join.input[0] = cst2.output.result
         pr = Print(proc=self.terse, scheduler=s)
         pr.input.df = join.output.result
         aio.run(s.start())

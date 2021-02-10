@@ -22,12 +22,12 @@ class TestJoin(ProgressiveTest):
         s=self.scheduler()
         csv = CSVLoader(get_dataset('bigfile'), index_col=False,header=None,scheduler=s)
         stat1=Stats(1, reset_index=True, scheduler=s)
-        stat1.input.table = csv.output.result
+        stat1.input[0] = csv.output.result
         stat2=Stats(2, reset_index=True, scheduler=s)
-        stat2.input.table = csv.output.result
+        stat2.input[0] = csv.output.result
         join=Join(scheduler=s)
-        join.input.table = stat1.output.result
-        join.input.table = stat2.output.result
+        join.input[0] = stat1.output.result
+        join.input[0] = stat2.output.result
         pr=Print(proc=self.terse, scheduler=s)
         pr.input.df = join.output.result
         prlen = Every(proc=self.terse, constant_time=True, scheduler=s)
@@ -43,8 +43,8 @@ class TestJoin(ProgressiveTest):
         cst2=Constant(Table(name='test_join_simple_cst2',
                 data=pd.DataFrame({'ymin': [3], 'ymax': [4]}), create=True), scheduler=s)
         join=Join(scheduler=s)
-        join.input.table = cst1.output.result
-        join.input.table = cst2.output.result
+        join.input[0] = cst1.output.result
+        join.input[0] = cst2.output.result
         pr=Print(proc=self.terse, scheduler=s)
         pr.input.df = join.output.result
         aio.run(s.start())

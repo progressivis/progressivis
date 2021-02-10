@@ -21,7 +21,7 @@ class TestStats(ProgressiveTest):
         wait = Wait(name='wait', delay=3, scheduler=s)
         wait.input.inp = csv_module.output.result
         stats.input._params = wait.output.out
-        stats.input.table = csv_module.output.result
+        stats.input[0] = csv_module.output.result
         pr = Print(proc=self.terse, name='print', scheduler=s)
         pr.input.df = stats.output.result
         aio.run(s.start())

@@ -29,9 +29,9 @@ class TestCombineFirst(ProgressiveTest):
                               create=True),
                         scheduler=s)
         cf = CombineFirst(scheduler=s)
-        cf.input.table = cst1.output.result
-        cf.input.table = cst2.output.result
-        cf.input.table = cst3.output.result
+        cf.input[0] = cst1.output.result
+        cf.input[0] = cst2.output.result
+        cf.input[0] = cst3.output.result
         pr = Print(proc=self.terse, scheduler=s)
         pr.input.df = cf.output.result
         aio.run(s.start())
@@ -59,9 +59,9 @@ class TestCombineFirst(ProgressiveTest):
                               create=True),
                         scheduler=s)
         cf = CombineFirst(scheduler=s)
-        cf.input.table = cst1.output.result
-        cf.input.table = cst2.output.result
-        cf.input.table = cst3.output.result
+        cf.input[0] = cst1.output.result
+        cf.input[0] = cst2.output.result
+        cf.input[0] = cst3.output.result
         pr = Print(proc=self.terse, scheduler=s)
         pr.input.df = cf.output.result
         aio.run(s.start())

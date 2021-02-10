@@ -27,13 +27,13 @@ class TestPercentiles(ProgressiveTest):
         with s:
             random = RandomTable(2, rows=10000, scheduler=s)
             hist_index = HistogramIndex(column='_1', scheduler=s)
-            hist_index.input.table = random.output.result
+            hist_index.input[0] = random.output.result
             t_percentiles = PsDict({'_25': 25.0,
                                     '_50': 50.0,
                                     '_75': 75.0})
             which_percentiles = Constant(table=t_percentiles, scheduler=s)
             percentiles = Percentiles(hist_index, accuracy=accuracy, scheduler=s)
-            percentiles.input.table = random.output.result
+            percentiles.input[0] = random.output.result
             percentiles.input.percentiles = which_percentiles.output.result
             prt = Print(proc=self.terse, scheduler=s)
             prt.input.df = percentiles.output.result
@@ -59,15 +59,15 @@ class TestPercentiles(ProgressiveTest):
             random = RandomTable(2, rows=10000, scheduler=s)
             stirrer = Stirrer(update_column='_2',
                           fixed_step_size=1000, scheduler=s, **kw)
-            stirrer.input.table = random.output.result
+            stirrer.input[0] = random.output.result
             hist_index = HistogramIndex(column='_1', scheduler=s)
-            hist_index.input.table = stirrer.output.result
+            hist_index.input[0] = stirrer.output.result
             t_percentiles = PsDict({'_25': 25.0,
                                     '_50': 50.0,
                                     '_75': 75.0})
             which_percentiles = Constant(table=t_percentiles, scheduler=s)
             percentiles = Percentiles(hist_index, accuracy=accuracy, scheduler=s)
-            percentiles.input.table = stirrer.output.result
+            percentiles.input[0] = stirrer.output.result
             percentiles.input.percentiles = which_percentiles.output.result
             prt = Print(proc=self.terse, scheduler=s)
             prt.input.df = percentiles.output.result
@@ -144,7 +144,7 @@ class TestPercentiles(ProgressiveTest):
                                     '_75': 75.0})
             which_percentiles = Constant(table=t_percentiles, scheduler=s)
             percentiles = Percentiles(hist_index, accuracy=accuracy, scheduler=s)
-            percentiles.input.table = range_qry.output.result
+            percentiles.input[0] = range_qry.output.result
             percentiles.input.percentiles = which_percentiles.output.result
             prt = Print(proc=self.terse, scheduler=s)
             prt.input.df = percentiles.output.result
@@ -170,7 +170,7 @@ class TestPercentiles(ProgressiveTest):
             random = RandomTable(2, rows=10000, scheduler=s)
             stirrer = Stirrer(update_column='_2',
                           fixed_step_size=1000, scheduler=s, **kw)
-            stirrer.input.table = random.output.result
+            stirrer.input[0] = random.output.result
             t_min = PsDict({'_1': 0.3})
             min_value = Constant(table=t_min, scheduler=s)
             t_max = PsDict({'_1': 0.8})
@@ -186,7 +186,7 @@ class TestPercentiles(ProgressiveTest):
                                     '_75': 75.0})
             which_percentiles = Constant(table=t_percentiles, scheduler=s)
             percentiles = Percentiles(hist_index, accuracy=accuracy, scheduler=s)
-            percentiles.input.table = range_qry.output.result
+            percentiles.input[0] = range_qry.output.result
             percentiles.input.percentiles = which_percentiles.output.result
             prt = Print(proc=self.terse, scheduler=s)
             prt.input.df = percentiles.output.result

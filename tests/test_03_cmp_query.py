@@ -17,7 +17,7 @@ class TestCmpQuery(ProgressiveTest):
         cst = Table("cmp_table", data={'_1': [0.5]})
         value = Constant(cst, scheduler=s)
         cmp_.input.cmp = value.output.result
-        cmp_.input.table = random.output.result
+        cmp_.input[0] = random.output.result
         pr=Print(proc=self.terse, scheduler=s)
         pr.input.df = cmp_.output.select
         aio.run(s.start())
@@ -32,12 +32,12 @@ class TestCmpQuery(ProgressiveTest):
         random = RandomTable(10, rows=10000, scheduler=s)
         stirrer = Stirrer(update_column='_1',
                           fixed_step_size=100, scheduler=s, **kw)
-        stirrer.input.table = random.output.result
+        stirrer.input[0] = random.output.result
         cmp_ = CmpQueryLast(scheduler=s)
         cst = Table("cmp_table", data={'_1': [0.5]})
         value = Constant(cst, scheduler=s)
         cmp_.input.cmp = value.output.result
-        cmp_.input.table = stirrer.output.result
+        cmp_.input[0] = stirrer.output.result
         pr=Print(proc=self.terse, scheduler=s)
         pr.input.df = cmp_.output.select
         aio.run(s.start())

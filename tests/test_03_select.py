@@ -26,9 +26,9 @@ class TestSelect(ProgressiveTest):
         csv = CSVLoader(get_dataset('bigfile'), index_col=False, header=None,
                         scheduler=s)
         sample = Sample(samples=100, scheduler=s)
-        sample.input.table = csv.output.result
+        sample.input[0] = csv.output.result
         q=Select(scheduler=s)
-        q.input.table = csv.output.result
+        q.input[0] = csv.output.result
         q.input.select = sample.output.select
         prlen = Print(proc=self.terse,  scheduler=s)
         prlen.input.df = q.output.result
