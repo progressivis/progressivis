@@ -283,6 +283,12 @@ class TestTable(ProgressiveTest):
             cnt += 1
         self.assertEqual(len(t), cnt)
 
+    def _delete_table2(self, t):
+        with self.assertRaises(KeyError):
+            c = t.loc[2]
+            print(c)
+
+        
     def append_dataframe(self):
         #pylint: disable=protected-access
         #self.scheduler._run_number = 1
