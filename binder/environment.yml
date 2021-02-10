@@ -14,7 +14,3 @@ dependencies:
   - pip:
     - -e ..
     - -e ../widgets
-
-
-
-    

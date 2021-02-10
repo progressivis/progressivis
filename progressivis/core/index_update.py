@@ -7,8 +7,8 @@ from ..core.bitmap import bitmap
 
 class IndexUpdate(object):
     """
-    IndexUpdate is used to keep track of chages occuring in linear data structures
-    such as tables, columns, or bitmaps.
+    IndexUpdate is used to keep track of chages occuring in linear data
+    structures such as tables, columns, or bitmaps.
     """
     def __init__(self, created=None, updated=None, deleted=None):
         created = created if isinstance(created, bitmap) else bitmap(created)
@@ -31,8 +31,8 @@ class IndexUpdate(object):
     def test(self, verbose=False):
         "Test if the IndexUpdate is valid"
         b = bool(self.created & self.updated) \
-          or bool(self.created & self.deleted) \
-          or bool(self.updated & self.deleted)
+            or bool(self.created & self.deleted) \
+            or bool(self.updated & self.deleted)
         if verbose and b:  # pragma no cover
             print("self.created & self.updated", self.created & self.updated)
             print("self.created & self.deleted", self.created & self.deleted)
@@ -101,5 +101,6 @@ class IndexUpdate(object):
         return IndexUpdate(created=bitmap(self.created),
                            updated=bitmap(self.updated),
                            deleted=bitmap(self.deleted))
+
 
 NIL_IU = IndexUpdate()
