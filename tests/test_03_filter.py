@@ -15,7 +15,7 @@ class TestFilter(ProgressiveTest):
         filter_ = FilterMod(expr='_1 > 0.5', scheduler=s)
         filter_.input[0] = random.output.result
         pr = Print(proc=self.terse, scheduler=s)
-        pr.input.df = filter_.output.result
+        pr.input[0] = filter_.output.result
         aio.run(s.start())
         idx = filter_.get_input_slot('table')\
                      .data()\
@@ -32,7 +32,7 @@ class TestFilter(ProgressiveTest):
         filter_ = FilterMod(expr='_1 > 0.5', scheduler=s)
         filter_.input[0] = stirrer.output.result
         pr = Print(proc=self.terse, scheduler=s)
-        pr.input.df = filter_.output.result
+        pr.input[0] = filter_.output.result
         aio.run(s.start())
         tbl = filter_.get_input_slot('table').data()
         idx = tbl.eval('_1>0.5', result_object='index')
@@ -51,7 +51,7 @@ class TestFilter(ProgressiveTest):
         filter_ = FilterMod(expr='_1 > 0.5', scheduler=s)
         filter_.input[0] = stirrer.output.result
         pr = Print(proc=self.terse, scheduler=s)
-        pr.input.df = filter_.output.result
+        pr.input[0] = filter_.output.result
         aio.run(s.start())
         tbl = filter_.get_input_slot('table').data()
         idx = tbl.eval('_1>0.5', result_object='index')

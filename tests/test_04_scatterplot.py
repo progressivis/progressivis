@@ -53,9 +53,9 @@ class TestScatterPlot(ProgressiveTest):
                                approximate=True)
             sp.create_dependent_modules(csv, 'result')
             cnt = Every(proc=self.terse, constant_time=True, scheduler=s)
-            cnt.input.df = csv.output.result
+            cnt.input[0] = csv.output.result
             prt = Print(proc=self.terse, scheduler=s)
-            prt.input.df = sp.output.result
+            prt.input[0] = sp.output.result
             sts = sleep_then_stop(s, 5)
         aio.run_gather(csv.scheduler().start(), sts)
         self.assertEqual(len(csv.result), 30000)
@@ -69,9 +69,9 @@ class TestScatterPlot(ProgressiveTest):
                                approximate=True)
             sp.create_dependent_modules(random, 'result', with_sampling=False)
             cnt = Every(proc=self.terse, constant_time=True, scheduler=s)
-            cnt.input.df = random.output.result
+            cnt.input[0] = random.output.result
             prt = Print(proc=self.terse, scheduler=s)
-            prt.input.df = sp.output.result
+            prt.input[0] = sp.output.result
         finp1 = fake_input(s, "variable_1", 6, {'_1': LOWER_X, '_2': LOWER_Y})
         finp2 = fake_input(s, "variable_2", 6, {'_1': UPPER_X, '_2': UPPER_Y})
         sts = sleep_then_stop(s, 30)

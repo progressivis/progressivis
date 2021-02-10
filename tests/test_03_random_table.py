@@ -16,7 +16,7 @@ class TestRandomTable(ProgressiveTest):
         self.assertEqual(module.result.columns[1],'b')
         self.assertEqual(len(module.result.columns), 2) # add the UPDATE_COLUMN
         prlen = Every(proc=self.terse, constant_time=True, scheduler=s)
-        prlen.input.df = module.output.result
+        prlen.input[0] = module.output.result
         aio.run(s.start())
         #s.join()
         self.assertEqual(len(module.result), 10000)
@@ -31,7 +31,7 @@ class TestRandomTable(ProgressiveTest):
         self.assertEqual(module.result.columns[0],'_1')
         self.assertEqual(module.result.columns[1],'_2')
         prlen = Every(proc=self.terse, constant_time=True, scheduler=s)
-        prlen.input.df = module.output.result
+        prlen.input[0] = module.output.result
         aio.run(s.start())
         #s.join()
         self.assertEqual(len(module.result), 1000000)

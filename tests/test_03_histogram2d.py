@@ -30,7 +30,7 @@ class TestHistogram2D(ProgressiveTest):
         heatmap = Heatmap(filename='histo_%03d.png', scheduler=s)
         heatmap.input.array = histogram2d.output.result
         pr = Every(proc=self.terse, scheduler=s)
-        pr.input.df = csv.output.result
+        pr.input[0] = csv.output.result
         aio.run(csv.scheduler().start())
         s = histogram2d.trace_stats()
 
@@ -52,7 +52,7 @@ class TestHistogram2D(ProgressiveTest):
         heatmap = Heatmap(filename='histo_%03d.png', scheduler=s)
         heatmap.input.array = histogram2d.output.result
         pr = Every(proc=self.terse, scheduler=s)
-        pr.input.df = csv.output.result
+        pr.input[0] = csv.output.result
         aio.run(csv.scheduler().start())
         last = histogram2d.result.last().to_dict()
         h1 = last['array']
@@ -82,7 +82,7 @@ class TestHistogram2D(ProgressiveTest):
         heatmap = Heatmap(filename='histo_%03d.png', scheduler=s)
         heatmap.input.array = histogram2d.output.result
         pr = Every(proc=self.terse, scheduler=s)
-        pr.input.df = stirrer.output.result
+        pr.input[0] = stirrer.output.result
         aio.run(s.start())
         last = histogram2d.result.last().to_dict()
         h1 = last['array']
@@ -113,7 +113,7 @@ class TestHistogram2D(ProgressiveTest):
         heatmap = Heatmap(filename='histo_%03d.png', scheduler=s)
         heatmap.input.array = histogram2d.output.result
         pr = Every(proc=self.terse, scheduler=s)
-        pr.input.df = stirrer.output.result
+        pr.input[0] = stirrer.output.result
         aio.run(s.start())
         last = histogram2d.result.last().to_dict()
         h1 = last['array']

@@ -36,7 +36,7 @@ class TestPercentiles(ProgressiveTest):
             percentiles.input[0] = random.output.result
             percentiles.input.percentiles = which_percentiles.output.result
             prt = Print(proc=self.terse, scheduler=s)
-            prt.input.df = percentiles.output.result
+            prt.input[0] = percentiles.output.result
         aio.run(s.start())
         pdict = percentiles.result.last().to_dict()
         v = random.result['_1'].values
@@ -70,7 +70,7 @@ class TestPercentiles(ProgressiveTest):
             percentiles.input[0] = stirrer.output.result
             percentiles.input.percentiles = which_percentiles.output.result
             prt = Print(proc=self.terse, scheduler=s)
-            prt.input.df = percentiles.output.result
+            prt.input[0] = percentiles.output.result
         aio.run(s.start())
         pdict = percentiles.result.last().to_dict()
         #v = random.table()['_1'].values
@@ -147,7 +147,7 @@ class TestPercentiles(ProgressiveTest):
             percentiles.input[0] = range_qry.output.result
             percentiles.input.percentiles = which_percentiles.output.result
             prt = Print(proc=self.terse, scheduler=s)
-            prt.input.df = percentiles.output.result
+            prt.input[0] = percentiles.output.result
         aio.run(s.start())
         pdict = percentiles.result.last().to_dict()
         v = range_qry.result['_1'].values
@@ -189,7 +189,7 @@ class TestPercentiles(ProgressiveTest):
             percentiles.input[0] = range_qry.output.result
             percentiles.input.percentiles = which_percentiles.output.result
             prt = Print(proc=self.terse, scheduler=s)
-            prt.input.df = percentiles.output.result
+            prt.input[0] = percentiles.output.result
         aio.run(s.start())
         pdict = percentiles.result.last().to_dict()
         v = range_qry.result['_1'].values

@@ -31,7 +31,7 @@ class TestSelect(ProgressiveTest):
         q.input[0] = csv.output.result
         q.input.select = sample.output.select
         prlen = Print(proc=self.terse,  scheduler=s)
-        prlen.input.df = q.output.result
+        prlen.input[0] = q.output.result
         aio.run(s.start())
         print(repr(q.table()))
         self.assertEqual(len(q.table()), 100)
@@ -44,10 +44,10 @@ class TestSelect(ProgressiveTest):
                         force_valid_ids=True, scheduler=s)
         cst = Constant(pd.DataFrame({'query': ['_1 < 0.5']}), scheduler=s)
         q = Select(scheduler=s)
-        q.input.df = csv.output.df
+        q.input[0] = csv.output.df
         q.input.query = cst.output.df
         prlen = Every(proc=self.terse, constant_time=True, scheduler=s)
-        prlen.input.df = q.output.df
+        prlen.input[0] = q.output.df
         aio.run(s.start())
         self.assertTrue(len(q.table()) < 1000000)
 

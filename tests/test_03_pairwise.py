@@ -28,11 +28,11 @@ class TestPairwiseDistances(ProgressiveTest):
         s= self.scheduler()
         vec=VECLoader(get_dataset('warlogs'),scheduler=s)
 #        dis=PairwiseDistances(metric='cosine',scheduler=s)
-#        dis.input.df = vec.output.df
+#        dis.input[0] = vec.output.df
 #        dis.input.array = vec.output.array
         cnt = Every(proc=self.terse,constant_time=True,scheduler=s)
-#        cnt.input.df = dis.output.dist
-        cnt.input.df = vec.output.result
+#        cnt.input[0] = dis.output.dist
+        cnt.input[0] = vec.output.result
         global times
         times = 0
         s.start()
@@ -47,10 +47,10 @@ class TestPairwiseDistances(ProgressiveTest):
         s = self.scheduler()
         vec=CSVLoader(get_dataset('smallfile'),index_col=False,header=None,scheduler=s)
 #        dis=PairwiseDistances(metric='euclidean',scheduler=s)
-#        dis.input.df = vec.output.df
+#        dis.input[0] = vec.output.df
         cnt = Every(proc=self.terse,constant_time=True,scheduler=s)
-#        cnt.input.df = dis.output.dist
-        cnt.input.df = vec.output.result
+#        cnt.input[0] = dis.output.dist
+        cnt.input[0] = vec.output.result
         global times
         times = 0
         aio.run(s.start(ten_times))

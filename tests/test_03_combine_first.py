@@ -33,7 +33,7 @@ class TestCombineFirst(ProgressiveTest):
         cf.input[0] = cst2.output.result
         cf.input[0] = cst3.output.result
         pr = Print(proc=self.terse, scheduler=s)
-        pr.input.df = cf.output.result
+        pr.input[0] = cf.output.result
         aio.run(s.start())
         # res = cf.trace_stats(max_runs=1)
         df = cf.result
@@ -63,7 +63,7 @@ class TestCombineFirst(ProgressiveTest):
         cf.input[0] = cst2.output.result
         cf.input[0] = cst3.output.result
         pr = Print(proc=self.terse, scheduler=s)
-        pr.input.df = cf.output.result
+        pr.input[0] = cf.output.result
         aio.run(s.start())
         df = cf.result
         last = df.last().to_dict()

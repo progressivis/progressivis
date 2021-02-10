@@ -66,7 +66,7 @@ class TestPPCA(ProgressiveTest):
                                       resetter_func=resetter_func)
 
         prn = Every(scheduler=s, proc=_print)
-        prn.input.df = ppca.reduced.output.result
+        prn.input[0] = ppca.reduced.output.result
         aio.run(s.start())
         pca_ = ppca._transformer['inc_pca']
         recovered = pca_.inverse_transform(ppca.reduced._table.to_array())

@@ -39,9 +39,9 @@ class TestMBKmeans(ProgressiveTest):
                           is_input=False, is_greedy=False, scheduler=s)
             km.input[0] = csv.output.result
             pr = Print(proc=self.terse, scheduler=s)
-            pr.input.df = km.output.result
+            pr.input[0] = km.output.result
             e = Every(proc=self.terse, scheduler=s)
-            e.input.df = km.output.labels
+            e.input[0] = km.output.labels
         aio.run(s.start())
         # s.join()
         self.assertEqual(len(csv.result), len(km.labels()))

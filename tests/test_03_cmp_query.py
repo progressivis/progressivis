@@ -19,7 +19,7 @@ class TestCmpQuery(ProgressiveTest):
         cmp_.input.cmp = value.output.result
         cmp_.input[0] = random.output.result
         pr=Print(proc=self.terse, scheduler=s)
-        pr.input.df = cmp_.output.select
+        pr.input[0] = cmp_.output.select
         aio.run(s.start())
         tbl = cmp_.get_input_slot('table').data()
         df = pd.DataFrame(tbl.to_dict(),index=tbl.index.to_array())
@@ -39,7 +39,7 @@ class TestCmpQuery(ProgressiveTest):
         cmp_.input.cmp = value.output.result
         cmp_.input[0] = stirrer.output.result
         pr=Print(proc=self.terse, scheduler=s)
-        pr.input.df = cmp_.output.select
+        pr.input[0] = cmp_.output.select
         aio.run(s.start())
         tbl = cmp_.get_input_slot('table').data()
         df = pd.DataFrame(tbl.to_dict(),index=tbl.index.to_array())

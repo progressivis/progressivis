@@ -19,7 +19,7 @@ class TestBlobsTable(ProgressiveTest):
         self.assertEqual(module.table().columns[1],'b')
         self.assertEqual(len(module.table().columns), 2)
         prlen = Every(proc=self.terse, constant_time=True, scheduler=s)
-        prlen.input.df = module.output.result
+        prlen.input[0] = module.output.result
         aio.run(s.start())
         #s.join()
         self.assertEqual(len(module.table()), 10000)
@@ -36,7 +36,7 @@ class TestBlobsTable(ProgressiveTest):
         add.input.first = blob1.output.result
         add.input.second = blob2.output.result
         prlen = Every(proc=self.terse, constant_time=True, scheduler=s)
-        prlen.input.df = add.output.result
+        prlen.input[0] = add.output.result
         aio.run(s.start())
         #s.join()
         self.assertEqual(len(blob1.table()), sz)
@@ -56,7 +56,7 @@ class TestMVBlobsTable(ProgressiveTest):
         self.assertEqual(module.table().columns[1],'b')
         self.assertEqual(len(module.table().columns), 2)
         prlen = Every(proc=self.terse, constant_time=True, scheduler=s)
-        prlen.input.df = module.output.result
+        prlen.input[0] = module.output.result
         aio.run(s.start())
         #s.join()
         self.assertEqual(len(module.table()), 10000)
@@ -72,7 +72,7 @@ class TestMVBlobsTable(ProgressiveTest):
         add.input.first = blob1.output.result
         add.input.second = blob2.output.result
         prlen = Every(proc=self.terse, constant_time=True, scheduler=s)
-        prlen.input.df = add.output.result
+        prlen.input[0] = add.output.result
         aio.run(s.start())
         #s.join()
         self.assertEqual(len(blob1.table()), sz)

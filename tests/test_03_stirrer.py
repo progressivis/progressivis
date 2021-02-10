@@ -16,7 +16,7 @@ class TestStirrer(ProgressiveTest):
         max_=Max(name='max_'+str(hash(random)), scheduler=s)
         max_.input[0] = stirrer.output.result
         pr=Print(proc=self.terse, scheduler=s)
-        pr.input.df = max_.output.result
+        pr.input[0] = max_.output.result
         aio.run(s.start())
         #idx = dummy_.get_input_slot('table').data().eval('_1>0.5', result_object='index')
         #self.assertEqual(dummy_._table.selection, bitmap(idx))

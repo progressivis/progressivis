@@ -13,7 +13,7 @@ class TestMinMax(ProgressiveTest):
         min_=Min(name='min_'+str(hash(random)), scheduler=s)
         min_.input[0] = random.output.result
         pr=Print(proc=self.terse, scheduler=s)
-        pr.input.df = min_.output.result
+        pr.input[0] = min_.output.result
         aio.run(s.start())
         #s.join()
         res1 = random.result.min()
@@ -33,7 +33,7 @@ class TestMinMax(ProgressiveTest):
         max_=Max(name='max_'+str(hash(random)), scheduler=s)
         max_.input[0] = random.output.result
         pr=Print(proc=self.terse, scheduler=s)
-        pr.input.df = max_.output.result
+        pr.input[0] = max_.output.result
         aio.run(s.start())
         #s.join()
         res1 = random.result.max()

@@ -37,9 +37,9 @@ class TestJoin2(ProgressiveTest):
                              [stat1.output.stats, stat2.output.stats],
                              scheduler=s)
         pr = Print(proc=self.terse, scheduler=s)
-        pr.input.df = join.output.result
+        pr.input[0] = join.output.result
         prlen = Every(proc=self.terse, constant_time=True, scheduler=s)
-        prlen.input.df = csv.output.result
+        prlen.input[0] = csv.output.result
         aio.run(s.start())
         res = join.trace_stats(max_runs=1)
         print(res)
@@ -63,7 +63,7 @@ class TestJoin2(ProgressiveTest):
         # join.input.first = cst1.output.result
         # join.input.second = cst2.output.result
         pr = Print(proc=self.terse, scheduler=s)
-        pr.input.df = join.output.result
+        pr.input[0] = join.output.result
         aio.run(s.start())
         res = join.trace_stats(max_runs=1)
         print(res)

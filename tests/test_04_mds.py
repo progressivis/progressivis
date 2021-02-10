@@ -23,10 +23,10 @@ class TestMDS(ProgressiveTest):
     # def test_MDS_vec(self):
     #     vec=VECLoader(get_dataset('warlogs'))
     #     dis=PairwiseDistances(metric='cosine')
-    #     dis.input.df = vec.output.df
+    #     dis.input[0] = vec.output.df
     #     dis.input.array = vec.output.array
     #     cnt = Every(proc=print_len,constant_time=True)
-    #     cnt.input.df = dis.output.df
+    #     cnt.input[0] = dis.output.df
     #     vec.start()
 
     @skip("Need to implement MDS on tables")
@@ -34,9 +34,9 @@ class TestMDS(ProgressiveTest):
         s= self.scheduler()
         vec=CSVLoader(get_dataset('smallfile'),index_col=False,header=None,scheduler=s)
         dis=PairwiseDistances(metric='euclidean',scheduler=s)
-        dis.input.df = vec.output.df
+        dis.input[0] = vec.output.df
         cnt = Every(proc=self.terse, constant_time=True,scheduler=s)
-        cnt.input.df = dis.output.dist
+        cnt.input[0] = dis.output.dist
         global times
         times = 0
         aio.run(s.start(ten_times))

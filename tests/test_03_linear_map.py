@@ -16,7 +16,7 @@ class TestLinearMap(ProgressiveTest):
         module.input.vectors = vectors.output.result
         module.input.transformation = transf.output.result
         pr = Print(proc=self.terse, scheduler=s)
-        pr.input.df = module.output.result
+        pr.input[0] = module.output.result
         aio.run(s.start())
         res1 = np.matmul(vectors.result.to_array(),
                          transf.result.to_array())
@@ -31,7 +31,7 @@ class TestLinearMap(ProgressiveTest):
         module.input.vectors = vectors.output.result
         module.input.transformation = transf.output.result
         pr = Print(proc=self.terse, scheduler=s)
-        pr.input.df = module.output.result
+        pr.input[0] = module.output.result
         aio.run(s.start())
         res1 = np.matmul(vectors.result.to_array()[:, 2:5],
                          transf.result.to_array())
@@ -48,7 +48,7 @@ class TestLinearMap(ProgressiveTest):
         module.input.vectors = vectors.output.result
         module.input.transformation = transf.output.result
         pr = Print(proc=self.terse, scheduler=s)
-        pr.input.df = module.output.result
+        pr.input[0] = module.output.result
         aio.run(s.start())
         res1 = np.matmul(vectors.result.to_array()[:, 2:5],
                          transf.result.to_array()[:, 3:7])

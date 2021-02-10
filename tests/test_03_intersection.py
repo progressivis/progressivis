@@ -38,7 +38,7 @@ class TestIntersection(ProgressiveTest):
         inter.input[0] = bisect_min.output.result
         inter.input[0] = bisect_max.output.result
         pr = Print(proc=self.terse, scheduler=s)
-        pr.input.df = inter.output.result
+        pr.input[0] = inter.output.result
         aio.run(s.start())
         idx = hist_index.input_module\
                         .output['result']\
@@ -74,7 +74,7 @@ class TestIntersection(ProgressiveTest):
         inter.input[0] = bisect_min.output.result
         inter.input[0] = bisect_max.output.result
         pr = Print(proc=self.terse, scheduler=s)
-        pr.input.df = inter.output.result
+        pr.input[0] = inter.output.result
         aio.run(s.start())
         idx = hist_index.input_module\
                         .output['result']\

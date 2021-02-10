@@ -20,7 +20,7 @@ class TestSample(ProgressiveTest):
         smp = Sample(samples=10,scheduler=s)
         smp.input[0] = csv.output.result
         prt = Print(proc=self.terse, scheduler=s)
-        prt.input.df = smp.output.result
+        prt.input[0] = smp.output.result
         aio.run(csv.scheduler().start())
         #print(repr(smp.result))
         self.assertEqual(len(smp.result), 10)

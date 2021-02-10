@@ -87,7 +87,7 @@ class TestRepairMax(ProgressiveTest):
         max_=ScalarMax(name='max_'+str(hash(random)), scheduler=s)
         max_.input[0] = random.output.result
         pr=Print(proc=self.terse, scheduler=s)
-        pr.input.df = max_.output.result
+        pr.input[0] = max_.output.result
         aio.run(s.start())
         res1 = random.result.max()
         res2 = max_.result
@@ -106,7 +106,7 @@ class TestRepairMax(ProgressiveTest):
         stirrer.input[0] = random.output.result
         max_.input[0] = stirrer.output.result
         pr=Print(proc=self.terse, scheduler=s)
-        pr.input.df = max_.output.result
+        pr.input[0] = max_.output.result
         aio.run(s.start())
         self.assertEqual(ScalarMax._reset_calls_counter, 1)
         res1 = stirrer.result.max()
@@ -126,7 +126,7 @@ class TestRepairMax(ProgressiveTest):
         stirrer.input[0] = random.output.result
         max_.input[0] = stirrer.output.result
         pr=Print(proc=self.terse, scheduler=s)
-        pr.input.df = max_.output.result
+        pr.input[0] = max_.output.result
         aio.run(s.start())
         self.assertEqual(ScalarMax._reset_calls_counter, 0)
         res1 = stirrer.result.max()
@@ -146,7 +146,7 @@ class TestRepairMax(ProgressiveTest):
         stirrer.input[0] = random.output.result
         max_.input[0] = stirrer.output.result
         pr=Print(proc=self.terse, scheduler=s)
-        pr.input.df = max_.output.result
+        pr.input[0] = max_.output.result
         aio.run(s.start())
         self.assertEqual(ScalarMax._reset_calls_counter, 0)
         res1 = stirrer.result.max()
@@ -166,7 +166,7 @@ class TestRepairMax(ProgressiveTest):
         stirrer.input[0] = random.output.result
         max_.input[0] = stirrer.output.result
         pr=Print(proc=self.terse, scheduler=s)
-        pr.input.df = max_.output.result
+        pr.input[0] = max_.output.result
         aio.run(s.start())
         self.assertEqual(ScalarMax._reset_calls_counter, 1)
         res1 = stirrer.result.max()
@@ -187,7 +187,7 @@ class TestRepairMax(ProgressiveTest):
         stirrer.input[0] = random.output.result
         max_.input[0] = stirrer.output.result
         pr=Print(proc=self.terse, scheduler=s)
-        pr.input.df = max_.output.result
+        pr.input[0] = max_.output.result
         aio.run(s.start())
         self.assertEqual(ScalarMax._reset_calls_counter, 0)
         res1 = stirrer.result.max()
@@ -213,7 +213,7 @@ class TestRepairMin(ProgressiveTest):
         min_=ScalarMin(name='min_'+str(hash(random)), scheduler=s)
         min_.input[0] = random.output.result
         pr=Print(proc=self.terse, scheduler=s)
-        pr.input.df = min_.output.result
+        pr.input[0] = min_.output.result
         aio.run(s.start())
         res1 = random.result.min()
         res2 = min_.result
@@ -231,7 +231,7 @@ class TestRepairMin(ProgressiveTest):
         stirrer.input[0] = random.output.result
         min_.input[0] = stirrer.output.result
         pr=Print(proc=self.terse, scheduler=s)
-        pr.input.df = min_.output.result
+        pr.input[0] = min_.output.result
         aio.run(s.start())
         self.assertEqual(ScalarMin._reset_calls_counter, 1)
         res1 = stirrer.result.min()
@@ -251,7 +251,7 @@ class TestRepairMin(ProgressiveTest):
         stirrer.input[0] = random.output.result
         min_.input[0] = stirrer.output.result
         pr=Print(proc=self.terse, scheduler=s)
-        pr.input.df = min_.output.result
+        pr.input[0] = min_.output.result
         aio.run(s.start())
         self.assertEqual(ScalarMin._reset_calls_counter, 0)
         res1 = stirrer.result.min()
@@ -271,7 +271,7 @@ class TestRepairMin(ProgressiveTest):
         stirrer.input[0] = random.output.result
         min_.input[0] = stirrer.output.result
         pr=Print(proc=self.terse, scheduler=s)
-        pr.input.df = min_.output.result
+        pr.input[0] = min_.output.result
         aio.run(s.start())
         self.assertEqual(ScalarMin._reset_calls_counter, 0)
         res1 = stirrer.result.min()
@@ -291,7 +291,7 @@ class TestRepairMin(ProgressiveTest):
         stirrer.input[0] = random.output.result
         min_.input[0] = stirrer.output.result
         pr=Print(proc=self.terse, scheduler=s)
-        pr.input.df = min_.output.result
+        pr.input[0] = min_.output.result
         aio.run(s.start())
         self.assertEqual(ScalarMin._reset_calls_counter, 1)
         res1 = stirrer.result.min()
@@ -312,7 +312,7 @@ class TestRepairMin(ProgressiveTest):
         stirrer.input[0] = random.output.result
         min_.input[0] = stirrer.output.result
         pr=Print(proc=self.terse, scheduler=s)
-        pr.input.df = min_.output.result
+        pr.input[0] = min_.output.result
         aio.run(s.start())
         self.assertEqual(ScalarMin._reset_calls_counter, 0)
         res1 = stirrer.result.min()

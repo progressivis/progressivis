@@ -28,7 +28,7 @@ class TestHistogram1D(ProgressiveTest):
         histogram1d.input.min = min_.output.result
         histogram1d.input.max = max_.output.result
         pr = Every(proc=self.terse, scheduler=s)
-        pr.input.df = csv.output.result
+        pr.input[0] = csv.output.result
         aio.run(s.start())
         s = histogram1d.trace_stats()
 
@@ -45,7 +45,7 @@ class TestHistogram1D(ProgressiveTest):
         histogram1d.input.min = min_.output.result
         histogram1d.input.max = max_.output.result
         pr = Every(proc=self.terse, scheduler=s)
-        pr.input.df = csv.output.result
+        pr.input[0] = csv.output.result
         aio.run(s.start())
         s = histogram1d.trace_stats()
         last = histogram1d.result.last().to_dict()
@@ -73,7 +73,7 @@ class TestHistogram1D(ProgressiveTest):
 
         #pr = Print(scheduler=s)
         pr = Every(proc=self.terse, scheduler=s)
-        pr.input.df = stirrer.output.result
+        pr.input[0] = stirrer.output.result
         aio.run(s.start())
         s = histogram1d.trace_stats()
         last = histogram1d.result.last().to_dict()

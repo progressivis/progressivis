@@ -53,7 +53,7 @@ class TestHadamard(ProgressiveTest):
         module.input.x1 = random1.output.result
         module.input.x2 = random2.output.result
         pr=Print(proc=self.terse, scheduler=s)
-        pr.input.df = module.output.result
+        pr.input[0] = module.output.result
         aio.run(s.start())
         res1 = np.multiply(random1.result.to_array(),
                       random2.result.to_array())

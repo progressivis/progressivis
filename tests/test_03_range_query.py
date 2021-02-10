@@ -31,7 +31,7 @@ class TestRangeQuery(ProgressiveTest):
                                                min_value=min_value,
                                                max_value=max_value)
             prt = Print(proc=self.terse, scheduler=s)
-            prt.input.df = range_qry.output.result
+            prt.input[0] = range_qry.output.result
         aio.run(s.start())
         idx = range_qry.input_module\
                        .output['result']\
@@ -52,16 +52,16 @@ class TestRangeQuery(ProgressiveTest):
                                                min_value=min_value,
                                                max_value=max_value)
             prt = Print(proc=self.terse, scheduler=s)
-            prt.input.df = range_qry.output.result
+            prt.input[0] = range_qry.output.result
             hist_index = range_qry.hist_index
             min_=Min(name='min_'+str(hash(hist_index)), scheduler=s)
             min_.input[0] = hist_index.output.min_out
             prt2 = Print(proc=self.terse, scheduler=s)
-            prt2.input.df = min_.output.result
+            prt2.input[0] = min_.output.result
             max_=Max(name='max_'+str(hash(hist_index)), scheduler=s)
             max_.input[0] = hist_index.output.max_out
             pr3=Print(proc=self.terse, scheduler=s)
-            pr3.input.df = max_.output.result
+            pr3.input[0] = max_.output.result
         aio.run(s.start())
         res1 = random.result.min()['_1']
         res2 = min_.result['_1']
@@ -78,11 +78,11 @@ class TestRangeQuery(ProgressiveTest):
                                            min_value=min_value,
                                            max_value=max_value)
         prt = Print(proc=self.terse, scheduler=s)
-        prt.input.df = range_qry.output.result
+        prt.input[0] = range_qry.output.result
         prt2 = Print(proc=self.terse, scheduler=s)
-        prt2.input.df = range_qry.output.min
+        prt2.input[0] = range_qry.output.min
         pr3 = Print(proc=self.terse, scheduler=s)
-        pr3.input.df = range_qry.output.max
+        pr3.input[0] = range_qry.output.max
         return range_qry
 
     def test_range_query_min_max(self):

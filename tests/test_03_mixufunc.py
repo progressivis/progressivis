@@ -63,7 +63,7 @@ class TestMixUfunc(ProgressiveTest):
         module.input.first = random1.output.result
         module.input.second = random2.output.result
         pr=Print(proc=self.terse, scheduler=s)
-        pr.input.df = module.output.result
+        pr.input[0] = module.output.result
         aio.run(s.start())
         first = random1.result.to_array()
         first_2 = first[:, 1]
@@ -88,7 +88,7 @@ class TestMixUfunc(ProgressiveTest):
         module.input.first = random1.output.result
         module.input.second = random2.output.result
         pr=Print(proc=self.terse, scheduler=s)
-        pr.input.df = module.output.result
+        pr.input[0] = module.output.result
         aio.run(s.start())
         first = list(random1.result.values())
         first_2 = first[1]

@@ -13,7 +13,7 @@ class Testvar(ProgressiveTest):
         var=Var(scheduler=s)
         var.input[0] = random.output.result
         pr=Print(proc=self.terse, scheduler=s)
-        pr.input.df = var.output.result
+        pr.input[0] = var.output.result
         aio.run(s.start())
         res1 = np.array([float(e) for e in random.result.var(ddof=1).values()])
         res2 = np.array([float(e) for e in var.result.last().to_dict(ordered=True).values()])
