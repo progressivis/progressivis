@@ -337,7 +337,7 @@ class MCScatterPlot(NAry):
             return json
         return self.make_json(json)
 
-    def create_dependent_modules(self, input_module=None, input_slot=None,
+    def create_dependent_modules(self, input_module=None, input_slot='result',
                                  sample='default', **kwds):
         self.input_module = input_module
         self.input_slot = input_slot

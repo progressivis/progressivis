@@ -71,6 +71,7 @@ class BlobsTableABC(TableModule):
         self.rows = rows
         self.seed = seed
         self._reservoir = None
+        self._labels = None
         self._reservoir_idx = 0
         if throttle and isinstance(throttle, integer_types+(float,)):
             self.throttle = throttle

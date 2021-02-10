@@ -254,7 +254,7 @@ class RangeQuery2d(TableModule):
         input_table = input_slot.data()
         if input_table is None:
             return self._return_run_step(self.state_blocked, steps_run=0)
-        if not self.result:
+        if self.result is None:
             self.result = TableSelectedView(input_table, bitmap([]))
         self._create_min_max()
         # param = self.params

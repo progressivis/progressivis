@@ -356,7 +356,9 @@ class Module(metaclass=ModuleMeta):
         "Create a specified output slot"
         if isinstance(output_name, int):
             pos = output_name
+            assert pos==0 # TODO: try to remove this restriction
             slot_desc = self.all_outputs[pos]
+            assert slot_desc.name == 'result' # TODO: Idem
             output_name = slot_desc.name
         return Slot(self, output_name, input_module, input_name)
 
