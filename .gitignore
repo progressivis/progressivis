@@ -25,7 +25,6 @@ mmap_storage
 /build
 /lib
 /local
-/include
 /share
 /src
 /static

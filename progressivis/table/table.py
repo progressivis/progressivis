@@ -19,7 +19,6 @@ from .table_base import IndexTable, BaseTable
 from .column import Column
 
 #from .column_id import IdColumn
-from ..utils.khash.hashtable import Int64HashTable
 from progressivis.core.bitmap import bitmap
 
 logger = logging.getLogger(__name__)
@@ -483,5 +482,6 @@ class Table(IndexTable):
         return [self[c].dataset.base for c in cols]
 
     def cxx_api_info_index(self):
-        ix = Int64HashTable() if self.is_identity else self._ids._ids_dict._ht
-        return self.is_identity, ix, self.last_id
+        #ix = Int64HashTable() if self.is_identity else self._ids._ids_dict._ht
+        #return self.is_identity, ix, self.last_id
+        return True, self._index, self.last_id

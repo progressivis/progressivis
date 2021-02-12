@@ -3,7 +3,7 @@ from progressivis.table.module import TableModule
 from progressivis.table.table import Table
 from progressivis.core.slot import SlotDescriptor
 try:
-    from .progressivis_max import Max as CxxMax
+    from .cxx_max import Max as CxxMax
 except:
     CxxMax = None
 
@@ -29,4 +29,5 @@ class Max(TableModule):
         return super(Max, self).is_ready()
 
     def run_step(self, run_number, step_size, howlong):
+        #import pdb;pdb.set_trace()
         return self.cxx_module.run(run_number, step_size, howlong)

@@ -1,5 +1,5 @@
 from . import ProgressiveTest, skip, skipIf
-
+from progressivis.core import aio
 from progressivis import Print
 from progressivis.stats  import RandomTable
 from progressivis.stats.cxxmax import Max, CxxMax
@@ -23,9 +23,8 @@ class TestCxxMax(ProgressiveTest):
         max_.input[0] = random.output.result
         pr=Print(proc=self.terse, scheduler=s)
         pr.input[0] = max_.output.result
-        s.start()
-        s.join()
-        res1 = random.table().max()
+        aio.run(s.start())
+        res1 = random.result.max()
         res2 = max_.cxx_module.get_output_table().last()
         self.compare(res1, res2)
 

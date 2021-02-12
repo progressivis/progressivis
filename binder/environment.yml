@@ -9,6 +9,9 @@ dependencies:
   - pip
   - numpy
   - cython
+  - pybind11
+  - xtensor-python
+  - croaring=0.2.63
   - voila
   - jupyterlab=2
   - pip:
