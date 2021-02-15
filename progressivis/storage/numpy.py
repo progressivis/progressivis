@@ -124,7 +124,7 @@ class NumpyGroup(GroupImpl):
             dtype = np.dtype(dtype)
         fillvalue = kwds.pop('fillvalue', None)
         if fillvalue is None:
-            if dtype==np.object:
+            if dtype==object:
                 fillvalue=''
             else:
                 fillvalue=0

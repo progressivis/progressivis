@@ -11,6 +11,8 @@ from setuptools.command.build_ext import build_ext
 from Cython.Build import cythonize
 import numpy as np
 
+CONDA_PREFIX = os.getenv('CONDA_PREFIX')
+
 PACKAGES = ['progressivis',
             'progressivis.utils',
             'progressivis.utils.khash',
@@ -79,77 +81,26 @@ EXT_PYBIND11 = [
         include_dirs=[
             'include',
             _pybind11_includes(True),
-            _pybind11_includes(False),            
+            _pybind11_includes(False),
             np.get_include(),
             os.path.join(sys.prefix, 'include'),
+            os.path.join(CONDA_PREFIX, 'include'),
             os.path.join(sys.prefix, 'Library', 'include')
         ],
         #extra_compile_args=['-std=c++17'],
-        extra_compile_args=['-std=c++17', '-Wall', '-O0', '-g'],        
+        extra_compile_args=['-std=c++17', '-Wall', '-O0', '-g'],
         extra_link_args=["-lroaring"],
         language='c++'
     ),
-]
+] if CONDA_PREFIX else [] # avoids conda dependency ...
 
 def read(fname):
     "Read the content of fname as string"
     with open(os.path.join(os.path.dirname(__file__), fname)) as infile:
         return infile.read()
-<<<<<<< HEAD
-def has_flag(compiler, flagname):
-    """Return a boolean indicating whether a flag name is supported on
-    the specified compiler.
-    """
-    import tempfile
-    with tempfile.NamedTemporaryFile('w', suffix='.cpp') as f:
-        f.write('int main (int argc, char **argv) { return 0; }')
-        try:
-            compiler.compile([f.name], extra_postargs=[flagname])
-        except setuptools.distutils.errors.CompileError:
-            return False
-    return True
-
-
-def cpp_flag(compiler):
-    """Return the -std=c++14 compiler flag  and errors when the flag is
-    no available.
-    """
-    if has_flag(compiler, '-std=c++17'):
-        return '-std=c++17'
-    else:
-        raise RuntimeError('C++14 support is required by xtensor!')
-class BuildExt(build_ext):
-    """A custom build extension for adding compiler-specific options."""
-    c_opts = {
-        'msvc': ['/EHsc'],
-        'unix': [],
-    }
-
-    if sys.platform == 'darwin':
-        c_opts['unix'] += ['-stdlib=libc++', '-mmacosx-version-min=10.7']
-
-<<<<<<< HEAD
-=======
-    def build_extensions(self):
-        ct = self.compiler.compiler_type
-        opts = self.c_opts.get(ct, [])
-        if ct == 'unix':
-            opts.append('-DVERSION_INFO="%s"' % self.distribution.get_version())
-            opts.append(cpp_flag(self.compiler))
-            if has_flag(self.compiler, '-fvisibility=hidden'):
-                opts.append('-fvisibility=hidden')
-        elif ct == 'msvc':
-            opts.append('/DVERSION_INFO=\\"%s\\"' % self.distribution.get_version())
-        for ext in self.extensions:
-            ext.extra_compile_args = opts
-        build_ext.build_extensions(self)
-=======
->>>>>>> 0152a54... yet another fix
-
->>>>>>> 1866450... cleanup cxx_max, remove intdict
 setup(
     name="progressivis",
-    version=versioneer.get_version(),
+    version= '0.0.1', #versioneer.get_version(),
     author="Jean-Daniel Fekete",
     author_email="Jean-Daniel.Fekete@inria.fr",
     url="https://github.com/jdfekete/progressivis",
@@ -170,7 +121,6 @@ setup(
                       "cython",
                       'pybind11>=2.0.1',
                       "numpy>=1.16.5",
-                      "xtensor-python",
                       "scipy>=0.18.1",
                       "numexpr>=2.6.1",
                       "tables>=3.3.0",
@@ -194,7 +144,7 @@ setup(
                       "aiohttp_jinja2",
                       "python_socketio", "click"],
     # "pptable",
-    setup_requires=['cython', 'numpy', 'pybind11', 'xtensor-python', 'nose>=1.3.7', 'coverage'],
+    setup_requires=['cython', 'numpy', 'pybind11', 'nose>=1.3.7', 'coverage'],
     # test_suite='tests',
     test_suite='nose.collector',
     cmdclass=versioneer.get_cmdclass({'bench': RunBench}),
