@@ -1,9 +1,9 @@
-from . import ProgressiveTest
+from . import ProgressiveTest, skip
 
-from progressivis.utils.intdict import IntDict
+#from progressivis.utils.intdict import IntDict
 import numpy as np
 
-
+@skip
 class TestIntDict(ProgressiveTest):
     def test_intdict(self):
         d = IntDict()
