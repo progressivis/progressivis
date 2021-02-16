@@ -15,7 +15,6 @@ CONDA_PREFIX = os.getenv('CONDA_PREFIX')
 
 PACKAGES = ['progressivis',
             'progressivis.utils',
-            'progressivis.utils.khash',
             'progressivis.core',
             'progressivis.storage',
             'progressivis.io',
@@ -26,13 +25,6 @@ PACKAGES = ['progressivis',
             'progressivis.metrics',
             'progressivis.server',
             'progressivis.table']
-
-def _pybind11_includes(mode):
-    try:
-        import pybind11
-        return pybind11.get_include(mode)
-    except:
-        return os.path.join(sys.prefix, 'include')
 
 class RunBench(Command):
     """Runs all ProgressiVis benchmarks"""
@@ -80,15 +72,13 @@ EXT_PYBIND11 = [
         ['progressivis/stats/cxx_max.cpp'],
         include_dirs=[
             'include',
-            _pybind11_includes(True),
-            _pybind11_includes(False),
             np.get_include(),
             os.path.join(sys.prefix, 'include'),
             os.path.join(CONDA_PREFIX, 'include'),
             os.path.join(sys.prefix, 'Library', 'include')
         ],
-        #extra_compile_args=['-std=c++17'],
-        extra_compile_args=['-std=c++17', '-Wall', '-O0', '-g'],
+        extra_compile_args=['-std=c++17'],
+        #extra_compile_args=['-std=c++17', '-Wall', '-O0', '-g'],
         extra_link_args=["-lroaring"],
         language='c++'
     ),
@@ -100,7 +90,7 @@ def read(fname):
         return infile.read()
 setup(
     name="progressivis",
-    version= '0.0.1', #versioneer.get_version(),
+    version= versioneer.get_version(),
     author="Jean-Daniel Fekete",
     author_email="Jean-Daniel.Fekete@inria.fr",
     url="https://github.com/jdfekete/progressivis",
