@@ -50,6 +50,8 @@
   },
   "dependencies": {
     "@jupyter-widgets/base": "^1.1 || ^2 || ^3",
+    "@jupyter-widgets/controls": "^1.5.0 || ^2 || ^3",
+    "@jupyterlab/builder": "^3.0.0",
     "chroma-js": "",
     "core-js": "^3.6.4",
     "d3": "5.0.0",

@@ -25,8 +25,8 @@ class SensitiveHTML(widgets.DOMWidget):
     # Version of the front-end module containing widget model
     _model_module_version = Unicode('^0.1.0').tag(sync=True)
 
-    html = Unicode('').tag(sync=True)
-    data = Dict('{}').tag(sync=True)
-    value = Dict('{}').tag(sync=True)
+    html = Unicode('').tag(sync=True)  # template html
+    data = Dict('{}').tag(sync=True)   # { id: html, ... }
+    value = Dict('{}').tag(sync=True)  # id of selected widget
     sensitive_css_class = Unicode('aCssClass').tag(sync=True)
     sort_table_ids = List([]).tag(sync=True)
