@@ -169,12 +169,20 @@ const SensitiveHTMLView = widgets.DOMWidgetView.extend({
 
   html_changed: function () {
     this.el.innerHTML = this.model.get('html');
-    this.table = this.$("table", this.el)[0];
-    this.table.id = this.id;
+    const tables = this.$("table", this.el);
+    if (tables.length != 0) {
+      this.table = tables[0];
+      this.table.id = this.id;
+    }
+    else {
+      this.el.id = this.id;
+    }
     let that = this;
     elementReady(`#${this.id}`).then(() => {
       that.sensitive.update_cb();
-      sorttable.makeSortable(that.table);
+      if (that.table) {
+        sorttable.makeSortable(that.table);
+      }
     });
   },
 
