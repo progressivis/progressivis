@@ -3,6 +3,7 @@ import _ from 'lodash';
 import $ from 'jquery';
 import { elementReady } from './es6-element-ready';
 import { new_id } from './base';
+require('sorttable');
 
 export const SensitiveHTMLModel = widgets.DOMWidgetModel.extend({
   defaults: _.extend(widgets.DOMWidgetModel.prototype.defaults(), {
