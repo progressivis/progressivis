@@ -525,5 +525,6 @@ export function Scatterplot(ipyView) {
     update_vis: multiclass2d_update_vis,
     ready: multiclass2d_ready,
     template: template,
+    with_id: with_id
   };
 }

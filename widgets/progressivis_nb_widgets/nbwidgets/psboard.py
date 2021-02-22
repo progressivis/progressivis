@@ -17,7 +17,7 @@ debug_console = ipw.Output()
 #
 
 INDEX_TEMPLATE = """
-<table id="mysortedtable" class="table table-striped table-bordered table-hover table-condensed">
+<table class="table table-striped table-bordered table-hover table-condensed">
 <thead><tr><th></th><th>Id</th><th>Class</th><th>State</th><th>Last Update</th><th>Order</th></tr></thead>
 <tbody>
 {% for m in modules%}
@@ -82,7 +82,8 @@ async def control_panel(psboard, action):
 # end coros
 
 
-class PsBoard(ipw.VBox):  # pylint: disable=too-many-ancestors,too-many-instance-attributes
+# pylint: disable=too-many-ancestors,too-many-instance-attributes
+class PsBoard(ipw.VBox):
     def __init__(self, scheduler=None):
         global debug_console  # pylint: disable=global-statement
         self.scheduler = scheduler
@@ -113,8 +114,6 @@ class PsBoard(ipw.VBox):  # pylint: disable=too-many-ancestors,too-many-instance
             tmpl = Template(INDEX_TEMPLATE)
             await update_widget(self.htable,
                                 'sensitive_css_class', 'ps-row-btn')
-            await update_widget(self.htable,
-                                'sort_table_ids', ['mysortedtable'])
             html = tmpl.render(modules=modules, cols=self.cols)
             # print(html)
             await update_widget(self.htable,

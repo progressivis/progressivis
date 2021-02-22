@@ -9,7 +9,7 @@ export function SensitiveHTML(ipyView) {
 
   function update_cb() {
     let cssCls = ipyView.model.get('sensitive_css_class');
-    $('.' + cssCls)
+    $(`#${ipyView.id} .${cssCls}`)
       .unbind('click')
       .click(onclick_fun);
   }

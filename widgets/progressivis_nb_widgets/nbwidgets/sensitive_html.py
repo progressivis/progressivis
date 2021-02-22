@@ -1,5 +1,5 @@
 import ipywidgets as widgets
-from traitlets import Unicode, List, Dict
+from traitlets import Unicode, Dict
 
 # See js/lib/widgets.js for the frontend counterpart to this file.
 
@@ -29,4 +29,3 @@ class SensitiveHTML(widgets.DOMWidget):
     data = Dict('{}').tag(sync=True)
     value = Dict('{}').tag(sync=True)
     sensitive_css_class = Unicode('aCssClass').tag(sync=True)
-    sort_table_ids = List([]).tag(sync=True)

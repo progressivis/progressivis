@@ -110,7 +110,6 @@ const ModuleGraphModel = widgets.DOMWidgetModel.extend({
     _model_module_version: '0.1.0',
     _view_module_version: '0.1.0',
     data: 'Hello ModuleGraph!',
-    //value: '{0}'
   }),
 });
 
@@ -152,7 +151,6 @@ const SensitiveHTMLModel = widgets.DOMWidgetModel.extend({
     value: '{0}',
     data: '{}',
     sensitive_css_class: 'aCssClass',
-    sort_table_ids: [],
   }),
 });
 
@@ -160,6 +158,7 @@ const SensitiveHTMLModel = widgets.DOMWidgetModel.extend({
 const SensitiveHTMLView = widgets.DOMWidgetView.extend({
   // Defines how the widget gets rendered into the DOM
   render: function () {
+    this.id = `sensitive_${new_id()}`;
     this.sensitive = SensitiveHTML(this);
     this.html_changed();
     // Observe changes in the value traitlet in Python, and define
@@ -170,23 +169,19 @@ const SensitiveHTMLView = widgets.DOMWidgetView.extend({
 
   html_changed: function () {
     this.el.innerHTML = this.model.get('html');
+    this.table = this.$("table", this.el)[0];
+    this.table.id = this.id;
     let that = this;
-    let sensitive_class = this.model.get('sensitive_css_class');
-    elementReady('.' + sensitive_class).then(() => {
+    elementReady(`#${this.id}`).then(() => {
       that.sensitive.update_cb();
-      let sort_table_ids = this.model.get('sort_table_ids');
-      for (const i in sort_table_ids) {
-        let tid = sort_table_ids[i];
-        let tobj = document.getElementById(tid);
-        sorttable.makeSortable(tobj);
-      }
+      sorttable.makeSortable(that.table);
     });
   },
 
   data_changed: function () {
     let that = this;
     let sensitive_class = this.model.get('sensitive_css_class');
-    elementReady('.' + sensitive_class).then(() =>
+    elementReady(`#${that.id} .${sensitive_class}`).then(() =>
       that.sensitive.update_data()
     );
   },
