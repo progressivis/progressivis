@@ -1,10 +1,56 @@
 'use strict';
+import * as widgets from '@jupyter-widgets/base';
 import * as d3 from 'd3';
 import * as cola from 'webcola';
 import $ from 'jquery';
 import _ from 'lodash';
+import { new_id } from './base';
+import { elementReady } from './es6-element-ready';
 
-export function module_graph(view) {
+import '../css/module-graph.css';
+
+// When serialiazing the entire widget state for embedding, only values that
+// differ from the defaults will be specified.
+export const ModuleGraphModel = widgets.DOMWidgetModel.extend({
+  defaults: _.extend(widgets.DOMWidgetModel.prototype.defaults(), {
+    _model_name: 'ModuleGraphModel',
+    _view_name: 'ModuleGraphView',
+    _model_module: 'progressivis-nb-widgets',
+    _view_module: 'progressivis-nb-widgets',
+    _model_module_version: '0.1.0',
+    _view_module_version: '0.1.0',
+    data: 'Hello ModuleGraph!',
+  }),
+});
+
+
+// Custom View. Renders the widget model.
+export const ModuleGraphView = widgets.DOMWidgetView.extend({
+  // Defines how the widget gets rendered into the DOM
+  render: function () {
+    this.id = 'module_graph_' + new_id();
+    this.module_graph = module_graph(this);
+    this.el.innerHTML = `<svg id="${this.id}" width="960" height="500"></svg>`;
+    const that = this;
+    elementReady('#' + this.id).then(() => {
+      that.module_graph.ready();
+      that.data_changed();
+    });
+    console.log('REnder ModuleGraphView');
+    // Observe changes in the value traitlet in Python, and define
+    // a custom callback.
+    this.model.on('change:data', this.data_changed, this);
+  },
+
+  data_changed: function () {
+    console.log('Data changed ModuleGraphView');
+    let val = this.model.get('data');
+    if (val == '{}') return;
+    this.module_graph.update_vis(JSON.parse(val));
+  },
+});
+
+function module_graph(view) {
   const id = view.id;
   let d3cola;
   let firstTime = true;

@@ -1,17 +1,85 @@
+'use strict';
+import * as widgets from '@jupyter-widgets/base';
+import _ from 'lodash';
+import $ from 'jquery';
+import { new_id } from './base';
+import { elementReady } from './es6-element-ready';
 import { Config, Interpreter } from 'multiclass-density-maps';
+import * as colormaps from './colormaps';
 import * as d3 from 'd3';
 import History from './history';
-import * as colormaps from './colormaps';
-import { elementReady } from './es6-element-ready';
 import { register_config_editor } from './config-editor';
-import $ from 'jquery';
+const ndarray = require('ndarray');
 const ndarray_unpack = require('ndarray-unpack');
+import '../css/scatterplot.css';
 
 const DEFAULT_SIGMA = 0;
 const DEFAULT_FILTER = 'default';
 const MAX_PREV_IMAGES = 3;
 
-export function Scatterplot(ipyView) {
+import {
+  data_union_serialization,
+  listenToUnion,
+} from 'jupyter-dataserializers';
+
+window.ndarray = ndarray;
+
+export const ScatterplotModel = widgets.DOMWidgetModel.extend(
+  {
+    defaults: _.extend(widgets.DOMWidgetModel.prototype.defaults(), {
+      _model_name: 'ScatterplotModel',
+      _view_name: 'ScatterplotView',
+      _model_module: 'progressivis-nb-widgets',
+      _view_module: 'progressivis-nb-widgets',
+      _model_module_version: '0.1.0',
+      _view_module_version: '0.1.0',
+      hists: ndarray([]),
+      samples: ndarray([]),
+      data: 'Hello Scatterplot!',
+      value: '{0}',
+      move_point: '{0}',
+      modal: false,
+      to_hide: [],
+    }),
+  },
+  {
+    serializers: _.extend(
+      {
+        hists: data_union_serialization,
+        samples: data_union_serialization,
+      },
+      widgets.DOMWidgetModel.serializers
+    ),
+  }
+);
+
+// Custom View. Renders the widget model.
+export const ScatterplotView = widgets.DOMWidgetView.extend({
+  // Defines how the widget gets rendered into the DOM
+  render: function () {
+    this.id = 'view_' + new_id();
+    const scatterplot = Scatterplot(this);
+    this.scatterplot = scatterplot;
+    this.scatterplot.template(this.el);
+    let that = this;
+    elementReady('#' + scatterplot.with_id('prevImages')).then(() =>
+      scatterplot.ready(that)
+    );
+    listenToUnion(this.model, 'hists', this.update.bind(this), true);
+    listenToUnion(this.model, 'samples', this.update.bind(this), true);
+    // Observe changes in the value traitlet in Python, and define
+    // a custom callback.
+    this.model.on('change:data', this.data_changed, this);
+  },
+  data_changed: function () {
+    //console.log("data_changed");
+    const val = this.model.get('data');
+    this.scatterplot.update_vis(JSON.parse(val));
+  },
+});
+
+
+function Scatterplot(ipyView) {
   const id = ipyView.id;
   let progressivis_data = null;
   const margin = { top: 20, right: 20, bottom: 30, left: 40 };
@@ -56,13 +124,13 @@ export function Scatterplot(ipyView) {
 
   function multiclass2d_dragstart(/* d, i*/) {
     d3.event.sourceEvent.stopPropagation();
-    d3.select(this).classed('dragging', true);
+    d3.select(ipyView).classed('dragging', true);
   }
 
   function multiclass2d_dragmove(d) {
     d[0] = xAxis.scale().invert(d3.event.x);
     d[1] = yAxis.scale().invert(d3.event.y);
-    d3.select(this).attr('cx', d3.event.x).attr('cy', d3.event.y);
+    d3.select(ipyView).attr('cx', d3.event.x).attr('cy', d3.event.y);
   }
 
   function template(element) {
@@ -149,9 +217,9 @@ export function Scatterplot(ipyView) {
 
   function multiclass2d_dragend(d, i) {
     const msg = {};
-    d3.select(this).classed('dragging', false);
+    d3.select(ipyView).classed('dragging', false);
     if (collection_in_progress) {
-      d3.select(this).style('fill', 'green');
+      d3.select(ipyView).style('fill', 'green');
       centroid_selection[i] = d;
     } else {
       msg[i] = d;
@@ -492,16 +560,17 @@ export function Scatterplot(ipyView) {
     );
     const filterSlider = $(swith_id('filterSlider'));
     filterSlider.change(function () {
-      gaussianBlur.setStdDeviation(this.value, this.value);
+      const value = $(this).value;
+      gaussianBlur.setStdDeviation(value, value);
     });
     filterSlider.get(0).value = DEFAULT_SIGMA;
     gaussianBlur.setStdDeviation(DEFAULT_SIGMA, DEFAULT_SIGMA);
 
     const colorMap = document.getElementById(with_id('colorMap'));
     const colorMapSelect = $(swith_id('colorMapSelect'));
-    colorMapSelect.change(() =>
-      colormaps.makeTableFilter(colorMap, this.value)
-    );
+    colorMapSelect.change(function() {
+      colormaps.makeTableFilter(colorMap, $(this).value);
+    });
     colorMapSelect.get(0).value = DEFAULT_FILTER;
     makeOptions(colorMapSelect.get(0), colormaps.getTableNames());
     colormaps.makeTableFilter(colorMap, 'Default');
