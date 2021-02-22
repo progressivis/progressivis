@@ -25,6 +25,5 @@ class JsonHTML(widgets.DOMWidget):
     # Version of the front-end module containing widget model
     _model_module_version = Unicode('^0.1.0').tag(sync=True)
 
-    dom_id = Unicode('json_html_dom_id').tag(sync=True)
     data = Any('{}').tag(sync=True)
     config = Any('{}').tag(sync=True)

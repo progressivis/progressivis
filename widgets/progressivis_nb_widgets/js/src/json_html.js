@@ -3,6 +3,7 @@ import $ from 'jquery';
 import 'jquery-sparkline';
 import * as widgets from '@jupyter-widgets/base';
 import _ from 'lodash';
+import { new_id } from './base';
 import { elementReady } from './es6-element-ready';
 
 export const JsonHTMLModel = widgets.DOMWidgetModel.extend({
@@ -13,7 +14,6 @@ export const JsonHTMLModel = widgets.DOMWidgetModel.extend({
     _view_module: 'progressivis-nb-widgets',
     _model_module_version: '0.1.0',
     _view_module_version: '0.1.0',
-    dom_id: 'json_html_dom_id',
     data: '{}',
     config: '{}',
   }),
@@ -23,8 +23,8 @@ export const JsonHTMLModel = widgets.DOMWidgetModel.extend({
 export const JsonHTMLView = widgets.DOMWidgetView.extend({
   // Defines how the widget gets rendered into the DOM
   render: function () {
-    let dom_id = this.model.get('dom_id');
-    this.el.innerHTML = "<div id='" + dom_id + "'></div>";
+    this.id = `json_html_${new_id()}`;
+    this.el.innerHTML = "<div id='" + this.id + "'></div>";
     this.data_changed();
     // Observe changes in the value traitlet in Python, and define
     // a custom callback.
@@ -34,17 +34,15 @@ export const JsonHTMLView = widgets.DOMWidgetView.extend({
 
   data_changed: function () {
     const that = this;
-    const dom_id = this.model.get('dom_id');
-
-    elementReady('#' + dom_id).then(() => layout_dict_entry(that));
+    elementReady(`#${this.id}`).then(() => layout_dict_entry(that));
   },
 });
 
 
 function layout_dict_entry(view_) {
   const ipyView = view_;
-  const dom_id = ipyView.model.get('dom_id');
-  let jq_id = '#' + ipyView.model.get('dom_id');
+  const id = ipyView.id;
+  let jq_id = `#${id}`;
   let data = view_.model.get('data');
   let config = view_.model.get('config');
   let order = config.order;
@@ -52,7 +50,7 @@ function layout_dict_entry(view_) {
   let procs = {};
 
   function makeSparkId(k) {
-    return 'ps-spark_' + dom_id + '_' + k;
+    return 'ps-spark_' + id + '_' + k;
   }
 
   function escapeHTML(s) {
