@@ -52,7 +52,7 @@
     "@jupyter-widgets/base": "^1.1 || ^2 || ^3",
     "chroma-js": "",
     "core-js": "^3.6.4",
-    "d3": "5.0.0",
+    "d3": "^5.0.0",
     "datatables": "^1.10.18",
     "jquery": "^3.4.1",
     "jquery-sparkline": "^2.4.0",

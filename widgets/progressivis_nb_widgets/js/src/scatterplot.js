@@ -1,4 +1,4 @@
-'use strict';
+//'use strict';
 import * as widgets from '@jupyter-widgets/base';
 import _ from 'lodash';
 import $ from 'jquery';
@@ -124,18 +124,21 @@ function Scatterplot(ipyView) {
 
   function multiclass2d_dragstart(/* d, i*/) {
     d3.event.sourceEvent.stopPropagation();
-    d3.select(ipyView).classed('dragging', true);
+    d3.select(this).classed('dragging', true);
   }
 
   function multiclass2d_dragmove(d) {
     d[0] = xAxis.scale().invert(d3.event.x);
     d[1] = yAxis.scale().invert(d3.event.y);
-    d3.select(ipyView).attr('cx', d3.event.x).attr('cy', d3.event.y);
+    d3.select(this)
+      .attr('cx', d3.event.x)
+      .attr('cy', d3.event.y);
   }
 
   function template(element) {
     let temp = document.querySelector('#Scatterplot');
     if (temp === null) {
+      // Install the template as a dom template node
       temp = document.createElement('template');
       temp.setAttribute('id', 'Scatterplot');
       temp.innerHTML = `<!-- Tab panes -->
@@ -199,6 +202,7 @@ function Scatterplot(ipyView) {
       document.body.appendChild(temp);
     }
     const templateClone = temp.content.cloneNode(true);
+    // Rename all the ids to be unique
     const with_ids = templateClone.querySelectorAll('[id]');
     const ids = new Set();
 
@@ -217,9 +221,9 @@ function Scatterplot(ipyView) {
 
   function multiclass2d_dragend(d, i) {
     const msg = {};
-    d3.select(ipyView).classed('dragging', false);
+    d3.select(this).classed('dragging', false);
     if (collection_in_progress) {
-      d3.select(ipyView).style('fill', 'green');
+      d3.select(this).style('fill', 'green');
       centroid_selection[i] = d;
     } else {
       msg[i] = d;
@@ -340,9 +344,15 @@ function Scatterplot(ipyView) {
           .attr('width', iw)
           .attr('height', ih);
 
-        gX = svg.append('g').attr('class', 'x axis axis--x').call(xAxis);
+        gX = svg
+          .append('g')
+          .attr('class', 'x axis axis--x')
+          .call(xAxis);
 
-        gY = svg.append('g').attr('class', 'y axis axis--y').call(yAxis);
+        gY = svg
+          .append('g')
+          .attr('class', 'y axis axis--y')
+          .call(yAxis);
 
         svg.call(zoom);
         //firstTime = false;
@@ -370,7 +380,7 @@ function Scatterplot(ipyView) {
         const iw = x(bounds.xmax) - ix;
         const ih = y(bounds.ymin) - iy;
         svg
-          .select('.heatmap')
+          .select(`#${id} .heatmap`)
           .attr('x', ix)
           .attr('y', iy)
           .attr('width', iw)
@@ -378,7 +388,7 @@ function Scatterplot(ipyView) {
           .attr('xlink:href', dataURL);
 
         svg
-          .select('.heatmapCompare')
+          .select(`#${id} .heatmapCompare`)
           .attr('x', ix)
           .attr('y', iy)
           .attr('width', iw)
@@ -395,12 +405,13 @@ function Scatterplot(ipyView) {
         .attr('width', 50)
         .attr('height', 50)
         .on('mouseover', (d) => {
-          d3.select('.heatmapCompare')
+          d3.select(`#${id} .heatmapCompare`)
             .attr('xlink:href', d)
             .attr('visibility', 'inherit');
         })
         .on('mouseout', () => {
-          d3.select('.heatmapCompare').attr('visibility', 'hidden');
+          d3.select(`#${id} .heatmapCompare`)
+            .attr('visibility', 'hidden');
         });
 
       prevImgElements
@@ -560,7 +571,7 @@ function Scatterplot(ipyView) {
     );
     const filterSlider = $(swith_id('filterSlider'));
     filterSlider.change(function () {
-      const value = $(this).value;
+      const value = this.value;
       gaussianBlur.setStdDeviation(value, value);
     });
     filterSlider.get(0).value = DEFAULT_SIGMA;
@@ -569,7 +580,7 @@ function Scatterplot(ipyView) {
     const colorMap = document.getElementById(with_id('colorMap'));
     const colorMapSelect = $(swith_id('colorMapSelect'));
     colorMapSelect.change(function() {
-      colormaps.makeTableFilter(colorMap, $(this).value);
+      colormaps.makeTableFilter(colorMap, this.value);
     });
     colorMapSelect.get(0).value = DEFAULT_FILTER;
     makeOptions(colorMapSelect.get(0), colormaps.getTableNames());
