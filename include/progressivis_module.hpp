@@ -163,6 +163,14 @@ public:
     return slot_.attr("created").attr("any")().cast<bool>();
   }
   
+  bool created_base_any(){
+    return slot_.attr("base").attr("created").attr("any")().cast<bool>();
+  }
+  
+  bool created_selection_any(){
+    return slot_.attr("selection").attr("created").attr("any")().cast<bool>();
+  }
+  
   bool updated_any(){
     return slot_.attr("updated").attr("any")().cast<bool>();
   }
@@ -170,16 +178,42 @@ public:
   bool deleted_any(){
     return slot_.attr("deleted").attr("any")().cast<bool>();
   }
+
+  bool deleted_base_any(){
+    return slot_.attr("base").attr("deleted").attr("any")().cast<bool>();
+  }
   
-  VectInd created_next(int howMany){
-    py::object bmpy = slot_.attr("created").attr("next")(howMany, "as_slice"_a=false);
+  bool deleted_selection_any(){
+    return slot_.attr("selection").attr("deleted").attr("any")().cast<bool>();
+  }
+  
+  VectInd _created_next(int howMany, py::object bmpy){
     bmpy.inc_ref();
     BitMap bm =bmpy.cast<BitMap>();
     auto res = table_->convert_indices(bm);
     bmpy.dec_ref();
     return res;
   }
-  
+
+   VectInd created_next(int howMany){
+     return _created_next(howMany,
+			  slot_.attr("created").attr("next")(howMany, "as_slice"_a=false));
+   }
+ 
+   VectInd created_base_next(int howMany){
+     return _created_next(howMany,
+			  slot_.attr("base")
+			  .attr("created").
+			  attr("next")(howMany, "as_slice"_a=false));
+   }
+ 
+   VectInd created_selection_next(int howMany){
+     return _created_next(howMany,
+			  slot_.attr("selection")
+			  .attr("created").
+			  attr("next")(howMany, "as_slice"_a=false));
+   }
+ 
   VectInd updated_next(int howMany){
     BitMap bm = slot_.attr("updated").attr("next")(howMany, "as_slice"_a=false).cast<BitMap>();
     return table_->convert_indices(bm);
@@ -187,6 +221,18 @@ public:
   
   VectInd deleted_next(int howMany){
     BitMap bm = slot_.attr("deleted").attr("next")(howMany, "as_slice"_a=false).cast<BitMap>();
+    return table_->convert_indices(bm);
+  }
+  
+  VectInd deleted_base_next(int howMany){
+    BitMap bm = slot_.attr("base").attr("deleted")
+      .attr("next")(howMany, "as_slice"_a=false).cast<BitMap>();
+    return table_->convert_indices(bm);
+  }
+  
+  VectInd deleted_selection_next(int howMany){
+    BitMap bm = slot_.attr("selection").attr("deleted")
+      .attr("next")(howMany, "as_slice"_a=false).cast<BitMap>();
     return table_->convert_indices(bm);
   }
   
