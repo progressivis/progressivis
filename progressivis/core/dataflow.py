@@ -112,9 +112,11 @@ class Dataflow(object):
         self.outputs[module.name] = {}
 
     def remove_module(self, module):
-        "Remove the specified module"
+        '''Remove the specified module
+           or does nothing if the module does not exist.
+        '''
         if isinstance(module, str):
-            module = self._modules[module]
+            module = self._modules.get(module)
         if not hasattr(module, 'name'):
             return  # module is not fully created
         # module.terminate()

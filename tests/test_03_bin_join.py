@@ -6,6 +6,7 @@ from progressivis.core import aio
 
 from . import ProgressiveTest
 
+
 class TestBinJoin(ProgressiveTest):
     def test_bin_join(self):
         s = self.scheduler()
