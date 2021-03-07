@@ -4,9 +4,10 @@ from progressivis.stats import RandomTable, Min
 from progressivis.table.dict2table import Dict2Table
 from progressivis.core import aio
 
-from . import ProgressiveTest
+from . import ProgressiveTest, skip
 
 
+@skip
 class TestBinJoin(ProgressiveTest):
     def test_bin_join(self):
         s = self.scheduler()

@@ -547,7 +547,6 @@ class Scheduler(object):
         return self._modules.get(mid, None)
 
     def __delitem__(self, name):
-        print('calling scheduler del on ', name)
         if self.dataflow:
             del self.dataflow[name]
         else:
