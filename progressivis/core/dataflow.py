@@ -56,11 +56,10 @@ class Dataflow(object):
 
     def generate_name(self, prefix):
         "Generate a name for a module given its class prefix."
-        for i in range(1, 10):
-            mid = '%s_%d' % (prefix, i)
-            if mid not in self._modules:
-                return mid
-        return '%s_%s' % (prefix, uuid4())
+        while True:
+            name = f'{prefix}_{uuid4}'
+            if name not in self._modules:
+                return name
 
     def modules(self):
         "Return all the modules in this dataflow"
@@ -119,9 +118,12 @@ class Dataflow(object):
         if not hasattr(module, 'name'):
             return  # module is not fully created
         # module.terminate()
-        del self._modules[module.name]
-        self._remove_module_inputs(module.name)
-        self._remove_module_outputs(module.name)
+        to_remove = set([module.name])
+        while to_remove:
+            name = to_remove.pop()
+            del self._modules[name]
+            self._remove_module_inputs(name)
+            to_remove.update(self._remove_module_outputs(name))
         self.valid = []
 
     def add_connection(self, slot):
@@ -182,7 +184,8 @@ class Dataflow(object):
     def _remove_module_inputs(self, name):
         for slot in self.inputs[name].values():
             slots = self.outputs[slot.output_module.name][slot.output_name]
-            nslots = [s for s in slots if s.output_module.name != name]
+            nslots = [s for s in slots if s.input_module.name != name]
+            assert slots != nslots  # we must remove a slot
             if nslots:
                 self.outputs[slot.output_module.name][slot.output_name] = nslots
             else:
@@ -190,16 +193,14 @@ class Dataflow(object):
         del self.inputs[name]
 
     def _remove_module_outputs(self, name):
-        module_slots = self.outputs[name]
-        for (sname, slots) in module_slots.items():
-            nslots = [s for s in slots if s.input_module.name != name]
-            if nslots == slots:
-                continue  # no need to change, weird
-            elif nslots:
-                module_slots[sname] = nslots
-            else:
-                del module_slots[sname]
+        emptied = []
+        for oslots in self.outputs[name].values():
+            for slot in oslots:
+                del self.inputs[slot.input_module.name][slot.input_name]
+                if not self.inputs[slot.input_module.name]:
+                    emptied.append(slot.input_module.name)
         del self.outputs[name]
+        return emptied
 
     def order_modules(self, dependencies=None):
         "Compute a topological order for the modules."

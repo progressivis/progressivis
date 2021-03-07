@@ -8,7 +8,7 @@ from . import ProgressiveTest
 
 
 class TestDataflow(ProgressiveTest):
-    def test_dataflow(self):
+    def test_dataflow_0(self):
         scheduler = self.scheduler()
         saved_inputs = None
         saved_outputs = None
@@ -35,6 +35,7 @@ class TestDataflow(ProgressiveTest):
             prt.input.df = m.output.result
 
             self.assertEqual(len(dataflow), 3)
+            self.assertEqual(dataflow.dir(), ['csv', 'min', 'print'])
             errors = dataflow.validate()
             self.assertEqual(errors, [])
             deps = dataflow.order_modules()
@@ -83,7 +84,7 @@ class TestDataflow(ProgressiveTest):
             prt.input.df = m.output.result
         scheduler._update_modules()  # force modules in the main loop
 
-    def test_dataflow_dynamic(self):
+    def test_dataflow_1_dynamic(self):
         scheduler = self.scheduler(clean=True)
 
         csv = CSVLoader(get_dataset('bigfile'), name='csv',
@@ -102,21 +103,58 @@ class TestDataflow(ProgressiveTest):
             print("proc max called")
             started = True
 
+        async def _add_max(csv, scheduler, proc):
+            await aio.sleep(2)
+            with scheduler:
+                print('adding new modules')
+                m = Max(name="max", scheduler=scheduler)
+                prt = Print(name='print_max',
+                            proc=proc,
+                            scheduler=scheduler)
+                m.input.table = csv.output.result
+                prt.input.df = m.output.result
+
         t = _add_max(csv, scheduler, proc=proc)
         aio.run_gather(scheduler.start(), t)
         self.assertTrue(started)
 
+    def test_dataflow_2_add_remove(self):
+        scheduler = self.scheduler(clean=True)
 
-async def _add_max(csv, scheduler, proc):
-    await aio.sleep(2)
-    with scheduler:
-        print('adding new modules')
-        m = Max(name="max", scheduler=scheduler)
-        prt = Print(name='print_max',
-                    proc=proc,
+        csv = CSVLoader(get_dataset('bigfile'), name='csv',
+                        index_col=False, header=None,
+                        scheduler=scheduler)
+        m = Min(name="min", scheduler=scheduler)
+        prt = Print(proc=self.terse,
+                    name='print_min',
                     scheduler=scheduler)
         m.input.table = csv.output.result
         prt.input.df = m.output.result
+        started = False
+
+        def proc(x):
+            nonlocal started
+            print("proc max called")
+            started = True
+
+        async def _add_max_remove_min(csv, scheduler, proc):
+            await aio.sleep(2)
+            with scheduler:
+                print('removing min module')
+                del scheduler['min']
+                print('adding new modules')
+                m = Max(name="max", scheduler=scheduler)
+                prt = Print(name='print_max',
+                            proc=proc,
+                            scheduler=scheduler)
+                m.input.table = csv.output.result
+                prt.input.df = m.output.result
+
+        t = _add_max_remove_min(csv, scheduler, proc=proc)
+        aio.run_gather(scheduler.start(), t)
+        self.assertTrue(started)
+
+
 
 
 if __name__ == '__main__':

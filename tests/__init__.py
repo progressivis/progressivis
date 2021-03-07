@@ -4,7 +4,7 @@ from unittest import TestCase, skip, skipIf, main
 
 from progressivis import (log_level, logging,
                           Scheduler)
-from progressivis.storage import StorageEngine, init_temp_dir_if, cleanup_temp_dir, temp_dir
+from progressivis.storage import init_temp_dir_if, cleanup_temp_dir
 import numpy as np
 
 _ = skip  # shut-up pylint

@@ -7,7 +7,6 @@ from timeit import default_timer
 import time
 from .dataflow import Dataflow
 from . import aio
-from .settings import VARS
 from ..utils.errors import ProgressiveError
 logger = logging.getLogger(__name__)
 
@@ -548,6 +547,7 @@ class Scheduler(object):
         return self._modules.get(mid, None)
 
     def __delitem__(self, name):
+        print('calling scheduler del on ', name)
         if self.dataflow:
             del self.dataflow[name]
         else:
