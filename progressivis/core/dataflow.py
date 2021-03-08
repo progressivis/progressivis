@@ -186,13 +186,14 @@ class Dataflow(object):
 
     def _remove_module_inputs(self, name):
         for slot in self.inputs[name].values():
-            slots = self.outputs[slot.output_module.name][slot.output_name]
+            outname = slot.output_name
+            slots = self.outputs[slot.output_module.name][outname]
             nslots = [s for s in slots if s.input_module.name != name]
             assert slots != nslots  # we must remove a slot
             if nslots:
-                self.outputs[slot.output_module.name][slot.output_name] = nslots
+                self.outputs[slot.output_module.name][outname] = nslots
             else:
-                del self.outputs[slot.output_module.name][slot.output_name]
+                del self.outputs[slot.output_module.name][outname]
         del self.inputs[name]
 
     def _remove_module_outputs(self, name):
@@ -201,6 +202,10 @@ class Dataflow(object):
             for slot in oslots:
                 del self.inputs[slot.input_module.name][slot.input_name]
                 if not self.inputs[slot.input_module.name]:
+                    emptied.append(slot.input_module.name)
+                # if the module become invalid, it should be removed
+                # Equivalent of SIGCHILD
+                elif self.validate_module(slot.input_module):
                     emptied.append(slot.input_module.name)
         del self.outputs[name]
         return emptied
