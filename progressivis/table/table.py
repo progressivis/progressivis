@@ -322,6 +322,7 @@ class Table(IndexTable):
                 for i in range(length):
                     tocol[indices[i]] = fromcol[i]
 
+
     def add(self, row, index=None):
         "Add one row to the Table"
         assert len(row) == self.ncol
@@ -466,22 +467,4 @@ class Table(IndexTable):
                      data=OrderedDict(data),
                      indices=indices)
 
-    def get_panene_data(self, cols=None):
-        if cols is None:
-            cols = self.columns
-        return [self[key].dataset.view for key in cols]
 
-    def cxx_api_raw_cols(self, cols=None):
-        if cols is None:
-            cols = self.columns
-        return cols, [self[c].dataset.base for c in cols]
-
-    def cxx_api_raw_cols2(self, cols=None):
-        if cols is None:
-            cols = self.columns
-        return [self[c].dataset.base for c in cols]
-
-    def cxx_api_info_index(self):
-        #ix = Int64HashTable() if self.is_identity else self._ids._ids_dict._ht
-        #return self.is_identity, ix, self.last_id
-        return True, self._index, self.last_id

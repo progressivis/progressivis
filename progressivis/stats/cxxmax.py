@@ -23,11 +23,12 @@ class Max(TableModule):
         self.default_step_size = 10000
         self.cxx_module = CxxMax(self)
 
+
+
     def is_ready(self):
         if self.get_input_slot('table').created.any():
             return True
         return super(Max, self).is_ready()
 
     def run_step(self, run_number, step_size, howlong):
-        #import pdb;pdb.set_trace()
         return self.cxx_module.run(run_number, step_size, howlong)

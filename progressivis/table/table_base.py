@@ -474,7 +474,7 @@ class BaseTable(metaclass=ABCMeta):
             res &= bm
             prev = prev._masked
         return res
-    
+
     @property
     def index(self):
         "Return the object in change of indexing this table"
@@ -980,6 +980,27 @@ class BaseTable(metaclass=ABCMeta):
             return True
         return np.all(self.values == other.values)
 
+    def get_panene_data(self, cols=None):
+        if cols is None:
+            cols = self.columns
+        return [self[key].dataset.view for key in cols]
+
+    def cxx_api_raw_cols(self, cols=None):
+        tbl = self.base or self
+        if cols is None:
+            cols = tbl.columns
+        return cols, [tbl[c].dataset.base for c in cols]
+
+    def cxx_api_raw_cols2(self, cols=None):
+        tbl = self.base or self
+        if cols is None:
+            cols = tbl.columns
+        return [tbl[c].dataset.base for c in cols]
+
+    def cxx_api_info_index(self):
+        #ix = Int64HashTable() if self.is_identity else self._ids._ids_dict._ht
+        #return self.is_identity, ix, self.last_id
+        return False, self.index, self.last_id
 
 class IndexTable(BaseTable):
     def __init__(self, index=None):

@@ -36,11 +36,11 @@ using VectInd = std::vector<uint32_t>;
 //PyRoaring-alike bitmap
 struct BitMap {
   PyObject_HEAD
-  void *foo;  
+  void *foo;
   roaring_bitmap_t *_c_bitmap;
 };
 
-// BitMap binding 
+// BitMap binding
 namespace pybind11 { namespace detail {
     template <> struct type_caster<BitMap> {
       using base = type_caster_base<BitMap>;
@@ -55,6 +55,7 @@ namespace pybind11 { namespace detail {
 }} // namespace pybind11::detail
 
 using bitmap = roaring_bitmap_t;
+
 
 /*
 struct ColVisitor {
@@ -83,7 +84,7 @@ struct Table{
     }
     updateIndex();
   }
-  
+
   void updateColumns(){
     py::list datasets = tobj_.attr("cxx_api_raw_cols2")();
     auto arrays = datasets.cast<VectNumpy>();
@@ -98,8 +99,8 @@ struct Table{
 	}, columns_[i]);
     }
   }
-  
-  
+
+
   void updateIndex(){
     py::tuple res = tobj_.attr("cxx_api_info_index")();
     is_identity_ = py::cast<bool>(res[0]);
@@ -139,7 +140,7 @@ struct Table{
 
     }
   }
-  
+
   void resize(int sz){
     tobj_.attr("resize")(sz);
     updateIndex();
@@ -152,29 +153,34 @@ class InputSlot{
   Table *table_;
 public:
   InputSlot(py::object& sl, Table* tbl): slot_(sl), table_(tbl){}
-  
-  void update(int run_number){
-    slot_.attr("update")(run_number);
+
+  void refresh(){
     table_->updateIndex();
     table_->updateColumns();
   }
-  
+
+  void update(int run_number){
+    slot_.attr("update")(run_number);
+    refresh();
+  }
+
   bool created_any(){
     return slot_.attr("created").attr("any")().cast<bool>();
   }
-  
+
+
   bool created_base_any(){
     return slot_.attr("base").attr("created").attr("any")().cast<bool>();
   }
-  
+
   bool created_selection_any(){
     return slot_.attr("selection").attr("created").attr("any")().cast<bool>();
   }
-  
+
   bool updated_any(){
     return slot_.attr("updated").attr("any")().cast<bool>();
   }
-  
+
   bool deleted_any(){
     return slot_.attr("deleted").attr("any")().cast<bool>();
   }
@@ -182,11 +188,11 @@ public:
   bool deleted_base_any(){
     return slot_.attr("base").attr("deleted").attr("any")().cast<bool>();
   }
-  
+
   bool deleted_selection_any(){
     return slot_.attr("selection").attr("deleted").attr("any")().cast<bool>();
   }
-  
+
   VectInd _created_next(int howMany, py::object bmpy){
     bmpy.inc_ref();
     BitMap bm =bmpy.cast<BitMap>();
@@ -199,43 +205,53 @@ public:
      return _created_next(howMany,
 			  slot_.attr("created").attr("next")(howMany, "as_slice"_a=false));
    }
- 
+
    VectInd created_base_next(int howMany){
      return _created_next(howMany,
 			  slot_.attr("base")
 			  .attr("created").
 			  attr("next")(howMany, "as_slice"_a=false));
    }
- 
+
    VectInd created_selection_next(int howMany){
      return _created_next(howMany,
 			  slot_.attr("selection")
 			  .attr("created").
 			  attr("next")(howMany, "as_slice"_a=false));
    }
- 
+
+  VectInd updated_next(){
+    BitMap bm = slot_.attr("updated").attr("next")("as_slice"_a=false).cast<BitMap>();
+    return table_->convert_indices(bm);
+  }
+
   VectInd updated_next(int howMany){
     BitMap bm = slot_.attr("updated").attr("next")(howMany, "as_slice"_a=false).cast<BitMap>();
     return table_->convert_indices(bm);
   }
-  
+
+  VectInd deleted_next(){
+    BitMap bm = slot_.attr("deleted").attr("next")("as_slice"_a=false).cast<BitMap>();
+    return table_->convert_indices(bm);
+  }
+
   VectInd deleted_next(int howMany){
     BitMap bm = slot_.attr("deleted").attr("next")(howMany, "as_slice"_a=false).cast<BitMap>();
     return table_->convert_indices(bm);
   }
-  
+
   VectInd deleted_base_next(int howMany){
     BitMap bm = slot_.attr("base").attr("deleted")
       .attr("next")(howMany, "as_slice"_a=false).cast<BitMap>();
     return table_->convert_indices(bm);
   }
-  
+
   VectInd deleted_selection_next(int howMany){
     BitMap bm = slot_.attr("selection").attr("deleted")
       .attr("next")(howMany, "as_slice"_a=false).cast<BitMap>();
     return table_->convert_indices(bm);
   }
-  
+
   void reset(){
     slot_.attr("reset")();
   }
@@ -260,9 +276,9 @@ public:
     VectStr colnames = coln.cast<VectStr>();
     py::list datasets = res[1];
     auto arrays = datasets.cast<VectNumpy>();
-    return std::make_unique<Table>(tobj, colnames, arrays);  
+    return std::make_unique<Table>(tobj, colnames, arrays);
   }
-  
+
   std::unique_ptr<InputSlot> get_input_slot(std::string slName){
     auto slot = module_.attr("get_input_slot")(slName);
     if(!has_input(slName)){
@@ -309,10 +325,10 @@ public:
     output_->updateIndex();
   }
 
-  void touch(std::vector<uint32_t>& locs){    
+  void touch(std::vector<uint32_t>& locs){
     output_->tobj_.attr("touch_rows")(locs);
   }
-  void touch(py::list locs){    
+  void touch(py::list locs){
     output_->tobj_.attr("touch_rows")(locs);
   }
   void setAt(int32_t ix, int64_t col, cell_t val){
@@ -322,9 +338,9 @@ public:
     std::vector<uint32_t> loc(1);
     loc[0] = ix;
     touch(loc);
-      
+
   }
-  
+
   void append(std::vector<column_t> toAppend){
     std::map<std::string, py::list> data;
     auto& colNames = output_->colNames_;
@@ -343,7 +359,7 @@ public:
   void add_input(const std::string& slot_name, py::object& tobj){
     inputs_.insert(std::make_pair(slot_name, makeTableObject(tobj)));
   }
-  
+
   void add_output(py::object& tobj){
     output_ =  makeTableObject(tobj);
   }
@@ -367,12 +383,12 @@ public:
   py::object get_input_table(const std::string& slot_name){
     return get_input(slot_name)->tobj_;
   }
- 
+
   bool has_output(){
     if(!output_){return false;}
     return true;
   }
-  
+
   Table* get_output(){
     if(!output_){throw std::out_of_range("Output table not defined!");}
     return output_.get();
@@ -385,7 +401,7 @@ public:
     }
   }
 
-  virtual void init() = 0; 
+  virtual void init() = 0;
 
   virtual py::object run(int run_number, int step_size, double howlong) = 0;
 };

@@ -163,6 +163,18 @@ class BaseChangeManager(object):
         self._selection_changes.clear()
 
 
+    def dump(self):
+        import inspect
+        curframe = inspect.currentframe()
+        calframe = inspect.getouterframes(curframe, 2)
+        print('caller name:', calframe[1][3])
+        print("created", self._created.changes)
+        print("updated", self._updated.changes)
+        print("deleted", self._deleted.changes)
+        print("exposed", self._exposed.changes)
+        print("masked", self._masked.changes)
+
+
 def _next(bm, length, as_slice):
     if length is None:
         length = len(bm)

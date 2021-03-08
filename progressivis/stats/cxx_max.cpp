@@ -8,15 +8,18 @@ public:
   Max(py::object& m):
     ProgressivisModule(m){}
 
+
   virtual void init() override {}
 
   virtual py::object run(int run_number, int step_size, double howlong) override {
     auto slot = get_input_slot("table");
-    slot->update(run_number);
+    slot->refresh();
+    auto resetting = false;
     if(slot->updated_any()||slot->deleted_any()){
       slot->reset();
       if(output_){
 	output_->resize(0);
+	resetting = true;
       }
       slot->update(run_number);
     }
@@ -26,7 +29,7 @@ public:
       return return_run_step(state_blocked(), 0);
     }
     Table* t = get_input("table");
-    if(!output_||output_->last_id_==0){
+    if(!output_||output_->last_id_==0||resetting){
       std::vector<cell_t> first_row(t->colNames_.size());
       for(int i=0; i < t->colNames_.size(); ++i){
 	std::visit([indices, &first_row, i](auto&& vin){
@@ -40,13 +43,15 @@ public:
 	append(first_row);
       }
     } else { //the table exists AND it contains its unique row
+      //output_->updateColumns();
+      //output_->updateIndex();
       for(int i=0; i < t->colNames_.size(); ++i){
 	std::visit([this, i, indices](auto&& vin, auto&& vout){
 	    auto vw = xt::view(vin, xt::keep(indices));
 	    auto max_ =  xt::amax(vw)();
-	    if(max_>vout[0]){
+	    if(max_>vout[output_->last_id_]){
 	      //vout[0] = max_;
-	      setAt(0, i, max_);
+	      setAt(output_->last_id_, i, max_);
 	    }
 	  }, t->columns_[i], output_->columns_[i]);
       }
