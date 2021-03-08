@@ -7,7 +7,6 @@ from progressivis.core import aio
 from . import ProgressiveTest, skip
 
 
-@skip
 class TestBinJoin(ProgressiveTest):
     def test_bin_join(self):
         s = self.scheduler()
