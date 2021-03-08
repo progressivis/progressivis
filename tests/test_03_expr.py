@@ -33,7 +33,8 @@ class TestExpr(ProgressiveTest):
         Connecting modules via function calls
         """
         with Scheduler.default:
-            csv = pv.load_csv(get_dataset('bigfile'), index_col=False, header=None)
+            csv = pv.load_csv(get_dataset('bigfile'),
+                              index_col=False, header=None)
             m = pv.min(csv)
             pv.echo(m, proc=prtm)
             M = pv.max(csv)
@@ -47,7 +48,6 @@ class TestExpr(ProgressiveTest):
         lastM = M.table
         self.assertEqual(len(table), 1000000)
         for col in table.columns:
-            #print('testing column %s'%col)
             c = table[col]
             v = c.min()
             self.assertEqual(v, lastm[col])

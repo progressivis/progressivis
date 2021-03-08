@@ -56,10 +56,11 @@ class Dataflow(object):
 
     def generate_name(self, prefix):
         "Generate a name for a module given its class prefix."
-        while True:
-            name = f'{prefix}_{uuid4()}'
-            if name not in self._modules:
-                return name
+        for i in range(1, 10):
+            mid = f'{prefix}_{i}'
+            if mid not in self._modules:
+                return mid
+        return f'{prefix}_{uuid4()}'
 
     def modules(self):
         "Return all the modules in this dataflow"
