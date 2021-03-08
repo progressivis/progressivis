@@ -51,7 +51,8 @@ public:
 	    auto max_ =  xt::amax(vw)();
 	    if(max_>vout[output_->last_id_]){
 	      //vout[0] = max_;
-	      setAt(output_->last_id_, i, max_);
+	      //setAt(output_->last_id_, i, max_);
+	      setLastOutputAt( i, max_);
 	    }
 	  }, t->columns_[i], output_->columns_[i]);
       }

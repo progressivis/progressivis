@@ -325,22 +325,26 @@ public:
     output_->updateIndex();
   }
 
-  void touch(std::vector<uint32_t>& locs){
+  void touchOutput(std::vector<uint32_t>& locs){
     output_->tobj_.attr("touch_rows")(locs);
   }
-  void touch(py::list locs){
+  void touchOutput(py::list locs){
     output_->tobj_.attr("touch_rows")(locs);
   }
-  void setAt(int32_t ix, int64_t col, cell_t val){
+  void setOutputAt(int32_t ix, int64_t col, cell_t val){
     std::visit([ix](auto&& vin, auto&& vout){
 	vout[ix] = vin;
       }, val, output_->columns_[col]);
     std::vector<uint32_t> loc(1);
     loc[0] = ix;
-    touch(loc);
+    touchOutput(loc);
 
   }
 
+  void setLastOutputAt(int64_t col, cell_t val){
+    setOutputAt(output_->last_id_, col, val);
+  }
+  
   void append(std::vector<column_t> toAppend){
     std::map<std::string, py::list> data;
     auto& colNames = output_->colNames_;
