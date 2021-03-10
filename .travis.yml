@@ -1,9 +1,8 @@
 language: python
 
-addons:
-  apt:
-    packages:
-      - g++-7
+dist: bionic
+compiler: gcc
+
 
 install:
   - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
