@@ -155,7 +155,5 @@ class TestDataflow(ProgressiveTest):
         self.assertTrue(started)
 
 
-
-
 if __name__ == '__main__':
     ProgressiveTest.main()
