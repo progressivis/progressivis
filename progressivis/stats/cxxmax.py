@@ -28,7 +28,7 @@ class Max(TableModule):
     def is_ready(self):
         if self.get_input_slot('table').created.any():
             return True
-        return super(Max, self).is_ready()
+        return super().is_ready()
 
     def run_step(self, run_number, step_size, howlong):
         return self.cxx_module.run(run_number, step_size, howlong)
