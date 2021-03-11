@@ -9,26 +9,26 @@ cache :
 
 
 install:
-  - if [[ -d $MINICONDA_DIR ]]; then
+  - if [[ -d $HOME/miniconda ]]; then
        echo "Miniconda already installed"
     else
        wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
-       bash miniconda.sh -b -p $MINICONDA_DIR
+       bash miniconda.sh -b -p $HOME/miniconda;
     fi;
-  - source "$MINICONDA_DIR/etc/profile.d/conda.sh"
+  - source "$HOME/miniconda/etc/profile.d/conda.sh"
   - hash -r
   - if (echo "$(bash scripts/needs_rebuild.sh)"  | fgrep -q "REBUILD"); then
-       conda config --set always_yes yes --set changeps1 no
-       conda remove --name progressivis --all --yes
-       conda update -q conda
-       conda info -a
-       conda env create -q -f binder/environment.yml
+       conda config --set always_yes yes --set changeps1 no;
+       conda remove --name progressivis --all --yes;
+       conda update -q conda;
+       conda info -a;
+       conda env create -q -f binder/environment.yml;
     fi;
   - conda activate progressivis
 
 env:
   - PROGRESSIVIS_STORAGE='numpy'
   - PROGRESSIVIS_STORAGE='mmap'
-  - MINICONDA_DIR=$HOME/miniconda
+
 
 script: python setup.py nosetests
