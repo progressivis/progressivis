@@ -1,7 +1,9 @@
 name: progressivis
+
 channels:
   - conda-forge
   - anaconda
+
 dependencies:
   - python=3.8
   - nodejs
