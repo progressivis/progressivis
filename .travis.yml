@@ -5,18 +5,18 @@ compiler: gcc
 
 cache :
   directories:
-    - $HOME/miniconda
+    - $MINICONDA_DIR
 
 
 install:
-  - if [[ -d $HOME/miniconda/etc ]]; then
+  - if [[ -d $MINICONDA_DIR/etc ]]; then
        echo "Miniconda already installed";
     else
-       rm -rf "$HOME/miniconda";
+       rm -rf "$MINICONDA_DIR";
        wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
-       bash miniconda.sh -b -p $HOME/miniconda;
+       bash miniconda.sh -b -p $MINICONDA_DIR;
     fi;
-  - source "$HOME/miniconda/etc/profile.d/conda.sh"
+  - source "$MINICONDA_DIR/etc/profile.d/conda.sh"
   - hash -r
   - if (echo "$(bash scripts/needs_rebuild.sh)"  | fgrep -q "REBUILD"); then
        conda config --set always_yes yes --set changeps1 no;
@@ -28,8 +28,8 @@ install:
   - conda activate progressivis
 
 env:
-  - PROGRESSIVIS_STORAGE='numpy'
-  - PROGRESSIVIS_STORAGE='mmap'
+  - PROGRESSIVIS_STORAGE='numpy' MINICONDA_DIR=$HOME/miniconda
+  - PROGRESSIVIS_STORAGE='mmap' MINICONDA_DIR=$HOME/miniconda
 
 
 script: python setup.py nosetests
