@@ -1,4 +1,4 @@
-from . import ProgressiveTest
+from . import ProgressiveTest, skipIf
 
 from progressivis import Print
 from progressivis.io import CSVLoader
