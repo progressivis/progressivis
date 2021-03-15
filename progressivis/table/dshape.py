@@ -156,6 +156,14 @@ def dshape_from_dataframe(df):
                           for c in df])
     return ds.dshape("{"+shape+"}")
 
+def array_dshape(df, array_col):
+    columns = df.columns
+    col_shapes = set([dataframe_dshape(df[c].dtype) for c in df])
+    if len(col_shapes) != 1:
+        raise ValueError('All column must have the same data type')
+    shape = col_shapes.pop()
+    return ds.dshape(f"{{{array_col}: {len(df.columns)} * {shape}}}")
+
 
 # myds = dshape("{a: int, b: float32, c: string, d:string, e:string, f:int32, g:float32}")
 # get_projection_dshape(myds, [2,4,6])

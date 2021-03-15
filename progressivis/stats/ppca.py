@@ -18,7 +18,7 @@ import numexpr as ne
 logger = logging.getLogger(__name__)
 
 class PPCA(TableModule):
-    parameters = [('n_components',  np.dtype(int), 2)]    
+    parameters = [('n_components',  np.dtype(int), 2)]
     inputs = [SlotDescriptor('table', type=Table, required=True)]
     outputs = [SlotDescriptor('transformer', type=PsDict, required=False)]
 
@@ -26,6 +26,7 @@ class PPCA(TableModule):
         super().__init__(**kwds)
         self.inc_pca = None # IncrementalPCA(n_components=self.params.n_components)
         self.inc_pca_wtn = None
+        self._as_array = None
         self._transformer = PsDict()
         #self.default_step_size = 10000
 
@@ -49,9 +50,8 @@ class PPCA(TableModule):
     @run_if_any
     def run_step(self, run_number, step_size, howlong):
         """
-        """    
+        """
         with self.context as ctx:
-            #import pdb;pdb.set_trace()
             table = ctx.table.data()
             indices = ctx.table.created.next(step_size) # returns a slice
             steps = indices_len(indices)
@@ -59,13 +59,18 @@ class PPCA(TableModule):
                 return self._return_run_step(self.state_blocked, steps_run=0)
 
             vs = self.filter_columns(table, fix_loc(indices))
-            vs = vs.to_array()
+            if self._as_array is None:
+                if len(vs.columns) == 1:
+                    self._as_array = vs.columns[0]
+                else:
+                    self._as_array = ''
+            vs = vs[self._as_array].values if self._as_array else vs.to_array()
             if self.inc_pca is None:
                 self.inc_pca = IncrementalPCA(n_components=self.params.n_components)
                 self._transformer['inc_pca'] = self.inc_pca
             self.inc_pca.partial_fit(vs)
             if self.result is None:
-                self.result = TableSelectedView(table, bitmap(indices)) 
+                self.result = TableSelectedView(table, bitmap(indices))
             else:
                 self.result.selection |= bitmap(indices)
             return self._return_run_step(self.next_state(ctx.table), steps_run=steps)
@@ -108,7 +113,7 @@ class PPCATransformer(TableModule):
     inputs = [SlotDescriptor('table', type=Table, required=True),
               SlotDescriptor('samples', type=Table, required=True),
               SlotDescriptor('transformer', type=PsDict, required=True),
-              SlotDescriptor('resetter', type=PsDict, required=False)]    
+              SlotDescriptor('resetter', type=PsDict, required=False)]
     outputs = [SlotDescriptor('samples', type=Table, required=False),
                SlotDescriptor('prev_samples', type=Table, required=False)]
 
@@ -126,6 +131,15 @@ class PPCATransformer(TableModule):
         self._samples_flag = False
         self._prev_samples = None
         self._prev_samples_flag = False
+        self._as_array = None
+
+    def _proc_as_array(self, data):
+        if self._as_array is None:
+            if len(data.columns) == 1:
+                self._as_array = data.columns[0]
+            else:
+                self._as_array = ''
+        return data[self._as_array].values if self._as_array else data.to_array()
 
     def create_dependent_modules(self, input_slot):
         scheduler = self.scheduler()
@@ -155,7 +169,7 @@ class PPCATransformer(TableModule):
                 return self.trace_if(False, 0.0, -1.0, len(input_table))
         if self._threshold is not None and len(input_table)>=self._threshold:
             return self.trace_if(False, 0.0, 0.0, len(input_table))
-        data = self.filter_columns(input_table, samples).to_array()
+        data = self._proc_as_array(self.filter_columns(input_table, samples))
         transf_wtn = inc_pca_wtn.transform(data)
         self.maintain_prev_samples(transf_wtn)
         transf_now = inc_pca.transform(data)
@@ -166,7 +180,7 @@ class PPCATransformer(TableModule):
         max_ = np.max(dist)
         ret = mean > self._rtol
         return self.trace_if(ret, mean, max_, len(input_table))
-            
+
     def reset(self):
         if self.result is not None:
             self.result.resize(0)
@@ -197,7 +211,7 @@ class PPCATransformer(TableModule):
             df = self._make_df(vec)
             self._samples = Table(self.generate_table_name('s_ppca'),
                                 data=df, create=True)
-            
+
     def maintain_prev_samples(self, vec):
         if not self._prev_samples_flag:
             return
@@ -216,16 +230,18 @@ class PPCATransformer(TableModule):
         return super().get_data(name)
 
     def _make_df(self, data):
+        if self._as_array:
+            return {self._as_array: data}
         cols = [f"_pc{i}" for i in range(data.shape[1])]
         return pd.DataFrame(data, columns=cols)
 
     @process_slot("table", reset_cb="reset")
     @process_slot("samples", reset_if=False)
-    @process_slot("transformer", reset_if=False)    
+    @process_slot("transformer", reset_if=False)
     @run_if_any
     def run_step(self, run_number, step_size, howlong):
         """
-        """    
+        """
         with self.context as ctx:
             input_table = ctx.table.data()
             indices = ctx.table.created.next(step_size) # returns a slice
@@ -249,12 +265,12 @@ class PPCATransformer(TableModule):
                         return self._return_run_step(self.state_blocked, steps_run=0)
             else:
                 self.inc_pca_wtn = copy.deepcopy(inc_pca)
-            data = self.filter_columns(input_table, fix_loc(indices)).to_array()
+            data = self._proc_as_array(self.filter_columns(input_table, fix_loc(indices)))
             reduced = inc_pca.transform(data)
+            df = self._make_df(reduced)
             if self.result is None:
-                df = self._make_df(reduced)
                 self.result = Table(self.generate_table_name('ppca'),
                                     data=df, create=True)
             else:
-                self.result.append(reduced)
+                self.result.append(df)
             return self._return_run_step(self.next_state(ctx.table), steps_run=steps)

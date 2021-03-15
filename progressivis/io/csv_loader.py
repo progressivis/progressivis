@@ -7,7 +7,7 @@ from progressivis.utils.errors import (ProgressiveError,
                                        ProgressiveStopIteration)
 from ..table.module import TableModule
 from ..table.table import Table
-from ..table.dshape import dshape_from_dataframe
+from ..table.dshape import dshape_from_dataframe, array_dshape
 from ..core.utils import force_valid_id_columns
 from .read_csv import read_csv, recovery, is_recoverable, InputSource
 
@@ -26,6 +26,7 @@ class CSVLoader(TableModule):
                  filter_=None,
                  force_valid_ids=True,
                  fillvalues=None,
+                 as_array='',
                  timeout=None,
                  save_context=None,
                  recovery=0,
@@ -57,6 +58,7 @@ class CSVLoader(TableModule):
         self._input_size = 0 # length of the file or input stream when available
         self._timeout_csv = timeout
         self._table_params = dict(name=self.name, fillvalues=fillvalues)
+        self._as_array = as_array
         self._save_context = True if save_context is None and is_recoverable(filepath_or_buffer) else False
         self._recovery = recovery
         self._recovery_table_size = recovery_table_size
@@ -235,6 +237,11 @@ class CSVLoader(TableModule):
                         # fall through
         return self.state_ready
 
+    def _proc_as_array(self, df):
+        if not self._as_array:
+            return df
+        return {self._as_array: df.values}
+
     def _needs_save(self):
         if self.result is None:
             return False
@@ -285,18 +292,20 @@ class CSVLoader(TableModule):
             if self.result is None:
                 if not self._recovery:
                     self._table_params['name'] = self.generate_table_name('table')
-                    self._table_params['dshape'] = dshape_from_dataframe(df_list[0])
+                    self._table_params['dshape'] = (array_dshape(df, self._as_array)
+                                                    if self._as_array
+                                                    else dshape_from_dataframe(df_list[0]))
                     self._table_params['create'] = True
-                    self._table_params['data'] = pd.concat(df_list)
+                    self._table_params['data'] = self._proc_as_array(pd.concat(df_list))
                     self.result = Table(**self._table_params)
                 else:
                     self._table_params['name'] = self._recovered_csv_table_name
                     self._table_params['create'] = False
                     self.result = Table(**self._table_params)
-                    self.result.append(pd.concat(df_list))
+                    self.result.append(self._proc_as_array(pd.concat(df_list)))
             else:
                 for df in df_list:
-                    self.result.append(df)
+                    self.result.append(self._proc_as_array(df))
             if self.parser.is_flushed() and needs_save \
                and self._recovery_table is None and self._save_context:
                 snapshot = self.parser.get_snapshot(run_number=run_number,
