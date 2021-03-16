@@ -26,6 +26,6 @@ class SensitiveHTML(widgets.DOMWidget):
     _model_module_version = Unicode('^0.1.0').tag(sync=True)
 
     html = Unicode('').tag(sync=True)
-    data = Dict('{}').tag(sync=True)
-    value = Dict('{}').tag(sync=True)
+    data = Dict({}).tag(sync=True)
+    value = Dict({}).tag(sync=True)
     sensitive_css_class = Unicode('aCssClass').tag(sync=True)
