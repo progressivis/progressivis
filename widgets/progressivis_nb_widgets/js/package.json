@@ -62,8 +62,8 @@
     "multiclass-density-maps": "~0.1.5",
     "ndarray": "^1.0.18",
     "ndarray-unpack": "^1.0.0",
-    "react": "^16.8.4",
-    "react-dom": "^16.8.4",
+    "react": "^17.0.1",
+    "react-dom": "^17.0.1",
     "sorttable": "^1.0.2",
     "webcola": "^3.4.0"
   },
