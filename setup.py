@@ -12,6 +12,7 @@ from Cython.Build import cythonize
 import numpy as np
 
 CONDA_PREFIX = os.getenv('CONDA_PREFIX')
+PROGRESSIVIS_CXX = os.getenv('PROGRESSIVIS_CXX')
 
 PACKAGES = ['progressivis',
             'progressivis.utils',
@@ -77,8 +78,8 @@ EXT_PYBIND11 = [
             os.path.join(CONDA_PREFIX, 'include'),
             os.path.join(sys.prefix, 'Library', 'include')
         ],
-        extra_compile_args=['-std=c++17'],
-        #extra_compile_args=['-std=c++17', '-Wall', '-O0', '-g'],
+        #extra_compile_args=['-std=c++17'],
+        extra_compile_args=['-std=c++17', '-Wall', '-O0', '-g'],
         extra_link_args=["-lroaring"],
         language='c++'
     ),
@@ -138,7 +139,7 @@ setup(
     # test_suite='tests',
     test_suite='nose.collector',
     cmdclass=versioneer.get_cmdclass({'bench': RunBench}),
-    ext_modules=cythonize(EXTENSIONS) + EXT_PYBIND11,
+    ext_modules=cythonize(EXTENSIONS) + EXT_PYBIND11 if PROGRESSIVIS_CXX else [],
     package_data={
         # If any package contains *.md, *.txt or *.rst files, include them:
         'doc': ['*.md', '*.rst'],

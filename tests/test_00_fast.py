@@ -1,4 +1,4 @@
-from . import ProgressiveTest
+from . import ProgressiveTest, skip
 
 import random
 from itertools import chain
@@ -9,7 +9,7 @@ from progressivis.utils.fast import (
     indices_to_slice, indices_to_slice_iterator
     )
 
-
+@skip
 class TestFast(ProgressiveTest):
     def tearDown(self):
         pass
