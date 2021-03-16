@@ -1,15 +1,20 @@
-from . import ProgressiveTest, skip
+from . import ProgressiveTest, skipIf
 
 import random
 from itertools import chain
 
 import numpy as np
-# from progressivis.utils.fast import (
-#     check_contiguity, PROP_START_AT_0, PROP_MONOTONIC_INC, PROP_CONTIGUOUS, PROP_IDENTITY,
-#     indices_to_slice, indices_to_slice_iterator
-#     )
 
-@skip
+IERR = False
+try:
+    from progressivis.utils.fast import (
+        check_contiguity, PROP_START_AT_0, PROP_MONOTONIC_INC, PROP_CONTIGUOUS, PROP_IDENTITY,
+        indices_to_slice, indices_to_slice_iterator
+    )
+except ImportError:
+    IERR = True
+
+@skipIf(IERR, 'running without fast module')
 class TestFast(ProgressiveTest):
     def tearDown(self):
         pass

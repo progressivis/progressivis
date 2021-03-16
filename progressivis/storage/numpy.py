@@ -4,7 +4,10 @@ import logging
 import numpy as np
 
 from progressivis.core.utils import integer_types
-from progressivis.utils.fast import next_pow2
+try:
+    from progressivis.utils.fast import next_pow2
+except ImportError:
+    from progressivis.core.utils import next_pow2
 from .base import StorageEngine, Dataset
 from .hierarchy import GroupImpl, AttributeImpl
 

@@ -6,7 +6,11 @@ import numpy as np
 from collections import OrderedDict
 from progressivis.storage import Group
 from progressivis.core.utils import integer_types, get_random_name
-from progressivis.utils.fast import indices_to_slice
+try:
+    from progressivis.utils.fast import indices_to_slice
+except ImportError:
+    from progressivis.core.utils import indices_to_slice
+
 from .column_base import BaseColumn
 from .dshape import dshape_to_h5py, np_dshape, dshape_create
 from . import metadata

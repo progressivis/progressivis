@@ -9,7 +9,11 @@ import pandas as pd
 import numexpr as ne
 from progressivis.core.utils import (integer_types, get_random_name, slice_to_bitmap,
                                      all_int, are_instances, gen_columns)
-from progressivis.utils.fast import indices_to_slice
+try:
+    from progressivis.utils.fast import indices_to_slice
+except ImportError:
+    from progressivis.core.utils import indices_to_slice
+
 from progressivis.storage import Group
 from .dshape import (dshape_create, dshape_table_check, dshape_fields,
                      dshape_to_shape, dshape_extract, dshape_compatible,
