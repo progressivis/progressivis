@@ -12,11 +12,15 @@ dependencies:
   - numpy>=1.16.5
   - scipy>=0.18.1
   - numexpr>=2.6.1
-  - cython
-  - pybind11
+  - pandas>=1.0.0
+  - pillow>=4.2.0
+  - requests
+  - scikit-learn>=0.18.1
+  #- cython
+  #- pybind11
   - xtensor-python
-  - croaring=0.2.63
-  - pyroaring==0.2.9
+  #- croaring=0.2.63
+  #- pyroaring==0.2.9
   - datashape
   - fast-histogram
   - s3fs
