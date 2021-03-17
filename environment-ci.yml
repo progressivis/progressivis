@@ -19,7 +19,7 @@ dependencies:
   - cython
   - pybind11
   - xtensor-python
-  #- croaring=0.2.63
+  - croaring=0.2.63
   - pyroaring==0.2.11
   - datashape
   - fast-histogram
