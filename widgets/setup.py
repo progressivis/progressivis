@@ -8,6 +8,10 @@ import os
 import sys
 import platform
 
+CONDA_PREFIX = os.getenv('CONDA_PREFIX')
+PROGRESSIVIS_CXX = os.getenv('PROGRESSIVIS_CXX')
+MY_BINDER = os.getenv('BINDER_REQUEST')
+
 here = os.path.dirname(os.path.abspath(__file__))
 node_root = os.path.join(here, 'progressivis_nb_widgets', 'js')
 is_repo = os.path.exists(os.path.join(here, '.git'))
@@ -140,7 +144,7 @@ setup_args = {
         ],),
         ('etc/jupyter/nbconfig/notebook.d' ,['progressivis-nb-widgets.json'])
     ],
-    'install_requires': [
+    'install_requires': [] if MY_BINDER else [
         'ipywidgets>=7.0.0',
         'ipydatawidgets==4.0.1',
         'sidecar'

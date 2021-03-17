@@ -8,11 +8,13 @@ import versioneer
 from setuptools import setup, Command
 from setuptools.extension import Extension
 from setuptools.command.build_ext import build_ext
-from Cython.Build import cythonize
+
 import numpy as np
 
 CONDA_PREFIX = os.getenv('CONDA_PREFIX')
 PROGRESSIVIS_CXX = os.getenv('PROGRESSIVIS_CXX')
+MY_BINDER = os.getenv('BINDER_REQUEST')
+
 
 PACKAGES = ['progressivis',
             'progressivis.utils',
@@ -26,6 +28,10 @@ PACKAGES = ['progressivis',
             'progressivis.metrics',
             'progressivis.server',
             'progressivis.table']
+
+def _cythonize(exts):
+    from Cython.Build import cythonize
+    return cythonize(exts)
 
 class RunBench(Command):
     """Runs all ProgressiVis benchmarks"""
@@ -108,38 +114,42 @@ setup(
     # Project uses reStructuredText, so ensure that the docutils get
     # installed or upgraded on the target machine
     # install_requires=required,
-    install_requires=["Pillow>=4.2.0",
-                      "cython",
-                      'pybind11>=2.0.1',
-                      "numpy>=1.16.5",
-                      "scipy>=0.18.1",
-                      "numexpr>=2.6.1",
-                      "tables>=3.3.0",
-                      "pandas>=1.0.0",
-                      "scikit-learn>=0.18.1",
-                      "tdigest>=0.4.1.0",
-                      "numcodecs>=0.5.5",
-                      "datashape>=0.5.2",
-                      "pyroaring==0.2.9",
-                      "msgpack-python>=0.4.8",
-                      "python-dateutil>=2.6.1",  # botocore wants < 2.7.0,>=2.1
-                      "boto",
-                      "s3fs",
-                      "sqlalchemy",
-                      "memory_profiler",
-                      "tabulate",
-                      "requests",
-                      "fast-histogram",
-                      "rangehttpserver",
-                      "aiohttp",
-                      "aiohttp_jinja2",
-                      "python_socketio", "click"],
+    install_requires=[
+        "pyroaring==0.2.9",
+        "tdigest>=0.4.1.0",
+    ] if MY_BINDER else [
+        "Pillow>=4.2.0",
+        "cython",
+        'pybind11>=2.0.1',
+        "numpy>=1.16.5",
+        "scipy>=0.18.1",
+        "numexpr>=2.6.1",
+        "tables>=3.3.0",
+        "pandas>=1.0.0",
+        "scikit-learn>=0.18.1",
+        "tdigest>=0.4.1.0",
+        "numcodecs>=0.5.5",
+        "datashape>=0.5.2",
+        "pyroaring==0.2.9",
+        "msgpack-python>=0.4.8",
+        "python-dateutil>=2.6.1",  # botocore wants < 2.7.0,>=2.1
+        "boto",
+        "s3fs",
+        "sqlalchemy",
+        "memory_profiler",
+        "tabulate",
+        "requests",
+        "fast-histogram",
+        "rangehttpserver",
+        "aiohttp",
+        "aiohttp_jinja2",
+        "python_socketio", "click"],
     # "pptable",
-    setup_requires=['cython', 'numpy', 'pybind11', 'nose>=1.3.7', 'coverage'],
+    setup_requires= ['numpy'] if MY_BINDER else ['cython', 'numpy', 'pybind11', 'nose>=1.3.7', 'coverage'],
     # test_suite='tests',
     test_suite='nose.collector',
     cmdclass=versioneer.get_cmdclass({'bench': RunBench}),
-    ext_modules=cythonize(EXTENSIONS) + EXT_PYBIND11 if PROGRESSIVIS_CXX else [],
+    ext_modules=_cythonize(EXTENSIONS) + EXT_PYBIND11 if PROGRESSIVIS_CXX else [],
     package_data={
         # If any package contains *.md, *.txt or *.rst files, include them:
         'doc': ['*.md', '*.rst'],
