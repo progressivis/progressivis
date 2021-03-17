@@ -154,7 +154,7 @@ setup(
     # test_suite='tests',
     test_suite='nose.collector',
     cmdclass=versioneer.get_cmdclass({'bench': RunBench}),
-    ext_modules=_cythonize(EXTENSIONS) + EXT_PYBIND11 if MINICONDA_DIR else [],
+    ext_modules=_cythonize(EXTENSIONS) + EXT_PYBIND11 if WITH_CXX else [],
     package_data={
         # If any package contains *.md, *.txt or *.rst files, include them:
         'doc': ['*.md', '*.rst'],
