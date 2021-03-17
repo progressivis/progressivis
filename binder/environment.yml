@@ -3,6 +3,7 @@ name: progressivis
 channels:
   - conda-forge
   - anaconda
+  - progressivis
 
 dependencies:
   - python=3.8
@@ -20,7 +21,8 @@ dependencies:
   #- pybind11
   #- xtensor-python
   #- croaring=0.2.63
-  #- pyroaring=0.2.9
+  - pyroaring=0.2.11
+  - tdigest
   - datashape
   - fast-histogram
   - s3fs
