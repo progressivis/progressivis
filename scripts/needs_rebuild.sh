@@ -7,7 +7,7 @@ if ! (echo "$envs"  | grep -q "progressivis"); then
 fi
 var=$(git diff-tree --no-commit-id --name-only -r HEAD)
 
-if (echo "$var"  | fgrep -q "binder/environment.yml"); then
+if (echo "$var"  | fgrep -q "environment-ci.yml"); then
     echo "REBUILD"
     exit
 fi
