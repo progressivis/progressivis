@@ -23,5 +23,5 @@ dependencies:
   #- voila
   #- jupyterlab=2
   - pip:
-    - -e ..
-  #  - -e ../widgets
+    - -e .
+  #  - -e ./widgets
