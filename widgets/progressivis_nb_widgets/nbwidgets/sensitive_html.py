@@ -1,5 +1,5 @@
 import ipywidgets as widgets
-from traitlets import Unicode, Dict
+from traitlets import Unicode, Dict, Any
 
 # See js/lib/widgets.js for the frontend counterpart to this file.
 
@@ -26,6 +26,6 @@ class SensitiveHTML(widgets.DOMWidget):
     _model_module_version = Unicode('^0.1.0').tag(sync=True)
 
     html = Unicode('').tag(sync=True)
-    data = Dict({}).tag(sync=True)
-    value = Dict({}).tag(sync=True)
+    data = Any({}).tag(sync=True)
+    value = Any({}).tag(sync=True)
     sensitive_css_class = Unicode('aCssClass').tag(sync=True)
