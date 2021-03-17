@@ -120,6 +120,7 @@ setup(
     install_requires=[
         "pyroaring==0.2.9",
         "tdigest>=0.4.1.0",
+        'pybind11>=2.0.1',
     ] if CONDA_PREFIX else [
         "Pillow>=4.2.0",
         "cython",
