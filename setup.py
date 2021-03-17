@@ -32,6 +32,10 @@ def _cythonize(exts):
     from Cython.Build import cythonize
     return cythonize(exts)
 
+def _np_get_include():
+    import numpy as np
+    return np.get_include()
+
 class RunBench(Command):
     """Runs all ProgressiVis benchmarks"""
 
@@ -68,7 +72,7 @@ EXTENSIONS = [
     Extension(
         "progressivis.utils.fast",
         ["progressivis/utils/fast.pyx"],
-        include_dirs=[np.get_include()],
+        include_dirs=[_np_get_include()],
         extra_compile_args=['-Wfatal-errors'],
     )]
 
@@ -78,7 +82,7 @@ EXT_PYBIND11 = [
         ['progressivis/stats/cxx_max.cpp'],
         include_dirs=[
             'include',
-            np.get_include(),
+            _np_get_include(),
             os.path.join(sys.prefix, 'include'),
             os.path.join(CONDA_PREFIX, 'include'),
             os.path.join(sys.prefix, 'Library', 'include')
