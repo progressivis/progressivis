@@ -380,7 +380,7 @@ function Scatterplot(ipyView) {
         const iw = x(bounds.xmax) - ix;
         const ih = y(bounds.ymin) - iy;
         svg
-          .select(`#${id} .heatmap`)
+          .select(`${swith_id('Scatterplot')} .heatmap`)
           .attr('x', ix)
           .attr('y', iy)
           .attr('width', iw)
@@ -388,7 +388,7 @@ function Scatterplot(ipyView) {
           .attr('xlink:href', dataURL);
 
         svg
-          .select(`#${id} .heatmapCompare`)
+          .select(`${swith_id('Scatterplot')} .heatmapCompare`)
           .attr('x', ix)
           .attr('y', iy)
           .attr('width', iw)
@@ -405,12 +405,12 @@ function Scatterplot(ipyView) {
         .attr('width', 50)
         .attr('height', 50)
         .on('mouseover', (d) => {
-          d3.select(`#${id} .heatmapCompare`)
+          d3.select(`${swith_id('Scatterplot')} .heatmapCompare`)
             .attr('xlink:href', d)
             .attr('visibility', 'inherit');
         })
         .on('mouseout', () => {
-          d3.select(`#${id} .heatmapCompare`)
+          d3.select(`${swith_id('Scatterplot')} .heatmapCompare`)
             .attr('visibility', 'hidden');
         });
 
