@@ -12,8 +12,10 @@ from setuptools.command.build_ext import build_ext
 #import numpy as np
 
 CONDA_PREFIX = os.getenv('CONDA_PREFIX')
-PROGRESSIVIS_CXX = os.getenv('PROGRESSIVIS_CXX')
-MINICONDA_DIR = os.getenv('MINICONDA_DIR') # defined by .travis.yml
+TRAVIS = os.getenv('USER') == 'travis'
+PROGRESSIVIS_CXX = TRAVIS or not CONDA_PREFIX
+
+
 
 PACKAGES = ['progressivis',
             'progressivis.utils',
@@ -120,7 +122,6 @@ setup(
     install_requires=[
         "pyroaring==0.2.9",
         "tdigest>=0.4.1.0",
-        'pybind11>=2.0.1',
     ] if CONDA_PREFIX else [
         "Pillow>=4.2.0",
         "cython",
@@ -149,7 +150,7 @@ setup(
         "aiohttp_jinja2",
         "python_socketio", "click"],
     # "pptable",
-    setup_requires= ['cython', 'numpy', 'pybind11', 'nose>=1.3.7', 'coverage'] if MINICONDA_DIR else [],
+    setup_requires= ['cython', 'numpy', 'pybind11', 'nose>=1.3.7', 'coverage'] if PROGRESSIVIS_CXX else [],
     # test_suite='tests',
     test_suite='nose.collector',
     cmdclass=versioneer.get_cmdclass({'bench': RunBench}),
