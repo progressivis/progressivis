@@ -23,7 +23,7 @@ install:
        conda remove --name progressivis --all --yes;
        conda update -q conda;
        conda info -a;
-       conda env create -q -f binder/environment.yml;
+       conda env create -q -f environment-ci.yml;
     fi;
   - conda activate progressivis
 

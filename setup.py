@@ -9,12 +9,11 @@ from setuptools import setup, Command
 from setuptools.extension import Extension
 from setuptools.command.build_ext import build_ext
 
-import numpy as np
+#import numpy as np
 
 CONDA_PREFIX = os.getenv('CONDA_PREFIX')
 PROGRESSIVIS_CXX = os.getenv('PROGRESSIVIS_CXX')
-MY_BINDER = os.getenv('BINDER_REQUEST')
-
+MINICONDA_DIR = os.getenv('MINICONDA_DIR') # defined by .travis.yml
 
 PACKAGES = ['progressivis',
             'progressivis.utils',
@@ -117,7 +116,7 @@ setup(
     install_requires=[
         "pyroaring==0.2.9",
         "tdigest>=0.4.1.0",
-    ] if MY_BINDER else [
+    ] if CONDA_PREFIX else [
         "Pillow>=4.2.0",
         "cython",
         'pybind11>=2.0.1',
@@ -145,11 +144,11 @@ setup(
         "aiohttp_jinja2",
         "python_socketio", "click"],
     # "pptable",
-    setup_requires= ['numpy'] if MY_BINDER else ['cython', 'numpy', 'pybind11', 'nose>=1.3.7', 'coverage'],
+    setup_requires= ['cython', 'numpy', 'pybind11', 'nose>=1.3.7', 'coverage'] if MINICONDA_DIR else [],
     # test_suite='tests',
     test_suite='nose.collector',
     cmdclass=versioneer.get_cmdclass({'bench': RunBench}),
-    ext_modules=_cythonize(EXTENSIONS) + EXT_PYBIND11 if PROGRESSIVIS_CXX else [],
+    ext_modules=_cythonize(EXTENSIONS) + EXT_PYBIND11 if MINICONDA_DIR else [],
     package_data={
         # If any package contains *.md, *.txt or *.rst files, include them:
         'doc': ['*.md', '*.rst'],

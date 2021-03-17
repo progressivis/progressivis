@@ -1,0 +1,27 @@
+name: progressivis
+
+channels:
+  - conda-forge
+  - anaconda
+
+dependencies:
+  - python=3.8
+  - nodejs
+  - pkgconfig
+  - pip
+  - numpy>=1.16.5
+  - scipy>=0.18.1
+  - numexpr>=2.6.1
+  - cython
+  - pybind11
+  - xtensor-python
+  - croaring=0.2.63
+  - pyroaring==0.2.9
+  - datashape
+  - fast-histogram
+  - s3fs
+  #- voila
+  #- jupyterlab=2
+  - pip:
+    - -e ..
+  #  - -e ../widgets
