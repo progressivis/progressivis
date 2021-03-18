@@ -38,6 +38,37 @@ def _np_get_include():
     import numpy as np
     return np.get_include()
 
+    def _ install_requires_with_conda():
+        res = [
+            #"pyroaring==0.2.9",
+            "tdigest>=0.4.1.0",
+        ]
+        if not MYBINDER:
+            res.extend([
+                "rangehttpserver",
+                "aiohttp",
+                "aiohttp_jinja2",
+                "python_socketio",
+                "click"
+            ])
+        return res
+
+def _not_in_conda_env():
+    res = [
+        #"pyroaring==0.2.9",
+        "tdigest>=0.4.1.0",
+    ]
+    if not MYBINDER:
+        res.extend([
+            "rangehttpserver",
+            "aiohttp",
+            "aiohttp_jinja2",
+            "python_socketio",
+            "click"
+        ])
+    return res
+
+
 class RunBench(Command):
     """Runs all ProgressiVis benchmarks"""
 
@@ -119,10 +150,7 @@ setup(
     # Project uses reStructuredText, so ensure that the docutils get
     # installed or upgraded on the target machine
     # install_requires=required,
-    install_requires=[
-        #"pyroaring==0.2.9",
-        "tdigest>=0.4.1.0",
-    ] if CONDA_PREFIX else [
+    install_requires= _not_in_conda_env() if CONDA_PREFIX else [
         "Pillow>=4.2.0",
         "cython",
         'pybind11>=2.0.1',
@@ -140,9 +168,9 @@ setup(
         "python-dateutil>=2.6.1",  # botocore wants < 2.7.0,>=2.1
         "boto",
         "s3fs",
-        "sqlalchemy",
-        "memory_profiler",
-        "tabulate",
+        #"sqlalchemy",
+        #"memory_profiler",
+        #"tabulate",
         "requests",
         "fast-histogram",
         "rangehttpserver",
