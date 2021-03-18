@@ -13,7 +13,7 @@ class AddToRow(Constant):
     def is_input(self):
         return True
 
-    def from_input(self, input):
+    async def from_input(self, input):
         _ = input
         if not isinstance(input,dict):
             raise ProgressiveError('Expecting a dictionary')

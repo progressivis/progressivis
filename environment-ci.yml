@@ -27,6 +27,7 @@ dependencies:
   #- voila
   #- jupyterlab=2
   - pip:
+    - tdigest>=0.4.1.0
     - rangehttpserver
     - aiohttp
     - aiohttp_jinja2

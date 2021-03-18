@@ -222,7 +222,7 @@ async def _module_input(request):
     msg = ''
     try:
         print('sending to %s: %s' % (module.name, var_values))
-        msg = module.from_input(var_values)
+        msg = await module.from_input(var_values)
         # pylint: disable=broad-except
     except Exception as exc:
         msg = str(exc)

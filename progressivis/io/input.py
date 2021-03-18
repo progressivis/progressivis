@@ -22,7 +22,7 @@ class Input(TableModule):
         self._last = len(self.result)
         return self._return_run_step(self.state_blocked, steps_run=0)
         
-    def from_input(self, msg):
+    async def from_input(self, msg):
         if not isinstance(msg, (list, dict)):
             msg = {'input': msg}
         self.result.add(msg)
