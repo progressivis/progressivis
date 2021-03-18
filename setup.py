@@ -41,7 +41,7 @@ def _np_get_include():
 def _not_in_conda_env():
     res = [
         #"pyroaring==0.2.9",
-        #"tdigest>=0.4.1.0",
+        "tdigest>=0.4.1.0",
     ]
     """if not MYBINDER:
         res.extend([
