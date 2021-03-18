@@ -38,21 +38,6 @@ def _np_get_include():
     import numpy as np
     return np.get_include()
 
-def _not_in_conda_env():
-    res = [
-        #"pyroaring==0.2.9",
-        "tdigest>=0.4.1.0",
-    ]
-    if not MYBINDER:
-        res.extend([
-            "rangehttpserver",
-            "aiohttp",
-            "aiohttp_jinja2",
-            "python_socketio",
-            "click"
-        ])
-    return res
-
 
 class RunBench(Command):
     """Runs all ProgressiVis benchmarks"""
@@ -135,7 +120,7 @@ setup(
     # Project uses reStructuredText, so ensure that the docutils get
     # installed or upgraded on the target machine
     # install_requires=required,
-    install_requires= _not_in_conda_env() if CONDA_PREFIX else [
+    install_requires= [] if CONDA_PREFIX else [
         "Pillow>=4.2.0",
         "cython",
         'pybind11>=2.0.1',

@@ -27,5 +27,10 @@ dependencies:
   #- voila
   #- jupyterlab=2
   - pip:
+    - rangehttpserver
+    - aiohttp
+    - aiohttp_jinja2
+    - python_socketio
+    - click
     - -e .
   #  - -e ./widgets

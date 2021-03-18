@@ -30,5 +30,6 @@ dependencies:
   - ipydatawidgets=4.0.1
   #- sidecar
   - pip:
+    - tdigest>=0.4.1.0
     - -e ..
     - -e ../widgets

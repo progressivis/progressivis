@@ -48,7 +48,7 @@ Currently, the easiest way to install *progressivis* is as follows:
 NB: by default it will create an environment called *progressivis*. If you want, you can change this name in the file *environment.yml* before runninng the command. Remember to reflect this change in the following commands.
 
 ```
-conda env create -f binder/environment.yml
+conda env create -f environment-ci.yml
 ```
 3. Activate this environment:
 
