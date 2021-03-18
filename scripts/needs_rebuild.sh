@@ -19,3 +19,7 @@ if (echo "$var"  | fgrep -q "requirements.txt"); then
     echo "REBUILD"
     exit
 fi
+if (echo "$var"  | fgrep -q "needs_rebuild.sh"); then
+    echo "REBUILD"
+    exit
+fi

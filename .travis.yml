@@ -18,7 +18,7 @@ install:
     fi;
   - source "$MINICONDA_DIR/etc/profile.d/conda.sh"
   - hash -r
-  - if (echo "$(bash scripts/needs_rebuild.sh)"  | fgrep -q "REBUILD"); then
+  - if (echo "$(bash scripts/needs_rebuild.sh)"  | fgrep "REBUILD"); then
        conda config --set always_yes yes --set changeps1 no;
        conda remove --name progressivis --all --yes;
        conda update -q conda;
