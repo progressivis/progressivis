@@ -8,7 +8,7 @@ from progressivis.core import aio
 async def _do_line(inp, s):
     await aio.sleep(2)
     for r in range(10):
-        inp.from_input('line#%d' % r)
+        await inp.from_input('line#%d' % r)
         await aio.sleep(np.random.random())
     await aio.sleep(1)
     await s.stop()
