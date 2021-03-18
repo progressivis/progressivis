@@ -11,6 +11,10 @@ if (echo "$var"  | fgrep -q "environment-ci.yml"); then
     echo "REBUILD"
     exit
 fi
+if (echo "$var"  | fgrep -q ".travis.yml"); then
+    echo "REBUILD"
+    exit
+fi
 if (echo "$var"  | fgrep -q "setup.py"); then
     echo "REBUILD"
     exit
