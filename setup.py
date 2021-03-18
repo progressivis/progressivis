@@ -38,21 +38,6 @@ def _np_get_include():
     import numpy as np
     return np.get_include()
 
-    def _ install_requires_with_conda():
-        res = [
-            #"pyroaring==0.2.9",
-            "tdigest>=0.4.1.0",
-        ]
-        if not MYBINDER:
-            res.extend([
-                "rangehttpserver",
-                "aiohttp",
-                "aiohttp_jinja2",
-                "python_socketio",
-                "click"
-            ])
-        return res
-
 def _not_in_conda_env():
     res = [
         #"pyroaring==0.2.9",
