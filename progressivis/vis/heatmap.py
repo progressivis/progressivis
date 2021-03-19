@@ -119,7 +119,7 @@ class Heatmap(TableModule):
         return self._return_run_step(self.state_blocked, steps_run=1)
 
     def is_visualization(self):
-        return False
+        return True
 
     def get_visualization(self):
         return "heatmap"
