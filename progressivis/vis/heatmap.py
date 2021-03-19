@@ -8,7 +8,6 @@ import io
 import numpy as np
 import scipy as sp
 from PIL import Image
-
 from progressivis.core.utils import indices_len
 from progressivis.core.slot import SlotDescriptor
 from progressivis.table import Table
@@ -80,8 +79,10 @@ class Heatmap(TableModule):
             if cmax is None:
                 cmax = histo.max()
             cscale = cmax - cmin
+            scale_hl = float(high - low)
             scale = float(high - low) / cscale
-            data = (sp.special.cbrt(histo) * 1.0 - cmin) * scale + 0.4999
+            #data = (sp.special.cbrt(histo) * 1.0 - cmin) * scale + 0.4999
+            data = (sp.special.cbrt(histo) * 1.0 - cmin) * scale_hl + 0.4999
             data[data > high] = high
             data[data < 0] = 0
             data = np.cast[np.uint32](data)
