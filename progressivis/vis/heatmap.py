@@ -42,7 +42,7 @@ class Heatmap(TableModule):
         # params = self.params
         # if params.filename is None:
         #     params.filename = name+'%d.png'
-        self._table = Table(name, dshape=Heatmap.schema, create=True)
+        self.result = Table(name, dshape=Heatmap.schema, create=True)
 
     def predict_step_size(self, duration):
         _ = duration
@@ -74,6 +74,7 @@ class Heatmap(TableModule):
         high = params.high
         low = params.low
         try:
+            #import pdb;pdb.set_trace()
             if cmin is None:
                 cmin = histo.min()
             if cmax is None:
@@ -112,13 +113,13 @@ class Heatmap(TableModule):
             res = str(base64.b64encode(buffered.getvalue()), "ascii")
             filename = "data:image/png;base64,"+res
 
-        if len(self._table) == 0 or self._table.last()['time'] != run_number:
+        if len(self.result) == 0 or self.result.last()['time'] != run_number:
             values = {'filename': filename, 'time': run_number}
-            self._table.add(values)
+            self.result.add(values)
         return self._return_run_step(self.state_blocked, steps_run=1)
 
     def is_visualization(self):
-        return True
+        return False
 
     def get_visualization(self):
         return "heatmap"
@@ -144,25 +145,25 @@ class Heatmap(TableModule):
                     'xmax': row['xmax'],
                     'ymax': row['ymax']
                 }
-        df = self._table
+        df = self.result
         if df is not None and self._last_update != 0:
             row = df.last()
             json['image'] = row['filename']
         return json
 
     def get_image(self, run_number=None):
-        if self._table is None or len(self._table) == 0:
+        if self.result is None or len(self.result) == 0:
             return None
-        last = self._table.last()
+        last = self.result.last()
         if run_number is None or run_number >= last['time']:
             run_number = last['time']
             filename = last['filename']
         else:
-            time = self._table['time']
+            time = self.result['time']
             idx = np.where(time == run_number)[0]
             if len(idx) == 0:
                 filename = last['filename']
             else:
-                filename = self._table['filename'][idx[0]]
+                filename = self.result['filename'][idx[0]]
 
         return filename

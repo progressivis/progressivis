@@ -75,17 +75,17 @@ class Histogram2D(TableModule):
         min_df = min_slot.data()
         if min_df is None or len(min_df) == 0:
             return None
-        k_ = min_df.k_
-        xmin = min_df[k_(self.x_column)]
-        ymin = min_df[k_(self.y_column)]
+        #k_ = min_df.k_
+        xmin = min_df[self.x_column]
+        ymin = min_df[self.y_column]
 
         max_slot.created.next()
         max_df = max_slot.data()
         if max_df is None or len(max_df) == 0:
             return None
-        k_ = max_df.k_
-        xmax = max_df[k_(self.x_column)]
-        ymax = max_df[k_(self.y_column)]
+        #k_ = max_df.k_
+        xmax = max_df[self.x_column]
+        ymax = max_df[self.y_column]
 
         if xmax < xmin:
             xmax, xmin = xmin, xmax
@@ -225,30 +225,6 @@ class Histogram2D(TableModule):
             self.build_heatmap(values)
             return self._return_run_step(self.next_state(dfslot), steps_run=steps)
 
-    def build_heatmap(self, values):
-        if not values:
-            return
-        p = self.params
-        json_ = {'columns': [self.x_column, self.y_column],
-                 'xbins': p.xbins,
-                 'ybins': p.ybins}
-        row = values
-        if not (np.isnan(row['xmin']) or np.isnan(row['xmax'])
-                or np.isnan(row['ymin']) or np.isnan(row['ymax'])):
-            json_['bounds'] = {
-                'xmin': row['xmin'],
-                'ymin': row['ymin'],
-                'xmax': row['xmax'],
-                'ymax': row['ymax']
-            }
-            data = sp.special.cbrt(row['array'])
-            json_['image'] = bytescale(data)
-            self._heatmap_cache = json_
-
-    def heatmap_to_json(self, json, short=False):
-        if self._heatmap_cache:
-            json.update(self._heatmap_cache)
-        return json
 
     def is_visualization(self):
         return True
@@ -261,3 +237,87 @@ class Histogram2D(TableModule):
         if short:
             return json
         return self.heatmap_to_json(json, short)
+    def build_heatmap(self, values):
+        json_ = {}
+        row = values
+        if not (np.isnan(row['xmin']) or np.isnan(row['xmax'])
+                    or np.isnan(row['ymin']) or np.isnan(row['ymax'])):
+            bounds = (row['xmin'], row['ymin'], row['xmax'], row['ymax'])
+            data = row['array']
+            #data = sp.special.cbrt(row['array'])
+            #json_['data'] = sp.misc.bytescale(data)
+            json_['binnedPixels'] = data
+            json_['range'] = [np.min(data), np.max(data)]
+            json_['count'] = np.sum(data)
+            json_['value'] = "heatmap"
+            #return json_
+            self._heatmap_cache = (json_, bounds)
+        return None
+
+
+    def heatmap_to_json(self, json, short=False):
+        if self._heatmap_cache is None:
+            return json
+        x_label, y_label = "x", "y"
+        domain = ["Heatmap"]
+        count = 1
+        xmin = ymin = - np.inf
+        xmax = ymax = np.inf
+        buff, bounds = self._heatmap_cache
+        xmin, ymin, xmax, ymax = bounds #buff.pop('bounds')
+        buffers = [buff]
+        # TODO: check consistency among classes (e.g. same xbin, ybin etc.)
+        xbins, ybins = buffers[0]['binnedPixels'].shape
+        encoding = {
+            "x": {
+                "bin": {
+                    "maxbins": xbins
+                },
+                "aggregate": "count",
+                "field": x_label,
+                "type": "quantitative",
+                "scale": {
+                    "domain": [
+                            -7,
+                        7
+                    ],
+                    "range": [
+                        0,
+                        xbins
+                    ]
+                }
+            },
+            "z": {
+                "field": "category",
+                "type": "nominal",
+                "scale": {
+                    "domain": domain
+                }
+            },
+            "y": {
+                "bin": {
+                    "maxbins": ybins
+                },
+                "aggregate": "count",
+                "field": y_label,
+                "type": "quantitative",
+                "scale": {
+                    "domain": [
+                            -7,
+                        7
+                    ],
+                    "range": [
+                        0,
+                        ybins
+                    ]
+                }
+            }
+        }
+        source = {"program": "progressivis",
+                  "type": "python",
+                  "rows": count}
+        json['chart'] = dict(buffers=buffers, encoding=encoding, source=source)
+        json['bounds'] = dict(xmin=xmin, ymin=ymin, xmax=xmax, ymax=ymax)
+        json['sample'] = dict(data=[], index=[])
+        json['columns'] = [x_label, y_label]
+        return json

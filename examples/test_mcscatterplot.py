@@ -37,7 +37,7 @@ except NameError:
 PREFIX = '../nyc-taxi/'
 
 SUFFIX = '.bz2'
-
+"""
 URLS = [
     PREFIX+'yellow_tripdata_2015-01.csv'+SUFFIX,
     PREFIX+'yellow_tripdata_2015-02.csv'+SUFFIX,
@@ -46,7 +46,8 @@ URLS = [
     PREFIX+'yellow_tripdata_2015-05.csv'+SUFFIX,
     PREFIX+'yellow_tripdata_2015-06.csv'+SUFFIX,
 ]
-
+"""
+URLS = [f"https://s3.amazonaws.com/nyc-tlc/trip+data/yellow_tripdata_2015-0{n}.csv" for n in range(1,7)]
 FILENAMES = pd.DataFrame({'filename': URLS})
 #import pdb;pdb.set_trace()
 CST = Constant(Table('filenames', data=FILENAMES), scheduler=s)
@@ -55,13 +56,13 @@ CSV = CSVLoader(index_col=False, skipinitialspace=True,
                              'dropoff_longitude', 'dropoff_latitude'],
                 filter_=_filter, scheduler=s) # TODO: reimplement filter in read_csv.py
 
-CSV.input.filenames = CST.output.table
+CSV.input.filenames = CST.output.result
 PR = Every(scheduler=s)
-PR.input.df = CSV.output.table
+PR.input.df = CSV.output.result
 MULTICLASS = MCScatterPlot(scheduler=s, classes=[
     ('pickup', 'pickup_longitude', 'pickup_latitude'),
     ('dropoff', 'dropoff_longitude', 'dropoff_latitude')], approximate=True)
-MULTICLASS.create_dependent_modules(CSV, 'table')
+MULTICLASS.create_dependent_modules(CSV, 'result')
 
 async def coro(s):
     await aio.sleep(2)

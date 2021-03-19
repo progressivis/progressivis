@@ -23,7 +23,8 @@ dependencies:
   - pyroaring==0.2.11
   - datashape
   - fast-histogram
-  - python-socketio
+  - python-engineio=3.13.2
+  - python-socketio=4.6.0
   - s3fs
   - voila
   - jupyterlab=2
