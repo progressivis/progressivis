@@ -171,7 +171,7 @@ class Parser(object):
                 names = None
                 usecols=None
             else:
-                header = None
+                header = 0
                 names = self._names
                 usecols = self._usecols
             kwds = {k:v for (k, v) in self._pd_kwds.items() if k not in ['header', 'names', 'usecols']}
