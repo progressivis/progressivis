@@ -166,5 +166,10 @@ class Heatmap(TableModule):
                 filename = last['filename']
             else:
                 filename = self.result['filename'][idx[0]]
-
         return filename
+
+    def get_image_bin(self, run_number=None):
+        file_url = self.get_image(run_number)
+        payload = file_url.split(',',1)[1]
+        return base64.b64decode(payload)
+
