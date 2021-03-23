@@ -142,7 +142,7 @@ class Parser(object):
                 nb_rows = max(n_, self._chunksize)
             size = nb_rows * row_size
             try:
-                bytes_ = self._input.read(size) # do not raise StopIteration, only returns b''
+                new_csv, bytes_ = self._input.read(size) # do not raise StopIteration, only returns b''
             except HTTPError:
                 print("HTTPError ...", self._offset)
                 if retries >= MAX_RETRY:
@@ -165,17 +165,19 @@ class Parser(object):
             self._remaining = bytes_[last_nl+1:]
             if not csv_bytes:
                 break
-            #print("self._pd_kwds: ", self._pd_kwds)
-            if self._names is None:
+            if new_csv or self._names is None:
                 header = self._header
+                if self._header==0 and self._usecols and isinstance(self._usecols[0], str):
+                    # csv_bytes begins with the column names
+                    first_row_size = csv_bytes.find(b'\n')+1
+                    self._names = pd.read_csv(BytesIO(csv_bytes[:first_row_size])).columns.values
                 names = None
-                usecols=None
             else:
-                header = 0
+                header = None
                 names = self._names
-                usecols = self._usecols
+                #print("H:",names, usecols)
             kwds = {k:v for (k, v) in self._pd_kwds.items() if k not in ['header', 'names', 'usecols']}
-            read_df = pd.read_csv(BytesIO(csv_bytes), header=header, names=names, usecols=usecols, **kwds)
+            read_df = pd.read_csv(BytesIO(csv_bytes), header=header, names=names, usecols=self._usecols, **kwds)
             if self._names is None:
                 self._names = read_df.columns.values
                 if self._usecols:
@@ -190,7 +192,8 @@ class Parser(object):
                                      "{} instead of {}".format(
                                          len(read_df.columns), self._nb_cols))
             len_df = len(read_df)
-            self._estimated_row_size = len(csv_bytes)//len_df
+            if len_df:
+                self._estimated_row_size = len(csv_bytes)//len_df
             if len_df <= n_:
                 ret.append(read_df)
                 row_cnt += len_df
@@ -323,12 +326,18 @@ class InputSource(object):
             return self._dec_offset
 
     def read(self, n):
+        """
+        returns new_file_flag, some_bytes
+        in case of multi-file with headers
+        is important to know when a new file begins in order to skip
+        its header
+        """
         if self._compression is None:
             ret = self._stream.read(n)
         else:
             ret = self._read_compressed(n)
         if ret or not n:
-            return ret
+            return False, ret
         tell_ = self._stream.tell()
         if  tell_ < self._input_size:
             raise ValueError(
@@ -336,9 +345,10 @@ class InputSource(object):
                 " when position {} < size {}".format(tell_,
                                                          self._input_size))
         if self.switch_to_next():
-            return self.read(n)
+            _, r = self.read(n)
+            return True, r
         else:
-            return b''
+            return False, b''
 
     def _read_compressed(self, n):
         len_remaining = len(self._dec_remaining)
@@ -391,7 +401,7 @@ def get_first_row(fd):
     ret = BytesIO()
     guard = ROW_MAX_LENGTH_GUESS
     for _ in range(guard):
-        c = fd.read(1)
+        _, c = fd.read(1)
         ret.write(c)
         if c == b'\n':
             break
