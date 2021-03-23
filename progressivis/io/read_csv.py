@@ -167,7 +167,9 @@ class Parser(object):
                 break
             if new_csv or self._names is None:
                 header = self._header
-                if self._header==0 and self._usecols and isinstance(self._usecols[0], str):
+                if (self._header in (0, 'infer') and
+                    self._names is None and
+                    self._usecols and isinstance(self._usecols[0], str)):
                     # csv_bytes begins with the column names
                     first_row_size = csv_bytes.find(b'\n')+1
                     self._names = pd.read_csv(BytesIO(csv_bytes[:first_row_size])).columns.values
