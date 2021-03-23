@@ -59,6 +59,11 @@ class bitmap(BitMap,object):
     #     return BitMap.__binary_op_inplace__(self, other, function)
 
     def __getitem__(self, values):
+        if isinstance(values, Iterable):
+            bm = bitmap()
+            for index in values:
+                bm.add(BitMap.__getitem__(self, int(index)))
+            return bm
         bm = BitMap.__getitem__(self, values)
         if isinstance(bm, BitMap):
             return bitmap(bm)
