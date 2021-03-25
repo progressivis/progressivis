@@ -2,6 +2,7 @@ import logging
 
 from collections import deque
 import numpy as np
+import pandas as pd
 from sklearn.cluster import MiniBatchKMeans
 from sklearn.cluster._kmeans import _mini_batch_convergence
 from sklearn.utils.validation import check_random_state
@@ -18,7 +19,6 @@ from ..stats import Var
 logger = logging.getLogger(__name__)
 
 SEED = 42
-
 
 class MBKMeans(TableModule):
     """
@@ -76,11 +76,14 @@ class MBKMeans(TableModule):
                                    random_state=self.mbk.random_state)
         dfslot = self.get_input_slot('table')
         dfslot.reset()
-        self._labels = None
         self.set_state(self.state_ready)
         self._data_changed = 0
         self._old_centers.clear()
         self.convergence_context = {}
+        # do not resize result to zero
+        # it contains 1 row per centroid
+        if self._labels is not None:
+            self._labels.resize(0)
 
     def starting(self):
         super().starting()
@@ -113,6 +116,21 @@ class MBKMeans(TableModule):
     def is_greedy(self):
         return self._is_greedy
 
+    def _process_labels(self, locs):
+        labels = self.mbk.labels_
+        u_locs = locs & self._labels.index # ids to update
+        if not u_locs: # shortcut
+            self._labels.append({'labels': labels},
+                                    indices=locs)
+            return
+        a_locs = locs - u_locs # ids to append
+        df = pd.DataFrame({'labels': labels}, index=locs)
+        u_labels = df.loc[u_locs,'labels']
+        a_labels = df.loc[a_locs,'labels']
+        self._labels.loc[u_locs, 'labels'] = u_labels
+        self._labels.append({'labels': a_labels},
+                                    indices=a_locs)
+
     def run_step(self, run_number, step_size, howlong):
         dfslot = self.get_input_slot('table')
         varslot = self.get_input_slot('var')
@@ -129,7 +147,6 @@ class MBKMeans(TableModule):
                     self.set_centroid(c, msg[c][:2])
                 init_centers = self.mbk.cluster_centers_
                 self.reset(init=init_centers)
-                dfslot.update(run_number)
                 dfslot.clear_buffers()  # No need to re-reset next
                 varslot.clear_buffers()
         if dfslot.has_buffered() or varslot.has_buffered():
@@ -140,51 +157,47 @@ class MBKMeans(TableModule):
         # print('dfslot has buffered %d elements'% dfslot.created_length())
         input_df = dfslot.data()
         var_data = varslot.data()
+        batch_size = self.mbk.batch_size or 100
         if (input_df is None or
            var_data is None or
-           len(input_df) < self.mbk.n_clusters):
+           len(input_df) < max(self.mbk.n_clusters, batch_size)):
             # Not enough data yet ...
             return self._return_run_step(self.state_blocked, 0)
         cols = self.get_columns(input_df)
         dtype = input_df.columns_common_dtype(cols)
         n_features = len(cols)
-        batch_size = self.mbk.batch_size or 100
         n_samples = len(input_df)
         is_conv = False
         if self._tol > 0:
             v = np.array(list(var_data.last().values()))
             tol = np.mean(v) * self._tol
-            old_center_buffer = np.zeros((self.n_clusters, n_features),
+            prev_centers = np.zeros((self.n_clusters, n_features),
                                          dtype=dtype)
         else:
             tol = 0
-            old_center_buffer = np.zeros(0, dtype=dtype)
+            prev_centers = np.zeros(0, dtype=dtype)
         random_state = check_random_state(self.mbk.random_state)
-        sample_weight = np.one(np.ones(batch_size, dtype=dtype))
         X = None
         for iter_ in range(step_size):
             mb_ilocs = random_state.randint(
                 0, n_samples, batch_size)
             mb_locs = input_df.index[mb_ilocs]
             X = input_df.to_array(columns=cols, locs=mb_locs, ret=X)
-            # sample_weight = _check_sample_weight(self._sample_weight, X,
-            #                                      dtype=X.dtype)
+            sample_weight = np.ones(X.shape[0], dtype=dtype)
             if hasattr(self.mbk, 'cluster_centers_'):
-                old_center_buffer[:, :] = self.mbk.cluster_centers_
+                prev_centers[:, :] = self.mbk.cluster_centers_
             self.mbk.partial_fit(X, sample_weight=sample_weight)
+            if self._labels is not None:
+                self._process_labels(mb_locs)
             centers = self.mbk.cluster_centers_
-            # x_squared_norms = row_norms(X, squared=True)
             nearest_center, batch_inertia = self.mbk.labels_, self.mbk.inertia_
             k = centers.shape[0]
             squared_diff = 0.0
-            for center_idx in range(k):
-                center_mask = nearest_center == center_idx
-                # sample_weight == [1, ...] so wsum is count_nonzero
-                # wsum = sample_weight[center_mask].sum()
+            for ci in range(k):
+                center_mask = (nearest_center == ci)
                 wsum = np.count_nonzero(center_mask)
                 if wsum > 0:
-                    diff = centers[center_idx].ravel() - \
-                      old_center_buffer[center_idx].ravel()
+                    diff = centers[ci].ravel() - prev_centers[ci].ravel()
                     squared_diff += np.dot(diff, diff)
             if _mini_batch_convergence(self.mbk,
                                        iter_, step_size, tol, n_samples,
