@@ -75,11 +75,12 @@ struct Table{
   py::object tobj_;
 
   Table(py::object& tobj, const VectStr& names, VectNumpy& arrays):
-    tobj_(tobj),
     colNames_(names),
-    is_identity_(true), last_id_(0){
+    is_identity_(true),
+    last_id_(0),
+    tobj_(tobj) {
     columns_.resize(arrays.size());
-    for(int i=0; i < arrays.size(); ++i){
+    for(size_t i=0; i < arrays.size(); ++i){
       setColumn(i, arrays[i]);
     }
     updateIndex();
@@ -88,7 +89,7 @@ struct Table{
   void updateColumns(){
     py::list datasets = tobj_.attr("cxx_api_raw_cols2")();
     auto arrays = datasets.cast<VectNumpy>();
-    for(int i=0; i < arrays.size(); ++i){
+    for(size_t i=0; i < arrays.size(); ++i){
       if(std::visit([i, arrays](auto&& val){return val.ptr()==arrays[i].ptr();},
 		    columns_[i])) continue;
       //setColumn(i, arrays[i]);
@@ -148,7 +149,7 @@ struct Table{
   }
 };
 
-class InputSlot{
+class InputSlot {
   py::object slot_;
   Table *table_;
 public:
@@ -299,7 +300,7 @@ public:
   }
   void createOutputTable(std::string tname, VectStr colNames, std::vector<cell_t> row, bool create){
     std::vector<std::tuple<std::string, py::list>> data(row.size());
-    for(int i=0; i < row.size(); ++i){
+    for(size_t i=0; i < row.size(); ++i){
       std::visit([i, &data, colNames](auto&& val){
 	  auto cn = colNames[i];
 	  data[i] = std::make_tuple(cn, py::make_tuple(val));
@@ -314,7 +315,7 @@ public:
   void append(std::vector<cell_t> row){
     std::map<std::string, py::list> data;
     auto& colNames = output_->colNames_;
-    for(int i=0; i < row.size(); ++i){
+    for(size_t i=0; i < row.size(); ++i){
       std::visit([i, &data, colNames](auto&& val){
 	  auto cn = colNames[i];
 	  data.insert(std::make_pair(cn, py::make_tuple(val)));
@@ -348,7 +349,7 @@ public:
   void append(std::vector<column_t> toAppend){
     std::map<std::string, py::list> data;
     auto& colNames = output_->colNames_;
-    for(int i=0; i < toAppend.size(); ++i){
+    for(size_t i=0; i < toAppend.size(); ++i){
       std::visit([i, &data, colNames](auto&& val){
 	  auto cn = colNames[i];
 	  data.insert(std::make_pair(cn, val));
