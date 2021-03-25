@@ -31,7 +31,7 @@ public:
     Table* t = get_input("table");
     if(!output_||output_->last_id_==0||resetting){
       std::vector<cell_t> first_row(t->colNames_.size());
-      for(int i=0; i < t->colNames_.size(); ++i){
+      for(size_t i=0; i < t->colNames_.size(); ++i){
 	std::visit([indices, &first_row, i](auto&& vin){
 	    auto vw = xt::view(vin, xt::keep(indices));
 	    first_row[i] = xt::amax(vw)();
@@ -45,7 +45,7 @@ public:
     } else { //the table exists AND it contains its unique row
       //output_->updateColumns();
       //output_->updateIndex();
-      for(int i=0; i < t->colNames_.size(); ++i){
+      for(size_t i=0; i < t->colNames_.size(); ++i){
 	std::visit([this, i, indices](auto&& vin, auto&& vout){
 	    auto vw = xt::view(vin, xt::keep(indices));
 	    auto max_ =  xt::amax(vw)();
