@@ -92,7 +92,7 @@ class Var(TableModule):
                                     dshape=ds, # input_df.dshape,
                                     create=True)
             self.result.append(op, indices=[run_number])
-            print(self.result)
+            #print(self.result)
 
             #if len(self.result) > self.params.history:
             #    self.result = self.result.loc[self.result.index[-self.params.history:]]

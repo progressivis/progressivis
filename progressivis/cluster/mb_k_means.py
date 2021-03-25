@@ -71,7 +71,7 @@ class MBKMeans(TableModule):
         return max(p, self.n_clusters)
 
     def reset(self, init='k-means++'):
-        print("Reset, init=", init)
+        #print("Reset, init=", init)
         self.mbk = MiniBatchKMeans(n_clusters=self.mbk.n_clusters,
                                    batch_size=self.mbk.batch_size,
                                    init=init,
@@ -115,23 +115,6 @@ class MBKMeans(TableModule):
 
     def is_greedy(self):
         return self._is_greedy
-
-    def _test_convergence(self):
-        ampl = distance.euclidean(self._min_p, self._max_p)
-        eps_ = ampl*self._tol
-        last_centers = self._old_centers[-1]
-        def _loop_fun(): # avoids a double break on False case
-            for old_centers in list(self._old_centers)[:-1]:
-                sum = 0.0
-                for i in range(self.mbk.n_clusters):
-                    sum += distance.euclidean(old_centers[i], last_centers[i])
-                    if sum > eps_:
-                        print("Convergence test failed:", sum, self._tol, old_centers[i], last_centers[i], i)
-                        return False
-            return True
-        res = _loop_fun()
-        if res: print("Convergence test succeeded")
-        self._conv_out['convergence'] = 'yes' if res else 'no'
 
     def run_step(self, run_number, step_size, howlong):
         dfslot = self.get_input_slot('table')
@@ -198,7 +181,6 @@ class MBKMeans(TableModule):
                     squared_diff, batch_inertia, convergence_context,
                     verbose=self.mbk.verbose):
                 is_conv = True
-                print("CONV")
                 break
         if self.result is None:
             dshape = dshape_from_columns(input_df, cols,
@@ -210,89 +192,6 @@ class MBKMeans(TableModule):
         self.result[cols] = self.mbk.cluster_centers_
         ret_args = (self.state_ready, iter_)  if is_conv  else (self.state_blocked,0)
         return self._return_run_step(*ret_args)
-
-    def __old_run_step(self, run_number, step_size, howlong):
-        dfslot = self.get_input_slot('table')
-        moved_center = self.get_input_slot('moved_center')
-        init_centers = 'k-means++'
-        if moved_center is not None:
-            moved_center.update(run_number)        
-            if moved_center.has_buffered():
-                print("Moved center!!")
-                moved_center.created.next()
-                moved_center.updated.next()
-                moved_center.deleted.next()            
-                msg = moved_center.data()
-                for c in msg:
-                    self.set_centroid(c, msg[c][:2])
-                init_centers = self.mbk.cluster_centers_
-                self.reset(init=init_centers)
-                dfslot.update(run_number)
-        # dfslot.update(run_number)
-
-        if dfslot.deleted.any() or dfslot.updated.any():
-            logger.debug('has deleted or updated, reseting')
-            self.reset(init=init_centers)
-            dfslot.update(run_number)
-
-        # print('dfslot has buffered %d elements'% dfslot.created_length())
-        input_df = dfslot.data()
-        if (input_df is None or len(input_df)  < self.mbk.n_clusters): #and \
-           #dfslot.created_length() < self.mbk.n_clusters:
-            # Should add more than k items per loop
-            return self._return_run_step(self.state_blocked, steps_run=0)
-        indices = dfslot.created.next(step_size)  # returns a slice
-        steps = indices_len(indices)
-        if steps == 0:
-            self._data_changed -= 1
-            #print("ZERO STEPS", self._data_changed)
-            trm = dfslot.output_module.is_terminated() or dfslot.output_module.is_zombie()
-            if self._data_changed==1 or trm:
-                print("DATA CHANGED", self._data_changed, trm)
-                self._test_convergence()
-                args = (self.state_blocked,0) if trm  else (self.state_ready, 1)
-                return self._return_run_step(*args)
-            return self._return_run_step(self.state_blocked, steps_run=0)
-        elif steps >= self.n_clusters:
-            #print("DATA_CHANGED_MAX")
-            self._data_changed = self.DATA_CHANGED_MAX
-        else: # n_samples should be larger than k
-            print("n_samples should be larger than k", steps, self.n_clusters, step_size)
-            return self._return_run_step(self.state_blocked, steps_run=0)
-        cols = self.get_columns(input_df)
-        if len(cols) == 0:
-            return self._return_run_step(self.state_blocked, steps_run=0)
-        locs = fix_loc(indices)
-        if self._labels is not None and isinstance(indices, slice):
-            indices = np.arange(indices.start, indices.stop)
-
-        X = input_df.to_array(columns=cols, locs=locs)
-        _min = np.min(X, axis=0)
-        _max = np.max(X, axis=0)
-        if self._min_p is None:
-            self._min_p = _min
-            self._max_p = _max
-        else:
-            self._min_p = np.minimum(self._min_p, _min)
-            self._max_p = np.maximum(self._max_p, _max)
-            
-        batch_size = self.mbk.batch_size or 100
-        # print("STEPS...", steps, batch_size)        
-        for batch in gen_batches(steps, batch_size):
-            self.mbk.partial_fit(X[batch])
-            self._old_centers.append(self.mbk.cluster_centers_.copy())
-            if self._labels is not None:
-                self._labels.append({'labels': self.mbk.labels_},
-                                    indices=indices[batch])
-        if self.result is None:
-            dshape = dshape_from_columns(input_df, cols,
-                                              dshape_from_dtype(X.dtype))
-            self.result = Table(self.generate_table_name('centers'),
-                                dshape=dshape,
-                                create=True)
-            self.result.resize(self.mbk.cluster_centers_.shape[0])
-        self.result[cols] = self.mbk.cluster_centers_
-        return self._return_run_step(self.next_state(dfslot), steps_run=steps)
 
     def is_visualization(self):
         return False
@@ -355,7 +254,6 @@ class MBKMeansFilter(TableModule):
     @process_slot("table", "labels")
     @run_if_any
     def run_step(self, run_number, step_size, howlong):
-        #import pdb;pdb.set_trace()
         with self.context as ctx:
             indices_t = ctx.table.created.next(step_size) # returns a slice
             steps_t = indices_len(indices_t)
