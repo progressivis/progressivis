@@ -722,7 +722,20 @@ class BaseTable(metaclass=ABCMeta):
         indices = self._col_slice_to_indices(colkey)
         self._setitem_iterable(indices, rowkey, values)
 
-    def to_array(self, locs=None, columns=None, returns_indices=False):
+    def columns_common_dtype(self, columns=None):
+        """Return the dtype that BaseTable.to_array would return.
+
+        Parameters
+        ----------
+        columns: a list or None
+            the columns to extract or, if None, all the table columns
+        """
+        if columns is None:
+            columns = self.columns
+        dtypes = [self[c].dtype for c in columns]
+        return np.find_common_type(dtypes, [])
+
+    def to_array(self, locs=None, columns=None, returns_indices=False, ret=None):
         """Convert this table to a numpy array
 
         Parameters
@@ -731,22 +744,34 @@ class BaseTable(metaclass=ABCMeta):
             The rows to extract.  Locs can be specified with multiple formats:
             integer, list, numpy array, Iterable, or slice.
         columns: a list or None
-            the columns to extract
+            the columns to extract or, if None, all the table columns
+        return_indices: Boolean
+            if True, returns a tuple with the indices of the returned values
+            as indices, followed by the array
+        ret: array or None
+            if None, the returned array is allocated, otherwise, ret is reused.
+            It should be an array of the right dtype and size otherwise it is
+            ignored.
         """
         if columns is None:
             columns = self.columns
 
         shapes = [self[c].shape for c in columns]
         offsets = self.column_offsets(columns, shapes)
-        dtypes = [self[c].dtype for c in columns]
-        dtype = np.find_common_type(dtypes, [])
+        dtype = self.columns_common_dtype(columns)
         indices = None
         # TODO split the copy in chunks
         if locs is None:
             indices = self.index
         else:
             indices = self._any_to_bitmap(locs)
-        arr = np.empty((indices_len(indices), offsets[-1]), dtype=dtype)
+        shape = (indices_len(indices), offsets[-1])
+        if (isinstance(ret, np.ndarray) and
+           ret.shape == shape and
+           ret.dtype == dtype):
+            arr = ret
+        else:
+            arr = np.empty(shape, dtype=dtype)
         for i, column in enumerate(columns):
             col = self._column(column)
             shape = shapes[i]
