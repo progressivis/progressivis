@@ -4,7 +4,7 @@ from collections import deque
 import numpy as np
 from sklearn.cluster import MiniBatchKMeans
 from sklearn.cluster._kmeans import _mini_batch_convergence
-from sklearn.utils.validation import _check_sample_weight
+from sklearn.utils.validation import check_random_state
 from progressivis import ProgressiveError, SlotDescriptor
 from progressivis.core.utils import indices_len
 from ..table.module import TableModule
@@ -46,7 +46,6 @@ class MBKMeans(TableModule):
                                    verbose=True,
                                    tol=tol,
                                    random_state=random_state)
-        self._random_state = np.random.RandomState(SEED)
         self.columns = columns
         self.n_clusters = n_clusters
         self.default_step_size = 100
@@ -60,10 +59,10 @@ class MBKMeans(TableModule):
         self._data_changed = 0
         self._conv_out = PsDict({'convergence': 'unknown'})
         self.params.samples = n_clusters
-        self._sample_weight = None
         self._min_p = None
         self._max_p = None
         self._is_greedy = is_greedy
+        self.convergence_context = {}
 
     def predict_step_size(self, duration):
         p = super().predict_step_size(duration)
@@ -75,13 +74,13 @@ class MBKMeans(TableModule):
                                    init=init,
                                    # tol=self._rel_tol,
                                    random_state=self.mbk.random_state)
-        self._random_state = np.random.RandomState(SEED)
         dfslot = self.get_input_slot('table')
         dfslot.reset()
         self._labels = None
         self.set_state(self.state_ready)
         self._data_changed = 0
         self._old_centers.clear()
+        self.convergence_context = {}
 
     def starting(self):
         super().starting()
@@ -120,6 +119,7 @@ class MBKMeans(TableModule):
         moved_center = self.get_input_slot('moved_center')
         init_centers = 'k-means++'
         if moved_center is not None:
+            # TODO I thought update was called before run_step?
             moved_center.update(run_number)
             if moved_center.has_buffered():
                 print("Moved center!!")
@@ -130,6 +130,8 @@ class MBKMeans(TableModule):
                 init_centers = self.mbk.cluster_centers_
                 self.reset(init=init_centers)
                 dfslot.update(run_number)
+                dfslot.clear_buffers()  # No need to re-reset next
+                varslot.clear_buffers()
         if dfslot.has_buffered() or varslot.has_buffered():
             logger.debug('has deleted or updated, reseting')
             self.reset(init=init_centers)
@@ -142,31 +144,34 @@ class MBKMeans(TableModule):
            var_data is None or
            len(input_df) < self.mbk.n_clusters):
             # Not enough data yet ...
-            return self._return_run_step(self.state_blocked, steps_run=0)
+            return self._return_run_step(self.state_blocked, 0)
         cols = self.get_columns(input_df)
+        dtype = input_df.columns_common_dtype(cols)
         n_features = len(cols)
         batch_size = self.mbk.batch_size or 100
         n_samples = len(input_df)
-        convergence_context = {}
         is_conv = False
         if self._tol > 0:
             v = np.array(list(var_data.last().values()))
             tol = np.mean(v) * self._tol
             old_center_buffer = np.zeros((self.n_clusters, n_features),
-                                         dtype=np.float64)
+                                         dtype=dtype)
         else:
             tol = 0
-            old_center_buffer = np.zeros(0, dtype=np.float64)
+            old_center_buffer = np.zeros(0, dtype=dtype)
+        random_state = check_random_state(self.mbk.random_state)
+        sample_weight = np.one(np.ones(batch_size, dtype=dtype))
+        X = None
         for iter_ in range(step_size):
-            mb_ilocs = self._random_state.randint(
+            mb_ilocs = random_state.randint(
                 0, n_samples, batch_size)
             mb_locs = input_df.index[mb_ilocs]
-            X = input_df.to_array(columns=cols, locs=mb_locs)
-            sample_weight = _check_sample_weight(self._sample_weight, X,
-                                                 dtype=X.dtype)
+            X = input_df.to_array(columns=cols, locs=mb_locs, ret=X)
+            # sample_weight = _check_sample_weight(self._sample_weight, X,
+            #                                      dtype=X.dtype)
             if hasattr(self.mbk, 'cluster_centers_'):
                 old_center_buffer[:, :] = self.mbk.cluster_centers_
-            self.mbk.partial_fit(X)
+            self.mbk.partial_fit(X, sample_weight=sample_weight)
             centers = self.mbk.cluster_centers_
             # x_squared_norms = row_norms(X, squared=True)
             nearest_center, batch_inertia = self.mbk.labels_, self.mbk.inertia_
@@ -174,7 +179,9 @@ class MBKMeans(TableModule):
             squared_diff = 0.0
             for center_idx in range(k):
                 center_mask = nearest_center == center_idx
-                wsum = sample_weight[center_mask].sum()
+                # sample_weight == [1, ...] so wsum is count_nonzero
+                # wsum = sample_weight[center_mask].sum()
+                wsum = np.count_nonzero(center_mask)
                 if wsum > 0:
                     diff = centers[center_idx].ravel() - \
                       old_center_buffer[center_idx].ravel()
@@ -182,7 +189,7 @@ class MBKMeans(TableModule):
             if _mini_batch_convergence(self.mbk,
                                        iter_, step_size, tol, n_samples,
                                        squared_diff, batch_inertia,
-                                       convergence_context,
+                                       self.convergence_context,
                                        verbose=self.mbk.verbose):
                 is_conv = True
                 break
@@ -197,7 +204,7 @@ class MBKMeans(TableModule):
         if is_conv:
             ret_args = (self.state_ready, iter_)
         else:
-            ret_args = (self.state_blocked, 0)
+            ret_args = (self.state_blocked, iter_)
         return self._return_run_step(*ret_args)
 
     def is_visualization(self):
