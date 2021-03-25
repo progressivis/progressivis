@@ -390,8 +390,8 @@ class Table(IndexTable):
                 data[nam] = array[:, off[0]:off[1]]
         return Table(name, data=data, dshape=dshape, **kwds)
 
-    def eval(self, expr, inplace=False, name=None, result_object=None, locs=None,
-             as_slice=True):
+    def eval(self, expr, inplace=False, name=None, result_object=None,
+             locs=None, as_slice=True):
         """Evaluate the ``expr`` on columns and return the result.
 
         Args:
