@@ -75,18 +75,16 @@ class Histogram2D(TableModule):
         min_df = min_slot.data()
         if min_df is None or len(min_df) == 0:
             return None
-        #k_ = min_df.k_
-        xmin = min_df[self.x_column]
-        ymin = min_df[self.y_column]
-
+        k_ = (lambda x: x) if isinstance(self.x_column, str) else min_df.k_
+        xmin = min_df[k_(self.x_column)]
+        ymin = min_df[k_(self.y_column)]
         max_slot.created.next()
         max_df = max_slot.data()
         if max_df is None or len(max_df) == 0:
             return None
-        #k_ = max_df.k_
-        xmax = max_df[self.x_column]
-        ymax = max_df[self.y_column]
-
+        k_ = (lambda x: x) if isinstance(self.x_column, str) else max_df.k_
+        xmax = max_df[k_(self.x_column)]
+        ymax = max_df[k_(self.y_column)]
         if xmax < xmin:
             xmax, xmin = xmin, xmax
             logger.warning('xmax < xmin, swapped')
