@@ -56,7 +56,8 @@ class Parser(object):
     Always use Parser.create() instead of Parser() because __init__() is not awaitable
     """    
     def __init__(self, input_source, remaining, estimated_row_size,
-                     offset=None, overflow_df=None, pd_kwds={}, chunksize=0, usecols=None, names=None, header='infer'):
+                 offset=None, overflow_df=None, pd_kwds={}, chunksize=0,
+                 usecols=None, names=None, header='infer'):
         self._input = input_source
         self._pd_kwds = pd_kwds
         self._remaining = remaining
@@ -72,9 +73,10 @@ class Parser(object):
 
     @staticmethod
     def create(input_source, remaining, estimated_row_size,
-                     offset=None, overflow_df=None, pd_kwds={}, chunksize=0, usecols=None, names=None, header='infer'):
+               offset=None, overflow_df=None, pd_kwds={}, chunksize=0,
+               usecols=None, names=None, header='infer'):
         par = Parser(input_source, remaining, estimated_row_size, offset,
-                         overflow_df, pd_kwds, chunksize, usecols, names, header)
+                     overflow_df, pd_kwds, chunksize, usecols, names, header)
         if offset is None:
             par._offset = par._input.tell()
         return par
@@ -84,14 +86,14 @@ class Parser(object):
             raise ValueError("Not recoverable")
         ret = OrderedDict(
                 file_seq=json.dumps(self._input._seq),
-                file_cnt = self._input._file_cnt,
+                file_cnt=self._input._file_cnt,
                 encoding=json.dumps(self._input._encoding),
                 compression=json.dumps(self._input._compression),
                 remaining=self._remaining.decode('utf-8'),
-                overflow_df= ("" if self._overflow_df is None
-                                  else
-                                  self._overflow_df.to_csv(index=False,
-                                                               header=False)),
+                overflow_df=("" if self._overflow_df is None
+                             else
+                             self._overflow_df.to_csv(index=False,
+                                                      header=False)),
                 offset=self._offset - len(self._input._dec_remaining),
                 estimated_row_size=self._estimated_row_size,
                 nb_cols=self._nb_cols,
@@ -105,9 +107,9 @@ class Parser(object):
         return ret
 
     def read(self, n, flush=False):
-        assert n>0
+        assert n > 0
         ret = []
-        n_ = n 
+        n_ = n
         if self._overflow_df is not None:
             len_df = len(self._overflow_df)
             #assert len_df < n
@@ -121,7 +123,7 @@ class Parser(object):
             n_ = n - len_df
             ret.append(self._overflow_df)
             self._overflow_df = None
-            if n_ < n*MARGIN: # almost equals
+            if n_ < n*MARGIN:  # almost equals
                 return ret
         assert n_ > 0
         # it remains n_ rows to read
@@ -169,7 +171,9 @@ class Parser(object):
                 header = self._header
                 if (self._header in (0, 'infer') and
                     self._names is None and
-                    self._usecols and isinstance(self._usecols[0], str)):
+                    self._usecols and
+                    (not callable(self._usecols)  # TODO not sure what to do
+                     and isinstance(self._usecols[0], str))):
                     # csv_bytes begins with the column names
                     first_row_size = csv_bytes.find(b'\n')+1
                     self._names = pd.read_csv(BytesIO(csv_bytes[:first_row_size])).columns.values
@@ -179,7 +183,8 @@ class Parser(object):
                 names = self._names
                 #print("H:",names, usecols)
             kwds = {k:v for (k, v) in self._pd_kwds.items() if k not in ['header', 'names', 'usecols']}
-            read_df = pd.read_csv(BytesIO(csv_bytes), header=header, names=names, usecols=self._usecols, **kwds)
+            read_df = pd.read_csv(BytesIO(csv_bytes), header=header,
+                                  names=names, usecols=self._usecols, **kwds)
             if self._names is None:
                 self._names = read_df.columns.values
                 if self._usecols:
