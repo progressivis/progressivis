@@ -244,7 +244,7 @@ class Table(IndexTable):
     def _allocate(self, count, index=None):
         start = self.last_id+1
         index = bitmap(range(start, start+count)) if index is None else bitmap.asbitmap(index)
-        newsize = index.max()+1
+        newsize = max(index.max(),self.last_id) +1
         self.add_created(index)
         self._storagegroup.attrs[metadata.ATTR_NROWS] = newsize
         for column in self._columns:
