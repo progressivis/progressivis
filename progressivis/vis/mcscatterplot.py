@@ -371,7 +371,7 @@ class MCScatterPlot(NAry):
             raise ProgressiveError("Input module is defined twice!")            
         if self.input_slot is None and input_slot is None:
             raise ProgressiveError("Input slot is not defined!")            
-        if self.input_slot is not None and input_slot is not None:
+        if self.input_slot is not None and input_slot is not None and self.input_slot!=input_slot:
             raise ProgressiveError("Input slot is defined twice!")            
         data_class = _DataClass(name, self.name, x_column,
                                 y_column,
