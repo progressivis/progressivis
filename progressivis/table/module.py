@@ -9,6 +9,7 @@ from ..core.slot import SlotDescriptor
 from .table import Table
 from .slot_join import SlotJoin
 
+
 # pylint: disable=abstract-method
 class TableModule(Module):
     "Base class for modules managing tables."
@@ -26,14 +27,13 @@ class TableModule(Module):
                 self._columns = v
                 break
             self._columns_dict = columns
-        elif isinstance(columns, list): # backward compatibility
+        elif isinstance(columns, list):  # backward compatibility
             self._columns = columns
             for k in self._input_slots.keys():
                 self._columns_dict = {k: columns}
                 break
             else:
                 assert columns is None
-        #self._table = None
         self.__result = None
 
     def get_first_input_slot(self):
