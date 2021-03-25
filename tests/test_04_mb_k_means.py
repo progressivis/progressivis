@@ -1,4 +1,4 @@
-from . import ProgressiveTest
+from . import ProgressiveTest, skip
 
 from progressivis import Print, Every #, log_level
 from progressivis.cluster import MBKMeans
@@ -22,7 +22,7 @@ from progressivis.core import aio
 #             s.stop()
 #         times += 1
 
-
+@skip
 class TestMBKmeans(ProgressiveTest):
     def test_mb_k_means(self):
         #log_level()
