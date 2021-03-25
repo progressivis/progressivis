@@ -235,3 +235,8 @@ def dshape_union(left, right):
         ctype = left_dict[key] if key in left_dict else right_dict[key]
         res.append((key, ctype))
     return '{'+",".join(["{}: {}".format(f, t) for f, t in res])+'}'
+
+def dshape_all_dtype(columns, dtype):
+    dshape = dshape_from_dtype(dtype)
+    dshapes = ["%s: %s" % (column, dshape) for column in columns]
+    return "{" + ", ".join(dshapes)+"}"

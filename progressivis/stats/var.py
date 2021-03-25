@@ -2,6 +2,7 @@ from ..core.utils import indices_len, fix_loc
 from ..core.slot import SlotDescriptor
 from ..table.module import TableModule
 from ..table.table import Table
+from ..table.dshape import dshape_all_dtype
 from ..core.decorators import *
 
 
@@ -71,7 +72,8 @@ class Var(TableModule):
         return ret
 
     def reset(self):
-        self.result = None
+        if self.result is None:
+            self.result.resize(0)
 
     @process_slot("table", reset_cb="reset")
     @run_if_any
@@ -85,12 +87,13 @@ class Var(TableModule):
             input_df = dfslot.data()
             op = self.op(self.filter_columns(input_df, fix_loc(indices)))
             if self.result is None:
+                ds = dshape_all_dtype(input_df.columns, np.dtype("float64"))
                 self.result = Table(self.generate_table_name('var'),
-                                    dshape=input_df.dshape,
+                                    dshape=ds, # input_df.dshape,
                                     create=True)
             self.result.append(op, indices=[run_number])
             print(self.result)
 
-            if len(self.result) > self.params.history:
-                self.result = self.result.loc[self.result.index[-self.params.history:]]
+            #if len(self.result) > self.params.history:
+            #    self.result = self.result.loc[self.result.index[-self.params.history:]]
             return self._return_run_step(self.next_state(dfslot), steps_run=steps)
