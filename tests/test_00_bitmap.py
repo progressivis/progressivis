@@ -72,6 +72,13 @@ class TestBitmap(ProgressiveTest):
         self.assertEqual(bm - None, bm2)
         self.assertEqual(bitmap([1, 2]).flip(0, 4), bitmap([0, 3]))
 
+    def test_bitmap_fancy(self):
+        bm = bitmap(range(100))
+        fancy = [10, 20, 30]
+        self.assertEqual(bm[fancy], bitmap(fancy))
+        bm -= bitmap([0, 1, 2])
+        self.assertEqual(bm[fancy], bitmap([13, 23, 33]))
+
 
 if __name__ == '__main__':
     ProgressiveTest.main()

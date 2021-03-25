@@ -1,22 +1,25 @@
-"""Manage bit sets as ordered list of integers very efficiently, relying on RoaringBitmaps.
+"""
+Manage bit sets as ordered list of integers very efficiently,
+relying on pyroaring RoaringBitmaps.
 """
 
 import array
 
 from pyroaring import BitMap
 import numpy as np
-from  collections.abc import Iterable
+from collections.abc import Iterable
 # pragma no cover
 # pylint: disable=invalid-name
 _integer_types = (int, np.integer)
 
 
-class bitmap(BitMap,object):
+class bitmap(BitMap, object):
     # pylint: disable=invalid-name
     """
     Derive from an efficient and light-weight ordered set of 32 bits integers.
     """
-    def __new__(cls, values=None, copy_on_write=False, optimize=True, no_init=False):
+    def __new__(cls, values=None, copy_on_write=False, optimize=True,
+                no_init=False):
         if isinstance(values, slice):
             values = range(values.start, values.stop,
                            (values.step if values.step else 1))
@@ -24,7 +27,6 @@ class bitmap(BitMap,object):
                                           copy_on_write,
                                           optimize,
                                           no_init)
-        #BitMap.__init__(self, values, copy_on_write)
 
     def clear(self):
         "Clear the bitmap in-place"
@@ -37,29 +39,18 @@ class bitmap(BitMap,object):
         return other <= self
 
     def __repr__(self):
-        l = len(self)
-        if l > 10:
+        length = len(self)
+        if length > 10:
             values = ', '.join([str(n) for n in self[0:6]])
-            values += '...(%d)...%d)' % (l, self[l-1])
+            values += '...(%d)...%d)' % (length, self[length-1])
         else:
             values = ', '.join([str(n) for n in self])
         return 'bitmap([%s])' % values
 
-    # def __binary_op__(self, other, function):
-    #     if other is None:
-    #         other = NIL_BITMAP
-    #     try:
-    #         return bitmap(obj=function(self.__obj__, other.__obj__))
-    #     except AttributeError:
-    #         raise TypeError('Not a bitmap.')
-
-    # def __binary_op_inplace__(self, other, function):
-    #     if other is None:
-    #         other = NIL_BITMAP
-    #     return BitMap.__binary_op_inplace__(self, other, function)
-
     def __getitem__(self, values):
         if isinstance(values, Iterable):
+            if self.max() == len(self)-1:
+                return bitmap(values)
             bm = bitmap()
             for index in values:
                 bm.add(BitMap.__getitem__(self, int(index)))
@@ -70,12 +61,6 @@ class bitmap(BitMap,object):
         if isinstance(bm, Exception):
             raise bm
         return bm
-
-                
-    # def __eq__(self, other):
-    #     if isinstance(other, BitMap):
-    #         return BitMap.__eq__(other, self)
-    #     return BitMap.__eq__(self, other)
 
     def update(self, values):
         '''
@@ -194,5 +179,6 @@ class bitmap(BitMap,object):
         Generate a bitmap from the given serialization.
         """
         return bitmap(BitMap.deserialize(buff))
+
 
 NIL_BITMAP = bitmap()
