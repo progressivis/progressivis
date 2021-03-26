@@ -4,7 +4,7 @@ from ..table.module import TableModule
 from ..table.table import Table
 from ..core.slot import SlotDescriptor
 from ..utils.psdict import PsDict
-from ..core.decorators import *
+from ..core.decorators import process_slot, run_if_any
 import numpy as np
 
 import logging
@@ -33,21 +33,24 @@ class Max(TableModule):
     @run_if_any
     def run_step(self, run_number, step_size, howlong):
         with self.context as ctx:
-            indices = ctx.table.created.next(step_size) # returns a slice
+            indices = ctx.table.created.next(step_size)  # returns a slice
             steps = indices_len(indices)
             input_df = ctx.table.data()
-            op = self.filter_columns(input_df, fix_loc(indices)).max(keepdims=False)
+            op = self.filter_columns(input_df,
+                                     fix_loc(indices)).max(keepdims=False)
             if self.result is None:
                 self.result = PsDict(op)
             else:
                 for k, v in self.result.items():
                     self.result[k] = np.maximum(op[k], v)
-            return self._return_run_step(self.next_state(ctx.table), steps_run=steps)
+            return self._return_run_step(self.next_state(ctx.table), steps)
+
 
 def maximum_val_id(candidate_val, candidate_id, current_val, current_id):
     if candidate_val > current_val:
         return candidate_val, candidate_id, True
     return current_val, current_id, False
+
 
 class ScalarMax(TableModule):
     inputs = [SlotDescriptor('table', type=Table, required=True)]
@@ -113,16 +116,18 @@ class ScalarMax(TableModule):
         if not self._sensitive_ids:
             self._sensitive_ids.update(idxop)
         if self.result is None:
-            op = {k:input_df.loc[i, k] for (k, i) in idxop.items()}    
+            op = {k: input_df.loc[i, k] for (k, i) in idxop.items()}
             self.result = PsDict(op)
         else:
-            rich_op = {k:(input_df.loc[i, k], i) for (k, i) in idxop.items()}
+            rich_op = {k: (input_df.loc[i, k], i) for (k, i) in idxop.items()}
             for k, v in self.result.items():
                 candidate_val, candidate_id = rich_op[k]
                 current_val = self.result[k]
                 current_id = self._sensitive_ids[k]
-                new_val, new_id, tst = maximum_val_id(candidate_val, candidate_id,
-                                                      current_val, current_id)
+                new_val, new_id, tst = maximum_val_id(candidate_val,
+                                                      candidate_id,
+                                                      current_val,
+                                                      current_id)
                 if tst:
                     self.result[k] = new_val
                     self._sensitive_ids[k] = new_id

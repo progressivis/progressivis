@@ -1,6 +1,6 @@
 from .stats import Stats
-from .min import Min
-from .max import Max
+from .min import Min, ScalarMin
+from .max import Max, ScalarMax
 from .idxmax import IdxMax
 from .idxmin import IdxMin
 from .var import Var, VarH
@@ -14,7 +14,9 @@ from .random_table import RandomTable, RandomDict
 
 __all__ = ["Stats",
            "Min",
+           "ScalarMin",
            "Max",
+           "ScalarMax",
            "IdxMax",
            "IdxMin",
            "VarH",
