@@ -23,6 +23,7 @@ logger = logging.getLogger(__name__)
 
 FAST = 1
 
+
 class _BaseLoc(object):
     # pylint: disable=too-few-public-methods
     def __init__(self, this_table, as_loc=True):
@@ -286,12 +287,16 @@ class BaseTable(metaclass=ABCMeta):
     def to_json(self, **kwds):
         "Return a dictionary describing the contents of this columns."
         return self.to_dict(**kwds)
+
     def make_col_view(self, col, index):
         from .column_selected import ColumnSelectedView
         return ColumnSelectedView(base=col, index=index, name=col.name)
+
     def make_projection(self, cols, index):
         dict_ = self._make_columndict_projection(cols)
-        columns = [self.make_col_view(c, index) for (i, c) in enumerate(self._columns) if i in  dict_.values()]
+        columns = [self.make_col_view(c, index)
+                   for (i, c) in enumerate(self._columns)
+                   if i in dict_.values()]
         columndict = OrderedDict(zip(dict_.keys(), range(len(dict_))))
         return columns, columndict
 
@@ -299,21 +304,24 @@ class BaseTable(metaclass=ABCMeta):
         if is_none_alike(cols):
             return self._columndict
         if isinstance(cols, slice):
-            assert is_int(cols.start) # for the moment ...
+            assert is_int(cols.start)  # for the moment ...
             nsl = norm_slice(cols, stop=len(self._columndict))
-            return OrderedDict({k:v for (i, (k,v)) in enumerate(self._columndict.items())
-                    if i in range(*nsl.indices(nsl.stop))})
+            return OrderedDict({
+                k: v
+                for (i, (k, v)) in enumerate(self._columndict.items())
+                if i in range(*nsl.indices(nsl.stop))})
         if is_int(cols) or is_str(cols):
             cols = [cols]
         if is_iterable(cols):
             if all_int(cols):
-                return OrderedDict({k:v for (i, (k,v)) in enumerate(self._columndict.items())
-                                    if i in cols})
+                return OrderedDict({
+                    k: v for (i, (k, v)) in enumerate(self._columndict.items())
+                    if i in cols})
             if all_string(cols):
-                return OrderedDict({k:v for (k,v) in self._columndict.items()
+                return OrderedDict({
+                    k: v for (k, v) in self._columndict.items()
                     if k in cols})
         raise ValueError(f"Invalid column projection {cols}")
-
 
     def to_dict(self, orient='dict', columns=None):
         # pylint: disable=too-many-branches
@@ -446,8 +454,7 @@ class BaseTable(metaclass=ABCMeta):
         """
         if is_int(ix):
             return ix
-        locs =  self._any_to_bitmap(ix)
-        #assert locs in self._index
+        locs = self._any_to_bitmap(ix)
         return locs
 
     def id_to_index(self, loc, as_slice=True):
@@ -735,7 +742,8 @@ class BaseTable(metaclass=ABCMeta):
         dtypes = [self[c].dtype for c in columns]
         return np.find_common_type(dtypes, [])
 
-    def to_array(self, locs=None, columns=None, returns_indices=False, ret=None):
+    def to_array(self, locs=None, columns=None, returns_indices=False,
+                 ret=None):
         """Convert this table to a numpy array
 
         Parameters
@@ -763,8 +771,11 @@ class BaseTable(metaclass=ABCMeta):
         # TODO split the copy in chunks
         if locs is None:
             indices = self.index
+        elif isinstance(locs, slice):
+            indices = self._slice_to_bitmap(locs)
+            # indices = self._any_to_bitmap(locs)
         else:
-            indices = self._any_to_bitmap(locs)
+            indices = locs
         shape = (indices_len(indices), offsets[-1])
         if (isinstance(ret, np.ndarray) and
            ret.shape == shape and

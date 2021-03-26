@@ -229,7 +229,8 @@ class Column(BaseColumn):
 
     def read_direct(self, array, source_sel=None, dest_sel=None):
         if hasattr(self.dataset, 'read_direct'):
-            if isinstance(source_sel, np.ndarray) and source_sel.dtype==np.int:
+            if (isinstance(source_sel, np.ndarray)
+               and source_sel.dtype == np.int):
                 source_sel = list(source_sel)
 #            if is_fancy(source_sel):
 #                source_sel = fancy_to_mask(source_sel, self.shape)
