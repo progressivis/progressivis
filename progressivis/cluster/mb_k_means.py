@@ -18,7 +18,6 @@ from ..table.filtermod import FilterMod
 from ..stats import Var
 logger = logging.getLogger(__name__)
 
-SEED = 42
 
 class MBKMeans(TableModule):
     """
@@ -118,21 +117,22 @@ class MBKMeans(TableModule):
 
     def _process_labels(self, locs):
         labels = self.mbk.labels_
-        u_locs = locs & self._labels.index # ids to update
-        if not u_locs: # shortcut
+        u_locs = locs & self._labels.index  # ids to update
+        if not u_locs:  # shortcut
             self._labels.append({'labels': labels},
-                                    indices=locs)
+                                indices=locs)
             return
-        a_locs = locs - u_locs # ids to append
+        a_locs = locs - u_locs  # ids to append
         df = pd.DataFrame({'labels': labels}, index=locs)
-        u_labels = df.loc[u_locs,'labels']
-        a_labels = df.loc[a_locs,'labels']
+        u_labels = df.loc[u_locs, 'labels']
+        a_labels = df.loc[a_locs, 'labels']
         self._labels.loc[u_locs, 'labels'] = u_labels
         self._labels.append({'labels': a_labels},
-                                    indices=a_locs)
+                            indices=a_locs)
 
     def run_step(self, run_number, step_size, howlong):
         dfslot = self.get_input_slot('table')
+        # TODO varslot is only required if we have tol > 0
         varslot = self.get_input_slot('var')
         moved_center = self.get_input_slot('moved_center')
         init_centers = 'k-means++'
@@ -172,7 +172,7 @@ class MBKMeans(TableModule):
             v = np.array(list(var_data.last().values()))
             tol = np.mean(v) * self._tol
             prev_centers = np.zeros((self.n_clusters, n_features),
-                                         dtype=dtype)
+                                    dtype=dtype)
         else:
             tol = 0
             prev_centers = np.zeros(0, dtype=dtype)

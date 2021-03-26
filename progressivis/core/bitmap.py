@@ -50,11 +50,11 @@ class bitmap(BitMap, object):
     def __getitem__(self, values):
         if isinstance(values, Iterable):
             if self.max() == len(self)-1:
-                return bitmap(values)
-            bm = bitmap()
+                return list(values)
+            ret = []
             for index in values:
-                bm.add(BitMap.__getitem__(self, int(index)))
-            return bm
+                ret.append(BitMap.__getitem__(self, int(index)))
+            return ret
         bm = BitMap.__getitem__(self, values)
         if isinstance(bm, BitMap):
             return bitmap(bm)
