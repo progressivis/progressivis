@@ -18,8 +18,6 @@ from ..table.filtermod import FilterMod
 from ..stats import Var
 logger = logging.getLogger(__name__)
 
-SEED = 42
-
 class MBKMeans(TableModule):
     """
     Mini-batch k-means using the sklearn implementation.
@@ -35,10 +33,7 @@ class MBKMeans(TableModule):
         SlotDescriptor('conv', type=PsDict, required=False)
     ]
 
-    DATA_CHANGED_MAX = 4
-
     def __init__(self, n_clusters, columns=None, batch_size=100, tol=0.01,
-                 conv_steps=2,
                  is_input=True, is_greedy=True, random_state=None, **kwds):
         super().__init__(**kwds)
         self.mbk = MiniBatchKMeans(n_clusters=n_clusters,
@@ -54,13 +49,8 @@ class MBKMeans(TableModule):
         self._initialization_steps = 0
         self._is_input = is_input
         self._tol = tol
-        self._conv_steps = conv_steps
-        self._old_centers = deque(maxlen=conv_steps)
-        self._data_changed = 0
         self._conv_out = PsDict({'convergence': 'unknown'})
         self.params.samples = n_clusters
-        self._min_p = None
-        self._max_p = None
         self._is_greedy = is_greedy
         self.convergence_context = {}
 
@@ -77,8 +67,6 @@ class MBKMeans(TableModule):
         dfslot = self.get_input_slot('table')
         dfslot.reset()
         self.set_state(self.state_ready)
-        self._data_changed = 0
-        self._old_centers.clear()
         self.convergence_context = {}
         # do not resize result to zero
         # it contains 1 row per centroid
@@ -124,6 +112,9 @@ class MBKMeans(TableModule):
                                     indices=locs)
             return
         a_locs = locs - u_locs # ids to append
+        if not a_locs: # 2nd shortcut
+            self._labels.loc[locs, 'labels'] = labels
+            return
         df = pd.DataFrame({'labels': labels}, index=locs)
         u_labels = df.loc[u_locs,'labels']
         a_labels = df.loc[a_locs,'labels']
