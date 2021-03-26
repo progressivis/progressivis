@@ -160,7 +160,7 @@ class MBKMeans(TableModule):
         n_samples = len(input_df)
         is_conv = False
         if self._tol > 0:
-            v = np.array(list(var_data.last().values()))
+            v = np.array(list(var_data.values()), dtype=np.float64)
             tol = np.mean(v) * self._tol
             prev_centers = np.zeros((self.n_clusters, n_features),
                                          dtype=dtype)

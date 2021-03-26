@@ -4,7 +4,7 @@ from .min import Min, ScalarMin
 from .max import Max, ScalarMax
 from .idxmax import IdxMax
 from .idxmin import IdxMin
-from .var import Var
+from .var import Var, VarH
 from .percentiles import Percentiles
 #from .linear_regression import LinearRegression
 from .histogram1d import Histogram1D
@@ -20,6 +20,7 @@ __all__ = ["Stats",
            "Max",
            "IdxMax",
            "IdxMin",
+           "VarH",
            "Var",
            "Percentiles",
 #           "LinearRegression",
