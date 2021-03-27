@@ -42,7 +42,7 @@ class Min(TableModule):
             else:
                 for k, v in self.result.items():
                     self.result[k] = np.minimum(op[k], v)
-            return self._return_run_step(self.next_state(ctx.table), steps_run=steps)
+            return self._return_run_step(self.next_state(ctx.table), steps)
 
 def minimum_val_id(candidate_val, candidate_id, current_val, current_id):
     if candidate_val < current_val:
