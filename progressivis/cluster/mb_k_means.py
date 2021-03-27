@@ -1,5 +1,6 @@
 import logging
 
+from collections import defaultdict
 import numpy as np
 import pandas as pd
 from sklearn.cluster import MiniBatchKMeans
@@ -52,6 +53,7 @@ class MBKMeans(TableModule):
         self._conv_out = PsDict({'convergence': 'unknown'})
         self.params.samples = n_clusters
         self._is_greedy = is_greedy
+        self._arrays = None
         self.convergence_context = {}
 
     def predict_step_size(self, duration):
@@ -159,6 +161,10 @@ class MBKMeans(TableModule):
         dtype = input_df.columns_common_dtype(cols)
         n_features = len(cols)
         n_samples = len(input_df)
+        if self._arrays is None:
+            def _array_factory():
+                return np.empty((self._key, n_features), dtype=dtype)
+            self._arrays = defaultdict(_array_factory)
         is_conv = False
         if self._tol > 0:
             v = np.array(list(var_data.values()), dtype=np.float64)
@@ -174,11 +180,12 @@ class MBKMeans(TableModule):
             mb_ilocs = random_state.randint(
                 0, n_samples, batch_size)
             mb_locs = input_df.index[mb_ilocs]
-            X = input_df.to_array(columns=cols, locs=mb_locs, ret=X)
-            sample_weight = np.ones(X.shape[0], dtype=dtype)
+            self._key = len(mb_locs)
+            arr = self._arrays[self._key]
+            X = input_df.to_array(columns=cols, locs=mb_locs, ret=arr)
             if hasattr(self.mbk, 'cluster_centers_'):
                 prev_centers[:, :] = self.mbk.cluster_centers_
-            self.mbk.partial_fit(X, sample_weight=sample_weight)
+            self.mbk.partial_fit(X)
             if self._labels is not None:
                 self._process_labels(mb_locs)
             centers = self.mbk.cluster_centers_
@@ -187,8 +194,7 @@ class MBKMeans(TableModule):
             squared_diff = 0.0
             for ci in range(k):
                 center_mask = (nearest_center == ci)
-                wsum = np.count_nonzero(center_mask)
-                if wsum > 0:
+                if np.count_nonzero(center_mask) > 0:
                     diff = centers[ci].ravel() - prev_centers[ci].ravel()
                     squared_diff += np.dot(diff, diff)
             if _mini_batch_convergence(self.mbk,
