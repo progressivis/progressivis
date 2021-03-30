@@ -213,10 +213,8 @@ class MBKMeans(TableModule):
             self.result.resize(self.mbk.cluster_centers_.shape[0])
         self.result[cols] = self.mbk.cluster_centers_
         if is_conv:
-            ret_args = (self.state_ready, iter_)
-        else:
-            ret_args = (self.state_blocked, iter_)
-        return self._return_run_step(*ret_args)
+            return self._return_run_step(self.state_blocked, iter_)
+        return self._return_run_step(self.state_ready, iter_)
 
     def is_visualization(self):
         return False

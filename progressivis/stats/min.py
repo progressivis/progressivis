@@ -4,7 +4,7 @@ from ..table.module import TableModule
 from ..table.table import Table
 from ..core.slot import SlotDescriptor
 from ..utils.psdict import PsDict
-from ..core.decorators import *
+from ..core.decorators import process_slot, run_if_any
 import numpy as np
 
 import logging
@@ -12,7 +12,6 @@ logger = logging.getLogger(__name__)
 
 
 class Min(TableModule):
-    # parameters = [('history', np.dtype(int), 3)]
     inputs = [SlotDescriptor('table', type=Table, required=True)]
 
     def __init__(self, columns=None, **kwds):
@@ -31,7 +30,7 @@ class Min(TableModule):
 
     @process_slot("table", reset_cb="reset")
     @run_if_any
-    def run_step(self,run_number,step_size,howlong):
+    def run_step(self, run_number, step_size, howlong):
         with self.context as ctx:
             indices = ctx.table.created.next(step_size) # returns a slice
             steps = indices_len(indices)

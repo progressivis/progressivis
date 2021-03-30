@@ -14,7 +14,7 @@ from progressivis.core.slot import SlotDescriptor
 from progressivis.core.utils import (slice_to_arange, fix_loc)
 from .module import TableModule
 from . import Table
-from ..core.utils import indices_len, fix_loc
+from ..core.utils import indices_len
 from . import TableSelectedView
 APPROX = False
 logger = logging.getLogger(__name__)
@@ -80,7 +80,7 @@ class _HistogramIndexImpl(object):
         for i, bm in enumerate(self.bitmaps):
             if elt in bm:
                 res.append(i)
-        return res # if len(res)>1: BUG
+        return res  # if len(res)>1: BUG
 
     def _is_merging_required(self):
         return len(self.bitmaps) > self._max_hist_size
@@ -138,7 +138,8 @@ class _HistogramIndexImpl(object):
         if i >= len(self.bins):
             assert self.bins[i-1] < v
         else:
-            assert self.bins[i-1] < v < self.bins[i] if i > 0 else v < self.bins[i]
+            assert (self.bins[i-1] < v < self.bins[i]
+                    if i > 0 else v < self.bins[i])
         values = self.column.loc[ids]
         lower_bin = bitmap(ids[values < v])
         upper_bin = self.bitmaps[i] - lower_bin
