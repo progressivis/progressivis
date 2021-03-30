@@ -72,7 +72,9 @@ class ModuleWg(ipw.Tab):  # pylint: disable=too-many-ancestors
                     self.set_title(1, 'Main')
                     self.set_title(2, 'Output slots')
             elif len(self.children) > 2:
-                self.children = self.children[:2]
+                self.children = self.children[1:]
+                self.set_title(0, module.name)
+                self.set_title(1, 'Output slots')
         else:
             _selected_index = self._output_slots.selected_index
         for i, k in enumerate(m["output_slots"].keys()):
