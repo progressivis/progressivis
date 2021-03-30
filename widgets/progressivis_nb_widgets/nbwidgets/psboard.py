@@ -84,8 +84,9 @@ async def control_panel(psboard, action):
 
 # pylint: disable=too-many-ancestors,too-many-instance-attributes
 class PsBoard(ipw.VBox):
-    def __init__(self, scheduler=None):
+    def __init__(self, scheduler=None, order='asc'):
         global debug_console  # pylint: disable=global-statement
+        self._order = order
         self.scheduler = scheduler
         self._cache = None
         self._cache_js = None
@@ -110,6 +111,8 @@ class PsBoard(ipw.VBox):
         super().__init__([self.cpanel, self.tab, debug_console])
 
     async def make_table_index(self, modules):
+        modules = sorted(modules, key=lambda x: x['order'],
+                         reverse=(self._order=='desc'))
         if not self.htable.html:
             tmpl = Template(INDEX_TEMPLATE)
             await update_widget(self.htable,
@@ -125,7 +128,7 @@ class PsBoard(ipw.VBox):
                     dataid = f"ps-cell_{m['id']}_{c}"
                     if c == 'is_visualization':
                         # Show an Unicode eye next to visualizations
-                        data[dataid] = '\U0001F441' if m[c] else ' '
+                        data[dataid] = '\U0001F441' if m['id'] in self.vis_register else ' '
                     else:
                         data[dataid] = m[c]
             await update_widget(self.htable, 'data', data)
