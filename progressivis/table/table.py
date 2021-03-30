@@ -213,6 +213,10 @@ class Table(IndexTable):
         self._storagegroup.attrs[metadata.ATTR_INDEX] = self._index.serialize()
         self._storagegroup.attrs[metadata.ATTR_LAST_ID] = self.last_id
 
+    def truncate(self):
+        if len(self):
+            self.drop(slice(None,None,None), truncate=True)
+
     def _resize_rows(self, newsize, index=None):
         super()._resize_rows(newsize, index)
         self._storagegroup.attrs[metadata.ATTR_INDEX] = self._index.serialize()

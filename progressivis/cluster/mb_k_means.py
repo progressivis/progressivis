@@ -73,7 +73,7 @@ class MBKMeans(TableModule):
         # do not resize result to zero
         # it contains 1 row per centroid
         if self._labels is not None:
-            self._labels.resize(0)
+            self._labels.truncate()
 
     def starting(self):
         super().starting()
@@ -131,8 +131,6 @@ class MBKMeans(TableModule):
         moved_center = self.get_input_slot('moved_center')
         init_centers = 'k-means++'
         if moved_center is not None:
-            # TODO I thought update was called before run_step?
-            moved_center.update(run_number)
             if moved_center.has_buffered():
                 print("Moved center!!")
                 moved_center.clear_buffers()
