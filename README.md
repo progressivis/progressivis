@@ -34,6 +34,13 @@ costly currently, but could become almost acceptable with some
 internal changes.  The current implementation provides replacements data
 structures that can grow and adapt to progressive computation.
 
+## Live demos
+
+Many interactive demos are available online. They will run remotelly on [mybinder.org](https://mybinder.org/) so you can experiment with Progressivis with no need to install it locally.
+
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/jdfekete/progressivis.git/master?filepath=demos)
+
+**NB:** Interactive demos may take up to several minutes to build depending on the server load.
 
 ## Installation
 
@@ -94,16 +101,6 @@ cd notebooks
 jupyter notebook
 ```
 then run the notebooks of your choice
-
-
-
-## Live demo
-
-A live demo is available online:
-* as **Jupyter notebook** [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/jdfekete/progressivis.git/master?filepath=notebooks%2FPsBoardDemo4Binder.ipynb)
-* as **Jupyter Voilà dashboard** [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/jdfekete/progressivis.git/master?filepath=%2F..%2Fvoila%2Frender%2Fnotebooks%2FPsBoardDemo4Binder.ipynb)
-
-
 
 ## Contribute
 
