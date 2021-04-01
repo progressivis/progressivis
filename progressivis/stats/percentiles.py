@@ -9,7 +9,10 @@ from ..core.decorators import *
 import numpy as np
 
 # Should use a Cython implementation eventually
-from tdigest import TDigest
+try:
+    from tdigest import TDigest
+except ImportError: # only for demos not using TDigest
+    class TDigest: pass # avoids tdigest dependency => speed build on mybinder
 
 
 def _pretty_name(x):
