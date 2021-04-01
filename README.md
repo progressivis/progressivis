@@ -38,7 +38,9 @@ structures that can grow and adapt to progressive computation.
 
 Many interactive demos are available online. They will run remotelly on [mybinder.org](https://mybinder.org/) so you can experiment with Progressivis with no need to install it locally.
 
-[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/jdfekete/progressivis.git/master?filepath=demos)
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/jdfekete/progressivis.git/stable?filepath=demos)
+
+Click the "launch binder" image above to run the the live demos on [mybinder.org](https://mybinder.org/).
 
 **NB:** Interactive demos may take up to several minutes to build depending on the server load.
 
