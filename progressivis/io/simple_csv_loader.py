@@ -1,27 +1,28 @@
-from __future__ import absolute_import, division, print_function
-
 import logging
 logger = logging.getLogger(__name__)
 
 import pandas as pd
 
 from progressivis import ProgressiveError, SlotDescriptor
+from progressivis.utils.errors import (ProgressiveError,
+                                       ProgressiveStopIteration)
 from ..table.module import TableModule
 from ..table.table import Table
 from ..table.dshape import dshape_from_dataframe
 from ..core.utils import filepath_to_buffer, _infer_compression, force_valid_id_columns
 
 
-class CSVLoader(TableModule):
+class SimpleCSVLoader(TableModule):
+    inputs = [SlotDescriptor('filenames', type=Table, required=False)]    
     def __init__(self,
                  filepath_or_buffer=None,
                  filter_=None,
                  force_valid_ids=True,
                  fillvalues=None,
                  **kwds):
-        self._add_slots(kwds,'input_descriptors',
-                        [SlotDescriptor('filenames', type=Table,required=False)])
-        super(CSVLoader, self).__init__(**kwds)
+        #self._add_slots(kwds,'input_descriptors',
+        #                [SlotDescriptor('filenames', type=Table,required=False)])
+        super().__init__(**kwds)
         self.default_step_size = kwds.get('chunksize', 1000)  # initial guess
         kwds.setdefault('chunksize', self.default_step_size)
         # Filter out the module keywords from the csv loader keywords
@@ -43,9 +44,9 @@ class CSVLoader(TableModule):
         self._input_encoding = None
         self._input_compression = None
         self._input_size = 0 # length of the file or input stream when available
-
+        self._file_mode = False
         self._table_params = dict(name=self.name, fillvalues=fillvalues)
-        self._table = None
+        #self.result = None
 
     def rows_read(self):
         return self._rows_read
@@ -55,7 +56,7 @@ class CSVLoader(TableModule):
         # Can be called before the first update so fn.created can be None
         if fn and (fn.created is None or fn.created.any()):
             return True
-        return super(CSVLoader, self).is_ready()
+        return super().is_ready()
     
     def is_data_input(self):
         # pylint: disable=no-self-use
@@ -106,11 +107,12 @@ class CSVLoader(TableModule):
                     self.parser = None
                     return self.state_terminated
                 self.filepath_or_buffer = None
+                self._file_mode = True
             else:
                 fn_slot = self.get_input_slot('filenames')
                 if fn_slot is None or fn_slot.output_module is None:
                     return self.state_terminated
-                with fn_slot.lock:
+                if True:
                     fn_slot.update(run_number)
                     if fn_slot.deleted.any() or fn_slot.updated.any():
                         raise ProgressiveError('Cannot handle input file changes')
@@ -131,32 +133,31 @@ class CSVLoader(TableModule):
     def run_step(self,run_number,step_size, howlong):
         if step_size==0: # bug
             logger.error('Received a step_size of 0')
-            return self._return_run_step(self.state_ready, steps_run=0, creates=0)
+            return self._return_run_step(self.state_ready, steps_run=0)
         status = self.validate_parser(run_number)
         if status==self.state_terminated:
-            raise StopIteration('no more filenames')
+            raise ProgressiveStopIteration('no more filenames')
         elif status==self.state_blocked:
-            return self._return_run_step(status, steps_run=0, creates=0)
+            return self._return_run_step(status, steps_run=0)
         elif status != self.state_ready:
             logger.error('Invalid state returned by validate_parser: %d', status)
             self.close()
-            raise StopIteration('Unexpected situation')
+            raise ProgressiveStopIteration('Unexpected situation')
         logger.info('loading %d lines', step_size)
         try:
-            with self.lock:
+            if True:
                 df = self.parser.read(step_size) # raises StopIteration at EOF
         except StopIteration:
             self.close()
             fn_slot = self.get_input_slot('filenames')
-            if fn_slot is None or fn_slot.output_module is None:
+            if (fn_slot is None or fn_slot.output_module is None) and not self._file_mode:
                 raise
             self.parser = None
-            return self._return_run_step(self.state_ready, steps_run=0, creates=0)
-
+            return self._return_run_step(self.state_ready, steps_run=0)
         creates = len(df)
         if creates == 0: # should not happen
             logger.error('Received 0 elements')
-            raise StopIteration
+            raise ProgressiveStopIteration
         if self._filter != None:
             df = self._filter(df)
         creates = len(df)
@@ -167,15 +168,15 @@ class CSVLoader(TableModule):
             logger.info('Loaded %d lines', self._rows_read)
             if self.force_valid_ids:
                 force_valid_id_columns(df)
-            with self.lock:
-                if self._table is None:
+            if True:
+                if self.result is None:
                     self._table_params['name'] = self.generate_table_name('table')
                     self._table_params['dshape'] = dshape_from_dataframe(df)
                     self._table_params['data'] = df
                     self._table_params['create'] = True
-                    self._table = Table(**self._table_params)
+                    self.result = Table(**self._table_params)
                 else:
-                    self._table.append(df)
+                    self.result.append(df)
         #print("Progress: ", self.get_progress())
         return self._return_run_step(self.state_ready, steps_run=creates)
 
@@ -194,15 +195,15 @@ def extract_params_docstring(fn, only_defaults=False):
         return reqargs
     return reqargs+","+defargs
 
-csv_docstring = "CSVLoader(" \
+csv_docstring = "SimpleCSVLoader(" \
   + extract_params_docstring(pd.read_csv) \
-  + ","+extract_params_docstring(CSVLoader.__init__, only_defaults=True) \
+  + ","+extract_params_docstring(SimpleCSVLoader.__init__, only_defaults=True) \
   + ",force_valid_ids=False,id=None,scheduler=None,tracer=None,predictor=None,storage=None,input_descriptors=[],output_descriptors=[])"
 try:
-    CSVLoader.__init__.__func__.__doc__ = csv_docstring
+    SimpleCSVLoader.__init__.__func__.__doc__ = csv_docstring
 except:
     try:
-        CSVLoader.__init__.__doc__ = csv_docstring
+        SimpleCSVLoader.__init__.__doc__ = csv_docstring
     except:
         pass
 
