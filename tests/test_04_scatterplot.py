@@ -4,8 +4,8 @@ from progressivis.vis import MCScatterPlot
 from progressivis.datasets import get_dataset
 from progressivis.stats import RandomTable
 from progressivis.core import aio
-from . import ProgressiveTest
-
+from . import ProgressiveTest, skipIf
+import os
 
 def print_len(x):
     if x is not None:
@@ -60,6 +60,7 @@ class TestScatterPlot(ProgressiveTest):
         aio.run_gather(csv.scheduler().start(), sts)
         self.assertEqual(len(csv.result), 30000)
 
+    @skipIf(os.getenv('TRAVIS'), 'skipped because is killed (sometimes) by the system on CI')
     def test_scatterplot2(self):
         s = self.scheduler(clean=True)
         with s:
