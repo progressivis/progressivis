@@ -17,8 +17,6 @@ class TestDistinct(ProgressiveTest):
 
     def test_distinct_categorical(self):
         s = self.scheduler()
-        #csv = SimpleCSVLoader('https://s3.amazonaws.com/nyc-tlc/trip+data/yellow_tripdata_2015-01.csv',
-        #                      index_col=False,  nrows=100_000, scheduler=s)
         csv = SimpleCSVLoader(get_dataset('nyc_taxis'), index_col=False,  nrows=100_000, scheduler=s)
         dist = Distinct(scheduler=s)
         dist.input[0] = csv.output.result
