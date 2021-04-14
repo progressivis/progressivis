@@ -1,4 +1,4 @@
-from . import ProgressiveTest
+from . import ProgressiveTest, skip
 import numpy as np
 from progressivis import Print
 from progressivis.io import SimpleCSVLoader
@@ -17,8 +17,9 @@ class TestDistinct(ProgressiveTest):
 
     def test_distinct_categorical(self):
         s = self.scheduler()
-        csv = SimpleCSVLoader('https://s3.amazonaws.com/nyc-tlc/trip+data/yellow_tripdata_2015-01.csv',
-                              index_col=False,  nrows=100_000, scheduler=s)
+        #csv = SimpleCSVLoader('https://s3.amazonaws.com/nyc-tlc/trip+data/yellow_tripdata_2015-01.csv',
+        #                      index_col=False,  nrows=100_000, scheduler=s)
+        csv = SimpleCSVLoader(get_dataset('nyc_taxis'), index_col=False,  nrows=100_000, scheduler=s)
         dist = Distinct(scheduler=s)
         dist.input[0] = csv.output.result
         prt = Print(proc=self.terse, scheduler=s)
@@ -27,7 +28,7 @@ class TestDistinct(ProgressiveTest):
         res = dist.result
         self.assertEqual(res['passenger_count'], {0, 1, 2, 3, 4, 5, 6, 9})
         self.assertEqual(res['trip_distance'], None)
-        self.assertEqual(res['payment_type'], {1, 2, 3, 4, MIN_INT64})
+        self.assertEqual(res['payment_type'], {1, 2, 3, 4})
 
     def test_distinct_float(self):
         s = self.scheduler()

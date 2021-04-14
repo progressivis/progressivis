@@ -5,6 +5,7 @@ from .random import generate_random_csv, generate_random_multivariate_normal_csv
 from .wget import wget_file
 import bz2
 import zlib
+import pandas as pd
 
 from functools import partial
 
@@ -30,6 +31,13 @@ def get_dataset(name, **kwds):
         return wget_file(filename='%s/mnist_784.csv'%DATA_DIR,
                          url='https://datahub.io/machine-learning/mnist_784/r/mnist_784.csv',
                          **kwds)
+    if name == 'nyc_taxis':
+        nyc_taxis_file = f"{DATA_DIR}/nyc_taxis.csv"
+        if not os.path.exists(nyc_taxis_file):
+            df = pd.read_csv('https://s3.amazonaws.com/nyc-tlc/trip+data/yellow_tripdata_2015-01.csv',
+                             index_col=False,  nrows=200_000)
+            df.to_csv(nyc_taxis_file)
+        return nyc_taxis_file
     if name.startswith('cluster:'):
         fname = name[len('cluster:'):] + ".txt"
         return wget_file(filename='%s/%s'%(DATA_DIR, fname),

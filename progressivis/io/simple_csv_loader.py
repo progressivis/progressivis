@@ -177,7 +177,7 @@ class SimpleCSVLoader(TableModule):
             else:
                 self.result.append(df)
         if self._nrows is not None and self.result is not None and len(self.result) >= self._nrows:
-            self.close()
+            #self.close()
             return self._return_run_step(self.state_ready, steps_run=creates)
         #print("Progress: ", self.get_progress())
         return self._return_run_step(self.state_ready, steps_run=creates)
