@@ -36,6 +36,8 @@ class SimpleCSVLoader(TableModule):
         csv_kwds['compression'] = None
         self._encoding = csv_kwds.get('encoding', None)
         csv_kwds['encoding'] = None
+        self._nrows = csv_kwds.get('nrows')
+        csv_kwds['nrows'] = None # nrows clashes with chunksize
         self._rows_read = 0
         if filter_ is not None and not callable(filter_):
             raise ProgressiveError('filter parameter should be callable or None')
@@ -112,22 +114,21 @@ class SimpleCSVLoader(TableModule):
                 fn_slot = self.get_input_slot('filenames')
                 if fn_slot is None or fn_slot.output_module is None:
                     return self.state_terminated
-                if True:
-                    fn_slot.update(run_number)
-                    if fn_slot.deleted.any() or fn_slot.updated.any():
-                        raise ProgressiveError('Cannot handle input file changes')
-                    df = fn_slot.data()
-                    while self.parser is None:
-                        indices = fn_slot.created.next(1)
-                        if indices.stop==indices.start:
-                            return self.state_blocked
-                        filename = df.at[indices.start, 'filename']
-                        try:
-                            self.parser = pd.read_csv(self.open(filename), **self.csv_kwds)
-                        except IOError as e:
-                            logger.error('Cannot open file %s: %s', filename, e)
-                            self.parser = None
-                        # fall through
+                fn_slot.update(run_number)
+                if fn_slot.deleted.any() or fn_slot.updated.any():
+                    raise ProgressiveError('Cannot handle input file changes')
+                df = fn_slot.data()
+                while self.parser is None:
+                    indices = fn_slot.created.next(1)
+                    if indices.stop==indices.start:
+                        return self.state_blocked
+                    filename = df.at[indices.start, 'filename']
+                    try:
+                        self.parser = pd.read_csv(self.open(filename), **self.csv_kwds)
+                    except IOError as e:
+                        logger.error('Cannot open file %s: %s', filename, e)
+                        self.parser = None
+                    # fall through
         return self.state_ready
 
     def run_step(self,run_number,step_size, howlong):
@@ -145,8 +146,7 @@ class SimpleCSVLoader(TableModule):
             raise ProgressiveStopIteration('Unexpected situation')
         logger.info('loading %d lines', step_size)
         try:
-            if True:
-                df = self.parser.read(step_size) # raises StopIteration at EOF
+            df = self.parser.read(step_size) # raises StopIteration at EOF
         except StopIteration:
             self.close()
             fn_slot = self.get_input_slot('filenames')
@@ -168,15 +168,17 @@ class SimpleCSVLoader(TableModule):
             logger.info('Loaded %d lines', self._rows_read)
             if self.force_valid_ids:
                 force_valid_id_columns(df)
-            if True:
-                if self.result is None:
-                    self._table_params['name'] = self.generate_table_name('table')
-                    self._table_params['dshape'] = dshape_from_dataframe(df)
-                    self._table_params['data'] = df
-                    self._table_params['create'] = True
-                    self.result = Table(**self._table_params)
-                else:
-                    self.result.append(df)
+            if self.result is None:
+                self._table_params['name'] = self.generate_table_name('table')
+                self._table_params['dshape'] = dshape_from_dataframe(df)
+                self._table_params['data'] = df
+                self._table_params['create'] = True
+                self.result = Table(**self._table_params)
+            else:
+                self.result.append(df)
+        if self._nrows is not None and self.result is not None and len(self.result) >= self._nrows:
+            self.close()
+            return self._return_run_step(self.state_ready, steps_run=creates)
         #print("Progress: ", self.get_progress())
         return self._return_run_step(self.state_ready, steps_run=creates)
 
