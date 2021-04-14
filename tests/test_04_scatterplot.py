@@ -60,7 +60,7 @@ class TestScatterPlot(ProgressiveTest):
         aio.run_gather(csv.scheduler().start(), sts)
         self.assertEqual(len(csv.result), 30000)
 
-    #@skipIf(os.getenv('TRAVIS'), 'skipped because is killed (sometimes) by the system on CI')
+    @skipIf(os.getenv('TRAVIS'), 'skipped because is killed (sometimes) by the system on CI')
     def test_scatterplot2(self):
         s = self.scheduler(clean=True)
         with s:
