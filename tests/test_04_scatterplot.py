@@ -60,7 +60,7 @@ class TestScatterPlot(ProgressiveTest):
         aio.run_gather(csv.scheduler().start(), sts)
         self.assertEqual(len(csv.result), 30000)
 
-    @skipIf(os.getenv('TRAVIS'), 'skipped because is killed (sometimes) by the system on CI')
+    #@skipIf(os.getenv('TRAVIS'), 'skipped because is killed (sometimes) by the system on CI')
     def test_scatterplot2(self):
         s = self.scheduler(clean=True)
         with s:
@@ -75,7 +75,7 @@ class TestScatterPlot(ProgressiveTest):
             prt.input[0] = sp.output.result
         finp1 = fake_input(s, "variable_1", 6, {'_1': LOWER_X, '_2': LOWER_Y})
         finp2 = fake_input(s, "variable_2", 6, {'_1': UPPER_X, '_2': UPPER_Y})
-        sts = sleep_then_stop(s, 30)
+        sts = sleep_then_stop(s, 20)
         aio.run_gather(sp.scheduler().start(), finp1, finp2, sts)
         js = sp.to_json()
         x, y, _ = zip(*js['sample']['data'])
