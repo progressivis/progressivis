@@ -63,8 +63,8 @@ class _Loc(_BaseLoc):
 
     def __getitem__(self, key):
         index, col_key, raw_index = self.parse_key_to_bitmap(key)
-        if not (is_slice(raw_index) or index in self._table._index):
-            diff_ = index - self._table._index
+        if not (is_slice(raw_index) or index in self._table.index):
+            diff_ = index - self._table.index
             raise KeyError(f"Not existing indices {diff_}")
         if isinstance(raw_index, integer_types):
             row = self._table.row(raw_index)
@@ -111,7 +111,7 @@ class _At(_BaseLoc):
 
     def __getitem__(self, key):
         index, col_key = self.parse_key(key)
-        if index not in self._table._index:
+        if index not in self._table.index:
             raise KeyError(f"Not existing indice {index}")
         return self._table[col_key][index]
 
@@ -172,7 +172,7 @@ class BaseTable(metaclass=ABCMeta):
 
     def info_row(self, row, width):
         "Return a description for a row, used in `repr`"
-        row_id = row if row in self._index else -1
+        row_id = row if row in self.index else -1
         rep = "{0:{width}}|".format(row_id, width=width)
         for name in self.columns:
             col = self[name]
@@ -225,10 +225,10 @@ class BaseTable(metaclass=ABCMeta):
 
     def index_to_mask(self):
         ret = np.zeros(self.last_id+1, dtype=bool)
-        if self._index.max() >= self.last_id+1:
-            ret[self._index & bitmap(range(self.last_id+1))] = True
+        if self.index.max() >= self.last_id+1:
+            ret[self.index & bitmap(range(self.last_id+1))] = True
         else:
-            ret[self._index] = True
+            ret[self.index] = True
         return ret
         # return np.array(((elt in self.index) for elt in range(self.last_id+1)))
 
@@ -571,7 +571,7 @@ class BaseTable(metaclass=ABCMeta):
             updates = self._changes.compute_updates(start, now, mid,
                                                     cleanup=cleanup)
             if updates is None:
-                updates = IndexUpdate(created=bitmap(self._index))
+                updates = IndexUpdate(created=bitmap(self.index))
             return updates
         return None
 
@@ -600,7 +600,7 @@ class BaseTable(metaclass=ABCMeta):
 
     def iterrows(self):
         "Return an iterator returning rows and their ids"
-        return map(self.row, iter(self._index))
+        return map(self.row, iter(self.index))
 
     def last(self, key=None):
         "Return the last row"
@@ -622,7 +622,7 @@ class BaseTable(metaclass=ABCMeta):
         if not bm:
             return
         if isinstance(key, slice):
-            if not (bm.min() in self._index and bm.max() in self._selection):
+            if not (bm.min() in self.index and bm.max() in self._selection):
                 # accept holes when key is a slice
                 raise ValueError('Invalid locs')
         elif bm not in self.index:
@@ -1032,7 +1032,7 @@ class IndexTable(BaseTable):
     @property
     def index(self):
         "Return the object in change of indexing this table"
-        return self._index.freeze()
+        return self._index  # .freeze()
 
     @index.setter
     def index(self, indices):
@@ -1041,7 +1041,7 @@ class IndexTable(BaseTable):
         if indices not in self._observed.index:
             raise ValueError(
                 f"Invalid indices {indices-self._observed.index}")
-        created_ = indices - self._index
+        created_ = indices - self.index
         if created_:
             self.add_created(created_)
         deleted_ = self._index - indices
