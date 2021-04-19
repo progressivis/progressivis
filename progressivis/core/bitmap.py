@@ -5,7 +5,7 @@ relying on pyroaring RoaringBitmaps.
 
 import array
 
-from pyroaring import BitMap
+from pyroaring import BitMap, FrozenBitMap
 import numpy as np
 from collections.abc import Iterable
 # pragma no cover
@@ -31,6 +31,9 @@ class bitmap(BitMap, object):
     def clear(self):
         "Clear the bitmap in-place"
         self &= NIL_BITMAP
+
+    def freeze(self):
+        return bitmap(FrozenBitMap(self))
 
     def __contains__(self, other):
         if isinstance(other, _integer_types):

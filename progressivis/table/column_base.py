@@ -7,10 +7,10 @@ from abc import ABCMeta, abstractmethod, abstractproperty
 import numpy as np
 
 from progressivis.core.config import get_option
-from progressivis.core.utils import integer_types
 
 
 logger = logging.getLogger(__name__)
+
 
 class _Loc(object):
     # pylint: disable=too-few-public-methods
@@ -20,7 +20,8 @@ class _Loc(object):
     def parse_loc(self, loc):
         "Nomalize the loc"
         if isinstance(loc, tuple):
-            raise ValueError('Location accessor not implemented for key "%s"' % loc)
+            raise ValueError(
+                f'Location accessor not implemented for key "{loc}"')
         return self.column.id_to_index(loc)
 
     def __delitem__(self, loc):
@@ -34,6 +35,7 @@ class _Loc(object):
     def __setitem__(self, loc, value):
         index = self.parse_loc(loc)
         self.column[index] = value
+
 
 class BaseColumn(metaclass=ABCMeta):
     """
@@ -72,14 +74,16 @@ class BaseColumn(metaclass=ABCMeta):
 
     @abstractproperty
     def fillvalue(self):
-        "Return the default value of elements created when the column is enlarged"
+        """
+        Return the default value for elements created
+        when the column is enlarged
+        """
         pass
 
     def id_to_index(self, loc, as_slice=True):
         "Convert an identifier to an index"
         # pylint: disable=unused-argument
         return self.index.id_to_index(loc, as_slice)
-
 
     def update(self):
         """
@@ -94,7 +98,9 @@ class BaseColumn(metaclass=ABCMeta):
 
     def __str__(self):
         classname = self.__class__.__name__
-        rep = '%s("%s", dshape=%s)[%d]' % (classname, self.name, str(self.dshape), len(self))
+        rep = '%s("%s", dshape=%s)[%d]' % (classname, self.name,
+                                           str(self.dshape),
+                                           len(self))
         return rep
 
     def info_contents(self):
@@ -103,7 +109,7 @@ class BaseColumn(metaclass=ABCMeta):
         rep = ''
         max_rows = get_option('display.max_rows')
         for row in range(min(max_rows, length)):
-            rep += ("\n    %d: %s"%(self.id_to_index(row), self[row]))
+            rep += ("\n    %d: %s" % (self.id_to_index(row), self[row]))
         if max_rows and length > max_rows:
             rep += "\n..."
         return rep
@@ -164,7 +170,8 @@ class BaseColumn(metaclass=ABCMeta):
 
     @abstractmethod
     def set_shape(self, shape):
-        "Set the shape of that column. The semantics can be different than that of numpy."
+        """Set the shape of that column.
+        The semantics can be different than that of numpy."""
         pass
 
     @abstractproperty
@@ -196,21 +203,21 @@ class BaseColumn(metaclass=ABCMeta):
         length = self.size
         if length == 0:
             return None
-        return self[length-1] # the last element is never -1
+        return self[length-1]  # the last element is never -1
 
-    def index_to_chunk(self, index):
-        "Convert and index to its chunk index"
-        if isinstance(index, integer_types):
-            index = (index, )
-        chunks = self.chunks
-        return [i // c for i, c in zip(index, chunks)]
+    # def index_to_chunk(self, index):
+    #     "Convert and index to its chunk index"
+    #     if isinstance(index, integer_types):
+    #         index = (index, )
+    #     chunks = self.chunks
+    #     return [i // c for i, c in zip(index, chunks)]
 
-    def chunk_to_index(self, chunk):
-        "Convert a chunk index to its index"
-        if isinstance(chunk, integer_types):
-            chunk = (chunk, )
-        chunks = self.chunks
-        return [i * c for i, c in zip(chunk, chunks)]
+    # def chunk_to_index(self, chunk):
+    #     "Convert a chunk index to its index"
+    #     if isinstance(chunk, integer_types):
+    #         chunk = (chunk, )
+    #     chunks = self.chunks
+    #     return [i * c for i, c in zip(chunk, chunks)]
 
     @property
     def changes(self):
@@ -264,12 +271,6 @@ class BaseColumn(metaclass=ABCMeta):
 
     def __rand__(self, other):
         return other.binary(operator.and_, self)
-
-    # def __div__(self, other):
-    #     return self.binary(operator.div, other)
-
-    # def __rdiv__(self, other):
-    #     return other.binary(operator.div, self)
 
     def __eq__(self, other):
         return self.binary(operator.eq, other)

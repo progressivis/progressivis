@@ -28,11 +28,13 @@ class Column(BaseColumn):
                  shape=None, chunks=None, data=None, indices=None):
         """Create a new column.
 
-        if index is None and self.index return None, a new index and dataset are created.
+        if index is None and self.index return None, a new index and
+        dataset are created.
         """
         super(Column, self).__init__(name, index, base=base)
         if storagegroup is None:
-            if index is not None and hasattr(index, 'storagegroup'): # i.e. isinstance(index, Table)
+            if index is not None and hasattr(index, 'storagegroup'):
+                # i.e. isinstance(index, Table)
                 storagegroup = index.storagegroup
             else:
                 storagegroup = Group.default(name=get_random_name('column_'))
@@ -40,10 +42,11 @@ class Column(BaseColumn):
         self.dataset = None
         self._dshape = None
         if self.index is None:
-            if data is not None: # check before creating everything
-                l = len(data)
-                if indices and l != len(indices):
-                    raise ValueError('Bad index length (%d/%d)', len(indices), l)
+            if data is not None:  # check before creating everything
+                length = len(data)
+                if indices and length != len(indices):
+                    raise ValueError('Bad index length (%d/%d)',
+                                     len(indices), length)
             self._complete_column(dshape, fillvalue, shape, chunks, data)
             if data is not None:
                 self.append(data, indices)
@@ -70,16 +73,16 @@ class Column(BaseColumn):
     def append(self, data, indices=None):
         if data is None:
             return
-        l = len(data)
+        length = len(data)
         is_array = isinstance(data, (np.ndarray, list, BaseColumn))
-        if indices is not None and len(indices) != l:
-            raise ValueError('Bad index length (%d/%d)', len(indices), l)
+        if indices is not None and len(indices) != length:
+            raise ValueError('Bad index length (%d/%d)', len(indices), length)
         indices = self._allocate(len(data), indices)
         if is_array:
             indices = indices_to_slice(indices)
-            self[indices] = data[0:l]
+            self[indices] = data[0:length]
         else:
-            for i in range(l):
+            for i in range(length):
                 self[indices[i]] = data[i]
 
     def add(self, value, index=None):
@@ -93,19 +96,20 @@ class Column(BaseColumn):
     def _complete_column(self, dshape, fillvalue, shape, chunks, data):
         if dshape is None:
             if data is None:
-                raise ValueError('Cannot create column "%s" without dshape nor data', self.name)
+                raise ValueError(
+                    'Cannot create column "%s" without dshape nor data',
+                    self.name)
             elif hasattr(data, 'dshape'):
                 dshape = data.dshape
             elif hasattr(data, 'dtype'):
                 dshape = np_dshape(data)
             else:
-                raise ValueError('Cannot create column "%s" from data %s', self.name, data)
-        dshape = dshape_create(dshape) # make sure it is valid
+                raise ValueError(
+                    'Cannot create column "%s" from data %s',
+                    self.name, data)
+        dshape = dshape_create(dshape)  # make sure it is valid
         if shape is None and data is not None:
-            shape=dshape.shape
-        #from .column_id import IdColumn
-        #self._index = IdColumn(self._storagegroup)
-        #self._index.create_dataset()
+            shape = dshape.shape
         self._index = IndexTable()
         self.create_dataset(dshape=dshape, fillvalue=fillvalue,
                             shape=shape, chunks=chunks)

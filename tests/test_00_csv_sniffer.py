@@ -31,14 +31,16 @@ class TestCSVSniffer(ProgressiveTest):
 
     def with_delimiter(self, delimiter):
         tmpfile = save_csv(".csv", csv_with_delimiter(delimiter))
-        sniffer = CSVSniffer(tmpfile)
-        dialect = sniffer.dialect()
-        self.assertEqual(dialect.delimiter, delimiter)
-        self.assertEqual(dialect.lineterminator, '\r\n')
-        df = sniffer.dataframe()
-        self.assertTrue(DF.equals(df))
-        self.assertEqual(sniffer.params['names'], ['a', 'b', 'c'])
-        os.unlink(tmpfile)
+        try:
+            sniffer = CSVSniffer(tmpfile)
+            dialect = sniffer.dialect()
+            self.assertEqual(dialect.delimiter, delimiter)
+            self.assertEqual(dialect.lineterminator, '\r\n')
+            df = sniffer.dataframe()
+            self.assertTrue(DF.equals(df))
+            self.assertEqual(sniffer.params['names'], ['a', 'b', 'c'])
+        finally:
+            os.unlink(tmpfile)
         
     def test_03_delimiter(self):
         self.with_delimiter(';')
@@ -50,8 +52,10 @@ class TestCSVSniffer(ProgressiveTest):
 
     def test_04_usecols(self):
         tmpfile = save_csv(".csv", csv_with_delimiter())
-        sniffer = CSVSniffer(tmpfile, usecols=['a', 'b'])
-        dialect = sniffer.dialect()
-        df = sniffer.dataframe()
-        self.assertEqual(sniffer.params['names'], ['a', 'b'])
-        os.unlink(tmpfile)
+        try:
+            sniffer = CSVSniffer(tmpfile, usecols=['a', 'b'])
+            dialect = sniffer.dialect()
+            df = sniffer.dataframe()
+            self.assertEqual(sniffer.params['names'], ['a', 'b'])
+        finally:
+            os.unlink(tmpfile)

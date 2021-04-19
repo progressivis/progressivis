@@ -2,8 +2,7 @@ from os import getenv
 import sys
 from unittest import TestCase, skip, skipIf, main
 
-from progressivis import (log_level, logging,
-                          Scheduler)
+from progressivis import (log_level, logging, Scheduler)
 from progressivis.storage import init_temp_dir_if, cleanup_temp_dir
 import numpy as np
 
