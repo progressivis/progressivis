@@ -14,7 +14,7 @@ class PsDict(dict):
             assert isinstance(other, dict)
         else:
             other = {}
-        super().__init__(**other, **kwargs)
+        super().__init__(other, **kwargs)
         self._index = None
         self._deleted = {}
         self._inverse = None

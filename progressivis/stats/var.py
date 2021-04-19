@@ -106,8 +106,7 @@ class Var(TableModule):
     inputs = [SlotDescriptor('table', type=Table, required=True)]
 
     def __init__(self, columns=None, **kwds):
-        super().__init__(dataframe_slot='table', **kwds)
-        self._columns = columns
+        super().__init__(**kwds)
         self._data = {}
         self.default_step_size = 1000
 
