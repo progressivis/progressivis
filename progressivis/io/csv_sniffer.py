@@ -49,8 +49,16 @@ class CSVSniffer:
         self.delimiter = widgets.VBox([self.delimiter, self.delim_other],
                                       description="Delimiter",
                                       layout=layout)
-        self.columns = widgets.HBox(label="Columns")
-        self.box = widgets.VBox([self.delimiter, self.columns, self.tab])
+        self.columns = widgets.Select(disabled=True,
+                                      rows=7)
+        self.columns.observe(self._columns_cb, names='value')
+        self.column = {}
+        self.no_detail = widgets.Label(value="No Column Selected")
+        self.details = widgets.Box([self.no_detail],
+                                   label="Details")
+        self.top = widgets.HBox([self.delimiter, self.columns, self.details])
+        self.box = widgets.VBox([self.top, self.tab])
+        self.column_info = []
         self.clear()
         self.dataframe()
 
@@ -59,6 +67,11 @@ class CSVSniffer:
         # print(f"Delimiter: '{delim}'")
         self.set_delimiter(delim)
 
+    def _columns_cb(self, change):
+        column = change['new']
+        # print(f"Column: '{column}'")
+        self.show_column(column)
+
     def set_delimiter(self, delim):
         if self._dialect.delimiter == delim:
             return
@@ -66,15 +79,9 @@ class CSVSniffer:
         self._dialect.delimiter = delim  # TODO check valid delim
         self.delimiter.value = delim
         self.tab.selected_index = 1
-        try:
-            if self._df is not None:
-                self._reset()
-            self.dataframe(force=True)
-        except ValueError as e:
-            self._df = None
-            self.df_text.value = f'''
-<pre style="white-space: pre">Error {quote_html(repr(e))}</pre>
-'''
+        if self._df is not None:
+            self._reset()
+        self.dataframe(force=True)
 
     def _reset(self):
         args = self._args.copy()
@@ -136,9 +143,19 @@ class CSVSniffer:
             return self._df
         self.params['dialect'] = self.dialect()
         strin = io.StringIO(self.head())
-        self._df = pd.read_csv(strin, **self.params)
+        try:
+            self._df = pd.read_csv(strin, **self.params)
+        except ValueError as e:
+            self._df = None
+            self.df_text.value = f'''
+<pre style="white-space: pre">Error {quote_html(repr(e))}</pre>
+'''
+        else:
+            with pd.option_context('display.max_rows', self.lines,
+                                   'display.max_columns', 0):
+                self.df_text.value = self._df._repr_html_()
+        self.dataframe_to_columns()
         self.dataframe_to_params()
-        self.df_text.value = self._df._repr_html_()
         return self._df
 
     def dataframe_to_params(self):
@@ -150,3 +167,67 @@ class CSVSniffer:
         # TODO test for existence?
         if self.params['usecols'] is None:
             self.params['usecols'] = list(df.columns)
+
+    def dataframe_to_columns(self):
+        df = self._df
+        if df is None:
+            self.columns.options = []
+            self.columns.disabled = True
+            return
+        for column in df.columns:
+            col = df[column]
+            if self.column.get(column) is None:
+                col = ColumnInfo(col)
+                self.column[column] = col
+        for column in self.column:
+            if column not in df.columns:
+                col = self.column[column]
+                col.box.close()
+                del self.column[column]
+        self.columns.options = list(df.columns)
+        self.columns.disabled = False
+
+    def show_column(self, column):
+        if column not in self.column:
+            # print(f"Not in columns: '{column}'")
+            self.details.children = [self.no_detail]
+            return
+        col = self.column[column]
+        self.details.children = [col.box]
+
+
+class ColumnInfo:
+    numeric_types = ['int32', 'int64',
+                     'uint32', 'uint64',
+                     'float32', 'float64']
+    object_types = ['object', 'string',
+                    'categorical', 'datetime']
+
+    def __init__(self, series):
+        self.series = series
+        self.name = widgets.Text(description="Name:",
+                                 value=series.name,
+                                 disabled=True)
+        self.type = widgets.Text(description="Type:",
+                                 value=series.dtype.name,
+                                 disabled=True)
+        self.use = widgets.Checkbox(description="Use:",
+                                    value=True)
+        self.nunique = widgets.Text(description="Unique vals:",
+                                    value=str(series.nunique()),
+                                    disabled=True)
+        self.rename = widgets.Text(description="Rename:",
+                                   value=series.name)
+        self.retype = widgets.Dropdown(description="Retype:",
+                                       options=self.retype_values(),
+                                       value=series.dtype.name)
+        self.box = widgets.VBox([self.name, self.type, self.use, self.nunique,
+                                 self.rename, self.retype])
+
+    def retype_values(self):
+        type = self.series.dtype.name
+        if type in self.numeric_types:
+            return self.numeric_types
+        elif type == "object":
+            return self.object_types
+        return type
