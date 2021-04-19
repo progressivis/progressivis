@@ -20,9 +20,12 @@ class OnlineVariance(object):
     """
 
     def __init__(self, ddof=1):
-        self.ddof, self.n, self.mean, self.M2 = ddof, 0, 0.0, 0.0
+        self.reset()
+        self.ddof = ddof
+
+    def reset(self):
+        self.n, self.mean, self.M2 = 0, 0.0, 0.0
         self.delta = 0
-        self.variance = 0
 
     def add(self, iterable):
         if iterable is not None:
@@ -36,8 +39,11 @@ class OnlineVariance(object):
         self.delta = datum - self.mean
         self.mean += self.delta / self.n
         self.M2 += self.delta * (datum - self.mean)
+
+    @property
+    def variance(self):
         n_ddof = self.n - self.ddof
-        self.variance = self.M2 / n_ddof if n_ddof else np.nan
+        return self.M2 / n_ddof if n_ddof else np.nan
 
     @property
     def std(self):
@@ -130,6 +136,9 @@ class Var(TableModule):
     def reset(self):
         if self.result is None:
             self.result.resize(0)
+        if self._data is not None:
+            for ov in self._data.values():
+                ov.reset()
 
     @process_slot("table", reset_cb="reset")
     @run_if_any
