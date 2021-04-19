@@ -11,8 +11,8 @@ class TestPsDict(ProgressiveTest):
         other = dict(a=1, b=2, c=3)
         d2 = PsDict(other)
         self.assertEqual(d1, d2)
-        with self.assertRaises(TypeError):
-            _ = PsDict(other, **other)
+        #with self.assertRaises(TypeError):
+        #    _ = PsDict(other, **other)
         d3 = PsDict(other, x=8, y=5)
         self.assertEqual(len(d3), 5)
 

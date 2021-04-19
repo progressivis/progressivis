@@ -29,7 +29,7 @@ class OnlineCovariance(object):
         self.n += 1
         dx = x - self.mean_x
         self.sum_x += x
-        self.sum_y += y        
+        self.sum_y += y
         self.mean_x = self.sum_x / self.n
         self.mean_y = self.sum_y / self.n
         self.cm += dx * (y - self.mean_y)
@@ -42,17 +42,6 @@ class OnlineCovariance(object):
     def cov(self):
         div_ = self.n - self.ddof
         return self.cm/div_ if div_ else np.nan
-"""
-def _prettify(dict_in):
-    res = {}
-    for k, v in dict_in:
-        lk = list(k)
-        if len(lk) == 1:
-            res[f"{lk[0]}__{lk[0]}"] = v
-            continue
-        res[f"{lk[0]}__{lk[1]}"] = v
-        res[f"{lk[1]}__{lk[0]}"] = v                
-"""
 
 class Cov(TableModule):
     """
@@ -64,7 +53,7 @@ class Cov(TableModule):
         super().__init__(**kwds)
         self._data = {}
         self.default_step_size = 1000
-        
+
     def is_ready(self):
         if self.get_input_slot('table').created.any():
             return True
@@ -93,7 +82,7 @@ class Cov(TableModule):
         if self._data is not None:
             for oc in self._data.values():
                 oc.reset()
-            
+
 
     def result_as_df(self, columns):
         """
@@ -103,7 +92,7 @@ class Cov(TableModule):
         for kx, ky in product(columns, columns):
             res.loc[kx, ky] = self.result[frozenset([kx, ky])]
         return res
-            
+
 
     @process_slot("table", reset_cb="reset")
     @run_if_any
@@ -125,7 +114,7 @@ class Cov(TableModule):
 
 class Corr(Cov):
     """
-    Compute the correlation matrix (a dict, actually) of the columns of an input table.
+    Compute the Pearson correlation matrix (a dict, actually) of the columns of an input table.
     """
     inputs = [SlotDescriptor('var', type=Table, required=True)]
 
@@ -133,7 +122,7 @@ class Corr(Cov):
         super().__init__(**kwds)
 
     @process_slot("table", reset_cb="reset")
-    @process_slot("var")    
+    @process_slot("var")
     @run_if_any
     def run_step(self, run_number, step_size, howlong):
         with self.context as ctx:
@@ -160,7 +149,7 @@ class Corr(Cov):
                     ky = lk[1]
                 corr_[k] = v/(std_[kx]*std_[ky])
             if self.result is None:
-                self.result = PsDict(other=corr_)
+                self.result = PsDict(corr_)
             else:
                 self.result.update(corr_)
             return self._return_run_step(self.next_state(dfslot), steps)
