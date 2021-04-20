@@ -35,6 +35,8 @@ class CSVSniffer:
         self._head = ""
         self._dialect = None
         self._df = None
+        self._rename = None
+        self._usecols = None
         layout = widgets.Layout(border='solid')
         self.head_text = widgets.HTML()
         self.df_text = widgets.HTML()
@@ -44,19 +46,29 @@ class CSVSniffer:
         self.delimiter = widgets.RadioButtons(
             options=list(zip(self.delimiters, self.del_values)))
         self.delimiter.observe(self._delimiter_cb, names='value')
-        self.delim_other = widgets.Text()
+        self.delim_other = widgets.Text(description='Other:')
         self.delim_other.observe(self._delimiter_cb, names='value')
-        self.delimiter = widgets.VBox([self.delimiter, self.delim_other],
-                                      description="Delimiter",
-                                      layout=layout)
+        self.delimiter = widgets.VBox([
+            widgets.Label("Delimiter:"),
+            self.delimiter, self.delim_other],
+            layout=layout)
         self.columns = widgets.Select(disabled=True,
                                       rows=7)
         self.columns.observe(self._columns_cb, names='value')
         self.column = {}
         self.no_detail = widgets.Label(value="No Column Selected")
-        self.details = widgets.Box([self.no_detail],
-                                   label="Details")
-        self.top = widgets.HBox([self.delimiter, self.columns, self.details])
+        self.details = widgets.Box([
+            self.no_detail],
+            layout=layout,
+            label="Details")
+        self.top = widgets.HBox([
+            self.delimiter,
+            widgets.VBox([
+                widgets.Label("Columns:"),
+                self.columns,
+                ],
+                layout=layout),
+            self.details])
         self.box = widgets.VBox([self.top, self.tab])
         self.column_info = []
         self.clear()
@@ -87,8 +99,10 @@ class CSVSniffer:
         args = self._args.copy()
         self.params = {'index_col': False}
         for name, param in self.signature.parameters.items():
-            if name != "sep" and param.default is not inspect._empty:
+            if name not in ['sep', 'index_col'] and \
+               param.default is not inspect._empty:
                 self.params[name] = args.pop(name, param.default)
+
         if args:
             raise ValueError(f"extra keywords arguments {args}")
 
@@ -144,6 +158,7 @@ class CSVSniffer:
         self.params['dialect'] = self.dialect()
         strin = io.StringIO(self.head())
         try:
+            # print(f"read_csv params: {self.params}")
             self._df = pd.read_csv(strin, **self.params)
         except ValueError as e:
             self._df = None
@@ -177,9 +192,9 @@ class CSVSniffer:
         for column in df.columns:
             col = df[column]
             if self.column.get(column) is None:
-                col = ColumnInfo(col)
+                col = ColumnInfo(self, col)
                 self.column[column] = col
-        for column in self.column:
+        for column in list(self.column):
             if column not in df.columns:
                 col = self.column[column]
                 col.box.close()
@@ -195,6 +210,20 @@ class CSVSniffer:
         col = self.column[column]
         self.details.children = [col.box]
 
+    def rename_columns(self):
+        names = [self.column[col].rename.value
+                 for col in self._df.columns]
+        self._rename = names
+        # print(f"Renames: {names}")
+
+    def usecols_columns(self):
+        names = [col for col in self._df.columns
+                 if self.column[col].use.value]
+        if names == list(self._df.columns):
+            self._usecols = None
+        else:
+            self._usecols = names
+
 
 class ColumnInfo:
     numeric_types = ['int32', 'int64',
@@ -203,26 +232,32 @@ class ColumnInfo:
     object_types = ['object', 'string',
                     'categorical', 'datetime']
 
-    def __init__(self, series):
+    def __init__(self, sniffer, series):
+        self.sniffer = sniffer
         self.series = series
-        self.name = widgets.Text(description="Name:",
+        self.name = widgets.Text(description="Column:",
                                  value=series.name,
+                                 continuous_update=False,
                                  disabled=True)
         self.type = widgets.Text(description="Type:",
                                  value=series.dtype.name,
                                  disabled=True)
         self.use = widgets.Checkbox(description="Use:",
                                     value=True)
-        self.nunique = widgets.Text(description="Unique vals:",
-                                    value=str(series.nunique()),
-                                    disabled=True)
+        self.use.observe(self.usecols_column, names='value')
         self.rename = widgets.Text(description="Rename:",
                                    value=series.name)
+        self.rename.observe(self.rename_column, names='value')
         self.retype = widgets.Dropdown(description="Retype:",
                                        options=self.retype_values(),
                                        value=series.dtype.name)
-        self.box = widgets.VBox([self.name, self.type, self.use, self.nunique,
-                                 self.rename, self.retype])
+        self.nunique = widgets.Text(description="Unique vals:",
+                                    value=str(series.nunique()),
+                                    disabled=True)
+        self.box = widgets.VBox([self.name, self.rename,
+                                 self.type, self.retype,
+                                 self.use, self.nunique,
+                                 ])
 
     def retype_values(self):
         type = self.series.dtype.name
@@ -231,3 +266,9 @@ class ColumnInfo:
         elif type == "object":
             return self.object_types
         return type
+
+    def rename_column(self, change):
+        self.sniffer.rename_columns()
+
+    def usecols_column(self, change):
+        self.sniffer.usecols_columns()
