@@ -23,7 +23,7 @@ class Testvar(ProgressiveTest):
 
     def test_var(self):
         s = self.scheduler()
-        random = RandomTable(1, rows=1000, scheduler=s)
+        random = RandomTable(1, rows=10_000, scheduler=s)
         var=Var(scheduler=s)
         var.input[0] = random.output.result
         pr=Print(proc=self.terse, scheduler=s)

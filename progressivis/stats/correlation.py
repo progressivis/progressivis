@@ -7,7 +7,7 @@ from ..core.slot import SlotDescriptor
 from ..table.table import Table
 from ..table.module import TableModule
 from ..utils.psdict import PsDict
-from . import Var
+from .var import OnlineVariance
 from ..core.decorators import process_slot, run_if_any
 
 
@@ -43,15 +43,18 @@ class OnlineCovariance(object):
         div_ = self.n - self.ddof
         return self.cm/div_ if div_ else np.nan
 
-class Cov(TableModule):
+class Corr(TableModule):
     """
     Compute the covariance matrix (a dict, actually) of the columns of an input table.
     """
     inputs = [SlotDescriptor('table', type=Table, required=True)]
 
-    def __init__(self, **kwds):
+    def __init__(self, mode='Pearson', **kwds):
+        assert mode in ('Pearson', 'CovarianceOnly')
         super().__init__(**kwds)
+        self._is_corr = (mode == 'Pearson')
         self._data = {}
+        self._vars = {}
         self.default_step_size = 1000
 
     def is_ready(self):
@@ -61,7 +64,7 @@ class Cov(TableModule):
 
     def op(self, chunk):
         cols = chunk.columns
-        ret = {}
+        cov_ = {}
         done_ = set()
         for cx, cy in product(cols, cols):
             key = frozenset([cx, cy])
@@ -73,8 +76,27 @@ class Cov(TableModule):
                 self._data[key] = data
             data.add(chunk[cx], chunk[cy])
             done_.add(key)
-            ret[key] = data.cov
-        return ret
+            cov_[key] = data.cov
+        if not self._is_corr:
+            return cov_ # covariance only
+        std_ = {}
+        for c in cols:
+            data = self._vars.get(c)
+            if data is None:
+                data = OnlineVariance()
+                self._vars[c] = data
+            data.add(chunk[c])
+            std_[c] = data.std
+        corr_ = {}
+        for k, v in cov_.items():
+            lk = list(k)
+            if len(lk) == 1:
+                kx = ky = lk[0]
+            else:
+                kx = lk[0]
+                ky = lk[1]
+            corr_[k] = v/(std_[kx]*std_[ky])
+        return corr_
 
     def reset(self):
         if self.result is None:
@@ -82,6 +104,9 @@ class Cov(TableModule):
         if self._data is not None:
             for oc in self._data.values():
                 oc.reset()
+        if self._vars is not None:
+            for ov in self._vars.values():
+                ov.reset()
 
 
     def result_as_df(self, columns):
@@ -110,53 +135,3 @@ class Cov(TableModule):
             else:
                 self.result.update(cov_)
             return self._return_run_step(self.next_state(dfslot), steps)
-
-
-class Corr(Cov):
-    """
-    Compute the Pearson correlation matrix (a dict, actually) of the columns of an input table.
-    """
-    inputs = [SlotDescriptor('var', type=Table, required=True)]
-
-    def __init__(self, **kwds):
-        super().__init__(**kwds)
-
-    @process_slot("table", reset_cb="reset")
-    @process_slot("var")
-    @run_if_any
-    def run_step(self, run_number, step_size, howlong):
-        with self.context as ctx:
-            dfslot = ctx.table
-            varslot = ctx.var
-            var_data = varslot.data()
-            if var_data is None:
-                return self._return_run_step(self.state_blocked, steps_run=0)
-            varslot.clear_buffers()
-            indices = dfslot.created.next(step_size)  # returns a slice
-            steps = indices_len(indices)
-            if steps == 0:
-                return self._return_run_step(self.state_blocked, steps_run=0)
-            input_df = dfslot.data()
-            cov_ = self.op(self.filter_columns(input_df, fix_loc(indices)))
-            std_ = {k: np.sqrt(v) for (k, v) in var_data.items()}
-            corr_ = {}
-            for k, v in cov_.items():
-                lk = list(k)
-                if len(lk) == 1:
-                    kx = ky = lk[0]
-                else:
-                    kx = lk[0]
-                    ky = lk[1]
-                corr_[k] = v/(std_[kx]*std_[ky])
-            if self.result is None:
-                self.result = PsDict(corr_)
-            else:
-                self.result.update(corr_)
-            return self._return_run_step(self.next_state(dfslot), steps)
-
-    def create_dependent_modules(self, input_module, input_slot='result'):
-        s = self.scheduler()
-        self.input.table = input_module.output[input_slot]
-        self.var = Var(scheduler=s)
-        self.var.input.table = input_module.output[input_slot]
-        self.input.var = self.var.output.result
