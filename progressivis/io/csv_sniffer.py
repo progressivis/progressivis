@@ -74,16 +74,17 @@ class CSVSniffer:
     """
 
     signature = inspect.signature(pd.read_csv)
-    delimiters = [",", ";", "<TAB>", "<SPACE>", ":"]
-    del_values = [",", ";", "\t", " ", ":"]
+    delimiters = [",", ";", "<TAB>", "<SPACE>", ":", "skip initial space"]
+    del_values = [",", ";", "\t", " ", ":", "skip"]
 
-    def __init__(self,
-                 path,
-                 lines=100,
-                 **args):
+    def __init__(self, path, lines=100, **args):
         self.path = path
         self._args = args
-        self.lines = 100
+        self.lines = widgets.BoundedIntText(value=lines,
+                                            min=10, max=1000,
+                                            continuous_update=False,
+                                            description='Lines:')
+        self.lines.observe(self._lines_cb, names='value')
         self._head = ""
         self._dialect = None
         self._df = None
@@ -98,32 +99,94 @@ class CSVSniffer:
         self.tab = widgets.Tab([self.head_text, self.df_text, self.df2_text])
         for i, title in enumerate(["Head", "DataFrame", "DataFrame2"]):
             self.tab.set_title(i, title)
+        # Delimiters
         self.delimiter = widgets.RadioButtons(
+            orientation='horizontal',
             options=list(zip(self.delimiters, self.del_values)))
         self.delimiter.observe(self._delimiter_cb, names='value')
-        self.delim_other = widgets.Text(description='Other:')
+        self.delim_other = widgets.Text()  # description='Other:')
         self.delim_other.observe(self._delimiter_cb, names='value')
         self.delimiter = widgets.VBox([
-            widgets.Label("Delimiter:"),
+            # widgets.Label("Delimiter"),
             self.delimiter, self.delim_other],
             layout=layout)
+        # Dates
+        # TODO
+        self.dayfirst = widgets.Checkbox(description="Dayfirst",
+                                         value=False)
+        self.date_parser = widgets.Text(description="Date parser:",
+                                        value="")
+        self.infer_datetime = widgets.Checkbox(description="Infer datetime",
+                                               value=False)
+        self.date = widgets.VBox([
+            self.dayfirst,
+            self.infer_datetime,
+            self.date_parser],
+            layout=layout)
+        # Header
+        self.header = widgets.BoundedIntText(value=-1,
+                                             min=-1, max=1000,
+                                             continuous_update=False,
+                                             description='Header:')
+        self.skiprows = widgets.BoundedIntText(value=0,
+                                               min=0, max=1000,
+                                               continuous_update=False,
+                                               description='Skip rows:')
+        self.skiprows.observe(self._skiprows_cb, names='value')
+        # Special values
+        self.true_values = widgets.Text(description="True values",
+                                        continuous_update=False)
+        self.true_values.observe(self._true_values_cb, names='value')
+        self.false_values = widgets.Text(description="False values",
+                                         continuous_update=False)
+        self.false_values.observe(self._false_values_cb, names='value')
+        self.na_values = widgets.Text(description="NA values",
+                                      continuous_update=False)
+        self.na_values.observe(self._na_values_cb, names='value')
+        self.special_values = widgets.VBox([
+            self.true_values,
+            self.false_values,
+            self.na_values],
+            layout=layout)
+
+        # Global tab with Delimiters and Dates
+        self.global_tab = widgets.Tab([
+            self.delimiter,
+            self.date,
+            widgets.VBox([
+                self.lines,
+                self.header,
+                self.skiprows],
+                layout=layout),
+            self.special_values])
+        for i, title in enumerate(["Delimiters",
+                                   "Dates",
+                                   "Header",
+                                   "Special values"]):
+            self.global_tab.set_title(i, title)
+
+        # Column selection
         self.columns = widgets.Select(disabled=True,
                                       rows=7)
         self.columns.observe(self._columns_cb, names='value')
+        # Column details
         self.column = {}
         self.no_detail = widgets.Label(value="No Column Selected")
         self.details = widgets.Box([
             self.no_detail],
-            layout=layout,
             label="Details")
+        # Toplevel Box
         self.top = widgets.HBox([
-            self.delimiter,
+            self.global_tab,
             widgets.VBox([
-                widgets.Label("Columns:"),
+                widgets.Label("Columns"),
                 self.columns,
                 ],
                 layout=layout),
-            self.details])
+            widgets.VBox([
+                widgets.Label("Selected Column"),
+                self.details],
+                layout=layout)])
         self.cmdline = widgets.Textarea(layout=widgets.Layout(width="100%"),
                                         rows=3)
         self.testBtn = widgets.Button(description="Test")
@@ -138,6 +201,28 @@ class CSVSniffer:
         self.clear()
         self.dataframe()
 
+    def _true_values_cb(self, change):
+        # TODO
+        pass
+
+    def _false_values_cb(self, change):
+        # TODO
+        pass
+
+    def _na_values_cb(self, change):
+        # TODO
+        pass
+
+    def _skiprows_cb(self, change):
+        skip = change['new']
+        self._head = ''
+        self.params['skiprows'] = skip
+        self.dataframe(force=True)
+
+    def _lines_cb(self, change):
+        self._head = ''
+        self.dataframe(force=True)
+
     def _delimiter_cb(self, change):
         delim = change['new']
         # print(f"Delimiter: '{delim}'")
@@ -149,8 +234,11 @@ class CSVSniffer:
         self.show_column(column)
 
     def set_delimiter(self, delim):
-        if self._dialect and self._dialect.delimiter == delim:
-            return
+        if delim == "skip":
+            delim = ' '
+            if self.params.get("skipinitialspace"):
+                return
+            self.params["skipinitialspace"] = True
         self._dialect.delimiter = delim  # TODO check valid delim
         self.delim_other.value = delim
         self.delimiter.value = delim
@@ -193,7 +281,7 @@ class CSVSniffer:
         # self.cmdline.value = cmdline
 
     def clear(self):
-        self.lines = 100
+        self.lines.value = 100
         self._head = ''
         self.head_text.value = '<pre style="white-space: pre"></pre>'
         self.df_text.value = ''
@@ -211,7 +299,7 @@ class CSVSniffer:
         with fsspec.open(self.path, mode="rt", compression="infer") as inp:
             lineno = 0
             for line in inp:
-                if line and lineno < self.lines:
+                if line and lineno < self.lines.value:
                     self._head += line
                     lineno += 1
                 else:
@@ -230,6 +318,9 @@ class CSVSniffer:
         if self.params['header'] == 'infer':
             if sniffer.has_header(head):
                 self.params['header'] = 0
+                self.header.value = 0
+        else:
+            self.header.value = self.params['header']
         return self._dialect
 
     def dataframe(self, force=False):
@@ -240,13 +331,14 @@ class CSVSniffer:
         try:
             # print(f"read_csv params: {self.params}")
             self._df = pd.read_csv(strin, **self.params)
+            self.column = {}
         except ValueError as e:
             self._df = None
             self.df_text.value = f'''
 <pre style="white-space: pre">Error {quote_html(repr(e))}</pre>
 '''
         else:
-            with pd.option_context('display.max_rows', self.lines,
+            with pd.option_context('display.max_rows', self.lines.value,
                                    'display.max_columns', 0):
                 self.df_text.value = self._df._repr_html_()
         self.dataframe_to_columns()
@@ -263,7 +355,7 @@ class CSVSniffer:
 <pre style="white-space: pre">Error {quote_html(repr(e))}</pre>
 '''
         else:
-            with pd.option_context('display.max_rows', self.lines,
+            with pd.option_context('display.max_rows', self.lines.value,
                                    'display.max_columns', 0):
                 self.df2_text.value = self._df2._repr_html_()
         self.tab.selected_index = 2
@@ -295,6 +387,7 @@ class CSVSniffer:
                 del self.column[column]
         self.columns.options = list(df.columns)
         self.columns.disabled = False
+        self.show_column(df.columns[0])
 
     def show_column(self, column):
         if column not in self.column:
@@ -345,20 +438,24 @@ class CSVSniffer:
 
 
 class ColumnInfo:
-    numeric_types = ['int8', 'uint8',
-                     'int16' 'uint16',
-                     'int32', 'int64',
-                     'uint32', 'uint64',
-                     'float32', 'float64',
-                     'str']
-    object_types = ['object', 'str',
-                    'category', 'datetime']
+    numeric_types = [
+        'int8', 'uint8',
+        'int16' 'uint16',
+        'int32', 'int64',
+        'uint32', 'uint64',
+        'float32', 'float64',
+        'str'
+    ]
+    object_types = [
+        'object', 'str',
+        'category', 'datetime'
+    ]
 
     def __init__(self, sniffer, series):
         self.sniffer = sniffer
         self.series = series
         self.default_type = series.dtype.name
-        self.name = widgets.Text(description="Column:",
+        self.name = widgets.Text(description="Name:",
                                  value=series.name,
                                  continuous_update=False,
                                  disabled=True)
@@ -377,10 +474,12 @@ class ColumnInfo:
         self.retype.observe(self.retype_column, names='value')
         self.nunique = widgets.Text(description="Unique vals:",
                                     value=f"{series.nunique()}/{len(series)}")
-        self.box = widgets.VBox([self.name, self.rename,
-                                 self.type, self.retype,
-                                 self.use, self.nunique,
-                                 ])
+        self.box = widgets.VBox()
+        self.box.children = [
+            self.name, self.rename,
+            self.type, self.retype,
+            self.use, self.nunique,
+        ]
 
     def retype_values(self):
         type = self.series.dtype.name
@@ -395,6 +494,13 @@ class ColumnInfo:
 
     def usecols_column(self, change):
         self.sniffer.usecols_columns()
+
+    def _test_column_type(self, newtype):
+        try:
+            self.series.as_type(newtype)
+        except ValueError as e:
+            return e
+        return None
 
     def retype_column(self, change):
         self.sniffer.retype_columns()
