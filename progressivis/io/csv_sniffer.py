@@ -15,6 +15,57 @@ def quote_html(text):
     return text.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
 
 
+_parser_defaults = {key: val.default
+                    for key, val in inspect.signature(pd.read_csv).parameters.items()
+                    if val.default is not inspect._empty}
+
+# Borrowed from pandas
+MANDATORY_DIALECT_ATTRS = (
+    "delimiter",
+    "doublequote",
+    "escapechar",
+    "skipinitialspace",
+    "quotechar",
+    "quoting",
+)
+
+
+def _merge_with_dialect_properties(dialect, defaults):
+    if not dialect:
+        return defaults
+    kwds = defaults.copy()
+
+    for param in MANDATORY_DIALECT_ATTRS:
+        dialect_val = getattr(dialect, param)
+
+        parser_default = _parser_defaults[param]
+        provided = kwds.get(param, parser_default)
+
+        # Messages for conflicting values between the dialect
+        # instance and the actual parameters provided.
+        conflict_msgs = []
+
+        # Don't warn if the default parameter was passed in,
+        # even if it conflicts with the dialect (gh-23761).
+        if provided != parser_default and provided != dialect_val:
+            msg = (
+                f"Conflicting values for '{param}': '{provided}' was "
+                f"provided, but the dialect specifies '{dialect_val}'. "
+                "Using the dialect-specified value."
+            )
+
+            # Annoying corner case for not warning about
+            # conflicts between dialect and delimiter parameter.
+            # Refer to the outer "_read_" function for more info.
+            if not (param == "delimiter" and kwds.pop("sep_override", False)):
+                conflict_msgs.append(msg)
+
+        if conflict_msgs:
+            print("\n\n".join(conflict_msgs))
+        kwds[param] = dialect_val
+    return kwds
+
+
 class CSVSniffer:
     """
     Non progressive class to assist in specifying parameters
@@ -40,9 +91,9 @@ class CSVSniffer:
         layout = widgets.Layout(border='solid')
         self.head_text = widgets.HTML()
         self.df_text = widgets.HTML()
-        self.tab = widgets.Tab()
-        self.tab.children = [self.head_text, self.df_text]
-        self.tab.titles = ("Head", "Dataframe")
+        self.tab = widgets.Tab([self.head_text, self.df_text])
+        for i, title in enumerate(["Head", "DataFrame"]):
+            self.tab.set_title(i, title)
         self.delimiter = widgets.RadioButtons(
             options=list(zip(self.delimiters, self.del_values)))
         self.delimiter.observe(self._delimiter_cb, names='value')
@@ -69,7 +120,10 @@ class CSVSniffer:
                 ],
                 layout=layout),
             self.details])
-        self.box = widgets.VBox([self.top, self.tab])
+        self.cmdline = widgets.Text(description="Comand Line:",
+                                    # disabled=True,
+                                    layout=widgets.Layout(width="100%"))
+        self.box = widgets.VBox([self.top, self.cmdline, self.tab])
         self.column_info = []
         self.clear()
         self.dataframe()
@@ -85,14 +139,17 @@ class CSVSniffer:
         self.show_column(column)
 
     def set_delimiter(self, delim):
-        if self._dialect.delimiter == delim:
+        if self._dialect and self._dialect.delimiter == delim:
             return
-        self.delim_other.value = delim
         self._dialect.delimiter = delim  # TODO check valid delim
+        self.delim_other.value = delim
         self.delimiter.value = delim
         self.tab.selected_index = 1
         if self._df is not None:
             self._reset()
+        else:
+            self.params = _merge_with_dialect_properties(self._dialect,
+                                                         self.params)
         self.dataframe(force=True)
 
     def _reset(self):
@@ -102,9 +159,23 @@ class CSVSniffer:
             if name not in ['sep', 'index_col'] and \
                param.default is not inspect._empty:
                 self.params[name] = args.pop(name, param.default)
-
+        self.params = _merge_with_dialect_properties(self._dialect,
+                                                     self.params)
+        self.set_cmdline()
         if args:
             raise ValueError(f"extra keywords arguments {args}")
+
+    def set_cmdline(self):
+        cmdline = ""
+        defaults = self.signature.parameters
+        for key, val in self.params.items():
+            default = defaults[key].default
+            if val == default:
+                continue
+            if cmdline:
+                cmdline += ", "
+            cmdline += f"{key}={repr(val)}"
+        self.cmdline.value = cmdline
 
     def clear(self):
         self.lines = 100
@@ -139,14 +210,8 @@ class CSVSniffer:
         sniffer = csv.Sniffer()
         head = self.head()
         self._dialect = sniffer.sniff(head)
-        self.params['dialect'] = self._dialect
+        # self.params['dialect'] = self._dialect
         self.set_delimiter(self._dialect.delimiter)
-        # self.params['delimiter'] = self._dialect.delimiter
-        # self.params['doublequote'] = self._dialect.doublequote
-        # self.params['escapechar'] = self._dialect.escapechar
-        # self.params['skipinitialspace'] = self._dialect.skipinitialspace
-        # self.params['quotechar'] = self._dialect.quotechar
-        # self.params['quoting'] = self._dialect.quoting
         if self.params['header'] == 'infer':
             if sniffer.has_header(head):
                 self.params['header'] = 0
@@ -155,7 +220,7 @@ class CSVSniffer:
     def dataframe(self, force=False):
         if not force and self._df is not None:
             return self._df
-        self.params['dialect'] = self.dialect()
+        self.dialect()
         strin = io.StringIO(self.head())
         try:
             # print(f"read_csv params: {self.params}")
@@ -177,11 +242,12 @@ class CSVSniffer:
         df = self._df
         if df is None:
             return
-        if self.params['names'] is None:
-            self.params['names'] = list(df.columns)
-        # TODO test for existence?
-        if self.params['usecols'] is None:
-            self.params['usecols'] = list(df.columns)
+        # if self.params['names'] is None:
+        #     self.params['names'] = list(df.columns)
+        # # TODO test for existence?
+        # if self.params['usecols'] is None:
+        #     self.params['usecols'] = list(df.columns)
+        self.set_cmdline()
 
     def dataframe_to_columns(self):
         df = self._df
