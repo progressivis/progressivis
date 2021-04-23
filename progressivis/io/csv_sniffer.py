@@ -1,3 +1,13 @@
+'''
+Sniffer for Pandas csv_read, allows interactive specification of data types, names,
+and various parameters before loading the whole file.
+
+TODO:
+- test renaming columns
+- test with header > 0
+- test specifying alternative date formats
+- cleanup params for first stage and second stage
+'''
 import csv
 import inspect
 import io
@@ -201,17 +211,22 @@ class CSVSniffer:
         self.clear()
         self.dataframe()
 
+    def _parse_list(self, key, values):
+        split = [s for s in values.split(',') if s]
+        if split:
+            self.params[key] = split
+        else:
+            self.params.pop(key, None)
+        self.set_cmdline()
+
     def _true_values_cb(self, change):
-        # TODO
-        pass
+        self._parse_list('true_values', change['new'])
 
     def _false_values_cb(self, change):
-        # TODO
-        pass
+        self._parse_list('false_values', change['new'])
 
     def _na_values_cb(self, change):
-        # TODO
-        pass
+        self._parse_list('na_values', change['new'])
 
     def _skiprows_cb(self, change):
         skip = change['new']
