@@ -1,18 +1,12 @@
 '''
-Sniffer for Pandas csv_read, allows interactive specification of data types, names,
-and various parameters before loading the whole file.
-
-TODO:
-- test renaming columns
-- test with header > 0
-- test specifying alternative date formats
-- cleanup params for first stage and second stage
+Sniffer for Pandas csv_read, allows interactive specification of data types,
+names, and various parameters before loading the whole file.
 '''
 import csv
 import inspect
 import io
 import logging
-import pprint
+# import pprint
 
 import pandas as pd
 import fsspec
@@ -97,16 +91,22 @@ class CSVSniffer:
         self.lines.observe(self._lines_cb, names='value')
         self._head = ""
         self._dialect = None
+        self.params = {}
         self._df = None
         self._df2 = None
         self._rename = None
         self._types = None
+        # Widgets
         layout = widgets.Layout(border='solid')
         self.head_text = widgets.HTML()
         self.df_text = widgets.HTML()
         self.df2_text = widgets.HTML()
         self.error_msg = widgets.Textarea(description='Error:')
-        self.tab = widgets.Tab([self.head_text, self.df_text, self.df2_text])
+        self.tab = widgets.Tab([
+            self.head_text,
+            self.df_text,
+            self.df2_text],
+            layout=widgets.Layout(max_height='1024px'))
         for i, title in enumerate(["Head", "DataFrame", "DataFrame2"]):
             self.tab.set_title(i, title)
         # Delimiters
@@ -267,33 +267,30 @@ class CSVSniffer:
 
     def _reset(self):
         args = self._args.copy()
-        self.params = {'index_col': False}
+        self.params = {}
         for name, param in self.signature.parameters.items():
-            if name not in ['sep', 'index_col'] and \
-               param.default is not inspect._empty:
+            if name != 'sep' and param.default is not inspect._empty:
                 self.params[name] = args.pop(name, param.default)
+        self.params['index_col'] = False
         self.params = _merge_with_dialect_properties(self._dialect,
                                                      self.params)
         self.set_cmdline()
         if args:
             raise ValueError(f"extra keywords arguments {args}")
 
-    def set_cmdline(self):
+    def kwargs(self):
+        "Return the arguments to pass to pandas.csv_read"
         params = {}
         for key, val in self.params.items():
             default = _parser_defaults[key]
             if val == default:
                 continue
             params[key] = val
-        self.cmdline.value = pprint.pformat(params)
-        # for key, val in self.params.items():
-        #     default = defaults[key].default
-        #     if val == default:
-        #         continue
-        #     if cmdline:
-        #         cmdline += ", "
-        #     cmdline += f"{key}={repr(val)}"
-        # self.cmdline.value = cmdline
+        return params
+
+    def set_cmdline(self):
+        params = self.kwargs()
+        self.cmdline.value = str(params)
 
     def clear(self):
         self.lines.value = 100
@@ -313,6 +310,7 @@ class CSVSniffer:
             return self._head
         with fsspec.open(self.path, mode="rt", compression="infer") as inp:
             lineno = 0
+            # TODO assumes that newline is correctly specified to fsspec
             for line in inp:
                 if line and lineno < self.lines.value:
                     self._head += line
@@ -451,11 +449,15 @@ class CSVSniffer:
             self.params['parse_dates'] = None
         self.set_cmdline()
 
+    def load_dataframe(self):
+        "Full load the DataFrame with the GUI parameters"
+        return pd.read_csv(self.path, **self.params)
+
 
 class ColumnInfo:
     numeric_types = [
         'int8', 'uint8',
-        'int16' 'uint16',
+        'int16', 'uint16',
         'int32', 'int64',
         'uint32', 'uint64',
         'float32', 'float64',
