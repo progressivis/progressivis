@@ -2,14 +2,15 @@ import logging
 logger = logging.getLogger(__name__)
 
 import pandas as pd
-
+import numpy as np
 from progressivis import ProgressiveError, SlotDescriptor
 from progressivis.utils.errors import (ProgressiveError,
                                        ProgressiveStopIteration)
 from ..table.module import TableModule
 from ..table.table import Table
 from ..table.dshape import dshape_from_dataframe
-from ..core.utils import filepath_to_buffer, _infer_compression, force_valid_id_columns
+from ..core.utils import (filepath_to_buffer, _infer_compression,
+                          force_valid_id_columns, integer_types)
 
 
 class SimpleCSVLoader(TableModule):
@@ -19,6 +20,7 @@ class SimpleCSVLoader(TableModule):
                  filter_=None,
                  force_valid_ids=True,
                  fillvalues=None,
+                 throttle=False,
                  **kwds):
         #self._add_slots(kwds,'input_descriptors',
         #                [SlotDescriptor('filenames', type=Table,required=False)])
@@ -30,6 +32,10 @@ class SimpleCSVLoader(TableModule):
         # When called with a specified chunksize, it returns a parser
         self.filepath_or_buffer = filepath_or_buffer
         self.force_valid_ids = force_valid_ids
+        if throttle and isinstance(throttle, integer_types+(float,)):
+            self.throttle = throttle
+        else:
+            self.throttle = False
         self.parser = None
         self.csv_kwds = csv_kwds
         self._compression = csv_kwds.get('compression', "infer")
@@ -135,6 +141,8 @@ class SimpleCSVLoader(TableModule):
         if step_size==0: # bug
             logger.error('Received a step_size of 0')
             return self._return_run_step(self.state_ready, steps_run=0)
+        if self.throttle:
+            step_size = np.min([self.throttle, step_size])
         status = self.validate_parser(run_number)
         if status==self.state_terminated:
             raise ProgressiveStopIteration('no more filenames')
