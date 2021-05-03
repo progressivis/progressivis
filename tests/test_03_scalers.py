@@ -45,14 +45,14 @@ class TestScalers(ProgressiveTest):
             self.assertGreaterEqual(min(sc.result[c]), 0.0)
             self.assertLessEqual(max(sc.result[c]), 1.0)            
 
-    def test_min_max_scaler_tol(self):
+    def t_est_min_max_scaler_tol(self):
         s = self.scheduler()
         _, f = tf.mkstemp()
         print(f)
         df2.to_csv(f, index=False)
         cols = ['A', 'B']
         csv = SimpleCSVLoader(f, usecols=cols, throttle=100, scheduler=s)
-        cst = Constant(table=PsDict({'delta': -5, 'ignore_max':20}), scheduler=s)
+        cst = Constant(table=PsDict({'delta': -5, 'ignore_max':10}), scheduler=s)
         sc = MinMaxScaler(reset_threshold=10_000, scheduler=s)
         #sc.input[0] = random.output.result
         sc.create_dependent_modules(csv)

@@ -4,6 +4,7 @@ import pandas as pd
 import numexpr as ne
 import logging
 
+
 from ..core.bitmap import bitmap
 from ..core.utils import indices_len, fix_loc
 from ..core.slot import SlotDescriptor
@@ -51,7 +52,7 @@ class MinMaxScaler(TableModule):
         self._info = None
 
     def reset(self):
-        if self.result is None:
+        if self.result is not None:
             self.result.truncate()
         self._cmin.clear()
         self._cmax.clear()
@@ -118,7 +119,7 @@ class MinMaxScaler(TableModule):
 
     def maintain_info(self, yes=True):
         if yes and self._info is None:
-            self._info = PsDict({'clipped': 0, 'ignored': 0})
+            self._info = PsDict({'clipped': 0, 'ignored': 0, 'needs_changes': False})
         elif not yes:
             self._info = None
 
@@ -148,7 +149,17 @@ class MinMaxScaler(TableModule):
         self._cmin.update(min_data)
         self._cmax.update(max_data)
         self._has_cmin_cmax = True
-
+        
+    def reset_min_max(self, dfslot, min_slot, max_slot, run_number):
+        dfslot.reset()
+        dfslot.update(run_number)
+        min_slot.reset()
+        min_slot.update(run_number)
+        max_slot.reset()
+        max_slot.update(run_number)
+        self.reset() # reset all but keep the recent bounds
+        self.update_bounds(min_slot.data(), max_slot.data())
+        
     @process_slot("table", reset_cb="reset")
     @process_slot("min")
     @process_slot("max")
@@ -177,7 +188,13 @@ class MinMaxScaler(TableModule):
                     return self._return_run_step(self.state_blocked, steps_run=0)
                 if control_slot.has_buffered():
                     control_slot.clear_buffers()
-                    
+                    if self._info and self._info.get('needs_changes'):
+                        self._info['needs_changes'] = False
+                    if self._control_data.get('reset'):
+                         self.reset_min_max(dfslot, min_slot, max_slot, run_number)
+                else:
+                    if self._info and self._info.get('needs_changes'):
+                        return self._return_run_step(self.state_blocked, steps_run=0)
             if min_slot.has_buffered() or max_slot.has_buffered():
                 min_slot.clear_buffers()
                 max_slot.clear_buffers()
@@ -187,14 +204,7 @@ class MinMaxScaler(TableModule):
                             len(self.result) <= self._reset_threshold):
                             # there is not much processed data => resetting
                             # all without checking tol, etc.
-                            dfslot.reset()
-                            dfslot.update(run_number)
-                            min_slot.reset()
-                            min_slot.update(run_number)
-                            max_slot.reset()
-                            max_slot.update(run_number)
-                            self.reset() # reset all but keep the recent bounds
-                            self.update_bounds(min_data, max_data)
+                            self.reset_min_max(dfslot, min_slot, max_slot, run_number)
                             # we will process data from the beginning
                             # but with the most recent knowledge about min/max
                             return self._return_run_step(self.state_blocked, steps_run=0)
@@ -209,10 +219,13 @@ class MinMaxScaler(TableModule):
             ignore_ilocs = self.get_ignore(tbl, cols_to_ignore)
             if ignore_ilocs:
                 len_ii = len(ignore_ilocs)
-                print("CREDIT", len_ii, self.get_ignore_credit(), self._ignored)
                 if  len_ii > self.get_ignore_credit():
-                    print("NEEDS RESET!!!!")
-                    raise ValueError("NEEDS RESET!!!!")
+                    if self._info is not None:
+                        self._info['needs_changes'] = True
+                        return self._return_run_step(self.next_state(dfslot), steps//2)
+                    else:
+                        self.reset_min_max(dfslot, min_slot, max_slot, run_number)
+                        return self._return_run_step(self.state_blocked, steps_run=0)
                 self._ignored += len_ii
                 if self._info is not None:
                     self._info['ignored'] += len_ii

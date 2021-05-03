@@ -13,7 +13,7 @@ class DynVar(TableModule):
         self._vocabulary = vocabulary
         if not (init_val is None or isinstance(init_val, dict)):
             raise ProgressiveError('init_val must be a dictionary')        
-        self._table = PsDict({} if init_val is None else init_val)        
+        self.result = PsDict({} if init_val is None else init_val)        
 
     def is_input(self):
         return True
@@ -29,7 +29,7 @@ class DynVar(TableModule):
         #import pdb;pdb.set_trace()
         if not isinstance(input_, dict):
             raise ProgressiveError('Expecting a dictionary')
-        last = PsDict(self._table) # shallow copy
+        last = PsDict(self.result) # shallow copy
         values = input_
         if self._vocabulary is not None:
             values = {self._vocabulary[k]: v for k, v in values.items()}
@@ -37,7 +37,7 @@ class DynVar(TableModule):
             last[k] = v
         await self.scheduler().for_input(self)
         #last['_update'] = run_number
-        self._table.update(values)
+        self.result.update(values)
         self._has_input = True
         await aio.sleep(0)
         return ''

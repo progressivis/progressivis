@@ -2,6 +2,7 @@ import numpy as np
 import csv
 import os
 import os.path
+import pandas as pd
 
 # filename='data/bigfile.csv'
 # rows = 1000000
@@ -22,7 +23,22 @@ def generate_random_csv(filename, rows, cols, seed=1234):
         raise
     return filename
 
-
+def generate_multiscale_random_csv(filename, rows, seed=1234):
+    if os.path.exists(filename):
+        return filename
+    np.random.seed(seed)
+    df = pd.DataFrame({
+        'A': np.random.normal(0, 3, rows),
+        'B': np.random.normal(5, 2, rows),
+        'C': np.random.normal(-5, 4, rows),
+        'D': np.random.normal(5, 3, rows)
+    })
+    try:
+        df.to_csv(filename, index=False)
+    except (KeyboardInterrupt, SystemExit):
+        os.remove(filename)
+        raise
+    return filename
 
 def generate_random_multivariate_normal_csv(filename, rows, seed=1234, header=None, reset=False):
     """
