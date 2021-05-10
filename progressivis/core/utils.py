@@ -839,9 +839,14 @@ async def asynchronize(f, *args, **kwargs):
     return await loop.run_in_executor(
         None, fun)
 
-
 def gather_and_run(*args):
+    loop = aio.get_event_loop()
+    for coro in args:
+        loop.create_task(coro)
+
+def mt_gather_and_run(*args):
     """
+    TODO: delete
     this function avoids the use on the "%gui asyncio" magic in notebook
     """
     async def gath():

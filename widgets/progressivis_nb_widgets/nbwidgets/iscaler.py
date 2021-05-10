@@ -1,25 +1,17 @@
 import time
 import ipywidgets as ipw
 from .utils import wait_for_change, wait_for_click, update_widget
-from progressivis.core import aio
+from progressivis.core import asynchronize, aio
+        
+def _refresh_info(wg):
+    async def _coro(_1, _2):
+        _ = _1, _2
+        await asynchronize(wg.refresh_info)
+    return _coro
 
-async def _apply(wg):
-    def _cbk():
-        m = wg._module
-        values = dict(wg.values) # shallow copy
-        values['time'] = time.time() # always make a change
-        wg._dict['reset'].value = False
-        aio.create_task(m.control.from_input(values))
-    while True:
-        await wait_for_click(wg._apply, _cbk)
 
-async def _refresh_info(wg):
-    while True:
-        wg.refresh_info()
-        await aio.sleep(0.5)
 
-class IScaler(ipw.GridBox):
-    info_keys = {'clipped': 'Clipped:', 'ignored': 'Ignored:', 'needs_changes': 'Needs changes:'}    
+class IScalerIn(ipw.GridBox):
     def __init__(self, module, scheduler=None):
         self._module = module
         self.info_labels = {}
@@ -66,6 +58,7 @@ class IScaler(ipw.GridBox):
             tooltip='Apply',
             icon='check' # (FontAwesome names without the `fa-` prefix)
         )
+        btn.on_click(self.get_apply_cb())
         self._apply = btn
         rst = ipw.Checkbox(
             value=False,
@@ -79,19 +72,39 @@ class IScaler(ipw.GridBox):
             lst.append(ipw.Label(wg.description))
             wg.description = ''
             lst.append(wg)
+        super().__init__(lst+[btn], layout=ipw.Layout(grid_template_columns="repeat(2, 120px)"))
+
+    @property
+    def values(self):
+        return {k: wg.value for (k, wg) in self._dict.items()}
+
+    def get_apply_cb(self):
+        def _cbk(_btn):
+            _ = _btn
+            m = self._module
+            values = dict(self.values) # shallow copy
+            values['time'] = time.time() # always make a change
+            #wg._dict['reset'].value = False
+            loop = aio.get_event_loop()
+            loop.create_task(m.control.from_input(values))
+        return _cbk
+
+        
+class IScalerOut(ipw.GridBox):
+    info_keys = {'clipped': 'Clipped:', 'ignored': 'Ignored:',
+                 'needs_changes': 'Needs changes:', 'has_buffered': 'Has buff:', 'last_reset': 'Last reset:'}    
+    def __init__(self, module, scheduler=None):
+        self._module = module
+        self.info_labels = {}
+        lst = []
         for k, lab in self.info_keys.items():
             lst.append(ipw.Label(lab))
             lst.append(self._info_label(k))
         lst.append(ipw.Label('Rows'))
         self._rows_label = ipw.Label('0')
         lst.append(self._rows_label)
-        super().__init__(lst+[btn], layout=ipw.Layout(grid_template_columns="repeat(2, 120px)"))
-    @property
-    def values(self):
-        return {k: wg.value for (k, wg) in self._dict.items()}
-    @property
-    def coroutines(self):
-        return [ _apply(self), _refresh_info(self)]
+        self._module.after_run_proc = _refresh_info(self)
+        super().__init__(lst, layout=ipw.Layout(grid_template_columns="repeat(2, 120px)"))
 
     def _info_label(self, k):
         v = ''

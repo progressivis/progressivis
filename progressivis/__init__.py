@@ -2,6 +2,8 @@
 Main imports from progressivis.
 """
 import logging
+POLL_INTERVAL = None
+DO_ONE_ITERATION = None
 
 from progressivis.core import (version, __version__, short_version,
                                Scheduler,
@@ -11,13 +13,15 @@ from progressivis.core import (version, __version__, short_version,
 from progressivis.utils import ProgressiveError
 
 from progressivis.table import Table, Column, Row
+from IPython.core.magic import (Magics, magics_class, line_magic,
+                                cell_magic, line_cell_magic, needs_local_scope)
 
 __all__ = ["log_level",
            "ProgressiveError", "Scheduler",
            "version", "__version__", "short_version",
            "Slot", "SlotDescriptor", "Module", "StorageManager",
            "Every", "Print",
-           "Table", "Column", "Row"]
+           "Table", "Column", "Row", "POLL_INTERVAL", "DO_ONE_ITERATION"]
 
 
 def s():
@@ -43,3 +47,39 @@ def log_level(level=logging.DEBUG, package='progressivis'):
 
 # Usage example
 # log_level(level=logging.INFO)
+try:
+    from ipykernel.eventloops import register_integration
+    @register_integration('progressivis')
+    def loop_progressivis(kernel):
+        global POLL_INTERVAL, DO_ONE_ITERATION
+        POLL_INTERVAL = kernel._poll_interval
+        DO_ONE_ITERATION = kernel.do_one_iteration
+except ImportError:
+    pass
+
+
+# https://gist.github.com/nkrumm/2246c7aa54e175964724
+@magics_class
+class ProgressivisMagic(Magics):
+
+    @line_cell_magic
+    @needs_local_scope
+    def progressivis(self, line, cell=None, local_ns=None):
+        from IPython.display import clear_output
+        #clear_output()
+        #print(local_ns[line])
+        #sys.stdout.flush()
+        import yaml,sys
+        #yaml.dump(eval(line, local_ns))
+        if cell is None:
+            clear_output()
+            for ln in yaml.dump(dict(eval(line, local_ns))).split('\n'):
+                print(ln)
+            sys.stdout.flush()
+        else:
+            ps_dict = eval(line, local_ns)
+            ps_dict.update(yaml.safe_load(cell))
+            return ps_dict
+def load_ipython_extension(ipython):
+    ip = get_ipython()
+    ip.register_magics(ProgressivisMagic)

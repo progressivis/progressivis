@@ -61,7 +61,7 @@ class MinMaxScaler(TableModule):
         self._clipped = 0
         self._ignored = 0
         if self._info is not None:
-            self._info.update({'clipped': 0, 'ignored': 0})
+            self._info.update({'clipped': 0, 'ignored': 0, 'has_buffered':0, 'last_reset': 0})
 
     def scale(self, chunk, cols, usecols, clip_cols):
         res = {}
@@ -191,7 +191,11 @@ class MinMaxScaler(TableModule):
                     if self._info and self._info.get('needs_changes'):
                         self._info['needs_changes'] = False
                     if self._control_data.get('reset'):
-                         self.reset_min_max(dfslot, min_slot, max_slot, run_number)
+                        self.reset_min_max(dfslot, min_slot, max_slot, run_number)
+                        self._info['last_reset'] = run_number
+                    else:
+                        self._info['last_reset'] = self._control_data.get('reset')
+                    self._info['has_buffered'] = run_number
                 else:
                     if self._info and self._info.get('needs_changes'):
                         return self._return_run_step(self.state_blocked, steps_run=0)

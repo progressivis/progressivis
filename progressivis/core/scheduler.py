@@ -9,7 +9,7 @@ from .dataflow import Dataflow
 from . import aio
 from ..utils.errors import ProgressiveError
 logger = logging.getLogger(__name__)
-
+from .. import DO_ONE_ITERATION
 __all__ = ['Scheduler']
 
 KEEP_RUNNING = 5
@@ -322,6 +322,8 @@ class Scheduler(object):
                             " because not ready and has no input",
                             module.name)
                 continue
+            if DO_ONE_ITERATION:
+                DO_ONE_ITERATION()
             await self._run_tick_procs()
             module.run(self._run_number)
             await module.after_run(self._run_number)
