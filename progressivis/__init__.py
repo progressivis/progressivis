@@ -2,6 +2,8 @@
 Main imports from progressivis.
 """
 import logging
+import yaml,sys
+
 POLL_INTERVAL = None
 DO_ONE_ITERATION = None
 
@@ -11,7 +13,7 @@ from progressivis.core import (version, __version__, short_version,
                                StorageManager,
                                Module, Every, Print)
 from progressivis.utils import ProgressiveError
-
+from progressivis.core import aio
 from progressivis.table import Table, Column, Row
 from IPython.core.magic import (Magics, magics_class, line_magic,
                                 cell_magic, line_cell_magic, needs_local_scope)
@@ -61,16 +63,10 @@ except ImportError:
 # https://gist.github.com/nkrumm/2246c7aa54e175964724
 @magics_class
 class ProgressivisMagic(Magics):
-
     @line_cell_magic
     @needs_local_scope
     def progressivis(self, line, cell=None, local_ns=None):
         from IPython.display import clear_output
-        #clear_output()
-        #print(local_ns[line])
-        #sys.stdout.flush()
-        import yaml,sys
-        #yaml.dump(eval(line, local_ns))
         if cell is None:
             clear_output()
             for ln in yaml.dump(dict(eval(line, local_ns))).split('\n'):
@@ -80,6 +76,14 @@ class ProgressivisMagic(Magics):
             ps_dict = eval(line, local_ns)
             ps_dict.update(yaml.safe_load(cell))
             return ps_dict
+
+    @cell_magic
+    @needs_local_scope
+    def from_input(self, line, cell, local_ns=None):
+        module = eval(line, local_ns)
+        return aio.create_task(module.from_input(yaml.safe_load(cell)))
+
+
 def load_ipython_extension(ipython):
     ip = get_ipython()
     ip.register_magics(ProgressivisMagic)
