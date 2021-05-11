@@ -5,7 +5,7 @@ from ipydatawidgets.widgets import DataWidget
 from traitlets import Unicode, Any, Bool
 from progressivis.core import JSONEncoderNp as JS, asynchronize
 import progressivis.core.aio as aio
-from .utils import data_union_serialization_compress, wait_for_change
+from .utils import data_union_serialization_compress #, wait_for_change
 # See js/lib/widgets.js for the frontend counterpart to this file.
 
 _serialization = data_union_serialization_compress
@@ -59,43 +59,32 @@ class Scatterplot(DataWidget, widgets.DOMWidget):
                 wg.samples = st
             wg.data = JS.dumps(data_)
 
-        async def _refresh():
-            while True:
-                await aio.sleep(0.5)
-
         async def _after_run(m, run_number):  # pylint: disable=unused-argument
             if not self.modal:
                 await asynchronize(_feed_widget, self, m)
 
         module.after_run_proc = _after_run
 
-        async def _from_input_value():
-            while True:
-                await wait_for_change(self, 'value')
+        def from_input_value(_val):
                 bounds = self.value
-                await module.min_value.from_input(bounds['min'])
-                await module.max_value.from_input(bounds['max'])
-
-        async def _from_input_move_point():
-            while True:
-                await wait_for_change(self, 'move_point')
-                await module.move_point.from_input(self.move_point)
-
-        async def _awake():
-            """
-            Hack intended to force the rendering even if the data
-            are exhausted at the time of the first display
-            """
-            while True:
-                await wait_for_change(self, 'modal')
-                # pylint: disable=protected-access
-                if module._json_cache is None or self.modal:
-                    continue
-                dummy = module._json_cache.get('dummy', 555)
-                module._json_cache['dummy'] = -dummy
-                await asynchronize(_feed_widget, self, module)
-        return ([_refresh()] if refresh else [])+[
-            _from_input_value(), _from_input_move_point(), _awake()]
+                async def _cbk():
+                    await module.min_value.from_input(bounds['min'])
+                    await module.max_value.from_input(bounds['max'])
+                aio.create_task(_cbk())
+        self.observe(from_input_value, 'value')
+                
+        def from_input_move_point(_val):
+            aio.create_task(module.move_point.from_input(self.move_point))
+        self.observe(from_input_move_point, 'move_point')
+        
+        def awake(_val):
+            if module._json_cache is None or self.modal:
+                return
+            dummy = module._json_cache.get('dummy', 555)
+            module._json_cache['dummy'] = -dummy
+            aio.create_task(asynchronize(_feed_widget, self, module)) # TODO: improve
+        self.observe(awake, 'modal')
+        return []
 
     def __init__(self, *, disable=tuple()):
         super().__init__()

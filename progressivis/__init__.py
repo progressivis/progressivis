@@ -4,9 +4,6 @@ Main imports from progressivis.
 import logging
 import yaml,sys
 
-POLL_INTERVAL = None
-DO_ONE_ITERATION = None
-
 from progressivis.core import (version, __version__, short_version,
                                Scheduler,
                                Slot, SlotDescriptor,
@@ -23,7 +20,7 @@ __all__ = ["log_level",
            "version", "__version__", "short_version",
            "Slot", "SlotDescriptor", "Module", "StorageManager",
            "Every", "Print",
-           "Table", "Column", "Row", "POLL_INTERVAL", "DO_ONE_ITERATION"]
+           "Table", "Column", "Row"]
 
 
 def s():
@@ -49,16 +46,6 @@ def log_level(level=logging.DEBUG, package='progressivis'):
 
 # Usage example
 # log_level(level=logging.INFO)
-try:
-    from ipykernel.eventloops import register_integration
-    @register_integration('progressivis')
-    def loop_progressivis(kernel):
-        global POLL_INTERVAL, DO_ONE_ITERATION
-        POLL_INTERVAL = kernel._poll_interval
-        DO_ONE_ITERATION = kernel.do_one_iteration
-except ImportError:
-    pass
-
 
 # https://gist.github.com/nkrumm/2246c7aa54e175964724
 @magics_class

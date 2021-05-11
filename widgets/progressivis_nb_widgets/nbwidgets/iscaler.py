@@ -1,6 +1,6 @@
 import time
 import ipywidgets as ipw
-from .utils import wait_for_change, wait_for_click, update_widget
+from .utils import update_widget
 from progressivis.core import asynchronize, aio
         
 def _refresh_info(wg):

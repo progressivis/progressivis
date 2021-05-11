@@ -11,7 +11,7 @@ class ControlPanel(widgets.HBox): # pylint: disable=too-many-ancestors
             tooltip='Start',
             icon='play'  # (FontAwesome names without the `fa-` prefix)
         )
-
+        
         self.bstop = widgets.Button(
             description='Stop',
             disabled=False,
@@ -19,7 +19,7 @@ class ControlPanel(widgets.HBox): # pylint: disable=too-many-ancestors
             tooltip='Stop',
             icon='stop'
         )
-
+        
         self.bstep = widgets.Button(
             description='Step',
             disabled=True,
@@ -27,7 +27,7 @@ class ControlPanel(widgets.HBox): # pylint: disable=too-many-ancestors
             tooltip='Step',
             icon='step-forward'
         )
-
+        
         self.run_nb = widgets.HTML(
             value="0",
             placeholder='0',
@@ -35,6 +35,10 @@ class ControlPanel(widgets.HBox): # pylint: disable=too-many-ancestors
         )
         self.status = "run"
         super().__init__([self.bstart, self.bstop, self.bstep, self.run_nb])
+        self.bstart.on_click(self.resume())
+        self.bstop.on_click(self.stop())
+        self.bstep.on_click(self.step())
+
 
     @property
     def data(self):
@@ -45,29 +49,39 @@ class ControlPanel(widgets.HBox): # pylint: disable=too-many-ancestors
         self.run_nb.value = str(val)
 
     def stop(self):
-        self.scheduler.task_stop()
-        self.status = "stop"
-        self.bstop.disabled = True
-        self.bstart.disabled = False
-        self.bstep.disabled = False
+        def _cbk(_btn):
+            _ = _btn        
+            self.scheduler.task_stop()
+            self.status = "stop"
+            self.bstop.disabled = True
+            self.bstart.disabled = False
+            self.bstep.disabled = False
+        return _cbk
 
     def step(self):
-        async def _step_once(sched, _):
-            await sched.stop()
-        self.scheduler.task_start(tick_proc=_step_once)
-        self.status = "stop"
-        self.bstop.disabled = True
-        self.bstart.disabled = False
-        self.bstep.disabled = False
+        def _cbk(_btn):
+            _ = _btn
+            async def _step_once(sched, _):
+                await sched.stop()
+            self.scheduler.task_start(tick_proc=_step_once)
+            self.status = "stop"
+            self.bstop.disabled = True
+            self.bstart.disabled = False
+            self.bstep.disabled = False
+        return _cbk
+                
 
     def resume(self):
-        self.scheduler.task_start()
-        self.status = "run"
-        self.bstop.disabled = False
-        self.bstart.disabled = True
-        self.bstep.disabled = True
+        def _cbk(_btn):
+            _ = _btn
+            self.scheduler.task_start()
+            self.status = "run"
+            self.bstop.disabled = False
+            self.bstart.disabled = True
+            self.bstep.disabled = True
+        return _cbk
 
-    def cb_args(self, key):
+    def __to_delete_cb_args(self, key):
         return {'resume': (self.bstart, self.resume),
                 'stop': (self.bstop, self.stop),
                 'step': (self.bstep, self.step)}[key]

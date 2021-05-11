@@ -839,28 +839,6 @@ async def asynchronize(f, *args, **kwargs):
     return await loop.run_in_executor(
         None, fun)
 
-def gather_and_run(*args):
-    loop = aio.get_event_loop()
-    for coro in args:
-        loop.create_task(coro)
-
-def mt_gather_and_run(*args):
-    """
-    TODO: delete
-    this function avoids the use on the "%gui asyncio" magic in notebook
-    """
-    async def gath():
-        await aio.gather(*args)
-
-    def func_():
-        loop = aio.new_event_loop()
-        aio.set_event_loop(loop)
-        loop.run_until_complete(gath())
-        loop.close()
-    thread = threading.Thread(target=func_, args=())
-    thread.start()
-
-
 def is_notebook():
     try:
         from IPython import get_ipython

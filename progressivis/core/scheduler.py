@@ -9,7 +9,7 @@ from .dataflow import Dataflow
 from . import aio
 from ..utils.errors import ProgressiveError
 logger = logging.getLogger(__name__)
-from .. import DO_ONE_ITERATION
+
 __all__ = ['Scheduler']
 
 KEEP_RUNNING = 5
@@ -69,6 +69,7 @@ class Scheduler(object):
         # self.runners = set()
         self.shortcut_evt = None
         self.coros = []
+        self._awakes = []
 
     async def shortcut_manager(self):
         if self.shortcut_evt is None:
@@ -322,8 +323,6 @@ class Scheduler(object):
                             " because not ready and has no input",
                             module.name)
                 continue
-            if DO_ONE_ITERATION:
-                DO_ONE_ITERATION()
             await self._run_tick_procs()
             module.run(self._run_number)
             await module.after_run(self._run_number)
@@ -643,6 +642,15 @@ class Scheduler(object):
                     mod.storagegroup is not None):
                 mod.storagegroup.close_all()
 
+    def awake_that(self, coro):
+        if not self._awakes:
+            async def _awaker():
+                while True:
+                    for c in self._awakes:
+                        aio.create_task(c())
+                    await aio.sleep(0.5)
+            aio.create_task(_awaker())
+        self._awakes.append(coro)
 
     @staticmethod
     def _module_order(x, y):

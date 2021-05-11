@@ -5,7 +5,7 @@ from progressivis.core import JSONEncoderNp
 import progressivis.core.aio as aio
 from .control_panel import ControlPanel
 from .sensitive_html import SensitiveHTML
-from .utils import wait_for_change, wait_for_click, update_widget
+from .utils import update_widget
 from .module_graph import ModuleGraph
 from .module_wg import ModuleWg
 
@@ -40,11 +40,8 @@ INDEX_TEMPLATE = """
 """
 
 
-async def module_choice(psboard):
-    while True:
-        await wait_for_change(psboard.htable, 'value')
-        # with debug_console:
-        #    print("Clicked: ", psboard.htable.value)
+def module_choice_hof(psboard):
+    def _module_choice(val):
         if len(psboard.tab.children) < 3:
             psboard.tab.children += (psboard.current_module,)
         psboard.current_module.module_name = psboard.htable.value[
@@ -52,8 +49,7 @@ async def module_choice(psboard):
         psboard.current_module.selection_changed = True
         psboard.tab.set_title(2, psboard.current_module.module_name)
         psboard.tab.selected_index = 2
-        # await psboard.refresh()
-
+    return _module_choice
 # async def change_tab(psboard):
 #     while True:
 #         await wait_for_change(psboard.tab, 'selected_index')
@@ -74,10 +70,8 @@ async def refresh_fun(psboard):
         await aio.sleep(0.5)
 
 
-async def control_panel(psboard, action):
-    btn, cbk = psboard.cpanel.cb_args(action)
-    while True:
-        await wait_for_click(btn, cbk)
+
+
 
 # end coros
 
@@ -104,11 +98,25 @@ class PsBoard(ipw.VBox):
                      'last_update', 'order']
         self.htable = SensitiveHTML(layout=ipw.Layout(height='500px',
                                                       overflow='auto'))
+        self.htable.observe(module_choice_hof(self), 'value')
         self.refresh_event = None
         self.other_coros = []
         self.vis_register = defaultdict(list)
         commons.update(tab=self.tab, scheduler=self.scheduler)
         super().__init__([self.cpanel, self.tab, debug_console])
+        if scheduler is not None:
+            async def _coro():
+                return await self.refresh_once()
+            scheduler.awake_that(_coro)
+
+    async def refresh_once(self):
+        # await psboard.refresh_event.wait()
+        # psboard.refresh_event.clear()
+        json_ = self.scheduler.to_json(short=False)
+        # pylint: disable=protected-access
+        self._cache = JSONEncoderNp.dumps(json_, skipkeys=True)
+        self._cache_js = None
+        await self.refresh()
 
     async def make_table_index(self, modules):
         modules = sorted(modules, key=lambda x: x['order'],
@@ -157,10 +165,10 @@ class PsBoard(ipw.VBox):
 
     @property
     def coroutines(self):
-        return [refresh_fun(self), module_choice(self),
-                control_panel(self, "resume"),
-                control_panel(self, "stop"),
-                control_panel(self, "step")]+self.other_coros
+        return [] #refresh_fun(self),] #module_choice(self),
+                #control_panel(self, "resume"),
+                #control_panel(self, "stop"),
+                #control_panel(self, "step")]+self.other_coros
 
     async def refresh(self):
         if self._cache is None:
