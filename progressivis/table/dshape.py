@@ -118,7 +118,7 @@ def np_dshape(v, skip=1):
             dshape = v.dtype.name
             shape = v.shape
             for d in shape[skip:]:
-                dshape = "%d * %s" % (d,dshape)
+                dshape = "%d * %s" % (d, dshape)
     elif isinstance(v, list):
         e = v[0]
         if isinstance(e, str):
@@ -156,13 +156,21 @@ def dshape_from_dataframe(df):
                           for c in df])
     return ds.dshape("{"+shape+"}")
 
+
 def array_dshape(df, array_col):
-    columns = df.columns
-    col_shapes = set([dataframe_dshape(df[c].dtype) for c in df])
-    if len(col_shapes) != 1:
-        raise ValueError('All column must have the same data type')
-    shape = col_shapes.pop()
-    return ds.dshape(f"{{{array_col}: {len(df.columns)} * {shape}}}")
+    if isinstance(df, np.ndarray):
+        shape = dataframe_dshape(df.dtype)
+        length = df.shape[1]
+    else:
+        col_dshapes = set([dataframe_dshape(df[c].dtype) for c in df])
+        if len(col_dshapes) != 1:
+            raise ValueError('All column must have the same data type')
+        shape = col_dshapes.pop()
+        length = len(df.columns)
+    if length == 1:
+        return ds.dshape(f"{{{array_col}: {shape}}}")
+    else:
+        return ds.dshape(f"{{{array_col}: {length} * {shape}}}")
 
 
 # myds = dshape("{a: int, b: float32, c: string, d:string, e:string, f:int32, g:float32}")

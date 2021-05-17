@@ -7,9 +7,6 @@ import os.path
 import versioneer
 from setuptools import setup, Command
 from setuptools.extension import Extension
-from setuptools.command.build_ext import build_ext
-
-#import numpy as np
 
 CONDA_PREFIX = os.getenv('CONDA_PREFIX')
 MYBINDER = os.getenv('USER') == 'jovyan'
