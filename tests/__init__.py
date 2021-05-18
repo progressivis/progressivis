@@ -1,4 +1,5 @@
 from os import getenv
+import gc
 import sys
 from unittest import TestCase, skip, skipIf, main
 
@@ -49,6 +50,7 @@ class ProgressiveTest(TestCase):
     def tearDown(self):
         # print('Logger level for %s back to ERROR' % self, file=sys.stderr)
         self.log()
+        gc.collect()
 
     @classmethod
     def cleanup(self):
