@@ -130,6 +130,7 @@ setup(
         "tables>=3.3.0",
         "pandas>=1.0.0",
         "scikit-learn>=0.18.1",
+        "pyyaml>=5.4.1",
         "tdigest>=0.4.1.0",
         "numcodecs>=0.5.5",
         "datashape>=0.5.2",

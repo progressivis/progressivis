@@ -154,6 +154,12 @@ class Scheduler(object):
     }
 </style>"""
         html_end = "</div>"
+        html_head += f"""
+<p><b>Scheduler</b> {hex(id(self))}
+        <b>{"running" if self.is_running() else "stopped"}</b>,
+        <b>modules:</b> {len(self._modules)},
+        <b>run number:</b> {self.run_number()}
+</p>"""
         html_head += """
 <table border="1" class="dataframe">
   <thead>
