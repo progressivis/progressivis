@@ -12,7 +12,7 @@ from ..table.table import Table
 from ..table.module import TableModule
 from ..utils.psdict import PsDict
 from .var import OnlineVariance
-from . import Min, Max
+from . import Min, Max, Histogram1D
 from ..core.decorators import process_slot, run_if_any
 from ..table.dshape import dshape_all_dtype
 logger = logging.getLogger(__name__)
@@ -245,7 +245,7 @@ class MinMaxScaler(TableModule):
             self.result.append(sc_data, indices=indices)
             return self._return_run_step(self.next_state(dfslot), steps)
 
-    def create_dependent_modules(self, input_module, input_slot='result'):
+    def create_dependent_modules(self, input_module, input_slot='result', hist=False):
         s = self.scheduler()
         self.input.table = input_module.output[input_slot]
         self.min = Min(scheduler=s)
@@ -253,4 +253,13 @@ class MinMaxScaler(TableModule):
         self.max = Max(scheduler=s)
         self.max.input.table = input_module.output[input_slot]
         self.input.min = self.min.output.result
-        self.input.max = self.max.output.result        
+        self.input.max = self.max.output.result
+        self. hist = {}
+        if hist:
+            assert self._usecols # TODO: avoid this requirement
+            for col in self._usecols:
+                hist1d = Histogram1D(scheduler=s, column=col)
+                hist1d.input.table = input_module.output[input_slot]
+                hist1d.input.min = self.min.output.result
+                hist1d.input.max = self.max.output.result
+                self.hist[col] = hist1d

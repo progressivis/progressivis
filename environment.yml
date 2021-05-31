@@ -33,6 +33,10 @@ dependencies:
   - aiohttp
   - aiohttp-jinja2
   - click
+  - pyyaml
+  - vega_datasets
+  - vega
+  - altair
   - pip:
     - tdigest>=0.4.1.0
     - rangehttpserver

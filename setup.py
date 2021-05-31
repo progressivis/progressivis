@@ -138,6 +138,7 @@ setup(
         "python-dateutil>=2.6.1",  # botocore wants < 2.7.0,>=2.1
         "boto",
         "s3fs",
+        "pyyaml",
         #"sqlalchemy",
         #"memory_profiler",
         #"tabulate",
