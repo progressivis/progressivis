@@ -25,4 +25,4 @@ __all__ = ["sleep", "Lock", "Event", "Condition", "gather", "wait",
            "Future", "iscoroutinefunction",
            "set_event_loop", "new_event_loop", "get_running_loop",
            "FIRST_COMPLETED", "ALL_COMPLETED",
-           create_task]
+           "create_task"]

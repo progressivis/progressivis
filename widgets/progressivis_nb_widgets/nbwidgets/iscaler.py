@@ -17,17 +17,32 @@ spec_no_data = {
     "layer": [
         {
             "mark": "bar",
-            "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+            "$schema": "https://vega.github.io/schema/vega-lite/v4.8.1.json",
             "encoding": {
-                "x": {"type": "quantitative", "bin": {"maxbins": 128},
+                "x": {"type": "ordinal",
                       "field": "bins",
-                      "title": "Values"
+                      "title": "Values", "axis": {"format": ".2e"}
                 },
                 "y": {"type": "quantitative", "field": "level", "title": "Count"},
 
             }
         },
-
+        {
+            "mark": "rule",
+            "encoding": {
+                "x": {"aggregate": "min", "field": "bins", "title": None, "axis": {"tickCount": 0}},
+                "color": {"value": "red"},
+                "size": {"value": 1}
+            }
+        },
+        {
+            "mark": "rule",
+            "encoding": {
+                "x": {"aggregate": "max", "field": "bins", "title": None, "axis": {"tickCount": 0}},
+                "color": {"value": "red"},
+                "size": {"value": 1}
+            }
+        }
 
     ]
 }
@@ -147,7 +162,7 @@ class IScalerIn(ipw.GridBox):
         return _cbk
 
 
-class IScalerOut(ipw.Tab):
+class IScalerOut(ipw.HBox):
     info_keys = {'clipped': 'Clipped:', 'ignored': 'Ignored:',
                  'needs_changes': 'Needs changes:', 'has_buffered': 'Has buff:', 'last_reset': 'Last reset:'}
     def __init__(self, module, scheduler=None):
@@ -164,7 +179,6 @@ class IScalerOut(ipw.Tab):
         gb = ipw.GridBox(lst, layout=ipw.Layout(grid_template_columns="repeat(2, 120px)"))
         if not module.hist:
             super().__init__(children=[gb])
-            self.set_title(0, 'ScalerMinMax')
         else:
             hlist = []
             for hmod in module.hist.values():
@@ -175,8 +189,6 @@ class IScalerOut(ipw.Tab):
             for i, t in enumerate(module.hist.keys()):
                 htab.set_title(i, t)
             super().__init__(children=[gb, htab])
-            self.set_title(0, 'ScalerMinMax')
-            self.set_title(1, 'Histograms')
 
 
 
