@@ -1,5 +1,5 @@
-from . import ProgressiveTest, skip, skipIf
-from progressivis import Print, Scheduler, Every
+from . import ProgressiveTest, skipIf
+from progressivis import Scheduler, Every
 from progressivis.core import aio
 from progressivis.io import CSVLoader
 from progressivis.stats.ppca import PPCA
@@ -10,13 +10,14 @@ from progressivis.utils.psdict import PsDict
 from progressivis.core.slot import SlotDescriptor
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.utils.random import sample_without_replacement
-import numpy as np
+
 import pandas as pd
 import os
 
-from functools import partial
+
 def _print(x):
     pass
+
 
 TRAIN_SAMPLE_SIZE = 10000
 PREDICT_SAMPLE_SIZE = 1000
@@ -24,11 +25,13 @@ SAMPLE_SIZE = TRAIN_SAMPLE_SIZE + PREDICT_SAMPLE_SIZE
 RANDOM_STATE = 42
 NNEIGHBOURS = 7
 N_COMPONENTS = 154
-TRACE = None # 'verbose'
+TRACE = None  # 'verbose'
 LABELS = INDICES = KNN = None
+
 
 def _array(tbl):
     return tbl['array'].values
+
 
 class MyResetter(TableModule):
     inputs = [SlotDescriptor('table', type=Table, required=True)]
@@ -44,11 +47,15 @@ class MyResetter(TableModule):
         data = input_slot.data()
         if data and len(data) >= self._threshold:
             self.result['reset'] = False
-        return self._return_run_step(self.next_state(input_slot), steps_run=step_size)
+        return self._return_run_step(
+            self.next_state(input_slot), steps_run=step_size
+        )
+
 
 @skipIf(os.getenv('TRAVIS'), 'skipped because too expensive for the CI')
 class TestPPCA(ProgressiveTest):
-    def _common(self, rtol, threshold=None, resetter=None, resetter_func=None, scheduler=None):
+    def _common(self, rtol, threshold=None, resetter=None, resetter_func=None,
+                scheduler=None):
         global KNN, LABELS, INDICES
         if scheduler is None:
             s = Scheduler()
@@ -56,7 +63,7 @@ class TestPPCA(ProgressiveTest):
             s = scheduler
         dataset = get_dataset('mnist_784')
         data = CSVLoader(dataset, index_col=False, as_array='array',
-                     usecols=lambda x: x!='class', scheduler=s)
+                         usecols=lambda x: x != 'class', scheduler=s)
         ppca = PPCA(scheduler=s)
         ppca.input[0] = data.output.result
         ppca.params.n_components = N_COMPONENTS

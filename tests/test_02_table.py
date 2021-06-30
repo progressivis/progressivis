@@ -5,8 +5,6 @@ import datashape as ds
 from collections import OrderedDict
 from progressivis import Scheduler
 from progressivis.table.table import Table, BaseTable
-#from progressivis.table.table_sliced import TableSlicedView
-#from progressivis.table.table_selected import TableSelectedView
 from progressivis.io.csv_loader import CSVLoader
 from progressivis.datasets import get_dataset
 from progressivis.storage import Group
@@ -16,12 +14,11 @@ import pandas as pd
 
 
 class TestTable(ProgressiveTest):
-    #pylint: disable=protected-access
+    # pylint: disable=protected-access
     def setUp(self):
         super(TestTable, self).setUp()
         self.scheduler = Scheduler.default
         self.storagegroup = Group.default()
-
 
     def test_steps(self):
         self.create_table()
@@ -37,7 +34,7 @@ class TestTable(ProgressiveTest):
     def test_loc_tableview(self):
         t = Table('table_loc', dshape="{a: int, b: float32}", create=True)
         t.resize(10)
-        ivalues = np.random.randint(100,size=20)
+        ivalues = np.random.randint(100, size=20)
         t['a'] = ivalues[:10]
         fvalues = np.random.rand(20)
         t['b'] = fvalues[:10]
@@ -188,7 +185,7 @@ class TestTable(ProgressiveTest):
         for i in range(len(ivalues)):
             self.assertEqual(ivalues[i], icol[i])
 
-        ivalues = np.random.randint(100,size=10)
+        ivalues = np.random.randint(100, size=10)
         t['a'] = ivalues
         icol = t['a'].value
 
@@ -206,7 +203,6 @@ class TestTable(ProgressiveTest):
         for i in range(len(fvalues)):
             self.assertAlmostEqual(fvalues[i], fcol[i])
 
-        #self.assertRaises(ValueError, t['a'] = values[1:])
         try:
             t['a'] = ivalues[1:]
         except ValueError:
@@ -214,7 +210,7 @@ class TestTable(ProgressiveTest):
         else:
             self.fail('ExpectedException not raised')
         # Fill multiple colums with
-        ivalues = np.random.randint(100,size=10)
+        ivalues = np.random.randint(100, size=10)
         fvalues = np.random.rand(10)
         t[['a', 'b']] = [ivalues, fvalues]
         icol = t['a'].value
@@ -222,7 +218,7 @@ class TestTable(ProgressiveTest):
         for i in range(len(fvalues)):
             self.assertEqual(ivalues[i], icol[i])
             self.assertAlmostEqual(fvalues[i], fcol[i])
-        values = np.random.randint(100,size=(10, 2))
+        values = np.random.randint(100, size=(10, 2))
         t[['a', 'b']] = values
         icol = t['a'].value
         fcol = t['b'].value
@@ -230,19 +226,17 @@ class TestTable(ProgressiveTest):
             self.assertEqual(values[i, 0], icol[i])
             self.assertEqual(values[i, 1], fcol[i])
 
-        #self.assertRaises(ValueError, t[['a','b']] = values[1:])
         try:
-            t[['a','b']] = values[:,1:]
-        except TypeError: # h5py raises a TypeError
+            t[['a', 'b']] = values[:, 1:]
+        except TypeError:  # h5py raises a TypeError
             pass
-        except ValueError: # numpy would raise a ValueError
+        except ValueError:  # numpy would raise a ValueError
             pass
-        #pylint: disable=broad-except
+        # pylint: disable=broad-except
         except Exception as e:
-            self.fail('Unexpected exception raised: %s'% e)
+            self.fail('Unexpected exception raised: %s' % e)
         else:
             self.fail('ExpectedException not raised')
-        #f.close()
 
     def update_table(self):
         t = Table('table', storagegroup=self.storagegroup)
@@ -268,6 +262,7 @@ class TestTable(ProgressiveTest):
         v12 = v1.loc[2,:]
         v2 = t.loc[:, 'a']
         v3 = t.loc[:]
+
     def _delete_table(self, t):
         self.assertEqual(t.index_to_id(2), 2)
         a = t['a']
@@ -288,7 +283,6 @@ class TestTable(ProgressiveTest):
             c = t.loc[2]
             print(c)
 
-        
     def append_dataframe(self):
         #pylint: disable=protected-access
         #self.scheduler._run_number = 1
@@ -317,8 +311,6 @@ class TestTable(ProgressiveTest):
             colt = t[colname]
             self.assertEqual(4*len(coldf), len(colt))
             self.assertTrue(np.all(colt[0:2*len(df)]==colt[2*len(df):len(t)]))
-
-
 
     def append_direct(self):
         #pylint: disable=protected-access

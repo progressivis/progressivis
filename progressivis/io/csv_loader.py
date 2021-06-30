@@ -1,5 +1,4 @@
 import pandas as pd
-import numpy as np
 import logging
 
 from progressivis import SlotDescriptor
@@ -7,7 +6,9 @@ from progressivis.utils.errors import (ProgressiveError,
                                        ProgressiveStopIteration)
 from ..table.module import TableModule
 from ..table.table import Table
-from ..table.dshape import dshape_from_dataframe, array_dshape
+from ..table.dshape import (dshape_from_dataframe,
+                            array_dshape,
+                            dshape_from_dict)
 from ..core.utils import force_valid_id_columns
 from .read_csv import read_csv, recovery, is_recoverable, InputSource
 
@@ -26,7 +27,7 @@ class CSVLoader(TableModule):
                  filter_=None,
                  force_valid_ids=True,
                  fillvalues=None,
-                 as_array='',
+                 as_array=None,
                  timeout=None,
                  save_context=None,
                  recovery=0,
@@ -86,8 +87,8 @@ class CSVLoader(TableModule):
             raise
         try:
             Table(name=self._recovery_table_inv_name, create=False)
-        except:
-            if 'exist' in ve.args[0]:
+        except Exception:
+            if 'exist' in ve.args[0]:  # FIXME
                 print('WARNING: recovery table invariant does not exist')
                 return False
             raise
@@ -237,10 +238,33 @@ class CSVLoader(TableModule):
                         # fall through
         return self.state_ready
 
-    def _proc_as_array(self, df):
+    def _data_as_array(self, df):
         if not self._as_array:
-            return df
-        return {self._as_array: df.values}
+            return (df, dshape_from_dataframe(df))
+        if callable(self._as_array):
+            self._as_array = self._as_array(list(df.columns))
+        if isinstance(self._as_array, str):
+            data = df.values
+            dshape = array_dshape(data, self._as_array)
+            return ({self._as_array: data}, dshape)
+        if not isinstance(self._as_array, dict):
+            raise ValueError(f"Unexpected parameter specified to as_array: {self.as_array}")
+        columns = set(df.columns)
+        ret = {}
+        for colname, cols in self._as_array.items():
+            if colname in ret:
+                raise KeyError(f"Duplicate column {colname} in as_array")
+            colset = set(cols)
+            assert colset.issubset(columns)
+            columns -= colset
+            view = df[cols]
+            values = view.values
+            ret[colname] = values
+        for colname in columns:
+            if colname in ret:
+                raise KeyError(f"Duplicate column {colname} in as_array")
+            ret[colname] = df[colname].values
+        return ret, dshape_from_dict(ret)
 
     def _needs_save(self):
         if self.result is None:
@@ -275,11 +299,11 @@ class CSVLoader(TableModule):
             return self._return_run_step(self.state_ready, 0)
         df_len = sum([len(df) for df in df_list])
         creates = df_len
-        if creates == 0: # should not happen
+        if creates == 0:  # should not happen
             logger.error('Received 0 elements')
             raise ProgressiveStopIteration
-        if self._filter != None:
-            df_list =[self._filter(df) for df in df_list]
+        if self._filter is not None:
+            df_list = [self._filter(df) for df in df_list]
         creates = sum([len(df) for df in df_list])
         if creates == 0:
             logger.info('frame has been filtered out')
@@ -290,22 +314,23 @@ class CSVLoader(TableModule):
                 for df in df_list:
                     force_valid_id_columns(df)
             if self.result is None:
+                data, dshape = self._data_as_array(pd.concat(df_list))
                 if not self._recovery:
                     self._table_params['name'] = self.generate_table_name('table')
-                    self._table_params['dshape'] = (array_dshape(df, self._as_array)
-                                                    if self._as_array
-                                                    else dshape_from_dataframe(df_list[0]))
+                    self._table_params['data'] = data
+                    self._table_params['dshape'] = dshape
                     self._table_params['create'] = True
-                    self._table_params['data'] = self._proc_as_array(pd.concat(df_list))
                     self.result = Table(**self._table_params)
                 else:
                     self._table_params['name'] = self._recovered_csv_table_name
+                    # self._table_params['dshape'] = dshape 
                     self._table_params['create'] = False
                     self.result = Table(**self._table_params)
-                    self.result.append(self._proc_as_array(pd.concat(df_list)))
+                    self.result.append(self._data_as_array(pd.concat(df_list)))
             else:
                 for df in df_list:
-                    self.result.append(self._proc_as_array(df))
+                    data, dshape = self._data_as_array(df)
+                    self.result.append(data)
             if self.parser.is_flushed() and needs_save \
                and self._recovery_table is None and self._save_context:
                 snapshot = self.parser.get_snapshot(run_number=run_number,
