@@ -3,7 +3,7 @@ import sys
 from asyncio import (sleep, Lock, Event, Condition, gather, wait, run, Future,
                      iscoroutinefunction, FIRST_COMPLETED, ALL_COMPLETED)
 from asyncio import create_task as _create_task
-from asyncio import set_event_loop, new_event_loop, get_running_loop
+from asyncio import set_event_loop, get_event_loop, new_event_loop, get_running_loop
 
 
 async def _gather(*coros):
@@ -25,4 +25,4 @@ __all__ = ["sleep", "Lock", "Event", "Condition", "gather", "wait",
            "Future", "iscoroutinefunction",
            "set_event_loop", "new_event_loop", "get_running_loop",
            "FIRST_COMPLETED", "ALL_COMPLETED",
-           create_task]
+           "create_task"]
