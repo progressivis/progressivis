@@ -20,8 +20,11 @@ spec_no_data = {
             "$schema": "https://vega.github.io/schema/vega-lite/v4.8.1.json",
             "encoding": {
                 "x": {"type": "ordinal",
-                      "field": "bins",
-                      "title": "Values", "axis": {"format": ".2e"}
+                      "field": "nbins",
+                      #"title": "Values", #"axis": {"format": ".2e", "ticks": False},
+                      "title": "Values",
+                      "axis": {"format": ".2e", "labelExpr": "(datum.value%10>0 ? null : datum.value)"},
+                      #"axis": {"labelExpr": "datum.label"},
                 },
                 "y": {"type": "quantitative", "field": "level", "title": "Count"},
 
@@ -58,21 +61,23 @@ def _refresh_info(wg):
 def refresh_info_hist(hout, hmod):
     if not hmod.result:
         return
-    spec_with_data = spec_no_data.copy()
+    #spec_with_data = spec_no_data.copy()
     res = hmod.result.last().to_dict()
     hist = res['array']
     min_ = res['min']
     max_ = res['max']
-    bins = np.linspace(min_, max_, len(hist))
+    #bins = np.linspace(min_, max_, len(hist))
     source = pd.DataFrame({
-        'bins': bins,
+        #'bins': bins,
+        'nbins': range(len(hist)),
         'level': hist,
     })
-    spec_with_data["data"] = {
-        "name": "data",
-        "values": source.to_dict(orient='records'),
-    }
-    hout.spec = spec_with_data
+    #spec_with_data["data"] = {
+    #    "name": "data",
+    #    "values": source.to_dict(orient='records'),
+    #}
+    #hout.spec = spec_with_data
+    hout.update('data', remove='true', insert=source)
 
 
 def _refresh_info_hist(hout, hmod):

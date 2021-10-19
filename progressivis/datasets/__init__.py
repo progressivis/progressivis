@@ -14,17 +14,32 @@ from functools import partial
 DATA_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../data'))
 Z_CHUNK_SIZE = 16*1024*32
 
+def _check_kwds(kwds, **defaults):
+    if ('rows' in kwds) or ('cols' in kwds) and ('overwrite' not in kwds):
+        raise ValueError("'owerwrite' param. is mandatory when "
+                         "'rows' or 'cols' is specified")
+    res = kwds.copy()
+    for k, v in defaults.items():
+        if k in res:
+            continue
+        res[k] = v
+    return res
+
 def get_dataset(name, **kwds):
     if not os.path.isdir(DATA_DIR):
         os.mkdir(DATA_DIR)
     if name == 'bigfile':
-        return generate_random_csv('%s/bigfile.csv'%DATA_DIR, 1000_000, 30)
+        kw = _check_kwds(kwds, rows=1_000_000, cols=30)
+        return generate_random_csv('%s/bigfile.csv'%DATA_DIR, **kw)
     if name == 'bigfile_multiscale':
-        return generate_multiscale_random_csv('%s/bigfile_multiscale.csv'%DATA_DIR, 5_000_000)
+        kw = _check_kwds(kwds, rows=5_000_000)
+        return generate_multiscale_random_csv('%s/bigfile_multiscale.csv'%DATA_DIR, **kw)
     if name == 'bigfile_mvn':
-        return generate_random_multivariate_normal_csv('%s/bigfile_mvn.csv'%DATA_DIR, 900_000)
+        kw = _check_kwds(kwds, rows=900_000)
+        return generate_random_multivariate_normal_csv('%s/bigfile_mvn.csv'%DATA_DIR, **kw)
     if name == 'smallfile':
-        return generate_random_csv('%s/smallfile.csv'%DATA_DIR, 30_000, 10)
+        kw = _check_kwds(kwds, rows=30_000, cols=10)
+        return generate_random_csv('%s/smallfile.csv'%DATA_DIR, **kw)
     if name == 'warlogs':
         return wget_file(filename='%s/warlogs.vec.bz2'%DATA_DIR,
                          url='http://www.cs.ubc.ca/labs/imager/video/2014/QSNE/warlogs.vec.bz2',

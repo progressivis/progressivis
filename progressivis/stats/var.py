@@ -57,9 +57,8 @@ class VarH(TableModule):
     parameters = [('history', np.dtype(int), 3)]
     inputs = [SlotDescriptor('table', type=Table, required=True)]
 
-    def __init__(self, columns=None, **kwds):
+    def __init__(self, **kwds):
         super().__init__(dataframe_slot='table', **kwds)
-        self._columns = columns
         self._data = {}
         self.default_step_size = 1000
 
@@ -81,7 +80,7 @@ class VarH(TableModule):
         return ret
 
     def reset(self):
-        if self.result is None:
+        if self.result is not None:
             self.result.resize(0)
 
     @process_slot("table", reset_cb="reset")
@@ -111,7 +110,7 @@ class Var(TableModule):
     """
     inputs = [SlotDescriptor('table', type=Table, required=True)]
 
-    def __init__(self, columns=None, **kwds):
+    def __init__(self, **kwds):
         super().__init__(**kwds)
         self._data = {}
         self.default_step_size = 1000
@@ -134,8 +133,8 @@ class Var(TableModule):
         return ret
 
     def reset(self):
-        if self.result is None:
-            self.result.resize(0)
+        if self.result is not None:
+            self.result.fill(np.nan)
         if self._data is not None:
             for ov in self._data.values():
                 ov.reset()

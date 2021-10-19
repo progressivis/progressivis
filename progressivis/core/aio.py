@@ -13,11 +13,12 @@ async def _gather(*coros):
 def run_gather(*coros):
     return run(_gather(*coros))
 
-
-if sys.version.startswith('3.7.'):
+major, minor, *_ = sys.version_info
+assert major == 3
+if minor <= 7:
     def create_task(coroutine, name=None):
         return _create_task(coroutine)
-elif sys.version.startswith('3.8.'):
+else:
     def create_task(coroutine, name=None):
         return _create_task(coroutine, name=name)
 
