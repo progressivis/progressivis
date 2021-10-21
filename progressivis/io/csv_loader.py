@@ -86,7 +86,7 @@ class CSVLoader(TableModule):
             raise
         try:
             Table(name=self._recovery_table_inv_name, create=False)
-        except:
+        except Exception:
             if 'exist' in ve.args[0]:
                 print('WARNING: recovery table invariant does not exist')
                 return False

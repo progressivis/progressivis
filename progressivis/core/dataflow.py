@@ -86,10 +86,6 @@ class Dataflow(object):
     def __len__(self):
         return len(self._modules)
 
-    def dir(self):
-        "Return the list the module names"
-        return list(self._modules.keys())
-
     def aborted(self):
         "The dataflow has been aborted before being sent."
         # pylint: disable=protected-access

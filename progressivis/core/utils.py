@@ -7,7 +7,6 @@ import re
 from itertools import tee
 from functools import wraps
 import functools as ft
-import threading
 
 from urllib.parse import urlparse as parse_url
 from urllib.parse import parse_qs
@@ -39,6 +38,7 @@ def is_int(n):
 
 def is_str(s):
     return isinstance(s, str)
+
 
 def is_slice(s):
     return isinstance(s, slice)

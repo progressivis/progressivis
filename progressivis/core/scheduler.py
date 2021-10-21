@@ -567,6 +567,9 @@ class Scheduler(object):
             return name in self.dataflow
         return name in self._modules
 
+    def _ipython_key_completions_(self):
+        return list(self._modules.keys())
+
     def run_number(self):
         "Return the last run number."
         return self._run_number
