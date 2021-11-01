@@ -134,6 +134,11 @@ def _refresh_info_corr(cout, cmod, wg):
         await asynchronize(refresh_info_corr, cout, cmod, wg)
     return _coro
     
+type_op_mismatches = dict(string=set(['var', 'corr']))
+
+def get_disabled_flag(dt, op):
+    return op in type_op_mismatches.get(dt, set())
+
 
 class DataViewer(ipw.Tab):
     #info_keys = {'min': 'Min', 'max': 'Max'}
@@ -159,13 +164,17 @@ class DataViewer(ipw.Tab):
         if not self.children:
             lst = [ipw.Label("")]+[ipw.Label(s) for s in self.info_keys_ext.values()]
             width_ = len(lst)
+            dshape = self._module.dshape
+            #dshape = {}
             for col in self._module.visible_cols:
-                lst.append(ipw.Label(col))
+                col_type = str(dshape.get(col, 'X'))
+                lst.append(ipw.Label(f"{col}: {col_type}"))
+                #lst.append(ipw.Label(col))
                 for k in self.info_keys_ext.keys():
-                    lst.append(self._info_checkbox((col, k)))
+                    lst.append(self._info_checkbox((col, k), get_disabled_flag(col_type, k)))
             gb = ipw.GridBox(lst,
                              layout=ipw.Layout(
-                                 grid_template_columns=f"repeat({width_}, 120px)"))
+                                 grid_template_columns=f"250px repeat({width_-1}, 50px)"))
             self.children = (gb,)
             self.set_next_title('Conf')
             ####
@@ -229,11 +238,11 @@ class DataViewer(ipw.Tab):
         self.info_labels[k] = lab
         return lab
 
-    def _info_checkbox(self, k):
+    def _info_checkbox(self, k, dis):
         cb = ipw.Checkbox(
             value=False,
             description='',
-            disabled=False,
+            disabled=dis,
             indent=False
         )
         self.info_cb[k] = cb

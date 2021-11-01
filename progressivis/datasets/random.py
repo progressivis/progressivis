@@ -32,7 +32,7 @@ def generate_multiscale_random_csv(filename, rows=5_000_000, seed=1234, choice=(
         'B': np.random.normal(5, 2, rows),
         'C': np.random.normal(-5, 4, rows),
         'D': np.random.normal(5, 3, rows),
-        'I': np.random.randint(0, size=rows, dtype=int),
+        'I': np.random.randint(0, 10_000, size=rows, dtype=int),
         'S': np.random.choice(choice, rows)
     })
     try:

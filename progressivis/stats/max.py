@@ -15,9 +15,8 @@ class Max(TableModule):
     parameters = [('history', np.dtype(int), 3)]
     inputs = [SlotDescriptor('table', type=Table, required=True)]
 
-    def __init__(self, columns=None, **kwds):
+    def __init__(self, **kwds):
         super(Max, self).__init__(**kwds)
-        self._columns = columns
         self.default_step_size = 10000
 
     def is_ready(self):
@@ -42,7 +41,7 @@ class Max(TableModule):
                 self.result = PsDict(op)
             else:
                 for k, v in self.result.items():
-                    self.result[k] = np.maximum(op[k], v)
+                    self.result[k] = max(op[k], v)
             return self._return_run_step(self.next_state(ctx.table), steps)
 
 

@@ -14,9 +14,8 @@ logger = logging.getLogger(__name__)
 class Min(TableModule):
     inputs = [SlotDescriptor('table', type=Table, required=True)]
 
-    def __init__(self, columns=None, **kwds):
+    def __init__(self, **kwds):
         super(Min, self).__init__(**kwds)
-        self._columns = columns
         self.default_step_size = 10000
 
     def is_ready(self):
@@ -40,7 +39,7 @@ class Min(TableModule):
                 self.result = PsDict(op)
             else:
                 for k, v in self.result.items():
-                    self.result[k] = np.minimum(op[k], v)
+                    self.result[k] = min(op[k], v)
             return self._return_run_step(self.next_state(ctx.table), steps)
 
 def minimum_val_id(candidate_val, candidate_id, current_val, current_id):

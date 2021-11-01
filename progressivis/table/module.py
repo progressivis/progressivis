@@ -83,7 +83,7 @@ class TableModule(Module):
                 _columns.remove(column)  # maintain the order
         return _columns
 
-    def filter_columns(self, df, indices=None, slot=None):
+    def filter_columns(self, df, indices=None, slot=None, cols=None):
         """
         Return the specified table filtered by the specified indices and
         limited to the columns of interest.
@@ -93,7 +93,7 @@ class TableModule(Module):
             if indices is None:
                 return df
             return df.loc[indices]
-        cols = self.get_columns(df, slot)
+        cols = cols or self.get_columns(df, slot)
         if cols is None:
             return None
         if indices is None:

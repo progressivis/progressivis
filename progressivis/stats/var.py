@@ -110,15 +110,29 @@ class Var(TableModule):
     """
     inputs = [SlotDescriptor('table', type=Table, required=True)]
 
-    def __init__(self, **kwds):
+    def __init__(self, ignore_string_cols=False, **kwds):
         super().__init__(**kwds)
         self._data = {}
+        self._ignore_string_cols = ignore_string_cols
+        self._num_cols = None
         self.default_step_size = 1000
 
     def is_ready(self):
         if self.get_input_slot('table').created.any():
             return True
         return super().is_ready()
+
+    def get_num_cols(self, input_df):
+        if self._num_cols is None:
+            if not self._columns:
+                self._num_cols = [c.name
+                                  for c in input_df._columns
+                                  if str(c.dshape) != 'string']
+            else:
+                self._num_cols = [c.name
+                        for c in input_df._columns
+                        if c.name in self._columns and str(c.dshape) != 'string']
+        return self._num_cols
 
     def op(self, chunk):
         cols = chunk.columns
@@ -149,7 +163,10 @@ class Var(TableModule):
             if steps == 0:
                 return self._return_run_step(self.state_blocked, steps_run=0)
             input_df = dfslot.data()
-            op = self.op(self.filter_columns(input_df, fix_loc(indices)))
+            cols = None
+            if self._ignore_string_cols:
+                cols = self.get_num_cols(input_df)
+            op = self.op(self.filter_columns(input_df, fix_loc(indices), cols=cols))
             if self.result is None:
                 self.result = PsDict(op)
             else:
