@@ -11,6 +11,12 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+def _min_func(x, y):
+    try: # fixing funny behaviour when min() is called with np.float64
+        return np.minimum(x, y)
+    except Exception:
+        return min(x, y)
+
 class Min(TableModule):
     inputs = [SlotDescriptor('table', type=Table, required=True)]
 
@@ -39,7 +45,7 @@ class Min(TableModule):
                 self.result = PsDict(op)
             else:
                 for k, v in self.result.items():
-                    self.result[k] = min(op[k], v)
+                    self.result[k] = _min_func(op[k], v)
             return self._return_run_step(self.next_state(ctx.table), steps)
 
 def minimum_val_id(candidate_val, candidate_id, current_val, current_id):

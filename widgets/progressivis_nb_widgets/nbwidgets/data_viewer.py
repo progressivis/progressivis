@@ -10,49 +10,10 @@ from .utils import update_widget
 from progressivis.core import asynchronize, aio
 from IPython.display import display, clear_output
 from vega.widget import VegaWidget
+from ._hist1d_schema import hist1d_spec_no_data
 from ._corr_schema import corr_spec_no_data
+from ._bar_schema import bar_spec_no_data
 
-spec_no_data = {
-    "data": {
-        "name": "data"
-    },
-    "height": 500,
-    "width": 500,
-    "layer": [
-        {
-            "mark": "bar",
-            "$schema": "https://vega.github.io/schema/vega-lite/v4.8.1.json",
-            "encoding": {
-                "x": {"type": "ordinal",
-                      "field": "nbins",
-                      #"title": "Values", #"axis": {"format": ".2e", "ticks": False},
-                      "title": "Values",
-                      "axis": {"format": ".2e", "labelExpr": "(datum.value%10>0 ? null : datum.value)"},
-                      #"axis": {"labelExpr": "datum.label"},
-                },
-                "y": {"type": "quantitative", "field": "level", "title": "Count"},
-
-            }
-        },
-        {
-            "mark": "rule",
-            "encoding": {
-                "x": {"aggregate": "min", "field": "bins", "title": None, "axis": {"tickCount": 0}},
-                "color": {"value": "red"},
-                "size": {"value": 1}
-            }
-        },
-        {
-            "mark": "rule",
-            "encoding": {
-                "x": {"aggregate": "max", "field": "bins", "title": None, "axis": {"tickCount": 0}},
-                "color": {"value": "red"},
-                "size": {"value": 1}
-            }
-        }
-
-    ]
-}
 
 def corr_as_vega_dataset(mod, columns=None):
     """
@@ -68,7 +29,9 @@ def corr_as_vega_dataset(mod, columns=None):
                  var2=ky)
             for (kx, ky) in product(columns, columns)]
 
-
+def categ_as_vega_dataset(categs):
+    return [{'category': k, 'count': v} for
+            (k, v) in categs.items()]
 
 
 def _refresh_info(wg):
@@ -93,6 +56,13 @@ def _(arg):
 
 
 def refresh_info_hist(hout, hmod):
+    if hout.bar:
+        categs = hmod._categorical
+        if categs is None:
+            return
+        dataset = categ_as_vega_dataset(categs)
+        hout.update('data', remove='true', insert=dataset)
+        return
     if not hmod.result:
         return
     #spec_with_data = spec_no_data.copy()
@@ -106,11 +76,6 @@ def refresh_info_hist(hout, hmod):
         'nbins': range(len(hist)),
         'level': hist,
     })
-    #spec_with_data["data"] = {
-    #    "name": "data",
-    #    "values": source.to_dict(orient='records'),
-    #}
-    #hout.spec = spec_with_data
     hout.update('data', remove='true', insert=source)
 
 
@@ -120,10 +85,10 @@ def _refresh_info_hist(hout, hmod):
         await asynchronize(refresh_info_hist, hout, hmod)
     return _coro
 
-def refresh_info_corr(cout, cmod, wg):
+def refresh_info_corr(cout, cmod, main_wg):
     if not cmod.result:
         return
-    cols = wg.get_corr_sel()
+    cols = main_wg.get_corr_sel()
     dataset = corr_as_vega_dataset(cmod, cols)
     cout.update('data', remove='true', insert=dataset)
 
@@ -192,7 +157,12 @@ class DataViewer(ipw.Tab):
             
             if hasattr(self._module, 'hist'):
                 for hname, hmod in self._module.hist.items():
-                    hout = VegaWidget(spec=spec_no_data)
+                    if str(dshape.get(hmod.column)) == 'string':
+                        hout = VegaWidget(spec=bar_spec_no_data)
+                        hout.bar = True
+                    else:
+                        hout = VegaWidget(spec=hist1d_spec_no_data)
+                        hout.bar = False
                     self._hdict[hname] = hout
                     hmod.after_run_proc =  _refresh_info_hist(hout, hmod)
                 self._hist_tab = ipw.Tab()
@@ -225,8 +195,10 @@ class DataViewer(ipw.Tab):
         if hist_sel != self._hist_sel:
             #with self._debug:
             #    print("changes...")
-            self._hist_tab.children = tuple([v for (k,v) in self._hdict.items() if k in hist_sel])
-            for i, k in enumerate(hist_sel):
+            selection_ = [(k, v) for (k,v) in self._hdict.items() if k in hist_sel]
+            selection_k, selection_v = zip(*selection_)
+            self._hist_tab.children = tuple(list(selection_v))
+            for i, k in enumerate(selection_k):
                     self._hist_tab.set_title(i, k)
             self._hist_sel = hist_sel
 

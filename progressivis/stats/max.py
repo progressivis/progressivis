@@ -10,6 +10,11 @@ import numpy as np
 import logging
 logger = logging.getLogger(__name__)
 
+def _max_func(x, y):
+    try: # fixing funny behaviour when max() is called with np.float64
+        return np.maximum(x, y)
+    except Exception:
+        return max(x, y)
 
 class Max(TableModule):
     parameters = [('history', np.dtype(int), 3)]
@@ -41,7 +46,7 @@ class Max(TableModule):
                 self.result = PsDict(op)
             else:
                 for k, v in self.result.items():
-                    self.result[k] = max(op[k], v)
+                    self.result[k] = _max_func(op[k], v)
             return self._return_run_step(self.next_state(ctx.table), steps)
 
 
