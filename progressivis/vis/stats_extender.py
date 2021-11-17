@@ -148,6 +148,8 @@ class StatsExtender(TableModule):
                 hist1d.input.table = input_module.output[input_slot]
                 hist1d.input.min = self.min.output.result
                 hist1d.input.max = self.max.output.result
+                pr = Print(proc=lambda x: None, scheduler=s)
+                pr.input[0] = hist1d.output.categorical
                 self.hist[col] = hist1d
         if var:
             self.var = Var(scheduler=s,
@@ -163,7 +165,8 @@ class StatsExtender(TableModule):
             self.decorations.append('distinct')
         if corr:
             self.corr = Corr(scheduler=s,
-                             columns=self._get_usecols(corr))
+                             columns=self._get_usecols(corr),
+                             ignore_string_cols=True)
             self.corr.input.table = input_module.output[input_slot]
             self.input.corr = self.corr.output.result
 
