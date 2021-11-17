@@ -31,6 +31,7 @@ class Max(TableModule):
 
     def reset(self):
         if self.result is not None:
+            print("Reset>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
             self.result.fill(-np.inf)
 
     @process_slot("table", reset_cb="reset")
@@ -46,7 +47,7 @@ class Max(TableModule):
                 self.result = PsDict(op)
             else:
                 for k, v in self.result.items():
-                    self.result[k] = _max_func(op[k], v)
+                    self.result[k] = max(op[k], v)
             return self._return_run_step(self.next_state(ctx.table), steps)
 
 
