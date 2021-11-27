@@ -66,6 +66,10 @@ class Dataflow(object):
         "Return all the modules in this dataflow"
         return self._modules.values()
 
+    def dir(self):
+        "Return the name of all the modules"
+        return list(self._modules.keys())
+
     def get_visualizations(self):
         "Return the visualization modules"
         return [m.name for m in self.modules() if m.is_visualization()]

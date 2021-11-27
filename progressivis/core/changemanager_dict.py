@@ -1,8 +1,9 @@
 
 from .changemanager_base import BaseChangeManager
 from ..utils.psdict import PsDict
-from ..table.tablechanges import TableChanges
+# from ..table.tablechanges import TableChanges
 from .slot import Slot
+from .index_update import IndexUpdate
 import copy
 
 
@@ -25,9 +26,9 @@ class DictChangeManager(BaseChangeManager):
             buffer_exposed,
             buffer_masked)
         self._last_dict = None
-        data = slot.data()
-        if data.changes is None:
-            data.changes = TableChanges()
+        # data = slot.data()
+        # if data.changes is None:
+        #     data.changes = TableChanges()
 
     def reset(self, name=None):
         super(DictChangeManager, self).reset(name)
@@ -41,14 +42,15 @@ class DictChangeManager(BaseChangeManager):
             return
         data.fix_indices()
         last_dict = self._last_dict
-        if last_dict is None:
-            data.changes.add_created(data.ids)
-        else:
-            data.changes.add_created(data.new_indices(last_dict))
-            data.changes.add_updated(data.updated_indices(last_dict))
-            data.changes.add_deleted(data.deleted_indices(last_dict))
-        changes = data.compute_updates(self._last_update, run_number, mid)
         self._last_dict = copy.copy(data)
+        if last_dict is None:
+            # BUG data.changes.add_created(data.ids)
+            changes = IndexUpdate(created=data.created_indices({}))
+        else:
+            changes = IndexUpdate(created=data.created_indices(last_dict),
+                                  updated=data.updated_indices(last_dict),
+                                  deleted=data.deleted_indices(last_dict))
+        # changes = data.compute_updates(self._last_update, run_number, mid)
         self._last_update = run_number
         self._row_changes.combine(changes,
                                   self.created.buffer,

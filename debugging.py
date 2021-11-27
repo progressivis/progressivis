@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 import tempfile as tf
 import os
-from progressivis import Scheduler, Print
+from progressivis import Scheduler, Print, log_level
 from progressivis.io import SimpleCSVLoader, DynVar
 from progressivis.stats import Histogram2D, Min, Max
 from progressivis.datasets import get_dataset
@@ -15,9 +15,10 @@ from progressivis_nb_widgets.nbwidgets import DataViewer
 from progressivis.datasets import get_dataset
 from progressivis.core import aio
 
+log_level(package='progressivis.table')
 s = Scheduler.default = Scheduler()
 
-PREFIX = '../../nyc-taxi/'
+PREFIX = '../nyc-taxi/'
 
 SUFFIX = '.bz2'
 

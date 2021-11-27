@@ -22,6 +22,7 @@ class PsDict(dict):
         self.changes = None
 
     def compute_updates(self, start, now, mid=None, cleanup=True):
+        assert False, "compute_updates should not be called on PsDict"
         if self.changes:
             updates = self.changes.compute_updates(start, now, mid,
                                                    cleanup=cleanup)
@@ -85,7 +86,7 @@ class PsDict(dict):
             if k in self._deleted:  # a previously deleted key was added later
                 del self._deleted[k]
 
-    def new_indices(self, prev):
+    def created_indices(self, prev):
         if self._index is None:
             return bitmap(range(len(self))[len(prev):])
         new_keys = set(self.keys()) - set(prev.keys())
@@ -115,6 +116,10 @@ class PsDict(dict):
         self._deleted[key] = self._index[key]
         del self._index[key]
         super().__delitem__(key)
+
+    def clear(self):
+        for key in list(self.keys()):
+            del self[key]
 
     def set_nth(self, i, val):
         self[list(self)[i]] = val

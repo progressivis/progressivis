@@ -1,14 +1,13 @@
 """Base class for Tables
 """
-from abc import ABCMeta, abstractmethod, abstractproperty
+from abc import ABCMeta
 from collections import OrderedDict, Mapping, Iterable
 import operator
 import logging
 import numpy as np
-import weakref
 from progressivis.core.index_update import IndexUpdate
-from progressivis.core.utils import (integer_types, norm_slice, is_slice, is_full_slice,
-                                     slice_to_bitmap, is_int, is_str,
+from progressivis.core.utils import (integer_types, norm_slice, is_slice,
+                                     is_int, is_str,
                                      all_int, all_string, is_iterable,
                                      all_string_or_int, all_bool,
                                      indices_len, remove_nan,
@@ -73,17 +72,16 @@ class _Loc(_BaseLoc):
                 return row[col_key]
             return row
         elif isinstance(index, Iterable):
-            #index = bitmap.asbitmap(index)
             base = self._table.get_original_base()
             btab = BaseTable(selection=raw_index, base=base)
             columns, columndict = self._table.make_projection(col_key, btab)
             btab._columns = columns
             btab._columndict = columndict
             btab._dshape = dshape_create(
-            '{'
-            + ','.join(["{}:{}".format(c.name, c.dshape)
-                       for c in btab._columns])
-            + '}')
+                '{'
+                + ','.join(["{}:{}".format(c.name, c.dshape)
+                            for c in btab._columns])
+                + '}')
             btab._masked = self._table
             return btab
         raise ValueError('getitem not implemented for index "%s"', index)
@@ -120,7 +118,7 @@ class _At(_BaseLoc):
         index, col_key = self.parse_key(key)
         if not is_int(index):
             raise KeyError(f"Invalid row key {index}")
-        if not  (is_str(col_key) or is_int(col_key)):
+        if not (is_str(col_key) or is_int(col_key)):
             raise ValueError('At setitem not implemented for column key "%s"' %
                              col_key)
         self._table[col_key][index] = value
@@ -577,7 +575,7 @@ class BaseTable(metaclass=ABCMeta):
             updates = self._changes.compute_updates(start, now, mid,
                                                     cleanup=cleanup)
             if updates is None:
-                updates = IndexUpdate(created=bitmap(self._index)) # pass an index copy ...
+                updates = IndexUpdate(created=bitmap(self._index))
             return updates
         return None
 
@@ -585,7 +583,7 @@ class BaseTable(metaclass=ABCMeta):
         # hack, use t[['a', 'b'], 1] to get a list instead of a TableView
         fast = False
         if isinstance(key, tuple):
-            key = key[0] # i.e. columns
+            key = key[0]  # i.e. columns
             fast = True
         if isinstance(key, (str, integer_types)):
             return self._column(key)
@@ -1082,6 +1080,7 @@ class IndexTable(BaseTable):
         return self.index.max()
     def add_created(self, locs):
         #self.notify_observers('created', locs)
+        #TODO simplify tablechanges to ignore add_created etc. when no bookmark exist
         if self._changes is None:
             self._changes = TableChanges()
         locs = self._normalize_locs(locs)

@@ -125,7 +125,6 @@ class BaseChangeManager(object):
         self.clear()
         logger.debug('reset(%d)', self._last_update)
 
-
     @property
     def row_changes(self):
         "Return the IndexUpdate keeping track of the row changes"
