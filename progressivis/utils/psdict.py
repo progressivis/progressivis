@@ -88,7 +88,7 @@ class PsDict(dict):
 
     def created_indices(self, prev):
         if self._index is None:
-            return bitmap(range(len(self))[len(prev):])
+            return bitmap(range(len(prev), len(self)))
         new_keys = set(self.keys()) - set(prev.keys())
         return bitmap((i for (k, i) in self._index.items() if k in new_keys))
 
