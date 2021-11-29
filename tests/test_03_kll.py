@@ -11,6 +11,7 @@ K = 300
 BINS = 128
 QUANTILES = [0.3, 0.5, 0.7]
 SPLITS_SEQ = [0.3, 0.5, 0.7]
+SPLITS_DICT = dict(lower=0.1, upper=0.9, n_splits=10)
 
 
 class TestKll(ProgressiveTest):
@@ -26,7 +27,6 @@ class TestKll(ProgressiveTest):
         val = random.result['_1'].value
         sk = kll_floats_sketch(K)
         sk.update(val)
-        print(kll.result['quantiles'])
         self.assertAlmostEqual(kll.result['max'], sk.get_max_value())
         self.assertAlmostEqual(kll.result['min'], sk.get_min_value())        
         self.assertEqual(kll.result['quantiles'], [])
@@ -84,11 +84,29 @@ class TestKll(ProgressiveTest):
         pmf = sk.get_pmf(SPLITS_SEQ)
         self.compare(kll.result['pmf'], pmf)
 
+    def test_kll5(self):
+        np.random.seed(42)
+        s = self.scheduler()
+        random = RandomTable(3, rows=10_000, scheduler=s)
+        kll=KLLSketch(column='_1', scheduler=s)
+        kll.params.binning = SPLITS_DICT
+        kll.input[0] = random.output.result
+        pr=Print(proc=self.terse, scheduler=s)
+        pr.input[0] = kll.output.result
+        aio.run(s.start())
+        val = random.result['_1'].value
+        sk = kll_floats_sketch(K)
+        sk.update(val)
+        lower_ = SPLITS_DICT['lower']
+        upper_ = SPLITS_DICT['upper']
+        num_splits = SPLITS_DICT['n_splits']
+        splits = np.linspace(lower_, upper_, num_splits)
+        pmf = sk.get_pmf(splits[:-1])
+        self.compare(kll.result['pmf'], pmf)
+
     def compare(self, res1, res2, atol=1e-02):
         v1 = np.array(res1)
         v2 = np.array(res2)
-        print(v1)
-        print(v2)
         self.assertEqual(v1.shape, v2.shape)
         self.assertTrue(np.allclose(v1, v2, atol=atol))
 
