@@ -72,7 +72,6 @@ class _Loc(_BaseLoc):
                 return row[col_key]
             return row
         elif isinstance(index, Iterable):
-            #index = bitmap.asbitmap(index)
             base = self._table.get_original_base()
             btab = BaseTable(selection=raw_index, base=base)
             columns, columndict = self._table.make_projection(col_key, btab)
@@ -129,20 +128,20 @@ class BaseTable(metaclass=ABCMeta):
     # pylint: disable=too-many-public-methods, too-many-instance-attributes
     """Base class for Tables.
     """
-    def __init__(self, base=None, selection=slice(0, None), columns=None,
-                 columndict=None):
-        if base is None or base._base is None:
-            self._base = base
-        else:
-            self._base = base._base
+    def __init__(self, base=None, selection=slice(0, None), columns=None, columndict=None):
+        self._base = base if (base is None or base._base is None) else base._base
         self._selection = selection
         self._columns = [] if columns is None else columns
         self._columndict = OrderedDict() if columndict is None else columndict
+        #self._index = bitmap() if index is None else index
         self._loc = _Loc(self, True)
         self._at = _At(self, True)
         self._masked = base
-        self._dshape = {}
-
+        #self._changes = None
+        #self._is_identity = True
+        #self._cached_index = BaseTable # hack
+        #self._last_id = -1
+        self._dshape = {} # for __str__()
     @property
     def loc(self):
         "Return a `locator` object for indexing using ids"
@@ -170,6 +169,7 @@ class BaseTable(metaclass=ABCMeta):
             return self
         return self._base
 
+
     def info_row(self, row, width):
         "Return a description for a row, used in `repr`"
         row_id = row if row in self.index else -1
@@ -193,7 +193,7 @@ class BaseTable(metaclass=ABCMeta):
 
     def info_contents(self):
         "Return a description of the contents of this table"
-        length = self.last_id + 1  # len(self)
+        length = self.last_id + 1 #len(self)
         rep = ''
         max_rows = min(length, get_option('display.max_rows'))
         if max_rows == 0:
@@ -224,13 +224,7 @@ class BaseTable(metaclass=ABCMeta):
         return rep
 
     def index_to_mask(self):
-        ret = np.zeros(self.last_id+1, dtype=bool)
-        if self.index.max() >= self.last_id+1:
-            ret[self.index & bitmap(range(self.last_id+1))] = True
-        else:
-            ret[self.index] = True
-        return ret
-        # return np.array(((elt in self.index) for elt in range(self.last_id+1)))
+        return np.array(((elt in self.index) for elt in range(self.last_id+1)))
 
     def index_to_array(self):
         return np.array(self.index, dtype='int32')
@@ -249,17 +243,20 @@ class BaseTable(metaclass=ABCMeta):
         sl = self.index.to_slice_maybe()
         if not isinstance(sl, slice):
             return False
+        #return sl == slice(0, self.last_id+1, None)
         return sl.start == 0
 
     @property
     def last_id(self):
         "Return the last id of this table"
+        #if not self._index:
+        #    assert self._last_id == -1
         return self._base.last_id
 
     @property
     def last_xid(self):
         'Return the last eXisting id of this table'
-        return self._base.last_xid  # only for refreshing self._last_id
+        return self._base.last_xid #only for refreshing self._last_id
 
     def width(self, colnames=None):
         """Return the number of effective width (number of columns) of the table
@@ -486,6 +483,7 @@ class BaseTable(metaclass=ABCMeta):
     @property
     def index(self):
         "Return the object in change of indexing this table"
+        #return self._base._any_to_bitmap(self._mask)
         return self._compute_index()
 
     @property
@@ -509,8 +507,7 @@ class BaseTable(metaclass=ABCMeta):
             ret &= self.index
         return ret
 
-    def _any_to_bitmap(self, locs, copy=True, fix_loc=True,
-                       existing_only=True):
+    def _any_to_bitmap(self, locs, copy=True, fix_loc=True, existing_only=True):
         if isinstance(locs, bitmap):
             return locs[:] if copy else locs
         if isinstance(locs, integer_types):
@@ -523,6 +520,9 @@ class BaseTable(metaclass=ABCMeta):
         if isinstance(locs, slice):
             return self._slice_to_bitmap(locs, fix_loc, existing_only)
         raise KeyError(f"Invalid type {type(locs)} for key {locs}")
+
+
+
 
     @property
     def name(self):
@@ -542,11 +542,15 @@ class BaseTable(metaclass=ABCMeta):
     @property
     def changes(self):
         "Return the TableChange manager associated with this table or None"
+        #if not self._index:
+        #    return None
         return self._changes
 
     @changes.setter
     def changes(self, tablechange):
         "Set the TableChange manager, or unset with None"
+        #if not self._index:
+        #    raise RuntimeError('Table has no index')
         self._changes = tablechange
 
     def compute_updates(self, start, now, mid=None, cleanup=True):
@@ -571,7 +575,7 @@ class BaseTable(metaclass=ABCMeta):
             updates = self._changes.compute_updates(start, now, mid,
                                                     cleanup=cleanup)
             if updates is None:
-                updates = IndexUpdate(created=bitmap(self.index))
+                updates = IndexUpdate(created=bitmap(self._index))
             return updates
         return None
 
@@ -600,7 +604,7 @@ class BaseTable(metaclass=ABCMeta):
 
     def iterrows(self):
         "Return an iterator returning rows and their ids"
-        return map(self.row, iter(self.index))
+        return map(self.row, iter(self._index))
 
     def last(self, key=None):
         "Return the last row"
@@ -621,16 +625,17 @@ class BaseTable(metaclass=ABCMeta):
         bm = self._any_to_bitmap(key, fix_loc=False, existing_only=False)
         if not bm:
             return
+        #if not (bm in self.index or isinstance(key, slice)):
+        #    raise ValueError('Invalid locs')
         if isinstance(key, slice):
-            if not (bm.min() in self.index and bm.max() in self._selection):
-                # accept holes when key is a slice
-                raise ValueError('Invalid locs')
-        elif bm not in self.index:
-            # when key is not a slice it must be exhaustive
+            if not (bm.min() in self._index and bm.max() in self._selection):
+                raise ValueError('Invalid locs') # when key is a slice we accept holes
+        elif bm not in self.index: # when key is not a slice it must be exhaustive
             raise ValueError('Invalid locs')
         if isinstance(key, Iterable):
             assert bm in self._selection
         self._selection -= bm
+
 
     def setitem_2d(self, rowkey, colkey, values):
         if isinstance(colkey, (str, integer_types)):
@@ -690,7 +695,7 @@ class BaseTable(metaclass=ABCMeta):
                                  'value shape do not match')
 
             if rowkey is None:
-                rowkey = self.index.to_slice_maybe()  # slice(None, None)
+                rowkey = self.index.to_slice_maybe() #slice(None, None)
             for i, colname in enumerate(colnames):
                 column = self._column(colname)
                 if len(column.shape) > 1:
@@ -836,6 +841,12 @@ class BaseTable(metaclass=ABCMeta):
     def __rand__(self, other):
         return other.binary(operator.and_, self)
 
+    # def __div__(self, other):
+    #     return self.binary(operator.div, other)
+
+    # def __rdiv__(self, other):
+    #     return other.binary(operator.div, self)
+
     def __eq__(self, other):
         return self.binary(operator.eq, other)
 
@@ -942,18 +953,18 @@ class BaseTable(metaclass=ABCMeta):
         argmin_ = self.raw_unary(np.argmin, **kwargs)
         if self.is_identity:
             return argmin_
-        index_array = self.index_to_array()
+        index_array= self.index_to_array()
         for k, v in argmin_.items():
-            argmin_[k] = index_array[v]
+             argmin_[k] = index_array[v]
         return argmin_
 
     def argmax(self, **kwargs):
         argmax_ = self.raw_unary(np.argmax, **kwargs)
         if self.is_identity:
             return argmax_
-        index_array = self.index_to_array()
+        index_array= self.index_to_array()
         for k, v in argmax_.items():
-            argmax_[k] = index_array[v]
+             argmax_[k] = index_array[v]
         return argmax_
 
     def idxmin(self, **kwargs):
@@ -967,6 +978,9 @@ class BaseTable(metaclass=ABCMeta):
         for c, ix in res.items():
             res[c] = self.index_to_id(ix)
         return res
+
+
+
 
     def remove_module(self, mid):
         # TODO
@@ -993,6 +1007,8 @@ class BaseTable(metaclass=ABCMeta):
         self._cached_index = index
         self.add_updated(index)
 
+
+
     def equals(self, other):
         if self is other:
             return True
@@ -1016,32 +1032,30 @@ class BaseTable(metaclass=ABCMeta):
         return [tbl[c].dataset.base for c in cols]
 
     def cxx_api_info_index(self):
-        # ix = Int64HashTable() if self.is_identity else self._ids._ids_dict._ht
-        # return self.is_identity, ix, self.last_id
+        #ix = Int64HashTable() if self.is_identity else self._ids._ids_dict._ht
+        #return self.is_identity, ix, self.last_id
         return False, self.index, self.last_id
-
 
 class IndexTable(BaseTable):
     def __init__(self, index=None):
         super().__init__()
         self._index = bitmap() if index is None else index
-        self._cached_index = BaseTable  # hack
+        self._cached_index = BaseTable # hack
         self._last_id = -1
         self._changes = None
 
     @property
     def index(self):
         "Return the object in change of indexing this table"
-        return self._index  # .freeze()
+        return bitmap(self._index) # returns a copy to prevent unwanted
 
     @index.setter
     def index(self, indices):
         "Modify the object in change of indexing this table"
         indices = self._any_to_bitmap(indices)
         if indices not in self._observed.index:
-            raise ValueError(
-                f"Invalid indices {indices-self._observed.index}")
-        created_ = indices - self.index
+            raise ValueError(f"Not existing indices {indices-self._observed.index}")
+        created_ = indices - self._index
         if created_:
             self.add_created(created_)
         deleted_ = self._index - indices
@@ -1053,8 +1067,10 @@ class IndexTable(BaseTable):
     @property
     def last_id(self):
         "Return the last id of this table"
-        if self._index and self._last_id < self._index.max():
-            self._last_id = self._index.max()
+        #if not self._index:
+        #    assert self._last_id == -1
+        if self.index and self._last_id < self.index.max():
+            self._last_id = self.index.max()
         return self._last_id
 
     @property
@@ -1064,6 +1080,7 @@ class IndexTable(BaseTable):
         return self.index.max()
     def add_created(self, locs):
         #self.notify_observers('created', locs)
+        #TODO simplify tablechanges to ignore add_created etc. when no bookmark exist
         if self._changes is None:
             self._changes = TableChanges()
         locs = self._normalize_locs(locs)

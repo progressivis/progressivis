@@ -2,7 +2,6 @@ from . import ProgressiveTest
 import copy
 from progressivis.core.bitmap import bitmap
 from progressivis.utils.psdict import PsDict
-import numpy as np
 
 
 class TestPsDict(ProgressiveTest):
@@ -11,8 +10,6 @@ class TestPsDict(ProgressiveTest):
         other = dict(a=1, b=2, c=3)
         d2 = PsDict(other)
         self.assertEqual(d1, d2)
-        with self.assertRaises(TypeError):
-            _ = PsDict(other, **other)
         d3 = PsDict(other, x=8, y=5)
         self.assertEqual(len(d3), 5)
 
@@ -21,7 +18,7 @@ class TestPsDict(ProgressiveTest):
         now = copy.copy(prev)
         now['x'] = 10
         now['y'] = 20
-        new_ids = now.new_indices(prev)
+        new_ids = now.created_indices(prev)
         self.assertEqual(bitmap(new_ids), bitmap([3, 4]))
 
     def test_ps_dict_updated_ids(self):

@@ -1,5 +1,5 @@
 """
-Return changes inside tables/columns/bitmaps.
+Changes (Delta) inside tables/columns/bitmaps.
 """
 
 from ..core.bitmap import bitmap
@@ -63,29 +63,32 @@ class IndexUpdate(object):
         if other is None:
             return
         if other.deleted:
-            # if not created yet, no need to delete
-            toignore = other.deleted & self.created
+            # No need to expose created when they become deleted
+            created_deleted = self.created & other.deleted
             if update_created:
-                self.created -= toignore
+                self.created -= other.deleted
             if update_updated:
                 self.updated -= other.deleted
             if update_deleted:
-                self.deleted |= other.deleted - toignore
+                self.deleted |= other.deleted
+                self.deleted -= created_deleted
         if other.created:
             # if re-created, pretend updated
-            toupdate = other.created & self.deleted
+            created_deleted = other.created & self.deleted
             if update_deleted:
-                self.deleted -= toupdate
-            if update_updated:
-                self.updated -= other.updated | toupdate
+                self.deleted -= created_deleted
             if update_created:
-                self.created |= other.created - toupdate
+                self.created |= other.created
+                self.created -= created_deleted
+            if update_updated:
+                self.updated |= created_deleted
+                self.updated -= self.created
+            #TODO handle case with created & updated -> created
         if other.updated and update_updated:
-            toignore = self.created
+            created_updated = self.created & other.updated
             self.updated |= other.updated
-            self.updated -= toignore
-        assert self.test()  # test invariant
-        return
+            self.updated -= self.created
+        assert self.test(verbose=True)  # test invariant
 
     def __eq__(self, other):
         return self is other or \

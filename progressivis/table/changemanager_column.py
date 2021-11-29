@@ -6,6 +6,7 @@ from .column_base import BaseColumn
 from .tablechanges import TableChanges
 from ..core.slot import Slot
 
+
 class ColumnChangeManager(BaseChangeManager):
     """
     Manage changes that occured in a Column between runs.
@@ -38,5 +39,6 @@ class ColumnChangeManager(BaseChangeManager):
                                   self.created.buffer,
                                   self.updated.buffer,
                                   self.deleted.buffer)
+
 
 Slot.add_changemanager_type(BaseColumn, ColumnChangeManager)

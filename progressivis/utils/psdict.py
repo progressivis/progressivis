@@ -14,7 +14,7 @@ class PsDict(dict):
             assert isinstance(other, dict)
         else:
             other = {}
-        super().__init__(**other, **kwargs)
+        super().__init__(other, **kwargs)
         self._index = None
         self._deleted = {}
         self._inverse = None
@@ -22,6 +22,7 @@ class PsDict(dict):
         self.changes = None
 
     def compute_updates(self, start, now, mid=None, cleanup=True):
+        assert False, "compute_updates should not be called on PsDict"
         if self.changes:
             updates = self.changes.compute_updates(start, now, mid,
                                                    cleanup=cleanup)
@@ -85,9 +86,9 @@ class PsDict(dict):
             if k in self._deleted:  # a previously deleted key was added later
                 del self._deleted[k]
 
-    def new_indices(self, prev):
+    def created_indices(self, prev):
         if self._index is None:
-            return bitmap(range(len(self))[len(prev):])
+            return bitmap(range(len(prev), len(self)))
         new_keys = set(self.keys()) - set(prev.keys())
         return bitmap((i for (k, i) in self._index.items() if k in new_keys))
 
@@ -115,6 +116,10 @@ class PsDict(dict):
         self._deleted[key] = self._index[key]
         del self._index[key]
         super().__delitem__(key)
+
+    def clear(self):
+        for key in list(self.keys()):
+            del self[key]
 
     def set_nth(self, i, val):
         self[list(self)[i]] = val
