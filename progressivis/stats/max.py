@@ -31,7 +31,6 @@ class Max(TableModule):
 
     def reset(self):
         if self.result is not None:
-            print("Reset>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
             self.result.fill(-np.inf)
 
     @process_slot("table", reset_cb="reset")
