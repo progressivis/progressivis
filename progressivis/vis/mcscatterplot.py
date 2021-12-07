@@ -86,6 +86,7 @@ class MCScatterPlot(NAry):
         """Multiclass ...
         """
         super(MCScatterPlot, self).__init__(**kwds)
+        self.tags.add(self.VISUALIZATION_TAG)
         self._classes = classes  # TODO: check it ...
         self._x_label = x_label
         self._y_label = y_label
@@ -112,9 +113,6 @@ class MCScatterPlot(NAry):
             input_slot.updated.next()
             changes = True
         return changes
-
-    def is_visualization(self):
-        return True
 
     def get_visualization(self):
         return "mcscatterplot"
@@ -149,7 +147,6 @@ class MCScatterPlot(NAry):
         inp_table = inp.data()
         if inp_table is None:
             return None
-        #with inp_table.lock:
         last = inp_table.last()
         if last is None:
             return None
@@ -163,7 +160,7 @@ class MCScatterPlot(NAry):
             if self._ipydata:
                 assert isinstance(plan, int)
                 json_['binnedPixels'] = plan
-                self.hist_tensor[:,:,plan] = row['array']
+                self.hist_tensor[:, :, plan] = row['array']
             else:
                 data = np.copy(row['array'])
                 json_['binnedPixels'] = data
@@ -214,12 +211,14 @@ class MCScatterPlot(NAry):
                 if select is not None:
                     ph_x = get_physical_base(select[x_column])
                     ph_y = get_physical_base(select[y_column])
-                    smpl = ph_x.loc[select[x_column].index.index],  ph_y.loc[select[y_column].index.index]
+                    smpl = (ph_x.loc[select[x_column].index.index],
+                            ph_y.loc[select[y_column].index.index])
                 else:
-                    smpl = [], []
-                    
+                    smpl = ([], [])
             else:
-                smpl = select.to_json(orient='split', columns=[x_column, y_column]) if select is not None else []
+                smpl = select.to_json(orient='split',
+                                      columns=[x_column, y_column]) \
+                                      if select is not None else []
             samples.append(smpl)
         if self._ipydata:
             samples_counter = []
@@ -232,12 +231,13 @@ class MCScatterPlot(NAry):
             for i, (vx, vy) in enumerate(samples):
                 if not len(vx):
                     continue
-                self.sample_tensor[:,0,i] = vx
-                self.sample_tensor[:,1,i] = vy
+                self.sample_tensor[:, 0, i] = vx
+                self.sample_tensor[:, 1, i] = vy
             json['samples_counter'] = samples_counter
             samples = []
         # TODO: check consistency among classes (e.g. same xbin, ybin etc.)
-        xbins, ybins = self.hist_tensor.shape[:-1] if self._ipydata else buffers[0]['binnedPixels'].shape
+        xbins, ybins = self.hist_tensor.shape[:-1] \
+            if self._ipydata else buffers[0]['binnedPixels'].shape
         encoding = {
             "x": {
                 "bin": {
@@ -283,15 +283,17 @@ class MCScatterPlot(NAry):
                 }
             }
         }
-        source = {"program": "progressivis",
-                  "type": "python",
-                  "rows": count
+        source = {
+            "program": "progressivis",
+            "type": "python",
+            "rows": count
         }
         json['chart'] = dict(buffers=buffers, encoding=encoding, source=source)
         json['bounds'] = dict(xmin=xmin, ymin=ymin, xmax=xmax, ymax=ymax)
         s_data = []
         for i, s in enumerate(samples):
-            if not s: continue
+            if not s:
+                continue
             d = s['data']
             for row in d:
                 row.append(i)
@@ -299,7 +301,7 @@ class MCScatterPlot(NAry):
         json['sample'] = dict(data=s_data, index=list(range(len(s_data))))
         json['columns'] = [self._x_label, self._y_label]
         if self._ipydata:
-            json['hist_tensor'] = self.hist_tensor 
+            json['hist_tensor'] = self.hist_tensor
             json['sample_tensor'] = self.sample_tensor
         return json
 
@@ -312,8 +314,8 @@ class MCScatterPlot(NAry):
                 # slot.created.next()
                 # slot.updated.next()
                 # slot.deleted.next()
-                #print("SLOT has buffered", slot)
-                self._json_cache = None                
+                # print("SLOT has buffered", slot)
+                self._json_cache = None
         return self._return_run_step(self.state_blocked, steps_run=0)
 
     def run(self, run_number):
@@ -361,18 +363,24 @@ class MCScatterPlot(NAry):
         for dc in self._data_class_dict.values():
             for dc2 in self._data_class_dict.values():
                 x, y = dc2.x_column, dc2.y_column
-                dc.histogram2d.input['table', ('min', x, y)] = dc2.range_query_2d.output.min
-                dc.histogram2d.input['table', ('max', x, y)] = dc2.range_query_2d.output.max
+                rq2d = dc2.range_query_2d
+                dc.histogram2d.input['table', ('min', x, y)] = rq2d.output.min
+                dc.histogram2d.input['table', ('max', x, y)] = rq2d.output.max
 
-    def _add_class(self, name, x_column, y_column, sample='default', sample_slot='result', input_module=None, input_slot=None):
+    def _add_class(self, name, x_column, y_column, sample='default',
+                   sample_slot='result', input_module=None, input_slot=None):
         if self.input_module is None and input_module is None:
-            raise ProgressiveError("Input module is not defined!")            
+            raise ProgressiveError("Input module is not defined!")
         if self.input_module is not None and input_module is not None:
-            raise ProgressiveError("Input module is defined twice!")            
+            raise ProgressiveError("Input module is defined twice!")
         if self.input_slot is None and input_slot is None:
-            raise ProgressiveError("Input slot is not defined!")            
-        if self.input_slot is not None and input_slot is not None and self.input_slot!=input_slot:
-            raise ProgressiveError("Input slot is defined twice!")            
+            raise ProgressiveError("Input slot is not defined!")
+        if (
+                self.input_slot is not None
+                and input_slot is not None
+                and self.input_slot != input_slot
+           ):
+            raise ProgressiveError("Input slot is defined twice!")
         data_class = _DataClass(name, self.name, x_column,
                                 y_column,
                                 approximate=self._approximate,
@@ -385,8 +393,8 @@ class MCScatterPlot(NAry):
         hist_meta = dict(inp='hist', class_=name, **col_translation)
         self.input['table', hist_meta] = data_class.histogram2d.output.result
         if sample is not None:
-            sample_meta = dict(inp='sample', class_=name, **col_translation)        
-            self.input['table', sample_meta] = data_class.sample.output[sample_slot]
+            meta = dict(inp='sample', class_=name, **col_translation)
+            self.input['table', meta] = data_class.sample.output[sample_slot]
         self._data_class_dict[name] = data_class
         self.min_value.subscribe(data_class.min_value, col_translation)
         self.max_value.subscribe(data_class.max_value, col_translation)

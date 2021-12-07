@@ -4,17 +4,18 @@ from ..core.slot import SlotDescriptor
 from ..table.module import TableModule
 from ..table.table import Table
 from ..utils.psdict import PsDict
-from ..core.decorators import *
+from ..core.decorators import process_slot, run_if_any
 import numpy as np
 
 import logging
 logger = logging.getLogger(__name__)
 
+
 class Histogram1D(TableModule):
     """
     """
     parameters = [('bins', np.dtype(int), 128),
-                  ('delta', np.dtype(float), -5)] # 5%
+                  ('delta', np.dtype(float), -5)]
     inputs = [
         SlotDescriptor('table', type=Table, required=True),
         SlotDescriptor('min', type=PsDict, required=True),
@@ -24,6 +25,7 @@ class Histogram1D(TableModule):
 
     def __init__(self, column, **kwds):
         super(Histogram1D, self).__init__(dataframe_slot='table', **kwds)
+        self.tags.add(self.VISUALIZATION_TAG)
         self.column = column
         self.total_read = 0
         self.default_step_size = 1000
@@ -35,6 +37,7 @@ class Histogram1D(TableModule):
                             dshape=Histogram1D.schema,
                             chunks={'array': (16384, 128)},
                             create=True)
+
     def reset(self):
         self._histo = None
         self._edges = None
@@ -57,7 +60,9 @@ class Histogram1D(TableModule):
             dfslot = ctx.table
             min_slot = ctx.min
             max_slot = ctx.max
-            if not (dfslot.created.any() or min_slot.has_buffered() or max_slot.has_buffered()):
+            if not (dfslot.created.any()
+                    or min_slot.has_buffered()
+                    or max_slot.has_buffered()):
                 logger.info('Input buffers empty')
                 return self._return_run_step(self.state_blocked, steps_run=0)
             min_slot.clear_buffers()
@@ -70,14 +75,18 @@ class Histogram1D(TableModule):
             if self._bounds is None:
                 delta = self.get_delta(*bounds)
                 self._bounds = (bound_min - delta, bound_max + delta)
-                logger.info("New bounds at run %d: %s", run_number, self._bounds)
+                logger.info("New bounds at run %d: %s",
+                            run_number, self._bounds)
             else:
                 (old_min, old_max) = self._bounds
                 delta = self.get_delta(*bounds)
-                if(bound_min < old_min or bound_max > old_max) \
-                  or bound_min > (old_min + delta) or bound_max < (old_max - delta):
+                if (bound_min < old_min
+                    or bound_max > old_max
+                    or bound_min > (old_min + delta)
+                    or bound_max < (old_max - delta)):
                     self._bounds = (bound_min - delta, bound_max + delta)
-                    logger.info('Updated bounds at run %d: %s', run_number, self._bounds)
+                    logger.info('Updated bounds at run %d: %s',
+                                run_number, self._bounds)
                     dfslot.reset()
                     dfslot.update(run_number)
                     min_slot.reset()
@@ -85,13 +94,14 @@ class Histogram1D(TableModule):
                     max_slot.reset()
                     max_slot.update(run_number)
                     self.reset()
-                    return self._return_run_step(self.state_blocked, steps_run=0)
+                    return self._return_run_step(self.state_blocked,
+                                                 steps_run=0)
             (curr_min, curr_max) = self._bounds
             if curr_min >= curr_max:
                 logger.error('Invalid bounds: %s', self._bounds)
                 return self._return_run_step(self.state_blocked, steps_run=0)
             input_df = dfslot.data()
-            indices = dfslot.created.next(step_size) # returns a slice or ... ?
+            indices = dfslot.created.next(step_size)  # returns a slice or ...
             steps = indices_len(indices)
             logger.info('Read %d rows', steps)
             self.total_read += steps
@@ -109,11 +119,14 @@ class Histogram1D(TableModule):
                 self._histo = histo
             elif histo is not None:
                 self._histo += histo
-            values = {'array': [self._histo], 'min': [curr_min], 'max': [curr_max], 'time': [run_number]}
+            values = {'array': [self._histo],
+                      'min': [curr_min],
+                      'max': [curr_max],
+                      'time': [run_number]}
             self.result['array'].set_shape((self.params.bins,))
             self.result.append(values)
-            return self._return_run_step(self.next_state(dfslot), steps_run=steps)
-  
+            return self._return_run_step(self.next_state(dfslot),
+                                         steps_run=steps)
 
     def get_bounds(self, min_slot, max_slot):
         min_df = min_slot.data()
@@ -146,9 +159,6 @@ class Histogram1D(TableModule):
                 "values": self._histo.tolist() if self._histo else [],
                 "min": min_,
                 "max": max_}
-
-    def is_visualization(self):
-        return True
 
     def get_visualization(self):
         return "histogram1d"

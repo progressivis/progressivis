@@ -214,9 +214,6 @@ class MBKMeans(TableModule):
             return self._return_run_step(self.state_blocked, iter_)
         return self._return_run_step(self.state_ready, iter_)
 
-    def is_visualization(self):
-        return False
-
     def to_json(self, short=False):
         json = super().to_json(short)
         if short:

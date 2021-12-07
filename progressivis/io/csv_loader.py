@@ -87,7 +87,8 @@ class CSVLoader(TableModule):
             raise
         try:
             Table(name=self._recovery_table_inv_name, create=False)
-        except Exception:
+        except Exception as ve:
+            # FIXME JDF: is that the right way?
             if 'exist' in ve.args[0]:  # FIXME
                 print('WARNING: recovery table invariant does not exist')
                 return False

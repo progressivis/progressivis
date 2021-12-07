@@ -34,13 +34,11 @@ class Heatmap(TableModule):
 
     def __init__(self, colormap=None, **kwds):
         super(Heatmap, self).__init__(**kwds)
+        self.tags.add(self.VISUALIZATION_TAG)
         self.colormap = colormap
         self.default_step_size = 1
 
         name = self.generate_table_name('Heatmap')
-        # params = self.params
-        # if params.filename is None:
-        #     params.filename = name+'%d.png'
         self.result = Table(name, dshape=Heatmap.schema, create=True)
 
     def predict_step_size(self, duration):
@@ -51,7 +49,6 @@ class Heatmap(TableModule):
     def run_step(self, run_number, step_size, howlong):
         dfslot = self.get_input_slot('array')
         input_df = dfslot.data()
-        # dfslot.update(run_number)
         dfslot.deleted.next()
         indices = dfslot.created.next()
         steps = indices_len(indices)
@@ -73,15 +70,14 @@ class Heatmap(TableModule):
         high = params.high
         low = params.low
         try:
-            #import pdb;pdb.set_trace()
             if cmin is None:
                 cmin = histo.min()
             if cmax is None:
                 cmax = histo.max()
-            cscale = cmax - cmin
+            # cscale = cmax - cmin
             scale_hl = float(high - low)
-            scale = float(high - low) / cscale
-            #data = (sp.special.cbrt(histo) * 1.0 - cmin) * scale + 0.4999
+            # scale = float(high - low) / cscale
+            # data = (sp.special.cbrt(histo) * 1.0 - cmin) * scale + 0.4999
             data = (sp.special.cbrt(histo) * 1.0 - cmin) * scale_hl + 0.4999
             data[data > high] = high
             data[data < 0] = 0
@@ -92,7 +88,7 @@ class Heatmap(TableModule):
             image = Image.fromarray(data, mode='I')
             image = image.transpose(Image.FLIP_TOP_BOTTOM)
             filename = params.filename
-        except:
+        except Exception:
             image = None
             filename = None
         if filename is not None:
@@ -105,7 +101,7 @@ class Heatmap(TableModule):
                 image.save(filename, format='PNG')  # bits=16)
                 logger.debug('Saved image %s', filename)
                 image = None
-            except:
+            except Exception:
                 logger.error('Cannot save image %s', filename)
                 raise
         else:
@@ -118,9 +114,6 @@ class Heatmap(TableModule):
             values = {'filename': filename, 'time': run_number}
             self.result.add(values)
         return self._return_run_step(self.state_blocked, steps_run=1)
-
-    def is_visualization(self):
-        return True
 
     def get_visualization(self):
         return "heatmap"
@@ -170,6 +163,5 @@ class Heatmap(TableModule):
 
     def get_image_bin(self, run_number=None):
         file_url = self.get_image(run_number)
-        payload = file_url.split(',',1)[1]
+        payload = file_url.split(',', 1)[1]
         return base64.b64decode(payload)
-

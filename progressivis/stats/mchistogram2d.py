@@ -31,6 +31,7 @@ class MCHistogram2D(NAry):
 
     def __init__(self, x_column, y_column, with_output=True, **kwds):
         super(MCHistogram2D, self).__init__(dataframe_slot='data', **kwds)
+        self.tags.add(self.VISUALIZATION_TAG)
         self.x_column = x_column
         self.y_column = y_column
         self.default_step_size = 10000
@@ -151,22 +152,32 @@ class MCHistogram2D(NAry):
             assert xdelta >= 0 and ydelta >= 0
 
             # Either the min/max has extended, or it has shrunk beyond the deltas
-            if ((xmin<dxmin or xmax>dxmax or ymin<dymin or ymax>dymax)
-                or (xmin>(dxmin+xdelta) or xmax<(dxmax-xdelta) or ymin>(dymin+ydelta) or ymax<(dymax-ydelta))):
-                #print('Old bounds: %s,%s,%s,%s'%(dxmin,dxmax,dymin,dymax))
-                self._bounds = (xmin-xdelta,xmax+xdelta,ymin-ydelta,ymax+ydelta)
-                #print('Updated bounds at run %d: %s old %s deltas %s, %s'%(run_number,self._bounds, bounds, xdelta, ydelta))
-                logger.info('Updated bounds at run %s: %s', run_number, self._bounds)
+            if ((xmin < dxmin
+                 or xmax > dxmax
+                 or ymin < dymin
+                 or ymax > dymax)
+                or (xmin > (dxmin+xdelta)
+                    or xmax < (dxmax-xdelta)
+                    or ymin > (dymin+ydelta)
+                    or ymax < (dymax-ydelta))):
+                # print('Old bounds: %s,%s,%s,%s'%(dxmin,dxmax,dymin,dymax))
+                self._bounds = (xmin - xdelta,
+                                xmax + xdelta,
+                                ymin - ydelta,
+                                ymax + ydelta)
+                logger.info('Updated bounds at run %s: %s',
+                            run_number, self._bounds)
                 self.reset()
                 dfslot.update(run_number)
 
         xmin, xmax, ymin, ymax = self._bounds
-        if xmin>=xmax or ymin>=ymax:
+        if xmin >= xmax or ymin >= ymax:
             logger.error('Invalid bounds: %s', self._bounds)
             return self._return_run_step(self.state_blocked, steps_run=0)
 
-        # Now, we know we have data and bounds, proceed to create a new histogram
-        # or to update the previous if is still exists (i.e. no reset)
+        # Now, we know we have data and bounds, proceed to create a
+        # new histogram or to update the previous if is still exists
+        # (i.e. no reset)
         p = self.params
         steps = 0
         # dfslot.data() is a Table() then deleted records are not available
@@ -177,15 +188,18 @@ class MCHistogram2D(NAry):
         # else if dfslot.data() is a view and
         # if there are new deletions, build the histogram of the deleted pairs
         # then subtract it from the main histogram
-        elif dfslot.selection.deleted.any()  and self._histo is not None:
-            input_df = dfslot.data().base # the original table
-            raw_indices = dfslot.deleted.next(step_size) # we assume that deletions are only local to the view
+        elif dfslot.selection.deleted.any() and self._histo is not None:
+            input_df = dfslot.data().base  # the original table
+            # we assume that deletions are only local to the view
+            raw_indices = dfslot.deleted.next(step_size)
             # and the related records still exist in the original table ...
             # TODO : test this hypothesis and reset if false
             indices = fix_loc(raw_indices)
             steps += indices_len(indices)
-            x = input_df.to_array(locs=indices, columns=[self.x_column]).reshape(-1)
-            y = input_df.to_array(locs=indices, columns=[self.y_column]).reshape(-1)
+            x = input_df.to_array(locs=indices,
+                                  columns=[self.x_column]).reshape(-1)
+            y = input_df.to_array(locs=indices,
+                                  columns=[self.y_column]).reshape(-1)
             bins = [p.ybins, p.xbins]
             if len(x) > 0:
                 histo = histogram2d(y, x,
@@ -194,7 +208,6 @@ class MCHistogram2D(NAry):
                 self._histo -= histo
         # if there are new creations, build a partial histogram with them then
         # add it to the main histogram
-        #input_df = dfslot.data()
         if not dfslot.created.any():
             return self._return_run_step(self.state_blocked, steps_run=0)
         input_df = dfslot.data()
@@ -203,21 +216,23 @@ class MCHistogram2D(NAry):
         steps += indices_len(indices)
         logger.info('Read %d rows', steps)
         self.total_read += steps
-        x = input_df.to_array(locs=indices, columns=[self.x_column]).reshape(-1)
-        y = input_df.to_array(locs=indices, columns=[self.y_column]).reshape(-1)
+        x = input_df.to_array(locs=indices,
+                              columns=[self.x_column]).reshape(-1)
+        y = input_df.to_array(locs=indices,
+                              columns=[self.y_column]).reshape(-1)
 
         if self._xedges is not None:
             bins = [self._xedges, self._yedges]
         else:
             bins = [p.ybins, p.xbins]
-        if len(x)>0:
+        if len(x) > 0:
             # using fast_histogram
             histo = histogram2d(y, x,
                                 bins=bins,
                                 range=[[ymin, ymax], [xmin, xmax]])
         else:
-            #histo = None
-            #cmax = 0
+            # histo = None
+            # cmax = 0
             return self._return_run_step(self.state_blocked,
                                          steps_run=0)
         if self._histo is None:
@@ -247,24 +262,22 @@ class MCHistogram2D(NAry):
         self.build_heatmap(values)
         return self._return_run_step(self.next_state(dfslot), steps_run=steps)
 
-
     def build_heatmap(self, values):
         json_ = {}
         row = values
         if not (np.isnan(row['xmin']) or np.isnan(row['xmax'])
-                    or np.isnan(row['ymin']) or np.isnan(row['ymax'])):
+                or np.isnan(row['ymin']) or np.isnan(row['ymax'])):
             bounds = (row['xmin'], row['ymin'], row['xmax'], row['ymax'])
             data = row['array']
-            #data = sp.special.cbrt(row['array'])
-            #json_['data'] = sp.misc.bytescale(data)
+            # data = sp.special.cbrt(row['array'])
+            # json_['data'] = sp.misc.bytescale(data)
             json_['binnedPixels'] = data
             json_['range'] = [np.min(data), np.max(data)]
             json_['count'] = np.sum(data)
             json_['value'] = "heatmap"
-            #return json_
+            # return json_
             self._heatmap_cache = (json_, bounds)
         return None
-
 
     def heatmap_to_json(self, json, short=False):
         if self._heatmap_cache is None:
@@ -275,7 +288,7 @@ class MCHistogram2D(NAry):
         xmin = ymin = - np.inf
         xmax = ymax = np.inf
         buff, bounds = self._heatmap_cache
-        xmin, ymin, xmax, ymax = bounds #buff.pop('bounds')
+        xmin, ymin, xmax, ymax = bounds
         buffers = [buff]
         # TODO: check consistency among classes (e.g. same xbin, ybin etc.)
         xbins, ybins = buffers[0]['binnedPixels'].shape
@@ -332,9 +345,6 @@ class MCHistogram2D(NAry):
         json['sample'] = dict(data=[], index=[])
         json['columns'] = [x_label, y_label]
         return json
-
-    def is_visualization(self):
-        return True
 
     def get_visualization(self):
         return "heatmap"

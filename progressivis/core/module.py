@@ -45,20 +45,19 @@ class ModuleMeta(ABCMeta):
             cls.outputs = []
         all_parameters = list(cls.parameters)
         all_inputs = list(cls.inputs)
-        #all_outputs = list(cls.outputs)
-        all_outputs = {c.name:c for c in cls.outputs} 
+        all_outputs = {c.name: c for c in cls.outputs}
         for base in bases:
             all_parameters += getattr(base, "all_parameters", [])
             all_inputs += getattr(base, "all_inputs", [])
-            #all_outputs += getattr(base, "all_outputs", [])
             for outp in getattr(base, "all_outputs", []):
                 assert isinstance(outp, SlotDescriptor)
                 if outp.name not in all_outputs:
-                    all_outputs[outp.name] = outp #.append(outp)
+                    all_outputs[outp.name] = outp
         cls.all_parameters = all_parameters
         cls.all_inputs = all_inputs
         cls.all_outputs = list(all_outputs.values())
         super(ModuleMeta, cls).__init__(name, bases, attrs)
+
 
 class Module(metaclass=ModuleMeta):
     """The Module class is the base class for all the progressive modules.
@@ -67,6 +66,10 @@ class Module(metaclass=ModuleMeta):
                   ('debug', np.dtype(bool), False)]
     TRACE_SLOT = '_trace'
     PARAMETERS_SLOT = '_params'
+    VISUALIZATION_TAG = 'visualization'
+    SOURCE_TAG = 'source'
+    GREEDY_TAG = 'greedy'
+    TRANSIENT_TYPE = 'transient'
     inputs = [SlotDescriptor(PARAMETERS_SLOT, type=BaseTable, required=False)]
     outputs = [SlotDescriptor(TRACE_SLOT, type=BaseTable, required=False)]
 
@@ -115,6 +118,7 @@ class Module(metaclass=ModuleMeta):
                 get_random_name(name+'_tracer'))
         tracer = Tracer.default(name, storagegroup)
 
+        self.tags = set()
         self.order = None
         self.group = group
         self.tracer = tracer
@@ -513,16 +517,19 @@ class Module(metaclass=ModuleMeta):
                 'steps_run': steps_run}
 
     def is_visualization(self):
-        return False
+        return self.VISUALIZATION_TAG in self.tags
 
     def get_visualization(self):
         return None
 
     def is_source(self):
-        return False
+        return self.SOURCE_TAG in self.tags
 
     def is_greedy(self):
-        return False
+        return self.GREEDY_TAG in self.tags
+
+    def is_tagged(self, tag):
+        return tag in self.tags
 
     def is_created(self):
         return self._state == Module.state_created
@@ -799,11 +806,12 @@ class InputSlots(object):
         slot.input_module = self.__dict__['module']
         if isinstance(name, int):
             pos = name
-            desc = [(k, sd.required) for (k, sd) in slot.input_module.input_descriptors.items()]
+            desc = [(k, sd.required)
+                    for (k, sd) in slot.input_module.input_descriptors.items()]
             assert pos < len(desc)
             name_, req = desc[pos]
             # pos slot and all slots before pos have to be "required"
-            assert set([r for (_, r) in desc[:pos+1]]) == set([True]) 
+            assert set([r for (_, r) in desc[:pos+1]]) == set([True])
             slot.input_name = name_
         else:
             slot.input_name = name
