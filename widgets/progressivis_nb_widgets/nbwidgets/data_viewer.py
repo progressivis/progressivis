@@ -55,7 +55,7 @@ def _(arg):
     return str(len(arg))
 
 
-def refresh_info_hist(hout, hmod):
+def refresh_info_histogram1d(hout, hmod): # older
     if hout.bar:
         categs = hmod._categorical
         if categs is None:
@@ -78,11 +78,56 @@ def refresh_info_hist(hout, hmod):
     })
     hout.update('data', remove='true', insert=source)
 
+def refresh_info_hist(hout, hmod):
+    if hout.bar:
+        categs = hmod.result
+        if categs is None:
+            return
+        dataset = categ_as_vega_dataset(categs)
+        hout.update('data', remove='true', insert=dataset)
+        return
+    if not hmod.result:
+        return
+    #spec_with_data = spec_no_data.copy()
+    res = hmod.result
+    hist = res['pmf']
+    min_ = res['min']
+    max_ = res['max']
+    #bins = np.linspace(min_, max_, len(hist))
+    source = pd.DataFrame({
+        #'bins': bins,
+        'nbins': range(len(hist)),
+        'level': hist,
+    })
+    hout.children[0].update('data', remove='true', insert=source)
+
+def refresh_info_hist_1d(hout, h1d_mod):    
+    if not h1d_mod.result:
+        return
+    #spec_with_data = spec_no_data.copy()
+    res = h1d_mod.result.last().to_dict()
+    hist = res['array']
+    min_ = res['min']
+    max_ = res['max']
+    #bins = np.linspace(min_, max_, len(hist))
+    source = pd.DataFrame({
+        #'bins': bins,
+        'nbins': range(len(hist)),
+        'level': hist,
+    })
+    hout.children[1].update('data', remove='true', insert=source)
+
 
 def _refresh_info_hist(hout, hmod):
     async def _coro(_1, _2):
         _ = _1, _2
         await asynchronize(refresh_info_hist, hout, hmod)
+    return _coro
+
+def _refresh_info_hist_1d(hout, hmod):
+    async def _coro(_1, _2):
+        _ = _1, _2
+        await asynchronize(refresh_info_hist_1d, hout, hmod)
     return _coro
 
 def refresh_info_corr(cout, cmod, main_wg):
@@ -161,10 +206,14 @@ class DataViewer(ipw.Tab):
                         hout = VegaWidget(spec=bar_spec_no_data)
                         hout.bar = True
                     else:
-                        hout = VegaWidget(spec=hist1d_spec_no_data)
+                        hout = ipw.HBox([VegaWidget(spec=hist1d_spec_no_data),
+                                         VegaWidget(spec=hist1d_spec_no_data)])
                         hout.bar = False
                     self._hdict[hname] = hout
                     hmod.after_run_proc =  _refresh_info_hist(hout, hmod)
+                    if not hout.bar:
+                        hmod_1d = self._module.hist1d[hname]
+                        hmod_1d.after_run_proc =  _refresh_info_hist_1d(hout, hmod_1d)
                 self._hist_tab = ipw.Tab()
                 #self._hist_tab.children = tuple(self._hdict.values())
                 #for i, k in enumerate(self._module.hist.keys()):

@@ -49,6 +49,8 @@ class KLLSketch(TableModule):
             dtype_ = column.dtype
             column = column.loc[fix_loc(indices)]
             if self._kll is None:
+                self._kll_func = kll_floats_sketch
+                """
                 if np.issubdtype(dtype_, np.integer):
                     self._kll_func = kll_ints_sketch
                 elif np.issubdtype(dtype_, np.floating):
@@ -57,6 +59,7 @@ class KLLSketch(TableModule):
                 else:
                     raise ProgressiveError(f"Type {dtype_} of {self.column} "
                                            "is invalid for sketching")
+                """
                 self._kll = self._kll_func(self._k)
             kll = self._kll                
             sk = self._kll_func(self._k)

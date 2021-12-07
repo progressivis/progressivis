@@ -12,13 +12,83 @@ from ..table.module import TableModule
 from ..table.nary import NAry
 from ..utils.psdict import PsDict
 #from .var import OnlineVariance
-from ..stats import Min, Max, Var, Distinct, Histogram1D, Corr
+from ..stats import Min, Max, Var, Distinct, Corr
+from ..stats.kll import KLLSketch
+from ..table.hub import Hub
+from ..stats import Histogram1D
+from ..stats.histogram1d_categorical import Histogram1DCategorical
 from ..core.decorators import process_slot, run_if_any
 from ..table import TableSelectedView
 from ..table.dshape import dshape_fields
 
 logger = logging.getLogger(__name__)
 
+
+
+def _is_string_col(table_, col):
+    col_type = dict(dshape_fields(table_.dshape))[col]
+    return str(col_type) == 'string'
+
+def _run_step_common(self_, super_call, run_number, step_size, howlong,
+                     is_string):
+    if self_._enabled:
+        return super_call(run_number, step_size, howlong)
+    slot = self_.get_input_slot('table')
+    input_df = slot.data()
+    if self_._enabled is None:
+        if input_df is None:
+            return self_._return_run_step(self_.state_blocked, steps_run=0)
+        self_._enabled = _is_string_col(input_df, self_.column) is is_string
+    if self_._enabled:
+        return super_call(run_number, step_size, howlong)
+    slot.clear_buffers()
+    return self_._return_run_step(self_.state_zombie, steps_run=0)
+
+
+class KLLSketchIf(KLLSketch):
+    def __init__(self, *args, **kw):
+        super().__init__(*args, **kw)
+        self._enabled = None
+
+    def run_step(self, run_number, step_size, howlong):
+        return _run_step_common(self, super().run_step,
+                                run_number, step_size,
+                                howlong, is_string=False)
+
+class Histogram1DCategoricalIf(Histogram1DCategorical):
+    def __init__(self, *args, **kw):
+        super().__init__(*args, **kw)
+        self._enabled = None
+
+    def run_step(self, run_number, step_size, howlong):
+        return _run_step_common(self, super().run_step,
+                                run_number, step_size,
+                                howlong, is_string=True)        
+
+class Histogram1DIf(Histogram1D):
+    def __init__(self, *args, **kw):
+        super().__init__(*args, **kw)
+        self._enabled = None
+
+    def run_step(self, run_number, step_size, howlong):
+        return _run_step_common(self, super().run_step,
+                                run_number, step_size,
+                                howlong, is_string=False)        
+
+def make_hist(input_module, col, scheduler, input_slot='result'):
+    s = scheduler
+    hist1d_num = KLLSketchIf(scheduler=s, column=col)
+    hist1d_num.params.binning = 128
+    hist1d_num.input.table = input_module.output[input_slot]
+    hist1d_str = Histogram1DCategoricalIf(scheduler=s, column=col)
+    hist1d_str.input.table = input_module.output[input_slot]
+    hub = Hub(scheduler=s)
+    hub.input.table = hist1d_num.output.result
+    hub.input.table = hist1d_str.output.result
+    hub.column = col
+    return hub
+    
+    
 class StatsExtender(TableModule):
     """
     Adds statistics on input data
@@ -142,15 +212,18 @@ class StatsExtender(TableModule):
             self.input.max = self.max.output.result
             self.decorations.append('max')
         self.hist = {}
+        self.hist1d = {}
         if hist:
             for col in self._get_usecols(hist):
-                hist1d = Histogram1D(scheduler=s, column=col)
+                hist1d = Histogram1DIf(scheduler=s, column=col)
                 hist1d.input.table = input_module.output[input_slot]
                 hist1d.input.min = self.min.output.result
                 hist1d.input.max = self.max.output.result
                 pr = Print(proc=lambda x: None, scheduler=s)
                 pr.input[0] = hist1d.output.categorical
-                self.hist[col] = hist1d
+                self.hist1d[col] = hist1d
+                self.hist[col] = make_hist(input_module, col, s, input_slot='result')
+                
         if var:
             self.var = Var(scheduler=s,
                            columns=self._get_usecols(var),
