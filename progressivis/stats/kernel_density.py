@@ -21,7 +21,7 @@ class KernelDensity(TableModule):
         self._inserted = 0
         self._lately_inserted = 0
         super(KernelDensity, self).__init__(**kwds)
-        self.tags.add(self.VISUALIZATION_TAG)
+        self.tags.add(self.TAG_VISUALIZATION)
 
     def run_step(self, run_number, step_size, howlong):
         dfslot = self.get_input_slot('table')

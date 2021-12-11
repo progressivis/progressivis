@@ -31,7 +31,7 @@ class MCHistogram2D(NAry):
 
     def __init__(self, x_column, y_column, with_output=True, **kwds):
         super(MCHistogram2D, self).__init__(dataframe_slot='data', **kwds)
-        self.tags.add(self.VISUALIZATION_TAG)
+        self.tags.add(self.TAG_VISUALIZATION)
         self.x_column = x_column
         self.y_column = y_column
         self.default_step_size = 10000

@@ -25,7 +25,7 @@ class Histogram1D(TableModule):
 
     def __init__(self, column, **kwds):
         super(Histogram1D, self).__init__(dataframe_slot='table', **kwds)
-        self.tags.add(self.VISUALIZATION_TAG)
+        self.tags.add(self.TAG_VISUALIZATION)
         self.column = column
         self.total_read = 0
         self.default_step_size = 1000

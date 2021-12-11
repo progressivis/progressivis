@@ -38,7 +38,7 @@ class Histogram2D(TableModule):
 
     def __init__(self, x_column, y_column, with_output=True, **kwds):
         super(Histogram2D, self).__init__(dataframe_slot='table', **kwds)
-        self.tags.add(self.VISUALIZATION_TAG)
+        self.tags.add(self.TAG_VISUALIZATION)
         self.x_column = x_column
         self.y_column = y_column
         self.default_step_size = 10000

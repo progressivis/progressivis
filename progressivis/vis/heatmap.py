@@ -34,7 +34,7 @@ class Heatmap(TableModule):
 
     def __init__(self, colormap=None, **kwds):
         super(Heatmap, self).__init__(**kwds)
-        self.tags.add(self.VISUALIZATION_TAG)
+        self.tags.add(self.TAG_VISUALIZATION)
         self.colormap = colormap
         self.default_step_size = 1
 

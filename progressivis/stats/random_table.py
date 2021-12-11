@@ -21,11 +21,13 @@ RAND = np.random.rand
 
 class RandomTable(TableModule):
     "Random table generator module"
-    def __init__(self, columns, rows=-1, random=RAND, dtype='float64',throttle=False, **kwds):
+    def __init__(self, columns, rows=-1, random=RAND, dtype='float64',
+                 throttle=False, **kwds):
         super(RandomTable, self).__init__(**kwds)
+        self.tags.add(self.TAG_SOURCE)
         self.default_step_size = 1000
         if isinstance(columns, integer_types):
-            self.columns = ["_%d"%i for i in range(1, columns+1)]
+            self.columns = ["_%d" % i for i in range(1, columns+1)]
         elif isinstance(columns, (list, np.ndarray)):
             self.columns = columns
         else:
@@ -42,9 +44,6 @@ class RandomTable(TableModule):
                             dshape=dshape,
                             create=True)
         self.columns = self.result.columns
-
-    def is_source(self):
-        return True
 
     def run_step(self, run_number, step_size, howlong):
         if step_size == 0:
@@ -72,8 +71,9 @@ class RandomTable(TableModule):
             next_state = self.state_ready
         return self._return_run_step(next_state, steps_run=step_size)
 
+
 class RandomDict(Constant):
-        def __init__(self, columns, **kwds):
-            keys = [f'_{i}' for i in range(1, columns+1)]
-            vals = np.random.rand(columns)
-            super().__init__(PsDict(dict(zip(keys, vals))), **kwds)
+    def __init__(self, columns, **kwds):
+        keys = [f'_{i}' for i in range(1, columns+1)]
+        vals = np.random.rand(columns)
+        super().__init__(PsDict(dict(zip(keys, vals))), **kwds)

@@ -86,7 +86,7 @@ class MCScatterPlot(NAry):
         """Multiclass ...
         """
         super(MCScatterPlot, self).__init__(**kwds)
-        self.tags.add(self.VISUALIZATION_TAG)
+        self.tags.add(self.TAG_VISUALIZATION)
         self._classes = classes  # TODO: check it ...
         self._x_label = x_label
         self._y_label = y_label

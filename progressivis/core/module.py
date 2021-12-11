@@ -66,9 +66,10 @@ class Module(metaclass=ModuleMeta):
                   ('debug', np.dtype(bool), False)]
     TRACE_SLOT = '_trace'
     PARAMETERS_SLOT = '_params'
-    VISUALIZATION_TAG = 'visualization'
-    SOURCE_TAG = 'source'
-    GREEDY_TAG = 'greedy'
+    TAG_VISUALIZATION = 'visualization'
+    TAG_INPUT = 'input'
+    TAG_SOURCE = 'source'
+    TAG_GREEDY = 'greedy'
     TRANSIENT_TYPE = 'transient'
     inputs = [SlotDescriptor(PARAMETERS_SLOT, type=BaseTable, required=False)]
     outputs = [SlotDescriptor(TRACE_SLOT, type=BaseTable, required=False)]
@@ -306,7 +307,7 @@ class Module(metaclass=ModuleMeta):
     def is_input(self):
         # pylint: disable=no-self-use
         "Return True if this module is an input module"
-        return False
+        return self.TAG_INPUT in self.tags
 
     def is_data_input(self):
         # pylint: disable=no-self-use
@@ -517,16 +518,16 @@ class Module(metaclass=ModuleMeta):
                 'steps_run': steps_run}
 
     def is_visualization(self):
-        return self.VISUALIZATION_TAG in self.tags
+        return self.TAG_VISUALIZATION in self.tags
 
     def get_visualization(self):
         return None
 
     def is_source(self):
-        return self.SOURCE_TAG in self.tags
+        return self.TAG_SOURCE in self.tags
 
     def is_greedy(self):
-        return self.GREEDY_TAG in self.tags
+        return self.TAG_GREEDY in self.tags
 
     def is_tagged(self, tag):
         return tag in self.tags

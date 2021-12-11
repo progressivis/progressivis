@@ -203,7 +203,8 @@ class Scheduler(object):
             self._idle_procs = []
         await self.run()
 
-    async def start(self, tick_proc=None, idle_proc=None, coros=(), persist=False):
+    async def start(self, tick_proc=None, idle_proc=None, coros=(),
+                    persist=False):
         if not persist:
             return await self.start_impl(tick_proc, idle_proc, coros)
         try:
@@ -443,7 +444,6 @@ class Scheduler(object):
 
     def _end_of_modules(self, first_run):
         # Reset interaction mode
-        #self._proc_interaction_opts()
         self._selection_target_time = -1
         new_list = [m for m in self._run_list if not m.is_terminated()]
         self._run_list = new_list
@@ -640,7 +640,6 @@ class Scheduler(object):
             if (hasattr(mod, 'storagegroup') and
                     mod.storagegroup is not None):
                 mod.storagegroup.close_all()
-
 
     @staticmethod
     def _module_order(x, y):
