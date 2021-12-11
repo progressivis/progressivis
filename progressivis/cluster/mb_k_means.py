@@ -243,17 +243,18 @@ class MBKMeans(TableModule):
         return self.mbk.cluster_centers_.tolist()
 
     def create_dependent_modules(self, input_module, input_slot='result'):
-        s = self.scheduler()
-        self.input_module = input_module
-        self.input.table = input_module.output[input_slot]
-        self.input_slot = input_slot
-        c = DynVar(group="bar", scheduler=s)
-        self.moved_center = c
-        self.input.moved_center = c.output.result
-        v = Var(group="bar", scheduler=s)
-        self.variance = v
-        v.input.table = input_module.output[input_slot]
-        self.input.var = v.output.result
+        with self.tagged(self.TAG_DEPENDENT):
+            s = self.scheduler()
+            self.input_module = input_module
+            self.input.table = input_module.output[input_slot]
+            self.input_slot = input_slot
+            c = DynVar(group="bar", scheduler=s)
+            self.moved_center = c
+            self.input.moved_center = c.output.result
+            v = Var(group="bar", scheduler=s)
+            self.variance = v
+            v.input.table = input_module.output[input_slot]
+            self.input.var = v.output.result
 
 
 class MBKMeansFilter(TableModule):
@@ -291,9 +292,11 @@ class MBKMeansFilter(TableModule):
                                          steps_run=steps)
 
     def create_dependent_modules(self, mbkmeans, data_module, data_slot):
-        scheduler = self.scheduler()
-        filter_ = FilterMod(expr=f'labels=={self._sel}', scheduler=scheduler)
-        filter_.input.table = mbkmeans.output.labels
-        self.filter = filter_
-        self.input.labels = filter_.output.result
-        self.input.table = data_module.output[data_slot]
+        with self.tagged(self.TAG_DEPENDENT):
+            scheduler = self.scheduler()
+            filter_ = FilterMod(expr=f'labels=={self._sel}',
+                                scheduler=scheduler)
+            filter_.input.table = mbkmeans.output.labels
+            self.filter = filter_
+            self.input.labels = filter_.output.result
+            self.input.table = data_module.output[data_slot]

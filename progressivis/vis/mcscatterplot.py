@@ -1,15 +1,17 @@
 "Multiclass Scatterplot Module."
 
-import numpy as np
-from ..table.nary import NAry
-from ..stats import MCHistogram2D, Sample
-from ..table.range_query_2d import RangeQuery2d
-from ..utils.errors import ProgressiveError
-from ..core.utils import is_notebook, get_physical_base
-from ..io import Variable, VirtualVariable
 from itertools import chain
-
 from collections import defaultdict
+
+import numpy as np
+
+from progressivis import Module
+from progressivis.table.nary import NAry
+from progressivis.stats import MCHistogram2D, Sample
+from progressivis.table.range_query_2d import RangeQuery2d
+from progressivis.utils.errors import ProgressiveError
+from progressivis.core.utils import is_notebook, get_physical_base
+from progressivis.io import Variable, VirtualVariable
 
 
 class _DataClass(object):
@@ -40,43 +42,46 @@ class _DataClass(object):
                                  **kwds):
         if self.input_module is not None:
             return self
-        scheduler = self.scheduler()
-        with scheduler:
-            self.input_module = input_module
-            self.input_slot = input_slot
-            range_query_2d = RangeQuery2d(column_x=self.x_column,
-                                          column_y=self.y_column,
-                                          group=self._group,
-                                          scheduler=scheduler,
-                                          approximate=self._approximate)
-            range_query_2d.create_dependent_modules(input_module,
-                                                    input_slot,
-                                                    min_value=False,
-                                                    max_value=False)
-            self.min_value = Variable(group=self._group, scheduler=scheduler)
-            self.min_value.input.like = range_query_2d.min.output.result
-            range_query_2d.input.lower = self.min_value.output.result
-            self.max_value = Variable(group=self._group, scheduler=scheduler)
-            self.max_value.input.like = range_query_2d.max.output.result
-            range_query_2d.input.upper = self.max_value.output.result
-            if histogram2d is None:
-                histogram2d = MCHistogram2D(self.x_column, self.y_column,
-                                            group=self._group,
-                                            scheduler=scheduler)
-            histogram2d.input.data = range_query_2d.output.result
-            if self.sample == 'default':
-                self.sample = Sample(samples=100, group=self._group,
-                                     scheduler=scheduler)
-            if isinstance(self.sample, Sample):
-                self.sample.input.table = range_query_2d.output.result
-            self.histogram2d = histogram2d
-            # self.sample = sample
-            # self.select = select
-            self.min = range_query_2d.min.output.result
-            self.max = range_query_2d.max.output.result
-            self.range_query_2d = range_query_2d
-        scatterplot = self
-        return scatterplot
+        with Module.tagged(Module.TAG_DEPENDENT):
+            scheduler = self.scheduler()
+            with scheduler:
+                self.input_module = input_module
+                self.input_slot = input_slot
+                range_query_2d = RangeQuery2d(column_x=self.x_column,
+                                              column_y=self.y_column,
+                                              group=self._group,
+                                              scheduler=scheduler,
+                                              approximate=self._approximate)
+                range_query_2d.create_dependent_modules(input_module,
+                                                        input_slot,
+                                                        min_value=False,
+                                                        max_value=False)
+                self.min_value = Variable(group=self._group,
+                                          scheduler=scheduler)
+                self.min_value.input.like = range_query_2d.min.output.result
+                range_query_2d.input.lower = self.min_value.output.result
+                self.max_value = Variable(group=self._group,
+                                          scheduler=scheduler)
+                self.max_value.input.like = range_query_2d.max.output.result
+                range_query_2d.input.upper = self.max_value.output.result
+                if histogram2d is None:
+                    histogram2d = MCHistogram2D(self.x_column, self.y_column,
+                                                group=self._group,
+                                                scheduler=scheduler)
+                histogram2d.input.data = range_query_2d.output.result
+                if self.sample == 'default':
+                    self.sample = Sample(samples=100, group=self._group,
+                                         scheduler=scheduler)
+                if isinstance(self.sample, Sample):
+                    self.sample.input.table = range_query_2d.output.result
+                self.histogram2d = histogram2d
+                # self.sample = sample
+                # self.select = select
+                self.min = range_query_2d.min.output.result
+                self.max = range_query_2d.max.output.result
+                self.range_query_2d = range_query_2d
+            scatterplot = self
+            return scatterplot
 
 
 class MCScatterPlot(NAry):
@@ -343,8 +348,8 @@ class MCScatterPlot(NAry):
                                  sample='default', **kwds):
         self.input_module = input_module
         self.input_slot = input_slot
-        scheduler = self.scheduler()
-        with scheduler:
+        with Module.tagged(Module.TAG_DEPENDENT):
+            scheduler = self.scheduler()
             self.min_value = VirtualVariable([self._x_label, self._y_label],
                                              scheduler=scheduler)
             self.max_value = VirtualVariable([self._x_label, self._y_label],

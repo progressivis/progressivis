@@ -37,24 +37,25 @@ class Select(TableModule):
 
         if self.input_module is not None:
             return self
-        scheduler = self.scheduler
-        kwds['scheduler'] = scheduler  # make sure we pass it
-        self.input_module = input_module
-        self.input_slot = input_slot
+        with self.tagged(self.TAG_DEPENDENT):
+            scheduler = self.scheduler
+            kwds['scheduler'] = scheduler  # make sure we pass it
+            self.input_module = input_module
+            self.input_slot = input_slot
 
-        query = RangeQuery(group=self.name, scheduler=scheduler)
-        query.create_dependent_modules(input_module, input_slot, **kwds)
+            query = RangeQuery(group=self.name, scheduler=scheduler)
+            query.create_dependent_modules(input_module, input_slot, **kwds)
 
-        select = self
-        select.input.df = input_module.output[input_slot]
-        select.input.query = query.output.query
+            select = self
+            select.input.df = input_module.output[input_slot]
+            select.input.query = query.output.query
 
-        self.query = query
-        self.min = query.min
-        self.max = query.max
-        self.min_value = query.min_value
-        self.max_value = query.max_value
-        return select
+            self.query = query
+            self.min = query.min
+            self.max = query.max
+            self.min_value = query.min_value
+            self.max_value = query.max_value
+            return select
 
     def run_step(self, run_number, step_size, howlong):
         table_slot = self.get_input_slot('table')

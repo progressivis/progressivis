@@ -1,21 +1,20 @@
 import logging
 import numpy as np
 import copy
-from ..core.utils import indices_len, fix_loc, filter_cols
+from ..core.utils import indices_len, fix_loc
 from ..core.bitmap import bitmap
 from ..table.module import TableModule
 from ..table import Table, TableSelectedView
-from ..table.dshape import dshape_projection
-from ..core.decorators import *
-from .. import ProgressiveError, SlotDescriptor
+from ..core.decorators import process_slot, run_if_any
+from .. import SlotDescriptor
 from ..utils.psdict import PsDict
 from . import Sample
 import pandas as pd
 from sklearn.decomposition import IncrementalPCA
-from scipy.spatial import distance as dist
 import numexpr as ne
 
 logger = logging.getLogger(__name__)
+
 
 class PPCA(TableModule):
     parameters = [('n_components',  np.dtype(int), 2)]
@@ -24,11 +23,11 @@ class PPCA(TableModule):
 
     def __init__(self, **kwds):
         super().__init__(**kwds)
-        self.inc_pca = None # IncrementalPCA(n_components=self.params.n_components)
+        # IncrementalPCA(n_components=self.params.n_components)
+        self.inc_pca = None
         self.inc_pca_wtn = None
         self._as_array = None
         self._transformer = PsDict()
-        #self.default_step_size = 10000
 
     def predict_step_size(self, duration):
         p = super().predict_step_size(duration)
@@ -53,7 +52,7 @@ class PPCA(TableModule):
         """
         with self.context as ctx:
             table = ctx.table.data()
-            indices = ctx.table.created.next(step_size) # returns a slice
+            indices = ctx.table.created.next(step_size)
             steps = indices_len(indices)
             if steps < self.params.n_components:
                 return self._return_run_step(self.state_blocked, steps_run=0)
@@ -66,18 +65,20 @@ class PPCA(TableModule):
                     self._as_array = ''
             vs = vs[self._as_array].values if self._as_array else vs.to_array()
             if self.inc_pca is None:
-                self.inc_pca = IncrementalPCA(n_components=self.params.n_components)
+                self.inc_pca = IncrementalPCA(
+                    n_components=self.params.n_components)
                 self._transformer['inc_pca'] = self.inc_pca
             self.inc_pca.partial_fit(vs)
             if self.result is None:
                 self.result = TableSelectedView(table, bitmap(indices))
             else:
                 self.result.selection |= bitmap(indices)
-            return self._return_run_step(self.next_state(ctx.table), steps_run=steps)
+            return self._return_run_step(self.next_state(ctx.table),
+                                         steps_run=steps)
 
     def create_dependent_modules_buggy(self, atol=0.0, rtol=0.001,
-                                 trace=False, threshold=None, resetter=None,
-                                 resetter_slot='result'):
+                                       trace=False, threshold=None,
+                                       resetter=None, resetter_slot='result'):
         scheduler = self.scheduler()
         with scheduler:
             self.reduced = PPCATransformer(scheduler=scheduler,
@@ -92,22 +93,25 @@ class PPCA(TableModule):
                 resetter.input.table = self.output.result
                 self.reduced.input.resetter = resetter.output[resetter_slot]
             self.reduced.create_dependent_modules(self.output.result)
+
     def create_dependent_modules(self, atol=0.0, rtol=0.001,
                                  trace=False, threshold=None, resetter=None,
                                  resetter_slot='result', resetter_func=None):
-        s = self.scheduler()
-        self.reduced = PPCATransformer(scheduler=s,
-                                       atol=atol, rtol=rtol,
-                                       trace=trace,
-                                       threshold=threshold,
-                                       resetter_func=resetter_func,
-                                       group=self.name)
-        self.reduced.input.table = self.output.result
-        self.reduced.input.transformer = self.output.transformer
-        if resetter is not None:
-            assert callable(resetter_func)
-            self.reduced.input.resetter = resetter.output[resetter_slot]
-        self.reduced.create_dependent_modules(self.output.result)
+        with self.tagged(self.TAG_DEPENDENT):
+            s = self.scheduler()
+            self.reduced = PPCATransformer(scheduler=s,
+                                           atol=atol, rtol=rtol,
+                                           trace=trace,
+                                           threshold=threshold,
+                                           resetter_func=resetter_func,
+                                           group=self.name)
+            self.reduced.input.table = self.output.result
+            self.reduced.input.transformer = self.output.transformer
+            if resetter is not None:
+                assert callable(resetter_func)
+                self.reduced.input.resetter = resetter.output[resetter_slot]
+            self.reduced.create_dependent_modules(self.output.result)
+
 
 class PPCATransformer(TableModule):
     inputs = [SlotDescriptor('table', type=Table, required=True),
@@ -139,15 +143,17 @@ class PPCATransformer(TableModule):
                 self._as_array = data.columns[0]
             else:
                 self._as_array = ''
-        return data[self._as_array].values if self._as_array else data.to_array()
+        return data[self._as_array].values \
+            if self._as_array else data.to_array()
 
     def create_dependent_modules(self, input_slot):
-        scheduler = self.scheduler()
-        with scheduler:
-            self.sample = Sample(samples=100, group=self.name,
+        with self.tagged(self.TAG_DEPENDENT):
+            scheduler = self.scheduler()
+            with scheduler:
+                self.sample = Sample(samples=100, group=self.name,
                                      scheduler=scheduler)
-            self.sample.input.table = input_slot
-            self.input.samples = self.sample.output.select
+                self.sample.input.table = input_slot
+                self.input.samples = self.sample.output.select
 
     def trace_if(self, ret, mean, max_, len_):
         if self._trace:
@@ -167,7 +173,7 @@ class PPCATransformer(TableModule):
             resetter.clear_buffers()
             if not self._resetter_func(resetter):
                 return self.trace_if(False, 0.0, -1.0, len(input_table))
-        if self._threshold is not None and len(input_table)>=self._threshold:
+        if self._threshold is not None and len(input_table) >= self._threshold:
             return self.trace_if(False, 0.0, 0.0, len(input_table))
         data = self._proc_as_array(self.filter_columns(input_table, samples))
         transf_wtn = inc_pca_wtn.transform(data)
@@ -175,7 +181,8 @@ class PPCATransformer(TableModule):
         transf_now = inc_pca.transform(data)
         self.maintain_samples(transf_now)
         explained_variance = inc_pca.explained_variance_
-        dist = np.sqrt(ne.evaluate("((transf_wtn-transf_now)**2)/explained_variance").sum(axis=1))
+        dist = np.sqrt(ne.evaluate(
+            "((transf_wtn-transf_now)**2)/explained_variance").sum(axis=1))
         mean = np.mean(dist)
         max_ = np.max(dist)
         ret = mean > self._rtol
@@ -206,21 +213,21 @@ class PPCATransformer(TableModule):
         if not self._samples_flag:
             return
         if isinstance(self._samples, Table):
-            self._samples.loc[:,:] = vec
+            self._samples.loc[:, :] = vec
         else:
             df = self._make_df(vec)
             self._samples = Table(self.generate_table_name('s_ppca'),
-                                data=df, create=True)
+                                  data=df, create=True)
 
     def maintain_prev_samples(self, vec):
         if not self._prev_samples_flag:
             return
         if isinstance(self._prev_samples, Table):
-            self._prev_samples.loc[:,:] = vec
+            self._prev_samples.loc[:, :] = vec
         else:
             df = self._make_df(vec)
             self._prev_samples = Table(self.generate_table_name('ps_ppca'),
-                                data=df, create=True)
+                                       data=df, create=True)
 
     def get_data(self, name):
         if name == 'samples':
@@ -244,7 +251,7 @@ class PPCATransformer(TableModule):
         """
         with self.context as ctx:
             input_table = ctx.table.data()
-            indices = ctx.table.created.next(step_size) # returns a slice
+            indices = ctx.table.created.next(step_size)
             steps = indices_len(indices)
             if steps == 0:
                 return self._return_run_step(self.state_blocked, steps_run=0)
@@ -254,7 +261,8 @@ class PPCATransformer(TableModule):
             ctx.samples.clear_buffers()
             if self.inc_pca_wtn is not None:
                 samples = ctx.samples.data()
-                if self.needs_reset(inc_pca, self.inc_pca_wtn, input_table, samples):
+                if self.needs_reset(inc_pca, self.inc_pca_wtn, input_table,
+                                    samples):
                     self.inc_pca_wtn = None
                     ctx.table.reset()
                     ctx.table.update(run_number)
@@ -262,10 +270,12 @@ class PPCATransformer(TableModule):
                     indices = ctx.table.created.next(step_size)
                     steps = indices_len(indices)
                     if steps == 0:
-                        return self._return_run_step(self.state_blocked, steps_run=0)
+                        return self._return_run_step(self.state_blocked,
+                                                     steps_run=0)
             else:
                 self.inc_pca_wtn = copy.deepcopy(inc_pca)
-            data = self._proc_as_array(self.filter_columns(input_table, fix_loc(indices)))
+            data = self._proc_as_array(self.filter_columns(input_table,
+                                                           fix_loc(indices)))
             reduced = inc_pca.transform(data)
             df = self._make_df(reduced)
             if self.result is None:
@@ -273,4 +283,5 @@ class PPCATransformer(TableModule):
                                     data=df, create=True)
             else:
                 self.result.append(df)
-            return self._return_run_step(self.next_state(ctx.table), steps_run=steps)
+            return self._return_run_step(self.next_state(ctx.table),
+                                         steps_run=steps)

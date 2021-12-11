@@ -14,6 +14,7 @@ from ..utils.psdict import PsDict
 from ..table.merge_dict import MergeDict
 from . import TableSelectedView
 
+
 class _Selection(object):
     def __init__(self, values=None):
         self._values = bitmap([]) if values is None else values
@@ -45,41 +46,60 @@ class RangeQuery2dImpl(ModuleImpl):
     def resume(self, lower_x, upper_x, lower_y, upper_y, limit_changed,
                created=None, updated=None, deleted=None):
         if limit_changed:
-            new_sel_x = self._hist_index_x.range_query_aslist(lower_x, upper_x,
-                                                approximate=self._approximate)
-            new_sel_y = self._hist_index_y.range_query_aslist(lower_y, upper_y,
-                                                approximate=self._approximate)
+            new_sel_x = self._hist_index_x.range_query_aslist(
+                lower_x, upper_x,
+                approximate=self._approximate
+            )
+            new_sel_y = self._hist_index_y.range_query_aslist(
+                lower_y, upper_y,
+                approximate=self._approximate
+            )
             if new_sel_x is None or new_sel_y is None:
-                new_sel_x = self._hist_index_x.range_query(lower_x, upper_x,
-                                                approximate=self._approximate)
-                new_sel_y = self._hist_index_y.range_query(lower_y, upper_y,
-                                                approximate=self._approximate)
+                new_sel_x = self._hist_index_x.range_query(
+                    lower_x, upper_x,
+                    approximate=self._approximate
+                )
+                new_sel_y = self._hist_index_y.range_query(
+                    lower_y, upper_y,
+                    approximate=self._approximate
+                )
                 new_sel = new_sel_x & new_sel_y
             else:
-                new_sel = bitmap.union(*(x&y for x,y in it.product(new_sel_x, new_sel_y)))
+                new_sel = bitmap.union(*(x & y
+                                         for x, y in it.product(new_sel_x,
+                                                                new_sel_y)))
             self.result.assign(new_sel)
             return
         if updated:
             self.result.remove(updated)
-            res_x = self._hist_index_x.restricted_range_query(lower_x, upper_x,
-                            only_locs=updated, approximate=self._approximate)
-            res_y = self._hist_index_y.restricted_range_query(lower_y, upper_y,
-                            only_locs=updated, approximate=self._approximate)
-            self.result.update(res_x&res_y)
+            res_x = self._hist_index_x.restricted_range_query(
+                lower_x, upper_x,
+                only_locs=updated, approximate=self._approximate
+            )
+            res_y = self._hist_index_y.restricted_range_query(
+                lower_y, upper_y,
+                only_locs=updated, approximate=self._approximate
+            )
+            self.result.update(res_x & res_y)
         if created:
-            res_x = self._hist_index_x.restricted_range_query(lower_x, upper_x,
-                            only_locs=created, approximate=self._approximate)
-            res_y = self._hist_index_y.restricted_range_query(lower_y, upper_y,
-                            only_locs=created, approximate=self._approximate)
-            self.result.update(res_x&res_y)
+            res_x = self._hist_index_x.restricted_range_query(
+                lower_x, upper_x,
+                only_locs=created, approximate=self._approximate
+            )
+            res_y = self._hist_index_y.restricted_range_query(
+                lower_y, upper_y,
+                only_locs=created, approximate=self._approximate
+            )
+            self.result.update(res_x & res_y)
         if deleted:
             self.result.remove(deleted)
 
-    def start(self, table, lower_x, upper_x, lower_y, upper_y, limit_changed, created=None, updated=None, deleted=None):
-        #self._table = table
+    def start(self, table, lower_x, upper_x, lower_y, upper_y,
+              limit_changed, created=None, updated=None, deleted=None):
         self.result = _Selection()
         self.is_started = True
-        return self.resume(lower_x, upper_x, lower_y, upper_y, limit_changed, created, updated, deleted)
+        return self.resume(lower_x, upper_x, lower_y, upper_y,
+                           limit_changed, created, updated, deleted)
 
 
 class RangeQuery2d(TableModule):
@@ -137,72 +157,73 @@ class RangeQuery2d(TableModule):
                                  **kwds):
         if self.input_module is not None:  # test if already called
             return self
-        scheduler = self.scheduler()
-        params = self.params
-        self.input_module = input_module
-        self.input_slot = input_slot
-        with scheduler:
-            hist_index_x = HistogramIndex(column=params.column_x,
-                                          group=self.name,
-                                          scheduler=scheduler)
-            self.hist_index_x = hist_index_x
-            hist_index_x.input.table = input_module.output[input_slot]
-            hist_index_y = HistogramIndex(column=params.column_y,
-                                          group=self.name,
-                                          scheduler=scheduler)
-            self.hist_index_y = hist_index_y
-            hist_index_y.input.table = input_module.output[input_slot]
-            if min_ is None:
-                min_x = Min(group=self.name,
-                            scheduler=scheduler,
-                            columns=[self._column_x])
-                min_x.input.table = hist_index_x.output.min_out
-                min_y = Min(group=self.name,
-                            scheduler=scheduler,
-                            columns=[self._column_y])
-                min_y.input.table = hist_index_y.output.min_out
-                min_ = MergeDict(group=self.name, scheduler=scheduler)
-                min_.input.first = min_x.output.result
-                min_.input.second = min_y.output.result
-            if max_ is None:
-                max_x = Max(group=self.name,
-                            scheduler=scheduler,
-                            columns=[self._column_x])
-                max_x.input.table = hist_index_x.output.max_out
-                max_y = Max(group=self.name,
-                            scheduler=scheduler,
-                            columns=[self._column_y])
-                max_y.input.table = hist_index_y.output.max_out
-                max_ = MergeDict(group=self.name, scheduler=scheduler)
-                max_.input.first = max_x.output.result
-                max_.input.second = max_y.output.result
-            if min_value is None:
-                min_value = Variable(group=self.name,
-                                     scheduler=scheduler)
-                min_value.input.like = min_.output.result
-            if max_value is None:
-                max_value = Variable(group=self.name,
-                                     scheduler=scheduler)
-                max_value.input.like = max_.output.result
+        with self.tagged(self.TAG_DEPENDENT):
+            scheduler = self.scheduler()
+            params = self.params
+            self.input_module = input_module
+            self.input_slot = input_slot
+            with scheduler:
+                hist_index_x = HistogramIndex(column=params.column_x,
+                                              group=self.name,
+                                              scheduler=scheduler)
+                self.hist_index_x = hist_index_x
+                hist_index_x.input.table = input_module.output[input_slot]
+                hist_index_y = HistogramIndex(column=params.column_y,
+                                              group=self.name,
+                                              scheduler=scheduler)
+                self.hist_index_y = hist_index_y
+                hist_index_y.input.table = input_module.output[input_slot]
+                if min_ is None:
+                    min_x = Min(group=self.name,
+                                scheduler=scheduler,
+                                columns=[self._column_x])
+                    min_x.input.table = hist_index_x.output.min_out
+                    min_y = Min(group=self.name,
+                                scheduler=scheduler,
+                                columns=[self._column_y])
+                    min_y.input.table = hist_index_y.output.min_out
+                    min_ = MergeDict(group=self.name, scheduler=scheduler)
+                    min_.input.first = min_x.output.result
+                    min_.input.second = min_y.output.result
+                if max_ is None:
+                    max_x = Max(group=self.name,
+                                scheduler=scheduler,
+                                columns=[self._column_x])
+                    max_x.input.table = hist_index_x.output.max_out
+                    max_y = Max(group=self.name,
+                                scheduler=scheduler,
+                                columns=[self._column_y])
+                    max_y.input.table = hist_index_y.output.max_out
+                    max_ = MergeDict(group=self.name, scheduler=scheduler)
+                    max_.input.first = max_x.output.result
+                    max_.input.second = max_y.output.result
+                if min_value is None:
+                    min_value = Variable(group=self.name,
+                                         scheduler=scheduler)
+                    min_value.input.like = min_.output.result
+                if max_value is None:
+                    max_value = Variable(group=self.name,
+                                         scheduler=scheduler)
+                    max_value.input.like = max_.output.result
 
-            range_query = self
-            # range_query.hist_index = hist_index
-            self._impl = RangeQuery2dImpl(self._column_x, self._column_y,
-                                          hist_index_x, hist_index_y,
-                                          approximate=self._approximate)
-            range_query.input.table = hist_index_x.output.result  # don't care
-            if min_value:
-                range_query.input.lower = min_value.output.result
-            if max_value:
-                range_query.input.upper = max_value.output.result
-            range_query.input.min = min_.output.result
-            range_query.input.max = max_.output.result
+                range_query = self
+                # range_query.hist_index = hist_index
+                self._impl = RangeQuery2dImpl(self._column_x, self._column_y,
+                                              hist_index_x, hist_index_y,
+                                              approximate=self._approximate)
+                range_query.input.table = hist_index_x.output.result
+                if min_value:
+                    range_query.input.lower = min_value.output.result
+                if max_value:
+                    range_query.input.upper = max_value.output.result
+                range_query.input.min = min_.output.result
+                range_query.input.max = max_.output.result
 
-        self.min = min_
-        self.max = max_
-        self.min_value = min_value
-        self.max_value = max_value
-        return range_query
+            self.min = min_
+            self.max = max_
+            self.min_value = min_value
+            self.max_value = max_value
+            return range_query
 
     def _create_min_max(self):
         if self._min_table is None:
@@ -358,11 +379,11 @@ class RangeQuery2d(TableModule):
                                       deleted=deleted)
             self.result.selection = self._impl.result._values
         else:
-            status = self._impl.resume(lower_value_x, upper_value_x,
-                                       lower_value_y, upper_value_y,
-                                       limit_changed,
-                                       created=created,
-                                       updated=updated,
-                                       deleted=deleted)
+            self._impl.resume(lower_value_x, upper_value_x,
+                              lower_value_y, upper_value_y,
+                              limit_changed,
+                              created=created,
+                              updated=updated,
+                              deleted=deleted)
             self.result.selection = self._impl.result._values
         return self._return_run_step(self.next_state(input_slot), steps)

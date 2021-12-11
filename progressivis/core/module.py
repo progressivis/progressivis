@@ -59,6 +59,21 @@ class ModuleMeta(ABCMeta):
         super(ModuleMeta, cls).__init__(name, bases, attrs)
 
 
+class ModuleTag:
+    tags = set()
+
+    def __init__(self, *tag_list):
+        self._saved = ModuleTag.tags
+        ModuleTag.tags = set(tag_list)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        ModuleTag.tags = self._saved
+        return False
+
+
 class Module(metaclass=ModuleMeta):
     """The Module class is the base class for all the progressive modules.
     """
@@ -66,11 +81,13 @@ class Module(metaclass=ModuleMeta):
                   ('debug', np.dtype(bool), False)]
     TRACE_SLOT = '_trace'
     PARAMETERS_SLOT = '_params'
+
     TAG_VISUALIZATION = 'visualization'
     TAG_INPUT = 'input'
     TAG_SOURCE = 'source'
     TAG_GREEDY = 'greedy'
-    TRANSIENT_TYPE = 'transient'
+    TAG_DEPENDENT = 'dependent'
+
     inputs = [SlotDescriptor(PARAMETERS_SLOT, type=BaseTable, required=False)]
     outputs = [SlotDescriptor(TRACE_SLOT, type=BaseTable, required=False)]
 
@@ -119,7 +136,7 @@ class Module(metaclass=ModuleMeta):
                 get_random_name(name+'_tracer'))
         tracer = Tracer.default(name, storagegroup)
 
-        self.tags = set()
+        self.tags = set(ModuleTag.tags)
         self.order = None
         self.group = group
         self.tracer = tracer
@@ -151,6 +168,13 @@ class Module(metaclass=ModuleMeta):
         self._start_run = None
         self._end_run = None
         dataflow.add_module(self)
+
+    @staticmethod
+    def tagged(*tags):
+        """Create a context manager to add tags to a set of modules
+        created within a scope, typically dependent modules.
+        """
+        return ModuleTag(*tags)
 
     def scheduler(self):
         """Return the scheduler associated with the module.
