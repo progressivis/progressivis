@@ -13,7 +13,6 @@ MYBINDER = os.getenv('USER') == 'jovyan'
 WITH_CXX = not MYBINDER
 
 
-
 PACKAGES = ['progressivis',
             'progressivis.utils',
             'progressivis.core',
@@ -27,9 +26,11 @@ PACKAGES = ['progressivis',
             'progressivis.server',
             'progressivis.table']
 
+
 def _cythonize(exts):
     from Cython.Build import cythonize
     return cythonize(exts)
+
 
 def _np_get_include():
     import numpy as np
@@ -87,20 +88,22 @@ EXT_PYBIND11 = [
             os.path.join(CONDA_PREFIX, 'include'),
             os.path.join(sys.prefix, 'Library', 'include')
         ],
-        #extra_compile_args=['-std=c++17'],
         extra_compile_args=['-std=c++17', '-Wall', '-O0', '-g'],
         extra_link_args=["-lroaring"],
         language='c++'
     ),
-] if CONDA_PREFIX else [] # avoids conda dependency ...
+] if CONDA_PREFIX else []  # avoids conda dependency ...
+
 
 def read(fname):
     "Read the content of fname as string"
     with open(os.path.join(os.path.dirname(__file__), fname)) as infile:
         return infile.read()
+
+
 setup(
     name="progressivis",
-    version= versioneer.get_version(),
+    version=versioneer.get_version(),
     author="Jean-Daniel Fekete",
     author_email="Jean-Daniel.Fekete@inria.fr",
     url="https://github.com/jdfekete/progressivis",
@@ -117,7 +120,7 @@ setup(
     # Project uses reStructuredText, so ensure that the docutils get
     # installed or upgraded on the target machine
     # install_requires=required,
-    install_requires= [] if CONDA_PREFIX else [
+    install_requires=[] if CONDA_PREFIX else [
         "Pillow>=4.2.0",
         "cython",
         'pybind11>=2.0.1',
@@ -135,9 +138,6 @@ setup(
         "python-dateutil>=2.6.1",  # botocore wants < 2.7.0,>=2.1
         "boto",
         "s3fs",
-        #"sqlalchemy",
-        #"memory_profiler",
-        #"tabulate",
         "requests",
         "fast-histogram",
         "rangehttpserver",
@@ -145,7 +145,7 @@ setup(
         "aiohttp_jinja2",
         "python_socketio", "click"],
     # "pptable",
-    setup_requires= ['cython', 'numpy', 'pybind11', 'nose>=1.3.7', 'coverage'] if WITH_CXX else [],
+    setup_requires=['cython', 'numpy', 'pybind11', 'nose>=1.3.7', 'coverage'] if WITH_CXX else [],
     # test_suite='tests',
     test_suite='nose.collector',
     cmdclass=versioneer.get_cmdclass({'bench': RunBench}),

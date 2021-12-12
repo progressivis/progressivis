@@ -140,7 +140,7 @@ class Dataflow(object):
         if input_module.input_slot_multiple(input_name):
             slot.original_name = input_name
             clashes = self._clashes(input_module, input_name)
-            input_name += ".%02d.%02d" % (self.version, clashes)
+            input_name += f".{self.version:02d}.{clashes:02d}"
             slot.input_name = input_name
             assert input_name not in self.inputs[input_module.name]
         elif input_name in self.inputs[input_module.name]:
@@ -179,7 +179,10 @@ class Dataflow(object):
         )
         if not slot.validate_types():
             raise ProgressiveError(
-                "Incompatible types for slot (%s,%s) in %s", str(slot)
+                "Incompatible types for slot (%s,%s) in %s",
+                output_name,
+                input_name,
+                str(slot)
             )
         self.add_connection(slot)
 
@@ -263,10 +266,11 @@ class Dataflow(object):
         Return a list of errors, empty if no error occured.
         """
         errors = []
+        inputs = dict(inputs)
         for slotdesc in module.input_descriptors.values():
             slot = None
             if slotdesc.multiple:
-                for islot in inputs.values():
+                for islot in list(inputs.values()):
                     if islot.original_name == slotdesc.name:
                         slot = islot
                         logger.info(
@@ -275,14 +279,20 @@ class Dataflow(object):
                             islot.input_name,
                             module.name,
                         )
-                        break
+                        inputs.pop(slot.input_name)
+                        # Iterate over all the inputs to remove the multiple slots
             else:
                 slot = inputs.get(slotdesc.name)
+                if slot:
+                    inputs.pop(slot.input_name)
             if slotdesc.required and slot is None:
                 errors.append(
-                    'Input slot "%s" missing in module "%s"'
-                    % (slotdesc.name, module.name)
+                        f'Input slot "{slotdesc.name}" missing in module "{module.name}"'
                 )
+        if inputs:
+            errors.append(
+                f'Invalid input slot(s) {list(inputs.keys())} for module {module.name}'
+            )
         return errors
 
     @staticmethod
@@ -291,6 +301,7 @@ class Dataflow(object):
         Return a list of errors, empty if no error occured.
         """
         errors = []
+        outputs = dict(outputs)
         for slotdesc in module.output_descriptors.values():
             slot = outputs.get(slotdesc.name)
             if slotdesc.required and slot is None:
@@ -298,6 +309,12 @@ class Dataflow(object):
                     'Output slot "%s" missing in module "%s"'
                     % (slotdesc.name, module.name)
                 )
+            if slot:
+                del outputs[slotdesc.name]
+        if outputs:
+            errors.append(
+                f'Invalid output slot(s) {list(outputs.keys())} for module {module.name}'
+            )
         return errors
 
     def validate_module(self, module):
@@ -305,7 +322,7 @@ class Dataflow(object):
         Return a list of errors, empty if no error occured.
         """
         errors = self.validate_module_inputs(module, self.inputs[module.name])
-        errors += self.validate_module_outputs(module, self.inputs[module.name])
+        errors += self.validate_module_outputs(module, self.outputs[module.name])
         return errors
 
     @staticmethod

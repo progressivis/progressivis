@@ -4,9 +4,26 @@ from time import sleep
 
 from progressivis import Print, Scheduler, ProgressiveError
 from progressivis.io import CSVLoader
-from progressivis.stats import Min
+from progressivis.stats import Min, RandomTable
 from progressivis.datasets import get_dataset
-from progressivis.core import aio
+from progressivis.core import aio, SlotDescriptor, Module
+
+
+class TestModule(Module):
+    inputs = [
+        SlotDescriptor('a'),
+        SlotDescriptor('b', required=False)
+    ]
+    outputs = [
+        SlotDescriptor('c'),
+        SlotDescriptor('d', required=False)
+    ]
+
+    def __init__(self, **kwds):
+        super(TestModule, self).__init__(**kwds)
+
+    def run_step(self, run_number, step_size, howlong):  # pragma no cover
+        return self._return_run_step(self.state_blocked, 0)
 
 
 class TestScheduler(ProgressiveTest):
@@ -46,6 +63,31 @@ class TestScheduler(ProgressiveTest):
         self.assertTrue(json['is_terminated'])
         html = s._repr_html_()
         self.assertTrue(len(html) != 0)
+
+    def test_scheduler_dels(self):
+        s = Scheduler()
+        table = RandomTable(name='table', columns=['a'], scheduler=s)
+        m = Min(name='min', scheduler=s)
+        m.input.table = table.output.result
+        prt = Print(name='prt', scheduler=s)
+        prt.input.df = m.output.result
+
+        aio.run(s.step())
+        deps = s.collateral_damage('table')
+        self.assertEquals(deps, set(['table', 'min', 'prt']))
+
+    def test_scheduler_dels2(self):
+        s = Scheduler()
+        table = RandomTable(name='table', columns=['a'], scheduler=s)
+        m = TestModule(name='min', scheduler=s)
+        m.input.a = table.output.result
+        prt = Print(name='prt', scheduler=s)
+        prt.input.df = m.output.c
+        # from nose.tools import set_trace; set_trace()
+        s.commit()
+        aio.run(s.step())
+        deps = s.collateral_damage('table')
+        self.assertEquals(deps, set(['table', 'min', 'prt']))
 
 
 if __name__ == '__main__':

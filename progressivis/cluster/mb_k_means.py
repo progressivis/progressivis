@@ -64,7 +64,6 @@ class MBKMeans(TableModule):
         self.mbk = MiniBatchKMeans(n_clusters=self.mbk.n_clusters,
                                    batch_size=self.mbk.batch_size,
                                    init=init,
-                                   # tol=self._rel_tol,
                                    random_state=self.mbk.random_state)
         dfslot = self.get_input_slot('table')
         dfslot.reset()
@@ -248,10 +247,10 @@ class MBKMeans(TableModule):
             self.input_module = input_module
             self.input.table = input_module.output[input_slot]
             self.input_slot = input_slot
-            c = DynVar(group="bar", scheduler=s)
+            c = DynVar(group=self.name, scheduler=s)
             self.moved_center = c
             self.input.moved_center = c.output.result
-            v = Var(group="bar", scheduler=s)
+            v = Var(group=self.name, scheduler=s)
             self.variance = v
             v.input.table = input_module.output[input_slot]
             self.input.var = v.output.result
