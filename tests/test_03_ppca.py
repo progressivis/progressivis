@@ -52,7 +52,7 @@ class MyResetter(TableModule):
         )
 
 
-@skipIf(os.getenv('TRAVIS'), 'skipped because too expensive for the CI')
+@skipIf(os.getenv('CI'), 'skipped because too expensive for the CI')
 class TestPPCA(ProgressiveTest):
     def _common(self, rtol, threshold=None, resetter=None, resetter_func=None,
                 scheduler=None):

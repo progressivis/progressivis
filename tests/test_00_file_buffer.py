@@ -7,7 +7,6 @@ HTTP_URL = ('http://s3.amazonaws.com/h2o-release/h2o/master'
 S3_URL = ('s3://h2o-release/h2o/master/1193/docs-website'
               '/resources/publicdata.html')
 
-@skipIf(os.getenv('TRAVIS'),'skipped on Travis=>avoids: "certificate verify failed: IP address mismatch, certificate is not valid"')
 class TestFileBuffer(ProgressiveTest):
     def setUp(self):
         req = requests.get(HTTP_URL)

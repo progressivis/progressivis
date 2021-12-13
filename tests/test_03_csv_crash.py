@@ -28,7 +28,7 @@ import http.server as http_srv
 BZ2 = 'csv.bz2'
 GZ = 'csv.gz'
 XZ = 'csv.xz'
-#TRAVIS = os.getenv("TRAVIS")
+
 PORT = 8000
 HOST = 'localhost'
 SLEEP = 10
@@ -123,7 +123,6 @@ class ProgressiveLoadCSVCrashRoot(ProgressiveTest):
 class TestProgressiveLoadCSVCrash1(ProgressiveLoadCSVCrashRoot):
     @skipIf(not IS_PERSISTENT, "transient storage, test skipped")
     def test_01_read_http_csv_with_crash(self):
-        #if TRAVIS: return
         self._http_srv =  _HttpSrv()
         tag = self.get_tag()
         s=self.scheduler()
@@ -145,7 +144,6 @@ class TestProgressiveLoadCSVCrash1(ProgressiveLoadCSVCrashRoot):
 
     @skipIf(not IS_PERSISTENT, "transient storage, test skipped")
     def test_01_read_http_csv_with_crash_and_counter(self):
-        #if TRAVIS: return
         self._http_srv =  _HttpSrv()
         tag = self.get_tag()
         s=self.scheduler()
@@ -166,7 +164,6 @@ class TestProgressiveLoadCSVCrash1(ProgressiveLoadCSVCrashRoot):
 
     @skipIf(not IS_PERSISTENT, "transient storage, test skipped")
     def test_02_read_http_csv_bz2_with_crash(self):
-        #if TRAVIS: return
         self._http_srv =  _HttpSrv()
         tag = self.get_tag()
         s=self.scheduler()
@@ -184,7 +181,6 @@ class TestProgressiveLoadCSVCrash1(ProgressiveLoadCSVCrashRoot):
 
     @skipIf(not IS_PERSISTENT, "transient storage, test skipped")
     def test_03_read_http_multi_csv_no_crash(self):
-        #if TRAVIS: return
         self._http_srv =  _HttpSrv()
         s=self.scheduler()
         module=CSVLoader([make_url('smallfile'),make_url('smallfile')], index_col=False, header=None, scheduler=s)
@@ -194,7 +190,6 @@ class TestProgressiveLoadCSVCrash1(ProgressiveLoadCSVCrashRoot):
 
     @skipIf(not IS_PERSISTENT, "transient storage, test skipped")
     def test_04_read_http_multi_csv_bz2_no_crash(self):
-        #if TRAVIS: return
         self._http_srv =  _HttpSrv()
         s=self.scheduler()
         module=CSVLoader([make_url('smallfile', ext=BZ2)]*2, index_col=False, header=None, scheduler=s)
@@ -205,7 +200,6 @@ class TestProgressiveLoadCSVCrash1(ProgressiveLoadCSVCrashRoot):
 class TestProgressiveLoadCSVCrash2(ProgressiveLoadCSVCrashRoot):
     @skipIf(not IS_PERSISTENT, "transient storage, test skipped")
     def test_05_read_http_multi_csv_with_crash(self):
-        #if TRAVIS: return
         self._http_srv =  _HttpSrv()
         tag = self.get_tag()
         s = self.scheduler()
@@ -223,7 +217,6 @@ class TestProgressiveLoadCSVCrash2(ProgressiveLoadCSVCrashRoot):
 
     @skipIf(not IS_PERSISTENT, "transient storage, test skipped")
     def test_06_read_http_multi_csv_bz2_with_crash(self):
-        #if TRAVIS: return
         self._http_srv =  _HttpSrv()
         tag = self.get_tag()
         s = self.scheduler()

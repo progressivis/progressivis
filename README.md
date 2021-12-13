@@ -1,6 +1,6 @@
 # Progressivis
 
-[![Build Status](https://travis-ci.org/jdfekete/progressivis.svg?branch=master&label=Travis%20CI)](https://travis-ci.org/jdfekete/progressivis)
+[![Python Tests](https://github.com/jdfekete/progressivis/actions/workflows/python.yml/badge.svg?branch=master&event=push)](https://github.com/jdfekete/progressivis/actions/workflows/python.yml)
 
 ProgressiVis is a Python toolkit and scientific workflow system that
 implements a new [programming
