@@ -4,12 +4,17 @@ import pandas as pd
 
 from progressivis import ProgressiveError, SlotDescriptor
 from progressivis.utils.errors import ProgressiveStopIteration
-from ..table.module import TableModule
-from ..table.table import Table
-from ..table.dshape import dshape_from_dataframe
-from ..core.utils import (filepath_to_buffer,
-                          _infer_compression,
-                          force_valid_id_columns)
+from progressivis.table.module import TableModule
+from progressivis.table.table import Table
+from progressivis.table.dshape import dshape_from_dataframe
+from progressivis.core.utils import (filepath_to_buffer,
+                                     _infer_compression,
+                                     force_valid_id_columns)
+from progressivis.io._mock_read_csv import (
+    extract_params_docstring,
+    RAW_CSV_DOCSTRING,
+    _mock_read_csv
+)
 
 
 logger = logging.getLogger(__name__)
@@ -28,7 +33,7 @@ class SimpleCSVLoader(TableModule):
         self.default_step_size = kwds.get('chunksize', 1000)  # initial guess
         kwds.setdefault('chunksize', self.default_step_size)
         # Filter out the module keywords from the csv loader keywords
-        csv_kwds = self._filter_kwds(kwds, pd.read_csv)
+        csv_kwds = self._filter_kwds(kwds, _mock_read_csv)
         # When called with a specified chunksize, it returns a parser
         self.filepath_or_buffer = filepath_or_buffer
         self.force_valid_ids = force_valid_ids
@@ -42,10 +47,10 @@ class SimpleCSVLoader(TableModule):
         if filter_ is not None and not callable(filter_):
             raise ProgressiveError('filter parameter should be callable or None')
         self._filter = filter_
-        self._input_stream = None # stream that returns a position through the 'tell()' method
+        self._input_stream = None  # stream that returns a position through the 'tell()' method
         self._input_encoding = None
         self._input_compression = None
-        self._input_size = 0 # length of the file or input stream when available
+        self._input_size = 0  # length of the file or input stream when available
         self._file_mode = False
         self._table_params = dict(name=self.name, fillvalues=fillvalues)
 
@@ -191,26 +196,8 @@ class SimpleCSVLoader(TableModule):
         return self._return_run_step(self.state_ready, steps_run=creates)
 
 
-def extract_params_docstring(fn, only_defaults=False):
-    defaults = fn.__defaults__
-    varnames = fn.__code__.co_varnames
-    argcount = fn.__code__.co_argcount
-    nodefcount = argcount - len(defaults)
-    reqargs = ",".join(varnames[0:nodefcount])
-    defargs = ",".join(["%s=%s" % (varval[0], repr(varval[1]))
-                        for varval in zip(varnames[nodefcount:argcount],
-                                          defaults)])
-    if only_defaults:
-        return defargs
-    if not reqargs:
-        return defargs
-    if not defargs:
-        return reqargs
-    return reqargs+","+defargs
-
-
 csv_docstring = "SimpleCSVLoader(" \
-  + extract_params_docstring(pd.read_csv) \
+  + RAW_CSV_DOCSTRING \
   + ","+extract_params_docstring(SimpleCSVLoader.__init__, only_defaults=True)\
   + ",force_valid_ids=False,id=None,scheduler=None,tracer=None,predictor=None"\
   + ",storage=None,input_descriptors=[],output_descriptors=[])"

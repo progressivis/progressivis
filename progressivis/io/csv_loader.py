@@ -1,16 +1,24 @@
-import pandas as pd
+from __future__ import annotations
+
 import logging
+
+import pandas as pd
 
 from progressivis import SlotDescriptor
 from progressivis.utils.errors import (ProgressiveError,
                                        ProgressiveStopIteration)
-from ..table.module import TableModule
-from ..table.table import Table
-from ..table.dshape import (dshape_from_dataframe,
-                            array_dshape,
-                            dshape_from_dict)
-from ..core.utils import force_valid_id_columns
-from .read_csv import read_csv, recovery, is_recoverable, InputSource
+from progressivis.table.module import TableModule
+from progressivis.table.table import Table
+from progressivis.table.dshape import (dshape_from_dataframe,
+                                       array_dshape,
+                                       dshape_from_dict)
+from progressivis.core.utils import force_valid_id_columns
+from progressivis.io.read_csv import read_csv, recovery, is_recoverable, InputSource
+from progressivis.io._mock_read_csv import (
+    extract_params_docstring,
+    RAW_CSV_DOCSTRING,
+    _mock_read_csv
+)
 
 
 logger = logging.getLogger(__name__)
@@ -40,7 +48,7 @@ class CSVLoader(TableModule):
         self.default_step_size = kwds.get('chunksize', 1000)  # initial guess
         kwds.setdefault('chunksize', self.default_step_size)
         # Filter out the module keywords from the csv loader keywords
-        csv_kwds = self._filter_kwds(kwds, pd.read_csv)
+        csv_kwds = self._filter_kwds(kwds, _mock_read_csv)
         # When called with a specified chunksize, it returns a parser
         self.filepath_or_buffer = filepath_or_buffer
         self.force_valid_ids = force_valid_ids
@@ -363,26 +371,8 @@ def check_snapshot(snapshot):
     return h == hcode
 
 
-def extract_params_docstring(fn, only_defaults=False):
-    defaults = fn.__defaults__
-    varnames = fn.__code__.co_varnames
-    argcount = fn.__code__.co_argcount
-    nodefcount = argcount - len(defaults)
-    reqargs = ",".join(varnames[0:nodefcount])
-    defargs = ",".join(["%s=%s" % (varval[0], repr(varval[1]))
-                        for varval in zip(varnames[nodefcount:argcount],
-                                          defaults)])
-    if only_defaults:
-        return defargs
-    if not reqargs:
-        return defargs
-    if not defargs:
-        return reqargs
-    return reqargs+","+defargs
-
-
 CSV_DOCSTRING = "CSVLoader(" \
-  + extract_params_docstring(pd.read_csv) \
+  + RAW_CSV_DOCSTRING \
   + ","+extract_params_docstring(CSVLoader.__init__, only_defaults=True) \
   + ",force_valid_ids=False,id=None,tracer=None,predictor=None,storage=None)"
 
