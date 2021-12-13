@@ -53,7 +53,7 @@ class BlobsTableABC(TableModule):
     def __init__(self, columns, rows=-1, dtype='float64', seed=0, throttle=False, **kwds):
         super().__init__(**kwds)
         self.tags.add(self.TAG_SOURCE)
-        self._kwds = {} #self._filter_kwds(kwds, self.kw_fun)
+        self._kwds = {}
         """assert 'centers' in self._kwds
         assert 'n_samples' not in self._kwds
         assert 'n_features' not in self._kwds

@@ -1,6 +1,7 @@
 "Binary Join module."
 
 from progressivis.core.slot import SlotDescriptor
+from progressivis.utils.inspect import filter_kwds
 from .table import Table
 from .module import TableModule
 from .join import join
@@ -23,7 +24,7 @@ class Paste(TableModule):
 
     def __init__(self, **kwds):
         super(Paste, self).__init__(**kwds)
-        self.join_kwds = self._filter_kwds(kwds, join)
+        self.join_kwds = filter_kwds(kwds, join)
 
     def run_step(self, run_number, step_size, howlong):
         first_slot = self.get_input_slot('first')

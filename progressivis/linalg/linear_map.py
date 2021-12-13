@@ -15,7 +15,7 @@ class LinearMap(TableModule):
         super().__init__(**kwds)
         self._k_dim = len(self._columns) if self._columns else None
         self._transf_columns = transf_columns
-        self._kwds = {}  # self._filter_kwds(kwds, ufunc)
+        self._kwds = {}
         self._transf_cache = None
 
     def reset(self):

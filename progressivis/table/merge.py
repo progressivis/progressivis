@@ -3,6 +3,8 @@
 from .nary import NAry
 from .table import Table
 from .dshape import dshape_join
+from progressivis.utils.inspect import filter_kwds
+
 
 def merge(left, right, name=None, how='inner', on=None,
           left_on=None, right_on=None,
@@ -33,6 +35,7 @@ def merge(left, right, name=None, how='inner', on=None,
         merge_ctx['right_cols'] = right_cols
     return merge_table
 
+
 def merge_cont(left, right, merge_ctx):
     "merge continuation function"
     merge_table = Table(name=None, dshape=merge_ctx['dshape'])
@@ -53,7 +56,7 @@ class Merge(NAry):
                 indicator=False)
         """
         super(Merge, self).__init__(**kwds)
-        self.merge_kwds = self._filter_kwds(kwds, merge)
+        self.merge_kwds = filter_kwds(kwds, merge)
         self._context = {}
 
     def run_step(self, run_number, step_size, howlong):

@@ -4,9 +4,10 @@ import numpy as np
 
 from progressivis.core.utils import (indices_len, inter_slice, fix_loc)
 from progressivis.core.bitmap import bitmap
-from .nary import NAry
-from .table import Table
-from .dshape import dshape_join
+from progressivis.utils.inspect import filter_kwds
+from progressivis.table.nary import NAry
+from progressivis.table.table import Table
+from progressivis.table.dshape import dshape_join
 
 
 def join(table, other, name=None, on=None, how='left', lsuffix='', rsuffix='', sort=False):
@@ -184,7 +185,7 @@ class Join(NAry):
                 sort=False,name=None)
         """
         super(Join, self).__init__(**kwds)
-        self.join_kwds = self._filter_kwds(kwds, join)
+        self.join_kwds = filter_kwds(kwds, join)
 
     def run_step(self, run_number, step_size, howlong):
         frames = []

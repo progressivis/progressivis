@@ -1,8 +1,8 @@
 from progressivis.core.utils import Dialog
 from progressivis.core.slot import SlotDescriptor
 
-from ..table.module import TableModule
-from ..utils.psdict import PsDict
+from progressivis.table.module import TableModule
+from progressivis.utils.psdict import PsDict
 
 
 class MergeDict(TableModule):
@@ -20,7 +20,6 @@ class MergeDict(TableModule):
 
     def __init__(self, **kwds):
         super().__init__(**kwds)
-        # self.join_kwds = self._filter_kwds(kwds, join)
         self._dialog = Dialog(self)
 
     def run_step(self, run_number, step_size, howlong):

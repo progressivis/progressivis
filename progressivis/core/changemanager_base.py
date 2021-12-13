@@ -161,7 +161,6 @@ class BaseChangeManager(object):
         self._row_changes.clear()
         self._selection_changes.clear()
 
-
     def dump(self):
         import inspect
         curframe = inspect.currentframe()

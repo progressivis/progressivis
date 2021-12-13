@@ -60,7 +60,7 @@ class Unary(TableModule):
     def __init__(self, ufunc, **kwds):
         super().__init__(**kwds)
         self._ufunc = ufunc
-        self._kwds = {} #self._filter_kwds(kwds, ufunc)
+        self._kwds = {}
 
     def reset(self):
         if self.result is not None:
@@ -145,7 +145,7 @@ class ColsBinary(TableModule):
         self._first = first
         self._second = second
         self._cols_out = cols_out
-        self._kwds = {} #self._filter_kwds(kwds, ufunc)
+        self._kwds = {}
         if self._columns is None:
             self._columns = first + second
 
@@ -227,7 +227,7 @@ class Binary(TableModule):
     def __init__(self, ufunc, **kwds):
         super().__init__(**kwds)
         self._ufunc = ufunc
-        self._kwds = {} #self._filter_kwds(kwds, ufunc)
+        self._kwds = {}
         _assert = self._columns is None or ("first" in
                                              self._columns_dict
                                              and "second"
@@ -312,7 +312,7 @@ class Reduce(TableModule):
         super().__init__(**kwds)
         self._ufunc = getattr(ufunc, 'reduce')
         self._columns = columns
-        self._kwds = {} #self._filter_kwds(kwds, ufunc)
+        self._kwds = {}
 
     def reset(self):
         if self.result is not None:

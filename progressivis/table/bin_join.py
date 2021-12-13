@@ -2,9 +2,10 @@
 
 from progressivis.core.utils import Dialog, indices_len
 from progressivis.core.slot import SlotDescriptor
-from .table import Table
-from .module import TableModule
-from .join import join, join_start, join_cont, join_reset
+from progressivis.utils.inspect import filter_kwds
+from progressivis.table.table import Table
+from progressivis.table.module import TableModule
+from progressivis.table.join import join, join_start, join_cont, join_reset
 
 
 class BinJoin(TableModule):
@@ -24,7 +25,7 @@ class BinJoin(TableModule):
 
     def __init__(self, **kwds):
         super(BinJoin, self).__init__(**kwds)
-        self.join_kwds = self._filter_kwds(kwds, join)
+        self.join_kwds = filter_kwds(kwds, join)
         self._dialog = Dialog(self)
 
     def run_step(self, run_number, step_size, howlong):

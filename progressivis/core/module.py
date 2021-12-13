@@ -26,8 +26,6 @@ from .time_predictor import TimePredictor
 from .storagemanager import StorageManager
 from .scheduler import Scheduler
 
-from inspect import getfullargspec
-
 
 logger = logging.getLogger(__name__)
 
@@ -230,14 +228,6 @@ class Module(metaclass=ModuleMeta):
             proc(self, rn)
 
     @staticmethod
-    def _filter_kwds(kwds, function_or_method):
-        argspec = getfullargspec(function_or_method)
-        keys_ = argspec.args[len(argspec.args)-(0 if argspec.defaults is None
-                                                else len(argspec.defaults)):]
-        filtered_kwds = {k: kwds[k] for k in kwds.keys() & keys_}
-        return filtered_kwds
-
-    @staticmethod
     def _add_slots(kwds, kwd, slots):
         if kwd in kwds:
             kwds[kwd] += slots
@@ -385,9 +375,9 @@ class Module(metaclass=ModuleMeta):
         "Create a specified output slot"
         if isinstance(output_name, int):
             pos = output_name
-            assert pos==0 # TODO: try to remove this restriction
+            assert pos == 0  # TODO: try to remove this restriction
             slot_desc = self.all_outputs[pos]
-            assert slot_desc.name == 'result' # TODO: Idem
+            assert slot_desc.name == 'result'  # TODO: Idem
             output_name = slot_desc.name
         return Slot(self, output_name, input_module, input_name)
 

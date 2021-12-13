@@ -4,17 +4,14 @@ import pandas as pd
 
 from progressivis import ProgressiveError, SlotDescriptor
 from progressivis.utils.errors import ProgressiveStopIteration
+from progressivis.utils.inspect import (filter_kwds,
+                                        extract_params_docstring)
 from progressivis.table.module import TableModule
 from progressivis.table.table import Table
 from progressivis.table.dshape import dshape_from_dataframe
 from progressivis.core.utils import (filepath_to_buffer,
                                      _infer_compression,
                                      force_valid_id_columns)
-from progressivis.io._mock_read_csv import (
-    extract_params_docstring,
-    RAW_CSV_DOCSTRING,
-    _mock_read_csv
-)
 
 
 logger = logging.getLogger(__name__)
@@ -33,7 +30,7 @@ class SimpleCSVLoader(TableModule):
         self.default_step_size = kwds.get('chunksize', 1000)  # initial guess
         kwds.setdefault('chunksize', self.default_step_size)
         # Filter out the module keywords from the csv loader keywords
-        csv_kwds = self._filter_kwds(kwds, _mock_read_csv)
+        csv_kwds = filter_kwds(kwds, pd.read_csv)
         # When called with a specified chunksize, it returns a parser
         self.filepath_or_buffer = filepath_or_buffer
         self.force_valid_ids = force_valid_ids
@@ -197,7 +194,7 @@ class SimpleCSVLoader(TableModule):
 
 
 csv_docstring = "SimpleCSVLoader(" \
-  + RAW_CSV_DOCSTRING \
+  + extract_params_docstring(pd.read_csv)\
   + ","+extract_params_docstring(SimpleCSVLoader.__init__, only_defaults=True)\
   + ",force_valid_ids=False,id=None,scheduler=None,tracer=None,predictor=None"\
   + ",storage=None,input_descriptors=[],output_descriptors=[])"
