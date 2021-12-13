@@ -1,0 +1,39 @@
+name: Python Tests
+
+on:
+  push:
+    branches:
+    - main
+  pull_request:
+    branches:
+    - main
+
+jobs:
+  run:
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        python_version: [3.8, 3.9]
+
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Setup conda
+      uses: conda-incubator/setup-miniconda@v2
+      with:
+        channels: conda-forge, anaconda
+    - name: Create the conda environment
+      run: conda env create -q python=${{ matrix.python_version }} -f environment.yml
+
+    - name: Run tests
+      run: |
+        source /usr/share/miniconda/etc/profile.d/conda.sh
+        conda activate progressivis
+        python setup.py nosetests
