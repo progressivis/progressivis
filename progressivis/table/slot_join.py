@@ -1,9 +1,10 @@
 from ..core.bitmap import bitmap
-from .. import ProgressiveError, Slot
+from .. import Slot
 from ..table import BaseTable
 import operator
 from functools import reduce
 import weakref
+
 
 class SlotJoin:
     def __init__(self, module, *slots):
@@ -13,7 +14,6 @@ class SlotJoin:
             assert isinstance(slot.data(), BaseTable)
         self._module_wr = weakref.ref(module)
         self._slots = slots
-
 
     def __enter__(self):
         return self
@@ -36,7 +36,8 @@ class SlotJoin:
         if len(common_ids) > step_size:
             common_ids = common_ids[:step_size]
         else:
-            common_ids = common_ids[:] # always make a copy here (single slot issue)
+            # always make a copy here (single slot issue)
+            common_ids = common_ids[:]
         for slot in self._slots:
             slot.created.changes -= common_ids
         return common_ids
@@ -65,7 +66,7 @@ class SlotJoin:
             if todo <= 0:
                 break
         if not raw:
-            idx_ =  [bitmap(slot.data().index) for slot in self._slots]
+            idx_ = [bitmap(slot.data().index) for slot in self._slots]
             return reduce(operator.and_, idx_, res)
         return res
 

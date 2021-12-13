@@ -57,10 +57,10 @@ class Dataflow(object):
     def generate_name(self, prefix):
         "Generate a name for a module given its class prefix."
         for i in range(1, 10):
-            mid = f'{prefix}_{i}'
+            mid = f"{prefix}_{i}"
             if mid not in self._modules:
                 return mid
-        return f'{prefix}_{uuid4()}'
+        return f"{prefix}_{uuid4()}"
 
     def modules(self):
         "Return all the modules in this dataflow"
@@ -113,12 +113,12 @@ class Dataflow(object):
         self.outputs[module.name] = {}
 
     def remove_module(self, module):
-        '''Remove the specified module
+        """Remove the specified module
            or does nothing if the module does not exist.
-        '''
+        """
         if isinstance(module, str):
             module = self._modules.get(module)
-        if not hasattr(module, 'name'):
+        if not hasattr(module, "name"):
             return  # module is not fully created
         # module.terminate()
         to_remove = set([module.name])
@@ -140,23 +140,29 @@ class Dataflow(object):
         if input_module.input_slot_multiple(input_name):
             slot.original_name = input_name
             clashes = self._clashes(input_module, input_name)
-            input_name += '.%02d.%02d' % (self.version, clashes)
+            input_name += f".{self.version:02d}.{clashes:02d}"
             slot.input_name = input_name
             assert input_name not in self.inputs[input_module.name]
         elif input_name in self.inputs[input_module.name]:
             if slot is self.inputs[input_module.name][input_name]:
-                logger.warn("redundant connection:"
-                            "Input slot %s already connected to "
-                            "slot %s in module %s",
-                            input_name,
-                            self.inputs[input_module.name][input_name],
-                            input_module.name)
+                logger.warn(
+                    "redundant connection:"
+                    "Input slot %s already connected to "
+                    "slot %s in module %s",
+                    input_name,
+                    self.inputs[input_module.name][input_name],
+                    input_module.name,
+                )
             else:
-                raise ProgressiveError("Input slot %s already connected to"
-                                       "slot %s in module %s" % (
-                                           input_name,
-                                           self.inputs[input_module.name][input_name],
-                                           input_module.name))
+                raise ProgressiveError(
+                    "Input slot %s already connected to"
+                    "slot %s in module %s"
+                    % (
+                        input_name,
+                        self.inputs[input_module.name][input_name],
+                        input_module.name,
+                    )
+                )
         self.inputs[input_module.name][input_name] = slot
         if output_module.name not in self.outputs:
             self.outputs[output_module.name] = {output_name: [slot]}
@@ -168,11 +174,16 @@ class Dataflow(object):
 
     def connect(self, output_module, output_name, input_module, input_name):
         "Declare a connection between two modules slots"
-        slot = output_module.create_slot(output_module, output_name,
-                                         input_module, input_name)
+        slot = output_module.create_slot(
+            output_module, output_name, input_module, input_name
+        )
         if not slot.validate_types():
-            raise ProgressiveError('Incompatible types for slot (%s,%s) in %s',
-                                   str(slot))
+            raise ProgressiveError(
+                "Incompatible types for slot (%s,%s) in %s",
+                output_name,
+                input_name,
+                str(slot)
+            )
         self.add_connection(slot)
 
     def _clashes(self, module_name, input_slot_name):
@@ -231,10 +242,10 @@ class Dataflow(object):
         return dependencies
 
     def validate(self):
-        '''
+        """
         Validate the Dataflow, returning [] if it is valid
         or the invalid modules otherwise.
-        '''
+        """
         errors = []
         if not self.valid:
             valid = []
@@ -255,23 +266,33 @@ class Dataflow(object):
         Return a list of errors, empty if no error occured.
         """
         errors = []
+        inputs = dict(inputs)
         for slotdesc in module.input_descriptors.values():
             slot = None
             if slotdesc.multiple:
-                for islot in inputs.values():
+                for islot in list(inputs.values()):
                     if islot.original_name == slotdesc.name:
                         slot = islot
-                        logger.info('Input slot "%s" renamed "%s" '
-                                    'in module "%s"',
-                                    islot.original_name,
-                                    islot.input_name,
-                                    module.name)
-                        break
+                        logger.info(
+                            'Input slot "%s" renamed "%s" ' 'in module "%s"',
+                            islot.original_name,
+                            islot.input_name,
+                            module.name,
+                        )
+                        inputs.pop(slot.input_name)
+                        # Iterate over all the inputs to remove the multiple slots
             else:
                 slot = inputs.get(slotdesc.name)
+                if slot:
+                    inputs.pop(slot.input_name)
             if slotdesc.required and slot is None:
-                errors.append('Input slot "%s" missing in module "%s"' % (
-                    slotdesc.name, module.name))
+                errors.append(
+                        f'Input slot "{slotdesc.name}" missing in module "{module.name}"'
+                )
+        if inputs:
+            errors.append(
+                f'Invalid input slot(s) {list(inputs.keys())} for module {module.name}'
+            )
         return errors
 
     @staticmethod
@@ -280,21 +301,28 @@ class Dataflow(object):
         Return a list of errors, empty if no error occured.
         """
         errors = []
+        outputs = dict(outputs)
         for slotdesc in module.output_descriptors.values():
             slot = outputs.get(slotdesc.name)
             if slotdesc.required and slot is None:
-                errors.append('Output slot "%s" missing in module "%s"' % (
-                    slotdesc.name, module.name))
+                errors.append(
+                    'Output slot "%s" missing in module "%s"'
+                    % (slotdesc.name, module.name)
+                )
+            if slot:
+                del outputs[slotdesc.name]
+        if outputs:
+            errors.append(
+                f'Invalid output slot(s) {list(outputs.keys())} for module {module.name}'
+            )
         return errors
 
     def validate_module(self, module):
         """Validate a module in the dataflow.
         Return a list of errors, empty if no error occured.
         """
-        errors = self.validate_module_inputs(module,
-                                             self.inputs[module.name])
-        errors += self.validate_module_outputs(module,
-                                               self.inputs[module.name])
+        errors = self.validate_module_inputs(module, self.inputs[module.name])
+        errors += self.validate_module_outputs(module, self.outputs[module.name])
         return errors
 
     @staticmethod
@@ -318,15 +346,15 @@ class Dataflow(object):
         index = dict(zip(k, range(len(k))))
         graph = self._dependency_csgraph(dependencies, index)
         self.reachability = {}
-        reachability = {inp: set(breadth_first_order(graph,
-                                                     index[inp],
-                                                     return_predecessors=False))
-                        for inp in input_modules}
+        reachability = {
+            inp: set(breadth_first_order(graph, index[inp], return_predecessors=False))
+            for inp in input_modules
+        }
         for vis in self.get_visualizations():
             vis_index = index[vis]
-            vis_reachability = set(breadth_first_order(graph.T,
-                                                       vis_index,
-                                                       return_predecessors=False))
+            vis_reachability = set(
+                breadth_first_order(graph.T, vis_index, return_predecessors=False)
+            )
             for inp in input_modules:
                 inp_reachability = reachability[inp]
                 if vis_index in inp_reachability:

@@ -9,6 +9,7 @@ from .changemanager_literal import LiteralChangeManager
 
 logger = logging.getLogger(__name__)
 
+
 class SlotDescriptor(namedtuple('SD',
                                 ['name', 'type', 'required', 'multiple', 'datashape',
                                  'buffer_created',

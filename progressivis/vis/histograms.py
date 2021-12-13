@@ -25,6 +25,7 @@ class Histograms(NAry):
 
     def __init__(self, columns=None, **kwds):
         super(Histograms, self).__init__(**kwds)
+        self.tags.add(self.TAG_VISUALIZATION)
         self.default_step_size = 1
         self._columns = columns
         self._histogram = {}
@@ -81,9 +82,6 @@ class Histograms(NAry):
             histo = self._histogram[column]
             del self._histogram[column]
             histo.destroy()
-
-    def is_visualization(self):
-        return True
 
     def get_visualization(self):
         return "histograms"

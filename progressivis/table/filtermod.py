@@ -8,7 +8,6 @@ from ..core.utils import indices_len, fix_loc
 #from .filter_impl import FilterImpl
 from ..core.bitmap import bitmap
 from . import TableSelectedView
-import numexpr as ne
 import numpy as np
 logger = logging.getLogger(__name__)
 

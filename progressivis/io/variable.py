@@ -15,9 +15,7 @@ class Variable(Constant):
 
     def __init__(self, table=None, **kwds):
         super(Variable, self).__init__(table, **kwds)
-
-    def is_input(self):
-        return True
+        self.tags.add(self.TAG_INPUT)
 
     async def from_input(self, input_):
         if not isinstance(input_, dict):
@@ -27,7 +25,7 @@ class Variable(Constant):
             logger.error(error)
             return error
         if self.result is None:
-            error = f'Variable {self.name} have to run once before receiving input'
+            error = f'Variable {self.name} has to run once before receiving input'
             logger.error(error)
             return error
         last = copy.copy(self.result)
@@ -63,9 +61,7 @@ class VirtualVariable(Constant):
         self._subscriptions = []
         table = None
         super(VirtualVariable, self).__init__(table, **kwds)
-
-    def is_input(self):
-        return True
+        self.tags.add(self.TAG_INPUT)
 
     def subscribe(self, var, vocabulary):
         """

@@ -203,7 +203,8 @@ class Scheduler(object):
             self._idle_procs = []
         await self.run()
 
-    async def start(self, tick_proc=None, idle_proc=None, coros=(), persist=False):
+    async def start(self, tick_proc=None, idle_proc=None, coros=(),
+                    persist=False):
         if not persist:
             return await self.start_impl(tick_proc, idle_proc, coros)
         try:
@@ -266,11 +267,7 @@ class Scheduler(object):
         global KEEP_RUNNING
         # from .sentinel import Sentinel
         # sl = Sentinel(scheduler=self)
-        if self.dataflow:
-            assert self._enter_cnt == 1
-            self._commit(self.dataflow)
-            self.dataflow = None
-            self._enter_cnt = 0
+        self.commit()
         self._stopped = False
         self._running = True
         self._start = default_timer()
@@ -391,6 +388,18 @@ class Scheduler(object):
                 return False
         return True
 
+    def commit(self):
+        """Forces a pending dataflow to be commited
+
+        :returns: None
+
+        """
+        if self.dataflow:
+            assert self._enter_cnt == 1
+            self._commit(self.dataflow)
+            self.dataflow = None
+            self._enter_cnt = 0
+
     def _commit(self, dataflow):
         assert dataflow.version == self.version
         self._new_runorder = dataflow.order_modules()  # raises if invalid
@@ -443,7 +452,6 @@ class Scheduler(object):
 
     def _end_of_modules(self, first_run):
         # Reset interaction mode
-        #self._proc_interaction_opts()
         self._selection_target_time = -1
         new_list = [m for m in self._run_list if not m.is_terminated()]
         self._run_list = new_list
@@ -560,6 +568,45 @@ class Scheduler(object):
             return name in self.dataflow
         return name in self._modules
 
+    def collateral_damage(self, name):
+        """Return the list of modules deleted when the specified one is deleted.
+
+        :param name: module to delete
+        :returns: list of modules relying on or feeding the specified module
+        :rtype: set
+
+        """
+        assert isinstance(name, str)
+
+        if name not in self._modules:
+            return []
+        deps = set([name])  # modules connected with a required slot
+        maybe_deps = set()  # modules with a non required one
+        queue = set(deps)
+        done = set()
+
+        while queue:
+            name = queue.pop()
+            done.add(name)
+            # collect children and ancestors
+            self[name].collect_deps(deps, maybe_deps)
+            queue = deps - done
+
+        # Check from the maybe_deps if some would be deleted for sure
+        again = True
+        while again:
+            again = False
+            for maybe in maybe_deps:
+                die = self[name].die_if_deps_die(deps, maybe_deps)
+                if die:
+                    deps.add(name)
+                    maybe_deps.remove(name)
+                elif die is None:
+                    again = True  # need to iterate
+                else:
+                    maybe_deps.remove(name)
+        return deps
+
     def run_number(self):
         "Return the last run number."
         return self._run_number
@@ -640,7 +687,6 @@ class Scheduler(object):
             if (hasattr(mod, 'storagegroup') and
                     mod.storagegroup is not None):
                 mod.storagegroup.close_all()
-
 
     @staticmethod
     def _module_order(x, y):

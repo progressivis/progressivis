@@ -1,8 +1,6 @@
-import numpy as np
-from progressivis.core.utils import (slice_to_arange, indices_len, fix_loc)
+from progressivis.core.utils import indices_len
 
 from . import Table, TableSelectedView
-#from . import TableSelectedView
 from ..core.slot import SlotDescriptor
 from .module import TableModule
 from ..core.bitmap import bitmap
@@ -137,14 +135,14 @@ class Bisect(TableModule):
         else:
             limit_value = limit_slot.data().last()[0]
         if not self._impl.is_started:
-            status = self._impl.start(input_table, limit_value, limit_changed,
-                                      created=created,
-                                      updated=updated,
-                                      deleted=deleted)
+            self._impl.start(input_table, limit_value, limit_changed,
+                             created=created,
+                             updated=updated,
+                             deleted=deleted)
         else:
-            status = self._impl.resume(limit_value, limit_changed,
-                                       created=created,
-                                       updated=updated,
-                                       deleted=deleted)
-        self.result.selection = self._impl.result._values #&self._table.base.index
+            self._impl.resume(limit_value, limit_changed,
+                              created=created,
+                              updated=updated,
+                              deleted=deleted)
+        self.result.selection = self._impl.result._values
         return self._return_run_step(self.next_state(input_slot), steps)

@@ -15,6 +15,14 @@ class TestProgressiveModule(ProgressiveTest):
     def test_scheduler(self):
         self.assertEqual(len(self.scheduler()), 0)
 
+    def test_tags(self):
+        s = self.scheduler()
+        simple = SimpleModule(scheduler=s)
+        self.assertEquals(simple.tags, set())  # no tags
+        with Module.tagged("a", "b"):
+            simple2 = SimpleModule(scheduler=s)
+        self.assertEquals(simple2.tags, set(["a", "b"]))
+
     def test_module(self):
         # pylint: disable=broad-except
         s = self.scheduler()

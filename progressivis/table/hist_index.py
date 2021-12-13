@@ -509,10 +509,11 @@ class HistogramIndex(TableModule):
                 self._eval_to_ids(operator.__ge__, lower, only_locs))
 
     def create_dependent_modules(self, input_module, input_slot, **kwds):
-        self.input_module = input_module
-        self.input_slot = input_slot
-        hist_index = self
-        hist_index.input.table = input_module.output[input_slot]
-        # hist_index.input.min = min_.output.result
-        # hist_index.input.max = max_.output.result
-        return hist_index
+        with self.tagged(self.TAG_DEPENDENT):
+            self.input_module = input_module
+            self.input_slot = input_slot
+            hist_index = self
+            hist_index.input.table = input_module.output[input_slot]
+            # hist_index.input.min = min_.output.result
+            # hist_index.input.max = max_.output.result
+            return hist_index

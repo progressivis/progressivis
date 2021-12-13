@@ -36,6 +36,7 @@ class CSVLoader(TableModule):
                  save_step_size=100000,
                  **kwds):
         super(CSVLoader, self).__init__(**kwds)
+        self.tags.add(self.TAG_SOURCE)
         self.default_step_size = kwds.get('chunksize', 1000)  # initial guess
         kwds.setdefault('chunksize', self.default_step_size)
         # Filter out the module keywords from the csv loader keywords
@@ -87,7 +88,8 @@ class CSVLoader(TableModule):
             raise
         try:
             Table(name=self._recovery_table_inv_name, create=False)
-        except Exception:
+        except Exception as ve:
+            # FIXME JDF: is that the right way?
             if 'exist' in ve.args[0]:  # FIXME
                 print('WARNING: recovery table invariant does not exist')
                 return False
@@ -141,7 +143,7 @@ class CSVLoader(TableModule):
         try:
             self._input_stream.close()
             # pylint: disable=bare-except
-        except:
+        except Exception:
             pass
         self._input_stream = None
         self._input_encoding = None
@@ -149,14 +151,10 @@ class CSVLoader(TableModule):
         self._input_size = 0
 
     def get_progress(self):
-        if self._input_size==0:
+        if self._input_size == 0:
             return (0, 0)
         pos = self._input_stream.tell()
         return (pos, self._input_size)
-
-    def is_source(self):
-        return True
-
 
     def validate_parser(self, run_number):
         if self.parser is None:

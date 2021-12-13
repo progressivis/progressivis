@@ -1,14 +1,12 @@
 
 from ..core.utils import (indices_len, fix_loc)
-from ..utils.bytescale import bytescale
 from ..core.slot import SlotDescriptor
 from ..table.module import TableModule
-from ..table import Table, TableSelectedView
+from ..table import Table
 from ..utils.psdict import PsDict
 from fast_histogram import histogram2d
-from ..core.decorators import *
+from ..core.decorators import process_slot, run_if_any
 
-import scipy as sp
 import numpy as np
 
 import logging
@@ -40,6 +38,7 @@ class Histogram2D(TableModule):
 
     def __init__(self, x_column, y_column, with_output=True, **kwds):
         super(Histogram2D, self).__init__(dataframe_slot='table', **kwds)
+        self.tags.add(self.TAG_VISUALIZATION)
         self.x_column = x_column
         self.y_column = y_column
         self.default_step_size = 10000
@@ -114,7 +113,9 @@ class Histogram2D(TableModule):
             dfslot = ctx.table
             min_slot = ctx.min
             max_slot = ctx.max
-            if not (dfslot.created.any() or min_slot.has_buffered() or max_slot.has_buffered()):
+            if not (dfslot.created.any()
+                    or min_slot.has_buffered()
+                    or max_slot.has_buffered()):
                 logger.info('Input buffers empty')
                 return self._return_run_step(self.state_blocked, steps_run=0)
             min_slot.clear_buffers()
@@ -126,16 +127,23 @@ class Histogram2D(TableModule):
             xmin, xmax, ymin, ymax = bounds
             if self._bounds is None:
                 (xdelta, ydelta) = self.get_delta(*bounds)
-                self._bounds = (xmin-xdelta, xmax+xdelta, ymin-ydelta, ymax+ydelta)
-                logger.info("New bounds at run %d: %s", run_number, self._bounds)
+                self._bounds = (xmin-xdelta, xmax+xdelta,
+                                ymin-ydelta, ymax+ydelta)
+                logger.info("New bounds at run %d: %s",
+                            run_number, self._bounds)
             else:
                 (dxmin, dxmax, dymin, dymax) = self._bounds
                 (xdelta, ydelta) = self.get_delta(*bounds)
                 assert xdelta >= 0 and ydelta >= 0
-                # Either the min/max has extended, or has shrunk beyond the deltas
-                if ((xmin < dxmin or xmax > dxmax or ymin < dymin or ymax > dymax)
-                    or (xmin > (dxmin+xdelta) or xmax < (dxmax-xdelta)
-                        or ymin > (dymin+ydelta) or ymax < (dymax-ydelta))):
+                # Either the min/max has extended or shrunk beyond the deltas
+                if ((xmin < dxmin
+                     or xmax > dxmax
+                     or ymin < dymin
+                     or ymax > dymax)
+                    or (xmin > (dxmin+xdelta)
+                        or xmax < (dxmax-xdelta)
+                        or ymin > (dymin+ydelta)
+                        or ymax < (dymax-ydelta))):
                     self._bounds = (xmin-xdelta, xmax+xdelta,
                                     ymin-ydelta, ymax+ydelta)
                     logger.info('Updated bounds at run %s: %s',
@@ -153,29 +161,32 @@ class Histogram2D(TableModule):
             # (i.e. no reset)
             p = self.params
             steps = 0
-            # if there are new deletions, build the histogram of the deleted pairs
+            # if there are new deletions, build the histogram of the del. pairs
             # then subtract it from the main histogram
             if dfslot.base.deleted.any():
                 self.reset()
                 dfslot.update(run_number)
-            elif dfslot.selection.deleted.any() and self._histo is not None: # i.e. TableSelectedView
-                input_df = dfslot.data().base # the original table
-                raw_indices = dfslot.selection.deleted.next(step_size) # we assume that deletions are only local to the view
+            elif (dfslot.selection.deleted.any()
+                  and self._histo is not None):  # i.e. TableSelectedView
+                input_df = dfslot.data().base  # the original table
+                # we assume that deletions are only local to the view
                 # and the related records still exist in the original table ...
                 # TODO : test this hypothesis and reset if false
+                raw_indices = dfslot.selection.deleted.next(step_size)
                 indices = fix_loc(raw_indices)
                 steps += indices_len(indices)
-                x = input_df.to_array(locs=indices, columns=[self.x_column]).reshape(-1)
-                y = input_df.to_array(locs=indices, columns=[self.y_column]).reshape(-1)
+                x = input_df.to_array(locs=indices,
+                                      columns=[self.x_column]).reshape(-1)
+                y = input_df.to_array(locs=indices,
+                                      columns=[self.y_column]).reshape(-1)
                 bins = [p.ybins, p.xbins]
                 if len(x) > 0:
                     histo = histogram2d(y, x,
                                         bins=bins,
                                         range=[[ymin, ymax], [xmin, xmax]])
                     self._histo -= histo
-            # if there are new creations, build a partial histogram with them then
+            # if there are new creations, build a partial histogram with them
             # add it to the main histogram
-            #input_df = dfslot.data()
             if not dfslot.created.any():
                 return self._return_run_step(self.state_blocked, steps_run=0)
             input_df = dfslot.data()
@@ -184,8 +195,10 @@ class Histogram2D(TableModule):
             steps += indices_len(indices)
             logger.info('Read %d rows', steps)
             self.total_read += steps
-            x = input_df.to_array(locs=indices, columns=[self.x_column]).reshape(-1)
-            y = input_df.to_array(locs=indices, columns=[self.y_column]).reshape(-1)
+            x = input_df.to_array(locs=indices,
+                                  columns=[self.x_column]).reshape(-1)
+            y = input_df.to_array(locs=indices,
+                                  columns=[self.y_column]).reshape(-1)
             if self._xedges is not None:
                 bins = [self._xedges, self._yedges]
             else:
@@ -221,11 +234,8 @@ class Histogram2D(TableModule):
                 else:
                     table.loc[last.row] = values
             self.build_heatmap(values)
-            return self._return_run_step(self.next_state(dfslot), steps_run=steps)
-
-
-    def is_visualization(self):
-        return True
+            return self._return_run_step(self.next_state(dfslot),
+                                         steps_run=steps)
 
     def get_visualization(self):
         return "heatmap"
@@ -235,23 +245,22 @@ class Histogram2D(TableModule):
         if short:
             return json
         return self.heatmap_to_json(json, short)
+
     def build_heatmap(self, values):
         json_ = {}
         row = values
-        if not (np.isnan(row['xmin']) or np.isnan(row['xmax'])
-                    or np.isnan(row['ymin']) or np.isnan(row['ymax'])):
+        if not (np.isnan(row['xmin'])
+                or np.isnan(row['xmax'])
+                or np.isnan(row['ymin'])
+                or np.isnan(row['ymax'])):
             bounds = (row['xmin'], row['ymin'], row['xmax'], row['ymax'])
             data = row['array']
-            #data = sp.special.cbrt(row['array'])
-            #json_['data'] = sp.misc.bytescale(data)
             json_['binnedPixels'] = data
             json_['range'] = [np.min(data), np.max(data)]
             json_['count'] = np.sum(data)
             json_['value'] = "heatmap"
-            #return json_
             self._heatmap_cache = (json_, bounds)
         return None
-
 
     def heatmap_to_json(self, json, short=False):
         if self._heatmap_cache is None:
@@ -262,7 +271,7 @@ class Histogram2D(TableModule):
         xmin = ymin = - np.inf
         xmax = ymax = np.inf
         buff, bounds = self._heatmap_cache
-        xmin, ymin, xmax, ymax = bounds #buff.pop('bounds')
+        xmin, ymin, xmax, ymax = bounds
         buffers = [buff]
         # TODO: check consistency among classes (e.g. same xbin, ybin etc.)
         xbins, ybins = buffers[0]['binnedPixels'].shape

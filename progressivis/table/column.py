@@ -3,7 +3,6 @@ from collections import Iterable
 import logging
 
 import numpy as np
-from collections import OrderedDict
 from progressivis.storage import Group
 from progressivis.core.utils import integer_types, get_random_name
 try:

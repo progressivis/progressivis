@@ -64,7 +64,6 @@ class MBKMeans(TableModule):
         self.mbk = MiniBatchKMeans(n_clusters=self.mbk.n_clusters,
                                    batch_size=self.mbk.batch_size,
                                    init=init,
-                                   # tol=self._rel_tol,
                                    random_state=self.mbk.random_state)
         dfslot = self.get_input_slot('table')
         dfslot.reset()
@@ -214,9 +213,6 @@ class MBKMeans(TableModule):
             return self._return_run_step(self.state_blocked, iter_)
         return self._return_run_step(self.state_ready, iter_)
 
-    def is_visualization(self):
-        return False
-
     def to_json(self, short=False):
         json = super().to_json(short)
         if short:
@@ -246,17 +242,18 @@ class MBKMeans(TableModule):
         return self.mbk.cluster_centers_.tolist()
 
     def create_dependent_modules(self, input_module, input_slot='result'):
-        s = self.scheduler()
-        self.input_module = input_module
-        self.input.table = input_module.output[input_slot]
-        self.input_slot = input_slot
-        c = DynVar(group="bar", scheduler=s)
-        self.moved_center = c
-        self.input.moved_center = c.output.result
-        v = Var(group="bar", scheduler=s)
-        self.variance = v
-        v.input.table = input_module.output[input_slot]
-        self.input.var = v.output.result
+        with self.tagged(self.TAG_DEPENDENT):
+            s = self.scheduler()
+            self.input_module = input_module
+            self.input.table = input_module.output[input_slot]
+            self.input_slot = input_slot
+            c = DynVar(group=self.name, scheduler=s)
+            self.moved_center = c
+            self.input.moved_center = c.output.result
+            v = Var(group=self.name, scheduler=s)
+            self.variance = v
+            v.input.table = input_module.output[input_slot]
+            self.input.var = v.output.result
 
 
 class MBKMeansFilter(TableModule):
@@ -294,9 +291,11 @@ class MBKMeansFilter(TableModule):
                                          steps_run=steps)
 
     def create_dependent_modules(self, mbkmeans, data_module, data_slot):
-        scheduler = self.scheduler()
-        filter_ = FilterMod(expr=f'labels=={self._sel}', scheduler=scheduler)
-        filter_.input.table = mbkmeans.output.labels
-        self.filter = filter_
-        self.input.labels = filter_.output.result
-        self.input.table = data_module.output[data_slot]
+        with self.tagged(self.TAG_DEPENDENT):
+            scheduler = self.scheduler()
+            filter_ = FilterMod(expr=f'labels=={self._sel}',
+                                scheduler=scheduler)
+            filter_.input.table = mbkmeans.output.labels
+            self.filter = filter_
+            self.input.labels = filter_.output.result
+            self.input.table = data_module.output[data_slot]

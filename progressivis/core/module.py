@@ -45,20 +45,34 @@ class ModuleMeta(ABCMeta):
             cls.outputs = []
         all_parameters = list(cls.parameters)
         all_inputs = list(cls.inputs)
-        #all_outputs = list(cls.outputs)
-        all_outputs = {c.name:c for c in cls.outputs} 
+        all_outputs = {c.name: c for c in cls.outputs}
         for base in bases:
             all_parameters += getattr(base, "all_parameters", [])
             all_inputs += getattr(base, "all_inputs", [])
-            #all_outputs += getattr(base, "all_outputs", [])
             for outp in getattr(base, "all_outputs", []):
                 assert isinstance(outp, SlotDescriptor)
                 if outp.name not in all_outputs:
-                    all_outputs[outp.name] = outp #.append(outp)
+                    all_outputs[outp.name] = outp
         cls.all_parameters = all_parameters
         cls.all_inputs = all_inputs
         cls.all_outputs = list(all_outputs.values())
         super(ModuleMeta, cls).__init__(name, bases, attrs)
+
+
+class ModuleTag:
+    tags = set()
+
+    def __init__(self, *tag_list):
+        self._saved = ModuleTag.tags
+        ModuleTag.tags = set(tag_list)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        ModuleTag.tags = self._saved
+        return False
+
 
 class Module(metaclass=ModuleMeta):
     """The Module class is the base class for all the progressive modules.
@@ -67,6 +81,13 @@ class Module(metaclass=ModuleMeta):
                   ('debug', np.dtype(bool), False)]
     TRACE_SLOT = '_trace'
     PARAMETERS_SLOT = '_params'
+
+    TAG_VISUALIZATION = 'visualization'
+    TAG_INPUT = 'input'
+    TAG_SOURCE = 'source'
+    TAG_GREEDY = 'greedy'
+    TAG_DEPENDENT = 'dependent'
+
     inputs = [SlotDescriptor(PARAMETERS_SLOT, type=BaseTable, required=False)]
     outputs = [SlotDescriptor(TRACE_SLOT, type=BaseTable, required=False)]
 
@@ -115,6 +136,7 @@ class Module(metaclass=ModuleMeta):
                 get_random_name(name+'_tracer'))
         tracer = Tracer.default(name, storagegroup)
 
+        self.tags = set(ModuleTag.tags)
         self.order = None
         self.group = group
         self.tracer = tracer
@@ -146,6 +168,13 @@ class Module(metaclass=ModuleMeta):
         self._start_run = None
         self._end_run = None
         dataflow.add_module(self)
+
+    @staticmethod
+    def tagged(*tags):
+        """Create a context manager to add tags to a set of modules
+        created within a scope, typically dependent modules.
+        """
+        return ModuleTag(*tags)
 
     def scheduler(self):
         """Return the scheduler associated with the module.
@@ -302,7 +331,7 @@ class Module(metaclass=ModuleMeta):
     def is_input(self):
         # pylint: disable=no-self-use
         "Return True if this module is an input module"
-        return False
+        return self.TAG_INPUT in self.tags
 
     def is_data_input(self):
         # pylint: disable=no-self-use
@@ -461,6 +490,70 @@ class Module(metaclass=ModuleMeta):
         "called when the module have been validated"
         self.state = Module.state_blocked
 
+    def collect_deps(self, deps, maybe_deps):
+        self._input_deps(deps, maybe_deps)
+        self._output_deps(deps, maybe_deps)
+
+    def _input_deps(self, deps, maybe_deps):
+        for olist in self._output_slots.values():
+            if olist is None:
+                continue
+            for oslot in olist:
+                module = oslot.input_module
+                if module.name in deps:
+                    continue
+                slot_name = oslot.input_name
+                desc = module.input_slot_descriptor(slot_name)
+                if desc.required:
+                    deps.add(module.name)
+                    maybe_deps.discard(module.name)  # in case
+                else:
+                    maybe_deps.add(module.name)
+
+    def _output_deps(self, deps, maybe_deps):
+        for islot in self._input_slots.values():
+            if islot is None:
+                continue
+            module = islot.output_module
+            if module.name in deps:
+                continue
+            slot_name = islot.output_name
+            desc = module.output_slot_descriptor(slot_name)
+            if desc.required:
+                deps.add(module.name)
+                maybe_deps.discard(module.name)  # in case
+            else:
+                maybe_deps.add(module.name)
+
+    def die_if_deps_die(self, deps, maybe_deps):
+        """Return True if the module would die if the deps
+        modules die, False if not, None if not sure.
+
+        :param deps: a set of module names that will die
+        :param maybe_deps: a set of module names that could die
+        :returns: True if the module dies, False if it does not,
+          None if not sure
+        :rtype: Boolean or None
+
+        """
+        ret = False
+        if not self.is_source():
+            imods = {islot.output_module.name
+                     for islot in self._input_slots.values()}
+            if imods.issubset(deps):  # all input will be deleted, we die
+                return True
+            if imods.issubset(deps | maybe_deps):
+                ret = None  # Maybe
+        if not self.is_sink():
+            omods = {oslot.input_module.name
+                     for oslots in self._output_slots.values()
+                     for oslot in oslots}
+            if omods.issubset(deps):
+                return True
+            if omods.issubset(deps | maybe_deps):
+                ret = None
+        return ret
+
     def _connect_output(self, slot):
         slot_list = self.get_output_slot(slot.output_name)
         if slot_list is None:
@@ -513,16 +606,19 @@ class Module(metaclass=ModuleMeta):
                 'steps_run': steps_run}
 
     def is_visualization(self):
-        return False
+        return self.TAG_VISUALIZATION in self.tags
 
     def get_visualization(self):
         return None
 
     def is_source(self):
-        return False
+        return self.TAG_SOURCE in self.tags
 
     def is_greedy(self):
-        return False
+        return self.TAG_GREEDY in self.tags
+
+    def is_tagged(self, tag):
+        return tag in self.tags
 
     def is_created(self):
         return self._state == Module.state_created
@@ -799,11 +895,12 @@ class InputSlots(object):
         slot.input_module = self.__dict__['module']
         if isinstance(name, int):
             pos = name
-            desc = [(k, sd.required) for (k, sd) in slot.input_module.input_descriptors.items()]
+            desc = [(k, sd.required)
+                    for (k, sd) in slot.input_module.input_descriptors.items()]
             assert pos < len(desc)
             name_, req = desc[pos]
             # pos slot and all slots before pos have to be "required"
-            assert set([r for (_, r) in desc[:pos+1]]) == set([True]) 
+            assert set([r for (_, r) in desc[:pos+1]]) == set([True])
             slot.input_name = name_
         else:
             slot.input_name = name

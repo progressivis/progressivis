@@ -3,8 +3,9 @@
 import numpy as np
 try:
     from pynene import Index
-except:
+except Exception:
     pass
+
 
 class KNNKernelDensity():
     SQRT2PI = np.sqrt(2 * np.pi)
@@ -12,8 +13,7 @@ class KNNKernelDensity():
     def __init__(self, X, online=False):
         self.X = X
         self.index = Index(X)
-        
-        if not online: # if offline
+        if not online:
             self.index.add_points(len(X))
 
     def run(self, ops):

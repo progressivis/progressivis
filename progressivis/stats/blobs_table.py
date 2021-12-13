@@ -52,6 +52,7 @@ class BlobsTableABC(TableModule):
     kw_fun = None
     def __init__(self, columns, rows=-1, dtype='float64', seed=0, throttle=False, **kwds):
         super().__init__(**kwds)
+        self.tags.add(self.TAG_SOURCE)
         self._kwds = {} #self._filter_kwds(kwds, self.kw_fun)
         """assert 'centers' in self._kwds
         assert 'n_samples' not in self._kwds
@@ -83,9 +84,6 @@ class BlobsTableABC(TableModule):
                             dshape=dshape,
                             create=True)
         self.columns = self.result.columns
-
-    def is_source(self):
-        return True
 
     def starting(self):
         super().starting()
