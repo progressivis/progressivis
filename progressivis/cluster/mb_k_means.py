@@ -172,6 +172,10 @@ class MBKMeans(TableModule):
             prev_centers = np.zeros(0, dtype=dtype)
         random_state = check_random_state(self.mbk.random_state)
         X = None
+        # Attributes to monitor the convergence
+        self.mbk._ewa_inertia = None
+        self.mbk._ewa_inertia_min = None
+        self.mbk._no_improvement = 0
         for iter_ in range(step_size):
             mb_ilocs = random_state.randint(
                 0, n_samples, batch_size)
