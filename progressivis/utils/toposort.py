@@ -2,6 +2,7 @@
 Topological sorting of a DAG
 """
 
+
 def _sort(graph, vertex, permanent, temporary, stack):
     if vertex in temporary:
         raise ValueError('Cycle in graph')
@@ -11,6 +12,7 @@ def _sort(graph, vertex, permanent, temporary, stack):
             _sort(graph, i, permanent, temporary, stack)
     permanent.add(vertex)
     stack.append(vertex)
+
 
 def toposort(graph):
     """
@@ -40,6 +42,7 @@ def toposort(graph):
         if i not in permanent:
             _sort(graph, i, permanent, temporary, stack)
     return stack
+
 
 if __name__ == "__main__":
     import doctest

@@ -2,20 +2,31 @@
 Dataflow Graph maintaining a graph of modules and implementing
 commit/rollback semantics.
 """
+from __future__ import annotations
+
+from typing import Any, Dict, Set, List, TYPE_CHECKING
 
 import logging
 
 from uuid import uuid4
-from scipy.sparse import csr_matrix
-from scipy.sparse.csgraph import breadth_first_order
+from scipy.sparse import csr_matrix  # type: ignore
+from scipy.sparse.csgraph import breadth_first_order  # type: ignore
 
 from progressivis.utils.toposort import toposort
 from progressivis.utils.errors import ProgressiveError
 
 logger = logging.getLogger(__name__)
 
+if TYPE_CHECKING:
+    from .scheduler import Scheduler
+    from .module import Module
+    from .slot import Slot
 
-class Dataflow(object):
+Dependencies = Dict[str, Set[str]]
+Order = List[str]
+
+
+class Dataflow:
     """Class managing a Dataflow, a configuration of modules and slots
     constructed by the user to be run by a Scheduler.
 
@@ -28,33 +39,32 @@ class Dataflow(object):
     Dataflow graph maintaining modules connected with slots.
     """
 
-    def __init__(self, scheduler):
+    def __init__(self, scheduler: Scheduler):
         self.scheduler = scheduler
-        self.version = -1
-        self._modules = {}
-        self.inputs = {}
-        self.outputs = {}
-        self.valid = []
-        self._slot_clashes = {}
-        self.reachability = None
+        self._modules: Dict[str, Module] = {}
+        self.inputs: Dict[str, Dict] = {}
+        self.outputs: Dict[str, Dict] = {}
+        self.valid: List[Module] = []
+        self._slot_clashes: Dict[str, Dict[str, int]] = {}
+        self.reachability: Dict[str, Any] = {}
         # add the scheduler's dataflow into self
-        self.version = scheduler.version
+        self.version: int = scheduler.version
         for module in scheduler.modules().values():
             self._add_module(module)
         for module in scheduler.modules().values():
             for slot in module.input_slot_values():
                 self.add_connection(slot)
 
-    def clear(self):
+    def clear(self) -> None:
         "Remove all the modules from the Dataflow"
         self.version = -1
         self._modules = {}
         self.inputs = {}
         self.outputs = {}
         self.valid = []
-        self.reachability = None
+        self.reachability = {}
 
-    def generate_name(self, prefix):
+    def generate_name(self, prefix: str) -> str:
         "Generate a name for a module given its class prefix."
         for i in range(1, 10):
             mid = f"{prefix}_{i}"
@@ -62,62 +72,62 @@ class Dataflow(object):
                 return mid
         return f"{prefix}_{uuid4()}"
 
-    def modules(self):
+    def modules(self) -> List[Module]:
         "Return all the modules in this dataflow"
-        return self._modules.values()
+        return list(self._modules.values())
 
-    def dir(self):
+    def dir(self) -> List[str]:
         "Return the name of all the modules"
         return list(self._modules.keys())
 
-    def get_visualizations(self):
+    def get_visualizations(self) -> List[str]:
         "Return the visualization modules"
         return [m.name for m in self.modules() if m.is_visualization()]
 
-    def get_inputs(self):
+    def get_inputs(self) -> List[str]:
         "Return the input modules"
         return [m.name for m in self.modules() if m.is_input()]
 
-    def __delitem__(self, name):
-        self.remove_module(name)
+    def __delitem__(self, name: str) -> None:
+        self.remove_module(self._modules[name])
 
-    def __getitem__(self, name):
-        return self._modules.get(name, None)
+    def __getitem__(self, name: str) -> Module:
+        return self._modules[name]
 
-    def __contains__(self, name):
+    def __contains__(self, name: str) -> bool:
         return name in self._modules
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self._modules)
 
-    def aborted(self):
+    def aborted(self) -> None:
         "The dataflow has been aborted before being sent."
         # pylint: disable=protected-access
         self.clear()
 
-    def committed(self):
+    def committed(self) -> None:
         "The dataflow has been sent to the scheduler."
         self.clear()
 
-    def add_module(self, module):
+    def add_module(self, module: Module) -> None:
         "Add a module to this Dataflow."
         assert module.is_created()
         self._add_module(module)
         self.valid = []
 
-    def _add_module(self, module):
+    def _add_module(self, module: Module) -> None:
         if module.name in self.inputs:
             raise ProgressiveError("Module %s already exists" % module.name)
         self._modules[module.name] = module
         self.inputs[module.name] = {}
         self.outputs[module.name] = {}
 
-    def remove_module(self, module):
+    def remove_module(self, module: Module) -> None:
         """Remove the specified module
            or does nothing if the module does not exist.
         """
-        if isinstance(module, str):
-            module = self._modules.get(module)
+        # if isinstance(module, str):
+        #     module = self._modules.get(module)
         if not hasattr(module, "name"):
             return  # module is not fully created
         # module.terminate()
@@ -129,7 +139,7 @@ class Dataflow(object):
             to_remove.update(self._remove_module_outputs(name))
         self.valid = []
 
-    def add_connection(self, slot):
+    def add_connection(self, slot: Slot) -> None:
         "Declare a connection between two module slots"
         if not slot:
             return
@@ -172,21 +182,27 @@ class Dataflow(object):
             self.outputs[output_module.name][output_name].append(slot)
         self.valid = []  # Not sure
 
-    def connect(self, output_module, output_name, input_module, input_name):
+    def connect(
+            self,
+            output_module: Module,
+            output_name: str,
+            input_module: Module,
+            input_name: str) -> None:
         "Declare a connection between two modules slots"
         slot = output_module.create_slot(
-            output_module, output_name, input_module, input_name
+            output_name, input_module, input_name
         )
         if not slot.validate_types():
             raise ProgressiveError(
-                "Incompatible types for slot (%s,%s) in %s",
-                output_name,
-                input_name,
-                str(slot)
+                "Incompatible types for slot (%s,%s) in %s" % (
+                    output_name,
+                    input_name,
+                    str(slot)
+                )
             )
         self.add_connection(slot)
 
-    def _clashes(self, module_name, input_slot_name):
+    def _clashes(self, module_name: str, input_slot_name: str) -> int:
         slots = self._slot_clashes.get(module_name, None)
         if slots is None:
             slots = {input_slot_name: 1}
@@ -195,7 +211,7 @@ class Dataflow(object):
         slots[input_slot_name] += 1
         return slots[input_slot_name]
 
-    def _remove_module_inputs(self, name):
+    def _remove_module_inputs(self, name: str):
         for slot in self.inputs[name].values():
             outname = slot.output_name
             slots = self.outputs[slot.output_module.name][outname]
@@ -207,7 +223,7 @@ class Dataflow(object):
                 del self.outputs[slot.output_module.name][outname]
         del self.inputs[name]
 
-    def _remove_module_outputs(self, name):
+    def _remove_module_outputs(self, name: str):
         emptied = []
         for oslots in self.outputs[name].values():
             for slot in oslots:
@@ -221,14 +237,14 @@ class Dataflow(object):
         del self.outputs[name]
         return emptied
 
-    def order_modules(self, dependencies=None):
+    def order_modules(self, dependencies : Dependencies = None) -> Order:
         "Compute a topological order for the modules."
         if dependencies is None:
             dependencies = self.collect_dependencies()
         runorder = toposort(dependencies)
         return runorder
 
-    def collect_dependencies(self):
+    def collect_dependencies(self) -> Dict[str, Set[str]]:
         "Return the dependecies of the modules"
         errors = self.validate()
         if errors:
@@ -241,7 +257,7 @@ class Dataflow(object):
             dependencies[module] = set(outs)
         return dependencies
 
-    def validate(self):
+    def validate(self) -> List[str]:
         """
         Validate the Dataflow, returning [] if it is valid
         or the invalid modules otherwise.
@@ -261,7 +277,7 @@ class Dataflow(object):
         return errors
 
     @staticmethod
-    def validate_module_inputs(module, inputs):
+    def validate_module_inputs(module, inputs: Dict[str, Slot]) -> List[str]:
         """Validate the input slots on a module.
         Return a list of errors, empty if no error occured.
         """
@@ -296,7 +312,7 @@ class Dataflow(object):
         return errors
 
     @staticmethod
-    def validate_module_outputs(module, outputs):
+    def validate_module_outputs(module, outputs: Dict[str, List[Slot]]):
         """Validate the output slots on a module.
         Return a list of errors, empty if no error occured.
         """
@@ -317,7 +333,7 @@ class Dataflow(object):
             )
         return errors
 
-    def validate_module(self, module):
+    def validate_module(self, module: Module) -> List[str]:
         """Validate a module in the dataflow.
         Return a list of errors, empty if no error occured.
         """
@@ -364,3 +380,48 @@ class Dataflow(object):
                         self.reachability[inp].update(inter)
                     else:
                         self.reachability[inp] = inter
+
+    def collateral_damage(self, name: str) -> Set[str]:
+        """Return the list of modules deleted when the specified one is deleted.
+
+        :param name: module to delete
+        :returns: list of modules relying on or feeding the specified module
+        :rtype: set
+
+        """
+        assert isinstance(name, str)
+
+        if name not in self._modules:
+            return Set()
+        deps = set([name])  # modules connected with a required slot
+        maybe_deps: Set[str] = set()  # modules with a non required one
+        queue = set(deps)
+        done: Set[str] = set()
+
+        while queue:
+            name = queue.pop()
+            done.add(name)
+            # collect children and ancestors
+            self[name].collect_deps(deps, maybe_deps)
+            queue = deps - done
+
+        # Check from the maybe_deps if some would be deleted for sure
+        again = True
+        while again:
+            again = False
+            for maybe in maybe_deps:
+                die = self[name].die_if_deps_die(deps, maybe_deps)
+                if die:
+                    deps.add(name)
+                    maybe_deps.remove(name)
+                elif die is None:
+                    again = True  # need to iterate
+                else:
+                    maybe_deps.remove(name)
+        return deps
+
+    def _collect_deps(self, name, deps, maybe_deps):
+        pass
+
+    def _die_if_deps_die(name, deps, maybe_deps):
+        pass

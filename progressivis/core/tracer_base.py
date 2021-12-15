@@ -1,39 +1,40 @@
+from typing import Callable, Any, Optional
 
 from abc import ABCMeta, abstractmethod
 
 
 class Tracer(metaclass=ABCMeta):
-    default = None
+    default: Callable[[str, Any], 'Tracer']
 
     @abstractmethod
-    def start_run(self, ts, run_number, **kwds):
+    def start_run(self, ts: float, run_number: int, **kwds):
         pass
 
     @abstractmethod
-    def end_run(self, ts, run_number, **kwds):
+    def end_run(self, ts: float, run_number: int, **kwds):
         pass
 
     @abstractmethod
-    def run_stopped(self, ts, run_number, **kwds):
+    def run_stopped(self, ts: float, run_number: int, **kwds):
         pass
 
     @abstractmethod
-    def before_run_step(self, ts, run_number, **kwds):
+    def before_run_step(self, ts: float, run_number: int, **kwds):
         pass
 
     @abstractmethod
-    def after_run_step(self, ts, run_number, **kwds):
+    def after_run_step(self, ts: float, run_number: int, **kwds):
         pass
 
     @abstractmethod
-    def exception(self, ts, run_number, **kwds):
+    def exception(self, ts: float, run_number: int, **kwds):
         pass
 
     @abstractmethod
-    def terminated(self, ts, run_number, **kwds):
+    def terminated(self, ts: float, run_number: int, **kwds):
         pass
 
     @abstractmethod
-    def trace_stats(self, max_runs=None):
+    def trace_stats(self, max_runs: Optional[int] = None):
         _ = max_runs  # keeps pylint mute
         return []

@@ -194,8 +194,6 @@ class Slot(object):
         "Return an accessor"
         return self.changes.selection if self.changes else EMPTY_BUFFER
 
-
-
     @property
     def changemanager(self):
         "Return the ChangeManager"

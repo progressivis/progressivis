@@ -40,9 +40,11 @@ class TableModule(Module):
         for k in self._input_slots.keys():
             return k
 
-    #def table(self):
-    #    "Return the table"
-    #    return self._table
+    def close_all(self) -> None:
+        super(TableModule, self).close_all()
+        if self.__result is not None and self.__result.storagegroup is not None:
+            self.__result.storagegroup.close_all()
+
     @property
     def result(self):
         return self.__result

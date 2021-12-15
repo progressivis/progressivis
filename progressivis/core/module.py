@@ -1,6 +1,7 @@
 """
 Base class for progressive modules.
 """
+from typing import Any, Optional, Dict, Set, List, TYPE_CHECKING
 
 from abc import ABCMeta, abstractmethod
 from traceback import print_exc
@@ -25,6 +26,10 @@ from .tracer_base import Tracer
 from .time_predictor import TimePredictor
 from .storagemanager import StorageManager
 from .scheduler import Scheduler
+
+
+if TYPE_CHECKING:
+    from .dataflow import Dataflow
 
 
 logger = logging.getLogger(__name__)
@@ -58,7 +63,7 @@ class ModuleMeta(ABCMeta):
 
 
 class ModuleTag:
-    tags = set()
+    tags: Set[str] = set()
 
     def __init__(self, *tag_list):
         self._saved = ModuleTag.tags
@@ -107,17 +112,17 @@ class Module(metaclass=ModuleMeta):
         return module
 
     def __init__(self,
-                 name=None,
-                 group=None,
-                 scheduler=None,
+                 name: Optional[str] = None,
+                 group: Optional[str] = None,
+                 scheduler: Optional[Scheduler] = None,
                  storagegroup=None,
                  **kwds):
         if scheduler is None:
             scheduler = Scheduler.default
-        self._scheduler = scheduler
-        dataflow = scheduler.dataflow
-        if dataflow is None:
+        self._scheduler: Scheduler = scheduler
+        if scheduler.dataflow is None:
             raise ProgressiveError("No valid context in scheduler")
+        dataflow: Dataflow = scheduler.dataflow
         if name is None:
             name = dataflow.generate_name(self.pretty_typename())
         elif name in dataflow:
@@ -135,7 +140,7 @@ class Module(metaclass=ModuleMeta):
         tracer = Tracer.default(name, storagegroup)
 
         self.tags = set(ModuleTag.tags)
-        self.order = None
+        self.order = -1
         self.group = group
         self.tracer = tracer
         self._start_time = None
@@ -146,8 +151,8 @@ class Module(metaclass=ModuleMeta):
         self._parse_parameters(kwds)
 
         # always present
-        input_descriptors = self.all_inputs
-        output_descriptors = self.all_outputs
+        input_descriptors = self.all_inputs    # type: ignore
+        output_descriptors = self.all_outputs  # type: ignore
         self._input_slots = self._validate_descriptors(input_descriptors)
         self.input_descriptors = {d.name: d
                                   for d in input_descriptors}
@@ -188,6 +193,10 @@ class Module(metaclass=ModuleMeta):
         """Create modules that this module depends on.
         """
         pass
+
+    def close_all(self) -> None:
+        if self._params is not None and self._params.storagegroup is not None:
+            self._params.storagegroup.close_all()
 
     def get_progress(self):
         """Return a tuple of numbers (current,total) where current is `current`
@@ -295,7 +304,7 @@ class Module(metaclass=ModuleMeta):
             'progress': list(self.get_progress()),
             'speed': speed_h
         }
-        if self.order is not None:
+        if self.order >= 0:
             json['order'] = self.order
 
         if short:

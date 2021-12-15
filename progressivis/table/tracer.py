@@ -129,5 +129,4 @@ class TableTracer(Tracer):
         return res
 
 
-if Tracer.default is None:
-    Tracer.default = TableTracer
+Tracer.default = TableTracer

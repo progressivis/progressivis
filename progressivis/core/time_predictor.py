@@ -1,4 +1,6 @@
 
+from typing import Callable
+
 from abc import abstractmethod
 import logging
 import numpy as np
@@ -6,8 +8,8 @@ import numpy as np
 logger = logging.getLogger(__name__)
 
 
-class TimePredictor(object):
-    default = None
+class TimePredictor:
+    default: Callable[[], 'TimePredictor']
 
     def __init__(self):
         self.name = None
@@ -76,5 +78,4 @@ class LinearTimePredictor(TimePredictor):
         return steps
 
 
-if TimePredictor.default is None:
-    TimePredictor.default = LinearTimePredictor
+TimePredictor.default = LinearTimePredictor

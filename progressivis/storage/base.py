@@ -1,9 +1,12 @@
+from typing import Callable
+
 from abc import ABCMeta, abstractmethod, abstractproperty
 from contextlib import contextmanager
 
+
 class StorageObject(metaclass=ABCMeta):
     @abstractproperty
-    def name(self):
+    def name(self) -> str:
         pass
 
     @abstractproperty
@@ -11,7 +14,7 @@ class StorageObject(metaclass=ABCMeta):
         pass
 
     @abstractproperty
-    def __len__(self):
+    def __len__(self) -> int:
         pass
 
 
@@ -65,7 +68,8 @@ class DatasetFactory(StorageObject):
 
 class Group(DatasetFactory):
     default = None
-    default_internal = None
+    default_internal: Callable[[str], 'Group'] = None
+
     @abstractmethod
     def create_dataset(self, name, shape=None, dtype=None, data=None, **kwds):
         pass
