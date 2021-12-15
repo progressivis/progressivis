@@ -129,7 +129,7 @@ setup(
         "numexpr>=2.6.1",
         "tables>=3.3.0",
         "pandas>=1.2.5",
-        "scikit-learn>=0.23.2",
+        "scikit-learn>=1.0.0",
         "tdigest>=0.4.1.0",
         "numcodecs>=0.5.5",
         "datashape>=0.5.2",

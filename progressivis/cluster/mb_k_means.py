@@ -4,10 +4,6 @@ from collections import defaultdict
 import numpy as np
 import pandas as pd
 from sklearn.cluster import MiniBatchKMeans
-try:
-    from sklearn.cluster._kmeans import _mini_batch_convergence
-except ImportError:
-    _mini_batch_convergence = MiniBatchKMeans._mini_batch_convergence
 from sklearn.utils.validation import check_random_state
 from progressivis import ProgressiveError, SlotDescriptor
 from progressivis.core.utils import indices_len
@@ -197,11 +193,10 @@ class MBKMeans(TableModule):
                 if np.count_nonzero(center_mask) > 0:
                     diff = centers[ci].ravel() - prev_centers[ci].ravel()
                     squared_diff += np.dot(diff, diff)
-            if _mini_batch_convergence(self.mbk,
-                                       iter_, step_size, tol, n_samples,
+            if self.mbk._mini_batch_convergence(
+                                       iter_, step_size, n_samples,
                                        squared_diff, batch_inertia,
-                                       self.convergence_context,
-                                       verbose=self.mbk.verbose):
+                                       self.convergence_context):
                 is_conv = True
                 break
         if self.result is None:
