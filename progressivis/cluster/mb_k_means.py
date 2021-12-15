@@ -193,10 +193,8 @@ class MBKMeans(TableModule):
                 if np.count_nonzero(center_mask) > 0:
                     diff = centers[ci].ravel() - prev_centers[ci].ravel()
                     squared_diff += np.dot(diff, diff)
-            if self.mbk._mini_batch_convergence(
-                                       iter_, step_size, n_samples,
-                                       squared_diff, batch_inertia,
-                                       self.convergence_context):
+            if self.mbk._mini_batch_convergence(iter_, step_size, n_samples,
+                                                squared_diff, batch_inertia):
                 is_conv = True
                 break
         if self.result is None:
