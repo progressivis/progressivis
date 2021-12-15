@@ -12,10 +12,10 @@ dependencies:
   - numpy>=1.16.5
   - scipy>=0.18.1
   - numexpr>=2.6.1
-  - pandas>=1.0.0
+  - pandas>=1.2.5
   - pillow>=4.2.0
   - requests
-  - scikit-learn>=0.18.1
+  - scikit-learn>=1.0.0
   - pyroaring=0.2.11
   - datashape
   - fast-histogram
