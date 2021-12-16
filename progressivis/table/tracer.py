@@ -110,7 +110,7 @@ class TableTracer(Tracer):
     def terminated(self, ts, run_number, **kwds):
         self.last_run_details += ('terminated')
 
-    def get_speed(self, depth=15):
+    def get_speed(self, depth: int = 15):
         res = []
         non_zero = self.table.eval('steps_run!=0', as_slice=False)
         sz = min(depth, len(non_zero))

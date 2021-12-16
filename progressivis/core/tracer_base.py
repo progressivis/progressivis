@@ -1,4 +1,4 @@
-from typing import Callable, Any, Optional
+from typing import Callable, Any, Optional, List, Union
 
 from abc import ABCMeta, abstractmethod
 
@@ -37,4 +37,8 @@ class Tracer(metaclass=ABCMeta):
     @abstractmethod
     def trace_stats(self, max_runs: Optional[int] = None):
         _ = max_runs  # keeps pylint mute
+        return []
+
+    @abstractmethod
+    def get_speed(self, depth: int = 15) -> List[Optional[float]]:
         return []

@@ -149,7 +149,7 @@ class Dataflow:
         input_name = slot.input_name
         if input_module.input_slot_multiple(input_name):
             slot.original_name = input_name
-            clashes = self._clashes(input_module, input_name)
+            clashes = self._clashes(input_module.name, input_name)
             input_name += f".{self.version:02d}.{clashes:02d}"
             slot.input_name = input_name
             assert input_name not in self.inputs[input_module.name]

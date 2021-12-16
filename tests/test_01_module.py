@@ -47,7 +47,7 @@ class TestProgressiveModule(ProgressiveTest):
             self.assertFalse(module.is_visualization())
             self.assertIsNone(module.get_visualization())
             self.assertIsNone(module.get_data("error"))
-            self.assertIsNone(module.last_time())
+            self.assertEquals(module.last_time(), 0)
             module.debug = True
             self.assertEqual(module.params.debug, True)
             module.set_current_params({'quantum': 2.0})

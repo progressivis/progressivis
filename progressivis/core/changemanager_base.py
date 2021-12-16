@@ -11,12 +11,15 @@ import weakref as wr
 
 logger = logging.getLogger(__name__)
 
+
 class _accessor:
     def __init__(self, parent):
         self._parent_wr = wr.ref(parent)
+
     @property
     def _parent(self):
         return self._parent_wr()
+
     @property
     def created(self):
         "Return information of items created"
@@ -31,7 +34,8 @@ class _accessor:
     def deleted(self):
         "Return information of items deleted"
         return self._parent._deleted
-    
+
+
 class _base_accessor(_accessor):
     @property
     def created(self):
@@ -48,6 +52,7 @@ class _base_accessor(_accessor):
         "Return information of items deleted"
         return self._parent._deleted
 
+
 class _selection_accessor(_accessor):
     @property
     def created(self):
@@ -58,6 +63,7 @@ class _selection_accessor(_accessor):
     def deleted(self):
         "Return information of items deleted"
         return self._parent._masked
+
 
 class BaseChangeManager(object):
     "Base class for change managers"
@@ -108,13 +114,13 @@ class BaseChangeManager(object):
         if self._base is None:
             self._base = _base_accessor(self)
         return self._base
-    
+
     @property
     def selection(self):
         if self._selection is None:
             self._selection = _selection_accessor(self)
         return self._selection
-    
+
     def reset(self, name=None):
         """
         Reset the change manager so changes will come as if the managed data

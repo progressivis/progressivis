@@ -1,7 +1,18 @@
 """
 Base class for progressive modules.
 """
-from typing import Any, Optional, Dict, Set, List, TYPE_CHECKING
+from __future__ import annotations
+
+from typing import (
+    Any,
+    Optional,
+    Dict,
+    Set,
+    List,
+    Tuple,
+    Callable,
+    TYPE_CHECKING
+)
 
 from abc import ABCMeta, abstractmethod
 from traceback import print_exc
@@ -65,7 +76,7 @@ class ModuleMeta(ABCMeta):
 class ModuleTag:
     tags: Set[str] = set()
 
-    def __init__(self, *tag_list):
+    def __init__(self, *tag_list: str):
         self._saved = ModuleTag.tags
         ModuleTag.tags = set(tag_list)
 
@@ -143,9 +154,9 @@ class Module(metaclass=ModuleMeta):
         self.order = -1
         self.group = group
         self.tracer = tracer
-        self._start_time = None
-        self._end_time = None
-        self._last_update = 0
+        self._start_time: float = 0
+        self._end_time: float = 0
+        self._last_update: int = 0
         self._state = Module.state_created
         self._had_error = False
         self._parse_parameters(kwds)
@@ -168,23 +179,23 @@ class Module(metaclass=ModuleMeta):
         self.after_run_proc = None
         self.context = None
         # callbacks
-        self._start_run = None
-        self._end_run = None
+        self._start_run: Optional[Callable[[Module, int], None]] = None
+        self._end_run: Optional[Callable[[Module, int], None]] = None
         dataflow.add_module(self)
 
     @staticmethod
-    def tagged(*tags):
+    def tagged(*tags: str):
         """Create a context manager to add tags to a set of modules
         created within a scope, typically dependent modules.
         """
         return ModuleTag(*tags)
 
-    def scheduler(self):
+    def scheduler(self) -> Scheduler:
         """Return the scheduler associated with the module.
         """
         return self._scheduler
 
-    def dataflow(self):
+    def dataflow(self) -> Optional[Dataflow]:
         """Return the dataflow associated with the module at creation time.
         """
         return self._scheduler.dataflow
@@ -198,7 +209,7 @@ class Module(metaclass=ModuleMeta):
         if self._params is not None and self._params.storagegroup is not None:
             self._params.storagegroup.close_all()
 
-    def get_progress(self):
+    def get_progress(self) -> Tuple[int, int]:
         """Return a tuple of numbers (current,total) where current is `current`
         progress value and `total` is the total number of values to process;
         these values can change during the computations.
@@ -221,13 +232,13 @@ class Module(metaclass=ModuleMeta):
             size += prog[1]
         return (pos, size)
 
-    def get_quality(self):
+    def get_quality(self) -> float:
         # pylint: disable=no-self-use
         """Quality value, should increase.
         """
         return 0.0
 
-    async def after_run(self, rn):
+    async def after_run(self, rn) -> None:
         if self.after_run_proc is None:
             return
         proc = self.after_run_proc
@@ -254,12 +265,12 @@ class Module(metaclass=ModuleMeta):
         return slots
 
     @property
-    def debug(self):
+    def debug(self) -> bool:
         "Return the value of the debug property"
-        return self.params.debug
+        return bool(self.params.debug)
 
     @debug.setter
-    def debug(self, value):
+    def debug(self, value: bool) -> None:
         """Set the value of the debug property.
 
         when True, the module trapped into the debugger when the run_step
@@ -277,18 +288,18 @@ class Module(metaclass=ModuleMeta):
             if name in kwds:
                 self.params[name] = kwds.pop(name)
 
-    def generate_table_name(self, name):
+    def generate_table_name(self, name: str) -> str:
         "Return a uniq name for this module"
         return f"s{self.scheduler().name}_{self.name}_{name}"
 
-    def timer(self):
+    def timer(self) -> float:
         "Return the timer associated with this module"
         return self.scheduler().timer()
 
-    def to_json(self, short=False, with_speed=True):
+    def to_json(self, short: bool = False, with_speed: bool = True) -> Dict[str, Any]:
         "Return a dictionary describing the module"
         s = self.scheduler()
-        speed_h = [1.0]
+        speed_h: List[Optional[float]] = [1.0]
         if with_speed:
             speed_h = self.tracer.get_speed()
         json = {
@@ -322,27 +333,27 @@ class Module(metaclass=ModuleMeta):
         })
         return json
 
-    async def from_input(self, msg):
+    async def from_input(self, msg: Dict[str, Any]) -> None:
         "Catch and process a message from an interaction"
         if 'debug' in msg:
-            self.debug = msg['debug']
+            self.debug = bool(msg['debug'])
 
-    def is_input(self):
+    def is_input(self) -> bool:
         # pylint: disable=no-self-use
         "Return True if this module is an input module"
         return self.TAG_INPUT in self.tags
 
-    def is_data_input(self):
+    def is_data_input(self) -> bool:
         # pylint: disable=no-self-use
         "Return True if this module brings new data"
         return False
 
-    def get_image(self, run_number=None):  # pragma no cover
+    def get_image(self, run_number: Optional[int] = None) -> Any:  # pragma no cover
         "Return an image created by this module or None"
         # pylint: disable=unused-argument, no-self-use
         return None
 
-    def describe(self):
+    def describe(self) -> None:
         "Print the description of this module"
         print('id: %s' % self.name)
         print('class: %s' % type_fullname(self))
@@ -358,7 +369,7 @@ class Module(metaclass=ModuleMeta):
             print('parameters: ')
             print(self._params)
 
-    def pretty_typename(self):
+    def pretty_typename(self) -> str:
         "Return a the type name of this module in a pretty form"
         name = self.__class__.__name__
         pretty = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
@@ -372,15 +383,15 @@ class Module(metaclass=ModuleMeta):
     def __repr__(self):
         return str(self)
 
-    async def start(self):
+    async def start(self) -> None:
         "Start the scheduler associated with this module"
         await self.scheduler().start()
 
-    def terminate(self):
+    def terminate(self) -> None:
         "Set the state to terminated for this module"
         self.state = Module.state_zombie
 
-    def create_slot(self, output_name, input_module, input_name):
+    def create_slot(self, output_name: str, input_module: Module, input_name: str) -> Slot:
         "Create a specified output slot"
         if isinstance(output_name, int):
             pos = output_name
@@ -390,48 +401,48 @@ class Module(metaclass=ModuleMeta):
             output_name = slot_desc.name
         return Slot(self, output_name, input_module, input_name)
 
-    def connect_output(self, output_name, input_module, input_name):
+    def connect_output(self, output_name: str, input_module: Module, input_name: str) -> Slot:
         "Connect the output slot"
         slot = self.create_slot(output_name, input_module, input_name)
         slot.connect()
         return slot
 
-    def has_any_input(self):
+    def has_any_input(self) -> bool:
         "Return True if the module has any input"
         return any(self._input_slots.values())
 
-    def get_input_slot(self, name):
+    def get_input_slot(self, name: str) -> Slot:
         "Return the specified input slot"
         # raises error is the slot is not declared
         return self._input_slots[name]
 
-    def get_input_slot_multiple(self, name):
+    def get_input_slot_multiple(self, name: str) -> List[Slot]:
         if not self.input_slot_multiple(name):
             return [self.get_input_slot(name)]
         prefix = name+'.'
-        return [iname for iname in self.inputs
+        return [iname for iname in self._input_slots
                 if iname.startswith(prefix)]
 
-    def get_input_module(self, name):
+    def get_input_module(self, name: str) -> Module:
         "Return the specified input module"
         return self.get_input_slot(name).output_module
 
-    def input_slot_values(self):
+    def input_slot_values(self) -> List[Slot]:
         return list(self._input_slots.values())
 
-    def input_slot_descriptor(self, name):
+    def input_slot_descriptor(self, name: str) -> SlotDescriptor:
         return self.input_descriptors[name]
 
-    def input_slot_type(self, name):
+    def input_slot_type(self, name: str) -> Any:
         return self.input_descriptors[name].type
 
-    def input_slot_required(self, name):
+    def input_slot_required(self, name: str) -> bool:
         return self.input_descriptors[name].required
 
-    def input_slot_multiple(self, name):
+    def input_slot_multiple(self, name: str) -> bool:
         return self.input_descriptors[name].multiple
 
-    def input_slot_names(self):
+    def input_slot_names(self) -> List[str]:
         return list(self._input_slots.keys())
 
     def reconnect(self, inputs):
@@ -736,32 +747,32 @@ class Module(metaclass=ModuleMeta):
     def _stop(self, run_number):
         self._end_time = self._start_time
         self._last_update = run_number
-        self._start_time = None
+        self._start_time = 0
         assert self.state != self.state_running
         self.end_run(run_number)
 
-    def set_start_run(self, start_run):
+    def set_start_run(self, start_run: Optional[Callable[[Module, int], None]]) -> None:
         if start_run is None or callable(start_run):
             self._start_run = start_run
         else:
             raise ProgressiveError('value should be callable or None',
                                    start_run)
 
-    def start_run(self, run_number):
+    def start_run(self, run_number: int):
         if self._start_run:
             self._start_run(self, run_number)
 
-    def set_end_run(self, end_run):
+    def set_end_run(self, end_run: Optional[Callable[[Module, int], None]]):
         if end_run is None or callable(end_run):
             self._end_run = end_run
         else:
             raise ProgressiveError('value should be callable or None', end_run)
 
-    def end_run(self, run_number):
+    def end_run(self, run_number: int):
         if self._end_run:
             self._end_run(self, run_number)
 
-    def ending(self):
+    def ending(self) -> None:
         '''Ends a module.
         called when it is about the be removed from the scheduler
         '''
@@ -771,11 +782,11 @@ class Module(metaclass=ModuleMeta):
         #  self.input = None
         #  self.output = None
 
-    def last_update(self):
+    def last_update(self) -> int:
         "Return the last time when the module was updated"
         return self._last_update
 
-    def last_time(self):
+    def last_time(self) -> float:
         return self._end_time
 
     def _update_params(self, run_number):
@@ -798,7 +809,7 @@ class Module(metaclass=ModuleMeta):
         self._params.add(combined)
         return v
 
-    def has_input(self):
+    def has_input(self) -> bool:
         """Return True if the module received something via a from_input() call.
         Usually is a flag set by from_input() and deleted by the following
         run_step().
@@ -810,7 +821,7 @@ class Module(metaclass=ModuleMeta):
         s = self.scheduler()
         s.freeze()
 
-    def run(self, run_number):
+    def run(self, run_number: int) -> None:
         assert not self.is_running()
         self.steps_acc = 0
         next_state = self.state
@@ -863,7 +874,7 @@ class Module(metaclass=ModuleMeta):
                 tracer.after_run_step(now, run_number, **run_step_ret)
                 self.state = next_state
 
-            if self._start_time is None or self.state != Module.state_ready:
+            if self._start_time == 0 or self.state != Module.state_ready:
                 tracer.run_stopped(now, run_number)
             self._start_time = now
         self.state = next_state
@@ -878,16 +889,16 @@ class Module(metaclass=ModuleMeta):
             raise RuntimeError("{} {}".format(type(exception), exception))
 
 
-class InputSlots(object):
+class InputSlots:
     # pylint: disable=too-few-public-methods
     """
     Convenience class to refer to input slots by name
     as if they were attributes.
     """
-    def __init__(self, module):
+    def __init__(self, module: Module):
         self.__dict__['module'] = module
 
-    def __setattr__(self, name, slot):
+    def __setattr__(self, name: str, slot: Slot):
         assert isinstance(slot, Slot)
         assert slot.output_module is not None
         assert slot.output_name is not None
@@ -905,13 +916,13 @@ class InputSlots(object):
             slot.input_name = name
         slot.connect()
 
-    def __getattr__(self, name):
+    def __getattr__(self, name: str) -> Slot:
         raise ProgressiveError('Input slots cannot be read, only assigned to')
 
-    def __getitem__(self, name):
+    def __getitem__(self, name: str) -> Slot:
         raise ProgressiveError('Input slots cannot be read, only assigned to')
 
-    def __setitem__(self, name, slot):
+    def __setitem__(self, name: str, slot: Slot) -> None:
         if isinstance(name, (str, int)):
             return self.__setattr__(name, slot)
         name, meta = name
@@ -922,25 +933,25 @@ class InputSlots(object):
         return self.__dict__['module'].input_slot_names()
 
 
-class OutputSlots(object):
+class OutputSlots:
     # pylint: disable=too-few-public-methods
     """
     Convenience class to refer to output slots by name
     as if they were attributes.
     """
-    def __init__(self, module):
+    def __init__(self, module: Module):
         self.__dict__['module'] = module
 
-    def __setattr__(self, name, slot):
+    def __setattr__(self, name: str, slot: Slot):
         raise ProgressiveError('Output slots cannot be assigned, only read')
 
-    def __getattr__(self, name):
+    def __getattr__(self, name: str) -> Slot:
         return self.__dict__['module'].create_slot(name, None, None)
 
-    def __getitem__(self, key):
-        return self.__getattr__(key)
+    def __getitem__(self, name: str) -> Slot:
+        return self.__getattr__(name)
 
-    def __dir__(self):
+    def __dir__(self) -> List[str]:
         return self.__dict__['module'].output_slot_names()
 
 
