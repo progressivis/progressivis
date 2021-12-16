@@ -4,7 +4,7 @@ commit/rollback semantics.
 """
 from __future__ import annotations
 
-from typing import Any, Dict, Set, List, TYPE_CHECKING
+from typing import Any, Dict, Set, List, TYPE_CHECKING, Optional
 
 import logging
 
@@ -420,8 +420,79 @@ class Dataflow:
                     maybe_deps.remove(name)
         return deps
 
-    def _collect_deps(self, name, deps, maybe_deps):
-        pass
+    def _collect_deps(self,
+                      name: str,
+                      deps: Set[str],
+                      maybe_deps: Set[str]) -> None:
+        self._input_deps(name, deps, maybe_deps)
+        self._output_deps(name, deps, maybe_deps)
 
-    def _die_if_deps_die(name, deps, maybe_deps):
-        pass
+    def _input_deps(self,
+                    name: str,
+                    deps: Set[str],
+                    maybe_deps: Set[str]) -> None:
+        mod = self[name]
+        for olist in mod.output_slot_values():
+            if olist is None:
+                continue
+            for oslot in olist:
+                module = oslot.input_module
+                if module.name in deps:
+                    continue
+                slot_name = oslot.input_name
+                desc = module.input_slot_descriptor(slot_name)
+                if desc.required:
+                    deps.add(module.name)
+                    maybe_deps.discard(module.name)  # in case
+                else:
+                    maybe_deps.add(module.name)
+
+    def _output_deps(self,
+                     name: str,
+                     deps: Set[str],
+                     maybe_deps: Set[str]) -> None:
+        mod = self[name]
+        for islot in mod.input_slot_values():
+            if islot is None:
+                continue
+            module = islot.output_module
+            if module.name in deps:
+                continue
+            slot_name = islot.output_name
+            desc = module.output_slot_descriptor(slot_name)
+            if desc.required:
+                deps.add(module.name)
+                maybe_deps.discard(module.name)  # in case
+            else:
+                maybe_deps.add(module.name)
+
+    def die_if_deps_die(self,
+                        name: str,
+                        deps: Set[str],
+                        maybe_deps: Set[str]) -> Optional[bool]:
+        """Return True if the module would die if the deps
+        modules die, False if not, None if not sure.
+
+        :param deps: a set of module names that will die
+        :param maybe_deps: a set of module names that could die
+        :returns: True if the module dies, False if it does not,
+          None if not sure
+        :rtype: Boolean or None
+
+        """
+        ret: Optional[bool] = False
+        mod = self[name]
+        imods = {islot.output_module.name
+                 for islot in mod.input_slot_values()}
+        if imods.issubset(deps):  # all input will be deleted, we die
+            return True
+        if imods.issubset(deps | maybe_deps):
+            ret = None  # Maybe
+        omods = {oslot.input_module.name
+                 for oslots in mod.output_slot_values()
+                 for oslot in oslots}
+        if omods.issubset(deps):
+            return True
+        if omods.issubset(deps | maybe_deps):
+            ret = None
+        return ret

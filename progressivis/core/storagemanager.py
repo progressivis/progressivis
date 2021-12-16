@@ -1,18 +1,25 @@
+from __future__ import annotations
+
+from typing import (
+    Any,
+    Dict,
+)
+
 import os
 import tempfile
 import unicodedata
 import re
 import shutil
 import urllib
+from urllib.request import pathname2url
 import logging
 logger = logging.getLogger(__name__)
 
 urljoin = urllib.parse.urljoin
-pathname2url = urllib.request.pathname2url
 
 
 class StorageManager(object):
-    default = None
+    default: StorageManager
 
     def __init__(self, directory=None):
         self._directory = directory

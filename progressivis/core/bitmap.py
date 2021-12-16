@@ -2,10 +2,15 @@
 Manage bit sets as ordered list of integers very efficiently,
 relying on pyroaring RoaringBitmaps.
 """
+from __future__ import annotations
+
+from typing import (
+    Union,
+)
 
 import array
 
-from pyroaring import BitMap, FrozenBitMap
+from pyroaring import BitMap, FrozenBitMap  # type: ignore
 import numpy as np
 from collections.abc import Iterable
 # pragma no cover
@@ -28,14 +33,14 @@ class bitmap(BitMap, object):
                                           optimize,
                                           no_init)
 
-    def clear(self):
+    def clear(self) -> None:
         "Clear the bitmap in-place"
         self &= NIL_BITMAP
 
-    def freeze(self):
+    def freeze(self) -> bitmap:
         return bitmap(FrozenBitMap(self))
 
-    def __contains__(self, other):
+    def __contains__(self, other) -> bool:
         if isinstance(other, _integer_types):
             return BitMap.__contains__(self, other)
         other = self.asbitmap(other)
@@ -50,7 +55,7 @@ class bitmap(BitMap, object):
             values = ', '.join([str(n) for n in self])
         return 'bitmap([%s])' % values
 
-    def __getitem__(self, values):
+    def __getitem__(self, values) -> bitmap:
         if isinstance(values, Iterable):
             bm = bitmap()
             for index in values:
@@ -63,7 +68,7 @@ class bitmap(BitMap, object):
             raise bm
         return bm
 
-    def update(self, values):
+    def update(self, values) -> None:
         '''
         Add new values from either a bitmap, an array, a slice, or an Iterable
         '''
@@ -80,7 +85,7 @@ class bitmap(BitMap, object):
             values = array.array('I', values)
             BitMap.update(self, values)
 
-    def pop(self, length=1):
+    def pop(self, length=1) -> bitmap:
         "Remove one or many items and return them as a bitmap"
         if length >= len(self):
             ret = bitmap(self)
@@ -90,7 +95,7 @@ class bitmap(BitMap, object):
         self -= ret
         return bitmap(ret)
 
-    def to_slice_maybe(self):
+    def to_slice_maybe(self) -> Union[slice, bitmap]:
         "Convert this bitmap to a slice if possible, or return self"
         length = len(self)
         if length == 0:
@@ -102,7 +107,7 @@ class bitmap(BitMap, object):
         return self
 
     @staticmethod
-    def asbitmap(x):
+    def asbitmap(x) -> bitmap:
         "Try to coerce the value as a bitmap"
         if x is None:
             return NIL_BITMAP
@@ -112,54 +117,54 @@ class bitmap(BitMap, object):
             return bitmap([x])
         return bitmap(x)
 
-    def __or__(self, other):
+    def __or__(self, other) -> bitmap:
         if other is None:
             other = NIL_BITMAP
         return bitmap(BitMap.__or__(self, other))
 
-    def __and__(self, other):
+    def __and__(self, other) -> bitmap:
         if other is None:
             other = NIL_BITMAP
         return bitmap(BitMap.__and__(self, other))
 
-    def __xor__(self, other):
+    def __xor__(self, other) -> bitmap:
         if other is None:
             other = NIL_BITMAP
         return bitmap(BitMap.__xor__(self, other))
 
-    def __sub__(self, other):
+    def __sub__(self, other) -> bitmap:
         if other is None:
             other = NIL_BITMAP
         return bitmap(BitMap.__sub__(self, other))
 
-    def __ior__(self, other):
+    def __ior__(self, other) -> bitmap:
         if other is None:
             other = NIL_BITMAP
         return BitMap.__ior__(self, other)
 
-    def __iand__(self, other):
+    def __iand__(self, other) -> bitmap:
         if other is None:
             other = NIL_BITMAP
         return BitMap.__iand__(self, other)
 
-    def __ixor__(self, other):
+    def __ixor__(self, other) -> bitmap:
         if other is None:
             other = NIL_BITMAP
         return BitMap.__ixor__(self, other)
 
-    def __isub__(self, other):
+    def __isub__(self, other) -> bitmap:
         if other is None:
             other = NIL_BITMAP
         return BitMap.__isub__(self, other)
 
-    def flip(self, start, end):
+    def flip(self, start: int, end: int) -> bitmap:
         """
         Compute the negation of the bitmap within the specified interval.
         """
         return bitmap(BitMap.flip(self, start, end))
 
     @staticmethod
-    def union(*bitmaps):
+    def union(*bitmaps) -> bitmap:
         """
         Return the union of the bitmaps.
         """
@@ -167,7 +172,7 @@ class bitmap(BitMap, object):
         return bitmap(bm) if isinstance(bm, BitMap) else bm
 
     @staticmethod
-    def intersection(*bitmaps):
+    def intersection(*bitmaps) -> bitmap:
         """
         Return the intersection of the bitmaps.
         """
@@ -175,7 +180,7 @@ class bitmap(BitMap, object):
         return bitmap(bm) if isinstance(bm, BitMap) else bm
 
     @staticmethod
-    def deserialize(buff):
+    def deserialize(buff) -> bitmap:
         """
         Generate a bitmap from the given serialization.
         """

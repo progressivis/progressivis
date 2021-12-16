@@ -1,3 +1,12 @@
+from __future__ import annotations
+
+from typing import (
+    Optional,
+    Any,
+    Dict,
+    List,
+)
+
 import os
 import os.path
 import io
@@ -18,37 +27,35 @@ import uuid
 from .bitmap import bitmap
 from ..core import aio
 
-try:
-    import collections.abc as collections_abc  # only works on python 3.3+
-except ImportError:
-    import collections as collections_abc
+import collections.abc as collections_abc  # only works on python 3.3+
 
 from multiprocessing import Process
-from pandas.io.common import is_url
+from pandas.io.common import is_url  # type: ignore
 
 import requests
-import s3fs
+import s3fs  # type: ignore
 import stat as st
 
 integer_types = (int, np.integer)
 
 
-def is_int(n):
+def is_int(n) -> bool:
     return isinstance(n, integer_types)
 
 
-def is_str(s):
+def is_str(s) -> bool:
     return isinstance(s, str)
 
-def is_slice(s):
+
+def is_slice(s) -> bool:
     return isinstance(s, slice)
 
 
-def is_iterable(it):
+def is_iterable(it) -> bool:
     return isinstance(it, collections_abc.Iterable)
 
 
-def is_iter_str(it):
+def is_iter_str(it) -> bool:
     if not is_iterable(it):
         return False
     for s in it:
@@ -57,7 +64,7 @@ def is_iter_str(it):
     return True
 
 
-def len_none(item):
+def len_none(item) -> int:
     return 0 if item is None else len(item)
 
 
@@ -67,7 +74,7 @@ def pairwise(iterator):
     return zip(a, b)
 
 
-def is_sorted(iterator, compare=None):
+def is_sorted(iterator, compare=None) -> bool:
     if compare is None:
         def compare(a, b):
             return a <= b
@@ -160,52 +167,52 @@ def remove_nan_etc(d):
     return d
 
 
-class AttributeDict(object):
-    def __init__(self, d):
+class AttributeDict:
+    def __init__(self, d: Dict[str, Any]):
         self.d = d
 
-    def __getattr__(self, attr):
+    def __getattr__(self, attr: str):
         return self.__dict__['d'][attr]
 
-    def __getitem__(self, key):
+    def __getitem__(self, key: str):
         return self.__getattribute__('d')[key]
 
-    def __dir__(self):
+    def __dir__(self) -> list:
         return list(self.__getattribute__('d').keys())
 
 
 ID_RE = re.compile(r'[_A-Za-z][_a-zA-Z0-9]*')
 
 
-def is_valid_identifier(s):
+def is_valid_identifier(s) -> bool:
     m = ID_RE.match(s)
     return bool(m and m.end(0) == len(s) and
                 not keyword.iskeyword(s))
 
 
-def fix_identifier(c):
+def fix_identifier(c: str) -> str:
     m = ID_RE.match(c)
     if m is None:
         c = '_' + c
         m = ID_RE.match(c)
-    while m.end(0) != len(c):
+    while m and m.end(0) != len(c):
         c = c[:m.end(0)] + '_' + c[m.end(0)+1:]
         m = ID_RE.match(c)
     return c
 
 
-def gen_columns(n):
+def gen_columns(n: int) -> List[str]:
     return ["_"+str(i) for i in range(1, n+1)]
 
 
-def type_fullname(o):
+def type_fullname(o: Any) -> str:
     module = o.__class__.__module__
     if module is None or module == str.__class__.__module__:
         return o.__class__.__name__
     return module + '.' + o.__class__.__name__
 
 
-def indices_len(ind):
+def indices_len(ind: Optional[slice]) -> int:
     if isinstance(ind, slice):
         if ind.step is None or ind.step == 1:
             return ind.stop-ind.start
@@ -224,7 +231,7 @@ def fix_loc(indices):
 # See http://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2Float
 
 
-def next_pow2(v):
+def next_pow2(v: int):
     v -= 1
     v |= v >> 1
     v |= v >> 2
@@ -284,7 +291,7 @@ def norm_slice(sl, fix_loc=False, stop=None):
     return slice(start, stop , step)
 
 
-def is_full_slice(sl):
+def is_full_slice(sl) -> bool:
     if not isinstance(sl, slice):
         return False
     nsl = norm_slice(sl)
@@ -341,10 +348,12 @@ def slice_to_array(sl):
         return bitmap(sl)
     return sl
 
+
 def slice_to_bitmap(sl, stop=None):
     stop = sl.stop if stop is None else stop
     assert is_int(stop)
     return bitmap(range(*sl.indices(stop)))
+
 
 def slice_to_arange(sl):
     if isinstance(sl, slice):
@@ -355,36 +364,36 @@ def slice_to_arange(sl):
     return np.array(sl)
 
 
-def get_random_name(prefix):
+def get_random_name(prefix: str) -> str:
     return prefix+str(uuid.uuid4()).split('-')[-1]
 
 
-def all_string(it):
+def all_string(it) -> bool:
     return all([isinstance(elt, str) for elt in it])
 
 
-def all_int(it):
+def all_int(it) -> bool:
     return all([isinstance(elt, integer_types) for elt in it])
 
 
-def all_string_or_int(it):
+def all_string_or_int(it) -> bool:
     return all_string(it) or all_int(it)
 
 
-def all_bool(it):
+def all_bool(it) -> bool:
     if hasattr(it, 'dtype'):
         return it.dtype == bool
     return all([isinstance(elt, bool) for elt in it])
 
 
-def are_instances(it, type_):
+def are_instances(it, type_) -> bool:
     if hasattr(it, 'dtype'):
         return it.dtype in type_ if isinstance(type_, tuple) else\
           it.type == type_
     return all([isinstance(elt, type_) for elt in it])
 
 
-def is_fancy(key):
+def is_fancy(key) -> bool:
     return (isinstance(key, np.ndarray) and key.dtype == np.int64) or \
       isinstance(key, collections_abc.Iterable)
 
@@ -402,13 +411,13 @@ def mask_to_fancy(mask):
     return np.where(mask)
 
 
-def is_none_alike(x):
+def is_none_alike(x) -> bool:
     if isinstance(x, slice) and x == slice(None, None, None):
         return True
     return x is None
 
 
-def are_none(*args):
+def are_none(*args) -> bool:
     for e in args:
         if e is not None:
             return False
@@ -587,7 +596,7 @@ def s3_get_filepath_or_buffer(filepath_or_buffer, encoding=None,
                               compression=None):
     # pylint: disable=unused-argument
     fs = s3fs.S3FileSystem(anon=False)
-    from botocore.exceptions import NoCredentialsError
+    from botocore.exceptions import NoCredentialsError  # type: ignore
     try:
         filepath_or_buffer = fs.open(_strip_schema(filepath_or_buffer))
     except (OSError, NoCredentialsError):
@@ -856,9 +865,9 @@ def gather_and_run(*args):
     thread.start()
 
 
-def is_notebook():
+def is_notebook() -> bool:
     try:
-        from IPython import get_ipython
+        from IPython import get_ipython  # type: ignore
         return get_ipython().__class__.__name__ == 'ZMQInteractiveShell'
     except ImportError:
         pass

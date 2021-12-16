@@ -1,1 +1,1 @@
-VARS = {}
+VARS: dict = {}

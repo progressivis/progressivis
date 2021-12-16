@@ -9,6 +9,7 @@ class FakeSlot(namedtuple('FakeSlot', ['table'])):
     def data(self):
         return self.table
 
+
 class TestDictChangeManager(ProgressiveTest):
     def test_dictchangemanager(self):
         mid1 = 1

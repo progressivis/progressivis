@@ -1,8 +1,15 @@
+from __future__ import annotations
+
+from typing import (
+    Any,
+    Dict,
+)
+
 import os
 from contextlib import contextmanager
 
-options = {}
-default_values = {}
+options: Dict[str, Any] = {}
+default_values: Dict[str, Any] = {}
 
 
 def get_default_val(pat):

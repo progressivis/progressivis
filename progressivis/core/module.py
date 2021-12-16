@@ -547,21 +547,19 @@ class Module(metaclass=ModuleMeta):
 
         """
         ret = False
-        if not self.is_source():
-            imods = {islot.output_module.name
-                     for islot in self._input_slots.values()}
-            if imods.issubset(deps):  # all input will be deleted, we die
-                return True
-            if imods.issubset(deps | maybe_deps):
-                ret = None  # Maybe
-        if not self.is_sink():
-            omods = {oslot.input_module.name
-                     for oslots in self._output_slots.values()
-                     for oslot in oslots}
-            if omods.issubset(deps):
-                return True
-            if omods.issubset(deps | maybe_deps):
-                ret = None
+        imods = {islot.output_module.name
+                 for islot in self._input_slots.values()}
+        if imods.issubset(deps):  # all input will be deleted, we die
+            return True
+        if imods.issubset(deps | maybe_deps):
+            ret = None  # Maybe
+        omods = {oslot.input_module.name
+                 for oslots in self._output_slots.values()
+                 for oslot in oslots}
+        if omods.issubset(deps):
+            return True
+        if omods.issubset(deps | maybe_deps):
+            ret = None
         return ret
 
     def _connect_output(self, slot):
