@@ -103,6 +103,8 @@ class Histogram1D(TableModule):
             column = input_df[self.column]
             indices = dfslot.created.next(step_size)  # returns a slice or ...
             steps = indices_len(indices)
+            if not steps:
+                return self._return_run_step(self.state_blocked, steps_run=0)
             logger.info('Read %d rows', steps)
             self.total_read += steps
             column = column.loc[fix_loc(indices)]
