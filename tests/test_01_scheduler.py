@@ -64,6 +64,7 @@ class TestScheduler(ProgressiveTest):
         html = s._repr_html_()
         self.assertTrue(len(html) != 0)
 
+    # See the same tests in test_01_dataflow.py
     def test_scheduler_dels(self):
         s = Scheduler()
         table = RandomTable(name='table', columns=['a'], scheduler=s)

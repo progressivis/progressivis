@@ -42,8 +42,8 @@ class Dataflow:
     def __init__(self, scheduler: Scheduler):
         self.scheduler = scheduler
         self._modules: Dict[str, Module] = {}
-        self.inputs: Dict[str, Dict] = {}
-        self.outputs: Dict[str, Dict] = {}
+        self.inputs: Dict[str, Dict[str, Slot]] = {}
+        self.outputs: Dict[str, Dict[str, List[Slot]]] = {}
         self.valid: List[Module] = []
         self._slot_clashes: Dict[str, Dict[str, int]] = {}
         self.reachability: Dict[str, Any] = {}
@@ -183,22 +183,18 @@ class Dataflow:
         self.valid = []  # Not sure
 
     def connect(
-            self,
-            output_module: Module,
-            output_name: str,
-            input_module: Module,
-            input_name: str) -> None:
+        self,
+        output_module: Module,
+        output_name: str,
+        input_module: Module,
+        input_name: str,
+    ) -> None:
         "Declare a connection between two modules slots"
-        slot = output_module.create_slot(
-            output_name, input_module, input_name
-        )
+        slot = output_module.create_slot(output_name, input_module, input_name)
         if not slot.validate_types():
             raise ProgressiveError(
-                "Incompatible types for slot (%s,%s) in %s" % (
-                    output_name,
-                    input_name,
-                    str(slot)
-                )
+                "Incompatible types for slot (%s,%s) in %s"
+                % (output_name, input_name, str(slot))
             )
         self.add_connection(slot)
 
@@ -237,7 +233,7 @@ class Dataflow:
         del self.outputs[name]
         return emptied
 
-    def order_modules(self, dependencies : Dependencies = None) -> Order:
+    def order_modules(self, dependencies: Dependencies = None) -> Order:
         "Compute a topological order for the modules."
         if dependencies is None:
             dependencies = self.collect_dependencies()
@@ -303,11 +299,11 @@ class Dataflow:
                     inputs.pop(slot.input_name)
             if slotdesc.required and slot is None:
                 errors.append(
-                        f'Input slot "{slotdesc.name}" missing in module "{module.name}"'
+                    f'Input slot "{slotdesc.name}" missing in module "{module.name}"'
                 )
         if inputs:
             errors.append(
-                f'Invalid input slot(s) {list(inputs.keys())} for module {module.name}'
+                f"Invalid input slot(s) {list(inputs.keys())} for module {module.name}"
             )
         return errors
 
@@ -329,7 +325,7 @@ class Dataflow:
                 del outputs[slotdesc.name]
         if outputs:
             errors.append(
-                f'Invalid output slot(s) {list(outputs.keys())} for module {module.name}'
+                f"Invalid output slot(s) {list(outputs.keys())} for module {module.name}"
             )
         return errors
 
@@ -402,7 +398,7 @@ class Dataflow:
             name = queue.pop()
             done.add(name)
             # collect children and ancestors
-            self[name].collect_deps(deps, maybe_deps)
+            self._collect_deps(name, deps, maybe_deps)
             queue = deps - done
 
         # Check from the maybe_deps if some would be deleted for sure
@@ -410,7 +406,7 @@ class Dataflow:
         while again:
             again = False
             for maybe in maybe_deps:
-                die = self[name].die_if_deps_die(deps, maybe_deps)
+                die = self.die_if_deps_die(name, deps, maybe_deps)
                 if die:
                     deps.add(name)
                     maybe_deps.remove(name)
@@ -420,19 +416,13 @@ class Dataflow:
                     maybe_deps.remove(name)
         return deps
 
-    def _collect_deps(self,
-                      name: str,
-                      deps: Set[str],
-                      maybe_deps: Set[str]) -> None:
+    def _collect_deps(self, name: str, deps: Set[str], maybe_deps: Set[str]) -> None:
         self._input_deps(name, deps, maybe_deps)
         self._output_deps(name, deps, maybe_deps)
 
-    def _input_deps(self,
-                    name: str,
-                    deps: Set[str],
-                    maybe_deps: Set[str]) -> None:
-        mod = self[name]
-        for olist in mod.output_slot_values():
+    def _input_deps(self, name: str, deps: Set[str], maybe_deps: Set[str]) -> None:
+        outputs = self.outputs[name]
+        for olist in outputs.values():
             if olist is None:
                 continue
             for oslot in olist:
@@ -447,12 +437,9 @@ class Dataflow:
                 else:
                     maybe_deps.add(module.name)
 
-    def _output_deps(self,
-                     name: str,
-                     deps: Set[str],
-                     maybe_deps: Set[str]) -> None:
-        mod = self[name]
-        for islot in mod.input_slot_values():
+    def _output_deps(self, name: str, deps: Set[str], maybe_deps: Set[str]) -> None:
+        inputs = self.inputs[name]
+        for islot in inputs.values():
             if islot is None:
                 continue
             module = islot.output_module
@@ -466,10 +453,9 @@ class Dataflow:
             else:
                 maybe_deps.add(module.name)
 
-    def die_if_deps_die(self,
-                        name: str,
-                        deps: Set[str],
-                        maybe_deps: Set[str]) -> Optional[bool]:
+    def die_if_deps_die(
+        self, name: str, deps: Set[str], maybe_deps: Set[str]
+    ) -> Optional[bool]:
         """Return True if the module would die if the deps
         modules die, False if not, None if not sure.
 
@@ -481,16 +467,16 @@ class Dataflow:
 
         """
         ret: Optional[bool] = False
-        mod = self[name]
-        imods = {islot.output_module.name
-                 for islot in mod.input_slot_values()}
+        inputs = self.inputs[name]
+        imods = {islot.output_module.name for islot in inputs.values()}
         if imods.issubset(deps):  # all input will be deleted, we die
             return True
         if imods.issubset(deps | maybe_deps):
             ret = None  # Maybe
-        omods = {oslot.input_module.name
-                 for oslots in mod.output_slot_values()
-                 for oslot in oslots}
+        outputs = self.outputs[name]
+        omods = {
+            oslot.input_module.name for oslots in outputs.values() for oslot in oslots
+        }
         if omods.issubset(deps):
             return True
         if omods.issubset(deps | maybe_deps):

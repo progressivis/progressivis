@@ -1,10 +1,10 @@
-from typing import Callable, Any, Optional, List, Union
+from typing import Callable, Any, Optional, List
 
 from abc import ABCMeta, abstractmethod
 
 
 class Tracer(metaclass=ABCMeta):
-    default: Callable[[str, Any], 'Tracer']
+    default: Callable[[str, Any], "Tracer"]
 
     @abstractmethod
     def start_run(self, ts: float, run_number: int, **kwds):

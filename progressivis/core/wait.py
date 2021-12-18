@@ -1,4 +1,3 @@
-
 from progressivis.utils.errors import ProgressiveError
 from progressivis.core.module import Module
 from progressivis.core.slot import SlotDescriptor
@@ -7,17 +6,17 @@ import numpy as np
 
 
 class Wait(Module):
-    parameters = [('delay', np.dtype(float), np.nan),
-                  ('reads', np.dtype(int), -1)]
-    inputs = [SlotDescriptor('inp', required=True)]
-    outputs = [SlotDescriptor('out', required=False)]
+    parameters = [("delay", np.dtype(float), np.nan), ("reads", np.dtype(int), -1)]
+    inputs = [SlotDescriptor("inp", required=True)]
+    outputs = [SlotDescriptor("out", required=False)]
 
     def __init__(self, **kwds):
         super(Wait, self).__init__(**kwds)
         if np.isnan(self.params.delay) and self.params.reads == -1:
-            raise ProgressiveError('Module %s needs either a delay or '
-                                   'a number of reads, not both',
-                                   self.pretty_typename())
+            raise ProgressiveError(
+                "Module %s needs either a delay or " "a number of reads, not both",
+                self.pretty_typename(),
+            )
 
     def is_ready(self):
         if not super(Wait, self).is_ready():
@@ -28,7 +27,7 @@ class Wait(Module):
         reads = self.params.reads
         if np.isnan(delay) and reads < 0:
             return False
-        inslot = self.get_input_slot('inp')
+        inslot = self.get_input_slot("inp")
         trace = inslot.output_module.tracer.trace_stats()
         if len(trace) == 0:
             return False
@@ -39,8 +38,8 @@ class Wait(Module):
         return False
 
     def get_data(self, name):
-        if name == 'inp':
-            return self.get_input_slot('inp').data()
+        if name == "inp":
+            return self.get_input_slot("inp").data()
         return None
 
     def predict_step_size(self, duration):

@@ -4,15 +4,14 @@ relying on pyroaring RoaringBitmaps.
 """
 from __future__ import annotations
 
-from typing import (
-    Union,
-)
+from typing import Union
 
 import array
 
 from pyroaring import BitMap, FrozenBitMap  # type: ignore
 import numpy as np
 from collections.abc import Iterable
+
 # pragma no cover
 # pylint: disable=invalid-name
 _integer_types = (int, np.integer)
@@ -23,15 +22,13 @@ class bitmap(BitMap, object):
     """
     Derive from an efficient and light-weight ordered set of 32 bits integers.
     """
-    def __new__(cls, values=None, copy_on_write=False, optimize=True,
-                no_init=False):
+
+    def __new__(cls, values=None, copy_on_write=False, optimize=True, no_init=False):
         if isinstance(values, slice):
-            values = range(values.start, values.stop,
-                           (values.step if values.step else 1))
-        return super(bitmap, cls).__new__(cls, values,
-                                          copy_on_write,
-                                          optimize,
-                                          no_init)
+            values = range(
+                values.start, values.stop, (values.step if values.step else 1)
+            )
+        return super(bitmap, cls).__new__(cls, values, copy_on_write, optimize, no_init)
 
     def clear(self) -> None:
         "Clear the bitmap in-place"
@@ -49,11 +46,11 @@ class bitmap(BitMap, object):
     def __repr__(self):
         length = len(self)
         if length > 10:
-            values = ', '.join([str(n) for n in self[0:6]])
-            values += '...(%d)...%d)' % (length, self[length-1])
+            values = ", ".join([str(n) for n in self[0:6]])
+            values += "...(%d)...%d)" % (length, self[length - 1])
         else:
-            values = ', '.join([str(n) for n in self])
-        return 'bitmap([%s])' % values
+            values = ", ".join([str(n) for n in self])
+        return "bitmap([%s])" % values
 
     def __getitem__(self, values) -> bitmap:
         if isinstance(values, Iterable):
@@ -69,9 +66,9 @@ class bitmap(BitMap, object):
         return bm
 
     def update(self, values) -> None:
-        '''
+        """
         Add new values from either a bitmap, an array, a slice, or an Iterable
-        '''
+        """
         try:
             BitMap.update(self, values)
         except TypeError:
@@ -79,10 +76,10 @@ class bitmap(BitMap, object):
                 return
             # NP check the copy here for slice
             if isinstance(values, slice):
-                values = range(*values.indices(values.stop+1))
+                values = range(*values.indices(values.stop + 1))
             # do not call bitmap constructor here cause
             # BitMap constructor calls update=>infinite recursion
-            values = array.array('I', values)
+            values = array.array("I", values)
             BitMap.update(self, values)
 
     def pop(self, length=1) -> bitmap:
@@ -102,8 +99,8 @@ class bitmap(BitMap, object):
             return slice(0, 0)
         first = self.min()
         last = self.max()
-        if last-first+1 == length:
-            return slice(first, last+1)
+        if last - first + 1 == length:
+            return slice(first, last + 1)
         return self
 
     @staticmethod

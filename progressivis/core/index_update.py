@@ -3,9 +3,7 @@ Changes (Delta) inside tables/columns/bitmaps.
 """
 from __future__ import annotations
 
-from typing import (
-    Optional,
-)
+from typing import Optional
 
 from ..core.bitmap import bitmap
 
@@ -15,10 +13,13 @@ class IndexUpdate:
     IndexUpdate is used to keep track of chages occuring in linear data
     structures such as tables, columns, or bitmaps.
     """
-    def __init__(self,
-                 created: Optional[bitmap] = None,
-                 updated: Optional[bitmap] = None,
-                 deleted: Optional[bitmap] = None):
+
+    def __init__(
+        self,
+        created: Optional[bitmap] = None,
+        updated: Optional[bitmap] = None,
+        deleted: Optional[bitmap] = None,
+    ):
         created = created if isinstance(created, bitmap) else bitmap(created)
         updated = updated if isinstance(updated, bitmap) else bitmap(updated)
         deleted = deleted if isinstance(deleted, bitmap) else bitmap(deleted)
@@ -28,7 +29,10 @@ class IndexUpdate:
 
     def __repr__(self):
         return "IndexUpdate(created=%s,updated=%s,deleted=%s)" % (
-            repr(self.created), repr(self.updated), repr(self.deleted))
+            repr(self.created),
+            repr(self.updated),
+            repr(self.deleted),
+        )
 
     def clear(self) -> None:
         "Clear the changes"
@@ -38,9 +42,11 @@ class IndexUpdate:
 
     def test(self, verbose=False) -> bool:
         "Test if the IndexUpdate is valid"
-        b = bool(self.created & self.updated) \
-            or bool(self.created & self.deleted) \
+        b = (
+            bool(self.created & self.updated)
+            or bool(self.created & self.deleted)
             or bool(self.updated & self.deleted)
+        )
         if verbose and b:  # pragma no cover
             print("self.created & self.updated", self.created & self.updated)
             print("self.created & self.deleted", self.created & self.deleted)
@@ -65,11 +71,13 @@ class IndexUpdate:
         self.updated -= bm
         self.created -= bm
 
-    def combine(self,
-                other: Optional[IndexUpdate],
-                update_created=True,
-                update_updated=True,
-                update_deleted=True) -> None:
+    def combine(
+        self,
+        other: Optional[IndexUpdate],
+        update_created=True,
+        update_updated=True,
+        update_deleted=True,
+    ) -> None:
         "Combine this IndexUpdate with another IndexUpdate"
         if other is None:
             return
@@ -102,20 +110,23 @@ class IndexUpdate:
         assert self.test(verbose=True)  # test invariant
 
     def __eq__(self, other) -> bool:
-        return self is other or \
-          (isinstance(other, IndexUpdate) and
-           self.created == other.created and
-           self.updated == other.updated and
-           self.deleted == other.deleted)
+        return self is other or (
+            isinstance(other, IndexUpdate)
+            and self.created == other.created
+            and self.updated == other.updated
+            and self.deleted == other.deleted
+        )
 
     def __ne__(self, other):
         return not self == other
 
     def copy(self) -> IndexUpdate:
         "Copy this Indexupdate"
-        return IndexUpdate(created=bitmap(self.created),
-                           updated=bitmap(self.updated),
-                           deleted=bitmap(self.deleted))
+        return IndexUpdate(
+            created=bitmap(self.created),
+            updated=bitmap(self.updated),
+            deleted=bitmap(self.deleted),
+        )
 
 
 NIL_IU = IndexUpdate()

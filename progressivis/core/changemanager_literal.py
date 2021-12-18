@@ -9,22 +9,26 @@ class LiteralChangeManager(BaseChangeManager):
     """
     Manage changes that occured in a literal value between runs.
     """
+
     VALUE = bitmap([0])
 
-    def __init__(self,
-                 slot,
-                 buffer_created=True,
-                 buffer_updated=False,
-                 buffer_deleted=True,
-                 buffer_exposed=False,
-                 buffer_masked=False):
+    def __init__(
+        self,
+        slot,
+        buffer_created=True,
+        buffer_updated=False,
+        buffer_deleted=True,
+        buffer_exposed=False,
+        buffer_masked=False,
+    ):
         super(LiteralChangeManager, self).__init__(
             slot,
             buffer_created,
             buffer_updated,
             buffer_deleted,
             buffer_exposed,
-            buffer_masked)
+            buffer_masked,
+        )
         self._last_value = None
 
     def reset(self, name=None):
@@ -55,7 +59,6 @@ class LiteralChangeManager(BaseChangeManager):
 
         changes = self.compute_updates(data)
         self._last_update = run_number
-        self._row_changes.combine(changes,
-                                  self.created.buffer,
-                                  self.updated.buffer,
-                                  self.deleted.buffer)
+        self._row_changes.combine(
+            changes, self.created.buffer, self.updated.buffer, self.deleted.buffer
+        )

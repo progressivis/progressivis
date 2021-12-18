@@ -68,13 +68,15 @@ class _selection_accessor(_accessor):
 class BaseChangeManager(object):
     "Base class for change managers"
 
-    def __init__(self,
-                 slot,
-                 buffer_created=True,
-                 buffer_updated=False,
-                 buffer_deleted=False,
-                 buffer_exposed=False,
-                 buffer_masked=False):
+    def __init__(
+        self,
+        slot,
+        buffer_created=True,
+        buffer_updated=False,
+        buffer_deleted=False,
+        buffer_exposed=False,
+        buffer_masked=False,
+    ):
         _ = slot
         self._row_changes = IndexUpdate()
         self._selection_changes = IndexUpdate()
@@ -129,7 +131,7 @@ class BaseChangeManager(object):
         # pylint: disable=unused-argument
         self._last_update = 0
         self.clear()
-        logger.debug('reset(%d)', self._last_update)
+        logger.debug("reset(%d)", self._last_update)
 
     @property
     def row_changes(self):
@@ -146,8 +148,13 @@ class BaseChangeManager(object):
         If the change manager has something buffered, then the module is
         ready to run immediately.
         """
-        return (self.created.any() or self.updated.any() or self.deleted.any()
-                or self.base.deleted.any() or self.selection.deleted.any())
+        return (
+            self.created.any()
+            or self.updated.any()
+            or self.deleted.any()
+            or self.base.deleted.any()
+            or self.selection.deleted.any()
+        )
 
     def last_update(self):
         "Return the date of the last update"
@@ -169,9 +176,10 @@ class BaseChangeManager(object):
 
     def dump(self):
         import inspect
+
         curframe = inspect.currentframe()
         calframe = inspect.getouterframes(curframe, 2)
-        print('caller name:', calframe[1][3])
+        print("caller name:", calframe[1][3])
         print("created", self._created.changes)
         print("updated", self._updated.changes)
         print("deleted", self._deleted.changes)

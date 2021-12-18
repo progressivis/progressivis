@@ -1,10 +1,28 @@
 from progressivis import Print
 from progressivis.io import CSVLoader
-from progressivis.stats import Min, Max
+from progressivis.stats import Min, Max, RandomTable
 from progressivis.datasets import get_dataset
-from progressivis.core import aio
+from progressivis.core import aio, SlotDescriptor, Module
+from progressivis.core.dataflow import Dataflow
 
 from . import ProgressiveTest
+
+
+class TestModule(Module):
+    inputs = [
+        SlotDescriptor('a'),
+        SlotDescriptor('b', required=False)
+    ]
+    outputs = [
+        SlotDescriptor('c'),
+        SlotDescriptor('d', required=False)
+    ]
+
+    def __init__(self, **kwds):
+        super(TestModule, self).__init__(**kwds)
+
+    def run_step(self, run_number, step_size, howlong):  # pragma no cover
+        return self._return_run_step(self.state_blocked, 0)
 
 
 class TestDataflow(ProgressiveTest):
@@ -153,6 +171,35 @@ class TestDataflow(ProgressiveTest):
         t = _add_max_remove_min(csv, scheduler, proc=proc)
         aio.run_gather(scheduler.start(), t)
         self.assertTrue(started)
+
+    def test_dataflow_dels(self):
+        s = self.scheduler()
+        table = RandomTable(name='table', columns=['a'], scheduler=s)
+        m = Min(name='min', scheduler=s)
+        m.input.table = table.output.result
+        prt = Print(name='prt', scheduler=s)
+        prt.input.df = m.output.result
+
+        aio.run(s.step())
+        with s as dataflow:
+            self.assertTrue(isinstance(dataflow, Dataflow))
+            deps = dataflow.collateral_damage('table')
+            self.assertEquals(deps, set(['table', 'min', 'prt']))
+
+    def test_dataflow_dels2(self):
+        s = self.scheduler()
+        table = RandomTable(name='table', columns=['a'], scheduler=s)
+        m = TestModule(name='min', scheduler=s)
+        m.input.a = table.output.result
+        prt = Print(name='prt', scheduler=s)
+        prt.input.df = m.output.c
+        # from nose.tools import set_trace; set_trace()
+        s.commit()
+        aio.run(s.step())
+        with s as dataflow:
+            self.assertTrue(isinstance(dataflow, Dataflow))
+            deps = dataflow.collateral_damage('table')
+            self.assertEquals(deps, set(['table', 'min', 'prt']))
 
 
 if __name__ == '__main__':

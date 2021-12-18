@@ -3,16 +3,7 @@ Base class for progressive modules.
 """
 from __future__ import annotations
 
-from typing import (
-    Any,
-    Optional,
-    Dict,
-    Set,
-    List,
-    Tuple,
-    Callable,
-    TYPE_CHECKING
-)
+from typing import Any, Optional, Dict, Set, List, Tuple, Callable, TYPE_CHECKING
 
 from abc import ABCMeta, abstractmethod
 from traceback import print_exc
@@ -21,8 +12,7 @@ import logging
 import pdb
 
 import numpy as np
-from progressivis.utils.errors import (ProgressiveError,
-                                       ProgressiveStopIteration)
+from progressivis.utils.errors import ProgressiveError, ProgressiveStopIteration
 from progressivis.table.table_base import BaseTable
 from progressivis.table.table import Table
 from progressivis.table.dshape import dshape_from_dtype
@@ -31,8 +21,8 @@ from progressivis.storage import Group
 import progressivis.core.aio as aio
 
 
-from .utils import (type_fullname, get_random_name)
-from .slot import (SlotDescriptor, Slot)
+from .utils import type_fullname, get_random_name
+from .slot import SlotDescriptor, Slot
 from .tracer_base import Tracer
 from .time_predictor import TimePredictor
 from .storagemanager import StorageManager
@@ -50,6 +40,7 @@ class ModuleMeta(ABCMeta):
     """Module metaclass is needed to collect the input parameter list
     in the field ``all_parameters''.
     """
+
     def __init__(cls, name, bases, attrs):
         if "parameters" not in attrs:
             cls.parameters = []
@@ -91,16 +82,16 @@ class ModuleTag:
 class Module(metaclass=ModuleMeta):
     """The Module class is the base class for all the progressive modules.
     """
-    parameters = [('quantum', np.dtype(float), .5),
-                  ('debug', np.dtype(bool), False)]
-    TRACE_SLOT = '_trace'
-    PARAMETERS_SLOT = '_params'
 
-    TAG_VISUALIZATION = 'visualization'
-    TAG_INPUT = 'input'
-    TAG_SOURCE = 'source'
-    TAG_GREEDY = 'greedy'
-    TAG_DEPENDENT = 'dependent'
+    parameters = [("quantum", np.dtype(float), 0.5), ("debug", np.dtype(bool), False)]
+    TRACE_SLOT = "_trace"
+    PARAMETERS_SLOT = "_params"
+
+    TAG_VISUALIZATION = "visualization"
+    TAG_INPUT = "input"
+    TAG_SOURCE = "source"
+    TAG_GREEDY = "greedy"
+    TAG_DEPENDENT = "dependent"
 
     inputs = [SlotDescriptor(PARAMETERS_SLOT, type=BaseTable, required=False)]
     outputs = [SlotDescriptor(TRACE_SLOT, type=BaseTable, required=False)]
@@ -112,8 +103,15 @@ class Module(metaclass=ModuleMeta):
     state_zombie = 4
     state_terminated = 5
     state_invalid = 6
-    state_name = ['created', 'ready', 'running', 'blocked',
-                  'zombie', 'terminated', 'invalid']
+    state_name = [
+        "created",
+        "ready",
+        "running",
+        "blocked",
+        "zombie",
+        "terminated",
+        "invalid",
+    ]
 
     def __new__(cls, *args, **kwds):
         module = object.__new__(cls)
@@ -122,12 +120,14 @@ class Module(metaclass=ModuleMeta):
         module._kwds = kwds
         return module
 
-    def __init__(self,
-                 name: Optional[str] = None,
-                 group: Optional[str] = None,
-                 scheduler: Optional[Scheduler] = None,
-                 storagegroup=None,
-                 **kwds):
+    def __init__(
+        self,
+        name: Optional[str] = None,
+        group: Optional[str] = None,
+        scheduler: Optional[Scheduler] = None,
+        storagegroup=None,
+        **kwds,
+    ):
         if scheduler is None:
             scheduler = Scheduler.default
         self._scheduler: Scheduler = scheduler
@@ -137,8 +137,9 @@ class Module(metaclass=ModuleMeta):
         if name is None:
             name = dataflow.generate_name(self.pretty_typename())
         elif name in dataflow:
-            raise ProgressiveError('module already exists in scheduler,'
-                                   ' delete it first')
+            raise ProgressiveError(
+                "module already exists in scheduler," " delete it first"
+            )
         self.name = name  # need to set the name so exception can remove it
         predictor = TimePredictor.default()
         predictor.name = name
@@ -146,8 +147,7 @@ class Module(metaclass=ModuleMeta):
         storage = StorageManager.default
         self.storage = storage
         if storagegroup is None:
-            storagegroup = Group.default_internal(
-                get_random_name(name+'_tracer'))
+            storagegroup = Group.default_internal(get_random_name(name + "_tracer"))
         tracer = Tracer.default(name, storagegroup)
 
         self.tags = set(ModuleTag.tags)
@@ -162,13 +162,11 @@ class Module(metaclass=ModuleMeta):
         self._parse_parameters(kwds)
 
         # always present
-        input_descriptors = self.all_inputs    # type: ignore
+        input_descriptors = self.all_inputs  # type: ignore
         output_descriptors = self.all_outputs  # type: ignore
         self._input_slots = self._validate_descriptors(input_descriptors)
-        self.input_descriptors = {d.name: d
-                                  for d in input_descriptors}
-        self.input_multiple = {d.name: 0
-                               for d in input_descriptors if d.multiple}
+        self.input_descriptors = {d.name: d for d in input_descriptors}
+        self.input_multiple = {d.name: 0 for d in input_descriptors if d.multiple}
         self._output_slots = self._validate_descriptors(output_descriptors)
         self.output_descriptors = {d.name: d for d in output_descriptors}
         self.default_step_size = 100
@@ -259,8 +257,9 @@ class Module(metaclass=ModuleMeta):
         slots = {}
         for desc in descriptor_list:
             if desc.name in slots:
-                raise ProgressiveError('Duplicate slot name %s'
-                                       ' in slot descriptor' % desc.name)
+                raise ProgressiveError(
+                    "Duplicate slot name %s" " in slot descriptor" % desc.name
+                )
             slots[desc.name] = None
         return slots
 
@@ -281,8 +280,9 @@ class Module(metaclass=ModuleMeta):
 
     def _parse_parameters(self, kwds):
         # pylint: disable=no-member
-        self._params = _create_table(self.generate_table_name("params"),
-                                     self.all_parameters)
+        self._params = _create_table(
+            self.generate_table_name("params"), self.all_parameters
+        )
         self.params = Row(self._params)
         for (name, _, _) in self.all_parameters:
             if name in kwds:
@@ -303,40 +303,44 @@ class Module(metaclass=ModuleMeta):
         if with_speed:
             speed_h = self.tracer.get_speed()
         json = {
-            'is_running': s.is_running(),
-            'is_terminated': s.is_terminated(),
-            'run_number': s.run_number(),
-            'id': self.name,
-            'classname': self.pretty_typename(),
-            'is_visualization': self.is_visualization(),
-            'last_update': self._last_update,
-            'state': self.state_name[self._state],
-            'quality': self.get_quality(),
-            'progress': list(self.get_progress()),
-            'speed': speed_h
+            "is_running": s.is_running(),
+            "is_terminated": s.is_terminated(),
+            "run_number": s.run_number(),
+            "id": self.name,
+            "classname": self.pretty_typename(),
+            "is_visualization": self.is_visualization(),
+            "last_update": self._last_update,
+            "state": self.state_name[self._state],
+            "quality": self.get_quality(),
+            "progress": list(self.get_progress()),
+            "speed": speed_h,
         }
         if self.order >= 0:
-            json['order'] = self.order
+            json["order"] = self.order
 
         if short:
             return json
 
-        json.update({
-            'start_time': self._start_time,
-            'end_time': self._end_time,
-            'input_slots': {k: _slot_to_json(s) for (k, s) in
-                            self._input_slots.items()},
-            'output_slots': {k: _slot_to_json(s) for (k, s) in
-                             self._output_slots.items()},
-            'default_step_size': self.default_step_size,
-            'parameters': self.current_params().to_json()
-        })
+        json.update(
+            {
+                "start_time": self._start_time,
+                "end_time": self._end_time,
+                "input_slots": {
+                    k: _slot_to_json(s) for (k, s) in self._input_slots.items()
+                },
+                "output_slots": {
+                    k: _slot_to_json(s) for (k, s) in self._output_slots.items()
+                },
+                "default_step_size": self.default_step_size,
+                "parameters": self.current_params().to_json(),
+            }
+        )
         return json
 
     async def from_input(self, msg: Dict[str, Any]) -> None:
         "Catch and process a message from an interaction"
-        if 'debug' in msg:
-            self.debug = bool(msg['debug'])
+        if "debug" in msg:
+            self.debug = bool(msg["debug"])
 
     def is_input(self) -> bool:
         # pylint: disable=no-self-use
@@ -355,30 +359,30 @@ class Module(metaclass=ModuleMeta):
 
     def describe(self) -> None:
         "Print the description of this module"
-        print('id: %s' % self.name)
-        print('class: %s' % type_fullname(self))
-        print('quantum: %f' % self.params.quantum)
-        print('start_time: %s' % self._start_time)
-        print('end_time: %s' % self._end_time)
-        print('last_update: %s' % self._last_update)
-        print('state: %s(%d)' % (self.state_name[self._state], self._state))
-        print('input_slots: %s' % self._input_slots)
-        print('outpus_slots: %s' % self._output_slots)
-        print('default_step_size: %d' % self.default_step_size)
+        print("id: %s" % self.name)
+        print("class: %s" % type_fullname(self))
+        print("quantum: %f" % self.params.quantum)
+        print("start_time: %s" % self._start_time)
+        print("end_time: %s" % self._end_time)
+        print("last_update: %s" % self._last_update)
+        print("state: %s(%d)" % (self.state_name[self._state], self._state))
+        print("input_slots: %s" % self._input_slots)
+        print("outpus_slots: %s" % self._output_slots)
+        print("default_step_size: %d" % self.default_step_size)
         if self._params:
-            print('parameters: ')
+            print("parameters: ")
             print(self._params)
 
     def pretty_typename(self) -> str:
         "Return a the type name of this module in a pretty form"
         name = self.__class__.__name__
-        pretty = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
-        pretty = re.sub('([a-z0-9])([A-Z])', r'\1_\2', pretty).lower()
-        pretty = re.sub('_module$', '', pretty)
+        pretty = re.sub("(.)([A-Z][a-z]+)", r"\1_\2", name)
+        pretty = re.sub("([a-z0-9])([A-Z])", r"\1_\2", pretty).lower()
+        pretty = re.sub("_module$", "", pretty)
         return pretty
 
     def __str__(self):
-        return 'Module %s: %s' % (self.__class__.__name__, self.name)
+        return "Module %s: %s" % (self.__class__.__name__, self.name)
 
     def __repr__(self):
         return str(self)
@@ -391,17 +395,21 @@ class Module(metaclass=ModuleMeta):
         "Set the state to terminated for this module"
         self.state = Module.state_zombie
 
-    def create_slot(self, output_name: str, input_module: Module, input_name: str) -> Slot:
+    def create_slot(
+        self, output_name: str, input_module: Module, input_name: str
+    ) -> Slot:
         "Create a specified output slot"
         if isinstance(output_name, int):
             pos = output_name
             assert pos == 0  # TODO: try to remove this restriction
             slot_desc = self.all_outputs[pos]
-            assert slot_desc.name == 'result'  # TODO: Idem
+            assert slot_desc.name == "result"  # TODO: Idem
             output_name = slot_desc.name
         return Slot(self, output_name, input_module, input_name)
 
-    def connect_output(self, output_name: str, input_module: Module, input_name: str) -> Slot:
+    def connect_output(
+        self, output_name: str, input_module: Module, input_name: str
+    ) -> Slot:
         "Connect the output slot"
         slot = self.create_slot(output_name, input_module, input_name)
         slot.connect()
@@ -419,9 +427,8 @@ class Module(metaclass=ModuleMeta):
     def get_input_slot_multiple(self, name: str) -> List[Slot]:
         if not self.input_slot_multiple(name):
             return [self.get_input_slot(name)]
-        prefix = name+'.'
-        return [iname for iname in self._input_slots
-                if iname.startswith(prefix)]
+        prefix = name + "."
+        return [iname for iname in self._input_slots if iname.startswith(prefix)]
 
     def get_input_module(self, name: str) -> Module:
         "Return the specified input module"
@@ -457,12 +464,12 @@ class Module(metaclass=ModuleMeta):
                     descriptor = self.input_descriptors[slot.original_name]
                     self.input_descriptors[name] = descriptor
                     self.inputs.append(name)
-                    logger.info('Creating multiple input slot "%s" in "%s"',
-                                name, self.name)
+                    logger.info(
+                        'Creating multiple input slot "%s" in "%s"', name, self.name
+                    )
                 self._input_slots[name] = slot
                 if old_slot:
-                    old_slot.output_module._disconnect_output(
-                        old_slot.output_name)
+                    old_slot.output_module._disconnect_output(old_slot.output_name)
                 slot.output_module._connect_output(slot)
 
         for name in deleted_keys:
@@ -473,8 +480,9 @@ class Module(metaclass=ModuleMeta):
                 if old_slot.original_name:
                     del self.inputs[self.inputs.index(name)]
                     del self.input_descriptors[name]
-                    logger.info('Removing multiple input slot "%s" in "%s"',
-                                name, self.name)
+                    logger.info(
+                        'Removing multiple input slot "%s" in "%s"', name, self.name
+                    )
             self._input_slots[name] = None
 
     def has_any_output(self):
@@ -547,15 +555,16 @@ class Module(metaclass=ModuleMeta):
 
         """
         ret = False
-        imods = {islot.output_module.name
-                 for islot in self._input_slots.values()}
+        imods = {islot.output_module.name for islot in self._input_slots.values()}
         if imods.issubset(deps):  # all input will be deleted, we die
             return True
         if imods.issubset(deps | maybe_deps):
             ret = None  # Maybe
-        omods = {oslot.input_module.name
-                 for oslots in self._output_slots.values()
-                 for oslot in oslots}
+        omods = {
+            oslot.input_module.name
+            for oslots in self._output_slots.values()
+            for oslot in oslots
+        }
         if omods.issubset(deps):
             return True
         if omods.issubset(deps | maybe_deps):
@@ -573,7 +582,7 @@ class Module(metaclass=ModuleMeta):
     def _disconnect_output(self, name):
         slots = self._output_slots.get(name, None)
         if slots is None:
-            logger.error('Cannot get output slot %s', name)
+            logger.error("Cannot get output slot %s", name)
             return
         slots = [s for s in slots if s.output_name != name]
         self._output_slots[name] = slots
@@ -595,7 +604,7 @@ class Module(metaclass=ModuleMeta):
         of read items, 3) a number of updated items (written), 4) a
         number of created items, and 5) the effective number of steps run.
         """
-        raise NotImplementedError('run_step not defined')
+        raise NotImplementedError("run_step not defined")
 
     @staticmethod
     def next_state(slot):
@@ -607,11 +616,9 @@ class Module(metaclass=ModuleMeta):
         return Module.state_blocked
 
     def _return_run_step(self, next_state, steps_run, productive=None):
-        assert (next_state >= Module.state_ready and
-                next_state <= Module.state_zombie)
+        assert next_state >= Module.state_ready and next_state <= Module.state_zombie
         self.steps_acc += steps_run
-        return {'next_state': next_state,
-                'steps_run': steps_run}
+        return {"next_state": next_state, "steps_run": steps_run}
 
     def is_visualization(self):
         return self.TAG_VISUALIZATION in self.tags
@@ -667,17 +674,20 @@ class Module(metaclass=ModuleMeta):
 
             if slot.has_buffered() or in_ts > ts:
                 ready_count += 1
-            elif (in_module.is_terminated() or
-                  in_module.state == Module.state_invalid):
+            elif in_module.is_terminated() or in_module.state == Module.state_invalid:
                 term_count += 1
 
         if self.state == Module.state_blocked:
             # if all the input slot modules are terminated or invalid
-            if not self.is_input() \
-               and in_count != 0 \
-               and term_count == in_count:
-                logger.info('%s becomes zombie because all its input slots'
-                            ' are terminated', self.name)
+            if (
+                not self.is_input()  # input modules never die
+                and in_count != 0
+                and term_count == in_count
+            ):
+                logger.info(
+                    "%s becomes zombie because all its input slots" " are terminated",
+                    self.name,
+                )
                 self.state = Module.state_zombie
                 return False
             # sources are always ready, and when 1 is ready, the module is.
@@ -696,8 +706,11 @@ class Module(metaclass=ModuleMeta):
         # to let it run. If all the input modules are terminated,
         # the module is blocked, cannot run any more, so it is terminated
         # too.
-        logger.error("%s Not ready because is in weird state %s",
-                     self.name, self.state_name[self.state])
+        logger.error(
+            "%s Not ready because is in weird state %s",
+            self.name,
+            self.state_name[self.state],
+        )
         return False
 
     def cleanup_run(self, run_number):
@@ -727,9 +740,9 @@ class Module(metaclass=ModuleMeta):
         self.set_state(s)
 
     def set_state(self, s):
-        assert (s >= Module.state_created and
-                s <= Module.state_invalid), "State %s invalid in module %s" % (
-                    s, self.name)
+        assert (
+            s >= Module.state_created and s <= Module.state_invalid
+        ), "State %s invalid in module %s" % (s, self.name)
         self._state = s
 
     def trace_stats(self, max_runs=None):
@@ -753,8 +766,7 @@ class Module(metaclass=ModuleMeta):
         if start_run is None or callable(start_run):
             self._start_run = start_run
         else:
-            raise ProgressiveError('value should be callable or None',
-                                   start_run)
+            raise ProgressiveError("value should be callable or None", start_run)
 
     def start_run(self, run_number: int):
         if self._start_run:
@@ -764,16 +776,16 @@ class Module(metaclass=ModuleMeta):
         if end_run is None or callable(end_run):
             self._end_run = end_run
         else:
-            raise ProgressiveError('value should be callable or None', end_run)
+            raise ProgressiveError("value should be callable or None", end_run)
 
     def end_run(self, run_number: int):
         if self._end_run:
             self._end_run(self, run_number)
 
     def ending(self) -> None:
-        '''Ends a module.
+        """Ends a module.
         called when it is about the be removed from the scheduler
-        '''
+        """
         self._state = Module.state_terminated
         #  self._input_slots = None
         #  self._output_slots = None
@@ -795,7 +807,7 @@ class Module(metaclass=ModuleMeta):
         df = pslot.data()
         if df is None:
             return
-        raise NotImplementedError('Updating parameters not implemented yet')
+        raise NotImplementedError("Updating parameters not implemented yet")
 
     def current_params(self):
         return self._params.last()
@@ -829,8 +841,9 @@ class Module(metaclass=ModuleMeta):
         tracer = self.tracer
         if quantum == 0:
             quantum = 0.1
-            logger.error('Quantum is 0 in %s, setting it to a'
-                         ' reasonable value', self.name)
+            logger.error(
+                "Quantum is 0 in %s, setting it to a" " reasonable value", self.name
+            )
         self.state = Module.state_running
         self._start_time = now
         self._end_time = self._start_time + quantum
@@ -840,7 +853,7 @@ class Module(metaclass=ModuleMeta):
         self.start_run(run_number)
         tracer.start_run(now, run_number)
         step_size = self.predict_step_size(quantum)
-        logger.info(f'{self.name}: step_size={step_size}')
+        logger.info(f"{self.name}: step_size={step_size}")
         if step_size != 0:
             # pylint: disable=broad-except
             try:
@@ -848,27 +861,29 @@ class Module(metaclass=ModuleMeta):
                 if self.debug:
                     pdb.set_trace()
                 run_step_ret = self.run_step(run_number, step_size, quantum)
-                next_state = run_step_ret['next_state']
+                next_state = run_step_ret["next_state"]
                 now = self.timer()
             except ProgressiveStopIteration:
-                logger.info('In Module.run(): Received a StopIteration')
+                logger.info("In Module.run(): Received a StopIteration")
                 next_state = Module.state_zombie
-                run_step_ret['next_state'] = next_state
+                run_step_ret["next_state"] = next_state
                 now = self.timer()
             except Exception as e:
                 print_exc()
                 next_state = Module.state_zombie
-                run_step_ret['next_state'] = next_state
+                run_step_ret["next_state"] = next_state
                 now = self.timer()
                 tracer.exception(now, run_number)
                 exception = e
                 self._had_error = True
                 self._start_time = now
             finally:
-                assert (run_step_ret is not None), "Error: %s run_step_ret"\
-                  " not returning a dict" % self.pretty_typename()
+                assert run_step_ret is not None, (
+                    "Error: %s run_step_ret"
+                    " not returning a dict" % self.pretty_typename()
+                )
                 if self.debug:
-                    run_step_ret['debug'] = True
+                    run_step_ret["debug"] = True
                 tracer.after_run_step(now, run_number, **run_step_ret)
                 self.state = next_state
 
@@ -879,9 +894,13 @@ class Module(metaclass=ModuleMeta):
         if self.state == Module.state_zombie:
             tracer.terminated(now, run_number)
         progress = self.get_progress()
-        tracer.end_run(now, run_number,
-                       progress_current=progress[0], progress_max=progress[1],
-                       quality=self.get_quality())
+        tracer.end_run(
+            now,
+            run_number,
+            progress_current=progress[0],
+            progress_max=progress[1],
+            quality=self.get_quality(),
+        )
         self._stop(run_number)
         if exception:
             raise RuntimeError("{} {}".format(type(exception), exception))
@@ -893,32 +912,35 @@ class InputSlots:
     Convenience class to refer to input slots by name
     as if they were attributes.
     """
+
     def __init__(self, module: Module):
-        self.__dict__['module'] = module
+        self.__dict__["module"] = module
 
     def __setattr__(self, name: str, slot: Slot):
         assert isinstance(slot, Slot)
         assert slot.output_module is not None
         assert slot.output_name is not None
-        slot.input_module = self.__dict__['module']
+        slot.input_module = self.__dict__["module"]
         if isinstance(name, int):
             pos = name
-            desc = [(k, sd.required)
-                    for (k, sd) in slot.input_module.input_descriptors.items()]
+            desc = [
+                (k, sd.required)
+                for (k, sd) in slot.input_module.input_descriptors.items()
+            ]
             assert pos < len(desc)
             name_, req = desc[pos]
             # pos slot and all slots before pos have to be "required"
-            assert set([r for (_, r) in desc[:pos+1]]) == set([True])
+            assert set([r for (_, r) in desc[: pos + 1]]) == set([True])
             slot.input_name = name_
         else:
             slot.input_name = name
         slot.connect()
 
     def __getattr__(self, name: str) -> Slot:
-        raise ProgressiveError('Input slots cannot be read, only assigned to')
+        raise ProgressiveError("Input slots cannot be read, only assigned to")
 
     def __getitem__(self, name: str) -> Slot:
-        raise ProgressiveError('Input slots cannot be read, only assigned to')
+        raise ProgressiveError("Input slots cannot be read, only assigned to")
 
     def __setitem__(self, name: str, slot: Slot) -> None:
         if isinstance(name, (str, int)):
@@ -928,7 +950,7 @@ class InputSlots:
         return self.__setattr__(name, slot)
 
     def __dir__(self):
-        return self.__dict__['module'].input_slot_names()
+        return self.__dict__["module"].input_slot_names()
 
 
 class OutputSlots:
@@ -937,20 +959,21 @@ class OutputSlots:
     Convenience class to refer to output slots by name
     as if they were attributes.
     """
+
     def __init__(self, module: Module):
-        self.__dict__['module'] = module
+        self.__dict__["module"] = module
 
     def __setattr__(self, name: str, slot: Slot):
-        raise ProgressiveError('Output slots cannot be assigned, only read')
+        raise ProgressiveError("Output slots cannot be assigned, only read")
 
     def __getattr__(self, name: str) -> Slot:
-        return self.__dict__['module'].create_slot(name, None, None)
+        return self.__dict__["module"].create_slot(name, None, None)
 
     def __getitem__(self, name: str) -> Slot:
         return self.__getattr__(name)
 
     def __dir__(self) -> List[str]:
-        return self.__dict__['module'].output_slot_names()
+        return self.__dict__["module"].output_slot_names()
 
 
 def _print_len(x):
@@ -960,7 +983,7 @@ def _print_len(x):
 
 class Every(Module):
     "Module running a function at each iteration"
-    inputs = [SlotDescriptor('df')]
+    inputs = [SlotDescriptor("df")]
 
     def __init__(self, proc=_print_len, constant_time=True, **kwds):
         super(Every, self).__init__(**kwds)
@@ -973,7 +996,7 @@ class Every(Module):
         return super(Every, self).predict_step_size(duration)
 
     def run_step(self, run_number, step_size, howlong):
-        slot = self.get_input_slot('df')
+        slot = self.get_input_slot("df")
         df = slot.data()
         if df is not None:
             self._proc(df)
@@ -987,9 +1010,10 @@ def _prt(x):
 
 class Print(Every):
     "Module to print its input slot"
+
     def __init__(self, **kwds):
-        if 'proc' not in kwds:
-            kwds['proc'] = _prt
+        if "proc" not in kwds:
+            kwds["proc"] = _prt
         super(Print, self).__init__(quantum=0.1, constant_time=True, **kwds)
 
 
@@ -1014,11 +1038,10 @@ def _create_table(tname, columns):
     data = {}
     for (name, dtype, val) in columns:
         if dshape:
-            dshape += ','
-        dshape += '%s: %s' % (name, dshape_from_dtype(dtype))
+            dshape += ","
+        dshape += "%s: %s" % (name, dshape_from_dtype(dtype))
         data[name] = val
-    dshape = '{'+dshape+'}'
-    table = Table(tname, dshape=dshape,
-                  storagegroup=Group.default_internal(tname))
+    dshape = "{" + dshape + "}"
+    table = Table(tname, dshape=dshape, storagegroup=Group.default_internal(tname))
     table.add(data)
     return table

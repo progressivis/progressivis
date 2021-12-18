@@ -76,8 +76,10 @@ def pairwise(iterator):
 
 def is_sorted(iterator, compare=None) -> bool:
     if compare is None:
+
         def compare(a, b):
             return a <= b
+
     return all(compare(a, b) for a, b in pairwise(iterator))
 
 
@@ -103,34 +105,34 @@ def find_nan_etc(d):
     if isinstance(d, float) and np.isnan(d):
         return None
     if isinstance(d, np.integer):
-        print('numpy int: %s' % (d))
+        print("numpy int: %s" % (d))
         return int(d)
     if isinstance(d, np.bool_):
         return bool(d)
     if isinstance(d, np.ndarray):
-        print('numpy array: %s' % (d))
+        print("numpy array: %s" % (d))
     if isinstance(d, list):
         for i, v in enumerate(d):
             if isinstance(v, float) and np.isnan(v):
-                print('numpy nan at %d in: %s' % (i, d))
+                print("numpy nan at %d in: %s" % (i, d))
             elif isinstance(v, np.integer):
-                print('numpy int: %s at %d in %s' % (v, i, d))
+                print("numpy int: %s at %d in %s" % (v, i, d))
             elif isinstance(v, np.bool_):
-                print('numpy bool: %d in %s' % (i, d))
+                print("numpy bool: %d in %s" % (i, d))
             elif isinstance(v, np.ndarray):
-                print('numpy array: %d in %s' % (i, d))
+                print("numpy array: %d in %s" % (i, d))
             else:
                 find_nan_etc(v)
     elif isinstance(d, collections_abc.Mapping):
         for k, v in d.items():
             if isinstance(v, float) and np.isnan(v):
-                print('numpy nan at %s in: %s' % (k, d))
+                print("numpy nan at %s in: %s" % (k, d))
             elif isinstance(v, np.integer):
-                print('numpy int: %s in %s' % (k, d))
+                print("numpy int: %s in %s" % (k, d))
             elif isinstance(v, np.bool_):
-                print('numpy bool: %s in %s' % (k, d))
+                print("numpy bool: %s in %s" % (k, d))
             elif isinstance(v, np.ndarray):
-                print('numpy array: %s in %s' % (k, d))
+                print("numpy array: %s in %s" % (k, d))
             else:
                 find_nan_etc(v)
 
@@ -172,50 +174,49 @@ class AttributeDict:
         self.d = d
 
     def __getattr__(self, attr: str):
-        return self.__dict__['d'][attr]
+        return self.__dict__["d"][attr]
 
     def __getitem__(self, key: str):
-        return self.__getattribute__('d')[key]
+        return self.__getattribute__("d")[key]
 
     def __dir__(self) -> list:
-        return list(self.__getattribute__('d').keys())
+        return list(self.__getattribute__("d").keys())
 
 
-ID_RE = re.compile(r'[_A-Za-z][_a-zA-Z0-9]*')
+ID_RE = re.compile(r"[_A-Za-z][_a-zA-Z0-9]*")
 
 
 def is_valid_identifier(s) -> bool:
     m = ID_RE.match(s)
-    return bool(m and m.end(0) == len(s) and
-                not keyword.iskeyword(s))
+    return bool(m and m.end(0) == len(s) and not keyword.iskeyword(s))
 
 
 def fix_identifier(c: str) -> str:
     m = ID_RE.match(c)
     if m is None:
-        c = '_' + c
+        c = "_" + c
         m = ID_RE.match(c)
     while m and m.end(0) != len(c):
-        c = c[:m.end(0)] + '_' + c[m.end(0)+1:]
+        c = c[: m.end(0)] + "_" + c[m.end(0) + 1 :]
         m = ID_RE.match(c)
     return c
 
 
 def gen_columns(n: int) -> List[str]:
-    return ["_"+str(i) for i in range(1, n+1)]
+    return ["_" + str(i) for i in range(1, n + 1)]
 
 
 def type_fullname(o: Any) -> str:
     module = o.__class__.__module__
     if module is None or module == str.__class__.__module__:
         return o.__class__.__name__
-    return module + '.' + o.__class__.__name__
+    return module + "." + o.__class__.__name__
 
 
 def indices_len(ind: Optional[slice]) -> int:
     if isinstance(ind, slice):
         if ind.step is None or ind.step == 1:
-            return ind.stop-ind.start
+            return ind.stop - ind.start
         else:
             return len(range(*ind.indices(ind.stop)))
     if ind is None:
@@ -225,8 +226,9 @@ def indices_len(ind: Optional[slice]) -> int:
 
 def fix_loc(indices):
     if isinstance(indices, slice):
-        return slice(indices.start, indices.stop-1)  # semantic of slice .loc
+        return slice(indices.start, indices.stop - 1)  # semantic of slice .loc
     return indices
+
 
 # See http://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2Float
 
@@ -239,7 +241,7 @@ def next_pow2(v: int):
     v |= v >> 8
     v |= v >> 16
     v |= v >> 32
-    return v+1
+    return v + 1
 
 
 def indices_to_slice(indices):
@@ -249,11 +251,11 @@ def indices_to_slice(indices):
     for i in indices:
         if s is None:
             s = e = i
-        elif i == e or i == e+1:
+        elif i == e or i == e + 1:
             e = i
         else:
             return indices  # not sliceable
-    return slice(s, e+1)
+    return slice(s, e + 1)
 
 
 def _first_slice(indices):
@@ -262,7 +264,7 @@ def _first_slice(indices):
     mask = np.equal(*zip(*ei))
     arr = np.array(indices)
     head = arr[mask]
-    tail = arr[len(head):]
+    tail = arr[len(head) :]
     return head, tail
 
 
@@ -273,13 +275,13 @@ def iter_to_slices(indices, fix_loc=False):
     slices = []
     while len(tail):
         head, tail = _first_slice(tail)
-        stop = head[-1]+incr if head[-1] < last else None
+        stop = head[-1] + incr if head[-1] < last else None
         slices.append(slice(head[0], stop, 1))
     return slices
 
 
 def norm_slice(sl, fix_loc=False, stop=None):
-    if (sl.start is not None and sl.step == 1):
+    if sl.start is not None and sl.step == 1:
         return sl
     start = 0 if sl.start is None else sl.start
     step = 1 if sl.step is None else sl.step
@@ -288,7 +290,7 @@ def norm_slice(sl, fix_loc=False, stop=None):
     if fix_loc:
         assert stop is not None
         stop += 1
-    return slice(start, stop , step)
+    return slice(start, stop, step)
 
 
 def is_full_slice(sl) -> bool:
@@ -311,9 +313,9 @@ def inter_slice(this, that):
             return bz, this, bz
         if this.step == 1 and this.step == 1:
             if this.start >= that.start and this.stop <= that.stop:
-                return bz, this, bitmap(that)-bitmap(this)
+                return bz, this, bitmap(that) - bitmap(this)
             if that.start >= this.start and that.stop <= this.stop:
-                return bitmap(this)-bitmap(that),  that, bz
+                return bitmap(this) - bitmap(that), that, bz
             if this.stop <= that.start or that.stop <= this.start:
                 return this, bz, that
             if this.start < that.start:
@@ -322,8 +324,7 @@ def inter_slice(this, that):
             else:
                 left = that
                 right = this
-            common_ = slice(max(left.start, right.start),
-                            min(left.stop, right.stop), 1)
+            common_ = slice(max(left.start, right.start), min(left.stop, right.stop), 1)
             only_left = slice(left.start, common_.start)
             only_right = slice(common_.stop, right.stop)
             if left == this:
@@ -365,7 +366,7 @@ def slice_to_arange(sl):
 
 
 def get_random_name(prefix: str) -> str:
-    return prefix+str(uuid.uuid4()).split('-')[-1]
+    return prefix + str(uuid.uuid4()).split("-")[-1]
 
 
 def all_string(it) -> bool:
@@ -381,21 +382,21 @@ def all_string_or_int(it) -> bool:
 
 
 def all_bool(it) -> bool:
-    if hasattr(it, 'dtype'):
+    if hasattr(it, "dtype"):
         return it.dtype == bool
     return all([isinstance(elt, bool) for elt in it])
 
 
 def are_instances(it, type_) -> bool:
-    if hasattr(it, 'dtype'):
-        return it.dtype in type_ if isinstance(type_, tuple) else\
-          it.type == type_
+    if hasattr(it, "dtype"):
+        return it.dtype in type_ if isinstance(type_, tuple) else it.type == type_
     return all([isinstance(elt, type_) for elt in it])
 
 
 def is_fancy(key) -> bool:
-    return (isinstance(key, np.ndarray) and key.dtype == np.int64) or \
-      isinstance(key, collections_abc.Iterable)
+    return (isinstance(key, np.ndarray) and key.dtype == np.int64) or isinstance(
+        key, collections_abc.Iterable
+    )
 
 
 def fancy_to_mask(indexes, array_shape, mask=None):
@@ -430,8 +431,7 @@ class RandomBytesIO(object):
         self._reminder = ""
         self._cols = cols
         if size is not None and rows is not None:
-            raise ValueError("'size' and 'rows' "
-                             "can not be supplied simultaneously")
+            raise ValueError("'size' and 'rows' " "can not be supplied simultaneously")
         self._generator = self.get_row_generator(**kwargs)
         self._yield_size = len(next(self._generator))
         if size is not None:
@@ -446,35 +446,37 @@ class RandomBytesIO(object):
             self._rows = rows
             self._size = rows * self._yield_size
         else:
-            raise ValueError("One of 'size' and 'rows' "
-                             "must be supplied (put 0 "
-                             "for an infinite loop)")
+            raise ValueError(
+                "One of 'size' and 'rows' "
+                "must be supplied (put 0 "
+                "for an infinite loop)"
+            )
 
     # WARNING: the choice of the mask must guarantee a fixed size for the rows
-    def get_row_generator(self, mask='{: 8.7e}',
-                          loc=0.5, scale=0.8, seed=1234):
-        row_mask = ','.join([mask]*self._cols)+'\n'
+    def get_row_generator(self, mask="{: 8.7e}", loc=0.5, scale=0.8, seed=1234):
+        row_mask = ",".join([mask] * self._cols) + "\n"
         np.random.seed(seed=seed)
         while True:
-            yield row_mask.format(*np.random.normal(loc=loc, scale=scale,
-                                                    size=self._cols))
+            yield row_mask.format(
+                *np.random.normal(loc=loc, scale=scale, size=self._cols)
+            )
 
     def read(self, n=0):
         if n == 0:
             n = self._size
         if self._pos > self._size - 1:
-            return b''
+            return b""
         if self._pos + n > self._size:
             n = self._size - self._pos
         self._pos += n
         if n == len(self._reminder):
             ret = self._reminder
             self._reminder = ""
-            return ret.encode('utf-8')
+            return ret.encode("utf-8")
         if n < len(self._reminder):
             ret = self._reminder[:n]
             self._reminder = self._reminder[n:]
-            return ret.encode('utf-8')
+            return ret.encode("utf-8")
         # n > len(self._reminder)
         n2 = n - len(self._reminder)
         rem = n2 % self._yield_size
@@ -485,7 +487,7 @@ class RandomBytesIO(object):
         raw_str = self._reminder + s
         ret = raw_str[:n]
         self._reminder = raw_str[n:]
-        return ret.encode('utf-8')
+        return ret.encode("utf-8")
 
     def tell(self):
         return self._pos
@@ -499,7 +501,7 @@ class RandomBytesIO(object):
     def __next__(self):
         if self._reminder:
             ret = self._reminder
-            self._reminder = ''
+            self._reminder = ""
             self._pos += len(ret)
             return ret
         if self._pos + self._yield_size > self._size:
@@ -507,14 +509,11 @@ class RandomBytesIO(object):
         self._pos += self._yield_size
         return next(self._generator)
 
-#    def next(self):
-#        return self.__next__()
-
     def readline(self):
         try:
             return self.__next__()
         except StopIteration:
-            return ''
+            return ""
 
     def readlines(self):
         return list(self)
@@ -522,13 +521,14 @@ class RandomBytesIO(object):
     def save(self, file_name, force=False):
         if os.path.exists(file_name) and not force:
             raise ValueError("File {} already exists!".format(file_name))
-        with open(file_name, 'wb') as fd:
+        with open(file_name, "wb") as fd:
             for row in self:
-                fd.write(bytes(row, encoding='ascii'))
+                fd.write(bytes(row, encoding="ascii"))
 
     def __str__(self):
-        return "<{} cols={}, rows={} bytes={}>".format(type(self), self._cols,
-                                                       self._rows, self._size)
+        return "<{} cols={}, rows={} bytes={}>".format(
+            type(self), self._cols, self._rows, self._size
+        )
 
     def __repr__(self):
         return self.__str__()
@@ -540,8 +540,8 @@ def _make_csv_fifo_impl(rand_io, file_name):
 
 def make_csv_fifo(rand_io, file_name=None):
     if file_name is None:
-        dir_name = tempfile.mkdtemp(prefix='p10s_rand_')
-        file_name = os.path.join(dir_name, 'buffer.csv')
+        dir_name = tempfile.mkdtemp(prefix="p10s_rand_")
+        file_name = os.path.join(dir_name, "buffer.csv")
     elif os.path.exists(file_name):
         raise ValueError("File {} already exists!".format(file_name))
     os.mkfifo(file_name)
@@ -551,7 +551,7 @@ def make_csv_fifo(rand_io, file_name=None):
 
 
 def del_tmp_csv_fifo(file_name):
-    if not file_name.startswith('/tmp/p10s_rand_'):
+    if not file_name.startswith("/tmp/p10s_rand_"):
         raise ValueError("Not in /tmp/p10s_rand_... {}".format(file_name))
     mode = os.stat(file_name).st_mode
     if not st.S_ISFIFO(mode):
@@ -570,16 +570,17 @@ def is_s3_url(url) -> bool:
 
 def _is_buffer_url(url):
     res = parse_url(url)
-    return res.scheme == 'buffer'
+    return res.scheme == "buffer"
 
 
 def _url_to_buffer(url):
     res = parse_url(url)
-    if res.scheme != 'buffer':
+    if res.scheme != "buffer":
         raise ValueError("Wrong buffer url: {}".format(url))
     dict_ = parse_qs(res.query, strict_parsing=1)
     kwargs = dict([(k, int(e[0])) for (k, e) in dict_.items()])
     return RandomBytesIO(**kwargs)
+
 
 #
 # from pandas-dev:  _strip_schema, s3_get_filepath_or_buffer
@@ -592,11 +593,11 @@ def _strip_schema(url):
     return result.netloc + result.path
 
 
-def s3_get_filepath_or_buffer(filepath_or_buffer, encoding=None,
-                              compression=None):
+def s3_get_filepath_or_buffer(filepath_or_buffer, encoding=None, compression=None):
     # pylint: disable=unused-argument
     fs = s3fs.S3FileSystem(anon=False)
     from botocore.exceptions import NoCredentialsError  # type: ignore
+
     try:
         filepath_or_buffer = fs.open(_strip_schema(filepath_or_buffer))
     except (OSError, NoCredentialsError):
@@ -611,8 +612,9 @@ def s3_get_filepath_or_buffer(filepath_or_buffer, encoding=None,
     return filepath_or_buffer, None, compression
 
 
-def filepath_to_buffer(filepath, encoding=None,
-                       compression=None, timeout=None, start_byte=0):
+def filepath_to_buffer(
+    filepath, encoding=None, compression=None, timeout=None, start_byte=0
+):
     if not is_str(filepath):
         # if start_byte:
         #    filepath.seek(start_byte)
@@ -621,19 +623,17 @@ def filepath_to_buffer(filepath, encoding=None,
         headers = None
         if start_byte:
             headers = {"Range": "bytes={}-".format(start_byte)}
-        req = requests.get(filepath, stream=True, headers=headers,
-                           timeout=timeout)
-        content_encoding = req.headers.get('Content-Encoding', None)
-        if content_encoding == 'gzip':
-            compression = 'gzip'
-        size = req.headers.get('Content-Length', 0)
+        req = requests.get(filepath, stream=True, headers=headers, timeout=timeout)
+        content_encoding = req.headers.get("Content-Encoding", None)
+        if content_encoding == "gzip":
+            compression = "gzip"
+        size = req.headers.get("Content-Length", 0)
         # return HttpDesc(req.raw, filepath), encoding, compression, int(size)
         return req.raw, encoding, compression, int(size)
     if is_s3_url(filepath):
         reader, encoding, compression = s3_get_filepath_or_buffer(
-            filepath,
-            encoding=encoding,
-            compression=compression)
+            filepath, encoding=encoding, compression=compression
+        )
         return reader, encoding, compression, reader.size
     if _is_buffer_url(filepath):
         buffer = _url_to_buffer(filepath)
@@ -649,10 +649,10 @@ def filepath_to_buffer(filepath, encoding=None,
 
 
 _compression_to_extension = {
-    'gzip': '.gz',
-    'bz2': '.bz2',
-    'zip': '.zip',
-    'xz': '.xz',
+    "gzip": ".gz",
+    "bz2": ".bz2",
+    "zip": ".zip",
+    "xz": ".xz",
 }
 
 
@@ -687,7 +687,7 @@ def _infer_compression(filepath_or_buffer, compression):
     if not is_str(filepath_or_buffer):
         return None
     # Infer compression from the filename/URL extension
-    if compression == 'infer':
+    if compression == "infer":
         for compression, extension in _compression_to_extension.items():
             if filepath_or_buffer.endswith(extension):
                 return compression
@@ -697,9 +697,9 @@ def _infer_compression(filepath_or_buffer, compression):
     if compression in _compression_to_extension:
         return compression
 
-    msg = 'Unrecognized compression type: {}'.format(compression)
-    valid = ['infer', None] + sorted(_compression_to_extension)
-    msg += '\nValid compression types are {}'.format(valid)
+    msg = "Unrecognized compression type: {}".format(compression)
+    valid = ["infer", None] + sorted(_compression_to_extension)
+    msg += "\nValid compression types are {}".format(valid)
     raise ValueError(msg)
 
 
@@ -718,7 +718,7 @@ def force_valid_id_columns(df):
             c = str(c)
         c = fix_identifier(c)
         while c in uniq:
-            c += ('_' + str(i))
+            c += "_" + str(i)
         columns.append(c)
     df.columns = columns
 
@@ -752,7 +752,8 @@ class Dialog(object):
 
 def spy(*args, **kwargs):
     import time
-    f = open(kwargs.pop('file'), "a")
+
+    f = open(kwargs.pop("file"), "a")
     print(time.time(), *args, file=f, flush=True, **kwargs)
     f.close()
 
@@ -761,11 +762,13 @@ def patch_this(to_decorate, module, patch):
     """
     patch decorator
     """
+
     def patch_decorator(to_decorate):
         """
         This is the actual decorator. It brings together the function to be
         decorated and the decoration stuff
         """
+
         @wraps(to_decorate)
         def patch_wrapper(*args, **kwargs):
             """
@@ -776,7 +779,9 @@ def patch_this(to_decorate, module, patch):
             ret = to_decorate(*args, **kwargs)
             patch.after_run_step(module, *args, **kwargs)
             return ret
+
         return patch_wrapper
+
     return patch_decorator(to_decorate)
 
 
@@ -798,7 +803,7 @@ class ModulePatch(object):
 
 
 def decorate_module(m, patch):
-    assert hasattr(m, 'run_step')
+    assert hasattr(m, "run_step")
     m.run_step = patch_this(to_decorate=m.run_step, module=m, patch=patch)
     patch.applied = True
 
@@ -811,6 +816,7 @@ def decorate(scheduler, patch):
 
 class JSONEncoderNp(js.JSONEncoder):
     "Encode numpy objects"
+
     def default(self, o):
         "Handle default encoding."
         if isinstance(o, float) and np.isnan(o):
@@ -845,14 +851,14 @@ async def asynchronize(f, *args, **kwargs):
     # cf. https://docs.python.org/3/library/asyncio-eventloop.html#asyncio.loop.run_in_executor
     loop = aio.get_running_loop()
     fun = ft.partial(f, *args, **kwargs)
-    return await loop.run_in_executor(
-        None, fun)
+    return await loop.run_in_executor(None, fun)
 
 
 def gather_and_run(*args):
     """
     this function avoids the use on the "%gui asyncio" magic in notebook
     """
+
     async def gath():
         await aio.gather(*args)
 
@@ -861,6 +867,7 @@ def gather_and_run(*args):
         aio.set_event_loop(loop)
         loop.run_until_complete(gath())
         loop.close()
+
     thread = threading.Thread(target=func_, args=())
     thread.start()
 
@@ -868,7 +875,8 @@ def gather_and_run(*args):
 def is_notebook() -> bool:
     try:
         from IPython import get_ipython  # type: ignore
-        return get_ipython().__class__.__name__ == 'ZMQInteractiveShell'
+
+        return get_ipython().__class__.__name__ == "ZMQInteractiveShell"
     except ImportError:
         pass
     print("not in notebook")

@@ -1,11 +1,14 @@
 "Change manager for tables."
 
-from progressivis.core.changemanager_base import BaseChangeManager
+from collections import namedtuple
 
+from progressivis.core.changemanager_base import BaseChangeManager
 from .table import Table
 from .tablechanges import TableChanges
 from ..core.slot import Slot
-from ..core.column_update import ColumnUpdate
+
+
+ColumnUpdate = namedtuple("ColumnUpdate", ["created", "updated", "deleted"])
 
 
 class TableChangeManager(BaseChangeManager):

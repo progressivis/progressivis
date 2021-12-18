@@ -9,20 +9,24 @@ class BitmapChangeManager(BaseChangeManager):
     """
     Manage changes that occured in a Bitmap between runs.
     """
-    def __init__(self,
-                 slot,
-                 buffer_created=True,
-                 buffer_updated=False,
-                 buffer_deleted=True,
-                 buffer_exposed=False,
-                 buffer_masked=False):
+
+    def __init__(
+        self,
+        slot,
+        buffer_created=True,
+        buffer_updated=False,
+        buffer_deleted=True,
+        buffer_exposed=False,
+        buffer_masked=False,
+    ):
         super(BitmapChangeManager, self).__init__(
             slot,
             buffer_created,
             buffer_updated,
             buffer_deleted,
             buffer_exposed,
-            buffer_masked)
+            buffer_masked,
+        )
         self._last_bm = None
 
     def reset(self, name=None):
@@ -37,25 +41,23 @@ class BitmapChangeManager(BaseChangeManager):
                 changes.created.update(data)
         else:
             if self.created.buffer:
-                changes.created.update(data-last_bm)
+                changes.created.update(data - last_bm)
             if self.deleted.buffer:
-                changes.deleted.update(last_bm-data)
+                changes.deleted.update(last_bm - data)
         self._last_bm = bitmap(data)
         return changes
 
     def update(self, run_number, data, mid):
         # pylint: disable=unused-argument
         assert isinstance(data, bitmap)
-        if data is None or (run_number != 0 and
-                            run_number <= self._last_update):
+        if data is None or (run_number != 0 and run_number <= self._last_update):
             return
 
         changes = self.compute_updates(data)
         self._last_update = run_number
-        self._row_changes.combine(changes,
-                                  self.created.buffer,
-                                  self.updated.buffer,
-                                  self.deleted.buffer)
+        self._row_changes.combine(
+            changes, self.created.buffer, self.updated.buffer, self.deleted.buffer
+        )
 
 
 Slot.add_changemanager_type(bitmap, BitmapChangeManager)

@@ -3,17 +3,12 @@ Slots between modules.
 """
 from __future__ import annotations
 
-from typing import (
-    Any,
-    Optional,
-    Dict,
-    Type,
-    TYPE_CHECKING
-)
+from typing import Any, Optional, Dict, Type, TYPE_CHECKING
 
 import logging
 from collections import namedtuple
 from .changemanager_base import EMPTY_BUFFER, BaseChangeManager
+
 # from .changemanager_literal import LiteralChangeManager
 
 logger = logging.getLogger(__name__)
@@ -25,43 +20,65 @@ if TYPE_CHECKING:
     from .bitmap import bitmap
 
 
-class SlotDescriptor(namedtuple('SD',
-                                ['name', 'type', 'required', 'multiple', 'datashape',
-                                 'buffer_created',
-                                 'buffer_updated',
-                                 'buffer_deleted',
-                                 'buffer_exposed',
-                                 'buffer_masked'])):
+class SlotDescriptor(
+    namedtuple(
+        "SD",
+        [
+            "name",
+            "type",
+            "required",
+            "multiple",
+            "datashape",
+            "buffer_created",
+            "buffer_updated",
+            "buffer_deleted",
+            "buffer_exposed",
+            "buffer_masked",
+        ],
+    )
+):
     "SlotDescriptor is used in modules to describe the input/output slots."
     __slots__ = ()
 
-    def __new__(cls, name,
-                type=None,
-                required=True,
-                multiple=False,
-                datashape: Optional[str] = None,
-                buffer_created=True,
-                buffer_updated=True,
-                buffer_deleted=True,
-                buffer_exposed=True,
-                buffer_masked=True):
+    def __new__(
+        cls,
+        name,
+        type=None,
+        required=True,
+        multiple=False,
+        datashape: Optional[str] = None,
+        buffer_created=True,
+        buffer_updated=True,
+        buffer_deleted=True,
+        buffer_exposed=True,
+        buffer_masked=True,
+    ):
         # pylint: disable=redefined-builtin
-        return super(SlotDescriptor, cls).__new__(cls, name, type,
-                                                  required, multiple, datashape,
-                                                  buffer_created,
-                                                  buffer_updated,
-                                                  buffer_deleted,
-                                                  buffer_exposed,
-                                                  buffer_masked)
+        return super(SlotDescriptor, cls).__new__(
+            cls,
+            name,
+            type,
+            required,
+            multiple,
+            datashape,
+            buffer_created,
+            buffer_updated,
+            buffer_deleted,
+            buffer_exposed,
+            buffer_masked,
+        )
 
 
 class Slot:
     "A Slot manages one connection between two modules."
-    def __init__(self,
-                 output_module: Module,
-                 output_name: str,
-                 input_module: Module,
-                 input_name: str):
+
+    def __init__(
+        self,
+        output_module: Module,
+        output_name: str,
+        input_module: Module,
+        input_name: str,
+    ):
         self.output_name = output_name
         self.output_module = output_module
         self.input_name = input_name
@@ -73,7 +90,7 @@ class Slot:
     def name(self) -> str:
         "Return the name of the slot"
         if not hasattr(self, "_name"):
-            self._name = (self.input_module.name + '_' + self.input_name)
+            self._name = self.input_module.name + "_" + self.input_name
         return self._name
 
     def data(self) -> Any:
@@ -93,11 +110,13 @@ class Slot:
         return self.output_module.output_slot_descriptor(self.output_name)
 
     def __str__(self):
-        return '%s(%s[%s]->%s[%s])' % (self.__class__.__name__,
-                                       self.output_module.name,
-                                       self.output_name,
-                                       self.input_module.name,
-                                       self.input_name)
+        return "%s(%s[%s]->%s[%s])" % (
+            self.__class__.__name__,
+            self.output_module.name,
+            self.output_name,
+            self.input_module.name,
+            self.input_name,
+        )
 
     def __repr__(self):
         return str(self)
@@ -113,10 +132,12 @@ class Slot:
         Return a dictionary describing this slot, meant to be
         serialized in json.
         """
-        return {'output_name': self.output_name,
-                'output_module': self.output_module.name,
-                'input_name': self.input_name,
-                'input_module': self.input_module.name}
+        return {
+            "output_name": self.output_name,
+            "output_module": self.output_module.name,
+            "input_name": self.input_name,
+            "input_module": self.input_module.name,
+        }
 
     def connect(self) -> None:
         "Declares the connection in the Dataflow"
@@ -132,34 +153,53 @@ class Slot:
             return True
         if issubclass(output_type, input_type):
             return True
-        if (not isinstance(input_type, type) and callable(input_type) and
-                input_type(output_type)):
+        if (
+            not isinstance(input_type, type)
+            and callable(input_type)
+            and input_type(output_type)
+        ):
             return True
 
-        logger.error('Incompatible types for slot (%s,%s) in %s',
-                     input_type, output_type, str(self))
+        logger.error(
+            "Incompatible types for slot (%s,%s) in %s",
+            input_type,
+            output_type,
+            str(self),
+        )
         return False
 
-    def create_changes(self,
-                       buffer_created=True,
-                       buffer_updated=False,
-                       buffer_deleted=False,
-                       buffer_exposed=False,
-                       buffer_masked=False) -> Optional[BaseChangeManager]:
+    def create_changes(
+        self,
+        buffer_created=True,
+        buffer_updated=False,
+        buffer_deleted=False,
+        buffer_exposed=False,
+        buffer_masked=False,
+    ) -> Optional[BaseChangeManager]:
         "Create a ChangeManager associated with the type of the slot's data."
         data = self.data()
         if data is not None:
-            return self.create_changemanager(type(data), self,
-                                             buffer_created=buffer_created,
-                                             buffer_updated=buffer_updated,
-                                             buffer_deleted=buffer_deleted,
-                                             buffer_exposed=buffer_exposed,
-                                             buffer_masked=buffer_masked)
+            return self.create_changemanager(
+                type(data),
+                self,
+                buffer_created=buffer_created,
+                buffer_updated=buffer_updated,
+                buffer_deleted=buffer_deleted,
+                buffer_exposed=buffer_exposed,
+                buffer_masked=buffer_masked,
+            )
         return None
 
-    def update(self, run_number: int,
-               buffer_created=True, buffer_updated=True, buffer_deleted=True,
-               buffer_exposed=True, buffer_masked=True, manage_columns=True) -> None:
+    def update(
+        self,
+        run_number: int,
+        buffer_created=True,
+        buffer_updated=True,
+        buffer_deleted=True,
+        buffer_exposed=True,
+        buffer_masked=True,
+        manage_columns=True,
+    ) -> None:
         # pylint: disable=too-many-arguments
         "Compute the changes that occur since this slot has been updated."
         if self.changes is None:
@@ -170,7 +210,8 @@ class Slot:
                 buffer_updated=desc.buffer_updated,
                 buffer_deleted=desc.buffer_deleted,
                 buffer_exposed=desc.buffer_exposed,
-                buffer_masked=desc.buffer_masked)
+                buffer_masked=desc.buffer_masked,
+            )
         if self.changes:
             df = self.data()
             self.changes.update(run_number, df, self.name())
@@ -225,18 +266,21 @@ class Slot:
     changemanager_classes: Dict[Any, Type[BaseChangeManager]] = {}
 
     @staticmethod
-    def create_changemanager(datatype, slot,
-                             buffer_created: bool,
-                             buffer_updated: bool,
-                             buffer_deleted: bool,
-                             buffer_exposed: bool,
-                             buffer_masked: bool) -> Optional[BaseChangeManager]:
+    def create_changemanager(
+        datatype,
+        slot,
+        buffer_created: bool,
+        buffer_updated: bool,
+        buffer_deleted: bool,
+        buffer_exposed: bool,
+        buffer_masked: bool,
+    ) -> Optional[BaseChangeManager]:
         """
         Create the ChangeManager responsible for this slot type or
         None if no ChangeManager is registered for that type.
         """
         # pylint: disable=too-many-arguments
-        logger.debug('create_changemanager(%s, %s)', datatype, slot)
+        logger.debug("create_changemanager(%s, %s)", datatype, slot)
         queue = [datatype]
         processed = set()
         while queue:
@@ -246,27 +290,28 @@ class Slot:
             processed.add(datatype)
             cls = Slot.changemanager_classes.get(datatype)
             if cls is not None:
-                logger.info('Creating changemanager %s for datatype %s'
-                            ' of slot %s', cls, datatype, slot)
-                return cls(slot,
-                           buffer_created,
-                           buffer_updated,
-                           buffer_deleted,
-                           buffer_exposed,
-                           buffer_masked)
-            if hasattr(datatype, '__base__'):
+                logger.info(
+                    "Creating changemanager %s for datatype %s" " of slot %s",
+                    cls,
+                    datatype,
+                    slot,
+                )
+                return cls(
+                    slot,
+                    buffer_created,
+                    buffer_updated,
+                    buffer_deleted,
+                    buffer_exposed,
+                    buffer_masked,
+                )
+            if hasattr(datatype, "__base__"):
                 queue.append(datatype.__base__)
-            elif hasattr(datatype, '__bases__'):
+            elif hasattr(datatype, "__bases__"):
                 queue += datatype.__bases__
-        logger.info('Creating LiteralChangeManager for datatype %s of slot %s',
-                    datatype, slot)
+        logger.info(
+            "Creating LiteralChangeManager for datatype %s of slot %s", datatype, slot
+        )
         return None
-        # return LiteralChangeManager(slot,
-        #                             buffer_created,
-        #                             buffer_updated,
-        #                             buffer_deleted,
-        #                             buffer_exposed,
-        #                             buffer_masked)
 
     @staticmethod
     def add_changemanager_type(datatype: Any, cls) -> None:
