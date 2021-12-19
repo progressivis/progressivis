@@ -6,12 +6,22 @@ import operator
 import logging
 import numpy as np
 from progressivis.core.index_update import IndexUpdate
-from progressivis.core.utils import (integer_types, norm_slice, is_slice,
-                                     is_int, is_str,
-                                     all_int, all_string, is_iterable,
-                                     all_string_or_int, all_bool,
-                                     indices_len, remove_nan,
-                                     is_none_alike, get_physical_base)
+from progressivis.core.utils import (
+    integer_types,
+    norm_slice,
+    is_slice,
+    is_int,
+    is_str,
+    all_int,
+    all_string,
+    is_iterable,
+    all_string_or_int,
+    all_bool,
+    indices_len,
+    remove_nan,
+    is_none_alike,
+    get_physical_base,
+)
 from progressivis.core.config import get_option
 from progressivis.core.bitmap import bitmap
 from .dshape import dshape_print, dshape_create
@@ -78,10 +88,10 @@ class _Loc(_BaseLoc):
             btab._columns = columns
             btab._columndict = columndict
             btab._dshape = dshape_create(
-                '{'
-                + ','.join(["{}:{}".format(c.name, c.dshape)
-                            for c in btab._columns])
-                + '}')
+                "{"
+                + ",".join(["{}:{}".format(c.name, c.dshape) for c in btab._columns])
+                + "}"
+            )
             btab._masked = self._table
             return btab
         raise ValueError('getitem not implemented for index "%s"', index)
@@ -119,8 +129,7 @@ class _At(_BaseLoc):
         if not is_int(index):
             raise KeyError(f"Invalid row key {index}")
         if not (is_str(col_key) or is_int(col_key)):
-            raise ValueError('At setitem not implemented for column key "%s"' %
-                             col_key)
+            raise ValueError('At setitem not implemented for column key "%s"' % col_key)
         self._table[col_key][index] = value
 
 
@@ -128,20 +137,24 @@ class BaseTable(metaclass=ABCMeta):
     # pylint: disable=too-many-public-methods, too-many-instance-attributes
     """Base class for Tables.
     """
-    def __init__(self, base=None, selection=slice(0, None), columns=None, columndict=None):
+
+    def __init__(
+        self, base=None, selection=slice(0, None), columns=None, columndict=None
+    ):
         self._base = base if (base is None or base._base is None) else base._base
         self._selection = selection
         self._columns = [] if columns is None else columns
         self._columndict = OrderedDict() if columndict is None else columndict
-        #self._index = bitmap() if index is None else index
+        # self._index = bitmap() if index is None else index
         self._loc = _Loc(self, True)
         self._at = _At(self, True)
         self._masked = base
-        #self._changes = None
-        #self._is_identity = True
-        #self._cached_index = BaseTable # hack
-        #self._last_id = -1
-        self._dshape = {} # for __str__()
+        # self._changes = None
+        # self._is_identity = True
+        # self._cached_index = BaseTable # hack
+        # self._last_id = -1
+        self._dshape = {}  # for __str__()
+
     @property
     def loc(self):
         "Return a `locator` object for indexing using ids"
@@ -159,16 +172,17 @@ class BaseTable(metaclass=ABCMeta):
     def __str__(self):
         classname = self.__class__.__name__
         length = len(self)
-        return u'%s("%s", dshape="%s")[%d]' % (classname,
-                                               self.name,
-                                               dshape_print(self.dshape),
-                                               length)
+        return '%s("%s", dshape="%s")[%d]' % (
+            classname,
+            self.name,
+            dshape_print(self.dshape),
+            length,
+        )
 
     def get_original_base(self):
         if self._base is None:
             return self
         return self._base
-
 
     def info_row(self, row, width):
         "Return a description for a row, used in `repr`"
@@ -180,54 +194,54 @@ class BaseTable(metaclass=ABCMeta):
                 v = str(col[row])
             except ValueError:
                 if row_id == -1:
-                    v = '?'*width
+                    v = "?" * width
                 else:
                     raise
             if len(v) > width:
                 if col.dshape == "string":
-                    v = v[0:width-3]+'...'
+                    v = v[0 : width - 3] + "..."
                 else:
-                    v = v[0:width-1]+'.'
-            rep += ("{0:>{width}}|".format(v, width=width))
+                    v = v[0 : width - 1] + "."
+            rep += "{0:>{width}}|".format(v, width=width)
         return rep
 
     def info_contents(self):
         "Return a description of the contents of this table"
-        length = self.last_id + 1 #len(self)
-        rep = ''
-        max_rows = min(length, get_option('display.max_rows'))
+        length = self.last_id + 1  # len(self)
+        rep = ""
+        max_rows = min(length, get_option("display.max_rows"))
         if max_rows == 0:
-            return ''
+            return ""
         if max_rows < length:
-            head = max_rows//2
-            tail = length - max_rows//2
+            head = max_rows // 2
+            tail = length - max_rows // 2
         else:
             head = length
             tail = None
-        width = get_option('display.column_space')
+        width = get_option("display.column_space")
 
-        rep += ("\n{0:^{width}}|".format("Index", width=width))
+        rep += "\n{0:^{width}}|".format("Index", width=width)
         for name in self.columns:
             if len(name) > width:
                 name = name[0:width]
-            rep += ("{0:^{width}}|".format(name, width=width))
+            rep += "{0:^{width}}|".format(name, width=width)
 
         for row in range(head):
             rep += "\n"
             rep += self.info_row(row, width)
 
         if tail:
-            rep += ("\n...(%d)..." % length)
+            rep += "\n...(%d)..." % length
             for row in range(tail, length):
                 rep += "\n"
                 rep += self.info_row(row, width)
         return rep
 
     def index_to_mask(self):
-        return np.array(((elt in self.index) for elt in range(self.last_id+1)))
+        return np.array(((elt in self.index) for elt in range(self.last_id + 1)))
 
     def index_to_array(self):
-        return np.array(self.index, dtype='int32')
+        return np.array(self.index, dtype="int32")
 
     def __iter__(self):
         return iter(self._columndict.keys())
@@ -243,20 +257,20 @@ class BaseTable(metaclass=ABCMeta):
         sl = self.index.to_slice_maybe()
         if not isinstance(sl, slice):
             return False
-        #return sl == slice(0, self.last_id+1, None)
+        # return sl == slice(0, self.last_id+1, None)
         return sl.start == 0
 
     @property
     def last_id(self):
         "Return the last id of this table"
-        #if not self._index:
+        # if not self._index:
         #    assert self._last_id == -1
         return self._base.last_id
 
     @property
     def last_xid(self):
-        'Return the last eXisting id of this table'
-        return self._base.last_xid #only for refreshing self._last_id
+        "Return the last eXisting id of this table"
+        return self._base.last_xid  # only for refreshing self._last_id
 
     def width(self, colnames=None):
         """Return the number of effective width (number of columns) of the table
@@ -270,8 +284,9 @@ class BaseTable(metaclass=ABCMeta):
             The optional list of columns to use for counting, or all the
             columns when not specified or `None`.
         """
-        columns = self._columns if colnames is None else [self[name]
-                                                          for name in colnames]
+        columns = (
+            self._columns if colnames is None else [self[name] for name in colnames]
+        )
         width = 0
         for col in columns:
             width += col.shape[1] if len(col.shape) > 1 else 1
@@ -288,13 +303,16 @@ class BaseTable(metaclass=ABCMeta):
 
     def make_col_view(self, col, index):
         from .column_selected import ColumnSelectedView
+
         return ColumnSelectedView(base=col, index=index, name=col.name)
 
     def make_projection(self, cols, index):
         dict_ = self._make_columndict_projection(cols)
-        columns = [self.make_col_view(c, index)
-                   for (i, c) in enumerate(self._columns)
-                   if i in dict_.values()]
+        columns = [
+            self.make_col_view(c, index)
+            for (i, c) in enumerate(self._columns)
+            if i in dict_.values()
+        ]
         columndict = OrderedDict(zip(dict_.keys(), range(len(dict_))))
         return columns, columndict
 
@@ -304,24 +322,31 @@ class BaseTable(metaclass=ABCMeta):
         if isinstance(cols, slice):
             assert is_int(cols.start)  # for the moment ...
             nsl = norm_slice(cols, stop=len(self._columndict))
-            return OrderedDict({
-                k: v
-                for (i, (k, v)) in enumerate(self._columndict.items())
-                if i in range(*nsl.indices(nsl.stop))})
+            return OrderedDict(
+                {
+                    k: v
+                    for (i, (k, v)) in enumerate(self._columndict.items())
+                    if i in range(*nsl.indices(nsl.stop))
+                }
+            )
         if is_int(cols) or is_str(cols):
             cols = [cols]
         if is_iterable(cols):
             if all_int(cols):
-                return OrderedDict({
-                    k: v for (i, (k, v)) in enumerate(self._columndict.items())
-                    if i in cols})
+                return OrderedDict(
+                    {
+                        k: v
+                        for (i, (k, v)) in enumerate(self._columndict.items())
+                        if i in cols
+                    }
+                )
             if all_string(cols):
-                return OrderedDict({
-                    k: v for (k, v) in self._columndict.items()
-                    if k in cols})
+                return OrderedDict(
+                    {k: v for (k, v) in self._columndict.items() if k in cols}
+                )
         raise ValueError(f"Invalid column projection {cols}")
 
-    def to_dict(self, orient='dict', columns=None):
+    def to_dict(self, orient="dict", columns=None):
         # pylint: disable=too-many-branches
         """
         Return a dictionary describing the contents of this columns.
@@ -335,25 +360,22 @@ class BaseTable(metaclass=ABCMeta):
         """
         if columns is None:
             columns = self.columns
-        if orient == 'dict':
+        if orient == "dict":
             ret = OrderedDict()
             for name in columns:
                 col = self[name]
                 ret[name] = {
-                    int(k): v
-                    for (k, v) in dict(zip(self.index,
-                                           col.tolist())).items()
+                    int(k): v for (k, v) in dict(zip(self.index, col.tolist())).items()
                 }  # because a custom JSONEncoder cannot fix it
             return ret
-        if orient == 'list':
+        if orient == "list":
             ret = OrderedDict()
             for name in columns:
                 col = self[name]
                 ret[name] = col.tolist()
             return ret
-        if orient == 'split':
-            ret = {'index': list(self.index),
-                   'columns': columns}
+        if orient == "split":
+            ret = {"index": list(self.index), "columns": columns}
             data = []
             cols = [self[c] for c in columns]
             for i in self.index:
@@ -361,9 +383,9 @@ class BaseTable(metaclass=ABCMeta):
                 for col in cols:
                     line.append(get_physical_base(col).loc[i])
                 data.append(line)
-            ret['data'] = data
+            ret["data"] = data
             return ret
-        if orient == 'datatable':
+        if orient == "datatable":
             # not a pandas compliant mode but useful for JS DataTable
             ret = []
             for i in self.index:
@@ -373,7 +395,7 @@ class BaseTable(metaclass=ABCMeta):
                     line.append(remove_nan(get_physical_base(col).loc[i]))
                 ret.append(line)
             return ret
-        if orient in ('rows', 'records'):
+        if orient in ("rows", "records"):
             ret = []
             for i in self.index:
                 line = OrderedDict()
@@ -382,7 +404,7 @@ class BaseTable(metaclass=ABCMeta):
                     line[name] = get_physical_base(col).loc[i]
                 ret.append(line)
             return ret
-        if orient == 'index':
+        if orient == "index":
             ret = OrderedDict()
             for id_ in self.index:
                 line = {}
@@ -393,23 +415,23 @@ class BaseTable(metaclass=ABCMeta):
             return ret
         raise ValueError(f"to_dict({orient}) not implemented")
 
-    def to_csv(self, filename, columns=None, sep=','):  # TODO: to be improved
+    def to_csv(self, filename, columns=None, sep=","):  # TODO: to be improved
         if columns is None:
             columns = self.columns
-        with open(filename, 'wb') as f:
+        with open(filename, "wb") as f:
             for i in self.index:
                 row = []
                 for name in columns:
                     col = self[name]
                     row.append(str(remove_nan(get_physical_base(col).loc[i])))
                 row = sep.join(row)
-                f.write(row.encode('utf-8'))
-                f.write(b'\n')
+                f.write(row.encode("utf-8"))
+                f.write(b"\n")
 
     def column_offsets(self, columns, shapes=None):
-        '''Return the offsets of each column considering columns can have
+        """Return the offsets of each column considering columns can have
         multiple dimensions
-        '''
+        """
         if shapes is None:
             shapes = [self[c].shape for c in columns]
         offsets = [0]
@@ -417,8 +439,9 @@ class BaseTable(metaclass=ABCMeta):
         for shape in shapes:
             dims = len(shape)
             if dims > 2:
-                raise ValueError('Cannot convert table to numpy array because'
-                                 'of shape %s', shape)
+                raise ValueError(
+                    "Cannot convert table to numpy array because" "of shape %s", shape
+                )
             dim2 += dims
             offsets.append(dim2)
         return offsets
@@ -483,7 +506,7 @@ class BaseTable(metaclass=ABCMeta):
     @property
     def index(self):
         "Return the object in change of indexing this table"
-        #return self._base._any_to_bitmap(self._mask)
+        # return self._base._any_to_bitmap(self._mask)
         return self._compute_index()
 
     @property
@@ -521,9 +544,6 @@ class BaseTable(metaclass=ABCMeta):
             return self._slice_to_bitmap(locs, fix_loc, existing_only)
         raise KeyError(f"Invalid type {type(locs)} for key {locs}")
 
-
-
-
     @property
     def name(self):
         "Return the name of this table"
@@ -542,18 +562,18 @@ class BaseTable(metaclass=ABCMeta):
     @property
     def changes(self):
         "Return the TableChange manager associated with this table or None"
-        #if not self._index:
-        #    return None
         return self._changes
 
     @changes.setter
     def changes(self, tablechange):
         "Set the TableChange manager, or unset with None"
-        #if not self._index:
-        #    raise RuntimeError('Table has no index')
         self._changes = tablechange
 
-    def compute_updates(self, start, now, mid=None, cleanup=True):
+    def reset_updates(self, mid):
+        if self._changes:
+            self._changes.reset(mid)
+
+    def compute_updates(self, start, now, mid, cleanup=True):
         """Compute the updates (delta) that happened to this table since the last call.
 
         Parameters
@@ -572,8 +592,7 @@ class BaseTable(metaclass=ABCMeta):
         """
         if self._changes:
             self._flush_cache()
-            updates = self._changes.compute_updates(start, now, mid,
-                                                    cleanup=cleanup)
+            updates = self._changes.compute_updates(start, now, mid, cleanup=cleanup)
             if updates is None:
                 updates = IndexUpdate(created=bitmap(self._index))
             return updates
@@ -613,6 +632,7 @@ class BaseTable(metaclass=ABCMeta):
             return None
         if key is None or isinstance(key, integer_types):
             from .row import Row
+
             return Row(self, key)
         if isinstance(key, str):
             return self._column(key)[self.last_xid]
@@ -625,17 +645,16 @@ class BaseTable(metaclass=ABCMeta):
         bm = self._any_to_bitmap(key, fix_loc=False, existing_only=False)
         if not bm:
             return
-        #if not (bm in self.index or isinstance(key, slice)):
+        # if not (bm in self.index or isinstance(key, slice)):
         #    raise ValueError('Invalid locs')
         if isinstance(key, slice):
             if not (bm.min() in self._index and bm.max() in self._selection):
-                raise ValueError('Invalid locs') # when key is a slice we accept holes
-        elif bm not in self.index: # when key is not a slice it must be exhaustive
-            raise ValueError('Invalid locs')
+                raise ValueError("Invalid locs")  # when key is a slice we accept holes
+        elif bm not in self.index:  # when key is not a slice it must be exhaustive
+            raise ValueError("Invalid locs")
         if isinstance(key, Iterable):
             assert bm in self._selection
         self._selection -= bm
-
 
     def setitem_2d(self, rowkey, colkey, values):
         if isinstance(colkey, (str, integer_types)):
@@ -649,8 +668,10 @@ class BaseTable(metaclass=ABCMeta):
 
     def __setitem__(self, colkey, values):
         if isinstance(colkey, tuple):
-            raise ValueError("Adding new columns ({}) via __setitem__"
-                             " not implemented".format(colkey))
+            raise ValueError(
+                "Adding new columns ({}) via __setitem__"
+                " not implemented".format(colkey)
+            )
         if isinstance(colkey, (str, integer_types)):
             # NB: on Pandas, only strings are accepted!
             self._setitem_key(colkey, None, values)
@@ -665,9 +686,10 @@ class BaseTable(metaclass=ABCMeta):
 
     def _setitem_key(self, colkey, rowkey, values):
         if is_none_alike(rowkey) and len(values) != len(self):
-            raise ValueError("Length of values (%d) different "
-                             "than length of table (%d)" % (
-                                 len(values), len(self)))
+            raise ValueError(
+                "Length of values (%d) different "
+                "than length of table (%d)" % (len(values), len(self))
+            )
         column = self._column(colkey)
         if is_none_alike(rowkey):
             column[self.index] = values
@@ -687,20 +709,21 @@ class BaseTable(metaclass=ABCMeta):
                     column[self.index] = v
                 else:
                     column[rowkey] = v
-        elif hasattr(values, 'shape'):
+        elif hasattr(values, "shape"):
             shape = values.shape
             if len(shape) > 1 and shape[1] != self.width(colnames):
                 # and not isinstance(values, BaseTable):
-                raise ValueError('Shape [1] (width)) of columns and '
-                                 'value shape do not match')
+                raise ValueError(
+                    "Shape [1] (width)) of columns and " "value shape do not match"
+                )
 
             if rowkey is None:
-                rowkey = self.index.to_slice_maybe() #slice(None, None)
+                rowkey = self.index.to_slice_maybe()  # slice(None, None)
             for i, colname in enumerate(colnames):
                 column = self._column(colname)
                 if len(column.shape) > 1:
                     wid = column.shape[1]
-                    column[rowkey, 0:wid] = values[i:i+wid]
+                    column[rowkey, 0:wid] = values[i : i + wid]
                 else:  # i.e. len(column.shape) == 1
                     if isinstance(values, BaseTable):
                         column[rowkey] = values[i]
@@ -720,7 +743,7 @@ class BaseTable(metaclass=ABCMeta):
         if isinstance(colkey.start, str):
             start = self.column_index(colkey.start)
             end = self.column_index(colkey.stop)
-            colkey = slice(start, end+1, colkey.step)
+            colkey = slice(start, end + 1, colkey.step)
         return range(*colkey.indices(self.ncol))
 
     def _setitem_slice(self, colkey, rowkey, values):
@@ -740,8 +763,7 @@ class BaseTable(metaclass=ABCMeta):
         dtypes = [self[c].dtype for c in columns]
         return np.find_common_type(dtypes, [])
 
-    def to_array(self, locs=None, columns=None, returns_indices=False,
-                 ret=None):
+    def to_array(self, locs=None, columns=None, returns_indices=False, ret=None):
         """Convert this table to a numpy array
 
         Parameters
@@ -775,9 +797,7 @@ class BaseTable(metaclass=ABCMeta):
         else:
             indices = locs
         shape = (indices_len(indices), offsets[-1])
-        if (isinstance(ret, np.ndarray) and
-           ret.shape == shape and
-           ret.dtype == dtype):
+        if isinstance(ret, np.ndarray) and ret.shape == shape and ret.dtype == dtype:
             arr = ret
         else:
             arr = np.empty(shape, dtype=dtype)
@@ -785,19 +805,19 @@ class BaseTable(metaclass=ABCMeta):
             col = self._column(column)
             shape = shapes[i]
             if len(shape) == 1:
-                col.read_direct(arr, indices,
-                                dest_sel=np.s_[:, offsets[i]])
+                col.read_direct(arr, indices, dest_sel=np.s_[:, offsets[i]])
             else:
-                col.read_direct(arr, indices,
-                                dest_sel=np.s_[:, offsets[i]:offsets[i+1]])
+                col.read_direct(
+                    arr, indices, dest_sel=np.s_[:, offsets[i] : offsets[i + 1]]
+                )
         if returns_indices:
             return indices, arr
         return arr
 
     def unary(self, op, **kwargs):
-        axis = kwargs.get('axis', 0)
+        axis = kwargs.get("axis", 0)
         # get() is cheaper than pop(), it avoids to update unused kwargs
-        keepdims = kwargs.get('keepdims', False)
+        keepdims = kwargs.get("keepdims", False)
         # ignore other kwargs, maybe raise error in the future
         res = OrderedDict()
         for col in self._columns:
@@ -813,10 +833,10 @@ class BaseTable(metaclass=ABCMeta):
         return res
 
     def binary(self, op, other, **kwargs):
-        axis = kwargs.pop('axis', 0)
+        axis = kwargs.pop("axis", 0)
         assert axis == 0
         res = OrderedDict()
-        isscalar = (np.isscalar(other) or isinstance(other, np.ndarray))
+        isscalar = np.isscalar(other) or isinstance(other, np.ndarray)
         for col in self._columns:
             name = col.name
             if isscalar:
@@ -953,18 +973,18 @@ class BaseTable(metaclass=ABCMeta):
         argmin_ = self.raw_unary(np.argmin, **kwargs)
         if self.is_identity:
             return argmin_
-        index_array= self.index_to_array()
+        index_array = self.index_to_array()
         for k, v in argmin_.items():
-             argmin_[k] = index_array[v]
+            argmin_[k] = index_array[v]
         return argmin_
 
     def argmax(self, **kwargs):
         argmax_ = self.raw_unary(np.argmax, **kwargs)
         if self.is_identity:
             return argmax_
-        index_array= self.index_to_array()
+        index_array = self.index_to_array()
         for k, v in argmax_.items():
-             argmax_[k] = index_array[v]
+            argmax_[k] = index_array[v]
         return argmax_
 
     def idxmin(self, **kwargs):
@@ -978,9 +998,6 @@ class BaseTable(metaclass=ABCMeta):
         for c, ix in res.items():
             res[c] = self.index_to_id(ix)
         return res
-
-
-
 
     def remove_module(self, mid):
         # TODO
@@ -1007,8 +1024,6 @@ class BaseTable(metaclass=ABCMeta):
         self._cached_index = index
         self.add_updated(index)
 
-
-
     def equals(self, other):
         if self is other:
             return True
@@ -1032,22 +1047,23 @@ class BaseTable(metaclass=ABCMeta):
         return [tbl[c].dataset.base for c in cols]
 
     def cxx_api_info_index(self):
-        #ix = Int64HashTable() if self.is_identity else self._ids._ids_dict._ht
-        #return self.is_identity, ix, self.last_id
+        # ix = Int64HashTable() if self.is_identity else self._ids._ids_dict._ht
+        # return self.is_identity, ix, self.last_id
         return False, self.index, self.last_id
+
 
 class IndexTable(BaseTable):
     def __init__(self, index=None):
         super().__init__()
         self._index = bitmap() if index is None else index
-        self._cached_index = BaseTable # hack
+        self._cached_index = BaseTable  # hack
         self._last_id = -1
         self._changes = None
 
     @property
     def index(self):
         "Return the object in change of indexing this table"
-        return bitmap(self._index) # returns a copy to prevent unwanted
+        return bitmap(self._index)  # returns a copy to prevent unwanted
 
     @index.setter
     def index(self, indices):
@@ -1067,7 +1083,7 @@ class IndexTable(BaseTable):
     @property
     def last_id(self):
         "Return the last id of this table"
-        #if not self._index:
+        # if not self._index:
         #    assert self._last_id == -1
         if self.index and self._last_id < self.index.max():
             self._last_id = self.index.max()
@@ -1075,26 +1091,27 @@ class IndexTable(BaseTable):
 
     @property
     def last_xid(self):
-        'Return the last eXisting id of this table'
-        self.last_id #only for refreshing self._last_id
+        "Return the last eXisting id of this table"
+        self.last_id  # only for refreshing self._last_id
         return self.index.max()
+
     def add_created(self, locs):
-        #self.notify_observers('created', locs)
-        #TODO simplify tablechanges to ignore add_created etc. when no bookmark exist
+        # self.notify_observers('created', locs)
+        # TODO simplify tablechanges to ignore add_created etc. when no bookmark exist
         if self._changes is None:
             self._changes = TableChanges()
         locs = self._normalize_locs(locs)
         self._changes.add_created(locs)
 
     def add_updated(self, locs):
-        #self.notify_observers('updated', locs)
+        # self.notify_observers('updated', locs)
         if self._changes is None:
             self._changes = TableChanges()
         locs = self._normalize_locs(locs)
         self._changes.add_updated(locs)
 
     def add_deleted(self, locs):
-        #self.notify_observers('deleted', locs)
+        # self.notify_observers('deleted', locs)
         if self._changes is None:
             self._changes = TableChanges()
         locs = self._normalize_locs(locs)
@@ -1104,13 +1121,13 @@ class IndexTable(BaseTable):
         bm = self._any_to_bitmap(key, fix_loc=False, existing_only=False)
         if not bm:
             return
-        #if not (bm in self.index or isinstance(key, slice)):
+        # if not (bm in self.index or isinstance(key, slice)):
         #    raise ValueError('Invalid locs')
         if isinstance(key, slice):
             if not (bm.min() in self._index and bm.max() in self._index):
-                raise ValueError('Invalid locs') # when key is a slice we accept holes
-        elif bm not in self.index: # when key is not a slice it must be exhaustive
-            raise ValueError('Invalid locs')
+                raise ValueError("Invalid locs")  # when key is a slice we accept holes
+        elif bm not in self.index:  # when key is not a slice it must be exhaustive
+            raise ValueError("Invalid locs")
         if isinstance(key, Iterable):
             assert bm in self._index
         self._index -= bm
@@ -1121,52 +1138,55 @@ class IndexTable(BaseTable):
         if raw_index is None:
             raw_index = index
         if is_int(raw_index):
-            #self.__delitem__(raw_index)
+            # self.__delitem__(raw_index)
             self._index.remove(raw_index)
         else:
-            #self.__delitem__(index)
+            # self.__delitem__(index)
             index = self._any_to_bitmap(index)
             self._index -= index
-        if truncate: # useful 4 csv recovery
+        if truncate:  # useful 4 csv recovery
             self._last_id = self._index.max() if self._index else -1
         self.add_deleted(index)
         if self._storagegroup is not None:
             self._storagegroup.release(index)
 
     def _resize_rows(self, newsize, index=None):
-        #self._ids.resize(newsize, index)
+        # self._ids.resize(newsize, index)
         created = bitmap()
         if index is not None:
             index = self._any_to_bitmap(index)
-            created =  index-self._index
+            created = index - self._index
             if index and index.min() > self.last_id:
                 self._index |= index
             else:
-                #assert index in self._index #TODO: check with JDF
-                #self._index = index
+                # assert index in self._index #TODO: check with JDF
+                # self._index = index
                 self._index |= index
         else:
-            #assert self._is_identity
-            if newsize >= self.last_id+1:
-                new_ids = bitmap(range(self.last_id+1, newsize))
-                created = new_ids-self._index
+            # assert self._is_identity
+            if newsize >= self.last_id + 1:
+                new_ids = bitmap(range(self.last_id + 1, newsize))
+                created = new_ids - self._index
                 self._index |= new_ids
             else:
-                self._index &=  bitmap(range(0, newsize))
+                self._index &= bitmap(range(0, newsize))
         if created:
-             self.add_created(created)
+            self.add_created(created)
+
 
 class TableSelectedView(BaseTable):
-    def __init__(self, base=None, selection=slice(0, None), columns=None, columndict=None):
+    def __init__(
+        self, base=None, selection=slice(0, None), columns=None, columndict=None
+    ):
         super().__init__(base, selection, columns, columndict)
         columns, columndict = self._base.make_projection(columns, self)
         self._columns = columns
         self._columndict = columndict
         self._dshape = dshape_create(
-            '{'
-            + ','.join(["{}:{}".format(c.name, c.dshape)
-                        for c in self._columns])
-            + '}')
+            "{"
+            + ",".join(["{}:{}".format(c.name, c.dshape) for c in self._columns])
+            + "}"
+        )
 
     @property
     def selection(self):
@@ -1180,4 +1200,3 @@ class TableSelectedView(BaseTable):
             self._selection = sel
         else:
             raise ValueError("Selection must be a bitmap or a slice")
-

@@ -29,11 +29,17 @@ class TableChangeManager(BaseChangeManager):
             buffer_deleted,
             buffer_exposed,
             buffer_masked)
+        self._slot = slot
         self._columns = set()
         self._column_changes = set()
         data = slot.data()
         if data.changes is None:
             data.changes = TableChanges()
+
+    def reset(self, mid):
+        super(TableChangeManager, self).reset(mid)
+        data = self._slot.data()
+        data.reset_updates(mid)
 
     def update(self, run_number, data, mid):
         if data is None or (run_number != 0

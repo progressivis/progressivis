@@ -467,6 +467,20 @@ class Scheduler:
             self._run_list.append(module)
             module.order = i
 
+    # def _cleanup_modules(self, modules):
+    #     "Unreference the terminated modules when possible"
+    #     collateral = set()
+    #     for mod in modules:
+    #         collateral = self.collateral_damage(mod.name, collateral)
+    #     if collateral:
+    #         logger.info(f"Modules {collateral} will be cleaned up")
+    #         self.version += 1  # Increment in case a dataflow is being built with dead modules
+    #         for name in collateral:
+    #             mod = self._modules[name]
+    #             mod.ending()
+    #             del self._modules[name]
+    #             self._runorder.remove(name)
+
     def _end_of_modules(self, first_run):
         # Reset interaction mode
         self._selection_target_time = -1
@@ -584,7 +598,7 @@ class Scheduler:
             return name in self.dataflow
         return name in self._modules
 
-    def collateral_damage(self, name: str) -> Set[str]:
+    def collateral_damage(self, name: str, deps: Set[str] = None) -> Set[str]:
         """Return the list of modules deleted when the specified one is deleted.
 
         :param name: module to delete
@@ -593,10 +607,11 @@ class Scheduler:
 
         """
         assert isinstance(name, str)
-
-        if name not in self._modules:
-            return set()
-        deps = set([name])  # modules connected with a required slot
+        if deps is None:
+            deps = set()
+        if name not in self._modules or name in deps:
+            return deps
+        deps.add(name)  # modules connected with a required slot
         maybe_deps: Set[str] = set()  # modules with a non required one
         queue = set(deps)
         done: Set[str] = set()
@@ -612,15 +627,15 @@ class Scheduler:
         again = True
         while again:
             again = False
-            for maybe in maybe_deps:
-                die = self[name].die_if_deps_die(deps, maybe_deps)
+            for maybe in list(maybe_deps):
+                die = self[maybe].die_if_deps_die(deps, maybe_deps)
                 if die:
-                    deps.add(name)
-                    maybe_deps.remove(name)
+                    deps.add(maybe)
+                    maybe_deps.remove(maybe)
                 elif die is None:
                     again = True  # need to iterate
                 else:
-                    maybe_deps.remove(name)
+                    maybe_deps.remove(maybe)
         return deps
 
     def run_number(self) -> int:

@@ -555,7 +555,9 @@ class Module(metaclass=ModuleMeta):
 
         """
         ret = False
-        imods = {islot.output_module.name for islot in self._input_slots.values()}
+        imods = {islot.output_module.name
+                 for islot in self._input_slots.values()
+                 if islot is not None}
         if imods.issubset(deps):  # all input will be deleted, we die
             return True
         if imods.issubset(deps | maybe_deps):
@@ -563,7 +565,7 @@ class Module(metaclass=ModuleMeta):
         omods = {
             oslot.input_module.name
             for oslots in self._output_slots.values()
-            for oslot in oslots
+            for oslot in oslots or []
         }
         if omods.issubset(deps):
             return True
@@ -680,7 +682,7 @@ class Module(metaclass=ModuleMeta):
         if self.state == Module.state_blocked:
             # if all the input slot modules are terminated or invalid
             if (
-                not self.is_input()  # input modules never die
+                not self.is_input()  # input modules never die by themselves
                 and in_count != 0
                 and term_count == in_count
             ):

@@ -166,3 +166,14 @@ class TableChanges(BaseChanges):
             last_u = new_u
         # TODO cache results to reuse it if possible
         return new_u
+
+    def reset(self, mid):
+        if mid not in self._mid_time:
+            return
+        # reset
+        logger.debug(f'Reset received for slot {mid}')
+        last_time = self._mid_time[mid]
+        del self._mid_time[mid]
+        i = self._saved_index(last_time)
+        if i != -1:
+            self._unref_bookmark(i)

@@ -28,3 +28,8 @@ class BaseChanges(metaclass=ABCMeta):
     def compute_updates(self, last, now, mid, cleanup=True):
         "Compute and return the list of changes as an IndexUpdate or None"
         return None
+
+    @abstractmethod
+    def reset(self, mid):
+        "Clears all data related to mid"
+        pass
