@@ -3,18 +3,6 @@ Base class for progressive modules.
 """
 from __future__ import annotations
 
-from typing import (
-    Any,
-    Optional,
-    Dict,
-    Set,
-    List,
-    Tuple,
-    Callable,
-    Type,
-    Union,
-    TYPE_CHECKING
-)
 
 from abc import ABCMeta, abstractmethod
 from traceback import print_exc
@@ -40,8 +28,23 @@ from .storagemanager import StorageManager
 from .scheduler import Scheduler
 
 
+from typing import (
+    Any,
+    Optional,
+    Dict,
+    Set,
+    List,
+    Tuple,
+    Callable,
+    Type,
+    Union,
+    TYPE_CHECKING
+)
+
 if TYPE_CHECKING:
     from .dataflow import Dataflow
+
+Parameters = List[Tuple[str, Union[Type, np.dtype], Any]]
 
 
 logger = logging.getLogger(__name__)
@@ -93,10 +96,11 @@ class ModuleTag:
 class Module(metaclass=ModuleMeta):
     """The Module class is the base class for all the progressive modules.
     """
-    parameters: List[Tuple[str, Union[Type, np.dtype], Any]] = [
+    parameters: Parameters = [
         ("quantum", np.dtype(float), 0.5),
         ("debug", np.dtype(bool), False)
     ]
+    all_parameters: Parameters  # defined by metaclass, declare for mypy
     TRACE_SLOT = "_trace"
     PARAMETERS_SLOT = "_params"
 
@@ -108,6 +112,8 @@ class Module(metaclass=ModuleMeta):
 
     inputs = [SlotDescriptor(PARAMETERS_SLOT, type=BaseTable, required=False)]
     outputs = [SlotDescriptor(TRACE_SLOT, type=BaseTable, required=False)]
+    all_inputs: List[SlotDescriptor]  # defined by metaclass, declare for mypy
+    all_outputs: List[SlotDescriptor]  # defined by metaclass, declare for mypy
 
     state_created = 0
     state_ready = 1

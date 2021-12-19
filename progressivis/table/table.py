@@ -97,7 +97,7 @@ class Table(IndexTable):
         self,
         name: str,
         data: Any = None,
-        dshape: str = None,
+        dshape: Optional[str] = None,
         fillvalues: Dict[str, Any] = None,
         storagegroup: Optional[Group] = None,
         chunks: Union[int, Dict[str, int]] = None,

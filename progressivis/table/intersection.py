@@ -5,7 +5,8 @@ Range Query module.
 
 from progressivis.core.utils import indices_len
 from progressivis.core.bitmap import bitmap
-from progressivis.table import NAry, BaseTable, TableSelectedView
+from progressivis.table.nary import NAry
+from progressivis.table.table_base import BaseTable, TableSelectedView
 
 
 def _get_physical_table(t):

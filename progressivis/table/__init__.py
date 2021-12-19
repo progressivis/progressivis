@@ -4,8 +4,6 @@ from .table_base import BaseTable, IndexTable, TableSelectedView
 from .table import Table
 from .changemanager_table_selected import TableSelectedChangeManager
 from .changemanager_table import TableChangeManager
-from .nary import NAry
-from .module import TableModule
 
 # pylint: disable=unused-import
 from .tracer import TableTracer  # initialize Tracert.default
@@ -19,7 +17,5 @@ __all__ = [
     "TableSelectedView",
     "TableSelectedChangeManager",
     "TableChangeManager",
-    "NAry",
-    "TableModule",
     "TableTracer",
 ]
