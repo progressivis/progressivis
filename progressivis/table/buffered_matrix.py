@@ -1,10 +1,10 @@
-
 import logging
-logger = logging.getLogger(__name__)
 
 import numpy as np
 
-from ..core.utils import next_pow2
+from progressivis.core.utils import next_pow2
+
+logger = logging.getLogger(__name__)
 
 
 class BufferedMatrix(object):
@@ -24,16 +24,16 @@ class BufferedMatrix(object):
 
     def __len__(self):
         return 0 if self._mat is None else self._mat.shape[0]
-    
-    def resize(self, l):
+
+    def resize(self, newsize):
         lb = self.allocated_size()
-        if l > lb:
-            n = next_pow2(l)
-            logger.info('Resizing matrix from %d to %d', lb, n)
-            self._base = np.empty([n,n]) # defaults to float
+        if newsize > lb:
+            n = next_pow2(newsize)
+            logger.info("Resizing matrix from %d to %d", lb, n)
+            self._base = np.empty([n, n])  # defaults to float
             if self._mat is not None:
                 # copy old content
-                self._base[0:self._mat.shape[0],0:self._mat.shape[1]] = self._mat
-                logger.debug('Base matrix copied')
-        self._mat = self._base[0:l,0:l]
+                self._base[0 : self._mat.shape[0], 0 : self._mat.shape[1]] = self._mat
+                logger.debug("Base matrix copied")
+        self._mat = self._base[0:newsize, 0:newsize]
         return self._mat

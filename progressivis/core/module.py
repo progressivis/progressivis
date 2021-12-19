@@ -3,7 +3,18 @@ Base class for progressive modules.
 """
 from __future__ import annotations
 
-from typing import Any, Optional, Dict, Set, List, Tuple, Callable, TYPE_CHECKING
+from typing import (
+    Any,
+    Optional,
+    Dict,
+    Set,
+    List,
+    Tuple,
+    Callable,
+    Type,
+    Union,
+    TYPE_CHECKING
+)
 
 from abc import ABCMeta, abstractmethod
 from traceback import print_exc
@@ -82,8 +93,10 @@ class ModuleTag:
 class Module(metaclass=ModuleMeta):
     """The Module class is the base class for all the progressive modules.
     """
-
-    parameters = [("quantum", np.dtype(float), 0.5), ("debug", np.dtype(bool), False)]
+    parameters: List[Tuple[str, Union[Type, np.dtype], Any]] = [
+        ("quantum", np.dtype(float), 0.5),
+        ("debug", np.dtype(bool), False)
+    ]
     TRACE_SLOT = "_trace"
     PARAMETERS_SLOT = "_params"
 

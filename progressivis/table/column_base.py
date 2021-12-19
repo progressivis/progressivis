@@ -20,8 +20,7 @@ class _Loc(object):
     def parse_loc(self, loc):
         "Nomalize the loc"
         if isinstance(loc, tuple):
-            raise ValueError(
-                f'Location accessor not implemented for key "{loc}"')
+            raise ValueError(f'Location accessor not implemented for key "{loc}"')
         return self.column.id_to_index(loc)
 
     def __delitem__(self, loc):
@@ -41,6 +40,7 @@ class BaseColumn(metaclass=ABCMeta):
     """
     Base class for columns.
     """
+
     # pylint: disable=too-many-public-methods
     def __init__(self, name, index=None, base=None):
         self._index = index
@@ -94,22 +94,25 @@ class BaseColumn(metaclass=ABCMeta):
         self.resize(self.index.size)
 
     def __repr__(self):
-        return str(self)+self.info_contents()
+        return str(self) + self.info_contents()
 
     def __str__(self):
         classname = self.__class__.__name__
-        rep = '%s("%s", dshape=%s)[%d]' % (classname, self.name,
-                                           str(self.dshape),
-                                           len(self))
+        rep = '%s("%s", dshape=%s)[%d]' % (
+            classname,
+            self.name,
+            str(self.dshape),
+            len(self),
+        )
         return rep
 
     def info_contents(self):
         "Return a string describing the contents of the column"
         length = len(self)
-        rep = ''
-        max_rows = get_option('display.max_rows')
+        rep = ""
+        max_rows = get_option("display.max_rows")
         for row in range(min(max_rows, length)):
-            rep += ("\n    %d: %s" % (self.id_to_index(row), self[row]))
+            rep += "\n    %d: %s" % (self.id_to_index(row), self[row])
         if max_rows and length > max_rows:
             rep += "\n..."
         return rep
@@ -203,7 +206,7 @@ class BaseColumn(metaclass=ABCMeta):
         length = self.size
         if length == 0:
             return None
-        return self[length-1]  # the last element is never -1
+        return self[length - 1]  # the last element is never -1
 
     # def index_to_chunk(self, index):
     #     "Convert and index to its chunk index"
@@ -230,7 +233,7 @@ class BaseColumn(metaclass=ABCMeta):
     def changes(self, changemanager):
         "Set the ChangeManager associated with the index of this column"
         if self.index is None:
-            raise RuntimeError('Column has no index')
+            raise RuntimeError("Column has no index")
         self.index.changes = changemanager
 
     def compute_updates(self, start, now, mid=None, cleanup=True):
@@ -241,16 +244,16 @@ class BaseColumn(metaclass=ABCMeta):
 
     def unary(self, operation, **kwargs):
         "Unary function manager"
-        axis = kwargs.pop('axis', 0)
-        keepdims = kwargs.pop('keepdims', False)
+        axis = kwargs.pop("axis", 0)
+        keepdims = kwargs.pop("keepdims", False)
         # ignore other kwargs, maybe raise error in the future
         return operation(self.value, axis=axis, keepdims=keepdims)
 
     def binary(self, operation, other, **kwargs):
         "Binary function manager"
-        axis = kwargs.pop('axis', 0)
+        axis = kwargs.pop("axis", 0)
         assert axis == 0
-        isscalar = (np.isscalar(other) or isinstance(other, np.ndarray))
+        isscalar = np.isscalar(other) or isinstance(other, np.ndarray)
         if isscalar:
             value = operation(self.value, other)
         else:

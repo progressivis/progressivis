@@ -1,13 +1,12 @@
-
 from progressivis.table.nary import NAry
 from progressivis import Scheduler
 
 
 class Reduce(NAry):
     "Reduce binary modules over multiple inputs"
+
     @staticmethod
-    def expand(binary_module, left_in, right_in, outp, slots,
-               **binary_module_kwds):
+    def expand(binary_module, left_in, right_in, outp, slots, **binary_module_kwds):
         if len(slots) < 2:
             raise ValueError("Reduce needs at least two unputs")
         scheduler = binary_module_kwds.get("scheduler")

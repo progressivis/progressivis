@@ -1,10 +1,10 @@
-
 import numpy as np
 
 from .nary import NAry
 from .table import Table
 from .dshape import dshape_union
 from ..core.bitmap import bitmap
+
 
 def combine_first(table, other, name=None):
     dshape = dshape_union(table.dshape, other.dshape)
@@ -31,7 +31,9 @@ def combine_first(table, other, name=None):
         other_only_idx = sorted(other_set - self_set)
         comb_table.resize(len(comb_idx), index=comb_idx)
         for cname in table.columns:
-            comb_table.loc[self_u_common_idx, [cname]] = table.loc[self_u_common_idx, [cname]]
+            comb_table.loc[self_u_common_idx, [cname]] = table.loc[
+                self_u_common_idx, [cname]
+            ]
             if cname in other.columns:
                 nans = table.index.values[np.isnan(table._column(cname).values)]
                 nans = sorted(set(nans) & common_set)
@@ -40,7 +42,9 @@ def combine_first(table, other, name=None):
         for cname in other.columns:
             if cname in table.columns:
                 continue
-            comb_table.loc[other_u_common_idx, [cname]] = other.loc[other_u_common_idx, [cname]]
+            comb_table.loc[other_u_common_idx, [cname]] = other.loc[
+                other_u_common_idx, [cname]
+            ]
     return comb_table
 
 

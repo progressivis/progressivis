@@ -8,9 +8,11 @@ from ..utils.psdict import PsDict
 
 
 class Percentiles(TableModule):
-    parameters = [('accuracy', np.dtype(float), 0.5)]
-    inputs = [SlotDescriptor('table', type=Table, required=True),
-              SlotDescriptor('percentiles', type=PsDict, required=True)]
+    parameters = [("accuracy", np.dtype(float), 0.5)]
+    inputs = [
+        SlotDescriptor("table", type=Table, required=True),
+        SlotDescriptor("percentiles", type=PsDict, required=True),
+    ]
 
     def __init__(self, hist_index, **kwds):
         super(Percentiles, self).__init__(**kwds)
@@ -27,9 +29,10 @@ class Percentiles(TableModule):
 
         def _no_filtering(bm):
             return bm
+
         _filter = _filter_tsv if isinstance(input_table, BaseTable) else _no_filtering
         len_ = len(input_table)
-        k_points = [p*(len_+1)*0.01 for p in points.values()]
+        k_points = [p * (len_ + 1) * 0.01 for p in points.values()]
         max_k = max(k_points)
         ret_values = []
         k_accuracy = self._accuracy * len_ * 0.01
@@ -47,7 +50,7 @@ class Percentiles(TableModule):
             bm_list.append(fbm)
             if acc > max_k:
                 break  # just avoids unnecessary computes
-        acc_list = acc_list[:i+1]
+        acc_list = acc_list[: i + 1]
         for k in k_points:
             i = (acc_list >= k).nonzero()[0][0]
             reminder = int(acc_list[i] - k)
@@ -56,12 +59,12 @@ class Percentiles(TableModule):
                 ret_values.append(column[bm_list[i][0]])
             else:
                 values = column.loc[bm_list[i]]
-                part = np.partition(values, reminder)
+                _ = np.partition(values, reminder)
                 ret_values.append(values[reminder])
         return OrderedDict(zip(points.keys(), ret_values))
 
     def run_step(self, run_number, step_size, howlong):
-        input_slot = self.get_input_slot('table')
+        input_slot = self.get_input_slot("table")
         if input_slot.data() is None:
             return self._return_run_step(self.state_blocked, steps_run=0)
         # input_slot.update(run_number)
@@ -78,7 +81,7 @@ class Percentiles(TableModule):
         # with input_slot.lock:
         #     input_table = input_slot.data()
         # param = self.params
-        percentiles_slot = self.get_input_slot('percentiles')
+        percentiles_slot = self.get_input_slot("percentiles")
         if percentiles_slot.data() is None:
             return self._return_run_step(self.state_blocked, steps_run=0)
         # percentiles_slot.update(run_number)
@@ -97,12 +100,9 @@ class Percentiles(TableModule):
             return self._return_run_step(self.state_blocked, steps_run=0)
         if not self._hist_index._impl:
             return self._return_run_step(self.state_blocked, steps_run=0)
-        computed = self.compute_percentiles(
-            percentiles_slot.data(),
-            input_slot.data())
+        computed = self.compute_percentiles(percentiles_slot.data(), input_slot.data())
         if not self.result:
-            self.result = Table(name=None,
-                                dshape=percentiles_slot.data().dshape)
+            self.result = Table(name=None, dshape=percentiles_slot.data().dshape)
             self.result.add(computed)
         else:
             self.result.loc[0, :] = list(computed.values())

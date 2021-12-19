@@ -3,19 +3,18 @@ Range Query module.
 
 """
 
-from progressivis.table.nary import NAry
 from progressivis.core.utils import indices_len
-from . import BaseTable
-from ..core.bitmap import bitmap
-from . import TableSelectedView
+from progressivis.core.bitmap import bitmap
+from progressivis.table import NAry, BaseTable, TableSelectedView
 
 
 def _get_physical_table(t):
     return t.base or t
 
+
 class Intersection(NAry):
     "Intersection Module"
-    parameters = []
+    # parameters = []
 
     def __init__(self, **kwds):
         super(Intersection, self).__init__(**kwds)
@@ -48,11 +47,11 @@ class Intersection(NAry):
                 reset_ = True
                 steps += 1
 
-            #if slot.deleted.any():
+            # if slot.deleted.any():
             #    deleted = slot.deleted.next(step_size)
             #    steps += 1
             #    to_delete.append(_b(deleted))
-            #if slot.updated.any(): # actually don't care
+            # if slot.updated.any(): # actually don't care
             #    _ = slot.updated.next(step_size)
             #    #to_delete |= _b(updated)
             #    #to_create |= _b(updated)
@@ -75,14 +74,12 @@ class Intersection(NAry):
             self.result = TableSelectedView(ph_table, bitmap([]))
         if reset_:
             self.result.selection = bitmap([])
-        # self._table.selection -= to_delete
-        self.result.selection = self.result.index|to_create_4sure
+        self.result.selection = self.result.index | to_create_4sure
         to_create_maybe -= to_create_4sure
         eff_create = to_create_maybe
         for t in tables:
             eff_create &= t.index
-        self.result.selection = self.result.index|eff_create
-        # self.get_input_slot(self.inputs[0]))
+        self.result.selection = self.result.index | eff_create
         return self._return_run_step(self.state_blocked, steps)
 
     def run_step_seq(self, run_number, step_size, howlong):
@@ -91,7 +88,7 @@ class Intersection(NAry):
         ph_table = None
         assert len(self.inputs) > 0
         for name in self.get_input_slot_multiple():
-            if not name.startswith('table'):
+            if not name.startswith("table"):
                 continue
             slot = self.get_input_slot(name)
             t = slot.data()
@@ -115,7 +112,5 @@ class Intersection(NAry):
             return self._return_run_step(self.state_blocked, 0)
         if not self.result:
             self.result = TableSelectedView(ph_table, bitmap([]))
-        self.result.selection = bitmap.intersection(*[t.index
-                                                      for t in tables])
-        # return self._return_run_step(self.next_state(self.get_input_slot(self.inputs[0])), steps)
+        self.result.selection = bitmap.intersection(*[t.index for t in tables])
         return self._return_run_step(self.state_blocked, steps)

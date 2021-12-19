@@ -18,9 +18,10 @@ class BinJoin(TableModule):
     Args:
         kwds : argument to pass to the join function
     """
+
     inputs = [
-        SlotDescriptor('first', type=Table, required=True),
-        SlotDescriptor('second', type=Table, required=True)
+        SlotDescriptor("first", type=Table, required=True),
+        SlotDescriptor("second", type=Table, required=True),
     ]
 
     def __init__(self, **kwds):
@@ -29,9 +30,9 @@ class BinJoin(TableModule):
         self._dialog = Dialog(self)
 
     def run_step(self, run_number, step_size, howlong):
-        first_slot = self.get_input_slot('first')
+        first_slot = self.get_input_slot("first")
         # first_slot.update(run_number)
-        second_slot = self.get_input_slot('second')
+        second_slot = self.get_input_slot("second")
         # second_slot.update(run_number)
         steps = 0
         if first_slot.deleted.any() or second_slot.deleted.any():
@@ -63,12 +64,20 @@ class BinJoin(TableModule):
         first_table = first_slot.data()
         second_table = second_slot.data()
         if not self._dialog.is_started:
-            join_start(first_table, second_table,
-                       dialog=self._dialog,
-                       created=created, updated=updated,
-                       **self.join_kwds)
+            join_start(
+                first_table,
+                second_table,
+                dialog=self._dialog,
+                created=created,
+                updated=updated,
+                **self.join_kwds
+            )
         else:
-            join_cont(first_table, second_table,
-                      dialog=self._dialog,
-                      created=created, updated=updated)
+            join_cont(
+                first_table,
+                second_table,
+                dialog=self._dialog,
+                created=created,
+                updated=updated,
+            )
         return self._return_run_step(self.next_state(first_slot), steps_run=steps)

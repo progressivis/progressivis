@@ -1,4 +1,3 @@
-
 import numpy as np
 
 from progressivis.core.utils import indices_len
@@ -30,7 +29,7 @@ class _Selection(object):
 
     def assign(self, values):
         self._values = values
-        
+
     def add(self, values):
         self._values |= values
 
@@ -46,52 +45,67 @@ class RangeQueryImpl(ModuleImpl):
         self.result = None
         self.is_started = False
 
-    def resume(self, lower, upper, limit_changed,
-               created=None, updated=None, deleted=None):
+    def resume(
+        self, lower, upper, limit_changed, created=None, updated=None, deleted=None
+    ):
         if limit_changed:
-            new_sel = self._hist_index.range_query(lower, upper,
-                                                   approximate=self._approximate)
+            new_sel = self._hist_index.range_query(
+                lower, upper, approximate=self._approximate
+            )
             self.result.assign(new_sel)
             return
         if updated:
             self.result.remove(updated)
             # res = self._eval_to_ids(limit, updated)
-            res = self._hist_index.restricted_range_query(lower, upper,
-                                                          only_locs=updated,
-                                                          approximate=self._approximate)
+            res = self._hist_index.restricted_range_query(
+                lower, upper, only_locs=updated, approximate=self._approximate
+            )
             self.result.add(res)
         if created:
-            res = self._hist_index.restricted_range_query(lower, upper,
-                                                          only_locs=created,
-                                                          approximate=self._approximate)
+            res = self._hist_index.restricted_range_query(
+                lower, upper, only_locs=created, approximate=self._approximate
+            )
             self.result.update(res)
         if deleted:
             self.result.remove(deleted)
 
-    def start(self, table, lower, upper, limit_changed,
-              created=None, updated=None, deleted=None):
+    def start(
+        self,
+        table,
+        lower,
+        upper,
+        limit_changed,
+        created=None,
+        updated=None,
+        deleted=None,
+    ):
         self._table = table
         self.result = _Selection()
         self.is_started = True
-        return self.resume(lower, upper, limit_changed,
-                           created, updated, deleted)
+        return self.resume(lower, upper, limit_changed, created, updated, deleted)
 
 
 class RangeQuery(TableModule):
     """
     """
-    parameters = [('column', str, "unknown"),
-                  ("watched_key_lower", str, ""),
-                  ("watched_key_upper", str, ""),
-                  # ('hist_index', object, None) # to improve ...
-                  ]
-    inputs = [SlotDescriptor('table', type=Table, required=True),
-              SlotDescriptor('lower', type=Table, required=False),
-              SlotDescriptor('upper', type=Table, required=False),
-              SlotDescriptor('min', type=PsDict, required=False),
-              SlotDescriptor('max', type=PsDict, required=False)]
-    outputs = [SlotDescriptor('min', type=Table, required=False),
-               SlotDescriptor('max', type=Table, required=False)]
+
+    parameters = [
+        ("column", str, "unknown"),
+        ("watched_key_lower", str, ""),
+        ("watched_key_upper", str, ""),
+        # ('hist_index', object, None) # to improve ...
+    ]
+    inputs = [
+        SlotDescriptor("table", type=Table, required=True),
+        SlotDescriptor("lower", type=Table, required=False),
+        SlotDescriptor("upper", type=Table, required=False),
+        SlotDescriptor("min", type=PsDict, required=False),
+        SlotDescriptor("max", type=PsDict, required=False),
+    ]
+    outputs = [
+        SlotDescriptor("min", type=Table, required=False),
+        SlotDescriptor("max", type=Table, required=False),
+    ]
 
     def __init__(self, hist_index=None, approximate=False, **kwds):
         super(RangeQuery, self).__init__(**kwds)
@@ -117,17 +131,18 @@ class RangeQuery(TableModule):
     @hist_index.setter
     def hist_index(self, hi):
         self._hist_index = hi
-        self._impl = RangeQueryImpl(self._column, hi,
-                                    approximate=self._approximate)
+        self._impl = RangeQueryImpl(self._column, hi, approximate=self._approximate)
 
-    def create_dependent_modules(self,
-                                 input_module,
-                                 input_slot,
-                                 min_=None,
-                                 max_=None,
-                                 min_value=None,
-                                 max_value=None,
-                                 **kwds):
+    def create_dependent_modules(
+        self,
+        input_module,
+        input_slot,
+        min_=None,
+        max_=None,
+        min_value=None,
+        max_value=None,
+        **kwds
+    ):
         if self.input_module is not None:  # test if already called
             return self
         with self.tagged(self.TAG_DEPENDENT):
@@ -136,17 +151,19 @@ class RangeQuery(TableModule):
             self.input_module = input_module
             self.input_slot = input_slot
             with scheduler:
-                hist_index = HistogramIndex(column=params.column,
-                                            group=self.name,
-                                            scheduler=scheduler)
+                hist_index = HistogramIndex(
+                    column=params.column, group=self.name, scheduler=scheduler
+                )
                 hist_index.input.table = input_module.output[input_slot]
                 if min_ is None:
-                    min_ = Min(group=self.name, columns=[self._column],
-                               scheduler=scheduler)
+                    min_ = Min(
+                        group=self.name, columns=[self._column], scheduler=scheduler
+                    )
                     min_.input.table = hist_index.output.min_out
                 if max_ is None:
-                    max_ = Max(group=self.name, columns=[self._column],
-                               scheduler=scheduler)
+                    max_ = Max(
+                        group=self.name, columns=[self._column], scheduler=scheduler
+                    )
                     max_.input.table = hist_index.output.max_out
                 if min_value is None:
                     min_value = Variable(group=self.name, scheduler=scheduler)
@@ -186,27 +203,27 @@ class RangeQuery(TableModule):
             getattr(self, attr_).update(d)
 
     def _set_min_out(self, val):
-        return self._set_minmax_out('_min_table', val)
+        return self._set_minmax_out("_min_table", val)
 
     def _set_max_out(self, val):
-        return self._set_minmax_out('_max_table', val)
+        return self._set_minmax_out("_max_table", val)
 
     def get_data(self, name):
-        if name == 'min':
+        if name == "min":
             return self._min_table
-        if name == 'max':
+        if name == "max":
             return self._max_table
         return super(RangeQuery, self).get_data(name)
 
     def run_step(self, run_number, step_size, howlong):
-        input_slot = self.get_input_slot('table')
+        input_slot = self.get_input_slot("table")
         self._create_min_max()
         #
         # lower/upper
         #
-        lower_slot = self.get_input_slot('lower')
+        lower_slot = self.get_input_slot("lower")
         # lower_slot.update(run_number)
-        upper_slot = self.get_input_slot('upper')
+        upper_slot = self.get_input_slot("upper")
         limit_changed = False
         if lower_slot.deleted.any():
             lower_slot.deleted.next()
@@ -229,40 +246,53 @@ class RangeQuery(TableModule):
         #
         # min/max
         #
-        min_slot = self.get_input_slot('min')
+        min_slot = self.get_input_slot("min")
         min_slot.clear_buffers()
         # min_slot.update(run_number)
         # min_slot.created.next()
         # min_slot.updated.next()
         # min_slot.deleted.next()
-        max_slot = self.get_input_slot('max')
+        max_slot = self.get_input_slot("max")
         max_slot.clear_buffers()
         # max_slot.update(run_number)
         # max_slot.created.next()
         # max_slot.updated.next()
         # max_slot.deleted.next()
-        if (lower_slot.data() is None or upper_slot.data() is None
-                or len(lower_slot.data()) == 0 or len(upper_slot.data()) == 0):
+        if (
+            lower_slot.data() is None
+            or upper_slot.data() is None
+            or len(lower_slot.data()) == 0
+            or len(upper_slot.data()) == 0
+        ):
             return self._return_run_step(self.state_blocked, steps_run=0)
         lower_value = lower_slot.data().get(self._watched_key_lower)
         upper_value = upper_slot.data().get(self._watched_key_upper)
-        if lower_slot.data() is None or upper_slot.data() is None \
-           or min_slot.data() is None or max_slot.data() is None \
-           or len(min_slot.data()) == 0 or len(max_slot.data()) == 0:
+        if (
+            lower_slot.data() is None
+            or upper_slot.data() is None
+            or min_slot.data() is None
+            or max_slot.data() is None
+            or len(min_slot.data()) == 0
+            or len(max_slot.data()) == 0
+        ):
             return self._return_run_step(self.state_blocked, steps_run=0)
         minv = min_slot.data().get(self._watched_key_lower)
         maxv = max_slot.data().get(self._watched_key_upper)
-        if lower_value is None or \
-           np.isnan(lower_value) or \
-           lower_value < minv or \
-           lower_value >= maxv:
+        if (
+            lower_value is None
+            or np.isnan(lower_value)
+            or lower_value < minv
+            or lower_value >= maxv
+        ):
             lower_value = minv
             limit_changed = True
-        if upper_value is None or \
-           np.isnan(upper_value) or \
-           upper_value > maxv or \
-           upper_value <= minv or \
-           upper_value <= lower_value:
+        if (
+            upper_value is None
+            or np.isnan(upper_value)
+            or upper_value > maxv
+            or upper_value <= minv
+            or upper_value <= lower_value
+        ):
             upper_value = maxv
             limit_changed = True
         self._set_min_out(lower_value)
@@ -288,16 +318,23 @@ class RangeQuery(TableModule):
         if not self.result:
             self.result = TableSelectedView(input_table, bitmap([]))
         if not self._impl.is_started:
-            self._impl.start(input_table, lower_value, upper_value,
-                             limit_changed,
-                             created=created,
-                             updated=updated,
-                             deleted=deleted)
+            self._impl.start(
+                input_table,
+                lower_value,
+                upper_value,
+                limit_changed,
+                created=created,
+                updated=updated,
+                deleted=deleted,
+            )
         else:
-            self._impl.resume(lower_value, upper_value,
-                              limit_changed,
-                              created=created,
-                              updated=updated,
-                              deleted=deleted)
+            self._impl.resume(
+                lower_value,
+                upper_value,
+                limit_changed,
+                created=created,
+                updated=updated,
+                deleted=deleted,
+            )
         self.result.selection = self._impl.result._values
         return self._return_run_step(self.next_state(input_slot), steps)

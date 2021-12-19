@@ -1,7 +1,9 @@
 """Base class for Tables
 """
+from __future__ import annotations
+
 from abc import ABCMeta
-from collections import OrderedDict, Mapping, Iterable
+from collections import Mapping, Iterable
 import operator
 import logging
 import numpy as np
@@ -24,8 +26,17 @@ from progressivis.core.utils import (
 )
 from progressivis.core.config import get_option
 from progressivis.core.bitmap import bitmap
-from .dshape import dshape_print, dshape_create
+from .dshape import dshape_print, dshape_create, DataShape, EMPTY_DSHAPE
 from .tablechanges import TableChanges
+
+from typing import Union, Any, Optional, Dict, List, Tuple, TYPE_CHECKING
+
+Indexer = Union[Any]  # improve later
+ColIndexer = Union[int, np.integer, str]
+
+if TYPE_CHECKING:
+    from .column_base import BaseColumn
+
 
 logger = logging.getLogger(__name__)
 
@@ -33,13 +44,13 @@ logger = logging.getLogger(__name__)
 FAST = 1
 
 
-class _BaseLoc(object):
+class _BaseLoc:
     # pylint: disable=too-few-public-methods
-    def __init__(self, this_table, as_loc=True):
+    def __init__(self, this_table: BaseTable, as_loc=True):
         self._table = this_table
         self._as_loc = as_loc
 
-    def parse_key(self, key):
+    def parse_key(self, key: Indexer):
         if isinstance(key, tuple):
             if len(key) != 2:
                 raise ValueError('getitem not implemented for key "%s"' % key)
@@ -52,7 +63,7 @@ class _BaseLoc(object):
             index = self._table._any_to_bitmap(index)
         return index, col_key, locs
 
-    def parse_key_to_bitmap(self, key):
+    def parse_key_to_bitmap(self, key: Indexer):
         if isinstance(key, tuple):
             if len(key) != 2:
                 raise ValueError('getitem not implemented for key "%s"' % key)
@@ -65,13 +76,13 @@ class _BaseLoc(object):
 
 class _Loc(_BaseLoc):
     # pylint: disable=too-few-public-methods
-    def __delitem__(self, key):
+    def __delitem__(self, key: Indexer):
         index, col_key, raw_index = self.parse_key_to_bitmap(key)
         if not is_none_alike(col_key):
             raise ValueError('Cannot delete key "%s"' % key)
         self._table.drop(index, raw_index)
 
-    def __getitem__(self, key):
+    def __getitem__(self, key: Indexer):
         index, col_key, raw_index = self.parse_key_to_bitmap(key)
         if not (is_slice(raw_index) or index in self._table.index):
             diff_ = index - self._table.index
@@ -96,7 +107,7 @@ class _Loc(_BaseLoc):
             return btab
         raise ValueError('getitem not implemented for index "%s"', index)
 
-    def __setitem__(self, key, value):
+    def __setitem__(self, key: Indexer, value: Any):
         index, col_key, raw_index = self.parse_key_to_bitmap(key)
         if isinstance(raw_index, integer_types):
             index = raw_index
@@ -105,7 +116,7 @@ class _Loc(_BaseLoc):
 
 class _At(_BaseLoc):
     # pylint: disable=too-few-public-methods
-    def parse_key(self, key):
+    def parse_key(self, key: Indexer):
         if isinstance(key, tuple):
             if len(key) != 2:
                 raise ValueError('getitem not implemented for key "%s"' % key)
@@ -118,13 +129,13 @@ class _At(_BaseLoc):
             raise KeyError(f"Invalid column key {col_key}")
         return index, col_key
 
-    def __getitem__(self, key):
+    def __getitem__(self, key: Indexer):
         index, col_key = self.parse_key(key)
         if index not in self._table.index:
             raise KeyError(f"Not existing indice {index}")
         return self._table[col_key][index]
 
-    def __setitem__(self, key, value):
+    def __setitem__(self, key: Indexer, value: Any):
         index, col_key = self.parse_key(key)
         if not is_int(index):
             raise KeyError(f"Invalid row key {index}")
@@ -139,29 +150,33 @@ class BaseTable(metaclass=ABCMeta):
     """
 
     def __init__(
-        self, base=None, selection=slice(0, None), columns=None, columndict=None
+        self,
+        base: Optional[BaseTable] = None,
+        selection=slice(0, None),
+        columns: Optional[List[BaseColumn]] = None,
+        columndict: Dict[str, int] = None,
     ):
-        self._base = base if (base is None or base._base is None) else base._base
+        self._base: Optional[BaseTable] = base if (
+            base is None or base._base is None
+        ) else base._base
         self._selection = selection
-        self._columns = [] if columns is None else columns
-        self._columndict = OrderedDict() if columndict is None else columndict
-        # self._index = bitmap() if index is None else index
+        self._columns: List[BaseColumn] = [] if columns is None else columns
+        self._columndict: Dict[str, int] = dict() if columndict is None else columndict
         self._loc = _Loc(self, True)
         self._at = _At(self, True)
         self._masked = base
-        # self._changes = None
-        # self._is_identity = True
-        # self._cached_index = BaseTable # hack
-        # self._last_id = -1
-        self._dshape = {}  # for __str__()
+        self._dshape: DataShape = EMPTY_DSHAPE
+
+    def drop(self, index, raw_index=None, truncate=False):
+        pass
 
     @property
-    def loc(self):
+    def loc(self) -> _Loc:
         "Return a `locator` object for indexing using ids"
         return self._loc
 
     @property
-    def at(self):
+    def at(self) -> _At:
         # pylint: disable=invalid-name
         "Return an object for indexing values using ids"
         return self._at
@@ -179,12 +194,12 @@ class BaseTable(metaclass=ABCMeta):
             length,
         )
 
-    def get_original_base(self):
+    def get_original_base(self) -> BaseTable:
         if self._base is None:
             return self
         return self._base
 
-    def info_row(self, row, width):
+    def info_row(self, row: int, width: int) -> str:
         "Return a description for a row, used in `repr`"
         row_id = row if row in self.index else -1
         rep = "{0:{width}}|".format(row_id, width=width)
@@ -205,7 +220,7 @@ class BaseTable(metaclass=ABCMeta):
             rep += "{0:>{width}}|".format(v, width=width)
         return rep
 
-    def info_contents(self):
+    def info_contents(self) -> str:
         "Return a description of the contents of this table"
         length = self.last_id + 1  # len(self)
         rep = ""
@@ -237,22 +252,22 @@ class BaseTable(metaclass=ABCMeta):
                 rep += self.info_row(row, width)
         return rep
 
-    def index_to_mask(self):
+    def index_to_mask(self) -> np.ndarray:
         return np.array(((elt in self.index) for elt in range(self.last_id + 1)))
 
-    def index_to_array(self):
+    def index_to_array(self) -> np.ndarray:
         return np.array(self.index, dtype="int32")
 
     def __iter__(self):
         return iter(self._columndict.keys())
 
     @property
-    def size(self):
+    def size(self) -> int:
         "Return the size of this table, which is the number of rows"
         return self.nrow
 
     @property
-    def is_identity(self):
+    def is_identity(self) -> bool:
         "Return True if the index is using the identity mapping"
         sl = self.index.to_slice_maybe()
         if not isinstance(sl, slice):
@@ -261,18 +276,20 @@ class BaseTable(metaclass=ABCMeta):
         return sl.start == 0
 
     @property
-    def last_id(self):
+    def last_id(self) -> int:
         "Return the last id of this table"
         # if not self._index:
         #    assert self._last_id == -1
+        assert self._base
         return self._base.last_id
 
     @property
-    def last_xid(self):
+    def last_xid(self) -> int:
         "Return the last eXisting id of this table"
+        assert self._base
         return self._base.last_xid  # only for refreshing self._last_id
 
-    def width(self, colnames=None):
+    def width(self, colnames=None) -> int:
         """Return the number of effective width (number of columns) of the table
 
         Since a column can be multidimensional, the effective width of a table
@@ -293,27 +310,29 @@ class BaseTable(metaclass=ABCMeta):
         return width
 
     @property
-    def shape(self):
+    def shape(self) -> Tuple[int, int]:
         "Return the shape of this table as if it were a numpy array"
         return self.size, self.width()
 
-    def to_json(self, **kwds):
+    def to_json(self, **kwds) -> Union[List, Dict[str, Any]]:
         "Return a dictionary describing the contents of this columns."
         return self.to_dict(**kwds)
 
-    def make_col_view(self, col, index):
+    def make_col_view(self, col: BaseColumn, index) -> BaseColumn:
         from .column_selected import ColumnSelectedView
 
         return ColumnSelectedView(base=col, index=index, name=col.name)
 
-    def make_projection(self, cols, index):
+    def make_projection(
+        self, cols: Optional[List[BaseColumn]], index
+    ) -> Tuple[List[BaseColumn], Dict[str, int]]:
         dict_ = self._make_columndict_projection(cols)
         columns = [
             self.make_col_view(c, index)
             for (i, c) in enumerate(self._columns)
             if i in dict_.values()
         ]
-        columndict = OrderedDict(zip(dict_.keys(), range(len(dict_))))
+        columndict = dict(zip(dict_.keys(), range(len(dict_))))
         return columns, columndict
 
     def _make_columndict_projection(self, cols):
@@ -322,7 +341,7 @@ class BaseTable(metaclass=ABCMeta):
         if isinstance(cols, slice):
             assert is_int(cols.start)  # for the moment ...
             nsl = norm_slice(cols, stop=len(self._columndict))
-            return OrderedDict(
+            return dict(
                 {
                     k: v
                     for (i, (k, v)) in enumerate(self._columndict.items())
@@ -333,7 +352,7 @@ class BaseTable(metaclass=ABCMeta):
             cols = [cols]
         if is_iterable(cols):
             if all_int(cols):
-                return OrderedDict(
+                return dict(
                     {
                         k: v
                         for (i, (k, v)) in enumerate(self._columndict.items())
@@ -341,12 +360,12 @@ class BaseTable(metaclass=ABCMeta):
                     }
                 )
             if all_string(cols):
-                return OrderedDict(
-                    {k: v for (k, v) in self._columndict.items() if k in cols}
-                )
+                return dict({k: v for (k, v) in self._columndict.items() if k in cols})
         raise ValueError(f"Invalid column projection {cols}")
 
-    def to_dict(self, orient="dict", columns=None):
+    def to_dict(
+        self, orient: str = "dict", columns: Optional[List[str]] = None
+    ) -> Union[List, Dict[str, Any]]:
         # pylint: disable=too-many-branches
         """
         Return a dictionary describing the contents of this columns.
@@ -358,10 +377,12 @@ class BaseTable(metaclass=ABCMeta):
         columns : list or `None`
             TODO
         """
+        ret: Dict
+        ret2: List[Any]
         if columns is None:
             columns = self.columns
         if orient == "dict":
-            ret = OrderedDict()
+            ret = dict()
             for name in columns:
                 col = self[name]
                 ret[name] = {
@@ -369,7 +390,7 @@ class BaseTable(metaclass=ABCMeta):
                 }  # because a custom JSONEncoder cannot fix it
             return ret
         if orient == "list":
-            ret = OrderedDict()
+            ret = dict()
             for name in columns:
                 col = self[name]
                 ret[name] = col.tolist()
@@ -387,35 +408,37 @@ class BaseTable(metaclass=ABCMeta):
             return ret
         if orient == "datatable":
             # not a pandas compliant mode but useful for JS DataTable
-            ret = []
+            ret2 = []
             for i in self.index:
                 line = [i]
                 for name in columns:
                     col = self[name]
                     line.append(remove_nan(get_physical_base(col).loc[i]))
-                ret.append(line)
-            return ret
+                ret2.append(line)
+            return ret2
         if orient in ("rows", "records"):
-            ret = []
+            ret2 = []
             for i in self.index:
-                line = OrderedDict()
+                line2 = {}
                 for name in columns:
                     col = self[name]
-                    line[name] = get_physical_base(col).loc[i]
-                ret.append(line)
-            return ret
+                    line2[name] = get_physical_base(col).loc[i]
+                ret2.append(line2)
+            return ret2
         if orient == "index":
-            ret = OrderedDict()
+            ret = dict()
             for id_ in self.index:
-                line = {}
+                line2 = {}
                 for name in columns:
                     col = self[name]
-                    line[name] = col.loc[id_]
-                ret[int(id_)] = line
+                    line2[name] = col.loc[id_]
+                ret[int(id_)] = line2
             return ret
         raise ValueError(f"to_dict({orient}) not implemented")
 
-    def to_csv(self, filename, columns=None, sep=","):  # TODO: to be improved
+    def to_csv(
+        self, filename: str, columns: Optional[List[str]] = None, sep: str = ","
+    ) -> None:  # TODO: to be improved
         if columns is None:
             columns = self.columns
         with open(filename, "wb") as f:
@@ -424,11 +447,12 @@ class BaseTable(metaclass=ABCMeta):
                 for name in columns:
                     col = self[name]
                     row.append(str(remove_nan(get_physical_base(col).loc[i])))
-                row = sep.join(row)
-                f.write(row.encode("utf-8"))
+                f.write(sep.join(row).encode("utf-8"))
                 f.write(b"\n")
 
-    def column_offsets(self, columns, shapes=None):
+    def column_offsets(
+        self, columns: List[BaseColumn], shapes: Optional[List[Tuple[int, int]]] = None
+    ) -> List[int]:
         """Return the offsets of each column considering columns can have
         multiple dimensions
         """
@@ -447,22 +471,22 @@ class BaseTable(metaclass=ABCMeta):
         return offsets
 
     @property
-    def columns(self):
+    def columns(self) -> List[str]:
         "Return the list of column names in this table"
         return list(self._columndict.keys())
 
-    def _column(self, name):
+    def _column(self, name: ColIndexer) -> BaseColumn:
         if isinstance(name, integer_types):
             return self._columns[name]
         return self._columns[self._columndict[name]]
 
-    def column_index(self, name):
+    def column_index(self, name: Union[str, int]) -> int:
         "Return the index of the specified column in this table"
         if isinstance(name, integer_types):
             return name
         return self._columndict[name]
 
-    def index_to_id(self, ix):
+    def index_to_id(self, ix) -> Any:
         """Return the ids of the specified indices
         NB: useless for this implementation. kept for compat.
         Parameters
@@ -478,7 +502,7 @@ class BaseTable(metaclass=ABCMeta):
         locs = self._any_to_bitmap(ix)
         return locs
 
-    def id_to_index(self, loc, as_slice=True):
+    def id_to_index(self, loc: _Loc, as_slice=True) -> Any:
         # to be reimplemented with LRU-dict+pyroaring
         """Return the indices of the specified id or ids
         NB: useless for this implementation. kept for compat.
@@ -510,12 +534,12 @@ class BaseTable(metaclass=ABCMeta):
         return self._compute_index()
 
     @property
-    def ncol(self):
+    def ncol(self) -> int:
         "Return the number of columns (same as `len(table.columns()`)"
         return len(self._columns)
 
     @property
-    def nrow(self):
+    def nrow(self) -> int:
         "Return the number of rows (same as `len(table)`)"
         return len(self.index)
 
@@ -545,35 +569,35 @@ class BaseTable(metaclass=ABCMeta):
         raise KeyError(f"Invalid type {type(locs)} for key {locs}")
 
     @property
-    def name(self):
+    def name(self) -> str:
         "Return the name of this table"
         return "anonymous"
 
     @property
-    def dshape(self):
+    def dshape(self) -> DataShape:
         "Return the datashape of this table"
         return self._dshape
 
     @property
-    def base(self):
+    def base(self) -> Optional[BaseTable]:
         "Return the base table for views, or None if the table is not a view"
         return self._base
 
     @property
-    def changes(self):
+    def changes(self) -> Optional[TableChanges]:
         "Return the TableChange manager associated with this table or None"
         return self._changes
 
     @changes.setter
-    def changes(self, tablechange):
+    def changes(self, tablechange: Optional[TableChanges]):
         "Set the TableChange manager, or unset with None"
         self._changes = tablechange
 
-    def reset_updates(self, mid):
+    def reset_updates(self, mid: str):
         if self._changes:
             self._changes.reset(mid)
 
-    def compute_updates(self, start, now, mid, cleanup=True):
+    def compute_updates(self, start: int, now: int, mid: str, cleanup=True):
         """Compute the updates (delta) that happened to this table since the last call.
 
         Parameters
@@ -594,11 +618,11 @@ class BaseTable(metaclass=ABCMeta):
             self._flush_cache()
             updates = self._changes.compute_updates(start, now, mid, cleanup=cleanup)
             if updates is None:
-                updates = IndexUpdate(created=bitmap(self._index))
+                updates = IndexUpdate(created=self.index)
             return updates
         return None
 
-    def __getitem__(self, key):
+    def __getitem__(self, key: Indexer):
         # hack, use t[['a', 'b'], 1] to get a list instead of a TableView
         fast = False
         if isinstance(key, tuple):
@@ -609,8 +633,9 @@ class BaseTable(metaclass=ABCMeta):
         elif isinstance(key, Iterable):
             if fast:
                 return (self._column(c) for c in key)
-            if all_bool(key):
-                return self.iloc[key]
+            # Old code, hoping it does not break anything
+            # if all_bool(key):
+            #     return self.iloc[key]
         elif isinstance(key, slice):
             if fast:
                 indices = self._col_slice_to_indices(key)
@@ -625,7 +650,7 @@ class BaseTable(metaclass=ABCMeta):
         "Return an iterator returning rows and their ids"
         return map(self.row, iter(self._index))
 
-    def last(self, key=None):
+    def last(self, key: Optional[Indexer] = None):
         "Return the last row"
         length = len(self)
         if length == 0:
@@ -641,14 +666,14 @@ class BaseTable(metaclass=ABCMeta):
             return (self._column(c)[index] for c in key)
         raise ValueError('last not implemented for key "%s"' % key)
 
-    def __delitem__(self, key):
+    def __delitem__(self, key: Indexer) -> None:
         bm = self._any_to_bitmap(key, fix_loc=False, existing_only=False)
         if not bm:
             return
         # if not (bm in self.index or isinstance(key, slice)):
         #    raise ValueError('Invalid locs')
         if isinstance(key, slice):
-            if not (bm.min() in self._index and bm.max() in self._selection):
+            if not (bm.min() in self.index and bm.max() in self._selection):
                 raise ValueError("Invalid locs")  # when key is a slice we accept holes
         elif bm not in self.index:  # when key is not a slice it must be exhaustive
             raise ValueError("Invalid locs")
@@ -666,7 +691,9 @@ class BaseTable(metaclass=ABCMeta):
         else:
             raise ValueError("Unhandled key %s", colkey)
 
-    def __setitem__(self, colkey, values):
+    def __setitem__(
+        self, colkey: Union[ColIndexer, Iterable, slice], values: Any
+    ) -> None:
         if isinstance(colkey, tuple):
             raise ValueError(
                 "Adding new columns ({}) via __setitem__"
@@ -684,7 +711,7 @@ class BaseTable(metaclass=ABCMeta):
         else:
             raise ValueError("Unhandled key %s", colkey)
 
-    def _setitem_key(self, colkey, rowkey, values):
+    def _setitem_key(self, colkey: ColIndexer, rowkey: Indexer, values: Any):
         if is_none_alike(rowkey) and len(values) != len(self):
             raise ValueError(
                 "Length of values (%d) different "
@@ -696,7 +723,7 @@ class BaseTable(metaclass=ABCMeta):
         else:
             column[rowkey] = values
 
-    def _setitem_iterable(self, colkey, rowkey, values):
+    def _setitem_iterable(self, colkey: Iterable, rowkey, values):
         # pylint: disable=too-many-branches
         colnames = list(colkey)
         len_colnames = len(colnames)
@@ -739,7 +766,7 @@ class BaseTable(metaclass=ABCMeta):
                 else:
                     column[rowkey] = values[i]
 
-    def _col_slice_to_indices(self, colkey):
+    def _col_slice_to_indices(self, colkey: slice) -> range:
         if isinstance(colkey.start, str):
             start = self.column_index(colkey.start)
             end = self.column_index(colkey.stop)
@@ -750,7 +777,7 @@ class BaseTable(metaclass=ABCMeta):
         indices = self._col_slice_to_indices(colkey)
         self._setitem_iterable(indices, rowkey, values)
 
-    def columns_common_dtype(self, columns=None):
+    def columns_common_dtype(self, columns: List[str] = None) -> np.dtype:
         """Return the dtype that BaseTable.to_array would return.
 
         Parameters
@@ -819,14 +846,14 @@ class BaseTable(metaclass=ABCMeta):
         # get() is cheaper than pop(), it avoids to update unused kwargs
         keepdims = kwargs.get("keepdims", False)
         # ignore other kwargs, maybe raise error in the future
-        res = OrderedDict()
+        res = dict()
         for col in self._columns:
             value = op(col.values, axis=axis, keepdims=keepdims)
             res[col.name] = value
         return res
 
     def raw_unary(self, op, **kwargs):
-        res = OrderedDict()
+        res = dict()
         for col in self._columns:
             value = op(col.values, **kwargs)
             res[col.name] = value
@@ -835,7 +862,7 @@ class BaseTable(metaclass=ABCMeta):
     def binary(self, op, other, **kwargs):
         axis = kwargs.pop("axis", 0)
         assert axis == 0
-        res = OrderedDict()
+        res = dict()
         isscalar = np.isscalar(other) or isinstance(other, np.ndarray)
         for col in self._columns:
             name = col.name
@@ -1176,9 +1203,14 @@ class IndexTable(BaseTable):
 
 class TableSelectedView(BaseTable):
     def __init__(
-        self, base=None, selection=slice(0, None), columns=None, columndict=None
+        self,
+        base: Optional[BaseTable] = None,
+        selection: Union[bitmap, slice] = slice(0, None),
+        columns: Optional[List[BaseColumn]] = None,
+        columndict: Dict[str, int] = None,
     ):
         super().__init__(base, selection, columns, columndict)
+        assert self._base
         columns, columndict = self._base.make_projection(columns, self)
         self._columns = columns
         self._columndict = columndict
@@ -1189,11 +1221,11 @@ class TableSelectedView(BaseTable):
         )
 
     @property
-    def selection(self):
+    def selection(self) -> bitmap:
         return bitmap(self._selection)
 
     @selection.setter
-    def selection(self, sel):
+    def selection(self, sel: Union[bitmap, slice]):
         if isinstance(sel, bitmap):
             self._selection = sel[:]
         elif isinstance(sel, slice):

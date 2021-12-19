@@ -47,8 +47,7 @@ class BisectImpl(ModuleImpl):
         self._hist_index = hist_index
         self.result = None
 
-    def resume(self, limit, limit_changed,
-               created=None, updated=None, deleted=None):
+    def resume(self, limit, limit_changed, created=None, updated=None, deleted=None):
         if limit_changed:
             new_sel = self._hist_index.query(self._op, limit)
             self.result.assign(new_sel)
@@ -63,8 +62,9 @@ class BisectImpl(ModuleImpl):
         if deleted:
             self.result.remove(deleted)
 
-    def start(self, table, limit, limit_changed,
-              created=None, updated=None, deleted=None):
+    def start(
+        self, table, limit, limit_changed, created=None, updated=None, deleted=None
+    ):
         self._table = table
         self.result = _Selection()
         self.is_started = True
@@ -74,33 +74,33 @@ class BisectImpl(ModuleImpl):
 class Bisect(TableModule):
     """
     """
+
     parameters = [
-        ('column', str, "unknown"),
-        ('op', str, ">"),
+        ("column", str, "unknown"),
+        ("op", str, ">"),
         ("limit_key", str, ""),
         # ('hist_index', object, None) # to improve ...
     ]
     inputs = [
-        SlotDescriptor('table', type=Table, required=True),
-        SlotDescriptor('limit', type=Table, required=False)
+        SlotDescriptor("table", type=Table, required=True),
+        SlotDescriptor("limit", type=Table, required=False),
     ]
 
     def __init__(self, hist_index=None, **kwds):
         super(Bisect, self).__init__(**kwds)
-        self._impl = BisectImpl(self.params.column,
-                                self.params.op, hist_index)
+        self._impl = BisectImpl(self.params.column, self.params.op, hist_index)
         self.default_step_size = 1000
         self._run_once = False
 
     def run_step(self, run_number, step_size, howlong):
         self._run_once = True
-        input_slot = self.get_input_slot('table')
+        input_slot = self.get_input_slot("table")
         # input_slot.update(run_number)
         steps = 0
         deleted = None
         if input_slot.deleted.any():
             deleted = input_slot.deleted.next()
-            steps += 1 #indices_len(deleted)
+            steps += 1  # indices_len(deleted)
         created = None
         if input_slot.created.any():
             created = input_slot.created.next(step_size)
@@ -117,7 +117,7 @@ class Bisect(TableModule):
         if steps == 0:
             return self._return_run_step(self.state_blocked, steps_run=0)
         param = self.params
-        limit_slot = self.get_input_slot('limit')
+        limit_slot = self.get_input_slot("limit")
         # limit_slot.update(run_number)
         limit_changed = False
         if limit_slot.deleted.any():
@@ -135,14 +135,21 @@ class Bisect(TableModule):
         else:
             limit_value = limit_slot.data().last()[0]
         if not self._impl.is_started:
-            self._impl.start(input_table, limit_value, limit_changed,
-                             created=created,
-                             updated=updated,
-                             deleted=deleted)
+            self._impl.start(
+                input_table,
+                limit_value,
+                limit_changed,
+                created=created,
+                updated=updated,
+                deleted=deleted,
+            )
         else:
-            self._impl.resume(limit_value, limit_changed,
-                              created=created,
-                              updated=updated,
-                              deleted=deleted)
+            self._impl.resume(
+                limit_value,
+                limit_changed,
+                created=created,
+                updated=updated,
+                deleted=deleted,
+            )
         self.result.selection = self._impl.result._values
         return self._return_run_step(self.next_state(input_slot), steps)

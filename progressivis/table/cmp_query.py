@@ -1,4 +1,3 @@
-
 import operator
 import logging
 
@@ -11,22 +10,25 @@ from .table import Table
 
 logger = logging.getLogger(__name__)
 
-ops = {"<":   operator.__lt__,
-       "<=":  operator.__le__,
-       ">":   operator.__gt__,
-       ">=":  operator.__ge__,
-       "and": operator.__and__,
-       "or":  operator.__or__,
-       "xor": operator.__xor__,
-       "==":  operator.__eq__,
-       "!=":  operator.__ne__
-       }
+ops = {
+    "<": operator.__lt__,
+    "<=": operator.__le__,
+    ">": operator.__gt__,
+    ">=": operator.__ge__,
+    "and": operator.__and__,
+    "or": operator.__or__,
+    "xor": operator.__xor__,
+    "==": operator.__eq__,
+    "!=": operator.__ne__,
+}
 
 
 class CmpQueryLast(TableModule):
-    inputs = [SlotDescriptor('table', type=Table, required=True),
-              SlotDescriptor('cmp', type=Table, required=True)]
-    outputs = [SlotDescriptor('select', type=bitmap, required=False)]
+    inputs = [
+        SlotDescriptor("table", type=Table, required=True),
+        SlotDescriptor("cmp", type=Table, required=True),
+    ]
+    outputs = [SlotDescriptor("select", type=bitmap, required=False)]
 
     def __init__(self, op="<", combine="and", **kwds):
         super(CmpQueryLast, self).__init__(**kwds)
@@ -38,25 +40,27 @@ class CmpQueryLast(TableModule):
         self._bitmap = None
 
     def get_data(self, name):
-        if name == 'select':
+        if name == "select":
             return self._bitmap
-        if name == 'table':
-            self.get_input_slot('table').data()
+        if name == "table":
+            self.get_input_slot("table").data()
         return super(CmpQueryLast, self).get_data(name)
 
     def run_step(self, run_number, step_size, howlong):
-        table_slot = self.get_input_slot('table')
+        table_slot = self.get_input_slot("table")
         # table_slot.update(run_number)
         table_data = table_slot.data()
-        cmp_slot = self.get_input_slot('cmp')
+        cmp_slot = self.get_input_slot("cmp")
         # cmp_slot.update(run_number)
         cmp_slot.clear_buffers()
         cmp_data = cmp_slot.data()
 
-        if table_data is None \
-           or len(table_data) == 0 \
-           or cmp_data is None \
-           or len(cmp_data) == 0:
+        if (
+            table_data is None
+            or len(table_data) == 0
+            or cmp_data is None
+            or len(cmp_data) == 0
+        ):
             # nothing to do if no filter is specified
             self._bitmap = None
             return self._return_run_step(self.state_blocked, steps_run=1)
@@ -99,5 +103,4 @@ class CmpQueryLast(TableModule):
             self._bitmap -= bitmap(indices)
             self._bitmap |= results
 
-        return self._return_run_step(self.next_state(table_slot),
-                                     steps_run=steps)
+        return self._return_run_step(self.next_state(table_slot), steps_run=steps)

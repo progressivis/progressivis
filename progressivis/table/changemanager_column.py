@@ -11,20 +11,24 @@ class ColumnChangeManager(BaseChangeManager):
     """
     Manage changes that occured in a Column between runs.
     """
-    def __init__(self,
-                 slot,
-                 buffer_created=True,
-                 buffer_updated=False,
-                 buffer_deleted=False,
-                 buffer_exposed=False,
-                 buffer_masked=False):
+
+    def __init__(
+        self,
+        slot,
+        buffer_created=True,
+        buffer_updated=False,
+        buffer_deleted=False,
+        buffer_exposed=False,
+        buffer_masked=False,
+    ):
         super(ColumnChangeManager, self).__init__(
             slot,
             buffer_created,
             buffer_updated,
             buffer_deleted,
             buffer_exposed,
-            buffer_masked)
+            buffer_masked,
+        )
         data = slot.data()
         if data.changes is None:
             data.changes = TableChanges()
@@ -35,10 +39,9 @@ class ColumnChangeManager(BaseChangeManager):
             return
         changes = data.compute_updates(self._last_update, run_number, mid)
         self._last_update = run_number
-        self._row_changes.combine(changes,
-                                  self.created.buffer,
-                                  self.updated.buffer,
-                                  self.deleted.buffer)
+        self._row_changes.combine(
+            changes, self.created.buffer, self.updated.buffer, self.deleted.buffer
+        )
 
 
 Slot.add_changemanager_type(BaseColumn, ColumnChangeManager)

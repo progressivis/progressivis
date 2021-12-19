@@ -1,8 +1,10 @@
 "Proxy for column"
 from .column_base import BaseColumn
 
+
 class ColumnProxy(BaseColumn):
     "Proxy class for a column"
+
     def __init__(self, base, index=None, name=None):
         super(ColumnProxy, self).__init__(name, base=base, index=index)
 
@@ -18,7 +20,7 @@ class ColumnProxy(BaseColumn):
         self._base.set_shape(shape)
 
     def __delitem__(self, index):
-        raise RuntimeError('Cannot delete in %s'%type(self))
+        raise RuntimeError("Cannot delete in %s" % type(self))
 
     @property
     def maxshape(self):

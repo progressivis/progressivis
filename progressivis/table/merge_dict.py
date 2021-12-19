@@ -15,17 +15,20 @@ class MergeDict(TableModule):
     Args:
         kwds : argument to pass to the join function
     """
-    inputs = [SlotDescriptor('first', type=PsDict, required=True),
-              SlotDescriptor('second', type=PsDict, required=True)]
+
+    inputs = [
+        SlotDescriptor("first", type=PsDict, required=True),
+        SlotDescriptor("second", type=PsDict, required=True),
+    ]
 
     def __init__(self, **kwds):
         super().__init__(**kwds)
         self._dialog = Dialog(self)
 
     def run_step(self, run_number, step_size, howlong):
-        first_slot = self.get_input_slot('first')
+        first_slot = self.get_input_slot("first")
         # first_slot.update(run_number)
-        second_slot = self.get_input_slot('second')
+        second_slot = self.get_input_slot("second")
         first_dict = first_slot.data()
         second_dict = second_slot.data()
         if first_dict is None or second_dict is None:

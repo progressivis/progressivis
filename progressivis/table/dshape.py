@@ -1,22 +1,25 @@
-import datashape as ds
+import datashape as ds  # type: ignore
+from datashape import DataShape  # type: ignore
 import pandas as pd
 import numpy as np
 from progressivis.core.utils import integer_types, gen_columns
 
+from typing import Union, Tuple, Dict, Any, List, Optional
 
-def dshape_print(dshape):
+
+def dshape_print(dshape: Union[DataShape, ds.Record, ds.Tuple, str]) -> str:
     return ds.pprint(dshape, 1000000)
 
 
-def dshape_fields(dshape):
+def dshape_fields(dshape: DataShape) -> Tuple:
     return dshape[0].fields
 
 
-def dshape_table_check(dshape):
+def dshape_table_check(dshape: DataShape):
     return len(dshape) == 1 and isinstance(dshape[0], ds.Record)
 
 
-def dshape_create(x):
+def dshape_create(x: Union[DataShape, str, ds.Mono, list, tuple]) -> DataShape:
     "Create a datashape, maybe check later to limit to known types."
     return ds.dshape(x)
 
@@ -28,22 +31,22 @@ def dshape_comp_to_shape(x, var):
         return int(x)
 
 
-def dshape_to_shape(dshape, var=None):
+def dshape_to_shape(dshape: DataShape, var=None):
     return [dshape_comp_to_shape(x, var) for x in dshape.shape]
 
 
-OBJECT = np.dtype('O')
+OBJECT = np.dtype("O")
 VSTRING = OBJECT
 
 
-def dshape_to_h5py(dshape):
+def dshape_to_h5py(dshape: DataShape) -> str:
     dtype = dshape.measure.to_numpy_dtype()
     if dtype == OBJECT:
-        return VSTRING
+        return VSTRING.str
     return dtype.str
 
 
-def dshape_from_dtype(dtype):
+def dshape_from_dtype(dtype: np.dtype) -> str:
     if dtype is str:
         return "string"
     if dtype is object:
@@ -55,17 +58,17 @@ def dshape_from_dtype(dtype):
     return ds.CType.from_numpy_dtype(dtype)
 
 
-def dshape_extract(data, columns=None):
+def dshape_extract(data, columns=None) -> Optional[DataShape]:
     if data is None:
         return None
-    if hasattr(data, 'dshape'):
+    if hasattr(data, "dshape"):
         return data.dshape
     if isinstance(data, np.ndarray):
         dshape = dshape_from_dtype(data.dtype)
         if columns is None:
             columns = gen_columns(len(data))
         dshapes = ["%s: %s" % (column, dshape) for column in columns]
-        return "{" + ", ".join(dshapes)+"}"
+        return ds.dshape("{" + ", ".join(dshapes) + "}")
     if isinstance(data, pd.DataFrame):
         return dshape_from_dataframe(data)
     if isinstance(data, dict):
@@ -73,44 +76,42 @@ def dshape_extract(data, columns=None):
     return None
 
 
-def dshape_projection(table, columns=None, names=None):
+def dshape_projection(table, columns=None, names=None) -> DataShape:
     if columns is None and names is None:
         return table.dshape
-    dshapes = []
+    dshapes: List[str] = []
     if names is None:
         names = columns
     assert len(columns) == len(names)
     for colname, newname in zip(columns, names):
         col = table._column(colname)
         if len(col.shape) > 1:
-            dshapes.append("%s: %d * %s" %
-                           (newname, col.shape[1], col.dshape))
+            dshapes.append("%s: %d * %s" % (newname, col.shape[1], col.dshape))
         else:
             dshapes.append("%s: %s" % (newname, col.dshape))
-    return "{" + ",".join(dshapes)+"}"
+    return ds.dshape("{" + ",".join(dshapes) + "}")
 
 
-def dshape_from_columns(table, columns, dshape):
-    dshapes = []
+def dshape_from_columns(table, columns, dshape) -> DataShape:
+    dshapes: List[str] = []
     for colname in columns:
         col = table._column(colname)
         if len(col.shape) > 1:
-            dshapes.append("%s: %d * %s" %
-                           (col.name, col.shape[1], dshape))
+            dshapes.append("%s: %d * %s" % (col.name, col.shape[1], dshape))
         else:
             dshapes.append("%s: %s" % (col.name, dshape))
-    return "{" + ",".join(dshapes)+"}"
+    return ds.dshape("{" + ",".join(dshapes) + "}")
 
 
-def dataframe_dshape(dtype):
+def dataframe_dshape(dtype) -> str:
     if dtype == OBJECT:
         return "string"
     else:
         return dtype
 
 
-def np_dshape(v, skip=1):
-    dshape = None
+def np_dshape(v, skip=1) -> str:
+    dshape: str
     if isinstance(v, np.ndarray):
         if v.dtype == OBJECT:
             dshape = "string"
@@ -130,41 +131,41 @@ def np_dshape(v, skip=1):
         elif isinstance(e, np.ndarray):
             dshape = np_dshape(e, skip=0)  # recursive call
         else:
-            raise ValueError('unknown dshape for %s' % v)
+            raise ValueError("unknown dshape for %s" % v)
     return dshape
 
 
-def dshape_from_dict(d):
+def dshape_from_dict(d: Dict[str, Any]) -> DataShape:
     shape = ",".join(["%s: %s" % (c, np_dshape(d[c])) for c in d])
-    return ds.dshape("{"+shape+"}")
+    return ds.dshape("{" + shape + "}")
 
 
-def dshape_from_pytable(pt):
+def dshape_from_pytable(pt) -> DataShape:
     shape = ",".join(["{}: {}".format(c, pt.coltypes[c]) for c in pt.colnames])
-    return ds.dshape("{"+shape+"}")
+    return ds.dshape("{" + shape + "}")
 
 
-def dshape_from_dataframe(df):
+def dshape_from_dataframe(df: pd.DataFrame) -> DataShape:
     columns = df.columns
     if columns.dtype == np.int64:
-        shape = ",".join(["_%s:%s" % (df[c].name,
-                                      dataframe_dshape(df[c].dtype))
-                          for c in df])
+        shape = ",".join(
+            ["_%s:%s" % (df[c].name, dataframe_dshape(df[c].dtype)) for c in df]
+        )
     else:
-        shape = ",".join(["%s:%s" % (df[c].name,
-                                     dataframe_dshape(df[c].dtype))
-                          for c in df])
-    return ds.dshape("{"+shape+"}")
+        shape = ",".join(
+            ["%s:%s" % (df[c].name, dataframe_dshape(df[c].dtype)) for c in df]
+        )
+    return ds.dshape("{" + shape + "}")
 
 
-def array_dshape(df, array_col):
+def array_dshape(df, array_col) -> DataShape:
     if isinstance(df, np.ndarray):
         shape = dataframe_dshape(df.dtype)
         length = df.shape[1]
     else:
         col_dshapes = set([dataframe_dshape(df[c].dtype) for c in df])
         if len(col_dshapes) != 1:
-            raise ValueError('All column must have the same data type')
+            raise ValueError("All column must have the same data type")
         shape = col_dshapes.pop()
         length = len(df.columns)
     if length == 1:
@@ -175,23 +176,27 @@ def array_dshape(df, array_col):
 
 # myds = dshape("{a: int, b: float32, c: string, d:string, e:string, f:int32, g:float32}")
 # get_projection_dshape(myds, [2,4,6])
-def get_projection_dshape(dshape_, projection_ix):
-    shape = ",".join(["{arg[0]}:{arg[1]}".format(arg=dshape_[0].fields[elt])
-                      for elt in projection_ix])
-    return ds.dshape("{"+shape+"}")
+def get_projection_dshape(dshape_, projection_ix) -> DataShape:
+    shape = ",".join(
+        [
+            "{arg[0]}:{arg[1]}".format(arg=dshape_[0].fields[elt])
+            for elt in projection_ix
+        ]
+    )
+    return ds.dshape("{" + shape + "}")
 
 
-#get_projection_dshape_with_keys(myds, ['c','e','g'])
-def get_projection_dshape_with_keys(dshape_, projection_keys):
+# get_projection_dshape_with_keys(myds, ['c','e','g'])
+def get_projection_dshape_with_keys(dshape_, projection_keys) -> DataShape:
     dict_ = {k: ix for ix, (k, _) in enumerate(dshape_[0].fields)}
-    return get_projection_dshape(dshape_,
-                                 [dict_[key] for key in projection_keys])
+    return get_projection_dshape(dshape_, [dict_[key] for key in projection_keys])
 
 
-def dshape_compatible(ds1, ds2):
+def dshape_compatible(ds1: DataShape, ds2: DataShape):
     # TODO fixme
-    assert isinstance(ds1, ds.DataShape) and isinstance(ds2, ds.DataShape)
+    assert isinstance(ds1, DataShape) and isinstance(ds2, DataShape)
     return True
+
 
 #
 # left = ds.dshape("{a: int, b: float32, c: string, d:string, e:string, f:int32, g:float32}")
@@ -204,10 +209,12 @@ def dshape_compatible(ds1, ds2):
 # dshape_join(left2, right2)
 
 
-def dshape_join(left, right, lsuffix='', rsuffix=''):
+def dshape_join(
+    left: DataShape, right: DataShape, lsuffix="", rsuffix=""
+) -> Tuple[DataShape, Dict[str, Dict]]:
     res = []
-    rename = {'left': {}, 'right': {}}
-    suffix = {'left': lsuffix, 'right': rsuffix}
+    rename: Dict[str, Dict] = {"left": {}, "right": {}}
+    suffix = {"left": lsuffix, "right": rsuffix}
     left_cols = left[0].fields
     left_keys, _ = zip(*left_cols)
     left_keys = set(left_keys)
@@ -220,18 +227,18 @@ def dshape_join(left, right, lsuffix='', rsuffix=''):
     len_left = len(left_keys)
     all_cols = left_cols + right_cols
     for i, (cname, ctype) in enumerate(all_cols):
-        side = 'left' if i < len_left else 'right'
+        side = "left" if i < len_left else "right"
         if cname in inter_keys and suffix[side]:
             alias = cname + suffix[side]
             rename[side][cname] = alias
         else:
             alias = cname
         res.append((alias, ctype))
-    res = '{'+",".join(["{}: {}".format(f, t) for f, t in res])+'}'
-    return ds.dshape(res), rename
+    ret = "{" + ",".join(["{}: {}".format(f, t) for f, t in res]) + "}"
+    return ds.dshape(ret), rename
 
 
-def dshape_union(left, right):
+def dshape_union(left: DataShape, right: DataShape) -> DataShape:
     res = []
     left_dict = dict(left[0].fields)
     left_keys = set(left_dict.keys())
@@ -242,9 +249,13 @@ def dshape_union(left, right):
         # ctype = left_dict.get(key, right_dict[key]) # nice bug!
         ctype = left_dict[key] if key in left_dict else right_dict[key]
         res.append((key, ctype))
-    return '{'+",".join(["{}: {}".format(f, t) for f, t in res])+'}'
+    return ds.dshape("{" + ",".join(["{}: {}".format(f, t) for f, t in res]) + "}")
 
-def dshape_all_dtype(columns, dtype):
+
+def dshape_all_dtype(columns: List[str], dtype: np.dtype):
     dshape = dshape_from_dtype(dtype)
     dshapes = ["%s: %s" % (column, dshape) for column in columns]
-    return "{" + ", ".join(dshapes)+"}"
+    return ds.dshape("{" + ", ".join(dshapes) + "}")
+
+
+EMPTY_DSHAPE = ds.dshape("{}")

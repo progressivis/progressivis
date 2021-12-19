@@ -1,4 +1,3 @@
-
 from progressivis.utils.errors import ProgressiveError
 from ..core.utils import indices_len, is_valid_identifier
 from ..core.slot import SlotDescriptor
@@ -7,18 +6,29 @@ from .table import Table
 from ..core.bitmap import bitmap
 
 import logging
+
 logger = logging.getLogger(__name__)
 
 
 class Select(TableModule):
-    inputs = [SlotDescriptor('table', type=Table, required=True,
-                             buffer_created=False,
-                             buffer_updated=True,
-                             buffer_deleted=False),
-              SlotDescriptor('select', type=bitmap, required=True,
-                             buffer_created=True,
-                             buffer_updated=False,
-                             buffer_deleted=True)]
+    inputs = [
+        SlotDescriptor(
+            "table",
+            type=Table,
+            required=True,
+            buffer_created=False,
+            buffer_updated=True,
+            buffer_deleted=False,
+        ),
+        SlotDescriptor(
+            "select",
+            type=bitmap,
+            required=True,
+            buffer_created=True,
+            buffer_updated=False,
+            buffer_deleted=True,
+        ),
+    ]
 
     def __init__(self, **kwds):
         super(Select, self).__init__(**kwds)
@@ -39,7 +49,7 @@ class Select(TableModule):
             return self
         with self.tagged(self.TAG_DEPENDENT):
             scheduler = self.scheduler
-            kwds['scheduler'] = scheduler  # make sure we pass it
+            kwds["scheduler"] = scheduler  # make sure we pass it
             self.input_module = input_module
             self.input_slot = input_slot
 
@@ -58,14 +68,14 @@ class Select(TableModule):
             return select
 
     def run_step(self, run_number, step_size, howlong):
-        table_slot = self.get_input_slot('table')
+        table_slot = self.get_input_slot("table")
         table = table_slot.data()
         # table_slot.update(run_number,
         #                   buffer_created=False,
         #                   buffer_updated=True,
         #                   buffer_deleted=False,
         #                   manage_columns=False)
-        select_slot = self.get_input_slot('select')
+        select_slot = self.get_input_slot("select")
         # select_slot.update(run_number,
         #                    buffer_created=True,
         #                    buffer_updated=False,
@@ -75,20 +85,21 @@ class Select(TableModule):
             if self._columns is None:
                 dshape = table.dshape
             else:
-                cols_dshape = ["%s: %s" % (col, table[col].dshape)
-                               for col in self._columns]
-                dshape = '{' + ",".join(cols_dshape) + '}'
-            self._table = Table(self.generate_table_name(table.name),
-                                dshape=dshape,
-                                create=True)
+                cols_dshape = [
+                    "%s: %s" % (col, table[col].dshape) for col in self._columns
+                ]
+                dshape = "{" + ",".join(cols_dshape) + "}"
+            self._table = Table(
+                self.generate_table_name(table.name), dshape=dshape, create=True
+            )
 
         if select_slot.deleted.any():
-            indices = select_slot.deleted.next(step_size*2, as_slice=False)
+            indices = select_slot.deleted.next(step_size * 2, as_slice=False)
             s = indices_len(indices)
             logger.info("deleting %s", indices)
             del self._table.loc[indices]
-            steps += s//2
-            step_size -= s//2
+            steps += s // 2
+            step_size -= s // 2
 
         if step_size > 0 and select_slot.created.any():
             indices = select_slot.created.next(step_size, as_slice=False)
@@ -129,14 +140,12 @@ class Select(TableModule):
                         idx = table.id_to_index(i)
                         row[c] = table[c][idx]
                     self._table.loc[i] = row
-        return self._return_run_step(self.next_state(select_slot),
-                                     steps_run=steps)
+        return self._return_run_step(self.next_state(select_slot), steps_run=steps)
 
     @staticmethod
     def make_range_query(column, low, high=None):
         if not is_valid_identifier(column):
-            raise ProgressiveError('Cannot use column "%s", invalid name',
-                                   column)
+            raise ProgressiveError('Cannot use column "%s", invalid name', column)
         if high is None or low == high:
             return "({} == {})".format(low, column)
         elif low > high:

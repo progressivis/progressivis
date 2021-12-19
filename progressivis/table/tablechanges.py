@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 class Bookmark(object):
     # pylint: disable=too-few-public-methods
     "Bookmark for changes"
-    __slots__ = ['time', 'refcount', 'update']
+    __slots__ = ["time", "refcount", "update"]
 
     def __init__(self, time, refcount=1, update=None):
         self.time = time
@@ -43,9 +43,9 @@ class TableChanges(BaseChanges):
     # the _times list, giving the index of the time; the Bookmark is at
     # the same index in the _bookmarks list.
     def __init__(self):
-        self._times = []      # list of times sorted
+        self._times = []  # list of times sorted
         self._bookmarks = []  # list of bookmarks synchronized with times
-        self._mid_time = {}   # time associated with last mid update
+        self._mid_time = {}  # time associated with last mid update
 
     def _last_update(self):
         "Return the last delta to update"
@@ -79,7 +79,7 @@ class TableChanges(BaseChanges):
     def _save_time(self, time, mid):
         if mid in self._mid_time:
             # reset
-            logger.debug('Reset received for module %s', mid)
+            logger.debug("Reset received for module %s", mid)
             last_time = self._mid_time[mid]
             i = self._saved_index(last_time)
             assert i != -1
@@ -141,7 +141,7 @@ class TableChanges(BaseChanges):
         # reuse the bookmark
         bookmark = self._bookmarks[i]
         update = bookmark.update
-        update = self._combine_updates(update, i+1)
+        update = self._combine_updates(update, i + 1)
 
         self._unref_bookmark(i)
         del self._mid_time[mid]
@@ -153,7 +153,8 @@ class TableChanges(BaseChanges):
         new_u = IndexUpdate(
             created=bitmap(update.created),
             deleted=bitmap(update.deleted),
-            updated=bitmap(update.updated))
+            updated=bitmap(update.updated),
+        )
 
         last_u = None
         # Since bookmarks can share their update slots,
@@ -171,7 +172,7 @@ class TableChanges(BaseChanges):
         if mid not in self._mid_time:
             return
         # reset
-        logger.debug(f'Reset received for slot {mid}')
+        logger.debug(f"Reset received for slot {mid}")
         last_time = self._mid_time[mid]
         del self._mid_time[mid]
         i = self._saved_index(last_time)

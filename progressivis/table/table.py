@@ -1,35 +1,52 @@
-# -*- coding: utf-8 -*-
 """
 Main Table class
 """
+from __future__ import annotations
+
 from collections import OrderedDict, Mapping
 import logging
 import numpy as np
 import pandas as pd
-import numexpr as ne
-from progressivis.core.utils import (integer_types, get_random_name, slice_to_bitmap,
-                                     all_int, are_instances, gen_columns)
+import numexpr as ne  # type: ignore
+from progressivis.core.utils import (
+    integer_types,
+    get_random_name,
+    slice_to_bitmap,
+    all_int,
+    are_instances,
+    gen_columns,
+)
+
 try:
-    from progressivis.utils.fast import indices_to_slice
+    from progressivis.utils.fast import indices_to_slice  # type: ignore
 except ImportError:
     from progressivis.core.utils import indices_to_slice
 
 from progressivis.storage import Group
-from .dshape import (dshape_create, dshape_table_check, dshape_fields,
-                     dshape_to_shape, dshape_extract, dshape_compatible,
-                     dshape_from_dtype)
+from .dshape import (
+    dshape_create,
+    dshape_table_check,
+    dshape_fields,
+    dshape_to_shape,
+    dshape_extract,
+    dshape_compatible,
+    dshape_from_dtype,
+    EMPTY_DSHAPE,
+)
 from . import metadata
 from .table_base import IndexTable, BaseTable
 from .column import Column
 
-#from .column_id import IdColumn
 from progressivis.core.bitmap import bitmap
+
+from typing import Any, Dict, Optional, Union, cast
+
+
+Index = Any  # simplify for now
 
 logger = logging.getLogger(__name__)
 
 __all__ = ["Table"]
-
-
 
 
 class Table(IndexTable):
@@ -75,60 +92,72 @@ class Table(IndexTable):
         >>> t.columns
         ['a', 'b', 'c']
     """
-    def __init__(self,
-                 name,
-                 data=None,
-                 dshape=None,
-                 fillvalues=None,
-                 storagegroup=None,
-                 chunks=None,
-                 create=None, indices=None):
+
+    def __init__(
+        self,
+        name: str,
+        data: Any = None,
+        dshape: str = None,
+        fillvalues: Dict[str, Any] = None,
+        storagegroup: Optional[Group] = None,
+        chunks: Union[int, Dict[str, int]] = None,
+        create: Optional[bool] = None,
+        indices: Optional[Index] = None,
+    ):
         # pylint: disable=too-many-arguments, too-many-branches
         super(Table, self).__init__()
         if not (fillvalues is None or isinstance(fillvalues, Mapping)):
-            raise ValueError('Invalid fillvalues (%s) should be None or a dictionary'%fillvalues)
+            raise ValueError(
+                "Invalid fillvalues (%s) should be None or a dictionary" % fillvalues
+            )
         if not (chunks is None or isinstance(chunks, (integer_types, Mapping))):
-            raise ValueError('Invalid chunks (%s) should be None or a dictionary'%chunks)
+            raise ValueError(
+                "Invalid chunks (%s) should be None or a dictionary" % chunks
+            )
         if data is not None:
             if create is not None and create is not True:
-                logger.warning('creating a Table with data and create=False')
+                logger.warning("creating a Table with data and create=False")
             create = True
 
         self._chunks = chunks
-        #self._nrow = 0
-        self._name = get_random_name('table_') if name is None else name
+        # self._nrow = 0
+        self._name: str = get_random_name("table_") if name is None else name
         # TODO: attach all randomly named tables to a dedicated, common parent node
         if not (storagegroup is None or isinstance(storagegroup, Group)):
-            raise ValueError('Invalid storagegroup (%s) should be None or a Group'%storagegroup)
+            raise ValueError(
+                "Invalid storagegroup (%s) should be None or a Group" % storagegroup
+            )
         if storagegroup is None:
+            assert Group.default
             storagegroup = Group.default(self._name, create=create)
         if storagegroup is None:
-            raise RuntimeError('Cannot get a valid default storage Group')
+            raise RuntimeError("Cannot get a valid default storage Group")
         self._storagegroup = storagegroup
         if dshape is None:
             if data is None:
-                self._dshape = None
+                self._dshape = EMPTY_DSHAPE
             else:
                 data = self.parse_data(data)
-                self._dshape = dshape_extract(data)
+                self._dshape = dshape_extract(data) or EMPTY_DSHAPE
         else:
             self._dshape = dshape_create(dshape)
             assert dshape_table_check(self._dshape)
-        if create and self._dshape is None:
-            raise ValueError('Cannot create a table without a dshape')
-        if self._dshape is None or (not create and metadata.ATTR_TABLE in self._storagegroup.attrs):
+        if create and self._dshape is EMPTY_DSHAPE:
+            raise ValueError("Cannot create a table without a dshape")
+        if self._dshape is EMPTY_DSHAPE or (
+            not create and metadata.ATTR_TABLE in self._storagegroup.attrs
+        ):
             self._load_table()
         else:
             self._create_table(fillvalues or {})
         if data is not None:
             self.append(data, indices=indices)
 
-
     @property
-    def name(self):
+    def name(self) -> str:
         return self._name
 
-    def _chunks_for(self, name):
+    def _chunks_for(self, name: str) -> Union[None, int, tuple]:
         chunks = self._chunks
         if chunks is None:
             return None
@@ -136,8 +165,8 @@ class Table(IndexTable):
             return chunks
         if name in chunks:
             return chunks[name]
-        if '*' in chunks:
-            return chunks['*']
+        if "*" in chunks:
+            return chunks["*"]
         return None
 
     @property
@@ -145,7 +174,7 @@ class Table(IndexTable):
         "Return the storagegroup form this column"
         return self._storagegroup
 
-    def _load_table(self):
+    def _load_table(self) -> None:
         node = self._storagegroup
         if metadata.ATTR_TABLE not in node.attrs:
             raise ValueError('Group "%s" is not a Table', self.name)
@@ -159,9 +188,7 @@ class Table(IndexTable):
         self._last_id = node.attrs[metadata.ATTR_LAST_ID]
         for (name, dshape) in dshape_fields(self._dshape):
             column = self._create_column(name)
-            column.load_dataset(dshape=dshape,
-                                nrow=nrow,
-                                shape=dshape_to_shape(dshape))
+            column.load_dataset(dshape=dshape, nrow=nrow, shape=dshape_to_shape(dshape))
 
     def _create_table(self, fillvalues):
         node = self.storagegroup
@@ -181,29 +208,16 @@ class Table(IndexTable):
             chunks = self._chunks_for(name)
             # TODO compute chunks according to the shape
             column = self._create_column(name)
-            column.create_dataset(dshape=dshape,
-                                  chunks=chunks,
-                                  fillvalue=fillvalue,
-                                  shape=shape)
+            column.create_dataset(
+                dshape=dshape, chunks=chunks, fillvalue=fillvalue, shape=shape
+            )
 
-    def _create_column(self, name):
+    def _create_column(self, name: str) -> Column:
         column = Column(name, self, storagegroup=self.storagegroup)
         index = len(self._columns)
         self._columndict[name] = index
         self._columns.append(column)
         return column
-
-    @property
-    def dshape(self):
-        return self._dshape
-
-    @property
-    def ncol(self):
-        return len(self._columns)
-
-    #@property
-    #def nrow(self):
-    #    return len(self.index)
 
     def __contains__(self, colname):
         return colname in self._columndict
@@ -213,16 +227,16 @@ class Table(IndexTable):
         self._storagegroup.attrs[metadata.ATTR_INDEX] = self._index.serialize()
         self._storagegroup.attrs[metadata.ATTR_LAST_ID] = self.last_id
 
-    def truncate(self):
+    def truncate(self) -> None:
         if len(self):
-            self.drop(slice(None,None,None), truncate=True)
+            self.drop(slice(None, None, None), truncate=True)
 
     def _resize_rows(self, newsize, index=None):
         super()._resize_rows(newsize, index)
         self._storagegroup.attrs[metadata.ATTR_INDEX] = self._index.serialize()
         self._storagegroup.attrs[metadata.ATTR_LAST_ID] = self.last_id
 
-    def resize(self, newsize=None, index=None):
+    def resize(self, newsize: Optional[int] = None, index: Index = None):
         # NB: newsize means how many active rows the table must contain
         if index is not None:
             index = bitmap.asbitmap(index)
@@ -230,10 +244,11 @@ class Table(IndexTable):
             if newsize < newsize_:
                 print(f"Wrong newsize={newsize}, fixed to {newsize_}")
                 newsize = newsize_
-        delta = newsize-len(self.index)
-        #if delta < 0:
+        assert newsize is not None
+        delta = newsize - len(self.index)
+        # if delta < 0:
         #    return
-        newsize = self.last_id + delta +1
+        newsize = self.last_id + delta + 1
         crt_index = bitmap(self._index)
         self._resize_rows(newsize, index)
         del_index = crt_index - self._index
@@ -243,12 +258,17 @@ class Table(IndexTable):
             return
         self._storagegroup.attrs[metadata.ATTR_NROWS] = newsize
         for column in self._columns:
-            column._resize(newsize)
+            col = cast(Column, column)
+            col._resize(newsize)
 
     def _allocate(self, count, index=None):
-        start = self.last_id+1
-        index = bitmap(range(start, start+count)) if index is None else bitmap.asbitmap(index)
-        newsize = max(index.max(),self.last_id) +1
+        start = self.last_id + 1
+        index = (
+            bitmap(range(start, start + count))
+            if index is None
+            else bitmap.asbitmap(index)
+        )
+        newsize = max(index.max(), self.last_id) + 1
         self.add_created(index)
         self._storagegroup.attrs[metadata.ATTR_NROWS] = newsize
         for column in self._columns:
@@ -264,8 +284,9 @@ class Table(IndexTable):
         if data is None:
             return None
         if isinstance(data, Mapping):
-            if are_instances(data.values(), np.ndarray) or \
-              are_instances(data.values(), list):
+            if are_instances(data.values(), np.ndarray) or are_instances(
+                data.values(), list
+            ):
                 return data  # Table can parse this
         if isinstance(data, (np.ndarray, Mapping)):
             # delegate creation of structured data to pandas for now
@@ -281,41 +302,43 @@ class Table(IndexTable):
         if data is None:
             return
         if data is self:
-            data = data.to_dict(orient='list')
+            data = data.to_dict(orient="list")
         data = self.parse_data(data, indices)
         dshape = dshape_extract(data)
         if not dshape_compatible(dshape, self.dshape):
             raise ValueError(f"{dshape} incompatible data shape in append")
         length = -1
         all_arrays = True
+
         def _len(c):
             if isinstance(data, BaseTable):
                 return len(c.value)
             return len(c)
+
         for colname in self:
             fromcol = data[colname]
             if length == -1:
                 length = _len(fromcol)
             elif length != _len(fromcol):
-                raise ValueError('Cannot append ragged values')
+                raise ValueError("Cannot append ragged values")
             all_arrays |= isinstance(fromcol, np.ndarray)
-            #print(type(fromcol))
+            # print(type(fromcol))
         if length == 0:
             return
         if isinstance(indices, slice):
             indices = slice_to_bitmap(indices)
         if indices is not None and len(indices) != length:
-            raise ValueError('Bad index length (%d/%d)', len(indices), length)
+            raise ValueError("Bad index length (%d/%d)", len(indices), length)
         init_indices = indices
         prev_last_id = self.last_id
         indices = self._allocate(length, indices)
         if isinstance(data, BaseTable):
             if init_indices is None:
-                start = prev_last_id+1
-                left_ind = slice(start, start+len(data)-1)
+                start = prev_last_id + 1
+                left_ind = slice(start, start + len(data) - 1)
             else:
                 left_ind = indices
-            self.loc[left_ind,:] = data
+            self.loc[left_ind, :] = data
         elif all_arrays:
             from_ind = slice(0, length)
             indices = indices_to_slice(indices)
@@ -329,7 +352,6 @@ class Table(IndexTable):
                 fromcol = data[colname]
                 for i in range(length):
                     tocol[indices[i]] = fromcol[i]
-
 
     def add(self, row, index=None):
         "Add one row to the Table"
@@ -360,42 +382,52 @@ class Table(IndexTable):
         return Table(None, data=res, create=True)
 
     @staticmethod
-    def from_array(array, name=None, columns=None, offsets=None, dshape=None,
-                   **kwds):
+    def from_array(array, name=None, columns=None, offsets=None, dshape=None, **kwds):
         """offsets is a list of indices or pairs. """
         if offsets is None:
-            offsets = [(i, i+1) for i in range(array.shape[1])]
+            offsets = [(i, i + 1) for i in range(array.shape[1])]
         if offsets is not None:
             if all_int(offsets):
-                offsets = [(offsets[i], offsets[i+1])
-                           for i in range(len(offsets)-1)]
+                offsets = [
+                    (offsets[i], offsets[i + 1]) for i in range(len(offsets) - 1)
+                ]
             elif not all([isinstance(elt, tuple) for elt in offsets]):
-                raise ValueError('Badly formed offset list %s', offsets)
+                raise ValueError("Badly formed offset list %s", offsets)
 
         if columns is None:
             if dshape is None:
                 columns = gen_columns(len(offsets))
             else:
                 dshape = dshape_create(dshape)
-                columns = [fieldname
-                           for (fieldname, _) in dshape_fields(dshape)]
+                columns = [fieldname for (fieldname, _) in dshape_fields(dshape)]
         if dshape is None:
             dshape_type = dshape_from_dtype(array.dtype)
-            dims = ["" if (off[0]+1 == off[1]) else "%d *" % (off[1] - off[0])
-                    for off in offsets]
-            dshapes = ["%s: %s %s" % (column, dim, dshape_type)
-                       for column, dim in zip(columns, dims)]
+            dims = [
+                "" if (off[0] + 1 == off[1]) else "%d *" % (off[1] - off[0])
+                for off in offsets
+            ]
+            dshapes = [
+                "%s: %s %s" % (column, dim, dshape_type)
+                for column, dim in zip(columns, dims)
+            ]
             dshape = "{" + ", ".join(dshapes) + "}"
         data = OrderedDict()
         for nam, off in zip(columns, offsets):
-            if off[0]+1 == off[1]:
+            if off[0] + 1 == off[1]:
                 data[nam] = array[:, off[0]]
             else:
-                data[nam] = array[:, off[0]:off[1]]
+                data[nam] = array[:, off[0] : off[1]]
         return Table(name, data=data, dshape=dshape, **kwds)
 
-    def eval(self, expr, inplace=False, name=None, result_object=None,
-             locs=None, as_slice=True):
+    def eval(
+        self,
+        expr,
+        inplace=False,
+        name=None,
+        result_object=None,
+        locs=None,
+        as_slice=True,
+    ):
         """Evaluate the ``expr`` on columns and return the result.
 
         Args:
@@ -418,28 +450,33 @@ class Table(IndexTable):
         indices = locs
         if indices is None:
             indices = np.array(self.index)
-        context =  {k:self.to_array(locs=indices, columns=[k]).reshape(-1) for k in self.columns}
+        context = {
+            k: self.to_array(locs=indices, columns=[k]).reshape(-1)
+            for k in self.columns
+        }
         is_assign = False
         try:
             res = ne.evaluate(expr, local_dict=context)
             if result_object is None:
-                result_object = 'index'
+                result_object = "index"
         except SyntaxError as err:
             # maybe an assignment ?
             try:
-                l_col, r_expr = expr.split('=', 1)
+                l_col, r_expr = expr.split("=", 1)
                 l_col = l_col.strip()
                 if l_col not in self.columns:
                     raise err
                 res = ne.evaluate(r_expr.strip(), local_dict=context)
                 is_assign = True
-            except:
+            except Exception:
                 raise err
-            if result_object is not None and result_object != 'table':
-                raise ValueError("result_object={} is not valid when expr "
-                                 "is an assignment".format(result_object))
+            if result_object is not None and result_object != "table":
+                raise ValueError(
+                    "result_object={} is not valid when expr "
+                    "is an assignment".format(result_object)
+                )
         else:
-            if result_object not in ('raw_numexpr', 'index', 'view', 'table'):
+            if result_object not in ("raw_numexpr", "index", "view", "table"):
                 raise ValueError("result_object={} is not valid".format(result_object))
         if is_assign:
             if inplace:
@@ -448,31 +485,25 @@ class Table(IndexTable):
 
             def cval(key):
                 return res if key == l_col else self[key].values
+
             data = [(cname, cval(cname)) for cname in self.columns]
             return Table(name=name, data=OrderedDict(data), indices=self.index)
         # not an assign ...
 
-        if res.dtype != 'bool':
-            raise ValueError(
-                'expr must be an assignment '
-                'or a conditional expr.!')
+        if res.dtype != "bool":
+            raise ValueError("expr must be an assignment " "or a conditional expr.!")
         if inplace:
-            raise ValueError('inplace eval of conditional expr '
-                             'not implemented!')
-        if result_object == 'raw_numexpr':
+            raise ValueError("inplace eval of conditional expr " "not implemented!")
+        if result_object == "raw_numexpr":
             return res
         indices = indices[res]
-        if not as_slice and result_object == 'index':
+        if not as_slice and result_object == "index":
             return indices
         ix_slice = indices_to_slice(indices)
-        if result_object == 'index':
+        if result_object == "index":
             return ix_slice
-        if result_object == 'view':
+        if result_object == "view":
             return self.loc[ix_slice, :]
         # as a new table ...
         data = [(cname, self[cname].values[indices]) for cname in self.columns]
-        return Table(name=name,
-                     data=OrderedDict(data),
-                     indices=indices)
-
-
+        return Table(name=name, data=OrderedDict(data), indices=indices)

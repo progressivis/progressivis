@@ -7,10 +7,9 @@ from progressivis.core.slot import SlotDescriptor
 
 class NAry(TableModule):
     "Base class for modules supporting a variable number of input slots."
-    inputs = [SlotDescriptor('table', type=BaseTable, required=True,
-                             multiple=True)]
+    inputs = [SlotDescriptor("table", type=BaseTable, required=True, multiple=True)]
 
-    def __init__(self, nary='table', **kwds):
+    def __init__(self, nary="table", **kwds):
         super(NAry, self).__init__(**kwds)
         self.nary = nary
         self.inputs = [nary]
@@ -40,4 +39,4 @@ class NAry(TableModule):
     #     return ret
 
     def run_step(self, run_number, step_size, howlong):  # pragma no cover
-        raise NotImplementedError('run_step not defined')
+        raise NotImplementedError("run_step not defined")

@@ -2,7 +2,7 @@
 
 import numpy as np
 
-from progressivis.core.utils import (indices_len, inter_slice, fix_loc)
+from progressivis.core.utils import indices_len, inter_slice, fix_loc
 from progressivis.core.bitmap import bitmap
 from progressivis.utils.inspect import filter_kwds
 from progressivis.table.nary import NAry
@@ -10,7 +10,9 @@ from progressivis.table.table import Table
 from progressivis.table.dshape import dshape_join
 
 
-def join(table, other, name=None, on=None, how='left', lsuffix='', rsuffix='', sort=False):
+def join(
+    table, other, name=None, on=None, how="left", lsuffix="", rsuffix="", sort=False
+):
     # pylint: disable=too-many-arguments, invalid-name
     "Compute the join of two table."
     if sort:
@@ -19,11 +21,11 @@ def join(table, other, name=None, on=None, how='left', lsuffix='', rsuffix='', s
         raise ValueError("'on' not yet implemented in Table.join()")
     dshape, rename = dshape_join(table.dshape, other.dshape, lsuffix, rsuffix)
     join_table = Table(name=name, dshape=dshape)
-    if how == 'left':
+    if how == "left":
         if np.array_equal(table.index, other.index):
             join_table.resize(len(table), index=table.index)
-            left_cols = [rename['left'].get(c, c) for c in table.columns]
-            right_cols = [rename['right'].get(c, c) for c in other.columns]
+            left_cols = [rename["left"].get(c, c) for c in table.columns]
+            right_cols = [rename["right"].get(c, c) for c in other.columns]
             join_table.loc[:, left_cols] = table.loc[:, table.columns]
             join_table.loc[:, right_cols] = other.loc[:, other.columns]
     else:
@@ -38,10 +40,22 @@ def join_reset(dialog):
     bag.existing_ids = None
 
 
-def join_start(table, other, dialog, name=None, on=None, how='left',
-               created=None, updated=None, deleted=None,
-               order=('c', 'u', 'd'), reset=False,
-               lsuffix='', rsuffix='', sort=False):
+def join_start(
+    table,
+    other,
+    dialog,
+    name=None,
+    on=None,
+    how="left",
+    created=None,
+    updated=None,
+    deleted=None,
+    order=("c", "u", "d"),
+    reset=False,
+    lsuffix="",
+    rsuffix="",
+    sort=False,
+):
     # pylint: disable=too-many-arguments, invalid-name, too-many-locals, unused-argument
     "Start the progressive join function"
     if sort:
@@ -49,13 +63,13 @@ def join_start(table, other, dialog, name=None, on=None, how='left',
     if on is not None:
         raise ValueError("'on' not yet implemented in Table.join()")
     dshape, rename = dshape_join(table.dshape, other.dshape, lsuffix, rsuffix)
-    left_cols = [rename['left'].get(c, c) for c in table.columns]
-    right_cols = [rename['right'].get(c, c) for c in other.columns]
-    if how == 'left':
+    left_cols = [rename["left"].get(c, c) for c in table.columns]
+    right_cols = [rename["right"].get(c, c) for c in other.columns]
+    if how == "left":
         # first, second = table, other
         first_key, second_key = "table", "other"
         first_cols, second_cols = left_cols, right_cols
-    elif how == 'right':
+    elif how == "right":
         # first, second = other, table
         first_key, second_key = "other", "table"
         first_cols, second_cols = right_cols, left_cols
@@ -76,8 +90,16 @@ def join_start(table, other, dialog, name=None, on=None, how='left',
     return join_cont(table, other, dialog, created, updated, deleted, order)
 
 
-def join_cont(table, other, dialog, created=None, updated=None,
-              deleted=None, order='cud', reset=False):
+def join_cont(
+    table,
+    other,
+    dialog,
+    created=None,
+    updated=None,
+    deleted=None,
+    order="cud",
+    reset=False,
+):
     # pylint: disable=too-many-arguments, invalid-name, too-many-locals, unused-argument
     "Continue the progressive join function"
     join_table = dialog.output_table
@@ -86,7 +108,7 @@ def join_cont(table, other, dialog, created=None, updated=None,
     first_key = dialog.bag.first_key
     second_key = dialog.bag.second_key
     how = dialog.bag.how
-    if how == 'left':
+    if how == "left":
         first, second = table, other
     else:
         first, second = other, table
@@ -105,7 +127,7 @@ def join_cont(table, other, dialog, created=None, updated=None,
         b = dialog.bag
         if not created:
             return
-        if how == 'outer':
+        if how == "outer":
             return _process_created_outer(ret)
         # if first_key not in created: return
         first_ids = created.get(first_key, None)
@@ -113,10 +135,13 @@ def join_cont(table, other, dialog, created=None, updated=None,
         only_1st, common, only_2nd = inter_slice(first_ids, second_ids)
         if first_ids is not None:
             new_size = _len(first_ids)
-            if (isinstance(first_ids, slice) and
-                    join_table.is_identity and
-                    (join_table.last_id+1 == first_ids.start
-                     or join_table.last_id == 0)):
+            if (
+                isinstance(first_ids, slice)
+                and join_table.is_identity
+                and (
+                    join_table.last_id + 1 == first_ids.start or join_table.last_id == 0
+                )
+            ):
                 # the nice case (no gaps)
                 join_table.resize(new_size)
             else:  # there are gaps ...we have to keep trace of existing ids
@@ -124,18 +149,21 @@ def join_cont(table, other, dialog, created=None, updated=None,
                 if b.existing_ids is None:
                     b.existing_ids = bitmap.asbitmap(join_table.index)
                 else:
-                    b.existing_ids = bitmap.union(b.existing_ids,
-                                                  bitmap.asbitmap(first_ids))
-            join_table.loc[_fix(first_ids), first_cols] = first.loc[_fix(first_ids), first.columns]
+                    b.existing_ids = bitmap.union(
+                        b.existing_ids, bitmap.asbitmap(first_ids)
+                    )
+            join_table.loc[_fix(first_ids), first_cols] = first.loc[
+                _fix(first_ids), first.columns
+            ]
         if not _void(common):
-            join_table.loc[_fix(common), second_cols] = second.loc[_fix(common),
-                                                                   second.columns]
+            join_table.loc[_fix(common), second_cols] = second.loc[
+                _fix(common), second.columns
+            ]
         # first matching: older orphans on the second table with new orphans on the first
         only_1st_bm = bitmap.asbitmap(only_1st)
         paired = b.second_orphans & only_1st_bm
         if paired:
-            join_table.loc[paired, second_cols] = second.loc[paired,
-                                                             second.columns]
+            join_table.loc[paired, second_cols] = second.loc[paired, second.columns]
             b.second_orphans = b.second_orphans - paired
             only_1st_bm -= paired
         b.first_orphans = bitmap.union(b.first_orphans, only_1st_bm)
@@ -143,8 +171,7 @@ def join_cont(table, other, dialog, created=None, updated=None,
         only_2nd_bm = bitmap.asbitmap(only_2nd)
         paired = b.first_orphans & only_2nd_bm
         if paired:
-            join_table.loc[paired, second_cols] = second.loc[paired,
-                                                             second.columns]
+            join_table.loc[paired, second_cols] = second.loc[paired, second.columns]
             b.first_orphans = b.first_orphans - paired
             only_2nd_bm -= paired
         b.second_orphans = bitmap.union(b.second_orphans, only_2nd_bm)
@@ -155,23 +182,23 @@ def join_cont(table, other, dialog, created=None, updated=None,
         first_ids = updated.get(first_key, None)
         second_ids = updated.get(second_key, None)
         if first_ids:
-            join_table.loc[_fix(first_ids), first_cols] = first.loc[_fix(first_ids),
-                                                                    first.columns]
+            join_table.loc[_fix(first_ids), first_cols] = first.loc[
+                _fix(first_ids), first.columns
+            ]
         if second_ids:
             if join_table.is_identity:
-                xisting_ = slice(0, join_table.last_id+1, 1)
+                xisting_ = slice(0, join_table.last_id + 1, 1)
             else:
-                xisting_ = existing_ids
+                xisting_ = dialog.existing_ids
             _, common, _ = inter_slice(second_ids, xisting_)
-            join_table.loc[_fix(common), second_cols] = second.loc[_fix(common),
-                                                                   second.columns]
+            join_table.loc[_fix(common), second_cols] = second.loc[
+                _fix(common), second.columns
+            ]
 
     def _process_deleted(ret):
         pass
 
-    order_dict = {'c': _process_created,
-                  'u': _process_updated,
-                  'd': _process_deleted}
+    order_dict = {"c": _process_created, "u": _process_updated, "d": _process_deleted}
     ret = {}
     for operator in order:
         order_dict[operator](ret)
@@ -180,6 +207,7 @@ def join_cont(table, other, dialog, created=None, updated=None,
 
 class Join(NAry):
     "Module executing join."
+
     def __init__(self, **kwds):
         """Join(on=None, how='left', lsuffix='', rsuffix='',
                 sort=False,name=None)

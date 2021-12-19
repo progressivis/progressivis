@@ -1,4 +1,3 @@
-
 from ..core.slot import SlotDescriptor
 from .module import TableModule
 from ..core.bitmap import bitmap
@@ -6,44 +5,41 @@ from .table import Table
 import operator
 
 import logging
+
 logger = logging.getLogger(__name__)
 
-ops = {"<":   operator.__lt__,
-       "<=":  operator.__le__,
-       ">":   operator.__gt__,
-       ">=":  operator.__ge__,
-       "and": operator.__and__,
-       "&":   operator.__and__,
-       "or":  operator.__or__,
-       "|":   operator.__or__,
-       "xor": operator.__xor__,
-       "^":   operator.__xor__,
-       "==":  operator.__eq__,
-       "=":   operator.__eq__,
-       "!=":  operator.__ne__,
-       "is":  operator.is_,
-       "+":   operator.__add__,
-       "//":  operator.__floordiv__,
-       "<<":  operator.__lshift__,
-       "%":   operator.__mod__,
-       "*":   operator.__mul__,
-       "**":  operator.__pow__,
-       ">>":  operator.__rshift__,
-       "-":   operator.__sub__,
-       }
+ops = {
+    "<": operator.__lt__,
+    "<=": operator.__le__,
+    ">": operator.__gt__,
+    ">=": operator.__ge__,
+    "and": operator.__and__,
+    "&": operator.__and__,
+    "or": operator.__or__,
+    "|": operator.__or__,
+    "xor": operator.__xor__,
+    "^": operator.__xor__,
+    "==": operator.__eq__,
+    "=": operator.__eq__,
+    "!=": operator.__ne__,
+    "is": operator.is_,
+    "+": operator.__add__,
+    "//": operator.__floordiv__,
+    "<<": operator.__lshift__,
+    "%": operator.__mod__,
+    "*": operator.__mul__,
+    "**": operator.__pow__,
+    ">>": operator.__rshift__,
+    "-": operator.__sub__,
+    "/": operator.__truediv__,
+}
 inv_ops = {v: k for k, v in ops.items()}
-
-if "__div__" in operator.__dict__:
-    ops["/"] = operator.__div__
-
-if "__truediv__" in operator.__dict__:
-    ops["/"] = operator.__truediv__
 
 
 class Binop(TableModule):
     inputs = [
-        SlotDescriptor('arg1', type=Table, required=True),
-        SlotDescriptor('arg2', type=Table, required=True)
+        SlotDescriptor("arg1", type=Table, required=True),
+        SlotDescriptor("arg2", type=Table, required=True),
     ]
 
     def __init__(self, binop, combine=None, **kwds):
@@ -62,24 +58,26 @@ class Binop(TableModule):
         self._bitmap = None
 
     def get_data(self, name):
-        if name == 'select':
+        if name == "select":
             return self._bitmap
-        if name == 'table':
-            self.get_input_slot('table').data()
+        if name == "table":
+            self.get_input_slot("table").data()
         return super(Binop, self).get_data(name)
 
     def run_step(self, run_number, step_size, howlong):
-        arg1_slot = self.get_input_slot('table')
+        arg1_slot = self.get_input_slot("table")
         # arg1_slot.update(run_number)
         arg1_data = arg1_slot.data()
-        arg2_slot = self.get_input_slot('cmp')
+        arg2_slot = self.get_input_slot("cmp")
         # arg2_slot.update(run_number)
         arg2_data = arg1_slot.data()
 
-        if arg1_data is None \
-           or len(arg1_data) == 0 \
-           or arg2_data is None \
-           or len(arg2_data) == 0:
+        if (
+            arg1_data is None
+            or len(arg1_data) == 0
+            or arg2_data is None
+            or len(arg2_data) == 0
+        ):
             # nothing to do if no filter is specified
             self._bitmap = None
             return self._return_run_step(self.state_blocked, steps_run=1)
@@ -90,12 +88,12 @@ class Binop(TableModule):
             arg1_slot.update(run_number)
             arg2_slot.update(run_number)
 
-        l = min(len(arg1_data), len(arg2_data))
+        length = min(len(arg1_data), len(arg2_data))
         cr1 = arg1_slot.created.next(as_slice=False)
         up1 = arg1_slot.updated.next(as_slice=False)
         cr2 = arg2_slot.created.next(as_slice=False)
         up2 = arg2_slot.updated.next(as_slice=False)
         work = cr1 | up1 | cr2 | up2
-        work &= bitmap(slice(0, l))
+        work &= bitmap(slice(0, length))
         work.pop(step_size)
         return self._return_run_step(self.state_blocked, steps_run=1)

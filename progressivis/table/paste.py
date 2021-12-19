@@ -19,17 +19,20 @@ class Paste(TableModule):
     Args:
         kwds : argument to pass to the join function
     """
-    inputs = [SlotDescriptor('first', type=Table, required=True),
-              SlotDescriptor('second', type=Table, required=True)]
+
+    inputs = [
+        SlotDescriptor("first", type=Table, required=True),
+        SlotDescriptor("second", type=Table, required=True),
+    ]
 
     def __init__(self, **kwds):
         super(Paste, self).__init__(**kwds)
         self.join_kwds = filter_kwds(kwds, join)
 
     def run_step(self, run_number, step_size, howlong):
-        first_slot = self.get_input_slot('first')
+        first_slot = self.get_input_slot("first")
         # first_slot.update(run_number)
-        second_slot = self.get_input_slot('second')
+        second_slot = self.get_input_slot("second")
         first_table = first_slot.data()
         second_table = second_slot.data()
         if first_table is None or second_table is None:
@@ -47,17 +50,22 @@ class Paste(TableModule):
         first_slot.updated.next(step_size)
         second_slot.updated.next(step_size)
         if self.result is None:
-            dshape, rename = dshape_join(first_table.dshape,
-                                         second_table.dshape)
+            dshape, rename = dshape_join(first_table.dshape, second_table.dshape)
             self.result = Table(name=None, dshape=dshape)
         if len(first_table) == 0 or len(second_table) == 0:
             return self._return_run_step(self.state_blocked, steps_run=0)
         col_0 = first_table.columns[0]
         col_1 = second_table.columns[0]
         if len(self.result) == 0:
-            self.result.append(OrderedDict([(col_0, first_table.last(col_0)),
-                                            (col_1, second_table.last(col_1))]),
-                               indices=[0])
+            self.result.append(
+                OrderedDict(
+                    [
+                        (col_0, first_table.last(col_0)),
+                        (col_1, second_table.last(col_1)),
+                    ]
+                ),
+                indices=[0],
+            )
         else:
             assert len(self.result) == 1
             if first_table.last(col_0) != self.result.last(col_0):

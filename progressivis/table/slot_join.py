@@ -82,7 +82,7 @@ class SlotJoin:
         changes_ = [slot.updated.changes for slot in self._slots]
         res = reduce(operator.or_, changes_)
         if not raw:
-            idx_ =  [bitmap(slot.data().index) for slot in self._slots]
+            idx_ = [bitmap(slot.data().index) for slot in self._slots]
             res = reduce(operator.and_, idx_, res)
         return res != bitmap()
 
@@ -96,4 +96,4 @@ class SlotJoin:
             if slot.output_module.state > self._module.state_blocked:
                 if not self.has_created():
                     for slot in self._slots:
-                        slot.created.next() # TODO: add a callback for orphans processing
+                        slot.created.next()  # TODO: add a callback for orphans processing

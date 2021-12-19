@@ -6,12 +6,15 @@ from ..core.bitmap import bitmap
 from . import TableSelectedView
 
 import logging
+
 logger = logging.getLogger(__name__)
 
 
 class LiteSelect(TableModule):
-    inputs = [SlotDescriptor('table', type=Table, required=True),
-              SlotDescriptor('select', type=bitmap, required=True)]
+    inputs = [
+        SlotDescriptor("table", type=Table, required=True),
+        SlotDescriptor("select", type=bitmap, required=True),
+    ]
 
     def __init__(self, **kwds):
         super(LiteSelect, self).__init__(**kwds)
@@ -19,14 +22,14 @@ class LiteSelect(TableModule):
 
     def run_step(self, run_number, step_size, howlong):
         step_size = 1000
-        table_slot = self.get_input_slot('table')
+        table_slot = self.get_input_slot("table")
         table = table_slot.data()
         # table_slot.update(run_number,
         #                  buffer_created=False,
         #                  buffer_updated=True,
         #                  buffer_deleted=False,
         #                  manage_columns=False)
-        select_slot = self.get_input_slot('select')
+        select_slot = self.get_input_slot("select")
         # select_slot.update(run_number,
         #                    buffer_created=True,
         #                    buffer_updated=False,
@@ -52,5 +55,4 @@ class LiteSelect(TableModule):
             # step_size -= s
             self._table.selection |= bitmap.asbitmap(indices)
 
-        return self._return_run_step(self.next_state(select_slot),
-                                     steps_run=steps)
+        return self._return_run_step(self.next_state(select_slot), steps_run=steps)

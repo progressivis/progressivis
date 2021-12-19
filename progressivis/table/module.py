@@ -13,11 +13,11 @@ from .slot_join import SlotJoin
 # pylint: disable=abstract-method
 class TableModule(Module):
     "Base class for modules managing tables."
-    outputs = [SlotDescriptor('result', type=Table, required=False)]
+    outputs = [SlotDescriptor("result", type=Table, required=False)]
 
     def __init__(self, columns=None, **kwds):
         super(TableModule, self).__init__(**kwds)
-        if 'table_slot' in kwds:
+        if "table_slot" in kwds:
             raise RuntimeError("don't use table_slot")
         self._columns = None
         self._columns_dict = {}
@@ -56,7 +56,7 @@ class TableModule(Module):
         self.__result = val
 
     def get_data(self, name):
-        if name in ('result', 'table'):
+        if name in ("result", "table"):
             return self.result
         return super(TableModule, self).get_data(name)
 
@@ -90,8 +90,9 @@ class TableModule(Module):
         Return the specified table filtered by the specified indices and
         limited to the columns of interest.
         """
-        if self._columns is None or (slot is not None and
-                                     slot not in self._columns_dict):
+        if self._columns is None or (
+            slot is not None and slot not in self._columns_dict
+        ):
             if indices is None:
                 return df
             return df.loc[indices]
@@ -119,7 +120,7 @@ class TableModule(Module):
     def get_output_datashape(self, name="table"):
         for osl in self.all_outputs:
             if osl.name == name:
-                output_ = osl
+                # output_ = osl
                 break
         else:
             raise ValueError("Output slot not declared")

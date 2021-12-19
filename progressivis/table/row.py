@@ -1,7 +1,7 @@
-
 from collections import Mapping
 from progressivis.core.utils import integer_types, remove_nan_etc
 from collections import OrderedDict
+
 
 class Row(Mapping):
     """ Wraps a dictionary interace around a row of a Table.
@@ -22,11 +22,12 @@ class Row(Mapping):
     >>> row['a']
     3
     """
+
     def __init__(self, table, index=None):
-        super(Row, self).__setattr__('table', table)
+        super(Row, self).__setattr__("table", table)
         if index is not None and not isinstance(index, integer_types):
-            raise ValueError('index should be an integer, not "%s"'%str(index))
-        super(Row, self).__setattr__('index', index)
+            raise ValueError('index should be an integer, not "%s"' % str(index))
+        super(Row, self).__setattr__("index", index)
 
     @property
     def row(self):
@@ -41,7 +42,7 @@ class Row(Mapping):
     def __getitem__(self, key):
         table = self.table
         if isinstance(key, (list, tuple)):
-            return (self[k] for k in key) # recursive call
+            return (self[k] for k in key)  # recursive call
         return table.at[self.row, table.column_index(key)]
 
     def __setitem__(self, key, value):

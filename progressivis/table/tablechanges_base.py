@@ -6,6 +6,7 @@ from abc import ABCMeta, abstractmethod
 
 class BaseChanges(metaclass=ABCMeta):
     "Base class for object keeping track of changes in a Table"
+
     def __str__(self):
         return type(self)
 

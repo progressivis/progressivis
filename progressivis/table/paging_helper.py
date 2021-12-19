@@ -1,6 +1,8 @@
 from .table import Table
 import numpy as np
 from progressivis.core.utils import remove_nan
+
+
 class PagingHelper:
     def __init__(self, tbl):
         self._table = tbl
@@ -19,4 +21,4 @@ class PagingHelper:
                 col = self._table[name]
                 row.append(remove_nan(col.loc[i]))
             ret.append(row)
-        return ret        
+        return ret

@@ -1,4 +1,6 @@
-from typing import Callable
+from __future__ import annotations
+
+from typing import Callable, Optional
 
 from abc import ABCMeta, abstractmethod, abstractproperty
 from contextlib import contextmanager
@@ -67,7 +69,7 @@ class DatasetFactory(StorageObject):
 
 
 class Group(DatasetFactory):
-    default = None
+    default: Optional[Callable[..., Group]] = None
     default_internal: Callable[[str], 'Group'] = None
 
     @abstractmethod
@@ -96,6 +98,7 @@ class Group(DatasetFactory):
 
     def close_all():
         pass
+
 
 class Dataset(StorageObject):
     @abstractproperty
@@ -183,11 +186,9 @@ class StorageEngine(Group):
 
     @staticmethod
     def lookup(engine):
-        default=StorageEngine._engines.get(StorageEngine.default)
+        default = StorageEngine._engines.get(StorageEngine.default)
         return StorageEngine._engines.get(engine, default)
 
     @staticmethod
     def engines():
         return StorageEngine._engines
-
-

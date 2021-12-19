@@ -1,7 +1,7 @@
 "Change manager for SelectedTable"
 
 from .table_base import TableSelectedView
-from ..core.changemanager_base import BaseChangeManager,  _base_accessor
+from ..core.changemanager_base import BaseChangeManager, _base_accessor
 from ..core.changemanager_bitmap import BitmapChangeManager
 from ..core.slot import Slot
 from ..core.bitmap import bitmap
@@ -10,7 +10,7 @@ from ..core.bitmap import bitmap
 class FakeSlot(object):
     # pylint: disable=too-few-public-methods
     "Fake slot to provide data to inner change manager"
-    __fields__ = ('data')
+    __fields__ = "data"
 
     def __init__(self, data):
         self._data = data
@@ -47,14 +47,12 @@ class _double_buffer:
 
     def next(self, length=None, as_slice=True):
         if length is None:
-            length = len(self._first.changes |
-                         self._second.changes)
+            length = len(self._first.changes | self._second.changes)
         "Return the next items in the buffer"
         acc = bitmap()
         while length and self._first.any():
             # prevents to return second ids twice
-            new_ids = (self._first.next(length, as_slice=False)
-                       - self._second.changes)
+            new_ids = self._first.next(length, as_slice=False) - self._second.changes
             length -= len(new_ids)
             acc |= new_ids
         if length and self._second.any():
@@ -66,16 +64,19 @@ class TableSelectedChangeManager(BaseChangeManager):
     """
     Manage changes that occured in a TableSelectedView between runs.
     """
-    def __init__(self,
-                 slot,
-                 buffer_created=True,
-                 buffer_updated=False,
-                 buffer_deleted=False,
-                 buffer_exposed=False,
-                 buffer_masked=False):
+
+    def __init__(
+        self,
+        slot,
+        buffer_created=True,
+        buffer_updated=False,
+        buffer_deleted=False,
+        buffer_exposed=False,
+        buffer_masked=False,
+    ):
         data = slot.data()
         assert isinstance(data, TableSelectedView)
-        bmslot = FakeSlot(data.index) # not required formally
+        bmslot = FakeSlot(data.index)  # not required formally
         tbslot = FakeSlot(data._base)
         super().__init__(
             slot,
@@ -83,22 +84,26 @@ class TableSelectedChangeManager(BaseChangeManager):
             buffer_updated,
             buffer_deleted,
             buffer_exposed,
-            buffer_masked)
+            buffer_masked,
+        )
         self._mask_cm = BitmapChangeManager(
             bmslot,
             buffer_created=buffer_exposed,
             buffer_updated=False,
             buffer_deleted=buffer_masked,
             buffer_exposed=False,
-            buffer_masked=False)
+            buffer_masked=False,
+        )
         from .changemanager_table import TableChangeManager
+
         self._table_cm = TableChangeManager(
             tbslot,
             buffer_created=buffer_created,
             buffer_updated=buffer_updated,
             buffer_deleted=buffer_deleted,
             buffer_exposed=False,
-            buffer_masked=False)
+            buffer_masked=False,
+        )
         self._selection_changes = self._mask_cm._row_changes
 
     def reset(self, name=None):
@@ -108,9 +113,7 @@ class TableSelectedChangeManager(BaseChangeManager):
 
     def update(self, run_number, data, mid):
         assert isinstance(data, TableSelectedView)
-        if (data is None
-            or (run_number != 0
-                and run_number <= self._last_update)):
+        if data is None or (run_number != 0 and run_number <= self._last_update):
             return
         table = data.base
         selection = data.index
@@ -120,21 +123,21 @@ class TableSelectedChangeManager(BaseChangeManager):
         # Mask table changes with current selection.
         table_changes.created &= selection
         table_changes.updated &= selection
-        table_changes.deleted &= (selection |
-                                  self._selection_changes.deleted)
+        table_changes.deleted &= selection | self._selection_changes.deleted
 
-        self._row_changes.combine(table_changes,
-                                  update_created=self.created.buffer,
-                                  update_updated=self.updated.buffer,
-                                  update_deleted=self.deleted.buffer)
+        self._row_changes.combine(
+            table_changes,
+            update_created=self.created.buffer,
+            update_updated=self.updated.buffer,
+            update_deleted=self.deleted.buffer,
+        )
         table_changes.clear()
         self._last_update = run_number
 
     @property
     def created(self):
         "Return information of items created"
-        return _double_buffer(first=self._created,
-                              second=self._mask_cm._created)
+        return _double_buffer(first=self._created, second=self._mask_cm._created)
 
     @property
     def updated(self):
@@ -144,8 +147,7 @@ class TableSelectedChangeManager(BaseChangeManager):
     @property
     def deleted(self):
         "Return information of items deleted"
-        return _double_buffer(first=self._deleted,
-                              second=self._mask_cm._deleted)
+        return _double_buffer(first=self._deleted, second=self._mask_cm._deleted)
 
     @property
     def selection(self):
@@ -157,6 +159,7 @@ class TableSelectedChangeManager(BaseChangeManager):
     def perm_deleted(self):
         "Return information of items deleted"
         return self._deleted
+
     """
     @property
     def row_changes(self):
@@ -168,12 +171,13 @@ class TableSelectedChangeManager(BaseChangeManager):
         "Return the IndexUpdate keeping track of the mask changes"
         return self._mask_cm._row_changes
     """
+
     def has_buffered(self):
         """
         If the change manager has something buffered, then the module is
         ready to run immediately.
         """
-        return (self._table_cm.has_buffered() or self._mask_cm.has_buffered())
+        return self._table_cm.has_buffered() or self._mask_cm.has_buffered()
 
     def last_update(self):
         "Return the date of the last update"

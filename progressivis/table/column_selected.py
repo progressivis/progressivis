@@ -1,6 +1,7 @@
 from .column_proxy import ColumnProxy
 
 import logging
+
 logger = logging.getLogger(__name__)
 
 
@@ -24,7 +25,7 @@ class ColumnSelectedView(ColumnProxy):
         return tuple(tshape)
 
     def __len__(self):
-        return self.index.last_id+1
+        return self.index.last_id + 1
 
     @property
     def value(self):
