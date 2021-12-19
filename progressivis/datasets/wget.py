@@ -6,6 +6,7 @@ from six.moves import urllib
 
 logger = logging.getLogger(__name__)
 
+
 def wget_file(filename, url):
     if os.path.exists(filename):
         return filename
@@ -14,13 +15,13 @@ def wget_file(filename, url):
         try:
             response = urllib.request.urlopen(url, timeout=5)
             content = response.read()
-            with open(filename, 'wb') as file:
+            with open(filename, "wb") as file:
                 file.write(content)
             break
         except urllib.error.URLError as exc:
             attempts += 1
-            logger.error('Failed to load %s', exc)
+            logger.error("Failed to load %s", exc)
             if attempts == 3:
                 raise
-        logger.debug('Timeout, attempt: %d', attempts)
+        logger.debug("Timeout, attempt: %d", attempts)
     return filename

@@ -5,6 +5,7 @@ and exposing it as an output slot.
 from __future__ import annotations
 
 from typing import (
+    Optional,
     Dict,
     List,
     Union,
@@ -32,8 +33,8 @@ class TableModule(Module):
         super(TableModule, self).__init__(**kwds)
         if "table_slot" in kwds:
             raise RuntimeError("don't use table_slot")
-        self._columns: List[str]
-        self._columns_dict: Dict[str, List[str]]
+        self._columns: Optional[List[str]] = None
+        self._columns_dict: Dict[str, List[str]] = {}
         if isinstance(columns, dict):
             assert len(columns)
             for v in columns.values():
@@ -43,7 +44,7 @@ class TableModule(Module):
         elif isinstance(columns, list):  # backward compatibility
             self._columns = columns
             for k in self._input_slots.keys():
-                self._columns_dict = {k: columns}
+                self._columns_dict[k] = columns
                 break
         else:
             assert columns is None
