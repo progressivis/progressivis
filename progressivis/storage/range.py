@@ -51,6 +51,12 @@ class RangeDataset(Dataset):
             logger.warning("Unused arguments %s", kwds)
         self._attrs = AttributeImpl()
 
+    def flush(self) -> None:
+        pass
+
+    def close_all(self, recurse=True) -> None:
+        pass
+
     @property
     def shape(self) -> Shape:
         return self._shape
