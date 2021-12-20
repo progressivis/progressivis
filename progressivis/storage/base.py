@@ -1,9 +1,17 @@
 from __future__ import annotations
 
-from typing import Callable, Optional
+from typing import Callable, Union, Optional, Dict, Any, Tuple, TYPE_CHECKING
 
 from abc import ABCMeta, abstractmethod, abstractproperty
 from contextlib import contextmanager
+
+if TYPE_CHECKING:
+    import numpy as np
+    import numpy.typing as npt
+    DTypeLike = npt.DTypeLike
+    ArrayLike = npt.ArrayLike
+
+Shape = Tuple[int, ...]
 
 
 class StorageObject(metaclass=ABCMeta):
@@ -12,7 +20,7 @@ class StorageObject(metaclass=ABCMeta):
         pass
 
     @abstractproperty
-    def attrs(self):
+    def attrs(self) -> Attribute:
         pass
 
     @abstractproperty
@@ -22,19 +30,19 @@ class StorageObject(metaclass=ABCMeta):
 
 class Attribute(metaclass=ABCMeta):
     @abstractmethod
-    def __getitem__(self, name):
+    def __getitem__(self, name: str) -> Any:
         pass
 
     @abstractmethod
-    def __setitem__(self, name, value):
+    def __setitem__(self, name: str, value: Any) -> None:
         pass
 
     @abstractmethod
-    def __delitem__(self, name):
+    def __delitem__(self, name: str) -> None:
         pass
 
     @abstractmethod
-    def __len__(self):
+    def __len__(self) -> int:
         pass
 
     @abstractmethod
@@ -42,153 +50,186 @@ class Attribute(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def __contains__(self, name):
+    def __contains__(self, name: str) -> bool:
         pass
 
 
 class DatasetFactory(StorageObject):
     @abstractmethod
-    def create_dataset(self, name, shape=None, dtype=None, data=None, **kwds):
+    def create_dataset(
+        self,
+        name: str,
+        shape: Optional[Shape] = None,
+        dtype: Optional[DTypeLike] = None,
+        data: Optional[Any] = None,
+        **kwds
+    ) -> Dataset:
         pass
 
     @abstractmethod
-    def require_dataset(self, name, shape, dtype, exact=False, **kwds):
+    def require_dataset(
+        self, name: str, shape: Shape, dtype: DTypeLike, exact=False, **kwds
+    ) -> Dataset:
         pass
 
     @abstractmethod
-    def __getitem__(self, name):
+    def __getitem__(self, name: str) -> Any:
         pass
 
     @abstractmethod
-    def __delitem__(self, name):
+    def __delitem__(self, name: str) -> None:
         pass
 
     @abstractmethod
-    def __contains__(self, name):
+    def __contains__(self, name: str) -> bool:
         pass
 
 
 class Group(DatasetFactory):
     default: Optional[Callable[..., Group]] = None
-    default_internal: Callable[[str], 'Group'] = None
+    default_internal: Optional[Callable[[str], "Group"]] = None
 
     @abstractmethod
-    def create_dataset(self, name, shape=None, dtype=None, data=None, **kwds):
+    def create_dataset(
+        self,
+        name: str,
+        shape: Optional[Shape] = None,
+        dtype: Optional[DTypeLike] = None,
+        data: Optional[Any] = None,
+        **kwds
+    ) -> Dataset:
         pass
 
     @abstractmethod
-    def require_dataset(self, name, shape, dtype, exact=False, **kwds):
+    def require_dataset(
+        self, name: str, shape: Shape, dtype: DTypeLike, exact=False, **kwds
+    ) -> Dataset:
         pass
 
     @abstractmethod
-    def require_group(self, name):
+    def require_group(self, name: str) -> Group:
         pass
 
     @abstractmethod
-    def __getitem__(self, name):
+    def __getitem__(self, name: str) -> Any:
         pass
 
     @abstractmethod
-    def __delitem__(self, name):
+    def __delitem__(self, name: str):
         pass
 
     @abstractmethod
-    def __contains__(self, name):
+    def __contains__(self, name: str) -> bool:
         pass
 
-    def close_all():
+    def close_all(self) -> None:
+        pass
+
+    def flush(self) -> None:
         pass
 
 
 class Dataset(StorageObject):
     @abstractproperty
-    def shape(self):
+    def shape(self) -> Shape:
         pass
 
     @abstractproperty
-    def dtype(self):
+    def dtype(self) -> np.dtype:
         pass
 
     @abstractproperty
-    def maxshape(self):
+    def maxshape(self) -> Shape:
         pass
 
     @abstractproperty
-    def fillvalue(self):
+    def fillvalue(self) -> Any:
         pass
 
     @abstractproperty
-    def chunks(self):
+    def chunks(self) -> Shape:
         pass
 
     @abstractmethod
-    def resize(self, size, axis=None):
+    def resize(self, size: int, axis: Optional[int] = None) -> None:
         pass
 
     @abstractproperty
-    def size(self):
+    def size(self) -> int:
         pass
 
     @abstractmethod
-    def __getitem__(self, args):
+    def __getitem__(self, args: Any) -> Any:
         pass
 
     @abstractmethod
-    def __setitem__(self, args, val):
+    def __setitem__(self, args: Any, val: Any) -> None:
         pass
 
-    def read_direct(self, dest, source_sel=None, dest_sel=None):
+    @abstractmethod
+    def flush(self) -> None:
+        pass
+
+    def read_direct(
+        self,
+        dest: Any,
+        source_sel: Optional[Union[int, slice]] = None,
+        dest_sel: Optional[Union[int, slice]] = None,
+    ) -> None:
         dest[dest_sel] = self[source_sel]
 
 
 class StorageEngine(Group):
-    _engines = dict()
-    default = None
+    _engines: Dict[str, StorageEngine] = dict()
+    _default: Optional[str] = None
 
-    def __init__(self, name, create_dataset_kwds=None):
+    def __init__(self, name: str, create_dataset_kwds: Optional[Dict[str, Any]] = None):
         # print('# creating storage engine %s'% name)
         # import pdb; pdb.set_trace()
         assert name not in StorageEngine._engines
         self._name = name
         StorageEngine._engines[name] = self
-        if StorageEngine.default is None:
-            StorageEngine.default = self.name
-        self._create_dataset_kwds = create_dataset_kwds or {}
+        if StorageEngine._default is None:
+            StorageEngine._default = self.name
+        self._create_dataset_kwds: Dict[str, Any] = dict(create_dataset_kwds or {})
 
     @staticmethod
     @contextmanager
-    def default_engine(engine):
+    def default_engine(engine: str):
         if engine not in StorageEngine._engines:
-            raise ValueError('Unknown storage engine %s', engine)
-        saved = StorageEngine.default
+            raise ValueError("Unknown storage engine %s", engine)
+        saved = StorageEngine._default
         try:
-            StorageEngine.default = engine
+            StorageEngine._default = engine
             yield saved
         finally:
-            StorageEngine.default = saved
+            StorageEngine._default = saved
 
     @property
-    def create_dataset_kwds(self):
+    def create_dataset_kwds(self) -> Dict[str, Any]:
         return self._create_dataset_kwds
 
     @property
-    def name(self):
+    def name(self) -> str:
         return self._name
 
-    def open(self, name, flags, **kwds):
+    def open(self, name: str, flags, **kwds):
         pass
 
-    def close(self, name, flags, **kwds):
+    def close(self, name: str, flags, **kwds):
         pass
 
-    def flush(self):
+    def flush(self) -> None:
         pass
 
     @staticmethod
-    def lookup(engine):
-        default = StorageEngine._engines.get(StorageEngine.default)
-        return StorageEngine._engines.get(engine, default)
+    def lookup(engine: Optional[str]) -> Optional[StorageEngine]:
+        assert StorageEngine._default is not None
+        default = StorageEngine._engines.get(StorageEngine._default)
+        if isinstance(engine, str):
+            return StorageEngine._engines.get(engine, default)
+        return default
 
     @staticmethod
-    def engines():
+    def engines() -> Dict[str, StorageEngine]:
         return StorageEngine._engines

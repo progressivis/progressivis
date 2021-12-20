@@ -166,6 +166,7 @@ class Module(metaclass=ModuleMeta):
         storage = StorageManager.default
         self.storage = storage
         if storagegroup is None:
+            assert Group.default_internal is not None
             storagegroup = Group.default_internal(get_random_name(name + "_tracer"))
         tracer = Tracer.default(name, storagegroup)
 

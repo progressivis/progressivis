@@ -9,16 +9,21 @@ import marshal
 import numpy as np
 from functools import lru_cache
 from ..core.bitmap import bitmap
+
 PAGESIZE = getpagesize()
 WB = 4
 MAX_SHORT = 32
 MAX_SHORT_BIT_LENGTH = MAX_SHORT.bit_length()
 LRU_MAX_SIZE = 128
 FREELIST_SIZE = 63
-MAX_OVERSIZE = 3 # we can reuse a chunk at most 2**MAX_OVERSIZE times greater than required
+MAX_OVERSIZE = (
+    3  # we can reuse a chunk at most 2**MAX_OVERSIZE times greater than required
+)
+
 
 def _ofs(idx):
-    return (idx+1)*WB
+    return (idx + 1) * WB
+
 
 class MMapObject(object):
     def __init__(self, filename):
@@ -36,17 +41,17 @@ class MMapObject(object):
         self._freelist = [bitmap() for _ in range(FREELIST_SIZE)]
 
     def _allocate(self, size):
-        self.mmap.resize(size*PAGESIZE)
+        self.mmap.resize(size * PAGESIZE)
         self.sizes = np.frombuffer(self.mmap, np.uint32)
 
     def resize(self, size):
-        mod = size%WB
+        mod = size % WB
         if mod:
             size += WB - mod
-        #size *= WB # size is already in bytes so ...
+        # size *= WB # size is already in bytes so ...
         if size > len(self.mmap):
-            #pages = (size + PAGESIZE-1) // PAGESIZE * (1+PAGESIZE)
-            pages = (size + PAGESIZE-1) // PAGESIZE + 1
+            # pages = (size + PAGESIZE-1) // PAGESIZE * (1+PAGESIZE)
+            pages = (size + PAGESIZE - 1) // PAGESIZE + 1
             self._allocate(pages)
 
     def __len__(self):
@@ -58,13 +63,12 @@ class MMapObject(object):
     def decode(self, buf):
         return marshal.loads(buf)
 
-
     def get(self, idx):
         if idx < 0 or idx > len(self):
-            raise IndexError('index %d is out of range' % idx)
+            raise IndexError("index %d is out of range" % idx)
         size = self.sizes[idx]
         off = _ofs(idx)
-        buf = self.mmap[off:off+size*WB]
+        buf = self.mmap[off : off + size * WB]
         return self.decode(buf)
 
     def __getitem__(self, idx):
@@ -80,53 +84,56 @@ class MMapObject(object):
     @lru_cache(maxsize=LRU_MAX_SIZE)
     def _add_short(self, buf, lb):
         return self._add_long(buf, lb, with_reuse=False)
-        
+
     def release(self, idx):
         if not idx:
             return
-        lb = self.sizes[idx]*WB
+        lb = self.sizes[idx] * WB
         if lb <= MAX_SHORT:
             return
-        pos = int(lb).bit_length()-1
+        pos = int(lb).bit_length() - 1
         self._freelist[pos].add(idx)
 
     def _get_from_freelist(self, lb):
-        pos = int(lb).bit_length()-1
-        lw = lb//WB + 1
+        pos = int(lb).bit_length() - 1
+        lw = lb // WB + 1
         for i in self._freelist[pos]:
             if self.sizes[i] >= lw:
                 self._freelist[pos].remove(i)
                 return i
-        for i in range(pos+1, min(pos+MAX_OVERSIZE, FREELIST_SIZE-1)):
+        for i in range(pos + 1, min(pos + MAX_OVERSIZE, FREELIST_SIZE - 1)):
             bm = self._freelist[i].pop()
             if bm:
                 return bm[0]
         return -1
 
     def _add_long(self, buf, lb, with_reuse):
-        bufsize = lb + WB - lb%WB
+        bufsize = lb + WB - lb % WB
         assert bufsize % 4 == 0
         idx = -1
         alloc_ = True
         if with_reuse:
-            idx = self._get_from_freelist(lb+1)
+            idx = self._get_from_freelist(lb + 1)
         if idx == -1:
             idx = len(self)
         else:
             alloc_ = False
         off = _ofs(idx)
         if alloc_:
-            self.resize(off+WB+bufsize)
-            self.sizes[idx] = bufsize//WB
-        self.mmap[off:off+lb] = buf
-        self.mmap[off+lb:off+bufsize] = b'\x00'*(bufsize-lb)  #np.zeros(bufsize-lb, dtype=np.uint8)
+            self.resize(off + WB + bufsize)
+            self.sizes[idx] = bufsize // WB
+        self.mmap[off : off + lb] = buf
+        self.mmap[off + lb : off + bufsize] = b"\x00" * (
+            bufsize - lb
+        )  # np.zeros(bufsize-lb, dtype=np.uint8)
         if alloc_:
-            self.sizes[0] = idx + 1 + bufsize//WB
-            self.sizes[idx] = bufsize//WB
+            self.sizes[0] = idx + 1 + bufsize // WB
+            self.sizes[idx] = bufsize // WB
         return idx
+
     def set_at(self, idx, obj):
         if idx < 0 or idx > len(self):
-            raise IndexError('index %d is out of range' % idx)
+            raise IndexError("index %d is out of range" % idx)
         buf = self.encode(obj)
         lb = len(buf)
         self.release(idx)

@@ -170,6 +170,7 @@ class Column(BaseColumn):
         dataset.attrs[metadata.ATTR_VERSION] = metadata.VALUE_VERSION
         dataset.attrs[metadata.ATTR_DATASHAPE] = str(dshape)
         self.dataset = dataset
+        dataset.flush()
         return dataset
 
     def load_dataset(self, dshape, nrow, shape=None, is_id=False):
