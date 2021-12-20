@@ -1,10 +1,18 @@
+from __future__ import annotations
 
 import numpy as np
+
+from typing import Optional
 
 
 # Returns a byte-scaled image
 # Disappeared from scipy.misc
-def bytescale(data, cmin=None, cmax=None, high=255, low=0):
+def bytescale(
+        data: np.ndarray,
+        cmin: Optional[float] = None,
+        cmax: Optional[float] = None,
+        high: int = 255,
+        low: int = 0) -> np.ndarray:
     """
     Byte scales an array (image).
 

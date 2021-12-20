@@ -1,12 +1,27 @@
+from __future__ import annotations
+
 from ..core.bitmap import bitmap
 from ..core.index_update import IndexUpdate
-from ..table.dshape import dshape_extract
+from ..table.dshape import dshape_extract, DataShape
 import numpy as np
+
+
+from typing import (
+    Any,
+    List,
+    Optional,
+    Dict,
+    Tuple,
+    TYPE_CHECKING
+)
+
+if TYPE_CHECKING:
+    from progressivis.core.changemanager_dict import DictChangeManager
 
 
 class PsDict(dict):
     "progressive dictionary"
-    def __init__(self, other=None, **kwargs):
+    def __init__(self, other: Dict[str, Any] = None, **kwargs):
         if other is not None:
             # useful when keys are not varname-alike
             # one can use both (other and kwargs)
@@ -15,11 +30,11 @@ class PsDict(dict):
         else:
             other = {}
         super().__init__(other, **kwargs)
-        self._index = None
-        self._deleted = {}
-        self._inverse = None
-        self._inverse_del = None
-        self.changes = None
+        self._index: Optional[Dict[str, int]] = None
+        self._deleted: Dict[str, int] = {}
+        self._inverse: Optional[Dict[int, str]] = None
+        self._inverse_del: Optional[Dict[int, str]] = None
+        self.changes: Optional[DictChangeManager] = None
 
     def compute_updates(self, start, now, mid=None, cleanup=True):
         assert False, "compute_updates should not be called on PsDict"
@@ -31,27 +46,27 @@ class PsDict(dict):
             return updates
         return None
 
-    def fill(self, val):
+    def fill(self, val) -> None:
         for k in self.keys():
             self[k] = val
 
     @property
-    def array(self):
+    def array(self) -> np.ndarray:
         return np.array(list(self.values()))
 
     @property
-    def as_row(self):
+    def as_row(self) -> Dict[str, List[Any]]:
         return {k: [v] for (k, v) in self.items()}
 
     @property
-    def dshape(self):
+    def dshape(self) -> DataShape:
         return dshape_extract(self.as_row)
 
     # def last(self, *args, **kwargs):
     #    print("LAST")
     #    import pdb;pdb.set_trace()
 
-    def key_of(self, id):
+    def key_of(self, id: int) -> Tuple[str, str]:
         """
         returns (key, status)
         key: the key associated to id
@@ -69,11 +84,11 @@ class PsDict(dict):
             return self._inverse_del[id], 'deleted'
         raise KeyError(f"Key not found for id: {id}")
 
-    def k_(self, id):
+    def k_(self, id: int) -> str:
         k, _ = self.key_of(id)
         return k
 
-    def fix_indices(self):  # TODO find a better name ...
+    def fix_indices(self) -> None:  # TODO find a better name ...
         if self._index is None:
             return
         self._inverse = None
@@ -86,13 +101,13 @@ class PsDict(dict):
             if k in self._deleted:  # a previously deleted key was added later
                 del self._deleted[k]
 
-    def created_indices(self, prev):
+    def created_indices(self, prev: PsDict) -> bitmap:
         if self._index is None:
             return bitmap(range(len(prev), len(self)))
         new_keys = set(self.keys()) - set(prev.keys())
         return bitmap((i for (k, i) in self._index.items() if k in new_keys))
 
-    def updated_indices(self, prev):
+    def updated_indices(self, prev: PsDict) -> bitmap:
         if self._index is None:
             return bitmap((i for (i, x, y) in zip(range(len(prev)),
                                                   prev.values(),
@@ -102,13 +117,13 @@ class PsDict(dict):
         return bitmap((i for (k, i) in self._index.items()
                        if k in common_keys and self[k] is not prev[k]))
 
-    def deleted_indices(self, prev):
+    def deleted_indices(self, prev: PsDict) -> bitmap:
         if self._index is None:
             return bitmap()
         del_keys = set(prev.keys()) - set(self.keys())
         return bitmap((i for (k, i) in self._deleted.items() if k in del_keys))
 
-    def __delitem__(self, key):
+    def __delitem__(self, key: str) -> None:
         if key not in self:
             raise KeyError(f"Key {key} does not exist")
         if self._index is None:  # first deletion
@@ -117,18 +132,18 @@ class PsDict(dict):
         del self._index[key]
         super().__delitem__(key)
 
-    def clear(self):
+    def clear(self) -> None:
         for key in list(self.keys()):
             del self[key]
 
-    def set_nth(self, i, val):
+    def set_nth(self, i: int, val):
         self[list(self)[i]] = val
 
-    def get_nth(self, i):
+    def get_nth(self, i: int):
         return self[list(self)[i]]
 
     @property
-    def ids(self):
+    def ids(self) -> bitmap:
         if self._index is None:
             return bitmap(range(len(self)))
         return bitmap(self._index.values())

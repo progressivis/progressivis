@@ -18,7 +18,7 @@ from progressivis.core.utils import (
 )
 
 try:
-    from progressivis.utils.fast import indices_to_slice  # type: ignore
+    from progressivis.utils.fast import indices_to_slice
 except ImportError:
     from progressivis.core.utils import indices_to_slice
 

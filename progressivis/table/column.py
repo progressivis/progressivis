@@ -6,7 +6,7 @@ from progressivis.storage import Group
 from progressivis.core.utils import integer_types, get_random_name
 
 try:
-    from progressivis.utils.fast import indices_to_slice  # type: ignore
+    from progressivis.utils.fast import indices_to_slice
 except ImportError:
     from progressivis.core.utils import indices_to_slice
 

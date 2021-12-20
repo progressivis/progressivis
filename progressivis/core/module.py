@@ -181,8 +181,8 @@ class Module(metaclass=ModuleMeta):
         self._parse_parameters(kwds)
 
         # always present
-        input_descriptors = self.all_inputs  # type: ignore
-        output_descriptors = self.all_outputs  # type: ignore
+        input_descriptors = self.all_inputs
+        output_descriptors = self.all_outputs
         self._input_slots = self._validate_descriptors(input_descriptors)
         self.input_descriptors = {d.name: d for d in input_descriptors}
         self.input_multiple = {d.name: 0 for d in input_descriptors if d.multiple}

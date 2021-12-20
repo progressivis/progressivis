@@ -1,9 +1,24 @@
 """
 Topological sorting of a DAG
 """
+from __future__ import annotations
 
 
-def _sort(graph, vertex, permanent, temporary, stack):
+from typing import (
+    List,
+    Dict,
+    Set
+)
+
+Vertex = str
+Graph = Dict[Vertex, Set[Vertex]]
+
+
+def _sort(graph: Graph,
+          vertex: Vertex,
+          permanent: Set[Vertex],
+          temporary: Set[Vertex],
+          stack: List[Vertex]):
     if vertex in temporary:
         raise ValueError('Cycle in graph')
     temporary.add(vertex)
@@ -14,7 +29,7 @@ def _sort(graph, vertex, permanent, temporary, stack):
     stack.append(vertex)
 
 
-def toposort(graph):
+def toposort(graph: Graph):
     """
     Perform the sorting and returns the element in order.
 
@@ -35,9 +50,9 @@ def toposort(graph):
       ...
     ValueError: Cycle in graph
     """
-    permanent = set()
-    temporary = set()
-    stack = []
+    permanent: Set[Vertex] = set()
+    temporary: Set[Vertex] = set()
+    stack: List[Vertex] = []
     for i in graph:
         if i not in permanent:
             _sort(graph, i, permanent, temporary, stack)
