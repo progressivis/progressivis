@@ -124,7 +124,7 @@ setup(
         "Pillow>=4.2.0",
         "cython",
         'pybind11>=2.0.1',
-        "numpy>=1.16.5",
+        "numpy>=1.21.4",
         "scipy>=0.18.1",
         "numexpr>=2.6.1",
         "tables>=3.3.0",
