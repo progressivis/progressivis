@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 
 class Variable(Constant):
-    inputs = [SlotDescriptor('like', type=(Table, PsDict), required=False)]
+    inputs = [SlotDescriptor("like", type=(Table, PsDict), required=False)]
 
     def __init__(self, table=None, **kwds):
         super(Variable, self).__init__(table, **kwds)
@@ -19,29 +19,29 @@ class Variable(Constant):
 
     async def from_input(self, input_):
         if not isinstance(input_, dict):
-            raise ProgressiveError('Expecting a dictionary')
-        if self.result is None and self.get_input_slot('like') is None:
-            error = f'Variable {self.name} with no initial value and no input slot'
+            raise ProgressiveError("Expecting a dictionary")
+        if self.result is None and self.get_input_slot("like") is None:
+            error = f"Variable {self.name} with no initial value and no input slot"
             logger.error(error)
             return error
         if self.result is None:
-            error = f'Variable {self.name} has to run once before receiving input'
+            error = f"Variable {self.name} has to run once before receiving input"
             logger.error(error)
             return error
         last = copy.copy(self.result)
-        error = ''
+        error = ""
         for (k, v) in input_.items():
             if k in last:
                 last[k] = v
             else:
-                error += f'Invalid key {k} ignored. '
+                error += f"Invalid key {k} ignored. "
         await self.scheduler().for_input(self)
         self.result.update(last)
         return error
 
     def run_step(self, run_number, step_size, howlong):
         if self.result is None:
-            slot = self.get_input_slot('like')
+            slot = self.get_input_slot("like")
             if slot is not None:
                 like = slot.data()
                 if like is not None:
@@ -55,7 +55,7 @@ class Variable(Constant):
 class VirtualVariable(Constant):
     def __init__(self, names, **kwds):
         if not all_string(names):
-            raise ProgressiveError(f'names {names} must be a set of strings')
+            raise ProgressiveError(f"names {names} must be a set of strings")
         self._names = names
         self._key = frozenset(names)
         self._subscriptions = []
@@ -68,21 +68,22 @@ class VirtualVariable(Constant):
         Example: vocabulary = {'x': 'longitude', 'y': 'latitude'}
         """
         if not isinstance(var, Variable):
-            raise ProgressiveError('Expecting a Variable module')
+            raise ProgressiveError("Expecting a Variable module")
         if not isinstance(vocabulary, dict):
-            raise ProgressiveError('Expecting a dictionary')
-        if frozenset(vocabulary.keys()) != self._key or \
-           not all_string(vocabulary.values()):
-            raise ProgressiveError('Inconsistent vocabulary')
+            raise ProgressiveError("Expecting a dictionary")
+        if frozenset(vocabulary.keys()) != self._key or not all_string(
+            vocabulary.values()
+        ):
+            raise ProgressiveError("Inconsistent vocabulary")
         self._subscriptions.append((var, vocabulary))
 
     async def from_input(self, input_):
         if not isinstance(input_, dict):
-            raise ProgressiveError('Expecting a dictionary')
+            raise ProgressiveError("Expecting a dictionary")
         for var, vocabulary in self._subscriptions:
             translation = {vocabulary[k]: v for k, v in input_.items()}
             await var.from_input(translation)
-        return ''
+        return ""
 
     def run_step(self, run_number, step_size, howlong):
         return self._return_run_step(self.state_blocked, steps_run=1)

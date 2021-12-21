@@ -12,23 +12,23 @@ import pandas as pd
 from pandas.core.dtypes.inference import is_file_like, is_sequence
 import lzma
 
-from progressivis.core.utils import (filepath_to_buffer,
-                                     _infer_compression, is_str)
+from progressivis.core.utils import filepath_to_buffer, _infer_compression, is_str
 
 
 SAMPLE_SIZE = 5
 MARGIN = 0.05
 MAX_RETRY = 3
-NL = b'\n'
-SEP = ','
+NL = b"\n"
+SEP = ","
 ROW_MAX_LENGTH_GUESS = 10000
 HEADER_CHUNK = 50
 
-decompressors = dict(bz2=bz2.BZ2Decompressor,
-                     zlib=zlib.decompressobj,
-                     gzip=ft.partial(zlib.decompressobj,
-                                     wbits=zlib.MAX_WBITS | 16),
-                     xz=lzma.LZMADecompressor)
+decompressors = dict(
+    bz2=bz2.BZ2Decompressor,
+    zlib=zlib.decompressobj,
+    gzip=ft.partial(zlib.decompressobj, wbits=zlib.MAX_WBITS | 16),
+    xz=lzma.LZMADecompressor,
+)
 
 
 def is_recoverable(inp):
@@ -46,9 +46,20 @@ class Parser(object):
     """
     Always use Parser.create() instead of Parser() because __init__() is not awaitable
     """
-    def __init__(self, input_source, remaining, estimated_row_size,
-                 offset=None, overflow_df=None, pd_kwds={}, chunksize=0,
-                 usecols=None, names=None, header='infer'):
+
+    def __init__(
+        self,
+        input_source,
+        remaining,
+        estimated_row_size,
+        offset=None,
+        overflow_df=None,
+        pd_kwds={},
+        chunksize=0,
+        usecols=None,
+        names=None,
+        header="infer",
+    ):
         self._input = input_source
         self._pd_kwds = pd_kwds
         self._remaining = remaining
@@ -63,11 +74,30 @@ class Parser(object):
         self._header = header
 
     @staticmethod
-    def create(input_source, remaining, estimated_row_size,
-               offset=None, overflow_df=None, pd_kwds={}, chunksize=0,
-               usecols=None, names=None, header='infer'):
-        par = Parser(input_source, remaining, estimated_row_size, offset,
-                     overflow_df, pd_kwds, chunksize, usecols, names, header)
+    def create(
+        input_source,
+        remaining,
+        estimated_row_size,
+        offset=None,
+        overflow_df=None,
+        pd_kwds={},
+        chunksize=0,
+        usecols=None,
+        names=None,
+        header="infer",
+    ):
+        par = Parser(
+            input_source,
+            remaining,
+            estimated_row_size,
+            offset,
+            overflow_df,
+            pd_kwds,
+            chunksize,
+            usecols,
+            names,
+            header,
+        )
         if offset is None:
             par._offset = par._input.tell()
         return par
@@ -76,24 +106,29 @@ class Parser(object):
         if not is_recoverable(self._input._seq):
             raise ValueError("Not recoverable")
         ret = OrderedDict(
-                file_seq=json.dumps(self._input._seq),
-                file_cnt=self._input._file_cnt,
-                encoding=json.dumps(self._input._encoding),
-                compression=json.dumps(self._input._compression),
-                remaining=self._remaining.decode('utf-8'),
-                overflow_df=("" if self._overflow_df is None
-                             else
-                             self._overflow_df.to_csv(index=False,
-                                                      header=False)),
-                offset=self._offset - len(self._input._dec_remaining),
-                estimated_row_size=self._estimated_row_size,
-                nb_cols=self._nb_cols,
-                run_number=run_number,
-                last_id=last_id,
-                table_name=table_name,
-                names=json.dumps(self._names.tolist() if isinstance(self._names, np.ndarray) else self._names),
-                usecols=json.dumps(self._usecols)
-            )
+            file_seq=json.dumps(self._input._seq),
+            file_cnt=self._input._file_cnt,
+            encoding=json.dumps(self._input._encoding),
+            compression=json.dumps(self._input._compression),
+            remaining=self._remaining.decode("utf-8"),
+            overflow_df=(
+                ""
+                if self._overflow_df is None
+                else self._overflow_df.to_csv(index=False, header=False)
+            ),
+            offset=self._offset - len(self._input._dec_remaining),
+            estimated_row_size=self._estimated_row_size,
+            nb_cols=self._nb_cols,
+            run_number=run_number,
+            last_id=last_id,
+            table_name=table_name,
+            names=json.dumps(
+                self._names.tolist()
+                if isinstance(self._names, np.ndarray)
+                else self._names
+            ),
+            usecols=json.dumps(self._usecols),
+        )
         ret.update(check=hash(tuple(ret.values())))
         return ret
 
@@ -107,14 +142,14 @@ class Parser(object):
             if len_df > n:
                 ret.append(self._overflow_df.iloc[:n])
                 self._overflow_df = self._overflow_df.iloc[n:]
-                #print("previous overflow partly consumed : ", n, " rows")
+                # print("previous overflow partly consumed : ", n, " rows")
                 return ret
             # else
             # print("previous overflow entirely consumed: ", len_df, " rows")
             n_ = n - len_df
             ret.append(self._overflow_df)
             self._overflow_df = None
-            if n_ < n*MARGIN:  # almost equals
+            if n_ < n * MARGIN:  # almost equals
                 return ret
         assert n_ > 0
         # it remains n_ rows to read
@@ -155,29 +190,42 @@ class Parser(object):
             if last_nl == -1:  # NL not found => we read less than an entire row
                 self._remaining += bytes_
                 continue
-            csv_bytes = self._remaining+bytes_[:last_nl+1]
-            self._remaining = bytes_[last_nl+1:]
+            csv_bytes = self._remaining + bytes_[: last_nl + 1]
+            self._remaining = bytes_[last_nl + 1 :]
             if not csv_bytes:
                 break
             if new_csv or self._names is None:
                 header = self._header
-                if (self._header in (0, 'infer') and
-                    self._names is None and
-                    self._usecols and
-                    (not callable(self._usecols)  # TODO not sure what to do
-                     and isinstance(self._usecols[0], str))):
+                if (
+                    self._header in (0, "infer")
+                    and self._names is None
+                    and self._usecols
+                    and (
+                        not callable(self._usecols)  # TODO not sure what to do
+                        and isinstance(self._usecols[0], str)
+                    )
+                ):
                     # csv_bytes begins with the column names
-                    first_row_size = csv_bytes.find(b'\n')+1
-                    self._names = pd.read_csv(BytesIO(csv_bytes[:first_row_size])).columns.values
+                    first_row_size = csv_bytes.find(b"\n") + 1
+                    self._names = pd.read_csv(
+                        BytesIO(csv_bytes[:first_row_size])
+                    ).columns.values
                 names = None
             else:
                 header = None
                 names = self._names
-            kwds = {k: v
-                    for (k, v) in self._pd_kwds.items()
-                    if k not in ['header', 'names', 'usecols']}
-            read_df = pd.read_csv(BytesIO(csv_bytes), header=header,
-                                  names=names, usecols=self._usecols, **kwds)
+            kwds = {
+                k: v
+                for (k, v) in self._pd_kwds.items()
+                if k not in ["header", "names", "usecols"]
+            }
+            read_df = pd.read_csv(
+                BytesIO(csv_bytes),
+                header=header,
+                names=names,
+                usecols=self._usecols,
+                **kwds
+            )
             if self._names is None:
                 self._names = read_df.columns.values
                 if self._usecols:
@@ -188,12 +236,13 @@ class Parser(object):
             if self._nb_cols is None:
                 self._nb_cols = len(read_df.columns)
             elif self._nb_cols != len(read_df.columns):
-                raise ValueError("Wrong number of cols "
-                                 "{} instead of {}".format(
-                                     len(read_df.columns), self._nb_cols))
+                raise ValueError(
+                    "Wrong number of cols "
+                    "{} instead of {}".format(len(read_df.columns), self._nb_cols)
+                )
             len_df = len(read_df)
             if len_df:
-                self._estimated_row_size = len(csv_bytes)//len_df
+                self._estimated_row_size = len(csv_bytes) // len_df
             if len_df <= n_:
                 ret.append(read_df)
                 row_cnt += len_df
@@ -211,7 +260,18 @@ class InputSource(object):
     """
     Always use InputSource.create() instead of InputSource() because __init__() is not awaitable
     """
-    def __init__(self, inp, encoding, file_cnt=0, compression=None, dec_remaining=b'', timeout=None, start_byte=0, usecols=None):
+
+    def __init__(
+        self,
+        inp,
+        encoding,
+        file_cnt=0,
+        compression=None,
+        dec_remaining=b"",
+        timeout=None,
+        start_byte=0,
+        usecols=None,
+    ):
         """
         NB: all inputs are supposed to have the same type, encoding, compression
         TODO: check that for encoding and compression
@@ -237,16 +297,36 @@ class InputSource(object):
         self._usecols = usecols
 
     @staticmethod
-    def create(inp, encoding, file_cnt=0, compression=None, dec_remaining=b'', timeout=None, start_byte=0, usecols=None):
-        isrc = InputSource(inp, encoding, file_cnt, compression, dec_remaining, timeout, start_byte, usecols=usecols)
+    def create(
+        inp,
+        encoding,
+        file_cnt=0,
+        compression=None,
+        dec_remaining=b"",
+        timeout=None,
+        start_byte=0,
+        usecols=None,
+    ):
+        isrc = InputSource(
+            inp,
+            encoding,
+            file_cnt,
+            compression,
+            dec_remaining,
+            timeout,
+            start_byte,
+            usecols=usecols,
+        )
         compression = _infer_compression(isrc.filepath, compression)
         offs = 0 if compression else start_byte
 
-        istream, encoding, compression, size = filepath_to_buffer(isrc.filepath,
-                                                                  encoding=encoding,
-                                                                  compression=compression,
-                                                                  timeout=timeout,
-                                                                  start_byte=offs)
+        istream, encoding, compression, size = filepath_to_buffer(
+            isrc.filepath,
+            encoding=encoding,
+            compression=compression,
+            timeout=timeout,
+            start_byte=offs,
+        )
         isrc._encoding = encoding
         isrc._compression = compression
         isrc._input_size = size
@@ -271,12 +351,12 @@ class InputSource(object):
         """
         """
         # print("Switch to next")
-        if self._file_cnt >= len(self._seq)-1:
+        if self._file_cnt >= len(self._seq) - 1:
             return False
         self._file_cnt += 1
-        istream, encoding, compression, size = filepath_to_buffer(self.filepath,
-                                                                  encoding=self._encoding,
-                                                                  compression=self._compression)
+        istream, encoding, compression, size = filepath_to_buffer(
+            self.filepath, encoding=self._encoding, compression=self._compression
+        )
         if self._encoding != encoding:
             raise ValueError("all files must have the same encoding")
         if self._compression != compression:
@@ -285,7 +365,7 @@ class InputSource(object):
         self._timeout = None  # for tests
         self._decompressor_class = None
         self._decompressor = None
-        self._dec_remaining = b''
+        self._dec_remaining = b""
         self._dec_offset = 0
         # self._compressed_offset = 0
         if self._compression is not None:
@@ -298,19 +378,23 @@ class InputSource(object):
         if self._stream is not None:
             self.close()
         if self._compression is None:
-            istream, encoding, compression, size = filepath_to_buffer(filepath=self.filepath,
-                                                                      encoding=self._encoding,
-                                                                      compression=self._compression,
-                                                                      timeout=self._timeout,
-                                                                      start_byte=start_byte)
+            istream, encoding, compression, size = filepath_to_buffer(
+                filepath=self.filepath,
+                encoding=self._encoding,
+                compression=self._compression,
+                timeout=self._timeout,
+                start_byte=start_byte,
+            )
             self._stream = istream
             self._input_size = size
             return istream
-        istream, encoding, compression, size = filepath_to_buffer(filepath=self.filepath,
-                                                                  encoding=self._encoding,
-                                                                  compression=self._compression,
-                                                                  timeout=self._timeout,
-                                                                  start_byte=0)
+        istream, encoding, compression, size = filepath_to_buffer(
+            filepath=self.filepath,
+            encoding=self._encoding,
+            compression=self._compression,
+            timeout=self._timeout,
+            start_byte=0,
+        )
         self._stream = istream
         self._decompressor = self._decompressor_class()
         if self._dec_offset != start_byte:
@@ -341,13 +425,13 @@ class InputSource(object):
         if tell_ < self._input_size:
             raise ValueError(
                 "Inconsistent read: empty string"
-                " when position {} < size {}".format(tell_,
-                                                     self._input_size))
+                " when position {} < size {}".format(tell_, self._input_size)
+            )
         if self.switch_to_next():
             _, r = self.read(n)
             return True, r
         else:
-            return False, b''
+            return False, b""
 
     def _read_compressed(self, n):
         len_remaining = len(self._dec_remaining)
@@ -366,7 +450,7 @@ class InputSource(object):
             chunk = self._stream.read(int(max_length))
             if not len(chunk):
                 break_ = True
-            bytes_ = b''
+            bytes_ = b""
             try:
                 bytes_ = self._decompressor.decompress(chunk)
             except EOFError:
@@ -378,7 +462,7 @@ class InputSource(object):
                 break
         self._dec_offset += cnt
         ret = buff.getvalue()
-        self._dec_remaining = b''
+        self._dec_remaining = b""
         if len(ret) > n:
             self._dec_remaining = ret[n:]
             ret = ret[:n]
@@ -404,7 +488,7 @@ def get_first_row(fd):
     for _ in range(guard):
         _, c = fd.read(1)
         ret.write(c)
-        if c == b'\n':
+        if c == b"\n":
             break
     else:
         print("Warning: row longer than {}".format(guard))
@@ -413,60 +497,84 @@ def get_first_row(fd):
 
 def read_csv(input_source, silent_before=0, **csv_kwds):
     pd_kwds = dict(csv_kwds)
-    chunksize = pd_kwds['chunksize']
-    del pd_kwds['chunksize']
+    chunksize = pd_kwds["chunksize"]
+    del pd_kwds["chunksize"]
     # pd_kwds['encoding'] = input_source._encoding
     first_row = get_first_row(input_source)
     usecols = None
-    if 'usecols' in pd_kwds:
-        usecols = pd_kwds.pop('usecols')
-    header = 'infer'
-    if 'header' in pd_kwds:
-        header = pd_kwds.pop('header')
+    if "usecols" in pd_kwds:
+        usecols = pd_kwds.pop("usecols")
+    header = "infer"
+    if "header" in pd_kwds:
+        header = pd_kwds.pop("header")
         assert header is None or header == 0
-    return Parser.create(input_source, remaining=first_row, estimated_row_size=len(first_row), pd_kwds=pd_kwds, chunksize=chunksize, usecols=usecols, header=header)
+    return Parser.create(
+        input_source,
+        remaining=first_row,
+        estimated_row_size=len(first_row),
+        pd_kwds=pd_kwds,
+        chunksize=chunksize,
+        usecols=usecols,
+        header=header,
+    )
 
 
 def recovery(snapshot, previous_file_seq, **csv_kwds):
     print("RECOVERY ...")
     pd_kwds = dict(csv_kwds)
-    chunksize = pd_kwds['chunksize']
-    del pd_kwds['chunksize']
-    file_seq = json.loads(snapshot['file_seq'])
+    chunksize = pd_kwds["chunksize"]
+    del pd_kwds["chunksize"]
+    file_seq = json.loads(snapshot["file_seq"])
     if is_str(previous_file_seq):
         previous_file_seq = [previous_file_seq]
-    if previous_file_seq != file_seq[:len(previous_file_seq)]:
+    if previous_file_seq != file_seq[: len(previous_file_seq)]:
         # we tolerate a new file_seq longer than the previous
         raise ValueError("File sequence changed, recovery aborted!")
-    file_cnt = snapshot['file_cnt']
-    encoding = json.loads(snapshot['encoding'])
-    compression = json.loads(snapshot['compression'])
-    remaining = snapshot['remaining'].encode('utf-8')
-    overflow_df = snapshot['overflow_df'].encode('utf-8')
-    offset = snapshot['offset']
-    estimated_row_size = snapshot['estimated_row_size']
-    nb_cols = snapshot['nb_cols']
-    names = json.loads(snapshot['names'])
-    usecols = json.loads(snapshot['usecols'])
+    file_cnt = snapshot["file_cnt"]
+    encoding = json.loads(snapshot["encoding"])
+    compression = json.loads(snapshot["compression"])
+    remaining = snapshot["remaining"].encode("utf-8")
+    overflow_df = snapshot["overflow_df"].encode("utf-8")
+    offset = snapshot["offset"]
+    estimated_row_size = snapshot["estimated_row_size"]
+    nb_cols = snapshot["nb_cols"]
+    names = json.loads(snapshot["names"])
+    usecols = json.loads(snapshot["usecols"])
     if usecols is not None:
-        assert 'usecols' in csv_kwds and csv_kwds['usecols'] == usecols
+        assert "usecols" in csv_kwds and csv_kwds["usecols"] == usecols
     # dec_remaining = snapshot['dec_remaining'].encode('utf-8')
     if overflow_df:
         overflow_df = pd.read_csv(BytesIO(overflow_df), **pd_kwds)
         if nb_cols != len(overflow_df.columns):
             raise ValueError(
                 "Inconsistent snapshot: wrong number of cols in df {} instead of {}".format(
-                    len(overflow_df.columns), nb_cols))
+                    len(overflow_df.columns), nb_cols
+                )
+            )
     else:
         overflow_df = None
-    input_source = InputSource.create(file_seq, encoding=encoding, compression=compression, file_cnt=file_cnt, start_byte=offset, timeout=None)
+    input_source = InputSource.create(
+        file_seq,
+        encoding=encoding,
+        compression=compression,
+        file_cnt=file_cnt,
+        start_byte=offset,
+        timeout=None,
+    )
     pd_kwds = dict(csv_kwds)
-    chunksize = pd_kwds['chunksize']
-    del pd_kwds['chunksize']
+    chunksize = pd_kwds["chunksize"]
+    del pd_kwds["chunksize"]
     # if 'header' in pd_kwds:
     #     header = pd_kwds.pop('header')
-    return Parser.create(input_source, remaining=remaining,
-                         estimated_row_size=estimated_row_size,
-                         offset=offset, overflow_df=overflow_df,
-                         pd_kwds=pd_kwds, chunksize=chunksize, names=names,
-                         usecols=usecols, header=None)
+    return Parser.create(
+        input_source,
+        remaining=remaining,
+        estimated_row_size=estimated_row_size,
+        offset=offset,
+        overflow_df=overflow_df,
+        pd_kwds=pd_kwds,
+        chunksize=chunksize,
+        names=names,
+        usecols=usecols,
+        header=None,
+    )

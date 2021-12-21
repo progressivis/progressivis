@@ -1,7 +1,6 @@
 import numpy as np
 import re
 import logging
-logger = logging.getLogger(__name__)
 
 from bz2 import BZ2File
 from gzip import GzipFile
@@ -9,9 +8,11 @@ from gzip import GzipFile
 from progressivis.table.table import Table
 from progressivis.table.module import TableModule
 
-from sklearn.feature_extraction import DictVectorizer
+from sklearn.feature_extraction import DictVectorizer  # type: ignore
 
-PATTERN = re.compile(r'\(([0-9]+),([-+.0-9]+)\)[ ]*')
+logger = logging.getLogger(__name__)
+
+PATTERN = re.compile(r"\(([0-9]+),([-+.0-9]+)\)[ ]*")
 
 
 def vec_loader(filename, dtype=np.float64):
@@ -23,23 +24,23 @@ def vec_loader(filename, dtype=np.float64):
     >>> mat.shape
     (3077, 4337)
     """
-    openf=open
-    if filename.endswith('.bz2'):
-        openf=BZ2File
-    elif filename.endswith('.gz') or filename.endswith('.Z'):
-        openf=GzipFile
+    openf = open
+    if filename.endswith(".bz2"):
+        openf = BZ2File
+    elif filename.endswith(".gz") or filename.endswith(".Z"):
+        openf = GzipFile
     with openf(filename) as f:
         dataset = []
         for d in f:
             doc = {}
-            for match in re.finditer(PATTERN, d.decode('ascii', errors='ignore')):
+            for match in re.finditer(PATTERN, d.decode("ascii", errors="ignore")):
                 termidx = int(match.group(1))
                 termfrx = dtype(match.group(2))
                 doc[termidx] = termfrx
-            if len(doc)!=0:
-                dataset.append(doc) 
+            if len(doc) != 0:
+                dataset.append(doc)
 
-        dictionary = DictVectorizer(dtype=dtype,sparse=True)
+        dictionary = DictVectorizer(dtype=dtype, sparse=True)
         return (dictionary.fit_transform(dataset), dictionary.get_feature_names())
 
 
@@ -47,30 +48,32 @@ class VECLoader(TableModule):
     def __init__(self, filename, dtype=np.float64, **kwds):
         super(VECLoader, self).__init__(**kwds)
         self._dtype = dtype
-        self.default_step_size = kwds.get('chunksize', 10)  # initial guess
-        openf=open
-        if filename.endswith('.bz2'):
-            openf=BZ2File
-        elif filename.endswith('.gz') or filename.endswith('.Z'):
-            openf=GzipFile
+        self.default_step_size = kwds.get("chunksize", 10)  # initial guess
+        openf = open
+        if filename.endswith(".bz2"):
+            openf = BZ2File
+        elif filename.endswith(".gz") or filename.endswith(".Z"):
+            openf = GzipFile
         self.f = openf(filename)
         # When created with a specified chunksize, it returns the parser
         self._rows_read = 0
         self._csr_matrix = None
-        self.result = Table(self.generate_table_name('documents'),
-                            dshape="{document: var * float32}",
-                            fillvalues={'document': 0},
-                            storagegroup=self.storagegroup)
+        self.result = Table(
+            self.generate_table_name("documents"),
+            dshape="{document: var * float32}",
+            fillvalues={"document": 0},
+            storagegroup=self.storagegroup,
+        )
 
     def rows_read(self):
         return self._rows_read
 
     def toarray(self):
         if self._csr_matrix is None:
-            docs = self.table()['document']
-            dv=DictVectorizer()
-            #TODO: race condition when using threads, cleanup_run can reset between
-            #setting the value here and returning it at the next instruction
+            docs = self.table()["document"]
+            dv = DictVectorizer()
+            # TODO: race condition when using threads, cleanup_run can reset between
+            # setting the value here and returning it at the next instruction
             self._csr_matrix = dv.fit_transform(docs)
         return self._csr_matrix
 
@@ -78,11 +81,11 @@ class VECLoader(TableModule):
         self._csr_matrix = None
         super(VECLoader, self).cleanup_run(run_number)
 
-    def run_step(self,run_number,step_size, howlong):
-        if step_size==0: # bug
-            logger.error('Received a step_size of 0')
-            #return self._return_run_step(self.state_ready, steps_run=0, creates=0)
-        print('step_size %d'%step_size)
+    def run_step(self, run_number, step_size, howlong):
+        if step_size == 0:  # bug
+            logger.error("Received a step_size of 0")
+            # return self._return_run_step(self.state_ready, steps_run=0, creates=0)
+        print("step_size %d" % step_size)
         if self.f is None:
             raise StopIteration()
 
@@ -91,8 +94,8 @@ class VECLoader(TableModule):
         try:
             while len(dataset) < step_size:
                 line = next(self.f)
-                line=line.rstrip(b'\n\r')
-                if len(line)==0:
+                line = line.rstrip(b"\n\r")
+                if len(line) == 0:
                     continue
                 doc = {}
                 for match in re.finditer(PATTERN, line):
@@ -100,18 +103,18 @@ class VECLoader(TableModule):
                     termfrx = self._dtype(match.group(2))
                     doc[termidx] = termfrx
                     dims = max(dims, termidx)
-                if len(doc)!=0:
+                if len(doc) != 0:
                     dataset.append(doc)
         except StopIteration:
             self.f.close()
             self.f = None
 
         creates = len(dataset)
-        if creates==0:
+        if creates == 0:
             raise StopIteration()
 
         dims += 1
-        documents = self.result['document']
+        documents = self.result["document"]
         if self._rows_read == 0:
             documents.set_shape((dims,))
         else:
@@ -121,10 +124,10 @@ class VECLoader(TableModule):
             else:
                 dims = current_dims
 
-        self.result.resize(self._rows_read+creates)
+        self.result.resize(self._rows_read + creates)
         tmp = np.zeros(dims, dtype=np.float)
         i = self._rows_read
-        #with self.lock:
+        # with self.lock:
         if True:
             for row in dataset:
                 tmp[:] = 0
@@ -133,9 +136,12 @@ class VECLoader(TableModule):
                 documents[i] = tmp
                 i += 1
         self._rows_read += creates
-        return self._return_run_step(self.state_ready, steps_run=creates, creates=creates)
+        return self._return_run_step(
+            self.state_ready, steps_run=creates, creates=creates
+        )
 
 
 if __name__ == "__main__":
     import doctest
+
     doctest.testmod()

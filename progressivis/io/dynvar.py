@@ -11,10 +11,10 @@ class DynVar(TableModule):
         self.tags.add(self.TAG_INPUT)
         self._has_input = False
         if not (vocabulary is None or isinstance(vocabulary, dict)):
-            raise ProgressiveError('vocabulary must be a dictionary')
+            raise ProgressiveError("vocabulary must be a dictionary")
         self._vocabulary = vocabulary
         if not (init_val is None or isinstance(init_val, dict)):
-            raise ProgressiveError('init_val must be a dictionary')
+            raise ProgressiveError("init_val must be a dictionary")
         self._table = PsDict({} if init_val is None else init_val)
 
     def has_input(self):
@@ -25,7 +25,7 @@ class DynVar(TableModule):
 
     async def from_input(self, input_):
         if not isinstance(input_, dict):
-            raise ProgressiveError('Expecting a dictionary')
+            raise ProgressiveError("Expecting a dictionary")
         last = PsDict(self._table)  # shallow copy
         values = input_
         if self._vocabulary is not None:
@@ -36,4 +36,4 @@ class DynVar(TableModule):
         self._table.update(values)
         self._has_input = True
         await aio.sleep(0)
-        return ''
+        return ""
