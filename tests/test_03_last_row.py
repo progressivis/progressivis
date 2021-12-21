@@ -14,10 +14,9 @@ from progressivis.core import aio
 class TestLastRow(ProgressiveTest):
     def test_last_row(self):
         s = self.scheduler()
-        csv = CSVLoader(get_dataset('smallfile'),
-                        index_col=False,
-                        header=None,
-                        scheduler=s)
+        csv = CSVLoader(
+            get_dataset("smallfile"), index_col=False, header=None, scheduler=s
+        )
         lr1 = LastRow(scheduler=s)
         lr1.input[0] = csv.output.result
         prlen = Every(proc=self.terse, constant_time=True, scheduler=s)
@@ -26,14 +25,12 @@ class TestLastRow(ProgressiveTest):
         df = csv.result
         last = df.last()
         res = lr1.result
-        self.assertEqual(res.at[0, '_1'], last['_1'])
+        self.assertEqual(res.at[0, "_1"], last["_1"])
 
     def test_last_row_simple(self):
         s = self.scheduler()
-        t1 = Table(name=get_random_name("cst1"),
-                   data={'xmin': [1], 'xmax': [2]})
-        t2 = Table(name=get_random_name("cst2"),
-                   data={'ymin': [3], 'ymax': [4]})
+        t1 = Table(name=get_random_name("cst1"), data={"xmin": [1], "xmax": [2]})
+        t2 = Table(name=get_random_name("cst2"), data={"ymin": [3], "ymax": [4]})
         cst1 = Constant(t1, scheduler=s)
         cst2 = Constant(t2, scheduler=s)
         join = Join(scheduler=s)
@@ -47,9 +44,13 @@ class TestLastRow(ProgressiveTest):
         # print(res)
         df = join.result
         last = df.last()
-        self.assertTrue(last['xmin'] == 1 and last['xmax'] == 2 and
-                        last['ymin'] == 3 and last['ymax'] == 4)
+        self.assertTrue(
+            last["xmin"] == 1
+            and last["xmax"] == 2
+            and last["ymin"] == 3
+            and last["ymax"] == 4
+        )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     ProgressiveTest.main()

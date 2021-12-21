@@ -20,17 +20,19 @@ class TestSelect(ProgressiveTest):
     def setUp(self):
         super(TestSelect, self).setUp()
         #        self.log(self.INFO)
+
     @skip
     def test_select_simple(self):
         s = self.scheduler()
-        csv = CSVLoader(get_dataset('bigfile'), index_col=False, header=None,
-                        scheduler=s)
+        csv = CSVLoader(
+            get_dataset("bigfile"), index_col=False, header=None, scheduler=s
+        )
         sample = Sample(samples=100, scheduler=s)
         sample.input[0] = csv.output.result
-        q=Select(scheduler=s)
+        q = Select(scheduler=s)
         q.input[0] = csv.output.result
         q.input.select = sample.output.select
-        prlen = Print(proc=self.terse,  scheduler=s)
+        prlen = Print(proc=self.terse, scheduler=s)
         prlen.input[0] = q.output.result
         aio.run(s.start())
         print(repr(q.table()))
@@ -40,9 +42,14 @@ class TestSelect(ProgressiveTest):
     @skip("Need to implement select on tables")
     def test_select(self):
         s = self.scheduler()
-        csv = CSVLoader(get_dataset('bigfile'), index_col=False, header=None,
-                        force_valid_ids=True, scheduler=s)
-        cst = Constant(pd.DataFrame({'query': ['_1 < 0.5']}), scheduler=s)
+        csv = CSVLoader(
+            get_dataset("bigfile"),
+            index_col=False,
+            header=None,
+            force_valid_ids=True,
+            scheduler=s,
+        )
+        cst = Constant(pd.DataFrame({"query": ["_1 < 0.5"]}), scheduler=s)
         q = Select(scheduler=s)
         q.input[0] = csv.output.df
         q.input.query = cst.output.df
@@ -52,5 +59,5 @@ class TestSelect(ProgressiveTest):
         self.assertTrue(len(q.table()) < 1000000)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     ProgressiveTest.main()

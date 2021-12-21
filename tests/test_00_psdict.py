@@ -16,8 +16,8 @@ class TestPsDict(ProgressiveTest):
     def test_ps_dict_new_ids(self):
         prev = PsDict(a=1, b=2, c=3)
         now = copy.copy(prev)
-        now['x'] = 10
-        now['y'] = 20
+        now["x"] = 10
+        now["y"] = 20
         new_ids = now.created_indices(prev)
         self.assertEqual(bitmap(new_ids), bitmap([3, 4]))
 
@@ -26,8 +26,8 @@ class TestPsDict(ProgressiveTest):
         now = copy.copy(prev)
         updated_ids = now.updated_indices(prev)
         self.assertEqual(bitmap(updated_ids), bitmap())
-        now['b'] += 1
-        now['d'] *= 2
+        now["b"] += 1
+        now["d"] *= 2
         updated_ids = now.updated_indices(prev)
         self.assertEqual(bitmap(updated_ids), bitmap([1, 3]))
 
@@ -36,8 +36,8 @@ class TestPsDict(ProgressiveTest):
         now = copy.copy(prev)
         deleted_ids = now.deleted_indices(prev)
         self.assertEqual(bitmap(deleted_ids), bitmap())
-        del now['b']
-        now['c'] *= 3
+        del now["b"]
+        now["c"] *= 3
         deleted_ids = now.deleted_indices(prev)
         updated_ids = now.updated_indices(prev)
         self.assertEqual(bitmap(deleted_ids), bitmap([1]))

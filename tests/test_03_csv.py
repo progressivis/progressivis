@@ -22,16 +22,15 @@ class TestProgressiveLoadCSV(ProgressiveTest):
         module.run(1)
         table = module.result
         self.assertFalse(table is None)
-        l = len(table)
+        _ = len(table)
         cnt = 2
 
         while not module.is_zombie():
             module.run(cnt)
             cnt += 1
             table = module.result
-            ln = len(table)
-            l = ln
-        s = module.trace_stats(max_runs=1)
+            _ = len(table)
+        _ = module.trace_stats(max_runs=1)
         return cnt
 
     def test_read_csv(self):
@@ -60,12 +59,7 @@ class TestProgressiveLoadCSV(ProgressiveTest):
         filenames = Table(
             name="file_names",
             dshape="{filename: string}",
-            data={
-                "filename": [
-                    get_dataset("smallfile"),
-                    get_dataset("smallfile"),
-                ]
-            },
+            data={"filename": [get_dataset("smallfile"), get_dataset("smallfile")]},
         )
         cst = Constant(table=filenames, scheduler=s)
         csv = CSVLoader(index_col=False, header=None, scheduler=s)

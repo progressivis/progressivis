@@ -9,14 +9,8 @@ from . import ProgressiveTest
 
 
 class TestModule(Module):
-    inputs = [
-        SlotDescriptor('a'),
-        SlotDescriptor('b', required=False)
-    ]
-    outputs = [
-        SlotDescriptor('c'),
-        SlotDescriptor('d', required=False)
-    ]
+    inputs = [SlotDescriptor("a"), SlotDescriptor("b", required=False)]
+    outputs = [SlotDescriptor("c"), SlotDescriptor("d", required=False)]
 
     def __init__(self, **kwds):
         super(TestModule, self).__init__(**kwds)
@@ -31,33 +25,39 @@ class TestDataflow(ProgressiveTest):
         saved_inputs = None
         saved_outputs = None
         with scheduler as dataflow:
-            csv = CSVLoader(get_dataset('smallfile'), name='csv',
-                            index_col=False, header=None,
-                            scheduler=scheduler)
-            self.assertIs(scheduler['csv'], csv)
+            csv = CSVLoader(
+                get_dataset("smallfile"),
+                name="csv",
+                index_col=False,
+                header=None,
+                scheduler=scheduler,
+            )
+            self.assertIs(scheduler["csv"], csv)
             self.assertEqual(dataflow.validate_module(csv), [])
 
             m = Min(name="min", scheduler=scheduler)
             self.assertIs(dataflow[m.name], m)
-            self.assertEqual(dataflow.validate_module(m),
-                             ['Input slot "table" missing in module "min"'])
+            self.assertEqual(
+                dataflow.validate_module(m),
+                ['Input slot "table" missing in module "min"'],
+            )
 
-            prt = Print(proc=self.terse,
-                        name='print',
-                        scheduler=scheduler)
+            prt = Print(proc=self.terse, name="print", scheduler=scheduler)
             self.assertIs(dataflow[prt.name], prt)
-            self.assertEqual(dataflow.validate_module(prt),
-                             ['Input slot "df" missing in module "print"'])
+            self.assertEqual(
+                dataflow.validate_module(prt),
+                ['Input slot "df" missing in module "print"'],
+            )
 
             m.input.table = csv.output.result
             prt.input.df = m.output.result
 
             self.assertEqual(len(dataflow), 3)
-            self.assertEqual(dataflow.dir(), ['csv', 'min', 'print'])
+            self.assertEqual(dataflow.dir(), ["csv", "min", "print"])
             errors = dataflow.validate()
             self.assertEqual(errors, [])
             deps = dataflow.order_modules()
-            self.assertEqual(deps, ['csv', m.name, prt.name])
+            self.assertEqual(deps, ["csv", m.name, prt.name])
             saved_inputs = dataflow.inputs
             saved_outputs = dataflow.outputs
             # dataflow.__exit__() is called here
@@ -71,7 +71,7 @@ class TestDataflow(ProgressiveTest):
             # nothing should change when nothing is modified in dataflow
             self.assertEqual(len(dataflow), 3)
             deps = dataflow.order_modules()
-            self.assertEqual(deps, ['csv', m.name, prt.name])
+            self.assertEqual(deps, ["csv", m.name, prt.name])
             self.assertEqual(dataflow.inputs, saved_inputs)
             self.assertEqual(dataflow.outputs, saved_outputs)
         scheduler._update_modules()  # force modules in the main loop
@@ -80,7 +80,7 @@ class TestDataflow(ProgressiveTest):
             dataflow.remove_module(prt)
             self.assertEqual(len(dataflow), 2)
             deps = dataflow.order_modules()
-            self.assertEqual(deps, ['csv', m.name])
+            self.assertEqual(deps, ["csv", m.name])
             # pprint(dataflow.inputs)
             # pprint(dataflow.outputs)
         # print('Old modules:')
@@ -91,13 +91,13 @@ class TestDataflow(ProgressiveTest):
         with scheduler as dataflow:
             self.assertEqual(len(dataflow), 2)
             deps = dataflow.order_modules()
-            self.assertEqual(deps, ['csv', m.name])
-            prt = Print(proc=self.terse,
-                        name="print",
-                        scheduler=scheduler)
+            self.assertEqual(deps, ["csv", m.name])
+            prt = Print(proc=self.terse, name="print", scheduler=scheduler)
             self.assertIs(dataflow[prt.name], prt)
-            self.assertEqual(dataflow.validate_module(prt),
-                             ['Input slot "df" missing in module "print"'])
+            self.assertEqual(
+                dataflow.validate_module(prt),
+                ['Input slot "df" missing in module "print"'],
+            )
 
             prt.input.df = m.output.result
         scheduler._update_modules()  # force modules in the main loop
@@ -105,13 +105,15 @@ class TestDataflow(ProgressiveTest):
     def test_dataflow_1_dynamic(self):
         scheduler = self.scheduler(clean=True)
 
-        csv = CSVLoader(get_dataset('bigfile'), name='csv',
-                        index_col=False, header=None,
-                        scheduler=scheduler)
+        csv = CSVLoader(
+            get_dataset("bigfile"),
+            name="csv",
+            index_col=False,
+            header=None,
+            scheduler=scheduler,
+        )
         m = Min(name="min", scheduler=scheduler)
-        prt = Print(proc=self.terse,
-                    name='print_min',
-                    scheduler=scheduler)
+        prt = Print(proc=self.terse, name="print_min", scheduler=scheduler)
         m.input.table = csv.output.result
         prt.input.df = m.output.result
         started = False
@@ -124,11 +126,9 @@ class TestDataflow(ProgressiveTest):
         async def _add_max(csv, scheduler, proc):
             await aio.sleep(2)
             with scheduler:
-                print('adding new modules')
+                print("adding new modules")
                 m = Max(name="max", scheduler=scheduler)
-                prt = Print(name='print_max',
-                            proc=proc,
-                            scheduler=scheduler)
+                prt = Print(name="print_max", proc=proc, scheduler=scheduler)
                 m.input.table = csv.output.result
                 prt.input.df = m.output.result
 
@@ -139,13 +139,15 @@ class TestDataflow(ProgressiveTest):
     def test_dataflow_2_add_remove(self):
         scheduler = self.scheduler(clean=True)
 
-        csv = CSVLoader(get_dataset('bigfile'), name='csv',
-                        index_col=False, header=None,
-                        scheduler=scheduler)
+        csv = CSVLoader(
+            get_dataset("bigfile"),
+            name="csv",
+            index_col=False,
+            header=None,
+            scheduler=scheduler,
+        )
         m = Min(name="min", scheduler=scheduler)
-        prt = Print(proc=self.terse,
-                    name='print_min',
-                    scheduler=scheduler)
+        prt = Print(proc=self.terse, name="print_min", scheduler=scheduler)
         m.input.table = csv.output.result
         prt.input.df = m.output.result
         started = False
@@ -158,13 +160,11 @@ class TestDataflow(ProgressiveTest):
         async def _add_max_remove_min(csv, scheduler, proc):
             await aio.sleep(2)
             with scheduler:
-                print('removing min module')
-                del scheduler['min']
-                print('adding new modules')
+                print("removing min module")
+                del scheduler["min"]
+                print("adding new modules")
                 m = Max(name="max", scheduler=scheduler)
-                prt = Print(name='print_max',
-                            proc=proc,
-                            scheduler=scheduler)
+                prt = Print(name="print_max", proc=proc, scheduler=scheduler)
                 m.input.table = csv.output.result
                 prt.input.df = m.output.result
 
@@ -174,33 +174,33 @@ class TestDataflow(ProgressiveTest):
 
     def test_dataflow_dels(self):
         s = self.scheduler()
-        table = RandomTable(name='table', columns=['a'], scheduler=s)
-        m = Min(name='min', scheduler=s)
+        table = RandomTable(name="table", columns=["a"], scheduler=s)
+        m = Min(name="min", scheduler=s)
         m.input.table = table.output.result
-        prt = Print(name='prt', scheduler=s)
+        prt = Print(name="prt", scheduler=s)
         prt.input.df = m.output.result
 
         aio.run(s.step())
         with s as dataflow:
             self.assertTrue(isinstance(dataflow, Dataflow))
-            deps = dataflow.collateral_damage('table')
-            self.assertEquals(deps, set(['table', 'min', 'prt']))
+            deps = dataflow.collateral_damage("table")
+            self.assertEquals(deps, set(["table", "min", "prt"]))
 
     def test_dataflow_dels2(self):
         s = self.scheduler()
-        table = RandomTable(name='table', columns=['a'], scheduler=s)
-        m = TestModule(name='min', scheduler=s)
+        table = RandomTable(name="table", columns=["a"], scheduler=s)
+        m = TestModule(name="min", scheduler=s)
         m.input.a = table.output.result
-        prt = Print(name='prt', scheduler=s)
+        prt = Print(name="prt", scheduler=s)
         prt.input.df = m.output.c
         # from nose.tools import set_trace; set_trace()
         s.commit()
         aio.run(s.step())
         with s as dataflow:
             self.assertTrue(isinstance(dataflow, Dataflow))
-            deps = dataflow.collateral_damage('table')
-            self.assertEquals(deps, set(['table', 'min', 'prt']))
+            deps = dataflow.collateral_damage("table")
+            self.assertEquals(deps, set(["table", "min", "prt"]))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     ProgressiveTest.main()

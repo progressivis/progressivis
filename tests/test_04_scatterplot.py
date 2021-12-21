@@ -16,7 +16,8 @@ def print_repr(x):
     if x is not None:
         print(repr(x))
 
-#async def idle_proc(s, _):
+
+# async def idle_proc(s, _):
 #    await s.stop()
 
 
@@ -45,13 +46,17 @@ class TestScatterPlot(ProgressiveTest):
     def test_scatterplot(self):
         s = self.scheduler(clean=True)
         with s:
-            csv = CSVLoader(get_dataset('smallfile'),
-                            index_col=False, header=None,
-                            force_valid_ids=True, scheduler=s)
-            sp = MCScatterPlot(scheduler=s,
-                               classes=[('Scatterplot', '_1', '_2')],
-                               approximate=True)
-            sp.create_dependent_modules(csv, 'result')
+            csv = CSVLoader(
+                get_dataset("smallfile"),
+                index_col=False,
+                header=None,
+                force_valid_ids=True,
+                scheduler=s,
+            )
+            sp = MCScatterPlot(
+                scheduler=s, classes=[("Scatterplot", "_1", "_2")], approximate=True
+            )
+            sp.create_dependent_modules(csv, "result")
             cnt = Every(proc=self.terse, constant_time=True, scheduler=s)
             cnt.input[0] = csv.output.result
             prt = Print(proc=self.terse, scheduler=s)
@@ -64,20 +69,20 @@ class TestScatterPlot(ProgressiveTest):
         s = self.scheduler(clean=True)
         with s:
             random = RandomTable(2, rows=2000000, scheduler=s)
-            sp = MCScatterPlot(scheduler=s,
-                               classes=[('Scatterplot', '_1', '_2')],
-                               approximate=True)
-            sp.create_dependent_modules(random, 'result', with_sampling=False)
+            sp = MCScatterPlot(
+                scheduler=s, classes=[("Scatterplot", "_1", "_2")], approximate=True
+            )
+            sp.create_dependent_modules(random, "result", with_sampling=False)
             cnt = Every(proc=self.terse, constant_time=True, scheduler=s)
             cnt.input[0] = random.output.result
             prt = Print(proc=self.terse, scheduler=s)
             prt.input[0] = sp.output.result
-        finp1 = fake_input(s, "variable_1", 6, {'_1': LOWER_X, '_2': LOWER_Y})
-        finp2 = fake_input(s, "variable_2", 6, {'_1': UPPER_X, '_2': UPPER_Y})
+        finp1 = fake_input(s, "variable_1", 6, {"_1": LOWER_X, "_2": LOWER_Y})
+        finp2 = fake_input(s, "variable_2", 6, {"_1": UPPER_X, "_2": UPPER_Y})
         sts = sleep_then_stop(s, 30)
         aio.run_gather(sp.scheduler().start(), finp1, finp2, sts)
         js = sp.to_json()
-        x, y, _ = zip(*js['sample']['data'])
+        x, y, _ = zip(*js["sample"]["data"])
         min_x = min(x)
         max_x = max(x)
         min_y = min(y)
@@ -88,5 +93,5 @@ class TestScatterPlot(ProgressiveTest):
         self.assertLessEqual(max_y, UPPER_Y)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     ProgressiveTest.main()

@@ -7,16 +7,15 @@ import numpy as np
 
 
 class TestPagingHelper(ProgressiveTest):
-
     def test_paging_helper_t(self):
-        t = Table('table_for_paging', dshape="{a: int, b: float32}", create=True)
+        t = Table("table_for_paging", dshape="{a: int, b: float32}", create=True)
         t.resize(200)
-        icontrol = np.arange(200)
-        ivalues = np.random.randint(100,size=200)
-        t['a'] = ivalues
+        _ = np.arange(200)
+        ivalues = np.random.randint(100, size=200)
+        t["a"] = ivalues
         fvalues = np.array(np.random.rand(200), np.float32)
-        t['b'] = fvalues
-        #import pdb; pdb.set_trace()
+        t["b"] = fvalues
+        # import pdb; pdb.set_trace()
         ph_t = PagingHelper(t)
         page = ph_t.get_page(0, 10)
         self.assertEqual(page[0][0], 0)

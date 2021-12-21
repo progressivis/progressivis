@@ -6,7 +6,7 @@ from progressivis.stats import Min, RandomTable
 from progressivis.table.module import TableModule
 from progressivis.table.table import Table
 from progressivis.core.slot import SlotDescriptor
-from progressivis.core.decorators import *
+from progressivis.core.decorators import process_slot, run_if_any
 from progressivis.core.utils import indices_len, fix_loc
 from progressivis.utils.psdict import PsDict
 import numpy as np
@@ -16,14 +16,15 @@ class Max(TableModule):
     """
     Simplified Max, adapted for documentation
     """
-    inputs = [SlotDescriptor('table', type=Table, required=True)]
+
+    inputs = [SlotDescriptor("table", type=Table, required=True)]
 
     def __init__(self, **kwds):
         super().__init__(**kwds)
         self.default_step_size = 10000
 
     def is_ready(self):
-        if self.get_input_slot('table').created.any():
+        if self.get_input_slot("table").created.any():
             return True
         return super().is_ready()
 
@@ -32,7 +33,7 @@ class Max(TableModule):
             self.result.fill(-np.inf)
 
     def run_step(self, run_number, step_size, howlong):
-        slot = self.get_input_slot('table')
+        slot = self.get_input_slot("table")
         if slot.updated.any() or slot.deleted.any():
             slot.reset()
             if self.result is not None:
@@ -40,7 +41,7 @@ class Max(TableModule):
             slot.update(run_number)
         indices = slot.created.next(step_size)
         steps = indices_len(indices)
-        if steps==0:
+        if steps == 0:
             return self._return_run_step(self.state_blocked, steps_run=0)
         data = slot.data()
         op = data.loc[fix_loc(indices)].max(keepdims=False)
@@ -56,14 +57,15 @@ class MaxDec(TableModule):
     """
     Simplified Max with decorated run_step(), adapted for documentation
     """
-    inputs = [SlotDescriptor('table', type=Table, required=True)]
+
+    inputs = [SlotDescriptor("table", type=Table, required=True)]
 
     def __init__(self, **kwds):
         super().__init__(**kwds)
         self.default_step_size = 10000
 
     def is_ready(self):
-        if self.get_input_slot('table').created.any():
+        if self.get_input_slot("table").created.any():
             return True
         return super().is_ready()
 
@@ -75,7 +77,7 @@ class MaxDec(TableModule):
     @run_if_any
     def run_step(self, run_number, step_size, howlong):
         with self.context as ctx:
-            indices = ctx.table.created.next(step_size) # returns a slice
+            indices = ctx.table.created.next(step_size)  # returns a slice
             steps = indices_len(indices)
             input_df = ctx.table.data()
             op = input_df.loc[fix_loc(indices)].max(keepdims=False)
@@ -86,16 +88,17 @@ class MaxDec(TableModule):
                     self.result[k] = np.maximum(op[k], v)
             return self._return_run_step(self.next_state(ctx.table), steps_run=steps)
 
+
 class TestMinMax(ProgressiveTest):
     def te_st_min(self):
         s = self.scheduler()
         random = RandomTable(10, rows=10000, scheduler=s)
-        min_=Min(name='min_'+str(hash(random)), scheduler=s)
+        min_ = Min(name="min_" + str(hash(random)), scheduler=s)
         min_.input[0] = random.output.result
-        pr=Print(proc=self.terse, scheduler=s)
+        pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = min_.output.result
         aio.run(s.start())
-        #s.join()
+        # s.join()
         res1 = random.result.min()
         res2 = min_.result
         self.compare(res1, res2)
@@ -103,23 +106,23 @@ class TestMinMax(ProgressiveTest):
     def compare(self, res1, res2):
         v1 = np.array(list(res1.values()))
         v2 = np.array(list(res2.values()))
-        #print('v1 = ', v1)
-        #print('v2 = ', v2)
+        # print('v1 = ', v1)
+        # print('v2 = ', v2)
         self.assertTrue(np.allclose(v1, v2))
 
     def test_max(self):
         s = self.scheduler()
         random = RandomTable(10, rows=10000, scheduler=s)
-        max_=Max(name='max_'+str(hash(random)), scheduler=s)
+        max_ = Max(name="max_" + str(hash(random)), scheduler=s)
         max_.input[0] = random.output.result
-        pr=Print(proc=self.terse, scheduler=s)
+        pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = max_.output.result
         aio.run(s.start())
-        #s.join()
+        # s.join()
         res1 = random.result.max()
         res2 = max_.result
         self.compare(res1, res2)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     ProgressiveTest.main()

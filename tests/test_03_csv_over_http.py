@@ -1,33 +1,29 @@
-from . import ProgressiveTest, skip
+from . import ProgressiveTest
 from progressivis.io import CSVLoader
 from progressivis.table.constant import Constant
 from progressivis.table.table import Table
-from progressivis.datasets import get_dataset,get_dataset_bz2,  DATA_DIR
-from progressivis.core.utils import RandomBytesIO
-#import logging, sys
-from multiprocessing import Process
-import time, os
-import requests
-from progressivis.core import aio
-from requests.packages.urllib3.exceptions import ReadTimeoutError
-from requests.exceptions import ConnectionError
+from progressivis.datasets import get_dataset, get_dataset_bz2, DATA_DIR
 
+# import logging, sys
+from multiprocessing import Process
+import time
+import os
+from progressivis.core import aio
 
 from RangeHTTPServer import RangeRequestHandler
 
-import shutil
-
-
 import http.server as http_srv
 
-BZ2 = 'csv.bz2'
+BZ2 = "csv.bz2"
 SLEEP = 1
 
+
 class ThrottledReqHandler(RangeRequestHandler):
-    threshold = 10**6
+    threshold = 10 ** 6
     sleep_times = 3
+
     def copyfile(self, src, dest):
-        buffer_size = 1024*16
+        buffer_size = 1024 * 16
         sleep_times = ThrottledReqHandler.sleep_times
         if not self.range:
             cnt = 0
@@ -43,36 +39,42 @@ class ThrottledReqHandler(RangeRequestHandler):
         else:
             RangeRequestHandler.copyfile(self, src, dest)
 
+
 def _close(module):
     try:
         module.parser._input._stream.close()
-    except:
+    except Exception:
         pass
 
-def run_throttled_server(port=8000, threshold=10**6):
-    _ = get_dataset('smallfile')
-    _ = get_dataset('bigfile')
-    _ = get_dataset_bz2('smallfile')
-    _ = get_dataset_bz2('bigfile')
+
+def run_throttled_server(port=8000, threshold=10 ** 6):
+    _ = get_dataset("smallfile")
+    _ = get_dataset("bigfile")
+    _ = get_dataset_bz2("smallfile")
+    _ = get_dataset_bz2("bigfile")
     os.chdir(DATA_DIR)
     ThrottledReqHandler.threshold = threshold
     http_srv.test(HandlerClass=ThrottledReqHandler, port=port)
 
-PORT = 8000
-HOST = 'localhost'
 
-def make_url(name, ext='csv'):
-    return 'http://{host}:{port}/{name}.{ext}'.format(host=HOST,
-                                                        port=PORT,
-                                                        name=name, ext=ext)
+PORT = 8000
+HOST = "localhost"
+
+
+def make_url(name, ext="csv"):
+    return "http://{host}:{port}/{name}.{ext}".format(
+        host=HOST, port=PORT, name=name, ext=ext
+    )
+
 
 def run_simple_server():
-    _ = get_dataset('smallfile')
-    _ = get_dataset('bigfile')
-    _ = get_dataset_bz2('smallfile')
-    _ = get_dataset_bz2('bigfile')
+    _ = get_dataset("smallfile")
+    _ = get_dataset("bigfile")
+    _ = get_dataset_bz2("smallfile")
+    _ = get_dataset_bz2("bigfile")
     os.chdir(DATA_DIR)
-    import RangeHTTPServer.__main__
+    # import RangeHTTPServer.__main__
+
 
 class TestProgressiveLoadCSVOverHTTP(ProgressiveTest):
     def setUp(self):
@@ -84,7 +86,7 @@ class TestProgressiveLoadCSVOverHTTP(ProgressiveTest):
             try:
                 self._http_proc.terminate()
                 time.sleep(SLEEP)
-            except:
+            except Exception:
                 pass
 
     def test_01_read_http_csv_no_crash(self):
@@ -92,36 +94,41 @@ class TestProgressiveLoadCSVOverHTTP(ProgressiveTest):
         p.start()
         self._http_proc = p
         time.sleep(SLEEP)
-        s=self.scheduler()
-        module=CSVLoader(make_url('bigfile'), index_col=False, header=None, scheduler=s)
+        s = self.scheduler()
+        module = CSVLoader(
+            make_url("bigfile"), index_col=False, header=None, scheduler=s
+        )
         self.assertTrue(module.result is None)
         aio.run(s.start())
         _close(module)
         self.assertEqual(len(module.result), 1000000)
 
-
     def test_02_read_http_csv_crash_recovery(self):
-        p = Process(target=run_throttled_server, args=(8000, 10**7))
+        p = Process(target=run_throttled_server, args=(8000, 10 ** 7))
         p.start()
         self._http_proc = p
         time.sleep(SLEEP)
-        s=self.scheduler()
-        module=CSVLoader(make_url('bigfile'), index_col=False, header=None, scheduler=s, timeout=0.01)
+        s = self.scheduler()
+        module = CSVLoader(
+            make_url("bigfile"), index_col=False, header=None, scheduler=s, timeout=0.01
+        )
         self.assertTrue(module.result is None)
         aio.run(s.start())
         _close(module)
-        #self.assertGreater(module.parser._recovery_cnt, 0)
+        # self.assertGreater(module.parser._recovery_cnt, 0)
         self.assertEqual(len(module.result), 1000000)
 
     def test_03_read_multiple_csv_crash_recovery(self):
-        p = Process(target=run_throttled_server, args=(8000, 10**6))
+        p = Process(target=run_throttled_server, args=(8000, 10 ** 6))
         p.start()
         self._http_proc = p
         time.sleep(SLEEP)
-        s=self.scheduler()
-        filenames = Table(name='file_names',
-                          dshape='{filename: string}',
-                          data={'filename': [make_url('smallfile'), make_url('smallfile')]})
+        s = self.scheduler()
+        filenames = Table(
+            name="file_names",
+            dshape="{filename: string}",
+            data={"filename": [make_url("smallfile"), make_url("smallfile")]},
+        )
         cst = Constant(table=filenames, scheduler=s)
         csv = CSVLoader(index_col=False, header=None, scheduler=s, timeout=0.01)
         csv.input.filenames = cst.output.result
@@ -134,36 +141,50 @@ class TestProgressiveLoadCSVOverHTTP(ProgressiveTest):
         p.start()
         self._http_proc = p
         time.sleep(SLEEP)
-        s=self.scheduler()
-        module=CSVLoader(make_url('bigfile', ext=BZ2), index_col=False, header=None, scheduler=s)
+        s = self.scheduler()
+        module = CSVLoader(
+            make_url("bigfile", ext=BZ2), index_col=False, header=None, scheduler=s
+        )
         self.assertTrue(module.result is None)
         aio.run(s.start())
         _close(module)
         self.assertEqual(len(module.result), 1000000)
 
     def test_05_read_http_csv_bz2_crash_recovery(self):
-        p = Process(target=run_throttled_server, args=(8000, 10**7))
+        p = Process(target=run_throttled_server, args=(8000, 10 ** 7))
         p.start()
         self._http_proc = p
         time.sleep(SLEEP)
-        s=self.scheduler()
-        module=CSVLoader(make_url('bigfile', ext=BZ2), index_col=False, header=None, scheduler=s, timeout=0.01)
+        s = self.scheduler()
+        module = CSVLoader(
+            make_url("bigfile", ext=BZ2),
+            index_col=False,
+            header=None,
+            scheduler=s,
+            timeout=0.01,
+        )
         self.assertTrue(module.result is None)
         aio.run(s.start())
         _close(module)
-        #self.assertGreater(module.parser._recovery_cnt, 0)
+        # self.assertGreater(module.parser._recovery_cnt, 0)
         self.assertEqual(len(module.result), 1000000)
 
     def test_06_read_multiple_csv_bz2_crash_recovery(self):
-        p = Process(target=run_throttled_server, args=(8000, 10**6))
+        p = Process(target=run_throttled_server, args=(8000, 10 ** 6))
         p.start()
         self._http_proc = p
         time.sleep(SLEEP)
-        s=self.scheduler()
-        filenames = Table(name='file_names',
-                          dshape='{filename: string}',
-                          data={'filename': [make_url('smallfile', ext=BZ2),
-                                            make_url('smallfile', ext=BZ2)]})
+        s = self.scheduler()
+        filenames = Table(
+            name="file_names",
+            dshape="{filename: string}",
+            data={
+                "filename": [
+                    make_url("smallfile", ext=BZ2),
+                    make_url("smallfile", ext=BZ2),
+                ]
+            },
+        )
         cst = Constant(table=filenames, scheduler=s)
         csv = CSVLoader(index_col=False, header=None, scheduler=s, timeout=0.01)
         csv.input.filenames = cst.output.result
@@ -172,5 +193,5 @@ class TestProgressiveLoadCSVOverHTTP(ProgressiveTest):
         self.assertEqual(len(csv.result), 60000)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     ProgressiveTest.main()

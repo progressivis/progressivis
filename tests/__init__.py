@@ -3,7 +3,7 @@ import gc
 import sys
 from unittest import TestCase, skip, skipIf, main
 
-from progressivis import (log_level, logging, Scheduler)
+from progressivis import log_level, logging, Scheduler
 from progressivis.storage import init_temp_dir_if, cleanup_temp_dir
 import numpy as np
 
@@ -19,12 +19,12 @@ class ProgressiveTest(TestCase):
     DEBUG = logging.DEBUG
     NOTSET = logging.NOTSET
     levels = {
-        'CRITICAL': logging.CRITICAL,
-        'ERROR': logging.ERROR,
-        'WARNING': logging.WARNING,
-        'INFO': logging.INFO,
-        'DEBUG': logging.DEBUG,
-        'NOTSET': logging.NOTSET
+        "CRITICAL": logging.CRITICAL,
+        "ERROR": logging.ERROR,
+        "WARNING": logging.WARNING,
+        "INFO": logging.INFO,
+        "DEBUG": logging.DEBUG,
+        "NOTSET": logging.NOTSET,
     }
 
     def __init__(self, *args):
@@ -36,13 +36,13 @@ class ProgressiveTest(TestCase):
         if level in self.levels:
             level = self.levels[level]
         if level:
-            print('Logger level for %s: ' % self, level, file=sys.stderr)
+            print("Logger level for %s: " % self, level, file=sys.stderr)
             self.log(int(level))
 
     @staticmethod
     def terse(x):
         _ = x
-        print('.', end='', file=sys.stderr)
+        print(".", end="", file=sys.stderr)
 
     def setUp(self):
         np.random.seed(42)
@@ -71,7 +71,7 @@ class ProgressiveTest(TestCase):
         return self._scheduler
 
     @staticmethod
-    def log(level=logging.ERROR, package='progressivis'):
+    def log(level=logging.ERROR, package="progressivis"):
         log_level(level, package=package)
 
     @staticmethod
