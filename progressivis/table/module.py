@@ -138,7 +138,7 @@ class TableModule(Module):
             raise ValueError("Output slot not declared")
         return osl.datashape is not None
 
-    def get_output_datashape(self, name="table") -> str:
+    def get_output_datashape(self, name: str = "table") -> str:
         for osl in self.all_outputs:
             if osl.name == name:
                 # output_ = osl

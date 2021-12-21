@@ -1,24 +1,29 @@
-import numpy as np
-from ..core.utils import indices_len, fix_loc, filter_cols
+from ..core.utils import fix_loc
 from ..table.module import TableModule
 from ..table.table import Table
-import numexpr as ne
+import numexpr as ne  # type: ignore
+
 
 def make_local(df, px):
     arr = df.to_array()
     result = {}
-    class _Aux: pass
+
+    class _Aux:
+        pass
+
     aux = _Aux()
     for i, n in enumerate(df.columns):
-        key = f'_{px}__{i}'
+        key = f"_{px}__{i}"
         result[key] = arr[:, i]
         setattr(aux, n, key)
     return aux, result
 
+
 class NumExprABC(TableModule):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.ref_expr = self.expr        
+        self.ref_expr = self.expr
+
     def reset(self):
         if self.result is not None:
             self.result.resize(0)
@@ -48,13 +53,14 @@ class NumExprABC(TableModule):
                 dshape_ = self.get_output_datashape("result")
             else:
                 dshape_ = self.get_datashape_from_expr()
-                self.ref_expr = {k.split(":")[0]:v for (k, v) in self.expr.items()}
-            self.result = Table(self.generate_table_name(f'num_expr'),
-                                dshape=dshape_, create=True)
+                self.ref_expr = {k.split(":")[0]: v for (k, v) in self.expr.items()}
+            self.result = Table(
+                self.generate_table_name("num_expr"), dshape=dshape_, create=True
+            )
         local_env = {}
         vars_dict = {}
         for n, sl in self._input_slots.items():
-            if n == '_params':
+            if n == "_params":
                 continue
             step_size = min(step_size, sl.created.length())
             data_ = sl.data()
@@ -62,7 +68,7 @@ class NumExprABC(TableModule):
                 return self._return_run_step(self.state_blocked, steps_run=0)
         first_slot = None
         for n, sl in self._input_slots.items():
-            if n == '_params':
+            if n == "_params":
                 continue
             if first_slot is None:
                 first_slot = sl

@@ -8,8 +8,10 @@ from .. import SlotDescriptor
 
 
 class LinearMap(TableModule):
-    inputs = [SlotDescriptor('vectors', type=Table, required=True),
-              SlotDescriptor('transformation', type=Table, required=True)]
+    inputs = [
+        SlotDescriptor("vectors", type=Table, required=True),
+        SlotDescriptor("transformation", type=Table, required=True),
+    ]
 
     def __init__(self, transf_columns=None, **kwds):
         super().__init__(**kwds)
@@ -40,14 +42,15 @@ class LinearMap(TableModule):
             trans.clear_buffers()
             if len(transformation) < self._k_dim:
                 if trans.output_module.state <= self.state_blocked:
-                    return self._return_run_step(self.state_blocked,
-                                                 steps_run=0)
+                    return self._return_run_step(self.state_blocked, steps_run=0)
                 else:  # transformation.output_module is zombie etc.=> no hope
-                    raise ValueError("vectors size don't match "
-                                     "the transformation matrix shape")
+                    raise ValueError(
+                        "vectors size don't match " "the transformation matrix shape"
+                    )
             elif len(transformation) > self._k_dim:
-                raise ValueError("vectors size don't match "
-                                 " the transformation matrix shape (2)")
+                raise ValueError(
+                    "vectors size don't match " " the transformation matrix shape (2)"
+                )
             # here len(transformation) == self._k_dim
             if self._transf_cache is None:
                 tf = filter_cols(transformation, self._transf_columns)
@@ -60,10 +63,9 @@ class LinearMap(TableModule):
             vs = vs.to_array()
             res = np.matmul(vs, self._transf_cache)
             if self.result is None:
-                dshape_ = dshape_projection(transformation,
-                                            self._transf_columns)
-                self.result = Table(self.generate_table_name('linear_map'),
-                                    dshape=dshape_, create=True)
+                dshape_ = dshape_projection(transformation, self._transf_columns)
+                self.result = Table(
+                    self.generate_table_name("linear_map"), dshape=dshape_, create=True
+                )
             self.result.append(res)
-            return self._return_run_step(self.next_state(ctx.vectors),
-                                         steps_run=steps)
+            return self._return_run_step(self.next_state(ctx.vectors), steps_run=steps)

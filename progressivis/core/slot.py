@@ -3,7 +3,7 @@ Slots between modules.
 """
 from __future__ import annotations
 
-from typing import Any, Optional, Dict, Type, TYPE_CHECKING
+from typing import Any, Optional, Dict, Type, TYPE_CHECKING, Union, List
 
 import logging
 from collections import namedtuple
@@ -46,7 +46,7 @@ class SlotDescriptor(
         type=None,
         required=True,
         multiple=False,
-        datashape: Optional[str] = None,
+        datashape: Optional[Dict[str, Union[str, List[str]]]] = None,
         buffer_created=True,
         buffer_updated=True,
         buffer_deleted=True,
