@@ -1,11 +1,24 @@
+from __future__ import annotations
+
 from ..core.utils import indices_len, fix_loc
 from ..core.slot import SlotDescriptor
 from ..table.table import Table
 from ..table.nary import NAry
 from ..core.module import Module
-from fast_histogram import histogram2d
+from fast_histogram import histogram2d  # type: ignore
 import numpy as np
 import logging
+
+from typing import (
+    Optional,
+    Tuple,
+    TYPE_CHECKING
+)
+
+Bounds = Tuple[float, float, float, float]
+
+if TYPE_CHECKING:
+    from progressivis.core.module import ReturnRunStep, JSon
 
 logger = logging.getLogger(__name__)
 
@@ -29,43 +42,44 @@ class MCHistogram2D(NAry):
              "time: int64" \
              "}"
 
-    def __init__(self, x_column, y_column, with_output=True, **kwds):
+    def __init__(
+            self,
+            x_column: str,
+            y_column: str,
+            with_output=True,
+            **kwds):
         super(MCHistogram2D, self).__init__(dataframe_slot='data', **kwds)
         self.tags.add(self.TAG_VISUALIZATION)
         self.x_column = x_column
         self.y_column = y_column
         self.default_step_size = 10000
         self.total_read = 0
-        self._histo = None
-        self._xedges = None
-        self._yedges = None
-        self._bounds = None
+        self._histo: Optional[np.ndarray] = None
+        self._bounds: Optional[Bounds] = None
         self._with_output = with_output
-        self._heatmap_cache = None
+        self._heatmap_cache: Optional[Tuple[JSon, Bounds]] = None
         self.result = Table(self.generate_table_name('MCHistogram2D'),
                             dshape=MCHistogram2D.schema,
                             chunks={'array': (1, 64, 64)},
                             create=True)
 
-    def reset(self):
+    def reset(self) -> None:
         self._histo = None
-        self._xedges = None
-        self._yedges = None
         self.total_read = 0
         self.get_input_slot('data').reset()
         if self.result:
             self.result.resize(1)
 
-    def predict_step_size(self, duration):
-        return Module. predict_step_size(self, duration)
+    def predict_step_size(self, duration: float) -> float:
+        return Module.predict_step_size(self, duration)
 
-    def is_ready(self):
+    def is_ready(self) -> bool:
         # If we have created data but no valid min/max, we can only wait
         if self._bounds and self.get_input_slot('data').created.any():
             return True
         return super(MCHistogram2D, self).is_ready()
 
-    def get_delta(self, xmin, xmax, ymin, ymax):
+    def get_delta(self, xmin: float, xmax: float, ymin: float, ymax: float) -> Tuple[float, float]:
         p = self.params
         xdelta, ydelta = p['xdelta'], p['ydelta']
         if xdelta < 0:
@@ -78,12 +92,12 @@ class MCHistogram2D(NAry):
             logger.info('ydelta is %f', ydelta)
         return (xdelta, ydelta)
 
-    def get_bounds(self, run_number):
+    def get_bounds(self, run_number: int) -> Optional[Tuple[float, float, float, float, bool]]:
         xmin = ymin = np.inf
         xmax = ymax = -np.inf
         has_creation = False
         min_found = max_found = False
-        for name in self.inputs:
+        for name in self.input_slot_names():
             input_slot = self.get_input_slot(name)
             if input_slot is None:
                 continue
@@ -127,7 +141,7 @@ class MCHistogram2D(NAry):
             return None
         return (xmin, xmax, ymin, ymax, has_creation)
 
-    def run_step(self, run_number, step_size, howlong):
+    def run_step(self, run_number: int, step_size: float, howlong: float) -> ReturnRunStep:
         dfslot = self.get_input_slot('data')
         # dfslot.update(run_number)
         if dfslot.updated.any():
@@ -221,10 +235,7 @@ class MCHistogram2D(NAry):
         y = input_df.to_array(locs=indices,
                               columns=[self.y_column]).reshape(-1)
 
-        if self._xedges is not None:
-            bins = [self._xedges, self._yedges]
-        else:
-            bins = [p.ybins, p.xbins]
+        bins = [p.ybins, p.xbins]
         if len(x) > 0:
             # using fast_histogram
             histo = histogram2d(y, x,
@@ -253,17 +264,17 @@ class MCHistogram2D(NAry):
         if self._with_output:
             table = self.result
             table['array'].set_shape([p.ybins, p.xbins])
-            l = len(table)
+            ln = len(table)
             last = table.last()
-            if l == 0 or last['time'] != run_number:
+            if ln == 0 or last['time'] != run_number:
                 table.add(values)
             else:
                 table.loc[last.row] = values
         self.build_heatmap(values)
         return self._return_run_step(self.next_state(dfslot), steps_run=steps)
 
-    def build_heatmap(self, values):
-        json_ = {}
+    def build_heatmap(self, values) -> None:
+        json_: JSon = {}
         row = values
         if not (np.isnan(row['xmin']) or np.isnan(row['xmax'])
                 or np.isnan(row['ymin']) or np.isnan(row['ymax'])):
@@ -279,7 +290,7 @@ class MCHistogram2D(NAry):
             self._heatmap_cache = (json_, bounds)
         return None
 
-    def heatmap_to_json(self, json, short=False):
+    def heatmap_to_json(self, json: JSon, short=False) -> JSon:
         if self._heatmap_cache is None:
             return json
         x_label, y_label = "x", "y"
@@ -346,11 +357,11 @@ class MCHistogram2D(NAry):
         json['columns'] = [x_label, y_label]
         return json
 
-    def get_visualization(self):
+    def get_visualization(self) -> str:
         return "heatmap"
 
-    def to_json(self, short=False):
-        json = super(MCHistogram2D, self).to_json(short)
+    def to_json(self, short=False, with_speed: bool = True) -> JSon:
+        json = super(MCHistogram2D, self).to_json(short, with_speed=with_speed)
         if short:
             return json
         return self.heatmap_to_json(json, short)

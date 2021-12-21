@@ -1,14 +1,17 @@
+from __future__ import annotations
+
 from progressivis.core.utils import indices_len, fix_loc, get_random_name
 from progressivis.core.slot import SlotDescriptor
 from progressivis.table.module import TableModule
 from progressivis.table.table import Table
 
-#TODO update with http://www.johndcook.com/blog/skewness_kurtosis/
-#Use http://www.grantjenks.com/docs/runstats/ 
+# TODO update with http://www.johndcook.com/blog/skewness_kurtosis/
+# Use http://www.grantjenks.com/docs/runstats/
 
 import numpy as np
 
 import logging
+
 logger = logging.getLogger(__name__)
 
 
@@ -16,8 +19,12 @@ class Stats(TableModule):
     parameters = [('history', np.dtype(int), 3)]
     inputs = [SlotDescriptor('table', type=Table, required=True)]
 
-    def __init__(self, column, min_column=None, max_column=None,
-                 reset_index=False, **kwds):
+    def __init__(self,
+                 column: str,
+                 min_column: str = None,
+                 max_column: str = None,
+                 reset_index=False,
+                 **kwds):
         super(Stats, self).__init__(**kwds)
         self._column = column
         self.default_step_size = 10000
@@ -36,12 +43,14 @@ class Stats(TableModule):
                        self._max_column+': float64}')
         self.result = Table(get_random_name('stats_'), dshape=self.schema)
 
-    def is_ready(self):
+    def is_ready(self) -> bool:
         if self.get_input_slot('table').created.any():
             return True
         return super(Stats, self).is_ready()
 
-    def run_step(self, run_number, step_size, howlong):
+    def run_step(self,
+                 run_number: int,
+                 step_size, howlong):
         prev_min = prev_max = np.nan
         dfslot = self.get_input_slot('table')
         # dfslot.update(run_number)

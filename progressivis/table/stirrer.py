@@ -13,14 +13,14 @@ from . import Table, TableSelectedView
 
 class Stirrer(TableModule):
     parameters = [
-        ("update_column", str, ""),
-        ("update_rows", object, None),
-        ("delete_rows", object, None),
-        ("delete_threshold", object, None),
-        ("update_threshold", object, None),
-        ("del_twice", bool, False),
-        ("fixed_step_size", int, 0),
-        ("mode", str, "random"),
+        ("update_column", np.dtype(np.object_), ""),
+        ("update_rows", np.dtype(np.object_), None),
+        ("delete_rows", np.dtype(np.object_), None),
+        ("delete_threshold", np.dtype(np.object_), None),
+        ("update_threshold", np.dtype(np.object_), None),
+        ("del_twice", np.dtype(np.bool_), False),
+        ("fixed_step_size", np.dtype(np.int_), 0),
+        ("mode", np.dtype(np.object_), "random"),
     ]
     inputs = [SlotDescriptor("table", type=Table, required=True)]
 
@@ -99,11 +99,11 @@ class Stirrer(TableModule):
 
 class StirrerView(TableModule):
     parameters = [
-        ("update_column", str, ""),
-        ("delete_rows", object, None),
-        ("delete_threshold", object, None),
-        ("fixed_step_size", int, 0),
-        ("mode", str, "random"),
+        ("update_column", np.dtype(object), ""),
+        ("delete_rows", np.dtype(object), None),
+        ("delete_threshold", np.dtype(object), None),
+        ("fixed_step_size", np.dtype(np.int_), 0),
+        ("mode", np.dtype(object), "random"),
     ]
     inputs = [SlotDescriptor("table", type=Table, required=True)]
 

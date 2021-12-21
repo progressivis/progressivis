@@ -86,6 +86,7 @@ class Slot:
         self.original_name: Optional[str] = None
         self._name: str
         self.changes: Optional[BaseChangeManager] = None
+        self.meta: Optional[Any] = None
 
     def name(self) -> str:
         "Return the name of the slot"

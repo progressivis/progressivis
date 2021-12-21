@@ -39,10 +39,11 @@ from .column import Column
 
 from progressivis.core.bitmap import bitmap
 
-from typing import Any, Dict, Optional, Union, cast
+from typing import Any, Dict, Optional, Union, cast, Tuple
 
 
 Index = Any  # simplify for now
+Chunks = Union[None, int, Dict[str, Union[int, Tuple[int, ...]]]]
 
 logger = logging.getLogger(__name__)
 
@@ -100,7 +101,7 @@ class Table(IndexTable):
         dshape: Optional[str] = None,
         fillvalues: Dict[str, Any] = None,
         storagegroup: Optional[Group] = None,
-        chunks: Union[int, Dict[str, int]] = None,
+        chunks: Chunks = None,
         create: Optional[bool] = None,
         indices: Optional[Index] = None,
     ):

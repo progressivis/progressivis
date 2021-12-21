@@ -333,7 +333,7 @@ class HistogramIndex(TableModule):
 
     parameters = [
         ("bins", np.dtype(int), 126),  # actually 128 with "-inf" and "inf"
-        ("init_threshold", int, 1),
+        ("init_threshold", np.dtype(int), 1),
     ]
     inputs = [SlotDescriptor("table", type=Table, required=True)]
     outputs = [

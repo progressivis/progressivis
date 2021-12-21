@@ -1,5 +1,7 @@
 from progressivis.core.utils import indices_len
 
+import numpy as np
+
 from . import Table, TableSelectedView
 from ..core.slot import SlotDescriptor
 from .module import TableModule
@@ -76,9 +78,9 @@ class Bisect(TableModule):
     """
 
     parameters = [
-        ("column", str, "unknown"),
-        ("op", str, ">"),
-        ("limit_key", str, ""),
+        ("column", np.dtype(object), "unknown"),
+        ("op", np.dtype(object), ">"),
+        ("limit_key", np.dtype(object), ""),
         # ('hist_index', object, None) # to improve ...
     ]
     inputs = [

@@ -90,9 +90,9 @@ class RangeQuery(TableModule):
     """
 
     parameters = [
-        ("column", str, "unknown"),
-        ("watched_key_lower", str, ""),
-        ("watched_key_upper", str, ""),
+        ("column", np.dtype(object), "unknown"),
+        ("watched_key_lower", np.dtype(object), ""),
+        ("watched_key_upper", np.dtype(object), ""),
         # ('hist_index', object, None) # to improve ...
     ]
     inputs = [

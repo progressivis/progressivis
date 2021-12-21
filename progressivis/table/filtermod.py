@@ -12,7 +12,10 @@ logger = logging.getLogger(__name__)
 
 
 class FilterMod(TableModule):
-    parameters = [("expr", str, "unknown"), ("user_dict", object, None)]
+    parameters = [
+        ("expr", np.dtype(object), "unknown"),
+        ("user_dict", np.dtype(object), None)
+    ]
 
     inputs = [SlotDescriptor("table", type=Table, required=True)]
 

@@ -115,12 +115,12 @@ class RangeQuery2dImpl(ModuleImpl):
 
 class RangeQuery2d(TableModule):
     parameters = [
-        ("column_x", str, "unknown"),
-        ("column_y", str, "unknown"),
-        ("watched_key_lower_x", str, ""),
-        ("watched_key_upper_x", str, ""),
-        ("watched_key_lower_y", str, ""),
-        ("watched_key_upper_y", str, ""),
+        ("column_x", np.dtype(object), "unknown"),
+        ("column_y", np.dtype(object), "unknown"),
+        ("watched_key_lower_x", np.dtype(object), ""),
+        ("watched_key_upper_x", np.dtype(object), ""),
+        ("watched_key_lower_y", np.dtype(object), ""),
+        ("watched_key_upper_y", np.dtype(object), ""),
         # ('hist_index', object, None) # to improve ...
     ]
     inputs = [

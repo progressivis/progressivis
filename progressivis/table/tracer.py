@@ -57,7 +57,7 @@ class TableTracer(Tracer):
         ] = None
         self.last_run_details = ""
 
-    def trace_stats(self, max_runs: Optional[int] = None):
+    def trace_stats(self, max_runs: Optional[int] = None) -> Table:
         return self.table
 
     def start_run(self, ts: float, run_number: int, **kwds):

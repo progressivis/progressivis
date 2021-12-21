@@ -1,6 +1,12 @@
-from typing import Callable, Any, Optional, List
+from __future__ import annotations
 
 from abc import ABCMeta, abstractmethod
+
+from typing import Callable, Any, Optional, List, TYPE_CHECKING
+
+
+if TYPE_CHECKING:
+    from progressivis.table import Table
 
 
 class Tracer(metaclass=ABCMeta):
@@ -35,9 +41,9 @@ class Tracer(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def trace_stats(self, max_runs: Optional[int] = None):
+    def trace_stats(self, max_runs: Optional[int] = None) -> Table:
         _ = max_runs  # keeps pylint mute
-        return []
+        raise NotImplementedError("trace_stats")
 
     @abstractmethod
     def get_speed(self, depth: int = 15) -> List[Optional[float]]:

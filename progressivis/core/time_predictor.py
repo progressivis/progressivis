@@ -1,8 +1,16 @@
+from __future__ import annotations
+
 from typing import Callable
 
 from abc import abstractmethod
 import logging
 import numpy as np
+
+from typing import TYPE_CHECKING
+
+
+if TYPE_CHECKING:
+    from progressivis.table import Table
 
 logger = logging.getLogger(__name__)
 
@@ -14,20 +22,20 @@ class TimePredictor:
         self.name = None
 
     @abstractmethod
-    def fit(self, trace_df):
+    def fit(self, trace_df: Table) -> None:
         pass
 
     @abstractmethod
-    def predict(self, duration, default_step):
+    def predict(self, duration: float, default_step: float) -> float:
         pass
 
 
 class ConstantTimePredictor(TimePredictor):
-    def __init__(self, t):
+    def __init__(self, t: float):
         super(ConstantTimePredictor, self).__init__()
         self.t = t
 
-    def predict(self, duration, default_step):
+    def predict(self, duration: float, default_step: float) -> float:
         return self.t
 
 
@@ -37,7 +45,7 @@ class LinearTimePredictor(TimePredictor):
         self.a = 0
         self.calls = 0
 
-    def fit(self, trace_df):
+    def fit(self, trace_df: Table):
         self.calls += 1
         if trace_df is None:
             return
@@ -70,7 +78,7 @@ class LinearTimePredictor(TimePredictor):
                 self.name,
             )
 
-    def predict(self, duration, default):
+    def predict(self, duration: float, default: float) -> float:
         if self.a == 0:
             return default
         # TODO account for the confidence interval and take min of the 95% CI

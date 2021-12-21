@@ -1,4 +1,5 @@
 "Multiclass Scatterplot Module."
+from __future__ import annotations
 
 from itertools import chain
 from collections import defaultdict
@@ -13,33 +14,61 @@ from progressivis.utils.errors import ProgressiveError
 from progressivis.core.utils import is_notebook, get_physical_base
 from progressivis.io import Variable, VirtualVariable
 
+from typing import (
+    Optional,
+    Tuple,
+    List,
+    Dict,
+    cast,
+    Union,
+    Any,
+    TYPE_CHECKING
+)
+
+Bounds = Tuple[float, float, float, float]
+
+if TYPE_CHECKING:
+    from progressivis.core.module import ReturnRunStep, JSon
+    from progressivis.core.scheduler import Scheduler
+    from progressivis.core.slot import Slot
+
 
 class _DataClass(object):
-    def __init__(self, name, group, x_column, y_column, approximate=False,
-                 scheduler=None, **kwds):
+    def __init__(self,
+                 name: str,
+                 group: Optional[str],
+                 x_column: str,
+                 y_column: str,
+                 approximate=False,
+                 scheduler: Optional[Scheduler] = None,
+                 **kwds):
         self.name = name
         self._group = group
         self.x_column = x_column
         self.y_column = y_column
         self._approximate = approximate
         self._scheduler = scheduler
-        self.input_module = None
-        self.input_slot = None
-        self.min = None
-        self.max = None
-        self.histogram2d = None
+        self.input_module: Optional[Module] = None
+        self.input_slot: Optional[str] = None
+        self.min: Optional[float] = None
+        self.max: Optional[float] = None
+        self.histogram2d: Optional[MCHistogram2D] = None
         self.heatmap = None
-        self.min_value = None
-        self.max_value = None
-        self.sample = None
-        self.range_query_2d = None
+        self.min_value: Optional[Variable] = None
+        self.max_value: Optional[Variable] = None
+        self.sample: Optional[Module] = None
+        self.range_query_2d: Optional[Module] = None
 
     def scheduler(self):
         return self._scheduler
 
-    def create_dependent_modules(self, input_module, input_slot,
-                                 histogram2d=None, heatmap=None,
-                                 **kwds):
+    def create_dependent_modules(
+            self,
+            input_module: Module,
+            input_slot: str,
+            histogram2d: Optional[MCHistogram2D] = None,
+            heatmap=None,
+            **kwds) -> _DataClass:
         if self.input_module is not None:
             return self
         with Module.tagged(Module.TAG_DEPENDENT):
@@ -85,8 +114,12 @@ class _DataClass(object):
 
 
 class MCScatterPlot(NAry):
-    "Module executing multiclass."
-    def __init__(self, classes, x_label="x", y_label="y", approximate=False,
+    "Module visualizing a multiclass scatterplot."
+    def __init__(self,
+                 classes: List[Union[Dict[str, Any], Tuple[str, str, str]]],
+                 x_label: str = "x",
+                 y_label: str = "y",
+                 approximate=False,
                  **kwds):
         """Multiclass ...
         """
@@ -96,17 +129,17 @@ class MCScatterPlot(NAry):
         self._x_label = x_label
         self._y_label = y_label
         self._approximate = approximate
-        self._json_cache = None
-        self.input_module = None
-        self.input_slot = None
-        self._data_class_dict = {}
-        self.min_value = None
-        self.max_value = None
-        self._ipydata = is_notebook()
-        self.hist_tensor = None
-        self.sample_tensor = None
+        self._json_cache: Optional[JSon] = None
+        self.input_module: Optional[Module] = None
+        self.input_slot: Optional[str] = None
+        self._data_class_dict: Dict[str, _DataClass] = {}
+        self.min_value: Optional[VirtualVariable] = None
+        self.max_value: Optional[VirtualVariable] = None
+        self._ipydata: bool = is_notebook()
+        self.hist_tensor: Optional[np.ndarray] = None
+        self.sample_tensor: Optional[np.ndarray] = None
 
-    def forget_changes(self, input_slot):
+    def forget_changes(self, input_slot: Slot) -> bool:
         changes = False
         if input_slot.deleted.any():
             input_slot.deleted.next()
@@ -119,36 +152,37 @@ class MCScatterPlot(NAry):
             changes = True
         return changes
 
-    def get_visualization(self):
+    def get_visualization(self) -> str:
         return "mcscatterplot"
 
-    def predict_step_size(self, duration):
+    def predict_step_size(self, duration: float) -> float:
         return 1
 
-    def group_inputs(self):
+    def group_inputs(self) -> Tuple[bool, Dict]:
         """
         Group inputs by classes using meta field on slots
         """
-        ret = defaultdict(dict)
+        ret: Dict[str, Dict[str, Tuple[Slot, float, float]]] = defaultdict(dict)
         changes = False
-        for name in self.inputs:
+        for name in self.input_slot_names():
             input_slot = self.get_input_slot(name)
             if input_slot is None:
                 continue
             meta = input_slot.meta
             if meta is None:
                 continue
-            input_type = meta['inp']
-            class_ = meta['class_']
+            assert isinstance(meta, dict)
+            input_type: str = cast(str, meta['inp'])
+            class_: str = cast(str, meta['class_'])
             if input_type not in ('hist', 'sample'):
-                raise ValueError('{} not in [hist, sample]'.format(input_type))
+                raise ValueError(f'{input_type} not in [hist, sample]')
             changes |= self.forget_changes(input_slot)
             ret[class_].update({
-                input_type: (input_slot, meta['x'], meta['y'])
+                input_type: (input_slot, cast(float, meta['x']), cast(float, meta['y']))
             })
         return changes, ret
 
-    def build_heatmap(self, inp, domain, plan):
+    def build_heatmap(self, inp: Slot, domain: Any, plan: int) -> Optional[JSon]:
         inp_table = inp.data()
         if inp_table is None:
             return None
@@ -156,7 +190,7 @@ class MCScatterPlot(NAry):
         if last is None:
             return None
         row = last.to_dict()
-        json_ = {}
+        json_: JSon = {}
         if not (np.isnan(row['xmin']) or np.isnan(row['xmax'])
                 or np.isnan(row['ymin']) or np.isnan(row['ymax'])):
             data = row['array']
@@ -165,7 +199,7 @@ class MCScatterPlot(NAry):
             if self._ipydata:
                 assert isinstance(plan, int)
                 json_['binnedPixels'] = plan
-                self.hist_tensor[:, :, plan] = row['array']
+                self.hist_tensor[:, :, plan] = row['array']  # type: ignore
             else:
                 data = np.copy(row['array'])
                 json_['binnedPixels'] = data
@@ -175,10 +209,10 @@ class MCScatterPlot(NAry):
             return json_
         return None
 
-    def make_json(self, json):
+    def make_json(self, json: JSon) -> JSon:
         buffers = []
         domain = []
-        samples = []
+        samples: List[Tuple[List, List]] = []
         count = 0
         xmin = ymin = - np.inf
         xmax = ymax = np.inf
@@ -212,7 +246,7 @@ class MCScatterPlot(NAry):
                 select = None
 
             if self._ipydata:
-                smpl = []
+                smpl: Tuple[List, List]
                 if select is not None:
                     ph_x = get_physical_base(select[x_column])
                     ph_y = get_physical_base(select[y_column])
@@ -226,7 +260,7 @@ class MCScatterPlot(NAry):
                                       if select is not None else []
             samples.append(smpl)
         if self._ipydata:
-            samples_counter = []
+            samples_counter: List[int] = []
             for vx, vy in samples:
                 len_s = len(vx)
                 assert len_s == len(vy)
@@ -241,6 +275,7 @@ class MCScatterPlot(NAry):
             json['samples_counter'] = samples_counter
             samples = []
         # TODO: check consistency among classes (e.g. same xbin, ybin etc.)
+        assert self.hist_tensor
         xbins, ybins = self.hist_tensor.shape[:-1] \
             if self._ipydata else buffers[0]['binnedPixels'].shape
         encoding = {
@@ -295,9 +330,10 @@ class MCScatterPlot(NAry):
         }
         json['chart'] = dict(buffers=buffers, encoding=encoding, source=source)
         json['bounds'] = dict(xmin=xmin, ymin=ymin, xmax=xmax, ymax=ymax)
-        s_data = []
+        s_data: List[float] = []
+        # Code note executed and probably wrong
         for i, s in enumerate(samples):
-            if not s:
+            if not s or not isinstance(s, dict):
                 continue
             d = s['data']
             for row in d:
@@ -310,7 +346,10 @@ class MCScatterPlot(NAry):
             json['sample_tensor'] = self.sample_tensor
         return json
 
-    def run_step(self, run_number, step_size, howlong):
+    def run_step(self,
+                 run_number: int,
+                 step_size: float,
+                 howlong: float) -> ReturnRunStep:
         for name in self.get_input_slot_multiple():
             slot = self.get_input_slot(name)
             # slot.update(run_number)
@@ -323,7 +362,7 @@ class MCScatterPlot(NAry):
                 self._json_cache = None
         return self._return_run_step(self.state_blocked, steps_run=0)
 
-    def run(self, run_number):
+    def run(self, run_number: int) -> None:
         super(MCScatterPlot, self).run(run_number)
         if self._ipydata:
             return
@@ -331,21 +370,25 @@ class MCScatterPlot(NAry):
             return
         self._json_cache = self._to_json_impl()
 
-    def to_json(self, short=False):
+    def to_json(self, short=False, with_speed: bool = True) -> JSon:
         if self._json_cache:
             return self._json_cache
-        self._json_cache = self._to_json_impl(short)
+        self._json_cache = self._to_json_impl(short, with_speed)
         return self._json_cache
 
-    def _to_json_impl(self, short=False):
+    def _to_json_impl(self, short=False, with_speed=True) -> JSon:
         self.image = None
-        json = super(MCScatterPlot, self).to_json(short, with_speed=False)
+        json = super(MCScatterPlot, self).to_json(short, with_speed=with_speed)
         if short:
             return json
         return self.make_json(json)
 
-    def create_dependent_modules(self, input_module=None, input_slot='result',
-                                 sample='default', **kwds):
+    def create_dependent_modules(
+            self,
+            input_module: Optional[Module] = None,
+            input_slot: str = 'result',
+            sample: str = 'default',
+            **kwds):
         self.input_module = input_module
         self.input_slot = input_slot
         with Module.tagged(Module.TAG_DEPENDENT):
@@ -357,23 +400,34 @@ class MCScatterPlot(NAry):
             for cl in self._classes:
                 if isinstance(cl, tuple):
                     self._add_class(*cl)
-                else:
+                elif isinstance(cl, dict):
                     self._add_class(**cl)
+                else:
+                    raise ValueError(f"Invalid data {cl} in classes")
             self._finalize()
 
-    def __getitem__(self, key):
-        return self._data_class_dict[key]
+    def __getitem__(self, _class: str) -> _DataClass:
+        return self._data_class_dict[_class]
 
-    def _finalize(self):
+    def _finalize(self) -> None:
         for dc in self._data_class_dict.values():
+            assert dc.histogram2d is not None
             for dc2 in self._data_class_dict.values():
+                assert dc2.x_column is not None and dc2.y_column is not None
                 x, y = dc2.x_column, dc2.y_column
                 rq2d = dc2.range_query_2d
+                assert rq2d is not None and rq2d.output is not None
                 dc.histogram2d.input['table', ('min', x, y)] = rq2d.output.min
                 dc.histogram2d.input['table', ('max', x, y)] = rq2d.output.max
 
-    def _add_class(self, name, x_column, y_column, sample='default',
-                   sample_slot='result', input_module=None, input_slot=None):
+    def _add_class(self,
+                   name: str,
+                   x_column: str,
+                   y_column: str,
+                   sample='default',
+                   sample_slot='result',
+                   input_module: Module = None,
+                   input_slot: str = None) -> None:
         if self.input_module is None and input_module is None:
             raise ProgressiveError("Input module is not defined!")
         if self.input_module is not None and input_module is not None:
@@ -393,16 +447,20 @@ class MCScatterPlot(NAry):
         data_class.sample = sample
         input_module = input_module or self.input_module
         input_slot = input_slot or self.input_slot
-        data_class.create_dependent_modules(input_module, input_slot)
+        if input_module is not None and input_slot is not None:
+            data_class.create_dependent_modules(input_module, input_slot)
         col_translation = {self._x_label: x_column, self._y_label: y_column}
         hist_meta = dict(inp='hist', class_=name, **col_translation)
-        self.input['table', hist_meta] = data_class.histogram2d.output.result
+        if data_class.histogram2d is not None:
+            self.input['table', hist_meta] = data_class.histogram2d.output.result
         if sample is not None:
             meta = dict(inp='sample', class_=name, **col_translation)
-            self.input['table', meta] = data_class.sample.output[sample_slot]
+            self.input['table', meta] = sample.output[sample_slot]
         self._data_class_dict[name] = data_class
-        self.min_value.subscribe(data_class.min_value, col_translation)
-        self.max_value.subscribe(data_class.max_value, col_translation)
+        if data_class.min_value is not None and self.min_value is not None:
+            self.min_value.subscribe(data_class.min_value, col_translation)
+        if data_class.max_value is not None and self.max_value is not None:
+            self.max_value.subscribe(data_class.max_value, col_translation)
 
     def get_starving_mods(self):
         return chain(*[(s.histogram2d, s.sample)
