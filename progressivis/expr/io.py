@@ -1,4 +1,3 @@
-
 from .table import TableExpr, Expr, Pipeable
 from progressivis.io.csv_loader import CSVLoader
 from progressivis import Print

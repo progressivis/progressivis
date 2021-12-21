@@ -1,4 +1,3 @@
-
 from .table import TableExpr, Pipeable
 from progressivis.stats import Min, Max
 

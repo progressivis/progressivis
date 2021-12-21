@@ -1,22 +1,21 @@
-
 import logging
 from progressivis.table.module import TableModule
 
 logger = logging.getLogger(__name__)
+
 
 class ValidationError(RuntimeError):
     pass
 
 
 def filter_underscore(lst):
-    return [l for l in lst if not l.startswith('_')]
+    return [elt for elt in lst if not elt.startswith("_")]
 
 
 class Expr(object):
-    def __init__(self, module_class, args, kwds, output_slot=None,
-                 module=None):
+    def __init__(self, module_class, args, kwds, output_slot=None, module=None):
         self._module_class = module_class
-        lazy = kwds.pop('lazy', False)
+        lazy = kwds.pop("lazy", False)
         self._args = args
         self._kwds = kwds
         self._module = module
@@ -43,13 +42,15 @@ class Expr(object):
 
     def __getitem__(self, output_slot):
         self._module.get_output_slot(
-            output_slot)  # raise an error if output_slot does not exist
+            output_slot
+        )  # raise an error if output_slot does not exist
         return Expr(
             self._module_class,
             self._non_expr_args,
             dict(lazy=True, **self._non_expr_kwds),
             output_slot=output_slot,
-            module=self._module)
+            module=self._module,
+        )
 
     def tee(self, lambda1, lambda2):
         lambda1(self)
@@ -85,8 +86,9 @@ class Expr(object):
         if output_slot is None:
             output_slots = filter_underscore(input_module.output_slot_names())
             if len(output_slots) == 0:
-                raise ValueError('Cannot extract output slot from module %s',
-                                 input_module)
+                raise ValueError(
+                    "Cannot extract output slot from module %s", input_module
+                )
             output_slot = output_slots[0]  # take the first one
         if input_slot is None:
             input_slots = filter_underscore(module.input_slot_names())
@@ -96,13 +98,11 @@ class Expr(object):
                     input_slot = inp
                     break
             if input_slot is None:
-                raise ValueError('Cannot extract input slot from module %s',
-                                 module)
+                raise ValueError("Cannot extract input slot from module %s", module)
         input_module.connect_output(output_slot, module, input_slot)
 
     def _instanciate_module(self):
-        module = self._module_class(*self._non_expr_args,
-                                    **self._non_expr_kwds)
+        module = self._module_class(*self._non_expr_args, **self._non_expr_kwds)
         for expr in self._expr_args:
             self._connect(module, expr, None)
 
@@ -118,7 +118,7 @@ class Expr(object):
                 self._validate_kwds()
                 self._instanciate_module()
                 self._valid = True
-            except:
+            except Exception:
                 self._valid = False
                 raise
         if self._valid is False:
@@ -135,10 +135,11 @@ class Expr(object):
         mod_ = self.scheduler()[mod_name]
         if isinstance(mod_, TableModule):
             from .table import TableExpr
+
             return TableExpr(
-                type(mod_), (), dict(lazy=True), module=mod_, output_slot=out)
-        return Expr(
-            type(mod_), (), dict(lazy=True), module=mod_, output_slot=out)
+                type(mod_), (), dict(lazy=True), module=mod_, output_slot=out
+            )
+        return Expr(type(mod_), (), dict(lazy=True), module=mod_, output_slot=out)
 
     def fetch(self, mod_name, out=None):  # a simple alias for repipe
         return self.repipe(mod_name, out)
@@ -148,8 +149,7 @@ class Expr(object):
             return self
         if isinstance(other, Expr):
             return other
-        ret = other._expr_class(other._module_class, (self, ) + other._args,
-                                other._kwds)
+        ret = other._expr_class(other._module_class, (self,) + other._args, other._kwds)
         if other._repipe:
             return ret.repipe(other._repipe, out=other._repipe_out)
         return ret

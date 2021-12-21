@@ -1,18 +1,20 @@
-
 from .core import Expr
 from ..table.constant import Constant
 
 
 class TableExpr(Expr):
-    def __init__(self,
-                 module_class,
-                 args,
-                 kwds,
-                 module=None,
-                 output_slot=None,
-                 output_slot_table="table"):
+    def __init__(
+        self,
+        module_class,
+        args,
+        kwds,
+        module=None,
+        output_slot=None,
+        output_slot_table="table",
+    ):
         super(TableExpr, self).__init__(
-            module_class, args, kwds, module=module, output_slot=output_slot)
+            module_class, args, kwds, module=module, output_slot=output_slot
+        )
         self._output_slot_table = output_slot_table
 
     @property
@@ -27,13 +29,9 @@ class TableExpr(Expr):
 
 
 class Pipeable(object):
-    def __init__(self,
-                 expr_class,
-                 module_class,
-                 args=(),
-                 kwds={},
-                 repipe=None,
-                 out=None):
+    def __init__(
+        self, expr_class, module_class, args=(), kwds={}, repipe=None, out=None
+    ):
         self._expr_class = expr_class
         self._module_class = module_class
         self._args = args
@@ -43,7 +41,7 @@ class Pipeable(object):
 
     def __call__(self, *args, **kwds):
         _kw = dict(**kwds)
-        rp_ = _kw.pop('repipe', None)
+        rp_ = _kw.pop("repipe", None)
         if len(args) > 0:
             ret = self._expr_class(self._module_class, args, _kw)
             if rp_:
@@ -72,5 +70,6 @@ class PipedInput(object):
         self._obj = obj
 
     def __or__(self, other):
-        return other._expr_class(other._module_class,
-                                 (self._obj, ) + other._args, other._kwds)
+        return other._expr_class(
+            other._module_class, (self._obj,) + other._args, other._kwds
+        )
