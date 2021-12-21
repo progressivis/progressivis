@@ -9,6 +9,7 @@ from typing import (
     Dict,
     List,
     Union,
+    Any,
     TYPE_CHECKING
 )
 
@@ -20,6 +21,9 @@ from .slot_join import SlotJoin
 
 if TYPE_CHECKING:
     from progressivis.utils import PsDict
+    from progressivis.table import BaseTable
+
+Columns = Union[None, List[str], Dict[str, List[str]]]
 
 
 # pylint: disable=abstract-method
@@ -28,7 +32,7 @@ class TableModule(Module):
     outputs = [SlotDescriptor("result", type=Table, required=False)]
 
     def __init__(self,
-                 columns: Union[None, List[str], Dict[str, List[str]]] = None,
+                 columns: Columns = None,
                  **kwds):
         super(TableModule, self).__init__(**kwds)
         if "table_slot" in kwds:
@@ -74,7 +78,7 @@ class TableModule(Module):
             return self.result
         return super(TableModule, self).get_data(name)
 
-    def get_columns(self, table, slot=None):
+    def get_columns(self, table: BaseTable, slot: Optional[str] = None) -> List[str]:
         """
         Return all the columns of interest from the specified table.
 
@@ -99,7 +103,10 @@ class TableModule(Module):
                 _columns.remove(column)  # maintain the order
         return _columns
 
-    def filter_columns(self, df, indices=None, slot=None):
+    def filter_columns(self,
+                       df: BaseTable,
+                       indices: Optional[Any] = None,
+                       slot: Optional[str] = None) -> BaseTable:
         """
         Return the specified table filtered by the specified indices and
         limited to the columns of interest.

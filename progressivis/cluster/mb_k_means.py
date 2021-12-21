@@ -1,10 +1,12 @@
+from __future__ import annotations
+
 import logging
 
 from collections import defaultdict
 import numpy as np
 import pandas as pd
-from sklearn.cluster import MiniBatchKMeans
-from sklearn.utils.validation import check_random_state
+from sklearn.cluster import MiniBatchKMeans  # type: ignore
+from sklearn.utils.validation import check_random_state  # type: ignore
 from progressivis import ProgressiveError, SlotDescriptor
 from progressivis.core.utils import indices_len
 from ..table.module import TableModule
@@ -15,6 +17,17 @@ from ..utils.psdict import PsDict
 from ..core.decorators import process_slot, run_if_any
 from ..table.filtermod import FilterMod
 from ..stats import Var
+
+from typing import (
+    Optional,
+    Union,
+    Dict,
+    TYPE_CHECKING
+)
+
+if TYPE_CHECKING:
+    from progressivis.table.module import Columns
+
 logger = logging.getLogger(__name__)
 
 
@@ -33,8 +46,15 @@ class MBKMeans(TableModule):
         SlotDescriptor('conv', type=PsDict, required=False)
     ]
 
-    def __init__(self, n_clusters, columns=None, batch_size=100, tol=0.01,
-                 is_input=True, is_greedy=True, random_state=None, **kwds):
+    def __init__(self,
+                 n_clusters: int,
+                 columns: Columns = None,
+                 batch_size: int = 100,
+                 tol: float = 0.01,
+                 is_input=True,
+                 is_greedy=True,
+                 random_state: Union[int, np.random.RandomState, None] = None,
+                 **kwds):
         super().__init__(**kwds)
         self.mbk = MiniBatchKMeans(n_clusters=n_clusters,
                                    batch_size=batch_size,
@@ -44,7 +64,7 @@ class MBKMeans(TableModule):
         self.columns = columns
         self.n_clusters = n_clusters
         self.default_step_size = 100
-        self._labels = None
+        self._labels: Optional[Table] = None
         self._remaining_inits = 10
         self._initialization_steps = 0
         self._is_input = is_input
@@ -52,14 +72,14 @@ class MBKMeans(TableModule):
         self._conv_out = PsDict({'convergence': 'unknown'})
         self.params.samples = n_clusters
         self._is_greedy = is_greedy
-        self._arrays = None
-        self.convergence_context = {}
+        self._arrays: Optional[Dict[int, np.ndarray]] = None
+        # self.convergence_context = {}
 
-    def predict_step_size(self, duration):
+    def predict_step_size(self, duration: float) -> float:
         p = super().predict_step_size(duration)
         return max(p, self.n_clusters)
 
-    def reset(self, init='k-means++'):
+    def reset(self, init='k-means++') -> None:
         self.mbk = MiniBatchKMeans(n_clusters=self.mbk.n_clusters,
                                    batch_size=self.mbk.batch_size,
                                    init=init,
@@ -67,13 +87,13 @@ class MBKMeans(TableModule):
         dfslot = self.get_input_slot('table')
         dfslot.reset()
         self.set_state(self.state_ready)
-        self.convergence_context = {}
+        # self.convergence_context = {}
         # do not resize result to zero
         # it contains 1 row per centroid
         if self._labels is not None:
             self._labels.truncate()
 
-    def starting(self):
+    def starting(self) -> None:
         super().starting()
         opt_slot = self.get_output_slot('labels')
         if opt_slot:
@@ -83,7 +103,7 @@ class MBKMeans(TableModule):
             logger.debug('Not maintaining labels')
             self.maintain_labels(False)
 
-    def maintain_labels(self, yes=True):
+    def maintain_labels(self, yes=True) -> None:
         if yes and self._labels is None:
             self._labels = Table(self.generate_table_name('labels'),
                                  dshape="{labels: int64}",
@@ -163,12 +183,12 @@ class MBKMeans(TableModule):
             self._arrays = defaultdict(_array_factory)
         is_conv = False
         if self._tol > 0:
-            v = np.array(list(var_data.values()), dtype=np.float64)
-            tol = np.mean(v) * self._tol
+            # v = np.array(list(var_data.values()), dtype=np.float64)
+            # tol = np.mean(v) * self._tol
             prev_centers = np.zeros((self.n_clusters, n_features),
                                     dtype=dtype)
         else:
-            tol = 0
+            # tol = 0
             prev_centers = np.zeros(0, dtype=dtype)
         random_state = check_random_state(self.mbk.random_state)
         X = None

@@ -73,7 +73,8 @@ def run_simple_server():
     _ = get_dataset_bz2("smallfile")
     _ = get_dataset_bz2("bigfile")
     os.chdir(DATA_DIR)
-    # import RangeHTTPServer.__main__
+    import RangeHTTPServer.__main__  # noqa: F401
+    RangeHTTPServer.__main__
 
 
 class TestProgressiveLoadCSVOverHTTP(ProgressiveTest):

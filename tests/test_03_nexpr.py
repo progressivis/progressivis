@@ -51,16 +51,17 @@ class TestNumExpr(ProgressiveTest):
         pr.input[0] = module.output.result
         aio.run(s.start())
         first = random1.result.to_array()
-        _ = first[:, 1]
-        _ = first[:, 2]
+        first_2 = first[:, 1]
+        first_3 = first[:, 2]
         second = random2.result.to_array()
-        _ = second[:, 1]
-        _ = second[:, 2]
+        second_2 = second[:, 1]
+        second_3 = second[:, 2]
         ne_1 = ne.evaluate("first_2+2*second_3")
         ne_2 = ne.evaluate("first_3-5*second_2")
         res = module.result.to_array()
         self.assertTrue(np.allclose(res[:, 0], ne_1, equal_nan=True))
         self.assertTrue(np.allclose(res[:, 1], ne_2, equal_nan=True))
+        return first_2, first_3, second_2, second_3
 
     def test_num_expr(self):
         return self.t_num_expr_impl(NumExprSample)

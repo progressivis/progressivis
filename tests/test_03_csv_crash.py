@@ -69,7 +69,8 @@ def run_simple_server():
     #    _ = get_dataset_lzma('smallfile')
     #    _ = get_dataset_lzma('bigfile')
     os.chdir(DATA_DIR)
-    # import RangeHTTPServer.__main__
+    import RangeHTTPServer.__main__  # noqa: F401
+    assert RangeHTTPServer.__main__
 
 
 BIGFILE_DF = pd.read_csv(get_dataset("bigfile"), header=None, usecols=[0])
