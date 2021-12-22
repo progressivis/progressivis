@@ -26,16 +26,16 @@ class TimePredictor:
         pass
 
     @abstractmethod
-    def predict(self, duration: float, default_step: float) -> float:
+    def predict(self, duration: float, default_step: int) -> int:
         pass
 
 
 class ConstantTimePredictor(TimePredictor):
-    def __init__(self, t: float):
+    def __init__(self, t: int):
         super(ConstantTimePredictor, self).__init__()
         self.t = t
 
-    def predict(self, duration: float, default_step: float) -> float:
+    def predict(self, duration: float, default_step: int) -> int:
         return self.t
 
 
@@ -78,7 +78,7 @@ class LinearTimePredictor(TimePredictor):
                 self.name,
             )
 
-    def predict(self, duration: float, default: float) -> float:
+    def predict(self, duration: float, default: int) -> int:
         if self.a == 0:
             return default
         # TODO account for the confidence interval and take min of the 95% CI

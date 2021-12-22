@@ -155,7 +155,7 @@ class MCScatterPlot(NAry):
     def get_visualization(self) -> str:
         return "mcscatterplot"
 
-    def predict_step_size(self, duration: float) -> float:
+    def predict_step_size(self, duration: float) -> int:
         return 1
 
     def group_inputs(self) -> Tuple[bool, Dict]:
@@ -276,7 +276,7 @@ class MCScatterPlot(NAry):
             samples = []
         # TODO: check consistency among classes (e.g. same xbin, ybin etc.)
         if self._ipydata:
-            assert self.hist_input
+            assert self.hist_tensor
             xbins, ybins = self.hist_tensor.shape[:-1]
         else:
             xbins, ybins = buffers[0]['binnedPixels'].shape
@@ -350,7 +350,7 @@ class MCScatterPlot(NAry):
 
     def run_step(self,
                  run_number: int,
-                 step_size: float,
+                 step_size: int,
                  howlong: float) -> ReturnRunStep:
         for name in self.get_input_slot_multiple():
             slot = self.get_input_slot(name)

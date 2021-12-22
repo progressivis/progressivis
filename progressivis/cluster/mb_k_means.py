@@ -27,6 +27,7 @@ from typing import (
 
 if TYPE_CHECKING:
     from progressivis.table.module import Columns
+    from progressivis.core.module import ReturnRunStep
 
 logger = logging.getLogger(__name__)
 
@@ -75,7 +76,7 @@ class MBKMeans(TableModule):
         self._arrays: Optional[Dict[int, np.ndarray]] = None
         # self.convergence_context = {}
 
-    def predict_step_size(self, duration: float) -> float:
+    def predict_step_size(self, duration: float) -> int:
         p = super().predict_step_size(duration)
         return max(p, self.n_clusters)
 
@@ -142,7 +143,10 @@ class MBKMeans(TableModule):
         self._labels.append({'labels': a_labels},
                             indices=a_locs)
 
-    def run_step(self, run_number, step_size, howlong):
+    def run_step(self,
+                 run_number: int,
+                 step_size: int,
+                 howlong: float) -> ReturnRunStep:
         dfslot = self.get_input_slot('table')
         # TODO varslot is only required if we have tol > 0
         varslot = self.get_input_slot('var')
@@ -191,7 +195,7 @@ class MBKMeans(TableModule):
             # tol = 0
             prev_centers = np.zeros(0, dtype=dtype)
         random_state = check_random_state(self.mbk.random_state)
-        X = None
+        X: Optional[np.ndarray] = None
         # Attributes to monitor the convergence
         self.mbk._ewa_inertia = None
         self.mbk._ewa_inertia_min = None
@@ -222,6 +226,7 @@ class MBKMeans(TableModule):
                 is_conv = True
                 break
         if self.result is None:
+            assert X is not None
             dshape = dshape_from_columns(input_df, cols,
                                          dshape_from_dtype(X.dtype))
             self.result = Table(self.generate_table_name('centers'),

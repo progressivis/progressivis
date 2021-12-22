@@ -3,6 +3,7 @@ from ..table.module import TableModule
 from ..table import Table
 from ..core.utils import indices_len
 from progressivis import SlotDescriptor
+
 try:
     from .knnkde import KNNKernelDensity
 except Exception:
@@ -10,10 +11,13 @@ except Exception:
 
 
 class KernelDensity(TableModule):
-    parameters = [('samples',  object, 1), ('bins',  np.dtype(int), 1),
-                  ('threshold',  np.dtype(int), 1000),
-                  ('knn',  np.dtype(int), 100)]
-    inputs = [SlotDescriptor('table', type=Table, required=True)]
+    parameters = [
+        ("samples", np.dtype(object), 1),
+        ("bins", np.dtype(int), 1),
+        ("threshold", np.dtype(int), 1000),
+        ("knn", np.dtype(int), 100),
+    ]
+    inputs = [SlotDescriptor("table", type=Table, required=True)]
 
     def __init__(self, **kwds):
         self._kde = None
@@ -24,7 +28,7 @@ class KernelDensity(TableModule):
         self.tags.add(self.TAG_VISUALIZATION)
 
     def run_step(self, run_number, step_size, howlong):
-        dfslot = self.get_input_slot('table')
+        dfslot = self.get_input_slot("table")
         # dfslot.update(run_number)
         if dfslot.deleted.any():
             raise ValueError("Not implemented yet")
@@ -37,7 +41,7 @@ class KernelDensity(TableModule):
         if self._kde is None:
             self._kde = KNNKernelDensity(dfslot.data(), online=True)
         res = self._kde.run_ids(indices.to_array())
-        self._inserted += res['numPointsInserted']
+        self._inserted += res["numPointsInserted"]
         self._lately_inserted += steps
         samples = self.params.samples
         sample_num = self.params.bins
@@ -47,16 +51,16 @@ class KernelDensity(TableModule):
             scores = self._kde.score_samples(samples.astype(np.float32), k=knn)
             self._lately_inserted = 0
             self._json_cache = {
-                'points': np.array(dfslot.data()
-                                   .loc[:500, :]
-                                   .to_dict(orient='split')['data']).tolist(),
-                'bins': sample_num,
-                'inserted': self._inserted,
-                'total': len(dfslot.data()),
-                'samples': [
+                "points": np.array(
+                    dfslot.data().loc[:500, :].to_dict(orient="split")["data"]
+                ).tolist(),
+                "bins": sample_num,
+                "inserted": self._inserted,
+                "total": len(dfslot.data()),
+                "samples": [
                     (sample, score)
                     for sample, score in zip(samples.tolist(), scores.tolist())
-                ]
+                ],
             }
         return self._return_run_step(self.state_ready, steps_run=steps)
 

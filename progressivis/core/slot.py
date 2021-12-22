@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 if TYPE_CHECKING:
     from .module import Module
     from .scheduler import Scheduler
-    from .bitmap import bitmap
+    from .changemanager_base import ChangeBuffer, _base_accessor, _selection_accessor
 
 
 class SlotDescriptor(
@@ -235,29 +235,31 @@ class Slot:
         return self.changes.has_buffered() if self.changes else False
 
     @property
-    def created(self) -> bitmap:
+    def created(self) -> ChangeBuffer:
         "Return the buffer for created rows"
         return self.changes.created if self.changes else EMPTY_BUFFER
 
     @property
-    def updated(self) -> bitmap:
+    def updated(self) -> ChangeBuffer:
         "Return the buffer for updated rows"
         return self.changes.updated if self.changes else EMPTY_BUFFER
 
     @property
-    def deleted(self) -> bitmap:
+    def deleted(self) -> ChangeBuffer:
         "Return the buffer for deleted rows"
         return self.changes.deleted if self.changes else EMPTY_BUFFER
 
     @property
-    def base(self) -> bitmap:
+    def base(self) -> _base_accessor:
         "Return an accessor"
-        return self.changes.base if self.changes else EMPTY_BUFFER
+        assert self.changes
+        return self.changes.base
 
     @property
-    def selection(self) -> bitmap:
+    def selection(self) -> _selection_accessor:
         "Return an accessor"
-        return self.changes.selection if self.changes else EMPTY_BUFFER
+        assert self.changes
+        return self.changes.selection
 
     @property
     def changemanager(self) -> Optional[BaseChangeManager]:

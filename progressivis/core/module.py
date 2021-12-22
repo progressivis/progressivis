@@ -44,9 +44,12 @@ from typing import (
 
 if TYPE_CHECKING:
     from .dataflow import Dataflow
+    from .decorators import _Context
 
 Parameters = List[Tuple[str, np.dtype, Any]]
 JSon = Dict[str, Any]
+# ReturnRunStep = Tuple[int, ModuleState]
+ReturnRunStep = Dict[str, int]
 
 
 logger = logging.getLogger(__name__)
@@ -103,10 +106,6 @@ class ModuleState(IntEnum):
     state_zombie = 4
     state_terminated = 5
     state_invalid = 6
-
-
-# ReturnRunStep = Tuple[int, ModuleState]
-ReturnRunStep = Dict[str, int]
 
 
 class Module(metaclass=ModuleMeta):
@@ -171,6 +170,8 @@ class Module(metaclass=ModuleMeta):
         storagegroup=None,
         **kwds,
     ):
+        self._args: Tuple
+        self._kwds: Dict[str, Any]
         if scheduler is None:
             scheduler = Scheduler.default
         self._scheduler: Scheduler = scheduler
@@ -213,13 +214,13 @@ class Module(metaclass=ModuleMeta):
         self.input_multiple = {d.name: 0 for d in input_descriptors if d.multiple}
         self._output_slots = self._validate_descriptors(output_descriptors)
         self.output_descriptors = {d.name: d for d in output_descriptors}
-        self.default_step_size = 100
+        self.default_step_size: int = 100
         self.input = InputSlots(self)
         self.output = OutputSlots(self)
-        self.steps_acc = 0
+        self.steps_acc: int = 0
         self.wait_expr = aio.FIRST_COMPLETED
         self.after_run_proc = None
-        self.context = None
+        self.context: Optional[_Context] = None
         # callbacks
         self._start_run: Optional[Callable[[Module, int], None]] = None
         self._end_run: Optional[Callable[[Module, int], None]] = None
@@ -645,7 +646,7 @@ class Module(metaclass=ModuleMeta):
     @abstractmethod
     def run_step(self,
                  run_number: int,
-                 step_size: float,
+                 step_size: int,
                  howlong: float) -> ReturnRunStep:  # pragma no cover
         """Run one step of the module, with a duration up to the 'howlong' parameter.
 
@@ -801,7 +802,7 @@ class Module(metaclass=ModuleMeta):
     def trace_stats(self, max_runs=None) -> Table:
         return self.tracer.trace_stats(max_runs)
 
-    def predict_step_size(self, duration: float) -> float:
+    def predict_step_size(self, duration: float) -> int:
         self.predictor.fit(self.trace_stats())
         return self.predictor.predict(duration, self.default_step_size)
 
@@ -1043,7 +1044,7 @@ class Every(Module):
         self._proc = proc
         self._constant_time = constant_time
 
-    def predict_step_size(self, duration: float) -> float:
+    def predict_step_size(self, duration: float) -> int:
         if self._constant_time:
             return 1
         return super(Every, self).predict_step_size(duration)

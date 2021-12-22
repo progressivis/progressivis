@@ -11,16 +11,16 @@ from ..core.utils import indices_len, fix_loc
 from ..core.slot import SlotDescriptor
 from ..table.module import TableModule
 from ..table.table import Table
-from ..core.decorators import *
+from ..core.decorators import process_slot, run_if_any
 
 
 logger = logging.getLogger(__name__)
 
 
 class IdxMax(TableModule):
-    parameters = [('history', np.dtype(int), 3)]
-    inputs = [SlotDescriptor('table', type=Table, required=True)]
-    outputs = [SlotDescriptor('max', type=Table, required=False)]
+    parameters = [("history", np.dtype(int), 3)]
+    inputs = [SlotDescriptor("table", type=Table, required=True)]
+    outputs = [SlotDescriptor("max", type=Table, required=False)]
 
     def __init__(self, **kwds):
         super(IdxMax, self).__init__(**kwds)
@@ -31,12 +31,12 @@ class IdxMax(TableModule):
         return self._max
 
     def get_data(self, name):
-        if name == 'max':
+        if name == "max":
             return self.max()
         return super(IdxMax, self).get_data(name)
 
     def is_ready(self):
-        if self.get_input_slot('table').created.any():
+        if self.get_input_slot("table").created.any():
             return True
         return super(IdxMax, self).is_ready()
 
@@ -46,7 +46,7 @@ class IdxMax(TableModule):
         if self._max is not None:
             self._max.resize(0)
 
-    @process_slot("table", reset_cb='reset')
+    @process_slot("table", reset_cb="reset")
     @run_if_any
     def run_step(self, run_number, step_size, howlong):
 
@@ -59,18 +59,24 @@ class IdxMax(TableModule):
             input_df = dfslot.data()
             op = self.filter_columns(input_df, fix_loc(indices)).idxmax()
             if self.result is None:
-                self.result = Table(self.generate_table_name('table'),
-                                    dshape=input_df.dshape,
-                                    create=True)
+                self.result = Table(
+                    self.generate_table_name("table"),
+                    dshape=input_df.dshape,
+                    create=True,
+                )
 
-            if not self._max: # None or len()==0
-                max_ = OrderedDict(zip(op.keys(), [np.nan]*len(op.keys())))
+            if not self._max:  # None or len()==0
+                max_ = OrderedDict(zip(op.keys(), [np.nan] * len(op.keys())))
                 for col, ix in op.items():
-                    max_[col] = input_df.at[ix, col]  # lookup value, is there a better way?
+                    max_[col] = input_df.at[
+                        ix, col
+                    ]  # lookup value, is there a better way?
                 if self._max is None:
-                    self._max = Table(self.generate_table_name('_max'),
-                                      dshape=input_df.dshape,
-                    create=True)
+                    self._max = Table(
+                        self.generate_table_name("_max"),
+                        dshape=input_df.dshape,
+                        create=True,
+                    )
                 self._max.append(max_, indices=[run_number])
                 self.result.append(op, indices=[run_number])
             else:
@@ -87,10 +93,14 @@ class IdxMax(TableModule):
                 self.result.append(op, indices=[run_number])
                 self._max.append(max_, indices=[run_number])
                 if len(self.result) > self.params.history:
-                    data = self.result.loc[self.result.index[-self.params.history:]].to_dict(orient='list')
+                    data = self.result.loc[
+                        self.result.index[-self.params.history :]
+                    ].to_dict(orient="list")
                     self.result.resize(0)
                     self.result.append(data)
-                    data = self._max.loc[self._max.index[-self.params.history:]].to_dict(orient='list')
+                    data = self._max.loc[
+                        self._max.index[-self.params.history :]
+                    ].to_dict(orient="list")
                     self._max.resize(0)
                     self._max.append(data)
             return self._return_run_step(self.next_state(dfslot), steps_run=steps)

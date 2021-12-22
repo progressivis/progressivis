@@ -8,12 +8,13 @@ from ..core.decorators import process_slot, run_if_any
 import numpy as np
 
 import logging
+
 logger = logging.getLogger(__name__)
 
 
 class Max(TableModule):
-    parameters = [('history', np.dtype(int), 3)]
-    inputs = [SlotDescriptor('table', type=Table, required=True)]
+    parameters = [("history", np.dtype(int), 3)]
+    inputs = [SlotDescriptor("table", type=Table, required=True)]
 
     def __init__(self, columns=None, **kwds):
         super(Max, self).__init__(**kwds)
@@ -21,7 +22,7 @@ class Max(TableModule):
         self.default_step_size = 10000
 
     def is_ready(self):
-        if self.get_input_slot('table').created.any():
+        if self.get_input_slot("table").created.any():
             return True
         return super(Max, self).is_ready()
 
@@ -36,8 +37,7 @@ class Max(TableModule):
             indices = ctx.table.created.next(step_size)  # returns a slice
             steps = indices_len(indices)
             input_df = ctx.table.data()
-            op = self.filter_columns(input_df,
-                                     fix_loc(indices)).max(keepdims=False)
+            op = self.filter_columns(input_df, fix_loc(indices)).max(keepdims=False)
             if self.result is None:
                 self.result = PsDict(op)
             else:
@@ -53,7 +53,7 @@ def maximum_val_id(candidate_val, candidate_id, current_val, current_id):
 
 
 class ScalarMax(TableModule):
-    inputs = [SlotDescriptor('table', type=Table, required=True)]
+    inputs = [SlotDescriptor("table", type=Table, required=True)]
 
     def __init__(self, **kwds):
         super().__init__(**kwds)
@@ -61,7 +61,7 @@ class ScalarMax(TableModule):
         self._sensitive_ids = {}
 
     def is_ready(self):
-        if self.get_input_slot('table').created.any():
+        if self.get_input_slot("table").created.any():
             return True
         return super().is_ready()
 
@@ -86,7 +86,7 @@ class ScalarMax(TableModule):
         return False
 
     def run_step(self, run_number, step_size, howlong):
-        slot = self.get_input_slot('table')
+        slot = self.get_input_slot("table")
         # slot.update(run_number)
         indices = None
         sensitive_ids_bm = bitmap(self._sensitive_ids.values())
@@ -98,7 +98,8 @@ class ScalarMax(TableModule):
         if slot.updated.any():
             sensitive_update_ids = slot.updated.changes & sensitive_ids_bm
             if sensitive_update_ids and self.are_critical(
-                    sensitive_update_ids, slot.data()):
+                sensitive_update_ids, slot.data()
+            ):
                 self.reset_all(slot, run_number)
             else:
                 # updates are not critical BUT some values
@@ -109,7 +110,7 @@ class ScalarMax(TableModule):
         if indices is None:
             if not slot.created.any():
                 return self._return_run_step(self.state_blocked, steps_run=0)
-            indices = slot.created.next(step_size) # returns a slice
+            indices = slot.created.next(step_size)  # returns a slice
         steps = indices_len(indices)
         input_df = slot.data()
         idxop = self.filter_columns(input_df, fix_loc(indices)).idxmax()
@@ -124,10 +125,9 @@ class ScalarMax(TableModule):
                 candidate_val, candidate_id = rich_op[k]
                 current_val = self.result[k]
                 current_id = self._sensitive_ids[k]
-                new_val, new_id, tst = maximum_val_id(candidate_val,
-                                                      candidate_id,
-                                                      current_val,
-                                                      current_id)
+                new_val, new_id, tst = maximum_val_id(
+                    candidate_val, candidate_id, current_val, current_id
+                )
                 if tst:
                     self.result[k] = new_val
                     self._sensitive_ids[k] = new_id

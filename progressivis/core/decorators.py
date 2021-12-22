@@ -1,4 +1,23 @@
+from __future__ import annotations
+
 from functools import wraps, partial
+
+from typing import (
+    Optional,
+    Callable,
+    Union,
+    Any,
+    Dict,
+    cast,
+    TYPE_CHECKING
+)
+
+if TYPE_CHECKING:
+    from .module import Module
+
+
+ReturnRunStep = Dict[str, int]
+RunStepCallable = Callable[[Any, int, int, float], ReturnRunStep]
 
 
 class _CtxImpl:
@@ -14,7 +33,7 @@ class _Context:
         self._slot_policy = None
         self._slot_expr = []
 
-    def reset(self):
+    def reset(self) -> None:
         self._impl = _CtxImpl()
 
     def __enter__(self):
@@ -27,7 +46,10 @@ class _Context:
         self.reset()
 
 
-def process_slot(*names, reset_if=("update", "delete"), reset_cb=None):
+def process_slot(
+        *names: str,
+        reset_if=("update", "delete"),
+        reset_cb: Optional[Union[str, Callable]] = None) -> Callable[[RunStepCallable], RunStepCallable]:
     """
     this function includes reset_if, reset_cb in the closure
     """
@@ -40,13 +62,17 @@ def process_slot(*names, reset_if=("update", "delete"), reset_cb=None):
     else:
         assert set(reset_if) == set(("update", "delete"))
 
-    def run_step_decorator(run_step_):
+    def run_step_decorator(run_step_: RunStepCallable) -> RunStepCallable:
         """
         run_step() decorator
         """
         # print("process slot deco", names)
         @wraps(run_step_)
-        def run_step_wrapper(self, run_number, step_size, howlong):
+        def run_step_wrapper(
+                self,
+                run_number: int,
+                step_size: int,
+                howlong: float) -> ReturnRunStep:
             """
             decoration
             """
@@ -80,11 +106,9 @@ def process_slot(*names, reset_if=("update", "delete"), reset_cb=None):
                 setattr(self.context._impl, name, slot)
                 if slot.has_buffered():
                     self.context._impl._has_buffered.add(name)
-            calc = run_step_(self, run_number, step_size, howlong)
-            # NB: "run_step_" fait partie de la fermeture
-            return calc
+            return run_step_(self, run_number, step_size, howlong)
 
-        return run_step_wrapper
+        return cast(RunStepCallable, run_step_wrapper)
 
     return run_step_decorator
 
@@ -105,7 +129,7 @@ def _slot_policy_rule(decname, *slots_maybe):
     slots = slots_maybe if called_with_args else tuple([])
     assert called_with_args or callable(slots_maybe[0])
 
-    def decorator_(to_decorate):
+    def decorator_(to_decorate: RunStepCallable) -> RunStepCallable:
         """
         this is the decorator.  it combines the decoration
         with the function to be decorated
@@ -114,7 +138,7 @@ def _slot_policy_rule(decname, *slots_maybe):
         has_hidden_attr = hasattr(to_decorate, "_hidden_progressivis_attr")
 
         @wraps(to_decorate)
-        def decoration_(self, *args, **kwargs):
+        def decoration_(self, run_number: int, step_size: int, howlong: float) -> ReturnRunStep:
             """
             this function makes the decoration
             """
@@ -144,24 +168,25 @@ def _slot_policy_rule(decname, *slots_maybe):
                 self.context._checked = True
                 if not run_step_required(self):
                     return self._return_run_step(self.state_blocked, steps_run=0)
-            return to_decorate(self, *args, **kwargs)
+            return to_decorate(self, run_number, step_size, howlong)
 
-        decoration_._hidden_progressivis_attr = True
-        return decoration_
+        decoration_._hidden_progressivis_attr = True  # type: ignore
+        return cast(RunStepCallable, decoration_)
 
     if called_with_args:
         return decorator_
     return decorator_(slots_maybe[0])
 
 
-run_if_all = partial(_slot_policy_rule, "run_if_all")
-or_all = partial(_slot_policy_rule, "or_if_all")
-run_if_any = partial(_slot_policy_rule, "run_if_any")
-and_any = partial(_slot_policy_rule, "and_if_any")
-run_always = partial(_slot_policy_rule, "run_always")
+run_if_all: Callable[[RunStepCallable], RunStepCallable] = partial(_slot_policy_rule, "run_if_all")
+or_all: Callable[[RunStepCallable], RunStepCallable] = partial(_slot_policy_rule, "or_if_all")
+run_if_any: Callable[[RunStepCallable], RunStepCallable] = partial(_slot_policy_rule, "run_if_any")
+and_any: Callable[[RunStepCallable], RunStepCallable] = partial(_slot_policy_rule, "and_if_any")
+run_always: Callable[[RunStepCallable], RunStepCallable] = partial(_slot_policy_rule, "run_always")
 
 
-def run_step_required(self_):
+def run_step_required(self_: Module) -> bool:
+    assert self_.context
     policy = self_.context._slot_policy
     slot_expr = self_.context._slot_expr
     if slot_expr == [tuple()]:

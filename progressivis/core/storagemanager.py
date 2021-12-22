@@ -10,28 +10,40 @@ import urllib
 from urllib.request import pathname2url
 import logging
 
+from typing import (
+    Optional,
+    Dict,
+    TYPE_CHECKING
+)
+
+FilePath = str
+
+if TYPE_CHECKING:
+    from .module import Module
+
+
 logger = logging.getLogger(__name__)
 
 urljoin = urllib.parse.urljoin
 
 
-class StorageManager(object):
+class StorageManager:
     default: StorageManager
 
-    def __init__(self, directory=None):
+    def __init__(self, directory: Optional[FilePath] = None):
         self._directory = directory
-        self.moduledir = dict()
+        self.moduledir: Dict[str, FilePath] = dict()
 
-    def start(self):
+    def start(self) -> FilePath:
         if self._directory is None:
             self._directory = tempfile.mkdtemp(prefix="progressivis_")
             logger.debug("StorageManager creating directory %s", self._directory)
         return self._directory
 
-    def directory(self):
+    def directory(self) -> FilePath:
         return self.start()
 
-    def module_directory(self, module):
+    def module_directory(self, module: Module) -> FilePath:
         mid = module.name
         if mid in self.moduledir:
             return self.moduledir[mid]
@@ -40,24 +52,24 @@ class StorageManager(object):
             os.mkdir(dirname)
         except os.error:
             mid = sluggify(mid)
-            dirname = os.path.join(self._directory, mid)
+            dirname = os.path.join(self.directory(), mid)
             os.mkdir(dirname)
         logger.debug("StorageManager creating module directory %s for %s", dirname, id)
         self.moduledir[mid] = dirname
         return dirname
 
-    def filename(self, name):
+    def filename(self, name: str) -> FilePath:
         return os.path.join(self.start(), name)
 
-    def fullname(self, module, filename):
+    def fullname(self, module: Module, filename: str) -> FilePath:
         return os.path.join(self.module_directory(module), filename)
 
-    def url(self, module, filename):
+    def url(self, module: Module, filename: str) -> str:
         return urljoin("file:", pathname2url(self.fullname(module, filename)))
 
-    def end(self):
+    def end(self) -> None:
         if self._directory is None:
-            return False
+            return
         logger.debug("StorageManager removing directory %s", self._directory)
         shutil.rmtree(self._directory, ignore_errors=True)
         self._directory = None
@@ -67,9 +79,9 @@ class StorageManager(object):
 StorageManager.default = StorageManager()
 
 
-def sluggify(s):
+def sluggify(s: str) -> str:
     slug = unicodedata.normalize("NFKD", s)
-    slug = slug.encode("ascii", "ignore").lower()
+    slug = (slug.encode("ascii", "ignore")).decode("ascii").lower()
     slug = re.sub(r"[^a-z0-9]+", "-", slug).strip("-")
     slug = re.sub(r"[-]+", "-", slug)
     return slug

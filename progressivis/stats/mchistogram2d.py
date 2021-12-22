@@ -1,19 +1,17 @@
 from __future__ import annotations
 
+import logging
+
+import numpy as np
+
 from ..core.utils import indices_len, fix_loc
 from ..core.slot import SlotDescriptor
 from ..table.table import Table
 from ..table.nary import NAry
 from ..core.module import Module
 from fast_histogram import histogram2d  # type: ignore
-import numpy as np
-import logging
 
-from typing import (
-    Optional,
-    Tuple,
-    TYPE_CHECKING
-)
+from typing import Optional, Tuple, TYPE_CHECKING
 
 Bounds = Tuple[float, float, float, float]
 
@@ -24,31 +22,30 @@ logger = logging.getLogger(__name__)
 
 
 class MCHistogram2D(NAry):
-    parameters = [('xbins',  np.dtype(int),   256),
-                  ('ybins',  np.dtype(int),   256),
-                  ('xdelta', np.dtype(float), -5),  # means 5%
-                  ('ydelta', np.dtype(float), -5),  # means 5%
-                  ('history', np.dtype(int),   3)]
-    inputs = [SlotDescriptor('data', type=Table, required=True)]
+    parameters = [
+        ("xbins", np.dtype(int), 256),
+        ("ybins", np.dtype(int), 256),
+        ("xdelta", np.dtype(float), -5),  # means 5%
+        ("ydelta", np.dtype(float), -5),  # means 5%
+        ("history", np.dtype(int), 3),
+    ]
+    inputs = [SlotDescriptor("data", type=Table, required=True)]
 
-    schema = "{" \
-             "array: var * var * float64," \
-             "cmin: float64," \
-             "cmax: float64," \
-             "xmin: float64," \
-             "xmax: float64," \
-             "ymin: float64," \
-             "ymax: float64," \
-             "time: int64" \
-             "}"
+    schema = (
+        "{"
+        "array: var * var * float64,"
+        "cmin: float64,"
+        "cmax: float64,"
+        "xmin: float64,"
+        "xmax: float64,"
+        "ymin: float64,"
+        "ymax: float64,"
+        "time: int64"
+        "}"
+    )
 
-    def __init__(
-            self,
-            x_column: str,
-            y_column: str,
-            with_output=True,
-            **kwds):
-        super(MCHistogram2D, self).__init__(dataframe_slot='data', **kwds)
+    def __init__(self, x_column: str, y_column: str, with_output=True, **kwds):
+        super(MCHistogram2D, self).__init__(dataframe_slot="data", **kwds)
         self.tags.add(self.TAG_VISUALIZATION)
         self.x_column = x_column
         self.y_column = y_column
@@ -58,41 +55,47 @@ class MCHistogram2D(NAry):
         self._bounds: Optional[Bounds] = None
         self._with_output = with_output
         self._heatmap_cache: Optional[Tuple[JSon, Bounds]] = None
-        self.result = Table(self.generate_table_name('MCHistogram2D'),
-                            dshape=MCHistogram2D.schema,
-                            chunks={'array': (1, 64, 64)},
-                            create=True)
+        self.result = Table(
+            self.generate_table_name("MCHistogram2D"),
+            dshape=MCHistogram2D.schema,
+            chunks={"array": (1, 64, 64)},
+            create=True,
+        )
 
     def reset(self) -> None:
         self._histo = None
         self.total_read = 0
-        self.get_input_slot('data').reset()
+        self.get_input_slot("data").reset()
         if self.result:
             self.result.resize(1)
 
-    def predict_step_size(self, duration: float) -> float:
+    def predict_step_size(self, duration: float) -> int:
         return Module.predict_step_size(self, duration)
 
     def is_ready(self) -> bool:
         # If we have created data but no valid min/max, we can only wait
-        if self._bounds and self.get_input_slot('data').created.any():
+        if self._bounds and self.get_input_slot("data").created.any():
             return True
         return super(MCHistogram2D, self).is_ready()
 
-    def get_delta(self, xmin: float, xmax: float, ymin: float, ymax: float) -> Tuple[float, float]:
+    def get_delta(
+        self, xmin: float, xmax: float, ymin: float, ymax: float
+    ) -> Tuple[float, float]:
         p = self.params
-        xdelta, ydelta = p['xdelta'], p['ydelta']
+        xdelta, ydelta = p["xdelta"], p["ydelta"]
         if xdelta < 0:
             dx = xmax - xmin
-            xdelta = dx*xdelta/-100.0
-            logger.info('xdelta is %f', xdelta)
+            xdelta = dx * xdelta / -100.0
+            logger.info("xdelta is %f", xdelta)
         if ydelta < 0:
             dy = ymax - ymin
-            ydelta = dy*ydelta/-100.0
-            logger.info('ydelta is %f', ydelta)
+            ydelta = dy * ydelta / -100.0
+            logger.info("ydelta is %f", ydelta)
         return (xdelta, ydelta)
 
-    def get_bounds(self, run_number: int) -> Optional[Tuple[float, float, float, float, bool]]:
+    def get_bounds(
+        self, run_number: int
+    ) -> Optional[Tuple[float, float, float, float, bool]]:
         xmin = ymin = np.inf
         xmax = ymax = -np.inf
         has_creation = False
@@ -105,7 +108,7 @@ class MCHistogram2D(NAry):
             if meta is None:
                 continue
             meta, x_column, y_column = meta
-            if meta == 'min':
+            if meta == "min":
                 min_slot = input_slot
                 # min_slot.update(run_number)
                 if min_slot.has_buffered():
@@ -117,7 +120,7 @@ class MCHistogram2D(NAry):
                 xmin = min(xmin, min_df[x_column])
                 ymin = min(ymin, min_df[y_column])
                 min_found = True
-            elif meta == 'max':
+            elif meta == "max":
                 max_slot = input_slot
                 # max_slot.update(run_number)
                 if max_slot.has_buffered():
@@ -133,32 +136,34 @@ class MCHistogram2D(NAry):
             return None
         if xmax < xmin:
             xmax, xmin = xmin, xmax
-            logger.warning('xmax < xmin, swapped')
+            logger.warning("xmax < xmin, swapped")
         if ymax < ymin:
             ymax, ymin = ymin, ymax
-            logger.warning('ymax < ymin, swapped')
+            logger.warning("ymax < ymin, swapped")
         if np.inf in (xmin, -xmax, ymin, -ymax):
             return None
         return (xmin, xmax, ymin, ymax, has_creation)
 
-    def run_step(self, run_number: int, step_size: float, howlong: float) -> ReturnRunStep:
-        dfslot = self.get_input_slot('data')
+    def run_step(
+        self, run_number: int, step_size: int, howlong: float
+    ) -> ReturnRunStep:
+        dfslot = self.get_input_slot("data")
         # dfslot.update(run_number)
         if dfslot.updated.any():
-            logger.debug('reseting histogram')
+            logger.debug("reseting histogram")
             self.reset()
             dfslot.update(run_number)
         bounds = self.get_bounds(run_number)
         if bounds is None:
-            logger.debug('No bounds yet at run %d', run_number)
+            logger.debug("No bounds yet at run %d", run_number)
             return self._return_run_step(self.state_blocked, steps_run=0)
         xmin, xmax, ymin, ymax, has_creation = bounds
         if not (dfslot.created.any() or has_creation):
-            logger.info('Input buffers empty')
+            logger.info("Input buffers empty")
             return self._return_run_step(self.state_blocked, steps_run=0)
         if self._bounds is None:
             (xdelta, ydelta) = self.get_delta(xmin, xmax, ymin, ymax)
-            self._bounds = (xmin-xdelta, xmax+xdelta, ymin-ydelta, ymax+ydelta)
+            self._bounds = (xmin - xdelta, xmax + xdelta, ymin - ydelta, ymax + ydelta)
             logger.info("New bounds at run %d: %s", run_number, self._bounds)
         else:
             (dxmin, dxmax, dymin, dymax) = self._bounds
@@ -166,27 +171,26 @@ class MCHistogram2D(NAry):
             assert xdelta >= 0 and ydelta >= 0
 
             # Either the min/max has extended, or it has shrunk beyond the deltas
-            if ((xmin < dxmin
-                 or xmax > dxmax
-                 or ymin < dymin
-                 or ymax > dymax)
-                or (xmin > (dxmin+xdelta)
-                    or xmax < (dxmax-xdelta)
-                    or ymin > (dymin+ydelta)
-                    or ymax < (dymax-ydelta))):
+            if (xmin < dxmin or xmax > dxmax or ymin < dymin or ymax > dymax) or (
+                xmin > (dxmin + xdelta)
+                or xmax < (dxmax - xdelta)
+                or ymin > (dymin + ydelta)
+                or ymax < (dymax - ydelta)
+            ):
                 # print('Old bounds: %s,%s,%s,%s'%(dxmin,dxmax,dymin,dymax))
-                self._bounds = (xmin - xdelta,
-                                xmax + xdelta,
-                                ymin - ydelta,
-                                ymax + ydelta)
-                logger.info('Updated bounds at run %s: %s',
-                            run_number, self._bounds)
+                self._bounds = (
+                    xmin - xdelta,
+                    xmax + xdelta,
+                    ymin - ydelta,
+                    ymax + ydelta,
+                )
+                logger.info("Updated bounds at run %s: %s", run_number, self._bounds)
                 self.reset()
                 dfslot.update(run_number)
 
         xmin, xmax, ymin, ymax = self._bounds
         if xmin >= xmax or ymin >= ymax:
-            logger.error('Invalid bounds: %s', self._bounds)
+            logger.error("Invalid bounds: %s", self._bounds)
             return self._return_run_step(self.state_blocked, steps_run=0)
 
         # Now, we know we have data and bounds, proceed to create a
@@ -210,15 +214,11 @@ class MCHistogram2D(NAry):
             # TODO : test this hypothesis and reset if false
             indices = fix_loc(raw_indices)
             steps += indices_len(indices)
-            x = input_df.to_array(locs=indices,
-                                  columns=[self.x_column]).reshape(-1)
-            y = input_df.to_array(locs=indices,
-                                  columns=[self.y_column]).reshape(-1)
+            x = input_df.to_array(locs=indices, columns=[self.x_column]).reshape(-1)
+            y = input_df.to_array(locs=indices, columns=[self.y_column]).reshape(-1)
             bins = [p.ybins, p.xbins]
             if len(x) > 0:
-                histo = histogram2d(y, x,
-                                    bins=bins,
-                                    range=[[ymin, ymax], [xmin, xmax]])
+                histo = histogram2d(y, x, bins=bins, range=[[ymin, ymax], [xmin, xmax]])
                 self._histo -= histo
         # if there are new creations, build a partial histogram with them then
         # add it to the main histogram
@@ -228,24 +228,19 @@ class MCHistogram2D(NAry):
         raw_indices = dfslot.created.next(step_size)
         indices = fix_loc(raw_indices)
         steps += indices_len(indices)
-        logger.info('Read %d rows', steps)
+        logger.info("Read %d rows", steps)
         self.total_read += steps
-        x = input_df.to_array(locs=indices,
-                              columns=[self.x_column]).reshape(-1)
-        y = input_df.to_array(locs=indices,
-                              columns=[self.y_column]).reshape(-1)
+        x = input_df.to_array(locs=indices, columns=[self.x_column]).reshape(-1)
+        y = input_df.to_array(locs=indices, columns=[self.y_column]).reshape(-1)
 
         bins = [p.ybins, p.xbins]
         if len(x) > 0:
             # using fast_histogram
-            histo = histogram2d(y, x,
-                                bins=bins,
-                                range=[[ymin, ymax], [xmin, xmax]])
+            histo = histogram2d(y, x, bins=bins, range=[[ymin, ymax], [xmin, xmax]])
         else:
             # histo = None
             # cmax = 0
-            return self._return_run_step(self.state_blocked,
-                                         steps_run=0)
+            return self._return_run_step(self.state_blocked, steps_run=0)
         if self._histo is None:
             self._histo = histo
         elif histo is not None:
@@ -253,20 +248,22 @@ class MCHistogram2D(NAry):
 
         if self._histo is not None:
             cmax = self._histo.max()
-        values = {'array': np.flip(self._histo, axis=0),
-                  'cmin': 0,
-                  'cmax': cmax,
-                  'xmin': xmin,
-                  'xmax': xmax,
-                  'ymin': ymin,
-                  'ymax': ymax,
-                  'time': run_number}
+        values = {
+            "array": np.flip(self._histo, axis=0),
+            "cmin": 0,
+            "cmax": cmax,
+            "xmin": xmin,
+            "xmax": xmax,
+            "ymin": ymin,
+            "ymax": ymax,
+            "time": run_number,
+        }
         if self._with_output:
             table = self.result
-            table['array'].set_shape([p.ybins, p.xbins])
+            table["array"].set_shape([p.ybins, p.xbins])
             ln = len(table)
             last = table.last()
-            if ln == 0 or last['time'] != run_number:
+            if ln == 0 or last["time"] != run_number:
                 table.add(values)
             else:
                 table.loc[last.row] = values
@@ -276,16 +273,20 @@ class MCHistogram2D(NAry):
     def build_heatmap(self, values) -> None:
         json_: JSon = {}
         row = values
-        if not (np.isnan(row['xmin']) or np.isnan(row['xmax'])
-                or np.isnan(row['ymin']) or np.isnan(row['ymax'])):
-            bounds = (row['xmin'], row['ymin'], row['xmax'], row['ymax'])
-            data = row['array']
+        if not (
+            np.isnan(row["xmin"])
+            or np.isnan(row["xmax"])
+            or np.isnan(row["ymin"])
+            or np.isnan(row["ymax"])
+        ):
+            bounds = (row["xmin"], row["ymin"], row["xmax"], row["ymax"])
+            data = row["array"]
             # data = sp.special.cbrt(row['array'])
             # json_['data'] = sp.misc.bytescale(data)
-            json_['binnedPixels'] = data
-            json_['range'] = [np.min(data), np.max(data)]
-            json_['count'] = np.sum(data)
-            json_['value'] = "heatmap"
+            json_["binnedPixels"] = data
+            json_["range"] = [np.min(data), np.max(data)]
+            json_["count"] = np.sum(data)
+            json_["value"] = "heatmap"
             # return json_
             self._heatmap_cache = (json_, bounds)
         return None
@@ -296,65 +297,35 @@ class MCHistogram2D(NAry):
         x_label, y_label = "x", "y"
         domain = ["Heatmap"]
         count = 1
-        xmin = ymin = - np.inf
+        xmin = ymin = -np.inf
         xmax = ymax = np.inf
         buff, bounds = self._heatmap_cache
         xmin, ymin, xmax, ymax = bounds
         buffers = [buff]
         # TODO: check consistency among classes (e.g. same xbin, ybin etc.)
-        xbins, ybins = buffers[0]['binnedPixels'].shape
+        xbins, ybins = buffers[0]["binnedPixels"].shape
         encoding = {
             "x": {
-                "bin": {
-                    "maxbins": xbins
-                },
+                "bin": {"maxbins": xbins},
                 "aggregate": "count",
                 "field": x_label,
                 "type": "quantitative",
-                "scale": {
-                    "domain": [
-                            -7,
-                        7
-                    ],
-                    "range": [
-                        0,
-                        xbins
-                    ]
-                }
+                "scale": {"domain": [-7, 7], "range": [0, xbins]},
             },
-            "z": {
-                "field": "category",
-                "type": "nominal",
-                "scale": {
-                    "domain": domain
-                }
-            },
+            "z": {"field": "category", "type": "nominal", "scale": {"domain": domain}},
             "y": {
-                "bin": {
-                    "maxbins": ybins
-                },
+                "bin": {"maxbins": ybins},
                 "aggregate": "count",
                 "field": y_label,
                 "type": "quantitative",
-                "scale": {
-                    "domain": [
-                            -7,
-                        7
-                    ],
-                    "range": [
-                        0,
-                        ybins
-                    ]
-                }
-            }
+                "scale": {"domain": [-7, 7], "range": [0, ybins]},
+            },
         }
-        source = {"program": "progressivis",
-                  "type": "python",
-                  "rows": count}
-        json['chart'] = dict(buffers=buffers, encoding=encoding, source=source)
-        json['bounds'] = dict(xmin=xmin, ymin=ymin, xmax=xmax, ymax=ymax)
-        json['sample'] = dict(data=[], index=[])
-        json['columns'] = [x_label, y_label]
+        source = {"program": "progressivis", "type": "python", "rows": count}
+        json["chart"] = dict(buffers=buffers, encoding=encoding, source=source)
+        json["bounds"] = dict(xmin=xmin, ymin=ymin, xmax=xmax, ymax=ymax)
+        json["sample"] = dict(data=[], index=[])
+        json["columns"] = [x_label, y_label]
         return json
 
     def get_visualization(self) -> str:

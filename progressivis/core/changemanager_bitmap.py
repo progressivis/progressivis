@@ -1,8 +1,15 @@
 "Change Manager for bitmap"
+from __future__ import annotations
+
 from .bitmap import bitmap
 from .index_update import IndexUpdate
 from .changemanager_base import BaseChangeManager
 from .slot import Slot
+
+from typing import (
+    Any,
+    Optional
+)
 
 
 class BitmapChangeManager(BaseChangeManager):
@@ -12,7 +19,7 @@ class BitmapChangeManager(BaseChangeManager):
 
     def __init__(
         self,
-        slot,
+        slot: Slot,
         buffer_created=True,
         buffer_updated=False,
         buffer_deleted=True,
@@ -27,13 +34,13 @@ class BitmapChangeManager(BaseChangeManager):
             buffer_exposed,
             buffer_masked,
         )
-        self._last_bm = None
+        self._last_bm: Optional[bitmap] = None
 
-    def reset(self, name=None):
+    def reset(self, name: Optional[str] = None) -> None:
         super(BitmapChangeManager, self).reset(name)
         self._last_bm = None
 
-    def compute_updates(self, data):
+    def compute_updates(self, data: bitmap) -> IndexUpdate:
         last_bm = self._last_bm
         changes = IndexUpdate()
         if last_bm is None:
@@ -47,7 +54,10 @@ class BitmapChangeManager(BaseChangeManager):
         self._last_bm = bitmap(data)
         return changes
 
-    def update(self, run_number, data, mid):
+    def update(self,
+               run_number: int,
+               data: Any,
+               mid: str) -> None:
         # pylint: disable=unused-argument
         assert isinstance(data, bitmap)
         if data is None or (run_number != 0 and run_number <= self._last_update):

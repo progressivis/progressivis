@@ -1,8 +1,18 @@
 "Change Manager for literal values (supporting ==)"
+from __future__ import annotations
 
 from .bitmap import bitmap
 from .index_update import IndexUpdate
 from .changemanager_base import BaseChangeManager
+
+from typing import (
+    Any,
+    Optional,
+    TYPE_CHECKING,
+)
+
+if TYPE_CHECKING:
+    from .slot import Slot
 
 
 class LiteralChangeManager(BaseChangeManager):
@@ -14,7 +24,7 @@ class LiteralChangeManager(BaseChangeManager):
 
     def __init__(
         self,
-        slot,
+        slot: Slot,
         buffer_created=True,
         buffer_updated=False,
         buffer_deleted=True,
@@ -29,13 +39,13 @@ class LiteralChangeManager(BaseChangeManager):
             buffer_exposed,
             buffer_masked,
         )
-        self._last_value = None
+        self._last_value: Any = None
 
-    def reset(self, name=None):
+    def reset(self, name: Optional[str] = None) -> None:
         super(LiteralChangeManager, self).reset(name)
         self._last_value = None
 
-    def compute_updates(self, data):
+    def compute_updates(self, data: Any) -> IndexUpdate:
         last_value = self._last_value
         changes = IndexUpdate()
         if last_value == data:
@@ -51,9 +61,11 @@ class LiteralChangeManager(BaseChangeManager):
         self._last_value = data
         return changes
 
-    def update(self, run_number, data, mid):
+    def update(self,
+               run_number: int,
+               data: Any,
+               mid: str) -> None:
         # pylint: disable=unused-argument
-        assert isinstance(data, bitmap)
         if run_number != 0 and run_number <= self._last_update:
             return
 

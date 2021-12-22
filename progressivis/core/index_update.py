@@ -117,7 +117,7 @@ class IndexUpdate:
             and self.deleted == other.deleted
         )
 
-    def __ne__(self, other):
+    def __ne__(self, other) -> bool:
         return not self == other
 
     def copy(self) -> IndexUpdate:

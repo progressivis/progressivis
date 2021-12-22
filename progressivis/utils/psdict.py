@@ -147,3 +147,6 @@ class PsDict(dict):
         if self._index is None:
             return bitmap(range(len(self)))
         return bitmap(self._index.values())
+
+
+EMPTY_PSDICT = PsDict()

@@ -12,19 +12,21 @@ from .sample import Sample
 from .random_table import RandomTable, RandomDict
 
 
-__all__ = ["Stats",
-           "Min",
-           "ScalarMin",
-           "Max",
-           "ScalarMax",
-           "IdxMax",
-           "IdxMin",
-           "VarH",
-           "Var",
-           "Percentiles",
-           "Histogram1D",
-           "Histogram2D",
-           "MCHistogram2D",
-           "Sample",
-           "RandomTable",
-           "RandomDict"]
+__all__ = [
+    "Stats",
+    "Min",
+    "ScalarMin",
+    "Max",
+    "ScalarMax",
+    "IdxMax",
+    "IdxMin",
+    "VarH",
+    "Var",
+    "Percentiles",
+    "Histogram1D",
+    "Histogram2D",
+    "MCHistogram2D",
+    "Sample",
+    "RandomTable",
+    "RandomDict",
+]

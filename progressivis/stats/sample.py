@@ -11,28 +11,29 @@ from ..core.bitmap import bitmap
 from ..table import Table
 from ..table.module import TableModule
 from ..core.utils import indices_len
-from ..core.decorators import *
+from ..core.decorators import process_slot, run_if_any
 from ..table import TableSelectedView
 import numpy as np
 
 import logging
+
 logger = logging.getLogger(__name__)
 
 
 def has_len(d):
-    return hasattr(d, '__len__')
+    return hasattr(d, "__len__")
 
 
 class Sample(TableModule):
-    parameters = [('samples',  np.dtype(int), 50)]
-    inputs = [SlotDescriptor('table', type=Table)]
-    outputs = [SlotDescriptor('select', type=bitmap, required=False)]
+    parameters = [("samples", np.dtype(int), 50)]
+    inputs = [SlotDescriptor("table", type=Table)]
+    outputs = [SlotDescriptor("select", type=bitmap, required=False)]
 
     def __init__(self, **kwds):
         super(Sample, self).__init__(**kwds)
-        self._tmp_table = Table(self.generate_table_name('sample'),
-                                dshape='{select: int64}',
-                                create=True)
+        self._tmp_table = Table(
+            self.generate_table_name("sample"), dshape="{select: int64}", create=True
+        )
         self._size = 0  # holds the size consumed from the input table so far
         self._bitmap = None
         self.result = None
@@ -41,10 +42,10 @@ class Sample(TableModule):
         self._tmp_table.resize(0)
         self._size = 0
         self._bitmap = None
-        self.get_input_slot('table').reset()
+        self.get_input_slot("table").reset()
 
     def get_data(self, name):
-        if name == 'select':
+        if name == "select":
             return self.get_bitmap()
         if self.result is not None:
             self.result.selection = self.get_bitmap()
@@ -52,14 +53,14 @@ class Sample(TableModule):
 
     def get_bitmap(self):
         if self._bitmap is None:
-            len_ = len(self._tmp_table['select'])
+            len_ = len(self._tmp_table["select"])
             # Avoid "ValueError: Iteration of zero-sized operands is not enabled"
-            self._bitmap = bitmap(self._tmp_table['select']) if len_ else bitmap()
+            self._bitmap = bitmap(self._tmp_table["select"]) if len_ else bitmap()
         return self._bitmap
 
-    @process_slot("table", reset_if='delete', reset_cb="reset")
+    @process_slot("table", reset_if="delete", reset_cb="reset")
     @run_if_any
-    def run_step(self,run_number,step_size,howlong):
+    def run_step(self, run_number, step_size, howlong):
         with self.context as ctx:
             if self.result is None:
                 self.result = TableSelectedView(ctx.table.data(), bitmap([]))
@@ -67,16 +68,16 @@ class Sample(TableModule):
             steps = indices_len(indices)
             k = int(self.params.samples)
             reservoir = self._tmp_table
-            res = reservoir['select']
-            size = self._size # cache in local variable
+            res = reservoir["select"]
+            size = self._size  # cache in local variable
             if size < k:
-                logger.info('Filling the reservoir %d/%d', size, k)
+                logger.info("Filling the reservoir %d/%d", size, k)
                 # fill the reservoir array until it contains k elements
-                rest = indices.pop(k-size)
-                reservoir.append({'select': rest})
+                rest = indices.pop(k - size)
+                reservoir.append({"select": rest})
                 size = len(reservoir)
 
-            if len(indices)==0: # nothing else to do
+            if len(indices) == 0:  # nothing else to do
                 self._size = size
                 if steps:
                     self._bitmap = None
@@ -87,33 +88,33 @@ class Sample(TableModule):
             # logic. The optimal value for (t) may vary depending on RNG
             # performance characteristics.
 
-            if size < t and len(indices)!=0:
-                logger.info('Normal sampling from %d to %d', size, t)
-            while size < t and len(indices)!=0:
+            if size < t and len(indices) != 0:
+                logger.info("Normal sampling from %d to %d", size, t)
+            while size < t and len(indices) != 0:
                 # Normal reservoir sampling is fastest up to (t) samples
                 j = np.random.randint(size)
                 if j < k:
                     res[j] = indices.pop()[0]
                 size += 1
 
-            if len(indices)==0:
+            if len(indices) == 0:
                 self._size = size
                 if steps:
                     self._bitmap = None
                 return self._return_run_step(self.state_blocked, steps_run=steps)
 
-            logger.info('Fast sampling with %d indices', len(indices))
+            logger.info("Fast sampling with %d indices", len(indices))
             while indices:
                 # draw gap size (g) from geometric distribution with probability p = k / size
                 p = k / size
                 u = np.random.rand()
-                g = int(np.floor(np.log(u) / np.log(1-p)))
+                g = int(np.floor(np.log(u) / np.log(1 - p)))
                 # advance over the gap, and assign next element to the reservoir
-                if (g+1) < len(indices):
+                if (g + 1) < len(indices):
                     j = np.random.randint(k)
                     res[j] = indices[g]
-                    indices.pop(g+1)
-                    size += g+1
+                    indices.pop(g + 1)
+                    size += g + 1
                 else:
                     size += len(indices)
                     break
@@ -122,5 +123,3 @@ class Sample(TableModule):
             if steps:
                 self._bitmap = None
             return self._return_run_step(self.state_blocked, steps_run=steps)
-
-
