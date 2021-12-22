@@ -275,9 +275,11 @@ class MCScatterPlot(NAry):
             json['samples_counter'] = samples_counter
             samples = []
         # TODO: check consistency among classes (e.g. same xbin, ybin etc.)
-        assert self.hist_tensor
-        xbins, ybins = self.hist_tensor.shape[:-1] \
-            if self._ipydata else buffers[0]['binnedPixels'].shape
+        if self._ipydata:
+            assert self.hist_input
+            xbins, ybins = self.hist_tensor.shape[:-1]
+        else:
+            xbins, ybins = buffers[0]['binnedPixels'].shape
         encoding = {
             "x": {
                 "bin": {
@@ -453,9 +455,9 @@ class MCScatterPlot(NAry):
         hist_meta = dict(inp='hist', class_=name, **col_translation)
         if data_class.histogram2d is not None:
             self.input['table', hist_meta] = data_class.histogram2d.output.result
-        if sample is not None:
+        if data_class.sample is not None:
             meta = dict(inp='sample', class_=name, **col_translation)
-            self.input['table', meta] = sample.output[sample_slot]
+            self.input['table', meta] = data_class.sample.output[sample_slot]
         self._data_class_dict[name] = data_class
         if data_class.min_value is not None and self.min_value is not None:
             self.min_value.subscribe(data_class.min_value, col_translation)
