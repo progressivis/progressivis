@@ -1,6 +1,8 @@
+from __future__ import annotations
+
 from ..core.utils import indices_len, fix_loc
-from ..core.slot import SlotDescriptor
-from ..table.module import TableModule
+from ..core.slot import SlotDescriptor, Slot
+from ..table.module import TableModule, JSon, ReturnRunStep
 from ..table import Table
 from ..utils.psdict import PsDict
 from fast_histogram import histogram2d  # type: ignore
@@ -9,6 +11,10 @@ from ..core.decorators import process_slot, run_if_any
 import numpy as np
 
 import logging
+
+from typing import Optional, Tuple, cast
+
+Bounds2D = Tuple[float, float, float, float]
 
 logger = logging.getLogger(__name__)
 
@@ -40,19 +46,23 @@ class Histogram2D(TableModule):
         "}"
     )
 
-    def __init__(self, x_column, y_column, with_output=True, **kwds):
+    def __init__(self,
+                 x_column: str,
+                 y_column: str,
+                 with_output=True,
+                 **kwds):
         super(Histogram2D, self).__init__(dataframe_slot="table", **kwds)
         self.tags.add(self.TAG_VISUALIZATION)
         self.x_column = x_column
         self.y_column = y_column
         self.default_step_size = 10000
         self.total_read = 0
-        self._histo = None
-        self._xedges = None
-        self._yedges = None
-        self._bounds = None
+        self._histo: Optional[np.ndarray] = None
+        self._xedges: Optional[np.ndarray] = None
+        self._yedges: Optional[np.ndarray] = None
+        self._bounds: Optional[Bounds2D] = None
         self._with_output = with_output
-        self._heatmap_cache = None
+        self._heatmap_cache: Optional[Tuple[JSon, Bounds2D]] = None
         self.result = Table(
             self.generate_table_name("Histogram2D"),
             dshape=Histogram2D.schema,
@@ -60,7 +70,7 @@ class Histogram2D(TableModule):
             create=True,
         )
 
-    def reset(self):
+    def reset(self) -> None:
         self._histo = None
         self._xedges = None
         self._yedges = None
@@ -69,13 +79,13 @@ class Histogram2D(TableModule):
         if self.result:
             self.result.resize(0)
 
-    def is_ready(self):
+    def is_ready(self) -> bool:
         # If we have created data but no valid min/max, we can only wait
         if self._bounds and self.get_input_slot("table").created.any():
             return True
         return super(Histogram2D, self).is_ready()
 
-    def get_bounds(self, min_slot, max_slot):
+    def get_bounds(self, min_slot: Slot, max_slot: Slot) -> Optional[Bounds2D]:
         min_slot.created.next()
         min_df = min_slot.data()
         if min_df is None or len(min_df) == 0:
@@ -98,7 +108,7 @@ class Histogram2D(TableModule):
             logger.warning("ymax < ymin, swapped")
         return (xmin, xmax, ymin, ymax)
 
-    def get_delta(self, xmin, xmax, ymin, ymax):
+    def get_delta(self, xmin: float, xmax: float, ymin: float, ymax: float) -> Tuple[float, float]:
         p = self.params
         xdelta, ydelta = p["xdelta"], p["ydelta"]
         if xdelta < 0:
@@ -114,7 +124,11 @@ class Histogram2D(TableModule):
     @process_slot("table", reset_if="update", reset_cb="reset")
     @process_slot("min", "max", reset_if=False)
     @run_if_any
-    def run_step(self, run_number, step_size, howlong):
+    def run_step(self,
+                 run_number: int,
+                 step_size: int,
+                 howlong: float) -> ReturnRunStep:
+        assert self.context
         with self.context as ctx:
             dfslot = ctx.table
             min_slot = ctx.min
@@ -246,17 +260,17 @@ class Histogram2D(TableModule):
             self.build_heatmap(values)
             return self._return_run_step(self.next_state(dfslot), steps_run=steps)
 
-    def get_visualization(self):
+    def get_visualization(self) -> str:
         return "heatmap"
 
-    def to_json(self, short=False):
-        json = super(Histogram2D, self).to_json(short)
+    def to_json(self, short=False, with_speed: bool = True) -> JSon:
+        json = super(Histogram2D, self).to_json(short, with_speed)
         if short:
             return json
         return self.heatmap_to_json(json, short)
 
-    def build_heatmap(self, values):
-        json_ = {}
+    def build_heatmap(self, values: JSon) -> None:
+        json_: JSon = {}
         row = values
         if not (
             np.isnan(row["xmin"])
@@ -264,8 +278,8 @@ class Histogram2D(TableModule):
             or np.isnan(row["ymin"])
             or np.isnan(row["ymax"])
         ):
-            bounds = (row["xmin"], row["ymin"], row["xmax"], row["ymax"])
-            data = row["array"]
+            bounds = cast(Bounds2D, (row["xmin"], row["ymin"], row["xmax"], row["ymax"]))
+            data = cast(np.ndarray, row["array"])
             json_["binnedPixels"] = data
             json_["range"] = [np.min(data), np.max(data)]
             json_["count"] = np.sum(data)
@@ -273,7 +287,7 @@ class Histogram2D(TableModule):
             self._heatmap_cache = (json_, bounds)
         return None
 
-    def heatmap_to_json(self, json, short=False):
+    def heatmap_to_json(self, json: JSon, short=False) -> JSon:
         if self._heatmap_cache is None:
             return json
         x_label, y_label = "x", "y"

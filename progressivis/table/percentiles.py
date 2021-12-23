@@ -1,10 +1,13 @@
+from __future__ import annotations
+
 import numpy as np
 
 from . import Table, BaseTable
 from ..core.slot import SlotDescriptor
-from .module import TableModule
+from .module import TableModule, ReturnRunStep
 from collections import OrderedDict
 from ..utils.psdict import PsDict
+from .hist_index import HistogramIndex
 
 
 class Percentiles(TableModule):
@@ -14,7 +17,9 @@ class Percentiles(TableModule):
         SlotDescriptor("percentiles", type=PsDict, required=True),
     ]
 
-    def __init__(self, hist_index, **kwds):
+    def __init__(self,
+                 hist_index: HistogramIndex,
+                 **kwds):
         super(Percentiles, self).__init__(**kwds)
         self._accuracy = self.params.accuracy
         self._hist_index = hist_index
@@ -63,7 +68,10 @@ class Percentiles(TableModule):
                 ret_values.append(values[reminder])
         return OrderedDict(zip(points.keys(), ret_values))
 
-    def run_step(self, run_number, step_size, howlong):
+    def run_step(self,
+                 run_number: int,
+                 step_size: int,
+                 howlong: float) -> ReturnRunStep:
         input_slot = self.get_input_slot("table")
         if input_slot.data() is None:
             return self._return_run_step(self.state_blocked, steps_run=0)

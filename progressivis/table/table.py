@@ -96,7 +96,7 @@ class Table(IndexTable):
 
     def __init__(
         self,
-        name: str,
+        name: Optional[str],
         data: Any = None,
         dshape: Optional[str] = None,
         fillvalues: Optional[Dict[str, Any]] = None,

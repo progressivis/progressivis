@@ -5,17 +5,21 @@ and https://en.wikipedia.org/wiki/Reservoir_sampling
 
 Vitter, Jeffrey S. (1 March 1985). "Random sampling with a reservoir" (PDF). ACM Transactions on Mathematical Software. 11 (1): 37-57. doi:10.1145/3147.3165.
 """
+from __future__ import annotations
+
+import logging
+
+import numpy as np
 
 from progressivis import SlotDescriptor
 from ..core.bitmap import bitmap
 from ..table import Table
-from ..table.module import TableModule
+from ..table.module import TableModule, ReturnRunStep
 from ..core.utils import indices_len
 from ..core.decorators import process_slot, run_if_any
 from ..table import TableSelectedView
-import numpy as np
 
-import logging
+from typing import Optional, Any
 
 logger = logging.getLogger(__name__)
 
@@ -35,23 +39,23 @@ class Sample(TableModule):
             self.generate_table_name("sample"), dshape="{select: int64}", create=True
         )
         self._size = 0  # holds the size consumed from the input table so far
-        self._bitmap = None
-        self.result = None
+        self._bitmap: Optional[bitmap] = None
+        self.result: Optional[TableSelectedView] = None
 
-    def reset(self):
+    def reset(self) -> None:
         self._tmp_table.resize(0)
         self._size = 0
         self._bitmap = None
         self.get_input_slot("table").reset()
 
-    def get_data(self, name):
+    def get_data(self, name: str) -> Any:
         if name == "select":
             return self.get_bitmap()
         if self.result is not None:
             self.result.selection = self.get_bitmap()
         return super(Sample, self).get_data(name)
 
-    def get_bitmap(self):
+    def get_bitmap(self) -> bitmap:
         if self._bitmap is None:
             len_ = len(self._tmp_table["select"])
             # Avoid "ValueError: Iteration of zero-sized operands is not enabled"
@@ -60,7 +64,11 @@ class Sample(TableModule):
 
     @process_slot("table", reset_if="delete", reset_cb="reset")
     @run_if_any
-    def run_step(self, run_number, step_size, howlong):
+    def run_step(self,
+                 run_number: int,
+                 step_size: int,
+                 howlong: float) -> ReturnRunStep:
+        assert self.context
         with self.context as ctx:
             if self.result is None:
                 self.result = TableSelectedView(ctx.table.data(), bitmap([]))

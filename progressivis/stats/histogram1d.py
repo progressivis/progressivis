@@ -181,7 +181,7 @@ class Histogram1D(TableModule):
         return "histogram1d"
 
     def to_json(self, short=False, with_speed: bool = True) -> JSon:
-        json = super(Histogram1D, self).to_json(short)
+        json = super(Histogram1D, self).to_json(short, with_speed)
         if short:
             return json
         return self._hist_to_json(json)

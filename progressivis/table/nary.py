@@ -1,8 +1,11 @@
 "Base Module for modules supporting a variable number in input slots."
+from __future__ import annotations
 
-from progressivis.table.module import TableModule
+from progressivis.table.module import TableModule, ReturnRunStep
 from progressivis.table import BaseTable
 from progressivis.core.slot import SlotDescriptor
+
+from typing import List, Optional
 
 
 class NAry(TableModule):
@@ -14,10 +17,10 @@ class NAry(TableModule):
         self.nary = nary
         self.inputs = [nary]
 
-    def predict_step_size(self, duration):
+    def predict_step_size(self, duration: float) -> int:
         return 1
 
-    def get_input_slot_multiple(self, name=None):
+    def get_input_slot_multiple(self, name: Optional[str]) -> List[str]:
         if name is None:
             name = self.nary
         return super(NAry, self).get_input_slot_multiple(name)
@@ -38,5 +41,8 @@ class NAry(TableModule):
     #     self._input_slots[slot.input_name] = slot
     #     return ret
 
-    def run_step(self, run_number, step_size, howlong):  # pragma no cover
+    def run_step(self,
+                 run_number: int,
+                 step_size: int,
+                 howlong: float) -> ReturnRunStep:  # pragma no cover
         raise NotImplementedError("run_step not defined")

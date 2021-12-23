@@ -351,7 +351,7 @@ class MCScatterPlot(NAry):
                  run_number: int,
                  step_size: int,
                  howlong: float) -> ReturnRunStep:
-        for name in self.get_input_slot_multiple():
+        for name in self.get_input_slot_multiple(self.nary):
             slot = self.get_input_slot(name)
             # slot.update(run_number)
             if slot.has_buffered():

@@ -470,9 +470,9 @@ class Module(metaclass=ModuleMeta):
         # raises error is the slot is not declared
         return self._input_slots[name]
 
-    def get_input_slot_multiple(self, name: str) -> List[Slot]:
+    def get_input_slot_multiple(self, name: str) -> List[str]:
         if not self.input_slot_multiple(name):
-            return [self.get_input_slot(name)]
+            return [name]  # self.get_input_slot(name)]
         prefix = name + "."
         return [iname for iname in self._input_slots if iname.startswith(prefix)]
 
