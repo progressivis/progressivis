@@ -75,7 +75,7 @@ class NumpyDataset(Dataset):
     def size(self) -> int:
         return self.view.shape[0]
 
-    def resize(self, size: Union[int, ArrayLike], axis: int = None) -> None:
+    def resize(self, size: Union[int, ArrayLike], axis: Optional[int] = None) -> None:
         if isinstance(size, integer_types):
             size = np.array(tuple([size] + list(self.base.shape[1:])))
         else:

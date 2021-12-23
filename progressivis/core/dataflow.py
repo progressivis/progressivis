@@ -233,7 +233,7 @@ class Dataflow:
         del self.outputs[name]
         return emptied
 
-    def order_modules(self, dependencies: Dependencies = None) -> Order:
+    def order_modules(self, dependencies: Optional[Dependencies] = None) -> Order:
         "Compute a topological order for the modules."
         if dependencies is None:
             dependencies = self.collect_dependencies()

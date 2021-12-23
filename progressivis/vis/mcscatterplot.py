@@ -428,8 +428,8 @@ class MCScatterPlot(NAry):
                    y_column: str,
                    sample='default',
                    sample_slot='result',
-                   input_module: Module = None,
-                   input_slot: str = None) -> None:
+                   input_module: Optional[Module] = None,
+                   input_slot: Optional[str] = None) -> None:
         if self.input_module is None and input_module is None:
             raise ProgressiveError("Input module is not defined!")
         if self.input_module is not None and input_module is not None:

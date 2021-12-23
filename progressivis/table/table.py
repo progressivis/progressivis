@@ -99,9 +99,9 @@ class Table(IndexTable):
         name: str,
         data: Any = None,
         dshape: Optional[str] = None,
-        fillvalues: Dict[str, Any] = None,
+        fillvalues: Optional[Dict[str, Any]] = None,
         storagegroup: Optional[Group] = None,
-        chunks: Chunks = None,
+        chunks: Optional[Chunks] = None,
         create: Optional[bool] = None,
         indices: Optional[Index] = None,
     ):

@@ -81,7 +81,7 @@ class RangeDataset(Dataset):
     def size(self) -> int:
         return self._shape[0]
 
-    def resize(self, size: Union[int, ArrayLike], axis: int = None) -> None:
+    def resize(self, size: Union[int, ArrayLike], axis: Optional[int] = None) -> None:
         if isinstance(size, tuple):
             if len(size) != 1:
                 raise KeyError(

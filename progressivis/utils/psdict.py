@@ -21,7 +21,7 @@ if TYPE_CHECKING:
 
 class PsDict(dict):
     "progressive dictionary"
-    def __init__(self, other: Dict[str, Any] = None, **kwargs):
+    def __init__(self, other: Optional[Dict[str, Any]] = None, **kwargs):
         if other is not None:
             # useful when keys are not varname-alike
             # one can use both (other and kwargs)

@@ -145,7 +145,7 @@ setup(
         "aiohttp_jinja2",
         "python_socketio", "click"],
     # "pptable",
-    setup_requires=['cython', 'numpy', 'pybind11', 'nose>=1.3.7', 'coverage'] if WITH_CXX else [],
+    setup_requires=['cython', 'numpy', 'pybind11', 'nose>=1.3.7', 'coverage', 'mypy'] if WITH_CXX else [],
     # test_suite='tests',
     test_suite='nose.collector',
     cmdclass=versioneer.get_cmdclass({'bench': RunBench}),

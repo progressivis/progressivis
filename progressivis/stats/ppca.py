@@ -220,6 +220,7 @@ class PPCATransformer(TableModule):
         resetter = self.get_input_slot("resetter")
         if resetter:
             resetter.clear_buffers()
+            assert self._resetter_func
             if not self._resetter_func(resetter):
                 return self.trace_if(False, 0.0, -1.0, len(input_table))
         if self._threshold is not None and len(input_table) >= self._threshold:

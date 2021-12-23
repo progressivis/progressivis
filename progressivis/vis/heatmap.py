@@ -6,7 +6,7 @@ import logging
 import base64
 import io
 import numpy as np
-import scipy as sp
+import scipy as sp  # type: ignore
 from PIL import Image
 from progressivis.core.utils import indices_len
 from progressivis.core.slot import SlotDescriptor

@@ -17,6 +17,20 @@ from progressivis.table.dshape import (
 from progressivis.core.utils import force_valid_id_columns
 from progressivis.io.read_csv import read_csv, recovery, is_recoverable, InputSource
 
+from typing import (
+    Any,
+    Optional,
+    Dict,
+    Tuple,
+    Callable,
+    TYPE_CHECKING,
+)
+
+if TYPE_CHECKING:
+    from progressivis.core.module import ModuleState, ReturnRunStep
+    from progressivis.io.read_csv import Parser
+    from progressivis.table.dshape import DataShape
+
 
 logger = logging.getLogger(__name__)
 
@@ -30,17 +44,17 @@ class CSVLoader(TableModule):
 
     def __init__(
         self,
-        filepath_or_buffer=None,
-        filter_=None,
+        filepath_or_buffer: Optional[Any] = None,
+        filter_: Optional[Callable[[pd.DataFrame], bool]] = None,
         force_valid_ids=True,
-        fillvalues=None,
-        as_array=None,
-        timeout=None,
-        save_context=None,
-        recovery=0,
-        recovery_tag="",
-        recovery_table_size=3,
-        save_step_size=100000,
+        fillvalues: Optional[Dict[str, Any]] = None,
+        as_array: Optional[Callable] = None,
+        timeout: Optional[float] = None,
+        save_context: Optional[Any] = None,  # FIXME seems more like a bool
+        recovery: int = 0,  # FIXME seems more like a bool
+        recovery_tag: str = "",
+        recovery_table_size: int = 3,
+        save_step_size: int = 100000,
         **kwds,
     ):
         super(CSVLoader, self).__init__(**kwds)
@@ -52,7 +66,7 @@ class CSVLoader(TableModule):
         # When called with a specified chunksize, it returns a parser
         self.filepath_or_buffer = filepath_or_buffer
         self.force_valid_ids = force_valid_ids
-        self.parser = None
+        self.parser: Optional[Parser] = None
         self.csv_kwds = csv_kwds
         self._compression = csv_kwds.get("compression", "infer")
         csv_kwds["compression"] = None
@@ -62,14 +76,14 @@ class CSVLoader(TableModule):
         if filter_ is not None and not callable(filter_):
             raise ProgressiveError("filter parameter should be callable or None")
         self._filter = filter_
-        self._input_stream = (
-            None  # stream that returns a position through the 'tell()' method
-        )
+        # self._input_stream: Optional[Any] = (
+        #     None  # stream that returns a position through the 'tell()' method
+        # )
         self._input_encoding = None
         self._input_compression = None
         self._input_size = 0  # length of the file or input stream when available
         self._timeout_csv = timeout
-        self._table_params = dict(name=self.name, fillvalues=fillvalues)
+        self._table_params: Dict[str, Any] = dict(name=self.name, fillvalues=fillvalues)
         self._as_array = as_array
         self._save_context = (
             True
@@ -78,9 +92,9 @@ class CSVLoader(TableModule):
         )
         self._recovery = recovery
         self._recovery_table_size = recovery_table_size
-        self._recovery_table = None
+        self._recovery_table: Optional[Table] = None
         self._recovery_table_name = f"csv_loader_recovery_{recovery_tag}"
-        self._recovery_table_inv = None
+        self._recovery_table_inv: Optional[Table] = None
         self._recovery_table_inv_name = f"csv_loader_recovery_invariant_{recovery_tag}"
         self._save_step_size = save_step_size
         self._last_saved_id = 0
@@ -89,7 +103,7 @@ class CSVLoader(TableModule):
         if not self._recovery:
             self.trunc_recovery_tables()
 
-    def recovery_tables_exist(self):
+    def recovery_tables_exist(self) -> bool:
         try:
             Table(name=self._recovery_table_name, create=False)
         except ValueError as ve:
@@ -107,7 +121,7 @@ class CSVLoader(TableModule):
             raise
         return True
 
-    def trunc_recovery_tables(self):
+    def trunc_recovery_tables(self) -> None:
         len_ = 0
         try:
             rt = Table(name=self._recovery_table_name, create=False)
@@ -125,23 +139,23 @@ class CSVLoader(TableModule):
         if len_:
             rt.drop(slice(None, None, None), truncate=True)
 
-    def rows_read(self):
+    def rows_read(self) -> int:
         "Return the number of rows read so far."
         return self._rows_read
 
-    def is_ready(self):
+    def is_ready(self) -> bool:
         fn = self.get_input_slot("filenames")
         # Can be called before the first update so fn.created can be None
         if fn and (fn.created is None or fn.created.any()):
             return True
         return super(CSVLoader, self).is_ready()
 
-    def is_data_input(self):
+    def is_data_input(self) -> bool:
         # pylint: disable=no-self-use
         "Return True if this module brings new data"
         return True
 
-    def create_input_source(self, filepath):
+    def create_input_source(self, filepath: str) -> InputSource:
         usecols = self.csv_kwds.get("usecols")
         return InputSource.create(
             filepath,
@@ -152,26 +166,26 @@ class CSVLoader(TableModule):
             usecols=usecols,
         )
 
-    def close(self):
-        if self._input_stream is None:
-            return
-        try:
-            self._input_stream.close()
-            # pylint: disable=bare-except
-        except Exception:
-            pass
-        self._input_stream = None
+    def close(self) -> None:
+        # if self._input_stream is None:
+        #     return
+        # try:
+        #     self._input_stream.close()
+        #     # pylint: disable=bare-except
+        # except Exception:
+        #     pass
+        # self._input_stream = None
         self._input_encoding = None
         self._input_compression = None
         self._input_size = 0
 
-    def get_progress(self):
+    def get_progress(self) -> Tuple[int, int]:
         if self._input_size == 0:
             return (0, 0)
-        pos = self._input_stream.tell()
+        pos = 0  # self._input_stream.tell()
         return (pos, self._input_size)
 
-    def validate_parser(self, run_number):
+    def validate_parser(self, run_number: int) -> ModuleState:
         if self.parser is None:
             if self.filepath_or_buffer is not None:
                 if not self._recovery:
@@ -216,7 +230,7 @@ class CSVLoader(TableModule):
                             logger.error("Inconsistent recovery table")
                             return self.state_terminated
                         # last_ = self._recovery_table.argmax()['offset']
-                        snapshot = None
+                        snapshot: Optional[Dict[str, Any]] = None
                         if len_last == 1:
                             snapshot = self._recovery_table.row(last_[0]).to_dict(
                                 ordered=True
@@ -230,13 +244,16 @@ class CSVLoader(TableModule):
                             for i in self._recovery_table.eval(
                                 "last_id<{}".format(len(self.result)), as_slice=False
                             ):
-                                sn = self._recovery_table.row(i).to_dict(ordered=True)
+                                sn: Dict[str, Any] = self._recovery_table.row(
+                                    i
+                                ).to_dict(ordered=True)
                                 if check_snapshot(sn) and sn["last_id"] > max_:
                                     max_, snapshot = sn["last_id"], sn
                             if max_ < 0:
                                 # logger.error('Cannot acces recovery table (max_<0)')
                                 return self.state_terminated
                             self.result.drop(slice(max_ + 1, None, None), truncate=True)
+                        assert snapshot
                         self._recovered_csv_table_name = snapshot["table_name"]
                     except Exception as e:
                         logger.error("Cannot read the snapshot %s", e)
@@ -261,6 +278,7 @@ class CSVLoader(TableModule):
                 df = fn_slot.data()
                 while self.parser is None:
                     indices = fn_slot.created.next(1)
+                    assert isinstance(indices, slice)
                     if indices.stop == indices.start:
                         return self.state_blocked
                     filename = df.at[indices.start, "filename"]
@@ -274,18 +292,18 @@ class CSVLoader(TableModule):
                         # fall through
         return self.state_ready
 
-    def _data_as_array(self, df):
+    def _data_as_array(self, df: pd.DataFrame) -> Tuple[Any, DataShape]:
         if not self._as_array:
             return (df, dshape_from_dataframe(df))
         if callable(self._as_array):
-            self._as_array = self._as_array(list(df.columns))
+            self._as_array = self._as_array(list(df.columns))  # FIXME
         if isinstance(self._as_array, str):
             data = df.values
             dshape = array_dshape(data, self._as_array)
             return ({self._as_array: data}, dshape)
         if not isinstance(self._as_array, dict):
             raise ValueError(
-                f"Unexpected parameter specified to as_array: {self.as_array}"
+                f"Unexpected parameter specified to as_array: {self._as_array}"
             )
         columns = set(df.columns)
         ret = {}
@@ -309,7 +327,9 @@ class CSVLoader(TableModule):
             return False
         return self.result.last_id >= self._last_saved_id + self._save_step_size
 
-    def run_step(self, run_number, step_size, howlong):
+    def run_step(
+        self, run_number: int, step_size: int, howlong: float
+    ) -> ReturnRunStep:
         if step_size == 0:  # bug
             logger.error("Received a step_size of 0")
             return self._return_run_step(self.state_ready, steps_run=0)
@@ -324,6 +344,7 @@ class CSVLoader(TableModule):
             raise ProgressiveStopIteration("Unexpected situation")
         logger.info("loading %d lines", step_size)
         needs_save = self._needs_save()
+        assert self.parser
         try:
             df_list = self.parser.read(
                 step_size, flush=needs_save
@@ -405,6 +426,7 @@ class CSVLoader(TableModule):
                     last_id=self.result.last_id,
                     table_name=self.result._name,
                 )
+                assert self._recovery_table
                 self._recovery_table.add(snapshot)
                 if len(self._recovery_table) > self._recovery_table_size:
                     oldest = self._recovery_table.argmin()["offset"]

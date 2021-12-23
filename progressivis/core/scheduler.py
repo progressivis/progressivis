@@ -598,7 +598,7 @@ class Scheduler:
             return name in self.dataflow
         return name in self._modules
 
-    def collateral_damage(self, name: str, deps: Set[str] = None) -> Set[str]:
+    def collateral_damage(self, name: str, deps: Optional[Set[str]] = None) -> Set[str]:
         """Return the list of modules deleted when the specified one is deleted.
 
         :param name: module to delete

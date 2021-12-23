@@ -256,7 +256,7 @@ class MMapDataset(Dataset):
     def size(self) -> int:
         return self.view.shape[0]
 
-    def resize(self, size: Union[int, ArrayLike], axis: int = None) -> None:
+    def resize(self, size: Union[int, ArrayLike], axis: Optional[int] = None) -> None:
         assert self._buffer is not None
         shape = self.base.shape
         if isinstance(size, integer_types):

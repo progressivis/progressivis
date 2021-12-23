@@ -154,7 +154,7 @@ class BaseTable(metaclass=ABCMeta):
         base: Optional[BaseTable] = None,
         selection=slice(0, None),
         columns: Optional[List[BaseColumn]] = None,
-        columndict: Dict[str, int] = None,
+        columndict: Optional[Dict[str, int]] = None,
     ):
         self._base: Optional[BaseTable] = base if (
             base is None or base._base is None
@@ -777,7 +777,7 @@ class BaseTable(metaclass=ABCMeta):
         indices = self._col_slice_to_indices(colkey)
         self._setitem_iterable(indices, rowkey, values)
 
-    def columns_common_dtype(self, columns: List[str] = None) -> np.dtype:
+    def columns_common_dtype(self, columns: Optional[List[str]] = None) -> np.dtype:
         """Return the dtype that BaseTable.to_array would return.
 
         Parameters
@@ -1207,7 +1207,7 @@ class TableSelectedView(BaseTable):
         base: Optional[BaseTable] = None,
         selection: Union[bitmap, slice] = slice(0, None),
         columns: Optional[List[BaseColumn]] = None,
-        columndict: Dict[str, int] = None,
+        columndict: Optional[Dict[str, int]] = None,
     ):
         super().__init__(base, selection, columns, columndict)
         assert self._base
