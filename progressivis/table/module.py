@@ -13,7 +13,7 @@ from typing import (
     TYPE_CHECKING
 )
 
-from ..core.module import Module
+from ..core.module import Module, ReturnRunStep, JSon  # noqa: F401
 from ..core.slot import SlotDescriptor
 from .table import Table
 from .slot_join import SlotJoin

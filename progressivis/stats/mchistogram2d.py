@@ -8,15 +8,12 @@ from ..core.utils import indices_len, fix_loc
 from ..core.slot import SlotDescriptor
 from ..table.table import Table
 from ..table.nary import NAry
-from ..core.module import Module
+from ..core.module import Module, ReturnRunStep, JSon
 from fast_histogram import histogram2d  # type: ignore
 
-from typing import Optional, Tuple, TYPE_CHECKING
+from typing import Optional, Tuple
 
 Bounds = Tuple[float, float, float, float]
-
-if TYPE_CHECKING:
-    from progressivis.core.module import ReturnRunStep, JSon
 
 logger = logging.getLogger(__name__)
 

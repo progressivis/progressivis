@@ -44,8 +44,8 @@ class CSVLoader(TableModule):
 
     def __init__(
         self,
-        filepath_or_buffer: Optional[Any] = None,
-        filter_: Optional[Callable[[pd.DataFrame], bool]] = None,
+        filepath_or_buffer: Any = None,
+        filter_: Callable[[pd.DataFrame], bool] = None,
         force_valid_ids=True,
         fillvalues: Optional[Dict[str, Any]] = None,
         as_array: Optional[Callable] = None,

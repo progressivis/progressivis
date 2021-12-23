@@ -382,10 +382,11 @@ class Module(metaclass=ModuleMeta):
         )
         return json
 
-    async def from_input(self, msg: JSon) -> None:
+    async def from_input(self, msg: JSon) -> str:
         "Catch and process a message from an interaction"
         if "debug" in msg:
             self.debug = bool(msg["debug"])
+        return ""
 
     def is_input(self) -> bool:
         # pylint: disable=no-self-use

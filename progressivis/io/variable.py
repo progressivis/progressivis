@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import logging
 
 from progressivis import ProgressiveError, SlotDescriptor
@@ -7,17 +9,22 @@ from ..core.utils import all_string
 from ..utils.psdict import PsDict
 import copy
 
+from typing import List, TYPE_CHECKING, Dict, Tuple
+
+if TYPE_CHECKING:
+    from progressivis.core.module import ReturnRunStep, JSon
+
 logger = logging.getLogger(__name__)
 
 
 class Variable(Constant):
     inputs = [SlotDescriptor("like", type=(Table, PsDict), required=False)]
 
-    def __init__(self, table=None, **kwds):
+    def __init__(self, table: Table = None, **kwds):
         super(Variable, self).__init__(table, **kwds)
         self.tags.add(self.TAG_INPUT)
 
-    async def from_input(self, input_):
+    async def from_input(self, input_: JSon) -> str:
         if not isinstance(input_, dict):
             raise ProgressiveError("Expecting a dictionary")
         if self.result is None and self.get_input_slot("like") is None:
@@ -39,7 +46,10 @@ class Variable(Constant):
         self.result.update(last)
         return error
 
-    def run_step(self, run_number, step_size, howlong):
+    def run_step(self,
+                 run_number: int,
+                 step_size: int,
+                 howlong: float) -> ReturnRunStep:
         if self.result is None:
             slot = self.get_input_slot("like")
             if slot is not None:
@@ -53,17 +63,17 @@ class Variable(Constant):
 
 
 class VirtualVariable(Constant):
-    def __init__(self, names, **kwds):
+    def __init__(self, names: List[str], **kwds):
         if not all_string(names):
             raise ProgressiveError(f"names {names} must be a set of strings")
         self._names = names
         self._key = frozenset(names)
-        self._subscriptions = []
+        self._subscriptions: List[Tuple[Variable, Dict[str, str]]] = []
         table = None
         super(VirtualVariable, self).__init__(table, **kwds)
         self.tags.add(self.TAG_INPUT)
 
-    def subscribe(self, var, vocabulary):
+    def subscribe(self, var: Variable, vocabulary: Dict[str, str]):
         """
         Example: vocabulary = {'x': 'longitude', 'y': 'latitude'}
         """
@@ -77,13 +87,16 @@ class VirtualVariable(Constant):
             raise ProgressiveError("Inconsistent vocabulary")
         self._subscriptions.append((var, vocabulary))
 
-    async def from_input(self, input_):
+    async def from_input(self, input_: JSon) -> str:
         if not isinstance(input_, dict):
-            raise ProgressiveError("Expecting a dictionary")
+            return f"Expecting a dictionary in {repr(self)}"
         for var, vocabulary in self._subscriptions:
             translation = {vocabulary[k]: v for k, v in input_.items()}
             await var.from_input(translation)
         return ""
 
-    def run_step(self, run_number, step_size, howlong):
+    def run_step(self,
+                 run_number: int,
+                 step_size: int,
+                 howlong: float) -> ReturnRunStep:
         return self._return_run_step(self.state_blocked, steps_run=1)

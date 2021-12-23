@@ -6,7 +6,7 @@ import numpy as np
 
 from ..core.utils import indices_len, fix_loc
 from ..core.slot import SlotDescriptor
-from ..table.module import TableModule
+from ..table.module import TableModule, ReturnRunStep
 from ..table.table import Table, BaseTable
 from ..table.dshape import dshape_all_dtype
 from ..utils.psdict import PsDict
@@ -16,7 +16,6 @@ from typing import Dict, Iterable, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from progressivis.table.module import Columns
-    from progressivis.core.module import ReturnRunStep
 
 
 logger = logging.getLogger(__name__)

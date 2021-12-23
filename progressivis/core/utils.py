@@ -2,9 +2,12 @@ from __future__ import annotations
 
 from typing import (
     Optional,
+    Union,
     Any,
     Dict,
     List,
+    Tuple,
+    cast
 )
 
 import os
@@ -35,6 +38,7 @@ from pandas.io.common import is_url  # type: ignore
 import requests
 import s3fs  # type: ignore
 import stat as st
+
 
 integer_types = (int, np.integer)
 
@@ -213,7 +217,7 @@ def type_fullname(o: Any) -> str:
     return module + "." + o.__class__.__name__
 
 
-def indices_len(ind: Optional[slice]) -> int:
+def indices_len(ind: Union[None, bitmap, slice]) -> int:
     if isinstance(ind, slice):
         if ind.step is None or ind.step == 1:
             return ind.stop - ind.start
@@ -613,12 +617,16 @@ def s3_get_filepath_or_buffer(filepath_or_buffer, encoding=None, compression=Non
 
 
 def filepath_to_buffer(
-    filepath, encoding=None, compression=None, timeout=None, start_byte=0
-):
+    filepath: Any,
+    encoding: str = None,
+    compression: str = None,
+    timeout: float = None,
+    start_byte=0
+) -> Tuple[io.IOBase, Optional[str], Optional[str], int]:
     if not is_str(filepath):
         # if start_byte:
         #    filepath.seek(start_byte)
-        return filepath, encoding, compression, filepath.size()
+        return cast(io.IOBase, filepath), encoding, compression, filepath.size()
     if is_url(filepath):
         headers = None
         if start_byte:
@@ -629,15 +637,15 @@ def filepath_to_buffer(
             compression = "gzip"
         size = req.headers.get("Content-Length", 0)
         # return HttpDesc(req.raw, filepath), encoding, compression, int(size)
-        return req.raw, encoding, compression, int(size)
+        return cast(io.IOBase, req.raw), encoding, compression, int(size)
     if is_s3_url(filepath):
         reader, encoding, compression = s3_get_filepath_or_buffer(
             filepath, encoding=encoding, compression=compression
         )
-        return reader, encoding, compression, reader.size
+        return cast(io.IOBase, reader), encoding, compression, reader.size
     if _is_buffer_url(filepath):
         buffer = _url_to_buffer(filepath)
-        return buffer, encoding, compression, buffer.size()
+        return cast(io.IOBase, buffer), encoding, compression, buffer.size()
     filepath = os.path.expanduser(filepath)
     if not os.path.exists(filepath):
         raise ValueError("wrong filepath: {}".format(filepath))
@@ -656,7 +664,7 @@ _compression_to_extension = {
 }
 
 
-def _infer_compression(filepath_or_buffer, compression):
+def _infer_compression(filepath_or_buffer: Any, compression: Optional[str]) -> Optional[str]:
     """
     From Pandas.
     Get the compression method for filepath_or_buffer. If compression='infer',
@@ -698,7 +706,7 @@ def _infer_compression(filepath_or_buffer, compression):
         return compression
 
     msg = "Unrecognized compression type: {}".format(compression)
-    valid = ["infer", None] + sorted(_compression_to_extension)
+    valid = ["infer", "None"] + sorted(_compression_to_extension)
     msg += "\nValid compression types are {}".format(valid)
     raise ValueError(msg)
 

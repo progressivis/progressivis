@@ -1,12 +1,19 @@
+from __future__ import annotations
+
 from ..core import aio
 
 from progressivis import ProgressiveError
-from ..table.module import TableModule
+from ..table.module import TableModule, ReturnRunStep, JSon
 from ..utils.psdict import PsDict
+
+from typing import Dict, Any
 
 
 class DynVar(TableModule):
-    def __init__(self, init_val=None, vocabulary=None, **kwds):
+    def __init__(self,
+                 init_val: PsDict = None,
+                 vocabulary: Dict[str, Any] = None,
+                 **kwds):
         super().__init__(**kwds)
         self.tags.add(self.TAG_INPUT)
         self._has_input = False
@@ -17,15 +24,18 @@ class DynVar(TableModule):
             raise ProgressiveError("init_val must be a dictionary")
         self._table = PsDict({} if init_val is None else init_val)
 
-    def has_input(self):
+    def has_input(self) -> bool:
         return self._has_input
 
-    def run_step(self, run_number, step_size, howlong):
+    def run_step(self,
+                 run_number: int,
+                 step_size: int,
+                 howlong: float) -> ReturnRunStep:
         return self._return_run_step(self.state_blocked, steps_run=1)
 
-    async def from_input(self, input_):
+    async def from_input(self, input_: JSon) -> str:
         if not isinstance(input_, dict):
-            raise ProgressiveError("Expecting a dictionary")
+            return "Expecting a dictionary"
         last = PsDict(self._table)  # shallow copy
         values = input_
         if self._vocabulary is not None:

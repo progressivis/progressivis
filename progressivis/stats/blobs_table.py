@@ -9,7 +9,7 @@ import numpy as np
 from abc import abstractmethod
 from ..utils.errors import ProgressiveError, ProgressiveStopIteration
 from progressivis import SlotDescriptor
-from ..table.module import TableModule
+from ..table.module import TableModule, ReturnRunStep
 from ..table.table import Table
 from ..table.dshape import dshape_from_dtype
 from ..core.utils import integer_types
@@ -19,7 +19,6 @@ from sklearn.utils import shuffle as multi_shuffle  # type: ignore
 from typing import Optional, Tuple, Any, List, Dict, Union, Callable, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from progressivis.core.module import ReturnRunStep
     import numpy.typing as npt
 
 

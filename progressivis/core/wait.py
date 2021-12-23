@@ -1,8 +1,12 @@
+from __future__ import annotations
+
 from progressivis.utils.errors import ProgressiveError
-from progressivis.core.module import Module
+from progressivis.core.module import Module, ReturnRunStep
 from progressivis.core.slot import SlotDescriptor
 
 import numpy as np
+
+from typing import Any
 
 
 class Wait(Module):
@@ -18,7 +22,7 @@ class Wait(Module):
                 self.pretty_typename(),
             )
 
-    def is_ready(self):
+    def is_ready(self) -> bool:
         if not super(Wait, self).is_ready():
             return False
         if self.is_zombie():
@@ -37,14 +41,17 @@ class Wait(Module):
             return len(inslot.data()) >= reads
         return False
 
-    def get_data(self, name):
+    def get_data(self, name: str) -> Any:
         if name == "inp":
             return self.get_input_slot("inp").data()
         return None
 
-    def predict_step_size(self, duration):
+    def predict_step_size(self, duration: float) -> int:
         return 1
 
-    def run_step(self, run_number, step_size, howlong):
+    def run_step(self,
+                 run_number: int,
+                 step_size: int,
+                 howlong: float) -> ReturnRunStep:
         self.get_input_slot("inp").clear_buffers()
         return self._return_run_step(self.state_blocked, steps_run=1)

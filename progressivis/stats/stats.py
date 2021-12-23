@@ -6,16 +6,12 @@ import numpy as np
 
 from progressivis.core.utils import indices_len, fix_loc, get_random_name
 from progressivis.core.slot import SlotDescriptor
-from progressivis.table.module import TableModule
+from progressivis.table.module import TableModule, ReturnRunStep
 from progressivis.table.table import Table
 
 # TODO update with http://www.johndcook.com/blog/skewness_kurtosis/
 # Use http://www.grantjenks.com/docs/runstats/
 
-from typing import Optional, TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from progressivis.core.module import ReturnRunStep
 
 logger = logging.getLogger(__name__)
 
@@ -27,8 +23,8 @@ class Stats(TableModule):
     def __init__(
         self,
         column: str,
-        min_column: Optional[str] = None,
-        max_column: Optional[str] = None,
+        min_column: str = None,
+        max_column: str = None,
         reset_index=False,
         **kwds
     ):

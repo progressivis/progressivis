@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import logging
 
 import pandas as pd
@@ -5,7 +7,7 @@ import pandas as pd
 from progressivis import ProgressiveError, SlotDescriptor
 from progressivis.utils.errors import ProgressiveStopIteration
 from progressivis.utils.inspect import filter_kwds, extract_params_docstring
-from progressivis.table.module import TableModule
+from progressivis.table.module import TableModule, ReturnRunStep
 from progressivis.table.table import Table
 from progressivis.table.dshape import dshape_from_dataframe
 from progressivis.core.utils import (
@@ -14,6 +16,12 @@ from progressivis.core.utils import (
     force_valid_id_columns,
 )
 
+from typing import Dict, Any, Callable, Optional, Tuple, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from progressivis.core.module import ModuleState
+    from progressivis.io.read_csv import Parser
+    import io
 
 logger = logging.getLogger(__name__)
 
@@ -23,59 +31,60 @@ class SimpleCSVLoader(TableModule):
 
     def __init__(
         self,
-        filepath_or_buffer=None,
-        filter_=None,
+        filepath_or_buffer: Any = None,
+        filter_: Callable[[pd.DataFrame], bool] = None,
         force_valid_ids=True,
-        fillvalues=None,
+        fillvalues: Dict[str, Any] = None,
         **kwds
     ):
         super().__init__(**kwds)
         self.default_step_size = kwds.get("chunksize", 1000)  # initial guess
         kwds.setdefault("chunksize", self.default_step_size)
         # Filter out the module keywords from the csv loader keywords
-        csv_kwds = filter_kwds(kwds, pd.read_csv)
+        csv_kwds: Dict[str, Any] = filter_kwds(kwds, pd.read_csv)
         # When called with a specified chunksize, it returns a parser
         self.filepath_or_buffer = filepath_or_buffer
         self.force_valid_ids = force_valid_ids
-        self.parser = None
+        self.parser: Optional[Parser] = None
         self.csv_kwds = csv_kwds
-        self._compression = csv_kwds.get("compression", "infer")
+        self._compression: Any = csv_kwds.get("compression", "infer")
         csv_kwds["compression"] = None
-        self._encoding = csv_kwds.get("encoding", None)
+        self._encoding: Any = csv_kwds.get("encoding", None)
         csv_kwds["encoding"] = None
         self._rows_read = 0
         if filter_ is not None and not callable(filter_):
             raise ProgressiveError("filter parameter should be callable or None")
         self._filter = filter_
-        self._input_stream = (
-            None  # stream that returns a position through the 'tell()' method
-        )
-        self._input_encoding = None
-        self._input_compression = None
+        self._input_stream: Optional[io.IOBase] = None  # stream that returns a position through the 'tell()' method
+        self._input_encoding: Optional[str] = None
+        self._input_compression: Optional[str] = None
         self._input_size = 0  # length of the file or input stream when available
         self._file_mode = False
-        self._table_params = dict(name=self.name, fillvalues=fillvalues)
+        self._table_params: Dict[str, Any] = dict(name=self.name, fillvalues=fillvalues)
 
-    def rows_read(self):
+    def rows_read(self) -> int:
         return self._rows_read
 
-    def is_ready(self):
+    def is_ready(self) -> bool:
         fn = self.get_input_slot("filenames")
         # Can be called before the first update so fn.created can be None
         if fn and (fn.created is None or fn.created.any()):
             return True
         return super().is_ready()
 
-    def is_data_input(self):
+    def is_data_input(self) -> bool:
         # pylint: disable=no-self-use
         "Return True if this module brings new data"
         return True
 
-    def open(self, filepath):
+    def open(self, filepath: Any) -> io.IOBase:
         if self._input_stream is not None:
             self.close()
-        compression = _infer_compression(filepath, self._compression)
-        istream, encoding, compression, size = filepath_to_buffer(
+        compression: Optional[str] = _infer_compression(filepath, self._compression)
+        istream: io.IOBase
+        encoding: Optional[str]
+        size: int
+        (istream, encoding, compression, size) = filepath_to_buffer(
             filepath, encoding=self._encoding, compression=compression
         )
         self._input_stream = istream
@@ -86,7 +95,7 @@ class SimpleCSVLoader(TableModule):
         self.csv_kwds["compression"] = compression
         return istream
 
-    def close(self):
+    def close(self) -> None:
         if self._input_stream is None:
             return
         try:
@@ -99,13 +108,15 @@ class SimpleCSVLoader(TableModule):
         self._input_compression = None
         self._input_size = 0
 
-    def get_progress(self):
+    def get_progress(self) -> Tuple[int, int]:
         if self._input_size == 0:
+            return (0, 0)
+        if self._input_stream is None:
             return (0, 0)
         pos = self._input_stream.tell()
         return (pos, self._input_size)
 
-    def validate_parser(self, run_number):
+    def validate_parser(self, run_number: int) -> ModuleState:
         if self.parser is None:
             if self.filepath_or_buffer is not None:
                 try:
@@ -129,6 +140,7 @@ class SimpleCSVLoader(TableModule):
                     df = fn_slot.data()
                     while self.parser is None:
                         indices = fn_slot.created.next(1)
+                        assert isinstance(indices, slice)
                         if indices.stop == indices.start:
                             return self.state_blocked
                         filename = df.at[indices.start, "filename"]
@@ -142,7 +154,9 @@ class SimpleCSVLoader(TableModule):
                         # fall through
         return self.state_ready
 
-    def run_step(self, run_number, step_size, howlong):
+    def run_step(
+        self, run_number: int, step_size: int, howlong: float
+    ) -> ReturnRunStep:
         if step_size == 0:  # bug
             logger.error("Received a step_size of 0")
             return self._return_run_step(self.state_ready, steps_run=0)
@@ -157,8 +171,8 @@ class SimpleCSVLoader(TableModule):
             raise ProgressiveStopIteration("Unexpected situation")
         logger.info("loading %d lines", step_size)
         try:
-            if True:
-                df = self.parser.read(step_size)  # raises StopIteration at EOF
+            assert self.parser
+            df = self.parser.read(step_size)  # raises StopIteration at EOF
         except StopIteration:
             self.close()
             fn_slot = self.get_input_slot("filenames")

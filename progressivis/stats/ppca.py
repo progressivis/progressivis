@@ -7,7 +7,7 @@ import copy
 
 from ..core.utils import indices_len, fix_loc
 from ..core.bitmap import bitmap
-from ..table.module import TableModule
+from ..table.module import TableModule, ReturnRunStep
 from ..table import BaseTable, Table, TableSelectedView
 from ..core.decorators import process_slot, run_if_any
 from .. import SlotDescriptor
@@ -20,7 +20,6 @@ import numexpr as ne  # type: ignore
 from typing import Optional, Any, Dict, Union, Callable, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from progressivis.core.module import ReturnRunStep
     from progressivis.core.slot import Slot
 
 

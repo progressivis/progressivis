@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from ..utils.errors import ProgressiveError
 from ..core.utils import indices_len, fix_loc
-from ..table.module import TableModule
+from ..table.module import TableModule, ReturnRunStep
 from ..table.table import Table
 from ..core.slot import SlotDescriptor
 from ..core.decorators import process_slot, run_if_any
@@ -13,10 +13,7 @@ import numpy as np
 from tdigest import TDigest  # type: ignore
 
 
-from typing import Optional, List, Union, TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from progressivis.core.module import ReturnRunStep
+from typing import Optional, List, Union
 
 
 def _pretty_name(x: float) -> str:

@@ -6,7 +6,7 @@ from collections import defaultdict
 
 import numpy as np
 
-from progressivis import Module
+from progressivis.core.module import Module, ReturnRunStep, JSon
 from progressivis.table.nary import NAry
 from progressivis.stats import MCHistogram2D, Sample
 from progressivis.table.range_query_2d import RangeQuery2d
@@ -28,7 +28,6 @@ from typing import (
 Bounds = Tuple[float, float, float, float]
 
 if TYPE_CHECKING:
-    from progressivis.core.module import ReturnRunStep, JSon
     from progressivis.core.scheduler import Scheduler
     from progressivis.core.slot import Slot
 
