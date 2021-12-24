@@ -51,7 +51,7 @@ class Histograms(NAry):
     def predict_step_size(self, duration: float) -> int:
         return 1
 
-    # def orun_step(self, run_number, step_size, howlong):
+    # def run_old_step(self, run_number, step_size, howlong):
     #     dfslot = self.get_input_slot('table')
     #     input_df = dfslot.data()
     #     # dfslot.update(run_number)

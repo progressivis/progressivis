@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 "Stirrer module for torturing progressivis in tests."
+from __future__ import annotations
 
 import random
 import numpy as np
@@ -7,8 +8,10 @@ import numpy as np
 from progressivis.core.utils import indices_len, fix_loc
 from progressivis.core.bitmap import bitmap
 from progressivis.core.slot import SlotDescriptor
-from .module import TableModule
+from .module import TableModule, ReturnRunStep
 from . import Table, TableSelectedView
+
+from typing import Optional
 
 
 class Stirrer(TableModule):
@@ -26,24 +29,27 @@ class Stirrer(TableModule):
 
     def __init__(self, **kwds):
         super().__init__(**kwds)
-        self._update_column = self.params.update_column
-        self._update_rows = self.params.update_rows
-        self._delete_rows = self.params.delete_rows
-        self._delete_threshold = self.params.delete_threshold
-        self._update_threshold = self.params.update_threshold
+        self._update_column: str = self.params.update_column
+        self._update_rows: bool = self.params.update_rows is not None
+        self._delete_rows: bool = self.params.delete_rows is not None
+        self._delete_threshold: Optional[int] = self.params.delete_threshold
+        self._update_threshold: Optional[int] = self.params.update_threshold
         self._mode = self.params.mode
         self._steps = 0
 
-    def test_delete_threshold(self, val):
+    def test_delete_threshold(self, val: bitmap) -> bool:
         if self._delete_threshold is None:
             return True
         return len(val) > self._delete_threshold
 
-    def predict_step_size(self, duration):
+    def predict_step_size(self, duration: float) -> int:
         p = super().predict_step_size(duration)
         return max(p, 1000)
 
-    def run_step(self, run_number, step_size, howlong):
+    def run_step(self,
+                 run_number: int,
+                 step_size: int,
+                 howlong: float) -> ReturnRunStep:
         if self.params.fixed_step_size and False:
             step_size = self.params.fixed_step_size
         input_slot = self.get_input_slot("table")
@@ -109,17 +115,20 @@ class StirrerView(TableModule):
 
     def __init__(self, **kwds):
         super().__init__(**kwds)
-        self._update_column = self.params.update_column
-        self._delete_rows = self.params.delete_rows
-        self._delete_threshold = self.params.delete_threshold
-        self._mode = self.params.mode
+        self._update_column: str = self.params.update_column
+        self._delete_rows: bool = self.params.delete_rows is not None
+        self._delete_threshold: Optional[int] = self.params.delete_threshold
+        self._mode: str = self.params.mode
 
-    def test_delete_threshold(self, val):
+    def test_delete_threshold(self, val: bitmap) -> bool:
         if self._delete_threshold is None:
             return True
         return len(val) > self._delete_threshold
 
-    def run_step(self, run_number, step_size, howlong):
+    def run_step(self,
+                 run_number: int,
+                 step_size: int,
+                 howlong: float) -> ReturnRunStep:
         if self.params.fixed_step_size and False:
             step_size = self.params.fixed_step_size
         input_slot = self.get_input_slot("table")

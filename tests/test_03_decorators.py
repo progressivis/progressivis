@@ -59,7 +59,7 @@ class RunAlways(FooABC):
 class RunIfAllacOrAllbd(FooABC):
     @process_slot("a", "b", "c", "d", reset_if=False)  # type: ignore
     @run_if_all("a", "c")  # type: ignore
-    @or_all("b", "d")
+    @or_all("b", "d")  # type: ignore
     def run_step(self, run_number: int, step_size: float, howlong: float) -> ReturnRunStep:
         assert self.context
         with self.context as ctx:
