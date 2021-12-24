@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from . import Table
+from . import Table, BaseTable
 from ..core.slot import SlotDescriptor
 from .module import TableModule, ReturnRunStep
 from collections import OrderedDict
@@ -35,7 +35,7 @@ class Percentiles(TableModule):
         def _no_filtering(bm):
             return bm
 
-        _filter = _filter_tsv if isinstance(input_table, Table) else _no_filtering
+        _filter = _filter_tsv if isinstance(input_table, BaseTable) else _no_filtering
         len_ = len(input_table)
         k_points = [p * (len_ + 1) * 0.01 for p in points.values()]
         max_k = max(k_points)

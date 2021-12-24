@@ -49,7 +49,7 @@ class ProgressiveTest(TestCase):
 
     def tearDown(self):
         # print('Logger level for %s back to ERROR' % self, file=sys.stderr)
-        self.log()
+        # self.log()
         gc.collect()
 
     @classmethod
@@ -71,7 +71,7 @@ class ProgressiveTest(TestCase):
         return self._scheduler
 
     @staticmethod
-    def log(level=logging.ERROR, package="progressivis"):
+    def log(level=logging.NOTSET, package="progressivis"):
         log_level(level, package=package)
 
     @staticmethod
