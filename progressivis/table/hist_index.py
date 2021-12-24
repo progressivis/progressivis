@@ -56,7 +56,7 @@ class _HistogramIndexImpl(object):
 
     def _needs_division(self, size: int) -> bool:
         len_c = len(self.column)
-        assert self.bins
+        assert self.bins is not None
         len_b = len(self.bins)
         mean = float(len_c) / len_b
         if size < self._divide_threshold:
@@ -96,8 +96,7 @@ class _HistogramIndexImpl(object):
         return len(self.bitmaps) > self._max_hist_size
 
     def _is_mergeable_pair(self, bm1: bitmap, bm2: bitmap, merge_cnt: int) -> bool:
-        assert self.bitmaps
-        assert self.bins
+        assert self.bins is not None
         if len(self.bitmaps) - merge_cnt < self._min_hist_size:
             return False
         len_c = len(self.column)
@@ -106,8 +105,7 @@ class _HistogramIndexImpl(object):
         return len(bm1) + len(bm2) < max(self._merge_coef * mean, self._merge_threshold)
 
     def merge_once(self) -> int:
-        assert self.bins
-        assert self.bitmaps
+        assert self.bins is not None
         assert len(self.bins) + 1 == len(self.bitmaps), "unexpected # of bins"
         bins_1 = list(self.bins)
         bins_1.append(None)
@@ -141,7 +139,7 @@ class _HistogramIndexImpl(object):
 
     def divide_bin(self, i: int) -> None:
         "Change the bounds of the index if needed"
-        assert self.bins
+        assert self.bins is not None
 
         ids = np.array(self.bitmaps[i], np.int64)
         if self._sampling_size * 1.2 < len(ids):
@@ -168,7 +166,7 @@ class _HistogramIndexImpl(object):
                 float(abs(lower_len - upper_len)) / len(ids),
             )
         self.bins = np.insert(self.bins, i, v)
-        assert self.bins
+        assert self.bins is not None
         if i + 1 >= len(self.bins):
             assert self.bins[i - 1] < self.bins[i]
         else:
@@ -385,7 +383,7 @@ class HistogramIndex(TableModule):
                 return None
             if self._min_table is None:
                 self._min_table = TableSelectedView(self._input_table, bitmap([]))
-            assert self._min_table
+            assert self._min_table is not None
             self._min_table.selection = min_bin
             return self._min_table
         if name == "max_out":
