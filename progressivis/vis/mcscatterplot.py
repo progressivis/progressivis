@@ -49,8 +49,8 @@ class _DataClass(object):
         self._scheduler = scheduler
         self.input_module: Optional[Module] = None
         self.input_slot: Optional[str] = None
-        self.min: Optional[float] = None
-        self.max: Optional[float] = None
+        self.min: Any = None
+        self.max: Any = None
         self.histogram2d: Optional[MCHistogram2D] = None
         self.heatmap = None
         self.min_value: Optional[Variable] = None
@@ -82,8 +82,8 @@ class _DataClass(object):
                                               approximate=self._approximate)
                 range_query_2d.create_dependent_modules(input_module,
                                                         input_slot,
-                                                        min_value=False,
-                                                        max_value=False)
+                                                        min_value=None,
+                                                        max_value=None)
                 self.min_value = Variable(group=self._group,
                                           scheduler=scheduler)
                 self.min_value.input.like = range_query_2d.min.output.result

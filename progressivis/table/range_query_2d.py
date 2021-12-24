@@ -3,7 +3,7 @@ import numpy as np
 import itertools as it
 from . import Table
 from ..core.slot import SlotDescriptor
-from .module import TableModule
+from .module import Module, TableModule, ReturnRunStep
 from ..core.bitmap import bitmap
 # from .mod_impl import ModuleImpl
 from ..io import Variable
@@ -13,6 +13,8 @@ from progressivis.core.utils import indices_len
 from ..utils.psdict import PsDict
 from ..table.merge_dict import MergeDict
 from . import TableSelectedView
+
+from typing import Optional, Any, cast
 
 
 class _Selection(object):
@@ -30,29 +32,35 @@ class _Selection(object):
 
 
 class RangeQuery2dImpl:  # (ModuleImpl):
-    def __init__(self, column_x, column_y, hist_index_x, hist_index_y, approximate):
+    def __init__(self,
+                 column_x: str,
+                 column_y: str,
+                 hist_index_x: HistogramIndex,
+                 hist_index_y: HistogramIndex,
+                 approximate: bool):
         super(RangeQuery2dImpl, self).__init__()
-        self._table = None
+        self._table: Optional[TableSelectedView] = None
         self._column_x = column_x
         self._column_y = column_y
-        self.bins = None
+        # self.bins = None
         self._hist_index_x = hist_index_x
         self._hist_index_y = hist_index_y
         self._approximate = approximate
-        self.result = None
+        self.result: Optional[_Selection] = None
         self.is_started = False
 
     def resume(
         self,
-        lower_x,
-        upper_x,
-        lower_y,
-        upper_y,
-        limit_changed,
-        created=None,
-        updated=None,
-        deleted=None,
+        lower_x: float,
+        upper_x: float,
+        lower_y: float,
+        upper_y: float,
+        limit_changed: bool,
+        created: bitmap = None,
+        updated: bitmap = None,
+        deleted: bitmap = None,
     ):
+        assert self.result
         if limit_changed:
             new_sel_x = self._hist_index_x.range_query_aslist(
                 lower_x, upper_x, approximate=self._approximate
@@ -96,17 +104,18 @@ class RangeQuery2dImpl:  # (ModuleImpl):
 
     def start(
         self,
-        table,
-        lower_x,
-        upper_x,
-        lower_y,
-        upper_y,
-        limit_changed,
-        created=None,
-        updated=None,
-        deleted=None,
+        table: TableSelectedView,
+        lower_x: float,
+        upper_x: float,
+        lower_y: float,
+        upper_y: float,
+        limit_changed: bool,
+        created: bitmap = None,
+        updated: bitmap = None,
+        deleted: bitmap = None,
     ):
         self.result = _Selection()
+        self._table = table
         self.is_started = True
         return self.resume(
             lower_x, upper_x, lower_y, upper_y, limit_changed, created, updated, deleted
@@ -135,14 +144,17 @@ class RangeQuery2d(TableModule):
         SlotDescriptor("max", type=Table, required=False),
     ]
 
-    def __init__(self, hist_index=None, approximate=False, **kwds):
+    def __init__(self,
+                 hist_index: HistogramIndex = None,
+                 approximate=False,
+                 **kwds):
         super(RangeQuery2d, self).__init__(**kwds)
-        self._impl = None  # RangeQueryImpl(self.params.column, hist_index)
-        self._hist_index_x = None
-        self._hist_index_y = None
+        self._impl: Optional[RangeQuery2dImpl] = None  # RangeQueryImpl(self.params.column, hist_index)
+        self._hist_index_x: Optional[HistogramIndex] = None
+        self._hist_index_y: Optional[HistogramIndex] = None
         self._approximate = approximate
-        self._column_x = self.params.column_x
-        self._column_y = self.params.column_y
+        self._column_x: str = self.params.column_x
+        self._column_y: str = self.params.column_y
         # X ...
         self._watched_key_lower_x = self.params.watched_key_lower_x
         if not self._watched_key_lower_x:
@@ -158,18 +170,18 @@ class RangeQuery2d(TableModule):
         if not self._watched_key_upper_y:
             self._watched_key_upper_y = self._column_y
         self.default_step_size = 1000
-        self.input_module = None
-        self._min_table = None
-        self._max_table = None
+        self.input_module: Optional[Module] = None
+        self._min_table: Optional[PsDict] = None
+        self._max_table: Optional[PsDict] = None
 
     def create_dependent_modules(
         self,
-        input_module,
-        input_slot,
-        min_=None,
-        max_=None,
-        min_value=None,
-        max_value=None,
+        input_module: Module,
+        input_slot: str,
+        min_: Module = None,
+        max_: Module = None,
+        min_value: Module = None,
+        max_value: Module = None,
         **kwds
     ):
         if self.input_module is not None:  # test if already called
@@ -244,7 +256,7 @@ class RangeQuery2d(TableModule):
             self.max_value = max_value
             return range_query
 
-    def _create_min_max(self):
+    def _create_min_max(self) -> None:
         if self._min_table is None:
             self._min_table = PsDict({self._column_x: np.inf, self._column_y: np.inf})
             # Table(name=None, dshape=self.min_max_dshape)
@@ -252,7 +264,7 @@ class RangeQuery2d(TableModule):
             self._max_table = PsDict({self._column_x: -np.inf, self._column_y: -np.inf})
             # Table(name=None, dshape=self.min_max_dshape)
 
-    def _set_minmax_out(self, attr_, val_x, val_y):
+    def _set_minmax_out(self, attr_: str, val_x: float, val_y: float) -> None:
         d = {self._column_x: val_x, self._column_y: val_y}
         if getattr(self, attr_) is None:
             setattr(self, attr_, PsDict(d))
@@ -260,34 +272,36 @@ class RangeQuery2d(TableModule):
         else:
             getattr(self, attr_).update(d)
 
-    def _set_min_out(self, val_x, val_y):
+    def _set_min_out(self, val_x: float, val_y: float) -> None:
         return self._set_minmax_out("_min_table", val_x, val_y)
 
-    def _set_max_out(self, val_x, val_y):
+    def _set_max_out(self, val_x: float, val_y: float) -> None:
         return self._set_minmax_out("_max_table", val_x, val_y)
 
-    def get_data(self, name):
+    def get_data(self, name: str) -> Any:
         if name == "min":
             return self._min_table
         if name == "max":
             return self._max_table
         return super(RangeQuery2d, self).get_data(name)
 
-    def run_step(self, run_number, step_size, howlong):
+    def run_step(
+        self, run_number: int, step_size: int, howlong: float
+    ) -> ReturnRunStep:
         input_slot = self.get_input_slot("table")
         # input_slot.update(run_number)
         steps = 0
-        deleted = None
+        deleted: Optional[bitmap] = None
         if input_slot.deleted.any():
-            deleted = input_slot.deleted.next(step_size)
+            deleted = cast(bitmap, input_slot.deleted.next(step_size))
             steps += indices_len(deleted)
-        created = None
+        created: Optional[bitmap] = None
         if input_slot.created.any():
-            created = input_slot.created.next(step_size)
+            created = cast(bitmap, input_slot.created.next(step_size))
             steps += indices_len(created)
-        updated = None
+        updated: Optional[bitmap] = None
         if input_slot.updated.any():
-            updated = input_slot.updated.next(step_size)
+            updated = cast(bitmap, input_slot.updated.next(step_size))
             steps += indices_len(updated)
         input_table = input_slot.data()
         if input_table is None:
@@ -403,6 +417,7 @@ class RangeQuery2d(TableModule):
         if steps == 0 and not limit_changed:
             return self._return_run_step(self.state_blocked, steps_run=0)
         # ...
+        assert self._impl
         if not self._impl.is_started:
             _ = self._impl.start(
                 input_table,
@@ -415,7 +430,8 @@ class RangeQuery2d(TableModule):
                 updated=updated,
                 deleted=deleted,
             )
-            self.result.selection = self._impl.result._values
+            assert self._impl.result
+            cast(TableSelectedView, self.result).selection = self._impl.result._values
         else:
             self._impl.resume(
                 lower_value_x,
@@ -427,5 +443,6 @@ class RangeQuery2d(TableModule):
                 updated=updated,
                 deleted=deleted,
             )
-            self.result.selection = self._impl.result._values
+            assert self._impl.result
+            cast(TableSelectedView, self.result).selection = self._impl.result._values
         return self._return_run_step(self.next_state(input_slot), steps)

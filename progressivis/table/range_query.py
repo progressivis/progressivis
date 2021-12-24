@@ -6,7 +6,7 @@ from progressivis.core.utils import indices_len
 from . import TableSelectedView
 from . import BaseTable, Table
 from ..core.slot import SlotDescriptor
-from .module import TableModule, Module
+from .module import TableModule, Module, ReturnRunStep
 from ..core.bitmap import bitmap
 # from .mod_impl import ModuleImpl
 from ..io import Variable
@@ -14,7 +14,7 @@ from ..stats import Min, Max
 from .hist_index import HistogramIndex
 from ..utils.psdict import PsDict
 
-from typing import Optional
+from typing import Optional, Any, cast
 
 
 # def _get_physical_table(t):
@@ -221,14 +221,16 @@ class RangeQuery(TableModule):
     def _set_max_out(self, val):
         return self._set_minmax_out("_max_table", val)
 
-    def get_data(self, name):
+    def get_data(self, name) -> Any:
         if name == "min":
             return self._min_table
         if name == "max":
             return self._max_table
         return super(RangeQuery, self).get_data(name)
 
-    def run_step(self, run_number, step_size, howlong):
+    def run_step(
+        self, run_number: int, step_size: int, howlong: float
+    ) -> ReturnRunStep:
         input_slot = self.get_input_slot("table")
         self._create_min_max()
         #
@@ -315,21 +317,22 @@ class RangeQuery(TableModule):
             return self._return_run_step(self.state_blocked, steps_run=0)
         # ...
         steps = 0
-        deleted = None
+        deleted: Optional[bitmap] = None
         if input_slot.deleted.any():
-            deleted = input_slot.deleted.next(step_size)
+            deleted = cast(bitmap, input_slot.deleted.next(step_size))
             steps += indices_len(deleted)
-        created = None
+        created: Optional[bitmap] = None
         if input_slot.created.any():
-            created = input_slot.created.next(step_size)
+            created = cast(bitmap, input_slot.created.next(step_size))
             steps += indices_len(created)
-        updated = None
+        updated: Optional[bitmap] = None
         if input_slot.updated.any():
-            updated = input_slot.updated.next(step_size)
+            updated = cast(bitmap, input_slot.updated.next(step_size))
             steps += indices_len(updated)
         input_table = input_slot.data()
         if not self.result:
             self.result = TableSelectedView(input_table, bitmap([]))
+        assert self._impl
         if not self._impl.is_started:
             self._impl.start(
                 input_table,
@@ -349,5 +352,6 @@ class RangeQuery(TableModule):
                 updated=updated,
                 deleted=deleted,
             )
-        self.result.selection = self._impl.result._values
+        assert self._impl.result
+        cast(TableSelectedView, self.result).selection = self._impl.result._values
         return self._return_run_step(self.next_state(input_slot), steps)
