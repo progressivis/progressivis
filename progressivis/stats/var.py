@@ -88,7 +88,7 @@ class VarH(TableModule):
 
     def reset(self) -> None:
         if self.result is not None:
-            self.result.resize(0)
+            self.table.resize(0)
 
     @process_slot("table", reset_cb="reset")
     @run_if_any
@@ -111,7 +111,7 @@ class VarH(TableModule):
                     dshape=ds,  # input_df.dshape,
                     create=True,
                 )
-            self.result.append(op, indices=[run_number])
+            self.table.append(op, indices=[run_number])
             return self._return_run_step(self.next_state(dfslot), steps)
 
 
@@ -148,7 +148,7 @@ class Var(TableModule):
 
     def reset(self) -> None:
         if self.result is not None:
-            self.result.resize(0)
+            self.psdict.clear()
 
     @process_slot("table", reset_cb="reset")
     @run_if_any
@@ -167,5 +167,5 @@ class Var(TableModule):
             if self.result is None:
                 self.result = PsDict(op)
             else:
-                self.result.update(op)
+                self.psdict.update(op)
             return self._return_run_step(self.next_state(dfslot), steps)

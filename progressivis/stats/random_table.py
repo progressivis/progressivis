@@ -52,10 +52,11 @@ class RandomTable(TableModule):
             self.throttle = False
         dshape = ", ".join([f"{col}: {dtype}" for col in self.columns])
         dshape = "{" + dshape + "}"
-        self.result = Table(
+        table = Table(
             self.generate_table_name("table"), dshape=dshape, create=True
         )
-        self.columns = self.result.columns
+        self.result = table
+        self.columns = table.columns
 
     def run_step(self,
                  run_number: int,
@@ -65,10 +66,11 @@ class RandomTable(TableModule):
             logger.error("Received a step_size of 0")
             return self._return_run_step(self.state_ready, steps_run=0)
         logger.info("generating %d lines", step_size)
+        table = self.table
         if self.throttle:
             step_size = np.min([self.throttle, step_size])
-        if self.rows >= 0 and (len(self.result) + step_size) > self.rows:
-            step_size = self.rows - len(self.result)
+        if self.rows >= 0 and (len(table) + step_size) > self.rows:
+            step_size = self.rows - len(table)
             logger.info("truncating to %d lines", step_size)
             if step_size <= 0:
                 raise ProgressiveStopIteration
@@ -77,8 +79,8 @@ class RandomTable(TableModule):
         for column in self.columns:
             s = self.random(step_size)
             values[column] = s
-        self.result.append(values)
-        if len(self.result) == self.rows:
+        table.append(values)
+        if len(table) == self.rows:
             next_state = self.state_zombie
         elif self.throttle:
             next_state = self.state_blocked

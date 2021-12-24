@@ -204,7 +204,7 @@ class SimpleCSVLoader(TableModule):
                     self._table_params["create"] = True
                     self.result = Table(**self._table_params)
                 else:
-                    self.result.append(df)
+                    self.table.append(df)
         return self._return_run_step(self.state_ready, steps_run=creates)
 
 

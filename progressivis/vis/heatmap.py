@@ -121,9 +121,10 @@ class Heatmap(TableModule):
             res = str(base64.b64encode(buffered.getvalue()), "ascii")
             filename = "data:image/png;base64,"+res
 
-        if len(self.result) == 0 or self.result.last()['time'] != run_number:
+        table = self.table
+        if len(table) == 0 or table.last()['time'] != run_number:
             values = {'filename': filename, 'time': run_number}
-            self.result.add(values)
+            table.add(values)
         return self._return_run_step(self.state_blocked, steps_run=1)
 
     def get_visualization(self) -> str:
@@ -151,26 +152,27 @@ class Heatmap(TableModule):
                     'xmax': row['xmax'],
                     'ymax': row['ymax']
                 }
-        df = self.result
+        df = self.table
         if df is not None and self._last_update != 0:
             row = df.last()
             json['image'] = row['filename']
         return json
 
     def get_image(self, run_number: int = None) -> Optional[str]:
-        if self.result is None or len(self.result) == 0:
+        table = self.table
+        if table is None or len(table) == 0:
             return None
-        last = self.result.last()
+        last = table.last()
         if run_number is None or run_number >= last['time']:
             run_number = last['time']
             filename = last['filename']
         else:
-            time = self.result['time']
+            time = table['time']
             idx = np.where(time == run_number)[0]
             if len(idx) == 0:
                 filename = last['filename']
             else:
-                filename = self.result['filename'][idx[0]]
+                filename = table['filename'][idx[0]]
         return filename
 
     def get_image_bin(self, run_number: int = None) -> Optional[bytes]:

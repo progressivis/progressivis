@@ -43,7 +43,7 @@ class Variable(Constant):
             else:
                 error += f"Invalid key {k} ignored. "
         await self.scheduler().for_input(self)
-        self.result.update(last)
+        self.psdict.update(last)
         return error
 
     def run_step(self,

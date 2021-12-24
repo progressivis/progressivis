@@ -77,7 +77,7 @@ class Histogram2D(TableModule):
         self.total_read = 0
         self.get_input_slot("table").reset()
         if self.result:
-            self.result.resize(0)
+            self.table.resize(0)
 
     def is_ready(self) -> bool:
         # If we have created data but no valid min/max, we can only wait
@@ -250,7 +250,7 @@ class Histogram2D(TableModule):
                 "time": run_number,
             }
             if self._with_output:
-                table = self.result
+                table = self.table
                 table["array"].set_shape([p.ybins, p.xbins])
                 last = table.last()
                 if len(table) == 0 or last["time"] != run_number:

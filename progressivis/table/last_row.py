@@ -30,13 +30,13 @@ class LastRow(TableModule):
                     self.generate_table_name("LastRow"), dshape=df.dshape
                 )
                 if self._reset_index:
-                    self.result.add(last)
+                    self.table.add(last)
                 else:
-                    self.result.add(last, last.index)
+                    self.table.add(last, last.index)
             elif self._reset_index:
-                self.result.loc[0] = last
+                self.table.loc[0] = last
             else:
-                del self.result.loc[0]
-                self.result.add(last, last.index)
+                del self.table.loc[0]
+                self.table.add(last, last.index)
 
         return self._return_run_step(self.state_blocked, steps_run=1)

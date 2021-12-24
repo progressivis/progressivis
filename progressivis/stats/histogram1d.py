@@ -52,7 +52,7 @@ class Histogram1D(TableModule):
         self.total_read = 0
         self._h_cnt = 0
         if self.result:
-            self.result.resize(0)
+            self.table.resize(0)
 
     def is_ready(self) -> bool:
         if self._bounds and self.get_input_slot("table").created.any():
@@ -138,8 +138,8 @@ class Histogram1D(TableModule):
                 "max": [curr_max],
                 "time": [run_number],
             }
-            self.result["array"].set_shape((self.params.bins,))
-            self.result.append(values)
+            self.table["array"].set_shape((self.params.bins,))
+            self.table.append(values)
             return self._return_run_step(self.next_state(dfslot), steps_run=steps)
 
     def get_bounds(self, min_slot: Slot, max_slot: Slot) -> Optional[Tuple[float, float]]:

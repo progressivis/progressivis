@@ -61,7 +61,7 @@ class Stats(TableModule):
             dfslot.reset()
             dfslot.update(run_number)
         else:
-            df = self.result
+            df = self.table
             prev = df.last_id
             if prev > 0:
                 prev_min = df.at[prev, self._min_column]

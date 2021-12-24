@@ -102,10 +102,11 @@ class BlobsTableABC(TableModule):
             self.throttle = False
         dshape = ", ".join([f"{col}: {dtype}" for col in self.columns])
         dshape = "{" + dshape + "}"
-        self.result = Table(
+        table = Table(
             self.generate_table_name("table"), dshape=dshape, create=True
         )
-        self.columns = self.result.columns
+        self.result = table
+        self.columns = table.columns
 
     def starting(self) -> None:
         super().starting()
@@ -142,14 +143,15 @@ class BlobsTableABC(TableModule):
     def run_step(
         self, run_number: int, step_size: int, howlong: float
     ) -> ReturnRunStep:
+        table = self.table
         if step_size == 0:
             logger.error("Received a step_size of 0")
             return self._return_run_step(self.state_ready, steps_run=0)
         logger.info("generating %d lines", step_size)
         if self.throttle:
             step_size = np.min([self.throttle, step_size])
-        if self.rows >= 0 and (len(self.result) + step_size) > self.rows:
-            step_size = self.rows - len(self.result)
+        if self.rows >= 0 and (len(table) + step_size) > self.rows:
+            step_size = self.rows - len(table)
             logger.info("truncating to %d lines", step_size)
             if step_size <= 0:
                 raise ProgressiveStopIteration
@@ -173,10 +175,10 @@ class BlobsTableABC(TableModule):
                 )
                 self._reservoir_idx += steps
                 steps = 0
-            self.result.append(blobs_dict)
+            table.append(blobs_dict)
             if self._labels is not None:
                 self._labels.append({"labels": y_})
-        if len(self.result) == self.rows:
+        if len(table) == self.rows:
             next_state = self.state_zombie
         elif self.throttle:
             next_state = self.state_blocked

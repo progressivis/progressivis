@@ -91,7 +91,7 @@ class Percentiles(TableModule):
             input_df = dfslot.data()
             x = self.filter_columns(input_df, fix_loc(indices))
             self.tdigest.batch_update(x[0])
-            df = self.result
+            df = self.table
             values = {}
             for n, p in zip(self._pername, self._percentiles):
                 values[n] = self.tdigest.percentile(p * 100)

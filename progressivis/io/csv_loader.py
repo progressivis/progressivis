@@ -216,14 +216,16 @@ class CSVLoader(TableModule):
                                 "table_name"
                             ].loc[0]
                             self._table_params["create"] = False
-                            self.result = Table(**self._table_params)
-                            self.result.last_id
+                            table = Table(**self._table_params)
+                            self.result = table
+                            table.last_id
                     except Exception as e:  # TODO: specify the exception?
                         logger.error(f"Cannot acces recovery table {e}")
                         return self.state_terminated
+                    table = self.table
                     try:
                         last_ = self._recovery_table.eval(
-                            "last_id=={}".format(len(self.result)), as_slice=False
+                            "last_id=={}".format(len(table)), as_slice=False
                         )
                         len_last = len(last_)
                         if len_last > 1:
@@ -242,7 +244,7 @@ class CSVLoader(TableModule):
                         ):  # i.e. snapshot not yet found or inconsistent
                             max_ = -1
                             for i in self._recovery_table.eval(
-                                "last_id<{}".format(len(self.result)), as_slice=False
+                                "last_id<{}".format(len(table)), as_slice=False
                             ):
                                 sn: Dict[str, Any] = self._recovery_table.row(
                                     i
@@ -252,7 +254,7 @@ class CSVLoader(TableModule):
                             if max_ < 0:
                                 # logger.error('Cannot acces recovery table (max_<0)')
                                 return self.state_terminated
-                            self.result.drop(slice(max_ + 1, None, None), truncate=True)
+                            table.drop(slice(max_ + 1, None, None), truncate=True)
                         assert snapshot
                         self._recovered_csv_table_name = snapshot["table_name"]
                     except Exception as e:
@@ -323,9 +325,10 @@ class CSVLoader(TableModule):
         return ret, dshape_from_dict(ret)
 
     def _needs_save(self):
-        if self.result is None:
+        table = self.table
+        if table is None:
             return False
-        return self.result.last_id >= self._last_saved_id + self._save_step_size
+        return table.last_id >= self._last_saved_id + self._save_step_size
 
     def run_step(
         self, run_number: int, step_size: int, howlong: float
@@ -386,22 +389,25 @@ class CSVLoader(TableModule):
                     self._table_params["name"] = self._recovered_csv_table_name
                     # self._table_params['dshape'] = dshape
                     self._table_params["create"] = False
-                    self.result = Table(**self._table_params)
-                    self.result.append(self._data_as_array(pd.concat(df_list)))
+                    table = Table(**self._table_params)
+                    self.result = table
+                    table.append(self._data_as_array(pd.concat(df_list)))
             else:
+                table = self.table
                 for df in df_list:
                     data, dshape = self._data_as_array(df)
-                    self.result.append(data)
+                    table.append(data)
             if (
                 self.parser.is_flushed()
                 and needs_save
                 and self._recovery_table is None
                 and self._save_context
             ):
+                table = self.table
                 snapshot = self.parser.get_snapshot(
                     run_number=run_number,
-                    table_name=self.result._name,
-                    last_id=self.result.last_id,
+                    table_name=table.name,
+                    last_id=table.last_id,
                 )
                 self._recovery_table = Table(
                     name=self._recovery_table_name,
@@ -412,26 +418,26 @@ class CSVLoader(TableModule):
                     name=self._recovery_table_inv_name,
                     data=pd.DataFrame(
                         dict(
-                            table_name=self.result._name,
+                            table_name=table.name,
                             csv_input=self.filepath_or_buffer,
                         ),
                         index=[0],
                     ),
                     create=True,
                 )
-                self._last_saved_id = self.result.last_id
+                self._last_saved_id = table.last_id
             elif self.parser.is_flushed() and needs_save and self._save_context:
                 snapshot = self.parser.get_snapshot(
                     run_number=run_number,
-                    last_id=self.result.last_id,
-                    table_name=self.result._name,
+                    last_id=table.last_id,
+                    table_name=table.name,
                 )
                 assert self._recovery_table
                 self._recovery_table.add(snapshot)
                 if len(self._recovery_table) > self._recovery_table_size:
                     oldest = self._recovery_table.argmin()["offset"]
                     self._recovery_table.drop(oldest)
-                self._last_saved_id = self.result.last_id
+                self._last_saved_id = table.last_id
         return self._return_run_step(self.state_ready, steps_run=creates)
 
 

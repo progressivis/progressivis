@@ -109,9 +109,11 @@ class Percentiles(TableModule):
         if not self._hist_index._impl:
             return self._return_run_step(self.state_blocked, steps_run=0)
         computed = self.compute_percentiles(percentiles_slot.data(), input_slot.data())
+        table: Table
         if not self.result:
-            self.result = Table(name=None, dshape=percentiles_slot.data().dshape)
-            self.result.add(computed)
+            table = Table(name=None, dshape=percentiles_slot.data().dshape)
+            table.add(computed)
+            self.result = table
         else:
-            self.result.loc[0, :] = list(computed.values())
+            self.table.loc[0, :] = list(computed.values())
         return self._return_run_step(self.next_state(input_slot), steps)

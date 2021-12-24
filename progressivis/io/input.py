@@ -13,22 +13,23 @@ class Input(TableModule):
     def __init__(self, **kwds):
         super(Input, self).__init__(**kwds)
         self.tags.add(self.TAG_INPUT)
-        self.result = Table(name=None, dshape=Input.schema, create=True)
-        self._last = len(self.result)
+        table = Table(name=None, dshape=Input.schema, create=True)
+        self.result = table
+        self._last = len(table)
         self.default_step_size = 1000000
 
     def is_ready(self) -> bool:
-        return len(self.result) > self._last
+        return len(self.table) > self._last
 
     def run_step(self,
                  run_number: int,
                  step_size: int,
                  howlong: float) -> ReturnRunStep:
-        self._last = len(self.result)
+        self._last = len(self.table)
         return self._return_run_step(self.state_blocked, steps_run=0)
 
     async def from_input(self, msg: JSon) -> str:
         if not isinstance(msg, (list, dict)):
             msg = {"input": msg}
-        self.result.add(msg)
+        self.table.add(msg)
         return ""

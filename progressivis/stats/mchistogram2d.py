@@ -64,7 +64,7 @@ class MCHistogram2D(NAry):
         self.total_read = 0
         self.get_input_slot("data").reset()
         if self.result:
-            self.result.resize(1)
+            self.table.resize(1)
 
     def predict_step_size(self, duration: float) -> int:
         return Module.predict_step_size(self, duration)
@@ -256,7 +256,7 @@ class MCHistogram2D(NAry):
             "time": run_number,
         }
         if self._with_output:
-            table = self.result
+            table = self.table
             table["array"].set_shape([p.ybins, p.xbins])
             ln = len(table)
             last = table.last()

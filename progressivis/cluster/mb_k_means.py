@@ -19,6 +19,7 @@ from ..table.filtermod import FilterMod
 from ..stats import Var
 
 from typing import (
+    cast,
     Optional,
     Union,
     List,
@@ -242,7 +243,7 @@ class MBKMeans(TableModule):
         return self._centers_to_json(json)
 
     def _centers_to_json(self, json: JSon) -> JSon:
-        if self.result is not None:
+        if isinstance(self.result, Table):
             json['cluster_centers'] = self.result.to_json()
         return json
 
@@ -253,6 +254,7 @@ class MBKMeans(TableModule):
             pass
 
         centroids = self.result
+        assert isinstance(centroids, Table)
         # idx = centroids.id_to_index(c)
 
         dfslot = self.get_input_slot('table')
@@ -317,7 +319,7 @@ class MBKMeansFilter(TableModule):
                 self.result = TableSelectedView(ctx.table.data(),
                                                 ctx.labels.data().selection)
             else:
-                self.result.selection = ctx.labels.data().selection
+                cast(TableSelectedView, self.result).selection = ctx.labels.data().selection
             return self._return_run_step(self.next_state(ctx.table),
                                          steps_run=steps)
 

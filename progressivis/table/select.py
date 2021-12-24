@@ -1,9 +1,13 @@
+from __future__ import annotations
+
 from progressivis.utils.errors import ProgressiveError
 from ..core.utils import indices_len, is_valid_identifier
 from ..core.slot import SlotDescriptor
-from .module import TableModule
+from .module import Module, TableModule, ReturnRunStep
 from .table import Table
 from ..core.bitmap import bitmap
+
+from typing import Optional
 
 import logging
 
@@ -34,15 +38,15 @@ class Select(TableModule):
         super(Select, self).__init__(**kwds)
         self.default_step_size = 1000
         # dependant modules
-        self.input_module = None
-        self.input_slot = None
-        self.query = None
-        self.min = None
-        self.max = None
-        self.min_value = None
-        self.max_value = None
+        self.input_module: Optional[Module] = None
+        self.input_slot: Optional[str] = None
+        self.query: Optional[Module] = None
+        self.min: Optional[Module] = None
+        self.max: Optional[Module] = None
+        self.min_value: Optional[Module] = None
+        self.max_value: Optional[Module] = None
 
-    def create_dependent_modules(self, input_module, input_slot, **kwds):
+    def create_dependent_modules(self, input_module: Module, input_slot: str, **kwds):
         from .range_query import RangeQuery
 
         if self.input_module is not None:
@@ -67,7 +71,10 @@ class Select(TableModule):
             self.max_value = query.max_value
             return select
 
-    def run_step(self, run_number, step_size, howlong):
+    def run_step(self,
+                 run_number: int,
+                 step_size: int,
+                 howlong: float) -> ReturnRunStep:
         table_slot = self.get_input_slot("table")
         table = table_slot.data()
         # table_slot.update(run_number,
@@ -81,7 +88,7 @@ class Select(TableModule):
         #                    buffer_updated=False,
         #                    buffer_deleted=True)
         steps = 0
-        if self._table is None:
+        if self.__result is None:
             if self._columns is None:
                 dshape = table.dshape
             else:
@@ -89,20 +96,22 @@ class Select(TableModule):
                     "%s: %s" % (col, table[col].dshape) for col in self._columns
                 ]
                 dshape = "{" + ",".join(cols_dshape) + "}"
-            self._table = Table(
+            self.__result = Table(
                 self.generate_table_name(table.name), dshape=dshape, create=True
             )
 
+        assert isinstance(self.__result, Table)
         if select_slot.deleted.any():
             indices = select_slot.deleted.next(step_size * 2, as_slice=False)
             s = indices_len(indices)
             logger.info("deleting %s", indices)
-            del self._table.loc[indices]
+            del self.__result.loc[indices]
             steps += s // 2
             step_size -= s // 2
 
         if step_size > 0 and select_slot.created.any():
             indices = select_slot.created.next(step_size, as_slice=False)
+            assert isinstance(indices, bitmap)
             s = indices_len(indices)
             logger.info("creating %s", indices)
             steps += s
@@ -115,35 +124,36 @@ class Select(TableModule):
                 #   self._table._column(i).append(values, indices=ind)
                 for i in indices:
                     row = table.row(i)
-                    self._table.add(row, index=i)
+                    self.__result.add(row, index=i)
             else:
                 row = {c: None for c in self._columns}
                 for i in indices:
                     idx = table.id_to_index(i)
                     for c in self._columns:
                         row[c] = table[c][idx]
-                    self._table.add(row, index=i)
+                    self.__result.add(row, index=i)
 
         if step_size > 0 and table_slot.updated.any():
             indices = table_slot.updated.next(step_size, as_slice=False)
+            assert isinstance(indices, bitmap)
             logger.info("updating %d", indices)
             s = indices_len(indices)
             steps += s
             step_size -= s
             if self._columns is None:
                 for i in indices:
-                    self._table.loc[i] = table.loc[i]
+                    self.__result.loc[i] = table.loc[i]
             else:
                 row = {c: None for c in self._columns}
                 for i in indices:
                     for c in self._columns:
                         idx = table.id_to_index(i)
                         row[c] = table[c][idx]
-                    self._table.loc[i] = row
+                    self.__result.loc[i] = row
         return self._return_run_step(self.next_state(select_slot), steps_run=steps)
 
     @staticmethod
-    def make_range_query(column, low, high=None):
+    def make_range_query(column: str, low: float, high: float = None):
         if not is_valid_identifier(column):
             raise ProgressiveError('Cannot use column "%s", invalid name', column)
         if high is None or low == high:

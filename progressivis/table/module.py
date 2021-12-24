@@ -4,20 +4,20 @@ and exposing it as an output slot.
 """
 from __future__ import annotations
 
+from ..core.module import Module, ReturnRunStep, JSon  # noqa: F401
+from ..core.slot import SlotDescriptor
+from .table import Table
+from .slot_join import SlotJoin
+
 from typing import (
     Optional,
     Dict,
     List,
     Union,
     Any,
+    cast,
     TYPE_CHECKING
 )
-
-from ..core.module import Module, ReturnRunStep, JSon  # noqa: F401
-from ..core.slot import SlotDescriptor
-from .table import Table
-from .slot_join import SlotJoin
-
 
 if TYPE_CHECKING:
     from progressivis.utils import PsDict
@@ -52,7 +52,7 @@ class TableModule(Module):
                 break
         else:
             assert columns is None
-        self.__result: Union[None, Table, PsDict] = None
+        self.__result: Union[None, BaseTable, PsDict] = None
 
     def get_first_input_slot(self):
         for k in self._input_slots.keys():
@@ -64,7 +64,7 @@ class TableModule(Module):
             self.__result.storagegroup.close_all()
 
     @property
-    def result(self):
+    def result(self) -> Union[None, BaseTable, PsDict]:
         return self.__result
 
     @result.setter
@@ -72,6 +72,14 @@ class TableModule(Module):
         if self.__result is not None:
             raise KeyError("result cannot be assigned more than once")
         self.__result = val
+
+    @property
+    def table(self) -> Table:
+        return cast(Table, self.__result)
+
+    @property
+    def psdict(self) -> PsDict:
+        return cast(PsDict, self.__result)
 
     def get_data(self, name: str):
         if name in ("result", "table"):

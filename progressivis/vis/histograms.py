@@ -37,7 +37,7 @@ class Histograms(NAry):
         self._columns = columns
         self._histogram: Dict[str, Histogram1D] = {}
 
-    def table(self) -> BaseTable:
+    def table_(self) -> BaseTable:
         "Return the table"
         return self.get_input_slot('table').data()
 
