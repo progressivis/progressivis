@@ -9,27 +9,27 @@ from progressivis.core import aio
 from progressivis.core.utils import indices_len, fix_loc
 import numpy as np
 
-ScalarMax._reset_calls_counter = 0
-ScalarMax._orig_reset = ScalarMax.reset
+ScalarMax._reset_calls_counter = 0       # type: ignore
+ScalarMax._orig_reset = ScalarMax.reset  # type: ignore
 
 
-def _reset_func(self_):
+def _reset_func_max(self_):
     ScalarMax._reset_calls_counter += 1
     return ScalarMax._orig_reset(self_)
 
 
-ScalarMax.reset = _reset_func
+ScalarMax.reset = _reset_func_max   # type: ignore
 
-ScalarMin._reset_calls_counter = 0
-ScalarMin._orig_reset = ScalarMin.reset
+ScalarMin._reset_calls_counter = 0  # type: ignore
+ScalarMin._orig_reset = ScalarMin.reset  # type: ignore
 
 
-def _reset_func(self_):
+def _reset_func_min(self_):
     ScalarMin._reset_calls_counter += 1
     return ScalarMin._orig_reset(self_)
 
 
-ScalarMin.reset = _reset_func
+ScalarMin.reset = _reset_func_min  # type: ignore
 
 
 class MyStirrer(TableModule):

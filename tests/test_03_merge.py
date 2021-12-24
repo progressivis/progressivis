@@ -13,7 +13,7 @@ import pandas as pd
 # from pprint import pprint
 
 
-@skip  # TODO: FIX IT
+@skip("Not ready")  # TODO: FIX IT
 class TestMerge(ProgressiveTest):
     def test_merge(self):
         s = self.scheduler()

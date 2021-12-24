@@ -3,7 +3,7 @@ from progressivis.io import CSVLoader
 from progressivis.table.constant import Constant
 from progressivis.core.slot import SlotDescriptor
 from progressivis.datasets import get_dataset
-from progressivis.table.module import TableModule
+from progressivis.table.module import TableModule, ReturnRunStep
 from progressivis.table.table import Table
 from progressivis.core.decorators import (
     process_slot,
@@ -39,6 +39,7 @@ class RunIfAll(FooABC):
     @process_slot("a", "b", "c", "d", reset_if=False)
     @run_if_all
     def run_step(self, run_number, step_size, howlong):
+        assert self.context
         with self.context as ctx:
             return self.run_step_impl(ctx, run_number, step_size)
 
@@ -50,24 +51,28 @@ class RunAlways(FooABC):
     @process_slot("a", "b", "c", "d", reset_if=False)
     @run_always
     def run_step(self, run_number, step_size, howlong):
+        assert self.context
         with self.context as ctx:
             return self.run_step_impl(ctx, run_number, step_size)
 
 
 class RunIfAllacOrAllbd(FooABC):
-    @process_slot("a", "b", "c", "d", reset_if=False)
-    @run_if_all("a", "c")
+    @process_slot("a", "b", "c", "d", reset_if=False)  # type: ignore
+    @run_if_all("a", "c")  # type: ignore
     @or_all("b", "d")
-    def run_step(self, run_number, step_size, howlong):
+    def run_step(self, run_number: int, step_size: float, howlong: float) -> ReturnRunStep:
+        assert self.context
         with self.context as ctx:
+            assert self.context
             return self.run_step_impl(ctx, run_number, step_size)
 
 
 class RunIfAllabOrAllcd(FooABC):
-    @process_slot("a", "b", "c", "d", reset_if=False)
-    @run_if_all("a", "b")
-    @or_all("c", "d")
+    @process_slot("a", "b", "c", "d", reset_if=False)  # type: ignore
+    @run_if_all("a", "b")  # type: ignore
+    @or_all("c", "d")  # type: ignore
     def run_step(self, run_number, step_size, howlong):
+        assert self.context
         with self.context as ctx:
             return self.run_step_impl(ctx, run_number, step_size)
 
@@ -76,35 +81,35 @@ class RunIfAny(FooABC):
     def is_greedy(self):
         return True
 
-    @process_slot("a", "b", "c", "d", reset_if=False)
-    @run_if_any()
+    @process_slot("a", "b", "c", "d", reset_if=False)  # type: ignore
+    @run_if_any()  # type: ignore
     def run_step(self, run_number, step_size, howlong):
         with self.context as ctx:
             return self.run_step_impl(ctx, run_number, step_size)
 
 
 class RunIfAnyAndAny(FooABC):
-    @process_slot("a", "b", "c", "d", reset_if=False)
-    @run_if_any("a", "c")
-    @and_any("b", "d")
+    @process_slot("a", "b", "c", "d", reset_if=False)  # type: ignore
+    @run_if_any("a", "c")  # type: ignore
+    @and_any("b", "d")  # type: ignore
     def run_step(self, run_number, step_size, howlong):
         with self.context as ctx:
             return self.run_step_impl(ctx, run_number, step_size)
 
 
 class InvalidProcessAfterRun(FooABC):
-    @run_if_any("a", "c")
-    @process_slot("a", "b", "c", "d", reset_if=False)
-    @and_any("b", "d")
+    @run_if_any("a", "c")  # type: ignore
+    @process_slot("a", "b", "c", "d", reset_if=False)  # type: ignore
+    @and_any("b", "d")  # type: ignore
     def run_step(self, run_number, step_size, howlong):
         with self.context as ctx:
             return self.run_step_impl(ctx, run_number, step_size)
 
 
 class InvalidDoubleRun(FooABC):
-    @process_slot("a", "b", "c", "d", reset_if=False)
-    @run_if_any("a", "c")
-    @run_if_any("b", "d")
+    @process_slot("a", "b", "c", "d", reset_if=False)  # type: ignore
+    @run_if_any("a", "c")  # type: ignore
+    @run_if_any("b", "d")  # type: ignore
     def run_step(self, run_number, step_size, howlong):
         with self.context as ctx:
             return self.run_step_impl(ctx, run_number, step_size)

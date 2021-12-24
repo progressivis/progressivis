@@ -9,7 +9,7 @@ from sklearn.cluster import MiniBatchKMeans  # type: ignore
 from sklearn.utils.validation import check_random_state  # type: ignore
 from progressivis import ProgressiveError, SlotDescriptor
 from progressivis.core.utils import indices_len
-from ..table.module import TableModule
+from ..table.module import TableModule, ReturnRunStep, JSon, Module
 from ..table import Table, TableSelectedView
 from ..table.dshape import dshape_from_dtype, dshape_from_columns
 from ..io import DynVar
@@ -21,13 +21,10 @@ from ..stats import Var
 from typing import (
     Optional,
     Union,
+    List,
     Dict,
-    TYPE_CHECKING
+    Any
 )
-
-if TYPE_CHECKING:
-    from progressivis.table.module import Columns
-    from progressivis.core.module import ReturnRunStep
 
 logger = logging.getLogger(__name__)
 
@@ -49,20 +46,20 @@ class MBKMeans(TableModule):
 
     def __init__(self,
                  n_clusters: int,
-                 columns: Columns = None,
+                 columns: List[str] = None,
                  batch_size: int = 100,
                  tol: float = 0.01,
                  is_input=True,
                  is_greedy=True,
                  random_state: Union[int, np.random.RandomState, None] = None,
                  **kwds):
-        super().__init__(**kwds)
+        super().__init__(columns=columns,
+                         **kwds)
         self.mbk = MiniBatchKMeans(n_clusters=n_clusters,
                                    batch_size=batch_size,
                                    verbose=True,
                                    tol=tol,
                                    random_state=random_state)
-        self.columns = columns
         self.n_clusters = n_clusters
         self.default_step_size = 100
         self._labels: Optional[Table] = None
@@ -112,17 +109,17 @@ class MBKMeans(TableModule):
         elif not yes:
             self._labels = None
 
-    def labels(self):
+    def labels(self) -> Optional[Table]:
         return self._labels
 
-    def get_data(self, name):
+    def get_data(self, name: str) -> Any:
         if name == 'labels':
             return self.labels()
         if name == 'conv':
             return self._conv_out
         return super().get_data(name)
 
-    def is_greedy(self):
+    def is_greedy(self) -> bool:
         return self._is_greedy
 
     def _process_labels(self, locs):
@@ -177,7 +174,7 @@ class MBKMeans(TableModule):
            len(input_df) < max(self.mbk.n_clusters, batch_size)):
             # Not enough data yet ...
             return self._return_run_step(self.state_blocked, 0)
-        cols = self.get_columns(input_df)
+        cols = self.get_columns(input_df, 'table')
         dtype = input_df.columns_common_dtype(cols)
         n_features = len(cols)
         n_samples = len(input_df)
@@ -238,18 +235,18 @@ class MBKMeans(TableModule):
             return self._return_run_step(self.state_blocked, iter_)
         return self._return_run_step(self.state_ready, iter_)
 
-    def to_json(self, short=False):
-        json = super().to_json(short)
+    def to_json(self, short: bool = False, with_speed: bool = True) -> JSon:
+        json = super().to_json(short, with_speed)
         if short:
             return json
         return self._centers_to_json(json)
 
-    def _centers_to_json(self, json):
+    def _centers_to_json(self, json: JSon) -> JSon:
         if self.result is not None:
             json['cluster_centers'] = self.result.to_json()
         return json
 
-    def set_centroid(self, c, values):
+    def set_centroid(self, c: int, values: List[float]) -> List[float]:
         try:
             c = int(c)
         except ValueError:
@@ -258,15 +255,20 @@ class MBKMeans(TableModule):
         centroids = self.result
         # idx = centroids.id_to_index(c)
 
-        if len(values) != len(self.columns):
-            raise ProgressiveError('Expected %s of values, received %s',
-                                   len(self.columns), values)
-        centroids.loc[c, self.columns] = values
+        dfslot = self.get_input_slot('table')
+        input_df = dfslot.data()
+        columns = self.get_columns(input_df, 'table')
+        if len(values) != len(columns):
+            raise ProgressiveError(
+                f'Expected {len(columns)} values, received {values}')
+        centroids.loc[c, columns] = values
         # TODO unpack the table
-        self.mbk.cluster_centers_[c] = list(centroids.loc[c, self.columns])
+        self.mbk.cluster_centers_[c] = list(centroids.loc[c, columns])
         return self.mbk.cluster_centers_.tolist()
 
-    def create_dependent_modules(self, input_module, input_slot='result'):
+    def create_dependent_modules(self,
+                                 input_module: Module,
+                                 input_slot='result'):
         with self.tagged(self.TAG_DEPENDENT):
             s = self.scheduler()
             self.input_module = input_module
@@ -296,7 +298,11 @@ class MBKMeansFilter(TableModule):
 
     @process_slot("table", "labels")
     @run_if_any
-    def run_step(self, run_number, step_size, howlong):
+    def run_step(self,
+                 run_number: int,
+                 step_size: int,
+                 howlong: float) -> ReturnRunStep:
+        assert self.context
         with self.context as ctx:
             indices_t = ctx.table.created.next(step_size)  # returns a slice
             steps_t = indices_len(indices_t)

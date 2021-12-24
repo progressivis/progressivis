@@ -1,19 +1,24 @@
+from __future__ import annotations
+
 from ..core.slot import SlotDescriptor
-from .module import TableModule
+from .module import TableModule, ReturnRunStep
 from .table import Table
 
 
 class LastRow(TableModule):
     inputs = [SlotDescriptor("table", type=Table, required=True)]
 
-    def __init__(self, reset_index=True, **kwds):
+    def __init__(self, reset_index: bool = True, **kwds):
         super(LastRow, self).__init__(**kwds)
         self._reset_index = reset_index
 
-    def predict_step_size(self, duration):
+    def predict_step_size(self, duration: float) -> int:
         return 1
 
-    def run_step(self, run_number, step_size, howlong):
+    def run_step(self,
+                 run_number: int,
+                 step_size: int,
+                 howlong: float) -> ReturnRunStep:
         slot = self.get_input_slot("table")
         slot.clear_buffers()
         df = slot.data()

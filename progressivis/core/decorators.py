@@ -3,8 +3,8 @@ from __future__ import annotations
 from functools import wraps, partial
 
 from typing import (
-    Optional,
     Callable,
+    Tuple,
     Union,
     Any,
     Dict,
@@ -48,8 +48,8 @@ class _Context:
 
 def process_slot(
         *names: str,
-        reset_if=("update", "delete"),
-        reset_cb: Optional[Union[str, Callable]] = None) -> Callable[[RunStepCallable], RunStepCallable]:
+        reset_if: Union[bool, str, Tuple[str, ...]] = ("update", "delete"),
+        reset_cb: Union[None, str, Callable] = None) -> Callable[[RunStepCallable], RunStepCallable]:
     """
     this function includes reset_if, reset_cb in the closure
     """
@@ -60,7 +60,8 @@ def process_slot(
     elif not reset_if:
         reset_if = tuple()
     else:
-        assert set(reset_if) == set(("update", "delete"))
+        assert reset_if == ("update", "delete") or reset_if == ("delete", "update")
+    assert isinstance(reset_if, tuple)
 
     def run_step_decorator(run_step_: RunStepCallable) -> RunStepCallable:
         """
@@ -84,6 +85,7 @@ def process_slot(
             for name in names:
                 slot = self.get_input_slot(name)
                 # slot.update(run_number)
+                assert isinstance(reset_if, tuple)
                 if ("update" in reset_if and slot.updated.any()) or (
                     "delete" in reset_if and slot.deleted.any()
                 ):
@@ -119,6 +121,9 @@ _INV_RULES = {v: k for (k, v) in _RULES.items()}
 
 def accepted_first(s):
     return s in _RULES
+
+
+DecCallable = Callable[[RunStepCallable], RunStepCallable]
 
 
 def _slot_policy_rule(decname, *slots_maybe):
@@ -178,11 +183,11 @@ def _slot_policy_rule(decname, *slots_maybe):
     return decorator_(slots_maybe[0])
 
 
-run_if_all: Callable[[RunStepCallable], RunStepCallable] = partial(_slot_policy_rule, "run_if_all")
-or_all: Callable[[RunStepCallable], RunStepCallable] = partial(_slot_policy_rule, "or_if_all")
-run_if_any: Callable[[RunStepCallable], RunStepCallable] = partial(_slot_policy_rule, "run_if_any")
-and_any: Callable[[RunStepCallable], RunStepCallable] = partial(_slot_policy_rule, "and_if_any")
-run_always: Callable[[RunStepCallable], RunStepCallable] = partial(_slot_policy_rule, "run_always")
+run_if_all: DecCallable = partial(_slot_policy_rule, "run_if_all")
+or_all: DecCallable = partial(_slot_policy_rule, "or_if_all")
+run_if_any: DecCallable = partial(_slot_policy_rule, "run_if_any")
+and_any: DecCallable = partial(_slot_policy_rule, "and_if_any")
+run_always: DecCallable = partial(_slot_policy_rule, "run_always")
 
 
 def run_step_required(self_: Module) -> bool:

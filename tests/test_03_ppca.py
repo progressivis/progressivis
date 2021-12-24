@@ -8,8 +8,8 @@ from progressivis.table.module import TableModule
 from progressivis.table.table import Table
 from progressivis.utils.psdict import PsDict
 from progressivis.core.slot import SlotDescriptor
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.utils.random import sample_without_replacement
+from sklearn.neighbors import KNeighborsClassifier  # type: ignore
+from sklearn.utils.random import sample_without_replacement  # type: ignore
 
 import pandas as pd
 import os

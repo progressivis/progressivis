@@ -1,6 +1,6 @@
 from . import ProgressiveTest
 
-import datashape as ds
+import datashape as ds  # type: ignore
 
 from collections import OrderedDict
 from progressivis import Scheduler

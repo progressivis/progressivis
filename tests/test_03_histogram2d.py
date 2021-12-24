@@ -9,7 +9,7 @@ from progressivis.datasets import get_dataset
 from progressivis.table.stirrer import Stirrer, StirrerView
 import pandas as pd
 import numpy as np
-import fast_histogram as fh
+import fast_histogram as fh  # type: ignore
 
 
 class TestHistogram2D(ProgressiveTest):

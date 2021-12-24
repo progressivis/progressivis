@@ -1,19 +1,22 @@
+from __future__ import annotations
+
 import os
 import os.path
-from progressivis import ProgressiveError
 from .random import generate_random_csv, generate_random_multivariate_normal_csv
+from functools import partial
+
 from .wget import wget_file
 import bz2
 import zlib
 import lzma
 
-from functools import partial
+from progressivis import ProgressiveError
 
 DATA_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../data"))
 Z_CHUNK_SIZE = 16 * 1024 * 32
 
 
-def get_dataset(name, **kwds):
+def get_dataset(name: str, **kwds) -> str:
     if not os.path.isdir(DATA_DIR):
         os.mkdir(DATA_DIR)
     if name == "bigfile":

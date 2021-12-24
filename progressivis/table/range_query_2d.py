@@ -5,7 +5,7 @@ from . import Table
 from ..core.slot import SlotDescriptor
 from .module import TableModule
 from ..core.bitmap import bitmap
-from .mod_impl import ModuleImpl
+# from .mod_impl import ModuleImpl
 from ..io import Variable
 from ..stats import Min, Max
 from .hist_index import HistogramIndex
@@ -29,7 +29,7 @@ class _Selection(object):
         self._values = values
 
 
-class RangeQuery2dImpl(ModuleImpl):
+class RangeQuery2dImpl:  # (ModuleImpl):
     def __init__(self, column_x, column_y, hist_index_x, hist_index_y, approximate):
         super(RangeQuery2dImpl, self).__init__()
         self._table = None

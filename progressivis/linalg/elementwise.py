@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import sys
+
 import numpy as np
 
 from ..core.utils import indices_len, fix_loc
@@ -79,7 +81,7 @@ class Unary(TableModule):
     ]
 
     def __init__(self, ufunc: np.ufunc, **kwds):
-        super().__init__(**kwds)
+        super(Unary, self).__init__(**kwds)
         self._ufunc: np.ufunc = ufunc
         self._kwds = {}
 
@@ -136,14 +138,14 @@ class Unary(TableModule):
         return self._return_run_step(self.next_state(slot), steps_run=steps)
 
 
-def make_subclass(super_, cname, ufunc):
+def make_subclass(super_: ModuleMeta, cname: str, ufunc: np.ufunc) -> ModuleMeta:
     def _init_func(self_, *args, **kwds):
         super_.__init__(self_, ufunc, *args, **kwds)
 
     # cls = type(cname, (super_,), {})
     cls = ModuleMeta(cname, (super_,), {})
     cls.__module__ = globals()["__name__"]  # avoids cls to be part of abc module ...
-    cls.__init__ = _init_func
+    cls.__init__ = _init_func  # type: ignore
     return cls
 
 
@@ -156,8 +158,8 @@ def func2class_name(s):
 
 for k, v in unary_dict_all.items():
     name = func2class_name(k)
-    _g[name] = make_subclass(Unary, name, v)
-    unary_modules.append(_g[name])
+    # _g[name] = make_subclass(Unary, name, v)
+    # unary_modules.append(_g[name])
 
 
 def _simple_binary(tbl, op, cols1, cols2, cols_out, **kwargs):
@@ -177,7 +179,7 @@ class ColsBinary(TableModule):
     outputs = [SlotDescriptor("result", type=Table, required=False)]
 
     def __init__(self, ufunc: np.ufunc, first, second, cols_out=None, **kwds):
-        super().__init__(**kwds)
+        super(ColsBinary, self).__init__(**kwds)
         self._ufunc = ufunc
         self._first = first
         self._second = second
@@ -269,8 +271,8 @@ def _binary(tbl, op, other, other_cols=None, **kwargs):
 
 for k, v in binary_dict_all.items():
     name = f"Cols{func2class_name(k)}"
-    _g[name] = make_subclass(ColsBinary, name, v)
-    binary_modules.append(_g[name])
+    # _g[name] = make_subclass(ColsBinary, name, v)
+    # binary_modules.append(_g[name])
 
 
 class Binary(TableModule):
@@ -285,7 +287,7 @@ class Binary(TableModule):
     ]
 
     def __init__(self, ufunc, **kwds):
-        super().__init__(**kwds)
+        super(Binary, self).__init__(**kwds)
         self._ufunc = ufunc
         self._kwds = {}
         _assert = self._columns is None or (
@@ -381,8 +383,8 @@ class Binary(TableModule):
 
 for k, v in binary_dict_all.items():
     name = func2class_name(k)
-    _g[name] = make_subclass(Binary, name, v)
-    binary_modules.append(_g[name])
+    # _g[name] = make_subclass(Binary, name, v)
+    # binary_modules.append(_g[name])
 
 
 def _reduce(tbl, op, initial, **kwargs):
@@ -398,7 +400,7 @@ class Reduce(TableModule):
 
     def __init__(self, ufunc: np.ufunc, columns: List[str] = None, **kwds):
         assert ufunc.nin == 2
-        super().__init__(**kwds)
+        super(Reduce, self).__init__(**kwds)
         self._ufunc = getattr(ufunc, "reduce")
         self._columns = columns
         self._kwds = {}
@@ -435,8 +437,8 @@ class Reduce(TableModule):
 
 for k, v in binary_dict_all.items():
     name = f"{func2class_name(k)}Reduce"
-    _g[name] = make_subclass(Reduce, name, v)
-    reduce_modules.append(_g[name])
+    # _g[name] = make_subclass(Reduce, name, v)
+    # reduce_modules.append(_g[name])
 
 
 def make_unary(func, name=None):
@@ -503,3 +505,48 @@ def reduce_module(func):
     else:
         func = np.frompyfunc(func, 2, 1)
     return make_subclass(Reduce, name, func)
+
+
+def generate_stubs(out=sys.stdout):
+    decls: List[str] = []
+
+    super = "Unary"
+    for k, v in unary_dict_all.items():
+        name = func2class_name(k)
+        decls.append(name)
+        print(f"""class {name}({super}):
+    def __init__(self, *args, **kwds):
+        super({name}, self).__init__(np.{k}, **kwds)
+
+""", file=out)
+    super = "Binary"
+    for k, v in binary_dict_all.items():
+        name = func2class_name(k)
+        decls.append(name)
+        print(f"""class {name}({super}):
+    def __init__(self, *args, **kwds):
+        super({name}, self).__init__(np.{k}, **kwds)
+
+""", file=out)
+    super = "ColsBinary"
+    for k, v in binary_dict_all.items():
+        name = f"Cols{func2class_name(k)}"
+        decls.append(name)
+        print(f"""class {name}({super}):
+    def __init__(self, *args, **kwds):
+        super({name}, self).__init__(np.{k}, **kwds)
+
+""", file=out)
+    super = "Reduce"
+    for k, v in binary_dict_all.items():
+        name = f"{func2class_name(k)}Reduce"
+        decls.append(name)
+        print(f"""class {name}({super}):
+    def __init__(self, *args, **kwds):
+        super({name}, self).__init__(np.{k}, **kwds)
+
+""", file=out)
+    print("from progressivis.linalg._elementwise import (", file=out)
+    for decl in decls:
+        print(f"    {decl},", file=out)
+    print(")", file=out)

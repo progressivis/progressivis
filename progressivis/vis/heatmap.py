@@ -1,17 +1,24 @@
 """
 Visualization of a Histogram2D as a heaatmap
 """
+from __future__ import annotations
+
 import re
 import logging
 import base64
 import io
+
 import numpy as np
 import scipy as sp  # type: ignore
 from PIL import Image
+
 from progressivis.core.utils import indices_len
 from progressivis.core.slot import SlotDescriptor
 from progressivis.table import Table
-from progressivis.table.module import TableModule
+from progressivis.table.module import TableModule, ReturnRunStep, JSon
+from progressivis.stats.histogram2d import Histogram2D
+
+from typing import cast, Optional
 
 
 logger = logging.getLogger(__name__)
@@ -32,21 +39,23 @@ class Heatmap(TableModule):
     #           UPDATE_COLUMN_DESC]
     schema = "{filename: string, time: int64}"
 
-    def __init__(self, colormap=None, **kwds):
+    def __init__(self, colormap: None = None, **kwds):
         super(Heatmap, self).__init__(**kwds)
         self.tags.add(self.TAG_VISUALIZATION)
         self.colormap = colormap
         self.default_step_size = 1
-
         name = self.generate_table_name('Heatmap')
         self.result = Table(name, dshape=Heatmap.schema, create=True)
 
-    def predict_step_size(self, duration):
+    def predict_step_size(self, duration: float) -> int:
         _ = duration
         # Module sample is constant time (supposedly)
         return 1
 
-    def run_step(self, run_number, step_size, howlong):
+    def run_step(self,
+                 run_number: int,
+                 step_size: int,
+                 howlong: float) -> ReturnRunStep:
         dfslot = self.get_input_slot('array')
         input_df = dfslot.data()
         dfslot.deleted.next()
@@ -61,14 +70,16 @@ class Heatmap(TableModule):
         if histo is None:
             return self._return_run_step(self.state_blocked, steps_run=1)
         params = self.params
-        cmax = params.cmax
+        cmax: Optional[float] = cast(float, params.cmax)
+        assert cmax
         if np.isnan(cmax):
             cmax = None
-        cmin = params.cmin
+        cmin: Optional[float] = cast(float, params.cmin)
+        assert cmin
         if np.isnan(cmin):
             cmin = None
-        high = params.high
-        low = params.low
+        high: int = cast(int, params.high)
+        low: int = cast(int, params.low)
         try:
             if cmin is None:
                 cmin = histo.min()
@@ -115,18 +126,19 @@ class Heatmap(TableModule):
             self.result.add(values)
         return self._return_run_step(self.state_blocked, steps_run=1)
 
-    def get_visualization(self):
+    def get_visualization(self) -> str:
         return "heatmap"
 
-    def to_json(self, short=False):
-        json = super(Heatmap, self).to_json(short)
+    def to_json(self, short=False, with_speed: bool = True) -> JSon:
+        json = super(Heatmap, self).to_json(short, with_speed)
         if short:
             return json
         return self.heatmap_to_json(json, short)
 
-    def heatmap_to_json(self, json, short):
+    def heatmap_to_json(self, json: JSon, short: bool) -> JSon:
         dfslot = self.get_input_slot('array')
-        histo = dfslot.output_module
+        assert isinstance(dfslot.output_module, Histogram2D)
+        histo: Histogram2D = dfslot.output_module
         json['columns'] = [histo.x_column, histo.y_column]
         histo_df = dfslot.data()
         if histo_df is not None and len(histo_df) != 0:
@@ -145,7 +157,7 @@ class Heatmap(TableModule):
             json['image'] = row['filename']
         return json
 
-    def get_image(self, run_number=None):
+    def get_image(self, run_number: int = None) -> Optional[str]:
         if self.result is None or len(self.result) == 0:
             return None
         last = self.result.last()
@@ -161,7 +173,10 @@ class Heatmap(TableModule):
                 filename = self.result['filename'][idx[0]]
         return filename
 
-    def get_image_bin(self, run_number=None):
+    def get_image_bin(self, run_number: int = None) -> Optional[bytes]:
         file_url = self.get_image(run_number)
-        payload = file_url.split(',', 1)[1]
-        return base64.b64decode(payload)
+        if file_url:
+            payload = file_url.split(',', 1)[1]
+            return base64.b64decode(payload)
+        else:
+            return None

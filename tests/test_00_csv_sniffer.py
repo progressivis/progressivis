@@ -2,7 +2,7 @@ from . import ProgressiveTest
 import tempfile
 import os
 
-import fsspec
+import fsspec  # type: ignore
 import pandas as pd
 
 from progressivis.io.csv_sniffer import CSVSniffer

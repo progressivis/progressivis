@@ -23,7 +23,7 @@ from progressivis.core import aio
 #         times += 1
 
 
-@skip
+@skip("Still converting to sklean > 1.0")
 class TestMBKmeans(ProgressiveTest):
     def test_mb_k_means(self):
         # log_level()

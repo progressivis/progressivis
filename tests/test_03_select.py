@@ -21,7 +21,7 @@ class TestSelect(ProgressiveTest):
         super(TestSelect, self).setUp()
         #        self.log(self.INFO)
 
-    @skip
+    @skip("Too long")
     def test_select_simple(self):
         s = self.scheduler()
         csv = CSVLoader(

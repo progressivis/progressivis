@@ -81,7 +81,7 @@ class TestTableEval(ProgressiveTest):
         self.assertTrue(np.allclose(t["a"], df["a"]))
         self.assertTrue(np.allclose(t["b"], df["b"]))
 
-    @skip
+    @skip("Not Ready")
     def test_user_dict(self):
         t = Table("table_user_dict", dshape="{a: int, b: float32}", create=True)
         t.resize(20)

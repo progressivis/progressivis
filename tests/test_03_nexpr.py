@@ -7,7 +7,7 @@ import numpy as np
 from progressivis.stats import RandomTable
 from progressivis.table.table import Table
 from progressivis.core import SlotDescriptor
-import numexpr as ne
+import numexpr as ne  # type: ignore
 
 
 class NumExprSample(NumExprABC):

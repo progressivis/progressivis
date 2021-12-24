@@ -1,53 +1,63 @@
+from __future__ import annotations
+
 import numpy as np
 
 from progressivis.core.utils import indices_len
 from . import TableSelectedView
-from . import Table
+from . import BaseTable, Table
 from ..core.slot import SlotDescriptor
-from .module import TableModule
+from .module import TableModule, Module
 from ..core.bitmap import bitmap
-from .mod_impl import ModuleImpl
+# from .mod_impl import ModuleImpl
 from ..io import Variable
 from ..stats import Min, Max
 from .hist_index import HistogramIndex
 from ..utils.psdict import PsDict
 
-
-def _get_physical_table(t):
-    return t if t.base is None else _get_physical_table(t.base)
+from typing import Optional
 
 
-class _Selection(object):
-    def __init__(self, values=None):
+# def _get_physical_table(t):
+#     return t if t.base is None else _get_physical_table(t.base)
+
+
+class _Selection:
+    def __init__(self, values: bitmap = None):
         self._values = bitmap([]) if values is None else values
 
-    def update(self, values):
+    def update(self, values: bitmap) -> None:
         self._values.update(values)
 
-    def remove(self, values):
+    def remove(self, values: bitmap) -> None:
         self._values = self._values - bitmap(values)
 
-    def assign(self, values):
+    def assign(self, values: bitmap) -> None:
         self._values = values
 
-    def add(self, values):
+    def add(self, values: bitmap) -> None:
         self._values |= values
 
 
-class RangeQueryImpl(ModuleImpl):
-    def __init__(self, column, hist_index, approximate):
+class RangeQueryImpl:  # (ModuleImpl):
+    def __init__(self,
+                 column: list[str],
+                 hist_index: HistogramIndex,
+                 approximate: bool):
         super(RangeQueryImpl, self).__init__()
-        self._table = None
+        self._table: Optional[BaseTable] = None
         self._column = column
-        self.bins = None
+        # self.bins = None
         self._hist_index = hist_index
         self._approximate = approximate
-        self.result = None
+        self.result: Optional[_Selection] = None
         self.is_started = False
 
     def resume(
-        self, lower, upper, limit_changed, created=None, updated=None, deleted=None
-    ):
+        self,
+        lower: float, upper: float, limit_changed: bool,
+        created: bitmap = None, updated: bitmap = None, deleted: bitmap = None
+    ) -> None:
+        assert self.result
         if limit_changed:
             new_sel = self._hist_index.range_query(
                 lower, upper, approximate=self._approximate
@@ -71,7 +81,7 @@ class RangeQueryImpl(ModuleImpl):
 
     def start(
         self,
-        table,
+        table: BaseTable,
         lower,
         upper,
         limit_changed,
@@ -107,10 +117,13 @@ class RangeQuery(TableModule):
         SlotDescriptor("max", type=Table, required=False),
     ]
 
-    def __init__(self, hist_index=None, approximate=False, **kwds):
+    def __init__(self,
+                 hist_index: HistogramIndex = None,
+                 approximate=False,
+                 **kwds):
         super(RangeQuery, self).__init__(**kwds)
-        self._impl = None  # RangeQueryImpl(self.params.column, hist_index)
-        self._hist_index = None
+        self._impl: Optional[RangeQueryImpl] = None  # RangeQueryImpl(self.params.column, hist_index)
+        self._hist_index: Optional[HistogramIndex] = hist_index
         self._approximate = approximate
         self._column = self.params.column
         self._watched_key_lower = self.params.watched_key_lower
@@ -120,27 +133,27 @@ class RangeQuery(TableModule):
         if not self._watched_key_upper:
             self._watched_key_upper = self._column
         self.default_step_size = 1000
-        self.input_module = None
-        self._min_table = None
-        self._max_table = None
+        self.input_module: Optional[Module] = None
+        self._min_table: Optional[PsDict] = None
+        self._max_table: Optional[PsDict] = None
 
     @property
-    def hist_index(self):
+    def hist_index(self) -> Optional[HistogramIndex]:
         return self._hist_index
 
     @hist_index.setter
-    def hist_index(self, hi):
+    def hist_index(self, hi: HistogramIndex):
         self._hist_index = hi
         self._impl = RangeQueryImpl(self._column, hi, approximate=self._approximate)
 
     def create_dependent_modules(
         self,
-        input_module,
-        input_slot,
-        min_=None,
-        max_=None,
-        min_value=None,
-        max_value=None,
+        input_module: Module,
+        input_slot: str,
+        min_: Module = None,
+        max_: Module = None,
+        min_value: Module = None,
+        max_value: Module = None,
         **kwds
     ):
         if self.input_module is not None:  # test if already called

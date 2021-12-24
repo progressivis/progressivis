@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from abc import ABCMeta, abstractmethod
 
 
@@ -9,9 +11,9 @@ class ModuleImpl(metaclass=ABCMeta):
         return "ModuleImpl %s: %s" % (self.__class__.__name__, id(self))
 
     @abstractmethod
-    def start(self, *args, **kwargs):
+    def start(self, *args, **kwargs) -> None:
         pass
 
     @abstractmethod
-    def resume(self, *args, **kwargs):
+    def resume(self, *args, **kwargs) -> None:
         pass

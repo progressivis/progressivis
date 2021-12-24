@@ -10,7 +10,7 @@ import time
 import os
 from progressivis.core import aio
 
-from RangeHTTPServer import RangeRequestHandler
+from RangeHTTPServer import RangeRequestHandler  # type: ignore
 
 import http.server as http_srv
 
@@ -73,7 +73,7 @@ def run_simple_server():
     _ = get_dataset_bz2("smallfile")
     _ = get_dataset_bz2("bigfile")
     os.chdir(DATA_DIR)
-    import RangeHTTPServer.__main__  # noqa: F401
+    import RangeHTTPServer.__main__  # type: ignore
     RangeHTTPServer.__main__
 
 

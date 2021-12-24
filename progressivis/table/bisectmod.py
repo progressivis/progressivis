@@ -1,53 +1,56 @@
+from __future__ import annotations
+
 from progressivis.core.utils import indices_len
 
 import numpy as np
 
-from . import Table, TableSelectedView
+from . import BaseTable, Table, TableSelectedView
 from ..core.slot import SlotDescriptor
 from .module import TableModule
 from ..core.bitmap import bitmap
-from .mod_impl import ModuleImpl
+# from .mod_impl import ModuleImpl
 from .binop import ops
 
+from typing import Optional, TYPE_CHECKING
 
-def _get_physical_table(t):
+if TYPE_CHECKING:
+    from .hist_index import HistogramIndex
+
+
+def _get_physical_table(t: np.ndarray) -> np.ndarray:
     return t if t.base is None else _get_physical_table(t.base)
 
 
 class _Selection(object):
-    def __init__(self, values=None):
+    def __init__(self, values: bitmap = None) -> None:
         self._values = bitmap([]) if values is None else values
 
-    def update(self, values):
+    def update(self, values: bitmap) -> None:
         self._values.update(values)
 
-    def remove(self, values):
+    def remove(self, values: bitmap) -> None:
         self._values = self._values - bitmap(values)
 
-    def assign(self, values):
+    def assign(self, values: bitmap) -> None:
         self._values = values
 
-    def add(self, values):
+    def add(self, values: bitmap) -> None:
         self._values |= values
 
 
-class BisectImpl(ModuleImpl):
-    def __init__(self, column, op, hist_index):
+class BisectImpl:  # (ModuleImpl):
+    def __init__(self, column: str, op: str, hist_index: HistogramIndex):
         super(BisectImpl, self).__init__()
-        self._table = None
+        self.is_started = False
+        self._table: Optional[BaseTable] = None
         self._column = column
-        self._op = op
         if isinstance(op, str):
             self._op = ops[op]
         elif op not in ops.values():
             raise ValueError("Invalid operator {}".format(op))
         self.has_cache = False
-        self.bins = None
-        self.e_min = None
-        self.e_max = None
-        self.boundaries = None
         self._hist_index = hist_index
-        self.result = None
+        self.result: _Selection = _Selection()
 
     def resume(self, limit, limit_changed, created=None, updated=None, deleted=None):
         if limit_changed:

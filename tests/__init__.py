@@ -8,7 +8,7 @@ from progressivis.storage import init_temp_dir_if, cleanup_temp_dir
 import numpy as np
 
 _ = skip  # shut-up pylint
-_ = skipIf
+__ = skipIf
 
 
 class ProgressiveTest(TestCase):

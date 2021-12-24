@@ -54,14 +54,15 @@ def temp_dir() -> Optional[str]:
     return VARS.get("TEMP_DIR")
 
 
-def cleanup_temp_dir():
+def cleanup_temp_dir() -> None:
     tmp = temp_dir()
     if tmp is None:
         return
     if StorageEngine._default == "mmap":
         root = StorageEngine.engines()["mmap"]
+        assert isinstance(root, MMapGroup)
         for tbl in root.dict.values():
-            if tbl.has_files():
+            if isinstance(tbl, MMapGroup) and tbl.has_files():
                 tbl.close_all()
                 tbl.delete_children()
         root.dict = {}
