@@ -5,7 +5,7 @@ from progressivis.table.module import TableModule, ReturnRunStep
 from progressivis.table import BaseTable
 from progressivis.core.slot import SlotDescriptor
 
-from typing import List, Optional
+from typing import List
 
 
 class NAry(TableModule):
@@ -20,7 +20,7 @@ class NAry(TableModule):
     def predict_step_size(self, duration: float) -> int:
         return 1
 
-    def get_input_slot_multiple(self, name: Optional[str]) -> List[str]:
+    def get_input_slot_multiple(self, name: str = None) -> List[str]:
         if name is None:
             name = self.nary
         return super(NAry, self).get_input_slot_multiple(name)
