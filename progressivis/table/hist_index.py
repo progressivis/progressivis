@@ -456,7 +456,7 @@ class HistogramIndex(TableModule):
         input_table = input_slot.data()
         # self._table = input_table
         self._impl.update_histogram(created, updated, deleted)
-        cast(TableSelectedView, self.result).selection = self.selection
+        self.selected.selection = self.selection
         return self._return_run_step(self.next_state(input_slot), steps_run=steps)
 
     def _eval_to_ids(self, operator_, limit, input_ids=None):

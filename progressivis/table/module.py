@@ -6,8 +6,10 @@ from __future__ import annotations
 
 from ..core.module import Module, ReturnRunStep, JSon  # noqa: F401
 from ..core.slot import SlotDescriptor
+from .table_base import TableSelectedView
 from .table import Table
 from .slot_join import SlotJoin
+from progressivis.utils import PsDict
 
 from typing import (
     Optional,
@@ -20,7 +22,6 @@ from typing import (
 )
 
 if TYPE_CHECKING:
-    from progressivis.utils import PsDict
     from progressivis.table import BaseTable
 
 Columns = Union[None, List[str], Dict[str, List[str]]]
@@ -80,6 +81,10 @@ class TableModule(Module):
     @property
     def psdict(self) -> PsDict:
         return cast(PsDict, self.__result)
+
+    @property
+    def selected(self) -> TableSelectedView:
+        return cast(TableSelectedView, self.__result)
 
     def get_data(self, name: str):
         if name in ("result", "table"):

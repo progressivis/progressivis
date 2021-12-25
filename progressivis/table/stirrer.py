@@ -11,7 +11,7 @@ from progressivis.core.slot import SlotDescriptor
 from .module import TableModule, ReturnRunStep
 from . import Table, TableSelectedView
 
-from typing import Optional, cast
+from typing import Optional
 
 
 class Stirrer(TableModule):
@@ -143,7 +143,7 @@ class StirrerView(TableModule):
         if self.result is None:
             self.result = TableSelectedView(input_table, bitmap([]))
         before_ = bitmap(self.table.index)
-        cast(TableSelectedView, self.result).selection |= created
+        self.selected.selection |= created
         print(len(self.table.index))
         delete = []
         if self._delete_rows and self.test_delete_threshold(before_):
@@ -157,5 +157,5 @@ class StirrerView(TableModule):
                 delete = before_
             else:
                 delete = self._delete_rows
-            cast(TableSelectedView, self.result).selection -= bitmap(delete)
+            self.selected.selection -= bitmap(delete)
         return self._return_run_step(self.next_state(input_slot), steps_run=steps)

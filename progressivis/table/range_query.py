@@ -353,5 +353,5 @@ class RangeQuery(TableModule):
                 deleted=deleted,
             )
         assert self._impl.result
-        cast(TableSelectedView, self.result).selection = self._impl.result._values
+        self.selected.selection = self._impl.result._values
         return self._return_run_step(self.next_state(input_slot), steps)

@@ -82,8 +82,8 @@ class _DataClass(object):
                                               approximate=self._approximate)
                 range_query_2d.create_dependent_modules(input_module,
                                                         input_slot,
-                                                        min_value=None,
-                                                        max_value=None)
+                                                        min_value=False,
+                                                        max_value=False)
                 self.min_value = Variable(group=self._group,
                                           scheduler=scheduler)
                 self.min_value.input.like = range_query_2d.min.output.result

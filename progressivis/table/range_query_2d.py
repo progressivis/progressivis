@@ -14,7 +14,7 @@ from ..utils.psdict import PsDict
 from ..table.merge_dict import MergeDict
 from . import TableSelectedView
 
-from typing import Optional, Any, cast
+from typing import Optional, Any, cast, Union
 
 
 class _Selection(object):
@@ -180,10 +180,15 @@ class RangeQuery2d(TableModule):
         input_slot: str,
         min_: Module = None,
         max_: Module = None,
-        min_value: Module = None,
-        max_value: Module = None,
+        min_value: Union[None, bool, Module] = None,
+        max_value: Union[None, bool, Module] = None,
         **kwds
     ):
+        """
+        Beware, {min,max}_value=None is not the same as {min,max}_value=False.
+        With None, a min module is created and connected.
+        With False, it is not created and not connected.
+        """
         if self.input_module is not None:  # test if already called
             return self
         with self.tagged(self.TAG_DEPENDENT):
@@ -431,7 +436,7 @@ class RangeQuery2d(TableModule):
                 deleted=deleted,
             )
             assert self._impl.result
-            cast(TableSelectedView, self.result).selection = self._impl.result._values
+            self.selected.selection = self._impl.result._values
         else:
             self._impl.resume(
                 lower_value_x,
@@ -444,5 +449,5 @@ class RangeQuery2d(TableModule):
                 deleted=deleted,
             )
             assert self._impl.result
-            cast(TableSelectedView, self.result).selection = self._impl.result._values
+            self.selected.selection = self._impl.result._values
         return self._return_run_step(self.next_state(input_slot), steps)

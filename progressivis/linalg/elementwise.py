@@ -110,10 +110,9 @@ class Unary(TableModule):
             raise ValueError("Empty list of columns")
         steps = 0
         steps_todo = step_size
-        table = self.table
         if slot.deleted.any():
             indices = slot.deleted.next(steps_todo, as_slice=False)
-            del table.loc[indices]
+            del self.table.loc[indices]
             steps += indices_len(indices)
             steps_todo -= indices_len(indices)
             if steps_todo <= 0:
@@ -123,7 +122,7 @@ class Unary(TableModule):
             vec = self.filter_columns(data_in, fix_loc(indices)).raw_unary(
                 self._ufunc, **self._kwds
             )
-            table.loc[indices, cols] = vec
+            self.table.loc[indices, cols] = vec
             steps += indices_len(indices)
             steps_todo -= indices_len(indices)
             if steps_todo <= 0:
@@ -135,7 +134,7 @@ class Unary(TableModule):
         vec = self.filter_columns(data_in, fix_loc(indices)).raw_unary(
             self._ufunc, **self._kwds
         )
-        table.append(vec, indices=indices)
+        self.table.append(vec, indices=indices)
         return self._return_run_step(self.next_state(slot), steps_run=steps)
 
 
@@ -191,8 +190,7 @@ class ColsBinary(TableModule):
 
     def reset(self) -> None:
         if self.result is not None:
-            table = self.table
-            table.resize(0)
+            self.table.resize(0)
 
     def run_step(self,
                  run_number: int,
@@ -213,10 +211,9 @@ class ColsBinary(TableModule):
             )
         steps = 0
         steps_todo = step_size
-        table = self.table
         if slot.deleted.any():
             indices = slot.deleted.next(steps_todo, as_slice=False)
-            del table.loc[indices]
+            del self.table.loc[indices]
             steps += indices_len(indices)
             steps_todo -= indices_len(indices)
             if steps_todo <= 0:
@@ -232,7 +229,7 @@ class ColsBinary(TableModule):
                 self._cols_out,
                 **self._kwds,
             )
-            table.loc[indices, self._cols_out] = vec
+            self.table.loc[indices, self._cols_out] = vec
             steps += indices_len(indices)
             steps_todo -= indices_len(indices)
             if steps_todo <= 0:
@@ -247,7 +244,7 @@ class ColsBinary(TableModule):
         vec = _simple_binary(
             view, self._ufunc, self._first, self._second, self._cols_out, **self._kwds
         )
-        table.append(vec, indices=indices)
+        self.table.append(vec, indices=indices)
         return self._return_run_step(self.next_state(slot), steps_run=steps)
 
 
@@ -333,11 +330,10 @@ class Binary(TableModule):
         if self._join is None:
             slots_ = (first, second) if isinstance(data2, BaseTable) else (first,)
             self._join = self.make_slot_join(*slots_)
-        table = self.table
         with self._join as join:
             if join.has_deleted():
                 indices = join.next_deleted(steps_todo)
-                del table.loc[indices]
+                del self.table.loc[indices]
                 steps += indices_len(indices)
                 steps_todo -= indices_len(indices)
                 if steps_todo <= 0:
@@ -358,7 +354,7 @@ class Binary(TableModule):
                     self.get_columns(data2, "second"),
                     **self._kwds,
                 )
-                table.loc[indices, :] = vec
+                self.table.loc[indices, :] = vec
                 steps += indices_len(indices)
                 steps_todo -= indices_len(indices)
                 if steps_todo <= 0:
@@ -381,7 +377,7 @@ class Binary(TableModule):
                 self.get_columns(data2, "second"),
                 **self._kwds,
             )
-            table.append(vec, indices=indices)
+            self.table.append(vec, indices=indices)
             return self._return_run_step(self.next_state(first), steps_run=steps)
 
 
@@ -427,7 +423,7 @@ class Reduce(TableModule):
                 psdict = PsDict()
                 self.result = psdict
             else:
-                psdict = cast(PsDict, self.result)
+                psdict = self.psdict
             cols = self.get_columns(data_in)
             if len(cols) == 0:
                 return self._return_run_step(self.state_blocked, steps_run=0)
