@@ -1,21 +1,26 @@
+from __future__ import annotations
+
 import numpy as np
 import re
 import logging
+from io import IOBase
 
 from bz2 import BZ2File
 from gzip import GzipFile
 
 from progressivis.table.table import Table
-from progressivis.table.module import TableModule
+from progressivis.table.module import TableModule, ReturnRunStep
 
 from sklearn.feature_extraction import DictVectorizer  # type: ignore
 
+from typing import Any, Dict, Tuple, List, Callable, Type, Pattern, Match
+
 logger = logging.getLogger(__name__)
 
-PATTERN = re.compile(r"\(([0-9]+),([-+.0-9]+)\)[ ]*")
+PATTERN: Pattern = re.compile(r"\(([0-9]+),([-+.0-9]+)\)[ ]*")
 
 
-def vec_loader(filename, dtype=np.float64):
+def vec_loader(filename: str, dtype: Type = np.float64) -> Tuple[Any, Dict]:
     """Loads a tf-idf file in .vec format (or .vec.bz2).
 
     Loads a file and returns a scipy sparse matrix of document features.
@@ -24,7 +29,7 @@ def vec_loader(filename, dtype=np.float64):
     >>> mat.shape
     (3077, 4337)
     """
-    openf = open
+    openf: Callable[[str], IOBase] = open
     if filename.endswith(".bz2"):
         openf = BZ2File
     elif filename.endswith(".gz") or filename.endswith(".Z"):
@@ -33,7 +38,8 @@ def vec_loader(filename, dtype=np.float64):
         dataset = []
         for d in f:
             doc = {}
-            for match in re.finditer(PATTERN, d.decode("ascii", errors="ignore")):
+            match: Match
+            for match in re.finditer(PATTERN, d.decode("ascii", errors="ignore")):  # type: ignore
                 termidx = int(match.group(1))
                 termfrx = dtype(match.group(2))
                 doc[termidx] = termfrx
@@ -45,16 +51,16 @@ def vec_loader(filename, dtype=np.float64):
 
 
 class VECLoader(TableModule):
-    def __init__(self, filename, dtype=np.float64, **kwds):
+    def __init__(self, filename: str, dtype: Type = np.float64, **kwds):
         super(VECLoader, self).__init__(**kwds)
         self._dtype = dtype
         self.default_step_size = kwds.get("chunksize", 10)  # initial guess
-        openf = open
+        openf: Callable[[str], IOBase] = open
         if filename.endswith(".bz2"):
             openf = BZ2File
         elif filename.endswith(".gz") or filename.endswith(".Z"):
             openf = GzipFile
-        self.f = openf(filename)
+        self.f: IOBase = openf(filename)
         # When created with a specified chunksize, it returns the parser
         self._rows_read = 0
         self._csr_matrix = None
@@ -65,31 +71,34 @@ class VECLoader(TableModule):
             storagegroup=self.storagegroup,
         )
 
-    def rows_read(self):
+    def rows_read(self) -> int:
         return self._rows_read
 
-    def toarray(self):
+    def toarray(self) -> Any:
         if self._csr_matrix is None:
-            docs = self.table()["document"]
+            docs = self.table["document"]
             dv = DictVectorizer()
             # TODO: race condition when using threads, cleanup_run can reset between
             # setting the value here and returning it at the next instruction
             self._csr_matrix = dv.fit_transform(docs)
         return self._csr_matrix
 
-    def cleanup_run(self, run_number):
+    def cleanup_run(self, run_number: int) -> int:
         self._csr_matrix = None
-        super(VECLoader, self).cleanup_run(run_number)
+        return super(VECLoader, self).cleanup_run(run_number)
 
-    def run_step(self, run_number, step_size, howlong):
+    def run_step(self,
+                 run_number: int,
+                 step_size: int,
+                 howlong: float) -> ReturnRunStep:
         if step_size == 0:  # bug
             logger.error("Received a step_size of 0")
             # return self._return_run_step(self.state_ready, steps_run=0, creates=0)
-        print("step_size %d" % step_size)
-        if self.f is None:
+        # print("step_size %d" % step_size)
+        if self.f.closed:
             raise StopIteration()
 
-        dataset = []
+        dataset: List[Dict[int, Any]] = []
         dims = 0
         try:
             while len(dataset) < step_size:
@@ -97,24 +106,23 @@ class VECLoader(TableModule):
                 line = line.rstrip(b"\n\r")
                 if len(line) == 0:
                     continue
-                doc = {}
+                doc: Dict[int, Any] = {}
                 for match in re.finditer(PATTERN, line):
                     termidx = int(match.group(1))
-                    termfrx = self._dtype(match.group(2))
+                    termfrx: Any = self._dtype(match.group(2))
                     doc[termidx] = termfrx
                     dims = max(dims, termidx)
                 if len(doc) != 0:
                     dataset.append(doc)
         except StopIteration:
             self.f.close()
-            self.f = None
 
         creates = len(dataset)
         if creates == 0:
             raise StopIteration()
 
         dims += 1
-        documents = self.result["document"]
+        documents = self.table["document"]
         if self._rows_read == 0:
             documents.set_shape((dims,))
         else:
@@ -124,8 +132,8 @@ class VECLoader(TableModule):
             else:
                 dims = current_dims
 
-        self.result.resize(self._rows_read + creates)
-        tmp = np.zeros(dims, dtype=np.float)
+        self.table.resize(self._rows_read + creates)
+        tmp = np.zeros(dims, dtype=np.float64)
         i = self._rows_read
         # with self.lock:
         if True:
@@ -137,7 +145,7 @@ class VECLoader(TableModule):
                 i += 1
         self._rows_read += creates
         return self._return_run_step(
-            self.state_ready, steps_run=creates, creates=creates
+            self.state_ready, steps_run=creates  # , creates=creates
         )
 
 

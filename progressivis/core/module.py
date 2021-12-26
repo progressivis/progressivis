@@ -167,7 +167,7 @@ class Module(metaclass=ModuleMeta):
         name: Optional[str] = None,
         group: Optional[str] = None,
         scheduler: Optional[Scheduler] = None,
-        storagegroup=None,
+        storagegroup: Group = None,
         **kwds,
     ):
         self._args: Tuple
@@ -193,6 +193,7 @@ class Module(metaclass=ModuleMeta):
         if storagegroup is None:
             assert Group.default_internal is not None
             storagegroup = Group.default_internal(get_random_name(name + "_tracer"))
+        self.storagegroup: Group = storagegroup
         tracer = Tracer.default(name, storagegroup)
 
         self.tags = set(ModuleTag.tags)

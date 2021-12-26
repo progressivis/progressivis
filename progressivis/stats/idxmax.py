@@ -1,6 +1,7 @@
 """
 Compute the index of the maximum value of one or many table columns.
 """
+from __future__ import annotations
 
 from collections import OrderedDict
 import logging
@@ -9,9 +10,11 @@ import numpy as np
 
 from ..core.utils import indices_len, fix_loc
 from ..core.slot import SlotDescriptor
-from ..table.module import TableModule
+from ..table.module import TableModule, ReturnRunStep
 from ..table.table import Table
 from ..core.decorators import process_slot, run_if_any
+
+from typing import Optional, Any
 
 
 logger = logging.getLogger(__name__)
@@ -24,32 +27,35 @@ class IdxMax(TableModule):
 
     def __init__(self, **kwds):
         super(IdxMax, self).__init__(**kwds)
-        self._max = None
+        self._max: Optional[Table] = None
         self.default_step_size = 10000
 
-    def max(self):
+    def max(self) -> Optional[Table]:
         return self._max
 
-    def get_data(self, name):
+    def get_data(self, name: str) -> Any:
         if name == "max":
             return self.max()
         return super(IdxMax, self).get_data(name)
 
-    def is_ready(self):
+    def is_ready(self) -> bool:
         if self.get_input_slot("table").created.any():
             return True
         return super(IdxMax, self).is_ready()
 
-    def reset(self):
+    def reset(self) -> None:
         if self.result is not None:
-            self.result.resize(0)
+            self.table.resize(0)
         if self._max is not None:
             self._max.resize(0)
 
     @process_slot("table", reset_cb="reset")
     @run_if_any
-    def run_step(self, run_number, step_size, howlong):
-
+    def run_step(self,
+                 run_number: int,
+                 step_size: int,
+                 howlong: float) -> ReturnRunStep:
+        assert self.context
         with self.context as ctx:
             dfslot = ctx.table
             indices = dfslot.created.next(step_size)
@@ -78,10 +84,10 @@ class IdxMax(TableModule):
                         create=True,
                     )
                 self._max.append(max_, indices=[run_number])
-                self.result.append(op, indices=[run_number])
+                self.table.append(op, indices=[run_number])
             else:
                 prev_max = self._max.last()
-                prev_idx = self.result.last()
+                prev_idx = self.table.last()
                 max_ = OrderedDict(prev_max.items())
                 for col, ix in op.items():
                     val = input_df.at[ix, col]
@@ -90,14 +96,14 @@ class IdxMax(TableModule):
                     elif np.isnan(max_[col]) or val > max_[col]:
                         op[col] = prev_idx[col]
                         max_[col] = val
-                self.result.append(op, indices=[run_number])
+                self.table.append(op, indices=[run_number])
                 self._max.append(max_, indices=[run_number])
-                if len(self.result) > self.params.history:
-                    data = self.result.loc[
-                        self.result.index[-self.params.history :]
+                if len(self.table) > self.params.history:
+                    data = self.table.loc[
+                        self.table.index[-self.params.history :]
                     ].to_dict(orient="list")
-                    self.result.resize(0)
-                    self.result.append(data)
+                    self.table.resize(0)
+                    self.table.append(data)
                     data = self._max.loc[
                         self._max.index[-self.params.history :]
                     ].to_dict(orient="list")

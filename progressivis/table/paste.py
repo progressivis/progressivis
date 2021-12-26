@@ -1,9 +1,10 @@
 "Binary Join module."
+from __future__ import annotations
 
 from progressivis.core.slot import SlotDescriptor
 from progressivis.utils.inspect import filter_kwds
 from .table import Table
-from .module import TableModule
+from .module import TableModule, ReturnRunStep
 from .join import join
 from .dshape import dshape_join
 from collections import OrderedDict
@@ -29,7 +30,10 @@ class Paste(TableModule):
         super(Paste, self).__init__(**kwds)
         self.join_kwds = filter_kwds(kwds, join)
 
-    def run_step(self, run_number, step_size, howlong):
+    def run_step(self,
+                 run_number: int,
+                 step_size: int,
+                 howlong: float) -> ReturnRunStep:
         first_slot = self.get_input_slot("first")
         # first_slot.update(run_number)
         second_slot = self.get_input_slot("second")
@@ -42,7 +46,7 @@ class Paste(TableModule):
             first_slot.reset()
             second_slot.reset()
             if self.result is not None:
-                self.result.resize(0)
+                self.table.resize(0)
             first_slot.update(run_number)
             second_slot.update(run_number)
         first_slot.created.next(step_size)
@@ -56,8 +60,8 @@ class Paste(TableModule):
             return self._return_run_step(self.state_blocked, steps_run=0)
         col_0 = first_table.columns[0]
         col_1 = second_table.columns[0]
-        if len(self.result) == 0:
-            self.result.append(
+        if len(self.table) == 0:
+            self.table.append(
                 OrderedDict(
                     [
                         (col_0, first_table.last(col_0)),
@@ -67,9 +71,9 @@ class Paste(TableModule):
                 indices=[0],
             )
         else:
-            assert len(self.result) == 1
-            if first_table.last(col_0) != self.result.last(col_0):
+            assert len(self.table) == 1
+            if first_table.last(col_0) != self.table.last(col_0):
                 self.result[col_0].loc[0] = first_table.last(col_0)
-            if second_table.last(col_1) != self.result.last(col_1):
+            if second_table.last(col_1) != self.table.last(col_1):
                 self.result[col_1].loc[0] = second_table.last(col_1)
         return self._return_run_step(self.next_state(first_slot), steps_run=1)

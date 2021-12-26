@@ -1,10 +1,16 @@
+from __future__ import annotations
+
 import numpy as np
+
 from ..core.utils import indices_len, fix_loc, filter_cols
-from ..table.module import TableModule
+from ..table.module import TableModule, ReturnRunStep
 from ..table.table import Table
 from ..table.dshape import dshape_projection
 from ..core.decorators import process_slot, run_if_any
 from .. import SlotDescriptor
+
+
+from typing import List, Optional
 
 
 class LinearMap(TableModule):
@@ -13,26 +19,30 @@ class LinearMap(TableModule):
         SlotDescriptor("transformation", type=Table, required=True),
     ]
 
-    def __init__(self, transf_columns=None, **kwds):
+    def __init__(self, transf_columns: List[str] = None, **kwds):
         super().__init__(**kwds)
         self._k_dim = len(self._columns) if self._columns else None
         self._transf_columns = transf_columns
         self._kwds = {}
-        self._transf_cache = None
+        self._transf_cache: Optional[np.ndarray] = None
 
-    def reset(self):
+    def reset(self) -> None:
         if self.result is not None:
-            self.result.resize(0)
+            self.table.resize(0)
         self._transf_cache = None
 
     @process_slot("vectors", "transformation", reset_cb="reset")
     @run_if_any
-    def run_step(self, run_number, step_size, howlong):
+    def run_step(self,
+                 run_number: int,
+                 step_size: int,
+                 howlong: float) -> ReturnRunStep:
         """
         vectors: (n, k)
         transf:  (k, m)
         result:  (n, m)
         """
+        assert self.context
         with self.context as ctx:
             vectors = ctx.vectors.data()
             if not self._k_dim:
@@ -60,12 +70,12 @@ class LinearMap(TableModule):
             if steps == 0:
                 return self._return_run_step(self.state_blocked, steps_run=0)
             vs = self.filter_columns(vectors, fix_loc(indices))
-            vs = vs.to_array()
-            res = np.matmul(vs, self._transf_cache)
+            array: np.ndarray = vs.to_array()
+            res = np.matmul(array, self._transf_cache)
             if self.result is None:
                 dshape_ = dshape_projection(transformation, self._transf_columns)
                 self.result = Table(
                     self.generate_table_name("linear_map"), dshape=dshape_, create=True
                 )
-            self.result.append(res)
+            self.table.append(res)
             return self._return_run_step(self.next_state(ctx.vectors), steps_run=steps)

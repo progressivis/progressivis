@@ -1,20 +1,27 @@
+from __future__ import annotations
+
+import numpy as np
+
 from ..core.utils import fix_loc
-from ..table.module import TableModule
-from ..table.table import Table
+from ..table.module import TableModule, ReturnRunStep
+from ..table.table import BaseTable, Table
 
 
-def make_local(df, px):
+from typing import Optional, Union, Dict
+
+
+def make_local(df: Union[BaseTable, Dict], px) -> Dict[str, np.ndarray]:
     if isinstance(df, dict):
         return make_local_dict(df, px)
     arr = df.to_array()
-    result = {}
+    result: Dict[str, np.ndarray] = {}
     for i, n in enumerate(df.columns):
         key = f"{px}.{n}"
         result[key] = arr[:, i]
     return result
 
 
-def make_local_dict(df, px):
+def make_local_dict(df: Dict, px) -> Dict[str, np.ndarray]:
     arr = list(df.values())
     result = {}
     for i, n in enumerate(df.keys()):
@@ -33,13 +40,17 @@ def get_ufunc_args(col_expr, local_env):
 class MixUfuncABC(TableModule):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.ref_expr = self.expr
+        self.expr: Dict
+        self.ref_expr: Dict = self.expr
 
     def reset(self):
         if self.result is not None:
-            self.result.resize(0)
+            self.table.resize(0)
 
-    def run_step(self, run_number, step_size, howlong):
+    def run_step(self,
+                 run_number: int,
+                 step_size: int,
+                 howlong: float) -> ReturnRunStep:
         """
         """
         reset_all = False
@@ -78,7 +89,7 @@ class MixUfuncABC(TableModule):
                 step_size = min(step_size, sl.created.length())
             if (step_size == 0 or data_ is None) and not isinstance(data_, dict):
                 return self._return_run_step(self.state_blocked, steps_run=0)
-        first_slot = None
+        first_slot: Optional[int] = None
         for n, sl in self._input_slots.items():
             if n == "_params":
                 continue
@@ -94,11 +105,12 @@ class MixUfuncABC(TableModule):
             local_env.update(dict_)
         result = {}
         steps = None
-        for c in self.result.columns:
+        for c in self.table.columns:
             col_expr_ = self.ref_expr[c]
             ufunc, args = get_ufunc_args(col_expr_, local_env)
             result[c] = ufunc(*args)
             if steps is None:
                 steps = len(result[c])
-        self.result.append(result)
+        self.table.append(result)
+        assert steps is not None
         return self._return_run_step(self.next_state(first_slot), steps_run=steps)

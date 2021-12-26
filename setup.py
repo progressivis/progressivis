@@ -22,7 +22,6 @@ PACKAGES = ['progressivis',
             'progressivis.datasets',
             'progressivis.vis',
             'progressivis.cluster',
-            'progressivis.metrics',
             'progressivis.server',
             'progressivis.table']
 

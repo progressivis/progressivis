@@ -6,7 +6,7 @@ import numpy as np
 
 from . import BaseTable, Table, TableSelectedView
 from ..core.slot import SlotDescriptor
-from .module import TableModule
+from .module import TableModule, ReturnRunStep
 from ..core.bitmap import bitmap
 # from .mod_impl import ModuleImpl
 from .binop import ops
@@ -97,7 +97,10 @@ class Bisect(TableModule):
         self.default_step_size = 1000
         self._run_once = False
 
-    def run_step(self, run_number, step_size, howlong):
+    def run_step(self,
+                 run_number: int,
+                 step_size: int,
+                 howlong: float) -> ReturnRunStep:
         self._run_once = True
         input_slot = self.get_input_slot("table")
         # input_slot.update(run_number)
@@ -156,5 +159,5 @@ class Bisect(TableModule):
                 updated=updated,
                 deleted=deleted,
             )
-        self.result.selection = self._impl.result._values
+        self.selected.selection = self._impl.result._values
         return self._return_run_step(self.next_state(input_slot), steps)

@@ -1,6 +1,8 @@
+from __future__ import annotations
+
 from ..core.utils import indices_len
 from ..core.slot import SlotDescriptor
-from .module import TableModule
+from .module import TableModule, ReturnRunStep
 from .table import Table
 from ..core.bitmap import bitmap
 from . import TableSelectedView
@@ -20,7 +22,10 @@ class LiteSelect(TableModule):
         super(LiteSelect, self).__init__(**kwds)
         self.default_step_size = 1000
 
-    def run_step(self, run_number, step_size, howlong):
+    def run_step(self,
+                 run_number: int,
+                 step_size: int,
+                 howlong: float) -> ReturnRunStep:
         step_size = 1000
         table_slot = self.get_input_slot("table")
         table = table_slot.data()
@@ -36,15 +41,15 @@ class LiteSelect(TableModule):
         #                    buffer_deleted=True)
 
         steps = 0
-        if self._table is None:
-            self._table = TableSelectedView(table, bitmap([]))
+        if self.result is None:
+            self.result = TableSelectedView(table, bitmap([]))
 
         if select_slot.deleted.any():
             indices = select_slot.deleted.next(step_size, as_slice=False)
             s = indices_len(indices)
             print("LITESELECT: -", s)
             logger.info("deleting %s", indices)
-            self._table.selection -= bitmap.asbitmap(indices)
+            self.selected.selection -= bitmap.asbitmap(indices)
             # step_size -= s//2
 
         if step_size > 0 and select_slot.created.any():
@@ -53,6 +58,6 @@ class LiteSelect(TableModule):
             logger.info("creating %s", indices)
             steps += s
             # step_size -= s
-            self._table.selection |= bitmap.asbitmap(indices)
+            self.selected.selection |= bitmap.asbitmap(indices)
 
         return self._return_run_step(self.next_state(select_slot), steps_run=steps)

@@ -1,12 +1,19 @@
+from __future__ import annotations
+
+import numpy as np
+
 from ..core.utils import fix_loc
-from ..table.module import TableModule
-from ..table.table import Table
+from ..table.module import TableModule, ReturnRunStep
+from ..table.table import BaseTable, Table
 import numexpr as ne  # type: ignore
 
 
-def make_local(df, px):
-    arr = df.to_array()
-    result = {}
+from typing import Dict, Any, Tuple
+
+
+def _make_local(df: BaseTable, px) -> Tuple[Any, Dict[str, np.ndarray]]:
+    arr: np.ndarray = df.to_array()
+    result: Dict[str, np.ndarray] = {}
 
     class _Aux:
         pass
@@ -22,13 +29,17 @@ def make_local(df, px):
 class NumExprABC(TableModule):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.ref_expr = self.expr
+        self.expr: Dict
+        self.ref_expr: Dict = self.expr
 
     def reset(self):
         if self.result is not None:
-            self.result.resize(0)
+            self.table.resize(0)
 
-    def run_step(self, run_number, step_size, howlong):
+    def run_step(self,
+                 run_number: int,
+                 step_size: int,
+                 howlong: float) -> ReturnRunStep:
         """
         """
         reset_all = False
@@ -74,17 +85,18 @@ class NumExprABC(TableModule):
                 first_slot = sl
             indices = sl.created.next(step_size)
             df = self.filter_columns(sl.data(), fix_loc(indices), n)
-            fobj, dict_ = make_local(df, n)
+            fobj, dict_ = _make_local(df, n)
             local_env.update(dict_)
             vars_dict[n] = fobj
         result = {}
         steps = None
-        for c in self.result.columns:
+        for c in self.table.columns:
             col_expr_ = self.ref_expr[c]
 
             col_expr_ = col_expr_.format(**vars_dict)
             result[c] = ne.evaluate(col_expr_, local_dict=local_env)
             if steps is None:
                 steps = len(result[c])
-        self.result.append(result)
+        self.table.append(result)
+        assert steps is not None
         return self._return_run_step(self.next_state(first_slot), steps_run=steps)

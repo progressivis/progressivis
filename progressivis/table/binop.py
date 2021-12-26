@@ -1,14 +1,21 @@
+from __future__ import annotations
+
+import operator
+import logging
+
 from ..core.slot import SlotDescriptor
-from .module import TableModule
+from .module import TableModule, ReturnRunStep
 from ..core.bitmap import bitmap
 from .table import Table
-import operator
 
-import logging
+from typing import Any, Callable, Union, Optional, Dict, cast
+
+Binoperator = Callable[[Any, Any], Any]
+
 
 logger = logging.getLogger(__name__)
 
-ops = {
+ops: Dict[str, Binoperator] = {
     "<": operator.__lt__,
     "<=": operator.__le__,
     ">": operator.__gt__,
@@ -33,7 +40,7 @@ ops = {
     "-": operator.__sub__,
     "/": operator.__truediv__,
 }
-inv_ops = {v: k for k, v in ops.items()}
+inv_ops: Dict[Callable, str] = {v: k for k, v in ops.items()}
 
 
 class Binop(TableModule):
@@ -42,10 +49,13 @@ class Binop(TableModule):
         SlotDescriptor("arg2", type=Table, required=True),
     ]
 
-    def __init__(self, binop, combine=None, **kwds):
+    def __init__(self,
+                 binop: Binoperator,
+                 combine: Union[None, str, Binoperator] = None,
+                 **kwds):
         super(Binop, self).__init__(**kwds)
         self.default_step_size = 1000
-        self.op = binop
+        self.op: Optional[Binoperator] = binop
         if callable(binop):
             self._op = binop
         else:
@@ -55,16 +65,19 @@ class Binop(TableModule):
             self._combine = combine
         else:
             self._combine = ops[combine]
-        self._bitmap = None
+        self._bitmap: Optional[bitmap] = None
 
-    def get_data(self, name):
+    def get_data(self, name: str) -> Any:
         if name == "select":
             return self._bitmap
         if name == "table":
             self.get_input_slot("table").data()
         return super(Binop, self).get_data(name)
 
-    def run_step(self, run_number, step_size, howlong):
+    def run_step(self,
+                 run_number: int,
+                 step_size: int,
+                 howlong: float) -> ReturnRunStep:
         arg1_slot = self.get_input_slot("table")
         # arg1_slot.update(run_number)
         arg1_data = arg1_slot.data()
@@ -89,10 +102,10 @@ class Binop(TableModule):
             arg2_slot.update(run_number)
 
         length = min(len(arg1_data), len(arg2_data))
-        cr1 = arg1_slot.created.next(as_slice=False)
-        up1 = arg1_slot.updated.next(as_slice=False)
-        cr2 = arg2_slot.created.next(as_slice=False)
-        up2 = arg2_slot.updated.next(as_slice=False)
+        cr1 = cast(bitmap, arg1_slot.created.next(as_slice=False))
+        up1 = cast(bitmap, arg1_slot.updated.next(as_slice=False))
+        cr2 = cast(bitmap, arg2_slot.created.next(as_slice=False))
+        up2 = cast(bitmap, arg2_slot.updated.next(as_slice=False))
         work = cr1 | up1 | cr2 | up2
         work &= bitmap(slice(0, length))
         work.pop(step_size)

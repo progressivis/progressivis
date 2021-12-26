@@ -1,12 +1,14 @@
+from __future__ import annotations
+
 import numpy as np
 
-from .nary import NAry
-from .table import Table
+from .nary import NAry, ReturnRunStep
+from .table import BaseTable, Table
 from .dshape import dshape_union
 from ..core.bitmap import bitmap
 
 
-def combine_first(table, other, name=None):
+def combine_first(table: BaseTable, other: BaseTable, name: str = None) -> Table:
     dshape = dshape_union(table.dshape, other.dshape)
     comb_table = Table(name=name, dshape=dshape)
     if np.all(table.index == other.index):  # the gentle case
@@ -36,8 +38,8 @@ def combine_first(table, other, name=None):
             ]
             if cname in other.columns:
                 nans = table.index.values[np.isnan(table._column(cname).values)]
-                nans = sorted(set(nans) & common_set)
-                comb_table.loc[nans, [cname]] = other.loc[nans, [cname]]
+                snans = sorted(set(nans) & common_set)
+                comb_table.loc[snans, [cname]] = other.loc[snans, [cname]]
             comb_table.loc[other_only_idx, [cname]] = other.loc[other_only_idx, [cname]]
         for cname in other.columns:
             if cname in table.columns:
@@ -49,7 +51,10 @@ def combine_first(table, other, name=None):
 
 
 class CombineFirst(NAry):
-    def run_step(self, run_number, step_size, howlong):
+    def run_step(self,
+                 run_number: int,
+                 step_size: int,
+                 howlong: float) -> ReturnRunStep:
         frames = []
         for name in self.get_input_slot_multiple():
             slot = self.get_input_slot(name)

@@ -87,7 +87,7 @@ class DatasetFactory(StorageObject):
 
 class Group(DatasetFactory):
     default: Optional[Callable[..., Group]] = None
-    default_internal: Optional[Callable[[str], "Group"]] = None
+    default_internal: Optional[Callable[[str], Group]] = None
 
     @abstractmethod
     def create_dataset(

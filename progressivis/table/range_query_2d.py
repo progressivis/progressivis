@@ -249,8 +249,10 @@ class RangeQuery2d(TableModule):
                 )
                 range_query.input.table = hist_index_x.output.result
                 if min_value:
+                    assert isinstance(min_value, Module)
                     range_query.input.lower = min_value.output.result
                 if max_value:
+                    assert isinstance(max_value, Module)
                     range_query.input.upper = max_value.output.result
                 range_query.input.min = min_.output.result
                 range_query.input.max = max_.output.result

@@ -1,18 +1,28 @@
 "Join Module."
+from __future__ import annotations
 
 import numpy as np
 
-from progressivis.core.utils import indices_len, inter_slice, fix_loc
+from progressivis.core.utils import Dialog, indices_len, inter_slice, fix_loc
 from progressivis.core.bitmap import bitmap
 from progressivis.utils.inspect import filter_kwds
-from progressivis.table.nary import NAry
-from progressivis.table.table import Table
+from progressivis.table.nary import NAry, ReturnRunStep
+from progressivis.table.table import BaseTable, Table
 from progressivis.table.dshape import dshape_join
+
+from typing import List, cast, Dict, Any
 
 
 def join(
-    table, other, name=None, on=None, how="left", lsuffix="", rsuffix="", sort=False
-):
+    table: BaseTable,
+    other: BaseTable,
+    name: str = None,
+    on=None,
+    how: str = "left",
+    lsuffix: str = "",
+    rsuffix: str = "",
+    sort=False
+) -> Table:
     # pylint: disable=too-many-arguments, invalid-name
     "Compute the join of two table."
     if sort:
@@ -33,7 +43,7 @@ def join(
     return join_table
 
 
-def join_reset(dialog):
+def join_reset(dialog: Dialog) -> None:
     bag = dialog.bag
     bag.first_orphans = bitmap([])
     bag.second_orphans = bitmap([])
@@ -41,12 +51,12 @@ def join_reset(dialog):
 
 
 def join_start(
-    table,
-    other,
-    dialog,
-    name=None,
+    table: BaseTable,
+    other: BaseTable,
+    dialog: Dialog,
+    name: str = None,
     on=None,
-    how="left",
+    how: str = "left",
     created=None,
     updated=None,
     deleted=None,
@@ -55,7 +65,7 @@ def join_start(
     lsuffix="",
     rsuffix="",
     sort=False,
-):
+) -> dict:
     # pylint: disable=too-many-arguments, invalid-name, too-many-locals, unused-argument
     "Start the progressive join function"
     if sort:
@@ -91,15 +101,15 @@ def join_start(
 
 
 def join_cont(
-    table,
-    other,
-    dialog,
+    table: BaseTable,
+    other: BaseTable,
+    dialog: Dialog,
     created=None,
     updated=None,
     deleted=None,
     order="cud",
     reset=False,
-):
+) -> dict:
     # pylint: disable=too-many-arguments, invalid-name, too-many-locals, unused-argument
     "Continue the progressive join function"
     join_table = dialog.output_table
@@ -199,7 +209,7 @@ def join_cont(
         pass
 
     order_dict = {"c": _process_created, "u": _process_updated, "d": _process_deleted}
-    ret = {}
+    ret: Dict[Any, Any] = {}
     for operator in order:
         order_dict[operator](ret)
     return ret
@@ -215,11 +225,14 @@ class Join(NAry):
         super(Join, self).__init__(**kwds)
         self.join_kwds = filter_kwds(kwds, join)
 
-    def run_step(self, run_number, step_size, howlong):
-        frames = []
+    def run_step(self,
+                 run_number: int,
+                 step_size: int,
+                 howlong: float) -> ReturnRunStep:
+        frames: List[BaseTable] = []
         for name in self.get_input_slot_multiple():
             slot = self.get_input_slot(name)
-            table = slot.data()
+            table = cast(BaseTable, slot.data())
             slot.clear_buffers()
             frames.append(table)
         table = frames[0]

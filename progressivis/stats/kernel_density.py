@@ -1,13 +1,18 @@
+from __future__ import annotations
+
 import numpy as np
-from ..table.module import TableModule
+from ..table.module import TableModule, ReturnRunStep, JSon
 from ..table import Table
 from ..core.utils import indices_len
+from ..core.bitmap import bitmap
 from progressivis import SlotDescriptor
 
 try:
     from .knnkde import KNNKernelDensity
 except Exception:
     pass
+
+from typing import cast
 
 
 class KernelDensity(TableModule):
@@ -21,20 +26,23 @@ class KernelDensity(TableModule):
 
     def __init__(self, **kwds):
         self._kde = None
-        self._json_cache = {}
+        self._json_cache: JSon = {}
         self._inserted = 0
         self._lately_inserted = 0
         super(KernelDensity, self).__init__(**kwds)
         self.tags.add(self.TAG_VISUALIZATION)
 
-    def run_step(self, run_number, step_size, howlong):
+    def run_step(self,
+                 run_number: int,
+                 step_size: int,
+                 howlong: float) -> ReturnRunStep:
         dfslot = self.get_input_slot("table")
         # dfslot.update(run_number)
         if dfslot.deleted.any():
             raise ValueError("Not implemented yet")
         if not dfslot.created.any():
             return self._return_run_step(self.state_blocked, steps_run=0)
-        indices = dfslot.created.next(step_size, as_slice=False)
+        indices = cast(bitmap, dfslot.created.next(step_size, as_slice=False))
         steps = indices_len(indices)
         if steps == 0:
             return self._return_run_step(self.state_blocked, steps_run=0)

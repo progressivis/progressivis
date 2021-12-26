@@ -1,8 +1,10 @@
+from __future__ import annotations
+
 import logging
 
 from . import Table
 from ..core.slot import SlotDescriptor
-from .module import TableModule
+from .module import TableModule, ReturnRunStep
 from ..core.utils import indices_len, fix_loc
 from ..core.bitmap import bitmap
 from . import TableSelectedView
@@ -24,9 +26,12 @@ class FilterMod(TableModule):
 
     def reset(self):
         if self.result is not None:
-            self.result.selection = bitmap([])
+            self.selected.selection = bitmap([])
 
-    def run_step(self, run_number, step_size, howlong):
+    def run_step(self,
+                 run_number: int,
+                 step_size: int,
+                 howlong: float) -> ReturnRunStep:
         input_slot = self.get_input_slot("table")
         input_table = input_slot.data()
         if input_table is None:
@@ -40,7 +45,7 @@ class FilterMod(TableModule):
             self.reset()
         if input_slot.deleted.any():
             deleted = input_slot.deleted.next(step_size, as_slice=False)
-            self.result.selection -= deleted
+            self.selected.selection -= deleted
             steps += indices_len(deleted)
         if input_slot.created.any():
             created = input_slot.created.next(step_size, as_slice=False)
@@ -52,7 +57,7 @@ class FilterMod(TableModule):
                 as_slice=False,
                 result_object="index",
             )
-            self.result.selection |= bitmap(eval_idx)
+            self.selected.selection |= bitmap(eval_idx)
         if not steps:
             return self._return_run_step(self.state_blocked, steps_run=0)
         return self._return_run_step(self.next_state(input_slot), steps)

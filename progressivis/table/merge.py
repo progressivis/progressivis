@@ -1,15 +1,18 @@
 "Merge module."
+from __future__ import annotations
 
-from .nary import NAry
-from .table import Table
+from .nary import NAry, ReturnRunStep
+from .table import BaseTable, Table
 from .dshape import dshape_join
 from progressivis.utils.inspect import filter_kwds
 
+from typing import Dict, Any, cast, List
+
 
 def merge(
-    left,
-    right,
-    name=None,
+    left: BaseTable,
+    right: BaseTable,
+    name: str = None,
     how="inner",
     on=None,
     left_on=None,
@@ -20,8 +23,8 @@ def merge(
     suffixes=("_x", "_y"),
     copy=True,
     indicator=False,
-    merge_ctx=None,
-):
+    merge_ctx: Dict[str, Any] = None,
+) -> Table:
     # pylint: disable=too-many-arguments, invalid-name, unused-argument, too-many-locals
     "Merge function"
     lsuffix, rsuffix = suffixes
@@ -49,7 +52,9 @@ def merge(
     return merge_table
 
 
-def merge_cont(left, right, merge_ctx):
+def merge_cont(left: BaseTable,
+               right: BaseTable,
+               merge_ctx: Dict[str, Any]) -> Table:
     "merge continuation function"
     merge_table = Table(name=None, dshape=merge_ctx["dshape"])
     merge_ids = left.index & right.index
@@ -77,11 +82,14 @@ class Merge(NAry):
         self.merge_kwds = filter_kwds(kwds, merge)
         self._context = {}
 
-    def run_step(self, run_number, step_size, howlong):
-        frames = []
+    def run_step(self,
+                 run_number: int,
+                 step_size: int,
+                 howlong: float) -> ReturnRunStep:
+        frames: List[BaseTable] = []
         for name in self.get_input_slot_multiple():
             slot = self.get_input_slot(name)
-            df = slot.data()
+            df = cast(BaseTable, slot.data())
             slot.clear_buffers()
             frames.append(df)
         df = frames[0]
@@ -91,5 +99,5 @@ class Merge(NAry):
             else:
                 df = merge_cont(df, other, merge_ctx=self._context)
         length = len(df)
-        self._table = df
+        self.result = df
         return self._return_run_step(self.state_blocked, steps_run=length)

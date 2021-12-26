@@ -1,12 +1,16 @@
+from __future__ import annotations
+
 import operator
 import logging
 
 import numpy as np
 
 from ..core.slot import SlotDescriptor
-from .module import TableModule
+from .module import TableModule, ReturnRunStep
 from ..core.bitmap import bitmap
 from .table import Table
+
+from typing import Optional, cast
 
 logger = logging.getLogger(__name__)
 
@@ -30,14 +34,14 @@ class CmpQueryLast(TableModule):
     ]
     outputs = [SlotDescriptor("select", type=bitmap, required=False)]
 
-    def __init__(self, op="<", combine="and", **kwds):
+    def __init__(self, op: str = "<", combine: str = "and", **kwds):
         super(CmpQueryLast, self).__init__(**kwds)
         self.default_step_size = 1000
         self.op = op
         self._op = ops[op]
         self.combine = combine
         self._combine = ops[combine]
-        self._bitmap = None
+        self._bitmap: Optional[bitmap] = None
 
     def get_data(self, name):
         if name == "select":
@@ -46,7 +50,7 @@ class CmpQueryLast(TableModule):
             self.get_input_slot("table").data()
         return super(CmpQueryLast, self).get_data(name)
 
-    def run_step(self, run_number, step_size, howlong):
+    def run_step(self, run_number: int, step_size: int, howlong: float) -> ReturnRunStep:
         table_slot = self.get_input_slot("table")
         # table_slot.update(run_number)
         table_data = table_slot.data()
@@ -71,10 +75,10 @@ class CmpQueryLast(TableModule):
             table_slot.update(run_number)
             cmp_slot.update(run_number)
 
-        cr = table_slot.created.next(as_slice=False)
+        cr = cast(bitmap, table_slot.created.next(as_slice=False))
         if cr is None:
             cr = bitmap()
-        up = table_slot.updated.next(as_slice=False)
+        up = cast(bitmap, table_slot.updated.next(as_slice=False))
         work = cr | up
         ids = work.pop(step_size)
         if cr:
@@ -82,16 +86,16 @@ class CmpQueryLast(TableModule):
         if up:
             table_slot.updated.push(up - ids)
         steps = len(ids)
-        ids = np.asarray(ids, dtype=np.int64)
-        indices = table_data.id_to_index(ids)
+        aids = np.asarray(ids, dtype=np.int64)
+        indices = table_data.id_to_index(aids)
         last = cmp_data.last()
-        results = None
+        results: Optional[bitmap] = None
         for colname in last:
             if colname in table_data:
                 arg1 = table_data._column(colname)
                 arg2 = last[colname]
                 res = self._op(arg1[indices], arg2)
-                res = ids[res]
+                res = aids[res]
                 if results is None:
                     results = bitmap(res)
                 else:

@@ -1,6 +1,7 @@
 """
 Compute the index of the minimum value of one or many table columns.
 """
+from __future__ import annotations
 
 from collections import OrderedDict
 import logging
@@ -9,9 +10,12 @@ import numpy as np
 
 from ..core.utils import indices_len, fix_loc
 from ..core.slot import SlotDescriptor
-from ..table.module import TableModule
+from ..table.module import TableModule, ReturnRunStep
 from ..table.table import Table
 from ..core.decorators import process_slot, run_if_any
+
+from typing import Optional, Any
+
 
 logger = logging.getLogger(__name__)
 
@@ -23,31 +27,35 @@ class IdxMin(TableModule):
 
     def __init__(self, **kwds):
         super(IdxMin, self).__init__(**kwds)
-        self._min = None
+        self._min: Optional[Table] = None
         self.default_step_size = 10000
 
-    def min(self):
+    def min(self) -> Optional[Table]:
         return self._min
 
-    def get_data(self, name):
+    def get_data(self, name: str) -> Any:
         if name == "min":
             return self.min()
         return super(IdxMin, self).get_data(name)
 
-    def is_ready(self):
+    def is_ready(self) -> bool:
         if self.get_input_slot("table").created.any():
             return True
         return super(IdxMin, self).is_ready()
 
-    def reset(self):
+    def reset(self) -> None:
         if self.result is not None:
-            self.result.resize(0)
+            self.table.resize(0)
         if self._min is not None:
             self._min.resize(0)
 
     @process_slot("table", reset_cb="reset")
     @run_if_any
-    def run_step(self, run_number, step_size, howlong):
+    def run_step(self,
+                 run_number: int,
+                 step_size: int,
+                 howlong: float) -> ReturnRunStep:
+        assert self.context
         with self.context as ctx:
             dfslot = ctx.table
             indices = dfslot.created.next(step_size)  # returns a slice
@@ -75,10 +83,10 @@ class IdxMin(TableModule):
                         create=True,
                     )
                 self._min.append(min_, indices=[run_number])
-                self.result.append(op, indices=[run_number])
+                self.table.append(op, indices=[run_number])
             else:
                 prev_min = self._min.last()
-                prev_idx = self.result.last()
+                prev_idx = self.table.last()
                 min_ = OrderedDict(prev_min.items())
                 for col, ix in op.items():
                     val = input_table.at[ix, col]
@@ -87,14 +95,14 @@ class IdxMin(TableModule):
                     elif np.isnan(min_[col]) or val < min_[col]:
                         op[col] = prev_idx[col]
                         min_[col] = val
-                self.result.append(op, indices=[run_number])
+                self.table.append(op, indices=[run_number])
                 self._min.append(min_, indices=[run_number])
-                if len(self.result) > self.params.history:
-                    data = self.result.loc[
-                        self.result.index[-self.params.history :]
+                if len(self.table) > self.params.history:
+                    data = self.table.loc[
+                        self.table.index[-self.params.history :]
                     ].to_dict(orient="list")
-                    self.result.resize(0)
-                    self.result.append(data)
+                    self.table.resize(0)
+                    self.table.append(data)
                     data = self._min.loc[
                         self._min.index[-self.params.history :]
                     ].to_dict(orient="list")

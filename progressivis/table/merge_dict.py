@@ -1,7 +1,9 @@
+from __future__ import annotations
+
 from progressivis.core.utils import Dialog
 from progressivis.core.slot import SlotDescriptor
 
-from progressivis.table.module import TableModule
+from progressivis.table.module import TableModule, ReturnRunStep
 from progressivis.utils.psdict import PsDict
 
 
@@ -25,7 +27,10 @@ class MergeDict(TableModule):
         super().__init__(**kwds)
         self._dialog = Dialog(self)
 
-    def run_step(self, run_number, step_size, howlong):
+    def run_step(self,
+                 run_number: int,
+                 step_size: int,
+                 howlong: float) -> ReturnRunStep:
         first_slot = self.get_input_slot("first")
         # first_slot.update(run_number)
         second_slot = self.get_input_slot("second")
@@ -43,6 +48,6 @@ class MergeDict(TableModule):
         if self.result is None:
             self.result = PsDict(**first_dict, **second_dict)
         else:
-            self.result.update(first_dict)
-            self.result.update(second_dict)
+            self.psdict.update(first_dict)
+            self.psdict.update(second_dict)
         return self._return_run_step(self.next_state(first_slot), steps_run=1)

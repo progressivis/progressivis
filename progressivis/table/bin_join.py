@@ -1,10 +1,11 @@
 "Binary Join module."
+from __future__ import annotations
 
 from progressivis.core.utils import Dialog, indices_len
 from progressivis.core.slot import SlotDescriptor
 from progressivis.utils.inspect import filter_kwds
 from progressivis.table.table import Table
-from progressivis.table.module import TableModule
+from progressivis.table.module import TableModule, ReturnRunStep
 from progressivis.table.join import join, join_start, join_cont, join_reset
 
 
@@ -29,7 +30,10 @@ class BinJoin(TableModule):
         self.join_kwds = filter_kwds(kwds, join)
         self._dialog = Dialog(self)
 
-    def run_step(self, run_number, step_size, howlong):
+    def run_step(self,
+                 run_number: int,
+                 step_size: int,
+                 howlong: float) -> ReturnRunStep:
         first_slot = self.get_input_slot("first")
         # first_slot.update(run_number)
         second_slot = self.get_input_slot("second")
@@ -39,7 +43,7 @@ class BinJoin(TableModule):
             first_slot.reset()
             second_slot.reset()
             if self.result is not None:
-                self.result.resize(0)
+                self.table.resize(0)
                 join_reset(self._dialog)
             first_slot.update(run_number)
             second_slot.update(run_number)
