@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from collections import Iterable
 import logging
 
@@ -16,6 +18,11 @@ from . import metadata
 from .table_base import IndexTable
 from ..core.bitmap import bitmap
 
+from typing import Any, Optional, Union, Tuple
+
+from ..core.types import Chunks, Index
+
+
 logger = logging.getLogger(__name__)
 
 __all__ = ["Column"]
@@ -24,16 +31,16 @@ __all__ = ["Column"]
 class Column(BaseColumn):
     def __init__(
         self,
-        name,
-        index,
-        base=None,
-        storagegroup=None,
-        dshape=None,
+        name: str,
+        index: IndexTable,
+        base: Optional[BaseColumn] = None,
+        storagegroup: Optional[Group] = None,
+        dshape: Union[None, DataShape, str] = None,
         fillvalue=None,
         shape=None,
-        chunks=None,
+        chunks: Optional[Chunks] = None,
+        indices: Optional[Index] = None,
         data=None,
-        indices=None,
     ):
         """Create a new column.
 
@@ -44,12 +51,18 @@ class Column(BaseColumn):
         if storagegroup is None:
             if index is not None and hasattr(index, "storagegroup"):
                 # i.e. isinstance(index, Table)
-                storagegroup = index.storagegroup
+                storagegroup = getattr(index, "storagegroup")
+                assert isinstance(storagegroup, Group)
             else:
+                assert Group.default
                 storagegroup = Group.default(name=get_random_name("column_"))
         self._storagegroup = storagegroup
         self.dataset = None
         self._dshape: DataShape = EMPTY_DSHAPE
+        if isinstance(dshape, DataShape):
+            self._dshape = dshape
+        elif isinstance(dshape, str):
+            self._dshape = dshape_create(dshape)
         if self.index is None:
             if data is not None:  # check before creating everything
                 length = len(data)
@@ -193,14 +206,17 @@ class Column(BaseColumn):
         return dataset
 
     @property
-    def chunks(self):
+    def chunks(self) -> Tuple[int, ...]:
+        assert self.dataset is not None
         return self.dataset.chunks
 
     @property
-    def shape(self):
+    def shape(self) -> Tuple[int, ...]:
+        assert self.dataset is not None
         return self.dataset.shape
 
-    def set_shape(self, shape):
+    def set_shape(self, shape: Tuple[int, ...]):
+        assert self.dataset is not None
         if not isinstance(shape, list):
             shape = list(shape)
         myshape = list(self.shape[1:])
@@ -215,33 +231,41 @@ class Column(BaseColumn):
         self.dataset.resize(tuple([len(self)] + shape))
 
     @property
-    def maxshape(self):
+    def maxshape(self) -> Tuple[int, ...]:
+        assert self.dataset is not None
         return self.dataset.maxshape
 
     @property
-    def dtype(self):
+    def dtype(self) -> np.dtype:
+        assert self.dataset is not None
         return self.dataset.dtype
 
     @property
-    def dshape(self):
+    def dshape(self) -> DataShape:
+        assert self.dataset is not None
         return self._dshape
 
     @property
-    def size(self):
+    def size(self) -> int:
+        assert self.dataset is not None
         return self.dataset.size
 
-    def __len__(self):
+    def __len__(self) -> int:
+        assert self.dataset is not None
         return len(self.index)
 
     @property
-    def fillvalue(self):
+    def fillvalue(self) -> Any:
+        assert self.dataset is not None
         return self.dataset.fillvalue
 
     @property
-    def value(self):
+    def value(self) -> np.ndarray:
+        assert self.dataset is not None
         return self.dataset[self.index.index.to_slice_maybe()]
 
-    def __getitem__(self, index):
+    def __getitem__(self, index: Index) -> Any:
+        assert self.dataset is not None
         if isinstance(index, np.ndarray):
             index = list(index)
         try:  # EAFP
@@ -251,9 +275,13 @@ class Column(BaseColumn):
                 return np.array([self.dataset[e] for e in index])
             raise
 
-    def read_direct(self, array, source_sel=None, dest_sel=None):
+    def read_direct(self,
+                    array: np.ndarray,
+                    source_sel: Any = None,
+                    dest_sel: Any = None) -> np.ndarray:
+        assert self.dataset is not None
         if hasattr(self.dataset, "read_direct"):
-            if isinstance(source_sel, np.ndarray) and source_sel.dtype == np.int:
+            if isinstance(source_sel, np.ndarray) and source_sel.dtype == np.int_:
                 source_sel = list(source_sel)
             #            if is_fancy(source_sel):
             #                source_sel = fancy_to_mask(source_sel, self.shape)
@@ -261,7 +289,8 @@ class Column(BaseColumn):
         else:
             return super(Column, self).read_direct(array, source_sel, dest_sel)
 
-    def __setitem__(self, index, val):
+    def __setitem__(self, index: Index, val: Any) -> None:
+        assert self.dataset is not None
         if isinstance(index, integer_types):
             self.dataset[index] = val
         else:
@@ -287,23 +316,25 @@ class Column(BaseColumn):
                     raise
         self.index.touch(index)
 
-    def _resize(self, newsize):
+    def _resize(self, newsize: int) -> None:
         assert isinstance(newsize, integer_types)
         if self.size == newsize:
             return
         shape = self.shape
+        assert self.dataset is not None
         if len(shape) == 1:
             self.dataset.resize((newsize,))
         else:
             shape = tuple([newsize] + list(shape[1:]))
             self.dataset.resize(shape)
 
-    def resize(self, newsize):
+    def resize(self, newsize: int) -> None:
         self._resize(newsize)
         if self.index is not None:
             self.index._resize_rows(newsize)
 
-    def __delitem__(self, index):
+    def __delitem__(self, index: Index) -> None:
+        assert self.dataset is not None
         del self.index[index]
         self.dataset[index] = self.fillvalue  # cannot propagate that to other columns
         self.dataset.resize(self.index.size)

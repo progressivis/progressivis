@@ -1,4 +1,6 @@
 "Test for Range Query"
+from __future__ import annotations
+
 from progressivis.core import aio
 from progressivis.table.constant import Constant
 from progressivis import Print
@@ -22,7 +24,7 @@ class TestPercentiles(ProgressiveTest):
     def tearDown(self):
         TestPercentiles.cleanup()
 
-    def _impl_tst_percentiles(self, accuracy):
+    def _impl_tst_percentiles(self, accuracy: float) -> None:
         """
         """
         s = self.scheduler()
@@ -38,8 +40,8 @@ class TestPercentiles(ProgressiveTest):
             prt = Print(proc=self.terse, scheduler=s)
             prt.input[0] = percentiles.output.result
         aio.run(s.start())
-        pdict = percentiles.result.last().to_dict()
-        v = random.result["_1"].values
+        pdict = percentiles.table.last().to_dict()
+        v = random.table["_1"].values
         p25 = np.percentile(v, 25.0)
         p50 = np.percentile(v, 50.0)
         p75 = np.percentile(v, 75.0)
@@ -60,7 +62,7 @@ class TestPercentiles(ProgressiveTest):
         self.assertAlmostEqual(p50, pdict["_50"], delta=0.01)
         self.assertAlmostEqual(p75, pdict["_75"], delta=0.01)
 
-    def _impl_stirred_tst_percentiles(self, accuracy, **kw):
+    def _impl_stirred_tst_percentiles(self, accuracy: float, **kw) -> None:
         """
         """
         s = self.scheduler()
@@ -80,10 +82,10 @@ class TestPercentiles(ProgressiveTest):
             prt = Print(proc=self.terse, scheduler=s)
             prt.input[0] = percentiles.output.result
         aio.run(s.start())
-        pdict = percentiles.result.last().to_dict()
+        pdict = percentiles.table.last().to_dict()
         # v = random.table()['_1'].values
         # import pdb;pdb.set_trace()
-        v = stirrer.result.to_array(columns=["_1"]).reshape(-1)
+        v = stirrer.table.to_array(columns=["_1"]).reshape(-1)
         p25 = np.percentile(v, 25.0)
         p50 = np.percentile(v, 50.0)
         p75 = np.percentile(v, 75.0)
@@ -104,43 +106,43 @@ class TestPercentiles(ProgressiveTest):
         self.assertAlmostEqual(p50, pdict["_50"], delta=0.01)
         self.assertAlmostEqual(p75, pdict["_75"], delta=0.01)
 
-    def test_percentiles_fast(self):
+    def test_percentiles_fast(self) -> None:
         """test_percentiles: Simple test for HistIndex based percentiles
         low accurracy => faster mode
         """
         return self._impl_tst_percentiles(2.0)
 
-    def test_percentiles_fast2(self):
+    def test_percentiles_fast2(self) -> None:
         """test_percentiles: Simple test for HistIndex based percentiles
         low accurracy => faster mode
         """
         return self._impl_stirred_tst_percentiles(2.0, delete_rows=5)
 
-    def test_percentiles_fast3(self):
+    def test_percentiles_fast3(self) -> None:
         """test_percentiles: Simple test for HistIndex based percentiles
         low accurracy => faster mode
         """
         return self._impl_stirred_tst_percentiles(2.0, update_rows=5)
 
-    def test_percentiles_accurate(self):
+    def test_percentiles_accurate(self) -> None:
         """test_percentiles: Simple test for HistIndex based percentiles
         higher accurracy => slower mode
         """
         return self._impl_tst_percentiles(0.2)
 
-    def test_percentiles_accurate2(self):
+    def test_percentiles_accurate2(self) -> None:
         """test_percentiles: Simple test for HistIndex based percentiles
         higher accurracy => slower mode
         """
         return self._impl_stirred_tst_percentiles(0.2, delete_rows=5)
 
-    def test_percentiles_accurate3(self):
+    def test_percentiles_accurate3(self) -> None:
         """test_percentiles: Simple test for HistIndex based percentiles
         higher accurracy => slower mode
         """
         return self._impl_stirred_tst_percentiles(0.2, update_rows=5)
 
-    def _impl_tst_percentiles_rq(self, accuracy):
+    def _impl_tst_percentiles_rq(self, accuracy: float) -> None:
         """
         """
         s = self.scheduler()
@@ -156,6 +158,7 @@ class TestPercentiles(ProgressiveTest):
             )
 
             hist_index = range_qry.hist_index
+            assert hist_index
             t_percentiles = PsDict({"_25": 25.0, "_50": 50.0, "_75": 75.0})
             which_percentiles = Constant(table=t_percentiles, scheduler=s)
             percentiles = Percentiles(hist_index, accuracy=accuracy, scheduler=s)
@@ -164,8 +167,8 @@ class TestPercentiles(ProgressiveTest):
             prt = Print(proc=self.terse, scheduler=s)
             prt.input[0] = percentiles.output.result
         aio.run(s.start())
-        pdict = percentiles.result.last().to_dict()
-        v = range_qry.result["_1"].values
+        pdict = percentiles.table.last().to_dict()
+        v = range_qry.table["_1"].values
         p25 = np.percentile(v, 25.0)
         p50 = np.percentile(v, 50.0)
         p75 = np.percentile(v, 75.0)
@@ -186,7 +189,7 @@ class TestPercentiles(ProgressiveTest):
         self.assertAlmostEqual(p50, pdict["_50"], delta=0.01)
         self.assertAlmostEqual(p75, pdict["_75"], delta=0.01)
 
-    def _impl_stirred_tst_percentiles_rq(self, accuracy, **kw):
+    def _impl_stirred_tst_percentiles_rq(self, accuracy: float, **kw) -> None:
         """
         """
         s = self.scheduler()
@@ -206,6 +209,7 @@ class TestPercentiles(ProgressiveTest):
             )
 
             hist_index = range_qry.hist_index
+            assert hist_index
             t_percentiles = PsDict({"_25": 25.0, "_50": 50.0, "_75": 75.0})
             which_percentiles = Constant(table=t_percentiles, scheduler=s)
             percentiles = Percentiles(hist_index, accuracy=accuracy, scheduler=s)
@@ -214,8 +218,8 @@ class TestPercentiles(ProgressiveTest):
             prt = Print(proc=self.terse, scheduler=s)
             prt.input[0] = percentiles.output.result
         aio.run(s.start())
-        pdict = percentiles.result.last().to_dict()
-        v = range_qry.result["_1"].values
+        pdict = percentiles.table.last().to_dict()
+        v = range_qry.table["_1"].values
         p25 = np.percentile(v, 25.0)
         p50 = np.percentile(v, 50.0)
         p75 = np.percentile(v, 75.0)
@@ -236,37 +240,37 @@ class TestPercentiles(ProgressiveTest):
         self.assertAlmostEqual(p50, pdict["_50"], delta=0.01)
         self.assertAlmostEqual(p75, pdict["_75"], delta=0.01)
 
-    def test_percentiles_fast_rq(self):
+    def test_percentiles_fast_rq(self) -> None:
         """test_percentiles: Simple test for HistIndex based percentiles
         low accurracy => faster mode
         """
         return self._impl_tst_percentiles_rq(2.0)
 
-    def test_percentiles_fast_rq2(self):
+    def test_percentiles_fast_rq2(self) -> None:
         """test_percentiles: Simple test for HistIndex based percentiles
         low accurracy => faster mode
         """
         return self._impl_stirred_tst_percentiles_rq(2.0, delete_rows=5)
 
-    def test_percentiles_fast_rq3(self):
+    def test_percentiles_fast_rq3(self) -> None:
         """test_percentiles: Simple test for HistIndex based percentiles
         low accurracy => faster mode
         """
         return self._impl_stirred_tst_percentiles_rq(2.0, update_rows=5)
 
-    def test_percentiles_accurate_rq(self):
+    def test_percentiles_accurate_rq(self) -> None:
         """test_percentiles: Simple test for HistIndex based percentiles
         higher accurracy => slower mode
         """
         return self._impl_tst_percentiles_rq(0.2)
 
-    def test_percentiles_accurate_rq2(self):
+    def test_percentiles_accurate_rq2(self) -> None:
         """test_percentiles: Simple test for HistIndex based percentiles
         higher accurracy => slower mode
         """
         return self._impl_stirred_tst_percentiles_rq(0.2, delete_rows=5)
 
-    def test_percentiles_accurate_rq3(self):
+    def test_percentiles_accurate_rq3(self) -> None:
         """test_percentiles: Simple test for HistIndex based percentiles
         higher accurracy => slower mode
         """

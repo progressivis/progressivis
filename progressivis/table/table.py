@@ -24,6 +24,7 @@ except ImportError:
 
 from progressivis.storage import Group
 from .dshape import (
+    DataShape,
     dshape_create,
     dshape_table_check,
     dshape_fields,
@@ -39,7 +40,7 @@ from .column import Column
 
 from progressivis.core.bitmap import bitmap
 
-from typing import Any, Dict, Optional, Union, cast, Tuple
+from typing import Any, Dict, Optional, Union, cast, Tuple, Callable, List
 
 
 Index = Any  # simplify for now
@@ -171,7 +172,7 @@ class Table(IndexTable):
         return None
 
     @property
-    def storagegroup(self):
+    def storagegroup(self) -> Group:
         "Return the storagegroup form this column"
         return self._storagegroup
 
@@ -220,7 +221,7 @@ class Table(IndexTable):
         self._columns.append(column)
         return column
 
-    def __contains__(self, colname):
+    def __contains__(self, colname: str) -> bool:
         return colname in self._columndict
 
     def drop(self, index, raw_index=None, truncate=False):
@@ -237,7 +238,7 @@ class Table(IndexTable):
         self._storagegroup.attrs[metadata.ATTR_INDEX] = self._index.serialize()
         self._storagegroup.attrs[metadata.ATTR_LAST_ID] = self.last_id
 
-    def resize(self, newsize: Optional[int] = None, index: Index = None):
+    def resize(self, newsize: Optional[int] = None, index: Union[bitmap, List[int]] = None) -> None:
         # NB: newsize means how many active rows the table must contain
         if index is not None:
             index = bitmap.asbitmap(index)
@@ -258,11 +259,12 @@ class Table(IndexTable):
         if delta < 0:
             return
         self._storagegroup.attrs[metadata.ATTR_NROWS] = newsize
+        assert newsize is not None
         for column in self._columns:
             col = cast(Column, column)
             col._resize(newsize)
 
-    def _allocate(self, count, index=None):
+    def _allocate(self, count: int, index: Union[bitmap, List[int]] = None) -> bitmap:
         start = self.last_id + 1
         index = (
             bitmap(range(start, start + count))
@@ -273,15 +275,16 @@ class Table(IndexTable):
         self.add_created(index)
         self._storagegroup.attrs[metadata.ATTR_NROWS] = newsize
         for column in self._columns:
-            column._resize(newsize)
+            col = cast(Column, column)
+            col._resize(newsize)
         self._resize_rows(newsize, index)
         return index
 
-    def touch_rows(self, loc=None):
+    def touch_rows(self, loc: Any = None) -> None:
         "Signals that the values at loc have been changed"
         self.touch(loc)
 
-    def parse_data(self, data, indices=None):
+    def parse_data(self, data: Any, indices=None) -> Any:
         if data is None:
             return None
         if isinstance(data, Mapping):
@@ -294,7 +297,7 @@ class Table(IndexTable):
             data = pd.DataFrame(data, columns=self.columns, index=indices)
         return data  # hoping it works
 
-    def append(self, data, indices=None):
+    def append(self, data: Any, indices=None) -> None:
         """
         Append Table-like data to the Table.
         The data has to be compatible. It can be from multiple sources
@@ -354,7 +357,7 @@ class Table(IndexTable):
                 for i in range(length):
                     tocol[indices[i]] = fromcol[i]
 
-    def add(self, row, index=None):
+    def add(self, row: Any, index=None) -> None:
         "Add one row to the Table"
         assert len(row) == self.ncol
 
@@ -378,26 +381,38 @@ class Table(IndexTable):
                 tocol = self._column(colname)
                 tocol[start] = value
 
-    def binary(self, op, other, **kwargs):
+    def binary(self,
+               op: Callable[[np.ndarray, Union[np.ndarray, int, float, bool]], np.ndarray],
+               other: BaseTable,
+               **kwargs) -> Union[Dict[str, np.ndarray], BaseTable]:
         res = super(Table, self).binary(op, other, **kwargs)
+        if isinstance(res, BaseTable):
+            return res
         return Table(None, data=res, create=True)
 
     @staticmethod
-    def from_array(array, name=None, columns=None, offsets=None, dshape=None, **kwds):
+    def from_array(array: np.ndarray,
+                   name: str = None,
+                   columns: List[str] = None,
+                   offsets: Union[List[int], List[Tuple[int, int]]] = None,
+                   dshape: Union[str, DataShape] = None,
+                   **kwds) -> Table:
         """offsets is a list of indices or pairs. """
         if offsets is None:
             offsets = [(i, i + 1) for i in range(array.shape[1])]
-        if offsets is not None:
+        elif offsets is not None:
             if all_int(offsets):
+                ioffsets = cast(List[int], offsets)
                 offsets = [
-                    (offsets[i], offsets[i + 1]) for i in range(len(offsets) - 1)
+                    (ioffsets[i], ioffsets[i + 1]) for i in range(len(ioffsets) - 1)
                 ]
             elif not all([isinstance(elt, tuple) for elt in offsets]):
                 raise ValueError("Badly formed offset list %s", offsets)
 
+        toffsets = cast(List[Tuple[int, int]], offsets)
         if columns is None:
             if dshape is None:
-                columns = gen_columns(len(offsets))
+                columns = gen_columns(len(toffsets))
             else:
                 dshape = dshape_create(dshape)
                 columns = [fieldname for (fieldname, _) in dshape_fields(dshape)]
@@ -405,7 +420,7 @@ class Table(IndexTable):
             dshape_type = dshape_from_dtype(array.dtype)
             dims = [
                 "" if (off[0] + 1 == off[1]) else "%d *" % (off[1] - off[0])
-                for off in offsets
+                for off in toffsets
             ]
             dshapes = [
                 "%s: %s %s" % (column, dim, dshape_type)
@@ -413,7 +428,7 @@ class Table(IndexTable):
             ]
             dshape = "{" + ", ".join(dshapes) + "}"
         data = OrderedDict()
-        for nam, off in zip(columns, offsets):
+        for nam, off in zip(columns, toffsets):
             if off[0] + 1 == off[1]:
                 data[nam] = array[:, off[0]]
             else:
@@ -422,13 +437,13 @@ class Table(IndexTable):
 
     def eval(
         self,
-        expr,
+        expr: str,
         inplace=False,
-        name=None,
-        result_object=None,
-        locs=None,
+        name: str = None,
+        result_object: str = None,
+        locs: Any = None,
         as_slice=True,
-    ):
+    ) -> Any:
         """Evaluate the ``expr`` on columns and return the result.
 
         Args:

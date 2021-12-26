@@ -8,7 +8,7 @@ import os.path
 # cols = 30
 
 
-def generate_random_csv(filename, rows, cols, seed=1234):
+def generate_random_csv(filename: str, rows: int, cols: int, seed=1234) -> str:
     if os.path.exists(filename):
         return filename
     try:
@@ -25,8 +25,12 @@ def generate_random_csv(filename, rows, cols, seed=1234):
 
 
 def generate_random_multivariate_normal_csv(
-    filename, rows, seed=1234, header=None, reset=False
-):
+    filename: str,
+    rows: int,
+    seed: int = 1234,
+    header: str = None,
+    reset: bool = False
+) -> str:
     """
     Adapted from: https://github.com/e-/PANENE/blob/master/examples/kernel_density/online.py
     Author: Jaemin Jo

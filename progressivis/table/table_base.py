@@ -29,7 +29,7 @@ from progressivis.core.bitmap import bitmap
 from .dshape import dshape_print, dshape_create, DataShape, EMPTY_DSHAPE
 from .tablechanges import TableChanges
 
-from typing import Union, Any, Optional, Dict, List, Tuple, TYPE_CHECKING
+from typing import Union, Any, Optional, Dict, List, Tuple, TYPE_CHECKING, Callable
 
 Indexer = Union[Any]  # improve later
 ColIndexer = Union[int, np.integer, str]
@@ -82,7 +82,7 @@ class _Loc(_BaseLoc):
             raise ValueError('Cannot delete key "%s"' % key)
         self._table.drop(index, raw_index)
 
-    def __getitem__(self, key: Indexer):
+    def __getitem__(self, key: Indexer) -> Any:
         index, col_key, raw_index = self.parse_key_to_bitmap(key)
         if not (is_slice(raw_index) or index in self._table.index):
             diff_ = index - self._table.index
@@ -129,7 +129,7 @@ class _At(_BaseLoc):
             raise KeyError(f"Invalid column key {col_key}")
         return index, col_key
 
-    def __getitem__(self, key: Indexer):
+    def __getitem__(self, key: Indexer) -> Any:
         index, col_key = self.parse_key(key)
         if index not in self._table.index:
             raise KeyError(f"Not existing indice {index}")
@@ -597,7 +597,7 @@ class BaseTable(metaclass=ABCMeta):
         if self._changes:
             self._changes.reset(mid)
 
-    def compute_updates(self, start: int, now: int, mid: str, cleanup=True):
+    def compute_updates(self, start: int, now: int, mid: str, cleanup: bool = True):
         """Compute the updates (delta) that happened to this table since the last call.
 
         Parameters
@@ -658,7 +658,7 @@ class BaseTable(metaclass=ABCMeta):
         if key is None or isinstance(key, integer_types):
             from .row import Row
 
-            return Row(self, key)
+            return Row(self, key if key is None else int(key))
         if isinstance(key, str):
             return self._column(key)[self.last_xid]
         if all_string_or_int(key):
@@ -824,6 +824,7 @@ class BaseTable(metaclass=ABCMeta):
         else:
             indices = locs
         shape = (indices_len(indices), offsets[-1])
+        arr: np.ndarray
         if isinstance(ret, np.ndarray) and ret.shape == shape and ret.dtype == dtype:
             arr = ret
         else:
@@ -859,18 +860,23 @@ class BaseTable(metaclass=ABCMeta):
             res[col.name] = value
         return res
 
-    def binary(self, op, other, **kwargs):
+    def binary(self,
+               op: Callable[[np.ndarray, Union[np.ndarray, int, float, bool]], np.ndarray],
+               other: BaseTable,
+               **kwargs) -> Union[Dict[str, np.ndarray], BaseTable]:
         axis = kwargs.pop("axis", 0)
         assert axis == 0
-        res = dict()
-        isscalar = np.isscalar(other) or isinstance(other, np.ndarray)
-        for col in self._columns:
-            name = col.name
-            if isscalar:
+        res: Dict[str, np.ndarray] = {}
+        if isinstance(other, (np.ndarray, int, float, bool)):
+            for col in self._columns:
+                name = col.name
                 value = op(col, other)
-            else:
-                value = op(col, other[name])
-            res[name] = value
+                res[name] = value
+        else:
+            for col in self._columns:
+                name = col.name
+                value = op(col.value, other[name])
+                res[name] = value
         return res
 
     def __abs__(self, **kwargs):

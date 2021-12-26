@@ -11,7 +11,7 @@ except Exception:
 class KNNKernelDensity:
     SQRT2PI = np.sqrt(2 * np.pi)
 
-    def __init__(self, X: np.ndarray, online=False):
+    def __init__(self, X: np.ndarray, online: bool = False):
         self.X = X
         self.index = Index(X)
         if not online:

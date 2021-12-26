@@ -18,7 +18,7 @@ def _sort(graph: Graph,
           vertex: Vertex,
           permanent: Set[Vertex],
           temporary: Set[Vertex],
-          stack: List[Vertex]):
+          stack: List[Vertex]) -> None:
     if vertex in temporary:
         raise ValueError('Cycle in graph')
     temporary.add(vertex)
@@ -29,7 +29,7 @@ def _sort(graph: Graph,
     stack.append(vertex)
 
 
-def toposort(graph: Graph):
+def toposort(graph: Graph) -> List[Vertex]:
     """
     Perform the sorting and returns the element in order.
 

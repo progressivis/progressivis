@@ -2,6 +2,8 @@
 Sniffer for Pandas csv_read, allows interactive specification of data types,
 names, and various parameters before loading the whole file.
 """
+from __future__ import annotations
+
 import csv
 import inspect
 import io
@@ -15,17 +17,19 @@ from ipywidgets import widgets  # type: ignore
 
 # from traitlets import HasTraits, observe, Instance
 
+from typing import Dict, Any, List
+
 logger = logging.getLogger(__name__)
 
 
-def quote_html(text):
+def quote_html(text: str) -> str:
     return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
 
 _parser_defaults = {
     key: val.default
     for key, val in inspect.signature(pd.read_csv).parameters.items()
-    if val.default is not inspect._empty  # type: ignore
+    if val.default is not inspect._empty
 }
 
 # Borrowed from pandas
@@ -85,7 +89,7 @@ class CSVSniffer:
     delimiters = [",", ";", "<TAB>", "<SPACE>", ":", "skip initial space"]
     del_values = [",", ";", "\t", " ", ":", "skip"]
 
-    def __init__(self, path, lines=100, **args):
+    def __init__(self, path: str, lines: int = 100, **args):
         self.path = path
         self._args = args
         self.lines = widgets.BoundedIntText(
@@ -94,7 +98,7 @@ class CSVSniffer:
         self.lines.observe(self._lines_cb, names="value")
         self._head = ""
         self._dialect = None
-        self.params = {}
+        self.params: Dict[str, Any] = {}
         self._df = None
         self._df2 = None
         self._rename = None
@@ -176,7 +180,7 @@ class CSVSniffer:
         self.columns = widgets.Select(disabled=True, rows=7)
         self.columns.observe(self._columns_cb, names="value")
         # Column details
-        self.column = {}
+        self.column: Dict[str, ColumnInfo] = {}
         self.no_detail = widgets.Label(value="No Column Selected")
         self.details = widgets.Box([self.no_detail], label="Details")
         # Toplevel Box
@@ -201,11 +205,11 @@ class CSVSniffer:
             ]
         )
         self.testBtn.on_click(self.test_cmd)
-        self.column_info = []
+        self.column_info: List[ColumnInfo] = []
         self.clear()
         self.dataframe()
 
-    def _parse_list(self, key, values):
+    def _parse_list(self, key: str, values: str) -> None:
         split = [s for s in values.split(",") if s]
         if split:
             self.params[key] = split
@@ -213,13 +217,13 @@ class CSVSniffer:
             self.params.pop(key, None)
         self.set_cmdline()
 
-    def _true_values_cb(self, change):
+    def _true_values_cb(self, change) -> None:
         self._parse_list("true_values", change["new"])
 
-    def _false_values_cb(self, change):
+    def _false_values_cb(self, change) -> None:
         self._parse_list("false_values", change["new"])
 
-    def _na_values_cb(self, change):
+    def _na_values_cb(self, change) -> None:
         self._parse_list("na_values", change["new"])
 
     def _skiprows_cb(self, change):
@@ -284,7 +288,7 @@ class CSVSniffer:
         params = self.kwargs()
         self.cmdline.value = str(params)
 
-    def clear(self):
+    def clear(self) -> None:
         self.lines.value = 100
         self._head = ""
         self.head_text.value = '<pre style="white-space: pre"></pre>'

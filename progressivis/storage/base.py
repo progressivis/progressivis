@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Callable, Union, Optional, Dict, Any, Tuple, TYPE_CHECKING
+from typing import Callable, Union, Optional, Dict, Any, Tuple, TYPE_CHECKING, Iterable
 
 from abc import ABCMeta, abstractmethod, abstractproperty
 from contextlib import contextmanager
@@ -46,7 +46,7 @@ class Attribute(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def __iter__(self):
+    def __iter__(self) -> Iterable[str]:
         pass
 
     @abstractmethod
@@ -115,7 +115,7 @@ class Group(DatasetFactory):
         pass
 
     @abstractmethod
-    def __delitem__(self, name: str):
+    def __delitem__(self, name: str) -> None:
         pass
 
     @abstractmethod
@@ -135,7 +135,7 @@ class Dataset(StorageObject):
         pass
 
     @abstractproperty
-    def dtype(self) -> np.dtype:
+    def dtype(self) -> np.dtype[Any]:
         pass
 
     @abstractproperty
@@ -193,9 +193,9 @@ class StorageEngine(Group):
             StorageEngine._default = self.name
         self._create_dataset_kwds: Dict[str, Any] = dict(create_dataset_kwds or {})
 
-    @staticmethod
-    @contextmanager
-    def default_engine(engine: str):
+    @staticmethod  # type: ignore
+    @contextmanager  # type: ignore
+    def default_engine(engine: str) -> None:   # type: ignore
         if engine not in StorageEngine._engines:
             raise ValueError("Unknown storage engine %s", engine)
         saved = StorageEngine._default
@@ -213,10 +213,10 @@ class StorageEngine(Group):
     def name(self) -> str:
         return self._name
 
-    def open(self, name: str, flags, **kwds):
+    def open(self, name: str, flags, **kwds) -> None:
         pass
 
-    def close(self, name: str, flags, **kwds):
+    def close(self, name: str, flags, **kwds) -> None:
         pass
 
     def flush(self) -> None:

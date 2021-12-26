@@ -9,6 +9,7 @@
 
 """Git implementation of _version.py."""
 
+
 import errno
 import os
 import re
@@ -16,7 +17,10 @@ import subprocess
 import sys
 
 
-def get_keywords():
+from typing import Dict
+
+
+def get_keywords() -> Dict[str, str]:
     """Get the keywords needed to look up the version information."""
     # these strings will be replaced by git during git-archive.
     # setup.py/versioneer.py will grep for the variable names, so they must

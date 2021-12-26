@@ -244,7 +244,7 @@ class Dataflow:
         "Return the dependecies of the modules"
         errors = self.validate()
         if errors:
-            raise ProgressiveError("Invalid dataflow", errors)
+            raise ProgressiveError(f"Invalid dataflow: {errors}")
         dependencies = {}
         for valid in self.valid:
             module = valid.name
