@@ -1,5 +1,9 @@
 "Proxy for column"
+from __future__ import annotations
+
 from .column_base import BaseColumn
+
+from typing import Sequence
 
 
 class ColumnProxy(BaseColumn):
@@ -16,7 +20,8 @@ class ColumnProxy(BaseColumn):
     def shape(self):
         return self._base.shape
 
-    def set_shape(self, shape):
+    def set_shape(self, shape: Sequence[int]) -> None:
+        assert self._base is not None
         self._base.set_shape(shape)
 
     def __delitem__(self, index):

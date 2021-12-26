@@ -260,6 +260,7 @@ class MCHistogram2D(NAry):
             table["array"].set_shape([p.ybins, p.xbins])
             ln = len(table)
             last = table.last()
+            assert last is not None
             if ln == 0 or last["time"] != run_number:
                 table.add(values)
             else:

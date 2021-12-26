@@ -228,7 +228,7 @@ def indices_len(ind: Union[None, bitmap, slice]) -> int:
     return len(ind)
 
 
-def fix_loc(indices):
+def fix_loc(indices: Any) -> Any:
     if isinstance(indices, slice):
         return slice(indices.start, indices.stop - 1)  # semantic of slice .loc
     return indices
@@ -237,7 +237,7 @@ def fix_loc(indices):
 # See http://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2Float
 
 
-def next_pow2(v: int):
+def next_pow2(v: int) -> int:
     v -= 1
     v |= v >> 1
     v |= v >> 2
@@ -248,7 +248,7 @@ def next_pow2(v: int):
     return v + 1
 
 
-def indices_to_slice(indices):
+def indices_to_slice(indices: bitmap) -> Union[slice, bitmap]:
     if len(indices) == 0:
         return slice(0, 0)
     s = e = None
@@ -259,6 +259,7 @@ def indices_to_slice(indices):
             e = i
         else:
             return indices  # not sliceable
+    assert isinstance(e, int)
     return slice(s, e + 1)
 
 
@@ -354,13 +355,13 @@ def slice_to_array(sl):
     return sl
 
 
-def slice_to_bitmap(sl, stop=None):
+def slice_to_bitmap(sl: slice, stop: int = None) -> bitmap:
     stop = sl.stop if stop is None else stop
     assert is_int(stop)
     return bitmap(range(*sl.indices(stop)))
 
 
-def slice_to_arange(sl):
+def slice_to_arange(sl: slice) -> np.ndarray:
     if isinstance(sl, slice):
         assert is_int(sl.stop)
         return np.arange(*sl.indices(sl.stop))
@@ -403,9 +404,11 @@ def is_fancy(key) -> bool:
     )
 
 
-def fancy_to_mask(indexes, array_shape, mask=None):
+def fancy_to_mask(indexes: Any,
+                  array_shape: Tuple[int, ...],
+                  mask: np.ndarray = None):
     if mask is None:
-        mask = np.zeros(array_shape, dtype=np.bool)
+        mask = np.zeros(array_shape, dtype=np.bool_)
     else:
         mask.fill(0)
     mask[indexes] = True

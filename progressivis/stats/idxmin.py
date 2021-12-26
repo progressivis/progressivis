@@ -86,7 +86,9 @@ class IdxMin(TableModule):
                 self.table.append(op, indices=[run_number])
             else:
                 prev_min = self._min.last()
+                assert prev_min is not None
                 prev_idx = self.table.last()
+                assert prev_idx is not None
                 min_ = OrderedDict(prev_min.items())
                 for col, ix in op.items():
                     val = input_table.at[ix, col]

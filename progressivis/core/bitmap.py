@@ -39,7 +39,7 @@ class bitmap(BitMap, object):
 
     def __contains__(self, other) -> bool:
         if isinstance(other, _integer_types):
-            return BitMap.__contains__(self, other)
+            return BitMap.__contains__(self, int(other))
         other = self.asbitmap(other)
         return other <= self
 

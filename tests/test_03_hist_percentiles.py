@@ -40,7 +40,9 @@ class TestPercentiles(ProgressiveTest):
             prt = Print(proc=self.terse, scheduler=s)
             prt.input[0] = percentiles.output.result
         aio.run(s.start())
-        pdict = percentiles.table.last().to_dict()
+        last = percentiles.table.last()
+        assert last is not None
+        pdict = last.to_dict()
         v = random.table["_1"].values
         p25 = np.percentile(v, 25.0)
         p50 = np.percentile(v, 50.0)
@@ -82,7 +84,9 @@ class TestPercentiles(ProgressiveTest):
             prt = Print(proc=self.terse, scheduler=s)
             prt.input[0] = percentiles.output.result
         aio.run(s.start())
-        pdict = percentiles.table.last().to_dict()
+        last = percentiles.table.last()
+        assert last is not None
+        pdict = last.to_dict()
         # v = random.table()['_1'].values
         # import pdb;pdb.set_trace()
         v = stirrer.table.to_array(columns=["_1"]).reshape(-1)
@@ -167,7 +171,9 @@ class TestPercentiles(ProgressiveTest):
             prt = Print(proc=self.terse, scheduler=s)
             prt.input[0] = percentiles.output.result
         aio.run(s.start())
-        pdict = percentiles.table.last().to_dict()
+        last = percentiles.table.last()
+        assert last is not None
+        pdict = last.to_dict()
         v = range_qry.table["_1"].values
         p25 = np.percentile(v, 25.0)
         p50 = np.percentile(v, 50.0)
@@ -218,7 +224,9 @@ class TestPercentiles(ProgressiveTest):
             prt = Print(proc=self.terse, scheduler=s)
             prt.input[0] = percentiles.output.result
         aio.run(s.start())
-        pdict = percentiles.table.last().to_dict()
+        last = percentiles.table.last()
+        assert last is not None
+        pdict = last.to_dict()
         v = range_qry.table["_1"].values
         p25 = np.percentile(v, 25.0)
         p50 = np.percentile(v, 50.0)

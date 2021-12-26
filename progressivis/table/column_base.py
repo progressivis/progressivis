@@ -10,7 +10,7 @@ import numpy as np
 
 from progressivis.core.config import get_option
 
-from typing import Any, Optional, List, TYPE_CHECKING, Callable, Union, cast
+from typing import Any, Optional, List, TYPE_CHECKING, Callable, Union, cast, Sequence
 
 if TYPE_CHECKING:
     from .table_base import IndexTable, Tuple, TableChanges
@@ -186,7 +186,7 @@ class BaseColumn(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def set_shape(self, shape: Tuple[int, ...]) -> None:
+    def set_shape(self, shape: Sequence[int]) -> None:
         """Set the shape of that column.
         The semantics can be different than that of numpy."""
         pass

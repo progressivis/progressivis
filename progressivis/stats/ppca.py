@@ -78,11 +78,11 @@ class PPCA(TableModule):
                     self._as_array = vs.columns[0]
                 else:
                     self._as_array = ""
-            vs = vs[self._as_array].values if self._as_array else vs.to_array()
+            avs = vs[self._as_array].values if self._as_array else vs.to_array()
             if self.inc_pca is None:
                 self.inc_pca = IncrementalPCA(n_components=self.params.n_components)
                 self._transformer["inc_pca"] = self.inc_pca
-            self.inc_pca.partial_fit(vs)
+            self.inc_pca.partial_fit(avs)
             if self.result is None:
                 self.result = TableSelectedView(table, bitmap(indices))
             else:

@@ -29,14 +29,25 @@ from progressivis.core.bitmap import bitmap
 from .dshape import dshape_print, dshape_create, DataShape, EMPTY_DSHAPE
 from .tablechanges import TableChanges
 
-from typing import Union, Any, Optional, Dict, List, Tuple, TYPE_CHECKING, Callable
+from typing import (
+    Union,
+    Any,
+    Optional,
+    Dict,
+    List,
+    Tuple,
+    TYPE_CHECKING,
+    Callable,
+    overload
+)
 
+Shape = Tuple[int, ...]
 Indexer = Union[Any]  # improve later
 ColIndexer = Union[int, np.integer, str]
 
 if TYPE_CHECKING:
     from .column_base import BaseColumn
-
+    from .row import Row
 
 logger = logging.getLogger(__name__)
 
@@ -310,7 +321,7 @@ class BaseTable(metaclass=ABCMeta):
         return width
 
     @property
-    def shape(self) -> Tuple[int, int]:
+    def shape(self) -> Shape:
         "Return the shape of this table as if it were a numpy array"
         return self.size, self.width()
 
@@ -451,7 +462,7 @@ class BaseTable(metaclass=ABCMeta):
                 f.write(b"\n")
 
     def column_offsets(
-        self, columns: List[BaseColumn], shapes: Optional[List[Tuple[int, int]]] = None
+        self, columns: List[str], shapes: List[Tuple[int, ...]] = None
     ) -> List[int]:
         """Return the offsets of each column considering columns can have
         multiple dimensions
@@ -622,7 +633,15 @@ class BaseTable(metaclass=ABCMeta):
             return updates
         return None
 
-    def __getitem__(self, key: Indexer):
+    @overload
+    def __getitem__(self, key: Union[int, str]) -> BaseColumn:
+        ...
+
+    @overload
+    def __getitem__(self, key: Union[List, np.ndarray, slice, Iterable[int]]) -> Tuple[BaseColumn, ...]:
+        ...
+
+    def __getitem__(self, key):
         # hack, use t[['a', 'b'], 1] to get a list instead of a TableView
         fast = False
         if isinstance(key, tuple):
@@ -650,7 +669,7 @@ class BaseTable(metaclass=ABCMeta):
         "Return an iterator returning rows and their ids"
         return map(self.row, iter(self._index))
 
-    def last(self, key: Optional[Indexer] = None):
+    def last(self, key: Optional[Indexer] = None) -> Optional[Row]:
         "Return the last row"
         length = len(self)
         if length == 0:
@@ -659,11 +678,11 @@ class BaseTable(metaclass=ABCMeta):
             from .row import Row
 
             return Row(self, key if key is None else int(key))
-        if isinstance(key, str):
-            return self._column(key)[self.last_xid]
-        if all_string_or_int(key):
-            index = self.last_xid
-            return (self._column(c)[index] for c in key)
+        # if isinstance(key, str):
+        #     return self._column(key)[self.last_xid]
+        # if all_string_or_int(key):
+        #     index = self.last_xid
+        #     return [self._column(c)[index] for c in key]
         raise ValueError('last not implemented for key "%s"' % key)
 
     def __delitem__(self, key: Indexer) -> None:
@@ -777,7 +796,7 @@ class BaseTable(metaclass=ABCMeta):
         indices = self._col_slice_to_indices(colkey)
         self._setitem_iterable(indices, rowkey, values)
 
-    def columns_common_dtype(self, columns: Optional[List[str]] = None) -> np.dtype:
+    def columns_common_dtype(self, columns: List[str] = None) -> np.dtype:
         """Return the dtype that BaseTable.to_array would return.
 
         Parameters
@@ -790,7 +809,11 @@ class BaseTable(metaclass=ABCMeta):
         dtypes = [self[c].dtype for c in columns]
         return np.find_common_type(dtypes, [])
 
-    def to_array(self, locs=None, columns=None, returns_indices=False, ret=None):
+    def to_array(self,
+                 locs=None,
+                 columns: List[str] = None,
+                 # returns_indices=False,
+                 ret: np.ndarray = None) -> np.ndarray:
         """Convert this table to a numpy array
 
         Parameters
@@ -810,7 +833,7 @@ class BaseTable(metaclass=ABCMeta):
         """
         if columns is None:
             columns = self.columns
-
+        assert columns is not None
         shapes = [self[c].shape for c in columns]
         offsets = self.column_offsets(columns, shapes)
         dtype = self.columns_common_dtype(columns)
@@ -823,7 +846,7 @@ class BaseTable(metaclass=ABCMeta):
             # indices = self._any_to_bitmap(locs)
         else:
             indices = locs
-        shape = (indices_len(indices), offsets[-1])
+        shape: Shape = (indices_len(indices), offsets[-1])
         arr: np.ndarray
         if isinstance(ret, np.ndarray) and ret.shape == shape and ret.dtype == dtype:
             arr = ret
@@ -838,8 +861,8 @@ class BaseTable(metaclass=ABCMeta):
                 col.read_direct(
                     arr, indices, dest_sel=np.s_[:, offsets[i] : offsets[i + 1]]
                 )
-        if returns_indices:
-            return indices, arr
+        # if returns_indices:
+        #     return indices, arr
         return arr
 
     def unary(self, op, **kwargs):
@@ -875,7 +898,7 @@ class BaseTable(metaclass=ABCMeta):
         else:
             for col in self._columns:
                 name = col.name
-                value = op(col.value, other[name])
+                value = op(col.value, other[name].value)
                 res[name] = value
         return res
 

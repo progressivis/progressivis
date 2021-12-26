@@ -24,7 +24,7 @@ from typing import (
 if TYPE_CHECKING:
     from progressivis.table import BaseTable
 
-Columns = Union[None, List[str], Dict[str, List[str]]]
+Columns = Union[None, List[str]]  # , Dict[str, List[str]]]
 
 
 # pylint: disable=abstract-method
@@ -40,13 +40,14 @@ class TableModule(Module):
             raise RuntimeError("don't use table_slot")
         self._columns: Optional[List[str]] = None
         self._columns_dict: Dict[str, List[str]] = {}
-        if isinstance(columns, dict):
-            assert len(columns)
-            for v in columns.values():
-                self._columns = v
-                break
-            self._columns_dict = columns
-        elif isinstance(columns, list):  # backward compatibility
+        # if isinstance(columns, dict):
+        #     assert len(columns)
+        #     for v in columns.values():
+        #         self._columns = v
+        #         break
+        #     self._columns_dict = columns
+        # elif isinstance(columns, list):  # backward compatibility
+        if isinstance(columns, list):  # backward compatibility
             self._columns = columns
             for k in self._input_slots.keys():
                 self._columns_dict[k] = columns
@@ -91,7 +92,9 @@ class TableModule(Module):
             return self.result
         return super(TableModule, self).get_data(name)
 
-    def get_columns(self, table: BaseTable, slot: Optional[str] = None) -> List[str]:
+    def get_columns(self,
+                    table: Union[BaseTable, dict],
+                    slot: Optional[str] = None) -> List[str]:
         """
         Return all the columns of interest from the specified table.
 
@@ -134,7 +137,9 @@ class TableModule(Module):
         if cols is None:
             return None
         if indices is None:
-            return df[cols]
+            if isinstance(cols, (int, str)):
+                cols = slice(cols, cols)
+            # return df[cols]
         return df.loc[indices, cols]
 
     def get_slot_columns(self, name: str) -> List[str]:

@@ -18,7 +18,7 @@ from . import metadata
 from .table_base import IndexTable
 from ..core.bitmap import bitmap
 
-from typing import Any, Optional, Union, Tuple
+from typing import Any, Optional, Union, Tuple, Sequence
 
 from ..core.types import Chunks, Index
 
@@ -215,7 +215,7 @@ class Column(BaseColumn):
         assert self.dataset is not None
         return self.dataset.shape
 
-    def set_shape(self, shape: Tuple[int, ...]):
+    def set_shape(self, shape: Sequence[int]):
         assert self.dataset is not None
         if not isinstance(shape, list):
             shape = list(shape)

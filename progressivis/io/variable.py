@@ -56,7 +56,9 @@ class Variable(Constant):
                 like = slot.data()
                 if like is not None:
                     if isinstance(like, Table):
-                        like = like.last().to_dict(ordered=True)
+                        last = like.last()
+                        assert last is not None
+                        like = last.to_dict(ordered=True)
                     self.result = copy.copy(like)
                     self._ignore_inputs = True
         return self._return_run_step(self.state_blocked, steps_run=1)

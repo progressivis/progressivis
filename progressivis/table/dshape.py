@@ -58,7 +58,7 @@ def dshape_from_dtype(dtype: np.dtype) -> str:
     return ds.CType.from_numpy_dtype(dtype)
 
 
-def dshape_extract(data, columns=None) -> Optional[DataShape]:
+def dshape_extract(data, columns: List[str] = None) -> Optional[DataShape]:
     if data is None:
         return None
     if hasattr(data, "dshape"):
@@ -76,12 +76,15 @@ def dshape_extract(data, columns=None) -> Optional[DataShape]:
     return None
 
 
-def dshape_projection(table, columns=None, names=None) -> DataShape:
+def dshape_projection(table,
+                      columns: List[str] = None,
+                      names: List[str] = None) -> DataShape:
     if columns is None and names is None:
         return table.dshape
     dshapes: List[str] = []
     if names is None:
         names = columns
+    assert columns is not None and names is not None
     assert len(columns) == len(names)
     for colname, newname in zip(columns, names):
         col = table._column(colname)
