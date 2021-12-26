@@ -257,7 +257,7 @@ class BaseColumn(metaclass=ABCMeta):
         return self.index.compute_updates(start, now, mid, cleanup)
 
     def unary(self,
-              operation=Callable[[np.ndarray, int, bool], np.ndarray],
+              operation=Callable[[np.ndarray, int, float, bool, str], np.ndarray],
               **kwargs):
         "Unary function manager"
         axis = kwargs.pop("axis", 0)
@@ -266,15 +266,15 @@ class BaseColumn(metaclass=ABCMeta):
         return operation(self.value, axis=axis, keepdims=keepdims)
 
     def binary(self,
-               operation: Callable[[np.ndarray, Union[np.ndarray, int, float, bool]], np.ndarray],
-               other: Union[np.ndarray, BaseColumn, int, float, bool],
+               operation: Callable[[np.ndarray, Union[np.ndarray, int, float, bool, str]], np.ndarray],
+               other: Union[np.ndarray, BaseColumn, int, float, bool, str],
                **kwargs) -> np.ndarray:
         "Binary function manager"
         axis = kwargs.pop("axis", 0)
         assert axis == 0
         # if isinstance(other, (int, float, bool, np.ndarray)):
         value: np.ndarray
-        if isinstance(other, (np.ndarray, int, float, bool)):
+        if isinstance(other, (np.ndarray, int, float, bool, str)):
             value = operation(self.value, other)
         elif isinstance(other, BaseColumn):
             value = operation(self.value, other.value)
