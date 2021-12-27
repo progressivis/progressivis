@@ -1,4 +1,4 @@
-import ipywidgets as ipw
+import ipywidgets as ipw  # type: ignore
 
 from .utils import update_widget
 from .slot_wg import SlotWg
@@ -24,8 +24,8 @@ class ModuleWg(ipw.Tab):  # pylint: disable=too-many-ancestors
         self.selection_changed = False
         self._output_slots = ipw.Tab()
         super().__init__([self._main, self._output_slots])
-        self.set_title(0, 'Main')
-        self.set_title(1, 'Output slots')
+        self.set_title(0, "Main")
+        self.set_title(1, "Output slots")
 
     async def refresh(self):
         _idx = self._index
@@ -34,25 +34,32 @@ class ModuleWg(ipw.Tab):  # pylint: disable=too-many-ancestors
         assert json_ is not None
         module_json = None
         m = None
-        for i, m in enumerate(json_['modules']):
-            if m['id'] == self.module_name:
+        for i, m in enumerate(json_["modules"]):
+            if m["id"] == self.module_name:
                 module_json = m
                 break
         assert module_json is not None
         self.set_title(0, self.module_name)
-        await update_widget(self._main, 'data', m)
-        await update_widget(self._main, 'config',
-                            dict(order=["classname",
-                                        "speed",
-                                        "debug",
-                                        "state",
-                                        "last_update",
-                                        "default_step_size",
-                                        "start_time",
-                                        "end_time",
-                                        "parameters",
-                                        "input_slots"],
-                                 sparkline=["speed"]))
+        await update_widget(self._main, "data", m)
+        await update_widget(
+            self._main,
+            "config",
+            dict(
+                order=[
+                    "classname",
+                    "speed",
+                    "debug",
+                    "state",
+                    "last_update",
+                    "default_step_size",
+                    "start_time",
+                    "end_time",
+                    "parameters",
+                    "input_slots",
+                ],
+                sparkline=["speed"],
+            ),
+        )
         _selected_index = 0
         module = self._index.scheduler.modules()[self.module_name]
         if module is None:
@@ -61,26 +68,26 @@ class ModuleWg(ipw.Tab):  # pylint: disable=too-many-ancestors
             # first refresh
             self.selection_changed = False
             self.selected_index = 0
-            slots = [SlotWg(module, sl)
-                     for sl in m["output_slots"].keys()]+[SlotWg(module,
-                                                                 '_params')]
-            await update_widget(self._output_slots, 'children', slots)
+            slots = [SlotWg(module, sl) for sl in m["output_slots"].keys()] + [
+                SlotWg(module, "_params")
+            ]
+            await update_widget(self._output_slots, "children", slots)
             if module.name in self._index.vis_register:
                 for wg, label in self._index.vis_register[module.name]:
                     self.children = (wg,) + self.children
                     self.set_title(0, label)
-                    self.set_title(1, 'Main')
-                    self.set_title(2, 'Output slots')
+                    self.set_title(1, "Main")
+                    self.set_title(2, "Output slots")
             elif len(self.children) > 2:
                 self.children = self.children[1:]
                 self.set_title(0, module.name)
-                self.set_title(1, 'Output slots')
+                self.set_title(1, "Output slots")
         else:
             _selected_index = self._output_slots.selected_index
         for i, k in enumerate(m["output_slots"].keys()):
             self._output_slots.set_title(i, k)
             await self._output_slots.children[i].refresh()
         i += 1
-        self._output_slots.set_title(i, '_params')
+        self._output_slots.set_title(i, "_params")
         await self._output_slots.children[i].refresh()
         self._output_slots.selected_index = _selected_index

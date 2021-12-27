@@ -39,5 +39,6 @@ dependencies:
   - pip:
     - tdigest>=0.4.1.0
     - rangehttpserver
+    - traits-stubs
     - -e .
     - -e ./widgets

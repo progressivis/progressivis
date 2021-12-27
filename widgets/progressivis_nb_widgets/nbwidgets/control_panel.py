@@ -1,38 +1,34 @@
-import ipywidgets as widgets
+import ipywidgets as widgets  # type: ignore
 
 
-class ControlPanel(widgets.HBox): # pylint: disable=too-many-ancestors
+class ControlPanel(widgets.HBox):  # pylint: disable=too-many-ancestors
     def __init__(self, scheduler=None):
         self.scheduler = scheduler
         self.bstart = widgets.Button(
-            description='Resume',
+            description="Resume",
             disabled=True,
-            button_style='',  # 'success', 'info', 'warning', 'danger' or ''
-            tooltip='Start',
-            icon='play'  # (FontAwesome names without the `fa-` prefix)
+            button_style="",  # 'success', 'info', 'warning', 'danger' or ''
+            tooltip="Start",
+            icon="play",  # (FontAwesome names without the `fa-` prefix)
         )
 
         self.bstop = widgets.Button(
-            description='Stop',
+            description="Stop",
             disabled=False,
-            button_style='',
-            tooltip='Stop',
-            icon='stop'
+            button_style="",
+            tooltip="Stop",
+            icon="stop",
         )
 
         self.bstep = widgets.Button(
-            description='Step',
+            description="Step",
             disabled=True,
-            button_style='',
-            tooltip='Step',
-            icon='step-forward'
+            button_style="",
+            tooltip="Step",
+            icon="step-forward",
         )
 
-        self.run_nb = widgets.HTML(
-            value="0",
-            placeholder='0',
-            description='',
-        )
+        self.run_nb = widgets.HTML(value="0", placeholder="0", description="",)
         self.status = "run"
         super().__init__([self.bstart, self.bstop, self.bstep, self.run_nb])
 
@@ -54,6 +50,7 @@ class ControlPanel(widgets.HBox): # pylint: disable=too-many-ancestors
     def step(self):
         async def _step_once(sched, _):
             await sched.stop()
+
         self.scheduler.task_start(tick_proc=_step_once)
         self.status = "stop"
         self.bstop.disabled = True
@@ -68,6 +65,8 @@ class ControlPanel(widgets.HBox): # pylint: disable=too-many-ancestors
         self.bstep.disabled = True
 
     def cb_args(self, key):
-        return {'resume': (self.bstart, self.resume),
-                'stop': (self.bstop, self.stop),
-                'step': (self.bstep, self.step)}[key]
+        return {
+            "resume": (self.bstart, self.resume),
+            "stop": (self.bstop, self.stop),
+            "step": (self.bstep, self.step),
+        }[key]

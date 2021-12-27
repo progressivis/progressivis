@@ -38,6 +38,7 @@ from typing import (
     Tuple,
     TYPE_CHECKING,
     Callable,
+    Sequence,
     overload
 )
 
@@ -669,7 +670,19 @@ class BaseTable(metaclass=ABCMeta):
         "Return an iterator returning rows and their ids"
         return map(self.row, iter(self._index))
 
-    def last(self, key: Optional[Indexer] = None) -> Optional[Row]:
+    @overload
+    def last(self, key: int = None) -> Optional[Row]:
+        ...
+
+    @overload
+    def last(self, key: str) -> Any:
+        ...
+
+    @overload
+    def last(self, key: Sequence[Union[int, str]]) -> List[Any]:
+        ...
+
+    def last(self, key=None):
         "Return the last row"
         length = len(self)
         if length == 0:
@@ -678,11 +691,11 @@ class BaseTable(metaclass=ABCMeta):
             from .row import Row
 
             return Row(self, key if key is None else int(key))
-        # if isinstance(key, str):
-        #     return self._column(key)[self.last_xid]
-        # if all_string_or_int(key):
-        #     index = self.last_xid
-        #     return [self._column(c)[index] for c in key]
+        if isinstance(key, str):
+            return self._column(key)[self.last_xid]
+        if all_string_or_int(key):
+            index = self.last_xid
+            return [self._column(c)[index] for c in key]
         raise ValueError('last not implemented for key "%s"' % key)
 
     def __delitem__(self, key: Indexer) -> None:

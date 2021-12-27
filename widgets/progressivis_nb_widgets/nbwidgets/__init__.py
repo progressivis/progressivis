@@ -1,3 +1,4 @@
+# flake8: noqa
 from ._version import version_info, __version__
 
 from .scatterplot import *
@@ -30,9 +31,11 @@ def _jupyter_nbextension_paths():
     require: Path to importable AMD Javascript module inside the
         <jupyter path>/nbextensions/<dest> directory
     """
-    return [{
-        'section': 'notebook',
-        'src': 'static',
-        'dest': 'progressivis-nb-widgets',
-        'require': 'progressivis-nb-widgets/extension'
-    }]
+    return [
+        {
+            "section": "notebook",
+            "src": "static",
+            "dest": "progressivis-nb-widgets",
+            "require": "progressivis-nb-widgets/extension",
+        }
+    ]
