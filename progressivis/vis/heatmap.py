@@ -123,8 +123,7 @@ class Heatmap(TableModule):
 
         table = self.table
         last = table.last()
-        assert last is not None
-        if len(table) == 0 or last['time'] != run_number:
+        if last is None or last['time'] != run_number:
             values = {'filename': filename, 'time': run_number}
             table.add(values)
         return self._return_run_step(self.state_blocked, steps_run=1)
@@ -165,8 +164,7 @@ class Heatmap(TableModule):
         if table is None or len(table) == 0:
             return None
         last = table.last()
-        assert last is not None
-        if run_number is None or run_number >= last['time']:
+        if run_number is None and (last is not None and run_number >= last['time']):
             run_number = last['time']
             filename = last['filename']
         else:

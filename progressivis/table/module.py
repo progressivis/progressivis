@@ -40,14 +40,13 @@ class TableModule(Module):
             raise RuntimeError("don't use table_slot")
         self._columns: Optional[List[str]] = None
         self._columns_dict: Dict[str, List[str]] = {}
-        # if isinstance(columns, dict):
-        #     assert len(columns)
-        #     for v in columns.values():
-        #         self._columns = v
-        #         break
-        #     self._columns_dict = columns
-        # elif isinstance(columns, list):  # backward compatibility
-        if isinstance(columns, list):  # backward compatibility
+        if isinstance(columns, dict):
+            assert len(columns)
+            for v in columns.values():
+                self._columns = v
+                break
+            self._columns_dict = columns
+        elif isinstance(columns, list):  # backward compatibility
             self._columns = columns
             for k in self._input_slots.keys():
                 self._columns_dict[k] = columns

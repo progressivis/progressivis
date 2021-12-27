@@ -253,8 +253,7 @@ class Histogram2D(TableModule):
                 table = self.table
                 table["array"].set_shape([p.ybins, p.xbins])
                 last = table.last()
-                assert last is not None
-                if len(table) == 0 or last["time"] != run_number:
+                if last is None or last["time"] != run_number:
                     table.add(values)
                 else:
                     table.loc[last.row] = values
