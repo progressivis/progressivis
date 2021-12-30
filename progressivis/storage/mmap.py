@@ -39,7 +39,7 @@ PAGESIZE = getpagesize()
 FACTOR = 1
 
 
-def init_temp_dir_if():
+def init_temp_dir_if() -> bool:
     from . import IS_PERSISTENT
 
     if not IS_PERSISTENT:

@@ -11,7 +11,7 @@ from progressivis.core.slot import SlotDescriptor
 from .module import TableModule, ReturnRunStep
 from . import Table, TableSelectedView
 
-from typing import Optional
+from typing import Optional, cast
 
 
 class Stirrer(TableModule):
@@ -136,8 +136,8 @@ class StirrerView(TableModule):
         steps = 0
         if not input_slot.created.any():
             return self._return_run_step(self.state_blocked, steps_run=0)
-        created = input_slot.created.next(step_size, as_slice=False)
-        created = fix_loc(created)
+        created = cast(bitmap, input_slot.created.next(step_size, as_slice=False))
+        # created = fix_loc(created)
         steps = indices_len(created)
         input_table = input_slot.data()
         if self.result is None:

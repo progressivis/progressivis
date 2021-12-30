@@ -6,7 +6,7 @@ import tempfile
 import unicodedata
 import re
 import shutil
-import urllib
+from urllib.parse import urljoin
 from urllib.request import pathname2url
 import logging
 
@@ -23,8 +23,6 @@ if TYPE_CHECKING:
 
 
 logger = logging.getLogger(__name__)
-
-urljoin = urllib.parse.urljoin
 
 
 class StorageManager:

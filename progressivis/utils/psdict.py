@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from ..core.bitmap import bitmap
 from ..core.index_update import IndexUpdate
-from ..table.dshape import dshape_extract, DataShape
+from ..table.dshape import DataShape, dshape_from_dict
 import numpy as np
 
 
@@ -60,7 +60,7 @@ class PsDict(dict):
 
     @property
     def dshape(self) -> DataShape:
-        return dshape_extract(self.as_row)
+        return dshape_from_dict(self.as_row)
 
     # def last(self, *args, **kwargs):
     #    print("LAST")

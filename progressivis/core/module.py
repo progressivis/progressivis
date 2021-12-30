@@ -60,13 +60,13 @@ class ModuleMeta(ABCMeta):
     in the field ``all_parameters''.
     """
 
-    def __init__(cls, name, bases, attrs):
+    def __init__(cls: Type, name: str, bases: Any, attrs: dict):
         if "parameters" not in attrs:
-            cls.parameters = []
+            cls.parameters: List[Parameters] = []
         if "inputs" not in attrs:
-            cls.inputs = []
+            cls.inputs: List[SlotDescriptor] = []
         if "outputs" not in attrs:
-            cls.outputs = []
+            cls.outputs: List[SlotDescriptor] = []
         all_parameters = list(cls.parameters)
         all_inputs = list(cls.inputs)
         all_outputs = {c.name: c for c in cls.outputs}
@@ -80,7 +80,7 @@ class ModuleMeta(ABCMeta):
         cls.all_parameters = all_parameters
         cls.all_inputs = all_inputs
         cls.all_outputs = list(all_outputs.values())
-        super(ModuleMeta, cls).__init__(name, bases, attrs)
+        super(ModuleMeta, cls).__init__(name, bases, attrs)  # type: ignore
 
 
 class ModuleTag:
@@ -865,10 +865,10 @@ class Module(metaclass=ModuleMeta):
             return
         raise NotImplementedError("Updating parameters not implemented yet")
 
-    def current_params(self):
-        return self._params.last()
+    def current_params(self) -> Row:
+        return cast(Row, self._params.last())
 
-    def set_current_params(self, v):
+    def set_current_params(self, v: Dict[str, Any]) -> Dict[str, Any]:
         current = self.current_params()
         combined = dict(current)
         combined.update(v)
@@ -884,8 +884,9 @@ class Module(metaclass=ModuleMeta):
         return False
 
     def post_interaction_proc(self):
-        s = self.scheduler()
-        s.freeze()
+        pass
+        # s = self.scheduler()
+        # s.freeze()
 
     def run(self, run_number: int) -> None:
         assert not self.is_running()

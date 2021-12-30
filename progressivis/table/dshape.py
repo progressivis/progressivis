@@ -1,5 +1,5 @@
-import datashape as ds  # type: ignore
-from datashape import DataShape  # type: ignore
+import datashape as ds
+from datashape import DataShape
 import pandas as pd
 import numpy as np
 from progressivis.core.utils import integer_types, gen_columns
@@ -7,7 +7,7 @@ from progressivis.core.utils import integer_types, gen_columns
 from typing import Union, Tuple, Dict, Any, List, Optional
 
 
-def dshape_print(dshape: Union[DataShape, ds.Record, ds.Tuple, str]) -> str:
+def dshape_print(dshape: Union[ds.Mono, str]) -> str:
     return ds.pprint(dshape, 1000000)
 
 
@@ -55,7 +55,7 @@ def dshape_from_dtype(dtype: np.dtype) -> str:
         return "bool"
     if dtype is int:
         return "int64"
-    return ds.CType.from_numpy_dtype(dtype)
+    return str(ds.CType.from_numpy_dtype(dtype))
 
 
 def dshape_extract(data, columns: List[str] = None) -> Optional[DataShape]:
@@ -195,8 +195,9 @@ def get_projection_dshape_with_keys(dshape_, projection_keys) -> DataShape:
     return get_projection_dshape(dshape_, [dict_[key] for key in projection_keys])
 
 
-def dshape_compatible(ds1: DataShape, ds2: DataShape):
-    # TODO fixme
+def dshape_compatible(ds1: Optional[DataShape], ds2: DataShape):
+    if ds1 is None:
+        return False
     assert isinstance(ds1, DataShape) and isinstance(ds2, DataShape)
     return True
 
@@ -219,11 +220,11 @@ def dshape_join(
     rename: Dict[str, Dict] = {"left": {}, "right": {}}
     suffix = {"left": lsuffix, "right": rsuffix}
     left_cols = left[0].fields
-    left_keys, _ = zip(*left_cols)
-    left_keys = set(left_keys)
+    keys, _ = zip(*left_cols)
+    left_keys = set(keys)
     right_cols = right[0].fields
-    right_keys, _ = zip(*right_cols)
-    right_keys = set(right_keys)
+    keys, _ = zip(*right_cols)
+    right_keys = set(keys)
     inter_keys = left_keys.intersection(right_keys)
     if inter_keys and not lsuffix and not rsuffix:
         raise ValueError("columns overlap in join without left/right suffixes")

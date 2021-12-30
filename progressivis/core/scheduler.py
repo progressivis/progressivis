@@ -3,8 +3,6 @@ Base Scheduler class, runs progressive modules.
 """
 from __future__ import annotations
 
-from typing import Optional, Dict, List, Any, Callable, Set, TYPE_CHECKING
-
 import logging
 import functools
 from timeit import default_timer
@@ -13,6 +11,20 @@ from .dataflow import Dataflow
 from . import aio
 from ..utils.errors import ProgressiveError
 
+from typing import (
+        Optional,
+        Dict,
+        List,
+        Sequence,
+        Any,
+        Callable,
+        Set,
+        TYPE_CHECKING,
+        Coroutine,
+        Union,
+        cast,
+)
+
 logger = logging.getLogger(__name__)
 
 __all__ = ["Scheduler"]
@@ -20,12 +32,14 @@ __all__ = ["Scheduler"]
 KEEP_RUNNING = 5
 SHORTCUT_TIME = 1.5
 
-TickProc = Callable[["Scheduler"], None]
-Order = List[str]
-Reachability = Dict[str, List[str]]
-
 if TYPE_CHECKING:
     from progressivis.core.module import Module
+
+TickCb = Callable[["Scheduler", int], None]
+TickCoro = Callable[["Scheduler", int], Coroutine[Any, Any, Any]]
+TickProc = Union[TickCb, TickCoro]
+Order = List[str]
+Reachability = Dict[str, List[str]]
 
 
 class Scheduler:
@@ -81,7 +95,7 @@ class Scheduler:
         self._task = False
         # self.runners = set()
         self.shortcut_evt: aio.Event
-        self.coros: List[Callable] = []
+        self.coros: List[Coroutine] = []
 
     async def shortcut_manager(self) -> None:
         while True:
@@ -194,7 +208,11 @@ class Scheduler:
     def _after_run(self) -> None:
         pass
 
-    async def start_impl(self, tick_proc=None, idle_proc=None, coros=()):
+    async def start_impl(
+            self,
+            tick_proc: TickProc = None,
+            idle_proc: TickProc = None,
+            coros: Sequence[Coroutine] = ()):
         async with self._lock:
             if self._task:
                 raise ProgressiveError(
@@ -214,15 +232,20 @@ class Scheduler:
             self._idle_procs = []
         await self.run()
 
-    async def start(self, tick_proc=None, idle_proc=None, coros=(), persist=False):
+    async def start(self,
+                    tick_proc: TickProc = None,
+                    idle_proc: TickProc = None,
+                    coros: Sequence[Coroutine] = (),
+                    persist=False):
+        from ..storage import init_temp_dir_if, cleanup_temp_dir, temp_dir
+
         self.shortcut_evt = aio.Event()
         self._hibernate_cond = aio.Condition()
         self._lock = aio.Lock()
+        itd_flag = False
         if not persist:
             return await self.start_impl(tick_proc, idle_proc, coros)
         try:
-            from ..storage import init_temp_dir_if, cleanup_temp_dir, temp_dir
-
             itd_flag = init_temp_dir_if()
             if itd_flag:
                 print("Init TEMP_DIR in start()", temp_dir())
@@ -259,16 +282,16 @@ class Scheduler:
         assert callable(tick_proc)
         self._tick_once_procs.append(tick_proc)
 
-    def remove_tick_once(self, tick_proc):
+    def remove_tick_once(self, tick_proc: TickProc):
         "Remove a tick once callback"
         self._tick_once_procs.remove(tick_proc)
 
-    def on_idle(self, idle_proc):
+    def on_idle(self, idle_proc: TickProc):
         "Set a procedure that will be called when there is nothing else to do."
         assert callable(idle_proc)
         self._idle_procs.append(idle_proc)
 
-    def remove_idle(self, idle_proc):
+    def remove_idle(self, idle_proc: TickProc):
         "Remove an idle callback."
         assert callable(idle_proc)
         self._idle_procs.remove(idle_proc)
@@ -288,7 +311,10 @@ class Scheduler:
         self._before_run()
         # if self._new_modules:
         #    self._update_modules()
-        runners = [self._run_loop(), self.shortcut_manager()]
+        runners = [
+                aio.create_task(self._run_loop()),
+                aio.create_task(self.shortcut_manager())
+        ]
         runners.extend([aio.create_task(coro) for coro in self.coros])
         # runners.append(aio.create_task(self.unlocker(), "unlocker"))
         # TODO: find the "right" initialisation value ...
@@ -303,7 +329,7 @@ class Scheduler:
         self._after_run()
         self.done()
 
-    async def _run_loop(self):
+    async def _run_loop(self) -> None:
         """Main scheduler loop."""
         # pylint: disable=broad-except
         for module in self._next_module():
@@ -508,7 +534,8 @@ class Scheduler:
             try:
                 logger.debug("Running idle proc")
                 if aio.iscoroutinefunction(proc):
-                    await proc(self, self._run_number)
+                    coro = cast(TickCoro, proc)
+                    await coro(self, self._run_number)
                 else:
                     proc(self, self._run_number)
                 has_run = True
@@ -524,7 +551,8 @@ class Scheduler:
             logger.debug("Calling tick_proc")
             try:
                 if aio.iscoroutinefunction(proc):
-                    await proc(self, self._run_number)
+                    coro = cast(TickCoro, proc)
+                    await coro(self, self._run_number)
                 else:
                     proc(self, self._run_number)
             except Exception as exc:
@@ -532,7 +560,8 @@ class Scheduler:
         for proc in self._tick_once_procs:
             try:
                 if aio.iscoroutinefunction(proc):
-                    await proc(self, self._run_number)
+                    coro = cast(TickCoro, proc)
+                    await coro(self, self._run_number)
                 else:
                     proc(self, self._run_number)
             except Exception as exc:
@@ -548,9 +577,10 @@ class Scheduler:
             self._hibernate_cond.notify()
             self._stopped = True
 
-    def task_stop(self) -> None:
+    def task_stop(self) -> Optional[aio.Task]:
         if self.is_running():
             return aio.create_task(self.stop())
+        return None
 
     def is_running(self) -> bool:
         "Return True if the scheduler is currently running."

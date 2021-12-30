@@ -317,7 +317,7 @@ class Slot:
         return None
 
     @staticmethod
-    def add_changemanager_type(datatype: Any, cls) -> None:
+    def add_changemanager_type(datatype: Any, cls: Type[BaseChangeManager]) -> None:
         """
         Declare a ChangerManager class for a slot type
         """

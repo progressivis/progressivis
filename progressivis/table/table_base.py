@@ -39,7 +39,8 @@ from typing import (
     TYPE_CHECKING,
     Callable,
     Sequence,
-    overload
+    overload,
+    Iterator
 )
 
 Shape = Tuple[int, ...]
@@ -100,8 +101,8 @@ class _Loc(_BaseLoc):
             diff_ = index - self._table.index
             raise KeyError(f"Not existing indices {diff_}")
         if isinstance(raw_index, integer_types):
-            row = self._table.row(raw_index)
-            if col_key != slice(None):
+            row = self._table.row(int(raw_index))
+            if row is not None and col_key != slice(None):
                 return row[col_key]
             return row
         elif isinstance(index, Iterable):
@@ -601,15 +602,15 @@ class BaseTable(metaclass=ABCMeta):
         return self._changes
 
     @changes.setter
-    def changes(self, tablechange: Optional[TableChanges]):
+    def changes(self, tablechange: Optional[TableChanges]) -> None:
         "Set the TableChange manager, or unset with None"
         self._changes = tablechange
 
-    def reset_updates(self, mid: str):
+    def reset_updates(self, mid: str) -> None:
         if self._changes:
             self._changes.reset(mid)
 
-    def compute_updates(self, start: int, now: int, mid: str, cleanup: bool = True):
+    def compute_updates(self, start: int, now: int, mid: str, cleanup: bool = True) -> Optional[IndexUpdate]:
         """Compute the updates (delta) that happened to this table since the last call.
 
         Parameters
@@ -662,13 +663,13 @@ class BaseTable(metaclass=ABCMeta):
                 return (self._column(c) for c in range(*indices))
         raise ValueError('getitem not implemented for key "%s"' % key)
 
-    def row(self, loc):
+    def row(self, loc: int) -> Optional[Row]:
         "Return a Row object wrapping the loc"
         return self.last(loc)
 
-    def iterrows(self):
+    def iterrows(self) -> Iterator[Optional[Row]]:
         "Return an iterator returning rows and their ids"
-        return map(self.row, iter(self._index))
+        raise NotImplementedError("iterrow not implemented in BaseTable")
 
     @overload
     def last(self, key: int = None) -> Optional[Row]:
@@ -686,6 +687,7 @@ class BaseTable(metaclass=ABCMeta):
         "Return the last row"
         length = len(self)
         if length == 0:
+            # raise KeyError("No value in table")
             return None
         if key is None or isinstance(key, integer_types):
             from .row import Row
@@ -1124,7 +1126,7 @@ class BaseTable(metaclass=ABCMeta):
 class IndexTable(BaseTable):
     def __init__(self, index=None):
         super().__init__()
-        self._index = bitmap() if index is None else index
+        self._index: bitmap = bitmap() if index is None else index
         self._cached_index = BaseTable  # hack
         self._last_id = -1
         self._changes = None
@@ -1157,6 +1159,10 @@ class IndexTable(BaseTable):
         if self.index and self._last_id < self.index.max():
             self._last_id = self.index.max()
         return self._last_id
+
+    def iterrows(self) -> Iterator[Optional[Row]]:
+        "Return an iterator returning rows and their ids"
+        return map(self.row, iter(self._index))
 
     @property
     def last_xid(self):

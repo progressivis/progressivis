@@ -6,7 +6,7 @@ from abc import abstractmethod
 import logging
 import numpy as np
 
-from typing import TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING
 
 
 if TYPE_CHECKING:
@@ -19,7 +19,7 @@ class TimePredictor:
     default: Callable[[], "TimePredictor"]
 
     def __init__(self):
-        self.name = None
+        self.name: Optional[str] = None
 
     @abstractmethod
     def fit(self, trace_df: Table) -> None:
@@ -42,8 +42,8 @@ class ConstantTimePredictor(TimePredictor):
 class LinearTimePredictor(TimePredictor):
     def __init__(self):
         super(LinearTimePredictor, self).__init__()
-        self.a = 0
-        self.calls = 0
+        self.a: float = 0
+        self.calls: int = 0
 
     def fit(self, trace_df: Table):
         self.calls += 1

@@ -12,7 +12,7 @@ from ..core.slot import SlotDescriptor, Slot
 from ..utils.psdict import PsDict
 from ..core.decorators import process_slot, run_if_any
 
-from typing import Optional, List, Dict, Union
+from typing import Optional, List, Dict, Union, cast
 
 logger = logging.getLogger(__name__)
 
@@ -105,7 +105,7 @@ class ScalarMax(TableModule):
         indices: Optional[Union[None, bitmap, slice]] = None
         sensitive_ids_bm = bitmap(self._sensitive_ids.values())
         if slot.deleted.any():
-            del_ids = slot.deleted.next(as_slice=False)
+            del_ids = cast(bitmap, slot.deleted.next(as_slice=False))
             if del_ids & sensitive_ids_bm:
                 self.reset_all(slot, run_number)
             # else : deletes are not sensitive, just ignore them

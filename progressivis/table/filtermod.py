@@ -10,6 +10,8 @@ from ..core.bitmap import bitmap
 from . import TableSelectedView
 import numpy as np
 
+from typing import cast
+
 logger = logging.getLogger(__name__)
 
 
@@ -44,7 +46,7 @@ class FilterMod(TableModule):
             input_slot.update(run_number)
             self.reset()
         if input_slot.deleted.any():
-            deleted = input_slot.deleted.next(step_size, as_slice=False)
+            deleted = cast(bitmap, input_slot.deleted.next(step_size, as_slice=False))
             self.selected.selection -= deleted
             steps += indices_len(deleted)
         if input_slot.created.any():

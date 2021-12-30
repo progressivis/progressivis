@@ -252,6 +252,8 @@ class CSVSniffer:
             if self.params.get("skipinitialspace"):
                 return
             self.params["skipinitialspace"] = True
+        self.dialect()
+        assert self._dialect is not None
         self._dialect.delimiter = delim  # TODO check valid delim
         self.delim_other.value = delim
         self.delimiter.value = delim

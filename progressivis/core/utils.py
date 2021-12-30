@@ -1,15 +1,5 @@
 from __future__ import annotations
 
-from typing import (
-    Optional,
-    Union,
-    Any,
-    Dict,
-    List,
-    Tuple,
-    cast
-)
-
 import os
 import os.path
 import io
@@ -20,6 +10,7 @@ from itertools import tee
 from functools import wraps
 import functools as ft
 import threading
+import inspect
 
 from urllib.parse import urlparse as parse_url
 from urllib.parse import parse_qs
@@ -40,26 +31,41 @@ import s3fs  # type: ignore
 import stat as st
 
 
+from typing import (
+    Optional,
+    Union,
+    Any,
+    Dict,
+    List,
+    Tuple,
+    cast,
+    Callable,
+    Iterator,
+    Sized
+)
+
 integer_types = (int, np.integer)
 
+Items = Union[collections_abc.MutableMapping, List[Any], Any]
 
-def is_int(n) -> bool:
+
+def is_int(n: Any) -> bool:
     return isinstance(n, integer_types)
 
 
-def is_str(s) -> bool:
+def is_str(s: Any) -> bool:
     return isinstance(s, str)
 
 
-def is_slice(s) -> bool:
+def is_slice(s: Any) -> bool:
     return isinstance(s, slice)
 
 
-def is_iterable(it) -> bool:
+def is_iterable(it: Any) -> bool:
     return isinstance(it, collections_abc.Iterable)
 
 
-def is_iter_str(it) -> bool:
+def is_iter_str(it: Any) -> bool:
     if not is_iterable(it):
         return False
     for s in it:
@@ -68,26 +74,27 @@ def is_iter_str(it) -> bool:
     return True
 
 
-def len_none(item) -> int:
+def len_none(item: Optional[Sized]) -> int:
     return 0 if item is None else len(item)
 
 
-def pairwise(iterator):
+def pairwise(iterator: Iterator[Any]):
     a, b = tee(iterator)
     next(b, None)
     return zip(a, b)
 
 
-def is_sorted(iterator, compare=None) -> bool:
+def is_sorted(iterator: Iterator[Any],
+              compare: Callable[[Any, Any], bool] = None) -> bool:
     if compare is None:
-
-        def compare(a, b):
+        def _compare(a, b):
             return a <= b
+        compare = _compare
 
     return all(compare(a, b) for a, b in pairwise(iterator))
 
 
-def remove_nan(d):
+def remove_nan(d: Items) -> Any:
     if isinstance(d, float) and np.isnan(d):
         return None
     if isinstance(d, list):
@@ -95,27 +102,27 @@ def remove_nan(d):
             if isinstance(v, float) and np.isnan(v):
                 d[i] = None
             else:
-                remove_nan(v)
-    elif isinstance(d, collections_abc.Mapping):
+                remove_nan(cast(Items, v))
+    elif isinstance(d, collections_abc.MutableMapping):
         for k, v in d.items():
             if isinstance(v, float) and np.isnan(v):
                 d[k] = None
             else:
-                remove_nan(v)
+                remove_nan(cast(Items, v))
     return d
 
 
-def find_nan_etc(d):
+def find_nan_etc(d: Any) -> None:
     if isinstance(d, float) and np.isnan(d):
-        return None
+        return
     if isinstance(d, np.integer):
         print("numpy int: %s" % (d))
-        return int(d)
+        return
     if isinstance(d, np.bool_):
-        return bool(d)
+        return
     if isinstance(d, np.ndarray):
         print("numpy array: %s" % (d))
-    if isinstance(d, list):
+    elif isinstance(d, list):
         for i, v in enumerate(d):
             if isinstance(v, float) and np.isnan(v):
                 print("numpy nan at %d in: %s" % (i, d))
@@ -141,7 +148,7 @@ def find_nan_etc(d):
                 find_nan_etc(v)
 
 
-def remove_nan_etc(d):
+def remove_nan_etc(d: Any) -> Any:
     if isinstance(d, float) and np.isnan(d):
         return None
     if isinstance(d, np.integer):
@@ -158,7 +165,7 @@ def remove_nan_etc(d):
                 d[i] = bool(v)
             else:
                 d[i] = remove_nan_etc(v)
-    elif isinstance(d, collections_abc.Mapping):
+    elif isinstance(d, collections_abc.MutableMapping):
         for k, v in d.items():
             if isinstance(v, float) and np.isnan(v):
                 d[k] = None
@@ -211,13 +218,14 @@ def gen_columns(n: int) -> List[str]:
 
 
 def type_fullname(o: Any) -> str:
-    module = o.__class__.__module__
-    if module is None or module == str.__class__.__module__:
-        return o.__class__.__name__
-    return module + "." + o.__class__.__name__
+    module = inspect.getmodule(o)
+    # module = o.__class__.__module__
+    if module is None or module == inspect.getmodule(str):
+        return type(o).__name__
+    return str(module) + "." + type(o).__name__
 
 
-def indices_len(ind: Union[None, bitmap, slice]) -> int:
+def indices_len(ind: Union[None, Sized, slice]) -> int:
     if isinstance(ind, slice):
         if ind.step is None or ind.step == 1:
             return ind.stop - ind.start
@@ -225,6 +233,7 @@ def indices_len(ind: Union[None, bitmap, slice]) -> int:
             return len(range(*ind.indices(ind.stop)))
     if ind is None:
         return 0
+    # assert isinstance(ind, bitmap), f"wrong type {type(ind)}"
     return len(ind)
 
 
@@ -251,7 +260,8 @@ def next_pow2(v: int) -> int:
 def indices_to_slice(indices: bitmap) -> Union[slice, bitmap]:
     if len(indices) == 0:
         return slice(0, 0)
-    s = e = None
+    s = None
+    e = 0
     for i in indices:
         if s is None:
             s = e = i
@@ -259,30 +269,29 @@ def indices_to_slice(indices: bitmap) -> Union[slice, bitmap]:
             e = i
         else:
             return indices  # not sliceable
-    assert isinstance(e, int)
     return slice(s, e + 1)
 
 
-def _first_slice(indices):
-    # assert isinstance(indices, bitmap)
-    ei = enumerate(indices, indices[0])
-    mask = np.equal(*zip(*ei))
-    arr = np.array(indices)
-    head = arr[mask]
-    tail = arr[len(head) :]
-    return head, tail
+# def _first_slice(indices):
+#     # assert isinstance(indices, bitmap)
+#     ei = enumerate(indices, indices[0])
+#     mask = np.equal(*zip(*ei))
+#     arr = np.array(indices)
+#     head = arr[mask]
+#     tail = arr[len(head) :]
+#     return head, tail
 
 
-def iter_to_slices(indices, fix_loc=False):
-    tail = np.sort(indices)
-    last = tail[-1]
-    incr = 0 if fix_loc else 1
-    slices = []
-    while len(tail):
-        head, tail = _first_slice(tail)
-        stop = head[-1] + incr if head[-1] < last else None
-        slices.append(slice(head[0], stop, 1))
-    return slices
+# def iter_to_slices(indices, fix_loc=False):
+#     tail = np.sort(indices)
+#     last = tail[-1]
+#     incr = 0 if fix_loc else 1
+#     slices = []
+#     while len(tail):
+#         head, tail = _first_slice(tail)
+#         stop = head[-1] + incr if head[-1] < last else None
+#         slices.append(slice(head[0], stop, 1))
+#     return slices
 
 
 def norm_slice(sl, fix_loc=False, stop=None):
@@ -337,14 +346,13 @@ def inter_slice(this, that):
             else:
                 return only_right, common_, only_left
         # else: # TODO: can we improve it when step >1 ?
-    else:
-        if not isinstance(this, bitmap):
-            this = bitmap(this)
-        if not isinstance(that, bitmap):
-            that = bitmap(that)
-        common_ = this & that
-        only_this = this - that
-        only_that = that - this
+    if not isinstance(this, bitmap):
+        this = bitmap(this)
+    if not isinstance(that, bitmap):
+        that = bitmap(that)
+    common_ = this & that
+    only_this = this - that
+    only_that = that - this
     return only_this, common_, only_that
 
 
@@ -357,17 +365,18 @@ def slice_to_array(sl):
 
 def slice_to_bitmap(sl: slice, stop: int = None) -> bitmap:
     stop = sl.stop if stop is None else stop
-    assert is_int(stop)
+    assert isinstance(stop, int)
     return bitmap(range(*sl.indices(stop)))
 
 
-def slice_to_arange(sl: slice) -> np.ndarray:
+def slice_to_arange(sl: Union[slice, np.ndarray]) -> np.ndarray:
     if isinstance(sl, slice):
         assert is_int(sl.stop)
         return np.arange(*sl.indices(sl.stop))
     if isinstance(sl, np.ndarray):
         return sl
-    return np.array(sl)
+    raise ValueError(f"Unhandled value {sl}")
+    # return np.array(sl)
 
 
 def get_random_name(prefix: str) -> str:
@@ -433,7 +442,7 @@ def are_none(*args) -> bool:
 
 
 class RandomBytesIO(object):
-    def __init__(self, cols=1, size=None, rows=None, **kwargs):
+    def __init__(self, cols: int = 1, size: int = None, rows: int = None, **kwargs):
         self._pos = 0
         self._reminder = ""
         self._cols = cols
@@ -441,6 +450,8 @@ class RandomBytesIO(object):
             raise ValueError("'size' and 'rows' " "can not be supplied simultaneously")
         self._generator = self.get_row_generator(**kwargs)
         self._yield_size = len(next(self._generator))
+        self._size: int
+        self._rows: int
         if size is not None:
             rem = size % self._yield_size
             if rem:
@@ -468,7 +479,7 @@ class RandomBytesIO(object):
                 *np.random.normal(loc=loc, scale=scale, size=self._cols)
             )
 
-    def read(self, n=0):
+    def read(self, n=0) -> bytes:
         if n == 0:
             n = self._size
         if self._pos > self._size - 1:
@@ -580,11 +591,11 @@ def _is_buffer_url(url):
     return res.scheme == "buffer"
 
 
-def _url_to_buffer(url):
+def _url_to_buffer(url: str) -> RandomBytesIO:
     res = parse_url(url)
     if res.scheme != "buffer":
         raise ValueError("Wrong buffer url: {}".format(url))
-    dict_ = parse_qs(res.query, strict_parsing=1)
+    dict_ = parse_qs(res.query, strict_parsing=True)
     kwargs = dict([(k, int(e[0])) for (k, e) in dict_.items()])
     return RandomBytesIO(**kwargs)
 

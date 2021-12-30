@@ -99,7 +99,7 @@ class Table(IndexTable):
         self,
         name: Optional[str],
         data: Any = None,
-        dshape: Optional[str] = None,
+        dshape: Optional[Union[str, DataShape]] = None,
         fillvalues: Optional[Dict[str, Any]] = None,
         storagegroup: Optional[Group] = None,
         chunks: Optional[Chunks] = None,
@@ -238,7 +238,7 @@ class Table(IndexTable):
         self._storagegroup.attrs[metadata.ATTR_INDEX] = self._index.serialize()
         self._storagegroup.attrs[metadata.ATTR_LAST_ID] = self.last_id
 
-    def resize(self, newsize: Optional[int] = None, index: Union[bitmap, List[int]] = None) -> None:
+    def resize(self, newsize: int, index: Union[bitmap, List[int]] = None) -> None:
         # NB: newsize means how many active rows the table must contain
         if index is not None:
             index = bitmap.asbitmap(index)
@@ -433,7 +433,7 @@ class Table(IndexTable):
                 data[nam] = array[:, off[0]]
             else:
                 data[nam] = array[:, off[0] : off[1]]
-        return Table(name, data=data, dshape=dshape, **kwds)
+        return Table(name, data=data, dshape=str(dshape), **kwds)
 
     def eval(
         self,

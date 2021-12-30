@@ -164,12 +164,14 @@ class Heatmap(TableModule):
         if table is None or len(table) == 0:
             return None
         last = table.last()
-        if run_number is None and (last is not None and run_number >= last['time']):
+        assert last is not None  # len(table) > 0 so last is not None
+        if run_number is None or run_number >= last['time']:
             run_number = last['time']
             filename = last['filename']
         else:
             time = table['time']
             idx = np.where(time == run_number)[0]
+            assert last is not None
             if len(idx) == 0:
                 filename = last['filename']
             else:

@@ -22,6 +22,7 @@ from typing import (
     Optional,
     Dict,
     Tuple,
+    List,
     Callable,
     TYPE_CHECKING,
 )
@@ -123,12 +124,13 @@ class CSVLoader(TableModule):
 
     def trunc_recovery_tables(self) -> None:
         len_ = 0
+        rt: Optional[Table] = None
         try:
             rt = Table(name=self._recovery_table_name, create=False)
             len_ = len(rt)
         except Exception:
             pass
-        if len_:
+        if len_ and rt is not None:
             rt.drop(slice(None, None, None), truncate=True)
         len_ = 0
         try:
@@ -136,7 +138,7 @@ class CSVLoader(TableModule):
             len_ = len(rt)
         except Exception:
             pass
-        if len_:
+        if len_ and rt is not None:
             rt.drop(slice(None, None, None), truncate=True)
 
     def rows_read(self) -> int:
@@ -234,7 +236,9 @@ class CSVLoader(TableModule):
                         # last_ = self._recovery_table.argmax()['offset']
                         snapshot: Optional[Dict[str, Any]] = None
                         if len_last == 1:
-                            snapshot = self._recovery_table.row(last_[0]).to_dict(
+                            row = self._recovery_table.row(last_[0])
+                            assert row is not None
+                            snapshot = row.to_dict(
                                 ordered=True
                             )
                             if not check_snapshot(snapshot):
@@ -246,9 +250,9 @@ class CSVLoader(TableModule):
                             for i in self._recovery_table.eval(
                                 "last_id<{}".format(len(table)), as_slice=False
                             ):
-                                sn: Dict[str, Any] = self._recovery_table.row(
-                                    i
-                                ).to_dict(ordered=True)
+                                row = self._recovery_table.row(i)
+                                assert row is not None
+                                sn: Dict[str, Any] = row.to_dict(ordered=True)
                                 if check_snapshot(sn) and sn["last_id"] > max_:
                                     max_, snapshot = sn["last_id"], sn
                             if max_ < 0:
@@ -348,6 +352,7 @@ class CSVLoader(TableModule):
         logger.info("loading %d lines", step_size)
         needs_save = self._needs_save()
         assert self.parser
+        df_list: List[pd.DataFrame]
         try:
             df_list = self.parser.read(
                 step_size, flush=needs_save
@@ -367,7 +372,7 @@ class CSVLoader(TableModule):
             logger.error("Received 0 elements")
             raise ProgressiveStopIteration
         if self._filter is not None:
-            df_list = [self._filter(df) for df in df_list]
+            df_list = [df for df in df_list if not self._filter(df)]
         creates = sum([len(df) for df in df_list])
         if creates == 0:
             logger.info("frame has been filtered out")
@@ -378,6 +383,7 @@ class CSVLoader(TableModule):
                 for df in df_list:
                     force_valid_id_columns(df)
             if self.result is None:
+                table = self.table
                 data, dshape = self._data_as_array(pd.concat(df_list))
                 if not self._recovery:
                     self._table_params["name"] = self.generate_table_name("table")
