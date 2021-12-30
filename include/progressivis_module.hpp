@@ -6,6 +6,7 @@
 #include "roaring/roaring.h"
 
 #define FORCE_IMPORT_ARRAY
+#define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
 #include "xtensor-python/pyarray.hpp"
 #include "xtensor-python/pyvectorize.hpp"
 
@@ -195,6 +196,7 @@ public:
   }
 
   VectInd _created_next(int howMany, py::object bmpy){
+    bmpy = bmpy.attr("bm");
     bmpy.inc_ref();
     BitMap bm =bmpy.cast<BitMap>();
     auto res = table_->convert_indices(bm);
@@ -222,34 +224,58 @@ public:
    }
 
   VectInd updated_next(){
-    BitMap bm = slot_.attr("updated").attr("next")("as_slice"_a=false).cast<BitMap>();
+    BitMap bm = slot_
+      .attr("updated")
+      .attr("next")("as_slice"_a=false)
+      .attr("bm")
+      .cast<BitMap>();
     return table_->convert_indices(bm);
   }
 
   VectInd updated_next(int howMany){
-    BitMap bm = slot_.attr("updated").attr("next")(howMany, "as_slice"_a=false).cast<BitMap>();
+    BitMap bm = slot_
+      .attr("updated")
+      .attr("next")(howMany, "as_slice"_a=false)
+      .attr("bm")
+      .cast<BitMap>();
     return table_->convert_indices(bm);
   }
 
   VectInd deleted_next(){
-    BitMap bm = slot_.attr("deleted").attr("next")("as_slice"_a=false).cast<BitMap>();
+    BitMap bm = slot_
+      .attr("deleted")
+      .attr("next")("as_slice"_a=false)
+      .attr("bm")
+      .cast<BitMap>();
     return table_->convert_indices(bm);
   }
 
   VectInd deleted_next(int howMany){
-    BitMap bm = slot_.attr("deleted").attr("next")(howMany, "as_slice"_a=false).cast<BitMap>();
+    BitMap bm = slot_
+      .attr("deleted")
+      .attr("next")(howMany, "as_slice"_a=false)
+      .attr("bm")
+      .cast<BitMap>();
     return table_->convert_indices(bm);
   }
 
   VectInd deleted_base_next(int howMany){
-    BitMap bm = slot_.attr("base").attr("deleted")
-      .attr("next")(howMany, "as_slice"_a=false).cast<BitMap>();
+    BitMap bm = slot_
+      .attr("base")
+      .attr("deleted")
+      .attr("next")(howMany, "as_slice"_a=false)
+      .attr("bm")
+      .cast<BitMap>();
     return table_->convert_indices(bm);
   }
 
   VectInd deleted_selection_next(int howMany){
-    BitMap bm = slot_.attr("selection").attr("deleted")
-      .attr("next")(howMany, "as_slice"_a=false).cast<BitMap>();
+    BitMap bm = slot_
+      .attr("selection")
+      .attr("deleted")
+      .attr("next")(howMany, "as_slice"_a=false)
+      .attr("bm")
+      .cast<BitMap>();
     return table_->convert_indices(bm);
   }
 
@@ -345,7 +371,7 @@ public:
   void setLastOutputAt(int64_t col, cell_t val){
     setOutputAt(output_->last_id_, col, val);
   }
-  
+
   void append(std::vector<column_t> toAppend){
     std::map<std::string, py::list> data;
     auto& colNames = output_->colNames_;
@@ -419,4 +445,3 @@ public:
   pmod.def("add_output", &ProgressivisModule::add_output, py::arg("tobj"));\
   pmod.def("get_input_table", &ProgressivisModule::get_input_table);\
   pmod.def("get_output_table", &ProgressivisModule::get_output_table);
-

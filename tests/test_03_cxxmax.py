@@ -3,11 +3,11 @@ from progressivis.core import aio
 from progressivis import Print
 from progressivis.stats import RandomTable
 from progressivis.table.stirrer import Stirrer, StirrerView
-from progressivis.stats.cxxmax import Max
+from progressivis.stats.cxxmax import Max, CxxMax
 
 import numpy as np
 
-CxxMax = None  # Skip for now
+# CxxMax = None  # Skip for now
 
 
 class TestCxxMax(ProgressiveTest):
