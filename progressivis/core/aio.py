@@ -19,7 +19,7 @@ from asyncio import (
 from asyncio import create_task as _create_task
 from asyncio import set_event_loop, new_event_loop, get_running_loop
 
-from typing import Coroutine, Any
+from typing import Coroutine, Any, Optional
 
 
 async def _gather(*coros: Coroutine[Any, Any, Any]) -> None:
@@ -31,10 +31,10 @@ def run_gather(*coros: Coroutine[Any, Any, Any]) -> None:
 
 
 if sys.version.startswith("3.7."):
-    def create_task(coroutine: Coroutine, name: str = None):
+    def create_task(coroutine: Coroutine[Any, Any, Any], name: Optional[str] = None) -> Task[Any]:
         return _create_task(coroutine)
 elif sys.version.startswith("3.8."):
-    def create_task(coroutine: Coroutine, name: str = None):
+    def create_task(coroutine: Coroutine[Any, Any, Any], name: Optional[str] = None) -> Task[Any]:
         return _create_task(coroutine, name=name)
 
 

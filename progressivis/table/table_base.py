@@ -27,7 +27,7 @@ from progressivis.core.utils import (
 from progressivis.core.config import get_option
 from progressivis.core.bitmap import bitmap
 from .dshape import dshape_print, dshape_create, DataShape, EMPTY_DSHAPE
-from .tablechanges import TableChanges
+from .tablechanges import TableChanges as TableChanges
 
 from typing import (
     Union,

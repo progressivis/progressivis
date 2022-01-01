@@ -13,6 +13,7 @@ from .storagemanager import StorageManager
 from .module import Module, Every, Print
 from .bitmap import bitmap
 from .wait import Wait
+from .sink import Sink
 
 # pylint: disable=unused-import
 from .changemanager_bitmap import BitmapChangeManager
@@ -46,4 +47,5 @@ __all__ = [
     "Every",
     "Print",
     "Wait",
+    "Sink",
 ]

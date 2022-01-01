@@ -17,7 +17,7 @@ from ipywidgets import widgets  # type: ignore
 
 # from traitlets import HasTraits, observe, Instance
 
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional, cast
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +26,7 @@ def quote_html(text: str) -> str:
     return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
 
-_parser_defaults = {
+_parser_defaults: Dict[str, Any] = {
     key: val.default
     for key, val in inspect.signature(pd.read_csv).parameters.items()
     if val.default is not inspect._empty
@@ -89,20 +89,20 @@ class CSVSniffer:
     delimiters = [",", ";", "<TAB>", "<SPACE>", ":", "skip initial space"]
     del_values = [",", ";", "\t", " ", ":", "skip"]
 
-    def __init__(self, path: str, lines: int = 100, **args):
+    def __init__(self, path: str, lines: int = 100, **args: Dict[str, Any]) -> None:
         self.path = path
         self._args = args
         self.lines = widgets.BoundedIntText(
             value=lines, min=10, max=1000, continuous_update=False, description="Lines:"
         )
         self.lines.observe(self._lines_cb, names="value")
-        self._head = ""
-        self._dialect = None
+        self._head: str = ""
+        self._dialect: Optional[Any] = None
         self.params: Dict[str, Any] = {}
-        self._df = None
-        self._df2 = None
-        self._rename = None
-        self._types = None
+        self._df: Optional[pd.DataFrame] = None
+        self._df2: Optional[pd.DataFrame] = None
+        self._rename: Optional[List[str]] = None
+        self._types: Optional[Dict[str, str]] = None
         # Widgets
         layout = widgets.Layout(border="solid")
         self.head_text = widgets.HTML()
@@ -246,7 +246,7 @@ class CSVSniffer:
         # print(f"Column: '{column}'")
         self.show_column(column)
 
-    def set_delimiter(self, delim):
+    def set_delimiter(self, delim: str) -> None:
         if delim == "skip":
             delim = " "
             if self.params.get("skipinitialspace"):
@@ -264,7 +264,7 @@ class CSVSniffer:
             self.params = _merge_with_dialect_properties(self._dialect, self.params)
         self.dataframe(force=True)
 
-    def _reset(self):
+    def _reset(self) -> None:
         args = self._args.copy()
         self.params = {}
         for name, param in self.signature.parameters.items():
@@ -276,9 +276,9 @@ class CSVSniffer:
         if args:
             raise ValueError(f"extra keywords arguments {args}")
 
-    def kwargs(self):
+    def kwargs(self) -> Dict[str, Any]:
         "Return the arguments to pass to pandas.csv_read"
-        params = {}
+        params: Dict[str, Any] = {}
         for key, val in self.params.items():
             default = _parser_defaults[key]
             if val == default:
@@ -286,7 +286,7 @@ class CSVSniffer:
             params[key] = val
         return params
 
-    def set_cmdline(self):
+    def set_cmdline(self) -> None:
         params = self.kwargs()
         self.cmdline.value = str(params)
 
@@ -298,12 +298,12 @@ class CSVSniffer:
         self._dialect = None
         self._reset()
 
-    def _format_head(self):
+    def _format_head(self) -> None:
         self.head_text.value = (
             '<pre style="white-space: pre">' + quote_html(self._head) + "</pre>"
         )
 
-    def head(self):
+    def head(self) -> str:
         if self._head:
             return self._head
         with fsspec.open(self.path, mode="rt", compression="infer") as inp:
@@ -318,7 +318,7 @@ class CSVSniffer:
         self._format_head()
         return self._head
 
-    def dialect(self, force=False):
+    def dialect(self, force=False) -> Any:
         if not force and self._dialect:
             return self._dialect
         sniffer = csv.Sniffer()
@@ -334,14 +334,14 @@ class CSVSniffer:
             self.header.value = self.params["header"]
         return self._dialect
 
-    def dataframe(self, force=False):
+    def dataframe(self, force: bool = False) -> Optional[pd.DataFrame]:
         if not force and self._df is not None:
             return self._df
         self.dialect()
         strin = io.StringIO(self.head())
         try:
             # print(f"read_csv params: {self.params}")
-            self._df = pd.read_csv(strin, **self.params)
+            self._df = cast(pd.DataFrame, pd.read_csv(strin, **self.params))
             self.column = {}
         except ValueError as e:
             self._df = None
@@ -357,10 +357,10 @@ class CSVSniffer:
         self.dataframe_to_params()
         return self._df
 
-    def test_cmd(self, button):
+    def test_cmd(self, button: widgets.Button) -> None:
         strin = io.StringIO(self.head())
         try:
-            self._df2 = pd.read_csv(strin, **self.params)
+            self._df2 = cast(pd.DataFrame, pd.read_csv(strin, **self.params))
         except ValueError as e:
             self._df2 = None
             self.df2_text.value = f"""
@@ -373,7 +373,7 @@ class CSVSniffer:
                 self.df2_text.value = self._df2._repr_html_()
         self.tab.selected_index = 2
 
-    def dataframe_to_params(self):
+    def dataframe_to_params(self) -> None:
         df = self._df
         if df is None:
             return
@@ -382,7 +382,7 @@ class CSVSniffer:
         # # TODO test for existence?
         self.set_cmdline()
 
-    def dataframe_to_columns(self):
+    def dataframe_to_columns(self) -> None:
         df = self._df
         if df is None:
             self.columns.options = []
@@ -402,7 +402,7 @@ class CSVSniffer:
         self.columns.disabled = False
         self.show_column(df.columns[0])
 
-    def show_column(self, column):
+    def show_column(self, column: str) -> None:
         if column not in self.column:
             # print(f"Not in columns: '{column}'")
             self.details.children = [self.no_detail]
@@ -410,12 +410,14 @@ class CSVSniffer:
         col = self.column[column]
         self.details.children = [col.box]
 
-    def rename_columns(self):
+    def rename_columns(self) -> None:
+        assert self._df is not None
         names = [self.column[col].rename.value for col in self._df.columns]
         self._rename = names
         # print(f"Renames: {names}")
 
-    def usecols_columns(self):
+    def usecols_columns(self) -> None:
+        assert self._df is not None
         names = [col for col in self._df.columns if self.column[col].use.value]
         if names == list(self._df.columns):
             del self.params["usecols"]
@@ -423,9 +425,10 @@ class CSVSniffer:
             self.params["usecols"] = names
         self.set_cmdline()
 
-    def retype_columns(self):
-        types = {}
-        parse_dates = []
+    def retype_columns(self) -> None:
+        types: Dict[str, str] = {}
+        parse_dates: List[str] = []
+        assert self._df is not None
         for name in list(self._df.columns):
             col = self.column[name]
             if col.use.value and col.default_type != col.retype.value:
@@ -447,9 +450,9 @@ class CSVSniffer:
             self.params["parse_dates"] = None
         self.set_cmdline()
 
-    def load_dataframe(self):
+    def load_dataframe(self) -> pd.DataFrame:
         "Full load the DataFrame with the GUI parameters"
-        return pd.read_csv(self.path, **self.params)
+        return cast(pd.DataFrame, pd.read_csv(self.path, **self.params))
 
 
 class ColumnInfo:
@@ -468,7 +471,7 @@ class ColumnInfo:
     ]
     object_types = ["object", "str", "category", "datetime"]
 
-    def __init__(self, sniffer, series):
+    def __init__(self, sniffer: CSVSniffer, series: pd.Series):
         self.sniffer = sniffer
         self.series = series
         self.default_type = series.dtype.name
@@ -502,26 +505,26 @@ class ColumnInfo:
             self.nunique,
         ]
 
-    def retype_values(self):
+    def retype_values(self) -> List[str]:
         type = self.series.dtype.name
         if type in self.numeric_types:
             return self.numeric_types
         elif type == "object":
             return self.object_types
-        return type
+        return [type]
 
-    def rename_column(self, change):
+    def rename_column(self, change) -> None:
         self.sniffer.rename_columns()
 
-    def usecols_column(self, change):
+    def usecols_column(self, change) -> None:
         self.sniffer.usecols_columns()
 
-    def _test_column_type(self, newtype):
+    def _test_column_type(self, newtype) -> Optional[ValueError]:
         try:
             self.series.as_type(newtype)
         except ValueError as e:
             return e
         return None
 
-    def retype_column(self, change):
+    def retype_column(self, change) -> None:
         self.sniffer.retype_columns()

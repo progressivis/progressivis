@@ -1,9 +1,14 @@
 """
 Base class for object keeping track of changes in a Table/Column
 """
+from __future__ import annotations
+
 from abc import ABCMeta, abstractmethod
 
-from typing import Any
+from typing import Any, Optional, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from progressivis.core.index_update import IndexUpdate
 
 
 class BaseChanges(metaclass=ABCMeta):
@@ -28,7 +33,11 @@ class BaseChanges(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def compute_updates(self, last: int, now: float, mid: str, cleanup: bool = True) -> None:
+    def compute_updates(self,
+                        last: int,
+                        now: int,
+                        mid: str,
+                        cleanup: bool = True) -> Optional[IndexUpdate]:
         "Compute and return the list of changes as an IndexUpdate or None"
         return None
 

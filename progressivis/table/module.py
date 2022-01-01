@@ -30,14 +30,17 @@ Columns = Union[None, List[str]]  # , Dict[str, List[str]]]
 # pylint: disable=abstract-method
 class TableModule(Module):
     "Base class for modules managing tables."
-    outputs = [SlotDescriptor("result", type=Table, required=False)]
+    outputs = [SlotDescriptor("result", type=Table, required=True)]
 
     def __init__(self,
                  columns: Columns = None,
+                 output_required: bool = True,
                  **kwds):
         super(TableModule, self).__init__(**kwds)
         if "table_slot" in kwds:
             raise RuntimeError("don't use table_slot")
+        if not output_required:
+            self.output_slot_descriptor("result").required = False
         self._columns: Optional[List[str]] = None
         self._columns_dict: Dict[str, List[str]] = {}
         if isinstance(columns, dict):

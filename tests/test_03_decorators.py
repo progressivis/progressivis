@@ -24,6 +24,9 @@ class FooABC(TableModule):
         SlotDescriptor("d", type=Table, required=True),
     ]
 
+    def __init__(self, **kwds):
+        super().__init__(output_required=False, **kwds)
+
     def run_step_impl(self, ctx, run_number, step_size):
         if self.result is None:
             self.result = Table(

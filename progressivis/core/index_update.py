@@ -3,7 +3,7 @@ Changes (Delta) inside tables/columns/bitmaps.
 """
 from __future__ import annotations
 
-from typing import Optional
+from typing import Optional, Any
 
 from ..core.bitmap import bitmap
 
@@ -27,7 +27,7 @@ class IndexUpdate:
         self.updated: bitmap = updated
         self.deleted: bitmap = deleted
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "IndexUpdate(created=%s,updated=%s,deleted=%s)" % (
             repr(self.created),
             repr(self.updated),
@@ -40,7 +40,7 @@ class IndexUpdate:
         self.updated.clear()
         self.deleted.clear()
 
-    def test(self, verbose=False) -> bool:
+    def test(self, verbose: bool = False) -> bool:
         "Test if the IndexUpdate is valid"
         b = (
             bool(self.created & self.updated)
@@ -74,9 +74,9 @@ class IndexUpdate:
     def combine(
         self,
         other: Optional[IndexUpdate],
-        update_created=True,
-        update_updated=True,
-        update_deleted=True,
+        update_created: bool = True,
+        update_updated: bool = True,
+        update_deleted: bool = True,
     ) -> None:
         "Combine this IndexUpdate with another IndexUpdate"
         if other is None:
@@ -109,7 +109,7 @@ class IndexUpdate:
             self.updated -= other.created
         assert self.test(verbose=True)  # test invariant
 
-    def __eq__(self, other) -> bool:
+    def __eq__(self, other: Any) -> bool:
         return self is other or (
             isinstance(other, IndexUpdate)
             and self.created == other.created
@@ -117,7 +117,7 @@ class IndexUpdate:
             and self.deleted == other.deleted
         )
 
-    def __ne__(self, other) -> bool:
+    def __ne__(self, other: Any) -> bool:
         return not self == other
 
     def copy(self) -> IndexUpdate:

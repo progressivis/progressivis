@@ -17,7 +17,7 @@ from progressivis.datasets import (
 from progressivis.stats.counter import Counter
 from progressivis.storage import IS_PERSISTENT
 from progressivis.storage import cleanup_temp_dir, init_temp_dir_if
-from progressivis.core import aio
+from progressivis.core import aio, Sink
 
 
 BZ2 = "csv.bz2"
@@ -137,6 +137,8 @@ class TestProgressiveLoadCSVCrash1(ProgressiveLoadCSVCrashRoot):
             url, index_col=False, recovery_tag=tag, header=None, scheduler=s
         )
         self.assertTrue(module.result is None)
+        sink = Sink(name="sink", scheduler=s)
+        sink.input.inp = module.output.result
         sts = sleep_then_stop(s, 2)
         aio.run_gather(s.start(), sts)
         self._http_srv.restart()
@@ -150,6 +152,8 @@ class TestProgressiveLoadCSVCrash1(ProgressiveLoadCSVCrashRoot):
             scheduler=s,
         )
         self.assertTrue(module.result is None)
+        sink = Sink(name="sink", scheduler=s)
+        sink.input.inp = module.output.result
         aio.run(s.start())
         self.assertEqual(len(module.result), 1000000)
         arr1 = module.result.loc[:, 0].to_array().reshape(-1)
@@ -167,6 +171,8 @@ class TestProgressiveLoadCSVCrash1(ProgressiveLoadCSVCrashRoot):
             url, index_col=False, recovery_tag=tag, header=None, scheduler=s
         )
         self.assertTrue(module.result is None)
+        sink = Sink(name="sink", scheduler=s)
+        sink.input.inp = module.output.result
         sts = sleep_then_stop(s, 2)
         aio.run_gather(s.start(), sts)
         self._http_srv.restart()
@@ -182,6 +188,8 @@ class TestProgressiveLoadCSVCrash1(ProgressiveLoadCSVCrashRoot):
         counter = Counter(scheduler=s)
         counter.input[0] = csv.output.result
         self.assertTrue(csv.result is None)
+        sink = Sink(name="sink", scheduler=s)
+        sink.input.inp = counter.output.result
         aio.run(s.start())
         self.assertEqual(len(csv.result), 1000000)
         self.assertEqual(counter.result["counter"].loc[0], 1000000)
@@ -196,6 +204,8 @@ class TestProgressiveLoadCSVCrash1(ProgressiveLoadCSVCrashRoot):
             url, index_col=False, recovery_tag=tag, header=None, scheduler=s
         )
         self.assertTrue(module.result is None)
+        sink = Sink(name="sink", scheduler=s)
+        sink.input.inp = module.output.result
         sts = sleep_then_stop(s, 5)
         aio.run_gather(s.start(), sts)
         self._http_srv.restart()
@@ -209,6 +219,8 @@ class TestProgressiveLoadCSVCrash1(ProgressiveLoadCSVCrashRoot):
             scheduler=s,
         )
         self.assertTrue(module.result is None)
+        sink = Sink(name="sink", scheduler=s)
+        sink.input.inp = module.output.result
         aio.run(s.start())
         self.assertEqual(len(module.result), 1000000)
 
@@ -223,6 +235,8 @@ class TestProgressiveLoadCSVCrash1(ProgressiveLoadCSVCrashRoot):
             scheduler=s,
         )
         self.assertTrue(module.result is None)
+        sink = Sink(name="sink", scheduler=s)
+        sink.input.inp = module.output.result
         aio.run(s.start())
         self.assertEqual(len(module.result), 60000)
 
@@ -237,6 +251,8 @@ class TestProgressiveLoadCSVCrash1(ProgressiveLoadCSVCrashRoot):
             scheduler=s,
         )
         self.assertTrue(module.result is None)
+        sink = Sink(name="sink", scheduler=s)
+        sink.input.inp = module.output.result
         aio.run(s.start())
         self.assertEqual(len(module.result), 60000)
 
@@ -252,6 +268,8 @@ class TestProgressiveLoadCSVCrash2(ProgressiveLoadCSVCrashRoot):
             url_list, index_col=False, recovery_tag=tag, header=None, scheduler=s
         )
         self.assertTrue(module.result is None)
+        sink = Sink(name="sink", scheduler=s)
+        sink.input.inp = module.output.result
         sts = sleep_then_stop(s, 3)
         aio.run_gather(s.start(), sts)
         self._http_srv.restart()
@@ -265,6 +283,8 @@ class TestProgressiveLoadCSVCrash2(ProgressiveLoadCSVCrashRoot):
             scheduler=s,
         )
         self.assertTrue(module.result is None)
+        sink = Sink(name="sink", scheduler=s)
+        sink.input.inp = module.output.result
         aio.run(s.start())
         self.assertEqual(len(module.result), 2000000)
 
@@ -278,6 +298,8 @@ class TestProgressiveLoadCSVCrash2(ProgressiveLoadCSVCrashRoot):
             url_list, index_col=False, recovery_tag=tag, header=None, scheduler=s
         )
         self.assertTrue(module.result is None)
+        sink = Sink(name="sink", scheduler=s)
+        sink.input.inp = module.output.result
         sts = sleep_then_stop(s, 3)
         aio.run_gather(s.start(), sts)
         self._http_srv.restart()
@@ -291,6 +313,8 @@ class TestProgressiveLoadCSVCrash2(ProgressiveLoadCSVCrashRoot):
             scheduler=s,
         )
         self.assertTrue(module.result is None)
+        sink = Sink(name="sink", scheduler=s)
+        sink.input.inp = module.output.result
         aio.run(s.start())
         self.assertEqual(len(module.result), 2000000)
 
@@ -304,6 +328,8 @@ class TestProgressiveLoadCSVCrash2(ProgressiveLoadCSVCrashRoot):
             scheduler=s,
         )
         self.assertTrue(module.result is None)
+        sink = Sink(name="sink", scheduler=s)
+        sink.input.inp = module.output.result
         aio.run(s.start())
         self.assertEqual(len(module.result), 60000)
 
@@ -315,6 +341,8 @@ class TestProgressiveLoadCSVCrash3(ProgressiveLoadCSVCrashRoot):
             files, index_col=False, header=None, scheduler=s
         )  # , save_context=False)
         self.assertTrue(module.result is None)
+        sink = Sink(name="sink", scheduler=s)
+        sink.input.inp = module.output.result
         aio.run(s.start())
         self.assertEqual(len(module.result), 60000)
 
@@ -342,6 +370,8 @@ class TestProgressiveLoadCSVCrash3(ProgressiveLoadCSVCrashRoot):
             file_list, index_col=False, recovery_tag=tag, header=None, scheduler=s
         )
         self.assertTrue(module.result is None)
+        sink = Sink(name="sink", scheduler=s)
+        sink.input.inp = module.output.result
         sts = sleep_then_stop(s, 3)
         aio.run_gather(s.start(), sts)
         _close(module)
@@ -355,6 +385,8 @@ class TestProgressiveLoadCSVCrash3(ProgressiveLoadCSVCrashRoot):
             scheduler=s,
         )
         self.assertTrue(module.result is None)
+        sink = Sink(name="sink", scheduler=s)
+        sink.input.inp = module.output.result
         aio.run(s.start())
         self.assertEqual(len(module.result), 2000000)
 
@@ -364,6 +396,8 @@ class TestProgressiveLoadCSVCrash3(ProgressiveLoadCSVCrashRoot):
             file_list, index_col=False, recovery_tag=tag, header=None, scheduler=s
         )
         self.assertTrue(module.result is None)
+        sink = Sink(name="sink", scheduler=s)
+        sink.input.inp = module.output.result
         sts = sleep_then_stop(s, 4)
         aio.run_gather(s.start(), sts)
         _close(module)
@@ -377,6 +411,8 @@ class TestProgressiveLoadCSVCrash3(ProgressiveLoadCSVCrashRoot):
             scheduler=s,
         )
         self.assertTrue(module.result is None)
+        sink = Sink(name="sink", scheduler=s)
+        sink.input.inp = module.output.result
         aio.run(s.start())
         self.assertEqual(len(module.result), 2000000)
 

@@ -1,6 +1,8 @@
 """
 Use mmap to manage strings
 """
+from __future__ import annotations
+
 import mmap as mm
 import os
 import os.path
@@ -9,6 +11,11 @@ import marshal
 import numpy as np
 from functools import lru_cache
 from ..core.bitmap import bitmap
+
+from typing import Any, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    Sizes = np.ndarray[Any, Any]
 
 PAGESIZE = getpagesize()
 WB = 4
@@ -21,12 +28,12 @@ MAX_OVERSIZE = (
 )
 
 
-def _ofs(idx):
+def _ofs(idx: int) -> int:
     return (idx + 1) * WB
 
 
 class MMapObject(object):
-    def __init__(self, filename):
+    def __init__(self, filename: str) -> None:
         if os.path.isfile(filename):
             self._file = open(filename, "r+b")
             self._new_file = False
@@ -35,16 +42,17 @@ class MMapObject(object):
             os.ftruncate(self._file.fileno(), PAGESIZE)
             self._new_file = True
         self.mmap = mm.mmap(self._file.fileno(), 0)
-        self.sizes = np.frombuffer(self.mmap, np.uint32)
+        self.sizes: Sizes
+        self.sizes = np.frombuffer(self.mmap, np.uint32)  # type: ignore
         if self._new_file:
             self.sizes[0] = 1
         self._freelist = [bitmap() for _ in range(FREELIST_SIZE)]
 
-    def _allocate(self, size):
+    def _allocate(self, size: int) -> None:
         self.mmap.resize(size * PAGESIZE)
-        self.sizes = np.frombuffer(self.mmap, np.uint32)
+        self.sizes = np.frombuffer(self.mmap, np.uint32)  # type: ignore
 
-    def resize(self, size):
+    def resize(self, size: int) -> None:
         mod = size % WB
         if mod:
             size += WB - mod
@@ -54,16 +62,16 @@ class MMapObject(object):
             pages = (size + PAGESIZE - 1) // PAGESIZE + 1
             self._allocate(pages)
 
-    def __len__(self):
-        return self.sizes[0]
+    def __len__(self) -> int:
+        return int(self.sizes[0])
 
-    def encode(self, obj):
+    def encode(self, obj: Any) -> bytes:
         return marshal.dumps(obj)
 
-    def decode(self, buf):
+    def decode(self, buf: bytes) -> Any:
         return marshal.loads(buf)
 
-    def get(self, idx):
+    def get(self, idx: int) -> Any:
         if idx < 0 or idx > len(self):
             raise IndexError("index %d is out of range" % idx)
         size = self.sizes[idx]
@@ -71,21 +79,21 @@ class MMapObject(object):
         buf = self.mmap[off : off + size * WB]
         return self.decode(buf)
 
-    def __getitem__(self, idx):
+    def __getitem__(self, idx: int) -> Any:
         return self.get(idx)
 
-    def add(self, obj):
+    def add(self, obj: Any) -> int:
         buf = self.encode(obj)
         lb = len(buf)
         if lb >= MAX_SHORT:
-            return self._add_long(buf, lb)
+            return self._add_long(buf, lb, with_reuse=False)
         return self._add_short(buf, lb)
 
     @lru_cache(maxsize=LRU_MAX_SIZE)
-    def _add_short(self, buf, lb):
+    def _add_short(self, buf: bytes, lb: int) -> int:
         return self._add_long(buf, lb, with_reuse=False)
 
-    def release(self, idx):
+    def release(self, idx: int) -> None:
         if not idx:
             return
         lb = self.sizes[idx] * WB
@@ -94,7 +102,7 @@ class MMapObject(object):
         pos = int(lb).bit_length() - 1
         self._freelist[pos].add(idx)
 
-    def _get_from_freelist(self, lb):
+    def _get_from_freelist(self, lb: int) -> int:
         pos = int(lb).bit_length() - 1
         lw = lb // WB + 1
         for i in self._freelist[pos]:
@@ -107,7 +115,7 @@ class MMapObject(object):
                 return bm[0]
         return -1
 
-    def _add_long(self, buf, lb, with_reuse):
+    def _add_long(self, buf: bytes, lb: int, with_reuse: bool) -> int:
         bufsize = lb + WB - lb % WB
         assert bufsize % 4 == 0
         idx = -1
@@ -131,7 +139,7 @@ class MMapObject(object):
             self.sizes[idx] = bufsize // WB
         return idx
 
-    def set_at(self, idx, obj):
+    def set_at(self, idx: int, obj: Any) -> int:
         if idx < 0 or idx > len(self):
             raise IndexError("index %d is out of range" % idx)
         buf = self.encode(obj)
@@ -142,10 +150,10 @@ class MMapObject(object):
         # long string case
         return self._add_long(buf, lb, with_reuse=True)
 
-    def close(self):
-        if self.mmap is not None:
+    def close(self) -> None:
+        if not self.mmap.closed:
             self.mmap.close()
-            self.mmap = None
-        if self._file is not None:
+            # self.mmap = None
+        if not self._file.closed:
             self._file.close()
-            self._file = None
+            # self._file = None

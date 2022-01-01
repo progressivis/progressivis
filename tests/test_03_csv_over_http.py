@@ -1,18 +1,20 @@
 from . import ProgressiveTest
-from progressivis.io import CSVLoader
-from progressivis.table.constant import Constant
-from progressivis.table.table import Table
-from progressivis.datasets import get_dataset, get_dataset_bz2, DATA_DIR
 
 # import logging, sys
 from multiprocessing import Process
 import time
 import os
-from progressivis.core import aio
 
 from RangeHTTPServer import RangeRequestHandler  # type: ignore
 
 import http.server as http_srv
+
+from progressivis.core import aio, Sink
+from progressivis.io import CSVLoader
+from progressivis.table.constant import Constant
+from progressivis.table.table import Table
+from progressivis.datasets import get_dataset, get_dataset_bz2, DATA_DIR
+
 
 BZ2 = "csv.bz2"
 SLEEP = 1
@@ -100,6 +102,8 @@ class TestProgressiveLoadCSVOverHTTP(ProgressiveTest):
             make_url("bigfile"), index_col=False, header=None, scheduler=s
         )
         self.assertTrue(module.result is None)
+        sink = Sink(name="sink", scheduler=s)
+        sink.input.inp = module.output.result
         aio.run(s.start())
         _close(module)
         self.assertEqual(len(module.result), 1000000)
@@ -114,6 +118,8 @@ class TestProgressiveLoadCSVOverHTTP(ProgressiveTest):
             make_url("bigfile"), index_col=False, header=None, scheduler=s, timeout=0.01
         )
         self.assertTrue(module.result is None)
+        sink = Sink(name="sink", scheduler=s)
+        sink.input.inp = module.output.result
         aio.run(s.start())
         _close(module)
         # self.assertGreater(module.parser._recovery_cnt, 0)
@@ -133,6 +139,8 @@ class TestProgressiveLoadCSVOverHTTP(ProgressiveTest):
         cst = Constant(table=filenames, scheduler=s)
         csv = CSVLoader(index_col=False, header=None, scheduler=s, timeout=0.01)
         csv.input.filenames = cst.output.result
+        sink = Sink(name="sink", scheduler=s)
+        sink.input.inp = csv.output.result
         aio.run(csv.start())
         _close(csv)
         self.assertEqual(len(csv.result), 60000)
@@ -147,6 +155,8 @@ class TestProgressiveLoadCSVOverHTTP(ProgressiveTest):
             make_url("bigfile", ext=BZ2), index_col=False, header=None, scheduler=s
         )
         self.assertTrue(module.result is None)
+        sink = Sink(name="sink", scheduler=s)
+        sink.input.inp = module.output.result
         aio.run(s.start())
         _close(module)
         self.assertEqual(len(module.result), 1000000)
@@ -165,6 +175,8 @@ class TestProgressiveLoadCSVOverHTTP(ProgressiveTest):
             timeout=0.01,
         )
         self.assertTrue(module.result is None)
+        sink = Sink(name="sink", scheduler=s)
+        sink.input.inp = module.output.result
         aio.run(s.start())
         _close(module)
         # self.assertGreater(module.parser._recovery_cnt, 0)
@@ -189,6 +201,8 @@ class TestProgressiveLoadCSVOverHTTP(ProgressiveTest):
         cst = Constant(table=filenames, scheduler=s)
         csv = CSVLoader(index_col=False, header=None, scheduler=s, timeout=0.01)
         csv.input.filenames = cst.output.result
+        sink = Sink(name="sink", scheduler=s)
+        sink.input.inp = csv.output.result
         aio.run(csv.start())
         _close(csv)
         self.assertEqual(len(csv.result), 60000)

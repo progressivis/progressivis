@@ -23,7 +23,10 @@ class bitmap:
     Derive from an efficient and light-weight ordered set of 32 bits integers.
     """
 
-    def __init__(self, values: Any = None, copy_on_write=False, optimize=True):
+    def __init__(self,
+                 values: Any = None,
+                 copy_on_write: bool = False,
+                 optimize: bool = True):
         self.bm: BitMap
         if isinstance(values, bitmap):
             values = values.bm
@@ -40,7 +43,7 @@ class bitmap:
     #         )
     #     return super(bitmap, cls).__new__(cls, values, copy_on_write, optimize, no_init)
 
-    def copy(self):
+    def copy(self) -> bitmap:
         return bitmap(self.bm.copy())
 
     def clear(self) -> None:
@@ -54,7 +57,8 @@ class bitmap:
         if isinstance(other, _integer_types):
             return self.bm.__contains__(int(other))
         other = self.asbitmap(other)
-        return other <= self
+        assert isinstance(other, bitmap)
+        return other.bm <= self.bm
 
     def __repr__(self) -> str:
         length = len(self.bm)
@@ -68,7 +72,7 @@ class bitmap:
     def __iter__(self) -> Iterator[int]:
         return iter(self.bm)
 
-    def __eq__(self, value, /) -> bool:
+    def __eq__(self, value: Any, /) -> bool:
         if isinstance(value, bitmap):
             return self.bm == value.bm
         return False
@@ -98,24 +102,28 @@ class bitmap:
         ...
 
     @overload
-    def __getitem__(self, values: Union[Iterable, slice, bitmap]) -> bitmap:
+    def __getitem__(self, values: Union[Iterable[int], slice, bitmap]) -> bitmap:
         ...
 
-    def __getitem__(self, values):
-        if isinstance(values, Iterable):
+    def __getitem__(self, values: Union[int, Iterable[int], slice, bitmap]) -> Union[int, bitmap]:
+        bm: Union[bitmap, BitMap, Exception]
+        if isinstance(values, int):
+            return self.bm[values]
+        elif isinstance(values, (Iterable, bitmap, BitMap)):
             bm = bitmap()
             for index in values:
                 bm.add(self.bm[int(index)])
             return bm
-        elif isinstance(values, bitmap):
-            bm = self.bm[values.bm]
-        else:
+        elif isinstance(values, slice):
             bm = self.bm[values]
+        else:
+            raise ValueError("Invalid index for bitmap")
+        # Fixes a bug in BitMap
         if isinstance(bm, BitMap):
             return bitmap(bm)
         if isinstance(bm, Exception):
             raise bm
-        return bm
+        raise RuntimeError("Should not happen")
 
     def __len__(self) -> int:
         return len(self.bm)
@@ -132,7 +140,7 @@ class bitmap:
     def any(self) -> bool:
         return bool(self.bm)
 
-    def to_array(self) -> array.array:
+    def to_array(self) -> array.array[int]:
         return self.bm.to_array()
 
     def update(self, values: Any) -> None:
@@ -152,7 +160,7 @@ class bitmap:
             values = array.array("I", values)
             self.bm.update(self, values)  # type: ignore
 
-    def pop(self, length=1) -> bitmap:
+    def pop(self, length: int = 1) -> bitmap:
         "Remove one or many items and return them as a bitmap"
         if length >= len(self):
             ret = bitmap(self)
@@ -196,7 +204,7 @@ class bitmap:
         return self
 
     @staticmethod
-    def asbitmap(x) -> bitmap:
+    def asbitmap(x: Any) -> bitmap:
         "Try to coerce the value as a bitmap"
         if x is None:
             return bitmap()
@@ -289,7 +297,7 @@ class bitmap:
         return bitmap(bm) if isinstance(bm, BitMap) else bm
 
     @staticmethod
-    def deserialize(buff) -> bitmap:
+    def deserialize(buff: bytes) -> bitmap:
         """
         Generate a bitmap from the given serialization.
         """

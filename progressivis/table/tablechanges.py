@@ -2,13 +2,18 @@
 TableChanges keep track of the changes (creation, updates, deletions)
 in tables/columns.
 """
+from __future__ import annotations
+
 
 import logging
 
 
-from ..core.index_update import IndexUpdate
-from ..core.bitmap import bitmap
-from .tablechanges_base import BaseChanges
+from progressivis.core.index_update import IndexUpdate
+from progressivis.core.bitmap import bitmap
+from progressivis.table.tablechanges_base import BaseChanges
+
+from typing import Optional, List, Dict
+
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +26,7 @@ class Bookmark(object):
     "Bookmark for changes"
     __slots__ = ["time", "refcount", "update"]
 
-    def __init__(self, time, refcount=1, update=None):
+    def __init__(self, time: int, refcount: int = 1, update: Optional[IndexUpdate] = None):
         self.time = time
         self.refcount = refcount
         self.update = update
@@ -42,18 +47,18 @@ class TableChanges(BaseChanges):
     # To find the Bookmark associated with a time, a binary search is used in
     # the _times list, giving the index of the time; the Bookmark is at
     # the same index in the _bookmarks list.
-    def __init__(self):
-        self._times = []  # list of times sorted
-        self._bookmarks = []  # list of bookmarks synchronized with times
-        self._mid_time = {}  # time associated with last mid update
+    def __init__(self) -> None:
+        self._times: List[int] = []  # list of times sorted
+        self._bookmarks: List[Bookmark] = []  # list of bookmarks synchronized with times
+        self._mid_time: Dict[str, int] = {}  # time associated with last mid update
 
-    def _last_update(self):
+    def _last_update(self) -> Optional[IndexUpdate]:
         "Return the last delta to update"
         if not self._bookmarks:
             return None
         return self._bookmarks[-1].update
 
-    def _saved_index(self, time):
+    def _saved_index(self, time: int) -> int:
         "Return the index of the given time, or -1 if not there"
         try:
             return self._times.index(time)
@@ -64,7 +69,7 @@ class TableChanges(BaseChanges):
         #     return i
         # return -1
 
-    def _unref_bookmark(self, index):
+    def _unref_bookmark(self, index: int) -> None:
         bookmark = self._bookmarks[index]
         bookmark.refcount -= 1
         if index != 0:
@@ -76,7 +81,7 @@ class TableChanges(BaseChanges):
             self._times.pop(0)
             self._bookmarks.pop(0)
 
-    def _save_time(self, time, mid):
+    def _save_time(self, time: int, mid: str) -> None:
         if mid in self._mid_time:
             # reset
             logger.debug("Reset received for module %s", mid)
@@ -98,6 +103,7 @@ class TableChanges(BaseChanges):
         # We create a new bookmark
         bookmark = Bookmark(time)
         self._times.append(time)
+        update: Optional[IndexUpdate]
         if not self._bookmarks:
             update = IndexUpdate(created=None, deleted=None, updated=None)
         else:
@@ -105,31 +111,35 @@ class TableChanges(BaseChanges):
         # if some changes have already been collected, we create a fresh
         # IndexUpdate, otherwise we share the same entry: multiple times
         # will share the same set of changes.
-        if update.created or update.deleted or update.updated:
+        if update is None or update.created or update.deleted or update.updated:
             update = IndexUpdate()
         bookmark.update = update
         self._bookmarks.append(bookmark)
         assert len(self._bookmarks) == len(self._times)
 
-    def add_created(self, locs):
+    def add_created(self, locs: bitmap) -> None:
         update = self._last_update()
         if update is None:
             return
         update.add_created(locs)
 
-    def add_updated(self, locs):
+    def add_updated(self, locs: bitmap) -> None:
         update = self._last_update()
         if update is None:
             return
         update.add_updated(locs)
 
-    def add_deleted(self, locs):
+    def add_deleted(self, locs: bitmap) -> None:
         update = self._last_update()
         if update is None:
             return
         update.add_deleted(locs)
 
-    def compute_updates(self, last, now, mid, cleanup=True):
+    def compute_updates(self,
+                        last: int,
+                        now: int,
+                        mid: str,
+                        cleanup: bool = True) -> Optional[IndexUpdate]:
         assert mid is not None
         time = now
         if last == 0:
@@ -141,14 +151,15 @@ class TableChanges(BaseChanges):
         # reuse the bookmark
         bookmark = self._bookmarks[i]
         update = bookmark.update
-        update = self._combine_updates(update, i + 1)
+        if update is not None:
+            update = self._combine_updates(update, i + 1)
 
         self._unref_bookmark(i)
         del self._mid_time[mid]
         self._save_time(time, mid)
         return update
 
-    def _combine_updates(self, update, start):
+    def _combine_updates(self, update: IndexUpdate, start: int) -> IndexUpdate:
         # TODO reuse cached results if it matches
         new_u = IndexUpdate(
             created=bitmap(update.created),
@@ -160,15 +171,15 @@ class TableChanges(BaseChanges):
         # Since bookmarks can share their update slots,
         # search for a bookmark with a different value
         for i in range(start, len(self._bookmarks)):
-            update = self._bookmarks[i].update
-            if update is last_u:
+            upd = self._bookmarks[i].update
+            if upd is last_u:
                 continue
-            new_u.combine(update)
+            new_u.combine(upd)
             last_u = new_u
         # TODO cache results to reuse it if possible
         return new_u
 
-    def reset(self, mid):
+    def reset(self, mid: str) -> None:
         if mid not in self._mid_time:
             return
         # reset

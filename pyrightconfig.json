@@ -1,0 +1,18 @@
+{
+  "include": [
+    "progressivis",
+    "tests",
+    "widgets/progressivis_nb_widgets/nbwidgets"
+  ],
+  "exclude": [
+  ],
+  "ignore": [
+    "progressivis/core/_version.py",
+    "progressivis/cluster/mb_k_means.py",
+    "progressivis/core/decorators.py"
+  ],
+  "pythonVersion": "3.8",
+  "pythonPlatform": "Linux",
+  "executionEnvironments": [
+  ]
+}

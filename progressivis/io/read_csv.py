@@ -6,7 +6,7 @@ import json
 from collections import OrderedDict
 import functools as ft
 
-from requests.packages.urllib3.exceptions import HTTPError
+from requests.packages.urllib3.exceptions import HTTPError  # type: ignore
 import numpy as np
 import pandas as pd
 from pandas.core.dtypes.inference import is_file_like, is_sequence

@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 import logging
+import copy
 
 from progressivis import ProgressiveError, SlotDescriptor
 from progressivis.table.table import Table
 from progressivis.table.constant import Constant
-from ..core.utils import all_string
-from ..utils.psdict import PsDict
-import copy
+from progressivis.core.utils import all_string
+from progressivis.utils.psdict import PsDict
 
 from typing import List, TYPE_CHECKING, Dict, Tuple
 

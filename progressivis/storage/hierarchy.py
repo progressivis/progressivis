@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Union, Optional, Any, Dict, TYPE_CHECKING
+from typing import Union, Optional, Any, Dict, TYPE_CHECKING, Iterator
 
 from .base import Group, Attribute, Dataset
 
@@ -31,15 +31,15 @@ class GroupImpl(Group):
         shape: Optional[Shape] = None,
         dtype: Optional[DTypeLike] = None,
         data: Optional[Any] = None,
-        **kwds,
+        **kwds: Dict[str, Any],
     ) -> Dataset:
         pass
 
-    def _create_attribute(self, dict_values=None) -> Attribute:
+    def _create_attribute(self, dict_values: Optional[Dict[str, Any]] = None) -> Attribute:
         return AttributeImpl(dict_values)
 
     def require_dataset(
-        self, name: str, shape: Shape, dtype: DTypeLike, exact=False, **kwds
+        self, name: str, shape: Shape, dtype: DTypeLike, exact: bool = False, **kwds: Dict[str, Any]
     ) -> Dataset:
         _ = exact  # don't know what to do with it
         if name in self.dict:
@@ -54,32 +54,34 @@ class GroupImpl(Group):
         if group is not None:
             assert isinstance(group, Group)
             return group
-        return self.create_group(name, self)
+        return self._create_group(name, self)
 
     def _create_group(self, name: str, parent: Optional[GroupImpl]) -> Group:
         return GroupImpl(name, parent=parent)
 
-    def create_group(self, item, overwrite=False) -> Group:
+    def create_group(self, item: str, overwrite: bool = False) -> Group:
         path = normalize_storage_path(item)
         root = self
         if item and item[0] == "/":
             while root.parent is not None:
                 root = root.parent
-        path = path.split("/")
-        for name in path[:-1]:
+        pathlist = path.split("/")
+        for name in pathlist[:-1]:
             value = root._get(name)
             if isinstance(value, GroupImpl):
                 root = value
             else:
                 raise ValueError(f"Path {item} contains a Dataset instead of a Group")
-        name = path[-1]
+        name = pathlist[-1]
         if name in self.dict and not overwrite:
             raise KeyError("%s already defined", item)
         group = self._create_group(name, self)
         self.dict[name] = group
         return group
 
-    def _get(self, name: str, default=None) -> Union[Dataset, Group]:
+    def _get(self,
+             name: str,
+             default: Optional[Union[Dataset, Group]] = None) -> Optional[Union[Dataset, Group]]:
         return self.dict.get(name, default)
 
     def get(
@@ -92,9 +94,9 @@ class GroupImpl(Group):
         if item and item[0] == "/":
             while root.parent is not None:
                 root = root.parent
-        path = path.split("/")
+        pathlist = path.split("/")
         ret: Union[None, Dataset, Group] = root
-        for name in path:
+        for name in pathlist:
             if isinstance(ret, GroupImpl):
                 ret = ret.dict.get(name)
             else:
@@ -103,7 +105,7 @@ class GroupImpl(Group):
             return default
         return ret
 
-    def release(self, ids):
+    def release(self, ids: Any) -> None:
         pass
 
     def __getitem__(self, item: str) -> Union[Dataset, Group]:
@@ -123,12 +125,12 @@ class GroupImpl(Group):
     def __len__(self) -> int:
         return len(self.dict)
 
-    def free_item(self, item):
+    def free_item(self, item: Any) -> None:
         pass
 
 
 # Taken from zarr.util
-def normalize_storage_path(path):
+def normalize_storage_path(path: str) -> str:
     if path:
 
         # convert backslash to forward slash
@@ -184,11 +186,11 @@ class AttributeImpl(Attribute):
     def __len__(self) -> int:
         return len(self.attrs)
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[str]:
         return iter(self.attrs)
 
     def __contains__(self, key: str) -> bool:
         return key in self.attrs
 
-    def get(self, key, default=None) -> Optional[Any]:
+    def get(self, key: str, default: Optional[Any] = None) -> Optional[Any]:
         return self.attrs.get(key, default)

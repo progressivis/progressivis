@@ -6,7 +6,7 @@ from progressivis import Print, Scheduler, ProgressiveError
 from progressivis.io import CSVLoader
 from progressivis.stats import Min, RandomTable
 from progressivis.datasets import get_dataset
-from progressivis.core import aio, SlotDescriptor, Module
+from progressivis.core import aio, SlotDescriptor, Module, Sink
 
 
 class TestModule(Module):
@@ -33,6 +33,8 @@ class TestScheduler(ProgressiveTest):
             scheduler=s,
         )
         self.assertIs(s["csv"], csv)
+        sink = Sink(name="sink", scheduler=s)
+        sink.input.inp = csv.output.result  # allow csv to start
         check_running = False
 
         async def _is_running():

@@ -8,7 +8,7 @@ from progressivis.table.table import Table, BaseTable
 from progressivis.io.csv_loader import CSVLoader
 from progressivis.datasets import get_dataset
 from progressivis.storage import Group
-from progressivis.core import aio
+from progressivis.core import aio, Sink
 import numpy as np
 import pandas as pd
 
@@ -388,6 +388,8 @@ class TestTable(ProgressiveTest):
             scheduler=self.scheduler,
         )
         self.assertTrue(module.result is None)
+        sink = Sink(name="sink", scheduler=self.scheduler)
+        sink.input.inp = module.output.result
         aio.run(self.scheduler.start(persist=True))
         t = module.result
         self.assertFalse(t is None)

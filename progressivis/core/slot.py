@@ -6,7 +6,6 @@ from __future__ import annotations
 from typing import Any, Optional, Dict, Type, TYPE_CHECKING, Union, List
 
 import logging
-from collections import namedtuple
 from .changemanager_base import EMPTY_BUFFER, BaseChangeManager
 
 # from .changemanager_literal import LiteralChangeManager
@@ -20,10 +19,9 @@ if TYPE_CHECKING:
     from .changemanager_base import ChangeBuffer, _base_accessor, _selection_accessor
 
 
-class SlotDescriptor(
-    namedtuple(
-        "SD",
-        [
+class SlotDescriptor:
+    "SlotDescriptor is used in modules to describe the input/output slots."
+    __slots__ = (
             "name",
             "type",
             "required",
@@ -34,14 +32,10 @@ class SlotDescriptor(
             "buffer_deleted",
             "buffer_exposed",
             "buffer_masked",
-        ],
     )
-):
-    "SlotDescriptor is used in modules to describe the input/output slots."
-    __slots__ = ()
 
-    def __new__(
-        cls,
+    def __init__(
+        self,
         name,
         type=None,
         required=True,
@@ -53,20 +47,16 @@ class SlotDescriptor(
         buffer_exposed=True,
         buffer_masked=True,
     ):
-        # pylint: disable=redefined-builtin
-        return super(SlotDescriptor, cls).__new__(
-            cls,
-            name,
-            type,
-            required,
-            multiple,
-            datashape,
-            buffer_created,
-            buffer_updated,
-            buffer_deleted,
-            buffer_exposed,
-            buffer_masked,
-        )
+        self.name = name
+        self.type = type
+        self.required = required
+        self.multiple = multiple
+        self.datashape = datashape
+        self.buffer_created = buffer_created
+        self.buffer_updated = buffer_updated
+        self.buffer_deleted = buffer_deleted
+        self.buffer_exposed = buffer_exposed
+        self.buffer_masked = buffer_masked
 
 
 class Slot:

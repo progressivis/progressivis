@@ -62,13 +62,13 @@ class DatasetFactory(StorageObject):
         shape: Optional[Shape] = None,
         dtype: Optional[DTypeLike] = None,
         data: Optional[Any] = None,
-        **kwds
+        **kwds: Dict[str, Any]
     ) -> Dataset:
         pass
 
     @abstractmethod
     def require_dataset(
-        self, name: str, shape: Shape, dtype: DTypeLike, exact=False, **kwds
+        self, name: str, shape: Shape, dtype: DTypeLike, exact: bool = False, **kwds: Dict[str, Any]
     ) -> Dataset:
         pass
 
@@ -96,13 +96,13 @@ class Group(DatasetFactory):
         shape: Optional[Shape] = None,
         dtype: Optional[DTypeLike] = None,
         data: Optional[Any] = None,
-        **kwds
+        **kwds: Dict[str, Any]
     ) -> Dataset:
         pass
 
     @abstractmethod
     def require_dataset(
-        self, name: str, shape: Shape, dtype: DTypeLike, exact=False, **kwds
+        self, name: str, shape: Shape, dtype: DTypeLike, exact: bool = False, **kwds: Dict[str, Any]
     ) -> Dataset:
         pass
 
@@ -194,7 +194,7 @@ class StorageEngine(Group):
         self._create_dataset_kwds: Dict[str, Any] = dict(create_dataset_kwds or {})
 
     @staticmethod  # type: ignore
-    @contextmanager  # type: ignore
+    @contextmanager
     def default_engine(engine: str) -> None:   # type: ignore
         if engine not in StorageEngine._engines:
             raise ValueError("Unknown storage engine %s", engine)
@@ -213,10 +213,10 @@ class StorageEngine(Group):
     def name(self) -> str:
         return self._name
 
-    def open(self, name: str, flags, **kwds) -> None:
+    def open(self, name: str, flags: Any, **kwds: Dict[str, Any]) -> None:
         pass
 
-    def close(self, name: str, flags, **kwds) -> None:
+    def close(self, name: str, flags: Any, **kwds: Dict[str, Any]) -> None:
         pass
 
     def flush(self) -> None:

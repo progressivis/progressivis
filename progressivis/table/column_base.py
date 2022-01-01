@@ -10,11 +10,24 @@ import numpy as np
 
 from progressivis.core.config import get_option
 
-from typing import Any, Optional, List, TYPE_CHECKING, Callable, Union, cast, Sequence
+from typing import (
+    Any,
+    Optional,
+    List,
+    TYPE_CHECKING,
+    Callable,
+    Union,
+    cast,
+    Sequence,
+    Tuple,
+    Iterator,
+    Dict
+)
 
 if TYPE_CHECKING:
-    from .table_base import IndexTable, Tuple, TableChanges
+    from .table_base import IndexTable, TableChanges
     from .dshape import DataShape
+    from ..core.index_update import IndexUpdate
 
 
 logger = logging.getLogger(__name__)
@@ -137,7 +150,7 @@ class BaseColumn(metaclass=ABCMeta):
     def __len__(self) -> int:
         pass
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[Any]:
         return np.nditer(self.value)
 
     @abstractmethod
@@ -146,12 +159,12 @@ class BaseColumn(metaclass=ABCMeta):
 
     def tolist(self) -> List[Any]:
         "Return a list from the values of the column"
-        return self.values.tolist()
+        return self.values.tolist()  # type: ignore
 
     def read_direct(self,
-                    array: np.ndarray,
+                    array: np.ndarray[Any, Any],
                     source_sel: Any = None,
-                    dest_sel: Any = None):
+                    dest_sel: Any = None) -> None:
         """ Read data from column into an existing NumPy array.
 
         Selections must be the output of numpy.s_[<args>] or slice.
@@ -166,12 +179,12 @@ class BaseColumn(metaclass=ABCMeta):
         pass
 
     @abstractproperty
-    def value(self) -> np.ndarray:
+    def value(self) -> np.ndarray[Any, Any]:
         "Return a numpy array-compatible object containing the values"
         pass
 
     @property
-    def values(self) -> np.ndarray:
+    def values(self) -> np.ndarray[Any, Any]:
         "Synonym with value"
         return self.value
 
@@ -197,7 +210,7 @@ class BaseColumn(metaclass=ABCMeta):
         pass
 
     @abstractproperty
-    def dtype(self) -> np.dtype:
+    def dtype(self) -> np.dtype[Any]:
         "Return the dtype"
         pass
 
@@ -244,36 +257,43 @@ class BaseColumn(metaclass=ABCMeta):
         return self._index.changes
 
     @changes.setter
-    def changes(self, tablechange: Optional[TableChanges]):
+    def changes(self, tablechange: Optional[TableChanges]) -> None:
         "Set the ChangeManager associated with the index of this column"
         if self.index is None:
             raise RuntimeError("Column has no index")
         self.index.changes = tablechange
 
-    def compute_updates(self, start: int, now: int, mid: str, cleanup: bool = True):
+    def compute_updates(self,
+                        start: int,
+                        now: int,
+                        mid: str,
+                        cleanup: bool = True) -> Optional[IndexUpdate]:
         "Return the updates of this column managed by the index"
         if self.index is None:
             return None
         return self.index.compute_updates(start, now, mid, cleanup)
 
     def unary(self,
-              operation=Callable[[np.ndarray, int, float, bool, str], np.ndarray],
-              **kwargs):
+              # operation: Callable[[np.ndarray[Any, Any], int, float, bool, str], np.ndarray[Any, Any]],
+              operation: Callable[..., np.ndarray[Any, Any]],
+              **kwargs: Dict[str, Any]) -> np.ndarray[Any, Any]:
         "Unary function manager"
         axis = kwargs.pop("axis", 0)
         keepdims = kwargs.pop("keepdims", False)
         # ignore other kwargs, maybe raise error in the future
-        return operation(self.value, axis=axis, keepdims=keepdims)
+        return operation(self.value, axis=axis, keepdims=keepdims)  # type: ignore
 
     def binary(self,
-               operation: Callable[[np.ndarray, Union[np.ndarray, int, float, bool, str]], np.ndarray],
-               other: Union[np.ndarray, BaseColumn, int, float, bool, str],
-               **kwargs) -> np.ndarray:
+               operation: Callable[[np.ndarray[Any, Any],
+                                    Union[np.ndarray[Any, Any], int, float, bool, str]],
+                                   np.ndarray[Any, Any]],
+               other: Union[np.ndarray[Any, Any], BaseColumn, int, float, bool, str],
+               **kwargs: Dict[str, Any]) -> np.ndarray[Any, Any]:
         "Binary function manager"
         axis = kwargs.pop("axis", 0)
         assert axis == 0
         # if isinstance(other, (int, float, bool, np.ndarray)):
-        value: np.ndarray
+        value: np.ndarray[Any, Any]
         if isinstance(other, (np.ndarray, int, float, bool, str)):
             value = operation(self.value, other)
         elif isinstance(other, BaseColumn):
@@ -282,120 +302,120 @@ class BaseColumn(metaclass=ABCMeta):
             raise ValueError(f"Invalid type {type(other)}")
         return value
 
-    def __abs__(self, **kwargs) -> np.ndarray:
+    def __abs__(self, **kwargs: Dict[str, Any]) -> np.ndarray[Any, Any]:
         return self.unary(np.abs, **kwargs)
 
-    def __add__(self, other) -> np.ndarray:
+    def __add__(self, other: BaseColumn) -> np.ndarray[Any, Any]:
         return self.binary(operator.add, other)
 
-    def __radd__(self, other) -> np.ndarray:
+    def __radd__(self, other: BaseColumn) -> np.ndarray[Any, Any]:
         return other.binary(operator.add, self)
 
-    def __and__(self, other) -> np.ndarray:
+    def __and__(self, other: BaseColumn) -> np.ndarray[Any, Any]:
         return self.binary(operator.and_, other)
 
-    def __rand__(self, other) -> np.ndarray:
+    def __rand__(self, other: BaseColumn) -> np.ndarray[Any, Any]:
         return other.binary(operator.and_, self)
 
-    def __eq__(self, other):  # type: ignore
+    def __eq__(self, other: BaseColumn):  # type: ignore
         return self.binary(operator.eq, other)
 
-    def __gt__(self, other) -> np.ndarray:
+    def __gt__(self, other: BaseColumn) -> np.ndarray[Any, Any]:
         return self.binary(operator.gt, other)
 
-    def __ge__(self, other) -> np.ndarray:
+    def __ge__(self, other: BaseColumn) -> np.ndarray[Any, Any]:
         return self.binary(operator.ge, other)
 
-    def __invert__(self) -> np.ndarray:
+    def __invert__(self) -> np.ndarray[Any, Any]:
         return self.unary(np.invert)
 
-    def __lshift__(self, other) -> np.ndarray:
+    def __lshift__(self, other: BaseColumn) -> np.ndarray[Any, Any]:
         return self.binary(operator.lshift, other)
 
-    def __rlshift__(self, other) -> np.ndarray:
+    def __rlshift__(self, other: BaseColumn) -> np.ndarray[Any, Any]:
         return other.binary(operator.lshift, self)
 
-    def __lt__(self, other) -> np.ndarray:
+    def __lt__(self, other: BaseColumn) -> np.ndarray[Any, Any]:
         return self.binary(operator.lt, other)
 
-    def __le__(self, other) -> np.ndarray:
+    def __le__(self, other: BaseColumn) -> np.ndarray[Any, Any]:
         return self.binary(operator.le, other)
 
-    def __mod__(self, other) -> np.ndarray:
+    def __mod__(self, other: BaseColumn) -> np.ndarray[Any, Any]:
         return self.binary(operator.mod, other)
 
-    def __rmod__(self, other) -> np.ndarray:
+    def __rmod__(self, other: BaseColumn) -> np.ndarray[Any, Any]:
         return other.binary(operator.mod, self)
 
-    def __mul__(self, other) -> np.ndarray:
+    def __mul__(self, other: BaseColumn) -> np.ndarray[Any, Any]:
         return self.binary(operator.mul, other)
 
-    def __rmul__(self, other) -> np.ndarray:
+    def __rmul__(self, other: BaseColumn) -> np.ndarray[Any, Any]:
         return other.binary(operator.mul, self)
 
-    def __ne__(self, other) -> bool:
+    def __ne__(self, other: Any) -> bool:
         return any(self.binary(operator.ne, other))
 
-    def __or__(self, other) -> np.ndarray:
+    def __or__(self, other: BaseColumn) -> np.ndarray[Any, Any]:
         return self.binary(operator.or_, other)
 
     def __pos__(self) -> BaseColumn:
         return self
 
-    def __ror__(self, other) -> np.ndarray:
+    def __ror__(self, other: BaseColumn) -> np.ndarray[Any, Any]:
         return other.binary(operator.or_, self)
 
-    def __pow__(self, other) -> np.ndarray:
+    def __pow__(self, other: BaseColumn) -> np.ndarray[Any, Any]:
         return self.binary(operator.pow, other)
 
-    def __rpow__(self, other) -> np.ndarray:
+    def __rpow__(self, other: BaseColumn) -> np.ndarray[Any, Any]:
         return other.binary(operator.pow, self)
 
-    def __rshift__(self, other) -> np.ndarray:
+    def __rshift__(self, other: BaseColumn) -> np.ndarray[Any, Any]:
         return self.binary(operator.rshift, other)
 
-    def __rrshift__(self, other) -> np.ndarray:
+    def __rrshift__(self, other: BaseColumn) -> np.ndarray[Any, Any]:
         return other.binary(operator.rshift, self)
 
-    def __sub__(self, other) -> np.ndarray:
+    def __sub__(self, other: BaseColumn) -> np.ndarray[Any, Any]:
         return self.binary(operator.sub, other)
 
-    def __rsub__(self, other) -> np.ndarray:
+    def __rsub__(self, other: BaseColumn) -> np.ndarray[Any, Any]:
         return other.binary(operator.sub, self)
 
-    def __truediv__(self, other) -> np.ndarray:
+    def __truediv__(self, other: BaseColumn) -> np.ndarray[Any, Any]:
         return self.binary(operator.truediv, other)
 
-    def __rtruediv__(self, other) -> np.ndarray:
+    def __rtruediv__(self, other: BaseColumn) -> np.ndarray[Any, Any]:
         return other.binary(operator.truediv, self)
 
-    def __floordiv__(self, other) -> np.ndarray:
+    def __floordiv__(self, other: BaseColumn) -> np.ndarray[Any, Any]:
         return self.binary(operator.floordiv, other)
 
-    def __rfloordiv__(self, other) -> np.ndarray:
+    def __rfloordiv__(self, other: BaseColumn) -> np.ndarray[Any, Any]:
         return other.binary(operator.floordiv, self)
 
-    def __xor__(self, other) -> np.ndarray:
+    def __xor__(self, other: BaseColumn) -> np.ndarray[Any, Any]:
         return self.binary(operator.xor, other)
 
-    def __rxor__(self, other) -> np.ndarray:
+    def __rxor__(self, other: BaseColumn) -> np.ndarray[Any, Any]:
         return other.binary(operator.xor, self)
 
-    def any(self, **kwargs) -> bool:
+    def any(self, **kwargs: Dict[str, Any]) -> bool:
         "Return True if any element is not False"
-        return self.unary(np.any, **kwargs)
+        return self.unary(np.any, **kwargs)  # type: ignore
 
-    def all(self, **kwargs) -> bool:
+    def all(self, **kwargs: Dict[str, Any]) -> bool:
         "Return True if all the elements are True"
-        return self.unary(np.all, **kwargs)
+        return self.unary(np.all, **kwargs)  # type: ignore
 
-    def min(self, **kwargs) -> Any:
+    def min(self, **kwargs: Dict[str, Any]) -> Any:
         "Return the min value"
         axis = cast(int, kwargs.pop("axis", 0))
         keepdims = cast(bool, kwargs.pop("keepdims", False))
         return self.value.min(axis=axis, keepdims=keepdims)
 
-    def max(self, **kwargs) -> Any:
+    def max(self, **kwargs: Dict[str, Any]) -> Any:
         "Return the max value"
         axis = cast(int, kwargs.pop("axis", 0))
         keepdims = cast(bool, kwargs.pop("keepdims", False))

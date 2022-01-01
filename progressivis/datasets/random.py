@@ -1,14 +1,20 @@
+from __future__ import annotations
+
 import numpy as np
 import csv
 import os
 import os.path
+
+
+from typing import Optional, Any, List
+
 
 # filename='data/bigfile.csv'
 # rows = 1000000
 # cols = 30
 
 
-def generate_random_csv(filename: str, rows: int, cols: int, seed=1234) -> str:
+def generate_random_csv(filename: str, rows: int, cols: int, seed: int = 1234) -> str:
     if os.path.exists(filename):
         return filename
     try:
@@ -28,8 +34,8 @@ def generate_random_multivariate_normal_csv(
     filename: str,
     rows: int,
     seed: int = 1234,
-    header: str = None,
-    reset: bool = False
+    header: Optional[str] = None,
+    reset: Optional[bool] = False
 ) -> str:
     """
     Adapted from: https://github.com/e-/PANENE/blob/master/examples/kernel_density/online.py
@@ -39,11 +45,13 @@ def generate_random_multivariate_normal_csv(
     if isinstance(filename, str) and os.path.exists(filename) and not reset:
         return filename
 
-    def mv(n, mean, cov):
+    def mv(n: int,
+           mean: List[float],
+           cov: List[List[float]]) -> np.ndarray[Any, np.dtype[np.float32]]:
         return np.random.multivariate_normal(mean, cov, size=(n)).astype(np.float32)
 
     N = rows // 3
-    X = np.concatenate(
+    X = np.concatenate(  # type: ignore
         (
             mv(N, [0.1, 0.3], [[0.01, 0], [0, 0.09]]),
             mv(N, [0.7, 0.5], [[0.04, 0], [0, 0.01]]),
@@ -53,5 +61,5 @@ def generate_random_multivariate_normal_csv(
     )
     np.random.shuffle(X)
     kw = {} if header is None else dict(header=header, comments="")
-    np.savetxt(filename, X, delimiter=",", **kw)
+    np.savetxt(filename, X, delimiter=",", **kw)  # type: ignore
     return filename

@@ -1,4 +1,6 @@
 # Author: Jaemin Jo <jmjo@hcil.snu.ac.kr>
+from __future__ import annotations
+
 
 import numpy as np
 
@@ -8,10 +10,13 @@ except Exception:
     pass
 
 
+from typing import Optional, Any
+
+
 class KNNKernelDensity:
     SQRT2PI = np.sqrt(2 * np.pi)
 
-    def __init__(self, X: np.ndarray, online: bool = False):
+    def __init__(self, X: np.ndarray[Any, Any], online: Optional[bool] = False):
         self.X = X
         self.index = Index(X)
         if not online:

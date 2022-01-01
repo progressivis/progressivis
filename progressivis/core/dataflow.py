@@ -377,7 +377,7 @@ class Dataflow:
                     else:
                         self.reachability[inp] = inter
 
-    def collateral_damage(self, name: str) -> Set[str]:
+    def collateral_damage(self, *names: str) -> Set[str]:
         """Return the list of modules deleted when the specified one is deleted.
 
         :param name: module to delete
@@ -385,73 +385,92 @@ class Dataflow:
         :rtype: set
 
         """
-        assert isinstance(name, str)
+        deps = set()  # modules connected with a required slot
 
-        if name not in self._modules:
-            return Set()
-        deps = set([name])  # modules connected with a required slot
         maybe_deps: Set[str] = set()  # modules with a non required one
-        queue = set(deps)
+        queue = set(names)
+        queue &= self._modules.keys()
+        # TODO check if all the modules exist
         done: Set[str] = set()
 
         while queue:
             name = queue.pop()
             done.add(name)
+            deps.add(name)
             # collect children and ancestors
-            self._collect_deps(name, deps, maybe_deps)
-            queue = deps - done
+            self._collect_collaterals(name, deps, maybe_deps)
+            queue.update(deps - done)
 
         # Check from the maybe_deps if some would be deleted for sure
         again = True
         while again:
             again = False
-            for maybe in maybe_deps:
+            for maybe in list(maybe_deps):
                 die = self.die_if_deps_die(name, deps, maybe_deps)
                 if die:
                     deps.add(name)
-                    maybe_deps.remove(name)
+                    maybe_deps.discard(name)
                 elif die is None:
                     again = True  # need to iterate
                 else:
-                    maybe_deps.remove(name)
+                    maybe_deps.discard(name)
         return deps
 
-    def _collect_deps(self, name: str, deps: Set[str], maybe_deps: Set[str]) -> None:
-        self._input_deps(name, deps, maybe_deps)
-        self._output_deps(name, deps, maybe_deps)
+    def _collect_collaterals(self, name: str, deps: Set[str], maybe_deps: Set[str]) -> None:
+        self._collect_output_collaterals(name, deps, maybe_deps)
+        self._collect_input_collaterals(name, deps, maybe_deps)
 
-    def _input_deps(self, name: str, deps: Set[str], maybe_deps: Set[str]) -> None:
+    def _collect_output_collaterals(self, name: str, deps: Set[str], maybe_deps: Set[str]) -> None:
         outputs = self.outputs[name]
         for olist in outputs.values():
             if olist is None:
                 continue
             for oslot in olist:
-                module = oslot.input_module
-                if module.name in deps:
-                    continue
-                slot_name = oslot.input_name
-                desc = module.input_slot_descriptor(slot_name)
-                if desc.required:
-                    deps.add(module.name)
-                    maybe_deps.discard(module.name)  # in case
-                else:
-                    maybe_deps.add(module.name)
+                self._collect_input_collaterals_if_required(oslot, deps, maybe_deps)
 
-    def _output_deps(self, name: str, deps: Set[str], maybe_deps: Set[str]) -> None:
+    def _collect_input_collaterals_if_required(self,
+                                               oslot: Slot,
+                                               deps: Set[str],
+                                               maybe_deps: Set[str]) -> None:
+        # collect input module only if the input slot being removed is required
+        module = oslot.input_module
+        if module.name in deps:
+            return  # already being removed
+        slot_name = oslot.input_name
+        desc = module.input_slot_descriptor(slot_name)
+        if desc.required:
+            deps.add(module.name)
+            maybe_deps.discard(module.name)  # in case
+        else:
+            maybe_deps.add(module.name)
+
+    def _collect_output_collaterals_if_required(self,
+                                                islot: Slot,
+                                                deps: Set[str],
+                                                maybe_deps: Set[str]) -> None:
+        module = islot.output_module
+        if module.name in deps:  # already being removed
+            return
+        slot_name = islot.output_name
+        olist = self.outputs[module.name][slot_name]  # the slot list exists
+        desc = module.output_slot_descriptor(slot_name)
+        if not desc.required:
+            return
+        # if the slot is required, the module is removed if all it outputs are
+        remaining = len(olist)
+        for oslot in olist:
+            if oslot.input_module.name in deps:
+                remaining -= 1
+        if remaining == 0:
+            deps.add(module.name)
+            maybe_deps.discard(module.name)
+
+    def _collect_input_collaterals(self, name: str, deps: Set[str], maybe_deps: Set[str]) -> None:
         inputs = self.inputs[name]
         for islot in inputs.values():
             if islot is None:
                 continue
-            module = islot.output_module
-            if module.name in deps:
-                continue
-            slot_name = islot.output_name
-            desc = module.output_slot_descriptor(slot_name)
-            if desc.required:
-                deps.add(module.name)
-                maybe_deps.discard(module.name)  # in case
-            else:
-                maybe_deps.add(module.name)
+            self._collect_output_collaterals_if_required(islot, deps, maybe_deps)
 
     def die_if_deps_die(
         self, name: str, deps: Set[str], maybe_deps: Set[str]

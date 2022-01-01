@@ -278,16 +278,16 @@ class Column(BaseColumn):
     def read_direct(self,
                     array: np.ndarray,
                     source_sel: Any = None,
-                    dest_sel: Any = None) -> np.ndarray:
+                    dest_sel: Any = None) -> None:
         assert self.dataset is not None
         if hasattr(self.dataset, "read_direct"):
             if isinstance(source_sel, np.ndarray) and source_sel.dtype == np.int_:
                 source_sel = list(source_sel)
             #            if is_fancy(source_sel):
             #                source_sel = fancy_to_mask(source_sel, self.shape)
-            return self.dataset.read_direct(array, source_sel, dest_sel)
+            self.dataset.read_direct(array, source_sel, dest_sel)
         else:
-            return super(Column, self).read_direct(array, source_sel, dest_sel)
+            super(Column, self).read_direct(array, source_sel, dest_sel)
 
     def __setitem__(self, index: Index, val: Any) -> None:
         assert self.dataset is not None

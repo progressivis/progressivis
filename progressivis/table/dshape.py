@@ -1,10 +1,10 @@
 import datashape as ds
-from datashape import DataShape
+from datashape import DataShape as DataShape
 import pandas as pd
 import numpy as np
 from progressivis.core.utils import integer_types, gen_columns
 
-from typing import Union, Tuple, Dict, Any, List, Optional
+from typing import Union, Tuple, Dict, Any, List, Optional, Sequence
 
 
 def dshape_print(dshape: Union[ds.Mono, str]) -> str:
@@ -19,7 +19,7 @@ def dshape_table_check(dshape: DataShape):
     return len(dshape) == 1 and isinstance(dshape[0], ds.Record)
 
 
-def dshape_create(x: Union[DataShape, str, ds.Mono, list, tuple]) -> DataShape:
+def dshape_create(x: Union[DataShape, str, ds.Mono, Sequence]) -> DataShape:
     "Create a datashape, maybe check later to limit to known types."
     return ds.dshape(x)
 

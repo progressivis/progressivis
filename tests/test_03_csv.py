@@ -1,5 +1,5 @@
 from . import ProgressiveTest
-from progressivis.core import aio
+from progressivis.core import aio, Sink
 from progressivis.io import CSVLoader
 from progressivis.table.constant import Constant
 from progressivis.table.table import Table
@@ -39,6 +39,8 @@ class TestProgressiveLoadCSV(ProgressiveTest):
             get_dataset("bigfile"), index_col=False, header=None, scheduler=s
         )
         self.assertTrue(module.result is None)
+        sink = Sink(name="sink", scheduler=s)
+        sink.input.inp = module.output.result
         aio.run(s.start())
         self.assertEqual(len(module.result), 1000000)
 
@@ -51,6 +53,8 @@ class TestProgressiveLoadCSV(ProgressiveTest):
             scheduler=s,
         )
         self.assertTrue(module.result is None)
+        sink = Sink(name="sink", scheduler=s)
+        sink.input.inp = module.output.result
         aio.run(s.start())
         self.assertEqual(len(module.result), 1000000)
 
@@ -64,6 +68,8 @@ class TestProgressiveLoadCSV(ProgressiveTest):
         cst = Constant(table=filenames, scheduler=s)
         csv = CSVLoader(index_col=False, header=None, scheduler=s)
         csv.input.filenames = cst.output.result
+        sink = Sink(name="sink", scheduler=s)
+        sink.input.inp = csv.output.result
         aio.run(csv.start())
         self.assertEqual(len(csv.result), 60000)
 
@@ -82,6 +88,8 @@ class TestProgressiveLoadCSV(ProgressiveTest):
         cst = Constant(table=filenames, scheduler=s)
         csv = CSVLoader(index_col=False, header=None, scheduler=s)
         csv.input.filenames = cst.output.result
+        sink = Sink(name="sink", scheduler=s)
+        sink.input.inp = csv.output.result
         aio.run(csv.start())
         self.assertEqual(len(csv.result), 60000)
 
@@ -94,6 +102,8 @@ class TestProgressiveLoadCSV(ProgressiveTest):
             header=None,
             scheduler=s,
         )
+        sink = Sink(name="sink", scheduler=s)
+        sink.input.inp = module.output.result
         self.assertTrue(module.result is None)
         aio.run(s.start())
         table = module.result
@@ -113,6 +123,8 @@ class TestProgressiveLoadCSV(ProgressiveTest):
             header=None,
             scheduler=s,
         )
+        sink = Sink(name="sink", scheduler=s)
+        sink.input.inp = module.output.result
         self.assertTrue(module.result is None)
         aio.run(s.start())
         table = module.result
@@ -129,6 +141,8 @@ class TestProgressiveLoadCSV(ProgressiveTest):
             as_array=lambda cols: {"array": [c for c in cols if c != "class"]},
             scheduler=s,
         )
+        sink = Sink(name="sink", scheduler=s)
+        sink.input.inp = module.output.result
         self.assertTrue(module.result is None)
         aio.run(s.start())
         table = module.result
