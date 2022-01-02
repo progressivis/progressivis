@@ -1,5 +1,5 @@
 from . import ProgressiveTest
-from progressivis.core import aio
+from progressivis.core import aio, Sink
 from progressivis.io import SimpleCSVLoader
 from progressivis.table.constant import Constant
 from progressivis.table.table import Table
@@ -46,6 +46,8 @@ class TestProgressiveLoadCSV(ProgressiveTest):
             get_dataset("bigfile"), index_col=False, header=None, scheduler=s
         )
         self.assertTrue(module.result is None)
+        sink = Sink(scheduler=s)
+        sink.input.inp = module.output.result
         aio.run(s.start())
         self.assertEqual(len(module.result), 1000000)
 
@@ -58,6 +60,8 @@ class TestProgressiveLoadCSV(ProgressiveTest):
             scheduler=s,
         )
         self.assertTrue(module.result is None)
+        sink = Sink(scheduler=s)
+        sink.input.inp = module.output.result
         aio.run(s.start())
         self.assertEqual(len(module.result), 1000000)
 
@@ -71,6 +75,8 @@ class TestProgressiveLoadCSV(ProgressiveTest):
         cst = Constant(table=filenames, scheduler=s)
         csv = SimpleCSVLoader(index_col=False, header=None, scheduler=s)
         csv.input.filenames = cst.output.result
+        sink = Sink(scheduler=s)
+        sink.input.inp = csv.output.result
         aio.run(csv.start())
         self.assertEqual(len(csv.result), 60000)
 
@@ -89,6 +95,8 @@ class TestProgressiveLoadCSV(ProgressiveTest):
         cst = Constant(table=filenames, scheduler=s)
         csv = SimpleCSVLoader(index_col=False, header=None, scheduler=s)
         csv.input.filenames = cst.output.result
+        sink = Sink(scheduler=s)
+        sink.input.inp = csv.output.result
         aio.run(csv.start())
         self.assertEqual(len(csv.result), 60000)
 

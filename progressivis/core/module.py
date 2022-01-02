@@ -169,7 +169,7 @@ class Module(metaclass=ModuleMeta):
         group: Optional[str] = None,
         scheduler: Optional[Scheduler] = None,
         storagegroup: Group = None,
-        **kwds,
+        **kwds: Any,
     ):
         self._args: Tuple
         self._kwds: Dict[str, Any]
@@ -444,7 +444,7 @@ class Module(metaclass=ModuleMeta):
         self.state = Module.state_zombie
 
     def create_slot(
-        self, output_name: str, input_module: Module, input_name: str
+        self, output_name: Union[str, int], input_module: Module, input_name: str
     ) -> Slot:
         "Create a specified output slot"
         if isinstance(output_name, int):
@@ -453,6 +453,7 @@ class Module(metaclass=ModuleMeta):
             slot_desc = self.all_outputs[pos]
             assert slot_desc.name == "result"  # TODO: Idem
             output_name = slot_desc.name
+        assert isinstance(output_name, str)
         return Slot(self, output_name, input_module, input_name)
 
     def connect_output(
@@ -544,7 +545,7 @@ class Module(metaclass=ModuleMeta):
     def output_slot_descriptor(self, name: str) -> SlotDescriptor:
         return self.output_descriptors[name]
 
-    def output_slot_type(self, name: str) -> Type:
+    def output_slot_type(self, name: str) -> Optional[Union[Type, Tuple[Type, ...]]]:
         return self.output_descriptors[name].type
 
     def output_slot_values(self):

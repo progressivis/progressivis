@@ -4,7 +4,7 @@ from ..core.tracer_base import Tracer
 from .table import Table
 import numpy as np
 
-from typing import Optional, List, Dict, Union, cast
+from typing import Optional, List, Dict, Union, cast, Any
 
 
 class TableTracer(Tracer):
@@ -41,7 +41,7 @@ class TableTracer(Tracer):
         ]
     )
 
-    def __init__(self, name: str, storagegroup):
+    def __init__(self, name: str, storagegroup: Any) -> None:
         self.table = Table(
             "trace_" + name,
             dshape=TableTracer.TRACER_DSHAPE,
@@ -60,13 +60,13 @@ class TableTracer(Tracer):
     def trace_stats(self, max_runs: Optional[int] = None) -> Table:
         return self.table
 
-    def start_run(self, ts: float, run_number: int, **kwds):
+    def start_run(self, ts: float, run_number: int, **kwds: Any) -> None:
         self.last_run_start = dict(TableTracer.TRACER_INIT)  # type: ignore
         self.last_run_start["start"] = ts
         self.last_run_start["run"] = run_number
         self.step_count = 0
 
-    def end_run(self, ts: float, run_number: int, **kwds):
+    def end_run(self, ts: float, run_number: int, **kwds: Any) -> None:
         if self.last_run_start is None:
             return
         row = self.last_run_start
@@ -83,17 +83,17 @@ class TableTracer(Tracer):
         self.last_run_details = ""
         self.last_run_start = None
 
-    def run_stopped(self, ts: float, run_number: int, **kwds):
+    def run_stopped(self, ts: float, run_number: int, **kwds: Any) -> None:
         self.last_run_details += "stopped"
 
-    def before_run_step(self, ts: float, run_number: int, **kwds):
+    def before_run_step(self, ts: float, run_number: int, **kwds: Any) -> None:
         self.last_run_step_start = {
             "start": ts,
             "run": run_number,
             "steps": self.step_count,
         }
 
-    def after_run_step(self, ts: float, run_number: int, **kwds):
+    def after_run_step(self, ts: float, run_number: int, **kwds: Any) -> None:
         assert self.last_run_step_start
         row = self.last_run_step_start
         for (name, dflt) in TableTracer.TRACER_INIT.items():
@@ -116,15 +116,15 @@ class TableTracer(Tracer):
         self.last_run_details = ""
         self.last_run_step_start = None
 
-    def exception(self, ts: float, run_number: int, **kwds):
+    def exception(self, ts: float, run_number: int, **kwds: Any) -> None:
         self.last_run_details += "exception"
 
     def terminated(self, ts: float, run_number: int, **kwds):
         self.last_run_details += "terminated"
 
-    def get_speed(self, depth: int = 15):
-        res: List[Union[float, None]] = []
-        elt: Union[float, None]
+    def get_speed(self, depth: int = 15) -> List[Optional[float]]:
+        res: List[Optional[float]] = []
+        elt: Optional[float]
         non_zero = self.table.eval("steps_run!=0", as_slice=False)
         sz = min(depth, len(non_zero))
         idx = non_zero[-sz:]

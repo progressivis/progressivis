@@ -5,7 +5,7 @@ import logging
 import numpy as np
 
 from ..core.utils import indices_len, fix_loc
-from ..core.slot import SlotDescriptor
+from ..core.slot import SlotDescriptor, Slot
 from ..table.module import TableModule, ReturnRunStep
 from ..table.table import Table, BaseTable
 from ..table.dshape import dshape_all_dtype
@@ -97,7 +97,7 @@ class VarH(TableModule):
     ) -> ReturnRunStep:
         assert self.context
         with self.context as ctx:
-            dfslot = ctx.table
+            dfslot: Slot = ctx.table
             indices = dfslot.created.next(step_size)  # returns a slice
             steps = indices_len(indices)
             if steps == 0:

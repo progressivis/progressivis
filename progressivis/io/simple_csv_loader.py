@@ -35,7 +35,7 @@ class SimpleCSVLoader(TableModule):
         filter_: Callable[[pd.DataFrame], bool] = None,
         force_valid_ids=True,
         fillvalues: Dict[str, Any] = None,
-        **kwds
+        **kwds: Any
     ):
         super().__init__(**kwds)
         self.default_step_size = kwds.get("chunksize", 1000)  # initial guess

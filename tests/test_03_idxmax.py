@@ -19,6 +19,8 @@ class TestIdxMax(ProgressiveTest):
         max_.input[0] = random.output.result
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = idxmax.output.result
+        pr2 = Print(proc=self.terse, scheduler=s)
+        pr2.input[0] = max_.output.result
         aio.run(s.start())
         max1 = max_.result
         # print('max1', max1)
@@ -39,6 +41,8 @@ class TestIdxMax(ProgressiveTest):
         max_.input[0] = stirrer.output.result
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = idxmax.output.result
+        pr2 = Print(proc=self.terse, scheduler=s)
+        pr2.input[0] = max_.output.result
         aio.run(s.start())
         # import pdb;pdb.set_trace()
         max1 = max_.result
@@ -56,6 +60,8 @@ class TestIdxMax(ProgressiveTest):
         min_.input[0] = random.output.result
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = idxmin.output.result
+        pr2 = Print(proc=self.terse, scheduler=s)
+        pr2.input[0] = min_.output.result
         aio.run(s.start())
         min1 = min_.result
         # print('min1', min1)
@@ -76,6 +82,8 @@ class TestIdxMax(ProgressiveTest):
         min_.input[0] = stirrer.output.result
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = idxmin.output.result
+        pr2 = Print(proc=self.terse, scheduler=s)
+        pr2.input[0] = min_.output.result
         aio.run(s.start())
         min1 = min_.result
         # print('min1', min1)

@@ -2,10 +2,23 @@ from __future__ import annotations
 
 from functools import wraps, partial
 
-from typing import Callable, Tuple, Union, Any, Dict, cast, TYPE_CHECKING
+from typing import (
+    Callable,
+    Sequence,
+    Tuple,
+    Union,
+    Any,
+    Dict,
+    cast,
+    TYPE_CHECKING,
+    Optional,
+    List,
+    Set
+)
 
 if TYPE_CHECKING:
     from .module import Module
+    from .slot import Slot
 
 
 ReturnRunStep = Dict[str, int]
@@ -13,35 +26,37 @@ RunStepCallable = Callable[[Any, int, int, float], ReturnRunStep]
 
 
 class _CtxImpl:
-    def __init__(self):
-        self._has_buffered = set()
+    def __init__(self) -> None:
+        self._has_buffered: Set[str] = set()
+
+    def __getattr__(self, name: str) -> Slot: ...
 
 
 class _Context:
-    def __init__(self):
+    def __init__(self) -> None:
         self._impl = _CtxImpl()
-        self._parsed = False
-        self._checked = False
-        self._slot_policy = None
-        self._slot_expr = []
+        self._parsed: bool = False
+        self._checked: bool = False
+        self._slot_policy: Optional[str] = None
+        self._slot_expr: List[Union[Sequence[Any], str]] = []
 
     def reset(self) -> None:
         self._impl = _CtxImpl()
 
-    def __enter__(self):
+    def __enter__(self) -> _CtxImpl:
         self._parsed = True
         if not self._checked:
             raise ValueError("mandatory @run_if_... decorator is missing!")
         return self._impl
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
         self.reset()
 
 
 def process_slot(
     *names: str,
     reset_if: Union[bool, str, Tuple[str, ...]] = ("update", "delete"),
-    reset_cb: Union[None, str, Callable] = None,
+    reset_cb: Union[None, str, Callable[[Module], None]] = None,
 ) -> Callable[[RunStepCallable], RunStepCallable]:
     """
     this function includes reset_if, reset_cb in the closure
@@ -63,7 +78,7 @@ def process_slot(
         # print("process slot deco", names)
         @wraps(run_step_)
         def run_step_wrapper(
-            self, run_number: int, step_size: int, howlong: float
+            self: Module, run_number: int, step_size: int, howlong: float
         ) -> ReturnRunStep:
             """
             decoration
@@ -110,19 +125,19 @@ _RULES = dict(run_if_all="or_if_all", run_if_any="and_if_any", run_always="run_a
 _INV_RULES = {v: k for (k, v) in _RULES.items()}
 
 
-def accepted_first(s):
+def accepted_first(s: str) -> bool:
     return s in _RULES
 
 
 DecCallable = Callable[[RunStepCallable], RunStepCallable]
 
 
-def _slot_policy_rule(decname, *slots_maybe):
+def _slot_policy_rule(decname: str, *slots_maybe: str):
     """
     this function includes *args in the closure
     """
     called_with_args = (not slots_maybe) or isinstance(slots_maybe[0], str)
-    slots = slots_maybe if called_with_args else tuple([])
+    slots: Sequence[str] = slots_maybe if called_with_args else tuple([])
     assert called_with_args or callable(slots_maybe[0])
 
     def decorator_(to_decorate: RunStepCallable) -> RunStepCallable:
@@ -135,7 +150,7 @@ def _slot_policy_rule(decname, *slots_maybe):
 
         @wraps(to_decorate)
         def decoration_(
-            self, run_number: int, step_size: int, howlong: float
+            self: Module, run_number: int, step_size: int, howlong: float
         ) -> ReturnRunStep:
             """
             this function makes the decoration
@@ -173,7 +188,7 @@ def _slot_policy_rule(decname, *slots_maybe):
 
     if called_with_args:
         return decorator_
-    return decorator_(slots_maybe[0])
+    return decorator_(slots_maybe[0])  # type: ignore
 
 
 run_if_all: DecCallable = partial(_slot_policy_rule, "run_if_all")

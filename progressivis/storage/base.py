@@ -63,7 +63,7 @@ class DatasetFactory(StorageObject):
         shape: Optional[Shape] = None,
         dtype: Optional[DTypeLike] = None,
         data: Optional[Any] = None,
-        **kwds: Dict[str, Any]
+        **kwds: Any
     ) -> Dataset:
         pass
 
@@ -74,7 +74,7 @@ class DatasetFactory(StorageObject):
         shape: Shape,
         dtype: DTypeLike,
         exact: bool = False,
-        **kwds: Dict[str, Any]
+        **kwds: Any
     ) -> Dataset:
         pass
 
@@ -102,7 +102,7 @@ class Group(DatasetFactory):
         shape: Optional[Shape] = None,
         dtype: Optional[DTypeLike] = None,
         data: Optional[Any] = None,
-        **kwds: Dict[str, Any]
+        **kwds: Any
     ) -> Dataset:
         pass
 
@@ -113,7 +113,7 @@ class Group(DatasetFactory):
         shape: Shape,
         dtype: DTypeLike,
         exact: bool = False,
-        **kwds: Dict[str, Any]
+        **kwds: Any
     ) -> Dataset:
         pass
 
@@ -224,10 +224,10 @@ class StorageEngine(Group):
     def name(self) -> str:
         return self._name
 
-    def open(self, name: str, flags: Any, **kwds: Dict[str, Any]) -> None:
+    def open(self, name: str, flags: Any, **kwds: Any) -> None:
         pass
 
-    def close(self, name: str, flags: Any, **kwds: Dict[str, Any]) -> None:
+    def close(self, name: str, flags: Any, **kwds: Any) -> None:
         pass
 
     def flush(self) -> None:

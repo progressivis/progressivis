@@ -4,7 +4,7 @@ commit/rollback semantics.
 """
 from __future__ import annotations
 
-from typing import Any, Dict, Set, List, TYPE_CHECKING, Optional
+from typing import Any, Dict, Set, List, TYPE_CHECKING, Optional, Union
 
 import logging
 
@@ -207,7 +207,7 @@ class Dataflow:
         slots[input_slot_name] += 1
         return slots[input_slot_name]
 
-    def _remove_module_inputs(self, name: str):
+    def _remove_module_inputs(self, name: str) -> None:
         for slot in self.inputs[name].values():
             outname = slot.output_name
             slots = self.outputs[slot.output_module.name][outname]
@@ -219,8 +219,8 @@ class Dataflow:
                 del self.outputs[slot.output_module.name][outname]
         del self.inputs[name]
 
-    def _remove_module_outputs(self, name: str):
-        emptied = []
+    def _remove_module_outputs(self, name: str) -> List[str]:
+        emptied: List[str] = []
         for oslots in self.outputs[name].values():
             for slot in oslots:
                 del self.inputs[slot.input_module.name][slot.input_name]
@@ -273,7 +273,7 @@ class Dataflow:
         return errors
 
     @staticmethod
-    def validate_module_inputs(module, inputs: Dict[str, Slot]) -> List[str]:
+    def validate_module_inputs(module: Module, inputs: Dict[str, Slot]) -> List[str]:
         """Validate the input slots on a module.
         Return a list of errors, empty if no error occured.
         """
@@ -308,11 +308,11 @@ class Dataflow:
         return errors
 
     @staticmethod
-    def validate_module_outputs(module, outputs: Dict[str, List[Slot]]):
+    def validate_module_outputs(module: Module, outputs: Dict[str, List[Slot]]) -> List[str]:
         """Validate the output slots on a module.
         Return a list of errors, empty if no error occured.
         """
-        errors = []
+        errors: List[str] = []
         outputs = dict(outputs)
         for slotdesc in module.output_descriptors.values():
             slot = outputs.get(slotdesc.name)
@@ -338,7 +338,8 @@ class Dataflow:
         return errors
 
     @staticmethod
-    def _dependency_csgraph(dependencies, index):
+    def _dependency_csgraph(dependencies: Dict[str, Dict[str, Slot]],
+                            index: Dict[str, int]) -> Any:
         size = len(index)
         row = []
         col = []
@@ -350,7 +351,7 @@ class Dataflow:
                 data.append(1)
         return csr_matrix((data, (row, col)), shape=(size, size))
 
-    def _compute_reachability(self, dependencies):
+    def _compute_reachability(self, dependencies: Dict[str, Dict[str, Slot]]) -> None:
         if self.reachability:
             return
         input_modules = self.get_inputs()
@@ -387,7 +388,6 @@ class Dataflow:
         """
         deps = set()  # modules connected with a required slot
 
-        maybe_deps: Set[str] = set()  # modules with a non required one
         queue = set(names)
         queue &= self._modules.keys()
         # TODO check if all the modules exist
@@ -398,43 +398,26 @@ class Dataflow:
             done.add(name)
             deps.add(name)
             # collect children and ancestors
-            self._collect_collaterals(name, deps, maybe_deps)
+            self._collect_collaterals(name, deps)
             queue.update(deps - done)
-
-        # Check from the maybe_deps if some would be deleted for sure
-        again = True
-        while again:
-            again = False
-            for maybe in list(maybe_deps):
-                die = self.die_if_deps_die(name, deps, maybe_deps)
-                if die:
-                    deps.add(name)
-                    maybe_deps.discard(name)
-                elif die is None:
-                    again = True  # need to iterate
-                else:
-                    maybe_deps.discard(name)
         return deps
 
-    def _collect_collaterals(
-        self, name: str, deps: Set[str], maybe_deps: Set[str]
-    ) -> None:
-        self._collect_output_collaterals(name, deps, maybe_deps)
-        self._collect_input_collaterals(name, deps, maybe_deps)
+    def _collect_collaterals(self, name: str, deps: Set[str]) -> None:
+        self._collect_output_collaterals(name, deps)
+        self._collect_input_collaterals(name, deps)
 
-    def _collect_output_collaterals(
-        self, name: str, deps: Set[str], maybe_deps: Set[str]
-    ) -> None:
+    def _collect_output_collaterals(self, name: str, deps: Set[str]) -> None:
         outputs = self.outputs[name]
         for olist in outputs.values():
             if olist is None:
                 continue
             for oslot in olist:
-                self._collect_input_collaterals_if_required(oslot, deps, maybe_deps)
+                self._collect_input_collaterals_if_required(oslot, deps)
 
     def _collect_input_collaterals_if_required(
-        self, oslot: Slot, deps: Set[str], maybe_deps: Set[str]
-    ) -> None:
+            self,
+            oslot: Slot,
+            deps: Set[str]) -> None:
         # collect input module only if the input slot being removed is required
         module = oslot.input_module
         if module.name in deps:
@@ -443,12 +426,9 @@ class Dataflow:
         desc = module.input_slot_descriptor(slot_name)
         if desc.required:
             deps.add(module.name)
-            maybe_deps.discard(module.name)  # in case
-        else:
-            maybe_deps.add(module.name)
 
     def _collect_output_collaterals_if_required(
-        self, islot: Slot, deps: Set[str], maybe_deps: Set[str]
+        self, islot: Slot, deps: Set[str]
     ) -> None:
         module = islot.output_module
         if module.name in deps:  # already being removed
@@ -465,16 +445,23 @@ class Dataflow:
                 remaining -= 1
         if remaining == 0:
             deps.add(module.name)
-            maybe_deps.discard(module.name)
 
     def _collect_input_collaterals(
-        self, name: str, deps: Set[str], maybe_deps: Set[str]
+        self, name: str, deps: Set[str]
     ) -> None:
         inputs = self.inputs[name]
         for islot in inputs.values():
             if islot is None:
                 continue
-            self._collect_output_collaterals_if_required(islot, deps, maybe_deps)
+            self._collect_output_collaterals_if_required(islot, deps)
+
+    def delete_modules(self, *name_or_mod: Union[str, Module]) -> None:
+        names = {m if isinstance(m, str) else m.name for m in name_or_mod}
+        collaterals = self.collateral_damage(*names)
+        if collaterals != names:
+            raise ValueError("pass the collateral_damage of the specified modules")
+        for mod in names:
+            del self[mod]
 
     def die_if_deps_die(
         self, name: str, deps: Set[str], maybe_deps: Set[str]

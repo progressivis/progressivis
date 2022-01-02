@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 class TimePredictor:
     default: Callable[[], "TimePredictor"]
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.name: Optional[str] = None
 
     @abstractmethod
@@ -31,7 +31,7 @@ class TimePredictor:
 
 
 class ConstantTimePredictor(TimePredictor):
-    def __init__(self, t: int):
+    def __init__(self, t: int) -> None:
         super(ConstantTimePredictor, self).__init__()
         self.t = t
 
@@ -40,12 +40,12 @@ class ConstantTimePredictor(TimePredictor):
 
 
 class LinearTimePredictor(TimePredictor):
-    def __init__(self):
+    def __init__(self) -> None:
         super(LinearTimePredictor, self).__init__()
         self.a: float = 0
         self.calls: int = 0
 
-    def fit(self, trace_df: Table):
+    def fit(self, trace_df: Table) -> None:
         self.calls += 1
         if trace_df is None:
             return
@@ -82,7 +82,7 @@ class LinearTimePredictor(TimePredictor):
         if self.a == 0:
             return default
         # TODO account for the confidence interval and take min of the 95% CI
-        steps = int(np.max([0, np.ceil(duration * self.a)]))
+        steps = int(np.max([0, np.ceil(duration * self.a)]))  # type: ignore
         logger.debug(
             "LinearPredictor %s: Predicts %d steps for duration %f",
             self.name,

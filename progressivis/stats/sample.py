@@ -19,7 +19,7 @@ from ..core.utils import indices_len
 from ..core.decorators import process_slot, run_if_any
 from ..table import TableSelectedView
 
-from typing import Optional, Any
+from typing import Optional, Any, cast
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +34,7 @@ class Sample(TableModule):
     outputs = [SlotDescriptor("select", type=bitmap, required=False)]
 
     def __init__(self, **kwds):
-        super(Sample, self).__init__(**kwds)
+        super(Sample, self).__init__(output_required=False, **kwds)
         self._tmp_table = Table(
             self.generate_table_name("sample"), dshape="{select: int64}", create=True
         )
@@ -71,7 +71,7 @@ class Sample(TableModule):
         with self.context as ctx:
             if self.result is None:
                 self.result = TableSelectedView(ctx.table.data(), bitmap([]))
-            indices = ctx.table.created.next(step_size, as_slice=False)
+            indices = cast(bitmap, ctx.table.created.next(step_size, as_slice=False))
             steps = indices_len(indices)
             k = int(self.params.samples)
             reservoir = self._tmp_table

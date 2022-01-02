@@ -31,7 +31,7 @@ class GroupImpl(Group):
         shape: Optional[Shape] = None,
         dtype: Optional[DTypeLike] = None,
         data: Optional[Any] = None,
-        **kwds: Dict[str, Any],
+        **kwds: Any,
     ) -> Dataset:
         pass
 
@@ -46,7 +46,7 @@ class GroupImpl(Group):
         shape: Shape,
         dtype: DTypeLike,
         exact: bool = False,
-        **kwds: Dict[str, Any],
+        **kwds: Any,
     ) -> Dataset:
         _ = exact  # don't know what to do with it
         if name in self.dict:

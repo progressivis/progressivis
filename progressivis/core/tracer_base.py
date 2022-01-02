@@ -13,31 +13,31 @@ class Tracer(metaclass=ABCMeta):
     default: Callable[[str, Any], "Tracer"]
 
     @abstractmethod
-    def start_run(self, ts: float, run_number: int, **kwds):
+    def start_run(self, ts: float, run_number: int, **kwds: Any) -> None:
         pass
 
     @abstractmethod
-    def end_run(self, ts: float, run_number: int, **kwds):
+    def end_run(self, ts: float, run_number: int, **kwds: Any) -> None:
         pass
 
     @abstractmethod
-    def run_stopped(self, ts: float, run_number: int, **kwds):
+    def run_stopped(self, ts: float, run_number: int, **kwds: Any) -> None:
         pass
 
     @abstractmethod
-    def before_run_step(self, ts: float, run_number: int, **kwds):
+    def before_run_step(self, ts: float, run_number: int, **kwds: Any) -> None:
         pass
 
     @abstractmethod
-    def after_run_step(self, ts: float, run_number: int, **kwds):
+    def after_run_step(self, ts: float, run_number: int, **kwds: Any) -> None:
         pass
 
     @abstractmethod
-    def exception(self, ts: float, run_number: int, **kwds):
+    def exception(self, ts: float, run_number: int, **kwds: Any) -> None:
         pass
 
     @abstractmethod
-    def terminated(self, ts: float, run_number: int, **kwds):
+    def terminated(self, ts: float, run_number: int, **kwds: Any) -> None:
         pass
 
     @abstractmethod

@@ -25,12 +25,12 @@ class BaseChangeManager:
     def __init__(
         self,
         slot: Slot,
-        buffer_created=True,
-        buffer_updated=False,
-        buffer_deleted=False,
-        buffer_exposed=False,
-        buffer_masked=False,
-    ):
+        buffer_created: bool = True,
+        buffer_updated: bool = False,
+        buffer_deleted: bool = False,
+        buffer_exposed: bool = False,
+        buffer_masked: bool = False,
+    ) -> None:
         _ = slot
         self._row_changes = IndexUpdate()
         self._selection_changes = IndexUpdate()
@@ -141,12 +141,12 @@ class BaseChangeManager:
         print("masked", self._masked.changes)
 
 
-def _next(bm, length, as_slice) -> Union[bitmap, slice]:
+def _next(bm: bitmap, length: Optional[int], as_slice: bool) -> Union[bitmap, slice]:
     if length is None:
         length = len(bm)
     ret = bm.pop(length)
     if as_slice:
-        ret = ret.to_slice_maybe()
+        return ret.to_slice_maybe()
     return ret
 
 
@@ -155,7 +155,7 @@ class ChangeBuffer:
         self.buffer = default
         self.changes = changes
 
-    def set_buffered(self, v=True) -> None:
+    def set_buffered(self, v: bool = True) -> None:
         "Set if data is buffered"
         self.buffer = v
         if not v:
@@ -177,7 +177,9 @@ class ChangeBuffer:
         "Return True if there is anything in the buffer"
         return self.buffer and len(self.changes) != 0
 
-    def next(self, length=None, as_slice=True) -> Union[None, bitmap, slice]:
+    def next(self,
+             length: Optional[int] = None,
+             as_slice: bool = True) -> Union[None, bitmap, slice]:
         "Return the next items in the buffer"
         if not self.buffer:
             return None
@@ -202,23 +204,23 @@ class _accessor:
         self._parent_wr: wr.ReferenceType[BaseChangeManager] = wr.ref(parent)
 
     @property
-    def _parent(self) -> Union[None, Any]:
+    def _parent(self) -> Union[None, BaseChangeManager]:
         return self._parent_wr()
 
     @property
-    def created(self) -> bitmap:
+    def created(self) -> ChangeBuffer:
         "Return information of items created"
         assert self._parent
         return self._parent._created
 
     @property
-    def updated(self) -> bitmap:
+    def updated(self) -> ChangeBuffer:
         "Return information of items updated"
         assert self._parent
         return self._parent._updated
 
     @property
-    def deleted(self) -> bitmap:
+    def deleted(self) -> ChangeBuffer:
         "Return information of items deleted"
         assert self._parent
         return self._parent._deleted
@@ -226,19 +228,19 @@ class _accessor:
 
 class _base_accessor(_accessor):
     @property
-    def created(self) -> bitmap:
+    def created(self) -> ChangeBuffer:
         "Return information of items created"
         assert self._parent
         return self._parent._created
 
     @property
-    def updated(self) -> bitmap:
+    def updated(self) -> ChangeBuffer:
         "Return information of items updated"
         assert self._parent
         return self._parent._updated
 
     @property
-    def deleted(self) -> bitmap:
+    def deleted(self) -> ChangeBuffer:
         "Return information of items deleted"
         assert self._parent
         return self._parent._deleted
@@ -246,13 +248,13 @@ class _base_accessor(_accessor):
 
 class _selection_accessor(_accessor):
     @property
-    def created(self) -> bitmap:
+    def created(self) -> ChangeBuffer:
         "Return information of items created"
         assert self._parent
         return self._parent._exposed
 
     @property
-    def deleted(self) -> bitmap:
+    def deleted(self) -> ChangeBuffer:
         "Return information of items deleted"
         assert self._parent
         return self._parent._masked

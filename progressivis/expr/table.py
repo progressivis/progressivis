@@ -64,7 +64,7 @@ class Pipeable:
         self._repipe: Optional[str] = repipe
         self._repipe_out = out
 
-    def __call__(self, *args: Any, **kwds: Dict[str, Any]) -> Union[Expr, Pipeable]:
+    def __call__(self, *args: Any, **kwds: Any) -> Union[Expr, Pipeable]:
         _kw = dict(**kwds)
         rp_: Optional[str] = cast(str, _kw.pop("repipe", None))
         if len(args) > 0:

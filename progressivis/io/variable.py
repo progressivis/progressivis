@@ -70,8 +70,8 @@ class VirtualVariable(Constant):
         self._names = names
         self._key = frozenset(names)
         self._subscriptions: List[Tuple[Variable, Dict[str, str]]] = []
-        table = None
-        super(VirtualVariable, self).__init__(table, **kwds)
+        columns = None
+        super(VirtualVariable, self).__init__(columns, output_required=False, **kwds)
         self.tags.add(self.TAG_INPUT)
 
     def subscribe(self, var: Variable, vocabulary: Dict[str, str]):

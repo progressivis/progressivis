@@ -3,7 +3,7 @@ Slots between modules.
 """
 from __future__ import annotations
 
-from typing import Any, Optional, Dict, Type, TYPE_CHECKING, Union, List
+from typing import Any, Optional, Dict, Type, TYPE_CHECKING, Union, List, Tuple
 
 import logging
 from .changemanager_base import EMPTY_BUFFER, BaseChangeManager
@@ -36,16 +36,16 @@ class SlotDescriptor:
 
     def __init__(
         self,
-        name,
-        type=None,
-        required=True,
-        multiple=False,
+        name: str,
+        type: Optional[Union[Type, Tuple[Type, ...]]] = None,
+        required: bool = True,
+        multiple: bool = False,
         datashape: Optional[Dict[str, Union[str, List[str]]]] = None,
-        buffer_created=True,
-        buffer_updated=True,
-        buffer_deleted=True,
-        buffer_exposed=True,
-        buffer_masked=True,
+        buffer_created: bool = True,
+        buffer_updated: bool = True,
+        buffer_deleted: bool = True,
+        buffer_exposed: bool = True,
+        buffer_masked: bool = True,
     ):
         self.name = name
         self.type = type
@@ -142,7 +142,11 @@ class Slot:
         input_type = self.input_module.input_slot_type(self.input_name)
         if output_type is None or input_type is None:
             return True
-        if issubclass(output_type, input_type):
+        if isinstance(output_type, tuple):
+            for out in output_type:
+                if issubclass(out, input_type):
+                    return True
+        elif issubclass(output_type, input_type):
             return True
         if (
             not isinstance(input_type, type)
