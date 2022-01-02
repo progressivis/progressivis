@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 class FilterMod(TableModule):
     parameters = [
         ("expr", np.dtype(object), "unknown"),
-        ("user_dict", np.dtype(object), None)
+        ("user_dict", np.dtype(object), None),
     ]
 
     inputs = [SlotDescriptor("table", type=Table, required=True)]
@@ -30,10 +30,9 @@ class FilterMod(TableModule):
         if self.result is not None:
             self.selected.selection = bitmap([])
 
-    def run_step(self,
-                 run_number: int,
-                 step_size: int,
-                 howlong: float) -> ReturnRunStep:
+    def run_step(
+        self, run_number: int, step_size: int, howlong: float
+    ) -> ReturnRunStep:
         input_slot = self.get_input_slot("table")
         input_table = input_slot.data()
         if input_table is None:

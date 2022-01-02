@@ -20,9 +20,7 @@ logger = logging.getLogger(__name__)
 class Min(TableModule):
     inputs = [SlotDescriptor("table", type=Table, required=True)]
 
-    def __init__(self,
-                 columns: List[str] = None,
-                 **kwds):
+    def __init__(self, columns: List[str] = None, **kwds):
         super(Min, self).__init__(**kwds)
         self._columns = columns
         self.default_step_size = 10000
@@ -38,10 +36,9 @@ class Min(TableModule):
 
     @process_slot("table", reset_cb="reset")
     @run_if_any
-    def run_step(self,
-                 run_number: int,
-                 step_size: int,
-                 howlong: float) -> ReturnRunStep:
+    def run_step(
+        self, run_number: int, step_size: int, howlong: float
+    ) -> ReturnRunStep:
         assert self.context
         with self.context as ctx:
             indices = ctx.table.created.next(step_size)  # returns a slice
@@ -95,10 +92,9 @@ class ScalarMin(TableModule):
                 return True
         return False
 
-    def run_step(self,
-                 run_number: int,
-                 step_size: int,
-                 howlong: float) -> ReturnRunStep:
+    def run_step(
+        self, run_number: int, step_size: int, howlong: float
+    ) -> ReturnRunStep:
         slot = self.get_input_slot("table")
         # slot.update(run_number)
         indices: Optional[Union[None, bitmap, slice]] = None

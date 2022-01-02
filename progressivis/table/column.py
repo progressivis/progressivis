@@ -275,10 +275,9 @@ class Column(BaseColumn):
                 return np.array([self.dataset[e] for e in index])
             raise
 
-    def read_direct(self,
-                    array: np.ndarray,
-                    source_sel: Any = None,
-                    dest_sel: Any = None) -> None:
+    def read_direct(
+        self, array: np.ndarray, source_sel: Any = None, dest_sel: Any = None
+    ) -> None:
         assert self.dataset is not None
         if hasattr(self.dataset, "read_direct"):
             if isinstance(source_sel, np.ndarray) and source_sel.dtype == np.int_:

@@ -33,10 +33,9 @@ class LinearMap(TableModule):
 
     @process_slot("vectors", "transformation", reset_cb="reset")
     @run_if_any
-    def run_step(self,
-                 run_number: int,
-                 step_size: int,
-                 howlong: float) -> ReturnRunStep:
+    def run_step(
+        self, run_number: int, step_size: int, howlong: float
+    ) -> ReturnRunStep:
         """
         vectors: (n, k)
         transf:  (k, m)

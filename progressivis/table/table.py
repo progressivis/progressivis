@@ -381,22 +381,26 @@ class Table(IndexTable):
                 tocol = self._column(colname)
                 tocol[start] = value
 
-    def binary(self,
-               op: Callable[[np.ndarray, Union[np.ndarray, int, float, bool]], np.ndarray],
-               other: BaseTable,
-               **kwargs) -> Union[Dict[str, np.ndarray], BaseTable]:
+    def binary(
+        self,
+        op: Callable[[np.ndarray, Union[np.ndarray, int, float, bool]], np.ndarray],
+        other: BaseTable,
+        **kwargs,
+    ) -> Union[Dict[str, np.ndarray], BaseTable]:
         res = super(Table, self).binary(op, other, **kwargs)
         if isinstance(res, BaseTable):
             return res
         return Table(None, data=res, create=True)
 
     @staticmethod
-    def from_array(array: np.ndarray,
-                   name: str = None,
-                   columns: List[str] = None,
-                   offsets: Union[List[int], List[Tuple[int, int]]] = None,
-                   dshape: Union[str, DataShape] = None,
-                   **kwds) -> Table:
+    def from_array(
+        array: np.ndarray,
+        name: str = None,
+        columns: List[str] = None,
+        offsets: Union[List[int], List[Tuple[int, int]]] = None,
+        dshape: Union[str, DataShape] = None,
+        **kwds,
+    ) -> Table:
         """offsets is a list of indices or pairs. """
         if offsets is None:
             offsets = [(i, i + 1) for i in range(array.shape[1])]

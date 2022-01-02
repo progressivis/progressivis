@@ -50,7 +50,9 @@ class CmpQueryLast(TableModule):
             self.get_input_slot("table").data()
         return super(CmpQueryLast, self).get_data(name)
 
-    def run_step(self, run_number: int, step_size: int, howlong: float) -> ReturnRunStep:
+    def run_step(
+        self, run_number: int, step_size: int, howlong: float
+    ) -> ReturnRunStep:
         table_slot = self.get_input_slot("table")
         # table_slot.update(run_number)
         table_data = table_slot.data()

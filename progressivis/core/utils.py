@@ -41,7 +41,7 @@ from typing import (
     cast,
     Callable,
     Iterator,
-    Sized
+    Sized,
 )
 
 integer_types = (int, np.integer)
@@ -84,11 +84,14 @@ def pairwise(iterator: Iterator[Any]):
     return zip(a, b)
 
 
-def is_sorted(iterator: Iterator[Any],
-              compare: Callable[[Any, Any], bool] = None) -> bool:
+def is_sorted(
+    iterator: Iterator[Any], compare: Callable[[Any, Any], bool] = None
+) -> bool:
     if compare is None:
+
         def _compare(a, b):
             return a <= b
+
         compare = _compare
 
     return all(compare(a, b) for a, b in pairwise(iterator))
@@ -413,9 +416,7 @@ def is_fancy(key) -> bool:
     )
 
 
-def fancy_to_mask(indexes: Any,
-                  array_shape: Tuple[int, ...],
-                  mask: np.ndarray = None):
+def fancy_to_mask(indexes: Any, array_shape: Tuple[int, ...], mask: np.ndarray = None):
     if mask is None:
         mask = np.zeros(array_shape, dtype=np.bool_)
     else:
@@ -635,7 +636,7 @@ def filepath_to_buffer(
     encoding: str = None,
     compression: str = None,
     timeout: float = None,
-    start_byte=0
+    start_byte=0,
 ) -> Tuple[io.IOBase, Optional[str], Optional[str], int]:
     if not is_str(filepath):
         # if start_byte:
@@ -678,7 +679,9 @@ _compression_to_extension = {
 }
 
 
-def _infer_compression(filepath_or_buffer: Any, compression: Optional[str]) -> Optional[str]:
+def _infer_compression(
+    filepath_or_buffer: Any, compression: Optional[str]
+) -> Optional[str]:
     """
     From Pandas.
     Get the compression method for filepath_or_buffer. If compression='infer',

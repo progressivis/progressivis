@@ -33,8 +33,7 @@ class Sample(TableModule):
             return True
         return super().is_ready()
 
-    def run_step(self,
-                 run_number: int,
-                 step_size: int,
-                 howlong: float) -> ReturnRunStep:
+    def run_step(
+        self, run_number: int, step_size: int, howlong: float
+    ) -> ReturnRunStep:
         return self.cxx_module.run(run_number, step_size, howlong)

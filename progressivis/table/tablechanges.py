@@ -26,7 +26,9 @@ class Bookmark(object):
     "Bookmark for changes"
     __slots__ = ["time", "refcount", "update"]
 
-    def __init__(self, time: int, refcount: int = 1, update: Optional[IndexUpdate] = None):
+    def __init__(
+        self, time: int, refcount: int = 1, update: Optional[IndexUpdate] = None
+    ):
         self.time = time
         self.refcount = refcount
         self.update = update
@@ -49,7 +51,9 @@ class TableChanges(BaseChanges):
     # the same index in the _bookmarks list.
     def __init__(self) -> None:
         self._times: List[int] = []  # list of times sorted
-        self._bookmarks: List[Bookmark] = []  # list of bookmarks synchronized with times
+        self._bookmarks: List[
+            Bookmark
+        ] = []  # list of bookmarks synchronized with times
         self._mid_time: Dict[str, int] = {}  # time associated with last mid update
 
     def _last_update(self) -> Optional[IndexUpdate]:
@@ -135,11 +139,9 @@ class TableChanges(BaseChanges):
             return
         update.add_deleted(locs)
 
-    def compute_updates(self,
-                        last: int,
-                        now: int,
-                        mid: str,
-                        cleanup: bool = True) -> Optional[IndexUpdate]:
+    def compute_updates(
+        self, last: int, now: int, mid: str, cleanup: bool = True
+    ) -> Optional[IndexUpdate]:
         assert mid is not None
         time = now
         if last == 0:

@@ -27,12 +27,9 @@ logger = logging.getLogger(__name__)
 class _HistogramIndexImpl(object):
     "Implementation part of Histogram Index"
     # pylint: disable=too-many-instance-attributes
-    def __init__(self,
-                 column: str,
-                 table: Table,
-                 e_min: float,
-                 e_max: float,
-                 nb_bin: int):
+    def __init__(
+        self, column: str, table: Table, e_min: float, e_max: float, nb_bin: int
+    ):
         self.column = table[column]
         self.e_min = e_min
         self.e_max = e_max
@@ -183,10 +180,9 @@ class _HistogramIndexImpl(object):
         i = np.digitize(val, self.bins)
         return self.bitmaps[int(i)]
 
-    def update_histogram(self,
-                         created: bitmap = None,
-                         updated: bitmap = None,
-                         deleted: bitmap = None):
+    def update_histogram(
+        self, created: bitmap = None, updated: bitmap = None, deleted: bitmap = None
+    ):
         "Update the histogram index"
         created = bitmap.asbitmap(created)
         updated = bitmap.asbitmap(updated)
@@ -277,7 +273,9 @@ class _HistogramIndexImpl(object):
             detail.update(bm)
         return detail
 
-    def range_query_aslist(self, lower: float, upper: float, approximate=APPROX) -> List[bitmap]:
+    def range_query_aslist(
+        self, lower: float, upper: float, approximate=APPROX
+    ) -> List[bitmap]:
         """
         Return the list of bitmaps with values in range [`lower`, `upper`[
         """
@@ -301,7 +299,9 @@ class _HistogramIndexImpl(object):
             res.append(detail)
         return res
 
-    def restricted_range_query(self, lower: float, upper: float, only_locs, approximate=APPROX) -> bitmap:
+    def restricted_range_query(
+        self, lower: float, upper: float, only_locs, approximate=APPROX
+    ) -> bitmap:
         """
         Return the bitmap of only_locs rows in range [`lower`, `upper`[
         """
@@ -406,10 +406,9 @@ class HistogramIndex(TableModule):
             return None
         return self._impl.get_max_bin()
 
-    def run_step(self,
-                 run_number: int,
-                 step_size: int,
-                 howlong: float) -> ReturnRunStep:
+    def run_step(
+        self, run_number: int, step_size: int, howlong: float
+    ) -> ReturnRunStep:
         input_slot = self.get_input_slot("table")
         # input_slot.update(run_number)
         steps = 0

@@ -10,12 +10,7 @@ from .index_update import IndexUpdate
 from .bitmap import bitmap
 import weakref as wr
 
-from typing import (
-    Any,
-    Optional,
-    Union,
-    TYPE_CHECKING
-)
+from typing import Any, Optional, Union, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from .slot import Slot
@@ -119,10 +114,7 @@ class BaseChangeManager:
         "Return the date of the last update"
         return self._last_update
 
-    def update(self,
-               run_number: int,
-               data: Any,
-               mid: str) -> None:  # pragma no cover
+    def update(self, run_number: int, data: Any, mid: str) -> None:  # pragma no cover
         """
         Compute the changes from the last_update to the specified run_number.
         """

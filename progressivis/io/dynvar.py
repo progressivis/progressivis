@@ -10,10 +10,9 @@ from typing import Dict, Any
 
 
 class DynVar(TableModule):
-    def __init__(self,
-                 init_val: PsDict = None,
-                 vocabulary: Dict[str, Any] = None,
-                 **kwds):
+    def __init__(
+        self, init_val: PsDict = None, vocabulary: Dict[str, Any] = None, **kwds
+    ):
         super().__init__(**kwds)
         self.tags.add(self.TAG_INPUT)
         self._has_input = False
@@ -27,10 +26,9 @@ class DynVar(TableModule):
     def has_input(self) -> bool:
         return self._has_input
 
-    def run_step(self,
-                 run_number: int,
-                 step_size: int,
-                 howlong: float) -> ReturnRunStep:
+    def run_step(
+        self, run_number: int, step_size: int, howlong: float
+    ) -> ReturnRunStep:
         return self._return_run_step(self.state_blocked, steps_run=1)
 
     async def from_input(self, input_: JSon) -> str:

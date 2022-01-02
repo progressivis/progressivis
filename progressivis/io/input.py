@@ -21,10 +21,9 @@ class Input(TableModule):
     def is_ready(self) -> bool:
         return len(self.table) > self._last
 
-    def run_step(self,
-                 run_number: int,
-                 step_size: int,
-                 howlong: float) -> ReturnRunStep:
+    def run_step(
+        self, run_number: int, step_size: int, howlong: float
+    ) -> ReturnRunStep:
         self._last = len(self.table)
         return self._return_run_step(self.state_blocked, steps_run=0)
 

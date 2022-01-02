@@ -22,10 +22,9 @@ class LiteSelect(TableModule):
         super(LiteSelect, self).__init__(**kwds)
         self.default_step_size = 1000
 
-    def run_step(self,
-                 run_number: int,
-                 step_size: int,
-                 howlong: float) -> ReturnRunStep:
+    def run_step(
+        self, run_number: int, step_size: int, howlong: float
+    ) -> ReturnRunStep:
         step_size = 1000
         table_slot = self.get_input_slot("table")
         table = table_slot.data()

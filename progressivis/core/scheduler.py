@@ -12,17 +12,17 @@ from . import aio
 from ..utils.errors import ProgressiveError
 
 from typing import (
-        Optional,
-        Dict,
-        List,
-        Sequence,
-        Any,
-        Callable,
-        Set,
-        TYPE_CHECKING,
-        Coroutine,
-        Union,
-        cast,
+    Optional,
+    Dict,
+    List,
+    Sequence,
+    Any,
+    Callable,
+    Set,
+    TYPE_CHECKING,
+    Coroutine,
+    Union,
+    cast,
 )
 
 logger = logging.getLogger(__name__)
@@ -209,10 +209,11 @@ class Scheduler:
         pass
 
     async def start_impl(
-            self,
-            tick_proc: TickProc = None,
-            idle_proc: TickProc = None,
-            coros: Sequence[Coroutine] = ()):
+        self,
+        tick_proc: TickProc = None,
+        idle_proc: TickProc = None,
+        coros: Sequence[Coroutine] = (),
+    ):
         async with self._lock:
             if self._task:
                 raise ProgressiveError(
@@ -232,11 +233,13 @@ class Scheduler:
             self._idle_procs = []
         await self.run()
 
-    async def start(self,
-                    tick_proc: TickProc = None,
-                    idle_proc: TickProc = None,
-                    coros: Sequence[Coroutine] = (),
-                    persist=False):
+    async def start(
+        self,
+        tick_proc: TickProc = None,
+        idle_proc: TickProc = None,
+        coros: Sequence[Coroutine] = (),
+        persist=False,
+    ):
         from ..storage import init_temp_dir_if, cleanup_temp_dir, temp_dir
 
         self.shortcut_evt = aio.Event()
@@ -312,8 +315,8 @@ class Scheduler:
         # if self._new_modules:
         #    self._update_modules()
         runners = [
-                aio.create_task(self._run_loop()),
-                aio.create_task(self.shortcut_manager())
+            aio.create_task(self._run_loop()),
+            aio.create_task(self.shortcut_manager()),
         ]
         runners.extend([aio.create_task(coro) for coro in self.coros])
         # runners.append(aio.create_task(self.unlocker(), "unlocker"))

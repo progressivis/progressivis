@@ -21,10 +21,9 @@ class Dict2Table(TableModule):
     def __init__(self, **kwds):
         super().__init__(**kwds)
 
-    def run_step(self,
-                 run_number: int,
-                 step_size: int,
-                 howlong: float) -> ReturnRunStep:
+    def run_step(
+        self, run_number: int, step_size: int, howlong: float
+    ) -> ReturnRunStep:
         dict_slot = self.get_input_slot("dict_")
         # dict_slot.update(run_number)
         dict_ = dict_slot.data()

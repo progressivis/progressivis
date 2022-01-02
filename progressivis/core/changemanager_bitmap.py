@@ -6,10 +6,7 @@ from .index_update import IndexUpdate
 from .changemanager_base import BaseChangeManager
 from .slot import Slot
 
-from typing import (
-    Any,
-    Optional
-)
+from typing import Any, Optional
 
 
 class BitmapChangeManager(BaseChangeManager):
@@ -54,10 +51,7 @@ class BitmapChangeManager(BaseChangeManager):
         self._last_bm = bitmap(data)
         return changes
 
-    def update(self,
-               run_number: int,
-               data: Any,
-               mid: str) -> None:
+    def update(self, run_number: int, data: Any, mid: str) -> None:
         # pylint: disable=unused-argument
         assert isinstance(data, bitmap)
         if data is None or (run_number != 0 and run_number <= self._last_update):

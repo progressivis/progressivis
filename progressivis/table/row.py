@@ -6,6 +6,7 @@ from collections import OrderedDict
 
 
 from typing import Any, List, Tuple, Union, Dict, TYPE_CHECKING, overload, Sequence
+
 JSon = Dict[str, Any]
 
 if TYPE_CHECKING:
@@ -33,9 +34,7 @@ class Row(MutableMapping):
     3
     """
 
-    def __init__(self,
-                 table: BaseTable,
-                 index: int = None):
+    def __init__(self, table: BaseTable, index: int = None):
         super(Row, self).__setattr__("table", table)
         if index is not None and not isinstance(index, integer_types):
             raise ValueError('index should be an integer, not "%s"' % str(index))
@@ -56,8 +55,7 @@ class Row(MutableMapping):
         ...
 
     @overload
-    def __getitem__(self,
-                    key: Sequence[Union[int, str]]) -> Tuple[Any, ...]:
+    def __getitem__(self, key: Sequence[Union[int, str]]) -> Tuple[Any, ...]:
         ...
 
     def __getitem__(self, key):

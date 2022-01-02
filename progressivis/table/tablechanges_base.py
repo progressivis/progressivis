@@ -33,11 +33,9 @@ class BaseChanges(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def compute_updates(self,
-                        last: int,
-                        now: int,
-                        mid: str,
-                        cleanup: bool = True) -> Optional[IndexUpdate]:
+    def compute_updates(
+        self, last: int, now: int, mid: str, cleanup: bool = True
+    ) -> Optional[IndexUpdate]:
         "Compute and return the list of changes as an IndexUpdate or None"
         return None
 

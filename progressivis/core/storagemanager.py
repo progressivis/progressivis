@@ -10,11 +10,7 @@ from urllib.parse import urljoin
 from urllib.request import pathname2url
 import logging
 
-from typing import (
-    Optional,
-    Dict,
-    TYPE_CHECKING
-)
+from typing import Optional, Dict, TYPE_CHECKING
 
 FilePath = str
 

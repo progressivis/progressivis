@@ -24,8 +24,7 @@ class NAry(TableModule):
             name = self.nary
         return super(NAry, self).get_input_slot_multiple(name)
 
-    def run_step(self,
-                 run_number: int,
-                 step_size: int,
-                 howlong: float) -> ReturnRunStep:  # pragma no cover
+    def run_step(
+        self, run_number: int, step_size: int, howlong: float
+    ) -> ReturnRunStep:  # pragma no cover
         raise NotImplementedError("run_step not defined")

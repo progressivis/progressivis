@@ -8,6 +8,7 @@ from . import BaseTable, Table
 from ..core.slot import SlotDescriptor
 from .module import TableModule, Module, ReturnRunStep
 from ..core.bitmap import bitmap
+
 # from .mod_impl import ModuleImpl
 from ..io import Variable
 from ..stats import Min, Max
@@ -39,10 +40,9 @@ class _Selection:
 
 
 class RangeQueryImpl:  # (ModuleImpl):
-    def __init__(self,
-                 column: list[str],
-                 hist_index: HistogramIndex,
-                 approximate: bool):
+    def __init__(
+        self, column: list[str], hist_index: HistogramIndex, approximate: bool
+    ):
         super(RangeQueryImpl, self).__init__()
         self._table: Optional[BaseTable] = None
         self._column = column
@@ -54,8 +54,12 @@ class RangeQueryImpl:  # (ModuleImpl):
 
     def resume(
         self,
-        lower: float, upper: float, limit_changed: bool,
-        created: bitmap = None, updated: bitmap = None, deleted: bitmap = None
+        lower: float,
+        upper: float,
+        limit_changed: bool,
+        created: bitmap = None,
+        updated: bitmap = None,
+        deleted: bitmap = None,
     ) -> None:
         assert self.result
         if limit_changed:
@@ -117,12 +121,11 @@ class RangeQuery(TableModule):
         SlotDescriptor("max", type=Table, required=False),
     ]
 
-    def __init__(self,
-                 hist_index: HistogramIndex = None,
-                 approximate=False,
-                 **kwds):
+    def __init__(self, hist_index: HistogramIndex = None, approximate=False, **kwds):
         super(RangeQuery, self).__init__(**kwds)
-        self._impl: Optional[RangeQueryImpl] = None  # RangeQueryImpl(self.params.column, hist_index)
+        self._impl: Optional[
+            RangeQueryImpl
+        ] = None  # RangeQueryImpl(self.params.column, hist_index)
         self._hist_index: Optional[HistogramIndex] = hist_index
         self._approximate = approximate
         self._column = self.params.column

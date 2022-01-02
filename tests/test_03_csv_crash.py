@@ -70,6 +70,7 @@ def run_simple_server():
     #    _ = get_dataset_lzma('bigfile')
     os.chdir(DATA_DIR)
     import RangeHTTPServer.__main__  # type: ignore
+
     assert RangeHTTPServer.__main__
 
 

@@ -102,9 +102,7 @@ class BlobsTableABC(TableModule):
             self.throttle = False
         dshape = ", ".join([f"{col}: {dtype}" for col in self.columns])
         dshape = "{" + dshape + "}"
-        table = Table(
-            self.generate_table_name("table"), dshape=dshape, create=True
-        )
+        table = Table(self.generate_table_name("table"), dshape=dshape, create=True)
         self.result = table
         self.columns = table.columns
 

@@ -49,9 +49,8 @@ class Wait(Module):
     def predict_step_size(self, duration: float) -> int:
         return 1
 
-    def run_step(self,
-                 run_number: int,
-                 step_size: int,
-                 howlong: float) -> ReturnRunStep:
+    def run_step(
+        self, run_number: int, step_size: int, howlong: float
+    ) -> ReturnRunStep:
         self.get_input_slot("inp").clear_buffers()
         return self._return_run_step(self.state_blocked, steps_run=1)

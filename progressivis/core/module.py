@@ -39,7 +39,7 @@ from typing import (
     Callable,
     Type,
     Union,
-    TYPE_CHECKING
+    TYPE_CHECKING,
 )
 
 if TYPE_CHECKING:
@@ -111,9 +111,10 @@ class ModuleState(IntEnum):
 class Module(metaclass=ModuleMeta):
     """The Module class is the base class for all the progressive modules.
     """
+
     parameters: Parameters = [
         ("quantum", np.dtype(float), 0.5),
-        ("debug", np.dtype(bool), False)
+        ("debug", np.dtype(bool), False),
     ]
     all_parameters: Parameters  # defined by metaclass, declare for mypy
     TRACE_SLOT = "_trace"
@@ -603,9 +604,11 @@ class Module(metaclass=ModuleMeta):
 
         """
         ret: Optional[bool] = False
-        imods = {islot.output_module.name
-                 for islot in self._input_slots.values()
-                 if islot is not None}
+        imods = {
+            islot.output_module.name
+            for islot in self._input_slots.values()
+            if islot is not None
+        }
         if imods.issubset(deps):  # all input will be deleted, we die
             return True
         if imods.issubset(deps | maybe_deps):
@@ -646,10 +649,9 @@ class Module(metaclass=ModuleMeta):
         return None
 
     @abstractmethod
-    def run_step(self,
-                 run_number: int,
-                 step_size: int,
-                 howlong: float) -> ReturnRunStep:  # pragma no cover
+    def run_step(
+        self, run_number: int, step_size: int, howlong: float
+    ) -> ReturnRunStep:  # pragma no cover
         """Run one step of the module, with a duration up to the 'howlong' parameter.
 
         Returns a dictionary with at least 5 pieces of information: 1)
@@ -668,10 +670,9 @@ class Module(metaclass=ModuleMeta):
             return Module.state_ready
         return Module.state_blocked
 
-    def _return_run_step(self,
-                         next_state: ModuleState,
-                         steps_run: int,
-                         productive=None) -> ReturnRunStep:
+    def _return_run_step(
+        self, next_state: ModuleState, steps_run: int, productive=None
+    ) -> ReturnRunStep:
         assert next_state >= Module.state_ready and next_state <= Module.state_zombie
         self.steps_acc += steps_run
         return {"next_state": next_state, "steps_run": steps_run}
@@ -763,9 +764,7 @@ class Module(metaclass=ModuleMeta):
         # the module is blocked, cannot run any more, so it is terminated
         # too.
         logger.error(
-            "%s Not ready because is in weird state %s",
-            self.name,
-            self.state.name,
+            "%s Not ready because is in weird state %s", self.name, self.state.name,
         )
         return False
 
@@ -797,7 +796,8 @@ class Module(metaclass=ModuleMeta):
 
     def set_state(self, s: ModuleState) -> None:
         assert (
-            s.value >= Module.state_created.value and s.value <= Module.state_invalid.value
+            s.value >= Module.state_created.value
+            and s.value <= Module.state_invalid.value
         ), "State %s invalid in module %s" % (s, self.name)
         self._state = s
 
@@ -1052,7 +1052,9 @@ class Every(Module):
             return 1
         return super(Every, self).predict_step_size(duration)
 
-    def run_step(self, run_number: int, step_size: float, howlong: float) -> ReturnRunStep:
+    def run_step(
+        self, run_number: int, step_size: float, howlong: float
+    ) -> ReturnRunStep:
         slot = self.get_input_slot("df")
         df = slot.data()
         if df is not None:

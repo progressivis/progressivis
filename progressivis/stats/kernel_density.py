@@ -32,10 +32,9 @@ class KernelDensity(TableModule):
         super(KernelDensity, self).__init__(**kwds)
         self.tags.add(self.TAG_VISUALIZATION)
 
-    def run_step(self,
-                 run_number: int,
-                 step_size: int,
-                 howlong: float) -> ReturnRunStep:
+    def run_step(
+        self, run_number: int, step_size: int, howlong: float
+    ) -> ReturnRunStep:
         dfslot = self.get_input_slot("table")
         # dfslot.update(run_number)
         if dfslot.deleted.any():

@@ -21,7 +21,7 @@ def join(
     how: str = "left",
     lsuffix: str = "",
     rsuffix: str = "",
-    sort=False
+    sort=False,
 ) -> Table:
     # pylint: disable=too-many-arguments, invalid-name
     "Compute the join of two table."
@@ -225,10 +225,9 @@ class Join(NAry):
         super(Join, self).__init__(**kwds)
         self.join_kwds = filter_kwds(kwds, join)
 
-    def run_step(self,
-                 run_number: int,
-                 step_size: int,
-                 howlong: float) -> ReturnRunStep:
+    def run_step(
+        self, run_number: int, step_size: int, howlong: float
+    ) -> ReturnRunStep:
         frames: List[BaseTable] = []
         for name in self.get_input_slot_multiple():
             slot = self.get_input_slot(name)

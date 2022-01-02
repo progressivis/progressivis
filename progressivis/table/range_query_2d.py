@@ -5,6 +5,7 @@ from . import Table
 from ..core.slot import SlotDescriptor
 from .module import Module, TableModule, ReturnRunStep
 from ..core.bitmap import bitmap
+
 # from .mod_impl import ModuleImpl
 from ..io import Variable
 from ..stats import Min, Max
@@ -32,12 +33,14 @@ class _Selection(object):
 
 
 class RangeQuery2dImpl:  # (ModuleImpl):
-    def __init__(self,
-                 column_x: str,
-                 column_y: str,
-                 hist_index_x: HistogramIndex,
-                 hist_index_y: HistogramIndex,
-                 approximate: bool):
+    def __init__(
+        self,
+        column_x: str,
+        column_y: str,
+        hist_index_x: HistogramIndex,
+        hist_index_y: HistogramIndex,
+        approximate: bool,
+    ):
         super(RangeQuery2dImpl, self).__init__()
         self._table: Optional[TableSelectedView] = None
         self._column_x = column_x
@@ -144,12 +147,11 @@ class RangeQuery2d(TableModule):
         SlotDescriptor("max", type=Table, required=False),
     ]
 
-    def __init__(self,
-                 hist_index: HistogramIndex = None,
-                 approximate=False,
-                 **kwds):
+    def __init__(self, hist_index: HistogramIndex = None, approximate=False, **kwds):
         super(RangeQuery2d, self).__init__(**kwds)
-        self._impl: Optional[RangeQuery2dImpl] = None  # RangeQueryImpl(self.params.column, hist_index)
+        self._impl: Optional[
+            RangeQuery2dImpl
+        ] = None  # RangeQueryImpl(self.params.column, hist_index)
         self._hist_index_x: Optional[HistogramIndex] = None
         self._hist_index_y: Optional[HistogramIndex] = None
         self._approximate = approximate

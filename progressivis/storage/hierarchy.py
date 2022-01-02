@@ -35,11 +35,18 @@ class GroupImpl(Group):
     ) -> Dataset:
         pass
 
-    def _create_attribute(self, dict_values: Optional[Dict[str, Any]] = None) -> Attribute:
+    def _create_attribute(
+        self, dict_values: Optional[Dict[str, Any]] = None
+    ) -> Attribute:
         return AttributeImpl(dict_values)
 
     def require_dataset(
-        self, name: str, shape: Shape, dtype: DTypeLike, exact: bool = False, **kwds: Dict[str, Any]
+        self,
+        name: str,
+        shape: Shape,
+        dtype: DTypeLike,
+        exact: bool = False,
+        **kwds: Dict[str, Any],
     ) -> Dataset:
         _ = exact  # don't know what to do with it
         if name in self.dict:
@@ -79,9 +86,9 @@ class GroupImpl(Group):
         self.dict[name] = group
         return group
 
-    def _get(self,
-             name: str,
-             default: Optional[Union[Dataset, Group]] = None) -> Optional[Union[Dataset, Group]]:
+    def _get(
+        self, name: str, default: Optional[Union[Dataset, Group]] = None
+    ) -> Optional[Union[Dataset, Group]]:
         return self.dict.get(name, default)
 
     def get(

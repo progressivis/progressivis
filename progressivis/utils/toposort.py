@@ -4,23 +4,21 @@ Topological sorting of a DAG
 from __future__ import annotations
 
 
-from typing import (
-    List,
-    Dict,
-    Set
-)
+from typing import List, Dict, Set
 
 Vertex = str
 Graph = Dict[Vertex, Set[Vertex]]
 
 
-def _sort(graph: Graph,
-          vertex: Vertex,
-          permanent: Set[Vertex],
-          temporary: Set[Vertex],
-          stack: List[Vertex]) -> None:
+def _sort(
+    graph: Graph,
+    vertex: Vertex,
+    permanent: Set[Vertex],
+    temporary: Set[Vertex],
+    stack: List[Vertex],
+) -> None:
     if vertex in temporary:
-        raise ValueError('Cycle in graph')
+        raise ValueError("Cycle in graph")
     temporary.add(vertex)
     for i in graph.get(vertex, []):
         if i not in permanent:
@@ -61,4 +59,5 @@ def toposort(graph: Graph) -> List[Vertex]:
 
 if __name__ == "__main__":
     import doctest
+
     doctest.testmod()

@@ -28,7 +28,7 @@ class TableExpr(Expr):
         kwds: Dict[str, Any],
         module: TableModule = None,
         output_slot: str = None,
-        output_slot_table: str = "table"
+        output_slot_table: str = "table",
     ):
         super(TableExpr, self).__init__(
             module_class, args, kwds, module=module, output_slot=output_slot
@@ -50,12 +50,12 @@ class TableExpr(Expr):
 class Pipeable:
     def __init__(
         self,
-            expr_class: Type[Expr],
-            module_class: Type[Module],
-            args: Tuple[Any, ...] = (),
-            kwds: Dict[str, Any] = {},
-            repipe: str = None,
-            out: str = None
+        expr_class: Type[Expr],
+        module_class: Type[Module],
+        args: Tuple[Any, ...] = (),
+        kwds: Dict[str, Any] = {},
+        repipe: str = None,
+        out: str = None,
     ):
         self._expr_class = expr_class
         self._module_class = module_class

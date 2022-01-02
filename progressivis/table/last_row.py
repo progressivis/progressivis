@@ -15,10 +15,9 @@ class LastRow(TableModule):
     def predict_step_size(self, duration: float) -> int:
         return 1
 
-    def run_step(self,
-                 run_number: int,
-                 step_size: int,
-                 howlong: float) -> ReturnRunStep:
+    def run_step(
+        self, run_number: int, step_size: int, howlong: float
+    ) -> ReturnRunStep:
         slot = self.get_input_slot("table")
         slot.clear_buffers()
         df = slot.data()

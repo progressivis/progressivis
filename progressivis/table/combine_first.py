@@ -51,10 +51,9 @@ def combine_first(table: BaseTable, other: BaseTable, name: str = None) -> Table
 
 
 class CombineFirst(NAry):
-    def run_step(self,
-                 run_number: int,
-                 step_size: int,
-                 howlong: float) -> ReturnRunStep:
+    def run_step(
+        self, run_number: int, step_size: int, howlong: float
+    ) -> ReturnRunStep:
         frames = []
         for name in self.get_input_slot_multiple():
             slot = self.get_input_slot(name)

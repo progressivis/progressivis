@@ -55,7 +55,9 @@ class SimpleCSVLoader(TableModule):
         if filter_ is not None and not callable(filter_):
             raise ProgressiveError("filter parameter should be callable or None")
         self._filter = filter_
-        self._input_stream: Optional[io.IOBase] = None  # stream that returns a position through the 'tell()' method
+        self._input_stream: Optional[
+            io.IOBase
+        ] = None  # stream that returns a position through the 'tell()' method
         self._input_encoding: Optional[str] = None
         self._input_compression: Optional[str] = None
         self._input_size = 0  # length of the file or input stream when available

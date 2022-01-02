@@ -21,12 +21,14 @@ def filter_underscore(lst: List[str]):
 
 
 class Expr:
-    def __init__(self,
-                 module_class: Type[Module],
-                 args: Tuple[Any, ...],
-                 kwds: Dict[str, Any],
-                 output_slot: str = None,
-                 module: Module = None):
+    def __init__(
+        self,
+        module_class: Type[Module],
+        args: Tuple[Any, ...],
+        kwds: Dict[str, Any],
+        output_slot: str = None,
+        module: Module = None,
+    ):
         self._module_class = module_class
         lazy = kwds.pop("lazy", False)
         self._args = args
@@ -160,7 +162,9 @@ class Expr:
             )
         return Expr(type(mod_), (), dict(lazy=True), module=mod_, output_slot=out)
 
-    def fetch(self, mod_name: str, out: str = None) -> Expr:  # a simple alias for repipe
+    def fetch(
+        self, mod_name: str, out: str = None
+    ) -> Expr:  # a simple alias for repipe
         return self.repipe(mod_name, out)
 
     def __or__(self, other: Union[None, Expr, Pipeable]) -> Expr:
@@ -169,7 +173,9 @@ class Expr:
         if isinstance(other, Expr):
             return other
         # assert isinstance(other, Pipeable)
-        ret: Expr = other._expr_class(other._module_class, (self,) + other._args, other._kwds)
+        ret: Expr = other._expr_class(
+            other._module_class, (self,) + other._args, other._kwds
+        )
         if other._repipe is not None:
             return ret.repipe(other._repipe, out=other._repipe_out)
         return ret

@@ -49,10 +49,9 @@ class Binop(TableModule):
         SlotDescriptor("arg2", type=Table, required=True),
     ]
 
-    def __init__(self,
-                 binop: Binoperator,
-                 combine: Union[None, str, Binoperator] = None,
-                 **kwds):
+    def __init__(
+        self, binop: Binoperator, combine: Union[None, str, Binoperator] = None, **kwds
+    ):
         super(Binop, self).__init__(**kwds)
         self.default_step_size = 1000
         self.op: Optional[Binoperator] = binop
@@ -74,10 +73,9 @@ class Binop(TableModule):
             self.get_input_slot("table").data()
         return super(Binop, self).get_data(name)
 
-    def run_step(self,
-                 run_number: int,
-                 step_size: int,
-                 howlong: float) -> ReturnRunStep:
+    def run_step(
+        self, run_number: int, step_size: int, howlong: float
+    ) -> ReturnRunStep:
         arg1_slot = self.get_input_slot("table")
         # arg1_slot.update(run_number)
         arg1_data = arg1_slot.data()

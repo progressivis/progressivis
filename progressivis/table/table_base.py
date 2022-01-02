@@ -40,7 +40,7 @@ from typing import (
     Callable,
     Sequence,
     overload,
-    Iterator
+    Iterator,
 )
 
 Shape = Tuple[int, ...]
@@ -610,7 +610,9 @@ class BaseTable(metaclass=ABCMeta):
         if self._changes:
             self._changes.reset(mid)
 
-    def compute_updates(self, start: int, now: int, mid: str, cleanup: bool = True) -> Optional[IndexUpdate]:
+    def compute_updates(
+        self, start: int, now: int, mid: str, cleanup: bool = True
+    ) -> Optional[IndexUpdate]:
         """Compute the updates (delta) that happened to this table since the last call.
 
         Parameters
@@ -640,7 +642,9 @@ class BaseTable(metaclass=ABCMeta):
         ...
 
     @overload
-    def __getitem__(self, key: Union[List, np.ndarray, slice, Iterable[int]]) -> Tuple[BaseColumn, ...]:
+    def __getitem__(
+        self, key: Union[List, np.ndarray, slice, Iterable[int]]
+    ) -> Tuple[BaseColumn, ...]:
         ...
 
     def __getitem__(self, key):
@@ -824,11 +828,13 @@ class BaseTable(metaclass=ABCMeta):
         dtypes = [self[c].dtype for c in columns]
         return np.find_common_type(dtypes, [])
 
-    def to_array(self,
-                 locs=None,
-                 columns: List[str] = None,
-                 # returns_indices=False,
-                 ret: np.ndarray = None) -> np.ndarray:
+    def to_array(
+        self,
+        locs=None,
+        columns: List[str] = None,
+        # returns_indices=False,
+        ret: np.ndarray = None,
+    ) -> np.ndarray:
         """Convert this table to a numpy array
 
         Parameters
@@ -898,10 +904,12 @@ class BaseTable(metaclass=ABCMeta):
             res[col.name] = value
         return res
 
-    def binary(self,
-               op: Callable[[np.ndarray, Union[np.ndarray, int, float, bool]], np.ndarray],
-               other: BaseTable,
-               **kwargs) -> Union[Dict[str, np.ndarray], BaseTable]:
+    def binary(
+        self,
+        op: Callable[[np.ndarray, Union[np.ndarray, int, float, bool]], np.ndarray],
+        other: BaseTable,
+        **kwargs,
+    ) -> Union[Dict[str, np.ndarray], BaseTable]:
         axis = kwargs.pop("axis", 0)
         assert axis == 0
         res: Dict[str, np.ndarray] = {}

@@ -71,10 +71,9 @@ class Select(TableModule):
             self.max_value = query.max_value
             return select
 
-    def run_step(self,
-                 run_number: int,
-                 step_size: int,
-                 howlong: float) -> ReturnRunStep:
+    def run_step(
+        self, run_number: int, step_size: int, howlong: float
+    ) -> ReturnRunStep:
         table_slot = self.get_input_slot("table")
         table = table_slot.data()
         # table_slot.update(run_number,

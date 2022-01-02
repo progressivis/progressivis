@@ -76,6 +76,7 @@ def run_simple_server():
     _ = get_dataset_bz2("bigfile")
     os.chdir(DATA_DIR)
     import RangeHTTPServer.__main__  # type: ignore
+
     RangeHTTPServer.__main__
 
 

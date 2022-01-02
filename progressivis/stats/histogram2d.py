@@ -46,11 +46,7 @@ class Histogram2D(TableModule):
         "}"
     )
 
-    def __init__(self,
-                 x_column: str,
-                 y_column: str,
-                 with_output=True,
-                 **kwds):
+    def __init__(self, x_column: str, y_column: str, with_output=True, **kwds):
         super(Histogram2D, self).__init__(dataframe_slot="table", **kwds)
         self.tags.add(self.TAG_VISUALIZATION)
         self.x_column = x_column
@@ -108,7 +104,9 @@ class Histogram2D(TableModule):
             logger.warning("ymax < ymin, swapped")
         return (xmin, xmax, ymin, ymax)
 
-    def get_delta(self, xmin: float, xmax: float, ymin: float, ymax: float) -> Tuple[float, float]:
+    def get_delta(
+        self, xmin: float, xmax: float, ymin: float, ymax: float
+    ) -> Tuple[float, float]:
         p = self.params
         xdelta, ydelta = p["xdelta"], p["ydelta"]
         if xdelta < 0:
@@ -124,10 +122,9 @@ class Histogram2D(TableModule):
     @process_slot("table", reset_if="update", reset_cb="reset")
     @process_slot("min", "max", reset_if=False)
     @run_if_any
-    def run_step(self,
-                 run_number: int,
-                 step_size: int,
-                 howlong: float) -> ReturnRunStep:
+    def run_step(
+        self, run_number: int, step_size: int, howlong: float
+    ) -> ReturnRunStep:
         assert self.context
         with self.context as ctx:
             dfslot = ctx.table
@@ -278,7 +275,9 @@ class Histogram2D(TableModule):
             or np.isnan(row["ymin"])
             or np.isnan(row["ymax"])
         ):
-            bounds = cast(Bounds2D, (row["xmin"], row["ymin"], row["xmax"], row["ymax"]))
+            bounds = cast(
+                Bounds2D, (row["xmin"], row["ymin"], row["xmax"], row["ymax"])
+            )
             data = cast(np.ndarray, row["array"])
             json_["binnedPixels"] = data
             json_["range"] = [np.min(data), np.max(data)]

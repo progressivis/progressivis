@@ -87,10 +87,9 @@ class VECLoader(TableModule):
         self._csr_matrix = None
         return super(VECLoader, self).cleanup_run(run_number)
 
-    def run_step(self,
-                 run_number: int,
-                 step_size: int,
-                 howlong: float) -> ReturnRunStep:
+    def run_step(
+        self, run_number: int, step_size: int, howlong: float
+    ) -> ReturnRunStep:
         if step_size == 0:  # bug
             logger.error("Received a step_size of 0")
             # return self._return_run_step(self.state_ready, steps_run=0, creates=0)

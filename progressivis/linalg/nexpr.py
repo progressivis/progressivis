@@ -36,10 +36,9 @@ class NumExprABC(TableModule):
         if self.result is not None:
             self.table.resize(0)
 
-    def run_step(self,
-                 run_number: int,
-                 step_size: int,
-                 howlong: float) -> ReturnRunStep:
+    def run_step(
+        self, run_number: int, step_size: int, howlong: float
+    ) -> ReturnRunStep:
         """
         """
         reset_all = False

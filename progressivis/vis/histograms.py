@@ -21,16 +21,17 @@ logger = logging.getLogger(__name__)
 
 class Histograms(NAry):
     "Visualize a table with multiple histograms"
-    parameters = [('bins', np.dtype(int), 128),
-                  ('delta', np.dtype(float), -5)]  # 5%
-    inputs = [SlotDescriptor('min', type=BaseTable, required=True),
-              SlotDescriptor('max', type=BaseTable, required=True)]
-    outputs = [SlotDescriptor('min', type=BaseTable, required=False),
-               SlotDescriptor('max', type=BaseTable, required=False)]
+    parameters = [("bins", np.dtype(int), 128), ("delta", np.dtype(float), -5)]  # 5%
+    inputs = [
+        SlotDescriptor("min", type=BaseTable, required=True),
+        SlotDescriptor("max", type=BaseTable, required=True),
+    ]
+    outputs = [
+        SlotDescriptor("min", type=BaseTable, required=False),
+        SlotDescriptor("max", type=BaseTable, required=False),
+    ]
 
-    def __init__(self,
-                 columns: List[str] = None,
-                 **kwds):
+    def __init__(self, columns: List[str] = None, **kwds):
         super(Histograms, self).__init__(**kwds)
         self.tags.add(self.TAG_VISUALIZATION)
         self.default_step_size = 1
@@ -39,13 +40,13 @@ class Histograms(NAry):
 
     def table_(self) -> BaseTable:
         "Return the table"
-        return self.get_input_slot('table').data()
+        return self.get_input_slot("table").data()
 
     def get_data(self, name: str) -> Any:
-        if name == 'min':
-            return self.get_input_slot('min').data()
-        if name == 'max':
-            return self.get_input_slot('max').data()
+        if name == "min":
+            return self.get_input_slot("min").data()
+        if name == "max":
+            return self.get_input_slot("max").data()
         return super(Histograms, self).get_data(name)
 
     def predict_step_size(self, duration: float) -> int:
@@ -65,18 +66,22 @@ class Histograms(NAry):
     def _create_columns(self, columns: List[str], df):
         bins: int = cast(int, self.params.bins)
         delta: float = cast(float, self.params.delta)  # crude
-        inp: Module = self.get_input_module('table')
-        minmod: Module = self.get_input_module('min')
-        maxmod: Module = self.get_input_module('max')
+        inp: Module = self.get_input_module("table")
+        minmod: Module = self.get_input_module("min")
+        maxmod: Module = self.get_input_module("max")
         for column in columns:
-            logger.debug('Creating histogram1d %s', column)
+            logger.debug("Creating histogram1d %s", column)
             dtype = df[column].dtype
             if not np.issubdtype(dtype, numbers.Number):
                 # only create histograms for number columns
                 continue
-            histo = Histogram1D(group=self.name, column=column,
-                                bins=bins, delta=delta,
-                                scheduler=self.scheduler)
+            histo = Histogram1D(
+                group=self.name,
+                column=column,
+                bins=bins,
+                delta=delta,
+                scheduler=self.scheduler,
+            )
             histo.input.table = inp.output.result
             histo.input.min = minmod.output.result
             histo.input.max = maxmod.output.result
@@ -85,7 +90,7 @@ class Histograms(NAry):
 
     def _delete_columns(self, columns: List[str]) -> None:
         for column in columns:
-            logger.debug('Deleting histogram1d %s', column)
+            logger.debug("Deleting histogram1d %s", column)
             histo = self._histogram[column]
             del self._histogram[column]
             histo.reset()
@@ -104,5 +109,5 @@ class Histograms(NAry):
         for (column, value) in self._histogram.items():
             column = str(column)
             histo_json[column] = value.get_histogram()
-        json['histograms'] = histo_json
+        json["histograms"] = histo_json
         return json

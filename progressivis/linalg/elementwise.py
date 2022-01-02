@@ -89,10 +89,9 @@ class Unary(TableModule):
         if self.result is not None:
             self.table.resize(0)
 
-    def run_step(self,
-                 run_number: int,
-                 step_size: int,
-                 howlong: float) -> ReturnRunStep:
+    def run_step(
+        self, run_number: int, step_size: int, howlong: float
+    ) -> ReturnRunStep:
         slot = self.get_input_slot("table")
         data_in = slot.data()
         if not data_in:
@@ -192,10 +191,9 @@ class ColsBinary(TableModule):
         if self.result is not None:
             self.table.resize(0)
 
-    def run_step(self,
-                 run_number: int,
-                 step_size: int,
-                 howlong: float) -> ReturnRunStep:
+    def run_step(
+        self, run_number: int, step_size: int, howlong: float
+    ) -> ReturnRunStep:
         slot = self.get_input_slot("table")
         data_in = slot.data()
         if not data_in:
@@ -300,10 +298,9 @@ class Binary(TableModule):
         if self.result is not None:
             self.table.resize(0)
 
-    def run_step(self,
-                 run_number: int,
-                 step_size: int,
-                 howlong: float) -> ReturnRunStep:
+    def run_step(
+        self, run_number: int, step_size: int, howlong: float
+    ) -> ReturnRunStep:
         first = self.get_input_slot("first")
         second = self.get_input_slot("second")
         data = first.data()
@@ -411,10 +408,9 @@ class Reduce(TableModule):
 
     @process_slot("table", reset_cb="reset")
     @run_if_any
-    def run_step(self,
-                 run_number: int,
-                 step_size: int,
-                 howlong: float) -> ReturnRunStep:
+    def run_step(
+        self, run_number: int, step_size: int, howlong: float
+    ) -> ReturnRunStep:
         assert self.context
         with self.context as ctx:
             data_in = ctx.table.data()
@@ -518,38 +514,50 @@ def generate_stubs(out=sys.stdout):
     for k, v in unary_dict_all.items():
         name = func2class_name(k)
         decls.append(name)
-        print(f"""class {name}({super}):
+        print(
+            f"""class {name}({super}):
     def __init__(self, *args, **kwds):
         super({name}, self).__init__(np.{k}, **kwds)
 
-""", file=out)
+""",
+            file=out,
+        )
     super = "Binary"
     for k, v in binary_dict_all.items():
         name = func2class_name(k)
         decls.append(name)
-        print(f"""class {name}({super}):
+        print(
+            f"""class {name}({super}):
     def __init__(self, *args, **kwds):
         super({name}, self).__init__(np.{k}, **kwds)
 
-""", file=out)
+""",
+            file=out,
+        )
     super = "ColsBinary"
     for k, v in binary_dict_all.items():
         name = f"Cols{func2class_name(k)}"
         decls.append(name)
-        print(f"""class {name}({super}):
+        print(
+            f"""class {name}({super}):
     def __init__(self, *args, **kwds):
         super({name}, self).__init__(np.{k}, **kwds)
 
-""", file=out)
+""",
+            file=out,
+        )
     super = "Reduce"
     for k, v in binary_dict_all.items():
         name = f"{func2class_name(k)}Reduce"
         decls.append(name)
-        print(f"""class {name}({super}):
+        print(
+            f"""class {name}({super}):
     def __init__(self, *args, **kwds):
         super({name}, self).__init__(np.{k}, **kwds)
 
-""", file=out)
+""",
+            file=out,
+        )
     print("from progressivis.linalg._elementwise import (", file=out)
     for decl in decls:
         print(f"    {decl},", file=out)

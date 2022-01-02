@@ -76,9 +76,9 @@ def dshape_extract(data, columns: List[str] = None) -> Optional[DataShape]:
     return None
 
 
-def dshape_projection(table,
-                      columns: List[str] = None,
-                      names: List[str] = None) -> DataShape:
+def dshape_projection(
+    table, columns: List[str] = None, names: List[str] = None
+) -> DataShape:
     if columns is None and names is None:
         return table.dshape
     dshapes: List[str] = []

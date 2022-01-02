@@ -416,11 +416,15 @@ class Dataflow:
                     maybe_deps.discard(name)
         return deps
 
-    def _collect_collaterals(self, name: str, deps: Set[str], maybe_deps: Set[str]) -> None:
+    def _collect_collaterals(
+        self, name: str, deps: Set[str], maybe_deps: Set[str]
+    ) -> None:
         self._collect_output_collaterals(name, deps, maybe_deps)
         self._collect_input_collaterals(name, deps, maybe_deps)
 
-    def _collect_output_collaterals(self, name: str, deps: Set[str], maybe_deps: Set[str]) -> None:
+    def _collect_output_collaterals(
+        self, name: str, deps: Set[str], maybe_deps: Set[str]
+    ) -> None:
         outputs = self.outputs[name]
         for olist in outputs.values():
             if olist is None:
@@ -428,10 +432,9 @@ class Dataflow:
             for oslot in olist:
                 self._collect_input_collaterals_if_required(oslot, deps, maybe_deps)
 
-    def _collect_input_collaterals_if_required(self,
-                                               oslot: Slot,
-                                               deps: Set[str],
-                                               maybe_deps: Set[str]) -> None:
+    def _collect_input_collaterals_if_required(
+        self, oslot: Slot, deps: Set[str], maybe_deps: Set[str]
+    ) -> None:
         # collect input module only if the input slot being removed is required
         module = oslot.input_module
         if module.name in deps:
@@ -444,10 +447,9 @@ class Dataflow:
         else:
             maybe_deps.add(module.name)
 
-    def _collect_output_collaterals_if_required(self,
-                                                islot: Slot,
-                                                deps: Set[str],
-                                                maybe_deps: Set[str]) -> None:
+    def _collect_output_collaterals_if_required(
+        self, islot: Slot, deps: Set[str], maybe_deps: Set[str]
+    ) -> None:
         module = islot.output_module
         if module.name in deps:  # already being removed
             return
@@ -465,7 +467,9 @@ class Dataflow:
             deps.add(module.name)
             maybe_deps.discard(module.name)
 
-    def _collect_input_collaterals(self, name: str, deps: Set[str], maybe_deps: Set[str]) -> None:
+    def _collect_input_collaterals(
+        self, name: str, deps: Set[str], maybe_deps: Set[str]
+    ) -> None:
         inputs = self.inputs[name]
         for islot in inputs.values():
             if islot is None:

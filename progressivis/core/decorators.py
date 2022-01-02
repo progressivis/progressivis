@@ -2,15 +2,7 @@ from __future__ import annotations
 
 from functools import wraps, partial
 
-from typing import (
-    Callable,
-    Tuple,
-    Union,
-    Any,
-    Dict,
-    cast,
-    TYPE_CHECKING
-)
+from typing import Callable, Tuple, Union, Any, Dict, cast, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from .module import Module
@@ -47,9 +39,10 @@ class _Context:
 
 
 def process_slot(
-        *names: str,
-        reset_if: Union[bool, str, Tuple[str, ...]] = ("update", "delete"),
-        reset_cb: Union[None, str, Callable] = None) -> Callable[[RunStepCallable], RunStepCallable]:
+    *names: str,
+    reset_if: Union[bool, str, Tuple[str, ...]] = ("update", "delete"),
+    reset_cb: Union[None, str, Callable] = None,
+) -> Callable[[RunStepCallable], RunStepCallable]:
     """
     this function includes reset_if, reset_cb in the closure
     """
@@ -70,10 +63,8 @@ def process_slot(
         # print("process slot deco", names)
         @wraps(run_step_)
         def run_step_wrapper(
-                self,
-                run_number: int,
-                step_size: int,
-                howlong: float) -> ReturnRunStep:
+            self, run_number: int, step_size: int, howlong: float
+        ) -> ReturnRunStep:
             """
             decoration
             """
@@ -143,7 +134,9 @@ def _slot_policy_rule(decname, *slots_maybe):
         has_hidden_attr = hasattr(to_decorate, "_hidden_progressivis_attr")
 
         @wraps(to_decorate)
-        def decoration_(self, run_number: int, step_size: int, howlong: float) -> ReturnRunStep:
+        def decoration_(
+            self, run_number: int, step_size: int, howlong: float
+        ) -> ReturnRunStep:
             """
             this function makes the decoration
             """

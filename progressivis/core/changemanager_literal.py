@@ -61,10 +61,7 @@ class LiteralChangeManager(BaseChangeManager):
         self._last_value = data
         return changes
 
-    def update(self,
-               run_number: int,
-               data: Any,
-               mid: str) -> None:
+    def update(self, run_number: int, data: Any, mid: str) -> None:
         # pylint: disable=unused-argument
         if run_number != 0 and run_number <= self._last_update:
             return

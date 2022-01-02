@@ -6,14 +6,7 @@ from ..table.dshape import DataShape, dshape_from_dict
 import numpy as np
 
 
-from typing import (
-    Any,
-    List,
-    Optional,
-    Dict,
-    Tuple,
-    TYPE_CHECKING
-)
+from typing import Any, List, Optional, Dict, Tuple, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from progressivis.core.changemanager_dict import DictChangeManager
@@ -21,6 +14,7 @@ if TYPE_CHECKING:
 
 class PsDict(dict):
     "progressive dictionary"
+
     def __init__(self, other: Optional[Dict[str, Any]] = None, **kwargs):
         if other is not None:
             # useful when keys are not varname-alike
@@ -39,8 +33,7 @@ class PsDict(dict):
     def compute_updates(self, start, now, mid=None, cleanup=True):
         assert False, "compute_updates should not be called on PsDict"
         if self.changes:
-            updates = self.changes.compute_updates(start, now, mid,
-                                                   cleanup=cleanup)
+            updates = self.changes.compute_updates(start, now, mid, cleanup=cleanup)
             if updates is None:
                 updates = IndexUpdate(created=bitmap(self.ids))
             return updates
@@ -73,15 +66,15 @@ class PsDict(dict):
         status: {active|deleted}
         """
         if self._index is None:
-            return list(self.keys())[id], 'active'
+            return list(self.keys())[id], "active"
         if self._inverse is None:
             self._inverse = {i: k for (k, i) in self._index.items()}
         if id in self._inverse:
-            return self._inverse[id], 'active'
+            return self._inverse[id], "active"
         if self._inverse_del is None:
             self._inverse_del = {i: k for (k, i) in self._deleted.items()}
         if id in self._inverse_del:
-            return self._inverse_del[id], 'deleted'
+            return self._inverse_del[id], "deleted"
         raise KeyError(f"Key not found for id: {id}")
 
     def k_(self, id: int) -> str:
@@ -109,13 +102,21 @@ class PsDict(dict):
 
     def updated_indices(self, prev: PsDict) -> bitmap:
         if self._index is None:
-            return bitmap((i for (i, x, y) in zip(range(len(prev)),
-                                                  prev.values(),
-                                                  self.values())
-                           if x is not y))
+            return bitmap(
+                (
+                    i
+                    for (i, x, y) in zip(range(len(prev)), prev.values(), self.values())
+                    if x is not y
+                )
+            )
         common_keys = set(self.keys()) & set(prev.keys())
-        return bitmap((i for (k, i) in self._index.items()
-                       if k in common_keys and self[k] is not prev[k]))
+        return bitmap(
+            (
+                i
+                for (k, i) in self._index.items()
+                if k in common_keys and self[k] is not prev[k]
+            )
+        )
 
     def deleted_indices(self, prev: PsDict) -> bitmap:
         if self._index is None:

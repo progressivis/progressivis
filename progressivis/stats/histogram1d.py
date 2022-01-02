@@ -62,10 +62,9 @@ class Histogram1D(TableModule):
     @process_slot("table", reset_cb="reset")
     @process_slot("min", "max", reset_if=False)
     @run_if_any
-    def run_step(self,
-                 run_number: int,
-                 step_size: int,
-                 howlong: float) -> ReturnRunStep:
+    def run_step(
+        self, run_number: int, step_size: int, howlong: float
+    ) -> ReturnRunStep:
         assert self.context
         with self.context as ctx:
             dfslot = ctx.table
@@ -142,7 +141,9 @@ class Histogram1D(TableModule):
             self.table.append(values)
             return self._return_run_step(self.next_state(dfslot), steps_run=steps)
 
-    def get_bounds(self, min_slot: Slot, max_slot: Slot) -> Optional[Tuple[float, float]]:
+    def get_bounds(
+        self, min_slot: Slot, max_slot: Slot
+    ) -> Optional[Tuple[float, float]]:
         min_df = min_slot.data()
         if len(min_df) == 0 and self._bounds is None:
             return None

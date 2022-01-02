@@ -35,7 +35,7 @@ def generate_random_multivariate_normal_csv(
     rows: int,
     seed: int = 1234,
     header: Optional[str] = None,
-    reset: Optional[bool] = False
+    reset: Optional[bool] = False,
 ) -> str:
     """
     Adapted from: https://github.com/e-/PANENE/blob/master/examples/kernel_density/online.py
@@ -45,9 +45,9 @@ def generate_random_multivariate_normal_csv(
     if isinstance(filename, str) and os.path.exists(filename) and not reset:
         return filename
 
-    def mv(n: int,
-           mean: List[float],
-           cov: List[List[float]]) -> np.ndarray[Any, np.dtype[np.float32]]:
+    def mv(
+        n: int, mean: List[float], cov: List[List[float]]
+    ) -> np.ndarray[Any, np.dtype[np.float32]]:
         return np.random.multivariate_normal(mean, cov, size=(n)).astype(np.float32)
 
     N = rows // 3

@@ -27,10 +27,9 @@ class MergeDict(TableModule):
         super().__init__(**kwds)
         self._dialog = Dialog(self)
 
-    def run_step(self,
-                 run_number: int,
-                 step_size: int,
-                 howlong: float) -> ReturnRunStep:
+    def run_step(
+        self, run_number: int, step_size: int, howlong: float
+    ) -> ReturnRunStep:
         first_slot = self.get_input_slot("first")
         # first_slot.update(run_number)
         second_slot = self.get_input_slot("second")

@@ -8,6 +8,7 @@ from contextlib import contextmanager
 if TYPE_CHECKING:
     import numpy as np
     import numpy.typing as npt
+
     DTypeLike = npt.DTypeLike
     ArrayLike = npt.ArrayLike
 
@@ -68,7 +69,12 @@ class DatasetFactory(StorageObject):
 
     @abstractmethod
     def require_dataset(
-        self, name: str, shape: Shape, dtype: DTypeLike, exact: bool = False, **kwds: Dict[str, Any]
+        self,
+        name: str,
+        shape: Shape,
+        dtype: DTypeLike,
+        exact: bool = False,
+        **kwds: Dict[str, Any]
     ) -> Dataset:
         pass
 
@@ -102,7 +108,12 @@ class Group(DatasetFactory):
 
     @abstractmethod
     def require_dataset(
-        self, name: str, shape: Shape, dtype: DTypeLike, exact: bool = False, **kwds: Dict[str, Any]
+        self,
+        name: str,
+        shape: Shape,
+        dtype: DTypeLike,
+        exact: bool = False,
+        **kwds: Dict[str, Any]
     ) -> Dataset:
         pass
 
@@ -195,7 +206,7 @@ class StorageEngine(Group):
 
     @staticmethod  # type: ignore
     @contextmanager
-    def default_engine(engine: str) -> None:   # type: ignore
+    def default_engine(engine: str) -> None:  # type: ignore
         if engine not in StorageEngine._engines:
             raise ValueError("Unknown storage engine %s", engine)
         saved = StorageEngine._default

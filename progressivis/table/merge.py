@@ -52,9 +52,7 @@ def merge(
     return merge_table
 
 
-def merge_cont(left: BaseTable,
-               right: BaseTable,
-               merge_ctx: Dict[str, Any]) -> Table:
+def merge_cont(left: BaseTable, right: BaseTable, merge_ctx: Dict[str, Any]) -> Table:
     "merge continuation function"
     merge_table = Table(name=None, dshape=merge_ctx["dshape"])
     merge_ids = left.index & right.index
@@ -82,10 +80,9 @@ class Merge(NAry):
         self.merge_kwds = filter_kwds(kwds, merge)
         self._context = {}
 
-    def run_step(self,
-                 run_number: int,
-                 step_size: int,
-                 howlong: float) -> ReturnRunStep:
+    def run_step(
+        self, run_number: int, step_size: int, howlong: float
+    ) -> ReturnRunStep:
         frames: List[BaseTable] = []
         for name in self.get_input_slot_multiple():
             slot = self.get_input_slot(name)

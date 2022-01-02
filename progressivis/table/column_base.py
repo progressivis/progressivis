@@ -21,7 +21,7 @@ from typing import (
     Sequence,
     Tuple,
     Iterator,
-    Dict
+    Dict,
 )
 
 if TYPE_CHECKING:
@@ -63,10 +63,7 @@ class BaseColumn(metaclass=ABCMeta):
     """
 
     # pylint: disable=too-many-public-methods
-    def __init__(self,
-                 name: str,
-                 index: IndexTable,
-                 base: Optional[BaseColumn] = None):
+    def __init__(self, name: str, index: IndexTable, base: Optional[BaseColumn] = None):
         self._index = index
         self._name = name
         self._base = base
@@ -161,10 +158,9 @@ class BaseColumn(metaclass=ABCMeta):
         "Return a list from the values of the column"
         return self.values.tolist()  # type: ignore
 
-    def read_direct(self,
-                    array: np.ndarray[Any, Any],
-                    source_sel: Any = None,
-                    dest_sel: Any = None) -> None:
+    def read_direct(
+        self, array: np.ndarray[Any, Any], source_sel: Any = None, dest_sel: Any = None
+    ) -> None:
         """ Read data from column into an existing NumPy array.
 
         Selections must be the output of numpy.s_[<args>] or slice.
@@ -263,32 +259,35 @@ class BaseColumn(metaclass=ABCMeta):
             raise RuntimeError("Column has no index")
         self.index.changes = tablechange
 
-    def compute_updates(self,
-                        start: int,
-                        now: int,
-                        mid: str,
-                        cleanup: bool = True) -> Optional[IndexUpdate]:
+    def compute_updates(
+        self, start: int, now: int, mid: str, cleanup: bool = True
+    ) -> Optional[IndexUpdate]:
         "Return the updates of this column managed by the index"
         if self.index is None:
             return None
         return self.index.compute_updates(start, now, mid, cleanup)
 
-    def unary(self,
-              # operation: Callable[[np.ndarray[Any, Any], int, float, bool, str], np.ndarray[Any, Any]],
-              operation: Callable[..., np.ndarray[Any, Any]],
-              **kwargs: Dict[str, Any]) -> np.ndarray[Any, Any]:
+    def unary(
+        self,
+        # operation: Callable[[np.ndarray[Any, Any], int, float, bool, str], np.ndarray[Any, Any]],
+        operation: Callable[..., np.ndarray[Any, Any]],
+        **kwargs: Dict[str, Any],
+    ) -> np.ndarray[Any, Any]:
         "Unary function manager"
         axis = kwargs.pop("axis", 0)
         keepdims = kwargs.pop("keepdims", False)
         # ignore other kwargs, maybe raise error in the future
         return operation(self.value, axis=axis, keepdims=keepdims)  # type: ignore
 
-    def binary(self,
-               operation: Callable[[np.ndarray[Any, Any],
-                                    Union[np.ndarray[Any, Any], int, float, bool, str]],
-                                   np.ndarray[Any, Any]],
-               other: Union[np.ndarray[Any, Any], BaseColumn, int, float, bool, str],
-               **kwargs: Dict[str, Any]) -> np.ndarray[Any, Any]:
+    def binary(
+        self,
+        operation: Callable[
+            [np.ndarray[Any, Any], Union[np.ndarray[Any, Any], int, float, bool, str]],
+            np.ndarray[Any, Any],
+        ],
+        other: Union[np.ndarray[Any, Any], BaseColumn, int, float, bool, str],
+        **kwargs: Dict[str, Any],
+    ) -> np.ndarray[Any, Any]:
         "Binary function manager"
         axis = kwargs.pop("axis", 0)
         assert axis == 0

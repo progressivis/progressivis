@@ -22,16 +22,16 @@ if TYPE_CHECKING:
 class SlotDescriptor:
     "SlotDescriptor is used in modules to describe the input/output slots."
     __slots__ = (
-            "name",
-            "type",
-            "required",
-            "multiple",
-            "datashape",
-            "buffer_created",
-            "buffer_updated",
-            "buffer_deleted",
-            "buffer_exposed",
-            "buffer_masked",
+        "name",
+        "type",
+        "required",
+        "multiple",
+        "datashape",
+        "buffer_created",
+        "buffer_updated",
+        "buffer_deleted",
+        "buffer_exposed",
+        "buffer_masked",
     )
 
     def __init__(

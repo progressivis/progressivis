@@ -46,10 +46,9 @@ class Stirrer(TableModule):
         p = super().predict_step_size(duration)
         return max(p, 1000)
 
-    def run_step(self,
-                 run_number: int,
-                 step_size: int,
-                 howlong: float) -> ReturnRunStep:
+    def run_step(
+        self, run_number: int, step_size: int, howlong: float
+    ) -> ReturnRunStep:
         if self.params.fixed_step_size and False:
             step_size = self.params.fixed_step_size
         input_slot = self.get_input_slot("table")
@@ -125,10 +124,9 @@ class StirrerView(TableModule):
             return True
         return len(val) > self._delete_threshold
 
-    def run_step(self,
-                 run_number: int,
-                 step_size: int,
-                 howlong: float) -> ReturnRunStep:
+    def run_step(
+        self, run_number: int, step_size: int, howlong: float
+    ) -> ReturnRunStep:
         if self.params.fixed_step_size and False:
             step_size = self.params.fixed_step_size
         input_slot = self.get_input_slot("table")

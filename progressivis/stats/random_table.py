@@ -32,7 +32,7 @@ class RandomTable(TableModule):
         random=RAND,
         dtype="float64",
         throttle=False,
-        **kwds
+        **kwds,
     ):
         super(RandomTable, self).__init__(**kwds)
         self.tags.add(self.TAG_SOURCE)
@@ -52,16 +52,13 @@ class RandomTable(TableModule):
             self.throttle = False
         dshape = ", ".join([f"{col}: {dtype}" for col in self.columns])
         dshape = "{" + dshape + "}"
-        table = Table(
-            self.generate_table_name("table"), dshape=dshape, create=True
-        )
+        table = Table(self.generate_table_name("table"), dshape=dshape, create=True)
         self.result = table
         self.columns = table.columns
 
-    def run_step(self,
-                 run_number: int,
-                 step_size: int,
-                 howlong: float) -> ReturnRunStep:
+    def run_step(
+        self, run_number: int, step_size: int, howlong: float
+    ) -> ReturnRunStep:
         if step_size == 0:
             logger.error("Received a step_size of 0")
             return self._return_run_step(self.state_ready, steps_run=0)
@@ -90,9 +87,7 @@ class RandomTable(TableModule):
 
 
 class RandomDict(Constant):
-    def __init__(self,
-                 columns: int,
-                 **kwds):
+    def __init__(self, columns: int, **kwds):
         keys = [f"_{i}" for i in range(1, columns + 1)]
         vals = np.random.rand(columns)
         super().__init__(PsDict(dict(zip(keys, vals))), **kwds)

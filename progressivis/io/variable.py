@@ -46,10 +46,9 @@ class Variable(Constant):
         self.psdict.update(last)
         return error
 
-    def run_step(self,
-                 run_number: int,
-                 step_size: int,
-                 howlong: float) -> ReturnRunStep:
+    def run_step(
+        self, run_number: int, step_size: int, howlong: float
+    ) -> ReturnRunStep:
         if self.result is None:
             slot = self.get_input_slot("like")
             if slot is not None:
@@ -97,8 +96,7 @@ class VirtualVariable(Constant):
             await var.from_input(translation)
         return ""
 
-    def run_step(self,
-                 run_number: int,
-                 step_size: int,
-                 howlong: float) -> ReturnRunStep:
+    def run_step(
+        self, run_number: int, step_size: int, howlong: float
+    ) -> ReturnRunStep:
         return self._return_run_step(self.state_blocked, steps_run=1)

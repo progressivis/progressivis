@@ -9,7 +9,7 @@ from progressivis.core import aio
 from progressivis.core.utils import indices_len, fix_loc
 import numpy as np
 
-ScalarMax._reset_calls_counter = 0       # type: ignore
+ScalarMax._reset_calls_counter = 0  # type: ignore
 ScalarMax._orig_reset = ScalarMax.reset  # type: ignore
 
 
@@ -18,7 +18,7 @@ def _reset_func_max(self_):
     return ScalarMax._orig_reset(self_)
 
 
-ScalarMax.reset = _reset_func_max   # type: ignore
+ScalarMax.reset = _reset_func_max  # type: ignore
 
 ScalarMin._reset_calls_counter = 0  # type: ignore
 ScalarMin._orig_reset = ScalarMin.reset  # type: ignore

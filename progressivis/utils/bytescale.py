@@ -8,11 +8,12 @@ from typing import Optional, Any
 # Returns a byte-scaled image
 # Disappeared from scipy.misc
 def bytescale(
-        data: np.ndarray[Any, Any],
-        cmin: Optional[float] = None,
-        cmax: Optional[float] = None,
-        high: int = 255,
-        low: int = 0) -> np.ndarray[Any, np.dtype[np.float64]]:
+    data: np.ndarray[Any, Any],
+    cmin: Optional[float] = None,
+    cmax: Optional[float] = None,
+    high: int = 255,
+    low: int = 0,
+) -> np.ndarray[Any, np.dtype[np.float64]]:
     """
     Byte scales an array (image).
 
@@ -75,5 +76,5 @@ def bytescale(
     scale = float(high - low) / cscale
     bytedata = (data * 1.0 - cmin) * scale + 0.4999
     bytedata[bytedata > high] = high  # type: ignore
-    bytedata[bytedata < 0] = 0        # type: ignore
+    bytedata[bytedata < 0] = 0  # type: ignore
     return np.cast[np.uint8](bytedata) + np.cast[np.uint8](low)

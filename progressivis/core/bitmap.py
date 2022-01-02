@@ -23,10 +23,9 @@ class bitmap:
     Derive from an efficient and light-weight ordered set of 32 bits integers.
     """
 
-    def __init__(self,
-                 values: Any = None,
-                 copy_on_write: bool = False,
-                 optimize: bool = True):
+    def __init__(
+        self, values: Any = None, copy_on_write: bool = False, optimize: bool = True
+    ):
         self.bm: BitMap
         if isinstance(values, bitmap):
             values = values.bm
@@ -105,7 +104,9 @@ class bitmap:
     def __getitem__(self, values: Union[Iterable[int], slice, bitmap]) -> bitmap:
         ...
 
-    def __getitem__(self, values: Union[int, Iterable[int], slice, bitmap]) -> Union[int, bitmap]:
+    def __getitem__(
+        self, values: Union[int, Iterable[int], slice, bitmap]
+    ) -> Union[int, bitmap]:
         bm: Union[bitmap, BitMap, Exception]
         if isinstance(values, int):
             return self.bm[values]
