@@ -5,16 +5,21 @@ from progressivis.core.utils import integer_types, remove_nan_etc
 from collections import OrderedDict
 
 
-from typing import Any, List, Tuple, Union, Dict, TYPE_CHECKING, overload, Sequence
+from typing import (
+    Any, List, Tuple, Union, Dict, TYPE_CHECKING, overload, Sequence,
+    Optional,
+    Iterator
+)
 
 JSon = Dict[str, Any]
 
 if TYPE_CHECKING:
     from .table_base import BaseTable
+    from .dshape import DataShape
     import numpy as np
 
 
-class Row(MutableMapping):
+class Row(MutableMapping[str, Any]):
     """ Wraps a dictionary interace around a row of a Table.
 
     Parameters
@@ -34,14 +39,16 @@ class Row(MutableMapping):
     3
     """
 
-    def __init__(self, table: BaseTable, index: int = None):
+    def __init__(self, table: BaseTable, index: Optional[int] = None) -> None:
         super(Row, self).__setattr__("table", table)
         if index is not None and not isinstance(index, integer_types):
             raise ValueError('index should be an integer, not "%s"' % str(index))
         super(Row, self).__setattr__("index", index)
+        self.index: Optional[int]
+        self.table: BaseTable
 
     @property
-    def row(self) -> int:
+    def row(self) -> Optional[int]:
         table = self.table
         index = self.index
         return table.last_xid if index is None else index
@@ -58,7 +65,7 @@ class Row(MutableMapping):
     def __getitem__(self, key: Sequence[Union[int, str]]) -> Tuple[Any, ...]:
         ...
 
-    def __getitem__(self, key):
+    def __getitem__(self, key: Any) -> Any:
         if isinstance(key, (list, tuple)):
             return (self[k] for k in key)  # recursive call
         table = self.table
@@ -71,21 +78,21 @@ class Row(MutableMapping):
     def __delitem__(self, key: Union[str, int]) -> None:
         raise ValueError("Cannot delete from a row")
 
-    def dtype(self, key: Union[int, str]) -> np.dtype:
+    def dtype(self, key: Union[int, str]) -> np.dtype[Any]:
         table = self.table
         return table[key].dtype
 
-    def dshape(self, key: Union[int, str]) -> Tuple[int, ...]:
+    def dshape(self, key: Union[int, str]) -> DataShape:
         table = self.table
         return table[key].dshape
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[str]:
         table = self.table
         return iter(table)
 
-    def __reversed__(self):
-        table = self.table
-        return table.iter().reversed()
+    # def __reversed__(self) -> Iterator[str]:
+    #     table = self.table
+    #     return iter(table).reversed()  # type: ignore
 
     def __contains__(self, key: object) -> bool:
         table = self.table
@@ -93,13 +100,15 @@ class Row(MutableMapping):
             return key in table
         return False
 
-    def to_dict(self, ordered=False) -> Dict[str, Any]:
+    def to_dict(self, ordered: bool = False) -> Dict[str, Any]:
         if ordered:
             return OrderedDict(self)
         return dict(self)
 
     def to_json(self) -> JSon:
-        return remove_nan_etc(dict(self))
+        d = dict(self)
+        remove_nan_etc(d)
+        return d
 
     def __getattr__(self, attr: str) -> Any:
         return self[attr]
@@ -107,6 +116,6 @@ class Row(MutableMapping):
     def __setattr__(self, attr: str, value: Any) -> None:
         self[attr] = value
 
-    def __dir__(self) -> List:
+    def __dir__(self) -> List[str]:
         table = self.table
         return list(table.columns)

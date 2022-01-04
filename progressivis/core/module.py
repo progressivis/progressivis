@@ -39,6 +39,7 @@ from typing import (
     Callable,
     Type,
     Union,
+    ClassVar,
     TYPE_CHECKING,
 )
 
@@ -116,7 +117,7 @@ class Module(metaclass=ModuleMeta):
         ("quantum", np.dtype(float), 0.5),
         ("debug", np.dtype(bool), False),
     ]
-    all_parameters: Parameters  # defined by metaclass, declare for mypy
+    all_parameters: ClassVar[Parameters]  # defined by metaclass, declare for mypy
     TRACE_SLOT = "_trace"
     PARAMETERS_SLOT = "_params"
 
@@ -128,16 +129,16 @@ class Module(metaclass=ModuleMeta):
 
     inputs = [SlotDescriptor(PARAMETERS_SLOT, type=BaseTable, required=False)]
     outputs = [SlotDescriptor(TRACE_SLOT, type=BaseTable, required=False)]
-    all_inputs: List[SlotDescriptor]  # defined by metaclass, declare for mypy
-    all_outputs: List[SlotDescriptor]  # defined by metaclass, declare for mypy
+    all_inputs: ClassVar[List[SlotDescriptor]]  # defined by metaclass, declare for mypy
+    all_outputs: ClassVar[List[SlotDescriptor]]  # defined by metaclass, declare for mypy
 
-    state_created = ModuleState.state_created
-    state_ready = ModuleState.state_ready
-    state_running = ModuleState.state_running
-    state_blocked = ModuleState.state_blocked
-    state_zombie = ModuleState.state_zombie
-    state_terminated = ModuleState.state_terminated
-    state_invalid = ModuleState.state_invalid
+    state_created: ClassVar[ModuleState] = ModuleState.state_created
+    state_ready: ClassVar[ModuleState] = ModuleState.state_ready
+    state_running: ClassVar[ModuleState] = ModuleState.state_running
+    state_blocked: ClassVar[ModuleState] = ModuleState.state_blocked
+    state_zombie: ClassVar[ModuleState] = ModuleState.state_zombie
+    state_terminated: ClassVar[ModuleState] = ModuleState.state_terminated
+    state_invalid: ClassVar[ModuleState] = ModuleState.state_invalid
 
     # state_created = 0
     # state_ready = 1
@@ -283,7 +284,7 @@ class Module(metaclass=ModuleMeta):
         """
         return 0.0
 
-    async def after_run(self, rn) -> None:
+    async def after_run(self, rn: int) -> None:
         if self.after_run_proc is None:
             return
         proc = self.after_run_proc

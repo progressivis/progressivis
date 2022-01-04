@@ -41,7 +41,6 @@ class Dataflow:
         self.inputs: Dict[str, Dict[str, Slot]] = {}
         self.outputs: Dict[str, Dict[str, List[Slot]]] = {}
         self.valid: List[Module] = []
-        self._slot_clashes: Dict[str, Dict[str, int]] = {}
         self.reachability: Dict[str, Any] = {}
         # add the scheduler's dataflow into self
         self.version: int = scheduler.version
@@ -144,11 +143,8 @@ class Dataflow:
         input_module = slot.input_module
         input_name = slot.original_name or slot.input_name
         if input_module.input_slot_multiple(input_name):
-            # FIXME: this will break when slots will be removed and added
-            # clashes = self._clashes(input_module.name, input_name)
             if rename:
                 slot.original_name = input_name
-                # input_name += f".{self.version:02d}.{clashes:02d}"
                 input_name += f".{uuid4()}"
                 logger.info(f"{slot.original_name} renamed {input_name}")
                 slot.input_name = input_name
@@ -198,15 +194,6 @@ class Dataflow:
                 % (output_name, input_name, str(slot))
             )
         self.add_connection(slot)
-
-    def _clashes(self, module_name: str, input_slot_name: str) -> int:
-        slots = self._slot_clashes.get(module_name, None)
-        if slots is None:
-            slots = {input_slot_name: 1}
-            self._slot_clashes[module_name] = slots
-            return 1  # shortcut
-        slots[input_slot_name] += 1
-        return slots[input_slot_name]
 
     def _remove_module_inputs(self, name: str) -> None:
         for slot in self.inputs[name].values():

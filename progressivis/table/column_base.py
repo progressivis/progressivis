@@ -64,9 +64,9 @@ class BaseColumn(metaclass=ABCMeta):
 
     # pylint: disable=too-many-public-methods
     def __init__(self, name: str, index: IndexTable, base: Optional[BaseColumn] = None):
-        self._index = index
-        self._name = name
-        self._base = base
+        self._index: IndexTable = index
+        self._name: str = name
+        self._base: Optional[BaseColumn] = base
 
     @property
     def loc(self) -> Any:

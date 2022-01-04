@@ -22,6 +22,7 @@ from typing import (
     TYPE_CHECKING,
     Coroutine,
     Union,
+    Iterator,
     cast,
 )
 
@@ -34,12 +35,14 @@ SHORTCUT_TIME = 1.5
 
 if TYPE_CHECKING:
     from progressivis.core.module import Module
+    from progressivis.core.slot import Slot
 
 TickCb = Callable[["Scheduler", int], None]
 TickCoro = Callable[["Scheduler", int], Coroutine[Any, Any, Any]]
 TickProc = Union[TickCb, TickCoro]
 Order = List[str]
 Reachability = Dict[str, List[str]]
+Dependencies = Dict[str, Dict[str, Slot]]
 
 
 class Scheduler:
@@ -64,12 +67,12 @@ class Scheduler:
         Scheduler._last_id += 1
         self._name: int = Scheduler._last_id
         self._modules: Dict[str, Module] = {}
-        self._dependencies: Dict[str, Dict]
+        self._dependencies: Dependencies
         self._running: bool = False
         self._stopped: bool = True
         self._runorder: Order = []
         self._new_modules: List[Module] = []
-        self._new_dependencies: Dict[str, Dict] = {}
+        self._new_dependencies: Dependencies = {}
         self._new_runorder: Order = []
         self._new_reachability: Reachability = {}
         self._start: float = 0
@@ -85,7 +88,7 @@ class Scheduler:
         self._selection_target_time: float = -1
         self.interaction_latency = interaction_latency
         self._reachability: Reachability = {}
-        self._start_inter = 0
+        self._start_inter: float = 0
         self._hibernate_cond: aio.Condition
         self._keep_running = KEEP_RUNNING
         self.dataflow: Optional[Dataflow] = Dataflow(self)
@@ -95,7 +98,7 @@ class Scheduler:
         self._task = False
         # self.runners = set()
         self.shortcut_evt: aio.Event
-        self.coros: List[Coroutine] = []
+        self.coros: List[Coroutine[Any, Any, Any]] = []
 
     async def shortcut_manager(self) -> None:
         while True:
@@ -118,7 +121,7 @@ class Scheduler:
             self._enter_cnt += 1
         return self.dataflow
 
-    def __exit__(self, exc_type, exc_value, traceback) -> None:
+    def __exit__(self, exc_type: Any, exc_value: Any, traceback: Any) -> None:
         self._enter_cnt -= 1
         if exc_type is None:
             if self._enter_cnt == 0:
@@ -147,7 +150,7 @@ class Scheduler:
         "Return the length of the run queue"
         return len(self._run_list)
 
-    def to_json(self, short=True) -> Dict[str, Any]:
+    def to_json(self, short: bool = True) -> Dict[str, Any]:
         "Return a dictionary describing the scheduler"
         msg: Dict[str, Any] = {}
         mods = {}
@@ -210,10 +213,10 @@ class Scheduler:
 
     async def start_impl(
         self,
-        tick_proc: TickProc = None,
-        idle_proc: TickProc = None,
-        coros: Sequence[Coroutine] = (),
-    ):
+        tick_proc: Optional[TickProc] = None,
+        idle_proc: Optional[TickProc] = None,
+        coros: Sequence[Coroutine[Any, Any, Any]] = (),
+    ) -> None:
         async with self._lock:
             if self._task:
                 raise ProgressiveError(
@@ -235,11 +238,11 @@ class Scheduler:
 
     async def start(
         self,
-        tick_proc: TickProc = None,
-        idle_proc: TickProc = None,
-        coros: Sequence[Coroutine] = (),
-        persist=False,
-    ):
+        tick_proc: Optional[TickProc] = None,
+        idle_proc: Optional[TickProc] = None,
+        coros: Sequence[Coroutine[Any, Any, Any]] = (),
+        persist: bool = False,
+    ) -> None:
         from ..storage import init_temp_dir_if, cleanup_temp_dir, temp_dir
 
         self.shortcut_evt = aio.Event()
@@ -257,27 +260,27 @@ class Scheduler:
             if itd_flag:
                 cleanup_temp_dir()
 
-    def task_start(self, *args, **kwargs):
+    def task_start(self, *args: Any, **kwargs: Any) -> aio.Task[Any]:
         return aio.create_task(self.start(*args, **kwargs))
 
-    def _step_proc(self, s, run_number):
+    def _step_proc(self, s: Scheduler, run_number: int) -> None:
         # pylint: disable=unused-argument
         self.task_stop()
 
-    async def step(self):
+    async def step(self) -> None:
         "Start the scheduler for on step."
         await self.start(tick_proc=self._step_proc)
 
-    def on_tick(self, tick_proc):
+    def on_tick(self, tick_proc: TickProc) -> None:
         "Set a procedure to call at each tick."
         assert callable(tick_proc)
         self._tick_procs.append(tick_proc)
 
-    def remove_tick(self, tick_proc):
+    def remove_tick(self, tick_proc: TickProc) -> None:
         "Remove a tick callback"
         self._tick_procs.remove(tick_proc)
 
-    def on_tick_once(self, tick_proc):
+    def on_tick_once(self, tick_proc: TickProc) -> None:
         """
         Add a oneshot function that will be run at the next scheduler tick.
         This is especially useful for setting up module connections.
@@ -285,24 +288,24 @@ class Scheduler:
         assert callable(tick_proc)
         self._tick_once_procs.append(tick_proc)
 
-    def remove_tick_once(self, tick_proc: TickProc):
+    def remove_tick_once(self, tick_proc: TickProc) -> None:
         "Remove a tick once callback"
         self._tick_once_procs.remove(tick_proc)
 
-    def on_idle(self, idle_proc: TickProc):
+    def on_idle(self, idle_proc: TickProc) -> None:
         "Set a procedure that will be called when there is nothing else to do."
         assert callable(idle_proc)
         self._idle_procs.append(idle_proc)
 
-    def remove_idle(self, idle_proc: TickProc):
+    def remove_idle(self, idle_proc: TickProc) -> None:
         "Remove an idle callback."
         assert callable(idle_proc)
         self._idle_procs.remove(idle_proc)
 
-    def idle_proc(self):
+    def idle_proc(self) -> None:
         pass
 
-    async def run(self):
+    async def run(self) -> None:
         "Run the modules, called by start()."
         global KEEP_RUNNING
         # from .sentinel import Sentinel
@@ -369,7 +372,7 @@ class Scheduler:
         if self.shortcut_evt is not None:
             self.shortcut_evt.set()
 
-    def _next_module(self):
+    def _next_module(self) -> Iterator[Module]:
         """
         Generator the yields a possibly infinite sequence of modules.
         Handles order recomputation and starting logic if needed.
@@ -511,7 +514,7 @@ class Scheduler:
     #             del self._modules[name]
     #             self._runorder.remove(name)
 
-    def _end_of_modules(self, first_run):
+    def _end_of_modules(self, first_run: int) -> None:
         # Reset interaction mode
         self._selection_target_time = -1
         new_list = [m for m in self._run_list if not m.is_terminated()]
@@ -531,7 +534,7 @@ class Scheduler:
                 time.sleep(0.2)
         self._run_index = 0
 
-    async def idle_proc_runner(self):
+    async def idle_proc_runner(self) -> None:
         has_run = False
         for proc in self._idle_procs:
             # pylint: disable=broad-except
@@ -549,7 +552,7 @@ class Scheduler:
             logger.info("sleeping %f", 0.2)
             await aio.sleep(0.2)
 
-    async def _run_tick_procs(self):
+    async def _run_tick_procs(self) -> None:
         # pylint: disable=broad-except
         for proc in self._tick_procs:
             logger.debug("Calling tick_proc")
@@ -572,7 +575,7 @@ class Scheduler:
                 logger.warning(exc)
             self._tick_once_procs = []
 
-    async def stop(self):
+    async def stop(self) -> None:
         "Stop the execution."
         if self.shortcut_evt is not None:
             self.shortcut_evt.set()
@@ -581,7 +584,7 @@ class Scheduler:
             self._hibernate_cond.notify()
             self._stopped = True
 
-    def task_stop(self) -> Optional[aio.Task]:
+    def task_stop(self) -> Optional[aio.Task[Any]]:
         if self.is_running():
             return aio.create_task(self.stop())
         return None
@@ -605,7 +608,7 @@ class Scheduler:
         self._task = False
         logger.info("Task finished")
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self._modules)
 
     def exists(self, moduleid: str) -> bool:
@@ -631,46 +634,6 @@ class Scheduler:
         if self.dataflow:
             return name in self.dataflow
         return name in self._modules
-
-    def collateral_damage(self, name: str, deps: Optional[Set[str]] = None) -> Set[str]:
-        """Return the list of modules deleted when the specified one is deleted.
-
-        :param name: module to delete
-        :returns: list of modules relying on or feeding the specified module
-        :rtype: set
-
-        """
-        assert isinstance(name, str)
-        if deps is None:
-            deps = set()
-        if name not in self._modules or name in deps:
-            return deps
-        deps.add(name)  # modules connected with a required slot
-        maybe_deps: Set[str] = set()  # modules with a non required one
-        queue = set(deps)
-        done: Set[str] = set()
-
-        while queue:
-            name = queue.pop()
-            done.add(name)
-            # collect children and ancestors
-            self[name].collect_deps(deps, maybe_deps)
-            queue = deps - done
-
-        # Check from the maybe_deps if some would be deleted for sure
-        again = True
-        while again:
-            again = False
-            for maybe in list(maybe_deps):
-                die = self[maybe].die_if_deps_die(deps, maybe_deps)
-                if die:
-                    deps.add(maybe)
-                    maybe_deps.remove(maybe)
-                elif die is None:
-                    again = True  # need to iterate
-                else:
-                    maybe_deps.remove(maybe)
-        return deps
 
     def run_number(self) -> int:
         "Return the last run number."
@@ -707,7 +670,7 @@ class Scheduler:
             return False
         return True
 
-    def _consider_module(self, module):
+    def _consider_module(self, module: Module) -> bool:
         # FIxME For now, accept all modules in input management
         if not self.has_input():
             return True
@@ -758,7 +721,7 @@ class Scheduler:
             #     mod.storagegroup.close_all()
 
     @staticmethod
-    def _module_order(x, y):
+    def _module_order(x: Dict[str, int], y: Dict[str, int]) -> int:
         if "order" in x:
             if "order" in y:
                 return x["order"] - y["order"]

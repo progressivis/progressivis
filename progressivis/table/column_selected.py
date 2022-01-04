@@ -6,7 +6,7 @@ import numpy as np
 
 from .column_proxy import ColumnProxy
 
-from typing import TYPE_CHECKING, Tuple, Any, Sequence, cast
+from typing import TYPE_CHECKING, Tuple, Any, Sequence
 
 if TYPE_CHECKING:
     from .column_base import BaseColumn
@@ -44,9 +44,7 @@ class ColumnSelectedView(ColumnProxy):
     @property
     def value(self) -> np.ndarray[Any, Any]:
         assert self._base is not None
-        return cast(
-            np.ndarray, self._base[self.index.id_to_index(slice(None, None, None))]
-        )
+        return self._base[self.index.id_to_index(slice(None))]  # type: ignore
 
     def __getitem__(self, index: Any) -> Any:
         bm = self.index._any_to_bitmap(index)

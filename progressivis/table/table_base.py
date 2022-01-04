@@ -1140,7 +1140,7 @@ class BaseTable(metaclass=ABCMeta):
 
 
 class IndexTable(BaseTable):
-    def __init__(self, index=None):
+    def __init__(self, index: Optional[bitmap] = None) -> None:
         super().__init__()
         self._index: bitmap = bitmap() if index is None else index
         self._cached_index = BaseTable  # hack
@@ -1148,27 +1148,28 @@ class IndexTable(BaseTable):
         self._changes = None
 
     @property
-    def index(self):
+    def index(self) -> bitmap:
         "Return the object in change of indexing this table"
         return bitmap(self._index)  # returns a copy to prevent unwanted
 
     @index.setter
-    def index(self, indices):
+    def index(self, indices: Any) -> None:
         "Modify the object in change of indexing this table"
-        indices = self._any_to_bitmap(indices)
-        if indices not in self._observed.index:
-            raise ValueError(f"Not existing indices {indices-self._observed.index}")
-        created_ = indices - self._index
-        if created_:
-            self.add_created(created_)
-        deleted_ = self._index - indices
-        if deleted_:
-            self.add_deleted(deleted_)
-        self._index = indices
-        return self._index
+        raise NotImplementedError("Cannot change index")
+        # indices = self._any_to_bitmap(indices)
+        # if indices not in self._observed.index:
+        #     raise ValueError(f"Not existing indices {indices-self._observed.index}")
+        # created_ = indices - self._index
+        # if created_:
+        #     self.add_created(created_)
+        # deleted_ = self._index - indices
+        # if deleted_:
+        #     self.add_deleted(deleted_)
+        # self._index = indices
+        # return self._index
 
     @property
-    def last_id(self):
+    def last_id(self) -> int:
         "Return the last id of this table"
         # if not self._index:
         #    assert self._last_id == -1
@@ -1181,12 +1182,12 @@ class IndexTable(BaseTable):
         return map(self.row, iter(self._index))
 
     @property
-    def last_xid(self):
+    def last_xid(self) -> int:
         "Return the last eXisting id of this table"
         self.last_id  # only for refreshing self._last_id
         return self.index.max()
 
-    def add_created(self, locs):
+    def add_created(self, locs: Any) -> None:
         # self.notify_observers('created', locs)
         # TODO simplify tablechanges to ignore add_created etc. when no bookmark exist
         if self._changes is None:
@@ -1194,21 +1195,21 @@ class IndexTable(BaseTable):
         locs = self._normalize_locs(locs)
         self._changes.add_created(locs)
 
-    def add_updated(self, locs):
+    def add_updated(self, locs: Any) -> None:
         # self.notify_observers('updated', locs)
         if self._changes is None:
             self._changes = TableChanges()
         locs = self._normalize_locs(locs)
         self._changes.add_updated(locs)
 
-    def add_deleted(self, locs):
+    def add_deleted(self, locs: Any) -> None:
         # self.notify_observers('deleted', locs)
         if self._changes is None:
             self._changes = TableChanges()
         locs = self._normalize_locs(locs)
         self._changes.add_deleted(locs)
 
-    def __delitem__(self, key):
+    def __delitem__(self, key: Any) -> None:
         bm = self._any_to_bitmap(key, fix_loc=False, existing_only=False)
         if not bm:
             return
@@ -1224,13 +1225,13 @@ class IndexTable(BaseTable):
         self._index -= bm
         self.add_deleted(bm)
 
-    def drop(self, index, raw_index=None, truncate=False):
+    def drop(self, index: Any, raw_index: Optional[Any] = None, truncate: bool = False) -> None:
         "index is useless by now"
         if raw_index is None:
             raw_index = index
-        if is_int(raw_index):
+        if isinstance(raw_index, (int, np.integer)):
             # self.__delitem__(raw_index)
-            self._index.remove(raw_index)
+            self._index.remove(int(raw_index))
         else:
             # self.__delitem__(index)
             index = self._any_to_bitmap(index)
@@ -1238,10 +1239,10 @@ class IndexTable(BaseTable):
         if truncate:  # useful 4 csv recovery
             self._last_id = self._index.max() if self._index else -1
         self.add_deleted(index)
-        if self._storagegroup is not None:
-            self._storagegroup.release(index)
+        if self._storagegroup is not None:     # type: ignore
+            self._storagegroup.release(index)  # type: ignore
 
-    def _resize_rows(self, newsize, index=None):
+    def _resize_rows(self, newsize: int, index: Optional[Any] = None) -> None:
         # self._ids.resize(newsize, index)
         created = bitmap()
         if index is not None:
@@ -1271,7 +1272,7 @@ class TableSelectedView(BaseTable):
         base: Optional[BaseTable] = None,
         selection: Union[bitmap, slice] = slice(0, None),
         columns: Optional[List[str]] = None,
-    ):
+    ) -> None:
         super().__init__(base, columns=None, selection=selection)
         assert self._base
         cols, coldict = self._base.make_projection(columns, self)
@@ -1288,7 +1289,7 @@ class TableSelectedView(BaseTable):
         return bitmap(self._selection)
 
     @selection.setter
-    def selection(self, sel: Union[bitmap, slice]):
+    def selection(self, sel: Union[bitmap, slice]) -> None:
         if isinstance(sel, bitmap):
             self._selection = sel[:]
         elif isinstance(sel, slice):
