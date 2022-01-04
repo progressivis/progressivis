@@ -24,7 +24,8 @@ from ..core import aio
 import collections.abc as collections_abc  # only works on python 3.3+
 
 from multiprocessing import Process
-from pandas.io.common import is_url  # type: ignore
+from pandas.io.common import is_url
+import pandas as pd
 
 import requests
 import s3fs  # type: ignore
@@ -33,7 +34,9 @@ import stat as st
 
 from typing import (
     Optional,
+    Set,
     Union,
+    Iterable,
     Any,
     Dict,
     List,
@@ -42,11 +45,16 @@ from typing import (
     Callable,
     Iterator,
     Sized,
+    TYPE_CHECKING,
 )
 
 integer_types = (int, np.integer)
-
 Items = Union[collections_abc.MutableMapping, List[Any], Any]
+
+if TYPE_CHECKING:
+    from progressivis.table.module import TableModule
+    from progressivis.table.table_base import BaseTable
+    from progressivis.utils import PsDict
 
 
 def is_int(n: Any) -> bool:
@@ -78,19 +86,19 @@ def len_none(item: Optional[Sized]) -> int:
     return 0 if item is None else len(item)
 
 
-def pairwise(iterator: Iterator[Any]):
+def pairwise(iterator: Iterator[Any]) -> Iterator[Any]:
     a, b = tee(iterator)
     next(b, None)
     return zip(a, b)
 
 
 def is_sorted(
-    iterator: Iterator[Any], compare: Callable[[Any, Any], bool] = None
+    iterator: Iterator[Any], compare: Optional[Callable[[Any, Any], bool]] = None
 ) -> bool:
     if compare is None:
 
-        def _compare(a, b):
-            return a <= b
+        def _compare(a: Any, b: Any) -> bool:
+            return cast(bool, a <= b)
 
         compare = _compare
 
@@ -187,20 +195,20 @@ class AttributeDict:
     def __init__(self, d: Dict[str, Any]):
         self.d = d
 
-    def __getattr__(self, attr: str):
+    def __getattr__(self, attr: str) -> Any:
         return self.__dict__["d"][attr]
 
-    def __getitem__(self, key: str):
+    def __getitem__(self, key: str) -> Any:
         return self.__getattribute__("d")[key]
 
-    def __dir__(self) -> list:
+    def __dir__(self) -> List[Any]:
         return list(self.__getattribute__("d").keys())
 
 
 ID_RE = re.compile(r"[_A-Za-z][_a-zA-Z0-9]*")
 
 
-def is_valid_identifier(s) -> bool:
+def is_valid_identifier(s: str) -> bool:
     m = ID_RE.match(s)
     return bool(m and m.end(0) == len(s) and not keyword.iskeyword(s))
 
@@ -231,6 +239,7 @@ def type_fullname(o: Any) -> str:
 def indices_len(ind: Union[None, Sized, slice]) -> int:
     if isinstance(ind, slice):
         if ind.step is None or ind.step == 1:
+            assert isinstance(ind.stop, int) and isinstance(ind.start, int)
             return ind.stop - ind.start
         else:
             return len(range(*ind.indices(ind.stop)))
@@ -297,7 +306,7 @@ def indices_to_slice(indices: bitmap) -> Union[slice, bitmap]:
 #     return slices
 
 
-def norm_slice(sl, fix_loc=False, stop=None):
+def norm_slice(sl: slice, fix_loc: bool = False, stop: Optional[int] = None) -> slice:
     if sl.start is not None and sl.step == 1:
         return sl
     start = 0 if sl.start is None else sl.start
@@ -305,23 +314,26 @@ def norm_slice(sl, fix_loc=False, stop=None):
     if stop is None:
         stop = sl.stop
     if fix_loc:
-        assert stop is not None
+        assert isinstance(stop, int)
         stop += 1
     return slice(start, stop, step)
 
 
-def is_full_slice(sl) -> bool:
+def is_full_slice(sl: slice) -> bool:
     if not isinstance(sl, slice):
         return False
     nsl = norm_slice(sl)
     return nsl.start == 0 and nsl.step == 1 and nsl.stop is None
 
 
-def inter_slice(this, that):
+def inter_slice(this: Optional[slice], that: Optional[slice]) -> Any:
+    # Union[None, slice, bitmap, Tuple[...]]:
     bz = bitmap([])
     if this is None:
+        assert that is not None
         return bz, bz, norm_slice(that)
     if that is None:
+        assert this is not None
         return norm_slice(this), bz, bz
     if isinstance(this, slice) and isinstance(that, slice):
         this = norm_slice(this)
@@ -349,33 +361,31 @@ def inter_slice(this, that):
             else:
                 return only_right, common_, only_left
         # else: # TODO: can we improve it when step >1 ?
-    if not isinstance(this, bitmap):
-        this = bitmap(this)
-    if not isinstance(that, bitmap):
-        that = bitmap(that)
-    common_ = this & that
-    only_this = this - that
-    only_that = that - this
-    return only_this, common_, only_that
+    thisbm = bitmap.asbitmap(this)
+    thatbm = bitmap.asbitmap(that)
+    commonbm = thisbm & thatbm
+    only_this = thisbm - thatbm
+    only_that = thatbm - thisbm
+    return only_this, commonbm, only_that
 
 
-def slice_to_array(sl):
+def slice_to_array(sl: Any) -> Any:
     if isinstance(sl, slice):
         # return bitmap(range(*sl.indices(sl.stop)))
         return bitmap(sl)
     return sl
 
 
-def slice_to_bitmap(sl: slice, stop: int = None) -> bitmap:
+def slice_to_bitmap(sl: slice, stop: Optional[int] = None) -> bitmap:
     stop = sl.stop if stop is None else stop
     assert isinstance(stop, int)
     return bitmap(range(*sl.indices(stop)))
 
 
-def slice_to_arange(sl: Union[slice, np.ndarray]) -> np.ndarray:
+def slice_to_arange(sl: Union[slice, np.ndarray[Any, Any]]) -> np.ndarray[Any, Any]:
     if isinstance(sl, slice):
         assert is_int(sl.stop)
-        return np.arange(*sl.indices(sl.stop))
+        return cast(np.ndarray[Any, Any], np.arange(*sl.indices(sl.stop)))
     if isinstance(sl, np.ndarray):
         return sl
     raise ValueError(f"Unhandled value {sl}")
@@ -386,37 +396,47 @@ def get_random_name(prefix: str) -> str:
     return prefix + str(uuid.uuid4()).split("-")[-1]
 
 
-def all_string(it) -> bool:
+def all_string(it: Iterable[Any]) -> bool:
     return all([isinstance(elt, str) for elt in it])
 
 
-def all_int(it) -> bool:
+def all_int(it: Iterable[Any]) -> bool:
     return all([isinstance(elt, integer_types) for elt in it])
 
 
-def all_string_or_int(it) -> bool:
+def all_string_or_int(it: Iterable[Any]) -> bool:
     return all_string(it) or all_int(it)
 
 
-def all_bool(it) -> bool:
+def all_bool(it: Union[np.ndarray[Any, Any], Iterable[Any]]) -> bool:
     if hasattr(it, "dtype"):
-        return it.dtype == bool
+        assert isinstance(it, np.ndarray)
+        return bool(it.dtype == np.bool_)
     return all([isinstance(elt, bool) for elt in it])
 
 
-def are_instances(it, type_) -> bool:
+def are_instances(
+    it: Union[np.ndarray[Any, Any], Iterable[Any]], type_: Union[type, Tuple[type, ...]]
+) -> bool:
     if hasattr(it, "dtype"):
-        return it.dtype in type_ if isinstance(type_, tuple) else it.type == type_
+        assert isinstance(it, np.ndarray)
+        return bool(
+            it.dtype in type_ if isinstance(type_, tuple) else it.dtype == type_
+        )
     return all([isinstance(elt, type_) for elt in it])
 
 
-def is_fancy(key) -> bool:
+def is_fancy(key: Any) -> bool:
     return (isinstance(key, np.ndarray) and key.dtype == np.int64) or isinstance(
         key, collections_abc.Iterable
     )
 
 
-def fancy_to_mask(indexes: Any, array_shape: Tuple[int, ...], mask: np.ndarray = None):
+def fancy_to_mask(
+    indexes: Any,
+    array_shape: Tuple[int, ...],
+    mask: Optional[np.ndarray[Any, Any]] = None,
+) -> np.ndarray[Any, Any]:
     if mask is None:
         mask = np.zeros(array_shape, dtype=np.bool_)
     else:
@@ -425,25 +445,31 @@ def fancy_to_mask(indexes: Any, array_shape: Tuple[int, ...], mask: np.ndarray =
     return mask
 
 
-def mask_to_fancy(mask):
+def mask_to_fancy(mask: Any) -> Any:
     return np.where(mask)
 
 
-def is_none_alike(x) -> bool:
+def is_none_alike(x: Any) -> bool:
     if isinstance(x, slice) and x == slice(None, None, None):
         return True
     return x is None
 
 
-def are_none(*args) -> bool:
+def are_none(*args: Any) -> bool:
     for e in args:
         if e is not None:
             return False
     return True
 
 
-class RandomBytesIO(object):
-    def __init__(self, cols: int = 1, size: int = None, rows: int = None, **kwargs):
+class RandomBytesIO:
+    def __init__(
+        self,
+        cols: int = 1,
+        size: Optional[int] = None,
+        rows: Optional[int] = None,
+        **kwargs: Any,
+    ) -> None:
         self._pos = 0
         self._reminder = ""
         self._cols = cols
@@ -472,7 +498,13 @@ class RandomBytesIO(object):
             )
 
     # WARNING: the choice of the mask must guarantee a fixed size for the rows
-    def get_row_generator(self, mask="{: 8.7e}", loc=0.5, scale=0.8, seed=1234):
+    def get_row_generator(
+        self,
+        mask: str = "{: 8.7e}",
+        loc: float = 0.5,
+        scale: float = 0.8,
+        seed: int = 1234,
+    ) -> Iterator[str]:
         row_mask = ",".join([mask] * self._cols) + "\n"
         np.random.seed(seed=seed)
         while True:
@@ -480,7 +512,7 @@ class RandomBytesIO(object):
                 *np.random.normal(loc=loc, scale=scale, size=self._cols)
             )
 
-    def read(self, n=0) -> bytes:
+    def read(self, n: int = 0) -> bytes:
         if n == 0:
             n = self._size
         if self._pos > self._size - 1:
@@ -508,16 +540,16 @@ class RandomBytesIO(object):
         self._reminder = raw_str[n:]
         return ret.encode("utf-8")
 
-    def tell(self):
+    def tell(self) -> int:
         return self._pos
 
-    def size(self):
+    def size(self) -> int:
         return self._size
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[str]:
         return self
 
-    def __next__(self):
+    def __next__(self) -> str:
         if self._reminder:
             ret = self._reminder
             self._reminder = ""
@@ -528,36 +560,36 @@ class RandomBytesIO(object):
         self._pos += self._yield_size
         return next(self._generator)
 
-    def readline(self):
+    def readline(self) -> str:
         try:
             return self.__next__()
         except StopIteration:
             return ""
 
-    def readlines(self):
+    def readlines(self) -> List[str]:
         return list(self)
 
-    def save(self, file_name, force=False):
+    def save(self, file_name: str, force: bool = False) -> None:
         if os.path.exists(file_name) and not force:
             raise ValueError("File {} already exists!".format(file_name))
         with open(file_name, "wb") as fd:
             for row in self:
                 fd.write(bytes(row, encoding="ascii"))
 
-    def __str__(self):
+    def __str__(self) -> str:
         return "<{} cols={}, rows={} bytes={}>".format(
             type(self), self._cols, self._rows, self._size
         )
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return self.__str__()
 
 
-def _make_csv_fifo_impl(rand_io, file_name):
+def _make_csv_fifo_impl(rand_io: RandomBytesIO, file_name: str) -> None:
     rand_io.save(file_name, force=True)
 
 
-def make_csv_fifo(rand_io, file_name=None):
+def make_csv_fifo(rand_io: RandomBytesIO, file_name: Optional[str] = None) -> str:
     if file_name is None:
         dir_name = tempfile.mkdtemp(prefix="p10s_rand_")
         file_name = os.path.join(dir_name, "buffer.csv")
@@ -569,7 +601,7 @@ def make_csv_fifo(rand_io, file_name=None):
     return file_name
 
 
-def del_tmp_csv_fifo(file_name):
+def del_tmp_csv_fifo(file_name: str) -> None:
     if not file_name.startswith("/tmp/p10s_rand_"):
         raise ValueError("Not in /tmp/p10s_rand_... {}".format(file_name))
     mode = os.stat(file_name).st_mode
@@ -580,14 +612,14 @@ def del_tmp_csv_fifo(file_name):
     os.rmdir(dn)
 
 
-def is_s3_url(url) -> bool:
+def is_s3_url(url: str) -> bool:
     """Check for an s3, s3n, or s3a url"""
     if not isinstance(url, str):
         return False
     return parse_url(url).scheme in ["s3", "s3n", "s3a"]
 
 
-def _is_buffer_url(url):
+def _is_buffer_url(url: str) -> bool:
     res = parse_url(url)
     return res.scheme == "buffer"
 
@@ -606,13 +638,17 @@ def _url_to_buffer(url: str) -> RandomBytesIO:
 #
 
 
-def _strip_schema(url):
+def _strip_schema(url: str) -> str:
     """Returns the url without the s3:// part"""
     result = parse_url(url)
     return result.netloc + result.path
 
 
-def s3_get_filepath_or_buffer(filepath_or_buffer, encoding=None, compression=None):
+def s3_get_filepath_or_buffer(
+    filepath_or_buffer: Any,
+    encoding: Optional[str] = None,
+    compression: Optional[str] = None,
+) -> Any:
     # pylint: disable=unused-argument
     fs = s3fs.S3FileSystem(anon=False)
     from botocore.exceptions import NoCredentialsError  # type: ignore
@@ -633,10 +669,10 @@ def s3_get_filepath_or_buffer(filepath_or_buffer, encoding=None, compression=Non
 
 def filepath_to_buffer(
     filepath: Any,
-    encoding: str = None,
-    compression: str = None,
-    timeout: float = None,
-    start_byte=0,
+    encoding: Optional[str] = None,
+    compression: Optional[str] = None,
+    timeout: Optional[float] = None,
+    start_byte: int = 0,
 ) -> Tuple[io.IOBase, Optional[str], Optional[str], int]:
     if not is_str(filepath):
         # if start_byte:
@@ -728,14 +764,14 @@ def _infer_compression(
     raise ValueError(msg)
 
 
-def get_physical_base(t):
+def get_physical_base(t: Any) -> Any:
     # TODO: obsolete, to be removed
     return t
 
 
-def force_valid_id_columns(df):
-    uniq = set()
-    columns = []
+def force_valid_id_columns(df: pd.DataFrame) -> None:
+    uniq: Set[str] = set()
+    columns: List[str] = []
     i = 0
     for c in df.columns:
         i += 1
@@ -748,34 +784,30 @@ def force_valid_id_columns(df):
     df.columns = columns
 
 
-class _Bag(object):
-    pass
-
-
 class Dialog(object):
-    def __init__(self, module, started=False):
+    def __init__(self, module: TableModule, started: bool = False):
         self._module = module
-        self.bag = _Bag()
-        self._started = started
+        self.bag: Dict[str, Any] = dict()
+        self._started: bool = started
 
-    def set_started(self, v=True):
+    def set_started(self, v: bool = True) -> Dialog:
         self._started = v
         return self
 
-    def set_output_table(self, res):
+    def set_output_table(self, res: Union[None, BaseTable, PsDict]) -> Dialog:
         self._module.result = res
         return self
 
     @property
-    def is_started(self):
+    def is_started(self) -> bool:
         return self._started
 
     @property
-    def output_table(self):
+    def output_table(self) -> Union[BaseTable, PsDict, None]:
         return self._module.result
 
 
-def spy(*args, **kwargs):
+def spy(*args: Any, **kwargs: Any) -> None:
     import time
 
     f = open(kwargs.pop("file"), "a")
@@ -908,7 +940,9 @@ def is_notebook() -> bool:
     return False
 
 
-def filter_cols(df, columns=None, indices=None):
+def filter_cols(
+    df: BaseTable, columns: Optional[List[str]] = None, indices: Optional[Any] = None
+):
     """
     Return the specified table filtered by the specified indices and
     limited to the columns of interest.

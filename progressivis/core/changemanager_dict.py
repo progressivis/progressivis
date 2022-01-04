@@ -38,8 +38,8 @@ class DictChangeManager(BaseChangeManager):
         # if data.changes is None:
         #     data.changes = TableChanges()
 
-    def reset(self, name: Optional[str] = None):
-        super(DictChangeManager, self).reset(name)
+    def reset(self, mid: str):
+        super(DictChangeManager, self).reset(mid)
         self._last_dict = None
 
     def update(self, run_number: int, data: Any, mid: str) -> None:

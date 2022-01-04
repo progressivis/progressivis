@@ -60,6 +60,7 @@ class TestPercentiles(ProgressiveTest):
             p75,
             pdict["_75"],
         )
+        # from nose.tools import set_trace; set_trace()
         self.assertAlmostEqual(p25, pdict["_25"], delta=0.01)
         self.assertAlmostEqual(p50, pdict["_50"], delta=0.01)
         self.assertAlmostEqual(p75, pdict["_75"], delta=0.01)
@@ -88,7 +89,7 @@ class TestPercentiles(ProgressiveTest):
         assert last is not None
         pdict = last.to_dict()
         # v = random.table()['_1'].values
-        # import pdb;pdb.set_trace()
+        # from nose.tools import set_trace; set_trace()
         v = stirrer.table.to_array(columns=["_1"]).reshape(-1)
         p25 = np.percentile(v, 25.0)
         p50 = np.percentile(v, 50.0)
@@ -106,43 +107,38 @@ class TestPercentiles(ProgressiveTest):
             p75,
             pdict["_75"],
         )
+        # from nose.tools import set_trace; set_trace()
         self.assertAlmostEqual(p25, pdict["_25"], delta=0.01)
         self.assertAlmostEqual(p50, pdict["_50"], delta=0.01)
         self.assertAlmostEqual(p75, pdict["_75"], delta=0.01)
 
     def test_percentiles_fast(self) -> None:
-        """test_percentiles: Simple test for HistIndex based percentiles
-        low accurracy => faster mode
+        """test_percentiles: lower  accurracy => faster mode
         """
         return self._impl_tst_percentiles(2.0)
 
     def test_percentiles_fast2(self) -> None:
-        """test_percentiles: Simple test for HistIndex based percentiles
-        low accurracy => faster mode
+        """test_percentiles: lower  accurracy => faster mode stirred del
         """
         return self._impl_stirred_tst_percentiles(2.0, delete_rows=5)
 
     def test_percentiles_fast3(self) -> None:
-        """test_percentiles: Simple test for HistIndex based percentiles
-        low accurracy => faster mode
+        """test_percentiles: lower  accurracy => faster mode stirred upd
         """
         return self._impl_stirred_tst_percentiles(2.0, update_rows=5)
 
     def test_percentiles_accurate(self) -> None:
-        """test_percentiles: Simple test for HistIndex based percentiles
-        higher accurracy => slower mode
+        """test_percentiles: higher accurracy => slower mode
         """
         return self._impl_tst_percentiles(0.2)
 
     def test_percentiles_accurate2(self) -> None:
-        """test_percentiles: Simple test for HistIndex based percentiles
-        higher accurracy => slower mode
+        """test_percentiles: higher accurracy => slower mode stirred del
         """
         return self._impl_stirred_tst_percentiles(0.2, delete_rows=5)
 
     def test_percentiles_accurate3(self) -> None:
-        """test_percentiles: Simple test for HistIndex based percentiles
-        higher accurracy => slower mode
+        """test_percentiles: higher accurracy => slower mode stirred upd
         """
         return self._impl_stirred_tst_percentiles(0.2, update_rows=5)
 
@@ -191,6 +187,7 @@ class TestPercentiles(ProgressiveTest):
             p75,
             pdict["_75"],
         )
+        # from nose.tools import set_trace; set_trace()
         self.assertAlmostEqual(p25, pdict["_25"], delta=0.01)
         self.assertAlmostEqual(p50, pdict["_50"], delta=0.01)
         self.assertAlmostEqual(p75, pdict["_75"], delta=0.01)
@@ -249,38 +246,32 @@ class TestPercentiles(ProgressiveTest):
         self.assertAlmostEqual(p75, pdict["_75"], delta=0.01)
 
     def test_percentiles_fast_rq(self) -> None:
-        """test_percentiles: Simple test for HistIndex based percentiles
-        low accurracy => faster mode
+        """test_percentiles: lower  accurracy => faster mode rq
         """
         return self._impl_tst_percentiles_rq(2.0)
 
     def test_percentiles_fast_rq2(self) -> None:
-        """test_percentiles: Simple test for HistIndex based percentiles
-        low accurracy => faster mode
+        """test_percentiles: lower  accurracy => faster mode rq stirred del
         """
         return self._impl_stirred_tst_percentiles_rq(2.0, delete_rows=5)
 
     def test_percentiles_fast_rq3(self) -> None:
-        """test_percentiles: Simple test for HistIndex based percentiles
-        low accurracy => faster mode
+        """test_percentiles: lower  accurracy => faster mode rq stirred upd
         """
         return self._impl_stirred_tst_percentiles_rq(2.0, update_rows=5)
 
     def test_percentiles_accurate_rq(self) -> None:
-        """test_percentiles: Simple test for HistIndex based percentiles
-        higher accurracy => slower mode
+        """test_percentiles: higher accurracy => slower mode rq
         """
         return self._impl_tst_percentiles_rq(0.2)
 
     def test_percentiles_accurate_rq2(self) -> None:
-        """test_percentiles: Simple test for HistIndex based percentiles
-        higher accurracy => slower mode
+        """test_percentiles: higher accurracy => slower mode rq stirred del
         """
         return self._impl_stirred_tst_percentiles_rq(0.2, delete_rows=5)
 
     def test_percentiles_accurate_rq3(self) -> None:
-        """test_percentiles: Simple test for HistIndex based percentiles
-        higher accurracy => slower mode
+        """test_percentiles: higher accurracy => slower mode rq stirred upd
         """
         return self._impl_stirred_tst_percentiles_rq(0.2, update_rows=5)
 

@@ -11,15 +11,7 @@ from .table import Table
 from .slot_join import SlotJoin
 from progressivis.utils import PsDict
 
-from typing import (
-    Optional,
-    Dict,
-    List,
-    Union,
-    Any,
-    cast,
-    TYPE_CHECKING
-)
+from typing import Optional, Dict, List, Union, Any, cast, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from progressivis.table import BaseTable
@@ -32,10 +24,7 @@ class TableModule(Module):
     "Base class for modules managing tables."
     outputs = [SlotDescriptor("result", type=Table, required=True)]
 
-    def __init__(self,
-                 columns: Columns = None,
-                 output_required: bool = True,
-                 **kwds):
+    def __init__(self, columns: Columns = None, output_required: bool = True, **kwds):
         super(TableModule, self).__init__(**kwds)
         if "table_slot" in kwds:
             raise RuntimeError("don't use table_slot")
@@ -98,9 +87,9 @@ class TableModule(Module):
             return self.result
         return super(TableModule, self).get_data(name)
 
-    def get_columns(self,
-                    table: Union[BaseTable, dict],
-                    slot: Optional[str] = None) -> List[str]:
+    def get_columns(
+        self, table: Union[BaseTable, dict], slot: Optional[str] = None
+    ) -> List[str]:
         """
         Return all the columns of interest from the specified table.
 
@@ -125,10 +114,9 @@ class TableModule(Module):
                 _columns.remove(column)  # maintain the order
         return _columns
 
-    def filter_columns(self,
-                       df: BaseTable,
-                       indices: Optional[Any] = None,
-                       slot: Optional[str] = None) -> BaseTable:
+    def filter_columns(
+        self, df: BaseTable, indices: Optional[Any] = None, slot: Optional[str] = None
+    ) -> BaseTable:
         """
         Return the specified table filtered by the specified indices and
         limited to the columns of interest.

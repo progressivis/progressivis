@@ -45,9 +45,9 @@ def join(
 
 def join_reset(dialog: Dialog) -> None:
     bag = dialog.bag
-    bag.first_orphans = bitmap([])
-    bag.second_orphans = bitmap([])
-    bag.existing_ids = None
+    bag["first_orphans"] = bitmap([])
+    bag["second_orphans"] = bitmap([])
+    bag["existing_ids"] = None
 
 
 def join_start(
@@ -87,12 +87,12 @@ def join_start(
         raise ValueError("how={} not yet implemented".format(how))
 
     bag = dialog.bag
-    bag.dshape = dshape
-    bag.first_cols = first_cols
-    bag.second_cols = second_cols
-    bag.first_key = first_key
-    bag.second_key = second_key
-    bag.how = how
+    bag["dshape"] = dshape
+    bag["first_cols"] = first_cols
+    bag["second_cols"] = second_cols
+    bag["first_key"] = first_key
+    bag["second_key"] = second_key
+    bag["how"] = how
     join_reset(dialog)
     join_table = Table(name=name, dshape=dshape)
     dialog.set_output_table(join_table)
@@ -113,11 +113,11 @@ def join_cont(
     # pylint: disable=too-many-arguments, invalid-name, too-many-locals, unused-argument
     "Continue the progressive join function"
     join_table = dialog.output_table
-    first_cols = dialog.bag.first_cols
-    second_cols = dialog.bag.second_cols
-    first_key = dialog.bag.first_key
-    second_key = dialog.bag.second_key
-    how = dialog.bag.how
+    first_cols = dialog.bag["first_cols"]
+    second_cols = dialog.bag["second_cols"]
+    first_key = dialog.bag["first_key"]
+    second_key = dialog.bag["second_key"]
+    how = dialog.bag["how"]
     if how == "left":
         first, second = table, other
     else:
@@ -171,20 +171,20 @@ def join_cont(
             ]
         # first matching: older orphans on the second table with new orphans on the first
         only_1st_bm = bitmap.asbitmap(only_1st)
-        paired = b.second_orphans & only_1st_bm
+        paired = b["second_orphans"] & only_1st_bm
         if paired:
             join_table.loc[paired, second_cols] = second.loc[paired, second.columns]
-            b.second_orphans = b.second_orphans - paired
+            b["second_orphans"] = b["second_orphans"] - paired
             only_1st_bm -= paired
-        b.first_orphans = bitmap.union(b.first_orphans, only_1st_bm)
+        b["first_orphans"] = bitmap.union(b["first_orphans"], only_1st_bm)
         # 2nd matching: older orphans on the first table with new orphans on the second
         only_2nd_bm = bitmap.asbitmap(only_2nd)
-        paired = b.first_orphans & only_2nd_bm
+        paired = b["first_orphans"] & only_2nd_bm
         if paired:
             join_table.loc[paired, second_cols] = second.loc[paired, second.columns]
-            b.first_orphans = b.first_orphans - paired
+            b["first_orphans"] = b["first_orphans"] - paired
             only_2nd_bm -= paired
-        b.second_orphans = bitmap.union(b.second_orphans, only_2nd_bm)
+        b["second_orphans"] = bitmap.union(b["second_orphans"], only_2nd_bm)
 
     def _process_updated(ret):
         if not updated:

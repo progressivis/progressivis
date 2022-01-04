@@ -230,7 +230,7 @@ class TestTableSelectedChangeManager(ProgressiveTest):
         # self.assertEqual(list(cm2.deleted.next()), [2,4])
 
         # TODO test reset
-        cm.reset()
+        cm.reset(mid=mid1)
         self.assertEqual(cm.last_update(), 0)
 
 

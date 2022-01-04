@@ -3,7 +3,16 @@ Slots between modules.
 """
 from __future__ import annotations
 
-from typing import Any, Optional, Dict, Type, TYPE_CHECKING, Union, List, Tuple
+from typing import (
+    Any,
+    Optional,
+    Dict,
+    Type,
+    TYPE_CHECKING,
+    Union,
+    List,
+    Tuple,
+)
 
 import logging
 from .changemanager_base import EMPTY_BUFFER, BaseChangeManager
@@ -17,6 +26,8 @@ if TYPE_CHECKING:
     from .module import Module
     from .scheduler import Scheduler
     from .changemanager_base import ChangeBuffer, _base_accessor, _selection_accessor
+
+SlotType = Optional[Union[Type[Any], Tuple[Type[Any], ...]]]
 
 
 class SlotDescriptor:
@@ -37,7 +48,7 @@ class SlotDescriptor:
     def __init__(
         self,
         name: str,
-        type: Optional[Union[Type, Tuple[Type, ...]]] = None,
+        type: SlotType = None,
         required: bool = True,
         multiple: bool = False,
         datashape: Optional[Dict[str, Union[str, List[str]]]] = None,
@@ -100,16 +111,25 @@ class Slot:
     def output_descriptor(self) -> SlotDescriptor:
         return self.output_module.output_slot_descriptor(self.output_name)
 
-    def __str__(self):
-        return "%s(%s[%s]->%s[%s])" % (
-            self.__class__.__name__,
-            self.output_module.name,
-            self.output_name,
-            self.input_module.name,
-            self.input_name,
-        )
+    def __str__(self) -> str:
+        if self.original_name:
+            name = "Slot(%s[%s]->%s[%s/%s])" % (
+                self.output_module.name,
+                self.output_name,
+                self.input_module.name,
+                self.input_name,
+                self.original_name,
+            )
+        else:
+            name = "Slot(%s[%s]->%s[%s])" % (
+                self.output_module.name,
+                self.output_name,
+                self.input_module.name,
+                self.input_name,
+            )
+        return name
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return str(self)
 
     def last_update(self) -> int:
@@ -165,11 +185,11 @@ class Slot:
 
     def create_changes(
         self,
-        buffer_created=True,
-        buffer_updated=False,
-        buffer_deleted=False,
-        buffer_exposed=False,
-        buffer_masked=False,
+        buffer_created: bool = True,
+        buffer_updated: bool = False,
+        buffer_deleted: bool = False,
+        buffer_exposed: bool = False,
+        buffer_masked: bool = False,
     ) -> Optional[BaseChangeManager]:
         "Create a ChangeManager associated with the type of the slot's data."
         data = self.data()
@@ -188,12 +208,12 @@ class Slot:
     def update(
         self,
         run_number: int,
-        buffer_created=True,
-        buffer_updated=True,
-        buffer_deleted=True,
-        buffer_exposed=True,
-        buffer_masked=True,
-        manage_columns=True,
+        buffer_created: bool = True,
+        buffer_updated: bool = True,
+        buffer_deleted: bool = True,
+        buffer_exposed: bool = True,
+        buffer_masked: bool = True,
+        manage_columns: bool = True,
     ) -> None:
         # pylint: disable=too-many-arguments
         "Compute the changes that occur since this slot has been updated."
@@ -264,8 +284,8 @@ class Slot:
 
     @staticmethod
     def create_changemanager(
-        datatype,
-        slot,
+        datatype: SlotType,
+        slot: Slot,
         buffer_created: bool,
         buffer_updated: bool,
         buffer_deleted: bool,
@@ -278,7 +298,7 @@ class Slot:
         """
         # pylint: disable=too-many-arguments
         logger.debug("create_changemanager(%s, %s)", datatype, slot)
-        queue = [datatype]
+        queue: List[SlotType] = [datatype]
         processed = set()
         while queue:
             datatype = queue.pop()
@@ -301,9 +321,7 @@ class Slot:
                     buffer_exposed,
                     buffer_masked,
                 )
-            if hasattr(datatype, "__base__"):
-                queue.append(datatype.__base__)
-            elif hasattr(datatype, "__bases__"):
+            elif isinstance(datatype, type):  # hasattr(datatype, "__bases__"):
                 queue += datatype.__bases__
         logger.info(
             "Creating LiteralChangeManager for datatype %s of slot %s", datatype, slot

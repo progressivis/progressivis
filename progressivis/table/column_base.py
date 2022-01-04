@@ -277,7 +277,7 @@ class BaseColumn(metaclass=ABCMeta):
         axis = kwargs.pop("axis", 0)
         keepdims = kwargs.pop("keepdims", False)
         # ignore other kwargs, maybe raise error in the future
-        return operation(self.value, axis=axis, keepdims=keepdims)  # type: ignore
+        return operation(self.value, axis=axis, keepdims=keepdims)
 
     def binary(
         self,

@@ -40,7 +40,7 @@ class TableChangeManager(BaseChangeManager):
         if data.changes is None:
             data.changes = TableChanges()
 
-    def reset(self, mid):
+    def reset(self, mid: str):
         super(TableChangeManager, self).reset(mid)
         data = self._slot.data()
         data.reset_updates(mid)

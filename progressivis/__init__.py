@@ -1,6 +1,8 @@
 """
 Main imports from progressivis.
 """
+from __future__ import annotations
+
 import logging
 
 from progressivis.core import (
@@ -16,8 +18,9 @@ from progressivis.core import (
     Print,
 )
 from progressivis.utils import ProgressiveError
-
 from progressivis.table import Table, Column, Row
+
+from typing import Dict
 
 __all__ = [
     "log_level",
@@ -38,6 +41,9 @@ __all__ = [
 ]
 
 
+LOGGERS: Dict[str, logging.Logger] = {}
+
+
 def s():
     "Shortcut to get the default scheduler."
     return Scheduler.default
@@ -46,21 +52,26 @@ def s():
 # Avoids the message 'No handlers could be found for logger X.Y.Z'
 # logging.getLogger('progressivis').addHandler(logging.NullHandler())
 
+# Usage example
+# log_level(level=logging.INFO)
+
 
 def log_level(level=logging.DEBUG, package="progressivis"):
     "Set the logging level for progressivis."
-    logger = logging.getLogger(package)
-    if logger.handlers:
-        return
+    global LOGGERS
+
+    logger = LOGGERS.get(package)
+    if logger is None:
+        logger = logging.getLogger(package)
+        LOGGERS[package] = logger
+        logger.propagate = False
+    logger.setLevel(level)
+    logger.handlers.clear()
     stream = logging.StreamHandler()
     stream.setLevel(level)
     formatter = logging.Formatter(
-        "%(asctime)s - %(name)s -" "%(levelname)s - %(message)s"
+        "%(levelname)s - %(asctime)s - %(name)s - %(message)s"
     )
     stream.setFormatter(formatter)
     logger.addHandler(stream)
-    logging.getLogger(package).setLevel(level)
-
-
-# Usage example
-# log_level(level=logging.INFO)
+    # logging.getLogger(package).setLevel(level)

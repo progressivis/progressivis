@@ -380,7 +380,7 @@ class Scheduler:
         self._start_inter = 0
         while not self._stopped:
             # Apply changes in the dataflow
-            if self._new_modules:
+            if len(self._new_modules) != 0:
                 self._update_modules()
                 self._run_index = 0
                 first_run = self._run_number
@@ -461,8 +461,9 @@ class Scheduler:
             self._update_modules()
 
     def _update_modules(self) -> None:
-        if not self._new_modules:
+        if len(self._new_modules) == 0:
             return
+        logger.info("Updating modules")
         prev_keys = set(self._modules.keys())
         modules = {module.name: module for module in self._new_modules}
         keys = set(modules.keys())
@@ -622,7 +623,7 @@ class Scheduler:
 
     def __delitem__(self, name: str) -> None:
         if self.dataflow:
-            del self.dataflow[name]
+            self.dataflow.delete_modules(name)
         else:
             raise ProgressiveError("Cannot delete module %s" "outside a context" % name)
 

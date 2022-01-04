@@ -17,11 +17,11 @@ class BitmapChangeManager(BaseChangeManager):
     def __init__(
         self,
         slot: Slot,
-        buffer_created=True,
-        buffer_updated=False,
-        buffer_deleted=True,
-        buffer_exposed=False,
-        buffer_masked=False,
+        buffer_created: bool = True,
+        buffer_updated: bool = False,
+        buffer_deleted: bool = True,
+        buffer_exposed: bool = False,
+        buffer_masked: bool = False,
     ):
         super(BitmapChangeManager, self).__init__(
             slot,
@@ -33,8 +33,8 @@ class BitmapChangeManager(BaseChangeManager):
         )
         self._last_bm: Optional[bitmap] = None
 
-    def reset(self, name: Optional[str] = None) -> None:
-        super(BitmapChangeManager, self).reset(name)
+    def reset(self, mid: str) -> None:
+        super(BitmapChangeManager, self).reset(mid)
         self._last_bm = None
 
     def compute_updates(self, data: bitmap) -> IndexUpdate:

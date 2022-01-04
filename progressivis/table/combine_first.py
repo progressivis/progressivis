@@ -1,11 +1,18 @@
 from __future__ import annotations
 
+import logging
+
 import numpy as np
 
 from .nary import NAry, ReturnRunStep
 from .table import BaseTable, Table
 from .dshape import dshape_union
 from ..core.bitmap import bitmap
+
+from typing import List
+
+
+logger = logging.getLogger(__name__)
 
 
 def combine_first(table: BaseTable, other: BaseTable, name: str = None) -> Table:
@@ -54,7 +61,8 @@ class CombineFirst(NAry):
     def run_step(
         self, run_number: int, step_size: int, howlong: float
     ) -> ReturnRunStep:
-        frames = []
+        logger.debug("Entering CombineFirst::run_step")
+        frames: List[BaseTable] = []
         for name in self.get_input_slot_multiple():
             slot = self.get_input_slot(name)
             slot.clear_buffers()
@@ -64,5 +72,7 @@ class CombineFirst(NAry):
         for other in frames[1:]:
             df = combine_first(df, other)
         steps = len(df)
+        if self.result is not None:
+            self.result = None  # TableModule does not want to reassign result
         self.result = df
         return self._return_run_step(self.state_blocked, steps_run=steps)

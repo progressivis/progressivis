@@ -78,9 +78,9 @@ class TableChanges(BaseChanges):
         bookmark.refcount -= 1
         if index != 0:
             return
-        # If first bookmark and no slot reference it any more,
+        # If first bookmark and no slot references it any more,
         # we can remove it from the lists, as well as all the
-        # other with bookmarks not referenced
+        # other with unreferences bookmarks.
         while self._bookmarks and self._bookmarks[0].refcount == 0:
             self._times.pop(0)
             self._bookmarks.pop(0)
@@ -183,9 +183,10 @@ class TableChanges(BaseChanges):
 
     def reset(self, mid: str) -> None:
         if mid not in self._mid_time:
+            logger.debug(f"Reset received for slot {mid}, ignored")
             return
+        logger.debug(f"Reset received for slot {mid}, processed")
         # reset
-        logger.debug(f"Reset received for slot {mid}")
         last_time = self._mid_time[mid]
         del self._mid_time[mid]
         i = self._saved_index(last_time)

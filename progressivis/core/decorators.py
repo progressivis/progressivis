@@ -13,7 +13,7 @@ from typing import (
     TYPE_CHECKING,
     Optional,
     List,
-    Set
+    Set,
 )
 
 if TYPE_CHECKING:
@@ -29,7 +29,8 @@ class _CtxImpl:
     def __init__(self) -> None:
         self._has_buffered: Set[str] = set()
 
-    def __getattr__(self, name: str) -> Slot: ...
+    def __getattr__(self, name: str) -> Slot:
+        ...
 
 
 class _Context:

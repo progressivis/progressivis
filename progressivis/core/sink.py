@@ -11,7 +11,7 @@ class Sink(Module):
     "Base class for modules supporting a variable number of input slots."
     inputs = [SlotDescriptor("inp", type=None, required=True, multiple=True)]
 
-    def __init__(self, slot_name: str = "table", **kwds) -> None:
+    def __init__(self, slot_name: str = "inp", **kwds) -> None:
         super(Sink, self).__init__(**kwds)
         self.slot_name = slot_name
 

@@ -77,7 +77,7 @@ class BaseChangeManager:
             self._selection = _selection_accessor(self)
         return self._selection
 
-    def reset(self, name: Optional[str] = None) -> None:
+    def reset(self, mid: str) -> None:
         """
         Reset the change manager so changes will come as if the managed data
         was freshly created.
@@ -177,9 +177,9 @@ class ChangeBuffer:
         "Return True if there is anything in the buffer"
         return self.buffer and len(self.changes) != 0
 
-    def next(self,
-             length: Optional[int] = None,
-             as_slice: bool = True) -> Union[None, bitmap, slice]:
+    def next(
+        self, length: Optional[int] = None, as_slice: bool = True
+    ) -> Union[None, bitmap, slice]:
         "Return the next items in the buffer"
         if not self.buffer:
             return None

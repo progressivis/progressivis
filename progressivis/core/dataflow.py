@@ -35,10 +35,6 @@ class Dataflow:
     be validated and committed first.
     """
 
-    """
-    Dataflow graph maintaining modules connected with slots.
-    """
-
     def __init__(self, scheduler: Scheduler):
         self.scheduler = scheduler
         self._modules: Dict[str, Module] = {}
@@ -53,7 +49,7 @@ class Dataflow:
             self._add_module(module)
         for module in scheduler.modules().values():
             for slot in module.input_slot_values():
-                self.add_connection(slot)
+                self.add_connection(slot, rename=False)
 
     def clear(self) -> None:
         "Remove all the modules from the Dataflow"
@@ -89,7 +85,9 @@ class Dataflow:
         return [m.name for m in self.modules() if m.is_input()]
 
     def __delitem__(self, name: str) -> None:
-        self.remove_module(self._modules[name])
+        self.delete_modules(name)
+        # raise RuntimeError("Cannot delete a module directly, use delete_modules")
+        # self._remove_module(self._modules[name])
 
     def __getitem__(self, name: str) -> Module:
         return self._modules[name]
@@ -122,7 +120,7 @@ class Dataflow:
         self.inputs[module.name] = {}
         self.outputs[module.name] = {}
 
-    def remove_module(self, module: Module) -> None:
+    def _remove_module(self, module: Module) -> None:
         """Remove the specified module
            or does nothing if the module does not exist.
         """
@@ -131,29 +129,32 @@ class Dataflow:
         if not hasattr(module, "name"):
             return  # module is not fully created
         # module.terminate()
-        to_remove = set([module.name])
-        while to_remove:
-            name = to_remove.pop()
-            del self._modules[name]
-            self._remove_module_inputs(name)
-            to_remove.update(self._remove_module_outputs(name))
+        name = module.name
+        del self._modules[name]
+        self._remove_module_inputs(name)
+        self._remove_module_outputs(name)
         self.valid = []
 
-    def add_connection(self, slot: Slot) -> None:
+    def add_connection(self, slot: Slot, rename: bool = True) -> None:
         "Declare a connection between two module slots"
         if not slot:
             return
         output_module = slot.output_module
         output_name = slot.output_name
         input_module = slot.input_module
-        input_name = slot.input_name
+        input_name = slot.original_name or slot.input_name
         if input_module.input_slot_multiple(input_name):
-            slot.original_name = input_name
-            clashes = self._clashes(input_module.name, input_name)
-            input_name += f".{self.version:02d}.{clashes:02d}"
-            slot.input_name = input_name
-            assert input_name not in self.inputs[input_module.name]
-        elif input_name in self.inputs[input_module.name]:
+            # FIXME: this will break when slots will be removed and added
+            # clashes = self._clashes(input_module.name, input_name)
+            if rename:
+                slot.original_name = input_name
+                # input_name += f".{self.version:02d}.{clashes:02d}"
+                input_name += f".{uuid4()}"
+                logger.info(f"{slot.original_name} renamed {input_name}")
+                slot.input_name = input_name
+            else:
+                input_name = slot.input_name
+        if input_name in self.inputs[input_module.name]:
             if slot is self.inputs[input_module.name][input_name]:
                 logger.warn(
                     "redundant connection:"
@@ -219,19 +220,19 @@ class Dataflow:
                 del self.outputs[slot.output_module.name][outname]
         del self.inputs[name]
 
-    def _remove_module_outputs(self, name: str) -> List[str]:
-        emptied: List[str] = []
+    def _remove_module_outputs(self, name: str) -> None:
         for oslots in self.outputs[name].values():
             for slot in oslots:
                 del self.inputs[slot.input_module.name][slot.input_name]
-                if not self.inputs[slot.input_module.name]:
-                    emptied.append(slot.input_module.name)
+                # if not self.inputs[slot.input_module.name]:
+                #    del self.inputs[slot.input_module.name]
+                #     emptied.append(slot.input_module.name)
                 # if the module become invalid, it should be removed
                 # Equivalent of SIGCHILD
-                elif self.validate_module(slot.input_module):
-                    emptied.append(slot.input_module.name)
+                # elif self.validate_module(slot.input_module):
+                #     emptied.append(slot.input_module.name)
         del self.outputs[name]
-        return emptied
+        # return emptied
 
     def order_modules(self, dependencies: Optional[Dependencies] = None) -> Order:
         "Compute a topological order for the modules."
@@ -285,14 +286,16 @@ class Dataflow:
                 for islot in list(inputs.values()):
                     if islot.original_name == slotdesc.name:
                         slot = islot
-                        logger.info(
-                            'Input slot "%s" renamed "%s" ' 'in module "%s"',
-                            islot.original_name,
-                            islot.input_name,
-                            module.name,
-                        )
-                        inputs.pop(slot.input_name)
-                        # Iterate over all the inputs to remove the multiple slots
+                        if islot.original_name != islot.input_name:
+                            logger.info(
+                                f'Input slot "{islot.original_name}" '
+                                f'renamed "{islot.input_name}" '
+                                f'in module "{module.name}"'
+                            )
+                        assert inputs.pop(
+                            slot.input_name, None
+                        ), f"Input slot {slot.input_name} not in {inputs}"
+                    # Iterate over all the inputs to remove the multiple slots
             else:
                 slot = inputs.get(slotdesc.name)
                 if slot:
@@ -308,7 +311,9 @@ class Dataflow:
         return errors
 
     @staticmethod
-    def validate_module_outputs(module: Module, outputs: Dict[str, List[Slot]]) -> List[str]:
+    def validate_module_outputs(
+        module: Module, outputs: Dict[str, List[Slot]]
+    ) -> List[str]:
         """Validate the output slots on a module.
         Return a list of errors, empty if no error occured.
         """
@@ -338,8 +343,9 @@ class Dataflow:
         return errors
 
     @staticmethod
-    def _dependency_csgraph(dependencies: Dict[str, Dict[str, Slot]],
-                            index: Dict[str, int]) -> Any:
+    def _dependency_csgraph(
+        dependencies: Dict[str, Dict[str, Slot]], index: Dict[str, int]
+    ) -> Any:
         size = len(index)
         row = []
         col = []
@@ -415,9 +421,8 @@ class Dataflow:
                 self._collect_input_collaterals_if_required(oslot, deps)
 
     def _collect_input_collaterals_if_required(
-            self,
-            oslot: Slot,
-            deps: Set[str]) -> None:
+        self, oslot: Slot, deps: Set[str]
+    ) -> None:
         # collect input module only if the input slot being removed is required
         module = oslot.input_module
         if module.name in deps:
@@ -446,9 +451,7 @@ class Dataflow:
         if remaining == 0:
             deps.add(module.name)
 
-    def _collect_input_collaterals(
-        self, name: str, deps: Set[str]
-    ) -> None:
+    def _collect_input_collaterals(self, name: str, deps: Set[str]) -> None:
         inputs = self.inputs[name]
         for islot in inputs.values():
             if islot is None:
@@ -459,9 +462,12 @@ class Dataflow:
         names = {m if isinstance(m, str) else m.name for m in name_or_mod}
         collaterals = self.collateral_damage(*names)
         if collaterals != names:
-            raise ValueError("pass the collateral_damage of the specified modules")
+            raise ValueError(
+                f"pass the result of collateral_damage ({collaterals})"
+                "for the specified modules"
+            )
         for mod in names:
-            del self[mod]
+            self._remove_module(self[mod])
 
     def die_if_deps_die(
         self, name: str, deps: Set[str], maybe_deps: Set[str]

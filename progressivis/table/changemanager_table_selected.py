@@ -106,10 +106,10 @@ class TableSelectedChangeManager(BaseChangeManager):
         )
         self._selection_changes = self._mask_cm._row_changes
 
-    def reset(self, name=None):
-        super().reset(name)
-        self._mask_cm.reset(name)
-        self._table_cm.reset(name)
+    def reset(self, mid: str):
+        super().reset(mid)
+        self._mask_cm.reset(mid)
+        self._table_cm.reset(mid)
 
     def update(self, run_number, data, mid):
         assert isinstance(data, TableSelectedView)

@@ -503,7 +503,6 @@ class Module(metaclass=ModuleMeta):
 
     def reconnect(self, inputs: Dict[str, Slot]) -> None:
         deleted_keys = set(self._input_slots.keys()) - set(inputs.keys())
-        logger.info("Deleted keys: %s", deleted_keys)
         for name, slot in inputs.items():
             old_slot = self._input_slots.get(name, None)
             if old_slot is not slot:
@@ -511,7 +510,7 @@ class Module(metaclass=ModuleMeta):
                 assert slot.input_module is self
                 if slot.original_name:
                     descriptor = self.input_descriptors[slot.original_name]
-                    self.input_descriptors[name] = descriptor
+                    # self.input_descriptors[name] = descriptor
                     self.inputs.append(descriptor)
                     logger.info(
                         'Creating multiple input slot "%s" in "%s"', name, self.name
@@ -522,8 +521,10 @@ class Module(metaclass=ModuleMeta):
                 slot.output_module._connect_output(slot)
 
         for name in deleted_keys:
+            logger.debug(f"Deleting key {name} from {self.name}")
             old_slot = self._input_slots[name]
             if old_slot:
+                logger.info(f"Deleted input slot {name} in {self.name}")
                 # pylint: disable=protected-access
                 old_slot.output_module._disconnect_output(old_slot.output_name)
                 if old_slot.original_name:
@@ -735,6 +736,11 @@ class Module(metaclass=ModuleMeta):
             elif in_module.is_terminated() or in_module.state == Module.state_invalid:
                 term_count += 1
 
+        logger.debug(
+            f"ready_count={ready_count}, "
+            f"term_count={term_count}, "
+            f"in_count={in_count}"
+        )
         if self.state == Module.state_blocked:
             # if all the input slot modules are terminated or invalid
             if (
@@ -844,10 +850,13 @@ class Module(metaclass=ModuleMeta):
         called when it is about the be removed from the scheduler
         """
         self._state = Module.state_terminated
-        #  self._input_slots = None
-        #  self._output_slots = None
-        #  self.input = None
-        #  self.output = None
+        for islot in self._input_slots.values():
+            if islot is not None:
+                islot.reset()
+        for oslots in self._output_slots.values():
+            for oslot in oslots or []:
+                if oslot is not None:
+                    oslot.reset()
 
     def last_update(self) -> int:
         "Return the last time when the module was updated"

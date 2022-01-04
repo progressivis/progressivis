@@ -16,7 +16,6 @@ from progressivis.core.utils import (
     is_str,
     all_int,
     all_string,
-    is_iterable,
     all_string_or_int,
     all_bool,
     indices_len,
@@ -331,24 +330,24 @@ class BaseTable(metaclass=ABCMeta):
         "Return a dictionary describing the contents of this columns."
         return self.to_dict(**kwds)
 
-    def make_col_view(self, col: BaseColumn, index) -> BaseColumn:
+    def make_projection(
+        self, cols: Optional[List[str]], index
+    ) -> Tuple[List[BaseColumn], Dict[str, int]]:
         from .column_selected import ColumnSelectedView
 
-        return ColumnSelectedView(base=col, index=index, name=col.name)
-
-    def make_projection(
-        self, cols: Optional[List[BaseColumn]], index
-    ) -> Tuple[List[BaseColumn], Dict[str, int]]:
         dict_ = self._make_columndict_projection(cols)
-        columns = [
-            self.make_col_view(c, index)
+        columns: List[BaseColumn] = [
+            ColumnSelectedView(base=c, index=index)
             for (i, c) in enumerate(self._columns)
             if i in dict_.values()
         ]
-        columndict = dict(zip(dict_.keys(), range(len(dict_))))
+        columndict: Dict[str, int] = dict(zip(dict_.keys(), range(len(dict_))))
         return columns, columndict
 
-    def _make_columndict_projection(self, cols):
+    def _make_columndict_projection(
+        self,
+        cols: Union[None, slice, int, str, List[str], List[Union[int, np.integer]]],
+    ) -> Dict[str, int]:
         if is_none_alike(cols):
             return self._columndict
         if isinstance(cols, slice):
@@ -361,9 +360,9 @@ class BaseTable(metaclass=ABCMeta):
                     if i in range(*nsl.indices(nsl.stop))
                 }
             )
-        if is_int(cols) or is_str(cols):
-            cols = [cols]
-        if is_iterable(cols):
+        if isinstance(cols, (int, integer_types)) or isinstance(cols, str):
+            cols = [cols]  # type: ignore
+        if isinstance(cols, Iterable):
             if all_int(cols):
                 return dict(
                     {
@@ -499,7 +498,7 @@ class BaseTable(metaclass=ABCMeta):
             return name
         return self._columndict[name]
 
-    def index_to_id(self, ix) -> Any:
+    def index_to_id(self, ix: Any) -> Any:
         """Return the ids of the specified indices
         NB: useless for this implementation. kept for compat.
         Parameters
@@ -515,7 +514,7 @@ class BaseTable(metaclass=ABCMeta):
         locs = self._any_to_bitmap(ix)
         return locs
 
-    def id_to_index(self, loc: _Loc, as_slice=True) -> Any:
+    def id_to_index(self, loc: Any, as_slice=True) -> Any:
         # to be reimplemented with LRU-dict+pyroaring
         """Return the indices of the specified id or ids
         NB: useless for this implementation. kept for compat.
@@ -559,7 +558,9 @@ class BaseTable(metaclass=ABCMeta):
     def __len__(self):
         return self.nrow
 
-    def _slice_to_bitmap(self, sl, fix_loc=True, existing_only=True):
+    def _slice_to_bitmap(
+        self, sl: slice, fix_loc: bool = True, existing_only: bool = True
+    ):
         stop = sl.stop or self.last_xid
         nsl = norm_slice(sl, fix_loc, stop=stop)
         ret = bitmap(nsl)
@@ -567,14 +568,21 @@ class BaseTable(metaclass=ABCMeta):
             ret &= self.index
         return ret
 
-    def _any_to_bitmap(self, locs, copy=True, fix_loc=True, existing_only=True):
+    def _any_to_bitmap(
+        self,
+        locs: Union[bitmap, int, np.integer, Iterable[Any], slice],
+        copy: bool = True,
+        fix_loc: bool = True,
+        existing_only: bool = True,
+    ):
         if isinstance(locs, bitmap):
             return locs[:] if copy else locs
         if isinstance(locs, integer_types):
             return bitmap([locs])
         if isinstance(locs, Iterable):
             if all_bool(locs):
-                return bitmap(np.nonzero(locs))
+                assert isinstance(locs, Iterable)
+                return bitmap(np.nonzero(locs))  # type: ignore
             else:
                 return bitmap(locs)
         if isinstance(locs, slice):
@@ -1136,7 +1144,7 @@ class IndexTable(BaseTable):
         super().__init__()
         self._index: bitmap = bitmap() if index is None else index
         self._cached_index = BaseTable  # hack
-        self._last_id = -1
+        self._last_id: int = -1
         self._changes = None
 
     @property
@@ -1262,14 +1270,13 @@ class TableSelectedView(BaseTable):
         self,
         base: Optional[BaseTable] = None,
         selection: Union[bitmap, slice] = slice(0, None),
-        columns: Optional[List[BaseColumn]] = None,
-        columndict: Optional[Dict[str, int]] = None,
+        columns: Optional[List[str]] = None,
     ):
-        super().__init__(base, selection, columns, columndict)
+        super().__init__(base, columns=None, selection=selection)
         assert self._base
-        columns, columndict = self._base.make_projection(columns, self)
-        self._columns = columns
-        self._columndict = columndict
+        cols, coldict = self._base.make_projection(columns, self)
+        self._columns = cols
+        self._columndict = coldict
         self._dshape = dshape_create(
             "{"
             + ",".join(["{}:{}".format(c.name, c.dshape) for c in self._columns])

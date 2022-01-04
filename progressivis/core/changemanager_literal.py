@@ -7,7 +7,6 @@ from .changemanager_base import BaseChangeManager
 
 from typing import (
     Any,
-    Optional,
     TYPE_CHECKING,
 )
 
@@ -41,8 +40,8 @@ class LiteralChangeManager(BaseChangeManager):
         )
         self._last_value: Any = None
 
-    def reset(self, name: Optional[str] = None) -> None:
-        super(LiteralChangeManager, self).reset(name)
+    def reset(self, mid: str) -> None:
+        super(LiteralChangeManager, self).reset(mid)
         self._last_value = None
 
     def compute_updates(self, data: Any) -> IndexUpdate:

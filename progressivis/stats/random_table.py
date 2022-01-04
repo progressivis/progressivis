@@ -15,7 +15,7 @@ from ..table.constant import Constant
 from ..utils.psdict import PsDict
 from ..core.utils import integer_types
 
-from typing import List, Dict, Union
+from typing import List, Dict, Union, Any
 
 logger = logging.getLogger(__name__)
 
@@ -32,8 +32,8 @@ class RandomTable(TableModule):
         random=RAND,
         dtype="float64",
         throttle=False,
-        **kwds,
-    ):
+        **kwds: Any,
+    ) -> None:
         super(RandomTable, self).__init__(**kwds)
         self.tags.add(self.TAG_SOURCE)
         self.default_step_size = 1000
