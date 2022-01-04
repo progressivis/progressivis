@@ -1225,7 +1225,9 @@ class IndexTable(BaseTable):
         self._index -= bm
         self.add_deleted(bm)
 
-    def drop(self, index: Any, raw_index: Optional[Any] = None, truncate: bool = False) -> None:
+    def drop(
+        self, index: Any, raw_index: Optional[Any] = None, truncate: bool = False
+    ) -> None:
         "index is useless by now"
         if raw_index is None:
             raw_index = index
@@ -1239,7 +1241,7 @@ class IndexTable(BaseTable):
         if truncate:  # useful 4 csv recovery
             self._last_id = self._index.max() if self._index else -1
         self.add_deleted(index)
-        if self._storagegroup is not None:     # type: ignore
+        if self._storagegroup is not None:  # type: ignore
             self._storagegroup.release(index)  # type: ignore
 
     def _resize_rows(self, newsize: int, index: Optional[Any] = None) -> None:

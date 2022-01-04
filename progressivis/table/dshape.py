@@ -5,7 +5,15 @@ import numpy as np
 from progressivis.core.utils import integer_types, gen_columns
 
 from typing import (
-    Union, Tuple, Dict, Any, List, Optional, Sequence, Type, TYPE_CHECKING
+    Union,
+    Tuple,
+    Dict,
+    Any,
+    List,
+    Optional,
+    Sequence,
+    Type,
+    TYPE_CHECKING,
 )
 
 if TYPE_CHECKING:
@@ -64,7 +72,9 @@ def dshape_from_dtype(dtype: Union[np.dtype[Any], Type[Any]]) -> str:
     return str(ds.CType.from_numpy_dtype(dtype))
 
 
-def dshape_extract(data: Any, columns: Optional[List[str]] = None) -> Optional[DataShape]:
+def dshape_extract(
+    data: Any, columns: Optional[List[str]] = None
+) -> Optional[DataShape]:
     if data is None:
         return None
     if hasattr(data, "dshape"):
@@ -83,7 +93,9 @@ def dshape_extract(data: Any, columns: Optional[List[str]] = None) -> Optional[D
 
 
 def dshape_projection(
-    table: BaseTable, columns: Optional[List[str]] = None, names: Optional[List[str]] = None
+    table: BaseTable,
+    columns: Optional[List[str]] = None,
+    names: Optional[List[str]] = None,
 ) -> DataShape:
     if columns is None and names is None:
         return table.dshape
@@ -167,8 +179,9 @@ def dshape_from_dataframe(df: pd.DataFrame) -> DataShape:
     return ds.dshape("{" + shape + "}")
 
 
-def array_dshape(df: Union[np.ndarray[Any, Any], BaseTable, pd.DataFrame],
-                 array_col: str) -> DataShape:
+def array_dshape(
+    df: Union[np.ndarray[Any, Any], BaseTable, pd.DataFrame], array_col: str
+) -> DataShape:
     if isinstance(df, np.ndarray):
         shape = dataframe_dshape(df.dtype)
         length = df.shape[1]
@@ -197,7 +210,9 @@ def get_projection_dshape(dshape_: DataShape, projection_ix: List[int]) -> DataS
 
 
 # get_projection_dshape_with_keys(myds, ['c','e','g'])
-def get_projection_dshape_with_keys(dshape_: DataShape, projection_keys: List[str]) -> DataShape:
+def get_projection_dshape_with_keys(
+    dshape_: DataShape, projection_keys: List[str]
+) -> DataShape:
     dict_ = {k: ix for ix, (k, _) in enumerate(dshape_[0].fields)}
     return get_projection_dshape(dshape_, [dict_[key] for key in projection_keys])
 
@@ -221,8 +236,7 @@ def dshape_compatible(ds1: Optional[DataShape], ds2: DataShape) -> bool:
 
 
 def dshape_join(
-    left: DataShape, right: DataShape,
-    lsuffix: str = "", rsuffix: str = ""
+    left: DataShape, right: DataShape, lsuffix: str = "", rsuffix: str = ""
 ) -> Tuple[DataShape, Dict[str, Dict[str, str]]]:
     res = []
     rename: Dict[str, Dict[str, str]] = {"left": {}, "right": {}}

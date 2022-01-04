@@ -130,7 +130,9 @@ class Module(metaclass=ModuleMeta):
     inputs = [SlotDescriptor(PARAMETERS_SLOT, type=BaseTable, required=False)]
     outputs = [SlotDescriptor(TRACE_SLOT, type=BaseTable, required=False)]
     all_inputs: ClassVar[List[SlotDescriptor]]  # defined by metaclass, declare for mypy
-    all_outputs: ClassVar[List[SlotDescriptor]]  # defined by metaclass, declare for mypy
+    all_outputs: ClassVar[
+        List[SlotDescriptor]
+    ]  # defined by metaclass, declare for mypy
 
     state_created: ClassVar[ModuleState] = ModuleState.state_created
     state_ready: ClassVar[ModuleState] = ModuleState.state_ready

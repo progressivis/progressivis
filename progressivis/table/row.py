@@ -6,9 +6,16 @@ from collections import OrderedDict
 
 
 from typing import (
-    Any, List, Tuple, Union, Dict, TYPE_CHECKING, overload, Sequence,
+    Any,
+    List,
+    Tuple,
+    Union,
+    Dict,
+    TYPE_CHECKING,
+    overload,
+    Sequence,
     Optional,
-    Iterator
+    Iterator,
 )
 
 JSon = Dict[str, Any]
