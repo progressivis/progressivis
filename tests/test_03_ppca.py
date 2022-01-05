@@ -60,7 +60,11 @@ class TestPPCA(ProgressiveTest):
             s = Scheduler()
         else:
             s = scheduler
-        dataset = get_dataset("mnist_784")
+        try:
+            dataset = get_dataset("mnist_784")
+        except TimeoutError:
+            print("Cannot download mnist")
+            return
         data = CSVLoader(
             dataset,
             index_col=False,

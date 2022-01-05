@@ -29,9 +29,15 @@ class TestMBKmeans(ProgressiveTest):
         # log_level()
         s = self.scheduler()
         n_clusters = 3
+        try:
+            dataset = get_dataset("cluster:s3"),
+        except TimeoutError:
+            print("Cannot download cluster:s3")
+            return
+
         with s:
             csv = CSVLoader(
-                get_dataset("cluster:s3"),
+                dataset,
                 sep=" ",
                 skipinitialspace=True,
                 header=None,
