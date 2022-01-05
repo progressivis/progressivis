@@ -224,7 +224,7 @@ class Table(IndexTable):
     def __contains__(self, colname: str) -> bool:
         return colname in self._columndict
 
-    def drop(self, index, raw_index=None, truncate=False):
+    def drop(self, index: Any, raw_index: Optional[Any] = None, truncate: bool = False) -> None:
         super().drop(index, raw_index, truncate)
         self._storagegroup.attrs[metadata.ATTR_INDEX] = self._index.serialize()
         self._storagegroup.attrs[metadata.ATTR_LAST_ID] = self.last_id

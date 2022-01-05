@@ -3,16 +3,20 @@ from __future__ import annotations
 from ..core import aio
 
 from progressivis import ProgressiveError
-from ..table.module import TableModule, ReturnRunStep, JSon
+from ..table.module import TableModule
+from progressivis.core.module import ReturnRunStep, JSon
 from ..utils.psdict import PsDict
 
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 
 
 class DynVar(TableModule):
     def __init__(
-        self, init_val: PsDict = None, vocabulary: Dict[str, Any] = None, **kwds
-    ):
+        self,
+        init_val: Optional[PsDict] = None,
+            vocabulary: Optional[Dict[str, Any]] = None,
+            **kwds: Any
+    ) -> None:
         super().__init__(**kwds)
         self.tags.add(self.TAG_INPUT)
         self._has_input = False

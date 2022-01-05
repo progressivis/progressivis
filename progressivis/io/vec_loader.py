@@ -9,7 +9,8 @@ from bz2 import BZ2File
 from gzip import GzipFile
 
 from progressivis.table.table import Table
-from progressivis.table.module import TableModule, ReturnRunStep
+from progressivis.table.module import TableModule
+from progressivis.core.module import ReturnRunStep
 
 from sklearn.feature_extraction import DictVectorizer  # type: ignore
 
@@ -17,10 +18,10 @@ from typing import Any, Dict, Tuple, List, Callable, Type, Pattern, Match
 
 logger = logging.getLogger(__name__)
 
-PATTERN: Pattern = re.compile(r"\(([0-9]+),([-+.0-9]+)\)[ ]*")
+PATTERN: Pattern[Any] = re.compile(r"\(([0-9]+),([-+.0-9]+)\)[ ]*")
 
 
-def vec_loader(filename: str, dtype: Type = np.float64) -> Tuple[Any, Dict]:
+def vec_loader(filename: str, dtype: Type[Any] = np.float64) -> Tuple[Any, Dict[str, Any]]:
     """Loads a tf-idf file in .vec format (or .vec.bz2).
 
     Loads a file and returns a scipy sparse matrix of document features.
@@ -38,8 +39,8 @@ def vec_loader(filename: str, dtype: Type = np.float64) -> Tuple[Any, Dict]:
         dataset = []
         for d in f:
             doc = {}
-            match: Match
-            for match in re.finditer(PATTERN, d.decode("ascii", errors="ignore")):  # type: ignore
+            match: Match[Any]
+            for match in re.finditer(PATTERN, d.decode("ascii", errors="ignore")):
                 termidx = int(match.group(1))
                 termfrx = dtype(match.group(2))
                 doc[termidx] = termfrx
@@ -51,7 +52,7 @@ def vec_loader(filename: str, dtype: Type = np.float64) -> Tuple[Any, Dict]:
 
 
 class VECLoader(TableModule):
-    def __init__(self, filename: str, dtype: Type = np.float64, **kwds):
+    def __init__(self, filename: str, dtype: Type[Any] = np.float64, **kwds: Any) -> None:
         super(VECLoader, self).__init__(**kwds)
         self._dtype = dtype
         self.default_step_size = kwds.get("chunksize", 10)  # initial guess

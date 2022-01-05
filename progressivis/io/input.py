@@ -3,14 +3,17 @@ from __future__ import annotations
 import numpy as np
 
 from progressivis.table import Table
-from progressivis.table.module import TableModule, ReturnRunStep, JSon
+from progressivis.table.module import TableModule
+from progressivis.core.module import ReturnRunStep, JSon
+
+from typing import Any
 
 
 class Input(TableModule):
     parameters = [("history", np.dtype(int), 3)]
     schema = "{input: string}"
 
-    def __init__(self, **kwds):
+    def __init__(self, **kwds: Any) -> None:
         super(Input, self).__init__(**kwds)
         self.tags.add(self.TAG_INPUT)
         table = Table(name=None, dshape=Input.schema, create=True)

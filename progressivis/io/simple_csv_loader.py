@@ -7,7 +7,8 @@ import pandas as pd
 from progressivis import ProgressiveError, SlotDescriptor
 from progressivis.utils.errors import ProgressiveStopIteration
 from progressivis.utils.inspect import filter_kwds, extract_params_docstring
-from progressivis.table.module import TableModule, ReturnRunStep
+from progressivis.table.module import TableModule
+from progressivis.core.module import ReturnRunStep
 from progressivis.table.table import Table
 from progressivis.table.dshape import dshape_from_dataframe
 from progressivis.core.utils import (
@@ -20,7 +21,6 @@ from typing import Dict, Any, Callable, Optional, Tuple, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from progressivis.core.module import ModuleState
-    from progressivis.io.read_csv import Parser
     import io
 
 logger = logging.getLogger(__name__)
@@ -31,12 +31,12 @@ class SimpleCSVLoader(TableModule):
 
     def __init__(
         self,
-        filepath_or_buffer: Any = None,
-        filter_: Callable[[pd.DataFrame], bool] = None,
-        force_valid_ids=True,
-        fillvalues: Dict[str, Any] = None,
+        filepath_or_buffer: Optional[Any] = None,
+        filter_: Optional[Callable[[pd.DataFrame], pd.DataFrame]] = None,
+        force_valid_ids: bool = True,
+        fillvalues: Optional[Dict[str, Any]] = None,
         **kwds: Any
-    ):
+    ) -> None:
         super().__init__(**kwds)
         self.default_step_size = kwds.get("chunksize", 1000)  # initial guess
         kwds.setdefault("chunksize", self.default_step_size)
@@ -45,7 +45,7 @@ class SimpleCSVLoader(TableModule):
         # When called with a specified chunksize, it returns a parser
         self.filepath_or_buffer = filepath_or_buffer
         self.force_valid_ids = force_valid_ids
-        self.parser: Optional[Parser] = None
+        self.parser: Optional[pd.TextReader] = None
         self.csv_kwds = csv_kwds
         self._compression: Any = csv_kwds.get("compression", "infer")
         csv_kwds["compression"] = None
@@ -54,7 +54,7 @@ class SimpleCSVLoader(TableModule):
         self._rows_read = 0
         if filter_ is not None and not callable(filter_):
             raise ProgressiveError("filter parameter should be callable or None")
-        self._filter = filter_
+        self._filter: Optional[Callable[[pd.DataFrame], pd.DataFrame]] = filter_
         self._input_stream: Optional[
             io.IOBase
         ] = None  # stream that returns a position through the 'tell()' method
@@ -174,7 +174,7 @@ class SimpleCSVLoader(TableModule):
         logger.info("loading %d lines", step_size)
         try:
             assert self.parser
-            df = self.parser.read(step_size)  # raises StopIteration at EOF
+            df: pd.DataFrame = self.parser.read(step_size)  # raises StopIteration at EOF
         except StopIteration:
             self.close()
             fn_slot = self.get_input_slot("filenames")

@@ -19,6 +19,10 @@ class TestModule(Module):
         return self._return_run_step(self.state_blocked, 0)
 
 
+async def _stop(scheduler, run_number):
+    await scheduler.stop()
+
+
 class TestDataflow(ProgressiveTest):
     def test_dataflow_0(self):
         scheduler = self.scheduler()
@@ -113,16 +117,10 @@ class TestDataflow(ProgressiveTest):
     def test_dataflow_1_dynamic(self):
         scheduler = self.scheduler(clean=True)
 
-        csv = CSVLoader(
-            get_dataset("bigfile"),
-            name="csv",
-            index_col=False,
-            header=None,
-            scheduler=scheduler,
-        )
+        table = RandomTable(name="table", columns=["a"], throttle=1000, scheduler=scheduler)
         m = Min(name="min", scheduler=scheduler)
         prt = Print(proc=self.terse, name="print_min", scheduler=scheduler)
-        m.input.table = csv.output.result
+        m.input.table = table.output.result
         prt.input.df = m.output.result
         started = False
 
@@ -131,32 +129,29 @@ class TestDataflow(ProgressiveTest):
             print("proc max called")
             started = True
 
-        async def _add_max(csv, scheduler, proc):
-            await aio.sleep(2)
+        async def _add_max(scheduler, run_number):
             with scheduler:
                 print("adding new modules")
                 m = Max(name="max", scheduler=scheduler)
                 prt = Print(name="print_max", proc=proc, scheduler=scheduler)
-                m.input.table = csv.output.result
+                m.input.table = table.output.result
                 prt.input.df = m.output.result
 
-        t = _add_max(csv, scheduler, proc=proc)
-        aio.run_gather(scheduler.start(), t)
+        # t = _add_max(csv, scheduler, proc=proc)
+        scheduler.on_loop(_add_max, 5)  # run the function after 5 loops
+        scheduler.on_loop(_stop, 10)
+
+        # from nose.tools import set_trace; set_trace()
+        aio.run(scheduler.start())
         self.assertTrue(started)
 
     def test_dataflow_2_add_remove(self):
         scheduler = self.scheduler(clean=True)
 
-        csv = CSVLoader(
-            get_dataset("bigfile"),
-            name="csv",
-            index_col=False,
-            header=None,
-            scheduler=scheduler,
-        )
+        table = RandomTable(name="table", columns=["a"], throttle=1000, scheduler=scheduler)
         m = Min(name="min", scheduler=scheduler)
         prt = Print(proc=self.terse, name="print_min", scheduler=scheduler)
-        m.input.table = csv.output.result
+        m.input.table = table.output.result
         prt.input.df = m.output.result
         started = False
 
@@ -165,24 +160,25 @@ class TestDataflow(ProgressiveTest):
             print("proc max called")
             started = True
 
-        async def _add_max_remove_min(csv, scheduler, proc):
-            await aio.sleep(2)
+        async def _add_max_remove_min(scheduler, run_number):
             with scheduler as dataflow:
                 print("adding new modules")
                 m = Max(name="max", scheduler=scheduler)
                 prt = Print(name="print_max", proc=proc, scheduler=scheduler)
-                m.input.table = csv.output.result
+                m.input.table = table.output.result
                 prt.input.df = m.output.result
                 print("removing min module")
                 dataflow.delete_modules("min", "print_min")
 
-        t = _add_max_remove_min(csv, scheduler, proc=proc)
-        aio.run_gather(scheduler.start(), t)
+        # t = _add_max_remove_min(csv, scheduler, proc=proc)
+        scheduler.on_loop(_add_max_remove_min, 5)
+        scheduler.on_loop(_stop, 10)
+        aio.run(scheduler.start())
         self.assertTrue(started)
 
     def test_dataflow_3_dels(self):
         s = self.scheduler()
-        table = RandomTable(name="table", columns=["a"], scheduler=s)
+        table = RandomTable(name="table", columns=["a"], throttle=1000, scheduler=s)
         m = Min(name="min", scheduler=s)
         m.input.table = table.output.result
         prt = Print(name="prt", scheduler=s)
@@ -196,7 +192,7 @@ class TestDataflow(ProgressiveTest):
 
     def test_dataflow_4_dels2(self):
         s = self.scheduler()
-        table = RandomTable(name="table", columns=["a"], scheduler=s)
+        table = RandomTable(name="table", columns=["a"], throttle=1000, scheduler=s)
         m = TestModule(name="min", scheduler=s)
         m.input.a = table.output.result
         prt = Print(name="prt", scheduler=s)
@@ -211,7 +207,7 @@ class TestDataflow(ProgressiveTest):
 
     def test_dataflow_5_dels_opt(self):
         s = self.scheduler()
-        table = RandomTable(name="table", columns=["a"], scheduler=s)
+        table = RandomTable(name="table", columns=["a"], throttle=1000, scheduler=s)
         m = TestModule(name="min", scheduler=s)
         m.input.a = table.output.result
         prt = Print(name="prt", scheduler=s)
@@ -231,27 +227,33 @@ class TestDataflow(ProgressiveTest):
 
     def test_dataflow_6_dynamic(self):
         s = self.scheduler()
-        table = RandomTable(name="table", columns=["a"], scheduler=s)
+        table = RandomTable(name="table", columns=["a"], throttle=1000, scheduler=s)
         sink = Sink(name="sink", scheduler=s)
         sink.input.inp = table.output.result
-        prt = Print(name="prt", scheduler=s)
+        prt = Print(name="prt", proc=self.terse, scheduler=s)
         prt.input.df = table.output.result
-        prt2 = Print(name="prt2", scheduler=s)
+        prt2 = Print(name="prt2", proc=self.terse, scheduler=s)
         prt2.input.df = table.output.result
         s.commit()
-        aio.run(s.step())
+
+        async def modify_1(scheduler, run_number):
+            with s as dataflow:
+                print("Checking module deletion")
+                self.assertTrue(isinstance(dataflow, Dataflow))
+                deps = dataflow.collateral_damage("prt2")
+                self.assertEquals(deps, set(["prt2"]))
+                deps = dataflow.collateral_damage("prt")
+                self.assertEquals(deps, set(["prt"]))
+                deps = dataflow.collateral_damage("prt", "prt2")
+                self.assertEquals(deps, set(["prt", "prt2"]))
+                dataflow.delete_modules("prt2")
+
+        s.on_loop(modify_1, 5)
+        s.on_loop(_stop, 10)
+
+        aio.run(s.start())
         # from nose.tools import set_trace; set_trace()
-        with s as dataflow:
-            self.assertTrue(isinstance(dataflow, Dataflow))
-            deps = dataflow.collateral_damage("prt2")
-            self.assertEquals(deps, set(["prt2"]))
-            deps = dataflow.collateral_damage("prt")
-            self.assertEquals(deps, set(["prt"]))
-            deps = dataflow.collateral_damage("prt", "prt2")
-            self.assertEquals(deps, set(["prt", "prt2"]))
-            dataflow.delete_modules("prt2")
         self.assertFalse("prt2" in s)
-        aio.run(s.step())
 
 
 if __name__ == "__main__":

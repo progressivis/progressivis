@@ -179,7 +179,7 @@ class BaseTable(metaclass=ABCMeta):
         self._masked = base
         self._dshape: DataShape = EMPTY_DSHAPE
 
-    def drop(self, index, raw_index=None, truncate=False):
+    def drop(self, index: Any, raw_index: Optional[Any] = None, truncate: bool = False) -> None:
         pass
 
     @property
@@ -1056,7 +1056,7 @@ class BaseTable(metaclass=ABCMeta):
     def var(self, **kwargs):
         return self.raw_unary(np.var, **kwargs)
 
-    def argmin(self, **kwargs):
+    def argmin(self, **kwargs: Any) -> Any:
         argmin_ = self.raw_unary(np.argmin, **kwargs)
         if self.is_identity:
             return argmin_

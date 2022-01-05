@@ -65,7 +65,7 @@ class TableModule(Module):
         return self.__result
 
     @result.setter
-    def result(self, val: Union[Table, PsDict]):
+    def result(self, val: Union[BaseTable, PsDict, None]):
         if self.__result is not None:
             raise KeyError("result cannot be assigned more than once")
         self.__result = val

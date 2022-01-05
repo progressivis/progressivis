@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from typing import Union, Optional, Any, TYPE_CHECKING
 
 import logging
 
@@ -12,11 +11,18 @@ try:
     from progressivis.utils.fast import next_pow2
 except ImportError:
     from progressivis.core.utils import next_pow2
-from .base import StorageEngine, Dataset
+from .base import StorageEngine, Dataset, Group
 from .hierarchy import GroupImpl, AttributeImpl
 
+
+from typing import Union, Optional, Any, Tuple, TYPE_CHECKING
+
 if TYPE_CHECKING:
-    from .base import Attribute, Shape, DTypeLike, ArrayLike
+    from .base import Attribute
+    from numpy.typing import DTypeLike, ArrayLike
+
+Shape = Tuple[int, ...]
+
 
 logger = logging.getLogger(__name__)
 
@@ -28,10 +34,10 @@ class NumpyDataset(Dataset):
         shape: Optional[Shape] = None,
         dtype: Optional[DTypeLike] = None,
         data: Optional[Any] = None,
-        **kwds
-    ):
+        **kwds: Any
+    ) -> None:
         self._name = name
-        self.base: np.ndarray
+        self.base: np.ndarray[Any, Any]
         if data is not None:
             self.base = np.array(data, dtype=dtype)
         else:
@@ -48,7 +54,7 @@ class NumpyDataset(Dataset):
                 self._fillvalue = np.nan
         if kwds:
             logger.warning("Ignored keywords in NumpyDataset: %s", kwds)
-        self.view = self.base
+        self.view: np.ndarray[Any, Any] = self.base
         self._attrs = AttributeImpl()
 
     @property
@@ -56,7 +62,7 @@ class NumpyDataset(Dataset):
         return self.view.shape
 
     @property
-    def dtype(self) -> np.dtype:
+    def dtype(self) -> np.dtype[Any]:
         return self.view.dtype
 
     @property
@@ -126,7 +132,7 @@ class NumpyDataset(Dataset):
 
 
 class NumpyGroup(GroupImpl):
-    def __init__(self, name: str = "numpy", parent: Optional[GroupImpl] = None):
+    def __init__(self, name: str = "numpy", parent: Optional[GroupImpl] = None) -> None:
         super(NumpyGroup, self).__init__(name, parent=parent)
 
     def create_dataset(
@@ -176,23 +182,23 @@ class NumpyGroup(GroupImpl):
 
 
 class NumpyStorageEngine(StorageEngine, NumpyGroup):
-    def __init__(self):
+    def __init__(self) -> None:
         StorageEngine.__init__(self, "numpy")
         NumpyGroup.__init__(self, "/", None)
 
-    def open(self, name, flags, **kwds):
+    def open(self, name: str, flags: Any, **kwds: Any) -> None:
         pass
 
-    def close(self):
+    def close(self, name: str, flags: Any, **kwds: Any) -> None:
         pass
 
-    def flush(self):
+    def flush(self) -> None:
         pass
 
-    def __contains__(self, name):
+    def __contains__(self, name: str) -> bool:
         return NumpyGroup.__contains__(self, name)
 
     @staticmethod
-    def create_group(name=None, create=True):
+    def create_group(name: str, create: bool = True) -> Group:
         _ = create  # for pylint
         return NumpyGroup(name)

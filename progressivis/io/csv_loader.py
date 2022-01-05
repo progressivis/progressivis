@@ -45,19 +45,19 @@ class CSVLoader(TableModule):
 
     def __init__(
         self,
-        filepath_or_buffer: Any = None,
-        filter_: Callable[[pd.DataFrame], bool] = None,
-        force_valid_ids=True,
+        filepath_or_buffer: Optional[Any] = None,
+        filter_: Optional[Callable[[pd.DataFrame], bool]] = None,
+        force_valid_ids: bool = True,
         fillvalues: Optional[Dict[str, Any]] = None,
-        as_array: Optional[Callable] = None,
+        as_array: Optional[Any] = None,
         timeout: Optional[float] = None,
         save_context: Optional[Any] = None,  # FIXME seems more like a bool
         recovery: int = 0,  # FIXME seems more like a bool
         recovery_tag: str = "",
         recovery_table_size: int = 3,
         save_step_size: int = 100000,
-        **kwds,
-    ):
+        **kwds: Any,
+    ) -> None:
         super(CSVLoader, self).__init__(**kwds)
         self.tags.add(self.TAG_SOURCE)
         self.default_step_size = kwds.get("chunksize", 1000)  # initial guess
@@ -326,7 +326,7 @@ class CSVLoader(TableModule):
             ret[colname] = df[colname].values
         return ret, dshape_from_dict(ret)
 
-    def _needs_save(self):
+    def _needs_save(self) -> bool:
         table = self.table
         if table is None:
             return False
@@ -438,13 +438,13 @@ class CSVLoader(TableModule):
         return self._return_run_step(self.state_ready, steps_run=creates)
 
 
-def check_snapshot(snapshot):
+def check_snapshot(snapshot: Dict[str, Any]) -> bool:
     if "check" not in snapshot:
         return False
     hcode = snapshot["check"]
     del snapshot["check"]
     h = hash(tuple(snapshot.values()))
-    return h == hcode
+    return bool(h == hcode)
 
 
 CSV_DOCSTRING = (

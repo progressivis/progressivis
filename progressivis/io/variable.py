@@ -9,7 +9,7 @@ from progressivis.table.constant import Constant
 from progressivis.core.utils import all_string
 from progressivis.utils.psdict import PsDict
 
-from typing import List, TYPE_CHECKING, Dict, Tuple
+from typing import List, TYPE_CHECKING, Dict, Tuple, Optional, Any
 
 if TYPE_CHECKING:
     from progressivis.core.module import ReturnRunStep, JSon
@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 class Variable(Constant):
     inputs = [SlotDescriptor("like", type=(Table, PsDict), required=False)]
 
-    def __init__(self, table: Table = None, **kwds):
+    def __init__(self, table: Optional[Table] = None, **kwds: Any) -> None:
         super(Variable, self).__init__(table, **kwds)
         self.tags.add(self.TAG_INPUT)
 
@@ -64,7 +64,7 @@ class Variable(Constant):
 
 
 class VirtualVariable(Constant):
-    def __init__(self, names: List[str], **kwds):
+    def __init__(self, names: List[str], **kwds: Any) -> None:
         if not all_string(names):
             raise ProgressiveError(f"names {names} must be a set of strings")
         self._names = names
@@ -74,7 +74,7 @@ class VirtualVariable(Constant):
         super(VirtualVariable, self).__init__(columns, output_required=False, **kwds)
         self.tags.add(self.TAG_INPUT)
 
-    def subscribe(self, var: Variable, vocabulary: Dict[str, str]):
+    def subscribe(self, var: Variable, vocabulary: Dict[str, str]) -> None:
         """
         Example: vocabulary = {'x': 'longitude', 'y': 'latitude'}
         """

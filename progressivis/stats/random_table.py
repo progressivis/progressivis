@@ -31,7 +31,7 @@ class RandomTable(TableModule):
         rows=-1,
         random=RAND,
         dtype="float64",
-        throttle=False,
+        throttle: Union[int, np.integer, float, bool] = False,
         **kwds: Any,
     ) -> None:
         super(RandomTable, self).__init__(**kwds)

@@ -43,7 +43,8 @@ MANDATORY_DIALECT_ATTRS = (
 )
 
 
-def _merge_with_dialect_properties(dialect, defaults):
+def _merge_with_dialect_properties(dialect: Optional[csv.Dialect],
+                                   defaults: Dict[str, Any]) -> Dict[str, Any]:
     if not dialect:
         return defaults
     kwds = defaults.copy()
@@ -97,7 +98,7 @@ class CSVSniffer:
         )
         self.lines.observe(self._lines_cb, names="value")
         self._head: str = ""
-        self._dialect: Optional[Any] = None
+        self._dialect: Optional[csv.Dialect] = None
         self.params: Dict[str, Any] = {}
         self._df: Optional[pd.DataFrame] = None
         self._df2: Optional[pd.DataFrame] = None
@@ -217,31 +218,31 @@ class CSVSniffer:
             self.params.pop(key, None)
         self.set_cmdline()
 
-    def _true_values_cb(self, change) -> None:
+    def _true_values_cb(self, change: Dict[str, Any]) -> None:
         self._parse_list("true_values", change["new"])
 
-    def _false_values_cb(self, change) -> None:
+    def _false_values_cb(self, change: Dict[str, Any]) -> None:
         self._parse_list("false_values", change["new"])
 
-    def _na_values_cb(self, change) -> None:
+    def _na_values_cb(self, change: Dict[str, Any]) -> None:
         self._parse_list("na_values", change["new"])
 
-    def _skiprows_cb(self, change):
+    def _skiprows_cb(self, change: Dict[str, Any]) -> None:
         skip = change["new"]
         self._head = ""
         self.params["skiprows"] = skip
         self.dataframe(force=True)
 
-    def _lines_cb(self, change):
+    def _lines_cb(self, change: Dict[str, Any]) -> None:
         self._head = ""
         self.dataframe(force=True)
 
-    def _delimiter_cb(self, change):
+    def _delimiter_cb(self, change: Dict[str, Any]) -> None:
         delim = change["new"]
         # print(f"Delimiter: '{delim}'")
         self.set_delimiter(delim)
 
-    def _columns_cb(self, change):
+    def _columns_cb(self, change: Dict[str, Any]) -> None:
         column = change["new"]
         # print(f"Column: '{column}'")
         self.show_column(column)
@@ -318,13 +319,14 @@ class CSVSniffer:
         self._format_head()
         return self._head
 
-    def dialect(self, force=False) -> Any:
+    def dialect(self, force: bool = False) -> csv.Dialect:
         if not force and self._dialect:
             return self._dialect
         sniffer = csv.Sniffer()
         head = self.head()
-        self._dialect = sniffer.sniff(head)
+        self._dialect = sniffer.sniff(head)  # type: ignore
         # self.params['dialect'] = self._dialect
+        assert self._dialect is not None
         self.set_delimiter(self._dialect.delimiter)
         if self.params["header"] == "infer":
             if sniffer.has_header(head):
@@ -513,18 +515,18 @@ class ColumnInfo:
             return self.object_types
         return [type]
 
-    def rename_column(self, change) -> None:
+    def rename_column(self, change: Dict[str, Any]) -> None:
         self.sniffer.rename_columns()
 
-    def usecols_column(self, change) -> None:
+    def usecols_column(self, change: Dict[str, Any]) -> None:
         self.sniffer.usecols_columns()
 
-    def _test_column_type(self, newtype) -> Optional[ValueError]:
+    def _test_column_type(self, newtype: Any) -> Optional[ValueError]:
         try:
             self.series.as_type(newtype)
         except ValueError as e:
             return e
         return None
 
-    def retype_column(self, change) -> None:
+    def retype_column(self, change: Dict[str, Any]) -> None:
         self.sniffer.retype_columns()

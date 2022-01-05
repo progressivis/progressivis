@@ -1,4 +1,6 @@
-from io import BytesIO
+from __future__ import annotations
+
+from io import BytesIO, IOBase
 import time
 import bz2
 import zlib
@@ -6,13 +8,23 @@ import json
 from collections import OrderedDict
 import functools as ft
 
-from requests.packages.urllib3.exceptions import HTTPError  # type: ignore
+from requests.packages.urllib3.exceptions import HTTPError
 import numpy as np
 import pandas as pd
 from pandas.core.dtypes.inference import is_file_like, is_sequence
 import lzma
 
 from progressivis.core.utils import filepath_to_buffer, _infer_compression, is_str
+
+from typing import (
+    Optional,
+    Union,
+    Any,
+    Dict,
+    List,
+    Tuple,
+    cast,
+)
 
 
 SAMPLE_SIZE = 5
@@ -23,7 +35,17 @@ SEP = ","
 ROW_MAX_LENGTH_GUESS = 10000
 HEADER_CHUNK = 50
 
-decompressors = dict(
+
+class Decompressor:
+    def decompress(self, chunk: bytes) -> bytes: ...
+
+
+class NoDecompressor(Decompressor):
+    def decompress(self, chunk: bytes) -> bytes:
+        return chunk
+
+
+decompressors: Dict[str, Any] = dict(
     bz2=bz2.BZ2Decompressor,
     zlib=zlib.decompressobj,
     gzip=ft.partial(zlib.decompressobj, wbits=zlib.MAX_WBITS | 16),
@@ -31,7 +53,7 @@ decompressors = dict(
 )
 
 
-def is_recoverable(inp):
+def is_recoverable(inp: Any) -> bool:
     if is_str(inp):
         return True
     if not is_sequence(inp):
@@ -42,55 +64,55 @@ def is_recoverable(inp):
     return is_str(inp[0])
 
 
-class Parser(object):
+class Parser:
     """
     Always use Parser.create() instead of Parser() because __init__() is not awaitable
     """
 
     def __init__(
         self,
-        input_source,
-        remaining,
-        estimated_row_size,
-        offset=None,
-        overflow_df=None,
-        pd_kwds={},
-        chunksize=0,
-        usecols=None,
-        names=None,
-        header="infer",
+        input_source: InputSource,
+        remaining: bytes,
+        estimated_row_size: int,
+        offset: int = 0,
+        overflow_df: Optional[pd.DataFrame] = None,
+        pd_kwds: Dict[str, Any] = {},
+        chunksize: int = 0,
+        usecols: Optional[List[str]] = None,
+        names: Optional[Union[np.ndarray[Any, Any], List[str]]] = None,
+        header: Union[None, str, int] = "infer",
     ):
         self._input = input_source
         self._pd_kwds = pd_kwds
         self._remaining = remaining
         self._estimated_row_size = estimated_row_size
-        self._overflow_df = overflow_df
-        self._offset = offset
-        self._recovery_cnt = 0
-        self._nb_cols = None if overflow_df is None else len(overflow_df.columns)
-        self._chunksize = chunksize
-        self._usecols = usecols
-        self._names = names
-        self._header = header
+        self._overflow_df: Optional[pd.DataFrame] = overflow_df
+        self._offset: int = offset
+        self._recovery_cnt: int = 0
+        self._nb_cols: Optional[int] = None if overflow_df is None else len(overflow_df.columns)
+        self._chunksize: int = chunksize
+        self._usecols: Optional[List[str]] = usecols
+        self._names: Optional[Union[np.ndarray[Any, Any], List[str]]] = names
+        self._header: Union[None, str, int] = header
 
     @staticmethod
     def create(
-        input_source,
-        remaining,
-        estimated_row_size,
-        offset=None,
-        overflow_df=None,
-        pd_kwds={},
-        chunksize=0,
-        usecols=None,
-        names=None,
-        header="infer",
-    ):
+        input_source: InputSource,
+        remaining: bytes,
+        estimated_row_size: int,
+        offset: Optional[int] = None,
+        overflow_df: Optional[pd.DataFrame] = None,
+        pd_kwds: Dict[str, Any] = {},
+        chunksize: int = 0,
+        usecols: Optional[List[str]] = None,
+        names: Optional[Union[np.ndarray[Any, Any], List[str]]] = None,
+        header: Union[None, str, int] = "infer",
+    ) -> Parser:
         par = Parser(
             input_source,
             remaining,
             estimated_row_size,
-            offset,
+            input_source.tell() if offset is None else offset,
             overflow_df,
             pd_kwds,
             chunksize,
@@ -98,11 +120,9 @@ class Parser(object):
             names,
             header,
         )
-        if offset is None:
-            par._offset = par._input.tell()
         return par
 
-    def get_snapshot(self, run_number, last_id, table_name):
+    def get_snapshot(self, run_number: int, last_id: int, table_name: str) -> Dict[str, Any]:
         if not is_recoverable(self._input._seq):
             raise ValueError("Not recoverable")
         ret = OrderedDict(
@@ -132,9 +152,9 @@ class Parser(object):
         ret.update(check=hash(tuple(ret.values())))
         return ret
 
-    def read(self, n, flush=False):
+    def read(self, n: int, flush: bool = False) -> List[pd.DataFrame]:
         assert n > 0
-        ret = []
+        ret: List[pd.DataFrame] = []
         n_ = n
         if self._overflow_df is not None:
             len_df = len(self._overflow_df)
@@ -219,11 +239,11 @@ class Parser(object):
                 for (k, v) in self._pd_kwds.items()
                 if k not in ["header", "names", "usecols"]
             }
-            read_df = pd.read_csv(
+            read_df: pd.DataFrame = pd.read_csv(
                 BytesIO(csv_bytes),
                 header=header,
-                names=names,
-                usecols=self._usecols,
+                names=names,  # type: ignore
+                usecols=self._usecols,  # type: ignore
                 **kwds
             )
             if self._names is None:
@@ -252,25 +272,25 @@ class Parser(object):
                 break
         return ret
 
-    def is_flushed(self):
+    def is_flushed(self) -> bool:
         return self._overflow_df is None
 
 
-class InputSource(object):
+class InputSource:
     """
     Always use InputSource.create() instead of InputSource() because __init__() is not awaitable
     """
 
     def __init__(
         self,
-        inp,
-        encoding,
-        file_cnt=0,
-        compression=None,
-        dec_remaining=b"",
-        timeout=None,
-        start_byte=0,
-        usecols=None,
+        inp: Any,
+        encoding: Optional[str],
+        file_cnt: int = 0,
+        compression: Optional[str] = None,
+        dec_remaining: bytes = b"",
+        timeout: Optional[float] = None,
+        start_byte: int = 0,
+        usecols: Optional[List[str]] = None,
     ):
         """
         NB: all inputs are supposed to have the same type, encoding, compression
@@ -292,21 +312,30 @@ class InputSource(object):
         #    raise ValueError("Cannot open a compressed file with a positive offset")
         if file_cnt >= len(inp):
             raise ValueError("File counter out of range")
-        self._seq = inp
-        self._file_cnt = file_cnt
-        self._usecols = usecols
+        self._seq: List[str] = inp
+        self._file_cnt: int = file_cnt
+        self._usecols: Optional[List[str]] = usecols
+        self._encoding: Optional[str]
+        self._compression: Optional[str]
+        self._input_size: int
+        self._timeout: Optional[float] = None
+        self._decompressor_class: Optional[type] = None
+        self._decompressor: Optional[Decompressor] = None
+        self._dec_remaining: bytes
+        self._dec_offset: int
+        self._stream: IOBase
 
     @staticmethod
     def create(
-        inp,
-        encoding,
-        file_cnt=0,
-        compression=None,
-        dec_remaining=b"",
-        timeout=None,
-        start_byte=0,
-        usecols=None,
-    ):
+        inp: Any,
+        encoding: Optional[str],
+        file_cnt: int = 0,
+        compression: Optional[str] = None,
+        dec_remaining: bytes = b"",
+        timeout: Optional[float] = None,
+        start_byte: int = 0,
+        usecols: Optional[List[str]] = None,
+    ) -> InputSource:
         isrc = InputSource(
             inp,
             encoding,
@@ -344,10 +373,10 @@ class InputSource(object):
         return isrc
 
     @property
-    def filepath(self):
+    def filepath(self) -> str:
         return self._seq[self._file_cnt]
 
-    def switch_to_next(self):
+    def switch_to_next(self) -> bool:
         """
         """
         # print("Switch to next")
@@ -374,7 +403,7 @@ class InputSource(object):
         self._stream = istream
         return True
 
-    def reopen(self, start_byte=0):
+    def reopen(self, start_byte: int = 0) -> IOBase:
         if self._stream is not None:
             self.close()
         if self._compression is None:
@@ -396,19 +425,22 @@ class InputSource(object):
             start_byte=0,
         )
         self._stream = istream
-        self._decompressor = self._decompressor_class()
+        if self._decompressor_class:
+            self._decompressor = cast(Decompressor, self._decompressor_class())
+        else:
+            self._decompressor = NoDecompressor()
         if self._dec_offset != start_byte:
             raise ValueError("PB: {}!={}".format(self._dec_offset, start_byte))
         self._read_compressed(start_byte)  # seek
         return istream
 
-    def tell(self):
+    def tell(self) -> int:
         if self._compression is None:
             return self._stream.tell()
         else:
             return self._dec_offset
 
-    def read(self, n):
+    def read(self, n: int) -> Tuple[bool, bytes]:
         """
         returns new_file_flag, some_bytes
         in case of multi-file with headers
@@ -433,7 +465,7 @@ class InputSource(object):
         else:
             return False, b""
 
-    def _read_compressed(self, n):
+    def _read_compressed(self, n: int) -> bytes:
         len_remaining = len(self._dec_remaining)
         if n <= len_remaining:
             ret = self._dec_remaining[:n]
@@ -445,6 +477,7 @@ class InputSource(object):
         buff.write(self._dec_remaining)
         cnt = 0
         break_ = False
+        assert self._decompressor is not None
         while cnt < n_:
             max_length = 1024 * 100
             chunk = self._stream.read(int(max_length))
@@ -468,21 +501,20 @@ class InputSource(object):
             ret = ret[:n]
         return ret
 
-    def close(self):
-        if self._stream is None:
+    def close(self) -> None:
+        if self._stream.closed:
             return
         try:
             self._stream.close()
             # pylint: disable=bare-except
         except Exception:
             pass
-        self._stream = None
         self._input_encoding = None
         self._input_compression = None
         self._input_size = 0
 
 
-def get_first_row(fd):
+def get_first_row(fd: InputSource) -> bytes:
     ret = BytesIO()
     guard = ROW_MAX_LENGTH_GUESS
     for _ in range(guard):
@@ -495,7 +527,7 @@ def get_first_row(fd):
     return ret.getvalue()
 
 
-def read_csv(input_source, silent_before=0, **csv_kwds):
+def read_csv(input_source: InputSource, silent_before: int = 0, **csv_kwds: Any) -> Parser:
     pd_kwds = dict(csv_kwds)
     chunksize = pd_kwds["chunksize"]
     del pd_kwds["chunksize"]
@@ -504,7 +536,7 @@ def read_csv(input_source, silent_before=0, **csv_kwds):
     usecols = None
     if "usecols" in pd_kwds:
         usecols = pd_kwds.pop("usecols")
-    header = "infer"
+    header: Union[str, None, int] = "infer"
     if "header" in pd_kwds:
         header = pd_kwds.pop("header")
         assert header is None or header == 0
@@ -519,13 +551,15 @@ def read_csv(input_source, silent_before=0, **csv_kwds):
     )
 
 
-def recovery(snapshot, previous_file_seq, **csv_kwds):
+def recovery(snapshot: Dict[str, Any],
+             previous_file_seq: Union[str, List[str]],
+             **csv_kwds: Any) -> Parser:
     print("RECOVERY ...")
     pd_kwds = dict(csv_kwds)
     chunksize = pd_kwds["chunksize"]
     del pd_kwds["chunksize"]
     file_seq = json.loads(snapshot["file_seq"])
-    if is_str(previous_file_seq):
+    if isinstance(previous_file_seq, str):
         previous_file_seq = [previous_file_seq]
     if previous_file_seq != file_seq[: len(previous_file_seq)]:
         # we tolerate a new file_seq longer than the previous

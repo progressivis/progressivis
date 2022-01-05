@@ -6,7 +6,7 @@ from __future__ import annotations
 import logging
 import functools
 from timeit import default_timer
-import time
+# import time
 from .dataflow import Dataflow
 from . import aio
 from ..utils.errors import ProgressiveError
@@ -22,7 +22,7 @@ from typing import (
     TYPE_CHECKING,
     Coroutine,
     Union,
-    Iterator,
+    AsyncGenerator,
     cast,
 )
 
@@ -43,6 +43,22 @@ TickCoro = Callable[["Scheduler", int], Coroutine[Any, Any, Any]]
 TickProc = Union[TickCb, TickCoro]
 Order = List[str]
 Reachability = Dict[str, List[str]]
+
+
+class CallbackList(List[TickProc]):
+    async def fire(self, scheduler: Scheduler, run_number: int) -> bool:
+        ret = False
+        for proc in self:
+            try:
+                if aio.iscoroutinefunction(proc):
+                    coro = cast(TickCoro, proc)
+                    await coro(scheduler, run_number)
+                else:
+                    proc(scheduler, run_number)
+                ret = True
+            except Exception as exc:
+                logger.warning(exc)
+        return ret
 
 
 class Scheduler:
@@ -78,9 +94,10 @@ class Scheduler:
         self._start: float = 0
         self._step_once = False
         self._run_number = 0
-        self._tick_procs: List[TickProc] = []
-        self._tick_once_procs: List[TickProc] = []
-        self._idle_procs: List[TickProc] = []
+        self._tick_procs = CallbackList()
+        self._tick_once_procs = CallbackList()
+        self._idle_procs = CallbackList()
+        self._loop_procs = CallbackList()
         self.version = 0
         self._run_list: List[Module] = []
         self._run_index = 0
@@ -224,16 +241,14 @@ class Scheduler:
                 )
             self._task = True
         self.coros = list(coros)
+        # self._tick_procs.clear()
         if tick_proc:
             assert callable(tick_proc) or aio.iscoroutinefunction(tick_proc)
-            self._tick_procs = [tick_proc]
-        else:
-            self._tick_procs = []
+            self._tick_procs.append(tick_proc)
+        # self._idle_procs.clear()
         if idle_proc:
             assert callable(idle_proc)
-            self._idle_procs = [idle_proc]
-        else:
-            self._idle_procs = []
+            self._idle_procs.append(idle_proc)
         await self.run()
 
     async def start(
@@ -271,39 +286,53 @@ class Scheduler:
         "Start the scheduler for on step."
         await self.start(tick_proc=self._step_proc)
 
-    def on_tick(self, tick_proc: TickProc) -> None:
+    def on_tick(self, proc: TickProc, delay: int = 0) -> None:
         "Set a procedure to call at each tick."
-        assert callable(tick_proc)
-        self._tick_procs.append(tick_proc)
+        assert callable(proc)
+        if delay <= 0:
+            self._tick_procs.append(proc)
+        else:
+            delay_proc(delay, proc, self._tick_procs)
 
-    def remove_tick(self, tick_proc: TickProc) -> None:
+    def remove_tick(self, proc: TickProc) -> None:
         "Remove a tick callback"
-        self._tick_procs.remove(tick_proc)
+        self._tick_procs.remove(proc)
 
-    def on_tick_once(self, tick_proc: TickProc) -> None:
+    def on_tick_once(self, proc: TickProc) -> None:
         """
         Add a oneshot function that will be run at the next scheduler tick.
         This is especially useful for setting up module connections.
         """
-        assert callable(tick_proc)
-        self._tick_once_procs.append(tick_proc)
+        assert callable(proc)
+        self._tick_once_procs.append(proc)
 
-    def remove_tick_once(self, tick_proc: TickProc) -> None:
+    def remove_tick_once(self, proc: TickProc) -> None:
         "Remove a tick once callback"
-        self._tick_once_procs.remove(tick_proc)
+        self._tick_once_procs.remove(proc)
 
-    def on_idle(self, idle_proc: TickProc) -> None:
+    def on_idle(self, proc: TickProc, delay: int = 0) -> None:
         "Set a procedure that will be called when there is nothing else to do."
-        assert callable(idle_proc)
-        self._idle_procs.append(idle_proc)
+        assert callable(proc)
+        if delay <= 0:
+            self._idle_procs.append(proc)
+        else:
+            delay_proc(delay, proc, self._idle_procs)
 
     def remove_idle(self, idle_proc: TickProc) -> None:
         "Remove an idle callback."
-        assert callable(idle_proc)
         self._idle_procs.remove(idle_proc)
 
-    def idle_proc(self) -> None:
-        pass
+    def on_loop(self, proc: TickProc, delay: int = 0) -> None:
+        assert callable(proc)
+        if delay <= 0:
+            self._loop_procs.append(proc)
+        else:
+            delay_proc(delay, proc, self._loop_procs)
+
+    def remove_loop(self, idle_proc: TickProc) -> None:
+        "Remove an idle callback."
+        assert callable(idle_proc)
+        self._loop_procs.remove(idle_proc)
 
     async def run(self) -> None:
         "Run the modules, called by start()."
@@ -338,7 +367,7 @@ class Scheduler:
     async def _run_loop(self) -> None:
         """Main scheduler loop."""
         # pylint: disable=broad-except
-        for module in self._next_module():
+        async for module in self._next_module():
             if (
                 self.no_more_data()
                 and self.all_blocked()
@@ -372,7 +401,7 @@ class Scheduler:
         if self.shortcut_evt is not None:
             self.shortcut_evt.set()
 
-    def _next_module(self) -> Iterator[Module]:
+    async def _next_module(self) -> AsyncGenerator[Module, None]:
         """
         Generator the yields a possibly infinite sequence of modules.
         Handles order recomputation and starting logic if needed.
@@ -410,7 +439,7 @@ class Scheduler:
             self._run_index += 1  # allow it to be reset
             yield module
             if self._run_index >= len(self._run_list):  # end of modules
-                self._end_of_modules(first_run)
+                await self._end_of_modules(first_run)
                 first_run = self._run_number
 
     def all_blocked(self) -> bool:
@@ -500,38 +529,17 @@ class Scheduler:
             self._run_list.append(module)
             module.order = i
 
-    # def _cleanup_modules(self, modules):
-    #     "Unreference the terminated modules when possible"
-    #     collateral = set()
-    #     for mod in modules:
-    #         collateral = self.collateral_damage(mod.name, collateral)
-    #     if collateral:
-    #         logger.info(f"Modules {collateral} will be cleaned up")
-    #         self.version += 1  # Increment in case a dataflow is being built with dead modules
-    #         for name in collateral:
-    #             mod = self._modules[name]
-    #             mod.ending()
-    #             del self._modules[name]
-    #             self._runorder.remove(name)
-
-    def _end_of_modules(self, first_run: int) -> None:
+    async def _end_of_modules(self, first_run: int) -> None:
         # Reset interaction mode
         self._selection_target_time = -1
         new_list = [m for m in self._run_list if not m.is_terminated()]
         self._run_list = new_list
+        await self._loop_procs.fire(self, self._run_number)
         if first_run == self._run_number:  # no module ready
-            has_run = False
-            for proc in self._idle_procs:
-                # pylint: disable=broad-except
-                try:
-                    logger.debug("Running idle proc")
-                    proc(self, self._run_number)
-                    has_run = True
-                except Exception as exc:
-                    logger.error(exc)
+            has_run = await self._idle_procs.fire(self, self._run_number)
             if not has_run:
                 logger.info("sleeping %f", 0.2)
-                time.sleep(0.2)
+                aio.sleep(0.2)
         self._run_index = 0
 
     async def idle_proc_runner(self) -> None:
@@ -554,26 +562,9 @@ class Scheduler:
 
     async def _run_tick_procs(self) -> None:
         # pylint: disable=broad-except
-        for proc in self._tick_procs:
-            logger.debug("Calling tick_proc")
-            try:
-                if aio.iscoroutinefunction(proc):
-                    coro = cast(TickCoro, proc)
-                    await coro(self, self._run_number)
-                else:
-                    proc(self, self._run_number)
-            except Exception as exc:
-                logger.warning(exc)
-        for proc in self._tick_once_procs:
-            try:
-                if aio.iscoroutinefunction(proc):
-                    coro = cast(TickCoro, proc)
-                    await coro(self, self._run_number)
-                else:
-                    proc(self, self._run_number)
-            except Exception as exc:
-                logger.warning(exc)
-            self._tick_once_procs = []
+        await self._tick_procs.fire(self, self._run_number)
+        await self._tick_once_procs.fire(self, self._run_number)
+        self._tick_once_procs.clear()
 
     async def stop(self) -> None:
         "Stop the execution."
@@ -732,3 +723,25 @@ class Scheduler:
 
 
 Scheduler.default = Scheduler()
+
+
+def delay_proc(counter: int, proc: TickProc, cb: CallbackList) -> None:
+    if aio.iscoroutinefunction(proc):
+        async def asubproc(scheduler: Scheduler, run_number: int) -> None:
+            nonlocal counter
+            counter -= 1
+            logger.debug(f"delay_proc {proc} counter: {counter}")
+            if counter <= 0:
+                coro = cast(TickCoro, proc)
+                await coro(scheduler, run_number)
+                cb.remove(asubproc)
+        cb.append(asubproc)
+    else:
+        def subproc(scheduler: Scheduler, run_number: int) -> None:
+            nonlocal counter
+            counter -= 1
+            logger.debug(f"delay_proc {proc} counter: {counter}")
+            if counter <= 0:
+                proc(scheduler, run_number)
+                cb.remove(subproc)
+        cb.append(subproc)
