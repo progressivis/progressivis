@@ -139,7 +139,6 @@ class TestDataflow(ProgressiveTest):
                 m.input.table = table.output.result
                 prt.input.df = m.output.result
 
-        # t = _add_max(csv, scheduler, proc=proc)
         scheduler.on_loop(_add_max, 5)  # run the function after 5 loops
         scheduler.on_loop(_stop, 10)
 

@@ -700,18 +700,6 @@ class Scheduler:
         "Close all the resources associated with this scheduler."
         for mod in self.modules().values():
             mod.close_all()
-            # # pylint: disable=protected-access
-            # if (hasattr(mod, '_table') and
-            #         mod._table is not None and
-            #         mod._table.storagegroup is not None):
-            #     mod._table.storagegroup.close_all()
-            # if (hasattr(mod, '_params') and
-            #         mod._params is not None and
-            #         mod._params.storagegroup is not None):
-            #     mod._params.storagegroup.close_all()
-            # if (hasattr(mod, 'storagegroup') and
-            #         mod.storagegroup is not None):
-            #     mod.storagegroup.close_all()
 
     @staticmethod
     def _module_order(x: Dict[str, int], y: Dict[str, int]) -> int:
