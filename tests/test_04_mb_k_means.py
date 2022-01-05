@@ -30,7 +30,7 @@ class TestMBKmeans(ProgressiveTest):
         s = self.scheduler()
         n_clusters = 3
         try:
-            dataset = get_dataset("cluster:s3"),
+            dataset = (get_dataset("cluster:s3"),)
         except TimeoutError:
             print("Cannot download cluster:s3")
             return

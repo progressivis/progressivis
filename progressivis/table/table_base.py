@@ -179,7 +179,9 @@ class BaseTable(metaclass=ABCMeta):
         self._masked = base
         self._dshape: DataShape = EMPTY_DSHAPE
 
-    def drop(self, index: Any, raw_index: Optional[Any] = None, truncate: bool = False) -> None:
+    def drop(
+        self, index: Any, raw_index: Optional[Any] = None, truncate: bool = False
+    ) -> None:
         pass
 
     @property

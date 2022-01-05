@@ -37,7 +37,8 @@ HEADER_CHUNK = 50
 
 
 class Decompressor:
-    def decompress(self, chunk: bytes) -> bytes: ...
+    def decompress(self, chunk: bytes) -> bytes:
+        ...
 
 
 class NoDecompressor(Decompressor):
@@ -89,7 +90,9 @@ class Parser:
         self._overflow_df: Optional[pd.DataFrame] = overflow_df
         self._offset: int = offset
         self._recovery_cnt: int = 0
-        self._nb_cols: Optional[int] = None if overflow_df is None else len(overflow_df.columns)
+        self._nb_cols: Optional[int] = None if overflow_df is None else len(
+            overflow_df.columns
+        )
         self._chunksize: int = chunksize
         self._usecols: Optional[List[str]] = usecols
         self._names: Optional[Union[np.ndarray[Any, Any], List[str]]] = names
@@ -122,7 +125,9 @@ class Parser:
         )
         return par
 
-    def get_snapshot(self, run_number: int, last_id: int, table_name: str) -> Dict[str, Any]:
+    def get_snapshot(
+        self, run_number: int, last_id: int, table_name: str
+    ) -> Dict[str, Any]:
         if not is_recoverable(self._input._seq):
             raise ValueError("Not recoverable")
         ret = OrderedDict(
@@ -527,7 +532,9 @@ def get_first_row(fd: InputSource) -> bytes:
     return ret.getvalue()
 
 
-def read_csv(input_source: InputSource, silent_before: int = 0, **csv_kwds: Any) -> Parser:
+def read_csv(
+    input_source: InputSource, silent_before: int = 0, **csv_kwds: Any
+) -> Parser:
     pd_kwds = dict(csv_kwds)
     chunksize = pd_kwds["chunksize"]
     del pd_kwds["chunksize"]
@@ -551,9 +558,9 @@ def read_csv(input_source: InputSource, silent_before: int = 0, **csv_kwds: Any)
     )
 
 
-def recovery(snapshot: Dict[str, Any],
-             previous_file_seq: Union[str, List[str]],
-             **csv_kwds: Any) -> Parser:
+def recovery(
+    snapshot: Dict[str, Any], previous_file_seq: Union[str, List[str]], **csv_kwds: Any
+) -> Parser:
     print("RECOVERY ...")
     pd_kwds = dict(csv_kwds)
     chunksize = pd_kwds["chunksize"]

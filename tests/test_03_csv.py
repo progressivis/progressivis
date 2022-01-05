@@ -142,7 +142,7 @@ class TestProgressiveLoadCSV(ProgressiveTest):
                 index_col=False,
                 as_array=lambda cols: {"array": [c for c in cols if c != "class"]},
                 scheduler=s,
-                )
+            )
             sink = Sink(name="sink", scheduler=s)
             sink.input.inp = module.output.result
             self.assertTrue(module.result is None)

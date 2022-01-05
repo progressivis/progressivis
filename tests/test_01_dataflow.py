@@ -117,7 +117,9 @@ class TestDataflow(ProgressiveTest):
     def test_dataflow_1_dynamic(self):
         scheduler = self.scheduler(clean=True)
 
-        table = RandomTable(name="table", columns=["a"], throttle=1000, scheduler=scheduler)
+        table = RandomTable(
+            name="table", columns=["a"], throttle=1000, scheduler=scheduler
+        )
         m = Min(name="min", scheduler=scheduler)
         prt = Print(proc=self.terse, name="print_min", scheduler=scheduler)
         m.input.table = table.output.result
@@ -148,7 +150,9 @@ class TestDataflow(ProgressiveTest):
     def test_dataflow_2_add_remove(self):
         scheduler = self.scheduler(clean=True)
 
-        table = RandomTable(name="table", columns=["a"], throttle=1000, scheduler=scheduler)
+        table = RandomTable(
+            name="table", columns=["a"], throttle=1000, scheduler=scheduler
+        )
         m = Min(name="min", scheduler=scheduler)
         prt = Print(proc=self.terse, name="print_min", scheduler=scheduler)
         m.input.table = table.output.result

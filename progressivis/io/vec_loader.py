@@ -21,7 +21,9 @@ logger = logging.getLogger(__name__)
 PATTERN: Pattern[Any] = re.compile(r"\(([0-9]+),([-+.0-9]+)\)[ ]*")
 
 
-def vec_loader(filename: str, dtype: Type[Any] = np.float64) -> Tuple[Any, Dict[str, Any]]:
+def vec_loader(
+    filename: str, dtype: Type[Any] = np.float64
+) -> Tuple[Any, Dict[str, Any]]:
     """Loads a tf-idf file in .vec format (or .vec.bz2).
 
     Loads a file and returns a scipy sparse matrix of document features.
@@ -52,7 +54,9 @@ def vec_loader(filename: str, dtype: Type[Any] = np.float64) -> Tuple[Any, Dict[
 
 
 class VECLoader(TableModule):
-    def __init__(self, filename: str, dtype: Type[Any] = np.float64, **kwds: Any) -> None:
+    def __init__(
+        self, filename: str, dtype: Type[Any] = np.float64, **kwds: Any
+    ) -> None:
         super(VECLoader, self).__init__(**kwds)
         self._dtype = dtype
         self.default_step_size = kwds.get("chunksize", 10)  # initial guess

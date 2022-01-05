@@ -14,8 +14,8 @@ class DynVar(TableModule):
     def __init__(
         self,
         init_val: Optional[PsDict] = None,
-            vocabulary: Optional[Dict[str, Any]] = None,
-            **kwds: Any
+        vocabulary: Optional[Dict[str, Any]] = None,
+        **kwds: Any
     ) -> None:
         super().__init__(**kwds)
         self.tags.add(self.TAG_INPUT)

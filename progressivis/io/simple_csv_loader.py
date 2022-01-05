@@ -174,7 +174,9 @@ class SimpleCSVLoader(TableModule):
         logger.info("loading %d lines", step_size)
         try:
             assert self.parser
-            df: pd.DataFrame = self.parser.read(step_size)  # raises StopIteration at EOF
+            df: pd.DataFrame = self.parser.read(
+                step_size
+            )  # raises StopIteration at EOF
         except StopIteration:
             self.close()
             fn_slot = self.get_input_slot("filenames")

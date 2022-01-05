@@ -6,6 +6,7 @@ from __future__ import annotations
 import logging
 import functools
 from timeit import default_timer
+
 # import time
 from .dataflow import Dataflow
 from . import aio
@@ -36,6 +37,7 @@ SHORTCUT_TIME = 1.5
 if TYPE_CHECKING:
     from progressivis.core.module import Module
     from progressivis.core.slot import Slot
+
     Dependencies = Dict[str, Dict[str, Slot]]
 
 TickCb = Callable[["Scheduler", int], None]
@@ -727,6 +729,7 @@ Scheduler.default = Scheduler()
 
 def delay_proc(counter: int, proc: TickProc, cb: CallbackList) -> None:
     if aio.iscoroutinefunction(proc):
+
         async def asubproc(scheduler: Scheduler, run_number: int) -> None:
             nonlocal counter
             counter -= 1
@@ -735,8 +738,10 @@ def delay_proc(counter: int, proc: TickProc, cb: CallbackList) -> None:
                 coro = cast(TickCoro, proc)
                 await coro(scheduler, run_number)
                 cb.remove(asubproc)
+
         cb.append(asubproc)
     else:
+
         def subproc(scheduler: Scheduler, run_number: int) -> None:
             nonlocal counter
             counter -= 1
@@ -744,4 +749,5 @@ def delay_proc(counter: int, proc: TickProc, cb: CallbackList) -> None:
             if counter <= 0:
                 proc(scheduler, run_number)
                 cb.remove(subproc)
+
         cb.append(subproc)

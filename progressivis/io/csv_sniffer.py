@@ -43,8 +43,9 @@ MANDATORY_DIALECT_ATTRS = (
 )
 
 
-def _merge_with_dialect_properties(dialect: Optional[csv.Dialect],
-                                   defaults: Dict[str, Any]) -> Dict[str, Any]:
+def _merge_with_dialect_properties(
+    dialect: Optional[csv.Dialect], defaults: Dict[str, Any]
+) -> Dict[str, Any]:
     if not dialect:
         return defaults
     kwds = defaults.copy()
