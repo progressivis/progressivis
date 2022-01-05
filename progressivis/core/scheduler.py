@@ -36,13 +36,13 @@ SHORTCUT_TIME = 1.5
 if TYPE_CHECKING:
     from progressivis.core.module import Module
     from progressivis.core.slot import Slot
+    Dependencies = Dict[str, Dict[str, Slot]]
 
 TickCb = Callable[["Scheduler", int], None]
 TickCoro = Callable[["Scheduler", int], Coroutine[Any, Any, Any]]
 TickProc = Union[TickCb, TickCoro]
 Order = List[str]
 Reachability = Dict[str, List[str]]
-Dependencies = Dict[str, Dict[str, Slot]]
 
 
 class Scheduler:

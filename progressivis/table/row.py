@@ -26,7 +26,7 @@ if TYPE_CHECKING:
     import numpy as np
 
 
-class Row(MutableMapping[str, Any]):
+class Row(MutableMapping):
     """ Wraps a dictionary interace around a row of a Table.
 
     Parameters

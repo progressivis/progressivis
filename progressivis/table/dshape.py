@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import datashape as ds
 from datashape import DataShape as DataShape
 import pandas as pd
