@@ -33,10 +33,12 @@ jobs:
       run: conda env create -q python=${{ matrix.python_version }} -f environment.yml
 
     - name: Download a file
-      run: wget https://datahub.io/machine-learning/mnist_784/r/mnist_784.csv -O data/mnist_784.csv
+      run: wget https://datahub.io/machine-learning/mnist_784/r/mnist_784.csv -O mnist_784.csv
 
     - name: Run tests
       run: |
         source /usr/share/miniconda/etc/profile.d/conda.sh
         conda activate progressivis
+        mkdir data
+        mv mnist_784.csv data
         python setup.py nosetests
