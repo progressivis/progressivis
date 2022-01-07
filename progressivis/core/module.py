@@ -49,6 +49,7 @@ from typing import (
 if TYPE_CHECKING:
     from .dataflow import Dataflow
     from .decorators import _Context
+
     Parameters = List[Tuple[str, np.dtype[Any], Any]]
 JSon = Dict[str, Any]
 # ReturnRunStep = Tuple[int, ModuleState]
@@ -216,11 +217,21 @@ class Module(metaclass=ModuleMeta):
         # always present
         input_descriptors = self.all_inputs
         output_descriptors = self.all_outputs
-        self._input_slots: Dict[str, Optional[Slot]] = self._validate_descriptors(input_descriptors)
-        self.input_descriptors: Dict[str, SlotDescriptor] = {d.name: d for d in input_descriptors}
-        self.input_multiple: Dict[str, int] = {d.name: 0 for d in input_descriptors if d.multiple}
-        self._output_slots: Dict[str, Optional[List[Slot]]] = self._validate_descriptors(output_descriptors)
-        self.output_descriptors: Dict[str, SlotDescriptor] = {d.name: d for d in output_descriptors}
+        self._input_slots: Dict[str, Optional[Slot]] = self._validate_descriptors(
+            input_descriptors
+        )
+        self.input_descriptors: Dict[str, SlotDescriptor] = {
+            d.name: d for d in input_descriptors
+        }
+        self.input_multiple: Dict[str, int] = {
+            d.name: 0 for d in input_descriptors if d.multiple
+        }
+        self._output_slots: Dict[
+            str, Optional[List[Slot]]
+        ] = self._validate_descriptors(output_descriptors)
+        self.output_descriptors: Dict[str, SlotDescriptor] = {
+            d.name: d for d in output_descriptors
+        }
         self.default_step_size: int = 100
         self.input = InputSlots(self)
         self.output = OutputSlots(self)
@@ -452,9 +463,9 @@ class Module(metaclass=ModuleMeta):
 
     def create_slot(
         self,
-            output_name: Union[str, int],
-            input_module: Optional[Module],
-            input_name: Optional[str]
+        output_name: Union[str, int],
+        input_module: Optional[Module],
+        input_name: Optional[str],
     ) -> Slot:
         "Create a specified output slot"
         if isinstance(output_name, int):
@@ -564,7 +575,9 @@ class Module(metaclass=ModuleMeta):
     def output_slot_descriptor(self, name: str) -> SlotDescriptor:
         return self.output_descriptors[name]
 
-    def output_slot_type(self, name: str) -> Optional[Union[Type[Any], Tuple[Type[Any], ...]]]:
+    def output_slot_type(
+        self, name: str
+    ) -> Optional[Union[Type[Any], Tuple[Type[Any], ...]]]:
         return self.output_descriptors[name].type
 
     def output_slot_values(self) -> Iterable[Optional[List[Slot]]]:
@@ -939,10 +952,7 @@ class InputSlots:
             pos = name
             imod = slot.input_module
             assert imod is not None
-            desc = [
-                (k, sd.required)
-                for (k, sd) in imod.input_descriptors.items()
-            ]
+            desc = [(k, sd.required) for (k, sd) in imod.input_descriptors.items()]
             assert pos < len(desc)
             name_, req = desc[pos]
             # pos slot and all slots before pos have to be "required"
@@ -1004,10 +1014,12 @@ class Every(Module):
     "Module running a function at each iteration"
     inputs = [SlotDescriptor("df")]
 
-    def __init__(self,
-                 proc: Callable[[Any], None] = _print_len,
-                 constant_time: bool = True,
-                 **kwds: Any) -> None:
+    def __init__(
+        self,
+        proc: Callable[[Any], None] = _print_len,
+        constant_time: bool = True,
+        **kwds: Any,
+    ) -> None:
         super(Every, self).__init__(**kwds)
         self._proc = proc
         self._constant_time = constant_time

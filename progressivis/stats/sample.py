@@ -73,7 +73,9 @@ class Sample(TableModule):
         with self.context as ctx:
             if self.result is None:
                 self.result = TableSelectedView(ctx.table.data(), bitmap([]))
-            indices = cast(bitmap, ctx.table.created.next(length=step_size, as_slice=False))
+            indices = cast(
+                bitmap, ctx.table.created.next(length=step_size, as_slice=False)
+            )
             steps = indices_len(indices)
             k = int(self.params.samples)
             reservoir = self._tmp_table

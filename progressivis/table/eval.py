@@ -9,8 +9,7 @@ from .column_base import BaseColumn
 from typing import Any, Dict, Optional
 
 
-def _getvars(expression: str,
-             user_dict: Dict[str, Any]) -> Dict[str, Any]:
+def _getvars(expression: str, user_dict: Dict[str, Any]) -> Dict[str, Any]:
     """Get the variables in `expression`."""
 
     cexpr = compile(expression, "<string>", "eval")
@@ -38,10 +37,12 @@ def is_sequence_like(var: Any) -> bool:
     return False
 
 
-def _eval(expression: str,
-          user_dict: Dict[str, Any],
-          blen: Optional[int] = None,
-          **kwargs: Any) -> Any:
+def _eval(
+    expression: str,
+    user_dict: Dict[str, Any],
+    blen: Optional[int] = None,
+    **kwargs: Any
+) -> Any:
     variables = _getvars(expression, user_dict)
     typesize, vlen = 0, 1
     for name in variables:
@@ -69,12 +70,14 @@ def _eval(expression: str,
     return _eval_blocks(expression, variables, vlen, typesize, blen, **kwargs)
 
 
-def _eval_blocks(expression: str,
-                 variables: Dict[str, Any],
-                 vlen: int,
-                 typesize: int,
-                 blen: Optional[int],
-                 **kwargs: Any) -> Any:
+def _eval_blocks(
+    expression: str,
+    variables: Dict[str, Any],
+    vlen: int,
+    typesize: int,
+    blen: Optional[int],
+    **kwargs: Any
+) -> Any:
     """Perform the evaluation in blocks."""
 
     if not blen:

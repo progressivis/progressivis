@@ -185,7 +185,7 @@ class SimpleCSVLoader(TableModule):
             if self.has_input_slot("filenames"):
                 fn_slot = self.get_input_slot("filenames")
                 if (
-                        fn_slot is None or fn_slot.output_module is None
+                    fn_slot is None or fn_slot.output_module is None
                 ) and not self._file_mode:
                     raise
             self.parser = None

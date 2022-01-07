@@ -3,7 +3,17 @@ from __future__ import annotations
 import logging
 from progressivis.table.module import TableModule, Module
 
-from typing import Type, Tuple, Any, Dict, Optional, List, TYPE_CHECKING, Union, Iterable
+from typing import (
+    Type,
+    Tuple,
+    Any,
+    Dict,
+    Optional,
+    List,
+    TYPE_CHECKING,
+    Union,
+    Iterable,
+)
 
 if TYPE_CHECKING:
     from progressivis.core.scheduler import Scheduler

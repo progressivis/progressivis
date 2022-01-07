@@ -32,12 +32,12 @@ def combine_first(table: BaseTable, other: BaseTable, name: str = None) -> Table
     else:
         self_set = bitmap(table.index)
         other_set = bitmap(other.index)
-        comb_idx = (self_set | other_set)
+        comb_idx = self_set | other_set
         common_set = self_set & other_set
         # common_idx = sorted(common_set)
-        self_u_common_idx = (self_set | common_set)
-        other_u_common_idx = (other_set | common_set)
-        other_only_idx = (other_set - self_set)
+        self_u_common_idx = self_set | common_set
+        other_u_common_idx = other_set | common_set
+        other_only_idx = other_set - self_set
         comb_table.resize(len(comb_idx), index=comb_idx)
         for cname in table.columns:
             comb_table.loc[self_u_common_idx, [cname]] = table.loc[

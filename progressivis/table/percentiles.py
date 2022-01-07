@@ -28,9 +28,7 @@ class Percentiles(TableModule):
         self.default_step_size = 1000
 
     def compute_percentiles(
-            self,
-            points: Dict[str, float],
-            input_table: BaseTable
+        self, points: Dict[str, float], input_table: BaseTable
     ) -> Dict[str, float]:
         column = input_table[self._hist_index.column]
         hii = self._hist_index._impl

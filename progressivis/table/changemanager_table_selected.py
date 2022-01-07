@@ -6,7 +6,7 @@ from ..core.changemanager_base import (
     BaseChangeManager,
     _accessor,
     _base_accessor,
-    ChangeBuffer
+    ChangeBuffer,
 )
 from ..core.changemanager_bitmap import BitmapChangeManager
 from ..core.slot import Slot
@@ -18,7 +18,7 @@ from typing import Any, Optional, Union, overload, Literal
 class FakeSlot(Slot):
     # pylint: disable=too-few-public-methods
     "Fake slot to provide data to inner change manager"
-#    __fields__ = "data"
+    #    __fields__ = "data"
 
     def __init__(self, data: Any) -> None:
         self._data = data
@@ -72,7 +72,9 @@ class _double_buffer(ChangeBuffer):
         acc = bitmap()
         while length and self._first.any():
             # prevents to return second ids twice
-            new_ids = self._first.next(length=length, as_slice=False) - self._second.changes
+            new_ids = (
+                self._first.next(length=length, as_slice=False) - self._second.changes
+            )
             length -= len(new_ids)
             acc |= new_ids
         if length and self._second.any():

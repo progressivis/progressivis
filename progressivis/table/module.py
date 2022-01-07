@@ -23,10 +23,10 @@ class TableModule(Module):
     outputs = [SlotDescriptor("result", type=Table, required=True)]
 
     def __init__(
-            self,
-            columns: Optional[Columns] = None,
-            output_required: Optional[bool] = True,
-            **kwds: Any
+        self,
+        columns: Optional[Columns] = None,
+        output_required: Optional[bool] = True,
+        **kwds: Any,
     ) -> None:
         super(TableModule, self).__init__(**kwds)
         if "table_slot" in kwds:
@@ -92,9 +92,7 @@ class TableModule(Module):
         return super(TableModule, self).get_data(name)
 
     def get_columns(
-        self,
-        table: Union[BaseTable, Dict[str, Any]],
-        slot: Optional[str] = None
+        self, table: Union[BaseTable, Dict[str, Any]], slot: Optional[str] = None
     ) -> List[str]:
         """
         Return all the columns of interest from the specified table.
@@ -121,10 +119,7 @@ class TableModule(Module):
         return _columns
 
     def filter_columns(
-        self,
-        df: BaseTable,
-        indices: Optional[Any] = None,
-        slot: Optional[str] = None
+        self, df: BaseTable, indices: Optional[Any] = None, slot: Optional[str] = None
     ) -> BaseTable:
         """
         Return the specified table filtered by the specified indices and

@@ -185,7 +185,7 @@ class _HistogramIndexImpl(object):
         self,
         created: Optional[bitmap] = None,
         updated: Optional[bitmap] = None,
-        deleted: Optional[bitmap] = None
+        deleted: Optional[bitmap] = None,
     ) -> None:
         "Update the histogram index"
         created = bitmap.asbitmap(created)
@@ -208,10 +208,12 @@ class _HistogramIndexImpl(object):
                 selection = bins == i  # boolean mask of values in bin i
                 bm.update(ids[selection])  # add them to the bitmap
 
-    def query(self,
-              operator_: Callable[[Any, Any], int],
-              limit: Any,
-              approximate: bool = APPROX) -> bitmap:  # blocking...
+    def query(
+        self,
+        operator_: Callable[[Any, Any], int],
+        limit: Any,
+        approximate: bool = APPROX,
+    ) -> bitmap:  # blocking...
         """
         Return the list of rows matching the query.
         For example, returning all values less than 10 (< 10) would be
@@ -238,7 +240,7 @@ class _HistogramIndexImpl(object):
         operator_: Callable[[Any, Any], int],
         limit: Any,
         only_locs: Any,
-        approximate: bool = APPROX
+        approximate: bool = APPROX,
     ) -> bitmap:  # blocking...
         """
         Returns the subset of only_locs matching the query.
@@ -261,10 +263,7 @@ class _HistogramIndexImpl(object):
         return detail
 
     def range_query(
-        self,
-        lower: float,
-        upper: float,
-        approximate: bool = APPROX
+        self, lower: float, upper: float, approximate: bool = APPROX
     ) -> bitmap:
         """
         Return the bitmap of all rows with values in range [`lower`, `upper`[
@@ -475,10 +474,11 @@ class HistogramIndex(TableModule):
         return self._return_run_step(self.next_state(input_slot), steps_run=steps)
 
     def _eval_to_ids(
-            self,
-            operator_: Callable[[Any, Any], Any],
-            limit: Any,
-            input_ids: Optional[slice] = None) -> bitmap:
+        self,
+        operator_: Callable[[Any, Any], Any],
+        limit: Any,
+        input_ids: Optional[slice] = None,
+    ) -> bitmap:
         input_slot = self.get_input_slot("table")
         table_ = input_slot.data()
         if input_ids is None:
@@ -492,10 +492,11 @@ class HistogramIndex(TableModule):
         return bitmap(arr[np.nonzero(mask_)[0]])
 
     def query(
-            self,
-            operator_: Callable[[Any, Any], Any],
-            limit: Any,
-            approximate: bool = APPROX) -> bitmap:
+        self,
+        operator_: Callable[[Any, Any], Any],
+        limit: Any,
+        approximate: bool = APPROX,
+    ) -> bitmap:
         """
         Return the list of rows matching the query.
         For example, returning all values less than 10 (< 10) would be
@@ -508,11 +509,11 @@ class HistogramIndex(TableModule):
         return self._eval_to_ids(operator_, limit)
 
     def restricted_query(
-            self,
-            operator_: Callable[[Any, Any], Any],
-            limit: Any,
-            only_locs: Any,
-            approximate: bool = APPROX
+        self,
+        operator_: Callable[[Any, Any], Any],
+        limit: Any,
+        only_locs: Any,
+        approximate: bool = APPROX,
     ) -> bitmap:
         """
         Return the list of rows matching the query.
@@ -526,10 +527,7 @@ class HistogramIndex(TableModule):
         return self._eval_to_ids(operator_, limit, only_locs)
 
     def range_query_aslist(
-        self,
-        lower: float,
-        upper: float,
-        approximate: bool = APPROX
+        self, lower: float, upper: float, approximate: bool = APPROX
     ) -> List[bitmap]:
         """
         Return the list of rows with values in range [`lower`, `upper`[
@@ -539,10 +537,7 @@ class HistogramIndex(TableModule):
         return []
 
     def range_query(
-        self,
-        lower: float,
-        upper: float,
-        approximate: bool = APPROX
+        self, lower: float, upper: float, approximate: bool = APPROX
     ) -> bitmap:
         """
         Return the list of rows with values in range [`lower`, `upper`[
@@ -558,11 +553,7 @@ class HistogramIndex(TableModule):
         )
 
     def restricted_range_query(
-        self,
-        lower: float,
-        upper: float,
-        only_locs: Any,
-        approximate: bool = APPROX
+        self, lower: float, upper: float, only_locs: Any, approximate: bool = APPROX
     ) -> bitmap:
         """
         Return the list of rows with values in range [`lower`, `upper`[
@@ -582,10 +573,7 @@ class HistogramIndex(TableModule):
         )
 
     def create_dependent_modules(
-        self,
-        input_module: Module,
-        input_slot: str,
-        **kwds: Any
+        self, input_module: Module, input_slot: str, **kwds: Any
     ) -> HistogramIndex:
         with self.tagged(self.TAG_DEPENDENT):
             self.input_module = input_module

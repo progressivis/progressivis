@@ -56,10 +56,7 @@ class Min(TableModule):
 
 
 def minimum_val_id(
-        candidate_val: float,
-        candidate_id: int,
-        current_val: float,
-        current_id: int
+    candidate_val: float, candidate_id: int, current_val: float, current_id: int
 ) -> Tuple[float, int, bool]:
     if candidate_val < current_val:
         return candidate_val, candidate_id, True

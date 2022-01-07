@@ -40,7 +40,7 @@ from typing import (
     Sequence,
     overload,
     Iterator,
-    Literal
+    Literal,
 )
 
 Shape = Tuple[int, ...]
@@ -304,8 +304,7 @@ class BaseTable(metaclass=ABCMeta):
         assert self._base
         return self._base.last_xid  # only for refreshing self._last_id
 
-    def width(self,
-              colnames: Optional[List[Union[int, str]]] = None) -> int:
+    def width(self, colnames: Optional[List[Union[int, str]]] = None) -> int:
         """Return the number of effective width (number of columns) of the table
 
         Since a column can be multidimensional, the effective width of a table
@@ -350,7 +349,9 @@ class BaseTable(metaclass=ABCMeta):
 
     def _make_columndict_projection(
         self,
-        cols: Union[None, slice, int, str, List[str], List[Union[int, np.integer[Any]]]],
+        cols: Union[
+            None, slice, int, str, List[str], List[Union[int, np.integer[Any]]]
+        ],
     ) -> Dict[str, int]:
         if is_none_alike(cols):
             return self._columndict
@@ -383,31 +384,27 @@ class BaseTable(metaclass=ABCMeta):
     def to_dict(
         self,
         orient: Union[Literal["dict"], Literal["split"]],
-        columns: Optional[List[str]] = None
+        columns: Optional[List[str]] = None,
     ) -> Dict[str, Any]:
         ...
 
     @overload
     def to_dict(
         self,
-        orient: Union[Literal["list"], Literal["rows"], Literal["datatable"], Literal["record"]],
-        columns: Optional[List[str]] = None
+        orient: Union[
+            Literal["list"], Literal["rows"], Literal["datatable"], Literal["record"]
+        ],
+        columns: Optional[List[str]] = None,
     ) -> List[Any]:
         ...
 
     @overload
     def to_dict(
-        self,
-        orient: Literal["index"],
-        columns: Optional[List[str]] = None
+        self, orient: Literal["index"], columns: Optional[List[str]] = None
     ) -> Dict[int, Any]:
         ...
 
-    def to_dict(
-        self,
-        orient: str = "dict",
-        columns: Optional[List[str]] = None
-    ) -> Any:
+    def to_dict(self, orient: str = "dict", columns: Optional[List[str]] = None) -> Any:
         # pylint: disable=too-many-branches
         """
         Return a dictionary describing the contents of this columns.
@@ -682,7 +679,10 @@ class BaseTable(metaclass=ABCMeta):
 
     @overload
     def __getitem__(
-        self, key: Union[List[Any], Tuple[Any, Any], np.ndarray[Any, Any], slice, Iterable[int]]
+        self,
+        key: Union[
+            List[Any], Tuple[Any, Any], np.ndarray[Any, Any], slice, Iterable[int]
+        ],
     ) -> Tuple[BaseColumn, ...]:
         ...
 
@@ -760,10 +760,9 @@ class BaseTable(metaclass=ABCMeta):
         res -= bm
         self._selection = res
 
-    def setitem_2d(self,
-                   rowkey: Any,
-                   colkey: Union[ColIndexer, Iterable[int], slice],
-                   values: Any) -> None:
+    def setitem_2d(
+        self, rowkey: Any, colkey: Union[ColIndexer, Iterable[int], slice], values: Any
+    ) -> None:
         if isinstance(colkey, (str, integer_types)):
             self._setitem_key(colkey, rowkey, values)
         elif isinstance(colkey, Iterable):
@@ -805,10 +804,9 @@ class BaseTable(metaclass=ABCMeta):
         else:
             column[rowkey] = values
 
-    def _setitem_iterable(self,
-                          colkey: Iterable[Union[int, str]],
-                          rowkey: Indexer,
-                          values: Any) -> None:
+    def _setitem_iterable(
+        self, colkey: Iterable[Union[int, str]], rowkey: Indexer, values: Any
+    ) -> None:
         # pylint: disable=too-many-branches
         colnames: List[Union[int, str]] = list(colkey)
         len_colnames = len(colnames)
@@ -862,7 +860,9 @@ class BaseTable(metaclass=ABCMeta):
         indices = self._col_slice_to_indices(colkey)
         self._setitem_iterable(indices, rowkey, values)
 
-    def columns_common_dtype(self, columns: Optional[List[str]] = None) -> np.dtype[Any]:
+    def columns_common_dtype(
+        self, columns: Optional[List[str]] = None
+    ) -> np.dtype[Any]:
         """Return the dtype that BaseTable.to_array would return.
 
         Parameters
@@ -953,9 +953,10 @@ class BaseTable(metaclass=ABCMeta):
 
     def binary(
         self,
-        op: Callable[[np.ndarray[Any, Any],
-                      Union[np.ndarray[Any, Any], int, float, bool]],
-                     np.ndarray[Any, Any]],
+        op: Callable[
+            [np.ndarray[Any, Any], Union[np.ndarray[Any, Any], int, float, bool]],
+            np.ndarray[Any, Any],
+        ],
         other: BaseTable,
         **kwargs: Any,
     ) -> Union[Dict[str, np.ndarray[Any, Any]], BaseTable]:
@@ -1148,24 +1149,19 @@ class BaseTable(metaclass=ABCMeta):
         return bool(np.all(self._columns == other._columns))
 
     def get_panene_data(
-        self,
-        cols: Optional[List[str]] = None
+        self, cols: Optional[List[str]] = None
     ) -> List[np.ndarray[Any, Any]]:
         if cols is None:
             cols = self.columns  # type: ignore
         return [self[key].values for key in cols]
 
-    def cxx_api_raw_cols(
-            self,
-            cols: Optional[List[str]] = None) -> Tuple[Any, Any]:
+    def cxx_api_raw_cols(self, cols: Optional[List[str]] = None) -> Tuple[Any, Any]:
         tbl = self.base or self
         if cols is None:
             cols = tbl.columns
         return cols, [tbl[c].dataset.base for c in cols]  # type: ignore
 
-    def cxx_api_raw_cols2(
-            self,
-            cols: Optional[List[str]] = None) -> List[Any]:
+    def cxx_api_raw_cols2(self, cols: Optional[List[str]] = None) -> List[Any]:
         tbl = self.base or self
         if cols is None:
             cols = tbl.columns

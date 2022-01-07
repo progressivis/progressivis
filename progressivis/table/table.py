@@ -191,9 +191,7 @@ class Table(IndexTable):
         for (name, dshape) in dshape_fields(self._dshape):
             column = self._create_column(name)
             column.load_dataset(
-                dshape=dshape_create(dshape),
-                nrow=nrow,
-                shape=dshape_to_shape(dshape)
+                dshape=dshape_create(dshape), nrow=nrow, shape=dshape_to_shape(dshape)
             )
 
     def _create_table(self, fillvalues: Any) -> None:
@@ -218,7 +216,7 @@ class Table(IndexTable):
                 dshape=dshape_create(dshape),
                 chunks=chunks,
                 fillvalue=fillvalue,
-                shape=shape
+                shape=shape,
             )
 
     def _create_column(self, name: str) -> Column:
@@ -248,9 +246,7 @@ class Table(IndexTable):
         self._storagegroup.attrs[metadata.ATTR_LAST_ID] = self.last_id
 
     def resize(
-            self,
-            newsize: int,
-            index: Optional[Union[bitmap, List[int]]] = None
+        self, newsize: int, index: Optional[Union[bitmap, List[int]]] = None
     ) -> None:
         # NB: newsize means how many active rows the table must contain
         if index is not None:
@@ -278,9 +274,7 @@ class Table(IndexTable):
             col._resize(newsize)
 
     def _allocate(
-            self,
-            count: int,
-            index: Optional[Union[bitmap, List[int]]] = None
+        self, count: int, index: Optional[Union[bitmap, List[int]]] = None
     ) -> bitmap:
         start = self.last_id + 1
         index = (
@@ -401,9 +395,10 @@ class Table(IndexTable):
 
     def binary(
         self,
-        op: Callable[[np.ndarray[Any, Any],
-                      Union[np.ndarray[Any, Any], int, float, bool]],
-                     np.ndarray[Any, Any]],
+        op: Callable[
+            [np.ndarray[Any, Any], Union[np.ndarray[Any, Any], int, float, bool]],
+            np.ndarray[Any, Any],
+        ],
         other: BaseTable,
         **kwargs: Any,
     ) -> Union[Dict[str, np.ndarray[Any, Any]], BaseTable]:

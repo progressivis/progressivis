@@ -141,11 +141,7 @@ class BaseChangeManager:
         print("masked", self._masked.changes)
 
 
-def _next(
-        bm: bitmap,
-        length: Optional[int],
-        as_slice: bool
-) -> Union[bitmap, slice]:
+def _next(bm: bitmap, length: Optional[int], as_slice: bool) -> Union[bitmap, slice]:
     if length is None:
         length = len(bm)
     ret = bm.pop(length)
@@ -182,11 +178,13 @@ class ChangeBuffer:
         return self.buffer and len(self.changes) != 0
 
     @overload
-    def next(self, length: Optional[int] = None, *,  as_slice: Literal[True] = True) -> slice:
+    def next(
+        self, length: Optional[int] = None, *, as_slice: Literal[True] = True
+    ) -> slice:
         ...
 
     @overload
-    def next(self, length: Optional[int] = None, *,  as_slice: Literal[False]) -> bitmap:
+    def next(self, length: Optional[int] = None, *, as_slice: Literal[False]) -> bitmap:
         ...
 
     @overload

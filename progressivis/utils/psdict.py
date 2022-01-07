@@ -31,11 +31,8 @@ class PsDict(Dict[str, Any]):
         self.changes: Optional[DictChangeManager] = None
 
     def compute_updates(
-            self,
-            start: int,
-            now: float,
-            mid: Optional[str],
-            cleanup: bool = True) -> Optional[IndexUpdate]:
+        self, start: int, now: float, mid: Optional[str], cleanup: bool = True
+    ) -> Optional[IndexUpdate]:
         assert False, "compute_updates should not be called on PsDict"
         if self.changes:
             updates = self.changes.compute_updates(start, now, mid, cleanup=cleanup)

@@ -15,7 +15,7 @@ from typing import (
     Sequence,
     Optional,
     Iterator,
-    MutableMapping
+    MutableMapping,
 )
 
 JSon = Dict[str, Any]

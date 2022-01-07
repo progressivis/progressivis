@@ -203,7 +203,9 @@ class Dataflow:
         for slot in self.inputs[name].values():
             outname = slot.output_name
             slots = self.outputs[slot.output_module.name][outname]
-            nslots = [s for s in slots if s.input_module and s.input_module.name != name]
+            nslots = [
+                s for s in slots if s.input_module and s.input_module.name != name
+            ]
             assert slots != nslots  # we must remove a slot
             if nslots:
                 self.outputs[slot.output_module.name][outname] = nslots
@@ -486,7 +488,9 @@ class Dataflow:
             ret = None  # Maybe
         outputs = self.outputs[name]
         omods = {
-            oslot.input_module.name for oslots in outputs.values() for oslot in oslots
+            oslot.input_module.name
+            for oslots in outputs.values()
+            for oslot in oslots
             if oslot.input_module is not None
         }
         if omods.issubset(deps):

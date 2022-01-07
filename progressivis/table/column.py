@@ -115,12 +115,13 @@ class Column(BaseColumn):
         self[index] = value
 
     def _complete_column(
-            self,
-            dshape: Optional[Union[str, DataShape]],
-            fillvalue: Any,
-            shape: Shape,
-            chunks: Chunks,
-            data: Any) -> None:
+        self,
+        dshape: Optional[Union[str, DataShape]],
+        fillvalue: Any,
+        shape: Shape,
+        chunks: Chunks,
+        data: Any,
+    ) -> None:
         if dshape is None:
             if data is None:
                 raise ValueError(
@@ -143,11 +144,12 @@ class Column(BaseColumn):
         )
 
     def create_dataset(
-            self,
-            dshape: Union[str, DataShape],
-            fillvalue: Any,
-            shape: Optional[Shape] = None,
-            chunks: Optional[Chunks] = None) -> Dataset:
+        self,
+        dshape: Union[str, DataShape],
+        fillvalue: Any,
+        shape: Optional[Shape] = None,
+        chunks: Optional[Chunks] = None,
+    ) -> Dataset:
         dshape = dshape_create(dshape)  # make sure it is valid
         self._dshape = dshape
         dtype = dshape_to_h5py(dshape)
@@ -199,11 +201,12 @@ class Column(BaseColumn):
         return dataset
 
     def load_dataset(
-            self,
-            dshape: DataShape,
-            nrow: int,
-            shape: Optional[Shape] = None,
-            is_id: bool = False) -> Optional[Dataset]:
+        self,
+        dshape: DataShape,
+        nrow: int,
+        shape: Optional[Shape] = None,
+        is_id: bool = False,
+    ) -> Optional[Dataset]:
         self._dshape = dshape
         if shape is None:
             shape = (nrow,)
@@ -296,7 +299,7 @@ class Column(BaseColumn):
         self,
         array: np.ndarray[Any, Any],
         source_sel: Optional[Any] = None,
-        dest_sel: Optional[Any] = None
+        dest_sel: Optional[Any] = None,
     ) -> None:
         assert self.dataset is not None
         if hasattr(self.dataset, "read_direct"):
