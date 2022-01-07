@@ -5,16 +5,14 @@ and exposing it as an output slot.
 from __future__ import annotations
 
 from ..core.module import Module, ReturnRunStep, JSon  # noqa: F401
-from ..core.slot import SlotDescriptor
-from .table_base import TableSelectedView
+from ..core.slot import SlotDescriptor, Slot
+from .table_base import TableSelectedView, BaseTable
 from .table import Table
 from .slot_join import SlotJoin
 from progressivis.utils import PsDict
 
-from typing import Optional, Dict, List, Union, Any, cast, TYPE_CHECKING
+from typing import Optional, Dict, List, Union, Any, cast
 
-if TYPE_CHECKING:
-    from progressivis.table import BaseTable
 
 Columns = Union[None, List[str]]  # , Dict[str, List[str]]]
 
@@ -24,7 +22,12 @@ class TableModule(Module):
     "Base class for modules managing tables."
     outputs = [SlotDescriptor("result", type=Table, required=True)]
 
-    def __init__(self, columns: Columns = None, output_required: bool = True, **kwds):
+    def __init__(
+            self,
+            columns: Optional[Columns] = None,
+            output_required: Optional[bool] = True,
+            **kwds: Any
+    ) -> None:
         super(TableModule, self).__init__(**kwds)
         if "table_slot" in kwds:
             raise RuntimeError("don't use table_slot")
@@ -51,9 +54,10 @@ class TableModule(Module):
             assert columns is None
         self.__result: Union[None, BaseTable, PsDict] = None
 
-    def get_first_input_slot(self):
-        for k in self._input_slots.keys():
+    def get_first_input_slot(self) -> Optional[str]:
+        for k in self.input_slot_names():
             return k
+        return None
 
     def close_all(self) -> None:
         super(TableModule, self).close_all()
@@ -65,7 +69,7 @@ class TableModule(Module):
         return self.__result
 
     @result.setter
-    def result(self, val: Union[BaseTable, PsDict, None]):
+    def result(self, val: Union[BaseTable, PsDict, None]) -> None:
         if self.__result is not None:
             raise KeyError("result cannot be assigned more than once")
         self.__result = val
@@ -82,13 +86,15 @@ class TableModule(Module):
     def selected(self) -> TableSelectedView:
         return cast(TableSelectedView, self.__result)
 
-    def get_data(self, name: str):
+    def get_data(self, name: str) -> Any:
         if name in ("result", "table"):
             return self.result
         return super(TableModule, self).get_data(name)
 
     def get_columns(
-        self, table: Union[BaseTable, dict], slot: Optional[str] = None
+        self,
+        table: Union[BaseTable, Dict[str, Any]],
+        slot: Optional[str] = None
     ) -> List[str]:
         """
         Return all the columns of interest from the specified table.
@@ -115,7 +121,10 @@ class TableModule(Module):
         return _columns
 
     def filter_columns(
-        self, df: BaseTable, indices: Optional[Any] = None, slot: Optional[str] = None
+        self,
+        df: BaseTable,
+        indices: Optional[Any] = None,
+        slot: Optional[str] = None
     ) -> BaseTable:
         """
         Return the specified table filtered by the specified indices and
@@ -126,7 +135,7 @@ class TableModule(Module):
         ):
             if indices is None:
                 return df
-            return df.loc[indices]
+            return cast(BaseTable, df.loc[indices])
         cols = self.get_columns(df, slot)
         if cols is None:
             return None
@@ -134,15 +143,18 @@ class TableModule(Module):
             if isinstance(cols, (int, str)):
                 cols = slice(cols, cols)
             # return df[cols]
-        return df.loc[indices, cols]
+        return cast(BaseTable, df.loc[indices, cols])
 
     def get_slot_columns(self, name: str) -> List[str]:
         cols = self._columns_dict.get(name)
-        if cols is None:
-            cols = self.get_input_slot(name).data().columns
-        return cols
+        if cols is not None:
+            return cols
+        slot = self.get_input_slot(name)
+        if slot is not None:
+            return list(slot.data().columns)
+        return []
 
-    def has_output_datashape(self, name="table") -> bool:
+    def has_output_datashape(self, name: str = "table") -> bool:
         for osl in self.all_outputs:
             if osl.name == name:
                 break
@@ -162,6 +174,7 @@ class TableModule(Module):
         dshapes = []
         for k, v in osl.datashape.items():
             isl = self.get_input_slot(k)
+            assert isl is not None
             table = isl.data()
             if v == "#columns":
                 colsn = self.get_slot_columns(k)
@@ -184,5 +197,5 @@ class TableModule(Module):
             return "{{{cols}}}".format(cols=",".join(expr.keys()))
         raise ValueError("expr attribute not defined")
 
-    def make_slot_join(self, *slots):
+    def make_slot_join(self, *slots: Slot) -> SlotJoin:
         return SlotJoin(self, *slots)

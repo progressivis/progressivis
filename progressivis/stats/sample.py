@@ -46,7 +46,9 @@ class Sample(TableModule):
         self._tmp_table.resize(0)
         self._size = 0
         self._bitmap = None
-        self.get_input_slot("table").reset()
+        slot = self.get_input_slot("table")
+        if slot is not None:
+            slot.reset()
 
     def get_data(self, name: str) -> Any:
         if name == "select":
@@ -71,7 +73,7 @@ class Sample(TableModule):
         with self.context as ctx:
             if self.result is None:
                 self.result = TableSelectedView(ctx.table.data(), bitmap([]))
-            indices = cast(bitmap, ctx.table.created.next(step_size, as_slice=False))
+            indices = cast(bitmap, ctx.table.created.next(length=step_size, as_slice=False))
             steps = indices_len(indices)
             k = int(self.params.samples)
             reservoir = self._tmp_table

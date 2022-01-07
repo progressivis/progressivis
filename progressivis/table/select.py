@@ -101,7 +101,7 @@ class Select(TableModule):
 
         assert isinstance(self.__result, Table)
         if select_slot.deleted.any():
-            indices = select_slot.deleted.next(step_size * 2, as_slice=False)
+            indices = select_slot.deleted.next(length=step_size * 2, as_slice=False)
             s = indices_len(indices)
             logger.info("deleting %s", indices)
             del self.__result.loc[indices]
@@ -109,7 +109,7 @@ class Select(TableModule):
             step_size -= s // 2
 
         if step_size > 0 and select_slot.created.any():
-            indices = select_slot.created.next(step_size, as_slice=False)
+            indices = select_slot.created.next(length=step_size, as_slice=False)
             assert isinstance(indices, bitmap)
             s = indices_len(indices)
             logger.info("creating %s", indices)
@@ -133,7 +133,7 @@ class Select(TableModule):
                     self.__result.add(row, index=i)
 
         if step_size > 0 and table_slot.updated.any():
-            indices = table_slot.updated.next(step_size, as_slice=False)
+            indices = table_slot.updated.next(length=step_size, as_slice=False)
             assert isinstance(indices, bitmap)
             logger.info("updating %d", indices)
             s = indices_len(indices)

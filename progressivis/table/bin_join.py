@@ -48,20 +48,20 @@ class BinJoin(TableModule):
             second_slot.update(run_number)
         created = {}
         if first_slot.created.any():
-            indices = first_slot.created.next(step_size)
+            indices = first_slot.created.next(length=step_size)
             steps += indices_len(indices)
             created["table"] = indices
         if second_slot.created.any():
-            indices = second_slot.created.next(step_size)
+            indices = second_slot.created.next(length=step_size)
             steps += indices_len(indices)
             created["other"] = indices
         updated = {}
         if first_slot.updated.any():
-            indices = first_slot.updated.next(step_size)
+            indices = first_slot.updated.next(length=step_size)
             steps += indices_len(indices)
             updated["table"] = indices
         if second_slot.updated.any():
-            indices = second_slot.updated.next(step_size)
+            indices = second_slot.updated.next(length=step_size)
             steps += indices_len(indices)
             updated["other"] = indices
         first_table = first_slot.data()

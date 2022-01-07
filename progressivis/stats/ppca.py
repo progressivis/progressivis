@@ -67,7 +67,7 @@ class PPCA(TableModule):
         assert self.context
         with self.context as ctx:
             table = ctx.table.data()
-            indices = ctx.table.created.next(step_size)
+            indices = ctx.table.created.next(length=step_size)
             steps = indices_len(indices)
             if steps < self.params.n_components:
                 return self._return_run_step(self.state_blocked, steps_run=0)
@@ -220,8 +220,8 @@ class PPCATransformer(TableModule):
         input_table: Table,
         samples: Any,
     ) -> bool:
-        resetter = self.get_input_slot("resetter")
-        if resetter:
+        if self.has_input_slot("resetter"):
+            resetter = self.get_input_slot("resetter")
             resetter.clear_buffers()
             assert self._resetter_func
             if not self._resetter_func(resetter):
@@ -312,7 +312,7 @@ class PPCATransformer(TableModule):
         assert self.context
         with self.context as ctx:
             input_table = ctx.table.data()
-            indices = ctx.table.created.next(step_size)
+            indices = ctx.table.created.next(length=step_size)
             steps = indices_len(indices)
             if steps == 0:
                 return self._return_run_step(self.state_blocked, steps_run=0)
@@ -327,7 +327,7 @@ class PPCATransformer(TableModule):
                     ctx.table.reset()
                     ctx.table.update(run_number)
                     self.reset()
-                    indices = ctx.table.created.next(step_size)
+                    indices = ctx.table.created.next(length=step_size)
                     steps = indices_len(indices)
                     if steps == 0:
                         return self._return_run_step(self.state_blocked, steps_run=0)

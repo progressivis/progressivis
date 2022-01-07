@@ -4,7 +4,7 @@ from collections import Iterable
 import logging
 
 import numpy as np
-from progressivis.storage import Group
+from progressivis.storage import Group, Dataset
 from progressivis.core.utils import integer_types, get_random_name
 
 try:
@@ -18,9 +18,9 @@ from . import metadata
 from .table_base import IndexTable
 from ..core.bitmap import bitmap
 
-from typing import Any, Optional, Union, Tuple, Sequence
+from typing import Any, Optional, Union, Tuple
 
-from ..core.types import Chunks, Index
+from ..core.types import Chunks, Index, Shape
 
 
 logger = logging.getLogger(__name__)
@@ -36,12 +36,12 @@ class Column(BaseColumn):
         base: Optional[BaseColumn] = None,
         storagegroup: Optional[Group] = None,
         dshape: Union[None, DataShape, str] = None,
-        fillvalue=None,
-        shape=None,
+        fillvalue: Any = None,
+        shape: Optional[Shape] = None,
         chunks: Optional[Chunks] = None,
         indices: Optional[Index] = None,
-        data=None,
-    ):
+        data: Any = None,
+    ) -> None:
         """Create a new column.
 
         if index is None and self.index return None, a new index and
@@ -57,7 +57,7 @@ class Column(BaseColumn):
                 assert Group.default
                 storagegroup = Group.default(name=get_random_name("column_"))
         self._storagegroup = storagegroup
-        self.dataset = None
+        self.dataset: Optional[Dataset] = None
         self._dshape: DataShape = EMPTY_DSHAPE
         if isinstance(dshape, DataShape):
             self._dshape = dshape
@@ -73,25 +73,25 @@ class Column(BaseColumn):
                 self.append(data, indices)
 
     @property
-    def storagegroup(self):
+    def storagegroup(self) -> Group:
         return self._storagegroup
 
-    def _allocate(self, count, indices=None):
+    def _allocate(self, count: int, indices: Any = None) -> bitmap:
         start = self.index.last_id + 1
         if indices is not None:
-            indices = self.index._any_to_bitmap(indices)
-            assert indices
-            if indices & self.index.index:
+            ret = self.index._any_to_bitmap(indices)
+            assert ret
+            if ret & self.index.index:
                 raise ValueError("Indices contain duplicates")
-            newsize = start + indices.max() + 1
+            newsize = start + ret.max() + 1
         else:
             newsize = start + count
-            indices = bitmap(range(start, newsize))
+            ret = bitmap(range(start, newsize))
         self._resize(newsize)
-        self.index._resize_rows(newsize, indices)
-        return indices
+        self.index._resize_rows(newsize, ret)
+        return ret
 
-    def append(self, data, indices=None):
+    def append(self, data: Any, indices: Optional[Any] = None) -> None:
         if data is None:
             return
         length = len(data)
@@ -106,7 +106,7 @@ class Column(BaseColumn):
             for i in range(length):
                 self[indices[i]] = data[i]
 
-    def add(self, value, index=None):
+    def add(self, value: Any, index: Optional[Any] = None) -> None:
         if index is None:
             index = self._allocate(1)
         else:
@@ -114,7 +114,13 @@ class Column(BaseColumn):
         index = index[0]
         self[index] = value
 
-    def _complete_column(self, dshape, fillvalue, shape, chunks, data):
+    def _complete_column(
+            self,
+            dshape: Optional[Union[str, DataShape]],
+            fillvalue: Any,
+            shape: Shape,
+            chunks: Chunks,
+            data: Any) -> None:
         if dshape is None:
             if data is None:
                 raise ValueError(
@@ -136,28 +142,34 @@ class Column(BaseColumn):
             dshape=dshape, fillvalue=fillvalue, shape=shape, chunks=chunks
         )
 
-    def create_dataset(self, dshape, fillvalue, shape=None, chunks=None):
+    def create_dataset(
+            self,
+            dshape: Union[str, DataShape],
+            fillvalue: Any,
+            shape: Optional[Shape] = None,
+            chunks: Optional[Chunks] = None) -> Dataset:
         dshape = dshape_create(dshape)  # make sure it is valid
         self._dshape = dshape
         dtype = dshape_to_h5py(dshape)
+        maxshape: Tuple[Any, ...]
         if shape is None:
             maxshape = (None,)
             shape = dshape.shape
             shape = (0,)
             if chunks is None:
-                chunks = (128 * 1024 / np.dtype(dtype).itemsize,)
+                chunks = (128 * 1024 // np.dtype(dtype).itemsize,)
         else:
-            maxshape = tuple([None] + list(shape))
+            maxshape = tuple((None,) + tuple(shape))
             shape = tuple([0] + [0 if s is None else s for s in shape])
             if chunks is None:
                 dims = list(shape)[1:]
                 # count 16 entries for each variable dimension
                 # TODO find a smarter way to allocate chunk size
-                chunks = [64]
+                chk = [64]
                 for d in dims:
-                    chunks.append(d if d != 0 else 64)
-                chunks = tuple(chunks)
-        if not isinstance(chunks, tuple):
+                    chk.append(d if d != 0 else 64)
+                chunks = tuple(chk)
+        if isinstance(chunks, int):
             chunks = tuple([chunks])
         logger.debug(
             "column=%s, shape=%s, chunks=%s, dtype=%s",
@@ -186,12 +198,17 @@ class Column(BaseColumn):
         dataset.flush()
         return dataset
 
-    def load_dataset(self, dshape, nrow, shape=None, is_id=False):
+    def load_dataset(
+            self,
+            dshape: DataShape,
+            nrow: int,
+            shape: Optional[Shape] = None,
+            is_id: bool = False) -> Optional[Dataset]:
         self._dshape = dshape
         if shape is None:
             shape = (nrow,)
         else:
-            shape = tuple([nrow] + shape)
+            shape = tuple((nrow,) + tuple(shape))
         dtype = dshape_to_h5py(dshape)
         group = self._storagegroup
         if is_id and self.name not in group:  # for lazy ID column creation
@@ -215,7 +232,7 @@ class Column(BaseColumn):
         assert self.dataset is not None
         return self.dataset.shape
 
-    def set_shape(self, shape: Sequence[int]):
+    def set_shape(self, shape: Shape) -> None:
         assert self.dataset is not None
         if not isinstance(shape, list):
             shape = list(shape)
@@ -236,7 +253,7 @@ class Column(BaseColumn):
         return self.dataset.maxshape
 
     @property
-    def dtype(self) -> np.dtype:
+    def dtype(self) -> np.dtype[Any]:
         assert self.dataset is not None
         return self.dataset.dtype
 
@@ -260,7 +277,7 @@ class Column(BaseColumn):
         return self.dataset.fillvalue
 
     @property
-    def value(self) -> np.ndarray:
+    def value(self) -> Any:
         assert self.dataset is not None
         return self.dataset[self.index.index.to_slice_maybe()]
 
@@ -276,7 +293,10 @@ class Column(BaseColumn):
             raise
 
     def read_direct(
-        self, array: np.ndarray, source_sel: Any = None, dest_sel: Any = None
+        self,
+        array: np.ndarray[Any, Any],
+        source_sel: Optional[Any] = None,
+        dest_sel: Optional[Any] = None
     ) -> None:
         assert self.dataset is not None
         if hasattr(self.dataset, "read_direct"):
@@ -298,11 +318,11 @@ class Column(BaseColumn):
             if not hasattr(val, "shape"):
                 val = np.asarray(val, dtype=self.dtype)
 
-            if isinstance(index, np.ndarray) and index.dtype == np.int:
+            if isinstance(index, np.ndarray) and index.dtype == np.int_:
                 index = list(index)
             try:
                 self.dataset[index] = val
-            except TypeError as e:
+            except TypeError:
                 # TODO distinguish between unsupported fancy indexing and real error
                 if isinstance(index, Iterable):
                     if isinstance(val, (np.ndarray, list)):

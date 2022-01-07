@@ -3,11 +3,15 @@ from __future__ import annotations
 import numpy as np
 
 from . import Table, BaseTable
+from ..core.bitmap import bitmap
 from ..core.slot import SlotDescriptor
-from .module import TableModule, ReturnRunStep
+from ..core.module import ReturnRunStep
+from .module import TableModule
 from collections import OrderedDict
 from ..utils.psdict import PsDict
 from .hist_index import HistogramIndex
+
+from typing import Any, Dict, List
 
 
 class Percentiles(TableModule):
@@ -17,33 +21,38 @@ class Percentiles(TableModule):
         SlotDescriptor("percentiles", type=PsDict, required=True),
     ]
 
-    def __init__(self, hist_index: HistogramIndex, **kwds):
+    def __init__(self, hist_index: HistogramIndex, **kwds: Any) -> None:
         super(Percentiles, self).__init__(**kwds)
         self._accuracy = self.params.accuracy
         self._hist_index = hist_index
         self.default_step_size = 1000
 
-    def compute_percentiles(self, points, input_table):
+    def compute_percentiles(
+            self,
+            points: Dict[str, float],
+            input_table: BaseTable
+    ) -> Dict[str, float]:
         column = input_table[self._hist_index.column]
         hii = self._hist_index._impl
+        assert hii is not None
 
-        def _filter_tsv(bm):
+        def _filter_tsv(bm: bitmap) -> bitmap:
             return bm & input_table.index
 
-        def _no_filtering(bm):
+        def _no_filtering(bm: bitmap) -> bitmap:
             return bm
 
         _filter = _filter_tsv if isinstance(input_table, BaseTable) else _no_filtering
         len_ = len(input_table)
         k_points = [p * (len_ + 1) * 0.01 for p in points.values()]
         max_k = max(k_points)
-        ret_values = []
+        ret_values: List[float] = []
         k_accuracy = self._accuracy * len_ * 0.01
         acc = 0
         lbm = len(hii.bitmaps)
         acc_list = np.empty(lbm, dtype=np.int64)
         sz_list = np.empty(lbm, dtype=np.int64)
-        bm_list = []
+        bm_list: List[bitmap] = []
         for i, bm in enumerate(hii.bitmaps):
             fbm = _filter(bm)
             sz = len(fbm)
@@ -55,7 +64,7 @@ class Percentiles(TableModule):
                 break  # just avoids unnecessary computes
         acc_list = acc_list[: i + 1]
         for k in k_points:
-            i = (acc_list >= k).nonzero()[0][0]
+            i = (acc_list >= k).nonzero()[0][0]  # type: ignore
             reminder = int(acc_list[i] - k)
             assert sz_list[i] > reminder >= 0
             if sz_list[i] < k_accuracy:
@@ -75,13 +84,13 @@ class Percentiles(TableModule):
         # input_slot.update(run_number)
         steps = 0
         if input_slot.deleted.any():
-            input_slot.deleted.next(step_size)
+            input_slot.deleted.next(length=step_size)
             steps = 1
         if input_slot.created.any():
-            input_slot.created.next(step_size)
+            input_slot.created.next(length=step_size)
             steps = 1
         if input_slot.updated.any():
-            input_slot.updated.next(step_size)
+            input_slot.updated.next(length=step_size)
             steps = 1
         # with input_slot.lock:
         #     input_table = input_slot.data()

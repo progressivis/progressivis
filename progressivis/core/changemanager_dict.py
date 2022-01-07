@@ -19,12 +19,12 @@ class DictChangeManager(BaseChangeManager):
     def __init__(
         self,
         slot: Slot,
-        buffer_created=True,
-        buffer_updated=True,
-        buffer_deleted=True,
-        buffer_exposed=False,
-        buffer_masked=False,
-    ):
+        buffer_created: bool = True,
+        buffer_updated: bool = True,
+        buffer_deleted: bool = True,
+        buffer_exposed: bool = False,
+        buffer_masked: bool = False,
+    ) -> None:
         super(DictChangeManager, self).__init__(
             slot,
             buffer_created,
@@ -38,7 +38,7 @@ class DictChangeManager(BaseChangeManager):
         # if data.changes is None:
         #     data.changes = TableChanges()
 
-    def reset(self, mid: str):
+    def reset(self, mid: str) -> None:
         super(DictChangeManager, self).reset(mid)
         self._last_dict = None
 

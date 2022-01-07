@@ -10,7 +10,7 @@ from .index_update import IndexUpdate
 from .bitmap import bitmap
 import weakref as wr
 
-from typing import Any, Optional, Union, TYPE_CHECKING
+from typing import Any, Optional, Union, TYPE_CHECKING, overload, Literal
 
 if TYPE_CHECKING:
     from .slot import Slot
@@ -34,8 +34,8 @@ class BaseChangeManager:
         _ = slot
         self._row_changes = IndexUpdate()
         self._selection_changes = IndexUpdate()
-        self._base: Optional[_base_accessor] = None
-        self._selection: Optional[_selection_accessor] = None
+        self._base: Optional[_accessor] = None
+        self._selection: Optional[_accessor] = None
         # The bitmaps are shared between _row_changes and the buffers.
         # To remain shared, they should never be assigned to, only updated.
         self._created = ChangeBuffer(buffer_created, self._row_changes.created)
@@ -66,13 +66,13 @@ class BaseChangeManager:
         return self._deleted
 
     @property
-    def base(self) -> _base_accessor:
+    def base(self) -> _accessor:
         if self._base is None:
             self._base = _base_accessor(self)
         return self._base
 
     @property
-    def selection(self) -> _selection_accessor:
+    def selection(self) -> _accessor:
         if self._selection is None:
             self._selection = _selection_accessor(self)
         return self._selection
@@ -141,7 +141,11 @@ class BaseChangeManager:
         print("masked", self._masked.changes)
 
 
-def _next(bm: bitmap, length: Optional[int], as_slice: bool) -> Union[bitmap, slice]:
+def _next(
+        bm: bitmap,
+        length: Optional[int],
+        as_slice: bool
+) -> Union[bitmap, slice]:
     if length is None:
         length = len(bm)
     ret = bm.pop(length)
@@ -177,9 +181,19 @@ class ChangeBuffer:
         "Return True if there is anything in the buffer"
         return self.buffer and len(self.changes) != 0
 
-    def next(
-        self, length: Optional[int] = None, as_slice: bool = True
-    ) -> Union[None, bitmap, slice]:
+    @overload
+    def next(self, length: Optional[int] = None, *,  as_slice: Literal[True] = True) -> slice:
+        ...
+
+    @overload
+    def next(self, length: Optional[int] = None, *,  as_slice: Literal[False]) -> bitmap:
+        ...
+
+    @overload
+    def next(self, length: Optional[int], *, as_slice: bool) -> Union[bitmap, slice]:
+        ...
+
+    def next(self, length: Optional[int] = None, *, as_slice: bool = True) -> Any:
         "Return the next items in the buffer"
         if not self.buffer:
             return None

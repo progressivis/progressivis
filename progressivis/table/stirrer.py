@@ -8,10 +8,13 @@ import numpy as np
 from progressivis.core.utils import indices_len, fix_loc
 from progressivis.core.bitmap import bitmap
 from progressivis.core.slot import SlotDescriptor
-from .module import TableModule, ReturnRunStep
+from .module import TableModule
 from . import Table, TableSelectedView
 
-from typing import Optional, cast
+from typing import Optional, Any, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from progressivis.core.module import ReturnRunStep
 
 
 class Stirrer(TableModule):
@@ -27,7 +30,7 @@ class Stirrer(TableModule):
     ]
     inputs = [SlotDescriptor("table", type=Table, required=True)]
 
-    def __init__(self, **kwds):
+    def __init__(self, **kwds: Any) -> None:
         super().__init__(**kwds)
         self._update_column: str = self.params.update_column
         self._update_rows: bool = self.params.update_rows is not None
@@ -52,11 +55,11 @@ class Stirrer(TableModule):
         if self.params.fixed_step_size and False:
             step_size = self.params.fixed_step_size
         input_slot = self.get_input_slot("table")
-        # input_slot.update(run_number)
+        assert input_slot is not None
         steps = 0
         if not input_slot.created.any():
             return self._return_run_step(self.state_blocked, steps_run=0)
-        created = input_slot.created.next(step_size)
+        created = input_slot.created.next(length=step_size)
         steps = indices_len(created)
         self._steps += steps
         input_table = input_slot.data()
@@ -112,7 +115,7 @@ class StirrerView(TableModule):
     ]
     inputs = [SlotDescriptor("table", type=Table, required=True)]
 
-    def __init__(self, **kwds):
+    def __init__(self, **kwds: Any) -> None:
         super().__init__(**kwds)
         self._update_column: str = self.params.update_column
         self._delete_rows: bool = self.params.delete_rows is not None
@@ -130,11 +133,11 @@ class StirrerView(TableModule):
         if self.params.fixed_step_size and False:
             step_size = self.params.fixed_step_size
         input_slot = self.get_input_slot("table")
-        # input_slot.update(run_number)
+        assert input_slot is not None
         steps = 0
         if not input_slot.created.any():
             return self._return_run_step(self.state_blocked, steps_run=0)
-        created = cast(bitmap, input_slot.created.next(step_size, as_slice=False))
+        created = input_slot.created.next(length=step_size, as_slice=False)
         # created = fix_loc(created)
         steps = indices_len(created)
         input_table = input_slot.data()

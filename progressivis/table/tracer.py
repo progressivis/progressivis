@@ -53,7 +53,7 @@ class TableTracer(Tracer):
         self.last_run_step_start: Optional[Dict[str, Union[int, float, str]]] = None
         self.last_run_step_details = ""
         self.last_run_start: Optional[
-            Dict[str, Union[int, float, np.floating, str]]
+            Dict[str, Union[int, float, np.floating[Any], str]]
         ] = None
         self.last_run_details = ""
 
@@ -119,7 +119,7 @@ class TableTracer(Tracer):
     def exception(self, ts: float, run_number: int, **kwds: Any) -> None:
         self.last_run_details += "exception"
 
-    def terminated(self, ts: float, run_number: int, **kwds):
+    def terminated(self, ts: float, run_number: int, **kwds: Any) -> None:
         self.last_run_details += "terminated"
 
     def get_speed(self, depth: int = 15) -> List[Optional[float]]:

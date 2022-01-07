@@ -98,9 +98,9 @@ class MCHistogram2D(NAry):
         has_creation = False
         min_found = max_found = False
         for name in self.input_slot_names():
-            input_slot = self.get_input_slot(name)
-            if input_slot is None:
+            if not self.has_input_slot(name):
                 continue
+            input_slot = self.get_input_slot(name)
             meta = input_slot.meta
             if meta is None:
                 continue
@@ -206,7 +206,7 @@ class MCHistogram2D(NAry):
         elif dfslot.selection.deleted.any() and self._histo is not None:
             input_df = dfslot.data().base  # the original table
             # we assume that deletions are only local to the view
-            raw_indices = dfslot.deleted.next(step_size)
+            raw_indices = dfslot.deleted.next(length=step_size)
             # and the related records still exist in the original table ...
             # TODO : test this hypothesis and reset if false
             indices = fix_loc(raw_indices)
@@ -222,7 +222,7 @@ class MCHistogram2D(NAry):
         if not dfslot.created.any():
             return self._return_run_step(self.state_blocked, steps_run=0)
         input_df = dfslot.data()
-        raw_indices = dfslot.created.next(step_size)
+        raw_indices = dfslot.created.next(length=step_size)
         indices = fix_loc(raw_indices)
         steps += indices_len(indices)
         logger.info("Read %d rows", steps)

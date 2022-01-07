@@ -47,7 +47,8 @@ class Stats(TableModule):
         self.result = Table(get_random_name("stats_"), dshape=self.schema)
 
     def is_ready(self) -> bool:
-        if self.get_input_slot("table").created.any():
+        slot = self.get_input_slot("table")
+        if slot is not None and slot.created.any():
             return True
         return super(Stats, self).is_ready()
 
@@ -56,7 +57,7 @@ class Stats(TableModule):
     ) -> ReturnRunStep:
         prev_min = prev_max = np.nan
         dfslot = self.get_input_slot("table")
-        # dfslot.update(run_number)
+        assert dfslot is not None
         if dfslot.updated.any() or dfslot.deleted.any():
             dfslot.reset()
             dfslot.update(run_number)
@@ -67,7 +68,7 @@ class Stats(TableModule):
                 prev_min = df.at[prev, self._min_column]
                 prev_max = df.at[prev, self._max_column]
 
-        indices = dfslot.created.next(step_size)  # returns a slice
+        indices = dfslot.created.next(length=step_size)  # returns a slice
         input_df = dfslot.data()
         steps = indices_len(indices)
         if steps > 0:

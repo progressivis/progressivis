@@ -30,22 +30,22 @@ def combine_first(table: BaseTable, other: BaseTable, name: str = None) -> Table
                 continue
             comb_table.loc[:, [cname]] = other.loc[:, [cname]]
     else:
-        self_set = set(table.index.values)
-        other_set = set(other.index.values)
-        comb_idx = sorted(self_set | other_set)
+        self_set = bitmap(table.index)
+        other_set = bitmap(other.index)
+        comb_idx = (self_set | other_set)
         common_set = self_set & other_set
         # common_idx = sorted(common_set)
-        self_u_common_idx = sorted(self_set | common_set)
-        other_u_common_idx = sorted(other_set | common_set)
-        other_only_idx = sorted(other_set - self_set)
+        self_u_common_idx = (self_set | common_set)
+        other_u_common_idx = (other_set | common_set)
+        other_only_idx = (other_set - self_set)
         comb_table.resize(len(comb_idx), index=comb_idx)
         for cname in table.columns:
             comb_table.loc[self_u_common_idx, [cname]] = table.loc[
                 self_u_common_idx, [cname]
             ]
             if cname in other.columns:
-                nans = table.index.values[np.isnan(table._column(cname).values)]
-                snans = sorted(set(nans) & common_set)
+                nans = table.index[np.isnan(table._column(cname).values)]
+                snans = nans & common_set
                 comb_table.loc[snans, [cname]] = other.loc[snans, [cname]]
             comb_table.loc[other_only_idx, [cname]] = other.loc[other_only_idx, [cname]]
         for cname in other.columns:

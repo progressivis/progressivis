@@ -40,6 +40,7 @@ from typing import (
     Sequence,
     overload,
     Iterator,
+    Literal
 )
 
 Shape = Tuple[int, ...]
@@ -58,11 +59,11 @@ FAST = 1
 
 class _BaseLoc:
     # pylint: disable=too-few-public-methods
-    def __init__(self, this_table: BaseTable, as_loc=True):
+    def __init__(self, this_table: BaseTable, as_loc: bool = True) -> None:
         self._table = this_table
         self._as_loc = as_loc
 
-    def parse_key(self, key: Indexer):
+    def parse_key(self, key: Indexer) -> Tuple[Any, Any, Any]:
         if isinstance(key, tuple):
             if len(key) != 2:
                 raise ValueError('getitem not implemented for key "%s"' % key)
@@ -75,7 +76,7 @@ class _BaseLoc:
             index = self._table._any_to_bitmap(index)
         return index, col_key, locs
 
-    def parse_key_to_bitmap(self, key: Indexer):
+    def parse_key_to_bitmap(self, key: Indexer) -> Tuple[Any, Any, Any]:
         if isinstance(key, tuple):
             if len(key) != 2:
                 raise ValueError('getitem not implemented for key "%s"' % key)
@@ -88,7 +89,7 @@ class _BaseLoc:
 
 class _Loc(_BaseLoc):
     # pylint: disable=too-few-public-methods
-    def __delitem__(self, key: Indexer):
+    def __delitem__(self, key: Indexer) -> None:
         index, col_key, raw_index = self.parse_key_to_bitmap(key)
         if not is_none_alike(col_key):
             raise ValueError('Cannot delete key "%s"' % key)
@@ -119,16 +120,16 @@ class _Loc(_BaseLoc):
             return btab
         raise ValueError('getitem not implemented for index "%s"', index)
 
-    def __setitem__(self, key: Indexer, value: Any):
+    def __setitem__(self, key: Indexer, value: Any) -> Any:
         index, col_key, raw_index = self.parse_key_to_bitmap(key)
         if isinstance(raw_index, integer_types):
             index = raw_index
-        return self._table.setitem_2d(index, col_key, value)
+        self._table.setitem_2d(index, col_key, value)
 
 
 class _At(_BaseLoc):
     # pylint: disable=too-few-public-methods
-    def parse_key(self, key: Indexer):
+    def _parse_key(self, key: Indexer) -> Tuple[Any, Any]:
         if isinstance(key, tuple):
             if len(key) != 2:
                 raise ValueError('getitem not implemented for key "%s"' % key)
@@ -142,13 +143,13 @@ class _At(_BaseLoc):
         return index, col_key
 
     def __getitem__(self, key: Indexer) -> Any:
-        index, col_key = self.parse_key(key)
+        index, col_key = self._parse_key(key)
         if index not in self._table.index:
             raise KeyError(f"Not existing indice {index}")
         return self._table[col_key][index]
 
-    def __setitem__(self, key: Indexer, value: Any):
-        index, col_key = self.parse_key(key)
+    def __setitem__(self, key: Indexer, value: Any) -> None:
+        index, col_key = self._parse_key(key)
         if not is_int(index):
             raise KeyError(f"Invalid row key {index}")
         if not (is_str(col_key) or is_int(col_key)):
@@ -164,14 +165,14 @@ class BaseTable(metaclass=ABCMeta):
     def __init__(
         self,
         base: Optional[BaseTable] = None,
-        selection=slice(0, None),
+        selection: Union[bitmap, slice] = slice(0, None),
         columns: Optional[List[BaseColumn]] = None,
         columndict: Optional[Dict[str, int]] = None,
-    ):
+    ) -> None:
         self._base: Optional[BaseTable] = base if (
             base is None or base._base is None
         ) else base._base
-        self._selection = selection
+        self._selection: Union[slice, bitmap] = selection
         self._columns: List[BaseColumn] = [] if columns is None else columns
         self._columndict: Dict[str, int] = dict() if columndict is None else columndict
         self._loc = _Loc(self, True)
@@ -195,10 +196,10 @@ class BaseTable(metaclass=ABCMeta):
         "Return an object for indexing values using ids"
         return self._at
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return str(self) + self.info_contents()
 
-    def __str__(self):
+    def __str__(self) -> str:
         classname = self.__class__.__name__
         length = len(self)
         return '%s("%s", dshape="%s")[%d]' % (
@@ -266,13 +267,13 @@ class BaseTable(metaclass=ABCMeta):
                 rep += self.info_row(row, width)
         return rep
 
-    def index_to_mask(self) -> np.ndarray:
+    def index_to_mask(self) -> np.ndarray[Any, Any]:
         return np.array(((elt in self.index) for elt in range(self.last_id + 1)))
 
-    def index_to_array(self) -> np.ndarray:
+    def index_to_array(self) -> np.ndarray[Any, Any]:
         return np.array(self.index, dtype="int32")
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[str]:
         return iter(self._columndict.keys())
 
     @property
@@ -287,7 +288,7 @@ class BaseTable(metaclass=ABCMeta):
         if not isinstance(sl, slice):
             return False
         # return sl == slice(0, self.last_id+1, None)
-        return sl.start == 0
+        return bool(sl.start == 0)
 
     @property
     def last_id(self) -> int:
@@ -303,7 +304,8 @@ class BaseTable(metaclass=ABCMeta):
         assert self._base
         return self._base.last_xid  # only for refreshing self._last_id
 
-    def width(self, colnames=None) -> int:
+    def width(self,
+              colnames: Optional[List[Union[int, str]]] = None) -> int:
         """Return the number of effective width (number of columns) of the table
 
         Since a column can be multidimensional, the effective width of a table
@@ -328,12 +330,12 @@ class BaseTable(metaclass=ABCMeta):
         "Return the shape of this table as if it were a numpy array"
         return self.size, self.width()
 
-    def to_json(self, **kwds) -> Union[List, Dict[str, Any]]:
+    def to_json(self, **kwds: Any) -> Dict[str, Any]:
         "Return a dictionary describing the contents of this columns."
         return self.to_dict(**kwds)
 
     def make_projection(
-        self, cols: Optional[List[str]], index
+        self, cols: Optional[List[str]], index: Any
     ) -> Tuple[List[BaseColumn], Dict[str, int]]:
         from .column_selected import ColumnSelectedView
 
@@ -348,7 +350,7 @@ class BaseTable(metaclass=ABCMeta):
 
     def _make_columndict_projection(
         self,
-        cols: Union[None, slice, int, str, List[str], List[Union[int, np.integer]]],
+        cols: Union[None, slice, int, str, List[str], List[Union[int, np.integer[Any]]]],
     ) -> Dict[str, int]:
         if is_none_alike(cols):
             return self._columndict
@@ -377,21 +379,47 @@ class BaseTable(metaclass=ABCMeta):
                 return dict({k: v for (k, v) in self._columndict.items() if k in cols})
         raise ValueError(f"Invalid column projection {cols}")
 
+    @overload
     def to_dict(
-        self, orient: str = "dict", columns: Optional[List[str]] = None
-    ) -> Union[List, Dict[str, Any]]:
+        self,
+        orient: Union[Literal["dict"], Literal["split"]],
+        columns: Optional[List[str]] = None
+    ) -> Dict[str, Any]:
+        ...
+
+    @overload
+    def to_dict(
+        self,
+        orient: Union[Literal["list"], Literal["rows"], Literal["datatable"], Literal["record"]],
+        columns: Optional[List[str]] = None
+    ) -> List[Any]:
+        ...
+
+    @overload
+    def to_dict(
+        self,
+        orient: Literal["index"],
+        columns: Optional[List[str]] = None
+    ) -> Dict[int, Any]:
+        ...
+
+    def to_dict(
+        self,
+        orient: str = "dict",
+        columns: Optional[List[str]] = None
+    ) -> Any:
         # pylint: disable=too-many-branches
         """
         Return a dictionary describing the contents of this columns.
 
         Parameters
         ----------
-        orient : {'dict', 'list', 'split', 'rows', 'record', 'index'}
+        orient : {'dict', 'list', 'split', 'rows', 'datatable', 'record', 'index'}
             TODO
         columns : list or `None`
             TODO
         """
-        ret: Dict
+        ret: Dict[str, Any]
         ret2: List[Any]
         if columns is None:
             columns = self.columns
@@ -440,14 +468,14 @@ class BaseTable(metaclass=ABCMeta):
                 ret2.append(line2)
             return ret2
         if orient == "index":
-            ret = dict()
+            ret3: Dict[int, Any] = dict()
             for id_ in self.index:
                 line2 = {}
                 for name in columns:
                     col = self[name]
                     line2[name] = col.loc[id_]
-                ret[int(id_)] = line2
-            return ret
+                ret3[int(id_)] = line2
+            return ret3
         raise ValueError(f"to_dict({orient}) not implemented")
 
     def to_csv(
@@ -465,7 +493,7 @@ class BaseTable(metaclass=ABCMeta):
                 f.write(b"\n")
 
     def column_offsets(
-        self, columns: List[str], shapes: List[Tuple[int, ...]] = None
+        self, columns: List[str], shapes: Optional[List[Tuple[int, ...]]] = None
     ) -> List[int]:
         """Return the offsets of each column considering columns can have
         multiple dimensions
@@ -516,7 +544,7 @@ class BaseTable(metaclass=ABCMeta):
         locs = self._any_to_bitmap(ix)
         return locs
 
-    def id_to_index(self, loc: Any, as_slice=True) -> Any:
+    def id_to_index(self, loc: Any, as_slice: bool = True) -> Any:
         # to be reimplemented with LRU-dict+pyroaring
         """Return the indices of the specified id or ids
         NB: useless for this implementation. kept for compat.
@@ -532,7 +560,8 @@ class BaseTable(metaclass=ABCMeta):
         """
         return self.index_to_id(loc)
 
-    def _compute_index(self):
+    def _compute_index(self) -> bitmap:
+        assert self._base is not None
         res = self._base._any_to_bitmap(self._selection)
         prev = self._masked
         while prev is not None:
@@ -542,7 +571,7 @@ class BaseTable(metaclass=ABCMeta):
         return res
 
     @property
-    def index(self):
+    def index(self) -> bitmap:
         "Return the object in change of indexing this table"
         # return self._base._any_to_bitmap(self._mask)
         return self._compute_index()
@@ -557,12 +586,12 @@ class BaseTable(metaclass=ABCMeta):
         "Return the number of rows (same as `len(table)`)"
         return len(self.index)
 
-    def __len__(self):
+    def __len__(self) -> int:
         return self.nrow
 
     def _slice_to_bitmap(
         self, sl: slice, fix_loc: bool = True, existing_only: bool = True
-    ):
+    ) -> bitmap:
         stop = sl.stop or self.last_xid
         nsl = norm_slice(sl, fix_loc, stop=stop)
         ret = bitmap(nsl)
@@ -572,11 +601,11 @@ class BaseTable(metaclass=ABCMeta):
 
     def _any_to_bitmap(
         self,
-        locs: Union[bitmap, int, np.integer, Iterable[Any], slice],
+        locs: Union[bitmap, int, np.integer[Any], Iterable[Any], slice],
         copy: bool = True,
         fix_loc: bool = True,
         existing_only: bool = True,
-    ):
+    ) -> bitmap:
         if isinstance(locs, bitmap):
             return locs[:] if copy else locs
         if isinstance(locs, integer_types):
@@ -653,11 +682,11 @@ class BaseTable(metaclass=ABCMeta):
 
     @overload
     def __getitem__(
-        self, key: Union[List, np.ndarray, slice, Iterable[int]]
+        self, key: Union[List[Any], Tuple[Any, Any], np.ndarray[Any, Any], slice, Iterable[int]]
     ) -> Tuple[BaseColumn, ...]:
         ...
 
-    def __getitem__(self, key):
+    def __getitem__(self, key: Any) -> Any:
         # hack, use t[['a', 'b'], 1] to get a list instead of a TableView
         fast = False
         if isinstance(key, tuple):
@@ -686,7 +715,7 @@ class BaseTable(metaclass=ABCMeta):
         raise NotImplementedError("iterrow not implemented in BaseTable")
 
     @overload
-    def last(self, key: int = None) -> Optional[Row]:
+    def last(self, key: Optional[int] = None) -> Optional[Row]:
         ...
 
     @overload
@@ -697,7 +726,7 @@ class BaseTable(metaclass=ABCMeta):
     def last(self, key: Sequence[Union[int, str]]) -> List[Any]:
         ...
 
-    def last(self, key=None):
+    def last(self, key: Any = None) -> Any:
         "Return the last row"
         length = len(self)
         if length == 0:
@@ -718,29 +747,34 @@ class BaseTable(metaclass=ABCMeta):
         bm = self._any_to_bitmap(key, fix_loc=False, existing_only=False)
         if not bm:
             return
+        res = self._any_to_bitmap(self._selection)
         # if not (bm in self.index or isinstance(key, slice)):
         #    raise ValueError('Invalid locs')
         if isinstance(key, slice):
-            if not (bm.min() in self.index and bm.max() in self._selection):
+            if not (bm.min() in self.index and bm.max() in res):
                 raise ValueError("Invalid locs")  # when key is a slice we accept holes
         elif bm not in self.index:  # when key is not a slice it must be exhaustive
             raise ValueError("Invalid locs")
         if isinstance(key, Iterable):
-            assert bm in self._selection
-        self._selection -= bm
+            assert bm in res
+        res -= bm
+        self._selection = res
 
-    def setitem_2d(self, rowkey, colkey, values):
+    def setitem_2d(self,
+                   rowkey: Any,
+                   colkey: Union[ColIndexer, Iterable[int], slice],
+                   values: Any) -> None:
         if isinstance(colkey, (str, integer_types)):
             self._setitem_key(colkey, rowkey, values)
         elif isinstance(colkey, Iterable):
-            self._setitem_iterable(colkey, rowkey, values)
+            self._setitem_iterable(colkey, rowkey, values)  # type: ignore
         elif isinstance(colkey, slice):
             self._setitem_slice(colkey, rowkey, values)
         else:
             raise ValueError("Unhandled key %s", colkey)
 
     def __setitem__(
-        self, colkey: Union[ColIndexer, Iterable, slice], values: Any
+        self, colkey: Union[ColIndexer, Iterable[int], slice], values: Any
     ) -> None:
         if isinstance(colkey, tuple):
             raise ValueError(
@@ -753,13 +787,13 @@ class BaseTable(metaclass=ABCMeta):
         elif isinstance(colkey, Iterable):
             if not all_string_or_int(colkey):
                 raise ValueError("setitem not implemented for %s key" % colkey)
-            self._setitem_iterable(colkey, None, values)
+            self._setitem_iterable(colkey, None, values)  # type: ignore
         elif isinstance(colkey, slice):
             self._setitem_slice(colkey, None, values)
         else:
             raise ValueError("Unhandled key %s", colkey)
 
-    def _setitem_key(self, colkey: ColIndexer, rowkey: Indexer, values: Any):
+    def _setitem_key(self, colkey: ColIndexer, rowkey: Indexer, values: Any) -> None:
         if is_none_alike(rowkey) and len(values) != len(self):
             raise ValueError(
                 "Length of values (%d) different "
@@ -771,9 +805,12 @@ class BaseTable(metaclass=ABCMeta):
         else:
             column[rowkey] = values
 
-    def _setitem_iterable(self, colkey: Iterable, rowkey, values):
+    def _setitem_iterable(self,
+                          colkey: Iterable[Union[int, str]],
+                          rowkey: Indexer,
+                          values: Any) -> None:
         # pylint: disable=too-many-branches
-        colnames = list(colkey)
+        colnames: List[Union[int, str]] = list(colkey)
         len_colnames = len(colnames)
         if not isinstance(values, Iterable):
             values = np.repeat(values, len_colnames)
@@ -821,11 +858,11 @@ class BaseTable(metaclass=ABCMeta):
             colkey = slice(start, end + 1, colkey.step)
         return range(*colkey.indices(self.ncol))
 
-    def _setitem_slice(self, colkey, rowkey, values):
+    def _setitem_slice(self, colkey: slice, rowkey: Indexer, values: Any) -> None:
         indices = self._col_slice_to_indices(colkey)
         self._setitem_iterable(indices, rowkey, values)
 
-    def columns_common_dtype(self, columns: List[str] = None) -> np.dtype:
+    def columns_common_dtype(self, columns: Optional[List[str]] = None) -> np.dtype[Any]:
         """Return the dtype that BaseTable.to_array would return.
 
         Parameters
@@ -840,11 +877,11 @@ class BaseTable(metaclass=ABCMeta):
 
     def to_array(
         self,
-        locs=None,
-        columns: List[str] = None,
+        locs: Indexer = None,
+        columns: Optional[List[str]] = None,
         # returns_indices=False,
-        ret: np.ndarray = None,
-    ) -> np.ndarray:
+        ret: Optional[np.ndarray[Any, Any]] = None,
+    ) -> np.ndarray[Any, Any]:
         """Convert this table to a numpy array
 
         Parameters
@@ -878,7 +915,7 @@ class BaseTable(metaclass=ABCMeta):
         else:
             indices = locs
         shape: Shape = (indices_len(indices), offsets[-1])
-        arr: np.ndarray
+        arr: np.ndarray[Any, Any]
         if isinstance(ret, np.ndarray) and ret.shape == shape and ret.dtype == dtype:
             arr = ret
         else:
@@ -896,19 +933,19 @@ class BaseTable(metaclass=ABCMeta):
         #     return indices, arr
         return arr
 
-    def unary(self, op, **kwargs):
+    def unary(self, op: Any, **kwargs: Any) -> Dict[str, Any]:
         axis = kwargs.get("axis", 0)
         # get() is cheaper than pop(), it avoids to update unused kwargs
         keepdims = kwargs.get("keepdims", False)
         # ignore other kwargs, maybe raise error in the future
-        res = dict()
+        res: Dict[str, Any] = dict()
         for col in self._columns:
             value = op(col.values, axis=axis, keepdims=keepdims)
             res[col.name] = value
         return res
 
-    def raw_unary(self, op, **kwargs):
-        res = dict()
+    def raw_unary(self, op: Any, **kwargs: Any) -> Dict[str, Any]:
+        res: Dict[str, Any] = dict()
         for col in self._columns:
             value = op(col.values, **kwargs)
             res[col.name] = value
@@ -916,13 +953,15 @@ class BaseTable(metaclass=ABCMeta):
 
     def binary(
         self,
-        op: Callable[[np.ndarray, Union[np.ndarray, int, float, bool]], np.ndarray],
+        op: Callable[[np.ndarray[Any, Any],
+                      Union[np.ndarray[Any, Any], int, float, bool]],
+                     np.ndarray[Any, Any]],
         other: BaseTable,
-        **kwargs,
-    ) -> Union[Dict[str, np.ndarray], BaseTable]:
+        **kwargs: Any,
+    ) -> Union[Dict[str, np.ndarray[Any, Any]], BaseTable]:
         axis = kwargs.pop("axis", 0)
         assert axis == 0
-        res: Dict[str, np.ndarray] = {}
+        res: Dict[str, np.ndarray[Any, Any]] = {}
         if isinstance(other, (np.ndarray, int, float, bool)):
             for col in self._columns:
                 name = col.name
@@ -935,7 +974,7 @@ class BaseTable(metaclass=ABCMeta):
                 res[name] = value
         return res
 
-    def __abs__(self, **kwargs):
+    def __abs__(self, **kwargs: Any) -> Dict[str, Any]:
         return self.unary(np.abs, **kwargs)
 
     def __add__(self, other):
@@ -995,8 +1034,8 @@ class BaseTable(metaclass=ABCMeta):
     def __ne__(self, other):
         return self.binary(operator.ne, other)
 
-    def __neg__(self):
-        return self.unary(np.neg)
+    def __neg__(self) -> Dict[str, Any]:
+        return self.unary(np.negative)
 
     def __or__(self, other):
         return self.binary(operator.or_, other)
@@ -1049,16 +1088,16 @@ class BaseTable(metaclass=ABCMeta):
     def all(self, **kwargs):
         return self.unary(np.all, **kwargs)
 
-    def min(self, **kwargs):
+    def min(self, **kwargs: Any) -> Dict[str, Any]:
         return self.unary(np.min, **kwargs)
 
-    def max(self, **kwargs):
+    def max(self, **kwargs: Any) -> Dict[str, Any]:
         return self.unary(np.max, **kwargs)
 
     def var(self, **kwargs):
         return self.raw_unary(np.var, **kwargs)
 
-    def argmin(self, **kwargs: Any) -> Any:
+    def argmin(self, **kwargs: Any) -> Dict[str, Any]:
         argmin_ = self.raw_unary(np.argmin, **kwargs)
         if self.is_identity:
             return argmin_
@@ -1067,7 +1106,7 @@ class BaseTable(metaclass=ABCMeta):
             argmin_[k] = index_array[v]
         return argmin_
 
-    def argmax(self, **kwargs):
+    def argmax(self, **kwargs: Any) -> Dict[str, Any]:
         argmax_ = self.raw_unary(np.argmax, **kwargs)
         if self.is_identity:
             return argmax_
@@ -1076,23 +1115,23 @@ class BaseTable(metaclass=ABCMeta):
             argmax_[k] = index_array[v]
         return argmax_
 
-    def idxmin(self, **kwargs):
+    def idxmin(self, **kwargs: Any) -> Dict[str, Any]:
         res = self.argmin(**kwargs)
         for c, ix in res.items():
             res[c] = self.index_to_id(ix)
         return res
 
-    def idxmax(self, **kwargs):
+    def idxmax(self, **kwargs: Any) -> Dict[str, Any]:
         res = self.argmax(**kwargs)
         for c, ix in res.items():
             res[c] = self.index_to_id(ix)
         return res
 
-    def remove_module(self, mid):
+    def remove_module(self, mid: str) -> None:
         # TODO
         pass
 
-    def _normalize_locs(self, locs):
+    def _normalize_locs(self, locs: Indexer) -> bitmap:
         return self._any_to_bitmap(locs)
         """if locs is None:
             if bool(self._freelist):
@@ -1103,51 +1142,61 @@ class BaseTable(metaclass=ABCMeta):
             locs = [locs]
         return bitmap(locs)"""
 
-    # begin(Change management)
-    def _flush_cache(self):
-        self._cached_index = BaseTable
-
-    def touch(self, index=None):
-        if index is self._cached_index:
-            return
-        self._cached_index = index
-        self.add_updated(index)
-
-    def equals(self, other):
+    def equals(self, other: BaseTable) -> bool:
         if self is other:
             return True
-        return np.all(self.values == other.values)
+        return bool(np.all(self._columns == other._columns))
 
-    def get_panene_data(self, cols=None):
+    def get_panene_data(
+        self,
+        cols: Optional[List[str]] = None
+    ) -> List[np.ndarray[Any, Any]]:
         if cols is None:
-            cols = self.columns
-        return [self[key].dataset.view for key in cols]
+            cols = self.columns  # type: ignore
+        return [self[key].values for key in cols]
 
-    def cxx_api_raw_cols(self, cols=None):
+    def cxx_api_raw_cols(
+            self,
+            cols: Optional[List[str]] = None) -> Tuple[Any, Any]:
         tbl = self.base or self
         if cols is None:
             cols = tbl.columns
-        return cols, [tbl[c].dataset.base for c in cols]
+        return cols, [tbl[c].dataset.base for c in cols]  # type: ignore
 
-    def cxx_api_raw_cols2(self, cols=None):
+    def cxx_api_raw_cols2(
+            self,
+            cols: Optional[List[str]] = None) -> List[Any]:
         tbl = self.base or self
         if cols is None:
             cols = tbl.columns
-        return [tbl[c].dataset.base for c in cols]
+        return [tbl[c].dataset.base for c in cols]  # type: ignore
 
-    def cxx_api_info_index(self):
+    def cxx_api_info_index(self) -> Tuple[bool, bitmap, int]:
         # ix = Int64HashTable() if self.is_identity else self._ids._ids_dict._ht
         # return self.is_identity, ix, self.last_id
         return False, self.index, self.last_id
+
+    def _flush_cache(self) -> None:
+        pass
 
 
 class IndexTable(BaseTable):
     def __init__(self, index: Optional[bitmap] = None) -> None:
         super().__init__()
         self._index: bitmap = bitmap() if index is None else index
-        self._cached_index = BaseTable  # hack
+        self._cached_index: Optional[bitmap] = None  # hack
         self._last_id: int = -1
         self._changes = None
+
+    # begin(Change management)
+    def _flush_cache(self) -> None:
+        self._cached_index = None
+
+    def touch(self, index: Optional[bitmap] = None) -> None:
+        if index is self._cached_index:
+            return
+        self._cached_index = index
+        self.add_updated(index)
 
     @property
     def index(self) -> bitmap:
@@ -1295,7 +1344,7 @@ class TableSelectedView(BaseTable):
     @selection.setter
     def selection(self, sel: Union[bitmap, slice]) -> None:
         if isinstance(sel, bitmap):
-            self._selection = sel[:]
+            self._selection = sel.copy()
         elif isinstance(sel, slice):
             self._selection = sel
         else:

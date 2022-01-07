@@ -13,12 +13,13 @@ import numpy as np
 from progressivis.core.bitmap import bitmap
 from progressivis.core.slot import SlotDescriptor
 from progressivis.core.utils import slice_to_arange, fix_loc
-from .module import TableModule, ReturnRunStep, Module
+from progressivis.core.module import ReturnRunStep, Module
+from .module import TableModule
 from . import Table
 from ..core.utils import indices_len
 from . import TableSelectedView
 
-from typing import List, Optional, Any, cast
+from typing import List, Optional, Any, Callable, Tuple
 
 APPROX = False
 logger = logging.getLogger(__name__)
@@ -34,7 +35,7 @@ class _HistogramIndexImpl(object):
         self.e_min = e_min
         self.e_max = e_max
         self.bitmaps: List[bitmap] = []
-        self.bins: Optional[np.ndarray] = None
+        self.bins: Optional[np.ndarray[Any, Any]] = None
         self._sampling_size = 1000
         self._perm_deviation = 0.1  # permitted deviation
         self._divide_threshold = 1000  # TODO: make it settable!
@@ -82,7 +83,7 @@ class _HistogramIndexImpl(object):
         for i, bm in enumerate(self.bitmaps):
             print(i, len(bm), "=" * len(bm))
 
-    def find_bin(self, elt):
+    def find_bin(self, elt: Any) -> List[int]:
         res: List[int] = []
         for i, bm in enumerate(self.bitmaps):
             if elt in bm:
@@ -144,7 +145,7 @@ class _HistogramIndexImpl(object):
         else:
             samples = ids
         s_vals = self.column.loc[samples]
-        v = np.median(s_vals)
+        v = np.median(s_vals)  # type: ignore
         if i >= len(self.bins):
             assert self.bins[i - 1] < v
         else:
@@ -162,7 +163,7 @@ class _HistogramIndexImpl(object):
                 upper_len,
                 float(abs(lower_len - upper_len)) / len(ids),
             )
-        self.bins = np.insert(self.bins, i, v)
+        self.bins = np.insert(self.bins, i, v)  # type: ignore
         assert self.bins is not None
         if i + 1 >= len(self.bins):
             assert self.bins[i - 1] < self.bins[i]
@@ -177,12 +178,15 @@ class _HistogramIndexImpl(object):
         print("*", end="")
 
     def _get_bin(self, val: float) -> bitmap:
-        i = np.digitize(val, self.bins)
+        i = np.digitize(val, self.bins)  # type: ignore
         return self.bitmaps[int(i)]
 
     def update_histogram(
-        self, created: bitmap = None, updated: bitmap = None, deleted: bitmap = None
-    ):
+        self,
+        created: Optional[bitmap] = None,
+        updated: Optional[bitmap] = None,
+        deleted: Optional[bitmap] = None
+    ) -> None:
         "Update the histogram index"
         created = bitmap.asbitmap(created)
         updated = bitmap.asbitmap(updated)
@@ -197,20 +201,23 @@ class _HistogramIndexImpl(object):
             to_add = created | updated
             ids = np.array(to_add, np.int64)
             values = self.column.loc[to_add]
-            bins = np.digitize(values, self.bins)
+            bins = np.digitize(values, self.bins)  # type: ignore
             counts = np.bincount(bins)
             for i in np.nonzero(counts)[0]:
                 bm = self.bitmaps[i]
                 selection = bins == i  # boolean mask of values in bin i
                 bm.update(ids[selection])  # add them to the bitmap
 
-    def query(self, operator_, limit, approximate=APPROX):  # blocking...
+    def query(self,
+              operator_: Callable[[Any, Any], int],
+              limit: Any,
+              approximate: bool = APPROX) -> bitmap:  # blocking...
         """
         Return the list of rows matching the query.
         For example, returning all values less than 10 (< 10) would be
         `query(operator.__lt__, 10)`
         """
-        pos = np.digitize(limit, self.bins)
+        pos = np.digitize(limit, self.bins)  # type: ignore
         detail = bitmap()
         if not approximate:
             ids = np.array(self.bitmaps[pos], np.int64)
@@ -227,13 +234,17 @@ class _HistogramIndexImpl(object):
         return detail
 
     def restricted_query(
-        self, operator_, limit, only_locs, approximate=APPROX
-    ):  # blocking...
+        self,
+        operator_: Callable[[Any, Any], int],
+        limit: Any,
+        only_locs: Any,
+        approximate: bool = APPROX
+    ) -> bitmap:  # blocking...
         """
         Returns the subset of only_locs matching the query.
         """
         only_locs = bitmap.asbitmap(only_locs)
-        pos = np.digitize(limit, self.bins)
+        pos = np.digitize(limit, self.bins)  # type: ignore
         detail = bitmap()
         if not approximate:
             ids = np.array(self.bitmaps[pos] & only_locs, np.int64)
@@ -249,13 +260,18 @@ class _HistogramIndexImpl(object):
                 detail.update(bm & only_locs)
         return detail
 
-    def range_query(self, lower: float, upper: float, approximate=APPROX) -> bitmap:
+    def range_query(
+        self,
+        lower: float,
+        upper: float,
+        approximate: bool = APPROX
+    ) -> bitmap:
         """
         Return the bitmap of all rows with values in range [`lower`, `upper`[
         """
         if lower > upper:
             lower, upper = upper, lower
-        pos = np.digitize([lower, upper], self.bins)
+        pos = np.digitize([lower, upper], self.bins)  # type: ignore
         detail = bitmap()
         if not approximate:
             ids = np.array(self.bitmaps[pos[0]], np.int64)
@@ -274,14 +290,14 @@ class _HistogramIndexImpl(object):
         return detail
 
     def range_query_aslist(
-        self, lower: float, upper: float, approximate=APPROX
+        self, lower: float, upper: float, approximate: bool = APPROX
     ) -> List[bitmap]:
         """
         Return the list of bitmaps with values in range [`lower`, `upper`[
         """
         if lower > upper:
             lower, upper = upper, lower
-        pos = np.digitize([lower, upper], self.bins)
+        pos = np.digitize([lower, upper], self.bins)  # type: ignore
         detail = bitmap()
         res = self.bitmaps[pos[0] + 1 : pos[1]]
         if not approximate:
@@ -300,7 +316,7 @@ class _HistogramIndexImpl(object):
         return res
 
     def restricted_range_query(
-        self, lower: float, upper: float, only_locs, approximate=APPROX
+        self, lower: float, upper: float, only_locs: Any, approximate: bool = APPROX
     ) -> bitmap:
         """
         Return the bitmap of only_locs rows in range [`lower`, `upper`[
@@ -308,7 +324,7 @@ class _HistogramIndexImpl(object):
         if lower > upper:
             lower, upper = upper, lower
         only_locs = bitmap.asbitmap(only_locs)
-        pos = np.digitize([lower, upper], self.bins)
+        pos = np.digitize([lower, upper], self.bins)  # type: ignore
         detail = bitmap()
         if not approximate:
             ids = np.array(self.bitmaps[pos[0]] & only_locs, np.int64)
@@ -354,7 +370,7 @@ class HistogramIndex(TableModule):
         SlotDescriptor("max_out", type=Table, required=False),
     ]
 
-    def __init__(self, column: str, **kwds):
+    def __init__(self, column: str, **kwds: Any) -> None:
         super(HistogramIndex, self).__init__(output_required=False, **kwds)
         self.column = column
         # will be created when the init_threshold is reached
@@ -367,7 +383,7 @@ class HistogramIndex(TableModule):
         self._min_table: Optional[TableSelectedView] = None
         self._max_table: Optional[TableSelectedView] = None
 
-    def compute_bounds(self, input_table):
+    def compute_bounds(self, input_table: Table) -> Tuple[float, float]:
         values = input_table[self.column]
         return values.min(), values.max()
 
@@ -410,7 +426,7 @@ class HistogramIndex(TableModule):
         self, run_number: int, step_size: int, howlong: float
     ) -> ReturnRunStep:
         input_slot = self.get_input_slot("table")
-        # input_slot.update(run_number)
+        assert input_slot is not None
         steps = 0
         input_table = input_slot.data()
         self._input_table = input_table
@@ -434,20 +450,20 @@ class HistogramIndex(TableModule):
             self._impl.reshape()
         deleted: Optional[bitmap] = None
         if input_slot.deleted.any():
-            deleted = cast(bitmap, input_slot.deleted.next(as_slice=False))
+            deleted = input_slot.deleted.next(as_slice=False)
             # steps += indices_len(deleted) # deleted are constant time
             steps = 1
             deleted = fix_loc(deleted)
             self.selection -= deleted
         created: Optional[bitmap] = None
         if input_slot.created.any():
-            created = cast(bitmap, input_slot.created.next(step_size, as_slice=False))
+            created = input_slot.created.next(length=step_size, as_slice=False)
             created = fix_loc(created)
             steps += indices_len(created)
             self.selection |= created
         updated: Optional[bitmap] = None
         if input_slot.updated.any():
-            updated = cast(bitmap, input_slot.updated.next(step_size, as_slice=False))
+            updated = input_slot.updated.next(length=step_size, as_slice=False)
             updated = fix_loc(updated)
             steps += indices_len(updated)
         if steps == 0:
@@ -458,7 +474,11 @@ class HistogramIndex(TableModule):
         self.selected.selection = self.selection
         return self._return_run_step(self.next_state(input_slot), steps_run=steps)
 
-    def _eval_to_ids(self, operator_, limit, input_ids=None):
+    def _eval_to_ids(
+            self,
+            operator_: Callable[[Any, Any], Any],
+            limit: Any,
+            input_ids: Optional[slice] = None) -> bitmap:
         input_slot = self.get_input_slot("table")
         table_ = input_slot.data()
         if input_ids is None:
@@ -466,11 +486,16 @@ class HistogramIndex(TableModule):
         else:
             input_ids = fix_loc(input_ids)
         x = table_[self.column].loc[input_ids]
-        mask_ = operator_(x, limit)
+        mask_ = operator_(x, limit)  # type: ignore
+        assert isinstance(input_ids, slice)
         arr = slice_to_arange(input_ids)
         return bitmap(arr[np.nonzero(mask_)[0]])
 
-    def query(self, operator_, limit, approximate=APPROX):
+    def query(
+            self,
+            operator_: Callable[[Any, Any], Any],
+            limit: Any,
+            approximate: bool = APPROX) -> bitmap:
         """
         Return the list of rows matching the query.
         For example, returning all values less than 10 (< 10) would be
@@ -482,7 +507,13 @@ class HistogramIndex(TableModule):
         # so we query the input table directly
         return self._eval_to_ids(operator_, limit)
 
-    def restricted_query(self, operator_, limit, only_locs, approximate=APPROX):
+    def restricted_query(
+            self,
+            operator_: Callable[[Any, Any], Any],
+            limit: Any,
+            only_locs: Any,
+            approximate: bool = APPROX
+    ) -> bitmap:
         """
         Return the list of rows matching the query.
         For example, returning all values less than 10 (< 10) would be
@@ -494,15 +525,25 @@ class HistogramIndex(TableModule):
         # so we query the input table directly
         return self._eval_to_ids(operator_, limit, only_locs)
 
-    def range_query_aslist(self, lower, upper, approximate=APPROX):
+    def range_query_aslist(
+        self,
+        lower: float,
+        upper: float,
+        approximate: bool = APPROX
+    ) -> List[bitmap]:
         """
         Return the list of rows with values in range [`lower`, `upper`[
         """
         if self._impl:
             return self._impl.range_query_aslist(lower, upper, approximate)
-        return None
+        return []
 
-    def range_query(self, lower, upper, approximate=APPROX):
+    def range_query(
+        self,
+        lower: float,
+        upper: float,
+        approximate: bool = APPROX
+    ) -> bitmap:
         """
         Return the list of rows with values in range [`lower`, `upper`[
         """
@@ -516,7 +557,13 @@ class HistogramIndex(TableModule):
             operator.__ge__, lower
         )
 
-    def restricted_range_query(self, lower, upper, only_locs, approximate=APPROX):
+    def restricted_range_query(
+        self,
+        lower: float,
+        upper: float,
+        only_locs: Any,
+        approximate: bool = APPROX
+    ) -> bitmap:
         """
         Return the list of rows with values in range [`lower`, `upper`[
         among only_locs
@@ -534,7 +581,12 @@ class HistogramIndex(TableModule):
             self._eval_to_ids(operator.__ge__, lower, only_locs)
         )
 
-    def create_dependent_modules(self, input_module: Module, input_slot: str, **kwds):
+    def create_dependent_modules(
+        self,
+        input_module: Module,
+        input_slot: str,
+        **kwds: Any
+    ) -> HistogramIndex:
         with self.tagged(self.TAG_DEPENDENT):
             self.input_module = input_module
             self.input_slot = input_slot

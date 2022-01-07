@@ -137,7 +137,7 @@ def _slot_policy_rule(decname: str, *slots_maybe: str):
     """
     this function includes *args in the closure
     """
-    called_with_args = (not slots_maybe) or isinstance(slots_maybe[0], str)
+    called_with_args = len(slots_maybe) == 0 or isinstance(slots_maybe[0], str)
     slots: Sequence[str] = slots_maybe if called_with_args else tuple([])
     assert called_with_args or callable(slots_maybe[0])
 

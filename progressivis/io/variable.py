@@ -35,7 +35,7 @@ class Variable(Constant):
             error = f"Variable {self.name} has to run once before receiving input"
             logger.error(error)
             return error
-        last = copy.copy(self.result)
+        last: PsDict = copy.copy(self.psdict)
         error = ""
         for (k, v) in input_.items():
             if k in last:

@@ -1,13 +1,17 @@
 from __future__ import annotations
 
+import logging
+
 from ..core.utils import indices_len
 from ..core.slot import SlotDescriptor
-from .module import TableModule, ReturnRunStep
+from ..core.module import ReturnRunStep
+from .module import TableModule
 from .table import Table
 from ..core.bitmap import bitmap
 from . import TableSelectedView
 
-import logging
+from typing import Any
+
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +22,7 @@ class LiteSelect(TableModule):
         SlotDescriptor("select", type=bitmap, required=True),
     ]
 
-    def __init__(self, **kwds):
+    def __init__(self, **kwds: Any) -> None:
         super(LiteSelect, self).__init__(**kwds)
         self.default_step_size = 1000
 
@@ -27,6 +31,7 @@ class LiteSelect(TableModule):
     ) -> ReturnRunStep:
         step_size = 1000
         table_slot = self.get_input_slot("table")
+        assert table_slot is not None
         table = table_slot.data()
         # table_slot.update(run_number,
         #                  buffer_created=False,
@@ -34,6 +39,7 @@ class LiteSelect(TableModule):
         #                  buffer_deleted=False,
         #                  manage_columns=False)
         select_slot = self.get_input_slot("select")
+        assert select_slot is not None
         # select_slot.update(run_number,
         #                    buffer_created=True,
         #                    buffer_updated=False,
@@ -44,7 +50,7 @@ class LiteSelect(TableModule):
             self.result = TableSelectedView(table, bitmap([]))
 
         if select_slot.deleted.any():
-            indices = select_slot.deleted.next(step_size, as_slice=False)
+            indices = select_slot.deleted.next(length=step_size, as_slice=False)
             s = indices_len(indices)
             print("LITESELECT: -", s)
             logger.info("deleting %s", indices)
@@ -52,7 +58,7 @@ class LiteSelect(TableModule):
             # step_size -= s//2
 
         if step_size > 0 and select_slot.created.any():
-            indices = select_slot.created.next(step_size, as_slice=False)
+            indices = select_slot.created.next(length=step_size, as_slice=False)
             s = indices_len(indices)
             logger.info("creating %s", indices)
             steps += s

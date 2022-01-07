@@ -1,15 +1,16 @@
 from __future__ import annotations
 
 from progressivis.utils.errors import ProgressiveStopIteration
+from progressivis.core.module import ReturnRunStep
 from .table import Table
-from .module import TableModule, ReturnRunStep
+from .module import TableModule
 from ..utils.psdict import PsDict
 
-from typing import Union
+from typing import Union, Any
 
 
 class Constant(TableModule):
-    def __init__(self, table: Union[None, Table, PsDict], **kwds):
+    def __init__(self, table: Union[None, Table, PsDict], **kwds: Any) -> None:
         super(Constant, self).__init__(**kwds)
         assert table is None or isinstance(table, (Table, PsDict))
         self.result = table

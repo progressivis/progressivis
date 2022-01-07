@@ -1,4 +1,5 @@
 "Change manager for tables."
+from __future__ import annotations
 
 from collections import namedtuple
 
@@ -6,6 +7,8 @@ from progressivis.core.changemanager_base import BaseChangeManager
 from .table import Table
 from .tablechanges import TableChanges
 from ..core.slot import Slot
+
+from typing import Any, Set
 
 
 ColumnUpdate = namedtuple("ColumnUpdate", ["created", "updated", "deleted"])
@@ -18,13 +21,13 @@ class TableChangeManager(BaseChangeManager):
 
     def __init__(
         self,
-        slot,
-        buffer_created=True,
-        buffer_updated=False,
-        buffer_deleted=False,
-        buffer_exposed=False,
-        buffer_masked=False,
-    ):
+        slot: Slot,
+        buffer_created: bool = True,
+        buffer_updated: bool = False,
+        buffer_deleted: bool = False,
+        buffer_exposed: bool = False,
+        buffer_masked: bool = False,
+    ) -> None:
         super(TableChangeManager, self).__init__(
             slot,
             buffer_created,
@@ -34,18 +37,18 @@ class TableChangeManager(BaseChangeManager):
             buffer_masked,
         )
         self._slot = slot
-        self._columns = set()
-        self._column_changes = set()
+        self._columns: Set[str] = set()
+        self._column_changes: Set[str] = set()
         data = slot.data()
         if data.changes is None:
             data.changes = TableChanges()
 
-    def reset(self, mid: str):
+    def reset(self, mid: str) -> None:
         super(TableChangeManager, self).reset(mid)
         data = self._slot.data()
         data.reset_updates(mid)
 
-    def update(self, run_number, data, mid):
+    def update(self, run_number: int, data: Any, mid: str) -> None:
         if data is None or (run_number != 0 and run_number <= self._last_update):
             return
         assert isinstance(data, Table)
@@ -62,7 +65,7 @@ class TableChangeManager(BaseChangeManager):
             self._column_changes = set()
 
     @property
-    def column_changes(self):
+    def column_changes(self) -> ColumnUpdate:
         return ColumnUpdate(created=self._column_changes, updated=set(), deleted=set())
 
 

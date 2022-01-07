@@ -159,7 +159,7 @@ class Table(IndexTable):
     def name(self) -> str:
         return self._name
 
-    def _chunks_for(self, name: str) -> Union[None, int, tuple]:
+    def _chunks_for(self, name: str) -> Union[None, int, Tuple[int, ...]]:
         chunks = self._chunks
         if chunks is None:
             return None
@@ -190,9 +190,13 @@ class Table(IndexTable):
         self._last_id = node.attrs[metadata.ATTR_LAST_ID]
         for (name, dshape) in dshape_fields(self._dshape):
             column = self._create_column(name)
-            column.load_dataset(dshape=dshape, nrow=nrow, shape=dshape_to_shape(dshape))
+            column.load_dataset(
+                dshape=dshape_create(dshape),
+                nrow=nrow,
+                shape=dshape_to_shape(dshape)
+            )
 
-    def _create_table(self, fillvalues):
+    def _create_table(self, fillvalues: Any) -> None:
         node = self.storagegroup
         node.attrs[metadata.ATTR_TABLE] = self.name
         node.attrs[metadata.ATTR_VERSION] = metadata.VALUE_VERSION
@@ -211,7 +215,10 @@ class Table(IndexTable):
             # TODO compute chunks according to the shape
             column = self._create_column(name)
             column.create_dataset(
-                dshape=dshape, chunks=chunks, fillvalue=fillvalue, shape=shape
+                dshape=dshape_create(dshape),
+                chunks=chunks,
+                fillvalue=fillvalue,
+                shape=shape
             )
 
     def _create_column(self, name: str) -> Column:
@@ -235,12 +242,16 @@ class Table(IndexTable):
         if len(self):
             self.drop(slice(None, None, None), truncate=True)
 
-    def _resize_rows(self, newsize, index=None):
+    def _resize_rows(self, newsize: int, index: Optional[Any] = None) -> None:
         super()._resize_rows(newsize, index)
         self._storagegroup.attrs[metadata.ATTR_INDEX] = self._index.serialize()
         self._storagegroup.attrs[metadata.ATTR_LAST_ID] = self.last_id
 
-    def resize(self, newsize: int, index: Union[bitmap, List[int]] = None) -> None:
+    def resize(
+            self,
+            newsize: int,
+            index: Optional[Union[bitmap, List[int]]] = None
+    ) -> None:
         # NB: newsize means how many active rows the table must contain
         if index is not None:
             index = bitmap.asbitmap(index)
@@ -266,7 +277,11 @@ class Table(IndexTable):
             col = cast(Column, column)
             col._resize(newsize)
 
-    def _allocate(self, count: int, index: Union[bitmap, List[int]] = None) -> bitmap:
+    def _allocate(
+            self,
+            count: int,
+            index: Optional[Union[bitmap, List[int]]] = None
+    ) -> bitmap:
         start = self.last_id + 1
         index = (
             bitmap(range(start, start + count))
@@ -286,7 +301,7 @@ class Table(IndexTable):
         "Signals that the values at loc have been changed"
         self.touch(loc)
 
-    def parse_data(self, data: Any, indices=None) -> Any:
+    def parse_data(self, data: Any, indices: Optional[Any] = None) -> Any:
         if data is None:
             return None
         if isinstance(data, Mapping):
@@ -299,7 +314,7 @@ class Table(IndexTable):
             data = pd.DataFrame(data, columns=self.columns, index=indices)
         return data  # hoping it works
 
-    def append(self, data: Any, indices=None) -> None:
+    def append(self, data: Any, indices: Optional[Any] = None) -> None:
         """
         Append Table-like data to the Table.
         The data has to be compatible. It can be from multiple sources
@@ -316,7 +331,7 @@ class Table(IndexTable):
         length = -1
         all_arrays = True
 
-        def _len(c):
+        def _len(c: Any) -> int:
             if isinstance(data, BaseTable):
                 return len(c.value)
             return len(c)
@@ -339,6 +354,7 @@ class Table(IndexTable):
         prev_last_id = self.last_id
         indices = self._allocate(length, indices)
         if isinstance(data, BaseTable):
+            left_ind: Union[bitmap, slice]
             if init_indices is None:
                 start = prev_last_id + 1
                 left_ind = slice(start, start + len(data) - 1)
@@ -359,7 +375,7 @@ class Table(IndexTable):
                 for i in range(length):
                     tocol[indices[i]] = fromcol[i]
 
-    def add(self, row: Any, index=None) -> None:
+    def add(self, row: Any, index: Optional[Any] = None) -> None:
         "Add one row to the Table"
         assert len(row) == self.ncol
 
@@ -385,10 +401,12 @@ class Table(IndexTable):
 
     def binary(
         self,
-        op: Callable[[np.ndarray, Union[np.ndarray, int, float, bool]], np.ndarray],
+        op: Callable[[np.ndarray[Any, Any],
+                      Union[np.ndarray[Any, Any], int, float, bool]],
+                     np.ndarray[Any, Any]],
         other: BaseTable,
-        **kwargs,
-    ) -> Union[Dict[str, np.ndarray], BaseTable]:
+        **kwargs: Any,
+    ) -> Union[Dict[str, np.ndarray[Any, Any]], BaseTable]:
         res = super(Table, self).binary(op, other, **kwargs)
         if isinstance(res, BaseTable):
             return res
@@ -396,12 +414,12 @@ class Table(IndexTable):
 
     @staticmethod
     def from_array(
-        array: np.ndarray,
-        name: str = None,
-        columns: List[str] = None,
-        offsets: Union[List[int], List[Tuple[int, int]]] = None,
-        dshape: Union[str, DataShape] = None,
-        **kwds,
+        array: np.ndarray[Any, Any],
+        name: Optional[str] = None,
+        columns: Optional[List[str]] = None,
+        offsets: Optional[Union[List[int], List[Tuple[int, int]]]] = None,
+        dshape: Optional[Union[str, DataShape]] = None,
+        **kwds: Any,
     ) -> Table:
         """offsets is a list of indices or pairs. """
         if offsets is None:
@@ -444,11 +462,11 @@ class Table(IndexTable):
     def eval(
         self,
         expr: str,
-        inplace=False,
-        name: str = None,
-        result_object: str = None,
-        locs: Any = None,
-        as_slice=True,
+        inplace: bool = False,
+        name: Optional[str] = None,
+        result_object: Optional[str] = None,
+        locs: Optional[Any] = None,
+        as_slice: bool = True,
     ) -> Any:
         """Evaluate the ``expr`` on columns and return the result.
 
@@ -505,7 +523,7 @@ class Table(IndexTable):
                 self[l_col] = res
                 return
 
-            def cval(key):
+            def cval(key: Any) -> Any:
                 return res if key == l_col else self[key].values
 
             data = [(cname, cval(cname)) for cname in self.columns]

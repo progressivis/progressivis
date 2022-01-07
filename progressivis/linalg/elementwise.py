@@ -110,14 +110,14 @@ class Unary(TableModule):
         steps = 0
         steps_todo = step_size
         if slot.deleted.any():
-            indices = slot.deleted.next(steps_todo, as_slice=False)
+            indices = slot.deleted.next(length=steps_todo, as_slice=False)
             del self.table.loc[indices]
             steps += indices_len(indices)
             steps_todo -= indices_len(indices)
             if steps_todo <= 0:
                 return self._return_run_step(self.next_state(slot), steps_run=steps)
         if slot.updated.any():
-            indices = slot.updated.next(steps_todo, as_slice=False)
+            indices = slot.updated.next(length=steps_todo, as_slice=False)
             vec = self.filter_columns(data_in, fix_loc(indices)).raw_unary(
                 self._ufunc, **self._kwds
             )
@@ -128,7 +128,7 @@ class Unary(TableModule):
                 return self._return_run_step(self.next_state(slot), steps_run=steps)
         if not slot.created.any():
             return self._return_run_step(self.next_state(slot), steps_run=steps)
-        indices = slot.created.next(step_size)
+        indices = slot.created.next(length=step_size, as_slice=False)
         steps += indices_len(indices)
         vec = self.filter_columns(data_in, fix_loc(indices)).raw_unary(
             self._ufunc, **self._kwds
@@ -210,14 +210,14 @@ class ColsBinary(TableModule):
         steps = 0
         steps_todo = step_size
         if slot.deleted.any():
-            indices = slot.deleted.next(steps_todo, as_slice=False)
+            indices = slot.deleted.next(length=steps_todo, as_slice=False)
             del self.table.loc[indices]
             steps += indices_len(indices)
             steps_todo -= indices_len(indices)
             if steps_todo <= 0:
                 return self._return_run_step(self.next_state(slot), steps_run=steps)
         if slot.updated.any():
-            indices = slot.updated.next(steps_todo, as_slice=False)
+            indices = slot.updated.next(length=steps_todo, as_slice=False)
             view = data_in.loc[fix_loc(indices)]
             vec = _simple_binary(
                 view,
@@ -234,7 +234,7 @@ class ColsBinary(TableModule):
                 return self._return_run_step(self.next_state(slot), steps_run=steps)
         if not slot.created.any():
             return self._return_run_step(self.next_state(slot), steps_run=steps)
-        indices = slot.created.next(step_size)
+        indices = slot.created.next(length=step_size, as_slice=False)
         steps = indices_len(indices)
         if steps == 0:
             return self._return_run_step(self.state_blocked, steps_run=0)
@@ -423,7 +423,7 @@ class Reduce(TableModule):
             cols = self.get_columns(data_in)
             if len(cols) == 0:
                 return self._return_run_step(self.state_blocked, steps_run=0)
-            indices = ctx.table.created.next(step_size)
+            indices = ctx.table.created.next(length=step_size)
             steps = indices_len(indices)
             rdict = _reduce(
                 self.filter_columns(data_in, fix_loc(indices)),

@@ -134,7 +134,7 @@ class Dataflow:
         self._remove_module_outputs(name)
         self.valid = []
 
-    def add_connection(self, slot: Slot, rename: bool = True) -> None:
+    def add_connection(self, slot: Optional[Slot], rename: bool = True) -> None:
         "Declare a connection between two module slots"
         if not slot:
             return
@@ -142,6 +142,9 @@ class Dataflow:
         output_name = slot.output_name
         input_module = slot.input_module
         input_name = slot.original_name or slot.input_name
+        if input_module is None:
+            return
+        assert input_name is not None
         if input_module.input_slot_multiple(input_name):
             if rename:
                 slot.original_name = input_name
@@ -170,6 +173,7 @@ class Dataflow:
                         input_module.name,
                     )
                 )
+        assert input_name is not None
         self.inputs[input_module.name][input_name] = slot
         if output_module.name not in self.outputs:
             self.outputs[output_module.name] = {output_name: [slot]}
@@ -199,7 +203,7 @@ class Dataflow:
         for slot in self.inputs[name].values():
             outname = slot.output_name
             slots = self.outputs[slot.output_module.name][outname]
-            nslots = [s for s in slots if s.input_module.name != name]
+            nslots = [s for s in slots if s.input_module and s.input_module.name != name]
             assert slots != nslots  # we must remove a slot
             if nslots:
                 self.outputs[slot.output_module.name][outname] = nslots
@@ -210,6 +214,7 @@ class Dataflow:
     def _remove_module_outputs(self, name: str) -> None:
         for oslots in self.outputs[name].values():
             for slot in oslots:
+                assert slot.input_module is not None and slot.input_name is not None
                 del self.inputs[slot.input_module.name][slot.input_name]
                 # if not self.inputs[slot.input_module.name]:
                 #    del self.inputs[slot.input_module.name]
@@ -279,13 +284,14 @@ class Dataflow:
                                 f'renamed "{islot.input_name}" '
                                 f'in module "{module.name}"'
                             )
-                        assert inputs.pop(
-                            slot.input_name, None
+                        assert slot.input_name is not None and inputs.pop(
+                            slot.input_name, False
                         ), f"Input slot {slot.input_name} not in {inputs}"
                     # Iterate over all the inputs to remove the multiple slots
             else:
                 slot = inputs.get(slotdesc.name)
                 if slot:
+                    assert slot.input_name is not None
                     inputs.pop(slot.input_name)
             if slotdesc.required and slot is None:
                 errors.append(
@@ -412,9 +418,11 @@ class Dataflow:
     ) -> None:
         # collect input module only if the input slot being removed is required
         module = oslot.input_module
+        assert module is not None
         if module.name in deps:
             return  # already being removed
         slot_name = oslot.input_name
+        assert slot_name is not None
         desc = module.input_slot_descriptor(slot_name)
         if desc.required:
             deps.add(module.name)
@@ -433,7 +441,7 @@ class Dataflow:
         # if the slot is required, the module is removed if all it outputs are
         remaining = len(olist)
         for oslot in olist:
-            if oslot.input_module.name in deps:
+            if oslot.input_module and oslot.input_module.name in deps:
                 remaining -= 1
         if remaining == 0:
             deps.add(module.name)
@@ -479,6 +487,7 @@ class Dataflow:
         outputs = self.outputs[name]
         omods = {
             oslot.input_module.name for oslots in outputs.values() for oslot in oslots
+            if oslot.input_module is not None
         }
         if omods.issubset(deps):
             return True

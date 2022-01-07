@@ -8,7 +8,7 @@ import logging
 import numbers
 import numpy as np
 
-from progressivis.core.module import Module, JSon
+from progressivis.core.module import JSon
 from progressivis.table.nary import NAry
 from progressivis.core.slot import SlotDescriptor
 from progressivis.stats import Histogram1D
@@ -66,9 +66,11 @@ class Histograms(NAry):
     def _create_columns(self, columns: List[str], df):
         bins: int = cast(int, self.params.bins)
         delta: float = cast(float, self.params.delta)  # crude
-        inp: Module = self.get_input_module("table")
-        minmod: Module = self.get_input_module("min")
-        maxmod: Module = self.get_input_module("max")
+        inp = self.get_input_module("table")
+        minmod = self.get_input_module("min")
+        maxmod = self.get_input_module("max")
+
+        assert inp and minmod and maxmod
         for column in columns:
             logger.debug("Creating histogram1d %s", column)
             dtype = df[column].dtype

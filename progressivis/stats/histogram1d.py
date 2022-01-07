@@ -114,7 +114,7 @@ class Histogram1D(TableModule):
                 logger.error("Invalid bounds: %s", self._bounds)
                 return self._return_run_step(self.state_blocked, steps_run=0)
             input_df = dfslot.data()
-            indices = dfslot.created.next(step_size)  # returns a slice or ...
+            indices = dfslot.created.next(length=step_size)  # returns a slice or ...
             steps = indices_len(indices)
             logger.info("Read %d rows", steps)
             self.total_read += steps

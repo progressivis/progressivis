@@ -64,7 +64,7 @@ class LinearMap(TableModule):
             if self._transf_cache is None:
                 tf = filter_cols(transformation, self._transf_columns)
                 self._transf_cache = tf.to_array()
-            indices = ctx.vectors.created.next(step_size)  # returns a slice
+            indices = ctx.vectors.created.next(length=step_size)  # returns a slice
             steps = indices_len(indices)
             if steps == 0:
                 return self._return_run_step(self.state_blocked, steps_run=0)

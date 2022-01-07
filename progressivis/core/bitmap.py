@@ -8,16 +8,16 @@ import array
 
 from pyroaring import BitMap, FrozenBitMap
 import numpy as np
-from collections.abc import Iterable
 
-from typing import Optional, Any, Union, Iterator, overload
+
+from typing import Optional, Any, Union, Iterator, overload, Iterable
 
 # pragma no cover
 # pylint: disable=invalid-name
 _integer_types = (int, np.integer)
 
 
-class bitmap:
+class bitmap(Iterable[int]):
     # pylint: disable=invalid-name
     """
     Derive from an efficient and light-weight ordered set of 32 bits integers.

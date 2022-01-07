@@ -118,6 +118,7 @@ class TestHistogram2D(ProgressiveTest):
         pr = Every(proc=self.terse, scheduler=s)
         pr.input[0] = heatmap.output.result
         aio.run(s.start())
+        # from nose.tools import set_trace; set_trace()
         last = histogram2d.result.last().to_dict()
         h1 = last["array"]
         bounds = [[last["ymin"], last["ymax"]], [last["xmin"], last["xmax"]]]

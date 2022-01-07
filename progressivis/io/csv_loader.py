@@ -146,10 +146,10 @@ class CSVLoader(TableModule):
         return self._rows_read
 
     def is_ready(self) -> bool:
-        fn = self.get_input_slot("filenames")
-        # Can be called before the first update so fn.created can be None
-        if fn and (fn.created is None or fn.created.any()):
-            return True
+        if self.has_input_slot("filenames"):
+            fn = self.get_input_slot("filenames")
+            if fn.created is None or fn.created.any():
+                return True
         return super(CSVLoader, self).is_ready()
 
     def is_data_input(self) -> bool:
@@ -273,7 +273,9 @@ class CSVLoader(TableModule):
                     self.filepath_or_buffer = None
 
             else:  # this case does not support recovery
-                fn_slot = self.get_input_slot("filenames")
+                fn_slot = None
+                if self.has_input_slot("filenames"):
+                    fn_slot = self.get_input_slot("filenames")
                 if fn_slot is None or fn_slot.output_module is None:
                     return self.state_terminated
                 # fn_slot.update(run_number)
@@ -281,7 +283,7 @@ class CSVLoader(TableModule):
                     raise ProgressiveError("Cannot handle input file changes")
                 df = fn_slot.data()
                 while self.parser is None:
-                    indices = fn_slot.created.next(1)
+                    indices = fn_slot.created.next(length=1)
                     assert isinstance(indices, slice)
                     if indices.stop == indices.start:
                         return self.state_blocked
@@ -359,9 +361,9 @@ class CSVLoader(TableModule):
                 raise ProgressiveStopIteration
         except ProgressiveStopIteration:
             self.close()
-            fn_slot = self.get_input_slot("filenames")
-            if fn_slot is None or fn_slot.output_module is None:
-                raise
+            if self.has_input_slot("filenames"):
+                fn_slot = self.get_input_slot("filenames")
+                assert fn_slot.output_module is not None
             self.parser = None
             return self._return_run_step(self.state_ready, 0)
         df_len = sum([len(df) for df in df_list])

@@ -31,7 +31,10 @@ from .scheduler import Scheduler
 from typing import (
     cast,
     Any,
+    Iterable,
+    Sequence,
     Optional,
+    Sized,
     Dict,
     Set,
     List,
@@ -46,8 +49,7 @@ from typing import (
 if TYPE_CHECKING:
     from .dataflow import Dataflow
     from .decorators import _Context
-
-Parameters = List[Tuple[str, np.dtype, Any]]
+    Parameters = List[Tuple[str, np.dtype[Any], Any]]
 JSon = Dict[str, Any]
 # ReturnRunStep = Tuple[int, ModuleState]
 ReturnRunStep = Dict[str, int]
@@ -61,7 +63,7 @@ class ModuleMeta(ABCMeta):
     in the field ``all_parameters''.
     """
 
-    def __init__(cls: Type, name: str, bases: Any, attrs: dict):
+    def __init__(cls, name: str, bases: Any, attrs: Dict[str, Any]) -> None:
         if "parameters" not in attrs:
             cls.parameters: List[Parameters] = []
         if "inputs" not in attrs:
@@ -81,7 +83,7 @@ class ModuleMeta(ABCMeta):
         cls.all_parameters = all_parameters
         cls.all_inputs = all_inputs
         cls.all_outputs = list(all_outputs.values())
-        super(ModuleMeta, cls).__init__(name, bases, attrs)  # type: ignore
+        super(ModuleMeta, cls).__init__(name, bases, attrs)
 
 
 class ModuleTag:
@@ -91,10 +93,10 @@ class ModuleTag:
         self._saved = ModuleTag.tags
         ModuleTag.tags = set(tag_list)
 
-    def __enter__(self):
+    def __enter__(self) -> Any:
         return self
 
-    def __exit__(self, *exc):
+    def __exit__(self, *exc: Any) -> Any:
         ModuleTag.tags = self._saved
         return False
 
@@ -159,7 +161,7 @@ class Module(metaclass=ModuleMeta):
     #     "invalid",
     # ]
 
-    def __new__(cls, *args, **kwds):
+    def __new__(cls, *args: Tuple[str, Any], **kwds: Any) -> Module:
         module = object.__new__(cls)
         # pylint: disable=protected-access
         module._args = args
@@ -171,10 +173,10 @@ class Module(metaclass=ModuleMeta):
         name: Optional[str] = None,
         group: Optional[str] = None,
         scheduler: Optional[Scheduler] = None,
-        storagegroup: Group = None,
+        storagegroup: Optional[Group] = None,
         **kwds: Any,
-    ):
-        self._args: Tuple
+    ) -> None:
+        self._args: Sequence[Tuple[str, Any]]
         self._kwds: Dict[str, Any]
         if scheduler is None:
             scheduler = Scheduler.default
@@ -214,11 +216,11 @@ class Module(metaclass=ModuleMeta):
         # always present
         input_descriptors = self.all_inputs
         output_descriptors = self.all_outputs
-        self._input_slots = self._validate_descriptors(input_descriptors)
-        self.input_descriptors = {d.name: d for d in input_descriptors}
-        self.input_multiple = {d.name: 0 for d in input_descriptors if d.multiple}
-        self._output_slots = self._validate_descriptors(output_descriptors)
-        self.output_descriptors = {d.name: d for d in output_descriptors}
+        self._input_slots: Dict[str, Optional[Slot]] = self._validate_descriptors(input_descriptors)
+        self.input_descriptors: Dict[str, SlotDescriptor] = {d.name: d for d in input_descriptors}
+        self.input_multiple: Dict[str, int] = {d.name: 0 for d in input_descriptors if d.multiple}
+        self._output_slots: Dict[str, Optional[List[Slot]]] = self._validate_descriptors(output_descriptors)
+        self.output_descriptors: Dict[str, SlotDescriptor] = {d.name: d for d in output_descriptors}
         self.default_step_size: int = 100
         self.input = InputSlots(self)
         self.output = OutputSlots(self)
@@ -295,20 +297,22 @@ class Module(metaclass=ModuleMeta):
         else:
             proc(self, rn)
 
-    @staticmethod
-    def _add_slots(kwds, kwd, slots):
-        if kwd in kwds:
-            kwds[kwd] += slots
-        else:
-            kwds[kwd] = slots
+    # @staticmethod
+    # def _add_slots(kwds: Dict[str, List[Slot]],
+    #                kwd: str,
+    #                slots: List[Slot]) -> None:
+    #     if kwd in kwds:
+    #         kwds[kwd] += slots
+    #     else:
+    #         kwds[kwd] = slots
 
     @staticmethod
-    def _validate_descriptors(descriptor_list):
-        slots = {}
+    def _validate_descriptors(descriptor_list: List[SlotDescriptor]) -> Dict[str, Any]:
+        slots: Dict[str, Any] = {}
         for desc in descriptor_list:
             if desc.name in slots:
                 raise ProgressiveError(
-                    "Duplicate slot name %s" " in slot descriptor" % desc.name
+                    "Duplicate slot name %s" f" in slot descriptor {desc.name}"
                 )
             slots[desc.name] = None
         return slots
@@ -328,7 +332,7 @@ class Module(metaclass=ModuleMeta):
         # TODO: should change the run_number of the params
         self.params.debug = bool(value)
 
-    def _parse_parameters(self, kwds):
+    def _parse_parameters(self, kwds: Dict[str, Any]) -> None:
         # pylint: disable=no-member
         self._params = _create_table(
             self.generate_table_name("params"), self.all_parameters
@@ -376,10 +380,10 @@ class Module(metaclass=ModuleMeta):
                 "start_time": self._start_time,
                 "end_time": self._end_time,
                 "input_slots": {
-                    k: _slot_to_json(s) for (k, s) in self._input_slots.items()
+                    k: _islot_to_json(s) for (k, s) in self._input_slots.items()
                 },
                 "output_slots": {
-                    k: _slot_to_json(s) for (k, s) in self._output_slots.items()
+                    l: _oslot_to_json(t) for (l, t) in self._output_slots.items()
                 },
                 "default_step_size": self.default_step_size,
                 "parameters": self.current_params().to_json(),
@@ -432,10 +436,10 @@ class Module(metaclass=ModuleMeta):
         pretty = re.sub("_module$", "", pretty)
         return pretty
 
-    def __str__(self):
+    def __str__(self) -> str:
         return "Module %s: %s" % (self.__class__.__name__, self.name)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return str(self)
 
     async def start(self) -> None:
@@ -447,7 +451,10 @@ class Module(metaclass=ModuleMeta):
         self.state = Module.state_zombie
 
     def create_slot(
-        self, output_name: Union[str, int], input_module: Module, input_name: str
+        self,
+            output_name: Union[str, int],
+            input_module: Optional[Module],
+            input_name: Optional[str]
     ) -> Slot:
         "Create a specified output slot"
         if isinstance(output_name, int):
@@ -471,10 +478,16 @@ class Module(metaclass=ModuleMeta):
         "Return True if the module has any input"
         return any(self._input_slots.values())
 
+    def has_input_slot(self, name: str) -> bool:
+        return self._input_slots.get(name, None) is not None
+
     def get_input_slot(self, name: str) -> Slot:
         "Return the specified input slot"
         # raises error is the slot is not declared
-        return self._input_slots[name]
+        slot = self._input_slots[name]
+        if slot is None:
+            raise KeyError(f"slot '{name}' not connected")
+        return slot
 
     def get_input_slot_multiple(self, name: str) -> List[str]:
         if not self.input_slot_multiple(name):
@@ -482,12 +495,14 @@ class Module(metaclass=ModuleMeta):
         prefix = name + "."
         return [iname for iname in self._input_slots if iname.startswith(prefix)]
 
-    def get_input_module(self, name: str) -> Module:
+    def get_input_module(self, name: str) -> Optional[Module]:
         "Return the specified input module"
-        return self.get_input_slot(name).output_module
+        slot = self.get_input_slot(name)
+        assert slot is not None
+        return slot.output_module
 
     def input_slot_values(self) -> List[Slot]:
-        return list(self._input_slots.values())
+        return [slot for slot in self._input_slots.values() if slot is not None]
 
     def input_slot_descriptor(self, name: str) -> SlotDescriptor:
         return self.input_descriptors[name]
@@ -501,8 +516,8 @@ class Module(metaclass=ModuleMeta):
     def input_slot_multiple(self, name: str) -> bool:
         return self.input_descriptors[name].multiple
 
-    def input_slot_names(self) -> List[str]:
-        return list(self._input_slots.keys())
+    def input_slot_names(self) -> Iterable[str]:
+        return self._input_slots.keys()
 
     def reconnect(self, inputs: Dict[str, Slot]) -> None:
         deleted_keys = set(self._input_slots.keys()) - set(inputs.keys())
@@ -542,97 +557,31 @@ class Module(metaclass=ModuleMeta):
     def has_any_output(self) -> bool:
         return any(self._output_slots.values())
 
-    def get_output_slot(self, name: str) -> List[Slot]:
+    def get_output_slot(self, name: str) -> Optional[List[Slot]]:
         # raise error is the slot is not declared
         return self._output_slots[name]
 
     def output_slot_descriptor(self, name: str) -> SlotDescriptor:
         return self.output_descriptors[name]
 
-    def output_slot_type(self, name: str) -> Optional[Union[Type, Tuple[Type, ...]]]:
+    def output_slot_type(self, name: str) -> Optional[Union[Type[Any], Tuple[Type[Any], ...]]]:
         return self.output_descriptors[name].type
 
-    def output_slot_values(self):
-        return list(self._output_slots.values())
+    def output_slot_values(self) -> Iterable[Optional[List[Slot]]]:
+        return self._output_slots.values()
 
-    def output_slot_names(self):
-        return list(self._output_slots.keys())
+    def output_slot_names(self) -> Iterable[str]:
+        return self._output_slots.keys()
 
     def validate(self) -> None:
         "called when the module have been validated"
         self.state = Module.state_blocked
 
-    def collect_deps(self, deps: Set[str], maybe_deps: Set[str]) -> None:
-        self._input_deps(deps, maybe_deps)
-        self._output_deps(deps, maybe_deps)
-
-    def _input_deps(self, deps: Set[str], maybe_deps: Set[str]) -> None:
-        for olist in self._output_slots.values():
-            if olist is None:
-                continue
-            for oslot in olist:
-                module = oslot.input_module
-                if module.name in deps:
-                    continue
-                slot_name = oslot.input_name
-                desc = module.input_slot_descriptor(slot_name)
-                if desc.required:
-                    deps.add(module.name)
-                    maybe_deps.discard(module.name)  # in case
-                else:
-                    maybe_deps.add(module.name)
-
-    def _output_deps(self, deps: Set[str], maybe_deps: Set[str]) -> None:
-        for islot in self._input_slots.values():
-            if islot is None:
-                continue
-            module = islot.output_module
-            if module.name in deps:
-                continue
-            slot_name = islot.output_name
-            desc = module.output_slot_descriptor(slot_name)
-            if desc.required:
-                deps.add(module.name)
-                maybe_deps.discard(module.name)  # in case
-            else:
-                maybe_deps.add(module.name)
-
-    def die_if_deps_die(self, deps: Set[str], maybe_deps: Set[str]) -> Optional[bool]:
-        """Return True if the module would die if the deps
-        modules die, False if not, None if not sure.
-
-        :param deps: a set of module names that will die
-        :param maybe_deps: a set of module names that could die
-        :returns: True if the module dies, False if it does not,
-          None if not sure
-        :rtype: Boolean or None
-
-        """
-        ret: Optional[bool] = False
-        imods = {
-            islot.output_module.name
-            for islot in self._input_slots.values()
-            if islot is not None
-        }
-        if imods.issubset(deps):  # all input will be deleted, we die
-            return True
-        if imods.issubset(deps | maybe_deps):
-            ret = None  # Maybe
-        omods = {
-            oslot.input_module.name
-            for oslots in self._output_slots.values()
-            for oslot in oslots or []
-        }
-        if omods.issubset(deps):
-            return True
-        if omods.issubset(deps | maybe_deps):
-            ret = None
-        return ret
-
     def _connect_output(self, slot: Slot) -> List[Slot]:
         slot_list = self.get_output_slot(slot.output_name)
         if slot_list is None:
-            self._output_slots[slot.output_name] = [slot]
+            slot_list = [slot]
+            self._output_slots[slot.output_name] = slot_list
         else:
             slot_list.append(slot)
         return slot_list
@@ -667,7 +616,7 @@ class Module(metaclass=ModuleMeta):
         raise NotImplementedError("run_step not defined")
 
     @staticmethod
-    def next_state(slot) -> ModuleState:
+    def next_state(slot: Slot) -> ModuleState:
         """Return state_ready if the slot has buffered information,
         or state_blocked otherwise.
         """
@@ -676,7 +625,7 @@ class Module(metaclass=ModuleMeta):
         return Module.state_blocked
 
     def _return_run_step(
-        self, next_state: ModuleState, steps_run: int, productive=None
+        self, next_state: ModuleState, steps_run: int
     ) -> ReturnRunStep:
         assert next_state >= Module.state_ready and next_state <= Module.state_zombie
         self.steps_acc += steps_run
@@ -694,7 +643,7 @@ class Module(metaclass=ModuleMeta):
     def is_greedy(self) -> bool:
         return self.TAG_GREEDY in self.tags
 
-    def is_tagged(self, tag) -> bool:
+    def is_tagged(self, tag: str) -> bool:
         return tag in self.tags
 
     def is_created(self) -> bool:
@@ -801,7 +750,7 @@ class Module(metaclass=ModuleMeta):
         return self._state
 
     @state.setter
-    def state(self, s: ModuleState):
+    def state(self, s: ModuleState) -> None:
         self.set_state(s)
 
     def set_state(self, s: ModuleState) -> None:
@@ -811,7 +760,7 @@ class Module(metaclass=ModuleMeta):
         ), "State %s invalid in module %s" % (s, self.name)
         self._state = s
 
-    def trace_stats(self, max_runs=None) -> Table:
+    def trace_stats(self, max_runs: Optional[int] = None) -> Table:
         return self.tracer.trace_stats(max_runs)
 
     def predict_step_size(self, duration: float) -> int:
@@ -870,7 +819,7 @@ class Module(metaclass=ModuleMeta):
 
     def _update_params(self, run_number: int) -> None:
         # pylint: disable=unused-argument
-        pslot = self.get_input_slot(self.PARAMETERS_SLOT)
+        pslot = self._input_slots[self.PARAMETERS_SLOT]
         if pslot is None or pslot.output_module is None:  # optional slot
             return
         df = pslot.data()
@@ -895,11 +844,6 @@ class Module(metaclass=ModuleMeta):
         See Variable module
         """
         return False
-
-    def post_interaction_proc(self):
-        pass
-        # s = self.scheduler()
-        # s.freeze()
 
     def run(self, run_number: int) -> None:
         assert not self.is_running()
@@ -993,9 +937,11 @@ class InputSlots:
         slot.input_module = self.__dict__["module"]
         if isinstance(name, int):
             pos = name
+            imod = slot.input_module
+            assert imod is not None
             desc = [
                 (k, sd.required)
-                for (k, sd) in slot.input_module.input_descriptors.items()
+                for (k, sd) in imod.input_descriptors.items()
             ]
             assert pos < len(desc)
             name_, req = desc[pos]
@@ -1019,8 +965,9 @@ class InputSlots:
         slot.meta = meta
         return self.__setattr__(name, slot)
 
-    def __dir__(self):
-        return self.__dict__["module"].input_slot_names()
+    def __dir__(self) -> Iterable[str]:
+        module: Module = self.__dict__["module"]
+        return module.input_slot_names()
 
 
 class OutputSlots:
@@ -1037,16 +984,18 @@ class OutputSlots:
         raise ProgressiveError("Output slots cannot be assigned, only read")
 
     def __getattr__(self, name: str) -> Slot:
-        return self.__dict__["module"].create_slot(name, None, None)
+        module: Module = self.__dict__["module"]
+        return module.create_slot(name, None, None)
 
     def __getitem__(self, name: str) -> Slot:
         return self.__getattr__(name)
 
-    def __dir__(self) -> List[str]:
-        return self.__dict__["module"].output_slot_names()
+    def __dir__(self) -> Iterable[str]:
+        module: Module = self.__dict__["module"]
+        return module.output_slot_names()
 
 
-def _print_len(x):
+def _print_len(x: Sized) -> None:
     if x is not None:
         print(len(x))
 
@@ -1055,7 +1004,10 @@ class Every(Module):
     "Module running a function at each iteration"
     inputs = [SlotDescriptor("df")]
 
-    def __init__(self, proc=_print_len, constant_time=True, **kwds):
+    def __init__(self,
+                 proc: Callable[[Any], None] = _print_len,
+                 constant_time: bool = True,
+                 **kwds: Any) -> None:
         super(Every, self).__init__(**kwds)
         self._proc = proc
         self._constant_time = constant_time
@@ -1070,42 +1022,37 @@ class Every(Module):
     ) -> ReturnRunStep:
         slot = self.get_input_slot("df")
         df = slot.data()
-        if df is not None:
-            self._proc(df)
+        self._proc(df)
         slot.clear_buffers()
         return self._return_run_step(Module.state_blocked, steps_run=1)
 
 
-def _prt(x):
+def _prt(x: Any) -> None:
     print(x)
 
 
 class Print(Every):
     "Module to print its input slot"
 
-    def __init__(self, **kwds):
+    def __init__(self, **kwds: Any) -> None:
         if "proc" not in kwds:
             kwds["proc"] = _prt
         super(Print, self).__init__(quantum=0.1, constant_time=True, **kwds)
 
 
-def _slot_to_json(slot: Optional[Slot]) -> Union[None, List, JSon]:
+def _islot_to_json(slot: Optional[Slot]) -> Optional[JSon]:
     if slot is None:
         return None
-    if isinstance(slot, list):
-        return [_slot_to_json(s) for s in slot]
     return slot.to_json()
 
 
-def _slot_to_dataflow(slot: Optional[Slot]) -> Union[None, List, Tuple[str, str]]:
-    if slot is None:
+def _oslot_to_json(slots: Optional[List[Slot]]) -> Optional[List[Optional[JSon]]]:
+    if slots is None:
         return None
-    if isinstance(slot, list):
-        return [_slot_to_dataflow(s) for s in slot]
-    return (slot.output_module.name, slot.output_name)
+    return [_islot_to_json(s) for s in slots]
 
 
-def _create_table(tname: str, columns: Parameters):
+def _create_table(tname: str, columns: Parameters) -> Table:
     dshape = ""
     data = {}
     for (name, dtype, val) in columns:

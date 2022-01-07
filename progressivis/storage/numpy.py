@@ -110,10 +110,10 @@ class NumpyDataset(Dataset):
             newarea = [np.s_[0:s] for s in size]
         self.view = self.base[tuple(newarea)]
 
-    def __getitem__(self, args) -> Any:
+    def __getitem__(self, args: Any) -> Any:
         return self.view[args]
 
-    def __setitem__(self, args, val):
+    def __setitem__(self, args: Any, val: Any) -> None:
         self.view[args] = val
 
     def __len__(self) -> int:
@@ -141,7 +141,7 @@ class NumpyGroup(GroupImpl):
         shape: Optional[Shape] = None,
         dtype: Optional[DTypeLike] = None,
         data: Optional[Any] = None,
-        **kwds
+        **kwds: Any
     ) -> Dataset:
         if name in self.dict:
             raise KeyError("name %s already defined", name)
@@ -177,7 +177,7 @@ class NumpyGroup(GroupImpl):
         self.dict[name] = arr
         return arr
 
-    def _create_group(self, name: str, parent: Optional[GroupImpl]):
+    def _create_group(self, name: str, parent: Optional[GroupImpl]) -> Group:
         return NumpyGroup(name, parent=parent)
 
 

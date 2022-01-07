@@ -162,7 +162,7 @@ class Dataset(StorageObject):
         pass
 
     @abstractmethod
-    def resize(self, size: int, axis: Optional[int] = None) -> None:
+    def resize(self, size: Union[int, Tuple[int, ...]], axis: Optional[int] = None) -> None:
         pass
 
     @abstractproperty

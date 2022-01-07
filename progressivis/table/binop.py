@@ -4,11 +4,12 @@ import operator
 import logging
 
 from ..core.slot import SlotDescriptor
-from .module import TableModule, ReturnRunStep
+from ..core.module import ReturnRunStep
+from .module import TableModule
 from ..core.bitmap import bitmap
 from .table import Table
 
-from typing import Any, Callable, Union, Optional, Dict, cast
+from typing import Any, Callable, Union, Optional, Dict
 
 Binoperator = Callable[[Any, Any], Any]
 
@@ -40,7 +41,7 @@ ops: Dict[str, Binoperator] = {
     "-": operator.__sub__,
     "/": operator.__truediv__,
 }
-inv_ops: Dict[Callable, str] = {v: k for k, v in ops.items()}
+inv_ops: Dict[Binoperator, str] = {v: k for k, v in ops.items()}
 
 
 class Binop(TableModule):
@@ -50,8 +51,11 @@ class Binop(TableModule):
     ]
 
     def __init__(
-        self, binop: Binoperator, combine: Union[None, str, Binoperator] = None, **kwds
-    ):
+        self,
+        binop: Binoperator,
+        combine: Union[None, str, Binoperator] = None,
+        **kwds: Any
+    ) -> None:
         super(Binop, self).__init__(**kwds)
         self.default_step_size = 1000
         self.op: Optional[Binoperator] = binop
@@ -70,17 +74,20 @@ class Binop(TableModule):
         if name == "select":
             return self._bitmap
         if name == "table":
-            self.get_input_slot("table").data()
+            slot = self.get_input_slot("table")
+            if slot is not None:
+                return slot.data()
+            return None
         return super(Binop, self).get_data(name)
 
     def run_step(
         self, run_number: int, step_size: int, howlong: float
     ) -> ReturnRunStep:
         arg1_slot = self.get_input_slot("table")
-        # arg1_slot.update(run_number)
+        assert arg1_slot is not None
         arg1_data = arg1_slot.data()
         arg2_slot = self.get_input_slot("cmp")
-        # arg2_slot.update(run_number)
+        assert arg2_slot is not None
         arg2_data = arg1_slot.data()
 
         if (
@@ -100,10 +107,10 @@ class Binop(TableModule):
             arg2_slot.update(run_number)
 
         length = min(len(arg1_data), len(arg2_data))
-        cr1 = cast(bitmap, arg1_slot.created.next(as_slice=False))
-        up1 = cast(bitmap, arg1_slot.updated.next(as_slice=False))
-        cr2 = cast(bitmap, arg2_slot.created.next(as_slice=False))
-        up2 = cast(bitmap, arg2_slot.updated.next(as_slice=False))
+        cr1 = arg1_slot.created.next(as_slice=False)
+        up1 = arg1_slot.updated.next(as_slice=False)
+        cr2 = arg2_slot.created.next(as_slice=False)
+        up2 = arg2_slot.updated.next(as_slice=False)
         work = cr1 | up1 | cr2 | up2
         work &= bitmap(slice(0, length))
         work.pop(step_size)

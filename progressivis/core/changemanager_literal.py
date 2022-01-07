@@ -24,12 +24,12 @@ class LiteralChangeManager(BaseChangeManager):
     def __init__(
         self,
         slot: Slot,
-        buffer_created=True,
-        buffer_updated=False,
-        buffer_deleted=True,
-        buffer_exposed=False,
-        buffer_masked=False,
-    ):
+        buffer_created: bool = True,
+        buffer_updated: bool = False,
+        buffer_deleted: bool = True,
+        buffer_exposed: bool = False,
+        buffer_masked: bool = False,
+    ) -> None:
         super(LiteralChangeManager, self).__init__(
             slot,
             buffer_created,

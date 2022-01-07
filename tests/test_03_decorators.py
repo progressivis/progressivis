@@ -121,22 +121,23 @@ class InvalidDoubleRun(FooABC):
 
 
 def _4_csv_scenario(module, s):
-    csv_a = CSVLoader(
-        get_dataset("smallfile"), index_col=False, header=None, scheduler=s
-    )
-    csv_b = CSVLoader(
-        get_dataset("smallfile"), index_col=False, header=None, scheduler=s
-    )
-    csv_c = CSVLoader(
-        get_dataset("smallfile"), index_col=False, header=None, scheduler=s
-    )
-    csv_d = CSVLoader(
-        get_dataset("smallfile"), index_col=False, header=None, scheduler=s
-    )
-    module.input.a = csv_a.output.result
-    module.input.b = csv_b.output.result
-    module.input.c = csv_c.output.result
-    module.input.d = csv_d.output.result
+    with s:
+        csv_a = CSVLoader(
+            get_dataset("smallfile"), index_col=False, header=None, scheduler=s
+        )
+        csv_b = CSVLoader(
+            get_dataset("smallfile"), index_col=False, header=None, scheduler=s
+        )
+        csv_c = CSVLoader(
+            get_dataset("smallfile"), index_col=False, header=None, scheduler=s
+        )
+        csv_d = CSVLoader(
+            get_dataset("smallfile"), index_col=False, header=None, scheduler=s
+        )
+        module.input.a = csv_a.output.result
+        module.input.b = csv_b.output.result
+        module.input.c = csv_c.output.result
+        module.input.d = csv_d.output.result
 
     def _fun(s, r):
         if r > 10:

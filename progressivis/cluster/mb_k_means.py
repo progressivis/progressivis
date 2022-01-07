@@ -231,7 +231,7 @@ class MBKMeans(TableModule):
                 self.generate_table_name("centers"), dshape=dshape, create=True
             )
             self.result.resize(self.mbk.cluster_centers_.shape[0])
-        self.result[cols] = self.mbk.cluster_centers_
+        self.psdict[cols] = self.mbk.cluster_centers_  # type: ignore
         if is_conv:
             return self._return_run_step(self.state_blocked, iter_)
         return self._return_run_step(self.state_ready, iter_)
@@ -301,10 +301,10 @@ class MBKMeansFilter(TableModule):
     ) -> ReturnRunStep:
         assert self.context
         with self.context as ctx:
-            indices_t = ctx.table.created.next(step_size)  # returns a slice
+            indices_t = ctx.table.created.next(length=step_size)  # returns a slice
             steps_t = indices_len(indices_t)
             ctx.table.clear_buffers()
-            indices_l = ctx.labels.created.next(step_size)  # returns a slice
+            indices_l = ctx.labels.created.next(length=step_size)  # returns a slice
             steps_l = indices_len(indices_l)
             ctx.labels.clear_buffers()
             steps = steps_t + steps_l

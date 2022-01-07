@@ -36,7 +36,7 @@ class Counter(TableModule):
         assert self.context
         with self.context as ctx:
             dfslot = ctx.table
-            indices = dfslot.created.next(step_size)
+            indices = dfslot.created.next(length=step_size)
             steps = indices_len(indices)
             if steps == 0:
                 return self._return_run_step(self.state_blocked, steps_run=0)

@@ -39,7 +39,8 @@ class IdxMin(TableModule):
         return super(IdxMin, self).get_data(name)
 
     def is_ready(self) -> bool:
-        if self.get_input_slot("table").created.any():
+        slot = self.get_input_slot("table")
+        if slot is not None and slot.created.any():
             return True
         return super(IdxMin, self).is_ready()
 
@@ -57,7 +58,7 @@ class IdxMin(TableModule):
         assert self.context
         with self.context as ctx:
             dfslot = ctx.table
-            indices = dfslot.created.next(step_size)  # returns a slice
+            indices = dfslot.created.next(length=step_size)  # returns a slice
             steps = indices_len(indices)
             if steps == 0:
                 return self._return_run_step(self.state_blocked, steps_run=0)

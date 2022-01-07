@@ -7,7 +7,6 @@ import logging
 import functools
 from timeit import default_timer
 
-# import time
 from .dataflow import Dataflow
 from . import aio
 from ..utils.errors import ProgressiveError
@@ -47,11 +46,17 @@ Order = List[str]
 Reachability = Dict[str, List[str]]
 
 
-class CallbackList(List[TickProc]):
+class CallbackList(Dict[TickProc, int]):
     async def fire(self, scheduler: Scheduler, run_number: int) -> bool:
         ret = False
-        for proc in self:
+        for proc, count in list(self.items()):
             try:
+                if count > 0:
+                    count -= 1
+                    self[proc] = count
+                    continue
+                if count == 0:
+                    del self[proc]
                 if aio.iscoroutinefunction(proc):
                     coro = cast(TickCoro, proc)
                     await coro(scheduler, run_number)
@@ -97,7 +102,6 @@ class Scheduler:
         self._step_once = False
         self._run_number = 0
         self._tick_procs = CallbackList()
-        self._tick_once_procs = CallbackList()
         self._idle_procs = CallbackList()
         self._loop_procs = CallbackList()
         self.version = 0
@@ -115,7 +119,6 @@ class Scheduler:
         self._enter_cnt = 1
         self._lock: aio.Lock
         self._task = False
-        # self.runners = set()
         self.shortcut_evt: aio.Event
         self.coros: List[Coroutine[Any, Any, Any]] = []
 
@@ -243,14 +246,10 @@ class Scheduler:
                 )
             self._task = True
         self.coros = list(coros)
-        # self._tick_procs.clear()
         if tick_proc:
-            assert callable(tick_proc) or aio.iscoroutinefunction(tick_proc)
-            self._tick_procs.append(tick_proc)
-        # self._idle_procs.clear()
+            self.on_tick(tick_proc)
         if idle_proc:
-            assert callable(idle_proc)
-            self._idle_procs.append(idle_proc)
+            self.on_idle(idle_proc)
         await self.run()
 
     async def start(
@@ -288,72 +287,56 @@ class Scheduler:
         "Start the scheduler for on step."
         await self.start(tick_proc=self._step_proc)
 
-    def on_tick(self, proc: TickProc, delay: int = 0) -> None:
+    def on_tick(self, proc: TickProc, delay: int = -1) -> None:
         "Set a procedure to call at each tick."
         assert callable(proc)
-        if delay <= 0:
-            self._tick_procs.append(proc)
-        else:
-            delay_proc(delay, proc, self._tick_procs)
+        self._tick_procs[proc] = delay
 
     def remove_tick(self, proc: TickProc) -> None:
         "Remove a tick callback"
-        self._tick_procs.remove(proc)
+        self._tick_procs.pop(proc, None)
 
     def on_tick_once(self, proc: TickProc) -> None:
         """
         Add a oneshot function that will be run at the next scheduler tick.
         This is especially useful for setting up module connections.
         """
-        assert callable(proc)
-        self._tick_once_procs.append(proc)
+        self.on_tick(proc, 1)
 
     def remove_tick_once(self, proc: TickProc) -> None:
         "Remove a tick once callback"
-        self._tick_once_procs.remove(proc)
+        self.remove_tick(proc)
 
-    def on_idle(self, proc: TickProc, delay: int = 0) -> None:
+    def on_idle(self, proc: TickProc, delay: int = -1) -> None:
         "Set a procedure that will be called when there is nothing else to do."
         assert callable(proc)
-        if delay <= 0:
-            self._idle_procs.append(proc)
-        else:
-            delay_proc(delay, proc, self._idle_procs)
+        self._idle_procs[proc] = delay
 
     def remove_idle(self, idle_proc: TickProc) -> None:
         "Remove an idle callback."
-        self._idle_procs.remove(idle_proc)
+        self._idle_procs.pop(idle_proc, None)
 
     def on_loop(self, proc: TickProc, delay: int = 0) -> None:
         assert callable(proc)
-        if delay <= 0:
-            self._loop_procs.append(proc)
-        else:
-            delay_proc(delay, proc, self._loop_procs)
+        self._loop_procs[proc] = delay
 
     def remove_loop(self, idle_proc: TickProc) -> None:
         "Remove an idle callback."
-        assert callable(idle_proc)
-        self._loop_procs.remove(idle_proc)
+        self._loop_procs.pop(idle_proc, None)
 
     async def run(self) -> None:
         "Run the modules, called by start()."
         global KEEP_RUNNING
-        # from .sentinel import Sentinel
-        # sl = Sentinel(scheduler=self)
         self.commit()
         self._stopped = False
         self._running = True
         self._start = default_timer()
         self._before_run()
-        # if self._new_modules:
-        #    self._update_modules()
         runners = [
             aio.create_task(self._run_loop()),
             aio.create_task(self.shortcut_manager()),
         ]
         runners.extend([aio.create_task(coro) for coro in self.coros])
-        # runners.append(aio.create_task(self.unlocker(), "unlocker"))
         # TODO: find the "right" initialisation value ...
         KEEP_RUNNING = min(50, len(self._run_list) * 3)
         self._keep_running = KEEP_RUNNING
@@ -565,8 +548,6 @@ class Scheduler:
     async def _run_tick_procs(self) -> None:
         # pylint: disable=broad-except
         await self._tick_procs.fire(self, self._run_number)
-        await self._tick_once_procs.fire(self, self._run_number)
-        self._tick_once_procs.clear()
 
     async def stop(self) -> None:
         "Stop the execution."
@@ -713,29 +694,3 @@ class Scheduler:
 
 
 Scheduler.default = Scheduler()
-
-
-def delay_proc(counter: int, proc: TickProc, cb: CallbackList) -> None:
-    if aio.iscoroutinefunction(proc):
-
-        async def asubproc(scheduler: Scheduler, run_number: int) -> None:
-            nonlocal counter
-            counter -= 1
-            logger.debug(f"delay_proc {proc} counter: {counter}")
-            if counter <= 0:
-                coro = cast(TickCoro, proc)
-                await coro(scheduler, run_number)
-                cb.remove(asubproc)
-
-        cb.append(asubproc)
-    else:
-
-        def subproc(scheduler: Scheduler, run_number: int) -> None:
-            nonlocal counter
-            counter -= 1
-            logger.debug(f"delay_proc {proc} counter: {counter}")
-            if counter <= 0:
-                proc(scheduler, run_number)
-                cb.remove(subproc)
-
-        cb.append(subproc)

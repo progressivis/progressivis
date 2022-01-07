@@ -3,14 +3,15 @@ from __future__ import annotations
 import logging
 
 from . import Table
-from ..core.slot import SlotDescriptor
-from .module import TableModule, ReturnRunStep
+from progressivis.core.slot import SlotDescriptor
+from progressivis.core.module import ReturnRunStep
+from .module import TableModule
 from ..core.utils import indices_len, fix_loc
 from ..core.bitmap import bitmap
 from . import TableSelectedView
 import numpy as np
 
-from typing import cast
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -23,10 +24,10 @@ class FilterMod(TableModule):
 
     inputs = [SlotDescriptor("table", type=Table, required=True)]
 
-    def __init__(self, **kwds):
+    def __init__(self, **kwds: Any) -> None:
         super().__init__(**kwds)
 
-    def reset(self):
+    def reset(self) -> None:
         if self.result is not None:
             self.selected.selection = bitmap([])
 
@@ -34,6 +35,7 @@ class FilterMod(TableModule):
         self, run_number: int, step_size: int, howlong: float
     ) -> ReturnRunStep:
         input_slot = self.get_input_slot("table")
+        assert input_slot is not None
         input_table = input_slot.data()
         if input_table is None:
             return self._return_run_step(self.state_blocked, steps_run=0)
@@ -45,11 +47,11 @@ class FilterMod(TableModule):
             input_slot.update(run_number)
             self.reset()
         if input_slot.deleted.any():
-            deleted = cast(bitmap, input_slot.deleted.next(step_size, as_slice=False))
+            deleted = input_slot.deleted.next(length=step_size, as_slice=False)
             self.selected.selection -= deleted
             steps += indices_len(deleted)
         if input_slot.created.any():
-            created = input_slot.created.next(step_size, as_slice=False)
+            created = input_slot.created.next(length=step_size, as_slice=False)
             indices = fix_loc(created)
             steps += indices_len(created)
             eval_idx = input_table.eval(

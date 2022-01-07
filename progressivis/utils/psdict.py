@@ -12,10 +12,10 @@ if TYPE_CHECKING:
     from progressivis.core.changemanager_dict import DictChangeManager
 
 
-class PsDict(dict):
+class PsDict(Dict[str, Any]):
     "progressive dictionary"
 
-    def __init__(self, other: Optional[Dict[str, Any]] = None, **kwargs):
+    def __init__(self, other: Optional[Dict[str, Any]] = None, **kwargs: Any) -> None:
         if other is not None:
             # useful when keys are not varname-alike
             # one can use both (other and kwargs)
@@ -30,7 +30,12 @@ class PsDict(dict):
         self._inverse_del: Optional[Dict[int, str]] = None
         self.changes: Optional[DictChangeManager] = None
 
-    def compute_updates(self, start, now, mid=None, cleanup=True):
+    def compute_updates(
+            self,
+            start: int,
+            now: float,
+            mid: Optional[str],
+            cleanup: bool = True) -> Optional[IndexUpdate]:
         assert False, "compute_updates should not be called on PsDict"
         if self.changes:
             updates = self.changes.compute_updates(start, now, mid, cleanup=cleanup)
@@ -39,12 +44,12 @@ class PsDict(dict):
             return updates
         return None
 
-    def fill(self, val) -> None:
+    def fill(self, val: Any) -> None:
         for k in self.keys():
             self[k] = val
 
     @property
-    def array(self) -> np.ndarray:
+    def array(self) -> np.ndarray[Any, Any]:
         return np.array(list(self.values()))
 
     @property
@@ -137,10 +142,10 @@ class PsDict(dict):
         for key in list(self.keys()):
             del self[key]
 
-    def set_nth(self, i: int, val):
+    def set_nth(self, i: int, val: Any) -> None:
         self[list(self)[i]] = val
 
-    def get_nth(self, i: int):
+    def get_nth(self, i: int) -> Any:
         return self[list(self)[i]]
 
     @property

@@ -111,11 +111,11 @@ class Bisect(TableModule):
             steps += 1  # indices_len(deleted)
         created = None
         if input_slot.created.any():
-            created = input_slot.created.next(step_size)
+            created = input_slot.created.next(length=step_size)
             steps += indices_len(created)
         updated = None
         if input_slot.updated.any():
-            updated = input_slot.updated.next(step_size)
+            updated = input_slot.updated.next(length=step_size)
             steps += indices_len(updated)
         input_table = input_slot.data()
         if input_table is None:

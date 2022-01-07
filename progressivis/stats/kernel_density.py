@@ -36,12 +36,12 @@ class KernelDensity(TableModule):
         self, run_number: int, step_size: int, howlong: float
     ) -> ReturnRunStep:
         dfslot = self.get_input_slot("table")
-        # dfslot.update(run_number)
+        assert dfslot is not None
         if dfslot.deleted.any():
             raise ValueError("Not implemented yet")
         if not dfslot.created.any():
             return self._return_run_step(self.state_blocked, steps_run=0)
-        indices = cast(bitmap, dfslot.created.next(step_size, as_slice=False))
+        indices = cast(bitmap, dfslot.created.next(length=step_size, as_slice=False))
         steps = indices_len(indices)
         if steps == 0:
             return self._return_run_step(self.state_blocked, steps_run=0)

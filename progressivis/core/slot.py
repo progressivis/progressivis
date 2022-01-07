@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 if TYPE_CHECKING:
     from .module import Module
     from .scheduler import Scheduler
-    from .changemanager_base import ChangeBuffer, _base_accessor, _selection_accessor
+    from .changemanager_base import ChangeBuffer, _accessor
 
 SlotType = Optional[Union[Type[Any], Tuple[Type[Any], ...]]]
 
@@ -77,8 +77,8 @@ class Slot:
         self,
         output_module: Module,
         output_name: str,
-        input_module: Module,
-        input_name: str,
+        input_module: Optional[Module],
+        input_name: Optional[str],
     ):
         self.output_name = output_name
         self.output_module = output_module
@@ -91,6 +91,7 @@ class Slot:
 
     def name(self) -> str:
         "Return the name of the slot"
+        assert self.input_module is not None and self.input_name is not None
         if not hasattr(self, "_name"):
             self._name = self.input_module.name + "_" + self.input_name
         return self._name
@@ -104,6 +105,7 @@ class Slot:
         return self.output_module.scheduler()
 
     def input_descriptor(self) -> SlotDescriptor:
+        assert self.input_module is not None and self.input_name is not None
         if self.original_name:
             return self.input_module.input_slot_descriptor(self.original_name)
         return self.input_module.input_slot_descriptor(self.input_name)
@@ -112,6 +114,7 @@ class Slot:
         return self.output_module.output_slot_descriptor(self.output_name)
 
     def __str__(self) -> str:
+        assert self.input_module is not None
         if self.original_name:
             name = "Slot(%s[%s]->%s[%s/%s])" % (
                 self.output_module.name,
@@ -134,6 +137,7 @@ class Slot:
 
     def last_update(self) -> int:
         "Return the time of the last update for thie slot"
+        assert self.input_module is not None
         if self.changes:
             return self.changes.last_update()
         return self.input_module.last_update()
@@ -143,6 +147,7 @@ class Slot:
         Return a dictionary describing this slot, meant to be
         serialized in json.
         """
+        assert self.input_module is not None
         return {
             "output_name": self.output_name,
             "output_module": self.output_module.name,
@@ -158,6 +163,7 @@ class Slot:
 
     def validate_types(self) -> bool:
         "Validate the types of the endpoints connected through this slot"
+        assert self.input_module is not None and self.input_name is not None
         output_type = self.output_module.output_slot_type(self.output_name)
         input_type = self.input_module.input_slot_type(self.input_name)
         if output_type is None or input_type is None:
@@ -264,13 +270,13 @@ class Slot:
         return self.changes.deleted if self.changes else EMPTY_BUFFER
 
     @property
-    def base(self) -> _base_accessor:
+    def base(self) -> _accessor:
         "Return an accessor"
         assert self.changes
         return self.changes.base
 
     @property
-    def selection(self) -> _selection_accessor:
+    def selection(self) -> _accessor:
         "Return an accessor"
         assert self.changes
         return self.changes.selection

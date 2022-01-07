@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 from progressivis.core.slot import SlotDescriptor
-from .module import TableModule, ReturnRunStep
+from progressivis.core.module import ReturnRunStep
+from .module import TableModule
 from ..utils.psdict import PsDict
 from .table import Table
+
+from typing import Any
 
 
 class Dict2Table(TableModule):
@@ -18,14 +21,14 @@ class Dict2Table(TableModule):
 
     inputs = [SlotDescriptor("dict_", type=PsDict, required=True)]
 
-    def __init__(self, **kwds):
+    def __init__(self, **kwds: Any) -> None:
         super().__init__(**kwds)
 
     def run_step(
         self, run_number: int, step_size: int, howlong: float
     ) -> ReturnRunStep:
         dict_slot = self.get_input_slot("dict_")
-        # dict_slot.update(run_number)
+        assert dict_slot is not None
         dict_ = dict_slot.data()
         if dict_ is None:
             return self._return_run_step(self.state_blocked, steps_run=0)

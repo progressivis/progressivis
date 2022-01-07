@@ -2,9 +2,11 @@ from __future__ import annotations
 
 from progressivis.core.utils import Dialog
 from progressivis.core.slot import SlotDescriptor
-
-from progressivis.table.module import TableModule, ReturnRunStep
+from progressivis.core.module import ReturnRunStep
+from progressivis.table.module import TableModule
 from progressivis.utils.psdict import PsDict
+
+from typing import Any
 
 
 class MergeDict(TableModule):
@@ -23,7 +25,7 @@ class MergeDict(TableModule):
         SlotDescriptor("second", type=PsDict, required=True),
     ]
 
-    def __init__(self, **kwds):
+    def __init__(self, **kwds: Any) -> None:
         super().__init__(**kwds)
         self._dialog = Dialog(self)
 
@@ -33,6 +35,7 @@ class MergeDict(TableModule):
         first_slot = self.get_input_slot("first")
         # first_slot.update(run_number)
         second_slot = self.get_input_slot("second")
+        assert first_slot is not None and second_slot is not None
         first_dict = first_slot.data()
         second_dict = second_slot.data()
         if first_dict is None or second_dict is None:

@@ -302,15 +302,15 @@ class RangeQuery2d(TableModule):
         steps = 0
         deleted: Optional[bitmap] = None
         if input_slot.deleted.any():
-            deleted = cast(bitmap, input_slot.deleted.next(step_size))
+            deleted = cast(bitmap, input_slot.deleted.next(length=step_size))
             steps += indices_len(deleted)
         created: Optional[bitmap] = None
         if input_slot.created.any():
-            created = cast(bitmap, input_slot.created.next(step_size))
+            created = cast(bitmap, input_slot.created.next(length=step_size))
             steps += indices_len(created)
         updated: Optional[bitmap] = None
         if input_slot.updated.any():
-            updated = cast(bitmap, input_slot.updated.next(step_size))
+            updated = cast(bitmap, input_slot.updated.next(length=step_size))
             steps += indices_len(updated)
         input_table = input_slot.data()
         if input_table is None:

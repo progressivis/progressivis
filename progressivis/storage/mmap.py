@@ -71,7 +71,7 @@ def cleanup_temp_dir() -> None:
 
 
 @atexit.register
-def cleanup_at_exit():
+def cleanup_at_exit() -> None:
     if VARS.get("REMOVE_TEMP_DIR_AT_EXIT") is not None:
         try:
             cleanup_temp_dir()
@@ -79,7 +79,7 @@ def cleanup_at_exit():
             pass
 
 
-def _shape_len(shape: Shape):
+def _shape_len(shape: Shape) -> int:
     length = 1
     for dim in shape:
         length *= dim
@@ -100,8 +100,8 @@ class MMapDataset(Dataset):
         shape: Optional[Shape] = None,
         dtype: Optional[DTypeLike] = None,
         data: Optional[Any] = None,
-        **kwds,
-    ):
+        **kwds: Any,
+    ) -> None:
         "Create a MMapDataset."
         self._name = name
         self._filename = os.path.join(path, name)
@@ -117,7 +117,7 @@ class MMapDataset(Dataset):
         if dtype is None:
             raise ValueError("dtype required when no data is provided")
         type = np.dtype(dtype)
-        self._dtype: np.dtype = type
+        self._dtype = type
 
         if shape:
             length = 1

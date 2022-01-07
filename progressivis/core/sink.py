@@ -4,21 +4,21 @@ from __future__ import annotations
 from progressivis.core.slot import SlotDescriptor
 from progressivis.core.module import Module, ReturnRunStep
 
-from typing import List
+from typing import List, Any, Optional
 
 
 class Sink(Module):
     "Base class for modules supporting a variable number of input slots."
     inputs = [SlotDescriptor("inp", type=None, required=True, multiple=True)]
 
-    def __init__(self, slot_name: str = "inp", **kwds) -> None:
+    def __init__(self, slot_name: str = "inp", **kwds: Any) -> None:
         super(Sink, self).__init__(**kwds)
         self.slot_name = slot_name
 
     def predict_step_size(self, duration: float) -> int:
         return 1
 
-    def get_input_slot_multiple(self, name: str = None) -> List[str]:
+    def get_input_slot_multiple(self, name: Optional[str] = None) -> List[str]:
         if name is None:
             name = self.slot_name
         return super(Sink, self).get_input_slot_multiple(name)

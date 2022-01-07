@@ -6,6 +6,8 @@ from .column_base import BaseColumn
 from .tablechanges import TableChanges
 from ..core.slot import Slot
 
+from typing import Any
+
 
 class ColumnChangeManager(BaseChangeManager):
     """
@@ -14,13 +16,13 @@ class ColumnChangeManager(BaseChangeManager):
 
     def __init__(
         self,
-        slot,
-        buffer_created=True,
-        buffer_updated=False,
-        buffer_deleted=False,
-        buffer_exposed=False,
-        buffer_masked=False,
-    ):
+        slot: Slot,
+        buffer_created: bool = True,
+        buffer_updated: bool = False,
+        buffer_deleted: bool = False,
+        buffer_exposed: bool = False,
+        buffer_masked: bool = False,
+    ) -> None:
         super(ColumnChangeManager, self).__init__(
             slot,
             buffer_created,
@@ -33,7 +35,7 @@ class ColumnChangeManager(BaseChangeManager):
         if data.changes is None:
             data.changes = TableChanges()
 
-    def update(self, run_number, data, mid):
+    def update(self, run_number: int, data: Any, mid: str) -> None:
         assert isinstance(data, BaseColumn)
         if data is None or (run_number != 0 and run_number <= self._last_update):
             return

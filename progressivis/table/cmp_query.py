@@ -5,12 +5,13 @@ import logging
 
 import numpy as np
 
+from ..core.module import ReturnRunStep
 from ..core.slot import SlotDescriptor
-from .module import TableModule, ReturnRunStep
+from .module import TableModule
 from ..core.bitmap import bitmap
 from .table import Table
 
-from typing import Optional, cast
+from typing import Optional, Any
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +35,7 @@ class CmpQueryLast(TableModule):
     ]
     outputs = [SlotDescriptor("select", type=bitmap, required=False)]
 
-    def __init__(self, op: str = "<", combine: str = "and", **kwds):
+    def __init__(self, op: str = "<", combine: str = "and", **kwds: Any) -> None:
         super(CmpQueryLast, self).__init__(**kwds)
         self.default_step_size = 1000
         self.op = op
@@ -43,7 +44,7 @@ class CmpQueryLast(TableModule):
         self._combine = ops[combine]
         self._bitmap: Optional[bitmap] = None
 
-    def get_data(self, name):
+    def get_data(self, name: str) -> Any:
         if name == "select":
             return self._bitmap
         if name == "table":
@@ -54,10 +55,10 @@ class CmpQueryLast(TableModule):
         self, run_number: int, step_size: int, howlong: float
     ) -> ReturnRunStep:
         table_slot = self.get_input_slot("table")
-        # table_slot.update(run_number)
+        assert table_slot is not None
         table_data = table_slot.data()
         cmp_slot = self.get_input_slot("cmp")
-        # cmp_slot.update(run_number)
+        assert cmp_slot is not None
         cmp_slot.clear_buffers()
         cmp_data = cmp_slot.data()
 
@@ -77,10 +78,10 @@ class CmpQueryLast(TableModule):
             table_slot.update(run_number)
             cmp_slot.update(run_number)
 
-        cr = cast(bitmap, table_slot.created.next(as_slice=False))
+        cr = table_slot.created.next(as_slice=False)
         if cr is None:
             cr = bitmap()
-        up = cast(bitmap, table_slot.updated.next(as_slice=False))
+        up = table_slot.updated.next(as_slice=False)
         work = cr | up
         ids = work.pop(step_size)
         if cr:

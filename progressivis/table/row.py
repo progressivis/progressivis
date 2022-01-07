@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from collections import MutableMapping
 from progressivis.core.utils import integer_types, remove_nan_etc
 from collections import OrderedDict
 
@@ -16,6 +15,7 @@ from typing import (
     Sequence,
     Optional,
     Iterator,
+    MutableMapping
 )
 
 JSon = Dict[str, Any]
@@ -26,7 +26,7 @@ if TYPE_CHECKING:
     import numpy as np
 
 
-class Row(MutableMapping):
+class Row(MutableMapping[str, Any]):
     """ Wraps a dictionary interace around a row of a Table.
 
     Parameters
@@ -103,7 +103,7 @@ class Row(MutableMapping):
 
     def __contains__(self, key: object) -> bool:
         table = self.table
-        if isinstance(key, (int, str)):
+        if isinstance(key, str):
             return key in table
         return False
 

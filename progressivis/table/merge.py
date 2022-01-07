@@ -1,29 +1,31 @@
 "Merge module."
 from __future__ import annotations
 
-from .nary import NAry, ReturnRunStep
-from .table import BaseTable, Table
+from progressivis.core.module import ReturnRunStep
+from .nary import NAry
+from .table_base import BaseTable
+from .table import Table
 from .dshape import dshape_join
 from progressivis.utils.inspect import filter_kwds
 
-from typing import Dict, Any, cast, List
+from typing import Dict, Any, cast, List, Tuple, Optional
 
 
 def merge(
     left: BaseTable,
     right: BaseTable,
-    name: str = None,
-    how="inner",
-    on=None,
-    left_on=None,
-    right_on=None,
-    left_index=False,
-    right_index=False,
-    sort=False,
-    suffixes=("_x", "_y"),
-    copy=True,
-    indicator=False,
-    merge_ctx: Dict[str, Any] = None,
+    name: Optional[str] = None,
+    how: str = "inner",
+    on: Any = None,
+    left_on: Any = None,
+    right_on: Any = None,
+    left_index: bool = False,
+    right_index: bool = False,
+    sort: bool = False,
+    suffixes: Tuple[str, str] = ("_x", "_y"),
+    copy: bool = True,
+    indicator: bool = False,
+    merge_ctx: Optional[Dict[str, Any]] = None,
 ) -> Table:
     # pylint: disable=too-many-arguments, invalid-name, unused-argument, too-many-locals
     "Merge function"
@@ -70,7 +72,7 @@ def merge_cont(left: BaseTable, right: BaseTable, merge_ctx: Dict[str, Any]) -> 
 class Merge(NAry):
     "Merge module"
 
-    def __init__(self, **kwds):
+    def __init__(self, **kwds: Any) -> None:
         """Merge(how='inner', on=None, left_on=None, right_on=None,
                  left_index=False, right_index=False,
                 sort=False,suffixes=('_x', '_y'), copy=True,
@@ -78,7 +80,7 @@ class Merge(NAry):
         """
         super(Merge, self).__init__(**kwds)
         self.merge_kwds = filter_kwds(kwds, merge)
-        self._context = {}
+        self._context: Dict[str, Any] = {}
 
     def run_step(
         self, run_number: int, step_size: int, howlong: float

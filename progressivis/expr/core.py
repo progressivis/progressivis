@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 from progressivis.table.module import TableModule, Module
 
-from typing import Type, Tuple, Any, Dict, Optional, List, TYPE_CHECKING, Union
+from typing import Type, Tuple, Any, Dict, Optional, List, TYPE_CHECKING, Union, Iterable
 
 if TYPE_CHECKING:
     from progressivis.core.scheduler import Scheduler
@@ -16,7 +16,7 @@ class ValidationError(RuntimeError):
     pass
 
 
-def filter_underscore(lst: List[str]):
+def filter_underscore(lst: Iterable[str]):
     return [elt for elt in lst if not elt.startswith("_")]
 
 
@@ -112,8 +112,7 @@ class Expr:
         if input_slot is None:
             input_slots = filter_underscore(module.input_slot_names())
             for inp in input_slots:
-                slot = module.get_input_slot(inp)
-                if slot is None:  # no input slot connected yet
+                if not module.has_input_slot(inp):  # no input slot connected yet
                     input_slot = inp
                     break
             if input_slot is None:

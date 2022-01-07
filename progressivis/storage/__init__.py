@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 from progressivis.core.config import get_option
-from .base import Group, StorageEngine
+from .base import Group, StorageEngine, Dataset
 from .numpy import NumpyStorageEngine
 from .mmap import MMapStorageEngine, init_temp_dir_if, cleanup_temp_dir, temp_dir
 
 
-__all__ = ["Group", "init_temp_dir_if", "cleanup_temp_dir", "temp_dir"]
+__all__ = ["Group", "Dataset", "init_temp_dir_if", "cleanup_temp_dir", "temp_dir"]
 
 
 numpyengine = NumpyStorageEngine()

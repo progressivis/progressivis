@@ -164,9 +164,9 @@ class MCScatterPlot(NAry):
         ret: Dict[str, Dict[str, Tuple[Slot, float, float]]] = defaultdict(dict)
         changes = False
         for name in self.input_slot_names():
-            input_slot = self.get_input_slot(name)
-            if input_slot is None:
+            if not self.has_input_slot(name):
                 continue
+            input_slot = self.get_input_slot(name)
             meta = input_slot.meta
             if meta is None:
                 continue

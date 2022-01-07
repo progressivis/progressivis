@@ -7,7 +7,7 @@ from ..table.module import TableModule, ReturnRunStep
 from ..table.table import BaseTable, Table
 
 
-from typing import Optional, Union, Dict
+from typing import Union, Dict
 
 
 def make_local(df: Union[BaseTable, Dict], px) -> Dict[str, np.ndarray]:
@@ -60,7 +60,7 @@ class MixUfuncABC(TableModule):
                 reset_all = True
                 break
         if reset_all:
-            for slot in self._input_slots.values():
+            for slot in self.input_slot_values():
                 slot.reset()
                 slot.update(run_number)
             self.reset()
@@ -80,7 +80,8 @@ class MixUfuncABC(TableModule):
             )
         local_env = {}
         # vars_dict = {}
-        for n, sl in self._input_slots.items():
+        for sl in self.input_slot_values():
+            n = sl.input_name
             if n == "_params":
                 continue
             data_ = sl.data()
@@ -88,13 +89,14 @@ class MixUfuncABC(TableModule):
                 step_size = min(step_size, sl.created.length())
             if (step_size == 0 or data_ is None) and not isinstance(data_, dict):
                 return self._return_run_step(self.state_blocked, steps_run=0)
-        first_slot: Optional[int] = None
-        for n, sl in self._input_slots.items():
+        first_slot = None
+        for sl in self.input_slot_values():
+            n = sl.input_name
             if n == "_params":
                 continue
             if first_slot is None:
                 first_slot = sl
-            indices = sl.created.next(step_size)
+            indices = sl.created.next(length=step_size)
             data_ = sl.data()
             is_dict = isinstance(data_, dict)
             df = data_ if is_dict else self.filter_columns(data_, fix_loc(indices), n)
@@ -111,5 +113,5 @@ class MixUfuncABC(TableModule):
             if steps is None:
                 steps = len(result[c])
         self.table.append(result)
-        assert steps is not None
+        assert steps is not None and first_slot is not None
         return self._return_run_step(self.next_state(first_slot), steps_run=steps)

@@ -68,10 +68,11 @@ class SimpleCSVLoader(TableModule):
         return self._rows_read
 
     def is_ready(self) -> bool:
-        fn = self.get_input_slot("filenames")
-        # Can be called before the first update so fn.created can be None
-        if fn and (fn.created is None or fn.created.any()):
-            return True
+        if self.has_input_slot("filenames"):
+            # Can be called before the first update so fn.created can be None
+            fn = self.get_input_slot("filenames")
+            if fn.created is None or fn.created.any():
+                return True
         return super().is_ready()
 
     def is_data_input(self) -> bool:
@@ -132,8 +133,10 @@ class SimpleCSVLoader(TableModule):
                 self.filepath_or_buffer = None
                 self._file_mode = True
             else:
+                if not self.has_input_slot("filenames"):
+                    return self.state_terminated
                 fn_slot = self.get_input_slot("filenames")
-                if fn_slot is None or fn_slot.output_module is None:
+                if fn_slot.output_module is None:
                     return self.state_terminated
                 if True:
                     fn_slot.update(run_number)
@@ -141,7 +144,7 @@ class SimpleCSVLoader(TableModule):
                         raise ProgressiveError("Cannot handle input file changes")
                     df = fn_slot.data()
                     while self.parser is None:
-                        indices = fn_slot.created.next(1)
+                        indices = fn_slot.created.next(length=1)
                         assert isinstance(indices, slice)
                         if indices.stop == indices.start:
                             return self.state_blocked
@@ -179,11 +182,12 @@ class SimpleCSVLoader(TableModule):
             )  # raises StopIteration at EOF
         except StopIteration:
             self.close()
-            fn_slot = self.get_input_slot("filenames")
-            if (
-                fn_slot is None or fn_slot.output_module is None
-            ) and not self._file_mode:
-                raise
+            if self.has_input_slot("filenames"):
+                fn_slot = self.get_input_slot("filenames")
+                if (
+                        fn_slot is None or fn_slot.output_module is None
+                ) and not self._file_mode:
+                    raise
             self.parser = None
             return self._return_run_step(self.state_ready, steps_run=0)
         creates = len(df)

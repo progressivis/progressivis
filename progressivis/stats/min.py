@@ -6,13 +6,14 @@ import numpy as np
 
 from ..core.utils import indices_len, fix_loc
 from ..core.bitmap import bitmap
-from ..table.module import TableModule, ReturnRunStep
+from ..core.module import ReturnRunStep
+from ..table.module import TableModule
 from ..table.table import Table
 from ..core.slot import SlotDescriptor, Slot
 from ..utils.psdict import PsDict
 from ..core.decorators import process_slot, run_if_any
 
-from typing import Optional, List, Dict, Union, cast
+from typing import Optional, List, Dict, Union, cast, Any, Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -20,13 +21,14 @@ logger = logging.getLogger(__name__)
 class Min(TableModule):
     inputs = [SlotDescriptor("table", type=Table, required=True)]
 
-    def __init__(self, columns: List[str] = None, **kwds):
+    def __init__(self, columns: Optional[List[str]] = None, **kwds: Any) -> None:
         super(Min, self).__init__(**kwds)
         self._columns = columns
         self.default_step_size = 10000
 
     def is_ready(self) -> bool:
-        if self.get_input_slot("table").created.any():
+        slot = self.get_input_slot("table")
+        if slot is not None and slot.created.any():
             return True
         return super(Min, self).is_ready()
 
@@ -41,7 +43,7 @@ class Min(TableModule):
     ) -> ReturnRunStep:
         assert self.context
         with self.context as ctx:
-            indices = ctx.table.created.next(step_size)  # returns a slice
+            indices = ctx.table.created.next(length=step_size)  # returns a slice
             steps = indices_len(indices)
             input_df = ctx.table.data()
             op = self.filter_columns(input_df, fix_loc(indices)).min(keepdims=False)
@@ -53,7 +55,12 @@ class Min(TableModule):
             return self._return_run_step(self.next_state(ctx.table), steps)
 
 
-def minimum_val_id(candidate_val, candidate_id, current_val, current_id):
+def minimum_val_id(
+        candidate_val: float,
+        candidate_id: int,
+        current_val: float,
+        current_id: int
+) -> Tuple[float, int, bool]:
     if candidate_val < current_val:
         return candidate_val, candidate_id, True
     return current_val, current_id, False
@@ -62,13 +69,14 @@ def minimum_val_id(candidate_val, candidate_id, current_val, current_id):
 class ScalarMin(TableModule):
     inputs = [SlotDescriptor("table", type=Table, required=True)]
 
-    def __init__(self, **kwds):
+    def __init__(self, **kwds: Any) -> None:
         super().__init__(**kwds)
         self.default_step_size = 10000
-        self._sensitive_ids: Dict[int, bitmap] = {}
+        self._sensitive_ids: Dict[str, int] = {}
 
     def is_ready(self) -> bool:
-        if self.get_input_slot("table").created.any():
+        slot = self.get_input_slot("table")
+        if slot is not None and slot.created.any():
             return True
         return super().is_ready()
 
@@ -88,7 +96,7 @@ class ScalarMin(TableModule):
         for col, id in self._sensitive_ids.items():
             if id not in updated_ids:
                 continue
-            if data.loc[id, col] > self.psdict[col]:
+            if bool(data.loc[id, col] > self.psdict[col]):
                 return True
         return False
 
@@ -96,7 +104,7 @@ class ScalarMin(TableModule):
         self, run_number: int, step_size: int, howlong: float
     ) -> ReturnRunStep:
         slot = self.get_input_slot("table")
-        # slot.update(run_number)
+        assert slot is not None
         indices: Optional[Union[None, bitmap, slice]] = None
         sensitive_ids_bm = bitmap(self._sensitive_ids.values())
         if slot.deleted.any():
@@ -115,11 +123,11 @@ class ScalarMin(TableModule):
                 # might become greater than the current MIN
                 # so we will process these updates as creations
                 # and we avoid a reset
-                indices = slot.updated.next(step_size, as_slice=False)
+                indices = slot.updated.next(length=step_size, as_slice=False)
         if indices is None:
             if not slot.created.any():
                 return self._return_run_step(self.state_blocked, steps_run=0)
-            indices = slot.created.next(step_size)  # returns a slice
+            indices = slot.created.next(length=step_size)  # returns a slice
         steps = indices_len(indices)
         input_df = slot.data()
         idxop = self.filter_columns(input_df, fix_loc(indices)).idxmin()
