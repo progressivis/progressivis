@@ -41,4 +41,4 @@ jobs:
         conda activate progressivis
         mkdir data
         mv mnist_784.csv data
-        python setup.py nosetests
+        python setup.py nosetests -w tests

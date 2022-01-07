@@ -44,6 +44,10 @@ class ProgressiveTest(TestCase):
         _ = x
         print(".", end="", file=sys.stderr)
 
+    @staticmethod
+    async def _stop(scheduler, run_number):
+        await scheduler.stop()
+
     def setUp(self):
         np.random.seed(42)
 

@@ -6,6 +6,7 @@ from __future__ import annotations
 import logging
 import functools
 from timeit import default_timer
+import traceback
 
 from .dataflow import Dataflow
 from . import aio
@@ -94,7 +95,7 @@ class Scheduler:
         self._running: bool = False
         self._stopped: bool = True
         self._runorder: Order = []
-        self._new_modules: List[Module] = []
+        self._new_modules: Optional[List[Module]] = None
         self._new_dependencies: Dependencies = {}
         self._new_runorder: Order = []
         self._new_reachability: Reachability = {}
@@ -143,16 +144,18 @@ class Scheduler:
             self._enter_cnt += 1
         return self.dataflow
 
-    def __exit__(self, exc_type: Any, exc_value: Any, traceback: Any) -> None:
+    def __exit__(self, exc_type: Any, exc_value: Any, tb: Any) -> None:
         self._enter_cnt -= 1
         if exc_type is None:
             if self._enter_cnt == 0:
-                if self.dataflow:
+                if self.dataflow is not None:
                     self._commit(self.dataflow)
         else:
             logger.info("Aborting Dataflow with exception %s", exc_type)
+            print(f"Aborting Dataflow with exception {exc_type}")
+            traceback.print_tb(tb)
             if self._enter_cnt == 0:
-                if self.dataflow:
+                if self.dataflow is not None:
                     self.dataflow.aborted()
                 self.dataflow = None
 
@@ -397,7 +400,7 @@ class Scheduler:
         self._start_inter = 0
         while not self._stopped:
             # Apply changes in the dataflow
-            if len(self._new_modules) != 0:
+            if self._new_modules is not None:
                 self._update_modules()
                 self._run_index = 0
                 first_run = self._run_number
@@ -456,7 +459,7 @@ class Scheduler:
         :returns: None
 
         """
-        if self.dataflow:
+        if self.dataflow is not None:
             assert self._enter_cnt == 1
             self._commit(self.dataflow)
             self._enter_cnt = 0
@@ -468,7 +471,7 @@ class Scheduler:
         self._new_dependencies = dataflow.inputs
         dataflow._compute_reachability(self._new_dependencies)
         self._new_reachability = dataflow.reachability
-        if self.dataflow:
+        if self.dataflow is not None:
             self.dataflow.committed()
             self.dataflow = None
         self.version += 1  # only increment if valid
@@ -478,7 +481,7 @@ class Scheduler:
             self._update_modules()
 
     def _update_modules(self) -> None:
-        if len(self._new_modules) == 0:
+        if self._new_modules is None:
             return
         logger.info("Updating modules")
         prev_keys = set(self._modules.keys())
@@ -487,7 +490,8 @@ class Scheduler:
         added = keys - prev_keys
         deleted = prev_keys - keys
         if deleted:
-            logger.info("Scheduler deleted modules %s", deleted)
+            logger.info(f"Scheduler deleted modules: {deleted}")
+            print(f"# Scheduler deleted module(s): {deleted}")
             for mid in deleted:
                 self._modules[mid].ending()
         self._modules = modules
@@ -502,17 +506,20 @@ class Scheduler:
             modules[mid].reconnect(slots)
         if added:
             logger.info("Scheduler adding modules %s", added)
+            print(f"# Scheduler added module(s): {added}")
             for mid in added:
                 modules[mid].starting()
-        self._new_modules = []
+        self._new_modules = None
         self._run_list = []
         self._runorder = self._new_runorder
         self._new_runorder = []
-        logger.info("New modules order: %s", self._runorder)
+        logger.info("New module order: %s", self._runorder)
         for i, mid in enumerate(self._runorder):
             module = self._modules[mid]
             self._run_list.append(module)
             module.order = i
+        if not self._run_list:
+            print("# Scheduler empty, finishing")
 
     async def _end_of_modules(self, first_run: int) -> None:
         # Reset interaction mode
@@ -594,18 +601,18 @@ class Scheduler:
         return self._modules
 
     def __getitem__(self, mid: str) -> Module:
-        if self.dataflow:
+        if self.dataflow is not None:
             return self.dataflow[mid]
         return self._modules[mid]
 
     def __delitem__(self, name: str) -> None:
-        if self.dataflow:
+        if self.dataflow is not None:
             self.dataflow.delete_modules(name)
         else:
             raise ProgressiveError("Cannot delete module %s" "outside a context" % name)
 
     def __contains__(self, name: str) -> bool:
-        if self.dataflow:
+        if self.dataflow is not None:
             return name in self.dataflow
         return name in self._modules
 

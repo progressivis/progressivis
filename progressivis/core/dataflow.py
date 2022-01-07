@@ -423,7 +423,7 @@ class Dataflow:
         assert module is not None
         if module.name in deps:
             return  # already being removed
-        slot_name = oslot.input_name
+        slot_name = oslot.original_name or oslot.input_name
         assert slot_name is not None
         desc = module.input_slot_descriptor(slot_name)
         if desc.required:

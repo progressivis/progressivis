@@ -1,7 +1,5 @@
 from . import ProgressiveTest
 
-from time import sleep
-
 from progressivis import Print, Scheduler, ProgressiveError
 from progressivis.io import CSVLoader
 from progressivis.stats import Min
@@ -45,17 +43,15 @@ class TestScheduler(ProgressiveTest):
 
         self.assertTrue(check_running)
 
-        def add_min():
+        def add_min(s, r):
             with s:
                 m = Min(scheduler=s)
                 m.input.table = csv.output.result
                 prt = Print(proc=self.terse, scheduler=s)
                 prt.input.df = m.output.result
 
-        s.on_tick_once(add_min)
-
-        sleep(1)
-        s.task_stop()
+        s.on_loop(add_min, 10)
+        s.on_loop(self._stop, 20)
 
         self.assertIs(s["csv"], csv)
         json = s.to_json(short=False)

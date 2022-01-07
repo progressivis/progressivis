@@ -19,10 +19,6 @@ class TestModule(Module):
         return self._return_run_step(self.state_blocked, 0)
 
 
-async def _stop(scheduler, run_number):
-    await scheduler.stop()
-
-
 class TestDataflow(ProgressiveTest):
     def test_dataflow_0(self):
         scheduler = self.scheduler()
@@ -140,7 +136,7 @@ class TestDataflow(ProgressiveTest):
                 prt.input.df = m.output.result
 
         scheduler.on_loop(_add_max, 5)  # run the function after 5 loops
-        scheduler.on_loop(_stop, 10)
+        scheduler.on_loop(self._stop, 10)
 
         # from nose.tools import set_trace; set_trace()
         aio.run(scheduler.start())
@@ -175,7 +171,7 @@ class TestDataflow(ProgressiveTest):
 
         # t = _add_max_remove_min(csv, scheduler, proc=proc)
         scheduler.on_loop(_add_max_remove_min, 5)
-        scheduler.on_loop(_stop, 10)
+        scheduler.on_loop(self._stop, 10)
         aio.run(scheduler.start())
         self.assertTrue(started)
 
@@ -250,13 +246,36 @@ class TestDataflow(ProgressiveTest):
                 deps = dataflow.collateral_damage("prt", "prt2")
                 self.assertEquals(deps, set(["prt", "prt2"]))
                 dataflow.delete_modules("prt2")
+            s.on_loop(modify_2, 5)
+
+        async def modify_2(scheduler, run_number):
+            self.assertFalse("prt2" in scheduler)
+            with s as dataflow:
+                print("Checking more module deletion")
+                deps = dataflow.collateral_damage("prt")
+                self.assertEquals(deps, {"prt"})
+                deps = dataflow.collateral_damage("prt", "sink")
+                self.assertEquals(deps, {"prt", "sink", "table"})
+                dataflow.delete_modules("prt")
+            s.on_loop(modify_3, 5)
+
+        async def modify_3(scheduler, run_number):
+            self.assertFalse("prt" in scheduler)
+            with s as dataflow:
+                print("Checking even more module deletion")
+                deps = dataflow.collateral_damage("sink")
+                self.assertEquals(deps, {"sink", "table"})
+                # from nose.tools import set_trace; set_trace()
+                dataflow.delete_modules("sink", "table")
+
+        async def stop_error(scheduler, run_number):
+            self.assertFalse("Scheduler should have stopped")
+            await self._stop()
 
         s.on_loop(modify_1, 5)
-        s.on_loop(_stop, 10)
-
+        s.on_loop(stop_error, 100)
         aio.run(s.start())
         # from nose.tools import set_trace; set_trace()
-        self.assertFalse("prt2" in s)
 
 
 if __name__ == "__main__":
