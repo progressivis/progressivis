@@ -33,7 +33,7 @@ jobs:
       run: conda env create -q python=${{ matrix.python_version }} -f environment.yml
 
     - name: Download a file
-      run: wget -no-verbose https://datahub.io/machine-learning/mnist_784/r/mnist_784.csv -O mnist_784.csv
+      run: wget --no-verbose https://datahub.io/machine-learning/mnist_784/r/mnist_784.csv -O mnist_784.csv
 
     - name: Run tests
       run: |
