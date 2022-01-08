@@ -320,9 +320,9 @@ class RangeQuery2d(TableModule):
             updated = cast(bitmap, input_slot.updated.next(length=step_size))
             steps += indices_len(updated)
         input_table = input_slot.data()
-        assert isinstance(input_slot, BaseTable)
         if input_table is None:
             return self._return_run_step(self.state_blocked, steps_run=0)
+        assert isinstance(input_table, BaseTable)
         if self.result is None:
             self.result = TableSelectedView(input_table, bitmap([]))
         self._create_min_max()
@@ -436,7 +436,7 @@ class RangeQuery2d(TableModule):
         # ...
         assert self._impl
         if not self._impl.is_started:
-            _ = self._impl.start(
+            self._impl.start(
                 input_table,
                 lower_value_x,
                 upper_value_x,

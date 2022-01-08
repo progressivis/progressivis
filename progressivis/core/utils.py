@@ -45,6 +45,7 @@ from typing import (
     Callable,
     Iterator,
     Sized,
+    # TypeGuard,
     TYPE_CHECKING,
 )
 
@@ -61,22 +62,27 @@ integer_types = (int, np.integer)
 Items = Union[collections_abc.MutableMapping, List[Any], Any]
 
 
+# def is_int(n: Any) -> TypeGuard[int]:
 def is_int(n: Any) -> bool:
     return isinstance(n, integer_types)
 
 
+# def is_str(s: Any) -> TypeGuard[str]:
 def is_str(s: Any) -> bool:
     return isinstance(s, str)
 
 
+# def is_slice(s: Any) -> TypeGuard[slice]:
 def is_slice(s: Any) -> bool:
     return isinstance(s, slice)
 
 
+# def is_iterable(it: Any) -> TypeGuard[Iterable[Any]]:
 def is_iterable(it: Any) -> bool:
-    return isinstance(it, collections_abc.Iterable)
+    return isinstance(it, Iterable)
 
 
+# def is_iter_str(it: Any) -> TypeGuard[Iterable[str]]:
 def is_iter_str(it: Any) -> bool:
     if not is_iterable(it):
         return False
@@ -90,7 +96,7 @@ def len_none(item: Optional[Sized]) -> int:
     return 0 if item is None else len(item)
 
 
-def pairwise(iterator: Iterator[Any]) -> Iterator[Any]:
+def pairwise(iterator: Iterator[Any]) -> Iterable[Any]:
     a, b = tee(iterator)
     next(b, None)
     return zip(a, b)
@@ -432,7 +438,7 @@ def are_instances(
 
 def is_fancy(key: Any) -> bool:
     return (isinstance(key, np.ndarray) and key.dtype == np.int64) or isinstance(
-        key, collections_abc.Iterable
+        key, Iterable
     )
 
 
