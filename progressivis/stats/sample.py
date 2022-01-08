@@ -11,20 +11,21 @@ import logging
 
 import numpy as np
 
+from progressivis.core.module import ReturnRunStep
 from progressivis import SlotDescriptor
 from ..core.bitmap import bitmap
 from ..table import Table
-from ..table.module import TableModule, ReturnRunStep
+from ..table.module import TableModule
 from ..core.utils import indices_len
 from ..core.decorators import process_slot, run_if_any
 from ..table import TableSelectedView
 
-from typing import Optional, Any, cast
+from typing import Optional, Any
 
 logger = logging.getLogger(__name__)
 
 
-def has_len(d):
+def has_len(d: object) -> bool:
     return hasattr(d, "__len__")
 
 
@@ -33,7 +34,7 @@ class Sample(TableModule):
     inputs = [SlotDescriptor("table", type=Table)]
     outputs = [SlotDescriptor("select", type=bitmap, required=False)]
 
-    def __init__(self, **kwds):
+    def __init__(self, **kwds: Any) -> None:
         super(Sample, self).__init__(output_required=False, **kwds)
         self._tmp_table = Table(
             self.generate_table_name("sample"), dshape="{select: int64}", create=True
@@ -73,9 +74,7 @@ class Sample(TableModule):
         with self.context as ctx:
             if self.result is None:
                 self.result = TableSelectedView(ctx.table.data(), bitmap([]))
-            indices = cast(
-                bitmap, ctx.table.created.next(length=step_size, as_slice=False)
-            )
+            indices = ctx.table.created.next(length=step_size, as_slice=False)
             steps = indices_len(indices)
             k = int(self.params.samples)
             reservoir = self._tmp_table

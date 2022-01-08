@@ -2,20 +2,20 @@ from __future__ import annotations
 
 import numpy as np
 
+from progressivis.core.module import Module, ReturnRunStep
+from progressivis.core.slot import SlotDescriptor
+from progressivis.core.bitmap import bitmap
 from progressivis.core.utils import indices_len
-from . import TableSelectedView
-from . import BaseTable, Table
-from ..core.slot import SlotDescriptor
-from .module import TableModule, Module, ReturnRunStep
-from ..core.bitmap import bitmap
-
-# from .mod_impl import ModuleImpl
 from ..io import Variable
 from ..stats import Min, Max
-from .hist_index import HistogramIndex
 from ..utils.psdict import PsDict
+from . import BaseTable, Table, TableSelectedView
+from .module import TableModule
+from .hist_index import HistogramIndex
 
-from typing import Optional, Any, cast
+# from .mod_impl import ModuleImpl
+
+from typing import Optional, Any, cast, Iterable
 
 
 # def _get_physical_table(t):
@@ -23,20 +23,20 @@ from typing import Optional, Any, cast
 
 
 class _Selection:
-    def __init__(self, values: bitmap = None):
+    def __init__(self, values: Optional[bitmap] = None):
         self._values = bitmap([]) if values is None else values
 
-    def update(self, values: bitmap) -> None:
+    def update(self, values: Iterable[int]) -> None:
         self._values.update(values)
 
-    def remove(self, values: bitmap) -> None:
+    def remove(self, values: Iterable[int]) -> None:
         self._values = self._values - bitmap(values)
 
-    def assign(self, values: bitmap) -> None:
-        self._values = values
+    def assign(self, values: Iterable[int]) -> None:
+        self._values = bitmap(values)
 
-    def add(self, values: bitmap) -> None:
-        self._values |= values
+    def add(self, values: Iterable[int]) -> None:
+        self._values |= bitmap(values)
 
 
 class RangeQueryImpl:  # (ModuleImpl):
@@ -57,9 +57,9 @@ class RangeQueryImpl:  # (ModuleImpl):
         lower: float,
         upper: float,
         limit_changed: bool,
-        created: bitmap = None,
-        updated: bitmap = None,
-        deleted: bitmap = None,
+        created: Optional[bitmap] = None,
+        updated: Optional[bitmap] = None,
+        deleted: Optional[bitmap] = None,
     ) -> None:
         assert self.result
         if limit_changed:
@@ -86,17 +86,17 @@ class RangeQueryImpl:  # (ModuleImpl):
     def start(
         self,
         table: BaseTable,
-        lower,
-        upper,
-        limit_changed,
-        created=None,
-        updated=None,
-        deleted=None,
-    ):
+        lower: float,
+        upper: float,
+        limit_changed: bool,
+        created: Optional[bitmap] = None,
+        updated: Optional[bitmap] = None,
+        deleted: Optional[bitmap] = None,
+    ) -> None:
         self._table = table
         self.result = _Selection()
         self.is_started = True
-        return self.resume(lower, upper, limit_changed, created, updated, deleted)
+        self.resume(lower, upper, limit_changed, created, updated, deleted)
 
 
 class RangeQuery(TableModule):
@@ -121,7 +121,12 @@ class RangeQuery(TableModule):
         SlotDescriptor("max", type=Table, required=False),
     ]
 
-    def __init__(self, hist_index: HistogramIndex = None, approximate=False, **kwds):
+    def __init__(
+        self,
+        hist_index: Optional[HistogramIndex] = None,
+        approximate: bool = False,
+        **kwds: Any
+    ) -> None:
         super(RangeQuery, self).__init__(**kwds)
         self._impl: Optional[
             RangeQueryImpl
@@ -145,7 +150,7 @@ class RangeQuery(TableModule):
         return self._hist_index
 
     @hist_index.setter
-    def hist_index(self, hi: HistogramIndex):
+    def hist_index(self, hi: HistogramIndex) -> None:
         self._hist_index = hi
         self._impl = RangeQueryImpl(self._column, hi, approximate=self._approximate)
 
@@ -153,12 +158,12 @@ class RangeQuery(TableModule):
         self,
         input_module: Module,
         input_slot: str,
-        min_: Module = None,
-        max_: Module = None,
-        min_value: Module = None,
-        max_value: Module = None,
-        **kwds
-    ):
+        min_: Optional[Module] = None,
+        max_: Optional[Module] = None,
+        min_value: Optional[Module] = None,
+        max_value: Optional[Module] = None,
+        **kwds: Any
+    ) -> RangeQuery:
         if self.input_module is not None:  # test if already called
             return self
         with self.tagged(self.TAG_DEPENDENT):
@@ -205,26 +210,26 @@ class RangeQuery(TableModule):
             self.max_value = max_value
             return range_query
 
-    def _create_min_max(self):
+    def _create_min_max(self) -> None:
         if self._min_table is None:
             self._min_table = PsDict({self._column: np.inf})
         if self._max_table is None:
             self._max_table = PsDict({self._column: -np.inf})
 
-    def _set_minmax_out(self, attr_, val):
+    def _set_minmax_out(self, attr_: str, val: float) -> None:
         d = {self._column: val}
         if getattr(self, attr_) is None:
             setattr(self, attr_, PsDict(d))
         else:
             getattr(self, attr_).update(d)
 
-    def _set_min_out(self, val):
+    def _set_min_out(self, val: float) -> None:
         return self._set_minmax_out("_min_table", val)
 
-    def _set_max_out(self, val):
+    def _set_max_out(self, val: float) -> None:
         return self._set_minmax_out("_max_table", val)
 
-    def get_data(self, name) -> Any:
+    def get_data(self, name: str) -> Any:
         if name == "min":
             return self._min_table
         if name == "max":

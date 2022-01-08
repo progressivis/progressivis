@@ -107,7 +107,7 @@ class Row(MutableMapping[str, Any]):
             return key in table
         return False
 
-    def to_dict(self, ordered: bool = False) -> Dict[str, Any]:
+    def to_dict(self, ordered: bool = False, **kwargs: Any) -> Dict[str, Any]:
         if ordered:
             return OrderedDict(self)
         return dict(self)

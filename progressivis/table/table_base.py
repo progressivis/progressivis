@@ -43,13 +43,16 @@ from typing import (
     Literal,
 )
 
-Shape = Tuple[int, ...]
-Indexer = Union[Any]  # improve later
-ColIndexer = Union[int, np.integer, str]
-
 if TYPE_CHECKING:
     from .column_base import BaseColumn
     from .row import Row
+
+    BinaryRet = Union[Dict[str, np.ndarray[Any, Any]], 'BaseTable']
+    ColIndexer = Union[int, np.integer[Any], str]
+
+Shape = Tuple[int, ...]
+Indexer = Union[Any]  # improve later
+UnaryRet = Dict[str, Any]
 
 logger = logging.getLogger(__name__)
 
@@ -95,11 +98,36 @@ class _Loc(_BaseLoc):
             raise ValueError('Cannot delete key "%s"' % key)
         self._table.drop(index, raw_index)
 
+    @overload
+    def __getitem__(self, key: int) -> Optional[Row]:
+        ...
+
+    @overload
+    def __getitem__(self, key: Tuple[int, Union[slice, List[str]]]) -> Optional[Row]:
+        ...
+
+    @overload
+    def __getitem__(self, key: Tuple[int, str]) -> Optional[Any]:
+        ...
+
+    @overload
+    def __getitem__(
+        self, key: Union[bitmap, np.ndarray[Any, Any], Union[slice, List[str]]]
+    ) -> Optional[BaseTable]:
+        ...
+
+    @overload
+    def __getitem__(
+        self,
+        key: Tuple[Union[bitmap, np.ndarray[Any, Any], slice], Union[slice, List[str]]],
+    ) -> Optional[BaseTable]:
+        ...
+
     def __getitem__(self, key: Indexer) -> Any:
         index, col_key, raw_index = self.parse_key_to_bitmap(key)
         if not (is_slice(raw_index) or index in self._table.index):
             diff_ = index - self._table.index
-            raise KeyError(f"Not existing indices {diff_}")
+            raise KeyError(f"Non existing indices {diff_}")
         if isinstance(raw_index, integer_types):
             row = self._table.row(int(raw_index))
             if row is not None and col_key != slice(None):
@@ -331,7 +359,11 @@ class BaseTable(metaclass=ABCMeta):
 
     def to_json(self, **kwds: Any) -> Dict[str, Any]:
         "Return a dictionary describing the contents of this columns."
-        return self.to_dict(**kwds)
+        if "orient" not in kwds:
+            self.to_dict(orient="dict", **kwds)
+        elif kwds["orient"] == "dict":
+            self.to_dict(**kwds)
+        return self.to_dict(**kwds)  # type: ignore
 
     def make_projection(
         self, cols: Optional[List[str]], index: Any
@@ -766,7 +798,7 @@ class BaseTable(metaclass=ABCMeta):
         if isinstance(colkey, (str, integer_types)):
             self._setitem_key(colkey, rowkey, values)
         elif isinstance(colkey, Iterable):
-            self._setitem_iterable(colkey, rowkey, values)  # type: ignore
+            self._setitem_iterable(colkey, rowkey, values)
         elif isinstance(colkey, slice):
             self._setitem_slice(colkey, rowkey, values)
         else:
@@ -786,7 +818,7 @@ class BaseTable(metaclass=ABCMeta):
         elif isinstance(colkey, Iterable):
             if not all_string_or_int(colkey):
                 raise ValueError("setitem not implemented for %s key" % colkey)
-            self._setitem_iterable(colkey, None, values)  # type: ignore
+            self._setitem_iterable(colkey, None, values)
         elif isinstance(colkey, slice):
             self._setitem_slice(colkey, None, values)
         else:
@@ -933,7 +965,7 @@ class BaseTable(metaclass=ABCMeta):
         #     return indices, arr
         return arr
 
-    def unary(self, op: Any, **kwargs: Any) -> Dict[str, Any]:
+    def unary(self, op: Any, **kwargs: Any) -> UnaryRet:
         axis = kwargs.get("axis", 0)
         # get() is cheaper than pop(), it avoids to update unused kwargs
         keepdims = kwargs.get("keepdims", False)
@@ -959,7 +991,7 @@ class BaseTable(metaclass=ABCMeta):
         ],
         other: BaseTable,
         **kwargs: Any,
-    ) -> Union[Dict[str, np.ndarray[Any, Any]], BaseTable]:
+    ) -> BinaryRet:
         axis = kwargs.pop("axis", 0)
         assert axis == 0
         res: Dict[str, np.ndarray[Any, Any]] = {}
@@ -975,19 +1007,19 @@ class BaseTable(metaclass=ABCMeta):
                 res[name] = value
         return res
 
-    def __abs__(self, **kwargs: Any) -> Dict[str, Any]:
+    def __abs__(self, **kwargs: Any) -> UnaryRet:
         return self.unary(np.abs, **kwargs)
 
-    def __add__(self, other):
+    def __add__(self, other: BaseTable) -> BinaryRet:
         return self.binary(operator.add, other)
 
-    def __radd__(self, other):
+    def __radd__(self, other: BaseTable) -> BinaryRet:
         return other.binary(operator.add, self)
 
-    def __and__(self, other):
+    def __and__(self, other: BaseTable) -> BinaryRet:
         return self.binary(operator.and_, other)
 
-    def __rand__(self, other):
+    def __rand__(self, other: BaseTable) -> BinaryRet:
         return other.binary(operator.and_, self)
 
     # def __div__(self, other):
@@ -996,109 +1028,113 @@ class BaseTable(metaclass=ABCMeta):
     # def __rdiv__(self, other):
     #     return other.binary(operator.div, self)
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> Any:
+        if not isinstance(other, BaseTable):
+            return False
         return self.binary(operator.eq, other)
 
-    def __gt__(self, other):
+    def __gt__(self, other: BaseTable) -> BinaryRet:
         return self.binary(operator.gt, other)
 
-    def __ge__(self, other):
+    def __ge__(self, other: BaseTable) -> BinaryRet:
         return self.binary(operator.ge, other)
 
-    def __invert__(self):
+    def __invert__(self) -> UnaryRet:
         return self.unary(np.invert)
 
-    def __lshift__(self, other):
+    def __lshift__(self, other: BaseTable) -> BinaryRet:
         return self.binary(operator.lshift, other)
 
-    def __rlshift__(self, other):
+    def __rlshift__(self, other: BaseTable) -> BinaryRet:
         return other.binary(operator.lshift, self)
 
-    def __lt__(self, other):
+    def __lt__(self, other: BaseTable) -> BinaryRet:
         return self.binary(operator.lt, other)
 
-    def __le__(self, other):
+    def __le__(self, other: BaseTable) -> BinaryRet:
         return self.binary(operator.le, other)
 
-    def __mod__(self, other):
+    def __mod__(self, other: BaseTable) -> BinaryRet:
         return self.binary(operator.mod, other)
 
-    def __rmod__(self, other):
+    def __rmod__(self, other: BaseTable) -> BinaryRet:
         return other.binary(operator.mod, self)
 
-    def __mul__(self, other):
+    def __mul__(self, other: BaseTable) -> BinaryRet:
         return self.binary(operator.mul, other)
 
-    def __rmul__(self, other):
+    def __rmul__(self, other: BaseTable) -> BinaryRet:
         return other.binary(operator.mul, self)
 
-    def __ne__(self, other):
+    def __ne__(self, other: Any) -> Any:
+        if not isinstance(other, BaseTable):
+            return False
         return self.binary(operator.ne, other)
 
     def __neg__(self) -> Dict[str, Any]:
         return self.unary(np.negative)
 
-    def __or__(self, other):
+    def __or__(self, other: BaseTable) -> BinaryRet:
         return self.binary(operator.or_, other)
 
-    def __pos__(self):
+    def __pos__(self) -> BaseTable:
         return self
 
-    def __ror__(self, other):
+    def __ror__(self, other: BaseTable) -> BinaryRet:
         return other.binary(operator.or_, self)
 
-    def __pow__(self, other):
+    def __pow__(self, other: BaseTable) -> BinaryRet:
         return self.binary(operator.pow, other)
 
-    def __rpow__(self, other):
+    def __rpow__(self, other: BaseTable) -> BinaryRet:
         return other.binary(operator.pow, self)
 
-    def __rshift__(self, other):
+    def __rshift__(self, other: BaseTable) -> BinaryRet:
         return self.binary(operator.rshift, other)
 
-    def __rrshift__(self, other):
+    def __rrshift__(self, other: BaseTable) -> BinaryRet:
         return other.binary(operator.rshift, self)
 
-    def __sub__(self, other):
+    def __sub__(self, other: BaseTable) -> BinaryRet:
         return self.binary(operator.sub, other)
 
-    def __rsub__(self, other):
+    def __rsub__(self, other: BaseTable) -> BinaryRet:
         return other.binary(operator.sub, self)
 
-    def __truediv__(self, other):
+    def __truediv__(self, other: BaseTable) -> BinaryRet:
         return self.binary(operator.truediv, other)
 
-    def __rtruediv__(self, other):
+    def __rtruediv__(self, other: BaseTable) -> BinaryRet:
         return other.binary(operator.truediv, self)
 
-    def __floordiv__(self, other):
+    def __floordiv__(self, other: BaseTable) -> BinaryRet:
         return self.binary(operator.floordiv, other)
 
-    def __rfloordiv__(self, other):
+    def __rfloordiv__(self, other: BaseTable) -> BinaryRet:
         return other.binary(operator.floordiv, self)
 
-    def __xor__(self, other):
+    def __xor__(self, other: BaseTable) -> BinaryRet:
         return self.binary(operator.xor, other)
 
-    def __rxor__(self, other):
+    def __rxor__(self, other: BaseTable) -> BinaryRet:
         return other.binary(operator.xor, self)
 
-    def any(self, **kwargs):
+    def any(self, **kwargs: Any) -> UnaryRet:
         return self.unary(np.any, **kwargs)
 
-    def all(self, **kwargs):
+    def all(self, **kwargs: Any) -> UnaryRet:
         return self.unary(np.all, **kwargs)
 
-    def min(self, **kwargs: Any) -> Dict[str, Any]:
+    def min(self, **kwargs: Any) -> UnaryRet:
         return self.unary(np.min, **kwargs)
 
-    def max(self, **kwargs: Any) -> Dict[str, Any]:
+    def max(self, **kwargs: Any) -> UnaryRet:
         return self.unary(np.max, **kwargs)
 
-    def var(self, **kwargs):
+    def var(self, **kwargs: Any) -> UnaryRet:
         return self.raw_unary(np.var, **kwargs)
 
-    def argmin(self, **kwargs: Any) -> Dict[str, Any]:
+    def argmin(self, **kwargs: Any) -> UnaryRet:
         argmin_ = self.raw_unary(np.argmin, **kwargs)
         if self.is_identity:
             return argmin_
@@ -1107,7 +1143,7 @@ class BaseTable(metaclass=ABCMeta):
             argmin_[k] = index_array[v]
         return argmin_
 
-    def argmax(self, **kwargs: Any) -> Dict[str, Any]:
+    def argmax(self, **kwargs: Any) -> UnaryRet:
         argmax_ = self.raw_unary(np.argmax, **kwargs)
         if self.is_identity:
             return argmax_
@@ -1116,13 +1152,13 @@ class BaseTable(metaclass=ABCMeta):
             argmax_[k] = index_array[v]
         return argmax_
 
-    def idxmin(self, **kwargs: Any) -> Dict[str, Any]:
+    def idxmin(self, **kwargs: Any) -> UnaryRet:
         res = self.argmin(**kwargs)
         for c, ix in res.items():
             res[c] = self.index_to_id(ix)
         return res
 
-    def idxmax(self, **kwargs: Any) -> Dict[str, Any]:
+    def idxmax(self, **kwargs: Any) -> UnaryRet:
         res = self.argmax(**kwargs)
         for c, ix in res.items():
             res[c] = self.index_to_id(ix)
@@ -1152,7 +1188,7 @@ class BaseTable(metaclass=ABCMeta):
         self, cols: Optional[List[str]] = None
     ) -> List[np.ndarray[Any, Any]]:
         if cols is None:
-            cols = self.columns  # type: ignore
+            cols = self.columns
         return [self[key].values for key in cols]
 
     def cxx_api_raw_cols(self, cols: Optional[List[str]] = None) -> Tuple[Any, Any]:

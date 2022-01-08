@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+from progressivis.core.module import ReturnRunStep
 from ..utils.errors import ProgressiveError
 from ..core.utils import indices_len, fix_loc
-from ..table.module import TableModule, ReturnRunStep
+from ..table.module import TableModule
 from ..table.table import Table
 from ..core.slot import SlotDescriptor
 from ..core.decorators import process_slot, run_if_any
@@ -13,7 +14,7 @@ import numpy as np
 from tdigest import TDigest  # type: ignore
 
 
-from typing import Optional, List, Union
+from typing import Optional, List, Union, Any
 
 
 def _pretty_name(x: float) -> str:
@@ -34,9 +35,9 @@ class Percentiles(TableModule):
     def __init__(
         self,
         column: str,
-        percentiles: Optional[Union[List[float], np.ndarray]] = None,
-        **kwds
-    ):
+        percentiles: Optional[Union[List[float], np.ndarray[Any, Any]]] = None,
+        **kwds: Any
+    ) -> None:
         if not column:
             raise ProgressiveError("Need a column name")
         super(Percentiles, self).__init__(**kwds)
@@ -49,7 +50,7 @@ class Percentiles(TableModule):
         else:
             # get them all to be in [0, 1]
             percentiles = np.asarray(percentiles)
-            if (percentiles > 1).any():
+            if (percentiles > 1).any():  # type: ignore
                 percentiles = percentiles / 100.0
                 msg = (
                     "percentiles should all be in the interval [0, 1]. "

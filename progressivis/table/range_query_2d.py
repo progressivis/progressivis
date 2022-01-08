@@ -1,35 +1,37 @@
+from __future__ import annotations
+
 import numpy as np
 
 import itertools as it
-from . import Table
-from ..core.slot import SlotDescriptor
-from .module import Module, TableModule, ReturnRunStep
-from ..core.bitmap import bitmap
 
-# from .mod_impl import ModuleImpl
+from ..core.module import Module, ReturnRunStep
+from ..core.slot import SlotDescriptor
+from ..core.bitmap import bitmap
+from ..core.utils import indices_len
+from ..utils.psdict import PsDict
 from ..io import Variable
 from ..stats import Min, Max
+from .table_base import TableSelectedView, BaseTable
+from .table import Table
+from .module import TableModule
 from .hist_index import HistogramIndex
-from progressivis.core.utils import indices_len
-from ..utils.psdict import PsDict
-from ..table.merge_dict import MergeDict
-from . import TableSelectedView
+from .merge_dict import MergeDict
 
-from typing import Optional, Any, cast, Union
+from typing import Optional, Any, cast, Union, Iterable
 
 
 class _Selection(object):
-    def __init__(self, values=None):
+    def __init__(self, values: Optional[bitmap] = None) -> None:
         self._values = bitmap([]) if values is None else values
 
-    def update(self, values):
+    def update(self, values: Iterable[int]) -> None:
         self._values.update(values)
 
-    def remove(self, values):
+    def remove(self, values: Iterable[int]) -> None:
         self._values = self._values - bitmap(values)
 
-    def assign(self, values):
-        self._values = values
+    def assign(self, values: Iterable[int]) -> None:
+        self._values = bitmap(values)
 
 
 class RangeQuery2dImpl:  # (ModuleImpl):
@@ -40,9 +42,9 @@ class RangeQuery2dImpl:  # (ModuleImpl):
         hist_index_x: HistogramIndex,
         hist_index_y: HistogramIndex,
         approximate: bool,
-    ):
+    ) -> None:
         super(RangeQuery2dImpl, self).__init__()
-        self._table: Optional[TableSelectedView] = None
+        self._table: Optional[BaseTable] = None
         self._column_x = column_x
         self._column_y = column_y
         # self.bins = None
@@ -59,10 +61,10 @@ class RangeQuery2dImpl:  # (ModuleImpl):
         lower_y: float,
         upper_y: float,
         limit_changed: bool,
-        created: bitmap = None,
-        updated: bitmap = None,
-        deleted: bitmap = None,
-    ):
+        created: Optional[bitmap] = None,
+        updated: Optional[bitmap] = None,
+        deleted: Optional[bitmap] = None,
+    ) -> None:
         assert self.result
         if limit_changed:
             new_sel_x = self._hist_index_x.range_query_aslist(
@@ -107,16 +109,16 @@ class RangeQuery2dImpl:  # (ModuleImpl):
 
     def start(
         self,
-        table: TableSelectedView,
+        table: BaseTable,
         lower_x: float,
         upper_x: float,
         lower_y: float,
         upper_y: float,
         limit_changed: bool,
-        created: bitmap = None,
-        updated: bitmap = None,
-        deleted: bitmap = None,
-    ):
+        created: Optional[bitmap] = None,
+        updated: Optional[bitmap] = None,
+        deleted: Optional[bitmap] = None,
+    ) -> None:
         self.result = _Selection()
         self._table = table
         self.is_started = True
@@ -147,7 +149,12 @@ class RangeQuery2d(TableModule):
         SlotDescriptor("max", type=Table, required=False),
     ]
 
-    def __init__(self, hist_index: HistogramIndex = None, approximate=False, **kwds):
+    def __init__(
+        self,
+        hist_index: Optional[HistogramIndex] = None,
+        approximate: bool = False,
+        **kwds: Any
+    ) -> None:
         super(RangeQuery2d, self).__init__(**kwds)
         self._impl: Optional[
             RangeQuery2dImpl
@@ -180,12 +187,12 @@ class RangeQuery2d(TableModule):
         self,
         input_module: Module,
         input_slot: str,
-        min_: Module = None,
-        max_: Module = None,
+        min_: Optional[Module] = None,
+        max_: Optional[Module] = None,
         min_value: Union[None, bool, Module] = None,
         max_value: Union[None, bool, Module] = None,
-        **kwds
-    ):
+        **kwds: Any
+    ) -> RangeQuery2d:
         """
         Beware, {min,max}_value=None is not the same as {min,max}_value=False.
         With None, a min module is created and connected.
@@ -313,6 +320,7 @@ class RangeQuery2d(TableModule):
             updated = cast(bitmap, input_slot.updated.next(length=step_size))
             steps += indices_len(updated)
         input_table = input_slot.data()
+        assert isinstance(input_slot, BaseTable)
         if input_table is None:
             return self._return_run_step(self.state_blocked, steps_run=0)
         if self.result is None:

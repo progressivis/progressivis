@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+from ..core.module import JSon, ReturnRunStep
 from ..core.utils import indices_len, fix_loc, integer_types
 from ..core.slot import SlotDescriptor, Slot
-from ..table.module import TableModule, ReturnRunStep, JSon
+from ..table.module import TableModule
 from ..table.table import Table
 from ..utils.psdict import PsDict
 from ..core.decorators import process_slot, run_if_any
@@ -28,14 +29,14 @@ class Histogram1D(TableModule):
     ]
     schema = "{ array: var * int32, min: float64, max: float64, time: int64 }"
 
-    def __init__(self, column: Union[int, str], **kwds):
+    def __init__(self, column: Union[int, str], **kwds: Any) -> None:
         super(Histogram1D, self).__init__(dataframe_slot="table", **kwds)
         self.tags.add(self.TAG_VISUALIZATION)
         self.column = column
         self.total_read = 0
         self.default_step_size = 1000
-        self._histo: Optional[np.ndarray] = None
-        self._edges: Optional[np.ndarray] = None
+        self._histo: Optional[np.ndarray[Any, Any]] = None
+        self._edges: Optional[np.ndarray[Any, Any]] = None
         self._bounds: Optional[Tuple[float, float]] = None
         self._h_cnt = 0
         self.result = Table(
@@ -123,7 +124,7 @@ class Histogram1D(TableModule):
             bins = self._edges if self._edges is not None else self.params.bins
             histo = None
             if len(column) > 0:
-                histo, self._edges = np.histogram(
+                histo, self._edges = np.histogram(  # type: ignore
                     column, bins=bins, range=[curr_min, curr_max], density=False
                 )
                 self._h_cnt += len(column)
@@ -155,7 +156,7 @@ class Histogram1D(TableModule):
         return (min_, max_)
 
     def get_delta(self, min_: float, max_: float) -> float:
-        delta = self.params["delta"]
+        delta: float = self.params["delta"]
         extent = max_ - min_
         if delta < 0:
             return extent * delta / -100.0
@@ -181,7 +182,7 @@ class Histogram1D(TableModule):
     def get_visualization(self) -> str:
         return "histogram1d"
 
-    def to_json(self, short=False, with_speed: bool = True) -> JSon:
+    def to_json(self, short: bool = False, with_speed: bool = True) -> JSon:
         json = super(Histogram1D, self).to_json(short, with_speed)
         if short:
             return json

@@ -24,7 +24,7 @@ class TableExpr(Expr):
     def __init__(
         self,
         module_class: Type[TableModule],
-        args: Tuple[Any, ...],
+        args: Any,
         kwds: Dict[str, Any],
         module: TableModule = None,
         output_slot: str = None,

@@ -4,15 +4,17 @@ import logging
 
 import numpy as np
 
+from ..core.module import ReturnRunStep
 from ..core.utils import indices_len, fix_loc
 from ..core.slot import SlotDescriptor, Slot
-from ..table.module import TableModule, ReturnRunStep
-from ..table.table import Table, BaseTable
+from ..core.decorators import process_slot, run_if_any
+from ..table.module import TableModule
+from ..table.table_base import BaseTable
+from ..table.table import Table
 from ..table.dshape import dshape_all_dtype
 from ..utils.psdict import PsDict
-from ..core.decorators import process_slot, run_if_any
 
-from typing import Dict, Iterable, TYPE_CHECKING
+from typing import Dict, Iterable, TYPE_CHECKING, Optional, Any
 
 if TYPE_CHECKING:
     from progressivis.table.module import Columns
@@ -52,7 +54,7 @@ class OnlineVariance(object):
 
     @property
     def std(self) -> float:
-        return np.sqrt(self.variance)
+        return np.sqrt(self.variance)  # type: ignore
 
 
 class VarH(TableModule):
@@ -63,7 +65,7 @@ class VarH(TableModule):
     parameters = [("history", np.dtype(int), 3)]
     inputs = [SlotDescriptor("table", type=Table, required=True)]
 
-    def __init__(self, columns: Columns = None, **kwds):
+    def __init__(self, columns: Optional[Columns] = None, **kwds: Any) -> None:
         super().__init__(columns, dataframe_slot="table", **kwds)
         # self._columns = columns
         self._data: Dict[str, OnlineVariance] = {}
@@ -124,13 +126,13 @@ class Var(TableModule):
 
     inputs = [SlotDescriptor("table", type=Table, required=True)]
 
-    def __init__(self, columns: Columns = None, **kwds):
+    def __init__(self, columns: Optional[Columns] = None, **kwds: Any) -> None:
         super().__init__(dataframe_slot="table", columns=columns, **kwds)
         # self._columns = columns
         self._data: Dict[str, OnlineVariance] = {}
         self.default_step_size = 1000
 
-    def is_ready(self):
+    def is_ready(self) -> bool:
         if self.get_input_slot("table").created.any():
             return True
         return super().is_ready()

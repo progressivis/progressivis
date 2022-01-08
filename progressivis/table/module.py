@@ -138,7 +138,7 @@ class TableModule(Module):
             if isinstance(cols, (int, str)):
                 cols = slice(cols, cols)
             # return df[cols]
-        return cast(BaseTable, df.loc[indices, cols])
+        return df.loc[indices, cols]  # type: ignore
 
     def get_slot_columns(self, name: str) -> List[str]:
         cols = self._columns_dict.get(name)

@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 import numpy as np
-from ..table.module import TableModule, ReturnRunStep, JSon
+
+from ..core.module import ReturnRunStep, JSon
+from ..table.module import TableModule
 from ..table import Table
 from ..core.utils import indices_len
-from ..core.bitmap import bitmap
 from progressivis import SlotDescriptor
 
 try:
@@ -12,7 +13,7 @@ try:
 except Exception:
     pass
 
-from typing import cast
+from typing import Optional, Any
 
 
 class KernelDensity(TableModule):
@@ -24,11 +25,11 @@ class KernelDensity(TableModule):
     ]
     inputs = [SlotDescriptor("table", type=Table, required=True)]
 
-    def __init__(self, **kwds):
-        self._kde = None
+    def __init__(self, **kwds: Any) -> None:
+        self._kde: Optional[KNNKernelDensity] = None
         self._json_cache: JSon = {}
-        self._inserted = 0
-        self._lately_inserted = 0
+        self._inserted: int = 0
+        self._lately_inserted: int = 0
         super(KernelDensity, self).__init__(**kwds)
         self.tags.add(self.TAG_VISUALIZATION)
 
@@ -41,7 +42,7 @@ class KernelDensity(TableModule):
             raise ValueError("Not implemented yet")
         if not dfslot.created.any():
             return self._return_run_step(self.state_blocked, steps_run=0)
-        indices = cast(bitmap, dfslot.created.next(length=step_size, as_slice=False))
+        indices = dfslot.created.next(length=step_size, as_slice=False)
         steps = indices_len(indices)
         if steps == 0:
             return self._return_run_step(self.state_blocked, steps_run=0)
@@ -55,7 +56,7 @@ class KernelDensity(TableModule):
         threshold = self.params.threshold
         knn = self.params.knn
         if self._lately_inserted > threshold:
-            scores = self._kde.score_samples(samples.astype(np.float32), k=knn)
+            scores = self._kde.score_samples(samples.astype(np.float32), k=knn)  # type: ignore
             self._lately_inserted = 0
             self._json_cache = {
                 "points": np.array(
@@ -66,20 +67,20 @@ class KernelDensity(TableModule):
                 "total": len(dfslot.data()),
                 "samples": [
                     (sample, score)
-                    for sample, score in zip(samples.tolist(), scores.tolist())
+                    for sample, score in zip(samples.tolist(), scores.tolist())  # type: ignore
                 ],
             }
         return self._return_run_step(self.state_ready, steps_run=steps)
 
-    def get_visualization(self):
+    def get_visualization(self) -> Optional[str]:
         return "knnkde"
 
-    def to_json(self, short=False):
-        json = super(KernelDensity, self).to_json(short)
+    def to_json(self, short: bool = False, with_speed: bool = True) -> JSon:
+        json = super(KernelDensity, self).to_json(short, with_speed)
         if short:
             return json
         return self.knnkde_to_json(json)
 
-    def knnkde_to_json(self, json):
+    def knnkde_to_json(self, json: JSon) -> JSon:
         json.update(self._json_cache)
         return json

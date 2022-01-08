@@ -20,7 +20,7 @@ from .changemanager_bitmap import BitmapChangeManager
 from .changemanager_dict import DictChangeManager
 
 
-__version__: str = get_versions()["version"]
+__version__: str = get_versions()["version"]  # type: ignore
 version = __version__
 short_version = __version__
 del get_versions

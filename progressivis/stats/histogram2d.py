@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+from ..core.module import JSon, ReturnRunStep
 from ..core.utils import indices_len, fix_loc
 from ..core.slot import SlotDescriptor, Slot
-from ..table.module import TableModule, JSon, ReturnRunStep
+from ..table.module import TableModule
 from ..table import Table
 from ..utils.psdict import PsDict
 from fast_histogram import histogram2d  # type: ignore
@@ -12,7 +13,7 @@ import numpy as np
 
 import logging
 
-from typing import Optional, Tuple, cast
+from typing import Optional, Tuple, cast, Any
 
 Bounds2D = Tuple[float, float, float, float]
 
@@ -46,16 +47,18 @@ class Histogram2D(TableModule):
         "}"
     )
 
-    def __init__(self, x_column: str, y_column: str, with_output=True, **kwds):
+    def __init__(
+        self, x_column: str, y_column: str, with_output: bool = True, **kwds: Any
+    ) -> None:
         super(Histogram2D, self).__init__(dataframe_slot="table", **kwds)
         self.tags.add(self.TAG_VISUALIZATION)
         self.x_column = x_column
         self.y_column = y_column
         self.default_step_size = 10000
         self.total_read = 0
-        self._histo: Optional[np.ndarray] = None
-        self._xedges: Optional[np.ndarray] = None
-        self._yedges: Optional[np.ndarray] = None
+        self._histo: Optional[np.ndarray[Any, Any]] = None
+        self._xedges: Optional[np.ndarray[Any, Any]] = None
+        self._yedges: Optional[np.ndarray[Any, Any]] = None
         self._bounds: Optional[Bounds2D] = None
         self._with_output = with_output
         self._heatmap_cache: Optional[Tuple[JSon, Bounds2D]] = None
@@ -84,18 +87,20 @@ class Histogram2D(TableModule):
     def get_bounds(self, min_slot: Slot, max_slot: Slot) -> Optional[Bounds2D]:
         min_slot.created.next()
         min_df = min_slot.data()
+        assert isinstance(min_df, PsDict)
         if min_df is None or len(min_df) == 0:
             return None
         k_ = (lambda x: x) if isinstance(self.x_column, str) else min_df.k_
-        xmin = min_df[k_(self.x_column)]
-        ymin = min_df[k_(self.y_column)]
+        xmin: float = cast(float, min_df[k_(self.x_column)])
+        ymin: float = cast(float, min_df[k_(self.y_column)])
         max_slot.created.next()
         max_df = max_slot.data()
+        assert isinstance(max_df, PsDict)
         if max_df is None or len(max_df) == 0:
             return None
-        k_ = (lambda x: x) if isinstance(self.x_column, str) else max_df.k_
-        xmax = max_df[k_(self.x_column)]
-        ymax = max_df[k_(self.y_column)]
+        k_ = (lambda x: x) if isinstance(self.x_column, str) else max_df.k_  # type: ignore
+        xmax: float = cast(float, max_df[k_(self.x_column)])
+        ymax: float = cast(float, max_df[k_(self.y_column)])
         if xmax < xmin:
             xmax, xmin = xmin, xmax
             logger.warning("xmax < xmin, swapped")
@@ -237,7 +242,7 @@ class Histogram2D(TableModule):
             if self._histo is not None:
                 cmax = self._histo.max()
             values = {
-                "array": np.flip(self._histo, axis=0),
+                "array": np.flip(self._histo, axis=0),  # type: ignore
                 "cmin": 0,
                 "cmax": cmax,
                 "xmin": xmin,
@@ -260,7 +265,7 @@ class Histogram2D(TableModule):
     def get_visualization(self) -> str:
         return "heatmap"
 
-    def to_json(self, short=False, with_speed: bool = True) -> JSon:
+    def to_json(self, short: bool = False, with_speed: bool = True) -> JSon:
         json = super(Histogram2D, self).to_json(short, with_speed)
         if short:
             return json
@@ -278,9 +283,9 @@ class Histogram2D(TableModule):
             bounds = cast(
                 Bounds2D, (row["xmin"], row["ymin"], row["xmax"], row["ymax"])
             )
-            data = cast(np.ndarray, row["array"])
+            data = row["array"]
             json_["binnedPixels"] = data
-            json_["range"] = [np.min(data), np.max(data)]
+            json_["range"] = [np.min(data), np.max(data)]  # type: ignore
             json_["count"] = np.sum(data)
             json_["value"] = "heatmap"
             self._heatmap_cache = (json_, bounds)

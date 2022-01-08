@@ -1,13 +1,16 @@
 "Binary Join module."
 from __future__ import annotations
 
+from progressivis.core.module import ReturnRunStep
 from progressivis.core.slot import SlotDescriptor
 from progressivis.utils.inspect import filter_kwds
 from .table import Table
-from .module import TableModule, ReturnRunStep
+from .module import TableModule
 from .join import join
 from .dshape import dshape_join
 from collections import OrderedDict
+
+from typing import Any
 
 
 class Paste(TableModule):
@@ -26,7 +29,7 @@ class Paste(TableModule):
         SlotDescriptor("second", type=Table, required=True),
     ]
 
-    def __init__(self, **kwds):
+    def __init__(self, **kwds: Any) -> None:
         super(Paste, self).__init__(**kwds)
         self.join_kwds = filter_kwds(kwds, join)
 

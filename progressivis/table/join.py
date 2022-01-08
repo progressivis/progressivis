@@ -5,23 +5,25 @@ import numpy as np
 
 from progressivis.core.utils import Dialog, indices_len, inter_slice, fix_loc
 from progressivis.core.bitmap import bitmap
+from progressivis.core.module import ReturnRunStep
 from progressivis.utils.inspect import filter_kwds
-from progressivis.table.nary import NAry, ReturnRunStep
-from progressivis.table.table import BaseTable, Table
+from progressivis.table.nary import NAry
+from progressivis.table.table_base import BaseTable
+from progressivis.table.table import Table
 from progressivis.table.dshape import dshape_join
 
-from typing import List, cast, Dict, Any
+from typing import List, cast, Dict, Any, Optional, Callable, Sequence
 
 
 def join(
     table: BaseTable,
     other: BaseTable,
-    name: str = None,
-    on=None,
+    name: Optional[str] = None,
+    on: Optional[Any] = None,
     how: str = "left",
     lsuffix: str = "",
     rsuffix: str = "",
-    sort=False,
+    sort: bool = False,
 ) -> Table:
     # pylint: disable=too-many-arguments, invalid-name
     "Compute the join of two table."
@@ -54,18 +56,18 @@ def join_start(
     table: BaseTable,
     other: BaseTable,
     dialog: Dialog,
-    name: str = None,
-    on=None,
+    name: Optional[str] = None,
+    on: Optional[Any] = None,
     how: str = "left",
-    created=None,
-    updated=None,
-    deleted=None,
-    order=("c", "u", "d"),
-    reset=False,
-    lsuffix="",
-    rsuffix="",
-    sort=False,
-) -> dict:
+    created: Optional[Dict[str, Any]] = None,
+    updated: Optional[Dict[str, Any]] = None,
+    deleted: Optional[Dict[str, Any]] = None,
+    order: Sequence[str] = ("c", "u", "d"),
+    reset: bool = False,
+    lsuffix: str = "",
+    rsuffix: str = "",
+    sort: bool = False,
+) -> Dict[str, Any]:
     # pylint: disable=too-many-arguments, invalid-name, too-many-locals, unused-argument
     "Start the progressive join function"
     if sort:
@@ -104,15 +106,16 @@ def join_cont(
     table: BaseTable,
     other: BaseTable,
     dialog: Dialog,
-    created=None,
-    updated=None,
-    deleted=None,
-    order="cud",
-    reset=False,
-) -> dict:
+    created: Optional[Dict[str, Any]] = None,
+    updated: Optional[Dict[str, Any]] = None,
+    deleted: Optional[Dict[str, Any]] = None,
+    order: Sequence[str] = "cud",
+    reset: bool = False,
+) -> Dict[str, Any]:
     # pylint: disable=too-many-arguments, invalid-name, too-many-locals, unused-argument
     "Continue the progressive join function"
     join_table = dialog.output_table
+    assert isinstance(join_table, BaseTable)
     first_cols = dialog.bag["first_cols"]
     second_cols = dialog.bag["second_cols"]
     first_key = dialog.bag["first_key"]
@@ -125,15 +128,15 @@ def join_cont(
     _len = indices_len
     _fix = fix_loc
 
-    def _void(obj):
+    def _void(obj: Any) -> bool:
         if isinstance(obj, slice) and obj.start == obj.stop:
             return True
         return not obj
 
-    def _process_created_outer(ret):
+    def _process_created_outer(ret: Dict[str, Any]) -> None:
         pass
 
-    def _process_created(ret):
+    def _process_created(ret: Dict[str, Any]) -> None:
         b = dialog.bag
         if not created:
             return
@@ -143,6 +146,7 @@ def join_cont(
         first_ids = created.get(first_key, None)
         second_ids = created.get(second_key, None)
         only_1st, common, only_2nd = inter_slice(first_ids, second_ids)
+        assert isinstance(join_table, Table)
         if first_ids is not None:
             new_size = _len(first_ids)
             if (
@@ -156,11 +160,11 @@ def join_cont(
                 join_table.resize(new_size)
             else:  # there are gaps ...we have to keep trace of existing ids
                 join_table.resize(new_size, index=bitmap.asbitmap(first_ids))
-                if b.existing_ids is None:
-                    b.existing_ids = bitmap.asbitmap(join_table.index)
+                if b.get("existing_ids", None) is None:
+                    b["existing_ids"] = bitmap.asbitmap(join_table.index)
                 else:
-                    b.existing_ids = bitmap.union(
-                        b.existing_ids, bitmap.asbitmap(first_ids)
+                    b["existing_ids"] = bitmap.union(
+                        b["existing_ids"], bitmap.asbitmap(first_ids)
                     )
             join_table.loc[_fix(first_ids), first_cols] = first.loc[
                 _fix(first_ids), first.columns
@@ -186,9 +190,10 @@ def join_cont(
             only_2nd_bm -= paired
         b["second_orphans"] = bitmap.union(b["second_orphans"], only_2nd_bm)
 
-    def _process_updated(ret):
+    def _process_updated(ret: Dict[str, Any]) -> None:
         if not updated:
             return
+        assert isinstance(join_table, BaseTable)
         first_ids = updated.get(first_key, None)
         second_ids = updated.get(second_key, None)
         if first_ids:
@@ -199,16 +204,20 @@ def join_cont(
             if join_table.is_identity:
                 xisting_ = slice(0, join_table.last_id + 1, 1)
             else:
-                xisting_ = dialog.existing_ids
+                xisting_ = dialog.bag["existing_ids"]
             _, common, _ = inter_slice(second_ids, xisting_)
             join_table.loc[_fix(common), second_cols] = second.loc[
                 _fix(common), second.columns
             ]
 
-    def _process_deleted(ret):
+    def _process_deleted(ret: Dict[str, Any]) -> None:
         pass
 
-    order_dict = {"c": _process_created, "u": _process_updated, "d": _process_deleted}
+    order_dict: Dict[str, Callable[[Dict[str, Any]], None]] = {
+        "c": _process_created,
+        "u": _process_updated,
+        "d": _process_deleted,
+    }
     ret: Dict[Any, Any] = {}
     for operator in order:
         order_dict[operator](ret)
@@ -218,7 +227,7 @@ def join_cont(
 class Join(NAry):
     "Module executing join."
 
-    def __init__(self, **kwds):
+    def __init__(self, **kwds: Any) -> None:
         """Join(on=None, how='left', lsuffix='', rsuffix='',
                 sort=False,name=None)
         """

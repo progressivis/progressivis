@@ -8,9 +8,10 @@ import logging
 
 import numpy as np
 
+from ..core.module import ReturnRunStep
 from ..core.utils import indices_len, fix_loc
 from ..core.slot import SlotDescriptor
-from ..table.module import TableModule, ReturnRunStep
+from ..table.module import TableModule
 from ..table.table import Table
 from ..core.decorators import process_slot, run_if_any
 
@@ -25,7 +26,7 @@ class IdxMin(TableModule):
     inputs = [SlotDescriptor("table", type=Table, required=True)]
     outputs = [SlotDescriptor("min", type=Table, required=False)]
 
-    def __init__(self, **kwds):
+    def __init__(self, **kwds: Any) -> None:
         super(IdxMin, self).__init__(**kwds)
         self._min: Optional[Table] = None
         self.default_step_size = 10000
@@ -100,14 +101,15 @@ class IdxMin(TableModule):
                 self.table.append(op, indices=[run_number])
                 self._min.append(min_, indices=[run_number])
                 if len(self.table) > self.params.history:
-                    data = self.table.loc[
-                        self.table.index[-self.params.history :]
-                    ].to_dict(orient="list")
+                    data = self.table.loc[self.table.index[-self.params.history :]]
+                    assert data is not None
+                    row = data.to_dict(orient="list")
                     self.table.resize(0)
-                    self.table.append(data)
-                    data = self._min.loc[
-                        self._min.index[-self.params.history :]
-                    ].to_dict(orient="list")
+                    self.table.append(row)
+
+                    data = self._min.loc[self._min.index[-self.params.history :]]
+                    assert data is not None
+                    row = data.to_dict(orient="list")
                     self._min.resize(0)
-                    self._min.append(data)
+                    self._min.append(row)
             return self._return_run_step(self.next_state(dfslot), steps_run=steps)

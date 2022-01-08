@@ -486,7 +486,7 @@ class HistogramIndex(TableModule):
         else:
             input_ids = fix_loc(input_ids)
         x = table_[self.column].loc[input_ids]
-        mask_ = operator_(x, limit)  # type: ignore
+        mask_ = operator_(x, limit)
         assert isinstance(input_ids, slice)
         arr = slice_to_arange(input_ids)
         return bitmap(arr[np.nonzero(mask_)[0]])

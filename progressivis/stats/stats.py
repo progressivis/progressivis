@@ -4,10 +4,13 @@ import logging
 
 import numpy as np
 
+from progressivis.core.module import ReturnRunStep
 from progressivis.core.utils import indices_len, fix_loc, get_random_name
 from progressivis.core.slot import SlotDescriptor
-from progressivis.table.module import TableModule, ReturnRunStep
+from progressivis.table.module import TableModule
 from progressivis.table.table import Table
+
+from typing import Optional, Any
 
 # TODO update with http://www.johndcook.com/blog/skewness_kurtosis/
 # Use http://www.grantjenks.com/docs/runstats/
@@ -23,11 +26,11 @@ class Stats(TableModule):
     def __init__(
         self,
         column: str,
-        min_column: str = None,
-        max_column: str = None,
-        reset_index=False,
-        **kwds
-    ):
+        min_column: Optional[str] = None,
+        max_column: Optional[str] = None,
+        reset_index: bool = False,
+        **kwds: Any
+    ) -> None:
         super(Stats, self).__init__(**kwds)
         self._column: str = column
         self.default_step_size = 10000
@@ -73,11 +76,11 @@ class Stats(TableModule):
         steps = indices_len(indices)
         if steps > 0:
             x = input_df.to_array(locs=fix_loc(indices), columns=[self._column])
-            new_min = np.nanmin(x)
-            new_max = np.nanmax(x)
+            new_min = np.nanmin(x)  # type: ignore
+            new_max = np.nanmax(x)  # type: ignore
             row = {
-                self._min_column: np.nanmin([prev_min, new_min]),
-                self._max_column: np.nanmax([prev_max, new_max]),
+                self._min_column: np.nanmin([prev_min, new_min]),  # type: ignore
+                self._max_column: np.nanmax([prev_max, new_max]),  # type: ignore
             }
             if run_number in df.index:
                 df.loc[run_number] = row

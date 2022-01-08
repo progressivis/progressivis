@@ -5,25 +5,26 @@ from progressivis.core.utils import indices_len
 import numpy as np
 
 from . import BaseTable, Table, TableSelectedView
+from ..core.module import ReturnRunStep
 from ..core.slot import SlotDescriptor
-from .module import TableModule, ReturnRunStep
+from .module import TableModule
 from ..core.bitmap import bitmap
 
 # from .mod_impl import ModuleImpl
 from .binop import ops
 
-from typing import Optional, TYPE_CHECKING
+from typing import Optional, Any, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from .hist_index import HistogramIndex
 
 
-def _get_physical_table(t: np.ndarray) -> np.ndarray:
+def _get_physical_table(t: np.ndarray[Any, Any]) -> np.ndarray[Any, Any]:
     return t if t.base is None else _get_physical_table(t.base)
 
 
 class _Selection(object):
-    def __init__(self, values: bitmap = None) -> None:
+    def __init__(self, values: Optional[bitmap] = None) -> None:
         self._values = bitmap([]) if values is None else values
 
     def update(self, values: bitmap) -> None:
@@ -53,7 +54,14 @@ class BisectImpl:  # (ModuleImpl):
         self._hist_index = hist_index
         self.result: _Selection = _Selection()
 
-    def resume(self, limit, limit_changed, created=None, updated=None, deleted=None):
+    def resume(
+        self,
+        limit: float,
+        limit_changed: bool,
+        created: Optional[bitmap] = None,
+        updated: Optional[bitmap] = None,
+        deleted: Optional[bitmap] = None,
+    ) -> None:
         if limit_changed:
             new_sel = self._hist_index.query(self._op, limit)
             self.result.assign(new_sel)
@@ -69,12 +77,18 @@ class BisectImpl:  # (ModuleImpl):
             self.result.remove(deleted)
 
     def start(
-        self, table, limit, limit_changed, created=None, updated=None, deleted=None
-    ):
+        self,
+        table: BaseTable,
+        limit: float,
+        limit_changed: bool,
+        created: Optional[bitmap] = None,
+        updated: Optional[bitmap] = None,
+        deleted: Optional[bitmap] = None,
+    ) -> None:
         self._table = table
         self.result = _Selection()
         self.is_started = True
-        return self.resume(limit, limit_changed, created, updated, deleted)
+        self.resume(limit, limit_changed, created, updated, deleted)
 
 
 class Bisect(TableModule):
@@ -92,7 +106,7 @@ class Bisect(TableModule):
         SlotDescriptor("limit", type=Table, required=False),
     ]
 
-    def __init__(self, hist_index=None, **kwds):
+    def __init__(self, hist_index: HistogramIndex, **kwds: Any) -> None:
         super(Bisect, self).__init__(**kwds)
         self._impl = BisectImpl(self.params.column, self.params.op, hist_index)
         self.default_step_size = 1000
@@ -107,15 +121,15 @@ class Bisect(TableModule):
         steps = 0
         deleted = None
         if input_slot.deleted.any():
-            deleted = input_slot.deleted.next()
+            deleted = input_slot.deleted.next(as_slice=False)
             steps += 1  # indices_len(deleted)
         created = None
         if input_slot.created.any():
-            created = input_slot.created.next(length=step_size)
+            created = input_slot.created.next(length=step_size, as_slice=False)
             steps += indices_len(created)
         updated = None
         if input_slot.updated.any():
-            updated = input_slot.updated.next(length=step_size)
+            updated = input_slot.updated.next(length=step_size, as_slice=False)
             steps += indices_len(updated)
         input_table = input_slot.data()
         if input_table is None:

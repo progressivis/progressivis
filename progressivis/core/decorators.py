@@ -8,8 +8,6 @@ from typing import (
     Tuple,
     Union,
     Any,
-    Dict,
-    cast,
     TYPE_CHECKING,
     Optional,
     List,
@@ -17,12 +15,11 @@ from typing import (
 )
 
 if TYPE_CHECKING:
-    from .module import Module
+    from .module import Module, ReturnRunStep
     from .slot import Slot
 
-
-ReturnRunStep = Dict[str, int]
-RunStepCallable = Callable[[Any, int, int, float], ReturnRunStep]
+    RunStepCallable = Callable[[Any, int, int, float], ReturnRunStep]
+    DecCallable = Callable[[RunStepCallable], RunStepCallable]
 
 
 class _CtxImpl:
@@ -117,7 +114,7 @@ def process_slot(
                     self.context._impl._has_buffered.add(name)
             return run_step_(self, run_number, step_size, howlong)
 
-        return cast(RunStepCallable, run_step_wrapper)
+        return run_step_wrapper
 
     return run_step_decorator
 
@@ -130,10 +127,7 @@ def accepted_first(s: str) -> bool:
     return s in _RULES
 
 
-DecCallable = Callable[[RunStepCallable], RunStepCallable]
-
-
-def _slot_policy_rule(decname: str, *slots_maybe: str):
+def _slot_policy_rule(decname: str, *slots_maybe: str) -> RunStepCallable:
     """
     this function includes *args in the closure
     """
@@ -185,10 +179,10 @@ def _slot_policy_rule(decname: str, *slots_maybe: str):
             return to_decorate(self, run_number, step_size, howlong)
 
         decoration_._hidden_progressivis_attr = True  # type: ignore
-        return cast(RunStepCallable, decoration_)
+        return decoration_
 
     if called_with_args:
-        return decorator_
+        return decorator_  # type: ignore
     return decorator_(slots_maybe[0])  # type: ignore
 
 

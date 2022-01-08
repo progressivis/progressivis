@@ -10,7 +10,7 @@ except Exception:
     pass
 
 
-from typing import Optional, Any
+from typing import Optional, Any, Iterable
 
 
 class KNNKernelDensity:
@@ -22,20 +22,20 @@ class KNNKernelDensity:
         if not online:
             self.index.add_points(len(X))
 
-    def run(self, ops):
+    def run(self, ops: Any) -> Any:
         return self.index.run(ops)
 
-    def run_ids(self, ids):
+    def run_ids(self, ids: Iterable[int]) -> Any:
         return self.index.run_ids(ids)
 
     def score_samples(
-        self, X: np.ndarray, k: int = 10, bandwidth: float = 0.2
+        self, X: np.ndarray[Any, Any], k: int = 10, bandwidth: float = 0.2
     ) -> float:
         _, dists = self.index.knn_search_points(X, k=k)
         scores = self._gaussian_score(dists, bandwidth) / k
         return scores
 
-    def _gaussian_score(self, dists, bandwidth: float) -> float:
+    def _gaussian_score(self, dists: float, bandwidth: float) -> float:
         logg = -0.5 * (dists / bandwidth) ** 2
         g = np.exp(logg) / bandwidth / self.SQRT2PI
-        return g.sum(axis=1)
+        return g.sum(axis=1)  # type: ignore

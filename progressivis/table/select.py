@@ -1,13 +1,14 @@
 from __future__ import annotations
 
+from ..core.module import Module, ReturnRunStep
+from ..core.bitmap import bitmap
 from progressivis.utils.errors import ProgressiveError
 from ..core.utils import indices_len, is_valid_identifier
 from ..core.slot import SlotDescriptor
-from .module import Module, TableModule, ReturnRunStep
+from .module import TableModule
 from .table import Table
-from ..core.bitmap import bitmap
 
-from typing import Optional
+from typing import Optional, Any
 
 import logging
 
@@ -34,7 +35,7 @@ class Select(TableModule):
         ),
     ]
 
-    def __init__(self, **kwds):
+    def __init__(self, **kwds: Any) -> None:
         super(Select, self).__init__(**kwds)
         self.default_step_size = 1000
         # dependant modules
@@ -46,7 +47,9 @@ class Select(TableModule):
         self.min_value: Optional[Module] = None
         self.max_value: Optional[Module] = None
 
-    def create_dependent_modules(self, input_module: Module, input_slot: str, **kwds):
+    def create_dependent_modules(
+        self, input_module: Module, input_slot: str, **kwds: Any
+    ) -> Select:
         from .range_query import RangeQuery
 
         if self.input_module is not None:
@@ -152,17 +155,17 @@ class Select(TableModule):
         return self._return_run_step(self.next_state(select_slot), steps_run=steps)
 
     @staticmethod
-    def make_range_query(column: str, low: float, high: float = None):
+    def make_range_query(column: str, low: float, high: Optional[float] = None) -> str:
         if not is_valid_identifier(column):
             raise ProgressiveError('Cannot use column "%s", invalid name', column)
         if high is None or low == high:
             return "({} == {})".format(low, column)
         elif low > high:
             low, high = high, low
-        return "({} <= {} <= {})".format(low, column, high)
+        return f"({low} <= {column} <= {high})"
 
     @staticmethod
-    def make_and_query(*expr):
+    def make_and_query(*expr: str) -> str:
         if len(expr) == 1:
             return expr[0]
         elif len(expr) > 1:
@@ -170,7 +173,7 @@ class Select(TableModule):
         return ""
 
     @staticmethod
-    def make_or_query(*expr):
+    def make_or_query(*expr: str) -> str:
         if len(expr) == 1:
             return expr[0]
         elif len(expr) > 1:

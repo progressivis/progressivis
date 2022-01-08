@@ -10,6 +10,7 @@ from sklearn.utils.validation import check_random_state  # type: ignore
 from progressivis import ProgressiveError, SlotDescriptor
 from progressivis.core.utils import indices_len
 from ..table.module import TableModule, ReturnRunStep, JSon, Module
+from ..table.table_base import BaseTable
 from ..table import Table, TableSelectedView
 from ..table.dshape import dshape_from_dtype, dshape_from_columns
 from ..io import DynVar
@@ -262,7 +263,9 @@ class MBKMeans(TableModule):
             raise ProgressiveError(f"Expected {len(columns)} values, received {values}")
         centroids.loc[c, columns] = values
         # TODO unpack the table
-        self.mbk.cluster_centers_[c] = list(centroids.loc[c, columns])
+        centers = centroids.loc[c, columns]
+        assert isinstance(centers, BaseTable)
+        self.mbk.cluster_centers_[c] = list(centers)
         return self.mbk.cluster_centers_.tolist()
 
     def create_dependent_modules(self, input_module: Module, input_slot="result"):

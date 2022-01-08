@@ -4,18 +4,22 @@ import logging
 
 import numpy as np
 
-from .nary import NAry, ReturnRunStep
-from .table import BaseTable, Table
-from .dshape import dshape_union
+from ..core.module import ReturnRunStep
 from ..core.bitmap import bitmap
+from .nary import NAry
+from .table_base import BaseTable
+from .table import Table
+from .dshape import dshape_union
 
-from typing import List
+from typing import List, Optional
 
 
 logger = logging.getLogger(__name__)
 
 
-def combine_first(table: BaseTable, other: BaseTable, name: str = None) -> Table:
+def combine_first(
+    table: BaseTable, other: BaseTable, name: Optional[str] = None
+) -> Table:
     dshape = dshape_union(table.dshape, other.dshape)
     comb_table = Table(name=name, dshape=dshape)
     if np.all(table.index == other.index):  # the gentle case

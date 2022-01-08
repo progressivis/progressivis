@@ -1,12 +1,23 @@
+from __future__ import annotations
+
+from progressivis import Scheduler, Module, Slot
 from progressivis.table.nary import NAry
-from progressivis import Scheduler
+
+from typing import Type, Any, List
 
 
 class Reduce(NAry):
     "Reduce binary modules over multiple inputs"
 
     @staticmethod
-    def expand(binary_module, left_in, right_in, outp, slots, **binary_module_kwds):
+    def expand(
+        binary_module: Type[Module],
+        left_in: str,
+        right_in: str,
+        outp: str,
+        slots: List[Slot],
+        **binary_module_kwds: Any
+    ) -> Module:
         if len(slots) < 2:
             raise ValueError("Reduce needs at least two unputs")
         scheduler = binary_module_kwds.get("scheduler")

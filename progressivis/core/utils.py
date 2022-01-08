@@ -48,13 +48,17 @@ from typing import (
     TYPE_CHECKING,
 )
 
-integer_types = (int, np.integer)
-Items = Union[collections_abc.MutableMapping, List[Any], Any]
-
 if TYPE_CHECKING:
+    from progressivis.core.scheduler import Scheduler
+    from progressivis.core.module import Module, ReturnRunStep
     from progressivis.table.module import TableModule
     from progressivis.table.table_base import BaseTable
     from progressivis.utils import PsDict
+
+    PatchRunStepCallable = Callable[[int, int, float], ReturnRunStep]
+
+integer_types = (int, np.integer)
+Items = Union[collections_abc.MutableMapping, List[Any], Any]
 
 
 def is_int(n: Any) -> bool:
@@ -784,7 +788,7 @@ def force_valid_id_columns(df: pd.DataFrame) -> None:
     df.columns = columns
 
 
-class Dialog(object):
+class Dialog:
     def __init__(self, module: TableModule, started: bool = False):
         self._module = module
         self.bag: Dict[str, Any] = dict()
@@ -815,19 +819,40 @@ def spy(*args: Any, **kwargs: Any) -> None:
     f.close()
 
 
-def patch_this(to_decorate, module, patch):
+class ModulePatch:
+    def __init__(self, name: str) -> None:
+        self._name = name
+        self.applied: bool = False
+
+    def patch_condition(self, m: Module) -> bool:
+        if self.applied:
+            return False
+        return self._name == m.name
+
+    def before_run_step(self, m: Module, *args: Any, **kwargs: Any) -> None:
+        pass
+
+    def after_run_step(self, m: Module, *args: Any, **kwargs: Any) -> None:
+        pass
+
+
+def patch_this(
+    to_decorate: PatchRunStepCallable, module: Module, patch: ModulePatch
+) -> PatchRunStepCallable:
     """
     patch decorator
     """
 
-    def patch_decorator(to_decorate):
+    def patch_decorator(
+        to_decorate: Callable[[PatchRunStepCallable], PatchRunStepCallable]
+    ) -> Callable[..., Any]:
         """
         This is the actual decorator. It brings together the function to be
         decorated and the decoration stuff
         """
 
         @wraps(to_decorate)
-        def patch_wrapper(*args, **kwargs):
+        def patch_wrapper(*args: Any, **kwargs: Any) -> PatchRunStepCallable:
             """
             This function is the decoration
             run_step(self, run_number, step_size, howlong)
@@ -839,33 +864,17 @@ def patch_this(to_decorate, module, patch):
 
         return patch_wrapper
 
-    return patch_decorator(to_decorate)
+    return patch_decorator(to_decorate)  # type: ignore
 
 
-class ModulePatch(object):
-    def __init__(self, name):
-        self._name = name
-        self.applied = False
+def decorate(scheduler: Scheduler, patch: ModulePatch) -> None:
+    def decorate_module(m: Module, patch: ModulePatch) -> None:
+        assert hasattr(m, "run_step")
+        m.run_step = patch_this(  # type: ignore
+            to_decorate=m.run_step, module=m, patch=patch
+        )
+        patch.applied = True
 
-    def patch_condition(self, m):
-        if self.applied:
-            return False
-        return self._name == m.name
-
-    def before_run_step(self, m, *args, **kwargs):
-        pass
-
-    def after_run_step(self, m, *args, **kwargs):
-        pass
-
-
-def decorate_module(m, patch):
-    assert hasattr(m, "run_step")
-    m.run_step = patch_this(to_decorate=m.run_step, module=m, patch=patch)
-    patch.applied = True
-
-
-def decorate(scheduler, patch):
     for m in scheduler.modules().values():
         if patch.patch_condition(m):
             decorate_module(m, patch)
@@ -874,7 +883,7 @@ def decorate(scheduler, patch):
 class JSONEncoderNp(js.JSONEncoder):
     "Encode numpy objects"
 
-    def default(self, o):
+    def default(self, o: Any) -> Any:
         "Handle default encoding."
         if isinstance(o, float) and np.isnan(o):
             return None
@@ -891,35 +900,35 @@ class JSONEncoderNp(js.JSONEncoder):
         return js.JSONEncoder.default(self, o)
 
     @staticmethod
-    def dumps(*args, **kwargs):
+    def dumps(*args: Any, **kwargs: Any) -> str:
         return js.dumps(*args, cls=JSONEncoderNp, **kwargs)
 
     @staticmethod
-    def loads(*args, **kwargs):
+    def loads(*args: Any, **kwargs: Any) -> Any:
         return js.loads(*args, **kwargs)
 
     @staticmethod
-    def cleanup(*args, **kwargs):
+    def cleanup(*args: Any, **kwargs: Any) -> Any:
         s = JSONEncoderNp.dumps(*args, **kwargs)
         return JSONEncoderNp.loads(s)
 
 
-async def asynchronize(f, *args, **kwargs):
+async def asynchronize(f: Callable[..., Any], *args: Any, **kwargs: Any) -> Any:
     # cf. https://docs.python.org/3/library/asyncio-eventloop.html#asyncio.loop.run_in_executor
     loop = aio.get_running_loop()
     fun = ft.partial(f, *args, **kwargs)
     return await loop.run_in_executor(None, fun)
 
 
-def gather_and_run(*args):
+def gather_and_run(*args: Any) -> None:
     """
     this function avoids the use on the "%gui asyncio" magic in notebook
     """
 
-    async def gath():
+    async def gath() -> Any:
         await aio.gather(*args)
 
-    def func_():
+    def func_() -> None:
         loop = aio.new_event_loop()
         aio.set_event_loop(loop)
         loop.run_until_complete(gath())
@@ -933,7 +942,7 @@ def is_notebook() -> bool:
     try:
         from IPython import get_ipython  # type: ignore
 
-        return get_ipython().__class__.__name__ == "ZMQInteractiveShell"
+        return bool(get_ipython().__class__.__name__ == "ZMQInteractiveShell")
     except ImportError:
         pass
     print("not in notebook")
@@ -942,7 +951,7 @@ def is_notebook() -> bool:
 
 def filter_cols(
     df: BaseTable, columns: Optional[List[str]] = None, indices: Optional[Any] = None
-):
+) -> BaseTable:
     """
     Return the specified table filtered by the specified indices and
     limited to the columns of interest.
@@ -950,10 +959,10 @@ def filter_cols(
     if columns is None:
         if indices is None:
             return df
-        return df.loc[indices]
+        return cast(BaseTable, df.loc[indices])
     cols = columns
     if cols is None:
         return None
     if indices is None:
         indices = slice(0, None)
-    return df.loc[indices, cols]
+    return df.loc[indices, cols]  # type: ignore
