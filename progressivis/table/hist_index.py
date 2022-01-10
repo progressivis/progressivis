@@ -370,7 +370,9 @@ class HistogramIndex(TableModule):
     ]
 
     def __init__(self, column: str, **kwds: Any) -> None:
-        super(HistogramIndex, self).__init__(output_required=False, **kwds)
+        super(HistogramIndex, self).__init__(
+            # output_required=False,
+            **kwds)
         self.column = column
         # will be created when the init_threshold is reached
         self._impl: Optional[_HistogramIndexImpl] = None

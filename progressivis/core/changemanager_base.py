@@ -10,7 +10,13 @@ from .index_update import IndexUpdate
 from .bitmap import bitmap
 import weakref as wr
 
-from typing import Any, Optional, Union, TYPE_CHECKING, overload, Literal
+import sys
+if sys.version_info >= (3, 8):
+    from typing import Literal
+else:
+    from typing_extensions import Literal
+
+from typing import Any, Optional, Union, TYPE_CHECKING, overload
 
 if TYPE_CHECKING:
     from .slot import Slot

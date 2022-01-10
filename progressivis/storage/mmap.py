@@ -4,8 +4,6 @@ See https://stackoverflow.com/questions/20932361/resizing-numpy-memmap-arrays.
 """
 from __future__ import annotations
 
-from typing import Union, Optional, Any, TYPE_CHECKING, cast, List
-
 import os
 import os.path
 from resource import getpagesize
@@ -23,6 +21,8 @@ from .hierarchy import GroupImpl, AttributeImpl
 from ..core.settings import VARS
 from .mmap_enc import MMapObject
 import atexit
+
+from typing import Union, Optional, Any, TYPE_CHECKING, cast, List, Iterable, Dict
 
 if TYPE_CHECKING:
     from .base import Shape, DTypeLike, ArrayLike, Group, Attribute
@@ -165,7 +165,7 @@ class MMapDataset(Dataset):
             # print('fillvalue for %s defaulted to %s'%(self.base.dtype, self._fillvalue))
         if kwds:
             logger.warning("Ignored keywords in MMapDataset: %s", kwds)
-        self.base = np.frombuffer(self._buffer, dtype=dtype, count=nb_item)
+        self.base = np.frombuffer(self._buffer, dtype=dtype, count=nb_item)  # type: ignore
         if self.base.shape != shape:
             self.base = self.base.reshape(shape)
         self.view = self.base
@@ -178,7 +178,7 @@ class MMapDataset(Dataset):
             self._fill(0, data)
         # MMapDataset.datasets.append(self)
 
-    def _fill(self, data, start=0, end=None):
+    def _fill(self, data: Any, start: int = 0, end: Optional[int] = None) -> None:
         if end is None:
             end = start + len(data)
         if self.base.dtype == OBJECT:
@@ -187,16 +187,16 @@ class MMapDataset(Dataset):
         else:
             self.view[start:end] = np.asarray(data)
 
-    def append(self, val) -> None:
+    def append(self, val: Any) -> None:
         # assert isinstance(val, bytes)
         assert isinstance(self.shape, tuple) and len(self.shape) == 1
-        assert self.dtype == np.int8
+        assert self.dtype == np.dtype(np.int8)
         last = len(self.view)
         lval = len(val)
         self.resize(last + lval)
         self.base[last : last + lval] = val
 
-    def release(self, ids):
+    def release(self, ids: Union[int, slice, Iterable[int]]) -> None:
         if self._strings is None:
             return
         if isinstance(ids, integer_types):
@@ -213,7 +213,8 @@ class MMapDataset(Dataset):
                 continue
             self._strings.release(offset)
 
-    def _set_value_at(self, i, v):
+    def _set_value_at(self, i: int, v: Any) -> None:
+        assert self._strings is not None
         # TODO free current value
         if v is None:
             self.view[i] = -1
@@ -223,7 +224,7 @@ class MMapDataset(Dataset):
     def flush(self) -> None:
         _write_attributes(self._attrs.attrs, self._metafile)
 
-    def close_all(self, recurse=True) -> None:
+    def close_all(self, recurse: bool = True) -> None:
         if self._buffer.closed:
             return
         self.flush()
@@ -235,15 +236,15 @@ class MMapDataset(Dataset):
 
     @property
     def shape(self) -> Shape:
-        return self.view.shape
+        return self.view.shape  # type: ignore
 
     @property
-    def dtype(self) -> np.dtype:
+    def dtype(self) -> np.dtype[Any]:
         return self._dtype
 
     @property
     def maxshape(self) -> Shape:
-        return self.view.shape
+        return self.view.shape  # type: ignore
 
     @property
     def fillvalue(self) -> Any:
@@ -251,11 +252,11 @@ class MMapDataset(Dataset):
 
     @property
     def chunks(self) -> Shape:
-        return self.view.shape
+        return self.view.shape  # type: ignore
 
     @property
     def size(self) -> int:
-        return self.view.shape[0]
+        return self.view.shape[0]  # type: ignore
 
     def resize(self, size: Union[int, ArrayLike], axis: Optional[int] = None) -> None:
         assert self._buffer is not None
@@ -278,7 +279,7 @@ class MMapDataset(Dataset):
         length = (last // PAGESIZE + 1) * PAGESIZE * 10
         if length != len(self._buffer):
             self._buffer.resize(length)
-        self.base = np.frombuffer(
+        self.base = np.frombuffer(  # type: ignore
             self._buffer, dtype=dtype_, count=nb_item
         )  # returns an 1D array
         if self.base.shape != shape:
@@ -286,7 +287,7 @@ class MMapDataset(Dataset):
         baseshape = np.array(self.base.shape)
         viewshape = self.view.shape
         size = np.asarray(shape)
-        if (size > baseshape).any():
+        if (size > baseshape).any():  # type: ignore
             self.view = None
             newsize = []
             for shap, shape in zip(size, baseshape):
@@ -308,7 +309,7 @@ class MMapDataset(Dataset):
             newarea = [np.s_[0:s] for s in size]
         self.view = self.base[tuple(newarea)]
 
-    def __getitem__(self, args) -> Any:
+    def __getitem__(self, args: Any) -> Any:
         if self.dtype != OBJECT:
             return self.view[args]
         assert self._strings is not None
@@ -329,7 +330,7 @@ class MMapDataset(Dataset):
             res[k] = self._strings.get(offset)
         return np.array(res, dtype=OBJECT)
 
-    def __setitem__(self, args, val) -> None:
+    def __setitem__(self, args: Any, val: Any) -> None:
         if self.dtype != OBJECT:
             self.view[args] = val
             return
@@ -344,7 +345,7 @@ class MMapDataset(Dataset):
             self.view[k] = self._strings.set_at(self.view[k], val[i])
 
     def __len__(self) -> int:
-        return self.view.shape[0]
+        return self.view.shape[0]  # type: ignore
 
     @property
     def attrs(self) -> Attribute:
@@ -364,7 +365,7 @@ class MMapGroup(GroupImpl):
     """
 
     # all_instances = []
-    def __init__(self, name: Optional[str] = None, parent=None):
+    def __init__(self, name: Optional[str] = None, parent: Optional[GroupImpl] = None):
         if name is None:
             name = get_random_name("mmapstorage_")
         super(MMapGroup, self).__init__(name, parent=parent)
@@ -387,14 +388,14 @@ class MMapGroup(GroupImpl):
                 raise ValueError(
                     'Cannot create group %s, "unsuitable directory' % self._directory
                 )
-            _read_attributes(cast(AttributeImpl, self._attrs).attrs, metadata)
+            _read_attributes(self._attrs.attrs, metadata)
         else:
             os.makedirs(self._directory)  # can raise exceptions
             self.flush()
         self._is_init = True
 
     def flush(self) -> None:
-        _write_attributes(cast(AttributeImpl, self._attrs).attrs, self._metadata)
+        _write_attributes(self._attrs.attrs, self._metadata)
 
     def path(self) -> str:
         "Return the path of the directory for that group"
@@ -420,7 +421,7 @@ class MMapGroup(GroupImpl):
         shape: Optional[Shape] = None,
         dtype: Optional[DTypeLike] = None,
         data: Optional[Any] = None,
-        **kwds,
+        **kwds: Any,
     ) -> Dataset:
         self._init_dirs()
         if name in self.dict:
@@ -457,7 +458,7 @@ class MMapGroup(GroupImpl):
         self.dict[name] = arr
         return arr
 
-    def _create_group(self, name: str, parent: Optional[GroupImpl]):
+    def _create_group(self, name: str, parent: Optional[GroupImpl]) -> MMapGroup:
         self._init_dirs()
         return MMapGroup(name, parent=parent)
 
@@ -467,7 +468,7 @@ class MMapGroup(GroupImpl):
         "Delete the group and resources associated. Do it at your own risk"
         if os.path.exists(self._directory):
             shutil.rmtree(self._directory)
-        if self.parent is not None and self in self.parent.dict:
+        if self.parent is not None and self.name in self.parent.dict:
             del self.parent.dict[self.name]
 
     def delete_children(self) -> None:
@@ -491,9 +492,9 @@ class MMapGroup(GroupImpl):
             elif isinstance(ds, MMapGroup):
                 ds.close_all()
         metadata = os.path.join(self._directory, METADATA_FILE)
-        _write_attributes(cast(AttributeImpl, self._attrs).attrs, metadata)
+        _write_attributes(self._attrs.attrs, metadata)
 
-    def release(self, ids) -> None:
+    def release(self, ids: Union[int, slice, Iterable[int]]) -> None:
         for ds in self.dict.values():
             if isinstance(ds, MMapDataset):
                 ds.release(ids)
@@ -502,7 +503,7 @@ class MMapGroup(GroupImpl):
 class MMapStorageEngine(StorageEngine, MMapGroup):
     "StorageEngine for mmap-based storage"
 
-    def __init__(self, root=ROOT_NAME):
+    def __init__(self, root: str = ROOT_NAME) -> None:
         """
         Create a storage manager from a specified root directory.
         """
@@ -510,7 +511,7 @@ class MMapStorageEngine(StorageEngine, MMapGroup):
         MMapGroup.__init__(self, root, None)
 
     @staticmethod
-    def create_group(name: Optional[str] = None, create=True) -> Group:
+    def create_group(name: Optional[str] = None, create: bool = True) -> Group:
         root = StorageEngine.engines()["mmap"]
         assert isinstance(root, GroupImpl)
         if name in root.dict:
@@ -536,7 +537,7 @@ class MMapStorageEngine(StorageEngine, MMapGroup):
         return MMapGroup.__contains__(self, name)
 
 
-def _read_attributes(attrs, filename):
+def _read_attributes(attrs: Dict[str, Any], filename: str) -> Dict[str, Any]:
     with open(filename, "rb") as inf:
         dictionary = marshal.load(inf)
     if not isinstance(dictionary, dict):
@@ -546,19 +547,19 @@ def _read_attributes(attrs, filename):
     return attrs
 
 
-def _write_attributes(attrs, filename):
+def _write_attributes(attrs: Dict[str, Any], filename: str) -> None:
     with open(filename, "wb") as outf:
         marshal.dump(attrs, outf)
 
 
 class Persist:
-    def __init__(self, cleanup=True):
-        self._itd_flag = None
+    def __init__(self, cleanup: bool = True):
+        self._itd_flag = False
         self._cleanup = cleanup
 
-    def __enter__(self):
+    def __enter__(self) -> None:
         self._itd_flag = init_temp_dir_if()
 
-    def __exit__(self, exc_type, exc_value, traceback):
+    def __exit__(self, exc_type: Any, exc_value: Any, traceback: Any) -> None:
         if self._itd_flag:
             cleanup_temp_dir()

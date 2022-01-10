@@ -28,6 +28,12 @@ from progressivis.core.bitmap import bitmap
 from .dshape import dshape_print, dshape_create, DataShape, EMPTY_DSHAPE
 from .tablechanges import TableChanges as TableChanges
 
+import sys
+if sys.version_info >= (3, 8):
+    from typing import Literal
+else:
+    from typing_extensions import Literal
+
 from typing import (
     Union,
     Any,
@@ -40,7 +46,6 @@ from typing import (
     Sequence,
     overload,
     Iterator,
-    Literal,
 )
 
 if TYPE_CHECKING:

@@ -4,8 +4,9 @@ import sys
 
 import numpy as np
 
+from ..core.module import ReturnRunStep
 from ..core.utils import indices_len, fix_loc
-from ..table.module import TableModule, ReturnRunStep
+from ..table.module import TableModule
 from ..table import Table, BaseTable
 from ..core.decorators import process_slot, run_if_any
 from .. import SlotDescriptor
@@ -14,7 +15,7 @@ from ..core.module import ModuleMeta
 from ..table.dshape import dshape_projection
 from collections import OrderedDict
 
-from typing import List, cast
+from typing import List, cast, Any
 
 not_tested_unaries = (
     "isnat",  # input array with datetime or timedelta data type.
@@ -66,7 +67,7 @@ binary_modules: List[Binary] = []
 reduce_modules: List[Reduce] = []
 
 
-def info():
+def info() -> None:
     print("unary dict", unary_dict_all)
     print("*************************************************")
     print("binary dict", binary_dict_all)
@@ -80,7 +81,7 @@ class Unary(TableModule):
         )
     ]
 
-    def __init__(self, ufunc: np.ufunc, **kwds):
+    def __init__(self, ufunc: np.ufunc, **kwds: Any) -> None:
         super(Unary, self).__init__(**kwds)
         self._ufunc: np.ufunc = ufunc
         self._kwds = {}
@@ -138,8 +139,8 @@ class Unary(TableModule):
 
 
 def make_subclass(super_: ModuleMeta, cname: str, ufunc: np.ufunc) -> ModuleMeta:
-    def _init_func(self_, *args, **kwds):
-        super_.__init__(self_, ufunc, *args, **kwds)
+    def _init_func(self_: ModuleMeta, *args: Any, **kwds: Any) -> None:
+        super_.__init__(self_, ufunc, *args, **kwds)  # type: ignore
 
     # cls = type(cname, (super_,), {})
     cls = ModuleMeta(cname, (super_,), {})
@@ -151,12 +152,12 @@ def make_subclass(super_: ModuleMeta, cname: str, ufunc: np.ufunc) -> ModuleMeta
 _g = globals()
 
 
-def func2class_name(s):
+def func2class_name(s: str) -> str:
     return "".join([e.capitalize() for e in s.split("_")])
 
 
 for k, v in unary_dict_all.items():
-    name = func2class_name(k)
+    name: str = func2class_name(k)
     # _g[name] = make_subclass(Unary, name, v)
     # unary_modules.append(_g[name])
 

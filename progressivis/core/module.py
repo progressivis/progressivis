@@ -550,7 +550,6 @@ class Module(metaclass=ModuleMeta):
                 slot.output_module._connect_output(slot)
 
         for name in deleted_keys:
-            logger.debug(f"Deleting key {name} from {self.name}")
             old_slot = self._input_slots[name]
             if old_slot:
                 logger.info(f"Deleted input slot {name} in {self.name}")
@@ -588,7 +587,8 @@ class Module(metaclass=ModuleMeta):
 
     def validate(self) -> None:
         "called when the module have been validated"
-        self.state = Module.state_blocked
+        if self.state == self.state_created:
+            self.state = Module.state_blocked
 
     def _connect_output(self, slot: Slot) -> List[Slot]:
         slot_list = self.get_output_slot(slot.output_name)

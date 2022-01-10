@@ -39,8 +39,8 @@ class RangeQuery2dImpl:  # (ModuleImpl):
         self,
         column_x: str,
         column_y: str,
-        hist_index_x: HistogramIndex,
-        hist_index_y: HistogramIndex,
+        # hist_index_x: HistogramIndex,
+        # hist_index_y: HistogramIndex,
         approximate: bool,
     ) -> None:
         super(RangeQuery2dImpl, self).__init__()
@@ -48,14 +48,16 @@ class RangeQuery2dImpl:  # (ModuleImpl):
         self._column_x = column_x
         self._column_y = column_y
         # self.bins = None
-        self._hist_index_x = hist_index_x
-        self._hist_index_y = hist_index_y
+        # self._hist_index_x = hist_index_x
+        # self._hist_index_y = hist_index_y
         self._approximate = approximate
         self.result: Optional[_Selection] = None
         self.is_started = False
 
     def resume(
         self,
+        hist_index_x: HistogramIndex,
+        hist_index_y: HistogramIndex,
         lower_x: float,
         upper_x: float,
         lower_y: float,
@@ -67,17 +69,17 @@ class RangeQuery2dImpl:  # (ModuleImpl):
     ) -> None:
         assert self.result
         if limit_changed:
-            new_sel_x = self._hist_index_x.range_query_aslist(
+            new_sel_x = hist_index_x.range_query_aslist(
                 lower_x, upper_x, approximate=self._approximate
             )
-            new_sel_y = self._hist_index_y.range_query_aslist(
+            new_sel_y = hist_index_y.range_query_aslist(
                 lower_y, upper_y, approximate=self._approximate
             )
             if new_sel_x is None or new_sel_y is None:
-                new_sel_x = self._hist_index_x.range_query(
+                new_sel_x = hist_index_x.range_query(
                     lower_x, upper_x, approximate=self._approximate
                 )
-                new_sel_y = self._hist_index_y.range_query(
+                new_sel_y = hist_index_y.range_query(
                     lower_y, upper_y, approximate=self._approximate
                 )
                 new_sel = new_sel_x & new_sel_y
@@ -89,18 +91,18 @@ class RangeQuery2dImpl:  # (ModuleImpl):
             return
         if updated:
             self.result.remove(updated)
-            res_x = self._hist_index_x.restricted_range_query(
+            res_x = hist_index_x.restricted_range_query(
                 lower_x, upper_x, only_locs=updated, approximate=self._approximate
             )
-            res_y = self._hist_index_y.restricted_range_query(
+            res_y = hist_index_y.restricted_range_query(
                 lower_y, upper_y, only_locs=updated, approximate=self._approximate
             )
             self.result.update(res_x & res_y)
         if created:
-            res_x = self._hist_index_x.restricted_range_query(
+            res_x = hist_index_x.restricted_range_query(
                 lower_x, upper_x, only_locs=created, approximate=self._approximate
             )
-            res_y = self._hist_index_y.restricted_range_query(
+            res_y = hist_index_y.restricted_range_query(
                 lower_y, upper_y, only_locs=created, approximate=self._approximate
             )
             self.result.update(res_x & res_y)
@@ -110,6 +112,8 @@ class RangeQuery2dImpl:  # (ModuleImpl):
     def start(
         self,
         table: BaseTable,
+        hist_index_x: HistogramIndex,
+        hist_index_y: HistogramIndex,
         lower_x: float,
         upper_x: float,
         lower_y: float,
@@ -123,7 +127,10 @@ class RangeQuery2dImpl:  # (ModuleImpl):
         self._table = table
         self.is_started = True
         return self.resume(
-            lower_x, upper_x, lower_y, upper_y, limit_changed, created, updated, deleted
+            hist_index_x, hist_index_y,
+            lower_x, upper_x, lower_y, upper_y,
+            limit_changed,
+            created, updated, deleted
         )
 
 
@@ -143,6 +150,8 @@ class RangeQuery2d(TableModule):
         SlotDescriptor("upper", type=PsDict, required=False),
         SlotDescriptor("min", type=PsDict, required=False),
         SlotDescriptor("max", type=PsDict, required=False),
+        SlotDescriptor("hist_x", type=Table, required=True),
+        SlotDescriptor("hist_y", type=Table, required=True)
     ]
     outputs = [
         SlotDescriptor("min", type=Table, required=False),
@@ -151,19 +160,17 @@ class RangeQuery2d(TableModule):
 
     def __init__(
         self,
-        hist_index: Optional[HistogramIndex] = None,
+        # hist_index: Optional[HistogramIndex] = None,
         approximate: bool = False,
         **kwds: Any
     ) -> None:
         super(RangeQuery2d, self).__init__(**kwds)
-        self._impl: Optional[
-            RangeQuery2dImpl
-        ] = None  # RangeQueryImpl(self.params.column, hist_index)
-        self._hist_index_x: Optional[HistogramIndex] = None
-        self._hist_index_y: Optional[HistogramIndex] = None
+        # self._hist_index_x: Optional[HistogramIndex] = None
+        # self._hist_index_y: Optional[HistogramIndex] = None
         self._approximate = approximate
         self._column_x: str = self.params.column_x
         self._column_y: str = self.params.column_y
+        self._impl = RangeQuery2dImpl(self._column_x, self._column_y, approximate)
         # X ...
         self._watched_key_lower_x = self.params.watched_key_lower_x
         if not self._watched_key_lower_x:
@@ -248,15 +255,16 @@ class RangeQuery2d(TableModule):
                     max_value.input.like = max_.output.result
 
                 range_query = self
-                # range_query.hist_index = hist_index
-                self._impl = RangeQuery2dImpl(
-                    self._column_x,
-                    self._column_y,
-                    hist_index_x,
-                    hist_index_y,
-                    approximate=self._approximate,
-                )
-                range_query.input.table = hist_index_x.output.result
+                range_query.input.hist_x = hist_index_x.output.result
+                range_query.input.hist_y = hist_index_y.output.result
+                # self._impl = RangeQuery2dImpl(
+                #     self._column_x,
+                #     self._column_y,
+                #     hist_index_x,
+                #     hist_index_y,
+                #     approximate=self._approximate,
+                # )
+                range_query.input.table = input_module.output[input_slot]  # hist_index_x.output.result
                 if min_value:
                     assert isinstance(min_value, Module)
                     range_query.input.lower = min_value.output.result
@@ -309,15 +317,15 @@ class RangeQuery2d(TableModule):
         steps = 0
         deleted: Optional[bitmap] = None
         if input_slot.deleted.any():
-            deleted = cast(bitmap, input_slot.deleted.next(length=step_size))
+            deleted = input_slot.deleted.next(length=step_size, as_slice=False)
             steps += indices_len(deleted)
         created: Optional[bitmap] = None
         if input_slot.created.any():
-            created = cast(bitmap, input_slot.created.next(length=step_size))
+            created = input_slot.created.next(length=step_size, as_slice=False)
             steps += indices_len(created)
         updated: Optional[bitmap] = None
         if input_slot.updated.any():
-            updated = cast(bitmap, input_slot.updated.next(length=step_size))
+            updated = input_slot.updated.next(length=step_size, as_slice=False)
             steps += indices_len(updated)
         input_table = input_slot.data()
         if input_table is None:
@@ -434,10 +442,17 @@ class RangeQuery2d(TableModule):
         if steps == 0 and not limit_changed:
             return self._return_run_step(self.state_blocked, steps_run=0)
         # ...
+        hist_x_slot = self.get_input_slot("hist_x")
+        hist_x_slot.clear_buffers()
+        hist_y_slot = self.get_input_slot("hist_y")
+        hist_y_slot.clear_buffers()
+
         assert self._impl
         if not self._impl.is_started:
             self._impl.start(
                 input_table,
+                cast(HistogramIndex, hist_x_slot.output_module),
+                cast(HistogramIndex, hist_y_slot.output_module),
                 lower_value_x,
                 upper_value_x,
                 lower_value_y,
@@ -451,6 +466,8 @@ class RangeQuery2d(TableModule):
             self.selected.selection = self._impl.result._values
         else:
             self._impl.resume(
+                cast(HistogramIndex, hist_x_slot.output_module),
+                cast(HistogramIndex, hist_y_slot.output_module),
                 lower_value_x,
                 upper_value_x,
                 lower_value_y,

@@ -2,18 +2,20 @@ from __future__ import annotations
 
 import numpy as np
 
+from ..core.module import ReturnRunStep
 from ..core.utils import fix_loc
-from ..table.module import TableModule, ReturnRunStep
-from ..table.table import BaseTable, Table
+from ..table.module import TableModule
+from ..table.table_base import BaseTable
+from ..table.table import Table
 import numexpr as ne  # type: ignore
 
 
 from typing import Dict, Any, Tuple
 
 
-def _make_local(df: BaseTable, px) -> Tuple[Any, Dict[str, np.ndarray]]:
-    arr: np.ndarray = df.to_array()
-    result: Dict[str, np.ndarray] = {}
+def _make_local(df: BaseTable, px: str) -> Tuple[Any, Dict[str, np.ndarray[Any, Any]]]:
+    arr: np.ndarray[Any, Any] = df.to_array()
+    result: Dict[str, np.ndarray[Any, Any]] = {}
 
     class _Aux:
         pass
@@ -27,12 +29,12 @@ def _make_local(df: BaseTable, px) -> Tuple[Any, Dict[str, np.ndarray]]:
 
 
 class NumExprABC(TableModule):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
-        self.expr: Dict
-        self.ref_expr: Dict = self.expr
+        self.expr: Dict[str, Any]
+        self.ref_expr: Dict[str, Any] = self.expr
 
-    def reset(self):
+    def reset(self) -> None:
         if self.result is not None:
             self.table.resize(0)
 
@@ -80,6 +82,7 @@ class NumExprABC(TableModule):
         first_slot = None
         for sl in self.input_slot_values():
             n = sl.input_name
+            assert n is not None
             if n == "_params":
                 continue
             if first_slot is None:

@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import Union, Optional, Any, TYPE_CHECKING, cast, List
-
 from collections import Iterable
 import logging
 
@@ -11,6 +9,8 @@ from progressivis.core.utils import integer_types
 from progressivis.core.bitmap import bitmap
 from .base import Dataset
 from .hierarchy import AttributeImpl
+
+from typing import Union, Optional, Any, TYPE_CHECKING, Sized
 
 
 if TYPE_CHECKING:
@@ -30,8 +30,8 @@ class RangeDataset(Dataset):
         shape: Optional[Shape] = None,
         dtype: Optional[DTypeLike] = None,
         data: Optional[Any] = None,
-        **kwds,
-    ):
+        **kwds: Any,
+    ) -> None:
         self._name = name
         if shape is None:
             if data is not None and hasattr(data, "shape"):
@@ -46,7 +46,7 @@ class RangeDataset(Dataset):
         if dtype is not None:
             if dtype != np.int_:
                 raise TypeError("dtype of a RangeDataset should be integer")
-        self._dtype: np.dtype = np.dtype(np.int_)
+        self._dtype: np.dtype[Any] = np.dtype(np.int_)
         if kwds:
             logger.warning("Unused arguments %s", kwds)
         self._attrs = AttributeImpl()
@@ -54,7 +54,7 @@ class RangeDataset(Dataset):
     def flush(self) -> None:
         pass
 
-    def close_all(self, recurse=True) -> None:
+    def close_all(self, recurse: bool = True) -> None:
         pass
 
     @property
@@ -62,7 +62,7 @@ class RangeDataset(Dataset):
         return self._shape
 
     @property
-    def dtype(self) -> np.dtype:
+    def dtype(self) -> np.dtype[Any]:
         return self._dtype
 
     @property
@@ -92,7 +92,7 @@ class RangeDataset(Dataset):
             return
         self._shape = (size,)
 
-    def __getitem__(self, args) -> Any:
+    def __getitem__(self, args: Any) -> Any:
         if isinstance(args, tuple):
             if len(args) != 1:
                 raise KeyError("too many dimensions in __getitem__: %s", args)
@@ -104,7 +104,7 @@ class RangeDataset(Dataset):
                 raise IndexError("Index %d out of bounds for size %d", args, self.size)
         elif isinstance(args, np.ndarray):
             if args.dtype == np.int_:
-                if (args >= self.size).any():
+                if (args >= self.size).any():  # type: ignore
                     raise IndexError(
                         "Some index in %s out of bounds for size %d", args, self.size
                     )
@@ -112,12 +112,11 @@ class RangeDataset(Dataset):
             elif args.dtype == np.bool_:
                 return self[np.where(args)[0]]
         elif isinstance(args, Iterable):
-            try:
-                count = len(cast(List, args))
-            # pylint: disable=bare-except
-            except Exception:
+            if isinstance(args, Sized):
+                count = len(args)
+            else:
                 count = -1
-            return self[np.fromiter(args, dtype=np.int64, count=count)]
+            return self[np.fromiter(args, dtype=np.int64, count=count)]  # type: ignore
         elif isinstance(args, slice):
             return np.arange(*args.indices(self.size), dtype=np.int64)
         elif isinstance(args, bitmap):
@@ -128,7 +127,7 @@ class RangeDataset(Dataset):
             return args
         raise KeyError("Invalid key for __getitem__: %s", args)
 
-    def __setitem__(self, args, val) -> None:
+    def __setitem__(self, args: Any, val: Any) -> None:
         if not np.array_equal(self[args], np.asarray(val)):
             raise RangeError("values incompatible with range")
 

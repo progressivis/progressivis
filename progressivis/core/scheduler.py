@@ -506,7 +506,8 @@ class Scheduler:
             modules[mid].reconnect(slots)
         if added:
             logger.info("Scheduler adding modules %s", added)
-            print(f"# Scheduler added module(s): {added}")
+            sorted_added = sorted(added)
+            print(f"# Scheduler added module(s): {sorted_added}")
             for mid in added:
                 modules[mid].starting()
         self._new_modules = None

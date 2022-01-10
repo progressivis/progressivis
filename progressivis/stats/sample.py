@@ -34,8 +34,18 @@ class Sample(TableModule):
     inputs = [SlotDescriptor("table", type=Table)]
     outputs = [SlotDescriptor("select", type=bitmap, required=False)]
 
-    def __init__(self, **kwds: Any) -> None:
-        super(Sample, self).__init__(output_required=False, **kwds)
+    def __init__(self, required: str = "result", **kwds: Any) -> None:
+        assert required in ("result", "select")
+        super(Sample, self).__init__(
+            output_required=(required == "result"),
+            **kwds)
+        if required == "select":
+            # Change the descriptor so required
+            # The original SD is kept in the shared outputs/all_outputs
+            # class variables
+            sd = SlotDescriptor("select", type=Table, required=True)
+            self.output_descriptors["select"] = sd
+
         self._tmp_table = Table(
             self.generate_table_name("sample"), dshape="{select: int64}", create=True
         )

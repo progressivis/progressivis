@@ -34,9 +34,10 @@ class TestPercentiles(ProgressiveTest):
             hist_index.input[0] = random.output.result
             t_percentiles = PsDict({"_25": 25.0, "_50": 50.0, "_75": 75.0})
             which_percentiles = Constant(table=t_percentiles, scheduler=s)
-            percentiles = Percentiles(hist_index, accuracy=accuracy, scheduler=s)
+            percentiles = Percentiles(accuracy=accuracy, scheduler=s)
             percentiles.input[0] = random.output.result
             percentiles.input.percentiles = which_percentiles.output.result
+            percentiles.input.hist = hist_index.output.result
             prt = Print(proc=self.terse, scheduler=s)
             prt.input[0] = percentiles.output.result
         aio.run(s.start())
@@ -79,9 +80,10 @@ class TestPercentiles(ProgressiveTest):
             hist_index.input[0] = stirrer.output.result
             t_percentiles = PsDict({"_25": 25.0, "_50": 50.0, "_75": 75.0})
             which_percentiles = Constant(table=t_percentiles, scheduler=s)
-            percentiles = Percentiles(hist_index, accuracy=accuracy, scheduler=s)
+            percentiles = Percentiles(accuracy=accuracy, scheduler=s)
             percentiles.input[0] = stirrer.output.result
             percentiles.input.percentiles = which_percentiles.output.result
+            percentiles.input.hist = hist_index.output.result
             prt = Print(proc=self.terse, scheduler=s)
             prt.input[0] = percentiles.output.result
         aio.run(s.start())
@@ -161,9 +163,10 @@ class TestPercentiles(ProgressiveTest):
             assert hist_index
             t_percentiles = PsDict({"_25": 25.0, "_50": 50.0, "_75": 75.0})
             which_percentiles = Constant(table=t_percentiles, scheduler=s)
-            percentiles = Percentiles(hist_index, accuracy=accuracy, scheduler=s)
+            percentiles = Percentiles(accuracy=accuracy, scheduler=s)
             percentiles.input[0] = range_qry.output.result
             percentiles.input.percentiles = which_percentiles.output.result
+            percentiles.input.hist = hist_index.output.result
             prt = Print(proc=self.terse, scheduler=s)
             prt.input[0] = percentiles.output.result
         aio.run(s.start())
@@ -215,9 +218,10 @@ class TestPercentiles(ProgressiveTest):
             assert hist_index
             t_percentiles = PsDict({"_25": 25.0, "_50": 50.0, "_75": 75.0})
             which_percentiles = Constant(table=t_percentiles, scheduler=s)
-            percentiles = Percentiles(hist_index, accuracy=accuracy, scheduler=s)
+            percentiles = Percentiles(accuracy=accuracy, scheduler=s)
             percentiles.input[0] = range_qry.output.result
             percentiles.input.percentiles = which_percentiles.output.result
+            percentiles.input.hist = hist_index.output.result
             prt = Print(proc=self.terse, scheduler=s)
             prt.input[0] = percentiles.output.result
         aio.run(s.start())

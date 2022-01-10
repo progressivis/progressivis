@@ -12,7 +12,13 @@ from ..core.changemanager_bitmap import BitmapChangeManager
 from ..core.slot import Slot
 from ..core.bitmap import bitmap
 
-from typing import Any, Optional, Union, overload, Literal
+import sys
+if sys.version_info >= (3, 8):
+    from typing import Literal
+else:
+    from typing_extensions import Literal
+
+from typing import Any, Optional, Union, overload
 
 
 class FakeSlot(Slot):

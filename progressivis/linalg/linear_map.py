@@ -2,15 +2,16 @@ from __future__ import annotations
 
 import numpy as np
 
+from ..core.module import ReturnRunStep
 from ..core.utils import indices_len, fix_loc, filter_cols
-from ..table.module import TableModule, ReturnRunStep
+from ..table.module import TableModule
 from ..table.table import Table
 from ..table.dshape import dshape_projection
 from ..core.decorators import process_slot, run_if_any
 from .. import SlotDescriptor
 
 
-from typing import List, Optional
+from typing import List, Optional, Any
 
 
 class LinearMap(TableModule):
@@ -19,12 +20,12 @@ class LinearMap(TableModule):
         SlotDescriptor("transformation", type=Table, required=True),
     ]
 
-    def __init__(self, transf_columns: List[str] = None, **kwds):
+    def __init__(self, transf_columns: Optional[List[str]] = None, **kwds: Any) -> None:
         super().__init__(**kwds)
         self._k_dim = len(self._columns) if self._columns else None
         self._transf_columns = transf_columns
         self._kwds = {}
-        self._transf_cache: Optional[np.ndarray] = None
+        self._transf_cache: Optional[np.ndarray[Any, Any]] = None
 
     def reset(self) -> None:
         if self.result is not None:
@@ -69,7 +70,7 @@ class LinearMap(TableModule):
             if steps == 0:
                 return self._return_run_step(self.state_blocked, steps_run=0)
             vs = self.filter_columns(vectors, fix_loc(indices))
-            array: np.ndarray = vs.to_array()
+            array: np.ndarray[Any, Any] = vs.to_array()
             res = np.matmul(array, self._transf_cache)
             if self.result is None:
                 dshape_ = dshape_projection(transformation, self._transf_columns)

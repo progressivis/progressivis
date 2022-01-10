@@ -4,8 +4,9 @@ from progressivis.stats import Min, Max, RandomTable
 from progressivis.datasets import get_dataset
 from progressivis.core import aio, SlotDescriptor, Module, Sink
 from progressivis.core.dataflow import Dataflow
+from progressivis.vis import MCScatterPlot
 
-from . import ProgressiveTest
+from . import ProgressiveTest, skip
 
 
 class TestModule(Module):
@@ -275,6 +276,84 @@ class TestDataflow(ProgressiveTest):
         s.on_loop(modify_1, 5)
         s.on_loop(stop_error, 100)
         aio.run(s.start())
+        # from nose.tools import set_trace; set_trace()
+
+    @skip("VirtualVariable still pending and not destroyed as collateral")
+    def test_dataflow_7_dynamic(self):
+        s = self.scheduler()
+        table = RandomTable(name="table", columns=["a", "b", "c"], throttle=1000, scheduler=s)
+        sink = Sink(name="sink", scheduler=s)
+        sink.input.inp = table.output.result
+        s.commit()
+
+        # Start loading a dataset, then visualize it, then change the visualizations
+
+        async def modify_1(scheduler, run_number):
+            print("Adding scatterplot_1")
+            # from nose.tools import set_trace; set_trace()
+            with scheduler:
+                sp = MCScatterPlot(
+                    name="scatterplot_1",
+                    classes=[("Scatterplot", "a", "b")],
+                    approximate=True,
+                    scheduler=scheduler
+                )
+                sp.create_dependent_modules(table, "result")
+            scheduler.on_loop(modify_2, 10)  # Schedule the next activity
+
+        async def modify_2(scheduler, run_number):
+            print("Removing scatterplot_1")
+            self.assertTrue("scatterplot_1" in scheduler)
+            with scheduler as dataflow:
+                print("Checking scatterplot module deletion")
+                deps = dataflow.collateral_damage("scatterplot_1")
+                print(f"collateral_damage('scatterplot_1') = '{sorted(deps)}'")
+                dataflow.delete_modules(*deps)
+            scheduler.on_loop(modify_3, 10)
+
+        async def modify_3(scheduler, run_number):
+            print("Adding scatterplot_2")
+            self.assertFalse("scatterplot_1" in scheduler)
+            with scheduler:
+                sp = MCScatterPlot(
+                    name="scatterplot_2",
+                    classes=[("Scatterplot", "a", "c")],
+                    approximate=True,
+                    scheduler=scheduler
+                )
+                sp.create_dependent_modules(table, "result")
+            scheduler.on_loop(modify_4, 10)  # Schedule the next activity
+
+        async def modify_4(scheduler, run_number):
+            print("Removing scatterplot_2")
+            self.assertFalse("scatterplot_1" in scheduler)
+            self.assertTrue("scatterplot_2" in scheduler)
+            with scheduler as dataflow:
+                print("Checking scatterplot module deletion")
+                deps = dataflow.collateral_damage("scatterplot_2")
+                print(f"collateral_damage('scatterplot_2') = '{sorted(deps)}'")
+                dataflow.delete_modules(*deps)
+            s.on_loop(modify_5, 5)
+
+        async def modify_5(scheduler, run_number):
+            print("Removing table")
+            self.assertFalse("scatterplot_1" in scheduler)
+            self.assertFalse("scatterplot_2" in scheduler)
+            with scheduler as dataflow:
+                print("Checking sink+table modules deletion")
+                deps = dataflow.collateral_damage("sink")
+                print(f"collateral_damage('sink') = '{sorted(deps)}'")
+                dataflow.delete_modules(*deps)
+
+        async def stop_error(scheduler, run_number):
+            self.assertFalse("Scheduler should have stopped")
+            await self._stop()
+
+        s.on_loop(modify_1, 10)
+        s.on_loop(stop_error, 100)
+        aio.run(s.start())
+        self.assertFalse("scatterplot_1" in s)
+        self.assertFalse("scatterplot_2" in s)
         # from nose.tools import set_trace; set_trace()
 
 

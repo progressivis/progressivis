@@ -79,8 +79,8 @@ class RandomTable(TableModule):
         table.append(values)
         if len(table) == self.rows:
             next_state = self.state_zombie
-        elif self.throttle:
-            next_state = self.state_blocked
+        # elif self.throttle:
+        #     next_state = self.state_blocked
         else:
             next_state = self.state_ready
         return self._return_run_step(next_state, steps_run=step_size)

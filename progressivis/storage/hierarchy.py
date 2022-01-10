@@ -14,7 +14,7 @@ class GroupImpl(Group):
         self._name = name
         self.parent = parent
         self.dict: Dict[str, Union[Dataset, Group]] = {}
-        self._attrs: Attribute = self._create_attribute()
+        self._attrs: AttributeImpl = self._create_attribute()
         self._cparams = None
 
     @property
@@ -37,7 +37,7 @@ class GroupImpl(Group):
 
     def _create_attribute(
         self, dict_values: Optional[Dict[str, Any]] = None
-    ) -> Attribute:
+    ) -> AttributeImpl:
         return AttributeImpl(dict_values)
 
     def require_dataset(

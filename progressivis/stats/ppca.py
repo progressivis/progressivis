@@ -196,7 +196,12 @@ class PPCATransformer(TableModule):
         with self.tagged(self.TAG_DEPENDENT):
             scheduler = self.scheduler()
             with scheduler:
-                self.sample = Sample(samples=100, group=self.name, scheduler=scheduler)
+                self.sample = Sample(
+                    samples=100,
+                    required="select",
+                    group=self.name,
+                    scheduler=scheduler
+                )
                 self.sample.input.table = input_slot
                 self.input.samples = self.sample.output.select
 

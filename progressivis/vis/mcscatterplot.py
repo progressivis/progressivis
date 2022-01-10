@@ -30,7 +30,7 @@ class _DataClass(object):
         group: Optional[str],
         x_column: str,
         y_column: str,
-        approximate=False,
+        approximate: bool = False,
         scheduler: Optional[Scheduler] = None,
         **kwds,
     ):
@@ -59,8 +59,8 @@ class _DataClass(object):
         input_module: Module,
         input_slot: str,
         histogram2d: Optional[MCHistogram2D] = None,
-        heatmap=None,
-        **kwds,
+        heatmap: Optional[Module] = None,
+        **kwds: Any,
     ) -> _DataClass:
         if self.input_module is not None:
             return self
@@ -73,8 +73,8 @@ class _DataClass(object):
                     column_x=self.x_column,
                     column_y=self.y_column,
                     group=self._group,
-                    scheduler=scheduler,
                     approximate=self._approximate,
+                    scheduler=scheduler,
                 )
                 range_query_2d.create_dependent_modules(
                     input_module, input_slot, min_value=False, max_value=False
@@ -122,7 +122,7 @@ class MCScatterPlot(NAry):
     ):
         """Multiclass ...
         """
-        super(MCScatterPlot, self).__init__(**kwds)
+        super(MCScatterPlot, self).__init__(output_required=False, **kwds)
         self.tags.add(self.TAG_VISUALIZATION)
         self._classes = classes  # TODO: check it ...
         self._x_label = x_label
@@ -369,7 +369,7 @@ class MCScatterPlot(NAry):
         input_module: Optional[Module] = None,
         input_slot: str = "result",
         sample: str = "default",
-        **kwds,
+        **kwds: Any,
     ):
         self.input_module = input_module
         self.input_slot = input_slot

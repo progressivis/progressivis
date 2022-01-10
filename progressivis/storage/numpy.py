@@ -59,15 +59,15 @@ class NumpyDataset(Dataset):
 
     @property
     def shape(self) -> Shape:
-        return self.view.shape
+        return self.view.shape  # type: ignore
 
     @property
     def dtype(self) -> np.dtype[Any]:
-        return self.view.dtype
+        return self.view.dtype  # type: ignore
 
     @property
     def maxshape(self) -> Shape:
-        return self.view.shape
+        return self.view.shape  # type: ignore
 
     @property
     def fillvalue(self) -> Any:
@@ -75,11 +75,11 @@ class NumpyDataset(Dataset):
 
     @property
     def chunks(self) -> Shape:
-        return self.view.shape
+        return self.view.shape  # type: ignore
 
     @property
     def size(self) -> int:
-        return self.view.shape[0]
+        return self.view.shape[0]  # type: ignore
 
     def resize(self, size: Union[int, ArrayLike], axis: Optional[int] = None) -> None:
         if isinstance(size, integer_types):
@@ -88,7 +88,7 @@ class NumpyDataset(Dataset):
             size = np.array(size)
         baseshape = np.array(self.base.shape)
         viewshape = self.view.shape
-        if (size > baseshape).any():
+        if (size > baseshape).any():  # type: ignore
             # self.view = None
             newsize = []
             for s, shape in zip(size, baseshape):
@@ -117,7 +117,7 @@ class NumpyDataset(Dataset):
         self.view[args] = val
 
     def __len__(self) -> int:
-        return self.view.shape[0]
+        return self.view.shape[0]  # type: ignore
 
     @property
     def attrs(self) -> Attribute:
@@ -158,7 +158,7 @@ class NumpyGroup(GroupImpl):
             dtype = np.dtype(dtype)
         fillvalue = kwds.pop("fillvalue", None)
         if fillvalue is None:
-            if dtype == object:
+            if dtype == np.dtype(object):
                 fillvalue = ""
             else:
                 fillvalue = 0

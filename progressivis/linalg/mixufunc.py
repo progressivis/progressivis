@@ -2,26 +2,29 @@ from __future__ import annotations
 
 import numpy as np
 
+from ..core.module import ReturnRunStep
 from ..core.utils import fix_loc
-from ..table.module import TableModule, ReturnRunStep
-from ..table.table import BaseTable, Table
+from ..table.module import TableModule
+from ..table.table_base import BaseTable
+from ..table.table import Table
 
 
-from typing import Union, Dict
+from typing import Union, Dict, Any, Tuple, Callable
 
 
-def make_local(df: Union[BaseTable, Dict], px) -> Dict[str, np.ndarray]:
+def make_local(df: Union[BaseTable, Dict[str, Any]],
+               px: str) -> Dict[str, np.ndarray[Any, Any]]:
     if isinstance(df, dict):
         return make_local_dict(df, px)
     arr = df.to_array()
-    result: Dict[str, np.ndarray] = {}
+    result: Dict[str, np.ndarray[Any, Any]] = {}
     for i, n in enumerate(df.columns):
         key = f"{px}.{n}"
         result[key] = arr[:, i]
     return result
 
 
-def make_local_dict(df: Dict, px) -> Dict[str, np.ndarray]:
+def make_local_dict(df: Dict[str, Any], px: str) -> Dict[str, np.ndarray[Any, Any]]:
     arr = list(df.values())
     result = {}
     for i, n in enumerate(df.keys()):
@@ -30,7 +33,7 @@ def make_local_dict(df: Dict, px) -> Dict[str, np.ndarray]:
     return result
 
 
-def get_ufunc_args(col_expr, local_env):
+def get_ufunc_args(col_expr: Any, local_env: Any) -> Tuple[Callable[..., Any], Tuple[Any, ...]]:
     assert isinstance(col_expr, tuple) and len(col_expr) in (2, 3)
     if len(col_expr) == 2:
         return col_expr[0], (local_env[col_expr[1]],)  # tuple, len==1
@@ -38,12 +41,12 @@ def get_ufunc_args(col_expr, local_env):
 
 
 class MixUfuncABC(TableModule):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
-        self.expr: Dict
-        self.ref_expr: Dict = self.expr
+        self.expr: Dict[str, Any]
+        self.ref_expr: Dict[str, Any] = self.expr
 
-    def reset(self):
+    def reset(self) -> None:
         if self.result is not None:
             self.table.resize(0)
 
@@ -92,6 +95,7 @@ class MixUfuncABC(TableModule):
         first_slot = None
         for sl in self.input_slot_values():
             n = sl.input_name
+            assert n is not None
             if n == "_params":
                 continue
             if first_slot is None:

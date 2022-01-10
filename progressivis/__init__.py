@@ -44,7 +44,7 @@ __all__ = [
 LOGGERS: Dict[str, logging.Logger] = {}
 
 
-def s():
+def s() -> Scheduler:
     "Shortcut to get the default scheduler."
     return Scheduler.default
 
@@ -56,7 +56,7 @@ def s():
 # log_level(level=logging.INFO)
 
 
-def log_level(level=logging.DEBUG, package="progressivis"):
+def log_level(level: int = logging.DEBUG, package: str = "progressivis") -> None:
     "Set the logging level for progressivis."
     global LOGGERS
 

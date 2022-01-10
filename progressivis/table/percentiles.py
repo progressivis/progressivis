@@ -11,7 +11,7 @@ from collections import OrderedDict
 from ..utils.psdict import PsDict
 from .hist_index import HistogramIndex
 
-from typing import Any, Dict, List
+from typing import Any, Dict, List, cast
 
 
 class Percentiles(TableModule):
@@ -19,19 +19,19 @@ class Percentiles(TableModule):
     inputs = [
         SlotDescriptor("table", type=Table, required=True),
         SlotDescriptor("percentiles", type=PsDict, required=True),
+        SlotDescriptor("hist", type=Table, required=True),
     ]
 
-    def __init__(self, hist_index: HistogramIndex, **kwds: Any) -> None:
+    def __init__(self, **kwds: Any) -> None:
         super(Percentiles, self).__init__(**kwds)
         self._accuracy = self.params.accuracy
-        self._hist_index = hist_index
         self.default_step_size = 1000
 
     def compute_percentiles(
-        self, points: Dict[str, float], input_table: BaseTable
+        self, points: Dict[str, float], input_table: BaseTable, hist_index: HistogramIndex
     ) -> Dict[str, float]:
-        column = input_table[self._hist_index.column]
-        hii = self._hist_index._impl
+        column = input_table[hist_index.column]
+        hii = hist_index._impl
         assert hii is not None
 
         def _filter_tsv(bm: bitmap) -> bitmap:
@@ -110,9 +110,17 @@ class Percentiles(TableModule):
             return self._return_run_step(self.state_blocked, steps_run=0)
         if steps == 0 and not percentiles_changed:
             return self._return_run_step(self.state_blocked, steps_run=0)
-        if not self._hist_index._impl:
+        hist_slot = self.get_input_slot("hist")
+        hist_slot.deleted.next()
+        hist_slot.updated.next()
+        hist_slot.created.next()
+        hist_index: HistogramIndex = cast(HistogramIndex, hist_slot.output_module)
+        if not hist_index._impl:
             return self._return_run_step(self.state_blocked, steps_run=0)
-        computed = self.compute_percentiles(percentiles_slot.data(), input_slot.data())
+        computed = self.compute_percentiles(
+            percentiles_slot.data(),
+            input_slot.data(),
+            hist_index)
         table: Table
         if not self.result:
             table = Table(name=None, dshape=percentiles_slot.data().dshape)
