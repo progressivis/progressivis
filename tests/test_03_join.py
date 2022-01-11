@@ -18,9 +18,6 @@ def print_len(x):
         print(len(x))
 
 
-# log_level()
-
-
 class TestJoin(ProgressiveTest):
     def test_join(self):
         s = self.scheduler()

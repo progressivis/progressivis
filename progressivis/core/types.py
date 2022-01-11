@@ -9,4 +9,4 @@ Index = Any  # simplify for now
 Chunks = Union[None, int, Tuple[int, ...], Dict[str, Union[int, Tuple[int, ...]]]]
 Shape = Sequence[int]
 Indexer = Any  # improve later
-ColIndexer = Union[int, np.integer, str]
+ColIndexer = Union[int, np.integer[Any], str]

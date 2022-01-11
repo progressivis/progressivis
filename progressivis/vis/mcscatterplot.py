@@ -64,47 +64,46 @@ class _DataClass(object):
     ) -> _DataClass:
         if self.input_module is not None:
             return self
-        with Module.tagged(Module.TAG_DEPENDENT):
-            scheduler = self.scheduler()
-            with scheduler:
-                self.input_module = input_module
-                self.input_slot = input_slot
-                range_query_2d = RangeQuery2d(
-                    column_x=self.x_column,
-                    column_y=self.y_column,
+        scheduler = self.scheduler()
+        with scheduler:
+            self.input_module = input_module
+            self.input_slot = input_slot
+            range_query_2d = RangeQuery2d(
+                column_x=self.x_column,
+                column_y=self.y_column,
+                group=self._group,
+                approximate=self._approximate,
+                scheduler=scheduler,
+            )
+            range_query_2d.create_dependent_modules(
+                input_module, input_slot, min_value=False, max_value=False
+            )
+            self.min_value = Variable(group=self._group, scheduler=scheduler)
+            self.min_value.input.like = range_query_2d.min.output.result
+            range_query_2d.input.lower = self.min_value.output.result
+            self.max_value = Variable(group=self._group, scheduler=scheduler)
+            self.max_value.input.like = range_query_2d.max.output.result
+            range_query_2d.input.upper = self.max_value.output.result
+            if histogram2d is None:
+                histogram2d = MCHistogram2D(
+                    self.x_column,
+                    self.y_column,
                     group=self._group,
-                    approximate=self._approximate,
                     scheduler=scheduler,
                 )
-                range_query_2d.create_dependent_modules(
-                    input_module, input_slot, min_value=False, max_value=False
+            histogram2d.input.data = range_query_2d.output.result
+            if self.sample == "default":
+                self.sample = Sample(
+                    samples=100, group=self._group, scheduler=scheduler
                 )
-                self.min_value = Variable(group=self._group, scheduler=scheduler)
-                self.min_value.input.like = range_query_2d.min.output.result
-                range_query_2d.input.lower = self.min_value.output.result
-                self.max_value = Variable(group=self._group, scheduler=scheduler)
-                self.max_value.input.like = range_query_2d.max.output.result
-                range_query_2d.input.upper = self.max_value.output.result
-                if histogram2d is None:
-                    histogram2d = MCHistogram2D(
-                        self.x_column,
-                        self.y_column,
-                        group=self._group,
-                        scheduler=scheduler,
-                    )
-                histogram2d.input.data = range_query_2d.output.result
-                if self.sample == "default":
-                    self.sample = Sample(
-                        samples=100, group=self._group, scheduler=scheduler
-                    )
-                if isinstance(self.sample, Sample):
-                    self.sample.input.table = range_query_2d.output.result
-                self.histogram2d = histogram2d
-                # self.sample = sample
-                # self.select = select
-                self.min = range_query_2d.min.output.result
-                self.max = range_query_2d.max.output.result
-                self.range_query_2d = range_query_2d
+            if isinstance(self.sample, Sample):
+                self.sample.input.table = range_query_2d.output.result
+            self.histogram2d = histogram2d
+            # self.sample = sample
+            # self.select = select
+            self.min = range_query_2d.min.output.result
+            self.max = range_query_2d.max.output.result
+            self.range_query_2d = range_query_2d
             scatterplot = self
             return scatterplot
 
@@ -373,7 +372,7 @@ class MCScatterPlot(NAry):
     ):
         self.input_module = input_module
         self.input_slot = input_slot
-        with Module.tagged(Module.TAG_DEPENDENT):
+        with self.grouped():
             scheduler = self.scheduler()
             self.min_value = VirtualVariable(
                 [self._x_label, self._y_label], scheduler=scheduler

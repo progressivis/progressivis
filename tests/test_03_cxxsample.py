@@ -13,8 +13,6 @@ def print_repr(x):
 
 
 class TestCxxSample(ProgressiveTest):
-    #    def setUp(self):
-    #        log_level(logging.INFO)
     @skipIf(CxxSample is None, "C++ module is missing")
     def test_sample(self):
         s = self.scheduler()

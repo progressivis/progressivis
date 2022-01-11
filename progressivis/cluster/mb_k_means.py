@@ -269,7 +269,7 @@ class MBKMeans(TableModule):
         return self.mbk.cluster_centers_.tolist()
 
     def create_dependent_modules(self, input_module: Module, input_slot="result"):
-        with self.tagged(self.TAG_DEPENDENT):
+        with self.grouped():
             s = self.scheduler()
             self.input_module = input_module
             self.input.table = input_module.output[input_slot]
@@ -322,7 +322,7 @@ class MBKMeansFilter(TableModule):
             return self._return_run_step(self.next_state(ctx.table), steps_run=steps)
 
     def create_dependent_modules(self, mbkmeans, data_module, data_slot):
-        with self.tagged(self.TAG_DEPENDENT):
+        with self.grouped():
             scheduler = self.scheduler()
             filter_ = FilterMod(expr=f"labels=={self._sel}", scheduler=scheduler)
             filter_.input.table = mbkmeans.output.labels

@@ -67,9 +67,15 @@ class Dataflow:
                 return mid
         return f"{prefix}_{uuid4()}"
 
-    def modules(self) -> List[Module]:
+    def modules(self) -> Dict[str, Module]:
         "Return all the modules in this dataflow"
-        return list(self._modules.values())
+        return self._modules
+
+    def group_modules(self, *names: str) -> List[Module]:
+        nameset = set(names)
+        if not nameset:
+            return []
+        return [mod.name for mod in self.modules().values() if mod.group in nameset]
 
     def dir(self) -> List[str]:
         "Return the name of all the modules"
@@ -77,11 +83,11 @@ class Dataflow:
 
     def get_visualizations(self) -> List[str]:
         "Return the visualization modules"
-        return [m.name for m in self.modules() if m.is_visualization()]
+        return [m.name for m in self.modules().values() if m.is_visualization()]
 
     def get_inputs(self) -> List[str]:
         "Return the input modules"
-        return [m.name for m in self.modules() if m.is_input()]
+        return [m.name for m in self.modules().values() if m.is_input()]
 
     def __delitem__(self, name: str) -> None:
         self.delete_modules(name)
@@ -96,6 +102,9 @@ class Dataflow:
 
     def __len__(self) -> int:
         return len(self._modules)
+
+    def groups(self) -> Set[str]:
+        return {mod.group for mod in self.modules().values() if mod.group is not None}
 
     def aborted(self) -> None:
         "The dataflow has been aborted before being sent."

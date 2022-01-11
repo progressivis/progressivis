@@ -6,7 +6,7 @@ from progressivis.core import aio, SlotDescriptor, Module, Sink
 from progressivis.core.dataflow import Dataflow
 from progressivis.vis import MCScatterPlot
 
-from . import ProgressiveTest, skip
+from . import ProgressiveTest
 
 
 class TestModule(Module):
@@ -278,7 +278,6 @@ class TestDataflow(ProgressiveTest):
         aio.run(s.start())
         # from nose.tools import set_trace; set_trace()
 
-    @skip("VirtualVariable still pending and not destroyed as collateral")
     def test_dataflow_7_dynamic(self):
         s = self.scheduler()
         table = RandomTable(name="table", columns=["a", "b", "c"], throttle=1000, scheduler=s)
@@ -291,7 +290,7 @@ class TestDataflow(ProgressiveTest):
         async def modify_1(scheduler, run_number):
             print("Adding scatterplot_1")
             # from nose.tools import set_trace; set_trace()
-            with scheduler:
+            with scheduler as dataflow:
                 sp = MCScatterPlot(
                     name="scatterplot_1",
                     classes=[("Scatterplot", "a", "b")],
@@ -299,14 +298,17 @@ class TestDataflow(ProgressiveTest):
                     scheduler=scheduler
                 )
                 sp.create_dependent_modules(table, "result")
+                print(f"Created scatterplot_1, groups: {dataflow.groups()}")
             scheduler.on_loop(modify_2, 10)  # Schedule the next activity
 
         async def modify_2(scheduler, run_number):
             print("Removing scatterplot_1")
             self.assertTrue("scatterplot_1" in scheduler)
             with scheduler as dataflow:
-                print("Checking scatterplot module deletion")
-                deps = dataflow.collateral_damage("scatterplot_1")
+                print("Checking scatterplot_1 module deletion")
+                modules = sorted(dataflow.group_modules("scatterplot_1"))
+                print(f"Removing modules {modules}")
+                deps = dataflow.collateral_damage(*modules)
                 print(f"collateral_damage('scatterplot_1') = '{sorted(deps)}'")
                 dataflow.delete_modules(*deps)
             scheduler.on_loop(modify_3, 10)
@@ -329,8 +331,11 @@ class TestDataflow(ProgressiveTest):
             self.assertFalse("scatterplot_1" in scheduler)
             self.assertTrue("scatterplot_2" in scheduler)
             with scheduler as dataflow:
+                print("Checking scatterplot_2 module deletion")
                 print("Checking scatterplot module deletion")
-                deps = dataflow.collateral_damage("scatterplot_2")
+                modules = sorted(dataflow.group_modules("scatterplot_2"))
+                print(f"Removing modules {modules}")
+                deps = dataflow.collateral_damage(*modules)
                 print(f"collateral_damage('scatterplot_2') = '{sorted(deps)}'")
                 dataflow.delete_modules(*deps)
             s.on_loop(modify_5, 5)

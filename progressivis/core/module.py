@@ -102,6 +102,21 @@ class ModuleTag:
         return False
 
 
+class GroupContext:
+    group: Optional[str] = None
+
+    def __init__(self, modgroup: Union[str, Module]) -> None:
+        self._saved = GroupContext.group
+        GroupContext.group = modgroup if isinstance(modgroup, str) else modgroup.name
+
+    def __enter__(self) -> GroupContext:
+        return self
+
+    def __exit__(self, *exc: Any) -> Any:
+        GroupContext.group = self._saved
+        return False
+
+
 class ModuleState(IntEnum):
     state_created = 0
     state_ready = 1
@@ -205,7 +220,7 @@ class Module(metaclass=ModuleMeta):
 
         self.tags = set(ModuleTag.tags)
         self.order = -1
-        self.group = group
+        self.group = group or GroupContext.group
         self.tracer = tracer
         self._start_time: float = 0
         self._end_time: float = 0
@@ -250,6 +265,12 @@ class Module(metaclass=ModuleMeta):
         created within a scope, typically dependent modules.
         """
         return ModuleTag(*tags)
+
+    def grouped(self) -> GroupContext:
+        """Create a context manager to add group to a set of modules
+        created within a scope, typically dependent modules.
+        """
+        return GroupContext(self.name)
 
     def scheduler(self) -> Scheduler:
         """Return the scheduler associated with the module.

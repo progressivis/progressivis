@@ -5,9 +5,10 @@ import logging
 import numpy as np
 import copy
 
+from ..core.module import ReturnRunStep
 from ..core.utils import indices_len, fix_loc
 from ..core.bitmap import bitmap
-from ..table.module import TableModule, ReturnRunStep
+from ..table.module import TableModule
 from ..table import BaseTable, Table, TableSelectedView
 from ..core.decorators import process_slot, run_if_any
 from .. import SlotDescriptor
@@ -17,7 +18,7 @@ import pandas as pd
 from sklearn.decomposition import IncrementalPCA  # type: ignore
 import numexpr as ne  # type: ignore
 
-from typing import Optional, Any, Dict, Union, Callable, TYPE_CHECKING
+from typing import Optional, Any, Dict, Union, Callable, cast, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from progressivis.core.slot import Slot
@@ -31,7 +32,7 @@ class PPCA(TableModule):
     inputs = [SlotDescriptor("table", type=Table, required=True)]
     outputs = [SlotDescriptor("transformer", type=PsDict, required=False)]
 
-    def __init__(self, **kwds):
+    def __init__(self, **kwds: Any) -> None:
         super().__init__(**kwds)
         # IncrementalPCA(n_components=self.params.n_components)
         self.inc_pca: Optional[IncrementalPCA] = None
@@ -41,7 +42,7 @@ class PPCA(TableModule):
 
     def predict_step_size(self, duration: float) -> int:
         p = super().predict_step_size(duration)
-        return max(p, self.params.n_components + 1)
+        return max(p, cast(int, self.params.n_components + 1))
 
     def reset(self) -> None:
         logger.info("RESET PPCA")
@@ -91,44 +92,44 @@ class PPCA(TableModule):
                 table.selection |= bitmap(indices)
             return self._return_run_step(self.next_state(ctx.table), steps_run=steps)
 
-    def create_dependent_modules_buggy(
-        self,
-        atol=0.0,
-        rtol=0.001,
-        trace=False,
-        threshold=None,
-        resetter=None,
-        resetter_slot="result",
-    ):
-        scheduler = self.scheduler()
-        with scheduler:
-            self.reduced = PPCATransformer(
-                scheduler=scheduler,
-                atol=atol,
-                rtol=rtol,
-                trace=trace,
-                threshold=threshold,
-                group=self.name,
-            )
-            self.reduced.input.table = self.output.result
-            self.reduced.input.transformer = self.output.transformer
-            if resetter is not None:
-                resetter = resetter(scheduler=scheduler)
-                resetter.input.table = self.output.result
-                self.reduced.input.resetter = resetter.output[resetter_slot]
-            self.reduced.create_dependent_modules(self.output.result)
+    # def create_dependent_modules_buggy(
+    #     self,
+    #     atol=0.0,
+    #     rtol=0.001,
+    #     trace=False,
+    #     threshold=None,
+    #     resetter=None,
+    #     resetter_slot="result",
+    # ):
+    #     scheduler = self.scheduler()
+    #     with scheduler:
+    #         self.reduced = PPCATransformer(
+    #             scheduler=scheduler,
+    #             atol=atol,
+    #             rtol=rtol,
+    #             trace=trace,
+    #             threshold=threshold,
+    #             group=self.name,
+    #         )
+    #         self.reduced.input.table = self.output.result
+    #         self.reduced.input.transformer = self.output.transformer
+    #         if resetter is not None:
+    #             resetter = resetter(scheduler=scheduler)
+    #             resetter.input.table = self.output.result
+    #             self.reduced.input.resetter = resetter.output[resetter_slot]
+    #         self.reduced.create_dependent_modules(self.output.result)
 
     def create_dependent_modules(
         self,
         atol: float = 0.0,
         rtol: float = 0.001,
-        trace=False,
+        trace: bool = False,
         threshold: Optional[Any] = None,
         resetter: Optional[Any] = None,
-        resetter_slot="result",
-        resetter_func: Optional[Callable] = None,
-    ):
-        with self.tagged(self.TAG_DEPENDENT):
+        resetter_slot: str = "result",
+        resetter_func: Optional[Callable[..., Any]] = None,
+    ) -> None:
+        with self.grouped():
             s = self.scheduler()
             self.reduced = PPCATransformer(
                 scheduler=s,
@@ -163,17 +164,17 @@ class PPCATransformer(TableModule):
         self,
         atol: float = 0.0,
         rtol: float = 0.001,
-        trace=False,
+        trace: bool = False,
         threshold: Optional[Any] = None,
-        resetter_func: Optional[Callable] = None,
-        **kwds,
-    ):
+        resetter_func: Optional[Callable[..., Any]] = None,
+        **kwds: Any,
+    ) -> None:
         super().__init__(**kwds)
         # if resetter_func is None:
         #     raise ValueError("resetter_func parameter is needed")
         self._atol = atol
         self._rtol = rtol
-        self._trace = trace
+        self._trace: Union[bool, str] = trace
         self._trace_df: Optional[pd.DataFrame] = None
         self._threshold = threshold
         self._resetter_func = resetter_func
@@ -184,7 +185,7 @@ class PPCATransformer(TableModule):
         self._prev_samples_flag = False
         self._as_array: Optional[str] = None
 
-    def _proc_as_array(self, data: BaseTable) -> np.ndarray:
+    def _proc_as_array(self, data: BaseTable) -> np.ndarray[Any, Any]:
         if self._as_array is None:
             if len(data.columns) == 1:
                 self._as_array = data.columns[0]
@@ -193,7 +194,7 @@ class PPCATransformer(TableModule):
         return data[self._as_array].values if self._as_array else data.to_array()
 
     def create_dependent_modules(self, input_slot: Slot) -> None:
-        with self.tagged(self.TAG_DEPENDENT):
+        with self.grouped():
             scheduler = self.scheduler()
             with scheduler:
                 self.sample = Sample(
@@ -245,7 +246,7 @@ class PPCATransformer(TableModule):
         )
         _ = explained_variance  # flakes8 does not see variables in numexpr expressions
         mean = np.mean(dist)
-        max_ = np.max(dist)
+        max_ = np.max(dist)  # type: ignore
         ret = mean > self._rtol
         return self.trace_if(ret, mean, max_, len(input_table))
 
@@ -272,7 +273,7 @@ class PPCATransformer(TableModule):
             logger.debug("Not maintaining prev samples")
             self._prev_samples_flag = False
 
-    def maintain_samples(self, vec: np.ndarray) -> None:
+    def maintain_samples(self, vec: np.ndarray[Any, Any]) -> None:
         if not self._samples_flag:
             return
         if isinstance(self._samples, Table):
@@ -283,7 +284,7 @@ class PPCATransformer(TableModule):
                 self.generate_table_name("s_ppca"), data=df, create=True
             )
 
-    def maintain_prev_samples(self, vec: np.ndarray) -> None:
+    def maintain_prev_samples(self, vec: np.ndarray[Any, Any]) -> None:
         if not self._prev_samples_flag:
             return
         if isinstance(self._prev_samples, Table):
@@ -301,7 +302,8 @@ class PPCATransformer(TableModule):
             return self._prev_samples
         return super().get_data(name)
 
-    def _make_df(self, data):
+    def _make_df(self, data: np.ndarray[Any, Any]) -> Union[Dict[str, np.ndarray[Any, Any]],
+                                                            pd.DataFrame]:
         if self._as_array:
             return {self._as_array: data}
         cols = [f"_pc{i}" for i in range(data.shape[1])]
@@ -311,7 +313,7 @@ class PPCATransformer(TableModule):
     @process_slot("samples", reset_if=False)
     @process_slot("transformer", reset_if=False)
     @run_if_any
-    def run_step(self, run_number: int, step_size: int, howlong: float):
+    def run_step(self, run_number: int, step_size: int, howlong: float) -> ReturnRunStep:
         """
         """
         assert self.context

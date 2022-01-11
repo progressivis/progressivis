@@ -17,10 +17,6 @@ def print_repr(x):
 
 
 class TestSelect(ProgressiveTest):
-    def setUp(self):
-        super(TestSelect, self).setUp()
-        #        self.log(self.INFO)
-
     @skip("Too long")
     def test_select_simple(self):
         s = self.scheduler()

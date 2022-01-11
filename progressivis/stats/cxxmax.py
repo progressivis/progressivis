@@ -1,8 +1,9 @@
 from __future__ import annotations
 
-from progressivis.table.module import TableModule, ReturnRunStep
-from progressivis.table.table import Table
+from progressivis.core.module import ReturnRunStep
 from progressivis.core.slot import SlotDescriptor
+from progressivis.table.module import TableModule
+from progressivis.table.table import Table
 
 try:
     from .cxx_max import Max as CxxMax  # type: ignore
@@ -13,7 +14,7 @@ import numpy as np
 
 import logging
 
-from typing import List
+from typing import List, Optional, Any
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +23,7 @@ class Max(TableModule):
     parameters = [("history", np.dtype(int), 3)]
     inputs = [SlotDescriptor("table", type=Table, required=True)]
 
-    def __init__(self, columns: List[str] = None, **kwds):
+    def __init__(self, columns: Optional[List[str]] = None, **kwds: Any) -> None:
         super(Max, self).__init__(**kwds)
         self._columns = columns
         self.default_step_size = 10000
@@ -36,4 +37,4 @@ class Max(TableModule):
     def run_step(
         self, run_number: int, step_size: int, howlong: float
     ) -> ReturnRunStep:
-        return self.cxx_module.run(run_number, step_size, howlong)
+        return self.cxx_module.run(run_number, step_size, howlong)  # type: ignore

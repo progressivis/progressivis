@@ -1,6 +1,5 @@
 from . import ProgressiveTest
 
-# import logging, sys
 from multiprocessing import Process
 import time
 import os

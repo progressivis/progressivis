@@ -60,6 +60,7 @@ def log_level(level: int = logging.DEBUG, package: str = "progressivis") -> None
     "Set the logging level for progressivis."
     global LOGGERS
 
+    print(f"Setting logging level to {level} for {package}")
     logger = LOGGERS.get(package)
     if logger is None:
         logger = logging.getLogger(package)

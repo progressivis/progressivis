@@ -1,6 +1,6 @@
 from . import ProgressiveTest, skip
 
-from progressivis import Print, Every  # , log_level
+from progressivis import Print, Every
 from progressivis.cluster import MBKMeans
 from progressivis.io import CSVLoader
 from progressivis.datasets import get_dataset
@@ -26,7 +26,6 @@ from progressivis.core import aio
 @skip("Still converting to sklean > 1.0")
 class TestMBKmeans(ProgressiveTest):
     def test_mb_k_means(self):
-        # log_level()
         s = self.scheduler()
         n_clusters = 3
         try:

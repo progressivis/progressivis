@@ -12,9 +12,6 @@ def print_repr(x):
 
 
 class TestSample(ProgressiveTest):
-    #    def setUp(self):
-    #        log_level(logging.INFO)
-
     def test_sample(self):
         s = self.scheduler()
         csv = CSVLoader(

@@ -207,7 +207,7 @@ class RangeQuery2d(TableModule):
         """
         if self.input_module is not None:  # test if already called
             return self
-        with self.tagged(self.TAG_DEPENDENT):
+        with self.grouped():
             scheduler = self.scheduler()
             params = self.params
             self.input_module = input_module

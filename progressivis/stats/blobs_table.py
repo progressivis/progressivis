@@ -7,9 +7,11 @@ import logging
 
 import numpy as np
 from abc import abstractmethod
+
+from progressivis.core.module import ReturnRunStep
 from ..utils.errors import ProgressiveError, ProgressiveStopIteration
 from progressivis import SlotDescriptor
-from ..table.module import TableModule, ReturnRunStep
+from ..table.module import TableModule
 from ..table.table import Table
 from ..table.dshape import dshape_from_dtype
 from ..core.utils import integer_types
@@ -28,8 +30,8 @@ RESERVOIR_SIZE = 10000
 
 
 def make_mv_blobs(
-    means: List[float], covs: List[float], n_samples: int, **kwds
-) -> List[List[float]]:
+    means: List[float], covs: List[float], n_samples: int, **kwds: Any
+) -> np.ndarray[Any, Any]:
     assert len(means) == len(covs)
     n_blobs = len(means)
     size = n_samples // n_blobs
@@ -40,12 +42,16 @@ def make_mv_blobs(
         arr = np.empty(size, dtype="int64")
         arr[:] = i
         labels.append(arr)
-    blobs = np.concatenate(blobs)
-    labels = np.concatenate(labels)
-    return multi_shuffle(blobs, labels)
+    blobs = np.concatenate(blobs)  # type: ignore
+    labels = np.concatenate(labels)  # type: ignore
+    return multi_shuffle(blobs, labels)  # type: ignore
 
 
-def xy_to_dict(x, y, i, size, cols):
+def xy_to_dict(x: np.ndarray[Any, Any],
+               y: np.ndarray[Any, Any],
+               i: int,
+               size: Optional[int],
+               cols: Union[List[str], np.ndarray[Any, Any]]) -> Tuple[Dict[str, Any], np.ndarray[Any, Any]]:
     res: Dict[str, Any] = {}
     k = None if size is None else i + size
     for j, col in enumerate(cols):
@@ -60,17 +66,17 @@ class BlobsTableABC(TableModule):
     """
 
     outputs = [SlotDescriptor("labels", type=Table, required=False)]
-    kw_fun: Optional[Callable] = None
+    kw_fun: Optional[Callable[..., Any]] = None
 
     def __init__(
         self,
-        columns: Union[int, list, np.ndarray],
+        columns: Union[int, List[str], np.ndarray[Any, Any]],
         rows: int = -1,
         dtype: npt.DTypeLike = np.float64,
         seed: int = 0,
         throttle: Union[int, bool, float] = False,
-        **kwds,
-    ):
+        **kwds: Any,
+    ) -> None:
         super().__init__(**kwds)
         self.tags.add(self.TAG_SOURCE)
         dtype = dshape_from_dtype(np.dtype(dtype))
@@ -82,7 +88,7 @@ class BlobsTableABC(TableModule):
         # self._kwds['n_samples'] = rows
         # self._kwds['n_features']
         self.default_step_size = 1000
-        self.columns: Union[List[str], np.ndarray]
+        self.columns: Union[List[str], np.ndarray[Any, Any]]
         if isinstance(columns, integer_types):
             self.columns = [f"_{i}" for i in range(1, columns + 1)]
             # self._kwds['n_features'] = columns
@@ -93,7 +99,7 @@ class BlobsTableABC(TableModule):
             raise ProgressiveError("Invalid type for columns")
         self.rows = rows
         self.seed = seed
-        self._reservoir: Optional[Tuple[np.ndarray, np.ndarray]] = None
+        self._reservoir: Optional[Tuple[np.ndarray[Any, Any], np.ndarray[Any, Any]]] = None
         self._labels: Optional[Table] = None
         self._reservoir_idx = 0
         if throttle and isinstance(throttle, integer_types + (float,)):
@@ -116,7 +122,7 @@ class BlobsTableABC(TableModule):
             logger.debug("Not maintaining labels")
             self.maintain_labels(False)
 
-    def maintain_labels(self, yes=True) -> None:
+    def maintain_labels(self, yes: bool = True) -> None:
         if yes and self._labels is None:
             self._labels = Table(
                 self.generate_table_name("blobs_labels"),
@@ -146,7 +152,7 @@ class BlobsTableABC(TableModule):
             return self._return_run_step(self.state_ready, steps_run=0)
         logger.info("generating %d lines", step_size)
         if self.throttle:
-            step_size = np.min([self.throttle, step_size])
+            step_size = np.min([self.throttle, step_size])  # type: ignore
         if self.rows >= 0 and (len(self.table) + step_size) > self.rows:
             step_size = self.rows - len(self.table)
             logger.info("truncating to %d lines", step_size)
@@ -187,7 +193,7 @@ class BlobsTableABC(TableModule):
 class BlobsTable(BlobsTableABC):
     kw_fun = make_blobs
 
-    def __init__(self, *args, **kwds):
+    def __init__(self, *args: Any, **kwds: Any) -> None:
         # import pdb;pdb.set_trace()
         super().__init__(*args, **kwds)
         self.centers = kwds.pop("centers")
@@ -211,12 +217,12 @@ class BlobsTable(BlobsTableABC):
 class MVBlobsTable(BlobsTableABC):
     kw_fun = make_mv_blobs
 
-    def __init__(self, *args, **kwds):
+    def __init__(self, *args: Any, **kwds: Any) -> None:
         super().__init__(*args, **kwds)
         self.means = kwds["means"]
         self.covs = kwds["covs"]
 
-    def fill_reservoir(self):
+    def fill_reservoir(self) -> None:
         np.random.seed(self.seed)
         X, y = make_mv_blobs(
             n_samples=RESERVOIR_SIZE, means=self.means, covs=self.covs, **self._kwds

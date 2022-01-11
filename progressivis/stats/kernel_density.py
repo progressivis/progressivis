@@ -56,7 +56,7 @@ class KernelDensity(TableModule):
         threshold = self.params.threshold
         knn = self.params.knn
         if self._lately_inserted > threshold:
-            scores = self._kde.score_samples(samples.astype(np.float32), k=knn)  # type: ignore
+            scores = self._kde.score_samples(samples.astype(np.float32), k=knn)
             self._lately_inserted = 0
             self._json_cache = {
                 "points": np.array(

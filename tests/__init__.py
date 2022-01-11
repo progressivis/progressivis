@@ -36,7 +36,7 @@ class ProgressiveTest(TestCase):
         if level in self.levels:
             level = self.levels[level]
         if level:
-            print("Logger level for %s: " % self, level, file=sys.stderr)
+            print(f"Logger level {level} for {self}", file=sys.stderr)
             self.log(int(level))
 
     @staticmethod
@@ -55,6 +55,10 @@ class ProgressiveTest(TestCase):
         # print('Logger level for %s back to ERROR' % self, file=sys.stderr)
         # self.log()
         gc.collect()
+        logger = logging.getLogger()
+        logger.setLevel(logging.NOTSET)
+        while logger.hasHandlers():
+            logger.removeHandler(logger.handlers[0])
 
     @classmethod
     def cleanup(self):

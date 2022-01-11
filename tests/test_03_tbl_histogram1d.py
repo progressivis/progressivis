@@ -6,11 +6,6 @@ from progressivis.stats import Histogram1D, Min, Max
 from progressivis.datasets import get_dataset
 from progressivis.core import aio
 
-import logging
-
-# logging.basicConfig(level=logging.DEBUG)
-logging.basicConfig(level=logging.WARNING)
-
 
 @skip("Not ready")  # essay
 class TestHistogram1D(ProgressiveTest):

@@ -91,16 +91,16 @@ class Histogram2D(TableModule):
         if min_df is None or len(min_df) == 0:
             return None
         k_ = (lambda x: x) if isinstance(self.x_column, str) else min_df.k_
-        xmin: float = cast(float, min_df[k_(self.x_column)])
-        ymin: float = cast(float, min_df[k_(self.y_column)])
+        xmin: float = cast(float, min_df[k_(self.x_column)])  # type: ignore
+        ymin: float = cast(float, min_df[k_(self.y_column)])  # type: ignore
         max_slot.created.next()
         max_df = max_slot.data()
         assert isinstance(max_df, PsDict)
         if max_df is None or len(max_df) == 0:
             return None
-        k_ = (lambda x: x) if isinstance(self.x_column, str) else max_df.k_  # type: ignore
-        xmax: float = cast(float, max_df[k_(self.x_column)])
-        ymax: float = cast(float, max_df[k_(self.y_column)])
+        k_ = (lambda x: x) if isinstance(self.x_column, str) else max_df.k_
+        xmax: float = cast(float, max_df[k_(self.x_column)])  # type: ignore
+        ymax: float = cast(float, max_df[k_(self.y_column)])  # type: ignore
         if xmax < xmin:
             xmax, xmin = xmin, xmax
             logger.warning("xmax < xmin, swapped")
@@ -291,7 +291,7 @@ class Histogram2D(TableModule):
             self._heatmap_cache = (json_, bounds)
         return None
 
-    def heatmap_to_json(self, json: JSon, short=False) -> JSon:
+    def heatmap_to_json(self, json: JSon, short: bool = False) -> JSon:
         if self._heatmap_cache is None:
             return json
         x_label, y_label = "x", "y"

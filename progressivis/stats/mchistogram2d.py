@@ -11,7 +11,7 @@ from ..table.nary import NAry
 from ..core.module import Module, ReturnRunStep, JSon
 from fast_histogram import histogram2d  # type: ignore
 
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Any, Dict
 
 Bounds = Tuple[float, float, float, float]
 
@@ -41,14 +41,14 @@ class MCHistogram2D(NAry):
         "}"
     )
 
-    def __init__(self, x_column: str, y_column: str, with_output=True, **kwds):
+    def __init__(self, x_column: str, y_column: str, with_output: bool = True, **kwds: Any) -> None:
         super(MCHistogram2D, self).__init__(dataframe_slot="data", **kwds)
         self.tags.add(self.TAG_VISUALIZATION)
         self.x_column = x_column
         self.y_column = y_column
         self.default_step_size = 10000
         self.total_read = 0
-        self._histo: Optional[np.ndarray] = None
+        self._histo: Optional[np.ndarray[Any, Any]] = None
         self._bounds: Optional[Bounds] = None
         self._with_output = with_output
         self._heatmap_cache: Optional[Tuple[JSon, Bounds]] = None
@@ -246,7 +246,7 @@ class MCHistogram2D(NAry):
         if self._histo is not None:
             cmax = self._histo.max()
         values = {
-            "array": np.flip(self._histo, axis=0),
+            "array": np.flip(self._histo, axis=0),  # type: ignore
             "cmin": 0,
             "cmax": cmax,
             "xmin": xmin,
@@ -268,7 +268,7 @@ class MCHistogram2D(NAry):
         self.build_heatmap(values)
         return self._return_run_step(self.next_state(dfslot), steps_run=steps)
 
-    def build_heatmap(self, values) -> None:
+    def build_heatmap(self, values: Dict[str, Any]) -> None:
         json_: JSon = {}
         row = values
         if not (
@@ -282,14 +282,14 @@ class MCHistogram2D(NAry):
             # data = sp.special.cbrt(row['array'])
             # json_['data'] = sp.misc.bytescale(data)
             json_["binnedPixels"] = data
-            json_["range"] = [np.min(data), np.max(data)]
+            json_["range"] = [np.min(data), np.max(data)]  # type: ignore
             json_["count"] = np.sum(data)
             json_["value"] = "heatmap"
             # return json_
             self._heatmap_cache = (json_, bounds)
         return None
 
-    def heatmap_to_json(self, json: JSon, short=False) -> JSon:
+    def heatmap_to_json(self, json: JSon, short: bool = False) -> JSon:
         if self._heatmap_cache is None:
             return json
         x_label, y_label = "x", "y"
@@ -329,7 +329,7 @@ class MCHistogram2D(NAry):
     def get_visualization(self) -> str:
         return "heatmap"
 
-    def to_json(self, short=False, with_speed: bool = True) -> JSon:
+    def to_json(self, short: bool = False, with_speed: bool = True) -> JSon:
         json = super(MCHistogram2D, self).to_json(short, with_speed=with_speed)
         if short:
             return json

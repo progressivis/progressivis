@@ -577,7 +577,7 @@ class HistogramIndex(TableModule):
     def create_dependent_modules(
         self, input_module: Module, input_slot: str, **kwds: Any
     ) -> HistogramIndex:
-        with self.tagged(self.TAG_DEPENDENT):
+        with self.grouped():
             self.input_module = input_module
             self.input_slot = input_slot
             hist_index = self

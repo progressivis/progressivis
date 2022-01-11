@@ -8,14 +8,15 @@ import logging
 
 import numpy as np
 
+from ..core.module import ReturnRunStep
+from ..core.utils import integer_types
 from ..utils.errors import ProgressiveError, ProgressiveStopIteration
-from ..table.module import TableModule, ReturnRunStep
+from ..table.module import TableModule
 from ..table.table import Table
 from ..table.constant import Constant
 from ..utils.psdict import PsDict
-from ..core.utils import integer_types
 
-from typing import List, Dict, Union, Any
+from typing import List, Dict, Union, Any, Callable
 
 logger = logging.getLogger(__name__)
 
@@ -27,17 +28,17 @@ class RandomTable(TableModule):
 
     def __init__(
         self,
-        columns: Union[int, list, np.ndarray],
-        rows=-1,
-        random=RAND,
-        dtype="float64",
-        throttle: Union[int, np.integer, float, bool] = False,
+        columns: Union[int, List[str], np.ndarray[Any, Any]],
+        rows: int = -1,
+        random: Callable[..., np.ndarray[Any, Any]] = RAND,
+        dtype: str = "float64",
+        throttle: Union[int, np.integer[Any], float, bool] = False,
         **kwds: Any,
     ) -> None:
         super(RandomTable, self).__init__(**kwds)
         self.tags.add(self.TAG_SOURCE)
         self.default_step_size = 1000
-        self.columns: Union[List[str], np.ndarray]
+        self.columns: Union[List[str], np.ndarray[Any, Any]]
         if isinstance(columns, integer_types):
             self.columns = ["_%d" % i for i in range(1, columns + 1)]
         elif isinstance(columns, (list, np.ndarray)):
@@ -65,14 +66,14 @@ class RandomTable(TableModule):
         logger.info("generating %d lines", step_size)
         table = self.table
         if self.throttle:
-            step_size = np.min([self.throttle, step_size])
+            step_size = np.min([self.throttle, step_size])  # type: ignore
         if self.rows >= 0 and (len(table) + step_size) > self.rows:
             step_size = self.rows - len(table)
             logger.info("truncating to %d lines", step_size)
             if step_size <= 0:
                 raise ProgressiveStopIteration
 
-        values: Dict[str, np.ndarray] = OrderedDict()
+        values: Dict[str, np.ndarray[Any, Any]] = OrderedDict()
         for column in self.columns:
             s = self.random(step_size)
             values[column] = s
@@ -87,7 +88,7 @@ class RandomTable(TableModule):
 
 
 class RandomDict(Constant):
-    def __init__(self, columns: int, **kwds):
+    def __init__(self, columns: int, **kwds: Any) -> None:
         keys = [f"_{i}" for i in range(1, columns + 1)]
         vals = np.random.rand(columns)
         super().__init__(PsDict(dict(zip(keys, vals))), **kwds)

@@ -6,20 +6,8 @@ from progressivis.table.table import Table
 from progressivis.datasets import get_dataset  # , RandomBytesIO
 from progressivis.core.utils import RandomBytesIO
 
-# import logging, sys
-
 
 class TestProgressiveLoadCSV(ProgressiveTest):
-    # def setUpNO(self):
-    #     self.logger=logging.getLogger('progressivis.core')
-    #     self.saved=self.logger.getEffectiveLevel()
-    #     self.logger.setLevel(logging.DEBUG)
-    #     ch = logging.StreamHandler(stream=sys.stdout)
-    #     self.logger.addHandler(ch)
-
-    # def tearDownNO(self):
-    #     self.logger.setLevel(self.saved)
-
     def runit(self, module):
         module.run(1)
         table = module.result

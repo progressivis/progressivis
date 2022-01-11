@@ -1,11 +1,14 @@
 from __future__ import annotations
 
+from progressivis.core.module import ReturnRunStep
 from ..core.utils import indices_len
-from ..table.module import TableModule, ReturnRunStep
+from ..table.module import TableModule
 from ..table.table import Table
 from ..core.slot import SlotDescriptor
 from ..core.decorators import process_slot, run_if_any
 import pandas as pd
+
+from typing import Any
 
 import logging
 
@@ -15,7 +18,7 @@ logger = logging.getLogger(__name__)
 class Counter(TableModule):
     inputs = [SlotDescriptor("table", type=Table, required=True)]
 
-    def __init__(self, **kwds):
+    def __init__(self, **kwds: Any):
         super(Counter, self).__init__(**kwds)
         self.default_step_size = 10000
 

@@ -54,7 +54,7 @@ class Select(TableModule):
 
         if self.input_module is not None:
             return self
-        with self.tagged(self.TAG_DEPENDENT):
+        with self.grouped():
             scheduler = self.scheduler
             kwds["scheduler"] = scheduler  # make sure we pass it
             self.input_module = input_module

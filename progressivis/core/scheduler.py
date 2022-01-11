@@ -20,11 +20,11 @@ from typing import (
     Any,
     Callable,
     Set,
-    TYPE_CHECKING,
     Coroutine,
     Union,
     AsyncGenerator,
     cast,
+    TYPE_CHECKING,
 )
 
 logger = logging.getLogger(__name__)
@@ -467,7 +467,7 @@ class Scheduler:
     def _commit(self, dataflow: Dataflow) -> None:
         assert dataflow.version == self.version
         self._new_runorder = dataflow.order_modules()  # raises if invalid
-        self._new_modules = dataflow.modules()
+        self._new_modules = list(dataflow.modules().values())
         self._new_dependencies = dataflow.inputs
         dataflow._compute_reachability(self._new_dependencies)
         self._new_reachability = dataflow.reachability
@@ -616,6 +616,15 @@ class Scheduler:
         if self.dataflow is not None:
             return name in self.dataflow
         return name in self._modules
+
+    def groups(self) -> Set[str]:
+        return {mod.group for mod in self.modules().values() if mod.group is not None}
+
+    def group_modules(self, *names: str) -> List[str]:
+        nameset = set(names)
+        if not nameset:
+            return []
+        return [mod.name for mod in self.modules().values() if mod.group in nameset]
 
     def run_number(self) -> int:
         "Return the last run number."

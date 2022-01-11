@@ -30,16 +30,12 @@ def run_gather(*coros: Coroutine[Any, Any, Any]) -> None:
     return run(_gather(*coros))
 
 
-if sys.version.startswith("3.7."):
-
+if sys.version_info < (3, 8):
     def create_task(
         coroutine: Coroutine[Any, Any, Any], name: Optional[str] = None
     ) -> Task[Any]:
         return _create_task(coroutine)
-
-
-elif sys.version.startswith("3.8."):
-
+else:
     def create_task(
         coroutine: Coroutine[Any, Any, Any], name: Optional[str] = None
     ) -> Task[Any]:

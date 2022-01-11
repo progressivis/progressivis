@@ -12,10 +12,11 @@ import numpy as np
 import scipy as sp  # type: ignore
 from PIL import Image
 
+from progressivis.core.module import ReturnRunStep, JSon
 from progressivis.core.utils import indices_len
 from progressivis.core.slot import SlotDescriptor
 from progressivis.table import Table
-from progressivis.table.module import TableModule, ReturnRunStep, JSon
+from progressivis.table.module import TableModule
 from progressivis.stats.histogram2d import Histogram2D
 
 from typing import cast, Optional

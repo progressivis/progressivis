@@ -12,11 +12,13 @@ import lzma
 
 from progressivis import ProgressiveError
 
+from typing import Any
+
 DATA_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../data"))
 Z_CHUNK_SIZE = 16 * 1024 * 32
 
 
-def get_dataset(name: str, **kwds) -> str:
+def get_dataset(name: str, **kwds: Any) -> str:
     if not os.path.isdir(DATA_DIR):
         os.mkdir(DATA_DIR)
     if name == "bigfile":
@@ -59,7 +61,7 @@ compressors = dict(
 )
 
 
-def get_dataset_compressed(name, compressor, **kwds):
+def get_dataset_compressed(name: str, compressor: str, **kwds: Any) -> str:
     source_file = get_dataset(name, **kwds)
     dest_file = source_file + compressor["ext"]
     if os.path.isfile(dest_file):
@@ -76,19 +78,19 @@ def get_dataset_compressed(name, compressor, **kwds):
     return dest_file
 
 
-def get_dataset_bz2(name, **kwds):
+def get_dataset_bz2(name: str, **kwds: Any) -> str:
     return get_dataset_compressed(name, compressors["bz2"], **kwds)
 
 
-def get_dataset_zlib(name, **kwds):
+def get_dataset_zlib(name: str, **kwds: Any) -> str:
     return get_dataset_compressed(name, compressors["zlib"], **kwds)
 
 
-def get_dataset_gz(name, **kwds):
+def get_dataset_gz(name: str, **kwds: Any) -> str:
     return get_dataset_compressed(name, compressors["gzip"], **kwds)
 
 
-def get_dataset_lzma(name, **kwds):
+def get_dataset_lzma(name: str, **kwds: Any) -> str:
     return get_dataset_compressed(name, compressors["lzma"], **kwds)
 
 
