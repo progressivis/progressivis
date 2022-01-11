@@ -49,7 +49,7 @@ class RangeQueryImpl(ModuleImpl):
         self, lower, upper, limit_changed, created=None, updated=None, deleted=None
     ):
         if limit_changed:
-            print("Limit changed")
+            # print("Limit changed")
             new_sel = self._hist_index.range_query(
                 lower, upper, approximate=self._approximate
             )
