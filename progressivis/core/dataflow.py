@@ -71,7 +71,7 @@ class Dataflow:
         "Return all the modules in this dataflow"
         return self._modules
 
-    def group_modules(self, *names: str) -> List[Module]:
+    def group_modules(self, *names: str) -> List[str]:
         nameset = set(names)
         if not nameset:
             return []
