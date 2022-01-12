@@ -8,7 +8,7 @@ import pandas as pd
 
 
 class TestToDict(ProgressiveTest):
-    def test_to_dict(self):
+    def test_to_dict(self) -> None:
         # index=[1,2,3,8,11],
         df = pd.DataFrame(
             data={
@@ -31,7 +31,7 @@ class TestToDict(ProgressiveTest):
         self.assertEqual(df.to_dict(orient="records"), t.to_dict(orient="records"))
         self.assertEqual(df.to_dict(orient="index"), t.to_dict(orient="index"))
 
-    def test_to_dict2(self):
+    def test_to_dict2(self) -> None:
         # index=[1,2,3,8,11],
         df = pd.DataFrame(
             data={
@@ -45,6 +45,7 @@ class TestToDict(ProgressiveTest):
         sel = bitmap(t_.index) - bitmap([3, 4])
         # del t.loc[[3,4]]
         t = t_.loc[sel, :]  # TableSelectedView(t_, sel)
+        assert t is not None
         # del t.loc[3]
         # print(df.to_dict(orient='records'))
         # print(df.to_dict(orient='records'))

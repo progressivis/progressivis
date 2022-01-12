@@ -130,7 +130,7 @@ class Dataflow:
 
     def _remove_module(self, module: Module) -> None:
         """Remove the specified module
-           or does nothing if the module does not exist.
+        or does nothing if the module does not exist.
         """
         # if isinstance(module, str):
         #     module = self._modules.get(module)

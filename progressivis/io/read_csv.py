@@ -90,8 +90,8 @@ class Parser:
         self._overflow_df: Optional[pd.DataFrame] = overflow_df
         self._offset: int = offset
         self._recovery_cnt: int = 0
-        self._nb_cols: Optional[int] = None if overflow_df is None else len(
-            overflow_df.columns
+        self._nb_cols: Optional[int] = (
+            None if overflow_df is None else len(overflow_df.columns)
         )
         self._chunksize: int = chunksize
         self._usecols: Optional[List[str]] = usecols
@@ -382,8 +382,7 @@ class InputSource:
         return self._seq[self._file_cnt]
 
     def switch_to_next(self) -> bool:
-        """
-        """
+        """ """
         # print("Switch to next")
         if self._file_cnt >= len(self._seq) - 1:
             return False

@@ -13,6 +13,7 @@ from ..core.slot import Slot
 from ..core.bitmap import bitmap
 
 import sys
+
 if sys.version_info >= (3, 8):
     from typing import Literal
 else:

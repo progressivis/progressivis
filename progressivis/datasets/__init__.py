@@ -12,7 +12,7 @@ import lzma
 
 from progressivis import ProgressiveError
 
-from typing import Any
+from typing import Any, Dict, cast, Type
 
 DATA_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../data"))
 Z_CHUNK_SIZE = 16 * 1024 * 32
@@ -53,7 +53,15 @@ def get_dataset(name: str, **kwds: Any) -> str:
     raise ProgressiveError("Unknown dataset %s" % name)
 
 
-compressors = dict(
+class Compressor:
+    def compress(self, data: bytes) -> bytes:
+        ...
+
+    def flush(self) -> bytes:
+        ...
+
+
+compressors: Dict[str, Dict[str, Any]] = dict(
     bz2=dict(ext=".bz2", factory=bz2.BZ2Compressor),
     zlib=dict(ext=".zlib", factory=zlib.compressobj),
     gzip=dict(ext=".gz", factory=partial(zlib.compressobj, wbits=zlib.MAX_WBITS | 16)),
@@ -61,20 +69,23 @@ compressors = dict(
 )
 
 
-def get_dataset_compressed(name: str, compressor: str, **kwds: Any) -> str:
+def get_dataset_compressed(
+    name: str, compressor: Dict[str, Compressor], **kwds: Any
+) -> str:
     source_file = get_dataset(name, **kwds)
-    dest_file = source_file + compressor["ext"]
+    dest_file = source_file + cast(str, compressor["ext"])
     if os.path.isfile(dest_file):
         return dest_file
-    compressor = compressor["factory"]()
+    factory = cast(Type[Compressor], compressor["factory"])
+    comp = factory()
     with open(source_file, "rb") as rdesc:
         with open(dest_file, "wb") as wdesc:
             while True:
                 data = rdesc.read(Z_CHUNK_SIZE)
                 if not data:
                     break
-                wdesc.write(compressor.compress(data))
-            wdesc.write(compressor.flush())
+                wdesc.write(comp.compress(data))
+            wdesc.write(comp.flush())
     return dest_file
 
 

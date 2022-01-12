@@ -7,10 +7,11 @@ import numpy as np
 
 
 class TestStorageEngine(ProgressiveTest):
-    def test_storage_engine(self):
-        e = StorageEngine.default
+    def test_storage_engine(self) -> None:
+        e = StorageEngine._default
         self.assertIsNotNone(e)
         se = StorageEngine.lookup(e)
+        assert se is not None
         g = se["/"]
         self.assertIsNotNone(g)
         self.assertIsInstance(g, Group)

@@ -14,7 +14,17 @@ from progressivis.utils.errors import ProgressiveError
 from progressivis.core.utils import is_notebook, get_physical_base
 from progressivis.io import Variable, VirtualVariable
 
-from typing import Optional, Tuple, List, Dict, cast, Union, Any, TYPE_CHECKING
+from typing import (
+    Optional,
+    Tuple,
+    List,
+    Dict,
+    cast,
+    Union,
+    Any,
+    Literal,
+    TYPE_CHECKING,
+)
 
 Bounds = Tuple[float, float, float, float]
 
@@ -30,9 +40,9 @@ class _DataClass(object):
         group: Optional[str],
         x_column: str,
         y_column: str,
+        scheduler: Scheduler,
         approximate: bool = False,
-        scheduler: Optional[Scheduler] = None,
-        **kwds,
+        **kwds: Any,
     ):
         self.name = name
         self._group = group
@@ -48,10 +58,10 @@ class _DataClass(object):
         self.heatmap = None
         self.min_value: Optional[Variable] = None
         self.max_value: Optional[Variable] = None
-        self.sample: Optional[Module] = None
+        self.sample: Union[None, Literal["default"], Module] = None
         self.range_query_2d: Optional[Module] = None
 
-    def scheduler(self):
+    def scheduler(self) -> Scheduler:
         return self._scheduler
 
     def create_dependent_modules(
@@ -116,11 +126,10 @@ class MCScatterPlot(NAry):
         classes: List[Union[Dict[str, Any], Tuple[str, str, str]]],
         x_label: str = "x",
         y_label: str = "y",
-        approximate=False,
-        **kwds,
-    ):
-        """Multiclass ...
-        """
+        approximate: bool = False,
+        **kwds: Any,
+    ) -> None:
+        """Multiclass ..."""
         super(MCScatterPlot, self).__init__(output_required=False, **kwds)
         self.tags.add(self.TAG_VISUALIZATION)
         self._classes = classes  # TODO: check it ...
@@ -134,8 +143,8 @@ class MCScatterPlot(NAry):
         self.min_value: Optional[VirtualVariable] = None
         self.max_value: Optional[VirtualVariable] = None
         self._ipydata: bool = is_notebook()
-        self.hist_tensor: Optional[np.ndarray] = None
-        self.sample_tensor: Optional[np.ndarray] = None
+        self.hist_tensor: Optional[np.ndarray[Any, Any]] = None
+        self.sample_tensor: Optional[np.ndarray[Any, Any]] = None
 
     def forget_changes(self, input_slot: Slot) -> bool:
         changes = False
@@ -156,7 +165,9 @@ class MCScatterPlot(NAry):
     def predict_step_size(self, duration: float) -> int:
         return 1
 
-    def group_inputs(self) -> Tuple[bool, Dict]:
+    def group_inputs(
+        self,
+    ) -> Tuple[bool, Dict[str, Dict[str, Tuple[Slot, float, float]]]]:
         """
         Group inputs by classes using meta field on slots
         """
@@ -208,9 +219,9 @@ class MCScatterPlot(NAry):
                 json_["binnedPixels"] = plan
                 self.hist_tensor[:, :, plan] = row["array"]  # type: ignore
             else:
-                data = np.copy(row["array"])
+                data = np.copy(row["array"])  # type: ignore
                 json_["binnedPixels"] = data
-            json_["range"] = [np.min(data), np.max(data)]
+            json_["range"] = [np.min(data), np.max(data)]  # type: ignore
             json_["count"] = np.sum(data)
             json_["value"] = domain
             return json_
@@ -219,7 +230,7 @@ class MCScatterPlot(NAry):
     def make_json(self, json: JSon) -> JSon:
         buffers = []
         domain = []
-        samples: List[Tuple[List, List]] = []
+        samples: List[Tuple[List[Any], List[Any]]] = []
         count = 0
         xmin = ymin = -np.inf
         xmax = ymax = np.inf
@@ -253,7 +264,7 @@ class MCScatterPlot(NAry):
                 select = None
 
             if self._ipydata:
-                smpl: Tuple[List, List]
+                smpl: Tuple[List[Any], List[Any]]
                 if select is not None:
                     ph_x = get_physical_base(select[x_column])
                     ph_y = get_physical_base(select[y_column])
@@ -287,7 +298,7 @@ class MCScatterPlot(NAry):
             samples = []
         # TODO: check consistency among classes (e.g. same xbin, ybin etc.)
         if self._ipydata:
-            assert self.hist_tensor
+            assert self.hist_tensor is not None
             xbins, ybins = self.hist_tensor.shape[:-1]
         else:
             xbins, ybins = buffers[0]["binnedPixels"].shape
@@ -350,13 +361,13 @@ class MCScatterPlot(NAry):
             return
         self._json_cache = self._to_json_impl()
 
-    def to_json(self, short=False, with_speed: bool = True) -> JSon:
+    def to_json(self, short: bool = False, with_speed: bool = True) -> JSon:
         if self._json_cache:
             return self._json_cache
         self._json_cache = self._to_json_impl(short, with_speed)
         return self._json_cache
 
-    def _to_json_impl(self, short=False, with_speed=True) -> JSon:
+    def _to_json_impl(self, short: bool = False, with_speed: bool = True) -> JSon:
         self.image = None
         json = super(MCScatterPlot, self).to_json(short, with_speed=with_speed)
         if short:
@@ -369,7 +380,7 @@ class MCScatterPlot(NAry):
         input_slot: str = "result",
         sample: str = "default",
         **kwds: Any,
-    ):
+    ) -> None:
         self.input_module = input_module
         self.input_slot = input_slot
         with self.grouped():
@@ -408,8 +419,8 @@ class MCScatterPlot(NAry):
         name: str,
         x_column: str,
         y_column: str,
-        sample="default",
-        sample_slot="result",
+        sample: Union[Literal["default"], Module] = "default",
+        sample_slot: str = "result",
         input_module: Optional[Module] = None,
         input_slot: Optional[str] = None,
     ) -> None:
@@ -442,7 +453,7 @@ class MCScatterPlot(NAry):
         hist_meta = dict(inp="hist", class_=name, **col_translation)
         if data_class.histogram2d is not None:
             self.input["table", hist_meta] = data_class.histogram2d.output.result
-        if data_class.sample is not None:
+        if isinstance(data_class.sample, Module):
             meta = dict(inp="sample", class_=name, **col_translation)
             self.input["table", meta] = data_class.sample.output[sample_slot]
         self._data_class_dict[name] = data_class
@@ -451,7 +462,7 @@ class MCScatterPlot(NAry):
         if data_class.max_value is not None and self.max_value is not None:
             self.max_value.subscribe(data_class.max_value, col_translation)
 
-    def get_starving_mods(self):
+    def get_starving_mods(self) -> Any:
         return chain(
             *[(s.histogram2d, s.sample) for s in self._data_class_dict.values()]
         )

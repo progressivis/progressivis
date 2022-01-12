@@ -4,7 +4,7 @@ from progressivis.core.index_update import IndexUpdate
 
 
 class TestIndexUpdate(ProgressiveTest):
-    def test_index_update(self):
+    def test_index_update(self) -> None:
         iu = IndexUpdate(created=None, updated=None, deleted=None)
         self.assertTrue(iu.test())
         iu2 = iu.copy()

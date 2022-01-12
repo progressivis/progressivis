@@ -1,41 +1,35 @@
 from . import ProgressiveTest
 
+import numpy as np
+
 from progressivis.table.column import Column
 from progressivis.table.changemanager_column import ColumnChangeManager
 from progressivis.table.tablechanges import TableChanges
-import numpy as np
-
-
-class FakeSlot(object):
-    def __init__(self, table):
-        self.table = table
-
-    def data(self):
-        return self.table
+from progressivis.table.changemanager_table_selected import FakeSlot
 
 
 class TestColumnChangeManager(ProgressiveTest):
-    def setUp(self):
+    def setUp(self) -> None:
         super(TestColumnChangeManager, self).setUp()
-        self.scheduler = self.scheduler()
+        self.scheduler_ = self.scheduler()
 
-    def test_columnchangemanager(self):
+    def test_columnchangemanager(self) -> None:
         # pylint: disable=protected-access
         column = Column("test_changemanager_column", None, data=np.array([1, 2, 3]))
-        s = self.scheduler
+        s = self.scheduler_
         column.changes = TableChanges()
         s._run_number = 1
         last = s._run_number
         slot = FakeSlot(column)
 
-        mid1 = 1
+        mid1 = "m1"
         cm = ColumnChangeManager(slot, buffer_updated=True, buffer_deleted=True)
         self.assertEqual(cm.last_update(), 0)
         self.assertEqual(cm.created.length(), 0)
         self.assertEqual(cm.updated.length(), 0)
         self.assertEqual(cm.deleted.length(), 0)
 
-        mid2 = 2
+        mid2 = "m2"
         cm2 = ColumnChangeManager(slot, buffer_updated=True, buffer_deleted=True)
         self.assertEqual(cm2.last_update(), 0)
         self.assertEqual(cm2.created.length(), 0)
@@ -130,7 +124,7 @@ class TestColumnChangeManager(ProgressiveTest):
         cm2.update(last2, column, mid=mid2)
         self.assertEqual(cm2.last_update(), last2)
         self.assertEqual(cm2.created.next(), slice(5, 6))
-        self.assertEqual(list(cm2.updated.next()), [0, 2])
+        self.assertEqual(list(cm2.updated.next(as_slice=False)), [0, 2])
         self.assertEqual(cm2.deleted.length(), 0)
 
         # s._run_number += 1
@@ -164,7 +158,7 @@ class TestColumnChangeManager(ProgressiveTest):
         self.assertEqual(cm2.last_update(), last2)
         self.assertEqual(cm2.created.next(), slice(6, 8))
         self.assertEqual(cm2.updated.next(), slice(5, 6))
-        self.assertEqual(list(cm2.deleted.next()), [2, 4])
+        self.assertEqual(list(cm2.deleted.next(as_slice=False)), [2, 4])
 
         # TODO test reset
         cm.reset(mid=mid1)

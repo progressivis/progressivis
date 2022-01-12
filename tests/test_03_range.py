@@ -6,7 +6,7 @@ import numpy as np
 
 
 class TestRange(ProgressiveTest):
-    def test_range(self):
+    def test_range(self) -> None:
         with self.assertRaises(ValueError):
             r = RangeDataset("range", shape=(10, 10))
         with self.assertRaises(TypeError):
@@ -15,7 +15,7 @@ class TestRange(ProgressiveTest):
         r = RangeDataset("range", shape=(10,))
         self.assertEqual(r.shape, (10,))
         self.assertEqual(r.size, 10)
-        self.assertEqual(r.dtype, np.int)
+        self.assertEqual(r.dtype, np.int_)
         self.assertEqual(r[9], 9)
         self.assertTrue(np.array_equal(r[1:3], np.array([1, 2])))
         self.assertTrue(np.array_equal(r[5:], np.array([5, 6, 7, 8, 9])))
@@ -45,5 +45,5 @@ class TestRange(ProgressiveTest):
             r[4:5] = [5]
         with self.assertRaises(RangeError):
             r[[4, 5, 6]] = [4, 5, 7]
-        for i, j in zip(range(10), r):
-            self.assertEqual(i, j)
+        for j, k in zip(range(10), r):
+            self.assertEqual(j, k)

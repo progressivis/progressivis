@@ -92,8 +92,7 @@ class BisectImpl:  # (ModuleImpl):
 
 
 class Bisect(TableModule):
-    """
-    """
+    """ """
 
     parameters = [
         ("column", np.dtype(object), "unknown"),

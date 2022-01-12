@@ -126,11 +126,14 @@ class GroupImpl(Group):
         self.free_item(item)
         del self.dict[name]
 
-    def __contains__(self, name: str) -> bool:
-        return name in self.dict
-
     def __len__(self) -> int:
         return len(self.dict)
+
+    def __iter__(self) -> Iterator[str]:
+        return iter(self.dict)
+
+    def __contains__(self, name: str) -> bool:
+        return name in self.dict
 
     def free_item(self, item: Any) -> None:
         pass

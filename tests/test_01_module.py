@@ -1,21 +1,26 @@
 from progressivis import Module, Every, ProgressiveError, Table
 
 from . import ProgressiveTest
+from progressivis.core.module import ReturnRunStep
+
+from typing import Any
 
 
 class SimpleModule(Module):
-    def __init__(self, **kwds):
+    def __init__(self, **kwds: Any):
         super(SimpleModule, self).__init__(**kwds)
 
-    def run_step(self, run_number, step_size, howlong):  # pragma no cover
+    def run_step(
+        self, run_number: int, step_size: int, howlong: float
+    ) -> ReturnRunStep:  # pragma no cover
         return self._return_run_step(self.state_blocked, 0)
 
 
 class TestProgressiveModule(ProgressiveTest):
-    def test_scheduler(self):
+    def test_scheduler(self) -> None:
         self.assertEqual(len(self.scheduler()), 0)
 
-    def test_tags(self):
+    def test_tags(self) -> None:
         s = self.scheduler()
         simple = SimpleModule(scheduler=s)
         self.assertEquals(simple.tags, set())  # no tags
@@ -23,11 +28,11 @@ class TestProgressiveModule(ProgressiveTest):
             simple2 = SimpleModule(scheduler=s)
         self.assertEquals(simple2.tags, set(["a", "b"]))
 
-    def test_module(self):
+    def test_module(self) -> None:
         # pylint: disable=broad-except
         s = self.scheduler()
         with self.assertRaises(TypeError):  # abstract base class
-            module = Module(name="a", scheduler=s)
+            module = Module(name="a", scheduler=s)  # type: ignore
 
         with s:
             module = Every(proc=self.terse, name="a", scheduler=s)

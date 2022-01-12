@@ -36,9 +36,7 @@ class Sample(TableModule):
 
     def __init__(self, required: str = "result", **kwds: Any) -> None:
         assert required in ("result", "select")
-        super(Sample, self).__init__(
-            output_required=(required == "result"),
-            **kwds)
+        super(Sample, self).__init__(output_required=(required == "result"), **kwds)
         if required == "select":
             # Change the descriptor so required
             # The original SD is kept in the shared outputs/all_outputs

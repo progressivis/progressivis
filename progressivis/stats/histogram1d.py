@@ -18,8 +18,7 @@ logger = logging.getLogger(__name__)
 
 
 class Histogram1D(TableModule):
-    """
-    """
+    """ """
 
     parameters = [("bins", np.dtype(int), 128), ("delta", np.dtype(float), -5)]
     inputs = [

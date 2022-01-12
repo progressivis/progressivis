@@ -47,11 +47,13 @@ def make_mv_blobs(
     return multi_shuffle(blobs, labels)  # type: ignore
 
 
-def xy_to_dict(x: np.ndarray[Any, Any],
-               y: np.ndarray[Any, Any],
-               i: int,
-               size: Optional[int],
-               cols: Union[List[str], np.ndarray[Any, Any]]) -> Tuple[Dict[str, Any], np.ndarray[Any, Any]]:
+def xy_to_dict(
+    x: np.ndarray[Any, Any],
+    y: np.ndarray[Any, Any],
+    i: int,
+    size: Optional[int],
+    cols: Union[List[str], np.ndarray[Any, Any]],
+) -> Tuple[Dict[str, Any], np.ndarray[Any, Any]]:
     res: Dict[str, Any] = {}
     k = None if size is None else i + size
     for j, col in enumerate(cols):
@@ -99,7 +101,9 @@ class BlobsTableABC(TableModule):
             raise ProgressiveError("Invalid type for columns")
         self.rows = rows
         self.seed = seed
-        self._reservoir: Optional[Tuple[np.ndarray[Any, Any], np.ndarray[Any, Any]]] = None
+        self._reservoir: Optional[
+            Tuple[np.ndarray[Any, Any], np.ndarray[Any, Any]]
+        ] = None
         self._labels: Optional[Table] = None
         self._reservoir_idx = 0
         if throttle and isinstance(throttle, integer_types + (float,)):

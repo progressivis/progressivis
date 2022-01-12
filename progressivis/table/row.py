@@ -27,7 +27,7 @@ if TYPE_CHECKING:
 
 
 class Row(MutableMapping[str, Any]):
-    """ Wraps a dictionary interace around a row of a Table.
+    """Wraps a dictionary interace around a row of a Table.
 
     Parameters
     ----------

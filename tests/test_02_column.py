@@ -9,7 +9,7 @@ import numpy as np
 
 
 class TestColumn(ProgressiveTest):
-    def test_column(self):
+    def test_column(self) -> None:
         index = IndexTable()
         self.assertTrue(index.is_identity)
         self.assertEqual(index.last_id, -1)
@@ -27,6 +27,7 @@ class TestColumn(ProgressiveTest):
         self.assertIsInstance(col2.index, IndexTable)
         self.assertEqual(col2.size, 10)
         self.assertEqual(col2.shape, (10,))
+        assert col2.dataset is not None
         self.assertTrue(np.array_equal(col2.dataset[:], a))
         self.assertEqual(str(col2.index), 'IndexTable("anonymous", dshape="{}")[10]')
         # self.assertEqual(repr(col2.index), 'IdColumn("_ID", dshape=int64)[10][IDENTITY]')
@@ -42,6 +43,7 @@ class TestColumn(ProgressiveTest):
         self.assertTrue(col2a.index.is_identity)
         self.assertEqual(col2a.size, 10)
         self.assertEqual(col2a.shape, (10,))
+        assert col2a.dataset is not None
         self.assertTrue(np.array_equal(col2a.dataset[:], a))
         with self.assertRaises(ValueError):
             col2a.add(10, 9)  # id 9 is already allocated
@@ -49,18 +51,21 @@ class TestColumn(ProgressiveTest):
         self.assertTrue(col2a.index.is_identity)
         self.assertEqual(col2a.size, 10)
         self.assertEqual(col2a.shape, (10,))
+        assert col2a.dataset is not None
         self.assertTrue(np.array_equal(col2a.dataset[:], a))
 
         del col2a[10:10]  # Should do nothing
         self.assertTrue(col2a.index.is_identity)
         self.assertEqual(col2a.size, 10)
         self.assertEqual(col2a.shape, (10,))
+        assert col2a.dataset is not None
         self.assertTrue(np.array_equal(col2a.dataset[:], a))
 
         del col2a[8:8]  # Should do nothing
         self.assertTrue(col2a.index.is_identity)
         self.assertEqual(col2a.size, 10)
         self.assertEqual(col2a.shape, (10,))
+        assert col2a.dataset is not None
         self.assertTrue(np.array_equal(col2a.dataset[:], a))
 
         with self.assertRaises(ValueError):
@@ -68,21 +73,25 @@ class TestColumn(ProgressiveTest):
         del col2a[9]  # delete end, remain identity mapping
         self.assertTrue(col2a.index.is_identity)
         self.assertEqual(len(col2a), 9)
+        assert col2a.dataset is not None
         self.assertTrue(np.array_equal(col2a.dataset[:], np.arange(9)))
 
         del col2a[8:9]  # delete end, remain identity mapping
         self.assertTrue(col2a.index.is_identity)
         self.assertEqual(len(col2a), 8)
+        assert col2a.dataset is not None
         self.assertTrue(np.array_equal(col2a.dataset[:], np.arange(8)))
 
         del col2a[bitmap([])]  # should do nothing
         self.assertTrue(col2a.index.is_identity)
         self.assertEqual(len(col2a), 8)
+        assert col2a.dataset is not None
         self.assertTrue(np.array_equal(col2a.dataset[:], np.arange(8)))
 
         del col2a[bitmap([7])]
         self.assertTrue(col2a.index.is_identity)
         self.assertEqual(len(col2a), 7)
+        assert col2a.dataset is not None
         self.assertTrue(np.array_equal(col2a.dataset[:], np.arange(7)))
 
         with self.assertRaises(ValueError):

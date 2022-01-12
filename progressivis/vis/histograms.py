@@ -12,9 +12,9 @@ from progressivis.core.module import JSon
 from progressivis.table.nary import NAry
 from progressivis.core.slot import SlotDescriptor
 from progressivis.stats import Histogram1D
-from progressivis.table.table import BaseTable
+from progressivis.table.table_base import BaseTable
 
-from typing import cast, Any, Dict, List
+from typing import cast, Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +31,7 @@ class Histograms(NAry):
         SlotDescriptor("max", type=BaseTable, required=False),
     ]
 
-    def __init__(self, columns: List[str] = None, **kwds):
+    def __init__(self, columns: Optional[List[str]] = None, **kwds: Any) -> None:
         super(Histograms, self).__init__(**kwds)
         self.tags.add(self.TAG_VISUALIZATION)
         self.default_step_size = 1
@@ -40,7 +40,7 @@ class Histograms(NAry):
 
     def table_(self) -> BaseTable:
         "Return the table"
-        return self.get_input_slot("table").data()
+        return cast(BaseTable, self.get_input_slot("table").data())
 
     def get_data(self, name: str) -> Any:
         if name == "min":
@@ -63,7 +63,7 @@ class Histograms(NAry):
     #         self._delete_columns(col_changes.deleted)
     #     return self._return_run_step(self.state_blocked, steps_run=1)
 
-    def _create_columns(self, columns: List[str], df):
+    def _create_columns(self, columns: List[str], df: Any) -> None:
         bins: int = cast(int, self.params.bins)
         delta: float = cast(float, self.params.delta)  # crude
         inp = self.get_input_module("table")
@@ -100,7 +100,7 @@ class Histograms(NAry):
     def get_visualization(self) -> str:
         return "histograms"
 
-    def to_json(self, short=False, with_speed: bool = True) -> JSon:
+    def to_json(self, short: bool = False, with_speed: bool = True) -> JSon:
         json = super(Histograms, self).to_json(short, with_speed)
         if short:
             return json

@@ -161,7 +161,7 @@ class BaseColumn(metaclass=ABCMeta):
     def read_direct(
         self, array: np.ndarray[Any, Any], source_sel: Any = None, dest_sel: Any = None
     ) -> None:
-        """ Read data from column into an existing NumPy array.
+        """Read data from column into an existing NumPy array.
 
         Selections must be the output of numpy.s_[<args>] or slice.
         """

@@ -41,7 +41,9 @@ class MCHistogram2D(NAry):
         "}"
     )
 
-    def __init__(self, x_column: str, y_column: str, with_output: bool = True, **kwds: Any) -> None:
+    def __init__(
+        self, x_column: str, y_column: str, with_output: bool = True, **kwds: Any
+    ) -> None:
         super(MCHistogram2D, self).__init__(dataframe_slot="data", **kwds)
         self.tags.add(self.TAG_VISUALIZATION)
         self.x_column = x_column

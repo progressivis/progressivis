@@ -1,4 +1,5 @@
-from .table import TableExpr, Expr, Pipeable
+from .core import Expr
+from .table import TableExpr, Pipeable
 from progressivis.io.csv_loader import CSVLoader
 from progressivis import Print
 

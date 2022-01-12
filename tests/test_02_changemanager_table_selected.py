@@ -8,34 +8,26 @@ from progressivis.table.changemanager_table_selected import (
 )
 
 
-class __FakeSlot(object):
-    def __init__(self, table):
-        self.table = table
-
-    def data(self):
-        return self.table
-
-
 class TestTableSelectedChangeManager(ProgressiveTest):
-    def setUp(self):
+    def setUp(self) -> None:
         super(TestTableSelectedChangeManager, self).setUp()
         self.s = self.scheduler()
 
-    def test_tablechangemanager(self):
+    def test_tablechangemanager(self) -> None:
         # pylint: disable=protected-access
         table = Table(
             "test_changemanager_table_selected",
             data={"a": [1, 2, 3], "b": [10.1, 0.2, 0.3]},
         )
         selection = bitmap([1, 2])
-        table_selected = TableSelectedView(table, selection)
+        table_selected: TableSelectedView = TableSelectedView(table, selection)
 
         s = self.s
         s._run_number = 1
         last = s._run_number
         slot = FakeSlot(table_selected)
 
-        mid1 = 1
+        mid1 = "m1"
         cm = TableSelectedChangeManager(
             slot,
             buffer_exposed=True,
@@ -118,7 +110,7 @@ class TestTableSelectedChangeManager(ProgressiveTest):
         s._run_number += 1
         last = s._run_number
         table.append({"a": [15, 16, 17, 18], "b": [0.51, 0.61, 0.71, 0.81]})
-        table_selected.selection = slice(5, None)
+        table_selected._selection = slice(5, None)
         cm.update(last, table_selected, mid=mid1)
         self.assertEqual(cm.last_update(), last)
         self.assertEqual(cm.base.created.changes, bitmap([8, 9, 10, 11]))

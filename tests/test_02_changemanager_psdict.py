@@ -1,18 +1,13 @@
-from collections import namedtuple
 from progressivis.core.bitmap import bitmap
 from progressivis.core.changemanager_dict import DictChangeManager
 from progressivis.utils.psdict import PsDict
+from progressivis.table.changemanager_table_selected import FakeSlot
 from . import ProgressiveTest
 
 
-class FakeSlot(namedtuple("FakeSlot", ["table"])):
-    def data(self):
-        return self.table
-
-
 class TestDictChangeManager(ProgressiveTest):
-    def test_dictchangemanager(self):
-        mid1 = 1
+    def test_dictchangemanager(self) -> None:
+        mid1 = "m1"
         d = PsDict(a=1, b=2, c=3)
         slot = FakeSlot(d)
         cm = DictChangeManager(slot)

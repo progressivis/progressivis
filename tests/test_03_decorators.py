@@ -139,7 +139,7 @@ def _4_csv_scenario(module, s):
         module.input.c = csv_c.output.result
         module.input.d = csv_d.output.result
 
-    def _fun(s, r):
+    async def _fun(s, r):
         if r > 10:
             s.task_stop()
 

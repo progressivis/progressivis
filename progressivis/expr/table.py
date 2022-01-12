@@ -2,7 +2,8 @@ from __future__ import annotations
 
 from .core import Expr
 from ..table.constant import Constant
-from progressivis.table.module import TableModule, Module
+from progressivis.core.module import Module
+from progressivis.table.module import TableModule
 
 from typing import (
     Optional,
@@ -26,8 +27,8 @@ class TableExpr(Expr):
         module_class: Type[TableModule],
         args: Any,
         kwds: Dict[str, Any],
-        module: TableModule = None,
-        output_slot: str = None,
+        module: Optional[TableModule] = None,
+        output_slot: Optional[str] = None,
         output_slot_table: str = "table",
     ):
         super(TableExpr, self).__init__(
@@ -54,8 +55,8 @@ class Pipeable:
         module_class: Type[Module],
         args: Tuple[Any, ...] = (),
         kwds: Dict[str, Any] = {},
-        repipe: str = None,
-        out: str = None,
+        repipe: Optional[str] = None,
+        out: Optional[str] = None,
     ):
         self._expr_class = expr_class
         self._module_class = module_class
@@ -80,18 +81,18 @@ class Pipeable:
         expr = self._expr_class(self._module_class, self._args, self._kwds)
         return expr | other
 
-    def tee(self, lambda1, lambda2):
+    def tee(self, lambda1: Any, lambda2: Any) -> Any:
         lambda1(self)
         return lambda2(self)
 
-    def repipe(self, mod_name: str, out=None) -> Pipeable:
+    def repipe(self, mod_name: str, out: Any = None) -> Pipeable:
         self._repipe = mod_name
         self._repipe_out = out
         return self
 
 
 class PipedInput(object):
-    def __init__(self, obj):
+    def __init__(self, obj: Any):
         self._obj = obj
 
     def __or__(self, other: Pipeable) -> Expr:

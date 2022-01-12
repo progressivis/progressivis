@@ -32,21 +32,28 @@ class Column(BaseColumn):
     def __init__(
         self,
         name: str,
-        index: IndexTable,
+        index: Optional[IndexTable],
         base: Optional[BaseColumn] = None,
         storagegroup: Optional[Group] = None,
-        dshape: Union[None, DataShape, str] = None,
-        fillvalue: Any = None,
+        dshape: Optional[Union[None, DataShape, str]] = None,
+        fillvalue: Optional[Any] = None,
         shape: Optional[Shape] = None,
         chunks: Optional[Chunks] = None,
         indices: Optional[Index] = None,
-        data: Any = None,
+        data: Optional[Any] = None,
     ) -> None:
         """Create a new column.
 
         if index is None and self.index return None, a new index and
         dataset are created.
         """
+        indexwasnone: bool = index is None
+        if index is None:
+            if data is not None:  # check before creating everything
+                length = len(data)
+                if indices and length != len(indices):
+                    raise ValueError("Bad index length (%d/%d)", len(indices), length)
+            index = IndexTable()
         super(Column, self).__init__(name, index, base=base)
         if storagegroup is None:
             if index is not None and hasattr(index, "storagegroup"):
@@ -63,11 +70,7 @@ class Column(BaseColumn):
             self._dshape = dshape
         elif isinstance(dshape, str):
             self._dshape = dshape_create(dshape)
-        if self.index is None:
-            if data is not None:  # check before creating everything
-                length = len(data)
-                if indices and length != len(indices):
-                    raise ValueError("Bad index length (%d/%d)", len(indices), length)
+        if indexwasnone:
             self._complete_column(dshape, fillvalue, shape, chunks, data)
             if data is not None:
                 self.append(data, indices)
@@ -118,8 +121,8 @@ class Column(BaseColumn):
         self,
         dshape: Optional[Union[str, DataShape]],
         fillvalue: Any,
-        shape: Shape,
-        chunks: Chunks,
+        shape: Optional[Shape],
+        chunks: Optional[Chunks],
         data: Any,
     ) -> None:
         if dshape is None:
@@ -138,7 +141,6 @@ class Column(BaseColumn):
         dshape = dshape_create(dshape)  # make sure it is valid
         if shape is None and data is not None:
             shape = dshape.shape
-        self._index = IndexTable()
         self.create_dataset(
             dshape=dshape, fillvalue=fillvalue, shape=shape, chunks=chunks
         )

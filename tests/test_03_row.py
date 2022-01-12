@@ -6,7 +6,7 @@ from progressivis.table.row import Row
 
 
 class TestRow(ProgressiveTest):
-    def test_row(self):
+    def test_row(self) -> None:
         table = Table(
             "table", data={"a": [1, 2, 3], "b": [10.1, 0.2, 0.3]}, create=True
         )

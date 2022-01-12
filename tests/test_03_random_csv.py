@@ -8,7 +8,7 @@ from . import ProgressiveTest
 
 
 class TestRandomCsv(ProgressiveTest):
-    def setUp(self):
+    def setUp(self) -> None:
         # fixed rows number
         self.dtemp = tempfile.mkdtemp(prefix="p10s_")
         fixed_rows_obj = RandomBytesIO(cols=10, rows=50)
@@ -19,16 +19,16 @@ class TestRandomCsv(ProgressiveTest):
         self.fixed_size_file = os.path.join(self.dtemp, "fixed_size.csv")
         fixed_size_obj.save(self.fixed_size_file)
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         shutil.rmtree(self.dtemp)
 
-    def test_size(self):
+    def test_size(self) -> None:
         fixed_rows_obj = RandomBytesIO(cols=10, rows=50)
         self.assertEqual(os.stat(self.fixed_rows_file).st_size, fixed_rows_obj.size())
         fixed_size_obj = RandomBytesIO(cols=10, size=7777)
         self.assertEqual(os.stat(self.fixed_size_file).st_size, fixed_size_obj.size())
 
-    def test_read(self):
+    def test_read(self) -> None:
         fixed_rows_obj = RandomBytesIO(cols=10, rows=50)
         with open(self.fixed_rows_file) as fd:
             for n in [7, 77, 777, 7007]:
@@ -40,7 +40,7 @@ class TestRandomCsv(ProgressiveTest):
                 self.assertEqual(fixed_size_obj.read(n), fd.read(n).encode("utf-8"))
                 self.assertEqual(fixed_size_obj.tell(), fd.tell())
 
-    def test_read_all(self):
+    def test_read_all(self) -> None:
         fixed_rows_obj = RandomBytesIO(cols=10, rows=50)
         with open(self.fixed_rows_file) as fd:
             self.assertEqual(fixed_rows_obj.read(), fd.read().encode("utf-8"))
@@ -50,7 +50,7 @@ class TestRandomCsv(ProgressiveTest):
             self.assertEqual(fixed_size_obj.read(), fd.read().encode("utf-8"))
             self.assertEqual(fixed_size_obj.tell(), fd.tell())
 
-    def test_iter(self):
+    def test_iter(self) -> None:
         fixed_rows_obj = RandomBytesIO(cols=10, rows=50)
         with open(self.fixed_rows_file) as fd:
             for row in fixed_rows_obj:
@@ -60,7 +60,7 @@ class TestRandomCsv(ProgressiveTest):
             for row in fixed_size_obj:
                 self.assertEqual(row, fd.readline())
 
-    def test_readline(self):
+    def test_readline(self) -> None:
         fixed_rows_obj = RandomBytesIO(cols=10, rows=50)
         with open(self.fixed_rows_file) as fd:
             for _ in range(50):
@@ -70,7 +70,7 @@ class TestRandomCsv(ProgressiveTest):
             for _ in range(50):
                 self.assertEqual(fixed_size_obj.readline(), fd.readline())
 
-    def test_readlines(self):
+    def test_readlines(self) -> None:
         fixed_rows_obj = RandomBytesIO(cols=10, rows=50)
         with open(self.fixed_rows_file) as fd:
             self.assertEqual(fixed_rows_obj.readlines(), fd.readlines())

@@ -74,9 +74,9 @@ class Merge(NAry):
 
     def __init__(self, **kwds: Any) -> None:
         """Merge(how='inner', on=None, left_on=None, right_on=None,
-                 left_index=False, right_index=False,
-                sort=False,suffixes=('_x', '_y'), copy=True,
-                indicator=False)
+         left_index=False, right_index=False,
+        sort=False,suffixes=('_x', '_y'), copy=True,
+        indicator=False)
         """
         super(Merge, self).__init__(**kwds)
         self.merge_kwds = filter_kwds(kwds, merge)

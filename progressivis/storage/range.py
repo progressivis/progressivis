@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from collections import Iterable
 import logging
 
 import numpy as np
@@ -10,7 +9,7 @@ from progressivis.core.bitmap import bitmap
 from .base import Dataset
 from .hierarchy import AttributeImpl
 
-from typing import Union, Optional, Any, TYPE_CHECKING, Sized
+from typing import Union, Optional, Any, TYPE_CHECKING, Sized, Iterator, Iterable
 
 
 if TYPE_CHECKING:
@@ -133,6 +132,9 @@ class RangeDataset(Dataset):
 
     def __len__(self) -> int:
         return self._shape[0]
+
+    def __iter__(self) -> Iterator[int]:
+        return iter(range(self._shape[0]))
 
     @property
     def attrs(self) -> Attribute:

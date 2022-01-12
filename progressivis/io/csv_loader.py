@@ -46,7 +46,7 @@ class CSVLoader(TableModule):
     def __init__(
         self,
         filepath_or_buffer: Optional[Any] = None,
-        filter_: Optional[Callable[[pd.DataFrame], bool]] = None,
+        filter_: Optional[Callable[[pd.DataFrame], pd.DataFrame]] = None,
         force_valid_ids: bool = True,
         fillvalues: Optional[Dict[str, Any]] = None,
         as_array: Optional[Any] = None,
@@ -372,7 +372,7 @@ class CSVLoader(TableModule):
             logger.error("Received 0 elements")
             raise ProgressiveStopIteration
         if self._filter is not None:
-            df_list = [df for df in df_list if not self._filter(df)]
+            df_list = [self._filter(df) for df in df_list]
         creates = sum([len(df) for df in df_list])
         if creates == 0:
             logger.info("frame has been filtered out")
@@ -411,7 +411,9 @@ class CSVLoader(TableModule):
             ):
                 table = self.table
                 snapshot = self.parser.get_snapshot(
-                    run_number=run_number, table_name=table.name, last_id=table.last_id,
+                    run_number=run_number,
+                    table_name=table.name,
+                    last_id=table.last_id,
                 )
                 self._recovery_table = Table(
                     name=self._recovery_table_name,
@@ -421,7 +423,10 @@ class CSVLoader(TableModule):
                 self._recovery_table_inv = Table(
                     name=self._recovery_table_inv_name,
                     data=pd.DataFrame(
-                        dict(table_name=table.name, csv_input=self.filepath_or_buffer,),
+                        dict(
+                            table_name=table.name,
+                            csv_input=self.filepath_or_buffer,
+                        ),
                         index=[0],
                     ),
                     create=True,
@@ -429,7 +434,9 @@ class CSVLoader(TableModule):
                 self._last_saved_id = table.last_id
             elif self.parser.is_flushed() and needs_save and self._save_context:
                 snapshot = self.parser.get_snapshot(
-                    run_number=run_number, last_id=table.last_id, table_name=table.name,
+                    run_number=run_number,
+                    last_id=table.last_id,
+                    table_name=table.name,
                 )
                 assert self._recovery_table
                 self._recovery_table.add(snapshot)

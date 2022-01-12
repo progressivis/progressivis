@@ -12,8 +12,9 @@ from ..table.table import Table
 from typing import Union, Dict, Any, Tuple, Callable
 
 
-def make_local(df: Union[BaseTable, Dict[str, Any]],
-               px: str) -> Dict[str, np.ndarray[Any, Any]]:
+def make_local(
+    df: Union[BaseTable, Dict[str, Any]], px: str
+) -> Dict[str, np.ndarray[Any, Any]]:
     if isinstance(df, dict):
         return make_local_dict(df, px)
     arr = df.to_array()
@@ -33,7 +34,9 @@ def make_local_dict(df: Dict[str, Any], px: str) -> Dict[str, np.ndarray[Any, An
     return result
 
 
-def get_ufunc_args(col_expr: Any, local_env: Any) -> Tuple[Callable[..., Any], Tuple[Any, ...]]:
+def get_ufunc_args(
+    col_expr: Any, local_env: Any
+) -> Tuple[Callable[..., Any], Tuple[Any, ...]]:
     assert isinstance(col_expr, tuple) and len(col_expr) in (2, 3)
     if len(col_expr) == 2:
         return col_expr[0], (local_env[col_expr[1]],)  # tuple, len==1
@@ -53,8 +56,7 @@ class MixUfuncABC(TableModule):
     def run_step(
         self, run_number: int, step_size: int, howlong: float
     ) -> ReturnRunStep:
-        """
-        """
+        """ """
         reset_all = False
         for slot in self._input_slots.values():
             if slot is None:

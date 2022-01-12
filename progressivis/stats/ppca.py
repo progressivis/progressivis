@@ -63,8 +63,7 @@ class PPCA(TableModule):
     def run_step(
         self, run_number: int, step_size: int, howlong: float
     ) -> ReturnRunStep:
-        """
-        """
+        """ """
         assert self.context
         with self.context as ctx:
             table = ctx.table.data()
@@ -198,10 +197,7 @@ class PPCATransformer(TableModule):
             scheduler = self.scheduler()
             with scheduler:
                 self.sample = Sample(
-                    samples=100,
-                    required="select",
-                    group=self.name,
-                    scheduler=scheduler
+                    samples=100, required="select", group=self.name, scheduler=scheduler
                 )
                 self.sample.input.table = input_slot
                 self.input.samples = self.sample.output.select
@@ -302,8 +298,9 @@ class PPCATransformer(TableModule):
             return self._prev_samples
         return super().get_data(name)
 
-    def _make_df(self, data: np.ndarray[Any, Any]) -> Union[Dict[str, np.ndarray[Any, Any]],
-                                                            pd.DataFrame]:
+    def _make_df(
+        self, data: np.ndarray[Any, Any]
+    ) -> Union[Dict[str, np.ndarray[Any, Any]], pd.DataFrame]:
         if self._as_array:
             return {self._as_array: data}
         cols = [f"_pc{i}" for i in range(data.shape[1])]
@@ -313,9 +310,10 @@ class PPCATransformer(TableModule):
     @process_slot("samples", reset_if=False)
     @process_slot("transformer", reset_if=False)
     @run_if_any
-    def run_step(self, run_number: int, step_size: int, howlong: float) -> ReturnRunStep:
-        """
-        """
+    def run_step(
+        self, run_number: int, step_size: int, howlong: float
+    ) -> ReturnRunStep:
+        """ """
         assert self.context
         with self.context as ctx:
             input_table = ctx.table.data()

@@ -11,6 +11,7 @@ from .bitmap import bitmap
 import weakref as wr
 
 import sys
+
 if sys.version_info >= (3, 8):
     from typing import Literal
 else:

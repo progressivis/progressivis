@@ -31,7 +31,7 @@ class Input(TableModule):
         return self._return_run_step(self.state_blocked, steps_run=0)
 
     async def from_input(self, msg: JSon) -> str:
-        if not isinstance(msg, (list, dict)):
+        if not isinstance(msg, dict):
             msg = {"input": msg}
         self.table.add(msg)
         return ""

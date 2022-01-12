@@ -1,19 +1,13 @@
-from collections import namedtuple
-
 from progressivis.core.bitmap import bitmap
 from progressivis.core.changemanager_bitmap import BitmapChangeManager
+from progressivis.table.changemanager_table_selected import FakeSlot
 
 from . import ProgressiveTest
 
 
-class FakeSlot(namedtuple("FakeSlot", ["table"])):
-    def data(self):
-        return self.table
-
-
 class TestBitmapChangeManager(ProgressiveTest):
-    def test_bitmapchangemanager(self):
-        mid1 = 1
+    def test_bitmapchangemanager(self) -> None:
+        mid1 = "m1"
         bm = bitmap([1, 2, 3])
         slot = FakeSlot(bm)
 

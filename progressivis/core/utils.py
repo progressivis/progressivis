@@ -45,7 +45,7 @@ from typing import (
     Callable,
     Iterator,
     Sized,
-    # TypeGuard,
+    Awaitable,
     TYPE_CHECKING,
 )
 
@@ -926,7 +926,7 @@ async def asynchronize(f: Callable[..., Any], *args: Any, **kwargs: Any) -> Any:
     return await loop.run_in_executor(None, fun)
 
 
-def gather_and_run(*args: Any) -> None:
+def gather_and_run(*args: Awaitable[Any]) -> None:
     """
     this function avoids the use on the "%gui asyncio" magic in notebook
     """

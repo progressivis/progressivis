@@ -127,10 +127,16 @@ class RangeQuery2dImpl:  # (ModuleImpl):
         self._table = table
         self.is_started = True
         return self.resume(
-            hist_index_x, hist_index_y,
-            lower_x, upper_x, lower_y, upper_y,
+            hist_index_x,
+            hist_index_y,
+            lower_x,
+            upper_x,
+            lower_y,
+            upper_y,
             limit_changed,
-            created, updated, deleted
+            created,
+            updated,
+            deleted,
         )
 
 
@@ -151,7 +157,7 @@ class RangeQuery2d(TableModule):
         SlotDescriptor("min", type=PsDict, required=False),
         SlotDescriptor("max", type=PsDict, required=False),
         SlotDescriptor("hist_x", type=Table, required=True),
-        SlotDescriptor("hist_y", type=Table, required=True)
+        SlotDescriptor("hist_y", type=Table, required=True),
     ]
     outputs = [
         SlotDescriptor("min", type=Table, required=False),
@@ -264,7 +270,9 @@ class RangeQuery2d(TableModule):
                 #     hist_index_y,
                 #     approximate=self._approximate,
                 # )
-                range_query.input.table = input_module.output[input_slot]  # hist_index_x.output.result
+                range_query.input.table = input_module.output[
+                    input_slot
+                ]  # hist_index_x.output.result
                 if min_value:
                     assert isinstance(min_value, Module)
                     range_query.input.lower = min_value.output.result

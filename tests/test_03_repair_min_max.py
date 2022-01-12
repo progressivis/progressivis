@@ -57,7 +57,8 @@ class MyStirrer(TableModule):
         input_table = input_slot.data()
         if self.result is None:
             self.result = Table(
-                self.generate_table_name("stirrer"), dshape=input_table.dshape,
+                self.generate_table_name("stirrer"),
+                dshape=input_table.dshape,
             )
         v = input_table.loc[fix_loc(created), :]
         self.result.append(v)

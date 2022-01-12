@@ -416,7 +416,7 @@ class Table(IndexTable):
         dshape: Optional[Union[str, DataShape]] = None,
         **kwds: Any,
     ) -> Table:
-        """offsets is a list of indices or pairs. """
+        """offsets is a list of indices or pairs."""
         if offsets is None:
             offsets = [(i, i + 1) for i in range(array.shape[1])]
         elif offsets is not None:

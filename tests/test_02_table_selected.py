@@ -9,11 +9,11 @@ import numpy as np
 
 
 class TestTableSelected(ProgressiveTest):
-    def setUp(self):
+    def setUp(self) -> None:
         super(TestTableSelected, self).setUp()
-        self.scheduler = Scheduler.default
+        self.scheduler_ = Scheduler.default
 
-    def test_loc_table_selection(self):
+    def test_loc_table_selection(self) -> None:
         t = Table("table_for_sel", dshape="{a: int, b: float32}", create=True)
         t.resize(10)
         ivalues = np.random.randint(100, size=20)
@@ -23,6 +23,7 @@ class TestTableSelected(ProgressiveTest):
         t.append({"a": ivalues[10:], "b": fvalues[10:]})
         sel = bitmap(range(5, 8))
         view = t.loc[sel, :]
+        assert view is not None
         self.assertEqual(type(view), BaseTable)
         self.assertTrue(np.array_equal(view[0].value, ivalues[5:8]))
         self.assertEqual(view.at[6, "a"], ivalues[6])

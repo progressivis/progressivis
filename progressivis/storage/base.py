@@ -1,9 +1,19 @@
 from __future__ import annotations
 
-from typing import Callable, Union, Optional, Dict, Any, Tuple, TYPE_CHECKING, Iterable
-
 from abc import ABCMeta, abstractmethod, abstractproperty
 from contextlib import contextmanager
+
+from typing import (
+    Callable,
+    Union,
+    Optional,
+    Dict,
+    Any,
+    Tuple,
+    TYPE_CHECKING,
+    Iterable,
+    Iterator,
+)
 
 if TYPE_CHECKING:
     import numpy as np
@@ -90,6 +100,10 @@ class DatasetFactory(StorageObject):
     def __contains__(self, name: str) -> bool:
         pass
 
+    @abstractmethod
+    def __iter__(self) -> Iterator[str]:
+        pass
+
 
 class Group(DatasetFactory):
     default: Optional[Callable[..., Group]] = None
@@ -127,10 +141,6 @@ class Group(DatasetFactory):
 
     @abstractmethod
     def __delitem__(self, name: str) -> None:
-        pass
-
-    @abstractmethod
-    def __contains__(self, name: str) -> bool:
         pass
 
     def close_all(self) -> None:

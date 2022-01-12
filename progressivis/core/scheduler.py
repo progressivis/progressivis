@@ -131,6 +131,7 @@ class Scheduler:
             await aio.sleep(SHORTCUT_TIME)
             self._module_selection = None
             self.shortcut_evt.clear()
+        # print("Leaving shortcut_manager()")
 
     def new_run_number(self) -> int:
         self._run_number += 1
@@ -335,18 +336,26 @@ class Scheduler:
         self._running = True
         self._start = default_timer()
         self._before_run()
-        runners = [
-            aio.create_task(self._run_loop()),
-            aio.create_task(self.shortcut_manager()),
-        ]
+        run_loop = aio.create_task(self._run_loop())
+        shortcut_loop = aio.create_task(self.shortcut_manager())
+        runners = [run_loop, shortcut_loop]
         runners.extend([aio.create_task(coro) for coro in self.coros])
+        for r in runners:
+            assert isinstance(r, aio.Task)
         # TODO: find the "right" initialisation value ...
         KEEP_RUNNING = min(50, len(self._run_list) * 3)
         self._keep_running = KEEP_RUNNING
         await aio.gather(*runners)
-        modules = [self._modules[m] for m in self._runorder]
-        for module in reversed(modules):
-            module.ending()
+        # while True:
+        #     done, pending = await aio.wait(runners, return_when=aio.FIRST_COMPLETED)
+        #     # print(f"In scheduler, tasks {done} done")
+        #     if run_loop in done:
+        #         break
+        #     runners = list(pending)
+        # print("Leaving run()")
+        # modules = [self._modules[m] for m in self._runorder]
+        # for module in reversed(modules):
+        #     module.ending()
         self._running = False
         self._stopped = True
         self._after_run()
@@ -388,6 +397,8 @@ class Scheduler:
             await aio.sleep(0)
         if self.shortcut_evt is not None:
             self.shortcut_evt.set()
+        self._task = False
+        # print("Leaving _run_loop()")
 
     async def _next_module(self) -> AsyncGenerator[Module, None]:
         """

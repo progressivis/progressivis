@@ -229,7 +229,7 @@ class Join(NAry):
 
     def __init__(self, **kwds: Any) -> None:
         """Join(on=None, how='left', lsuffix='', rsuffix='',
-                sort=False,name=None)
+        sort=False,name=None)
         """
         super(Join, self).__init__(**kwds)
         self.join_kwds = filter_kwds(kwds, join)

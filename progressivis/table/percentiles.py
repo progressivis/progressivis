@@ -28,7 +28,10 @@ class Percentiles(TableModule):
         self.default_step_size = 1000
 
     def compute_percentiles(
-        self, points: Dict[str, float], input_table: BaseTable, hist_index: HistogramIndex
+        self,
+        points: Dict[str, float],
+        input_table: BaseTable,
+        hist_index: HistogramIndex,
     ) -> Dict[str, float]:
         column = input_table[hist_index.column]
         hii = hist_index._impl
@@ -118,9 +121,8 @@ class Percentiles(TableModule):
         if not hist_index._impl:
             return self._return_run_step(self.state_blocked, steps_run=0)
         computed = self.compute_percentiles(
-            percentiles_slot.data(),
-            input_slot.data(),
-            hist_index)
+            percentiles_slot.data(), input_slot.data(), hist_index
+        )
         table: Table
         if not self.result:
             table = Table(name=None, dshape=percentiles_slot.data().dshape)

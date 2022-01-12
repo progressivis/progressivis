@@ -8,8 +8,10 @@ import pandas as pd
 from sklearn.cluster import MiniBatchKMeans  # type: ignore
 from sklearn.utils.validation import check_random_state  # type: ignore
 from progressivis import ProgressiveError, SlotDescriptor
+from progressivis.core.module import ReturnRunStep, JSon, Module
+from progressivis.core.bitmap import bitmap
 from progressivis.core.utils import indices_len
-from ..table.module import TableModule, ReturnRunStep, JSon, Module
+from ..table.module import TableModule
 from ..table.table_base import BaseTable
 from ..table import Table, TableSelectedView
 from ..table.dshape import dshape_from_dtype, dshape_from_columns
@@ -43,13 +45,13 @@ class MBKMeans(TableModule):
     def __init__(
         self,
         n_clusters: int,
-        columns: List[str] = None,
+        columns: Optional[List[str]] = None,
         batch_size: int = 100,
         tol: float = 0.01,
-        is_input=True,
-        is_greedy=True,
+        is_input: bool = True,
+        is_greedy: bool = True,
         random_state: Union[int, np.random.RandomState, None] = None,
-        **kwds,
+        **kwds: Any,
     ):
         super().__init__(columns=columns, **kwds)
         self.mbk = MiniBatchKMeans(
@@ -68,15 +70,15 @@ class MBKMeans(TableModule):
         self._tol = tol
         self._conv_out = PsDict({"convergence": "unknown"})
         self.params.samples = n_clusters
-        self._is_greedy = is_greedy
-        self._arrays: Optional[Dict[int, np.ndarray]] = None
+        self._is_greedy: bool = is_greedy
+        self._arrays: Optional[Dict[int, np.ndarray[Any, Any]]] = None
         # self.convergence_context = {}
 
     def predict_step_size(self, duration: float) -> int:
         p = super().predict_step_size(duration)
         return max(p, self.n_clusters)
 
-    def reset(self, init="k-means++") -> None:
+    def reset(self, init: str = "k-means++") -> None:
         self.mbk = MiniBatchKMeans(
             n_clusters=self.mbk.n_clusters,
             batch_size=self.mbk.batch_size,
@@ -102,7 +104,7 @@ class MBKMeans(TableModule):
             logger.debug("Not maintaining labels")
             self.maintain_labels(False)
 
-    def maintain_labels(self, yes=True) -> None:
+    def maintain_labels(self, yes: bool = True) -> None:
         if yes and self._labels is None:
             self._labels = Table(
                 self.generate_table_name("labels"),
@@ -125,15 +127,16 @@ class MBKMeans(TableModule):
     def is_greedy(self) -> bool:
         return self._is_greedy
 
-    def _process_labels(self, locs):
+    def _process_labels(self, locs: bitmap) -> None:
         labels = self.mbk.labels_
+        assert self._labels is not None
         u_locs = locs & self._labels.index  # ids to update
         if not u_locs:  # shortcut
             self._labels.append({"labels": labels}, indices=locs)
             return
         a_locs = locs - u_locs  # ids to append
         if not a_locs:  # 2nd shortcut
-            self._labels.loc[locs, "labels"] = labels
+            assert self._labels is not None
             return
         df = pd.DataFrame({"labels": labels}, index=locs)
         u_labels = df.loc[u_locs, "labels"]
@@ -182,7 +185,7 @@ class MBKMeans(TableModule):
         n_samples = len(input_df)
         if self._arrays is None:
 
-            def _array_factory():
+            def _array_factory() -> np.ndarray[Any, Any]:
                 return np.empty((self._key, n_features), dtype=dtype)
 
             self._arrays = defaultdict(_array_factory)
@@ -195,7 +198,7 @@ class MBKMeans(TableModule):
             # tol = 0
             prev_centers = np.zeros(0, dtype=dtype)
         random_state = check_random_state(self.mbk.random_state)
-        X: Optional[np.ndarray] = None
+        X: Optional[np.ndarray[Any, Any]] = None
         # Attributes to monitor the convergence
         self.mbk._ewa_inertia = None
         self.mbk._ewa_inertia_min = None
@@ -219,7 +222,7 @@ class MBKMeans(TableModule):
                 center_mask = nearest_center == ci
                 if np.count_nonzero(center_mask) > 0:
                     diff = centers[ci].ravel() - prev_centers[ci].ravel()
-                    squared_diff += np.dot(diff, diff)
+                    squared_diff += np.dot(diff, diff)  # type: ignore
             if self.mbk._mini_batch_convergence(
                 iter_, step_size, n_samples, squared_diff, batch_inertia
             ):
@@ -268,7 +271,9 @@ class MBKMeans(TableModule):
         self.mbk.cluster_centers_[c] = list(centers)
         return self.mbk.cluster_centers_.tolist()
 
-    def create_dependent_modules(self, input_module: Module, input_slot="result"):
+    def create_dependent_modules(
+        self, input_module: Module, input_slot: str = "result"
+    ) -> None:
         with self.grouped():
             s = self.scheduler()
             self.input_module = input_module
@@ -293,7 +298,7 @@ class MBKMeansFilter(TableModule):
         SlotDescriptor("labels", type=Table, required=True),
     ]
 
-    def __init__(self, sel, **kwds):
+    def __init__(self, sel: Any, **kwds: Any) -> None:
         self._sel = sel
         super().__init__(**kwds)
 
@@ -321,7 +326,9 @@ class MBKMeansFilter(TableModule):
                 self.selected.selection = ctx.labels.data().selection
             return self._return_run_step(self.next_state(ctx.table), steps_run=steps)
 
-    def create_dependent_modules(self, mbkmeans, data_module, data_slot):
+    def create_dependent_modules(
+        self, mbkmeans: MBKMeans, data_module: Module, data_slot: str
+    ) -> None:
         with self.grouped():
             scheduler = self.scheduler()
             filter_ = FilterMod(expr=f"labels=={self._sel}", scheduler=scheduler)

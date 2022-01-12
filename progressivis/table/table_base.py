@@ -29,6 +29,7 @@ from .dshape import dshape_print, dshape_create, DataShape, EMPTY_DSHAPE
 from .tablechanges import TableChanges as TableChanges
 
 import sys
+
 if sys.version_info >= (3, 8):
     from typing import Literal
 else:
@@ -52,7 +53,7 @@ if TYPE_CHECKING:
     from .column_base import BaseColumn
     from .row import Row
 
-    BinaryRet = Union[Dict[str, np.ndarray[Any, Any]], 'BaseTable']
+    BinaryRet = Union[Dict[str, np.ndarray[Any, Any]], "BaseTable"]
     ColIndexer = Union[int, np.integer[Any], str]
 
 Shape = Tuple[int, ...]
@@ -192,8 +193,7 @@ class _At(_BaseLoc):
 
 class BaseTable(metaclass=ABCMeta):
     # pylint: disable=too-many-public-methods, too-many-instance-attributes
-    """Base class for Tables.
-    """
+    """Base class for Tables."""
 
     def __init__(
         self,
@@ -202,9 +202,9 @@ class BaseTable(metaclass=ABCMeta):
         columns: Optional[List[BaseColumn]] = None,
         columndict: Optional[Dict[str, int]] = None,
     ) -> None:
-        self._base: Optional[BaseTable] = base if (
-            base is None or base._base is None
-        ) else base._base
+        self._base: Optional[BaseTable] = (
+            base if (base is None or base._base is None) else base._base
+        )
         self._selection: Union[slice, bitmap] = selection
         self._columns: List[BaseColumn] = [] if columns is None else columns
         self._columndict: Dict[str, int] = dict() if columndict is None else columndict
@@ -420,7 +420,7 @@ class BaseTable(metaclass=ABCMeta):
     @overload
     def to_dict(
         self,
-        orient: Union[Literal["dict"], Literal["split"]],
+        orient: Union[Literal["dict"], Literal["split"]] = "dict",
         columns: Optional[List[str]] = None,
     ) -> Dict[str, Any]:
         ...
@@ -429,7 +429,7 @@ class BaseTable(metaclass=ABCMeta):
     def to_dict(
         self,
         orient: Union[
-            Literal["list"], Literal["rows"], Literal["datatable"], Literal["record"]
+            Literal["list"], Literal["rows"], Literal["datatable"], Literal["records"]
         ],
         columns: Optional[List[str]] = None,
     ) -> List[Any]:
@@ -448,7 +448,7 @@ class BaseTable(metaclass=ABCMeta):
 
         Parameters
         ----------
-        orient : {'dict', 'list', 'split', 'rows', 'datatable', 'record', 'index'}
+        orient : {'dict', 'list', 'split', 'rows', 'datatable', 'records', 'index'}
             TODO
         columns : list or `None`
             TODO

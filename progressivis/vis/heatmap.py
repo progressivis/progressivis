@@ -19,7 +19,7 @@ from progressivis.table import Table
 from progressivis.table.module import TableModule
 from progressivis.stats.histogram2d import Histogram2D
 
-from typing import cast, Optional
+from typing import cast, Optional, Any
 
 
 logger = logging.getLogger(__name__)
@@ -42,8 +42,8 @@ class Heatmap(TableModule):
     #           UPDATE_COLUMN_DESC]
     schema = "{filename: string, time: int64}"
 
-    def __init__(self, colormap: None = None, **kwds):
-        super(Heatmap, self).__init__(**kwds)
+    def __init__(self, colormap: None = None, **kwds: Any) -> None:
+        super(Heatmap, self).__init__(output_required=False, **kwds)
         self.tags.add(self.TAG_VISUALIZATION)
         self.colormap = colormap
         self.default_step_size = 1
@@ -133,7 +133,7 @@ class Heatmap(TableModule):
     def get_visualization(self) -> str:
         return "heatmap"
 
-    def to_json(self, short=False, with_speed: bool = True) -> JSon:
+    def to_json(self, short: bool = False, with_speed: bool = True) -> JSon:
         json = super(Heatmap, self).to_json(short, with_speed)
         if short:
             return json
@@ -165,7 +165,8 @@ class Heatmap(TableModule):
             json["image"] = row["filename"]
         return json
 
-    def get_image(self, run_number: int = None) -> Optional[str]:
+    def get_image(self, run_number: Optional[int] = None) -> Optional[str]:
+        filename: Optional[str]
         table = self.table
         if table is None or len(table) == 0:
             return None
@@ -184,7 +185,7 @@ class Heatmap(TableModule):
                 filename = table["filename"][idx[0]]
         return filename
 
-    def get_image_bin(self, run_number: int = None) -> Optional[bytes]:
+    def get_image_bin(self, run_number: Optional[int] = None) -> Optional[bytes]:
         file_url = self.get_image(run_number)
         if file_url:
             payload = file_url.split(",", 1)[1]

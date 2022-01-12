@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import logging
-from progressivis.table.module import TableModule, Module
+from progressivis.core.module import Module
+from progressivis.table.module import TableModule
 
 from typing import (
     Type,
@@ -26,7 +27,7 @@ class ValidationError(RuntimeError):
     pass
 
 
-def filter_underscore(lst: Iterable[str]):
+def filter_underscore(lst: Iterable[str]) -> List[str]:
     return [elt for elt in lst if not elt.startswith("_")]
 
 
@@ -36,8 +37,8 @@ class Expr:
         module_class: Type[Module],
         args: Tuple[Any, ...],
         kwds: Dict[str, Any],
-        output_slot: str = None,
-        module: Module = None,
+        output_slot: Optional[str] = None,
+        module: Optional[Module] = None,
     ):
         self._module_class = module_class
         lazy = kwds.pop("lazy", False)
@@ -80,7 +81,7 @@ class Expr:
             module=self._module,
         )
 
-    def tee(self, lambda1, lambda2):
+    def tee(self, lambda1: Any, lambda2: Any) -> Any:
         lambda1(self)
         return lambda2(self)
 
@@ -108,7 +109,9 @@ class Expr:
         self._expr_kwds = modules
         self._non_expr_kwds = non_modules
 
-    def _connect(self, module: Module, expr: Expr, input_slot: str = None):
+    def _connect(
+        self, module: Module, expr: Expr, input_slot: Optional[str] = None
+    ) -> None:
         input_module = expr.module
         assert input_module
         output_slot = expr.output_slot
@@ -129,7 +132,7 @@ class Expr:
                 raise ValueError("Cannot extract input slot from module %s", module)
         input_module.connect_output(output_slot, module, input_slot)
 
-    def _instanciate_module(self):
+    def _instanciate_module(self) -> None:
         module = self._module_class(*self._non_expr_args, **self._non_expr_kwds)
         for expr in self._expr_args:
             self._connect(module, expr, None)
@@ -161,7 +164,7 @@ class Expr:
         assert self._module
         return self._module.scheduler()
 
-    def repipe(self, mod_name: str, out: str = None) -> Expr:
+    def repipe(self, mod_name: str, out: Optional[str] = None) -> Expr:
         mod_ = self.scheduler()[mod_name]
         if isinstance(mod_, TableModule):
             from .table import TableExpr
@@ -172,7 +175,7 @@ class Expr:
         return Expr(type(mod_), (), dict(lazy=True), module=mod_, output_slot=out)
 
     def fetch(
-        self, mod_name: str, out: str = None
+        self, mod_name: str, out: Optional[str] = None
     ) -> Expr:  # a simple alias for repipe
         return self.repipe(mod_name, out)
 

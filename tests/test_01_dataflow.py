@@ -280,7 +280,9 @@ class TestDataflow(ProgressiveTest):
 
     def test_dataflow_7_dynamic(self):
         s = self.scheduler()
-        table = RandomTable(name="table", columns=["a", "b", "c"], throttle=1000, scheduler=s)
+        table = RandomTable(
+            name="table", columns=["a", "b", "c"], throttle=1000, scheduler=s
+        )
         sink = Sink(name="sink", scheduler=s)
         sink.input.inp = table.output.result
         s.commit()
@@ -295,7 +297,7 @@ class TestDataflow(ProgressiveTest):
                     name="scatterplot_1",
                     classes=[("Scatterplot", "a", "b")],
                     approximate=True,
-                    scheduler=scheduler
+                    scheduler=scheduler,
                 )
                 sp.create_dependent_modules(table, "result")
                 print(f"Created scatterplot_1, groups: {dataflow.groups()}")
@@ -321,7 +323,7 @@ class TestDataflow(ProgressiveTest):
                     name="scatterplot_2",
                     classes=[("Scatterplot", "a", "c")],
                     approximate=True,
-                    scheduler=scheduler
+                    scheduler=scheduler,
                 )
                 sp.create_dependent_modules(table, "result")
             scheduler.on_loop(modify_4, 10)  # Schedule the next activity

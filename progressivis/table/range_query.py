@@ -40,9 +40,7 @@ class _Selection:
 
 
 class RangeQueryImpl:  # (ModuleImpl):
-    def __init__(
-        self, column: list[str], approximate: bool
-    ):
+    def __init__(self, column: list[str], approximate: bool):
         super(RangeQueryImpl, self).__init__()
         self._table: Optional[BaseTable] = None
         self._column = column
@@ -102,8 +100,7 @@ class RangeQueryImpl:  # (ModuleImpl):
 
 
 class RangeQuery(TableModule):
-    """
-    """
+    """ """
 
     parameters = [
         ("column", np.dtype(object), "unknown"),

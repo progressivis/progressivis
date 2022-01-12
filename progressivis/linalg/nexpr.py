@@ -41,8 +41,7 @@ class NumExprABC(TableModule):
     def run_step(
         self, run_number: int, step_size: int, howlong: float
     ) -> ReturnRunStep:
-        """
-        """
+        """ """
         reset_all = False
         for slot in self._input_slots.values():
             if slot is None:

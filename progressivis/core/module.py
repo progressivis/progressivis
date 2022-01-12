@@ -43,6 +43,7 @@ from typing import (
     Type,
     Union,
     ClassVar,
+    Awaitable,
     TYPE_CHECKING,
 )
 
@@ -128,8 +129,7 @@ class ModuleState(IntEnum):
 
 
 class Module(metaclass=ModuleMeta):
-    """The Module class is the base class for all the progressive modules.
-    """
+    """The Module class is the base class for all the progressive modules."""
 
     parameters: Parameters = [
         ("quantum", np.dtype(float), 0.5),
@@ -252,7 +252,7 @@ class Module(metaclass=ModuleMeta):
         self.output = OutputSlots(self)
         self.steps_acc: int = 0
         self.wait_expr = aio.FIRST_COMPLETED
-        self.after_run_proc = None
+        self.after_run_proc: Optional[Callable[[Module, int], Awaitable[Any]]] = None
         self.context: Optional[_Context] = None
         # callbacks
         self._start_run: Optional[Callable[[Module, int], None]] = None
@@ -273,13 +273,11 @@ class Module(metaclass=ModuleMeta):
         return GroupContext(self.name)
 
     def scheduler(self) -> Scheduler:
-        """Return the scheduler associated with the module.
-        """
+        """Return the scheduler associated with the module."""
         return self._scheduler
 
     def dataflow(self) -> Optional[Dataflow]:
-        """Return the dataflow associated with the module at creation time.
-        """
+        """Return the dataflow associated with the module at creation time."""
         return self._scheduler.dataflow
 
     # def create_dependent_modules(self, *params, **kwds) -> None:  # pragma no cover
@@ -316,8 +314,7 @@ class Module(metaclass=ModuleMeta):
 
     def get_quality(self) -> float:
         # pylint: disable=no-self-use
-        """Quality value, should increase.
-        """
+        """Quality value, should increase."""
         return 0.0
 
     async def after_run(self, rn: int) -> None:
@@ -757,7 +754,9 @@ class Module(metaclass=ModuleMeta):
         # the module is blocked, cannot run any more, so it is terminated
         # too.
         logger.error(
-            "%s Not ready because is in weird state %s", self.name, self.state.name,
+            "%s Not ready because is in weird state %s",
+            self.name,
+            self.state.name,
         )
         return False
 
