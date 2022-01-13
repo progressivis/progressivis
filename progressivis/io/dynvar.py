@@ -4,13 +4,13 @@ from ..utils.psdict import PsDict
 
 
 class DynVar(TableModule):
-    def __init__(self, init_val=None, vocabulary=None, **kwds):
+    def __init__(self, init_val=None, translation=None, **kwds):
         super().__init__(**kwds)
         self._has_input = False
         self.prioritize = set()
-        if not (vocabulary is None or isinstance(vocabulary, dict)):
-            raise ProgressiveError("vocabulary must be a dictionary")
-        self._vocabulary = vocabulary
+        if not (translation is None or isinstance(translation, dict)):
+            raise ProgressiveError("translation must be a dictionary")
+        self._translation = translation
         if not (init_val is None or isinstance(init_val, dict)):
             raise ProgressiveError("init_val must be a dictionary")
         self.result = PsDict({} if init_val is None else init_val)
@@ -29,18 +29,19 @@ class DynVar(TableModule):
         # raise StopIteration()
 
     async def from_input(self, input_):
-        # import pdb;pdb.set_trace()
         if not isinstance(input_, dict):
             raise ProgressiveError("Expecting a dictionary")
         last = PsDict(self.result)  # shallow copy
         values = input_
-        if self._vocabulary is not None:
-            values = {self._vocabulary[k]: v for k, v in values.items()}
+        if self._translation is not None:
+            res = {}
+            for k, v in values.items():
+                for syn in self._translation[k]:
+                    res[syn] = v
+            values = res
         for (k, v) in input_.items():
             last[k] = v
-        await self.scheduler().for_input(self, self.prioritize)
-        # last['_update'] = run_number
+        await self.scheduler().for_input(self)
         self.result.update(values)
         self._has_input = True
-        # await aio.sleep(0)
         return ""
