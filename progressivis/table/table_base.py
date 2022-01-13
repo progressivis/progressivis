@@ -109,7 +109,7 @@ class _Loc(_BaseLoc):
         ...
 
     @overload
-    def __getitem__(self, key: Tuple[int, Union[slice, List[str]]]) -> Optional[Row]:
+    def __getitem__(self, key: Tuple[int, Union[slice, List[str], List[int]]]) -> Optional[Row]:
         ...
 
     @overload
@@ -118,14 +118,15 @@ class _Loc(_BaseLoc):
 
     @overload
     def __getitem__(
-        self, key: Union[bitmap, np.ndarray[Any, Any], Union[slice, List[str]]]
+        self, key: Union[bitmap, np.ndarray[Any, Any], slice, List[str], List[int]]
     ) -> Optional[BaseTable]:
         ...
 
     @overload
     def __getitem__(
         self,
-        key: Tuple[Union[bitmap, np.ndarray[Any, Any], slice], Union[slice, List[str]]],
+        key: Tuple[Union[bitmap, np.ndarray[Any, Any], slice],
+                   Union[int, str, slice, List[str]]],
     ) -> Optional[BaseTable]:
         ...
 
@@ -809,9 +810,26 @@ class BaseTable(metaclass=ABCMeta):
         else:
             raise ValueError("Unhandled key %s", colkey)
 
+    @overload
     def __setitem__(
-        self, colkey: Union[ColIndexer, Iterable[int], slice], values: Any
+        self,
+        key: Union[int, str],
+        values: Union[BaseColumn, np.ndarray[Any, Any], Iterable[Any]]
     ) -> None:
+        ...
+
+    @overload
+    def __setitem__(
+        self,
+        key: Union[
+            List[Any], Tuple[Any, Any], np.ndarray[Any, Any], slice, Iterable[int]
+        ],
+        values: Union[np.ndarray[Any, Any], BaseTable,
+                      Sequence[Union[BaseColumn, np.ndarray[Any, Any], Iterable[Any]]]]
+    ) -> None:
+        ...
+
+    def __setitem__(self, colkey: Any, values: Any) -> None:
         if isinstance(colkey, tuple):
             raise ValueError(
                 "Adding new columns ({}) via __setitem__"

@@ -9,10 +9,10 @@ from progressivis.core import aio
 
 @skip("Not ready")  # essay
 class TestHistogram1D(ProgressiveTest):
-    def tearDown(self):
+    def tearDown(self) -> None:
         StorageManager.default.end()
 
-    def test_histogram1d(self):
+    def test_histogram1d(self) -> None:
         s = self.scheduler()
         csv = CSVLoader(
             get_dataset("bigfile"),

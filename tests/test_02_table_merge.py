@@ -41,11 +41,11 @@ df_right2 = pd.DataFrame(
 
 
 class TestMergeTable(ProgressiveTest):
-    def setUp(self):
+    def setUp(self) -> None:
         super(TestMergeTable, self).setUp()
-        self.scheduler = Scheduler.default
+        self.scheduler_ = Scheduler.default
 
-    def test_merge1(self):
+    def test_merge1(self) -> None:
         table_left = Table(name="table_left", data=df_left1, create=True)
         print(repr(table_left))
         table_right = Table(

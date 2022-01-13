@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 __all__ = ["Scheduler"]
 
 KEEP_RUNNING = 5
-SHORTCUT_TIME = 1.5
+SHORTCUT_TIME: float = 1.5
 
 if TYPE_CHECKING:
     from progressivis.core.module import Module
@@ -114,7 +114,7 @@ class Scheduler:
         self._reachability: Reachability = {}
         self._start_inter: float = 0
         self._hibernate_cond: aio.Condition
-        self._keep_running = KEEP_RUNNING
+        self._keep_running: float = KEEP_RUNNING
         self.dataflow: Optional[Dataflow] = Dataflow(self)
         self.module_iterator = None
         self._enter_cnt = 1
@@ -122,16 +122,6 @@ class Scheduler:
         self._task = False
         self.shortcut_evt: aio.Event
         self.coros: List[Coroutine[Any, Any, Any]] = []
-
-    async def shortcut_manager(self) -> None:
-        while True:
-            await self.shortcut_evt.wait()
-            if self._stopped or not self._run_list:
-                break
-            await aio.sleep(SHORTCUT_TIME)
-            self._module_selection = None
-            self.shortcut_evt.clear()
-        # print("Leaving shortcut_manager()")
 
     def new_run_number(self) -> int:
         self._run_number += 1
@@ -320,7 +310,7 @@ class Scheduler:
         "Remove an idle callback."
         self._idle_procs.pop(idle_proc, None)
 
-    def on_loop(self, proc: TickProc, delay: int = 0) -> None:
+    def on_loop(self, proc: TickProc, delay: int = -1) -> None:
         assert callable(proc)
         self._loop_procs[proc] = delay
 
@@ -346,6 +336,7 @@ class Scheduler:
         KEEP_RUNNING = min(50, len(self._run_list) * 3)
         self._keep_running = KEEP_RUNNING
         await aio.gather(*runners)
+        # print("Leaving run()")
         # while True:
         #     done, pending = await aio.wait(runners, return_when=aio.FIRST_COMPLETED)
         #     # print(f"In scheduler, tasks {done} done")
@@ -361,19 +352,38 @@ class Scheduler:
         self._after_run()
         self.done()
 
+    async def shortcut_manager(self) -> None:
+        while not self._stopped and self._run_list:
+            # print("In shortcut_manager: Waiting for shortcut_evt")
+            await self.shortcut_evt.wait()
+            # print("In shortcut_manager: shortcut_evt received")
+            if self._stopped or not self._run_list:
+                break
+            # print(f"In shortcut_manager: Sleeping {SHORTCUT_TIME}s")
+            await aio.sleep(SHORTCUT_TIME)
+            # print("In shortcut_manager: End of sleep")
+            self._module_selection = None
+            # print("In shortcut_manager: shortcut_evt.clear()")
+            self.shortcut_evt.clear()
+        print("In shortcut_manager: leaving shortcut_manager()")
+
     async def _run_loop(self) -> None:
         """Main scheduler loop."""
         # pylint: disable=broad-except
+        blocked = 0  # all_blocked() cannot detect that all modules are blocked
         async for module in self._next_module():
+            await aio.sleep(0)
             if (
                 self.no_more_data()
-                and self.all_blocked()
+                and (self.all_blocked() or blocked == len(self._run_list))
                 and self.is_waiting_for_input()
             ):
-                if not self._keep_running:
+                if self._keep_running <= 0:
                     async with self._hibernate_cond:
+                        # print("Waiting for condition")
                         await self._hibernate_cond.wait()
-            if self._keep_running:
+            # print("_keep_running: ", self._keep_running)
+            if self._keep_running > 0:
                 self._keep_running -= 1
             if not self._consider_module(module):
                 logger.info(
@@ -383,18 +393,19 @@ class Scheduler:
                 continue
             # increment the run number, even if we don't call the module
             self._run_number += 1
-            # import pdb; pdb.set_trace()
             module.prepare_run(self._run_number)
             if not (module.is_ready() or self.has_input() or module.is_greedy()):
                 logger.info(
                     "Module %s not scheduled" " because not ready and has no input",
                     module.name,
                 )
+                blocked += 1
                 continue
+            blocked = 0
             await self._run_tick_procs()
+            await module.start_run(self._run_number)
             module.run(self._run_number)
             await module.after_run(self._run_number)
-            await aio.sleep(0)
         if self.shortcut_evt is not None:
             self.shortcut_evt.set()
         self._task = False
@@ -412,7 +423,7 @@ class Scheduler:
         while not self._stopped:
             # Apply changes in the dataflow
             if self._new_modules is not None:
-                self._update_modules()
+                await self._update_modules()
                 self._run_index = 0
                 first_run = self._run_number
             # If run_list empty, we're done
@@ -446,22 +457,28 @@ class Scheduler:
         from .module import Module
 
         for module in self._run_list:
-            if module.state != Module.state_blocked:
+            if module.state not in (Module.state_blocked, Module.state_suspended):
+                # print("all_blocked: False")
                 return False
+        # print("all_blocked: True")
         return True
 
     def is_waiting_for_input(self) -> bool:
         "Return True if there is at least one input module"
         for module in self._run_list:
             if module.is_input():
+                # print("is_waiting_for_input: True")
                 return True
+        # print("is_waiting_for_input: False")
         return False
 
     def no_more_data(self) -> bool:
         "Return True if at least one module has data input."
         for module in self._run_list:
             if module.is_data_input():
+                # print("no_more_data: False")
                 return False
+        # print("no_more_data: True")
         return True
 
     def commit(self) -> None:
@@ -488,10 +505,10 @@ class Scheduler:
         self.version += 1  # only increment if valid
         # The slots in the module,_modules, and _runorder will be updated
         # in _update_modules when the scheduler decides it is time to do so.
-        if not self._running:  # no need to delay updating the scheduler
-            self._update_modules()
+        # if not self._running:  # no need to delay updating the scheduler
+        #     self._update_modules()
 
-    def _update_modules(self) -> None:
+    async def _update_modules(self) -> None:
         if self._new_modules is None:
             return
         logger.info("Updating modules")
@@ -504,7 +521,7 @@ class Scheduler:
             logger.info(f"Scheduler deleted modules: {deleted}")
             print(f"# Scheduler deleted module(s): {deleted}")
             for mid in deleted:
-                self._modules[mid].ending()
+                await self._modules[mid].ending()
         self._modules = modules
         if not (deleted or added):
             logger.info("Scheduler updated with no new module(s)")
@@ -543,6 +560,7 @@ class Scheduler:
             has_run = await self._idle_procs.fire(self, self._run_number)
             if not has_run:
                 logger.info("sleeping %f", 0.2)
+                print("Sleeping 0.2")
                 aio.sleep(0.2)
         self._run_index = 0
 
@@ -570,6 +588,7 @@ class Scheduler:
 
     async def stop(self) -> None:
         "Stop the execution."
+        self._stopped = True
         if self.shortcut_evt is not None:
             self.shortcut_evt.set()
         async with self._hibernate_cond:

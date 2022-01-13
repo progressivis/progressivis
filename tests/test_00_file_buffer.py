@@ -12,16 +12,16 @@ S3_URL = "s3://h2o-release/h2o/master/1193/docs-website" "/resources/publicdata.
 
 
 class TestFileBuffer(ProgressiveTest):
-    def setUp(self):
+    def setUp(self) -> None:
         req = requests.get(HTTP_URL)
         _, self.tmp_file = tempfile.mkstemp(prefix="p10s_", suffix=".html")
         with open(self.tmp_file, "wb") as f:
             f.write(req.content)
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         os.remove(self.tmp_file)
 
-    def test_file_buffer(self):
+    def test_file_buffer(self) -> None:
         reader_http, _, _, size_http = filepath_to_buffer(HTTP_URL)
         self.assertGreater(size_http, 0)
         reader_s3, _, _, size_s3 = filepath_to_buffer(S3_URL)

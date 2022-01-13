@@ -61,4 +61,5 @@ __all__ = [
     "FIRST_COMPLETED",
     "ALL_COMPLETED",
     "create_task",
+    "run"
 ]

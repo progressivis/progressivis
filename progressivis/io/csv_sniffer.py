@@ -91,7 +91,7 @@ class CSVSniffer:
     delimiters = [",", ";", "<TAB>", "<SPACE>", ":", "skip initial space"]
     del_values = [",", ";", "\t", " ", ":", "skip"]
 
-    def __init__(self, path: str, lines: int = 100, **args: Dict[str, Any]) -> None:
+    def __init__(self, path: str, lines: int = 100, **args: Any) -> None:
         self.path = path
         self._args = args
         self.lines = widgets.BoundedIntText(

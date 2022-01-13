@@ -87,6 +87,7 @@ class _DataClass:
             range_query_2d.create_dependent_modules(
                 input_module, input_slot, min_value=False, max_value=False
             )
+            assert self.min_value is not None and self.max_value is not None
             range_query_2d.input.lower = self.min_value.output.result
             range_query_2d.input.upper = self.max_value.output.result
             if histogram2d is None:
@@ -118,7 +119,7 @@ class MCScatterPlot(NAry):
 
     def __init__(
         self,
-        classes: List[Union[Dict[str, Any], Tuple[str, str, str]]],
+        classes: Union[List[Dict[str, Any]], List[Tuple[str, ...]]],
         x_label: str = "x",
         y_label: str = "y",
         approximate: bool = False,
@@ -130,10 +131,12 @@ class MCScatterPlot(NAry):
         self._classes = classes  # TODO: check it ...
         self._x_label = x_label
         self._y_label = y_label
+        syn_x: Tuple[str, ...]
+        syn_y: Tuple[str, ...]
         if isinstance(classes[0], tuple):
             syn_x, syn_y = zip(*[(x, y) for (_, x, y, *ignored) in classes])
-        else:
-            syn_x, syn_y = zip(*[(d["x_column"], d["y_column"]) for d in classes])
+        elif isinstance(classes[0], dict):
+            syn_x, syn_y = zip(*[(d["x_column"], d["y_column"]) for d in classes])  # type: ignore
         self._translation = {x_label: syn_x, y_label: syn_y}
         self._translated_keys = set(syn_x) | set(syn_y)
         self._approximate = approximate
@@ -394,7 +397,7 @@ class MCScatterPlot(NAry):
             )
             for cl in self._classes:
                 if isinstance(cl, tuple):
-                    self._add_class(*cl)
+                    self._add_class(*cl)   # type: ignore
                 elif isinstance(cl, dict):
                     self._add_class(**cl)
                 else:

@@ -11,7 +11,7 @@ import numpy as np
 
 
 class TestStats(ProgressiveTest):
-    def test_stats(self):
+    def test_stats(self) -> None:
         s = self.scheduler()
         csv_module = CSVLoader(
             get_dataset("smallfile"), index_col=False, header=None, scheduler=s
@@ -24,9 +24,10 @@ class TestStats(ProgressiveTest):
         pr = Print(proc=self.terse, name="print", scheduler=s)
         pr.input[0] = stats.output.result
         aio.run(s.start())
-        table = csv_module.result
-        stable = stats.result
+        table = csv_module.table
+        stable = stats.table
         last = stable.last()
+        assert last is not None
         tmin = table["_1"].min()
         self.assertTrue(np.isclose(tmin, last["__1_min"]))
         tmax = table["_1"].max()

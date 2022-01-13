@@ -10,27 +10,27 @@ from progressivis.datasets import (
 
 
 class TestLoadDatasets(ProgressiveTest):
-    def test_load_smallfile(self):
+    def test_load_smallfile(self) -> None:
         _ = get_dataset("smallfile")
 
-    def test_load_bigfile(self):
+    def test_load_bigfile(self) -> None:
         _ = get_dataset("bigfile")
 
-    def test_load_smallfile_bz2(self):
+    def test_load_smallfile_bz2(self) -> None:
         _ = get_dataset_bz2("smallfile")
 
-    def test_load_bigfile_bz2(self):
+    def test_load_bigfile_bz2(self) -> None:
         _ = get_dataset_bz2("bigfile")
 
-    def test_load_smallfile_gz(self):
+    def test_load_smallfile_gz(self) -> None:
         _ = get_dataset_gz("smallfile")
 
-    def test_load_bigfile_gz(self):
+    def test_load_bigfile_gz(self) -> None:
         _ = get_dataset_gz("bigfile")
 
-    def test_load_smallfile_lzma(self):
+    def test_load_smallfile_lzma(self) -> None:
         _ = get_dataset_lzma("smallfile")
 
     @skip("Too slow ...")
-    def test_load_bigfile_lzma(self):
+    def test_load_bigfile_lzma(self) -> None:
         _ = get_dataset_lzma("bigfile")

@@ -24,12 +24,12 @@ logger = logging.getLogger(__name__)
 
 
 # Should translate that to Cython eventually
-class OnlineVariance(object):
+class OnlineVariance:
     """
     Welford's algorithm computes the sample variance incrementally.
     """
 
-    def __init__(self, ddof: int = 1):
+    def __init__(self, ddof: int = 1) -> None:
         self.ddof: int = ddof
         self.n: int = 0
         self.mean: float = 0.0

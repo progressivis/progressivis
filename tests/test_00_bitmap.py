@@ -3,7 +3,7 @@ from . import ProgressiveTest
 
 
 class TestBitmap(ProgressiveTest):
-    def test_bitmap(self):
+    def test_bitmap(self) -> None:
         bm = bitmap([0, 1, 2, 3])
         self.assertEqual(repr(bm), "bitmap([0, 1, 2, 3])")
         bm2 = bitmap(slice(0, 4))
@@ -51,9 +51,9 @@ class TestBitmap(ProgressiveTest):
         bm.update(slice(1000, 1001))
         self.assertEqual(len(bm), 1001)
         with self.assertRaises(TypeError):
-            bm = bm & 10
+            bm = bm & 10  # type: ignore
         with self.assertRaises(TypeError):
-            bm = bm + "hello"
+            bm = bm + "hello"  # type: ignore
         with self.assertRaises(TypeError):
             bm.update(10)
         bm = bitmap(range(100))
@@ -71,7 +71,7 @@ class TestBitmap(ProgressiveTest):
         self.assertEqual(bm - None, bm2)
         self.assertEqual(bitmap([1, 2]).flip(0, 4), bitmap([0, 3]))
 
-    def test_bitmap_fancy(self):
+    def test_bitmap_fancy(self) -> None:
         bm = bitmap(range(100))
         fancy = [10, 20, 30]
         self.assertEqual(bm[fancy], bitmap(fancy))

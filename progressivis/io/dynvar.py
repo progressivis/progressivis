@@ -11,7 +11,7 @@ from typing import Dict, Any, Optional
 class DynVar(TableModule):
     def __init__(
         self,
-        init_val: Optional[Dict] = None,
+        init_val: Optional[Dict[str, Any]] = None,
         translation: Optional[Dict[str, Any]] = None,
         **kwds: Any
     ) -> None:
@@ -36,7 +36,7 @@ class DynVar(TableModule):
     async def from_input(self, input_: JSon) -> str:
         if not isinstance(input_, dict):
             raise ProgressiveError("Expecting a dictionary")
-        last = PsDict(self.result)  # shallow copy
+        last = PsDict(self.psdict)  # shallow copy
         values = input_
         if self._translation is not None:
             res = {}
@@ -47,6 +47,6 @@ class DynVar(TableModule):
         for (k, v) in input_.items():
             last[k] = v
         await self.scheduler().for_input(self)
-        self.result.update(values)
+        self.psdict.update(values)
         self._has_input = True
         return ""

@@ -6,7 +6,7 @@ from progressivis.core import aio
 
 
 class TestStirrer(ProgressiveTest):
-    def test_stirrer(self):
+    def test_stirrer(self) -> None:
         s = Scheduler()
         random = RandomTable(2, rows=100000, scheduler=s)
         stirrer = Stirrer(

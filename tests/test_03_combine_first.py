@@ -11,7 +11,7 @@ import numpy as np
 
 
 class TestCombineFirst(ProgressiveTest):
-    def test_combine_first_dup(self):
+    def test_combine_first_dup(self) -> None:
         s = self.scheduler(True)
         cst1 = Constant(
             Table(
@@ -45,8 +45,11 @@ class TestCombineFirst(ProgressiveTest):
         pr.input[0] = cf.output.result
         aio.run(s.start())
         # res = cf.trace_stats(max_runs=1)
-        df = cf.result
-        last = df.last().to_dict()
+        df = cf.table
+        row = df.last()
+        self.assertFalse(row is None)
+        assert row is not None
+        last = row.to_dict()
         self.assertTrue(
             last["xmin"] == 1
             and last["xmax"] == 2
@@ -54,7 +57,7 @@ class TestCombineFirst(ProgressiveTest):
             and last["ymax"] == 6
         )
 
-    def test_combine_first_nan(self):
+    def test_combine_first_nan(self) -> None:
         s = self.scheduler(True)
         cst1 = Constant(
             Table(
@@ -87,8 +90,10 @@ class TestCombineFirst(ProgressiveTest):
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = cf.output.result
         aio.run(s.start())
-        df = cf.result
-        last = df.last().to_dict()
+        df = cf.table
+        row = df.last()
+        assert row is not None
+        last = row.to_dict()
         self.assertTrue(
             last["xmin"] == 1
             and last["xmax"] == 2

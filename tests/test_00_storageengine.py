@@ -23,10 +23,11 @@ class TestStorageEngine(ProgressiveTest):
         self.assertIsNotNone(d1)
         self.assertIsInstance(d1, Dataset)
 
-    def test_storage_engines(self):
+    def test_storage_engines(self) -> None:
         print("Engines detected: ", list(StorageEngine.engines().keys()))
         for e in StorageEngine.engines():
             s = StorageEngine.lookup(e)
+            assert s is not None
             self.assertIsNotNone(s)
             g = s["/"]
             self.assertIsNotNone(g)
@@ -43,6 +44,7 @@ class TestStorageEngine(ProgressiveTest):
             self.assertEqual(len(arr), 10)
             self.assertEqual(arr.dtype, np.int32)
             s = StorageEngine.lookup(e)
+            assert s is not None
             group = s.require_group("table")
             t = self._create_table(e, group)
             self.assertEqual(t.storagegroup, group)
@@ -52,7 +54,7 @@ class TestStorageEngine(ProgressiveTest):
         #         t = self._create_table(None)
         #         self.assertEqual(t.storagegroup, e)
 
-    def _create_table(self, storageengine, group):
+    def _create_table(self, storageengine: str, group: Group) -> Table:
         if storageengine == "mmap":
             t = Table(
                 "table_" + str(storageengine),

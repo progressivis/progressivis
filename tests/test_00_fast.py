@@ -22,10 +22,10 @@ except ImportError:
 
 @skipIf(IERR, "running without fast module")
 class TestFast(ProgressiveTest):
-    def tearDown(self):
+    def tearDown(self) -> None:
         pass
 
-    def test_check_contiguity(self):
+    def test_check_contiguity(self) -> None:
         a = np.arange(10, dtype=np.int32)
         with self.assertRaises(ValueError):
             check_contiguity(a)
@@ -53,7 +53,7 @@ class TestFast(ProgressiveTest):
         c = check_contiguity(a)
         self.assertEqual(c, 0)
 
-    def test_indices_to_slice(self):
+    def test_indices_to_slice(self) -> None:
         s = indices_to_slice([])
         self.assertEqual(s, slice(0, 0))
         s = indices_to_slice([0, 1, 2, 3])
@@ -70,7 +70,7 @@ class TestFast(ProgressiveTest):
         s = indices_to_slice(np.array([1, 2, 3, 4]))
         self.assertEqual(s, slice(1, 5))
 
-    def test_indices_to_slice_iterator(self):
+    def test_indices_to_slice_iterator(self) -> None:
         s = indices_to_slice_iterator([])
         self.assertEqual(list(s), [])
         s = indices_to_slice_iterator([0, 1, 2, 3])

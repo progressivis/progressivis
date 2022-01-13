@@ -6,7 +6,7 @@ from progressivis.table.buffered_matrix import BufferedMatrix
 
 
 class TestBufferedMatrix(ProgressiveTest):
-    def test_buffered_matrix(self):
+    def test_buffered_matrix(self) -> None:
         buf = BufferedMatrix()
         omat = buf.matrix()
         self.assertEqual(len(buf), 0)

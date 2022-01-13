@@ -43,7 +43,7 @@ from typing import (
     Type,
     Union,
     ClassVar,
-    Awaitable,
+    Coroutine,
     TYPE_CHECKING,
 )
 
@@ -52,6 +52,12 @@ if TYPE_CHECKING:
     from .decorators import _Context
 
     Parameters = List[Tuple[str, np.dtype[Any], Any]]
+
+ModuleCb = Callable[["Module", int], None]
+ModuleCoro = Callable[["Module", int], Coroutine[Any, Any, Any]]
+ModuleProc = Union[ModuleCb, ModuleCoro]
+
+
 JSon = Dict[str, Any]
 # ReturnRunStep = Tuple[int, ModuleState]
 ReturnRunStep = Dict[str, int]
@@ -123,9 +129,26 @@ class ModuleState(IntEnum):
     state_ready = 1
     state_running = 2
     state_blocked = 3
-    state_zombie = 4
-    state_terminated = 5
-    state_invalid = 6
+    state_suspended = 4
+    state_zombie = 5
+    state_terminated = 6
+    state_invalid = 7
+
+
+class ModuleCallbackList(List[ModuleProc]):
+    async def fire(self, module: Module, run_number: int) -> bool:
+        ret = False
+        for proc in self:
+            try:
+                if aio.iscoroutinefunction(proc):
+                    coro = cast(ModuleCoro, proc)
+                    await coro(module, run_number)
+                else:
+                    proc(module, run_number)
+                ret = True
+            except Exception as exc:
+                logger.warning(exc)
+        return ret
 
 
 class Module(metaclass=ModuleMeta):
@@ -156,6 +179,7 @@ class Module(metaclass=ModuleMeta):
     state_ready: ClassVar[ModuleState] = ModuleState.state_ready
     state_running: ClassVar[ModuleState] = ModuleState.state_running
     state_blocked: ClassVar[ModuleState] = ModuleState.state_blocked
+    state_suspended: ClassVar[ModuleState] = ModuleState.state_suspended
     state_zombie: ClassVar[ModuleState] = ModuleState.state_zombie
     state_terminated: ClassVar[ModuleState] = ModuleState.state_terminated
     state_invalid: ClassVar[ModuleState] = ModuleState.state_invalid
@@ -251,12 +275,13 @@ class Module(metaclass=ModuleMeta):
         self.input = InputSlots(self)
         self.output = OutputSlots(self)
         self.steps_acc: int = 0
-        self.wait_expr = aio.FIRST_COMPLETED
-        self.after_run_proc: Optional[Callable[[Module, int], Awaitable[Any]]] = None
+        # self.wait_expr = aio.FIRST_COMPLETED
         self.context: Optional[_Context] = None
         # callbacks
-        self._start_run: Optional[Callable[[Module, int], None]] = None
-        self._end_run: Optional[Callable[[Module, int], None]] = None
+        self._start_run = ModuleCallbackList()
+        self._after_run = ModuleCallbackList()
+        self._ending: List[ModuleCb] = []
+        # Register module
         dataflow.add_module(self)
 
     @staticmethod
@@ -316,15 +341,6 @@ class Module(metaclass=ModuleMeta):
         # pylint: disable=no-self-use
         """Quality value, should increase."""
         return 0.0
-
-    async def after_run(self, rn: int) -> None:
-        if self.after_run_proc is None:
-            return
-        proc = self.after_run_proc
-        if aio.iscoroutinefunction(proc):
-            await proc(self, rn)
-        else:
-            proc(self, rn)
 
     # @staticmethod
     # def _add_slots(kwds: Dict[str, List[Slot]],
@@ -606,7 +622,7 @@ class Module(metaclass=ModuleMeta):
     def validate(self) -> None:
         "called when the module have been validated"
         if self.state == self.state_created:
-            self.state = Module.state_blocked
+            self.state = Module.state_ready
 
     def _connect_output(self, slot: Slot) -> List[Slot]:
         slot_list = self.get_output_slot(slot.output_name)
@@ -695,10 +711,13 @@ class Module(metaclass=ModuleMeta):
 
     def is_ready(self) -> bool:
         if self.state == Module.state_terminated:
-            logger.info("%s Not ready because it terminated", self.name)
+            logger.info(f"{self.name} Not ready because it terminated")
             return False
         if self.state == Module.state_invalid:
-            logger.info("%s Not ready because it is invalid", self.name)
+            logger.info(f"{self.name} Not ready because it is invalid")
+            return False
+        if self.state == Module.state_suspended:
+            logger.info(f"{self.name} Not ready because it is suspended")
             return False
 
         # Always process the input slots to have the buffers valid
@@ -808,32 +827,46 @@ class Module(metaclass=ModuleMeta):
         self._last_update = run_number
         self._start_time = 0
         assert self.state != self.state_running
-        self.end_run(run_number)
 
-    def set_start_run(self, start_run: Optional[Callable[[Module, int], None]]) -> None:
-        if start_run is None or callable(start_run):
-            self._start_run = start_run
-        else:
-            raise ProgressiveError("value should be callable or None", start_run)
+    def on_start_run(self, proc: ModuleProc) -> None:
+        assert callable(proc)
+        self._start_run.append(proc)
 
-    def start_run(self, run_number: int) -> None:
-        if self._start_run:
-            self._start_run(self, run_number)
+    def remove_start_run(self, proc: ModuleProc) -> None:
+        self._start_run.remove(proc)
 
-    def set_end_run(self, end_run: Optional[Callable[[Module, int], None]]) -> None:
-        if end_run is None or callable(end_run):
-            self._end_run = end_run
-        else:
-            raise ProgressiveError("value should be callable or None", end_run)
+    async def start_run(self, run_number: int) -> bool:
+        return await self._start_run.fire(self, run_number)
 
-    def end_run(self, run_number: int) -> None:
-        if self._end_run:
-            self._end_run(self, run_number)
+    def on_after_run(self, proc: ModuleProc) -> None:
+        assert callable(proc)
+        self._after_run.append(proc)
 
-    def ending(self) -> None:
+    def remove_after_run(self, proc: ModuleProc) -> None:
+        self._after_run.remove(proc)
+
+    async def after_run(self, run_number: int) -> bool:
+        return await self._after_run.fire(self, run_number)
+
+    def on_ending(self, proc: ModuleCb) -> None:
+        assert callable(proc) and not aio.iscoroutinefunction(proc)
+        self._ending.append(proc)
+
+    def remove_ending(self, proc: ModuleCb) -> None:
+        self._ending.remove(proc)
+
+    def do_ending(self, run_number: int) -> None:
+        for proc in self._ending:
+            try:
+                proc(self, run_number)
+            except Exception as exc:
+                logger.warning("Exception in ending proc: ", exc)
+
+    async def ending(self) -> None:
         """Ends a module.
         called when it is about the be removed from the scheduler
         """
+        self.do_ending(self._last_update)
         self._state = Module.state_terminated
         for islot in self._input_slots.values():
             if islot is not None:
@@ -897,7 +930,6 @@ class Module(metaclass=ModuleMeta):
         self._update_params(run_number)
 
         run_step_ret = {}
-        self.start_run(run_number)
         tracer.start_run(now, run_number)
         step_size = self.predict_step_size(quantum)
         logger.info(f"{self.name}: step_size={step_size}")

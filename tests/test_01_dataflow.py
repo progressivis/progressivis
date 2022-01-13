@@ -70,7 +70,7 @@ class TestDataflow(ProgressiveTest):
             # dataflow.__exit__() is called here
         # print('Old modules:', end=' ')
         # pprint(scheduler._modules)
-        scheduler._update_modules()  # force modules in the main loop
+        aio.run(scheduler._update_modules())  # force modules in the main loop
         # print('New modules:', end=' ')
         # pprint(scheduler.modules())
 
@@ -81,7 +81,7 @@ class TestDataflow(ProgressiveTest):
             self.assertEqual(deps, ["csv", m.name, prt.name])
             self.assertEqual(dataflow.inputs, saved_inputs)
             self.assertEqual(dataflow.outputs, saved_outputs)
-        scheduler._update_modules()  # force modules in the main loop
+        aio.run(scheduler._update_modules())  # force modules in the main loop
 
         with scheduler as dataflow:
             sink = Sink(name="sink", scheduler=scheduler)
@@ -94,7 +94,7 @@ class TestDataflow(ProgressiveTest):
             # pprint(dataflow.outputs)
         # print('Old modules:')
         # pprint(scheduler._new_modules)
-        scheduler._update_modules()  # force modules in the main loop
+        aio.run(scheduler._update_modules())  # force modules in the main loop
         # print('New modules:')
         # pprint(scheduler.modules())
         with scheduler as dataflow:
@@ -109,7 +109,7 @@ class TestDataflow(ProgressiveTest):
             )
 
             prt.input.df = m.output.result
-        scheduler._update_modules()  # force modules in the main loop
+        aio.run(scheduler._update_modules())  # force modules in the main loop
 
     def test_dataflow_1_dynamic(self):
         scheduler = self.scheduler(clean=True)
