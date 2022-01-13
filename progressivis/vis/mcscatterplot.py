@@ -1,7 +1,6 @@
 "Multiclass Scatterplot Module."
 from __future__ import annotations
 
-from itertools import chain
 from collections import defaultdict
 
 import numpy as np
@@ -12,7 +11,7 @@ from progressivis.stats import MCHistogram2D, Sample
 from progressivis.table.range_query_2d import RangeQuery2d
 from progressivis.utils.errors import ProgressiveError
 from progressivis.core.utils import is_notebook, get_physical_base
-from progressivis.io import Variable, VirtualVariable
+from progressivis.io import DynVar
 
 from typing import (
     Optional,
@@ -33,11 +32,11 @@ if TYPE_CHECKING:
     from progressivis.core.slot import Slot
 
 
-class _DataClass(object):
+class _DataClass:
     def __init__(
         self,
         name: str,
-        group: Optional[str],
+        that: MCScatterPlot,
         x_column: str,
         y_column: str,
         scheduler: Scheduler,
@@ -45,7 +44,7 @@ class _DataClass(object):
         **kwds: Any,
     ):
         self.name = name
-        self._group = group
+        self._group = that.name
         self.x_column = x_column
         self.y_column = y_column
         self._approximate = approximate
@@ -56,8 +55,8 @@ class _DataClass(object):
         self.max: Any = None
         self.histogram2d: Optional[MCHistogram2D] = None
         self.heatmap = None
-        self.min_value: Optional[Variable] = None
-        self.max_value: Optional[Variable] = None
+        self.min_value: Optional[DynVar] = that.min_value
+        self.max_value: Optional[DynVar] = that.max_value
         self.sample: Union[None, Literal["default"], Module] = None
         self.range_query_2d: Optional[Module] = None
 
@@ -88,11 +87,7 @@ class _DataClass(object):
             range_query_2d.create_dependent_modules(
                 input_module, input_slot, min_value=False, max_value=False
             )
-            self.min_value = Variable(group=self._group, scheduler=scheduler)
-            self.min_value.input.like = range_query_2d.min.output.result
             range_query_2d.input.lower = self.min_value.output.result
-            self.max_value = Variable(group=self._group, scheduler=scheduler)
-            self.max_value.input.like = range_query_2d.max.output.result
             range_query_2d.input.upper = self.max_value.output.result
             if histogram2d is None:
                 histogram2d = MCHistogram2D(
@@ -135,13 +130,19 @@ class MCScatterPlot(NAry):
         self._classes = classes  # TODO: check it ...
         self._x_label = x_label
         self._y_label = y_label
+        if isinstance(classes[0], tuple):
+            syn_x, syn_y = zip(*[(x, y) for (_, x, y, *ignored) in classes])
+        else:
+            syn_x, syn_y = zip(*[(d["x_column"], d["y_column"]) for d in classes])
+        self._translation = {x_label: syn_x, y_label: syn_y}
+        self._translated_keys = set(syn_x) | set(syn_y)
         self._approximate = approximate
         self._json_cache: Optional[JSon] = None
         self.input_module: Optional[Module] = None
         self.input_slot: Optional[str] = None
         self._data_class_dict: Dict[str, _DataClass] = {}
-        self.min_value: Optional[VirtualVariable] = None
-        self.max_value: Optional[VirtualVariable] = None
+        self.min_value: Optional[DynVar] = None
+        self.max_value: Optional[DynVar] = None
         self._ipydata: bool = is_notebook()
         self.hist_tensor: Optional[np.ndarray[Any, Any]] = None
         self.sample_tensor: Optional[np.ndarray[Any, Any]] = None
@@ -346,10 +347,6 @@ class MCScatterPlot(NAry):
             # slot.update(run_number)
             if slot.has_buffered():
                 slot.clear_buffers()
-                # slot.created.next()
-                # slot.updated.next()
-                # slot.deleted.next()
-                # print("SLOT has buffered", slot)
                 self._json_cache = None
         return self._return_run_step(self.state_blocked, steps_run=0)
 
@@ -385,11 +382,15 @@ class MCScatterPlot(NAry):
         self.input_slot = input_slot
         with self.grouped():
             scheduler = self.scheduler()
-            self.min_value = VirtualVariable(
-                [self._x_label, self._y_label], scheduler=scheduler
+            self.min_value = DynVar(
+                {k: None for k in self._translated_keys},
+                translation=self._translation,
+                scheduler=scheduler,
             )
-            self.max_value = VirtualVariable(
-                [self._x_label, self._y_label], scheduler=scheduler
+            self.max_value = DynVar(
+                {k: None for k in self._translated_keys},
+                translation=self._translation,
+                scheduler=scheduler,
             )
             for cl in self._classes:
                 if isinstance(cl, tuple):
@@ -438,7 +439,7 @@ class MCScatterPlot(NAry):
             raise ProgressiveError("Input slot is defined twice!")
         data_class = _DataClass(
             name,
-            self.name,
+            self,
             x_column,
             y_column,
             approximate=self._approximate,
@@ -457,12 +458,3 @@ class MCScatterPlot(NAry):
             meta = dict(inp="sample", class_=name, **col_translation)
             self.input["table", meta] = data_class.sample.output[sample_slot]
         self._data_class_dict[name] = data_class
-        if data_class.min_value is not None and self.min_value is not None:
-            self.min_value.subscribe(data_class.min_value, col_translation)
-        if data_class.max_value is not None and self.max_value is not None:
-            self.max_value.subscribe(data_class.max_value, col_translation)
-
-    def get_starving_mods(self) -> Any:
-        return chain(
-            *[(s.histogram2d, s.sample) for s in self._data_class_dict.values()]
-        )

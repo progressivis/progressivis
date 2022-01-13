@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from ..core import aio
-
 from progressivis import ProgressiveError
 from ..table.module import TableModule
 from progressivis.core.module import ReturnRunStep, JSon
@@ -13,19 +11,19 @@ from typing import Dict, Any, Optional
 class DynVar(TableModule):
     def __init__(
         self,
-        init_val: Optional[PsDict] = None,
-        vocabulary: Optional[Dict[str, Any]] = None,
+        init_val: Optional[Dict] = None,
+        translation: Optional[Dict[str, Any]] = None,
         **kwds: Any
     ) -> None:
         super().__init__(**kwds)
         self.tags.add(self.TAG_INPUT)
         self._has_input = False
-        if not (vocabulary is None or isinstance(vocabulary, dict)):
-            raise ProgressiveError("vocabulary must be a dictionary")
-        self._vocabulary = vocabulary
+        if not (translation is None or isinstance(translation, dict)):
+            raise ProgressiveError("translation must be a dictionary")
+        self._translation = translation
         if not (init_val is None or isinstance(init_val, dict)):
             raise ProgressiveError("init_val must be a dictionary")
-        self._table = PsDict({} if init_val is None else init_val)
+        self.result = PsDict({} if init_val is None else init_val)
 
     def has_input(self) -> bool:
         return self._has_input
@@ -37,15 +35,18 @@ class DynVar(TableModule):
 
     async def from_input(self, input_: JSon) -> str:
         if not isinstance(input_, dict):
-            return "Expecting a dictionary"
-        last = PsDict(self._table)  # shallow copy
+            raise ProgressiveError("Expecting a dictionary")
+        last = PsDict(self.result)  # shallow copy
         values = input_
-        if self._vocabulary is not None:
-            values = {self._vocabulary[k]: v for k, v in values.items()}
+        if self._translation is not None:
+            res = {}
+            for k, v in values.items():
+                for syn in self._translation[k]:
+                    res[syn] = v
+            values = res
         for (k, v) in input_.items():
             last[k] = v
         await self.scheduler().for_input(self)
-        self._table.update(values)
+        self.result.update(values)
         self._has_input = True
-        await aio.sleep(0)
         return ""

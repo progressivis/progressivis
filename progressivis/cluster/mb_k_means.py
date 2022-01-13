@@ -247,7 +247,7 @@ class MBKMeans(TableModule):
         return self._centers_to_json(json)
 
     def _centers_to_json(self, json: JSon) -> JSon:
-        json["cluster_centers"] = self.table.to_json()
+        json["cluster_centers"] = self.result.to_json()
         return json
 
     def set_centroid(self, c: int, values: List[float]) -> List[float]:

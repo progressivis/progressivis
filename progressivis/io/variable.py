@@ -6,10 +6,9 @@ import copy
 from progressivis import ProgressiveError, SlotDescriptor
 from progressivis.table.table import Table
 from progressivis.table.constant import Constant
-from progressivis.core.utils import all_string
 from progressivis.utils.psdict import PsDict
 
-from typing import List, TYPE_CHECKING, Dict, Tuple, Optional, Any
+from typing import TYPE_CHECKING, Optional, Any
 
 if TYPE_CHECKING:
     from progressivis.core.module import ReturnRunStep, JSon
@@ -60,43 +59,4 @@ class Variable(Constant):
                         like = last.to_dict(ordered=True)
                     self.result = copy.copy(like)
                     self._ignore_inputs = True
-        return self._return_run_step(self.state_blocked, steps_run=1)
-
-
-class VirtualVariable(Constant):
-    def __init__(self, names: List[str], **kwds: Any) -> None:
-        if not all_string(names):
-            raise ProgressiveError(f"names {names} must be a set of strings")
-        self._names = names
-        self._key = frozenset(names)
-        self._subscriptions: List[Tuple[Variable, Dict[str, str]]] = []
-        columns = None
-        super(VirtualVariable, self).__init__(columns, output_required=False, **kwds)
-        self.tags.add(self.TAG_INPUT)
-
-    def subscribe(self, var: Variable, vocabulary: Dict[str, str]) -> None:
-        """
-        Example: vocabulary = {'x': 'longitude', 'y': 'latitude'}
-        """
-        if not isinstance(var, Variable):
-            raise ProgressiveError("Expecting a Variable module")
-        if not isinstance(vocabulary, dict):
-            raise ProgressiveError("Expecting a dictionary")
-        if frozenset(vocabulary.keys()) != self._key or not all_string(
-            vocabulary.values()
-        ):
-            raise ProgressiveError("Inconsistent vocabulary")
-        self._subscriptions.append((var, vocabulary))
-
-    async def from_input(self, input_: JSon) -> str:
-        if not isinstance(input_, dict):
-            return f"Expecting a dictionary in {repr(self)}"
-        for var, vocabulary in self._subscriptions:
-            translation = {vocabulary[k]: v for k, v in input_.items()}
-            await var.from_input(translation)
-        return ""
-
-    def run_step(
-        self, run_number: int, step_size: int, howlong: float
-    ) -> ReturnRunStep:
         return self._return_run_step(self.state_blocked, steps_run=1)
