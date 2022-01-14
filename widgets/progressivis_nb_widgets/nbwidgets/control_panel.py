@@ -2,14 +2,14 @@ from __future__ import annotations
 
 import ipywidgets as widgets  # type: ignore
 
-from typing import Any, TYPE_CHECKING, Tuple, Callable
+from typing import Any, TYPE_CHECKING, Tuple, Callable, Optional
 
 if TYPE_CHECKING:
     from progressivis.core.scheduler import Scheduler
 
 
-class ControlPanel(widgets.HBox):  # pylint: disable=too-many-ancestors
-    def __init__(self, scheduler: Scheduler) -> None:
+class ControlPanel(widgets.HBox):  # type: ignore # pylint: disable=too-many-ancestors
+    def __init__(self, scheduler: Optional[Scheduler]) -> None:
         self.scheduler = scheduler
         self.bstart = widgets.Button(
             description="Resume",
@@ -45,13 +45,14 @@ class ControlPanel(widgets.HBox):  # pylint: disable=too-many-ancestors
 
     @property
     def data(self) -> str:
-        return self.run_nb.value
+        return self.run_nb.value  # type: ignore
 
     @data.setter
     def data(self, val: Any) -> None:
         self.run_nb.value = str(val)
 
     def stop(self) -> None:
+        assert self.scheduler is not None
         self.scheduler.task_stop()
         self.status = "stop"
         self.bstop.disabled = True
@@ -59,9 +60,10 @@ class ControlPanel(widgets.HBox):  # pylint: disable=too-many-ancestors
         self.bstep.disabled = False
 
     def step(self) -> None:
-        async def _step_once(sched, _):
+        async def _step_once(sched: Scheduler, _: Any) -> None:
             await sched.stop()
 
+        assert self.scheduler is not None
         self.scheduler.on_loop(_step_once, 1)
         self.scheduler.task_start()
         self.status = "stop"
@@ -70,6 +72,7 @@ class ControlPanel(widgets.HBox):  # pylint: disable=too-many-ancestors
         self.bstep.disabled = False
 
     def resume(self) -> None:
+        assert self.scheduler is not None
         self.scheduler.task_start()
         self.status = "run"
         self.bstop.disabled = False

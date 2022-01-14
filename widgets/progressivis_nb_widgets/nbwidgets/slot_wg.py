@@ -1,7 +1,14 @@
+from __future__ import annotations
+
 from progressivis.core import JSONEncoderNp as JSON
 from progressivis.table.paging_helper import PagingHelper
 from .utils import wait_for_change, update_widget
 from .data_table import DataTable
+
+from typing import Any, Optional, NoReturn, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from progressivis import Table, Module
 
 
 debug_console = None
@@ -9,7 +16,7 @@ _dmp = JSON.dumps
 # https://datatables.net/examples/basic_init/alt_pagination.html
 
 
-async def pagination(dt, tbl):
+async def pagination(dt: DataTable, tbl: Table) -> NoReturn:
     while True:
         await wait_for_change(dt, "page")
         info = dt.page
@@ -28,14 +35,19 @@ async def pagination(dt, tbl):
 
 
 class SlotWg(DataTable):
-    def __init__(self, module, slot_name, dconsole=None):
+    def __init__(
+        self,
+        module: Module,
+        slot_name: str,
+        dconsole: Optional[Any] = None
+    ) -> None:
         global debug_console  # pylint: disable=global-statement
         debug_console = dconsole
         self.module = module
         self.slot_name = slot_name
         super().__init__()
 
-    async def refresh(self):
+    async def refresh(self) -> None:
         tbl = self.module.get_data(self.slot_name)
         if tbl is None:
             return

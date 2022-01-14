@@ -5,7 +5,7 @@ from traitlets import Unicode  # type: ignore
 
 
 @widgets.register
-class ModuleGraph(widgets.DOMWidget):
+class ModuleGraph(widgets.DOMWidget):  # type: ignore
     """Progressivis ModuleGraph widget."""
 
     # Name of the widget view class in front-end

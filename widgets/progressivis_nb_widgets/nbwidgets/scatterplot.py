@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import numpy as np
 import ipywidgets as widgets  # type: ignore
 from ipydatawidgets import DataUnion  # type: ignore
@@ -7,13 +9,20 @@ from progressivis.core import JSONEncoderNp as JS, asynchronize
 import progressivis.core.aio as aio
 from .utils import data_union_serialization_compress, wait_for_change
 
+from typing import Any as AnyType, List, Coroutine, NoReturn, Sequence, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from progressivis import Module
+    from progressivis.vis.mcscatterplot import MCScatterPlot
+WidgetType = AnyType
+
 # See js/lib/widgets.js for the frontend counterpart to this file.
 
 _serialization = data_union_serialization_compress
 
 
 @widgets.register
-class Scatterplot(DataWidget, widgets.DOMWidget):
+class Scatterplot(DataWidget, widgets.DOMWidget):  # type: ignore
     """Progressivis Scatterplot widget."""
 
     # Name of the widget view class in front-end
@@ -43,8 +52,12 @@ class Scatterplot(DataWidget, widgets.DOMWidget):
     modal = Bool(False).tag(sync=True)
     to_hide = Any("[]").tag(sync=True)
 
-    def link_module(self, module, refresh=True):
-        def _feed_widget(wg, m):
+    def link_module(
+        self,
+        module: MCScatterPlot,
+        refresh: bool = True
+    ) -> List[Coroutine[Any, Any, None]]:
+        def _feed_widget(wg: WidgetType, m: MCScatterPlot) -> None:
             val = m.to_json()
             data_ = {
                 k: v
@@ -59,29 +72,36 @@ class Scatterplot(DataWidget, widgets.DOMWidget):
                 wg.samples = st
             wg.data = JS.dumps(data_)
 
-        async def _refresh():
+        async def _refresh() -> NoReturn:
             while True:
                 await aio.sleep(0.5)
 
-        async def _after_run(m, run_number):  # pylint: disable=unused-argument
+        async def _after_run(
+            m: Module,
+            run_number: int
+        ) -> None:  # pylint: disable=unused-argument
             if not self.modal:
                 await asynchronize(_feed_widget, self, m)
 
-        module.after_run_proc = _after_run
+        module.on_after_run(_after_run)
 
-        async def _from_input_value():
+        async def _from_input_value() -> None:
             while True:
                 await wait_for_change(self, "value")
                 bounds = self.value
-                await module.min_value.from_input(bounds["min"])
-                await module.max_value.from_input(bounds["max"])
+                min_value = module.min_value
+                max_value = module.max_value
+                assert min_value is not None and max_value is not None
+                await min_value.from_input(bounds["min"])
+                await max_value.from_input(bounds["max"])
 
-        async def _from_input_move_point():
+        async def _from_input_move_point() -> None:
             while True:
                 await wait_for_change(self, "move_point")
-                await module.move_point.from_input(self.move_point)
+                print(f"Should move point to {self.move_point}")
+                # await module.move_point.from_input(self.move_point)
 
-        async def _awake():
+        async def _awake() -> None:
             """
             Hack intended to force the rendering even if the data
             are exhausted at the time of the first display
@@ -95,12 +115,12 @@ class Scatterplot(DataWidget, widgets.DOMWidget):
                 module._json_cache["dummy"] = -dummy
                 await asynchronize(_feed_widget, self, module)
 
-        return ([_refresh()] if refresh else []) + [
+        return [
             _from_input_value(),
             _from_input_move_point(),
             _awake(),
-        ]
+        ] + ([_refresh()] if refresh else [])
 
-    def __init__(self, *, disable=tuple()):
+    def __init__(self, *, disable: Sequence[Any] = tuple()):
         super().__init__()
         self.to_hide = list(disable)

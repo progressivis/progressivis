@@ -1,8 +1,15 @@
+from __future__ import annotations
+
 import ipywidgets as ipw  # type: ignore
 
 from .utils import update_widget
 from .slot_wg import SlotWg
 from .json_html import JsonHTML
+
+from typing import Any, Optional, Tuple, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .psboard import PsBoard
 
 
 debug_console = None  # ipw.Output()
@@ -14,20 +21,21 @@ debug_console = None  # ipw.Output()
 """
 
 
-class ModuleWg(ipw.Tab):  # pylint: disable=too-many-ancestors
-    def __init__(self, board, dconsole=None):
+class ModuleWg(ipw.Tab):  # type: ignore # pylint: disable=too-many-ancestors
+    def __init__(self, board: PsBoard, dconsole: Optional[Any] = None) -> None:
         global debug_console  # pylint: disable=global-statement
         debug_console = dconsole
+        self.children: Tuple[Any, ...]
         self._index = board
         self._main = JsonHTML()
-        self.module_name = None
+        self.module_name: Optional[str] = None
         self.selection_changed = False
         self._output_slots = ipw.Tab()
         super().__init__([self._main, self._output_slots])
         self.set_title(0, "Main")
         self.set_title(1, "Output slots")
 
-    async def refresh(self):
+    async def refresh(self) -> None:
         _idx = self._index
         # pylint: disable=protected-access
         json_ = _idx._cache_js
@@ -61,9 +69,11 @@ class ModuleWg(ipw.Tab):  # pylint: disable=too-many-ancestors
             ),
         )
         _selected_index = 0
-        module = self._index.scheduler.modules()[self.module_name]
-        if module is None:
+        scheduler = self._index.scheduler
+        assert scheduler is not None and self.module_name is not None
+        if self.module_name not in scheduler:
             return
+        module = scheduler[self.module_name]
         if self.selection_changed or not self._output_slots.children:
             # first refresh
             self.selection_changed = False

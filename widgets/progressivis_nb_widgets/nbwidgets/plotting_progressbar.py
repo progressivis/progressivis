@@ -5,7 +5,7 @@ from traitlets import Unicode, Any  # type: ignore
 
 
 @widgets.register
-class PlottingProgressBar(widgets.DOMWidget):
+class PlottingProgressBar(widgets.DOMWidget):  # type: ignore
     """Progressivis PlottingProgressBar widget."""
 
     # Name of the widget view class in front-end

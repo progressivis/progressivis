@@ -5,7 +5,7 @@ from traitlets import Unicode, Any  # type: ignore
 
 
 @widgets.register
-class JsonHTML(widgets.DOMWidget):
+class JsonHTML(widgets.DOMWidget):  # type: ignore
     """Progressivis JsonHTML widget."""
 
     # Name of the widget view class in front-end

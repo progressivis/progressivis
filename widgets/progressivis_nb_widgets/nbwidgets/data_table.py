@@ -5,7 +5,7 @@ from traitlets import Unicode, Any  # type: ignore
 
 
 @widgets.register
-class DataTable(widgets.DOMWidget):
+class DataTable(widgets.DOMWidget):  # type: ignore
     """Progressivis DataTable widget."""
 
     # Name of the widget view class in front-end

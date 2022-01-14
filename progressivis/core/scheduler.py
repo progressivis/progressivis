@@ -99,6 +99,7 @@ class Scheduler:
         self._new_dependencies: Dependencies = {}
         self._new_runorder: Order = []
         self._new_reachability: Reachability = {}
+        self._deleted_modules: Set[Module] = set()
         self._start: float = 0
         self._step_once = False
         self._run_number = 0
@@ -365,7 +366,7 @@ class Scheduler:
             self._module_selection = None
             # print("In shortcut_manager: shortcut_evt.clear()")
             self.shortcut_evt.clear()
-        print("In shortcut_manager: leaving shortcut_manager()")
+        # print("In shortcut_manager: leaving shortcut_manager()")
 
     async def _run_loop(self) -> None:
         """Main scheduler loop."""
@@ -423,9 +424,13 @@ class Scheduler:
         while not self._stopped:
             # Apply changes in the dataflow
             if self._new_modules is not None:
-                await self._update_modules()
+                self._update_modules()
                 self._run_index = 0
                 first_run = self._run_number
+            if self._deleted_modules:
+                for mod in self._deleted_modules:
+                    await mod.ending()
+                self._deleted_modules = set()
             # If run_list empty, we're done
             if not self._run_list:
                 break
@@ -505,10 +510,10 @@ class Scheduler:
         self.version += 1  # only increment if valid
         # The slots in the module,_modules, and _runorder will be updated
         # in _update_modules when the scheduler decides it is time to do so.
-        # if not self._running:  # no need to delay updating the scheduler
-        #     self._update_modules()
+        if not self._running:  # no need to delay updating the scheduler
+            self._update_modules()
 
-    async def _update_modules(self) -> None:
+    def _update_modules(self) -> None:
         if self._new_modules is None:
             return
         logger.info("Updating modules")
@@ -520,8 +525,7 @@ class Scheduler:
         if deleted:
             logger.info(f"Scheduler deleted modules: {deleted}")
             print(f"# Scheduler deleted module(s): {deleted}")
-            for mid in deleted:
-                await self._modules[mid].ending()
+            self._deleted_modules.update({self[mid] for mid in deleted})
         self._modules = modules
         if not (deleted or added):
             logger.info("Scheduler updated with no new module(s)")

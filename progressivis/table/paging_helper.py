@@ -11,10 +11,11 @@ class PagingHelper:
     def __init__(self, tbl: BaseTable):
         self._table: BaseTable = tbl
         self._index: bitmap = tbl.index
+        # FIXME
         # if not isinstance(tbl, Table):
         #     self._index = np.array(list(self._table.index))
-        # if not tbl.is_identity:
-        #     self._index = self._table.index
+        if not tbl.is_identity:
+            self._index = self._table.index
 
     def get_page(self, start: int, end: int) -> List[List[Any]]:
         ret = []

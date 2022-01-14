@@ -5,7 +5,7 @@ from traitlets import Unicode, Any  # type: ignore
 
 
 @widgets.register
-class SensitiveHTML(widgets.DOMWidget):
+class SensitiveHTML(widgets.DOMWidget):  # type: ignore
     """Progressivis SensitiveHTML widget."""
 
     # Name of the widget view class in front-end
