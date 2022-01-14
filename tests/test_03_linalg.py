@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from . import ProgressiveTest
 
 from progressivis.core import aio
@@ -18,20 +20,27 @@ from progressivis.linalg import (
     binary_dict_int_tst,
     unary_dict_gen_tst,
     binary_dict_gen_tst,
-    Arccosh,
+)
+from progressivis.linalg._elementwise import (
     Invert,
     BitwiseNot,
     ColsLdexp,
     Ldexp,
+    Arccosh,
 )
 import progressivis.linalg as arr
 from progressivis.core.bitmap import bitmap
 from progressivis.stats import RandomTable, RandomDict
 import numpy as np
 
+from typing import Any, Type, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from progressivis.table.module import TableModule
+
 
 class TestUnary(ProgressiveTest):
-    def test_unary(self):
+    def test_unary(self) -> None:
         s = self.scheduler()
         random = RandomTable(10, rows=100_000, scheduler=s)
         module = Unary(np.log, scheduler=s)
@@ -39,12 +48,12 @@ class TestUnary(ProgressiveTest):
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = module.output.result
         aio.run(s.start())
-        res1 = np.log(random.result.to_array())
-        res2 = module.result.to_array()
+        res1 = np.log(random.table.to_array())
+        res2 = module.table.to_array()
         self.assertTrue(module.name.startswith("unary_"))
         self.assertTrue(np.allclose(res1, res2, equal_nan=True))
 
-    def test_unary2(self):
+    def test_unary2(self) -> None:
         s = self.scheduler()
         random = RandomTable(10, rows=100_000, scheduler=s)
         module = Unary(np.log, columns=["_3", "_5", "_7"], scheduler=s)
@@ -52,12 +61,12 @@ class TestUnary(ProgressiveTest):
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = module.output.result
         aio.run(s.start())
-        res1 = np.log(random.result.to_array()[:, [2, 4, 6]])
-        res2 = module.result.to_array()
+        res1 = np.log(random.table.to_array()[:, [2, 4, 6]])
+        res2 = module.table.to_array()
         self.assertTrue(module.name.startswith("unary_"))
         self.assertTrue(np.allclose(res1, res2, equal_nan=True))
 
-    def _t_stirred_unary(self, **kw):
+    def _t_stirred_unary(self, **kw: Any) -> None:
         s = self.scheduler()
         random = RandomTable(10, rows=100_000, scheduler=s)
         stirrer = Stirrer(update_column="_3", fixed_step_size=1000, scheduler=s, **kw)
@@ -67,18 +76,18 @@ class TestUnary(ProgressiveTest):
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = module.output.result
         aio.run(s.start())
-        res1 = np.log(stirrer.result.to_array()[:, [2, 4, 6]])
-        res2 = module.result.to_array()
+        res1 = np.log(stirrer.table.to_array()[:, [2, 4, 6]])
+        res2 = module.table.to_array()
         self.assertTrue(module.name.startswith("unary_"))
         self.assertTrue(np.allclose(res1, res2, equal_nan=True))
 
-    def test_unary3(self):
+    def test_unary3(self) -> None:
         self._t_stirred_unary(delete_rows=5)
 
-    def test_unary4(self):
+    def test_unary4(self) -> None:
         self._t_stirred_unary(update_rows=5)
 
-    def _t_impl(self, cls, ufunc, mod_name):
+    def _t_impl(self, cls: Type[TableModule], ufunc: np.ufunc, mod_name: str) -> None:
         print("Testing", mod_name)
         s = self.scheduler()
         random = RandomTable(10, rows=10_000, scheduler=s)
@@ -87,17 +96,17 @@ class TestUnary(ProgressiveTest):
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = module.output.result
         aio.run(s.start())
-        res1 = ufunc(random.result.to_array())
-        res2 = module.result.to_array()
+        res1 = ufunc(random.table.to_array())
+        res2 = module.table.to_array()
         self.assertTrue(module.name.startswith(mod_name))
         self.assertTrue(np.allclose(res1, res2, equal_nan=True))
 
 
-def add_un_tst(k, ufunc):
+def add_un_tst(k: str, ufunc: np.ufunc) -> None:
     cls = func2class_name(k)
     mod_name = k + "_"
 
-    def _f(self_):
+    def _f(self_: TestUnary) -> None:
         TestUnary._t_impl(self_, arr.__dict__[cls], ufunc, mod_name)
 
     setattr(TestUnary, "test_" + k, _f)
@@ -108,7 +117,7 @@ for k, ufunc in unary_dict_gen_tst.items():
 
 
 class TestOtherUnaries(ProgressiveTest):
-    def test_arccosh(self):
+    def test_arccosh(self) -> None:
         module_name = "arccosh_"
         print("Testing", module_name)
         s = self.scheduler()
@@ -120,18 +129,18 @@ class TestOtherUnaries(ProgressiveTest):
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = module.output.result
         aio.run(s.start())
-        res1 = np.arccosh(random.result.to_array())
-        res2 = module.result.to_array()
+        res1 = np.arccosh(random.table.to_array())
+        res2 = module.table.to_array()
         self.assertTrue(module.name.startswith(module_name))
         self.assertTrue(np.allclose(res1, res2, equal_nan=True))
 
-    def test_invert(self):
+    def test_invert(self) -> None:
         module_name = "invert_"
         print("Testing", module_name)
         s = self.scheduler()
         random = RandomTable(
             10,
-            random=lambda x: np.random.randint(100_000, size=x),
+            random=lambda x: np.random.randint(100_000, size=x),  # type: ignore
             dtype="int64",
             rows=100_000,
             scheduler=s,
@@ -141,18 +150,18 @@ class TestOtherUnaries(ProgressiveTest):
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = module.output.result
         aio.run(s.start())
-        res1 = np.invert(random.result.to_array())
-        res2 = module.result.to_array()
+        res1 = np.invert(random.table.to_array())
+        res2 = module.table.to_array()
         self.assertTrue(module.name.startswith(module_name))
         self.assertTrue(np.allclose(res1, res2, equal_nan=True))
 
-    def test_bitwise_not(self):
+    def test_bitwise_not(self) -> None:
         module_name = "bitwise_not_"
         print("Testing", module_name)
         s = self.scheduler()
         random = RandomTable(
             10,
-            random=lambda x: np.random.randint(100_000, size=x),
+            random=lambda x: np.random.randint(100_000, size=x),  # type: ignore
             dtype="int64",
             rows=100_000,
             scheduler=s,
@@ -162,15 +171,15 @@ class TestOtherUnaries(ProgressiveTest):
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = module.output.result
         aio.run(s.start())
-        res1 = np.bitwise_not(random.result.to_array())
-        res2 = module.result.to_array()
+        res1 = np.bitwise_not(random.table.to_array())
+        res2 = module.table.to_array()
         self.assertTrue(module.name.startswith(module_name))
         self.assertTrue(np.allclose(res1, res2, equal_nan=True))
 
 
 # @skip
 class TestColsBinary(ProgressiveTest):
-    def test_cols_binary(self):
+    def test_cols_binary(self) -> None:
         s = self.scheduler()
         cols = 10
         random = RandomTable(cols, rows=100_000, scheduler=s)
@@ -181,14 +190,14 @@ class TestColsBinary(ProgressiveTest):
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = module.output.result
         aio.run(s.start())
-        self.assertListEqual(module.result.columns, ["_3", "_5", "_7"])
-        arr = random.result.to_array()
+        self.assertListEqual(module.table.columns, ["_3", "_5", "_7"])
+        arr = random.table.to_array()
         res1 = np.add(arr[:, [2, 4, 6]], arr[:, [3, 5, 7]])
-        res2 = module.result.to_array()
+        res2 = module.table.to_array()
         self.assertTrue(module.name.startswith("cols_binary_"))
         self.assertTrue(np.allclose(res1, res2, equal_nan=True))
 
-    def test_cols_binary2(self):
+    def test_cols_binary2(self) -> None:
         s = self.scheduler()
         cols = 10
         random = RandomTable(cols, rows=100, scheduler=s)
@@ -203,9 +212,9 @@ class TestColsBinary(ProgressiveTest):
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = module.output.result
         aio.run(s.start())
-        self.assertListEqual(module.result.columns, ["x", "y", "z"])
+        self.assertListEqual(module.table.columns, ["x", "y", "z"])
 
-    def t_stirred_cols_binary(self, **kw):
+    def t_stirred_cols_binary(self, **kw: Any) -> None:
         s = self.scheduler()
         cols = 10
         random = RandomTable(cols, rows=10_000, scheduler=s)
@@ -218,20 +227,20 @@ class TestColsBinary(ProgressiveTest):
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = module.output.result
         aio.run(s.start())
-        self.assertListEqual(module.result.columns, ["_3", "_5", "_7"])
-        arr = stirrer.result.to_array()
+        self.assertListEqual(module.table.columns, ["_3", "_5", "_7"])
+        arr = stirrer.table.to_array()
         res1 = np.add(arr[:, [2, 4, 6]], arr[:, [3, 5, 7]])
-        res2 = module.result.to_array()
+        res2 = module.table.to_array()
         self.assertTrue(module.name.startswith("cols_binary_"))
         self.assertTrue(np.allclose(res1, res2, equal_nan=True))
 
-    def test_cols_binary3(self):
+    def test_cols_binary3(self) -> None:
         self.t_stirred_cols_binary(delete_rows=5)
 
-    def test_cols_binary4(self):
+    def test_cols_binary4(self) -> None:
         self.t_stirred_cols_binary(update_rows=5)
 
-    def _t_impl(self, cls, ufunc, mod_name):
+    def _t_impl(self, cls: Type[TableModule], ufunc: np.ufunc, mod_name: str) -> None:
         print("Testing", mod_name)
         s = self.scheduler()
         random = RandomTable(10, rows=10_000, scheduler=s)
@@ -245,19 +254,19 @@ class TestColsBinary(ProgressiveTest):
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = module.output.result
         aio.run(s.start())
-        self.assertListEqual(module.result.columns, ["x", "y", "z"])
-        arr = random.result.to_array()
+        self.assertListEqual(module.table.columns, ["x", "y", "z"])
+        arr = random.table.to_array()
         res1 = ufunc(arr[:, [2, 4, 6]], arr[:, [3, 5, 7]])
-        res2 = module.result.to_array()
+        res2 = module.table.to_array()
         self.assertTrue(module.name.startswith(mod_name))
         self.assertTrue(np.allclose(res1, res2, equal_nan=True))
 
 
-def add_cols_bin_tst(c, k, ufunc):
+def add_cols_bin_tst(c: Type[TestColsBinary], k: str, ufunc: np.ufunc) -> None:
     cls = f"Cols{func2class_name(k)}"
     mod_name = f"cols_{k}_"
 
-    def _f(self_):
+    def _f(self_: TestColsBinary) -> None:
         c._t_impl(self_, arr.__dict__[cls], ufunc, mod_name)
 
     setattr(c, "test_" + k, _f)
@@ -268,7 +277,7 @@ for k, ufunc in binary_dict_gen_tst.items():
 
 
 class TestOtherColsBinaries(ProgressiveTest):
-    def _t_impl(self, cls, ufunc, mod_name):
+    def _t_impl(self, cls: Type[TableModule], ufunc: np.ufunc, mod_name: str) -> None:
         print("Testing", mod_name)
         s = self.scheduler()
         cols = 10
@@ -276,7 +285,7 @@ class TestOtherColsBinaries(ProgressiveTest):
             cols,
             rows=10_000,
             scheduler=s,
-            random=lambda x: np.random.randint(10, size=x),
+            random=lambda x: np.random.randint(10, size=x),  # type: ignore
             dtype="int64",
         )
         module = cls(
@@ -289,14 +298,14 @@ class TestOtherColsBinaries(ProgressiveTest):
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = module.output.result
         aio.run(s.start())
-        self.assertListEqual(module.result.columns, ["x", "y", "z"])
-        arr = random.result.to_array()
+        self.assertListEqual(module.table.columns, ["x", "y", "z"])
+        arr = random.table.to_array()
         res1 = ufunc(arr[:, [2, 4, 6]], arr[:, [3, 5, 7]])
-        res2 = module.result.to_array()
+        res2 = module.table.to_array()
         self.assertTrue(module.name.startswith(mod_name))
         self.assertTrue(np.allclose(res1, res2, equal_nan=True))
 
-    def test_ldexp(self):
+    def test_ldexp(self) -> None:
         cls, ufunc, mod_name = ColsLdexp, np.ldexp, "cols_ldexp_"
         print("Testing", mod_name)
         s = self.scheduler()
@@ -305,7 +314,7 @@ class TestOtherColsBinaries(ProgressiveTest):
             cols,
             rows=10_000,
             scheduler=s,
-            random=lambda x: np.random.randint(10, size=x),
+            random=lambda x: np.random.randint(10, size=x),  # type: ignore
             dtype="int64",
         )
         module = cls(
@@ -318,19 +327,19 @@ class TestOtherColsBinaries(ProgressiveTest):
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = module.output.result
         aio.run(s.start())
-        self.assertListEqual(module.result.columns, ["x", "y", "z"])
-        arr = random.result.to_array()
+        self.assertListEqual(module.table.columns, ["x", "y", "z"])
+        arr = random.table.to_array()
         res1 = ufunc(arr[:, [2, 4, 6]], arr[:, [3, 5, 7]])
-        res2 = module.result.to_array()
+        res2 = module.table.to_array()
         self.assertTrue(module.name.startswith(mod_name))
         self.assertTrue(np.allclose(res1, res2, equal_nan=True))
 
 
-def add_other_cols_bin_tst(c, k, ufunc):
+def add_other_cols_bin_tst(c: Type[TestOtherColsBinaries], k: str, ufunc: np.ufunc) -> None:
     cls = f"Cols{func2class_name(k)}"
     mod_name = f"cols_{k}_"
 
-    def _f(self_):
+    def _f(self_: TestOtherColsBinaries) -> None:
         c._t_impl(self_, arr.__dict__[cls], ufunc, mod_name)
 
     setattr(c, f"test_cols_{k}", _f)
@@ -342,8 +351,13 @@ for k, ufunc in binary_dict_int_tst.items():
     add_other_cols_bin_tst(TestOtherColsBinaries, k, ufunc)
 
 
-class TestBinary(ProgressiveTest):
-    def test_binary(self):
+class TestBin(ProgressiveTest):
+    def _t_impl(self, cls: Type[TableModule], ufunc: np.ufunc, mod_name: str) -> None:
+        pass
+
+
+class TestBinary(TestBin):
+    def test_binary(self) -> None:
         s = self.scheduler()
         random1 = RandomTable(3, rows=100_000, scheduler=s)
         random2 = RandomTable(3, rows=100_000, scheduler=s)
@@ -353,12 +367,12 @@ class TestBinary(ProgressiveTest):
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = module.output.result
         aio.run(s.start())
-        res1 = np.add(random1.result.to_array(), random2.result.to_array())
-        res2 = module.result.to_array()
+        res1 = np.add(random1.table.to_array(), random2.table.to_array())
+        res2 = module.table.to_array()
         self.assertTrue(module.name.startswith("binary_"))
         self.assertTrue(np.allclose(res1, res2, equal_nan=True))
 
-    def test_binary2(self):
+    def test_binary2(self) -> None:
         s = self.scheduler()
         cols = 10
         _ = RandomTable(cols, rows=100_000, scheduler=s)
@@ -366,7 +380,7 @@ class TestBinary(ProgressiveTest):
         with self.assertRaises(AssertionError):
             _ = Binary(np.add, columns=["_3", "_5", "_7"], scheduler=s)
 
-    def test_binary3(self):
+    def test_binary3(self) -> None:
         s = self.scheduler()
         random1 = RandomTable(10, rows=100_000, scheduler=s)
         random2 = RandomTable(10, rows=100_000, scheduler=s)
@@ -381,14 +395,14 @@ class TestBinary(ProgressiveTest):
         pr.input[0] = module.output.result
         aio.run(s.start())
         res1 = np.add(
-            random1.result.to_array()[:, [2, 4, 6]],
-            random2.result.to_array()[:, [3, 5, 7]],
+            random1.table.to_array()[:, [2, 4, 6]],
+            random2.table.to_array()[:, [3, 5, 7]],
         )
-        res2 = module.result.to_array()
+        res2 = module.table.to_array()
         self.assertTrue(module.name.startswith("binary_"))
         self.assertTrue(np.allclose(res1, res2, equal_nan=True))
 
-    def _t_stirred_binary(self, **kw):
+    def _t_stirred_binary(self, **kw: Any) -> None:
         s = self.scheduler()
         random1 = RandomTable(10, rows=100000, scheduler=s)
         random2 = RandomTable(10, rows=100000, scheduler=s)
@@ -406,23 +420,26 @@ class TestBinary(ProgressiveTest):
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = module.output.result
         aio.run(s.start())
-        idx1 = stirrer1.result.index.to_array()
-        idx2 = stirrer2.result.index.to_array()
+        idx1 = stirrer1.table.index.to_array()
+        idx2 = stirrer2.table.index.to_array()
         common = bitmap(idx1) & bitmap(idx2)
-        t1 = stirrer1.result.loc[common, :].to_array()[:, [2, 4, 6]]
-        t2 = stirrer2.result.loc[common, :].to_array()[:, [3, 5, 7]]
+        bt1 = stirrer1.table.loc[common, :]
+        bt2 = stirrer2.table.loc[common, :]
+        assert bt1 is not None and bt2 is not None
+        t1 = bt1.to_array()[:, [2, 4, 6]]
+        t2 = bt2.to_array()[:, [3, 5, 7]]
         res1 = np.add(t1, t2)
-        res2 = module.result.to_array()
+        res2 = module.table.to_array()
         self.assertTrue(module.name.startswith("binary_"))
         self.assertTrue(np.allclose(res1, res2, equal_nan=True))
 
-    def test_stirred_binary1(self):
+    def test_stirred_binary1(self) -> None:
         self._t_stirred_binary(delete_rows=5)
 
-    def test_stirred_binary2(self):
+    def test_stirred_binary2(self) -> None:
         self._t_stirred_binary(update_rows=5)
 
-    def _t_impl(self, cls, ufunc, mod_name):
+    def _t_impl(self, cls: Type[TableModule], ufunc: np.ufunc, mod_name: str) -> None:
         print("Testing", mod_name)
         s = self.scheduler()
         random1 = RandomTable(3, rows=10_000, scheduler=s)
@@ -433,17 +450,17 @@ class TestBinary(ProgressiveTest):
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = module.output.result
         aio.run(s.start())
-        res1 = ufunc(random1.result.to_array(), random2.result.to_array())
-        res2 = module.result.to_array()
+        res1 = ufunc(random1.table.to_array(), random2.table.to_array())
+        res2 = module.table.to_array()
         self.assertTrue(module.name.startswith(mod_name))
         self.assertTrue(np.allclose(res1, res2, equal_nan=True))
 
 
-def add_bin_tst(c, k, ufunc):
+def add_bin_tst(c: Type[TestBin], k: str, ufunc: np.ufunc) -> None:
     cls = func2class_name(k)
     mod_name = k + "_"
 
-    def _f(self_):
+    def _f(self_: TestBinary) -> None:
         c._t_impl(self_, arr.__dict__[cls], ufunc, mod_name)
 
     setattr(c, "test_" + k, _f)
@@ -453,8 +470,8 @@ for k, ufunc in binary_dict_gen_tst.items():
     add_bin_tst(TestBinary, k, ufunc)
 
 
-class TestBinaryTD(ProgressiveTest):
-    def test_binary(self):
+class TestBinaryTD(TestBin):
+    def test_binary(self) -> None:
         s = self.scheduler()
         cols = 3
         random1 = RandomTable(cols, rows=100000, scheduler=s)
@@ -466,13 +483,13 @@ class TestBinaryTD(ProgressiveTest):
         pr.input[0] = module.output.result
         aio.run(s.start())
         res1 = np.add(
-            random1.result.to_array(), np.array(list(random2.result.values()))
+            random1.table.to_array(), np.array(list(random2.psdict.values()))
         )
-        res2 = module.result.to_array()
+        res2 = module.table.to_array()
         self.assertTrue(module.name.startswith("binary_"))
         self.assertTrue(np.allclose(res1, res2, equal_nan=True))
 
-    def test_binary2(self):
+    def test_binary2(self) -> None:
         s = self.scheduler()
         cols = 10
         _ = RandomTable(cols, rows=100_000, scheduler=s)
@@ -480,7 +497,7 @@ class TestBinaryTD(ProgressiveTest):
         with self.assertRaises(AssertionError):
             _ = Binary(np.add, columns=["_3", "_5", "_7"], scheduler=s)
 
-    def test_binary3(self):
+    def test_binary3(self) -> None:
         s = self.scheduler()
         cols = 10
         random1 = RandomTable(cols, rows=100_000, scheduler=s)
@@ -496,14 +513,14 @@ class TestBinaryTD(ProgressiveTest):
         pr.input[0] = module.output.result
         aio.run(s.start())
         res1 = np.add(
-            random1.result.to_array()[:, [2, 4, 6]],
-            np.array(list(random2.result.values()))[[3, 5, 7]],
+            random1.table.to_array()[:, [2, 4, 6]],
+            np.array(list(random2.psdict.values()))[[3, 5, 7]],
         )
-        res2 = module.result.to_array()
+        res2 = module.table.to_array()
         self.assertTrue(module.name.startswith("binary_"))
         self.assertTrue(np.allclose(res1, res2, equal_nan=True))
 
-    def _t_impl(self, cls, ufunc, mod_name):
+    def _t_impl(self, cls: Type[TableModule], ufunc: np.ufunc, mod_name: str) -> None:
         print("Testing", mod_name)
         s = self.scheduler()
         cols = 3
@@ -515,8 +532,8 @@ class TestBinaryTD(ProgressiveTest):
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = module.output.result
         aio.run(s.start())
-        res1 = ufunc(random1.result.to_array(), np.array(list(random2.result.values())))
-        res2 = module.result.to_array()
+        res1 = ufunc(random1.table.to_array(), np.array(list(random2.psdict.values())))
+        res2 = module.table.to_array()
         self.assertTrue(module.name.startswith(mod_name))
         self.assertTrue(np.allclose(res1, res2, equal_nan=True))
 
@@ -526,21 +543,21 @@ for k, ufunc in binary_dict_gen_tst.items():
 
 
 class TestOtherBinaries(ProgressiveTest):
-    def _t_impl(self, cls, ufunc, mod_name):
+    def _t_impl(self, cls: Type[TableModule], ufunc: np.ufunc, mod_name: str) -> None:
         print("Testing", mod_name)
         s = self.scheduler()
         random1 = RandomTable(
             3,
             rows=100_000,
             scheduler=s,
-            random=lambda x: np.random.randint(10, size=x),
+            random=lambda x: np.random.randint(10, size=x),  # type: ignore
             dtype="int64",
         )
         random2 = RandomTable(
             3,
             rows=100_000,
             scheduler=s,
-            random=lambda x: np.random.randint(10, size=x),
+            random=lambda x: np.random.randint(10, size=x),  # type: ignore
             dtype="int64",
         )
         module = cls(scheduler=s)
@@ -549,12 +566,12 @@ class TestOtherBinaries(ProgressiveTest):
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = module.output.result
         aio.run(s.start())
-        res1 = ufunc(random1.result.to_array(), random2.result.to_array())
-        res2 = module.result.to_array()
+        res1 = ufunc(random1.table.to_array(), random2.table.to_array())
+        res2 = module.table.to_array()
         self.assertTrue(module.name.startswith(mod_name))
         self.assertTrue(np.allclose(res1, res2, equal_nan=True))
 
-    def test_ldexp(self):
+    def test_ldexp(self) -> None:
         cls, ufunc, mod_name = Ldexp, np.ldexp, "ldexp_"
         print("Testing", mod_name)
         s = self.scheduler()
@@ -563,7 +580,7 @@ class TestOtherBinaries(ProgressiveTest):
             3,
             rows=100_000,
             scheduler=s,
-            random=lambda x: np.random.randint(10, size=x),
+            random=lambda x: np.random.randint(10, size=x),  # type: ignore
             dtype="int64",
         )
         module = cls(scheduler=s)
@@ -572,17 +589,17 @@ class TestOtherBinaries(ProgressiveTest):
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = module.output.result
         aio.run(s.start())
-        res1 = ufunc(random1.result.to_array(), random2.result.to_array())
-        res2 = module.result.to_array()
+        res1 = ufunc(random1.table.to_array(), random2.table.to_array())
+        res2 = module.table.to_array()
         self.assertTrue(module.name.startswith(mod_name))
         self.assertTrue(np.allclose(res1, res2, equal_nan=True))
 
 
-def add_other_bin_tst(c, k, ufunc):
+def add_other_bin_tst(c: Type[TestOtherBinaries], k: str, ufunc: np.ufunc) -> None:
     cls = func2class_name(k)
     mod_name = k + "_"
 
-    def _f(self_):
+    def _f(self_: TestOtherBinaries) -> None:
         c._t_impl(self_, arr.__dict__[cls], ufunc, mod_name)
 
     setattr(c, "test_" + k, _f)
@@ -595,7 +612,7 @@ for k, ufunc in binary_dict_int_tst.items():
 
 
 class TestReduce(ProgressiveTest):
-    def test_reduce(self):
+    def test_reduce(self) -> None:
         s = self.scheduler()
         random = RandomTable(10, rows=100_000, scheduler=s)
         module = Reduce(np.add, scheduler=s)
@@ -603,12 +620,12 @@ class TestReduce(ProgressiveTest):
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = module.output.result
         aio.run(s.start())
-        res1 = np.add.reduce(random.result.to_array())
-        res2 = np.array(list(module.result.values()))
+        res1 = np.add.reduce(random.table.to_array())
+        res2 = np.array(list(module.psdict.values()))
         self.assertTrue(module.name.startswith("reduce_"))
         self.assertTrue(np.allclose(res1, res2, equal_nan=True))
 
-    def test_reduce2(self):
+    def test_reduce2(self) -> None:
         s = self.scheduler()
         random = RandomTable(10, rows=100_000, scheduler=s)
         module = Reduce(np.add, columns=["_3", "_5", "_7"], scheduler=s)
@@ -616,12 +633,12 @@ class TestReduce(ProgressiveTest):
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = module.output.result
         aio.run(s.start())
-        res1 = np.add.reduce(random.result.to_array()[:, [2, 4, 6]])
-        res2 = np.array(list(module.result.values()))
+        res1 = np.add.reduce(random.table.to_array()[:, [2, 4, 6]])
+        res2 = np.array(list(module.psdict.values()))
         self.assertTrue(module.name.startswith("reduce_"))
         self.assertTrue(np.allclose(res1, res2, equal_nan=True))
 
-    def _t_impl(self, cls, ufunc, mod_name):
+    def _t_impl(self, cls: Type[TableModule], ufunc: np.ufunc, mod_name: str) -> None:
         print("Testing", mod_name)
         s = self.scheduler()
         random = RandomTable(10, rows=10_000, scheduler=s)
@@ -630,17 +647,17 @@ class TestReduce(ProgressiveTest):
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = module.output.result
         aio.run(s.start())
-        res1 = getattr(ufunc, "reduce")(random.result.to_array())
-        res2 = np.array(list(module.result.values()))
+        res1 = getattr(ufunc, "reduce")(random.table.to_array())
+        res2 = np.array(list(module.psdict.values()))
         self.assertTrue(module.name.startswith(mod_name))
         self.assertTrue(np.allclose(res1, res2, equal_nan=True))
 
 
-def add_reduce_tst(c, k, ufunc):
+def add_reduce_tst(c: Type[TestReduce], k: str, ufunc: np.ufunc) -> None:
     cls = f"{func2class_name(k)}Reduce"
     mod_name = f"{k}_reduce_"
 
-    def _f(self_):
+    def _f(self_: TestReduce) -> None:
         c._t_impl(self_, arr.__dict__[cls], ufunc, mod_name)
 
     setattr(c, f"test_{k}", _f)
@@ -651,9 +668,9 @@ for k, ufunc in binary_dict_gen_tst.items():
 
 
 class TestCustomFunctions(ProgressiveTest):
-    def test_custom_unary(self):
-        def custom_unary(x):
-            return (x + np.sin(x)) / (x + np.cos(x))
+    def test_custom_unary(self) -> None:
+        def custom_unary(x: float) -> float:
+            return (x + np.sin(x)) / (x + np.cos(x))  # type: ignore
 
         CustomUnary = make_unary(custom_unary)
         s = self.scheduler()
@@ -663,14 +680,14 @@ class TestCustomFunctions(ProgressiveTest):
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = module.output.result
         aio.run(s.start())
-        res1 = np.array(module._ufunc(random.result.to_array()), dtype="float64")
-        res2 = module.result.to_array()
+        res1 = np.array(module._ufunc(random.table.to_array()), dtype="float64")
+        res2 = module.table.to_array()
         self.assertTrue(module.name.startswith("custom_unary_"))
         self.assertTrue(np.allclose(res1, res2, equal_nan=True))
 
-    def test_custom_binary(self):
-        def custom_binary(x, y):
-            return (x + np.sin(y)) / (x + np.cos(y))
+    def test_custom_binary(self) -> None:
+        def custom_binary(x: float, y: float) -> float:
+            return (x + np.sin(y)) / (x + np.cos(y))  # type: ignore
 
         CustomBinary = make_binary(custom_binary)
         s = self.scheduler()
@@ -683,16 +700,16 @@ class TestCustomFunctions(ProgressiveTest):
         pr.input[0] = module.output.result
         aio.run(s.start())
         res1 = np.array(
-            module._ufunc(random1.result.to_array(), random2.result.to_array()),
+            module._ufunc(random1.table.to_array(), random2.table.to_array()),
             dtype="float64",
         )
-        res2 = module.result.to_array()
+        res2 = module.table.to_array()
         self.assertTrue(module.name.startswith("custom_binary_"))
         self.assertTrue(np.allclose(res1, res2, equal_nan=True))
 
-    def test_custom_reduce(self):
-        def custom_binary(x, y):
-            return (x + np.sin(y)) / (x + np.cos(y))
+    def test_custom_reduce(self) -> None:
+        def custom_binary(x: float, y: float) -> float:
+            return (x + np.sin(y)) / (x + np.cos(y))  # type: ignore
 
         CustomBinaryReduce = make_reduce(custom_binary)
         s = self.scheduler()
@@ -702,21 +719,21 @@ class TestCustomFunctions(ProgressiveTest):
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = module.output.result
         aio.run(s.start())
-        res1 = np.array(module._ufunc(random.result.to_array()), dtype="float64")
+        res1 = np.array(module._ufunc(random.table.to_array()), dtype="float64")
         res2 = np.array(list(module.result.values()))
         self.assertTrue(module.name.startswith("custom_binary_reduce_"))
         self.assertTrue(np.allclose(res1, res2, equal_nan=True))
 
 
 class TestOtherReduces(ProgressiveTest):
-    def _t_impl(self, cls, ufunc, mod_name):
+    def _t_impl(self, cls: Type[TableModule], ufunc: np.ufunc, mod_name: str) -> None:
         print("Testing", mod_name)
         s = self.scheduler()
         random = RandomTable(
             3,
             rows=10_000,
             scheduler=s,
-            random=lambda x: np.random.randint(10, size=x),
+            random=lambda x: np.random.randint(10, size=x),  # type: ignore
             dtype="int64",
         )
         module = cls(scheduler=s)
@@ -724,17 +741,17 @@ class TestOtherReduces(ProgressiveTest):
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = module.output.result
         aio.run(s.start())
-        res1 = getattr(ufunc, "reduce")(random.result.to_array())
-        res2 = np.array(list(module.result.values()))
+        res1 = getattr(ufunc, "reduce")(random.table.to_array())
+        res2 = np.array(list(module.psdict.values()))
         self.assertTrue(module.name.startswith(mod_name))
         self.assertTrue(np.allclose(res1, res2, equal_nan=True))
 
 
-def add_other_reduce_tst(c, k, ufunc):
+def add_other_reduce_tst(c: Type[TestOtherReduces], k: str, ufunc: np.ufunc) -> None:
     cls = f"{func2class_name(k)}Reduce"
     mod_name = f"{k}_reduce_"
 
-    def _f(self_):
+    def _f(self_: TestOtherReduces) -> None:
         c._t_impl(self_, arr.__dict__[cls], ufunc, mod_name)
 
     setattr(c, f"test_{k}", _f)
@@ -747,10 +764,10 @@ for k, ufunc in binary_dict_int_tst.items():
 
 
 class TestDecorators(ProgressiveTest):
-    def test_decorator_unary(self):
+    def test_decorator_unary(self) -> None:
         @unary_module
-        def CustomUnary(x):
-            return (x + np.sin(x)) / (x + np.cos(x))
+        def CustomUnary(x: float) -> float:
+            return (x + np.sin(x)) / (x + np.cos(x))  # type: ignore
 
         s = self.scheduler()
         random = RandomTable(10, rows=100_000, scheduler=s)
@@ -759,15 +776,15 @@ class TestDecorators(ProgressiveTest):
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = module.output.result
         aio.run(s.start())
-        res1 = np.array(module._ufunc(random.result.to_array()), dtype="float64")
-        res2 = module.result.to_array()
+        res1 = np.array(module._ufunc(random.table.to_array()), dtype="float64")
+        res2 = module.table.to_array()
         self.assertTrue(module.name.startswith("custom_unary_"))
         self.assertTrue(np.allclose(res1, res2, equal_nan=True))
 
-    def test_decorator_binary(self):
+    def test_decorator_binary(self) -> None:
         @binary_module
-        def CustomBinary(x, y):
-            return (x + np.sin(y)) / (x + np.cos(y))
+        def CustomBinary(x: float, y: float) -> float:
+            return (x + np.sin(y)) / (x + np.cos(y))  # type: ignore
 
         s = self.scheduler()
         random1 = RandomTable(3, rows=100_000, scheduler=s)
@@ -779,17 +796,17 @@ class TestDecorators(ProgressiveTest):
         pr.input[0] = module.output.result
         aio.run(s.start())
         res1 = np.array(
-            module._ufunc(random1.result.to_array(), random2.result.to_array()),
+            module._ufunc(random1.table.to_array(), random2.table.to_array()),
             dtype="float64",
         )
-        res2 = module.result.to_array()
+        res2 = module.table.to_array()
         self.assertTrue(module.name.startswith("custom_binary_"))
         self.assertTrue(np.allclose(res1, res2, equal_nan=True))
 
-    def test_decorator_reduce(self):
+    def test_decorator_reduce(self) -> None:
         @reduce_module
-        def CustomBinaryReduce(x, y):
-            return (x + np.sin(y)) / (x + np.cos(y))
+        def CustomBinaryReduce(x: float, y: float) -> float:
+            return (x + np.sin(y)) / (x + np.cos(y))  # type: ignore
 
         s = self.scheduler()
         random = RandomTable(10, rows=100_000, scheduler=s)
@@ -798,7 +815,7 @@ class TestDecorators(ProgressiveTest):
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = module.output.result
         aio.run(s.start())
-        res1 = np.array(module._ufunc(random.result.to_array()), dtype="float64")
+        res1 = np.array(module._ufunc(random.table.to_array()), dtype="float64")
         res2 = np.array(list(module.result.values()))
         self.assertTrue(module.name.startswith("custom_binary_reduce_"))
         self.assertTrue(np.allclose(res1, res2, equal_nan=True))

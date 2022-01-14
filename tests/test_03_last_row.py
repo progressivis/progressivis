@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from . import ProgressiveTest
 
 from progressivis import Print, Every
@@ -12,7 +14,7 @@ from progressivis.core import aio
 
 
 class TestLastRow(ProgressiveTest):
-    def test_last_row(self):
+    def test_last_row(self) -> None:
         s = self.scheduler()
         csv = CSVLoader(
             get_dataset("smallfile"), index_col=False, header=None, scheduler=s
@@ -22,12 +24,13 @@ class TestLastRow(ProgressiveTest):
         prlen = Every(proc=self.terse, constant_time=True, scheduler=s)
         prlen.input[0] = lr1.output.result
         aio.run(s.start())
-        df = csv.result
+        df = csv.table
         last = df.last()
-        res = lr1.result
+        res = lr1.table
+        assert last is not None and res is not None
         self.assertEqual(res.at[0, "_1"], last["_1"])
 
-    def test_last_row_simple(self):
+    def test_last_row_simple(self) -> None:
         s = self.scheduler()
         t1 = Table(name=get_random_name("cst1"), data={"xmin": [1], "xmax": [2]})
         t2 = Table(name=get_random_name("cst2"), data={"ymin": [3], "ymax": [4]})
@@ -42,8 +45,9 @@ class TestLastRow(ProgressiveTest):
         # res = join.trace_stats(max_runs=1)
         # pd.set_option('display.expand_frame_repr', False)
         # print(res)
-        df = join.result
+        df = join.table
         last = df.last()
+        assert last is not None
         self.assertTrue(
             last["xmin"] == 1
             and last["xmax"] == 2

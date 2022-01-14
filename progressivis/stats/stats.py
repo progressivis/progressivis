@@ -10,7 +10,7 @@ from progressivis.core.slot import SlotDescriptor
 from progressivis.table.module import TableModule
 from progressivis.table.table import Table
 
-from typing import Optional, Any
+from typing import Optional, Any, Union
 
 # TODO update with http://www.johndcook.com/blog/skewness_kurtosis/
 # Use http://www.grantjenks.com/docs/runstats/
@@ -25,14 +25,14 @@ class Stats(TableModule):
 
     def __init__(
         self,
-        column: str,
+        column: Union[str, int],
         min_column: Optional[str] = None,
         max_column: Optional[str] = None,
         reset_index: bool = False,
         **kwds: Any
     ) -> None:
         super(Stats, self).__init__(**kwds)
-        self._column: str = column
+        self._column = column
         self.default_step_size = 10000
 
         if min_column is None:

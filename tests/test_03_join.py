@@ -10,16 +10,18 @@ from progressivis.table.table import Table
 from progressivis.core import aio
 import pandas as pd
 
+from typing import Any
+
 # from pprint import pprint
 
 
-def print_len(x):
+def print_len(x: Any) -> None:
     if x is not None:
         print(len(x))
 
 
 class TestJoin(ProgressiveTest):
-    def test_join(self):
+    def test_join(self) -> None:
         s = self.scheduler()
         csv = CSVLoader(
             get_dataset("bigfile"), index_col=False, header=None, scheduler=s
@@ -39,7 +41,7 @@ class TestJoin(ProgressiveTest):
         res = join.trace_stats(max_runs=1)
         print(res)
 
-    def te_st_join_simple(self):
+    def te_st_join_simple(self) -> None:
         s = self.scheduler()
         cst1 = Constant(
             Table(
@@ -65,8 +67,9 @@ class TestJoin(ProgressiveTest):
         aio.run(s.start())
         res = join.trace_stats(max_runs=1)
         print(res)
-        df = join.result
+        df = join.table
         last = df.loc[df.index[-1]]
+        assert last is not None
         self.assertTrue(
             last["xmin"] == 1
             and last["xmax"] == 2

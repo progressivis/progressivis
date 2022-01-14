@@ -43,6 +43,7 @@ if TYPE_CHECKING:
 TickCb = Callable[["Scheduler", int], None]
 TickCoro = Callable[["Scheduler", int], Coroutine[Any, Any, Any]]
 TickProc = Union[TickCb, TickCoro]
+ChangeProc = Callable[["Scheduler", Set[str], Set[str]], None]
 Order = List[str]
 Reachability = Dict[str, List[str]]
 
@@ -99,6 +100,7 @@ class Scheduler:
         self._new_dependencies: Dependencies = {}
         self._new_runorder: Order = []
         self._new_reachability: Reachability = {}
+        self._added_modules: Set[Module] = set()
         self._deleted_modules: Set[Module] = set()
         self._start: float = 0
         self._step_once = False
@@ -106,6 +108,7 @@ class Scheduler:
         self._tick_procs = CallbackList()
         self._idle_procs = CallbackList()
         self._loop_procs = CallbackList()
+        self._change_procs: Set[ChangeProc] = set()
         self.version = 0
         self._run_list: List[Module] = []
         self._run_index = 0
@@ -319,6 +322,13 @@ class Scheduler:
         "Remove an idle callback."
         self._loop_procs.pop(idle_proc, None)
 
+    def on_change(self, proc: ChangeProc) -> None:
+        assert callable(proc)
+        self._change_procs.add(proc)
+
+    def remove_change(self, proc: ChangeProc) -> None:
+        self._change_procs.remove(proc)
+
     async def run(self) -> None:
         "Run the modules, called by start()."
         global KEEP_RUNNING
@@ -430,6 +440,12 @@ class Scheduler:
             if self._deleted_modules:
                 for mod in self._deleted_modules:
                     await mod.ending()
+            if self._added_modules or self._deleted_modules:
+                for proc in self._change_procs:
+                    proc(self,
+                         {mod.name for mod in self._added_modules},
+                         {mod.name for mod in self._deleted_modules})
+                self._added_modules = set()
                 self._deleted_modules = set()
             # If run_list empty, we're done
             if not self._run_list:
@@ -542,6 +558,7 @@ class Scheduler:
             print(f"# Scheduler added module(s): {sorted_added}")
             for mid in added:
                 modules[mid].starting()
+            self._added_modules.update({self[mid] for mid in added})
         self._new_modules = None
         self._run_list = []
         self._runorder = self._new_runorder

@@ -5,12 +5,14 @@ from progressivis.stats import IdxMax, IdxMin, Max, Min, RandomTable
 from progressivis.table.stirrer import Stirrer
 from progressivis.core import aio
 
+from typing import Any, Dict
+
 
 class TestIdxMax(ProgressiveTest):
-    def tearDown(self):
+    def tearDown(self) -> None:
         TestIdxMax.cleanup()
 
-    def test_idxmax(self):
+    def test_idxmax(self) -> None:
         s = self.scheduler()
         random = RandomTable(10, rows=10000, throttle=1000, scheduler=s)
         idxmax = IdxMax(scheduler=s)
@@ -22,13 +24,17 @@ class TestIdxMax(ProgressiveTest):
         pr2 = Print(proc=self.terse, scheduler=s)
         pr2.input[0] = max_.output.result
         aio.run(s.start())
-        max1 = max_.result
+        max1 = max_.psdict
         # print('max1', max1)
-        max2 = idxmax.max().last().to_dict()
+        max = idxmax.max()
+        assert max is not None
+        row = max.last()
+        assert row is not None
+        max2 = row.to_dict()
         # print('max2', max2)
         self.compare(max1, max2)
 
-    def test_idxmax2(self):
+    def test_idxmax2(self) -> None:
         s = self.scheduler()
         random = RandomTable(10, rows=10000, throttle=1000, scheduler=s)
         stirrer = Stirrer(
@@ -45,13 +51,17 @@ class TestIdxMax(ProgressiveTest):
         pr2.input[0] = max_.output.result
         aio.run(s.start())
         # import pdb;pdb.set_trace()
-        max1 = max_.result
+        max1 = max_.psdict
         # print('max1', max1)
-        max2 = idxmax.max().last().to_dict()
+        max = idxmax.max()
+        assert max is not None
+        row = max.last()
+        assert row is not None
+        max2 = row.to_dict()
         # print('max2', max2)
         self.compare(max1, max2)
 
-    def test_idxmin(self):
+    def test_idxmin(self) -> None:
         s = self.scheduler()
         random = RandomTable(10, rows=10000, throttle=1000, scheduler=s)
         idxmin = IdxMin(scheduler=s)
@@ -63,13 +73,17 @@ class TestIdxMax(ProgressiveTest):
         pr2 = Print(proc=self.terse, scheduler=s)
         pr2.input[0] = min_.output.result
         aio.run(s.start())
-        min1 = min_.result
+        min1 = min_.psdict
         # print('min1', min1)
-        min2 = idxmin.min().last().to_dict()
+        min = idxmin.min()
+        assert min is not None
+        row = min.last()
+        assert row is not None
+        min2 = row.to_dict()
         # print('min2', min2)
         self.compare(min1, min2)
 
-    def test_idxmin2(self):
+    def test_idxmin2(self) -> None:
         s = self.scheduler()
         random = RandomTable(10, rows=10000, throttle=1000, scheduler=s)
         stirrer = Stirrer(
@@ -85,13 +99,17 @@ class TestIdxMax(ProgressiveTest):
         pr2 = Print(proc=self.terse, scheduler=s)
         pr2.input[0] = min_.output.result
         aio.run(s.start())
-        min1 = min_.result
+        min1 = min_.psdict
         # print('min1', min1)
-        min2 = idxmin.min().last().to_dict()
+        min = idxmin.min()
+        assert min is not None
+        row = min.last()
+        assert row is not None
+        min2 = row.to_dict()
         # print('min2', min2)
         self.compare(min1, min2)
 
-    def compare(self, res1, res2):
+    def compare(self, res1: Dict[str, Any], res2: Dict[str, Any]) -> None:
         v1 = np.array(list(res1.values()))
         v2 = np.array(list(res2.values()))
         # print('v1 = ', v1, res1.keys())

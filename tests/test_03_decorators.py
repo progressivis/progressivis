@@ -1,9 +1,11 @@
 from . import ProgressiveTest
+from progressivis import Module, Scheduler
 from progressivis.io import CSVLoader
 from progressivis.table.constant import Constant
 from progressivis.core.slot import SlotDescriptor
+from progressivis.core.module import ReturnRunStep
 from progressivis.datasets import get_dataset
-from progressivis.table.module import TableModule, ReturnRunStep
+from progressivis.table.module import TableModule
 from progressivis.table.table import Table
 from progressivis.core.decorators import (
     process_slot,
@@ -12,8 +14,11 @@ from progressivis.core.decorators import (
     or_all,
     run_if_any,
     and_any,
+    _CtxImpl
 )
 import asyncio as aio
+
+from typing import Any, Callable, Coroutine
 
 
 class FooABC(TableModule):
@@ -24,36 +29,36 @@ class FooABC(TableModule):
         SlotDescriptor("d", type=Table, required=True),
     ]
 
-    def __init__(self, **kwds):
+    def __init__(self, **kwds: Any) -> None:
         super().__init__(output_required=False, **kwds)
 
-    def run_step_impl(self, ctx, run_number, step_size):
+    def run_step_impl(self, ctx: _CtxImpl, run_number: int, step_size: int) -> ReturnRunStep:
         if self.result is None:
             self.result = Table(
                 self.generate_table_name("Foo"), dshape="{a: int, b: int}", create=True
             )
         for sn in "abcd":
             getattr(ctx, sn).created.next()
-        self.result.append({"a": [run_number], "b": [step_size]})
+        self.table.append({"a": [run_number], "b": [step_size]})
         return self._return_run_step(self.state_blocked, steps_run=0)
 
 
 class RunIfAll(FooABC):
     @process_slot("a", "b", "c", "d", reset_if=False)
     @run_if_all
-    def run_step(self, run_number, step_size, howlong):
+    def run_step(self, run_number: int, step_size: int, howlong: float) -> ReturnRunStep:
         assert self.context
         with self.context as ctx:
             return self.run_step_impl(ctx, run_number, step_size)
 
 
 class RunAlways(FooABC):
-    def is_greedy(self):
+    def is_greedy(self) -> bool:
         return True
 
     @process_slot("a", "b", "c", "d", reset_if=False)
     @run_always
-    def run_step(self, run_number, step_size, howlong):
+    def run_step(self, run_number: int, step_size: int, howlong: float) -> ReturnRunStep:
         assert self.context
         with self.context as ctx:
             return self.run_step_impl(ctx, run_number, step_size)
@@ -64,7 +69,7 @@ class RunIfAllacOrAllbd(FooABC):
     @run_if_all("a", "c")  # type: ignore
     @or_all("b", "d")  # type: ignore
     def run_step(
-        self, run_number: int, step_size: float, howlong: float
+        self, run_number: int, step_size: int, howlong: float
     ) -> ReturnRunStep:
         assert self.context
         with self.context as ctx:
@@ -76,19 +81,20 @@ class RunIfAllabOrAllcd(FooABC):
     @process_slot("a", "b", "c", "d", reset_if=False)  # type: ignore
     @run_if_all("a", "b")  # type: ignore
     @or_all("c", "d")  # type: ignore
-    def run_step(self, run_number, step_size, howlong):
+    def run_step(self, run_number: int, step_size: int, howlong: float) -> ReturnRunStep:
         assert self.context
         with self.context as ctx:
             return self.run_step_impl(ctx, run_number, step_size)
 
 
 class RunIfAny(FooABC):
-    def is_greedy(self):
+    def is_greedy(self) -> bool:
         return True
 
     @process_slot("a", "b", "c", "d", reset_if=False)  # type: ignore
     @run_if_any()  # type: ignore
-    def run_step(self, run_number, step_size, howlong):
+    def run_step(self, run_number: int, step_size: int, howlong: float) -> ReturnRunStep:
+        assert self.context is not None
         with self.context as ctx:
             return self.run_step_impl(ctx, run_number, step_size)
 
@@ -97,16 +103,18 @@ class RunIfAnyAndAny(FooABC):
     @process_slot("a", "b", "c", "d", reset_if=False)  # type: ignore
     @run_if_any("a", "c")  # type: ignore
     @and_any("b", "d")  # type: ignore
-    def run_step(self, run_number, step_size, howlong):
+    def run_step(self, run_number: int, step_size: int, howlong: float) -> ReturnRunStep:
+        assert self.context is not None
         with self.context as ctx:
             return self.run_step_impl(ctx, run_number, step_size)
 
 
 class InvalidProcessAfterRun(FooABC):
     @run_if_any("a", "c")  # type: ignore
-    @process_slot("a", "b", "c", "d", reset_if=False)  # type: ignore
+    @process_slot("a", "b", "c", "d", reset_if=False)
     @and_any("b", "d")  # type: ignore
-    def run_step(self, run_number, step_size, howlong):
+    def run_step(self, run_number: int, step_size: int, howlong: float) -> ReturnRunStep:  # type: ignore
+        assert self.context is not None
         with self.context as ctx:
             return self.run_step_impl(ctx, run_number, step_size)
 
@@ -115,12 +123,13 @@ class InvalidDoubleRun(FooABC):
     @process_slot("a", "b", "c", "d", reset_if=False)  # type: ignore
     @run_if_any("a", "c")  # type: ignore
     @run_if_any("b", "d")  # type: ignore
-    def run_step(self, run_number, step_size, howlong):
+    def run_step(self, run_number: int, step_size: int, howlong: float) -> ReturnRunStep:
+        assert self.context is not None
         with self.context as ctx:
             return self.run_step_impl(ctx, run_number, step_size)
 
 
-def _4_csv_scenario(module, s):
+def _4_csv_scenario(module: Module, s: Scheduler) -> Callable[[Scheduler, int], Coroutine[Any, Any, None]]:
     with s:
         csv_a = CSVLoader(
             get_dataset("smallfile"), index_col=False, header=None, scheduler=s
@@ -139,14 +148,14 @@ def _4_csv_scenario(module, s):
         module.input.c = csv_c.output.result
         module.input.d = csv_d.output.result
 
-    async def _fun(s, r):
+    async def _fun(s: Scheduler, r: int) -> None:
         if r > 10:
             s.task_stop()
 
     return _fun
 
 
-def _4_const_scenario(module, s):
+def _4_const_scenario(module: Module, s: Scheduler) -> Callable[[Scheduler, int], None]:
     table_ = Table("const_4_scenario", dshape="{a: int}", create=True)
     const_a = Constant(table=table_, scheduler=s)
     const_b = Constant(table=table_, scheduler=s)
@@ -157,14 +166,14 @@ def _4_const_scenario(module, s):
     module.input.c = const_c.output.result
     module.input.d = const_d.output.result
 
-    def _fun(s, r):
+    def _fun(s: Scheduler, r: int) -> None:
         if r > 10:
             s.task_stop()
 
     return _fun
 
 
-def _2_csv_2_const_scenario(module, s):
+def _2_csv_2_const_scenario(module: Module, s: Scheduler) -> Callable[[Scheduler, int], None]:
     csv_a = CSVLoader(
         get_dataset("smallfile"), index_col=False, header=None, scheduler=s
     )
@@ -180,7 +189,7 @@ def _2_csv_2_const_scenario(module, s):
     module.input.c = const_c.output.result
     module.input.d = const_d.output.result
 
-    def _fun(s, r):
+    def _fun(s: Scheduler, r: int) -> None:
         if r > 10:
             s.task_stop()
 
@@ -189,7 +198,7 @@ def _2_csv_2_const_scenario(module, s):
 
 # @skip
 class TestDecorators(ProgressiveTest):
-    def test_decorators_all(self):
+    def test_decorators_all(self) -> None:
         s = self.scheduler()
         module = RunIfAll(scheduler=s)
         _fun = _4_csv_scenario(module, s)
@@ -197,10 +206,11 @@ class TestDecorators(ProgressiveTest):
         self.assertTrue(
             module.result is not None
         )  # evidence that run_step_impl() was called
+        assert module.context is not None
         self.assertEqual(module.context._slot_policy, "run_if_all")
         self.assertEqual(module.context._slot_expr, [["a", "b", "c", "d"]])
 
-    def test_decorators_all_or_all(self):
+    def test_decorators_all_or_all(self) -> None:
         s = self.scheduler()
         module = RunIfAllacOrAllbd(scheduler=s)
         _fun = _4_csv_scenario(module, s)
@@ -208,10 +218,11 @@ class TestDecorators(ProgressiveTest):
         self.assertTrue(
             module.result is not None
         )  # evidence that run_step_impl() was called
+        assert module.context is not None
         self.assertEqual(module.context._slot_policy, "run_if_all")
         self.assertEqual(module.context._slot_expr, [("a", "c"), ("b", "d")])
 
-    def test_decorators_any(self):
+    def test_decorators_any(self) -> None:
         s = self.scheduler()
         module = RunIfAny(scheduler=s)
         _fun = _4_csv_scenario(module, s)
@@ -219,10 +230,11 @@ class TestDecorators(ProgressiveTest):
         self.assertTrue(
             module.result is not None
         )  # evidence that run_step_impl() was called
+        assert module.context is not None
         self.assertEqual(module.context._slot_policy, "run_if_any")
         self.assertEqual(module.context._slot_expr, [["a", "b", "c", "d"]])
 
-    def test_decorators_any_and_any(self):
+    def test_decorators_any_and_any(self) -> None:
         s = self.scheduler()
         module = RunIfAnyAndAny(scheduler=s)
         _fun = _4_csv_scenario(module, s)
@@ -230,13 +242,14 @@ class TestDecorators(ProgressiveTest):
         self.assertTrue(
             module.result is not None
         )  # evidence that run_step_impl() was called
+        assert module.context is not None
         self.assertEqual(module.context._slot_policy, "run_if_any")
         self.assertEqual(module.context._slot_expr, [("a", "c"), ("b", "d")])
 
 
 # @skip
 class TestDecoratorsWith2CSV2Const(ProgressiveTest):
-    def test_decorators_all(self):
+    def test_decorators_all(self) -> None:
         s = self.scheduler()
         module = RunIfAll(scheduler=s)
         _fun = _2_csv_2_const_scenario(module, s)
@@ -244,10 +257,11 @@ class TestDecoratorsWith2CSV2Const(ProgressiveTest):
         self.assertTrue(
             module.result is None
         )  # evidence that run_step_impl() was NOT called
+        assert module.context is not None
         self.assertEqual(module.context._slot_policy, "run_if_all")
         self.assertEqual(module.context._slot_expr, [["a", "b", "c", "d"]])
 
-    def test_decorators_all_or_all(self):
+    def test_decorators_all_or_all(self) -> None:
         s = self.scheduler()
         module = RunIfAllacOrAllbd(scheduler=s)
         _fun = _2_csv_2_const_scenario(module, s)
@@ -255,10 +269,11 @@ class TestDecoratorsWith2CSV2Const(ProgressiveTest):
         self.assertTrue(
             module.result is None
         )  # evidence that run_step_impl() was NOT called
+        assert module.context is not None
         self.assertEqual(module.context._slot_policy, "run_if_all")
         self.assertEqual(module.context._slot_expr, [("a", "c"), ("b", "d")])
 
-    def test_decorators_all_or_all2(self):
+    def test_decorators_all_or_all2(self) -> None:
         s = self.scheduler()
         module = RunIfAllabOrAllcd(scheduler=s)
         _fun = _2_csv_2_const_scenario(module, s)
@@ -266,12 +281,13 @@ class TestDecoratorsWith2CSV2Const(ProgressiveTest):
         self.assertTrue(
             module.result is not None
         )  # evidence that run_step_impl() was called
+        assert module.context is not None
         self.assertEqual(module.context._slot_policy, "run_if_all")
         self.assertEqual(module.context._slot_expr, [("a", "b"), ("c", "d")])
 
 
 class TestDecoratorsWith2CSV2Const2(ProgressiveTest):
-    def test_decorators_any(self):
+    def test_decorators_any(self) -> None:
         s = self.scheduler()
         module = RunIfAny(scheduler=s)
         _fun = _2_csv_2_const_scenario(module, s)
@@ -279,10 +295,11 @@ class TestDecoratorsWith2CSV2Const2(ProgressiveTest):
         self.assertTrue(
             module.result is not None
         )  # evidence that run_step_impl() was called
+        assert module.context is not None
         self.assertEqual(module.context._slot_policy, "run_if_any")
         self.assertEqual(module.context._slot_expr, [["a", "b", "c", "d"]])
 
-    def test_decorators_any_and_any(self):
+    def test_decorators_any_and_any(self) -> None:
         s = self.scheduler()
         module = RunIfAnyAndAny(scheduler=s)
         _fun = _4_csv_scenario(module, s)
@@ -290,13 +307,14 @@ class TestDecoratorsWith2CSV2Const2(ProgressiveTest):
         self.assertTrue(
             module.result is not None
         )  # evidence that run_step_impl() was called
+        assert module.context is not None
         self.assertEqual(module.context._slot_policy, "run_if_any")
         self.assertEqual(module.context._slot_expr, [("a", "c"), ("b", "d")])
 
 
 # @skip
 class TestDecoratorsWith4Const(ProgressiveTest):
-    def test_decorators_any(self):
+    def test_decorators_any(self) -> None:
         s = self.scheduler()
         module = RunIfAny(scheduler=s)
         _fun = _4_const_scenario(module, s)
@@ -304,10 +322,11 @@ class TestDecoratorsWith4Const(ProgressiveTest):
         self.assertTrue(
             module.result is None
         )  # evidence that run_step_impl() was NOT called
+        assert module.context is not None
         self.assertEqual(module.context._slot_policy, "run_if_any")
         self.assertEqual(module.context._slot_expr, [["a", "b", "c", "d"]])
 
-    def test_decorators_always(self):
+    def test_decorators_always(self) -> None:
         s = self.scheduler()
         module = RunAlways(scheduler=s)
         _fun = _4_const_scenario(module, s)
@@ -315,13 +334,14 @@ class TestDecoratorsWith4Const(ProgressiveTest):
         self.assertTrue(
             module.result is not None
         )  # evidence that run_step_impl() was called despite slots inactivity
+        assert module.context is not None
         self.assertEqual(module.context._slot_policy, "run_always")
         self.assertEqual(module.context._slot_expr, [["a", "b", "c", "d"]])
 
 
 # @skip
 class TestDecoratorsInvalid(ProgressiveTest):
-    def test_invalid_process_after_run(self):
+    def test_invalid_process_after_run(self) -> None:
         with self.assertRaises(RuntimeError) as cm:
             s = self.scheduler()
             module = InvalidProcessAfterRun(scheduler=s)
@@ -332,7 +352,7 @@ class TestDecoratorsInvalid(ProgressiveTest):
             in cm.exception.args[0]
         )
 
-    def test_invalid_double_run(self):
+    def test_invalid_double_run(self) -> None:
         with self.assertRaises(RuntimeError) as cm:
             s = self.scheduler()
             module = InvalidDoubleRun(scheduler=s)

@@ -19,6 +19,7 @@ from progressivis.io.read_csv import read_csv, recovery, is_recoverable, InputSo
 
 from typing import (
     Any,
+    Union,
     Optional,
     Dict,
     Tuple,
@@ -53,7 +54,7 @@ class CSVLoader(TableModule):
         timeout: Optional[float] = None,
         save_context: Optional[Any] = None,  # FIXME seems more like a bool
         recovery: int = 0,  # FIXME seems more like a bool
-        recovery_tag: str = "",
+        recovery_tag: Union[str, int] = "",
         recovery_table_size: int = 3,
         save_step_size: int = 100000,
         **kwds: Any,

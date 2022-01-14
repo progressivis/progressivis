@@ -9,7 +9,7 @@ import pandas as pd
 
 
 class TestFilter(ProgressiveTest):
-    def test_filter(self):
+    def test_filter(self) -> None:
         s = Scheduler()
         random = RandomTable(2, rows=100000, scheduler=s)
         filter_ = FilterMod(expr="_1 > 0.5", scheduler=s)
@@ -20,9 +20,9 @@ class TestFilter(ProgressiveTest):
         idx = (
             filter_.get_input_slot("table").data().eval("_1>0.5", result_object="index")
         )
-        self.assertEqual(filter_.result.index, bitmap(idx))
+        self.assertEqual(filter_.table.index, bitmap(idx))
 
-    def test_filter2(self):
+    def test_filter2(self) -> None:
         s = Scheduler()
         random = RandomTable(2, rows=100000, scheduler=s)
         stirrer = Stirrer(
@@ -40,12 +40,12 @@ class TestFilter(ProgressiveTest):
         aio.run(s.start())
         tbl = filter_.get_input_slot("table").data()
         idx = tbl.eval("_1>0.5", result_object="index")
-        self.assertEqual(filter_.result.index, bitmap(idx))
+        self.assertEqual(filter_.table.index, bitmap(idx))
         df = pd.DataFrame(tbl.to_dict(), index=tbl.index.to_array())
         dfe = df.eval("_1>0.5")
-        self.assertEqual(filter_.result.index, bitmap(df.index[dfe]))
+        self.assertEqual(filter_.table.index, bitmap(df.index[dfe]))
 
-    def test_filter3(self):
+    def test_filter3(self) -> None:
         s = Scheduler()
         random = RandomTable(2, rows=100000, scheduler=s)
         stirrer = Stirrer(
@@ -59,10 +59,10 @@ class TestFilter(ProgressiveTest):
         aio.run(s.start())
         tbl = filter_.get_input_slot("table").data()
         idx = tbl.eval("_1>0.5", result_object="index")
-        self.assertEqual(filter_.result.index, bitmap(idx))
+        self.assertEqual(filter_.table.index, bitmap(idx))
         df = pd.DataFrame(tbl.to_dict(), index=tbl.index.to_array())
         dfe = df.eval("_1>0.5")
-        self.assertEqual(filter_.result.index, bitmap(df.index[dfe]))
+        self.assertEqual(filter_.table.index, bitmap(df.index[dfe]))
 
 
 if __name__ == "__main__":

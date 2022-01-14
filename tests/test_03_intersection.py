@@ -11,9 +11,11 @@ from progressivis.core import aio
 
 from . import ProgressiveTest
 
+from typing import Any
+
 
 class TestIntersection(ProgressiveTest):
-    def test_intersection(self):
+    def test_intersection(self) -> None:
         s = self.scheduler()
         random = RandomTable(2, rows=100000, scheduler=s)
         t_min = Table(name=None, dshape="{_1: float64}", data={"_1": [0.3]})
@@ -36,14 +38,15 @@ class TestIntersection(ProgressiveTest):
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = inter.output.result
         aio.run(s.start())
+        assert hist_index.input_module is not None
         idx = (
             hist_index.input_module.output["result"]
             .data()
             .eval("(_1>0.3)&(_1<0.8)", result_object="index")
         )
-        self.assertEqual(inter.result.index, bitmap(idx))
+        self.assertEqual(inter.table.index, bitmap(idx))
 
-    def _impl_stirred_tst_intersection(self, **kw):
+    def _impl_stirred_tst_intersection(self, **kw: Any) -> None:
         s = self.scheduler()
         random = RandomTable(2, rows=100000, scheduler=s)
         stirrer = Stirrer(update_column="_2", fixed_step_size=1000, scheduler=s, **kw)
@@ -68,17 +71,18 @@ class TestIntersection(ProgressiveTest):
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = inter.output.result
         aio.run(s.start())
+        assert hist_index.input_module is not None
         idx = (
             hist_index.input_module.output["result"]
             .data()
             .eval("(_1>0.3)&(_1<0.8)", result_object="index")
         )
-        self.assertEqual(inter.result.index, bitmap(idx))
+        self.assertEqual(inter.table.index, bitmap(idx))
 
-    def test_intersection2(self):
+    def test_intersection2(self) -> None:
         self._impl_stirred_tst_intersection(delete_rows=5)
 
-    def test_intersection3(self):
+    def test_intersection3(self) -> None:
         self._impl_stirred_tst_intersection(update_rows=5)
 
 

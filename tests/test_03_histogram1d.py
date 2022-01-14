@@ -8,9 +8,11 @@ from progressivis.table.stirrer import Stirrer
 import pandas as pd
 import numpy as np
 
+from typing import Any
+
 
 class TestHistogram1D(ProgressiveTest):
-    def test_histogram1d(self):
+    def test_histogram1d(self) -> None:
         s = self.scheduler()
         csv = CSVLoader(
             get_dataset("bigfile"), index_col=False, header=None, scheduler=s
@@ -26,9 +28,9 @@ class TestHistogram1D(ProgressiveTest):
         pr = Every(proc=self.terse, scheduler=s)
         pr.input[0] = histogram1d.output.result
         aio.run(s.start())
-        s = histogram1d.trace_stats()
+        _ = histogram1d.trace_stats()
 
-    def test_histogram1d1(self):
+    def test_histogram1d1(self) -> None:
         s = self.scheduler()
         csv = CSVLoader(
             get_dataset("bigfile"), index_col=False, header=None, scheduler=s
@@ -44,18 +46,22 @@ class TestHistogram1D(ProgressiveTest):
         pr = Every(proc=self.terse, scheduler=s)
         pr.input[0] = histogram1d.output.result
         aio.run(s.start())
-        s = histogram1d.trace_stats()
-        last = histogram1d.result.last().to_dict()
+        _ = histogram1d.trace_stats()
+        row = histogram1d.table.last()
+        assert row is not None
+        last = row.to_dict()
         h1 = last["array"]
         bounds = (last["min"], last["max"])
-        df = pd.read_csv(get_dataset("bigfile"), header=None, usecols=[2])
+        df = pd.read_csv(get_dataset("bigfile"),  # type: ignore
+                         header=None,
+                         usecols=[2])
         v = df.to_numpy().reshape(-1)
-        h2, _ = np.histogram(
+        h2, _ = np.histogram(  # type: ignore
             v, bins=histogram1d.params.bins, density=False, range=bounds
         )
         self.assertListEqual(h1.tolist(), h2.tolist())
 
-    def t_histogram1d_impl(self, **kw):
+    def t_histogram1d_impl(self, **kw: Any) -> None:
         s = self.scheduler()
         csv = CSVLoader(
             get_dataset("bigfile"), index_col=False, header=None, scheduler=s
@@ -75,21 +81,25 @@ class TestHistogram1D(ProgressiveTest):
         pr = Every(proc=self.terse, scheduler=s)
         pr.input[0] = histogram1d.output.result
         aio.run(s.start())
-        s = histogram1d.trace_stats()
-        last = histogram1d.result.last().to_dict()
+        _ = histogram1d.trace_stats()
+        row = histogram1d.table.last()
+        assert row is not None
+        last = row.to_dict()
         h1 = last["array"]
         bounds = (last["min"], last["max"])
-        v = stirrer.result.loc[:, ["_2"]].to_array().reshape(-1)
-        h2, _ = np.histogram(
+        tab = stirrer.table.loc[:, ["_2"]]
+        assert tab is not None
+        v = tab.to_array().reshape(-1)
+        h2, _ = np.histogram(  # type: ignore
             v, bins=histogram1d.params.bins, density=False, range=bounds
         )
         self.assertEqual(np.sum(h1), np.sum(h2))
         self.assertListEqual(h1.tolist(), h2.tolist())
 
-    def test_histogram1d2(self):
+    def test_histogram1d2(self) -> None:
         return self.t_histogram1d_impl(delete_rows=5)
 
-    def test_histogram1d3(self):
+    def test_histogram1d3(self) -> None:
         return self.t_histogram1d_impl(update_rows=5)
 
 

@@ -8,7 +8,7 @@ from progressivis.core import aio
 
 
 class TestPercentiles(ProgressiveTest):
-    def test_percentile(self):
+    def test_percentile(self) -> None:
         s = self.scheduler()
         csv_module = CSVLoader(
             get_dataset("smallfile"), index_col=False, header=None, scheduler=s

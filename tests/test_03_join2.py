@@ -12,15 +12,17 @@ from progressivis.table.reduce import Reduce
 
 from . import ProgressiveTest, skip
 
+from typing import Any
 
-def print_len(x):
+
+def print_len(x: Any) -> None:
     if x is not None:
         print(len(x))
 
 
 class TestJoin2(ProgressiveTest):
     @skip("Need fixing")
-    def test_join(self):
+    def test_join(self) -> None:
         s = self.scheduler()
         csv = CSVLoader(
             get_dataset("bigfile"), index_col=False, header=None, scheduler=s
@@ -50,7 +52,7 @@ class TestJoin2(ProgressiveTest):
         res = join.trace_stats(max_runs=1)
         print(res)
 
-    def test_join_simple(self):
+    def test_join_simple(self) -> None:
         s = self.scheduler()
         cst1 = Constant(
             Table(
@@ -88,8 +90,9 @@ class TestJoin2(ProgressiveTest):
         aio.run(s.start())
         res = join.trace_stats(max_runs=1)
         print(res)
-        df = join.result
+        df = join.table
         last = df.loc[df.index[-1]]
+        assert last is not None
         self.assertTrue(
             last["xmin"] == 1
             and last["xmax"] == 2

@@ -15,7 +15,7 @@ import pandas as pd
 
 @skip("Not ready")  # TODO: FIX IT
 class TestMerge(ProgressiveTest):
-    def test_merge(self):
+    def test_merge(self) -> None:
         s = self.scheduler()
         csv = CSVLoader(
             get_dataset("bigfile"), index_col=False, header=None, scheduler=s
@@ -36,7 +36,7 @@ class TestMerge(ProgressiveTest):
         # pd.set_option('display.expand_frame_repr', False)
         # print(res)
 
-    def test_merge_simple(self):
+    def test_merge_simple(self) -> None:
         s = self.scheduler()
         cst1 = Constant(
             Table(name=None, data=pd.DataFrame({"xmin": [1], "xmax": [2]})), scheduler=s
@@ -53,8 +53,9 @@ class TestMerge(ProgressiveTest):
         _ = merge.trace_stats(max_runs=1)
         # pd.set_option('display.expand_frame_repr', False)
         # print(res)
-        df = merge.table()
+        df = merge.table
         last = df.loc[df.index[-1]]
+        assert last is not None
         self.assertTrue(
             last["xmin"] == 1
             and last["xmax"] == 2

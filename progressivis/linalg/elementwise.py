@@ -13,9 +13,12 @@ from .. import SlotDescriptor
 from ..utils.psdict import PsDict
 from ..core.module import ModuleMeta
 from ..table.dshape import dshape_projection
+from ..table.slot_join import SlotJoin
 from collections import OrderedDict
 
-from typing import List, cast, Any
+from typing import List, cast, Any, Optional, Dict, Union, Callable
+
+UFunc = Union[np.ufunc, Callable[..., Any]]
 
 not_tested_unaries = (
     "isnat",  # input array with datetime or timedelta data type.
@@ -81,9 +84,9 @@ class Unary(TableModule):
         )
     ]
 
-    def __init__(self, ufunc: np.ufunc, **kwds: Any) -> None:
+    def __init__(self, ufunc: UFunc, **kwds: Any) -> None:
         super(Unary, self).__init__(**kwds)
-        self._ufunc: np.ufunc = ufunc
+        self._ufunc: UFunc = ufunc
         self._kwds = {}
 
     def reset(self) -> None:
@@ -138,7 +141,7 @@ class Unary(TableModule):
         return self._return_run_step(self.next_state(slot), steps_run=steps)
 
 
-def make_subclass(super_: ModuleMeta, cname: str, ufunc: np.ufunc) -> ModuleMeta:
+def make_subclass(super_: ModuleMeta, cname: str, ufunc: UFunc) -> ModuleMeta:
     def _init_func(self_: ModuleMeta, *args: Any, **kwds: Any) -> None:
         super_.__init__(self_, ufunc, *args, **kwds)  # type: ignore
 
@@ -162,7 +165,14 @@ for k, v in unary_dict_all.items():
     # unary_modules.append(_g[name])
 
 
-def _simple_binary(tbl, op, cols1, cols2, cols_out, **kwargs):
+def _simple_binary(
+    tbl: BaseTable,
+    op: UFunc,
+    cols1: List[str],
+    cols2: List[str],
+    cols_out: List[str],
+    **kwargs: Any
+) -> Dict[str, Any]:
     axis = kwargs.pop("axis", 0)
     assert axis == 0
     res = OrderedDict()
@@ -178,7 +188,14 @@ class ColsBinary(TableModule):
     inputs = [SlotDescriptor("table", type=Table, required=True)]
     outputs = [SlotDescriptor("result", type=Table, required=False)]
 
-    def __init__(self, ufunc: np.ufunc, first, second, cols_out=None, **kwds):
+    def __init__(
+        self,
+        ufunc: UFunc,
+        first: List[str],
+        second: List[str],
+        cols_out: Optional[List[str]] = None,
+        **kwds: Any
+    ) -> None:
         super(ColsBinary, self).__init__(**kwds)
         self._ufunc = ufunc
         self._first = first
@@ -247,7 +264,13 @@ class ColsBinary(TableModule):
         return self._return_run_step(self.next_state(slot), steps_run=steps)
 
 
-def _binary(tbl, op, other, other_cols=None, **kwargs):
+def _binary(
+    tbl: BaseTable,
+    op: UFunc,
+    other: BaseTable,
+    other_cols: Optional[List[str]] = None,
+    **kwargs: Any
+) -> Dict[str, Any]:
     if other_cols is None:
         other_cols = tbl.columns
     axis = kwargs.pop("axis", 0)
@@ -255,7 +278,7 @@ def _binary(tbl, op, other, other_cols=None, **kwargs):
     res = OrderedDict()
     isscalar = isinstance(other, dict)
 
-    def _value(c):
+    def _value(c: Any) -> Any:
         if isscalar:
             return c
         return c.value
@@ -285,7 +308,7 @@ class Binary(TableModule):
         )
     ]
 
-    def __init__(self, ufunc, **kwds):
+    def __init__(self, ufunc: UFunc, **kwds: Any):
         super(Binary, self).__init__(**kwds)
         self._ufunc = ufunc
         self._kwds = {}
@@ -293,9 +316,9 @@ class Binary(TableModule):
             "first" in self._columns_dict and "second" in self._columns_dict
         )
         assert _assert
-        self._join = None
+        self._join: Optional[SlotJoin] = None
 
-    def reset(self):
+    def reset(self) -> None:
         if self.result is not None:
             self.table.resize(0)
 
@@ -385,7 +408,12 @@ for k, v in binary_dict_all.items():
     # binary_modules.append(_g[name])
 
 
-def _reduce(tbl, op, initial, **kwargs):
+def _reduce(
+    tbl: BaseTable,
+    op: UFunc,
+    initial: Any,
+    **kwargs: Any
+) -> Dict[str, Any]:
     res = {}
     for col in tbl._columns:
         cn = col.name
@@ -396,7 +424,7 @@ def _reduce(tbl, op, initial, **kwargs):
 class Reduce(TableModule):
     inputs = [SlotDescriptor("table", type=Table, required=True)]
 
-    def __init__(self, ufunc: np.ufunc, columns: List[str] = None, **kwds):
+    def __init__(self, ufunc: np.ufunc, columns: Optional[List[str]] = None, **kwds: Any) -> None:
         assert ufunc.nin == 2
         super(Reduce, self).__init__(**kwds)
         self._ufunc = getattr(ufunc, "reduce")
@@ -442,17 +470,17 @@ for k, v in binary_dict_all.items():
     # reduce_modules.append(_g[name])
 
 
-def make_unary(func, name=None):
+def make_unary(func: UFunc, name: Optional[str] = None) -> ModuleMeta:
     if not isinstance(func, np.ufunc):
         if name is None:
             name = func2class_name(func.__name__)
-        func = np.frompyfunc(func, 1, 1)
+        func = np.frompyfunc(func, 1, 1)  # type: ignore
     else:
         assert name is not None
     return make_subclass(Unary, name, func)
 
 
-def unary_module(func):
+def unary_module(func: UFunc) -> ModuleMeta:
     name = func.__name__
     if isinstance(func, np.ufunc):  # it should never happen
         raise ValueError(
@@ -460,21 +488,21 @@ def unary_module(func):
             "be decorated. Use make_unary() instead"
         )
     else:
-        func = np.frompyfunc(func, 1, 1)
+        func = np.frompyfunc(func, 1, 1)  # type: ignore
     return make_subclass(Unary, name, func)
 
 
-def make_binary(func, name=None):
+def make_binary(func: UFunc, name: Optional[str] = None) -> ModuleMeta:
     if not isinstance(func, np.ufunc):
         if name is None:
             name = func2class_name(func.__name__)
-        func = np.frompyfunc(func, 2, 1)
+        func = np.frompyfunc(func, 2, 1)  # type: ignore
     else:
         assert name is not None
     return make_subclass(Binary, name, func)
 
 
-def binary_module(func):
+def binary_module(func: UFunc) -> ModuleMeta:
     name = func.__name__
     if isinstance(func, np.ufunc):  # it should never happen
         raise ValueError(
@@ -482,21 +510,21 @@ def binary_module(func):
             "be decorated. Use make_binary() instead"
         )
     else:
-        func = np.frompyfunc(func, 2, 1)
+        func = np.frompyfunc(func, 2, 1)  # type: ignore
     return make_subclass(Binary, name, func)
 
 
-def make_reduce(func, name=None):
+def make_reduce(func: UFunc, name: Optional[str] = None) -> ModuleMeta:
     if not isinstance(func, np.ufunc):
         if name is None:
             name = f"{func2class_name(func.__name__)}Reduce"
-        func = np.frompyfunc(func, 2, 1)
+        func = np.frompyfunc(func, 2, 1)  # type: ignore
     else:
         assert name is not None
     return make_subclass(Reduce, name, func)
 
 
-def reduce_module(func):
+def reduce_module(func: UFunc) -> ModuleMeta:
     name = func.__name__
     if isinstance(func, np.ufunc):  # it should never happen
         raise ValueError(
@@ -504,11 +532,11 @@ def reduce_module(func):
             "be decorated. Use make_reduce() instead"
         )
     else:
-        func = np.frompyfunc(func, 2, 1)
+        func = np.frompyfunc(func, 2, 1)  # type: ignore
     return make_subclass(Reduce, name, func)
 
 
-def generate_stubs(out=sys.stdout):
+def generate_stubs(out: Any = sys.stdout) -> None:
     decls: List[str] = []
 
     super = "Unary"
@@ -517,7 +545,7 @@ def generate_stubs(out=sys.stdout):
         decls.append(name)
         print(
             f"""class {name}({super}):
-    def __init__(self, *args, **kwds):
+    def __init__(self, *args: Any, **kwds: Any):
         super({name}, self).__init__(np.{k}, **kwds)
 
 """,
@@ -529,7 +557,7 @@ def generate_stubs(out=sys.stdout):
         decls.append(name)
         print(
             f"""class {name}({super}):
-    def __init__(self, *args, **kwds):
+    def __init__(self, *args: Any, **kwds: Any):
         super({name}, self).__init__(np.{k}, **kwds)
 
 """,
@@ -541,7 +569,7 @@ def generate_stubs(out=sys.stdout):
         decls.append(name)
         print(
             f"""class {name}({super}):
-    def __init__(self, *args, **kwds):
+    def __init__(self, *args: Any, **kwds: Any):
         super({name}, self).__init__(np.{k}, **kwds)
 
 """,
@@ -553,7 +581,7 @@ def generate_stubs(out=sys.stdout):
         decls.append(name)
         print(
             f"""class {name}({super}):
-    def __init__(self, *args, **kwds):
+    def __init__(self, *args: Any, **kwds: Any):
         super({name}, self).__init__(np.{k}, **kwds)
 
 """,

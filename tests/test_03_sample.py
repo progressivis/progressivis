@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from . import ProgressiveTest
 
 from progressivis import Print
@@ -6,13 +8,15 @@ from progressivis.stats import Sample
 from progressivis.datasets import get_dataset
 from progressivis.core import aio
 
+from typing import Any
 
-def print_repr(x):
+
+def print_repr(x: Any) -> None:
     print(repr(x))
 
 
 class TestSample(ProgressiveTest):
-    def test_sample(self):
+    def test_sample(self) -> None:
         s = self.scheduler()
         csv = CSVLoader(
             get_dataset("bigfile"), index_col=False, header=None, scheduler=s
@@ -23,7 +27,7 @@ class TestSample(ProgressiveTest):
         prt.input[0] = smp.output.result
         aio.run(csv.scheduler().start())
         # print(repr(smp.result))
-        self.assertEqual(len(smp.result), 10)
+        self.assertEqual(len(smp.table), 10)
 
 
 if __name__ == "__main__":

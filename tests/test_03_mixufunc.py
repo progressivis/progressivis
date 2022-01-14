@@ -1,14 +1,19 @@
+from __future__ import annotations
+
+import numpy as np
+
 from . import ProgressiveTest
 
 from progressivis.core import aio
 from progressivis import Print
-from progressivis.linalg import MixUfuncABC
-import numpy as np
+from progressivis.linalg.mixufunc import MixUfuncABC
 from progressivis.stats import RandomTable, RandomDict
 from progressivis.table.table import Table
 
 # from progressivis.core.decorators import *
 from progressivis.core import SlotDescriptor
+
+from typing import Any, Type
 
 
 class MixUfuncSample(MixUfuncABC):
@@ -37,11 +42,11 @@ class MixUfuncSample2(MixUfuncABC):
 
 
 # https://stackoverflow.com/questions/6768245/difference-between-frompyfunc-and-vectorize-in-numpy
-def custom_unary(x):
-    return (x + np.sin(x)) / (x + np.cos(x))
+def custom_unary(x: float) -> float:
+    return (x + np.sin(x)) / (x + np.cos(x))  # type: ignore
 
 
-custom_unary_ufunc = np.frompyfunc(custom_unary, 1, 1)
+custom_unary_ufunc: Any = np.frompyfunc(custom_unary, 1, 1)  # type: ignore
 
 
 class MixUfuncCustomUnary(MixUfuncABC):
@@ -56,11 +61,11 @@ class MixUfuncCustomUnary(MixUfuncABC):
     }
 
 
-def custom_binary(x, y):
-    return (x + np.sin(y)) / (x + np.cos(y))
+def custom_binary(x: float, y: float) -> float:
+    return (x + np.sin(y)) / (x + np.cos(y))  # type: ignore
 
 
-custom_binary_ufunc = np.frompyfunc(custom_binary, 2, 1)
+custom_binary_ufunc: Any = np.frompyfunc(custom_binary, 2, 1)  # type: ignore
 
 
 class MixUfuncCustomBinary(MixUfuncABC):
@@ -76,7 +81,12 @@ class MixUfuncCustomBinary(MixUfuncABC):
 
 
 class TestMixUfunc(ProgressiveTest):
-    def t_mix_ufunc_impl(self, cls, ufunc1=np.log, ufunc2=np.add):
+    def t_mix_ufunc_impl(
+        self,
+        cls: Type[MixUfuncABC],
+        ufunc1: np.ufunc = np.log,
+        ufunc2: np.ufunc = np.add
+    ) -> None:
         s = self.scheduler()
         random1 = RandomTable(10, rows=100000, scheduler=s)
         random2 = RandomTable(10, rows=100000, scheduler=s)
@@ -90,19 +100,19 @@ class TestMixUfunc(ProgressiveTest):
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = module.output.result
         aio.run(s.start())
-        first = random1.result.to_array()
+        first = random1.table.to_array()
         first_2 = first[:, 1]
         _ = first[:, 2]
-        second = random2.result.to_array()
+        second = random2.table.to_array()
         _ = second[:, 1]
         second_3 = second[:, 2]
         ne_1 = ufunc2(first_2, second_3).astype("float64")
         ne_2 = ufunc1(second_3).astype("float64")
-        res = module.result.to_array()
+        res = module.table.to_array()
         self.assertTrue(np.allclose(res[:, 0], ne_1, equal_nan=True))
         self.assertTrue(np.allclose(res[:, 1], ne_2, equal_nan=True))
 
-    def t_mix_ufunc_table_dict_impl(self, cls):
+    def t_mix_ufunc_table_dict_impl(self, cls: Type[MixUfuncABC]) -> None:
         s = self.scheduler()
         random1 = RandomDict(10, scheduler=s)
         random2 = RandomTable(10, rows=100000, scheduler=s)
@@ -116,29 +126,29 @@ class TestMixUfunc(ProgressiveTest):
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = module.output.result
         aio.run(s.start())
-        first = list(random1.result.values())
+        first = list(random1.psdict.values())
         first_2 = first[1]
         _ = first[2]
-        second = random2.result.to_array()
+        second = random2.table.to_array()
         _ = second[:, 1]
         second_3 = second[:, 2]
         ne_1 = np.add(first_2, second_3)
         ne_2 = np.log(second_3)
-        res = module.result.to_array()
+        res = module.table.to_array()
         self.assertTrue(np.allclose(res[:, 0], ne_1, equal_nan=True))
         self.assertTrue(np.allclose(res[:, 1], ne_2, equal_nan=True))
 
-    def test_mix_ufunc(self):
+    def test_mix_ufunc(self) -> None:
         return self.t_mix_ufunc_impl(MixUfuncSample)
 
-    def test_mix_ufunc2(self):
+    def test_mix_ufunc2(self) -> None:
         return self.t_mix_ufunc_impl(MixUfuncSample2)
 
-    def test_mix_custom1(self):
+    def test_mix_custom1(self) -> None:
         return self.t_mix_ufunc_impl(MixUfuncCustomUnary, ufunc1=custom_unary_ufunc)
 
-    def test_mix_custom2(self):
+    def test_mix_custom2(self) -> None:
         return self.t_mix_ufunc_impl(MixUfuncCustomBinary, ufunc2=custom_binary_ufunc)
 
-    def test_mix_ufunc3(self):
+    def test_mix_ufunc3(self) -> None:
         return self.t_mix_ufunc_table_dict_impl(MixUfuncSample2)

@@ -3,15 +3,16 @@ from progressivis.core import aio
 from progressivis import Print
 from progressivis.stats import RandomTable
 from progressivis.table.stirrer import Stirrer, StirrerView
-from progressivis.stats.cxxmax import Max, CxxMax
+from progressivis.stats.cxxmax import Max, CxxMax  # type: ignore
 
 import numpy as np
 
+from typing import Dict, Any
 # CxxMax = None  # Skip for now
 
 
 class TestCxxMax(ProgressiveTest):
-    def compare(self, res1, res2):
+    def compare(self, res1: Dict[str, Any], res2: Dict[str, Any]) -> None:
         v1 = np.array(list(res1.values()))
         v2 = np.array(list(res2.values()))
         # print('v1 = ', v1)
@@ -19,7 +20,7 @@ class TestCxxMax(ProgressiveTest):
         self.assertTrue(np.allclose(v1, v2))
 
     @skipIf(CxxMax is None, "C++ module is missing")
-    def test_max(self):
+    def test_max(self) -> None:
         s = self.scheduler()
         random = RandomTable(10, rows=10_000, scheduler=s)
         max_ = Max(name="max_" + str(hash(random)), scheduler=s)
@@ -27,12 +28,12 @@ class TestCxxMax(ProgressiveTest):
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = max_.output.result
         aio.run(s.start())
-        res1 = random.result.max()
+        res1 = random.table.max()
         res2 = max_.cxx_module.get_output_table().last().to_dict(ordered=True)
         self.compare(res1, res2)
 
     @skipIf(CxxMax is None, "C++ module is missing")
-    def test_stirrer(self):
+    def test_stirrer(self) -> None:
         s = self.scheduler()
         random = RandomTable(2, rows=100_000, scheduler=s)
         stirrer = Stirrer(
@@ -48,12 +49,12 @@ class TestCxxMax(ProgressiveTest):
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = max_.output.result
         aio.run(s.start())
-        res1 = random.result.max()
+        res1 = random.table.max()
         res2 = max_.cxx_module.get_output_table().last().to_dict(ordered=True)
         self.compare(res1, res2)
 
     @skipIf(CxxMax is None, "C++ module is missing")
-    def test_stirrer_view(self):
+    def test_stirrer_view(self) -> None:
         s = self.scheduler()
         random = RandomTable(2, rows=100_000, scheduler=s)
         stirrer = StirrerView(
@@ -69,7 +70,7 @@ class TestCxxMax(ProgressiveTest):
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = max_.output.result
         aio.run(s.start())
-        res1 = random.result.max()
+        res1 = random.table.max()
         res2 = max_.cxx_module.get_output_table().last().to_dict(ordered=True)
         self.compare(res1, res2)
 

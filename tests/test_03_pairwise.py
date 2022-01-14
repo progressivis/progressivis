@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from . import ProgressiveTest
 
 from progressivis import Every
@@ -7,8 +9,13 @@ from progressivis.io import VECLoader, CSVLoader
 from progressivis.datasets import get_dataset
 from progressivis.core import aio
 
+from typing import Any, TYPE_CHECKING
 
-def print_len(x):
+if TYPE_CHECKING:
+    from progressivis import Scheduler
+
+
+def print_len(x: Any) -> None:
     if x is not None:
         print(len(x))
 
@@ -16,16 +23,16 @@ def print_len(x):
 times = 0
 
 
-async def ten_times(scheduler, run_number):
+async def ten_times(scheduler: Scheduler, run_number: int) -> None:
     global times
     times += 1
     # import pdb;pdb.set_trace()
     if times > 10:
-        scheduler.exit()
+        await scheduler.stop()
 
 
 class TestPairwiseDistances(ProgressiveTest):
-    def NOtest_vec_distances(self):
+    def NOtest_vec_distances(self) -> None:
         s = self.scheduler()
         vec = VECLoader(get_dataset("warlogs"), scheduler=s)
         #        dis=PairwiseDistances(metric='cosine',scheduler=s)
@@ -45,7 +52,7 @@ class TestPairwiseDistances(ProgressiveTest):
     #        truth = pairwise_distances(vec.toarray(), metric=dis._metric)
     #        self.assertTrue(np.allclose(truth, computed))
 
-    def test_csv_distances(self):
+    def test_csv_distances(self) -> None:
         s = self.scheduler()
         vec = CSVLoader(
             get_dataset("smallfile"), index_col=False, header=None, scheduler=s
