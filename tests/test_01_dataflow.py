@@ -1,27 +1,32 @@
+from __future__ import annotations
+
 from progressivis import Print
 from progressivis.io import CSVLoader
 from progressivis.stats import Min, Max, RandomTable
 from progressivis.datasets import get_dataset
-from progressivis.core import aio, SlotDescriptor, Module, Sink
+from progressivis.core import aio, SlotDescriptor, Sink, Scheduler
+from progressivis.core.module import Module, ReturnRunStep
 from progressivis.core.dataflow import Dataflow
 from progressivis.vis import MCScatterPlot
 
 from . import ProgressiveTest
+
+from typing import Any
 
 
 class TestModule(Module):
     inputs = [SlotDescriptor("a"), SlotDescriptor("b", required=False)]
     outputs = [SlotDescriptor("c"), SlotDescriptor("d", required=False)]
 
-    def __init__(self, **kwds):
+    def __init__(self, **kwds: Any) -> None:
         super(TestModule, self).__init__(**kwds)
 
-    def run_step(self, run_number, step_size, howlong):  # pragma no cover
+    def run_step(self, run_number: int, step_size: int, howlong: float) -> ReturnRunStep:
         return self._return_run_step(self.state_blocked, 0)
 
 
 class TestDataflow(ProgressiveTest):
-    def test_dataflow_0(self):
+    def test_dataflow_0(self) -> None:
         scheduler = self.scheduler()
         saved_inputs = None
         saved_outputs = None
@@ -111,7 +116,7 @@ class TestDataflow(ProgressiveTest):
             prt.input.df = m.output.result
         # scheduler._update_modules()  # force modules in the main loop
 
-    def test_dataflow_1_dynamic(self):
+    def test_dataflow_1_dynamic(self) -> None:
         scheduler = self.scheduler(clean=True)
 
         table = RandomTable(
@@ -123,12 +128,12 @@ class TestDataflow(ProgressiveTest):
         prt.input.df = m.output.result
         started = False
 
-        def proc(x):
+        def proc(x: Any) -> None:
             nonlocal started
             print("proc max called")
             started = True
 
-        async def _add_max(scheduler, run_number):
+        async def _add_max(scheduler: Scheduler, run_number: int) -> None:
             with scheduler:
                 print("adding new modules")
                 m = Max(name="max", scheduler=scheduler)
@@ -143,7 +148,7 @@ class TestDataflow(ProgressiveTest):
         aio.run(scheduler.start())
         self.assertTrue(started)
 
-    def test_dataflow_2_add_remove(self):
+    def test_dataflow_2_add_remove(self) -> None:
         scheduler = self.scheduler(clean=True)
 
         table = RandomTable(
@@ -155,12 +160,12 @@ class TestDataflow(ProgressiveTest):
         prt.input.df = m.output.result
         started = False
 
-        def proc(x):
+        def proc(x: Any) -> None:
             nonlocal started
             print("proc max called")
             started = True
 
-        async def _add_max_remove_min(scheduler, run_number):
+        async def _add_max_remove_min(scheduler: Scheduler, run_number: int) -> None:
             with scheduler as dataflow:
                 print("adding new modules")
                 m = Max(name="max", scheduler=scheduler)
@@ -176,7 +181,7 @@ class TestDataflow(ProgressiveTest):
         aio.run(scheduler.start())
         self.assertTrue(started)
 
-    def test_dataflow_3_dels(self):
+    def test_dataflow_3_dels(self) -> None:
         s = self.scheduler()
         table = RandomTable(name="table", columns=["a"], throttle=1000, scheduler=s)
         m = Min(name="min", scheduler=s)
@@ -190,7 +195,7 @@ class TestDataflow(ProgressiveTest):
             deps = dataflow.collateral_damage("table")
             self.assertEquals(deps, set(["table", "min", "prt"]))
 
-    def test_dataflow_4_dels2(self):
+    def test_dataflow_4_dels2(self) -> None:
         s = self.scheduler()
         table = RandomTable(name="table", columns=["a"], throttle=1000, scheduler=s)
         m = TestModule(name="min", scheduler=s)
@@ -205,7 +210,7 @@ class TestDataflow(ProgressiveTest):
             deps = dataflow.collateral_damage("table")
             self.assertEquals(deps, set(["table", "min", "prt"]))
 
-    def test_dataflow_5_dels_opt(self):
+    def test_dataflow_5_dels_opt(self) -> None:
         s = self.scheduler()
         table = RandomTable(name="table", columns=["a"], throttle=1000, scheduler=s)
         m = TestModule(name="min", scheduler=s)
@@ -225,7 +230,7 @@ class TestDataflow(ProgressiveTest):
             deps = dataflow.collateral_damage("prt", "prt2")
             self.assertEquals(deps, set(["prt", "prt2", "min", "table"]))
 
-    def test_dataflow_6_dynamic(self):
+    def test_dataflow_6_dynamic(self) -> None:
         s = self.scheduler()
         table = RandomTable(name="table", columns=["a"], throttle=1000, scheduler=s)
         sink = Sink(name="sink", scheduler=s)
@@ -237,7 +242,7 @@ class TestDataflow(ProgressiveTest):
         # from nose.tools import set_trace; set_trace()
         s.commit()
 
-        async def modify_1(scheduler, run_number):
+        async def modify_1(scheduler: Scheduler, run_number: int) -> None:
             with s as dataflow:
                 print("Checking module deletion")
                 self.assertTrue(isinstance(dataflow, Dataflow))
@@ -250,7 +255,7 @@ class TestDataflow(ProgressiveTest):
                 dataflow.delete_modules("prt2")
             s.on_loop(modify_2, 5)
 
-        async def modify_2(scheduler, run_number):
+        async def modify_2(scheduler: Scheduler, run_number: Any) -> None:
             self.assertFalse("prt2" in scheduler)
             with s as dataflow:
                 print("Checking more module deletion")
@@ -261,7 +266,7 @@ class TestDataflow(ProgressiveTest):
                 dataflow.delete_modules("prt")
             s.on_loop(modify_3, 5)
 
-        async def modify_3(scheduler, run_number):
+        async def modify_3(scheduler: Scheduler, run_number: int) -> None:
             self.assertFalse("prt" in scheduler)
             with s as dataflow:
                 print("Checking even more module deletion")
@@ -269,16 +274,16 @@ class TestDataflow(ProgressiveTest):
                 self.assertEquals(deps, {"sink", "table"})
                 dataflow.delete_modules("sink", "table")
 
-        async def stop_error(scheduler, run_number):
+        async def stop_error(scheduler: Scheduler, run_number: int) -> None:
             self.assertFalse("Scheduler should have stopped")
-            await self._stop()
+            await scheduler.stop()
 
         s.on_loop(modify_1, 5)
         s.on_loop(stop_error, 100)
         aio.run(s.start())
         # from nose.tools import set_trace; set_trace()
 
-    def test_dataflow_7_dynamic(self):
+    def test_dataflow_7_dynamic(self) -> None:
         s = self.scheduler()
         table = RandomTable(
             name="table", columns=["a", "b", "c"], throttle=1000, scheduler=s
@@ -289,7 +294,7 @@ class TestDataflow(ProgressiveTest):
 
         # Start loading a dataset, then visualize it, then change the visualizations
 
-        async def modify_1(scheduler, run_number):
+        async def modify_1(scheduler: Scheduler, run_number: int) -> None:
             print("Adding scatterplot_1")
             # from nose.tools import set_trace; set_trace()
             with scheduler as dataflow:
@@ -303,7 +308,7 @@ class TestDataflow(ProgressiveTest):
                 print(f"Created scatterplot_1, groups: {dataflow.groups()}")
             scheduler.on_loop(modify_2, 10)  # Schedule the next activity
 
-        async def modify_2(scheduler, run_number):
+        async def modify_2(scheduler: Scheduler, run_number: int) -> None:
             print("Removing scatterplot_1")
             self.assertTrue("scatterplot_1" in scheduler)
             with scheduler as dataflow:
@@ -313,7 +318,7 @@ class TestDataflow(ProgressiveTest):
                 dataflow.delete_modules(*deps)
             scheduler.on_loop(modify_3, 10)
 
-        async def modify_3(scheduler, run_number):
+        async def modify_3(scheduler: Scheduler, run_number: int) -> None:
             print("Adding scatterplot_2")
             self.assertFalse("scatterplot_1" in scheduler)
             with scheduler:
@@ -326,7 +331,7 @@ class TestDataflow(ProgressiveTest):
                 sp.create_dependent_modules(table, "result")
             scheduler.on_loop(modify_4, 10)  # Schedule the next activity
 
-        async def modify_4(scheduler, run_number):
+        async def modify_4(scheduler: Scheduler, run_number: int) -> None:
             print("Removing scatterplot_2")
             self.assertFalse("scatterplot_1" in scheduler)
             self.assertTrue("scatterplot_2" in scheduler)
@@ -338,7 +343,7 @@ class TestDataflow(ProgressiveTest):
                 dataflow.delete_modules(*deps)
             s.on_loop(modify_5, 5)
 
-        async def modify_5(scheduler, run_number):
+        async def modify_5(scheduler: Scheduler, run_number: int) -> None:
             print("Removing table")
             self.assertFalse("scatterplot_1" in scheduler)
             self.assertFalse("scatterplot_2" in scheduler)
@@ -348,9 +353,9 @@ class TestDataflow(ProgressiveTest):
                 print(f"collateral_damage('sink') = '{sorted(deps)}'")
                 dataflow.delete_modules(*deps)
 
-        async def stop_error(scheduler, run_number):
+        async def stop_error(scheduler: Scheduler, run_number: int) -> None:
             self.assertFalse("Scheduler should have stopped")
-            await self._stop()
+            await scheduler.stop()
 
         s.on_loop(modify_1, 10)
         s.on_loop(stop_error, 100)

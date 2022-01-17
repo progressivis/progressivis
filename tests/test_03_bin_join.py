@@ -8,7 +8,7 @@ from . import ProgressiveTest
 
 
 class TestBinJoin(ProgressiveTest):
-    def test_bin_join(self):
+    def test_bin_join(self) -> None:
         s = self.scheduler()
         random = RandomTable(10, rows=10000, scheduler=s)
         min_1 = Min(name="min_1" + str(hash(random)), columns=["_1"], scheduler=s)
@@ -25,7 +25,9 @@ class TestBinJoin(ProgressiveTest):
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = bj.output[0]
         aio.run(s.start())
-        res1 = random.result.min()
-        res2 = bj.result.last().to_dict()
+        res1 = random.table.min()
+        row = bj.table.last()
+        assert row is not None
+        res2 = row.to_dict()
         self.assertAlmostEqual(res1["_1"], res2["_1"])
         self.assertAlmostEqual(res1["_2"], res2["_2"])

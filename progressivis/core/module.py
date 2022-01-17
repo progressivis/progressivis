@@ -1076,11 +1076,11 @@ class OutputSlots:
     def __setattr__(self, name: str, slot: Slot) -> None:
         raise ProgressiveError("Output slots cannot be assigned, only read")
 
-    def __getattr__(self, name: str) -> Slot:
+    def __getattr__(self, name: Union[int, str]) -> Slot:
         module: Module = self.__dict__["module"]
         return module.create_slot(name, None, None)
 
-    def __getitem__(self, name: str) -> Slot:
+    def __getitem__(self, name: Union[int, str]) -> Slot:
         return self.__getattr__(name)
 
     def __dir__(self) -> Iterable[str]:

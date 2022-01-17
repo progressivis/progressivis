@@ -1,25 +1,30 @@
+from __future__ import annotations
+
 from . import ProgressiveTest
 
 from progressivis import Print, Scheduler, ProgressiveError
 from progressivis.io import CSVLoader
 from progressivis.stats import Min
 from progressivis.datasets import get_dataset
-from progressivis.core import aio, SlotDescriptor, Module, Sink
+from progressivis.core import aio, SlotDescriptor, Sink
+from progressivis.core.module import Module, ReturnRunStep
+
+from typing import Any
 
 
 class TestModule(Module):
     inputs = [SlotDescriptor("a"), SlotDescriptor("b", required=False)]
     outputs = [SlotDescriptor("c"), SlotDescriptor("d", required=False)]
 
-    def __init__(self, **kwds):
+    def __init__(self, **kwds: Any) -> None:
         super(TestModule, self).__init__(**kwds)
 
-    def run_step(self, run_number, step_size, howlong):  # pragma no cover
+    def run_step(self, run_number: int, step_size: int, howlong: float) -> ReturnRunStep:  # pragma no cover
         return self._return_run_step(self.state_blocked, 0)
 
 
 class TestScheduler(ProgressiveTest):
-    def test_scheduler(self):
+    def test_scheduler(self) -> None:
         with self.assertRaises(ProgressiveError):
             s = Scheduler(0)
         s = Scheduler()
@@ -35,7 +40,7 @@ class TestScheduler(ProgressiveTest):
         sink.input.inp = csv.output.result  # allow csv to start
         check_running = False
 
-        async def _is_running():
+        async def _is_running() -> None:
             nonlocal check_running
             check_running = csv.scheduler().is_running()
 
@@ -43,7 +48,7 @@ class TestScheduler(ProgressiveTest):
 
         self.assertTrue(check_running)
 
-        def add_min(s, r):
+        def add_min(s: Scheduler, r: int) -> None:
             with s:
                 m = Min(scheduler=s)
                 m.input.table = csv.output.result

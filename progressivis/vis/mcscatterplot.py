@@ -16,6 +16,7 @@ from progressivis.io import DynVar
 from typing import (
     Optional,
     Tuple,
+    Sequence,
     List,
     Dict,
     cast,
@@ -119,7 +120,7 @@ class MCScatterPlot(NAry):
 
     def __init__(
         self,
-        classes: Union[List[Dict[str, Any]], List[Tuple[str, ...]]],
+        classes: Union[Sequence[Dict[str, Any]], Sequence[Tuple[str, ...]]],
         x_label: str = "x",
         y_label: str = "y",
         approximate: bool = False,
