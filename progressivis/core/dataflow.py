@@ -7,6 +7,7 @@ from __future__ import annotations
 from typing import Any, Dict, Set, List, TYPE_CHECKING, Optional, Union
 
 import logging
+# import pprint
 
 from uuid import uuid4
 from scipy.sparse import csr_matrix  # type: ignore
@@ -34,6 +35,7 @@ class Dataflow:
     interfering with the Scheduler. To update the Scheduler, it should
     be validated and committed first.
     """
+    multiple_slots_name_generator = 1
 
     def __init__(self, scheduler: Scheduler):
         self.scheduler = scheduler
@@ -157,7 +159,8 @@ class Dataflow:
         if input_module.input_slot_multiple(input_name):
             if rename:
                 slot.original_name = input_name
-                input_name += f".{uuid4()}"
+                input_name += f".{self.multiple_slots_name_generator:04}"
+                self.multiple_slots_name_generator += 1
                 logger.info(f"{slot.original_name} renamed {input_name}")
                 slot.input_name = input_name
             else:
@@ -464,6 +467,35 @@ class Dataflow:
                 continue
             self._collect_output_collaterals_if_required(islot, deps)
 
+    def _test_modules_removed(self, names: Set[str]) -> List[str]:
+        errors: List[str] = []
+        for iname in self.inputs:
+            if iname in names:
+                errors.append(f"Input name {iname} in deleted names")
+            for islot in self.inputs[iname].values():
+                if islot.input_module and islot.input_module.name in names:
+                    errors.append(
+                        f"Input slot {iname} points to deleted names: {islot}"
+                    )
+                if islot.output_module.name in names:
+                    errors.append(
+                        f"Input slot {iname} points to deleted names: {islot}"
+                    )
+        for oname in self.outputs:
+            if oname in names:
+                errors.append(f"Output name {oname} in deleted names")
+            for oslots in self.outputs[oname].values():
+                for oslot in oslots:
+                    if oslot.input_module and oslot.input_module.name in names:
+                        errors.append(
+                            f"Output slot {oname} points to deleted names: {oslot}"
+                        )
+                    if oslot.output_module.name in names:
+                        errors.append(
+                            f"Output slot {oname} points to deleted names: {oslot}"
+                        )
+        return errors
+
     def delete_modules(self, *name_or_mod: Union[str, Module]) -> None:
         names = {m if isinstance(m, str) else m.name for m in name_or_mod}
         collaterals = self.collateral_damage(*names)
@@ -474,6 +506,9 @@ class Dataflow:
             )
         for mod in names:
             self._remove_module(self[mod])
+        # errs = self._test_modules_removed(names)
+        # if errs:
+        #     pprint.pprint(errs)
 
     def die_if_deps_die(
         self, name: str, deps: Set[str], maybe_deps: Set[str]

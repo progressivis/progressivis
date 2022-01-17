@@ -43,7 +43,7 @@ if TYPE_CHECKING:
 TickCb = Callable[["Scheduler", int], None]
 TickCoro = Callable[["Scheduler", int], Coroutine[Any, Any, Any]]
 TickProc = Union[TickCb, TickCoro]
-ChangeProc = Callable[["Scheduler", Set[str], Set[str]], None]
+ChangeProc = Callable[["Scheduler", Set["Module"], Set["Module"]], Coroutine[Any, Any, None]]
 Order = List[str]
 Reachability = Dict[str, List[str]]
 
@@ -97,7 +97,8 @@ class Scheduler:
         self._stopped: bool = True
         self._runorder: Order = []
         self._new_modules: Optional[List[Module]] = None
-        self._new_dependencies: Dependencies = {}
+        self._new_inputs: Dependencies = {}
+        self._new_outputs: Dict[str, Dict[str, List[Slot]]] = {}
         self._new_runorder: Order = []
         self._new_reachability: Reachability = {}
         self._added_modules: Set[Module] = set()
@@ -413,10 +414,10 @@ class Scheduler:
                 blocked += 1
                 continue
             blocked = 0
-            await self._run_tick_procs()
             await module.start_run(self._run_number)
             module.run(self._run_number)
             await module.after_run(self._run_number)
+            await self._run_tick_procs()
         if self.shortcut_evt is not None:
             self.shortcut_evt.set()
         self._task = False
@@ -441,12 +442,12 @@ class Scheduler:
                 for mod in self._deleted_modules:
                     await mod.ending()
             if self._added_modules or self._deleted_modules:
-                for proc in self._change_procs:
-                    proc(self,
-                         {mod.name for mod in self._added_modules},
-                         {mod.name for mod in self._deleted_modules})
+                added = self._added_modules
+                deleted = self._deleted_modules
                 self._added_modules = set()
                 self._deleted_modules = set()
+                for proc in self._change_procs:
+                    await proc(self, added, deleted)
             # If run_list empty, we're done
             if not self._run_list:
                 break
@@ -517,8 +518,9 @@ class Scheduler:
         assert dataflow.version == self.version
         self._new_runorder = dataflow.order_modules()  # raises if invalid
         self._new_modules = list(dataflow.modules().values())
-        self._new_dependencies = dataflow.inputs
-        dataflow._compute_reachability(self._new_dependencies)
+        self._new_inputs = dataflow.inputs
+        self._new_outputs = dataflow.outputs
+        dataflow._compute_reachability(self._new_inputs)
         self._new_reachability = dataflow.reachability
         if self.dataflow is not None:
             self.dataflow.committed()
@@ -545,13 +547,14 @@ class Scheduler:
         self._modules = modules
         if not (deleted or added):
             logger.info("Scheduler updated with no new module(s)")
-        self._dependencies = self._new_dependencies
-        self._new_dependencies = {}
+        self._dependencies = self._new_inputs
         self._reachability = self._new_reachability
-        self._new_reachability = {}
         logger.info("New dependencies: %s", self._dependencies)
         for mid, slots in self._dependencies.items():
-            modules[mid].reconnect(slots)
+            modules[mid].reconnect(slots, self._new_outputs.get(mid, {}))
+        self._new_outputs = {}
+        self._new_inputs = {}
+        self._new_reachability = {}
         if added:
             logger.info("Scheduler adding modules %s", added)
             sorted_added = sorted(added)

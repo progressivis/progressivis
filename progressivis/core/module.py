@@ -262,9 +262,9 @@ class Module(metaclass=ModuleMeta):
         self.input_descriptors: Dict[str, SlotDescriptor] = {
             d.name: d for d in input_descriptors
         }
-        self.input_multiple: Dict[str, int] = {
-            d.name: 0 for d in input_descriptors if d.multiple
-        }
+        # self.input_multiple: Dict[str, int] = {
+        #     d.name: 0 for d in input_descriptors if d.multiple
+        # }
         self._output_slots: Dict[
             str, Optional[List[Slot]]
         ] = self._validate_descriptors(output_descriptors)
@@ -538,7 +538,10 @@ class Module(metaclass=ModuleMeta):
         if not self.input_slot_multiple(name):
             return [name]  # self.get_input_slot(name)]
         prefix = name + "."
-        return [iname for iname in self._input_slots if iname.startswith(prefix)]
+        return sorted([  # maintains the creation order
+            iname for iname in self._input_slots
+            if iname.startswith(prefix)
+        ])
 
     def get_input_module(self, name: str) -> Optional[Module]:
         "Return the specified input module"
@@ -564,39 +567,67 @@ class Module(metaclass=ModuleMeta):
     def input_slot_names(self) -> Iterable[str]:
         return self._input_slots.keys()
 
-    def reconnect(self, inputs: Dict[str, Slot]) -> None:
-        deleted_keys = set(self._input_slots.keys()) - set(inputs.keys())
-        for name, slot in inputs.items():
+    def reconnect(
+        self,
+        inputs: Dict[str, Slot],
+        outputs: Dict[str, List[Slot]]
+    ) -> None:
+        logger.info(f"Module {self}, reconnect({inputs}, {outputs})")
+        all_keys = set(self._input_slots.keys()) | set(inputs.keys())
+        for name in all_keys:
             old_slot = self._input_slots.get(name, None)
-            if old_slot is not slot:
+            slot = inputs.get(name, None)
+            if old_slot is slot:
+                continue
+            if old_slot is None:  # adding a new input slot
                 # pylint: disable=protected-access
                 assert slot.input_module is self
-                if slot.original_name:
-                    descriptor = self.input_descriptors[slot.original_name]
-                    # self.input_descriptors[name] = descriptor
-                    self.inputs.append(descriptor)
-                    logger.info(
-                        'Creating multiple input slot "%s" in "%s"', name, self.name
-                    )
+                # if slot.original_name:  # if it's a multiple slot, declare it
+                #     descriptor = self.input_descriptors[slot.original_name]
+                #     self.input_descriptors[name] = descriptor
+                #     logger.info(
+                #         'Creating multiple input slot "%s" in "%s"', name, self.name
+                #     )
                 self._input_slots[name] = slot
-                if old_slot:
-                    old_slot.output_module._disconnect_output(old_slot.output_name)
-                slot.output_module._connect_output(slot)
+            else:
+                # either delete a slot or replace an existing slot
+                self._input_slots[name] = slot
+                if slot is None:  # deleted slot
+                    if old_slot.original_name:
+                        # self.input_descriptors.pop(name)
+                        logger.info(f"Deleted multiple input slot {name} in {self.name}")
+                    else:
+                        logger.info(f"Deleted input slot {name} in {self.name}")
+                else:  # slot is replaced
+                    logger.info(f"Changing input slot {name} in {self.name}")
+                    if slot == old_slot:  # no need to replace when the slots are identical
+                        continue
 
-        for name in deleted_keys:
-            old_slot = self._input_slots[name]
-            if old_slot:
-                logger.info(f"Deleted input slot {name} in {self.name}")
-                # pylint: disable=protected-access
-                old_slot.output_module._disconnect_output(old_slot.output_name)
-                if old_slot.original_name:
-                    descriptor = self.input_descriptors.pop(name)
-                    assert descriptor.name == old_slot.original_name
-                    del self.inputs[self.inputs.index(descriptor)]
-                    logger.info(
-                        'Removing multiple input slot "%s" in "%s"', name, self.name
-                    )
-            self._input_slots[name] = None
+        all_keys = set(self._output_slots.keys()) | set(outputs.keys())
+        for name in all_keys:
+            old_slots = self._output_slots.get(name, None)
+            slots = outputs.get(name, None)
+            if old_slots == slots:
+                continue
+            if old_slots is None:  # adding all new output slots
+                logger.info(f"Module {self}, output '{name}': adding slots {slots}")
+                self._output_slots[name] = slots
+            elif slots is None:  # deleting all the output slots
+                logger.info(f"Module {self}: output '{name}': removing slots {old_slots}")
+                self._output_slots[name] = None
+            else:
+                new_slots: List[Slot] = []
+                for slot in slots:
+                    try:
+                        index = old_slots.index(slot)
+                    except ValueError:
+                        index = -1
+                    if index != -1:
+                        old_slot = old_slots[index]
+                        if slot == old_slot:  # if they are the same, reuse the old one
+                            slot = old_slot
+                    new_slots.append(slot)
+                self._output_slots[name] = new_slots
 
     def has_any_output(self) -> bool:
         return any(self._output_slots.values())

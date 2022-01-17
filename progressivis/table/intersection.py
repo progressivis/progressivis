@@ -37,7 +37,7 @@ class Intersection(NAry):
         steps = 0
         tables = []
         ph_table = None
-        assert len(self.inputs) > 0
+        # assert len(self.inputs) > 0
         reset_ = False
         for name in self.get_input_slot_multiple():
             slot = self.get_input_slot(name)
@@ -95,7 +95,7 @@ class Intersection(NAry):
         steps = 0
         tables = []
         ph_table = None
-        assert len(self.inputs) > 0
+        # assert len(self.inputs) > 0
         for name in self.get_input_slot_multiple():
             if not name.startswith("table"):
                 continue

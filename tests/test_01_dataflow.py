@@ -234,6 +234,7 @@ class TestDataflow(ProgressiveTest):
         prt.input.df = table.output.result
         prt2 = Print(name="prt2", proc=self.terse, scheduler=s)
         prt2.input.df = table.output.result
+        # from nose.tools import set_trace; set_trace()
         s.commit()
 
         async def modify_1(scheduler, run_number):
@@ -266,7 +267,6 @@ class TestDataflow(ProgressiveTest):
                 print("Checking even more module deletion")
                 deps = dataflow.collateral_damage("sink")
                 self.assertEquals(deps, {"sink", "table"})
-                # from nose.tools import set_trace; set_trace()
                 dataflow.delete_modules("sink", "table")
 
         async def stop_error(scheduler, run_number):
@@ -308,9 +308,7 @@ class TestDataflow(ProgressiveTest):
             self.assertTrue("scatterplot_1" in scheduler)
             with scheduler as dataflow:
                 print("Checking scatterplot_1 module deletion")
-                modules = sorted(dataflow.group_modules("scatterplot_1"))
-                print(f"Removing modules {modules}")
-                deps = dataflow.collateral_damage(*modules)
+                deps = dataflow.collateral_damage("scatterplot_1")
                 print(f"collateral_damage('scatterplot_1') = '{sorted(deps)}'")
                 dataflow.delete_modules(*deps)
             scheduler.on_loop(modify_3, 10)
@@ -333,11 +331,9 @@ class TestDataflow(ProgressiveTest):
             self.assertFalse("scatterplot_1" in scheduler)
             self.assertTrue("scatterplot_2" in scheduler)
             with scheduler as dataflow:
-                print("Checking scatterplot_2 module deletion")
                 print("Checking scatterplot module deletion")
-                modules = sorted(dataflow.group_modules("scatterplot_2"))
-                print(f"Removing modules {modules}")
-                deps = dataflow.collateral_damage(*modules)
+                print("Checking scatterplot_2 module addition")
+                deps = dataflow.collateral_damage("scatterplot_2")
                 print(f"collateral_damage('scatterplot_2') = '{sorted(deps)}'")
                 dataflow.delete_modules(*deps)
             s.on_loop(modify_5, 5)

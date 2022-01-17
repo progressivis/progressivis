@@ -11,32 +11,36 @@
     fill: lightcoral;
 }
 
-.created {
+.state_created {
     fill: lightblue;
 }
 
-.ready {
+.state_ready {
     fill: lightseagreen;
 }
 
-.running {
+.state_running {
     fill: lightgreen;
 }
 
-.blocked {
-    fill: orchid; 
+.state_blocked {
+    fill: orchid;
 }
 
-.zombie {
-    fill: goldenrod;
+.state_zombie {
+    fill: grey;
 }
 
-.terminated {
+.state_terminated {
     fill: lightgrey;
 }
 
-.invalid {
-    fill: orangered;
+.state_invalid {
+    fill: red;
+}
+
+.state_stopped {
+    fill: orange;
 }
 
 .link {
@@ -56,4 +60,3 @@
 #module-graph{
   border: 1px solid grey;
 }
-

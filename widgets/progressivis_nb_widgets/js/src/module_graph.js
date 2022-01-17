@@ -36,7 +36,7 @@ export const ModuleGraphView = widgets.DOMWidgetView.extend({
       that.module_graph.ready();
       that.data_changed();
     });
-    console.log('REnder ModuleGraphView');
+    console.log('Render ModuleGraphView');
     // Observe changes in the value traitlet in Python, and define
     // a custom callback.
     this.model.on('change:data', this.data_changed, this);
@@ -50,10 +50,16 @@ export const ModuleGraphView = widgets.DOMWidgetView.extend({
   },
 });
 
+function eqSet(as, bs) {
+    if (as.size !== bs.size) return false;
+    for (var a of as) if (!bs.has(a)) return false;
+    return true;
+}
+
 function module_graph(view) {
   const id = view.id;
-  let d3cola;
   let firstTime = true;
+  let prev_edges = [];
 
   const width = 960,
     height = 500;
@@ -93,13 +99,6 @@ function module_graph(view) {
     function zoom() {
       vis.attr('transform', d3.event.transform);
     }
-    d3cola = cola
-      .d3adaptor(d3)
-      .size([width, height])
-      .avoidOverlaps(true)
-      .convergenceThreshold(0.001)
-      .flowLayout('x', 150)
-      .jaccardLinkLengths(150);
   }
 
   /**
@@ -134,6 +133,7 @@ function module_graph(view) {
             retval.push({
               source: name2id[link.output_module],
               target: name2id[link.input_module],
+              id: link.output_module+":"+link.input_module
             });
           });
         }
@@ -162,21 +162,34 @@ function module_graph(view) {
 
     const vis = d3.select('#' + id + ' g');
 
-    const node = vis.selectAll('.node').data(nodes, (d) => d.id);
+    const edges = collect_edges(modules, name2id)
+          .sort(function (a, b) {
+            if (a.source < b.source) return -1;
+            if (a.source > b.source) return 1;
+            if (a.target < b.target) return -1;
+            if (a.target > b.target) return 1;
+            return 0;
+          });
 
-    if (firstTime) {
-      const edges = collect_edges(modules, name2id);
+    const node = vis.selectAll('.node').data(nodes, (d) => d.name);
+    node
+      .exit()
+      .remove();
+    node
+      .enter()
+      .append('rect')
+      .attr('class', (d) => 'node ' + d.state)
+      .attr('rx', 5)
+      .attr('ry', 5);
+    node
+      .attr('class', (d) => 'node ' + d.state);
 
-      node
-        .enter()
-        .append('rect')
-        .attr('class', (d) => 'node ' + d.state)
-        .attr('rx', 5)
-        .attr('ry', 5);
-
-      const label = vis
-        .selectAll('.label')
-        .data(nodes)
+    const label = vis
+          .selectAll('.label')
+          .data(nodes, (d) => d.name);
+    label
+        .exit().remove();
+    label
         .enter()
         .append('text')
         .attr('class', 'label')
@@ -187,41 +200,45 @@ function module_graph(view) {
           d.width = b.width + extra;
           d.height = b.height + extra;
         });
+    label
+        .each(function (d) {
+          const b = this.getBBox();
+          const extra = 2 * margin + 2 * pad;
+          d.width = b.width + extra;
+          d.height = b.height + extra;
+        });
 
-      const link = vis.selectAll('.link').data(edges);
 
-      const lineFunction = d3
-        .line()
-        .x((d) => d.x)
-        .y((d) => d.y);
+    if (! _.isEqual(edges, prev_edges)) {
+      const d3cola = cola
+            .d3adaptor(d3)
+            .size([width, height])
+            .avoidOverlaps(true)
+            .convergenceThreshold(0.001)
+            .flowLayout('x', 150)
+            .jaccardLinkLengths(150);
+      prev_edges = edges;
+      console.log("Laying out graph");
 
+      const link = vis.selectAll('.link').data(edges, (d) => d.id);
+      link.exit().remove();
+      link.enter()
+        .append('path')
+        .attr('class', 'link')
+        .attr('d', "");
+
+      const lineFunction = d3.line().x((d) => d.x).y((d) => d.y);
       const routeEdges = () => {
-        d3cola.prepareEdgeRouting(margin / 3);
+        vis.selectAll('.node')
+          .data(nodes, (d) => d.name)
+          .each((d) => { d.innerBounds = d.bounds.inflate(-margin); })
+          .attr('x', (d) => d.innerBounds.x)
+          .attr('y', (d) => d.innerBounds.y)
+          .attr('width', (d) => d.innerBounds.width())
+          .attr('height', (d) => d.innerBounds.height());
 
-        link
-          .enter()
-          .append('path')
-          .attr('class', 'link')
-          .attr('d', (d) => lineFunction(d3cola.routeEdge(d)));
-      };
-
-      d3cola
-        .nodes(nodes)
-        .links(edges)
-        .start(50, 100, 200)
-        .on('tick', () => {
-          vis
-            .selectAll('.node')
-            .data(nodes, (d) => d.id)
-            .each((d) => {
-              d.innerBounds = d.bounds.inflate(-margin);
-            })
-            .attr('x', (d) => d.innerBounds.x)
-            .attr('y', (d) => d.innerBounds.y)
-            .attr('width', (d) => d.innerBounds.width())
-            .attr('height', (d) => d.innerBounds.height());
-
-          link.attr('d', (d) => {
+        vis.selectAll('.link').data(edges, (d) => d.id)
+          .attr('d', (d) => {
             const route = cola.makeEdgeBetween(
               d.source.innerBounds,
               d.target.innerBounds,
@@ -229,13 +246,28 @@ function module_graph(view) {
             );
             return lineFunction([route.sourceIntersection, route.arrowStart]);
           });
-          label
-            .attr('x', (d) => d.x)
-            .attr('y', (d) => d.y + (margin + pad) / 2);
-        })
-        .on('end', routeEdges);
-    } else {
-      node.attr('class', (d) => 'node ' + d.state);
+        vis.selectAll('.label')
+          .data(nodes, (d) => d.name)
+          .attr('x', (d) => d.x)
+          .attr('y', (d) => d.y + (margin + pad) / 2);
+
+        d3cola.prepareEdgeRouting(margin / 3);
+
+        const link = vis.selectAll('.link')
+              .data(edges, (d) => d.id)
+              .attr('d', (d) => lineFunction(d3cola.routeEdge(d)));
+      };
+
+      try {
+        d3cola
+          .nodes(nodes)
+          .links(edges)
+          .start(50, 100, 200)
+          .on('end', routeEdges);
+      }
+      catch(e) {
+        console.log("Error in routEdges: "+e);
+      }
     }
   }
 

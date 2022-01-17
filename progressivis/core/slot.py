@@ -57,7 +57,7 @@ class SlotDescriptor:
         buffer_deleted: bool = True,
         buffer_exposed: bool = True,
         buffer_masked: bool = True,
-    ):
+    ) -> None:
         self.name = name
         self.type = type
         self.required = required
@@ -68,6 +68,17 @@ class SlotDescriptor:
         self.buffer_deleted = buffer_deleted
         self.buffer_exposed = buffer_exposed
         self.buffer_masked = buffer_masked
+
+    def __str__(self) -> str:
+        return (
+            f"SlotDescriptor({self.name}, "
+            f"type={self.type}, "
+            f"required={self.required}, "
+            f"multiple={self.required})"
+        )
+
+    def __repr__(self) -> str:
+        return str(self)
 
 
 class Slot:
@@ -134,6 +145,36 @@ class Slot:
 
     def __repr__(self) -> str:
         return str(self)
+
+    def __eq__(self, other: Any) -> bool:
+        if not isinstance(other, Slot):
+            return False
+        return (
+            self.output_name == other.output_name
+            and self.output_module == other.output_module
+            and self.input_name == other.input_name
+            and self.input_module == other.input_module
+            and self.original_name == other.original_name
+        )
+
+    def __neq__(self, other: Any) -> bool:
+        return not (self == other)
+
+    @staticmethod
+    def compare(self: Slot, other: Slot) -> int:
+        if self == other:
+            return 0
+        if (self.output_name < other.output_name
+            or self.output_module.name < other.output_module.name
+            or self.input_name < other.input_name
+            or (self.input_module.name is not None
+                and other.input_module is not None
+                and self.input_module.name < other.input_module.name)
+            or (self.original_name is not None
+                and other.original_name is not None
+                and self.original_name < other.original_name)):
+            return -1
+        return 1
 
     def last_update(self) -> int:
         "Return the time of the last update for thie slot"

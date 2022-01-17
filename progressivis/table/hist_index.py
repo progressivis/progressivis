@@ -175,7 +175,7 @@ class _HistogramIndexImpl(object):
             )
         self.bitmaps.insert(i, lower_bin)
         self.bitmaps[i + 1] = upper_bin
-        print("*", end="")
+        # print("*", end="")
 
     def _get_bin(self, val: float) -> bitmap:
         i = np.digitize(val, self.bins)  # type: ignore
