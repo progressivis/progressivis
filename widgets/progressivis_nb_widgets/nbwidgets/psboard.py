@@ -61,11 +61,14 @@ class PsBoard(ipw.VBox):  # type: ignore
     def __init__(
         self,
         scheduler: Scheduler,
-        order: Literal["asc", "desc"] = "asc"
+        order: Literal["asc", "desc"] = "asc",
+        refresh_rate: int = 5
     ):
         global debug_console  # pylint: disable=global-statement
         self._order: Literal["asc", "desc"] = order
         self.scheduler = scheduler
+        self.refresh_rate = refresh_rate
+        self.last_refresh = 0
         self._cache: Any = None
         self._cache_js: Any = None
         self.cpanel = ControlPanel(scheduler)
@@ -88,7 +91,9 @@ class PsBoard(ipw.VBox):  # type: ignore
             "last_update",
             "order",
         ]
-        self.htable = SensitiveHTML(layout=ipw.Layout(height="500px", overflow="auto"))
+        self.htable = SensitiveHTML(
+            layout=ipw.Layout(height="500px", overflow="auto")
+        )
         # self.refresh_event = None
         self.other_coros: List[Coroutine[Any, Any, None]] = []
         self.vis_register: Dict[str, List[WidgetType]] = defaultdict(list)
@@ -97,14 +102,25 @@ class PsBoard(ipw.VBox):  # type: ignore
         self.scheduler.on_tick(self._refresh_proc)
         self.scheduler.on_change(self._change_proc)
 
-    async def _refresh_proc(self, scheduler: Scheduler, run_number: int) -> None:
+    async def _refresh_proc(
+        self,
+        scheduler: Scheduler,
+        run_number: int
+    ) -> None:
         assert scheduler is self.scheduler
+        self.last_refresh += 1
+        if self.last_refresh < self.refresh_rate:
+            return
+        self.last_refresh = 0
         json_ = self.scheduler.to_json(short=False)
         self._cache = JSONEncoderNp.dumps(json_, skipkeys=True)
         self._cache_js = None
         await self.refresh()
 
-    async def _change_proc(self, scheduler: Scheduler, added: Set[Module], deleted: Set[Module]) -> None:
+    async def _change_proc(self,
+                           scheduler: Scheduler,
+                           added: Set[Module],
+                           deleted: Set[Module]) -> None:
         assert scheduler is self.scheduler
         # print("Dataflow changed")
         self.modules_changed = True
@@ -227,7 +243,16 @@ class PsBoard(ipw.VBox):  # type: ignore
             self.mgraph_changed = False
         else:
             assert len(self.tab.children) > 2
-            await self.current_module.refresh()
+            # FIXME fix when the displayed module is not deleted
+            module_name = self.current_module.module_name
+            module_json = None
+            m = None
+            for i, m in enumerate(json_["modules"]):
+                if m["id"] == module_name:
+                    module_json = m
+                    break
+            if module_json is not None:
+                await self.current_module.refresh(module_json)
         if len(self.tab.children) < 3:
             self.tab.children = [self.htable, self.mgraph]
         else:

@@ -11,7 +11,7 @@ from . import ProgressiveTest
 
 
 class TestBisect(ProgressiveTest):
-    def test_bisect(self):
+    def test_bisect(self) -> None:
         s = self.scheduler()
         random = RandomTable(2, rows=1000_000, scheduler=s)
         t = Table(name=None, dshape="{value: string}", data={"value": [0.5]})
@@ -26,10 +26,10 @@ class TestBisect(ProgressiveTest):
         pr.input[0] = bisect_.output.result
         aio.run(s.start())
         # hist_index._impl.dump()
-        idx = random.result.eval("_1>0.5", result_object="index")
-        self.assertEqual(bisect_.result.index, bitmap(idx))
+        idx = random.table.eval("_1>0.5", result_object="index")
+        self.assertEqual(bisect_.table.index, bitmap(idx))
 
-    def test_bisect2(self):
+    def test_bisect2(self) -> None:
         s = self.scheduler()
         random = RandomTable(2, rows=100_000, scheduler=s)
         stirrer = Stirrer(
@@ -51,10 +51,10 @@ class TestBisect(ProgressiveTest):
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = bisect_.output.result
         aio.run(s.start())
-        idx = stirrer.result.eval("_1>0.5", result_object="index")
-        self.assertEqual(bisect_.result.index, bitmap(idx))
+        idx = stirrer.table.eval("_1>0.5", result_object="index")
+        self.assertEqual(bisect_.table.index, bitmap(idx))
 
-    def test_bisect3(self):
+    def test_bisect3(self) -> None:
         s = self.scheduler()
         random = RandomTable(2, rows=100_000, scheduler=s)
         stirrer = Stirrer(
@@ -72,8 +72,8 @@ class TestBisect(ProgressiveTest):
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = bisect_.output.result
         aio.run(s.start())
-        idx = stirrer.result.eval("_1>0.5", result_object="index")
-        self.assertEqual(bisect_.result.index, bitmap(idx))
+        idx = stirrer.table.eval("_1>0.5", result_object="index")
+        self.assertEqual(bisect_.table.index, bitmap(idx))
 
 
 if __name__ == "__main__":

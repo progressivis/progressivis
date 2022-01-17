@@ -166,12 +166,11 @@ class Slot:
             return 0
         if (self.output_name < other.output_name
             or self.output_module.name < other.output_module.name
-            or self.input_name < other.input_name
-            or (self.input_module.name is not None
-                and other.input_module is not None
+            or (self.input_name is not None and other.input_name is not None
+                and self.input_name < other.input_name)
+            or (self.input_module is not None and other.input_module is not None
                 and self.input_module.name < other.input_module.name)
-            or (self.original_name is not None
-                and other.original_name is not None
+            or (self.original_name is not None and other.original_name is not None
                 and self.original_name < other.original_name)):
             return -1
         return 1

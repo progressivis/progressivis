@@ -52,7 +52,7 @@ class LiteSelect(TableModule):
         if select_slot.deleted.any():
             indices = select_slot.deleted.next(length=step_size, as_slice=False)
             s = indices_len(indices)
-            print("LITESELECT: -", s)
+            # print("LITESELECT: -", s)
             logger.info("deleting %s", indices)
             self.selected.selection -= bitmap.asbitmap(indices)
             # step_size -= s//2

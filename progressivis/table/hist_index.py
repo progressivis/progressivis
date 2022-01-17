@@ -157,11 +157,8 @@ class _HistogramIndexImpl(object):
         upper_len = len(upper_bin)
         t = len(ids) * self._perm_deviation
         if abs(lower_len - upper_len) > t:
-            print(
-                "DIFF: ",
-                lower_len,
-                upper_len,
-                float(abs(lower_len - upper_len)) / len(ids),
+            logger.info(
+                f"DIFF: {lower_len} {upper_len} {float(abs(lower_len - upper_len)) / len(ids)}"
             )
         self.bins = np.insert(self.bins, i, v)  # type: ignore
         assert self.bins is not None

@@ -6,7 +6,7 @@ from .utils import update_widget
 from .slot_wg import SlotWg
 from .json_html import JsonHTML
 
-from typing import Any, Optional, Tuple, TYPE_CHECKING
+from typing import Any, Optional, Tuple, Dict, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from .psboard import PsBoard
@@ -35,20 +35,13 @@ class ModuleWg(ipw.Tab):  # type: ignore # pylint: disable=too-many-ancestors
         self.set_title(0, "Main")
         self.set_title(1, "Output slots")
 
-    async def refresh(self) -> None:
-        _idx = self._index
-        # pylint: disable=protected-access
-        json_ = _idx._cache_js
-        assert json_ is not None
-        module_json = None
-        m = None
-        for i, m in enumerate(json_["modules"]):
-            if m["id"] == self.module_name:
-                module_json = m
-                break
-        assert module_json is not None
+    async def refresh(self, module_json: Dict[str, Any]) -> None:
+        # _idx = self._index
+        # # pylint: disable=protected-access
+        # json_ = _idx._cache_js
+        # assert json_ is not None
         self.set_title(0, self.module_name)
-        await update_widget(self._main, "data", m)
+        await update_widget(self._main, "data", module_json)
         await update_widget(
             self._main,
             "config",
@@ -78,9 +71,9 @@ class ModuleWg(ipw.Tab):  # type: ignore # pylint: disable=too-many-ancestors
             # first refresh
             self.selection_changed = False
             self.selected_index = 0
-            slots = [SlotWg(module, sl) for sl in m["output_slots"].keys()] + [
-                SlotWg(module, "_params")
-            ]
+            slots = [
+                SlotWg(module, sl) for sl in module_json["output_slots"].keys()
+            ] + [SlotWg(module, "_params")]
             await update_widget(self._output_slots, "children", slots)
             if module.name in self._index.vis_register:
                 for wg, label in self._index.vis_register[module.name]:
@@ -94,7 +87,7 @@ class ModuleWg(ipw.Tab):  # type: ignore # pylint: disable=too-many-ancestors
                 self.set_title(1, "Output slots")
         else:
             _selected_index = self._output_slots.selected_index
-        for i, k in enumerate(m["output_slots"].keys()):
+        for i, k in enumerate(module_json["output_slots"].keys()):
             self._output_slots.set_title(i, k)
             await self._output_slots.children[i].refresh()
         i += 1

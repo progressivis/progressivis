@@ -1,3 +1,7 @@
+from __future__ import annotations
+
+import pandas as pd
+
 from . import ProgressiveTest
 from progressivis.core import aio, Sink
 from progressivis import Print
@@ -7,11 +11,12 @@ from progressivis.table.constant import Constant
 from progressivis.stats import RandomTable
 from progressivis.table.stirrer import Stirrer
 from progressivis.core.bitmap import bitmap
-import pandas as pd
+
+from typing import Any
 
 
 class TestCmpQuery(ProgressiveTest):
-    def test_cmp_query(self):
+    def test_cmp_query(self) -> None:
         s = self.scheduler()
         random = RandomTable(10, rows=10000, scheduler=s)
         cmp_ = CmpQueryLast(scheduler=s)
@@ -30,7 +35,7 @@ class TestCmpQuery(ProgressiveTest):
         self.assertEqual(cmp_._bitmap, bitmap(df.index[dfe]))
         # s.join()
 
-    def t_cmp_query_impl(self, **kw):
+    def t_cmp_query_impl(self, **kw: Any) -> None:
         s = self.scheduler()
         random = RandomTable(10, rows=10000, scheduler=s)
         stirrer = Stirrer(update_column="_1", fixed_step_size=100, scheduler=s, **kw)
@@ -50,10 +55,10 @@ class TestCmpQuery(ProgressiveTest):
         dfe = df.eval("_1<0.5")
         self.assertEqual(cmp_._bitmap, bitmap(df.index[dfe]))
 
-    def test_cmp_query2(self):
+    def test_cmp_query2(self) -> None:
         return self.t_cmp_query_impl(delete_rows=5)
 
-    def test_cmp_query3(self):
+    def test_cmp_query3(self) -> None:
         return self.t_cmp_query_impl(update_rows=5)
 
 

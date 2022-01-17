@@ -146,7 +146,7 @@ class StirrerView(TableModule):
             self.result = TableSelectedView(input_table, bitmap([]))
         before_ = bitmap(self.table.index)
         self.selected.selection |= created
-        print(len(self.table.index))
+        # print(len(self.table.index))
         delete = []
         if self._delete_rows and self.test_delete_threshold(before_):
             if isinstance(self._delete_rows, int):

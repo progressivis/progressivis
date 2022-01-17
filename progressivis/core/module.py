@@ -581,7 +581,7 @@ class Module(metaclass=ModuleMeta):
                 continue
             if old_slot is None:  # adding a new input slot
                 # pylint: disable=protected-access
-                assert slot.input_module is self
+                assert slot is not None and slot.input_module is self
                 # if slot.original_name:  # if it's a multiple slot, declare it
                 #     descriptor = self.input_descriptors[slot.original_name]
                 #     self.input_descriptors[name] = descriptor

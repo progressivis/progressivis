@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from . import ProgressiveTest
 from progressivis.core import aio
 from progressivis import Every
@@ -5,8 +7,10 @@ from progressivis.stats.blobs_table import BlobsTable, MVBlobsTable
 from progressivis.linalg import Add
 import numpy as np
 
+from typing import Any
 
-def print_len(x):
+
+def print_len(x: Any) -> None:
     if x is not None:
         print(len(x))
 
@@ -15,19 +19,19 @@ centers = [(0.1, 0.3), (0.7, 0.5), (-0.4, -0.3)]
 
 
 class TestBlobsTable(ProgressiveTest):
-    def test_blobs_table(self):
+    def test_blobs_table(self) -> None:
         s = self.scheduler()
         module = BlobsTable(["a", "b"], centers=centers, rows=10000, scheduler=s)
-        self.assertEqual(module.result.columns[0], "a")
-        self.assertEqual(module.result.columns[1], "b")
-        self.assertEqual(len(module.result.columns), 2)
+        self.assertEqual(module.table.columns[0], "a")
+        self.assertEqual(module.table.columns[1], "b")
+        self.assertEqual(len(module.table.columns), 2)
         prlen = Every(proc=self.terse, constant_time=True, scheduler=s)
         prlen.input[0] = module.output.result
         aio.run(s.start())
         # s.join()
-        self.assertEqual(len(module.result), 10000)
+        self.assertEqual(len(module.table), 10000)
 
-    def test_blobs_table2(self):
+    def test_blobs_table2(self) -> None:
         s = self.scheduler()
         sz = 100000
         centers = [(0.1, 0.3), (0.7, 0.5), (-0.4, -0.3)]
@@ -46,10 +50,10 @@ class TestBlobsTable(ProgressiveTest):
         prlen.input[0] = add.output.result
         aio.run(s.start())
         # s.join()
-        self.assertEqual(len(blob1.result), sz)
-        self.assertEqual(len(blob2.result), sz)
-        arr1 = blob1.result.to_array()
-        arr2 = blob2.result.to_array()
+        self.assertEqual(len(blob1.table), sz)
+        self.assertEqual(len(blob2.table), sz)
+        arr1 = blob1.table.to_array()
+        arr2 = blob2.table.to_array()
         self.assertTrue(np.allclose(arr1, arr2))
 
 
@@ -58,21 +62,21 @@ covs = [[0.01, 0], [0, 0.09]], [[0.04, 0], [0, 0.01]], [[0.09, 0.04], [0.04, 0.0
 
 
 class TestMVBlobsTable(ProgressiveTest):
-    def test_mv_blobs_table(self):
+    def test_mv_blobs_table(self) -> None:
         s = self.scheduler()
         module = MVBlobsTable(
             ["a", "b"], means=means, covs=covs, rows=10000, scheduler=s
         )
-        self.assertEqual(module.result.columns[0], "a")
-        self.assertEqual(module.result.columns[1], "b")
-        self.assertEqual(len(module.result.columns), 2)
+        self.assertEqual(module.table.columns[0], "a")
+        self.assertEqual(module.table.columns[1], "b")
+        self.assertEqual(len(module.table.columns), 2)
         prlen = Every(proc=self.terse, constant_time=True, scheduler=s)
         prlen.input[0] = module.output.result
         aio.run(s.start())
         # s.join()
-        self.assertEqual(len(module.result), 10000)
+        self.assertEqual(len(module.table), 10000)
 
-    def test_mv_blobs_table2(self):
+    def test_mv_blobs_table2(self) -> None:
         s = self.scheduler()
         sz = 100000
         blob1 = MVBlobsTable(["a", "b"], means=means, covs=covs, rows=sz, scheduler=s)
@@ -86,8 +90,8 @@ class TestMVBlobsTable(ProgressiveTest):
         prlen.input[0] = add.output.result
         aio.run(s.start())
         # s.join()
-        self.assertEqual(len(blob1.result), sz)
-        self.assertEqual(len(blob2.result), sz)
-        arr1 = blob1.result.to_array()
-        arr2 = blob2.result.to_array()
+        self.assertEqual(len(blob1.table), sz)
+        self.assertEqual(len(blob2.table), sz)
+        arr1 = blob1.table.to_array()
+        arr2 = blob2.table.to_array()
         self.assertTrue(np.allclose(arr1, arr2))

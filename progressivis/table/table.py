@@ -253,7 +253,7 @@ class Table(IndexTable):
             index = bitmap.asbitmap(index)
             newsize_ = index.max() + 1 if index else 0
             if newsize < newsize_:
-                print(f"Wrong newsize={newsize}, fixed to {newsize_}")
+                logger.warning(f"Wrong newsize={newsize}, fixed to {newsize_}")
                 newsize = newsize_
         assert newsize is not None
         delta = newsize - len(self.index)
