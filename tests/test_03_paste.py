@@ -2,7 +2,7 @@ from progressivis.table.dict2table import Dict2Table
 from progressivis.table.paste import Paste
 from progressivis import Print
 from progressivis.stats import RandomTable, Min
-from progressivis.core import aio
+from progressivis.core import aio, notNone
 
 
 from . import ProgressiveTest
@@ -27,8 +27,6 @@ class TestPaste(ProgressiveTest):
         pr.input[0] = bj.output.result
         aio.run(s.start())
         res1 = random.table.min()
-        last = bj.table.last()
-        assert last is not None
-        res2 = last.to_dict()
+        res2 = notNone(bj.table.last()).to_dict()
         self.assertAlmostEqual(res1["_1"], res2["_1"])
         self.assertAlmostEqual(res1["_2"], res2["_2"])

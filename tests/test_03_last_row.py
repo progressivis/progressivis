@@ -10,7 +10,7 @@ from progressivis.datasets import get_dataset
 from progressivis.table.table import Table
 from progressivis.table.join import Join
 from progressivis.core.utils import get_random_name
-from progressivis.core import aio
+from progressivis.core import aio, notNone
 
 
 class TestLastRow(ProgressiveTest):
@@ -25,10 +25,9 @@ class TestLastRow(ProgressiveTest):
         prlen.input[0] = lr1.output.result
         aio.run(s.start())
         df = csv.table
-        last = df.last()
         res = lr1.table
-        assert last is not None and res is not None
-        self.assertEqual(res.at[0, "_1"], last["_1"])
+        assert res is not None
+        self.assertEqual(res.at[0, "_1"], notNone(df.last())["_1"])
 
     def test_last_row_simple(self) -> None:
         s = self.scheduler()
@@ -45,9 +44,7 @@ class TestLastRow(ProgressiveTest):
         # res = join.trace_stats(max_runs=1)
         # pd.set_option('display.expand_frame_repr', False)
         # print(res)
-        df = join.table
-        last = df.last()
-        assert last is not None
+        last = notNone(join.table.last())
         self.assertTrue(
             last["xmin"] == 1
             and last["xmax"] == 2

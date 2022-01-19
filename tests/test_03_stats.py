@@ -5,7 +5,7 @@ from progressivis.stats import Stats
 from progressivis.io import CSVLoader
 from progressivis.core.wait import Wait
 from progressivis.datasets import get_dataset
-from progressivis.core import aio
+from progressivis.core import aio, notNone
 
 import numpy as np
 
@@ -26,8 +26,7 @@ class TestStats(ProgressiveTest):
         aio.run(s.start())
         table = csv_module.table
         stable = stats.table
-        last = stable.last()
-        assert last is not None
+        last = notNone(stable.last())
         tmin = table["_1"].min()
         self.assertTrue(np.isclose(tmin, last["__1_min"]))
         tmax = table["_1"].max()

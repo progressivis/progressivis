@@ -373,18 +373,12 @@ class Scheduler:
 
     async def shortcut_manager(self) -> None:
         while not self._stopped and self._run_list:
-            # print("In shortcut_manager: Waiting for shortcut_evt")
             await self.shortcut_evt.wait()
-            # print("In shortcut_manager: shortcut_evt received")
             if self._stopped or not self._run_list:
                 break
-            # print(f"In shortcut_manager: Sleeping {SHORTCUT_TIME}s")
             await aio.sleep(SHORTCUT_TIME)
-            # print("In shortcut_manager: End of sleep")
             self._module_selection = None
-            # print("In shortcut_manager: shortcut_evt.clear()")
             self.shortcut_evt.clear()
-        # print("In shortcut_manager: leaving shortcut_manager()")
 
     async def _run_loop(self) -> None:
         """Main scheduler loop."""
@@ -399,9 +393,7 @@ class Scheduler:
             ):
                 if self._keep_running <= 0:
                     async with self._hibernate_cond:
-                        # print("Waiting for condition")
                         await self._hibernate_cond.wait()
-            # print("_keep_running: ", self._keep_running)
             if self._keep_running > 0:
                 self._keep_running -= 1
             if not self._consider_module(module):
@@ -428,7 +420,6 @@ class Scheduler:
         if self.shortcut_evt is not None:
             self.shortcut_evt.set()
         self._task = False
-        # print("Leaving _run_loop()")
 
     async def _next_module(self) -> AsyncGenerator[Module, None]:
         """

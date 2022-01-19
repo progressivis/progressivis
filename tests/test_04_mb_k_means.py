@@ -25,7 +25,7 @@ from progressivis.core import aio
 
 @skip("Still converting to sklean > 1.0")
 class TestMBKmeans(ProgressiveTest):
-    def test_mb_k_means(self):
+    def test_mb_k_means(self) -> None:
         s = self.scheduler()
         n_clusters = 3
         try:
@@ -57,8 +57,9 @@ class TestMBKmeans(ProgressiveTest):
             e = Every(proc=self.terse, scheduler=s)
             e.input[0] = km.output.labels
         aio.run(s.start())
-        # s.join()
-        self.assertEqual(len(csv.result), len(km.labels()))
+        labels = km.labels()
+        assert labels is not None
+        self.assertEqual(len(csv.table), len(labels))
         # mbk = MiniBatchKMeans(n_clusters=n_clusters, random_state=42, verbose=True)
         # X = csv.df()[km.columns]
         # mbk.partial_fit(X)

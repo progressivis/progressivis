@@ -3,7 +3,7 @@ import numpy as np
 from progressivis import Print
 from progressivis.stats import IdxMax, IdxMin, Max, Min, RandomTable
 from progressivis.table.stirrer import Stirrer
-from progressivis.core import aio
+from progressivis.core import aio, notNone
 
 from typing import Any, Dict
 
@@ -28,9 +28,7 @@ class TestIdxMax(ProgressiveTest):
         # print('max1', max1)
         max = idxmax.max()
         assert max is not None
-        row = max.last()
-        assert row is not None
-        max2 = row.to_dict()
+        max2 = notNone(max.last()).to_dict()
         # print('max2', max2)
         self.compare(max1, max2)
 
@@ -55,9 +53,7 @@ class TestIdxMax(ProgressiveTest):
         # print('max1', max1)
         max = idxmax.max()
         assert max is not None
-        row = max.last()
-        assert row is not None
-        max2 = row.to_dict()
+        max2 = notNone(max.last()).to_dict()
         # print('max2', max2)
         self.compare(max1, max2)
 
@@ -77,9 +73,7 @@ class TestIdxMax(ProgressiveTest):
         # print('min1', min1)
         min = idxmin.min()
         assert min is not None
-        row = min.last()
-        assert row is not None
-        min2 = row.to_dict()
+        min2 = notNone(min.last()).to_dict()
         # print('min2', min2)
         self.compare(min1, min2)
 
@@ -103,9 +97,7 @@ class TestIdxMax(ProgressiveTest):
         # print('min1', min1)
         min = idxmin.min()
         assert min is not None
-        row = min.last()
-        assert row is not None
-        min2 = row.to_dict()
+        min2 = notNone(min.last()).to_dict()
         # print('min2', min2)
         self.compare(min1, min2)
 

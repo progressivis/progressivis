@@ -87,9 +87,8 @@ class IdxMax(TableModule):
                 self.table.append(op, indices=[run_number])
             else:
                 prev_max = self._max.last()
-                assert prev_max is not None
                 prev_idx = self.table.last()
-                assert prev_idx is not None
+                assert prev_max is not None and prev_idx is not None
                 max_ = OrderedDict(prev_max.items())
                 for col, ix in op.items():
                     val = input_df.at[ix, col]

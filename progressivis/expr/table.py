@@ -72,9 +72,8 @@ class Pipeable:
             ret = self._expr_class(self._module_class, args, _kw)
             if rp_ is not None:
                 return ret.repipe(rp_)
-            else:
-                return ret
             return ret
+        # raise ValueError("At least one non-keyword arg is required")
         return Pipeable(self._expr_class, self._module_class, args, _kw, rp_)
 
     def __or__(self, other: Pipeable) -> Expr:

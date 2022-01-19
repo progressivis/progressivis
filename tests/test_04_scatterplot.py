@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from progressivis import Every, Print, Scheduler
 from progressivis.io import CSVLoader
 from progressivis.vis import MCScatterPlot
@@ -7,13 +9,15 @@ from progressivis.core import aio
 from . import ProgressiveTest, skipIf
 import os
 
+from typing import Any, Dict
 
-def print_len(x):
+
+def print_len(x: Any) -> None:
     if x is not None:
         print(len(x))
 
 
-def print_repr(x):
+def print_repr(x: Any) -> None:
     if x is not None:
         print(repr(x))
 
@@ -28,13 +32,13 @@ UPPER_X = 0.8
 UPPER_Y = 0.7
 
 
-async def fake_input(sched, name, t, inp):
+async def fake_input(sched: Scheduler, name: str, t: float, inp: Dict[str, Any]) -> Any:
     await aio.sleep(t)
     module = sched.modules()[name]
     await module.from_input(inp)
 
 
-async def sleep_then_stop(s, t):
+async def sleep_then_stop(s: Scheduler, t: float) -> None:
     await aio.sleep(t)
     await s.stop()
     print(s._run_list)
@@ -44,10 +48,10 @@ async def sleep_then_stop(s, t):
     os.getenv("TRAVIS"), "skipped because is killed (sometimes) by the system on CI"
 )
 class TestScatterPlot(ProgressiveTest):
-    def tearDown(self):
+    def tearDown(self) -> None:
         TestScatterPlot.cleanup()
 
-    def test_scatterplot(self):
+    def test_scatterplot(self) -> None:
         s = self.scheduler(clean=True)
         with s:
             csv = CSVLoader(
@@ -68,9 +72,9 @@ class TestScatterPlot(ProgressiveTest):
             # sts = sleep_then_stop(s, 5)
         s.on_loop(self._stop, 5)
         aio.run(csv.scheduler().start())
-        self.assertEqual(len(csv.result), 30000)
+        self.assertEqual(len(csv.table), 30000)
 
-    def test_scatterplot2(self):
+    def test_scatterplot2(self) -> None:
         s = self.scheduler(clean=True)
         with s:
             random = RandomTable(2, rows=2000000, throttle=1000, scheduler=s)
