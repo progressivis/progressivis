@@ -130,10 +130,10 @@ class Var(TableModule):
 
     inputs = [SlotDescriptor("table", type=Table, required=True)]
 
-    def __init__(self, **kwds: Any) -> None:
+    def __init__(self, ignore_string_cols: bool = False, **kwds: Any) -> None:
         super().__init__(dataframe_slot="table", **kwds)
         self._data: Dict[str, OnlineVariance] = {}
-        self._ignore_string_cols = ignore_string_cols
+        self._ignore_string_cols: bool = ignore_string_cols
         self._num_cols: Columns = None
         self.default_step_size = 1000
 

@@ -3,6 +3,7 @@ from progressivis import Print, Scheduler
 from progressivis.stats import RandomTable, Max
 from progressivis.table.stirrer import Stirrer
 from progressivis.core import aio
+import numpy as np
 
 from typing import Any
 
