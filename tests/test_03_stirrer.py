@@ -22,8 +22,18 @@ class TestStirrer(ProgressiveTest):
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = max_.output.result
         aio.run(s.start())
-        # idx = dummy_.get_input_slot('table').data().eval('_1>0.5', result_object='index')
-        # self.assertEqual(dummy_._table.selection, bitmap(idx))
+        res1 = stirrer.result.max()
+        res2 = max_.result
+        self.compare(res1, res2)
+
+    def compare(self, res1: Any, res2: Any) -> None:
+        v1 = np.array(list(res1.values()))
+        v2 = np.array(list(res2.values()))
+        self.assertEqual(v1.shape, v2.shape)
+        #print('v1 = ', v1)
+        #print('v2 = ', v2)
+        self.assertTrue(np.allclose(v1, v2))
+
 
 
 if __name__ == "__main__":

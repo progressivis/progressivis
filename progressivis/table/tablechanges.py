@@ -73,6 +73,7 @@ class TableChanges(BaseChanges):
         #     return i
         # return -1
 
+
     def _unref_bookmark(self, index: int) -> None:
         bookmark = self._bookmarks[index]
         bookmark.refcount -= 1
@@ -84,6 +85,7 @@ class TableChanges(BaseChanges):
         while self._bookmarks and self._bookmarks[0].refcount == 0:
             self._times.pop(0)
             self._bookmarks.pop(0)
+
 
     def _save_time(self, time: int, mid: str) -> None:
         if mid in self._mid_time:
@@ -155,7 +157,6 @@ class TableChanges(BaseChanges):
         update = bookmark.update
         if update is not None:
             update = self._combine_updates(update, i + 1)
-
         self._unref_bookmark(i)
         del self._mid_time[mid]
         self._save_time(time, mid)

@@ -1,3 +1,4 @@
+
 from __future__ import annotations
 
 import numpy as np
@@ -31,6 +32,7 @@ class _Selection:
 
     def remove(self, values: Iterable[int]) -> None:
         self._values = self._values - bitmap(values)
+
 
     def assign(self, values: Iterable[int]) -> None:
         self._values = bitmap(values)
@@ -131,13 +133,6 @@ class RangeQuery(TableModule):
         self._impl: RangeQueryImpl = RangeQueryImpl(self.params.column, approximate)
         # self._hist_index: Optional[HistogramIndex] = hist_index
         self._approximate = approximate
-        self._column = self.params.column
-        self._watched_key_lower = self.params.watched_key_lower
-        if not self._watched_key_lower:
-            self._watched_key_lower = self._column
-        self._watched_key_upper = self.params.watched_key_upper
-        if not self._watched_key_upper:
-            self._watched_key_upper = self._column
         self.default_step_size = 1000
         self.input_module: Optional[Module] = None
         self._min_table: Optional[PsDict] = None
@@ -212,9 +207,9 @@ class RangeQuery(TableModule):
 
     def _create_min_max(self) -> None:
         if self._min_table is None:
-            self._min_table = PsDict({self._column: np.inf})
+            self._min_table = PsDict({self.column: np.inf})
         if self._max_table is None:
-            self._max_table = PsDict({self._column: -np.inf})
+            self._max_table = PsDict({self.column: -np.inf})
 
     def _set_minmax_out(self, attr_: str, val: float) -> None:
         d = {self._column: val}
@@ -338,7 +333,7 @@ class RangeQuery(TableModule):
             updated = input_slot.updated.next(length=step_size, as_slice=False)
             steps += indices_len(updated)
         input_table = input_slot.data()
-        if not self.result:
+        if self.result is None:
             self.result = TableSelectedView(input_table, bitmap([]))
         assert self._impl
         hist_slot = self.get_input_slot("hist")

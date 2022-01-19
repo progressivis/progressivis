@@ -5,7 +5,6 @@ from progressivis.core.changemanager_base import BaseChangeManager
 from .column_base import BaseColumn
 from .tablechanges import TableChanges
 from ..core.slot import Slot
-
 from typing import Any
 
 
@@ -44,6 +43,7 @@ class ColumnChangeManager(BaseChangeManager):
         self._row_changes.combine(
             changes, self.created.buffer, self.updated.buffer, self.deleted.buffer
         )
+
 
 
 Slot.add_changemanager_type(BaseColumn, ColumnChangeManager)

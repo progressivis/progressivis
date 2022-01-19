@@ -7,7 +7,9 @@ from ..table.module import TableModule
 from ..table.table import Table
 from ..utils.psdict import PsDict
 from ..core.decorators import process_slot, run_if_any
+from ..utils.errors import ProgressiveError
 import numpy as np
+import pandas as pd
 
 import logging
 
@@ -26,6 +28,10 @@ class Histogram1D(TableModule):
         SlotDescriptor("min", type=PsDict, required=True),
         SlotDescriptor("max", type=PsDict, required=True),
     ]
+    outputs = [
+        SlotDescriptor('categorical', type=PsDict, required=False)
+    ]
+
     schema = "{ array: var * int32, min: float64, max: float64, time: int64 }"
 
     def __init__(self, column: Union[int, str], **kwds: Any) -> None:
@@ -79,6 +85,20 @@ class Histogram1D(TableModule):
                 return self._return_run_step(self.state_blocked, steps_run=0)
             min_slot.clear_buffers()
             max_slot.clear_buffers()
+            input_df = dfslot.data()
+            column = input_df[self.column]
+            indices = dfslot.created.next(step_size)  # returns a slice or ...
+            steps = indices_len(indices)
+            if not steps:
+                return self._return_run_step(self.state_blocked, steps_run=0)
+            logger.info('Read %d rows', steps)
+            self.total_read += steps
+            column = column.loc[fix_loc(indices)]
+            if self._is_string_col is None:
+                self._is_string_col = (column.dtype == 'O')
+            if self._is_string_col:
+                return self.maintain_categorical(dfslot, column, steps)
+
             bounds = self.get_bounds(min_slot, max_slot)
             if bounds is None:
                 logger.debug("No bounds yet at run %d", run_number)
@@ -87,7 +107,8 @@ class Histogram1D(TableModule):
             if self._bounds is None:
                 delta = self.get_delta(*bounds)
                 self._bounds = (bound_min - delta, bound_max + delta)
-                logger.info("New bounds at run %d: %s", run_number, self._bounds)
+                logger.info("New bounds at run %d: %s",
+                            run_number, self._bounds)
             else:
                 (old_min, old_max) = self._bounds
                 delta = self.get_delta(*bounds)
@@ -108,7 +129,8 @@ class Histogram1D(TableModule):
                     max_slot.reset()
                     max_slot.update(run_number)
                     self.reset()
-                    return self._return_run_step(self.state_blocked, steps_run=0)
+                    return self._return_run_step(self.state_blocked,
+                                                 steps_run=0)
             (curr_min, curr_max) = self._bounds
             if curr_min >= curr_max:
                 logger.error("Invalid bounds: %s", self._bounds)

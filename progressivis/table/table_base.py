@@ -1,5 +1,6 @@
 """Base class for Tables
 """
+
 from __future__ import annotations
 
 from abc import ABCMeta
@@ -707,7 +708,7 @@ class BaseTable(metaclass=ABCMeta):
             self._flush_cache()
             updates = self._changes.compute_updates(start, now, mid, cleanup=cleanup)
             if updates is None:
-                updates = IndexUpdate(created=self.index)
+                updates = IndexUpdate(created=bitmap(self._index))
             return updates
         return None
 

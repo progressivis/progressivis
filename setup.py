@@ -129,6 +129,7 @@ setup(
         "tables>=3.3.0",
         "pandas>=1.2.5",
         "scikit-learn>=1.0.0",
+        "pyyaml>=5.4.1",
         "tdigest>=0.4.1.0",
         "numcodecs>=0.5.5",
         "datashape>=0.5.2",
@@ -144,13 +145,13 @@ setup(
         "aiohttp_jinja2",
         "python_socketio", "click"],
     # "pptable",
-    setup_requires=['cython', 'numpy', 'pybind11', 'nose>=1.3.7', 'coverage', 'mypy'] if WITH_CXX else [],
-    # test_suite='tests',
-    test_suite='nose.collector',
-    cmdclass=versioneer.get_cmdclass({'bench': RunBench}),
+    setup_requires=["cython", "numpy", "pybind11", "nose>=1.3.7", "coverage", "mypy"] if WITH_CXX else [],
+    # test_suite="tests",
+    test_suite="nose.collector",
+    cmdclass=versioneer.get_cmdclass({"bench": RunBench}),
     ext_modules=_cythonize(EXTENSIONS) + EXT_PYBIND11 if WITH_CXX else [],
     package_data={
         # If any package contains *.md, *.txt or *.rst files, include them:
-        'doc': ['*.md', '*.rst'],
+        "doc": ["*.md", "*.rst"],
         }
     )

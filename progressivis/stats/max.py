@@ -17,13 +17,11 @@ from typing import Optional, List, Dict, Union, Any, Tuple
 
 logger = logging.getLogger(__name__)
 
-
 class Max(TableModule):
     inputs = [SlotDescriptor("table", type=Table, required=True)]
 
-    def __init__(self, columns: Optional[List[str]] = None, **kwds: Any) -> None:
-        super(Max, self).__init__(**kwds)
-        self._columns = columns
+    def __init__(self, **kwds: Any) -> None:
+        super().__init__(**kwds)
         self.default_step_size = 10000
 
     def is_ready(self) -> bool:

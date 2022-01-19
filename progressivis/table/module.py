@@ -118,8 +118,9 @@ class TableModule(Module):
                 _columns.remove(column)  # maintain the order
         return _columns
 
+
     def filter_columns(
-        self, df: BaseTable, indices: Optional[Any] = None, slot: Optional[str] = None
+        self, df: BaseTable, indices: Optional[Any] = None, slot: Optional[str] = None, cols: Columns = None
     ) -> BaseTable:
         """
         Return the specified table filtered by the specified indices and
@@ -131,7 +132,7 @@ class TableModule(Module):
             if indices is None:
                 return df
             return cast(BaseTable, df.loc[indices])
-        cols = self.get_columns(df, slot)
+        cols = cols or self.get_columns(df, slot)
         if cols is None:
             return None
         if indices is None:

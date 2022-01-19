@@ -17,7 +17,7 @@ from asyncio import (
     ALL_COMPLETED,
 )
 from asyncio import create_task as _create_task
-from asyncio import set_event_loop, new_event_loop, get_running_loop
+from asyncio import set_event_loop, get_event_loop, new_event_loop, get_running_loop
 
 from typing import Coroutine, Any, Optional
 
@@ -28,7 +28,6 @@ async def _gather(*coros: Coroutine[Any, Any, Any]) -> None:
 
 def run_gather(*coros: Coroutine[Any, Any, Any]) -> None:
     return run(_gather(*coros))
-
 
 if sys.version_info < (3, 8):
 

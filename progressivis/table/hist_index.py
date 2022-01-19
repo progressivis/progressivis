@@ -19,6 +19,7 @@ from . import Table
 from ..core.utils import indices_len
 from . import TableSelectedView
 
+
 from typing import List, Optional, Any, Callable, Tuple
 
 APPROX = False
@@ -102,6 +103,7 @@ class _HistogramIndexImpl(object):
         mean = float(len_c) / len_b
         return len(bm1) + len(bm2) < max(self._merge_coef * mean, self._merge_threshold)
 
+
     def merge_once(self) -> int:
         assert self.bins is not None
         assert len(self.bins) + 1 == len(self.bitmaps), "unexpected # of bins"
@@ -145,7 +147,10 @@ class _HistogramIndexImpl(object):
         else:
             samples = ids
         s_vals = self.column.loc[samples]
+
         v = np.median(s_vals)  # type: ignore
+        if v == self.bins[i - 1] or v == self.bins[i]:  # there are a lot of identical
+            return  # values=> do not divide
         if i >= len(self.bins):
             assert self.bins[i - 1] < v
         else:
@@ -153,13 +158,13 @@ class _HistogramIndexImpl(object):
         values = self.column.loc[ids]
         lower_bin = bitmap(ids[values < v])
         upper_bin = self.bitmaps[i] - lower_bin
-        lower_len = len(lower_bin)
-        upper_len = len(upper_bin)
-        t = len(ids) * self._perm_deviation
-        if abs(lower_len - upper_len) > t:
-            logger.info(
-                f"DIFF: {lower_len} {upper_len} {float(abs(lower_len - upper_len)) / len(ids)}"
-            )
+        # lower_len = len(lower_bin)
+        # upper_len = len(upper_bin)
+        # t = len(ids) * self._perm_deviation
+        # if abs(lower_len - upper_len) > t:
+        #    logger.info(
+        #        f"DIFF: {lower_len} {upper_len} {float(abs(lower_len - upper_len)) / len(ids)}"
+        #    )
         self.bins = np.insert(self.bins, i, v)  # type: ignore
         assert self.bins is not None
         if i + 1 >= len(self.bins):

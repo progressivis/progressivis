@@ -6,7 +6,7 @@ from jinja2 import Template
 from progressivis.core import JSONEncoderNp
 from .control_panel import ControlPanel
 from .sensitive_html import SensitiveHTML
-from .utils import wait_for_change, wait_for_click, update_widget
+from .utils import update_widget
 from .module_graph import ModuleGraph
 from .module_wg import ModuleWg
 

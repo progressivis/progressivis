@@ -135,6 +135,7 @@ class PsDict(Dict[str, Any]):
         del self._index[key]
         super().__delitem__(key)
 
+
     def clear(self) -> None:
         for key in list(self.keys()):
             del self[key]

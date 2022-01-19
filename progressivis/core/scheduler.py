@@ -12,6 +12,7 @@ from .dataflow import Dataflow
 from . import aio
 from ..utils.errors import ProgressiveError
 
+
 from typing import (
     Optional,
     Dict,
@@ -202,6 +203,12 @@ class Scheduler:
     }
 </style>"""
         html_end = "</div>"
+        html_head += f"""
+<p><b>Scheduler</b> {hex(id(self))}
+        <b>{"running" if self.is_running() else "stopped"}</b>,
+        <b>modules:</b> {len(self._modules)},
+        <b>run number:</b> {self.run_number()}
+</p>"""
         html_head += """
 <table border="1" class="dataframe">
   <thead>
@@ -683,6 +690,9 @@ class Scheduler:
     def run_number(self) -> int:
         "Return the last run number."
         return self._run_number
+
+    def _ipython_key_completions_(self):
+        return list(self._modules.keys())
 
     async def for_input(self, module: Module) -> int:
         """

@@ -7,6 +7,7 @@ from ipydatawidgets.ndarray.serializers import (  # type: ignore
 )
 from progressivis.core import asynchronize, aio
 
+
 from typing import Any, Callable, Dict
 
 

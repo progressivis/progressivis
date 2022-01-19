@@ -5,7 +5,7 @@ channels:
   - anaconda
 
 dependencies:
-  - python=3.8
+  - python=3.9
   - nodejs
   - pkgconfig
   - pip
@@ -27,6 +27,7 @@ dependencies:
   - python-engineio=3.13.2
   - python-socketio=4.6.0
   - s3fs
+  - typing_extensions
   - voila
   - jupyterlab=2
   - ipywidgets>=7.0.0

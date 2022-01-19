@@ -20,9 +20,14 @@ dependencies:
   - datashape
   - fast-histogram
   - s3fs
+  - typing_extensions
+  - typing-extensions  
   - jupyter>=1.0.0
   - ipywidgets>=7.0.0
   - ipydatawidgets=4.0.1
+  - vega_datasets
+  - vega
+  - altair
   - pip:
     - tdigest>=0.4.1.0
     - -e ..

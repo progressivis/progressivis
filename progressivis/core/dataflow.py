@@ -79,6 +79,7 @@ class Dataflow:
             return []
         return [mod.name for mod in self.modules().values() if mod.group in nameset]
 
+
     def dir(self) -> List[str]:
         "Return the name of all the modules"
         return list(self._modules.keys())
@@ -104,6 +105,7 @@ class Dataflow:
 
     def __len__(self) -> int:
         return len(self._modules)
+
 
     def groups(self) -> Set[str]:
         return {mod.group for mod in self.modules().values() if mod.group is not None}

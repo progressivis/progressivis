@@ -25,6 +25,9 @@ class DynVar(TableModule):
             raise ProgressiveError("init_val must be a dictionary")
         self.result = PsDict({} if init_val is None else init_val)
 
+    def is_input(self) -> bool:
+        return True
+
     def has_input(self) -> bool:
         return self._has_input
 
@@ -33,6 +36,9 @@ class DynVar(TableModule):
     ) -> ReturnRunStep:
         return self._return_run_step(self.state_blocked, steps_run=1)
 
+    def predict_step_size(self, duration: int) -> int:
+        return 1
+    
     async def from_input(self, input_: JSon) -> str:
         if not isinstance(input_, dict):
             raise ProgressiveError("Expecting a dictionary")

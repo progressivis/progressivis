@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 
 import pandas as pd
-
+import numpy as np
 from progressivis import ProgressiveError, SlotDescriptor
 from progressivis.utils.errors import ProgressiveStopIteration
 from progressivis.utils.inspect import filter_kwds, extract_params_docstring
@@ -35,6 +35,7 @@ class SimpleCSVLoader(TableModule):
         filter_: Optional[Callable[[pd.DataFrame], pd.DataFrame]] = None,
         force_valid_ids: bool = True,
         fillvalues: Optional[Dict[str, Any]] = None,
+        throttle: bool = False,    
         **kwds: Any
     ) -> None:
         super().__init__(**kwds)
@@ -45,12 +46,19 @@ class SimpleCSVLoader(TableModule):
         # When called with a specified chunksize, it returns a parser
         self.filepath_or_buffer = filepath_or_buffer
         self.force_valid_ids = force_valid_ids
+        if throttle and isinstance(throttle, integer_types+(float,)):
+            self.throttle = throttle
+        else:
+            self.throttle = False
         self.parser: Optional[pd.TextReader] = None
         self.csv_kwds = csv_kwds
         self._compression: Any = csv_kwds.get("compression", "infer")
         csv_kwds["compression"] = None
         self._encoding: Any = csv_kwds.get("encoding", None)
         csv_kwds["encoding"] = None
+        self._nrows = csv_kwds.get('nrows')
+        csv_kwds['nrows'] = None # nrows clashes with chunksize
+
         self._rows_read = 0
         if filter_ is not None and not callable(filter_):
             raise ProgressiveError("filter parameter should be callable or None")
@@ -138,24 +146,23 @@ class SimpleCSVLoader(TableModule):
                 fn_slot = self.get_input_slot("filenames")
                 if fn_slot.output_module is None:
                     return self.state_terminated
-                if True:
-                    fn_slot.update(run_number)
-                    if fn_slot.deleted.any() or fn_slot.updated.any():
-                        raise ProgressiveError("Cannot handle input file changes")
-                    df = fn_slot.data()
-                    while self.parser is None:
-                        indices = fn_slot.created.next(length=1)
-                        assert isinstance(indices, slice)
-                        if indices.stop == indices.start:
-                            return self.state_blocked
-                        filename = df.at[indices.start, "filename"]
-                        try:
-                            self.parser = pd.read_csv(
-                                self.open(filename), **self.csv_kwds
-                            )
-                        except IOError as e:
-                            logger.error("Cannot open file %s: %s", filename, e)
-                            self.parser = None
+                fn_slot.update(run_number)
+                if fn_slot.deleted.any() or fn_slot.updated.any():
+                    raise ProgressiveError("Cannot handle input file changes")
+                df = fn_slot.data()
+                while self.parser is None:
+                    indices = fn_slot.created.next(length=1)
+                    assert isinstance(indices, slice)
+                    if indices.stop == indices.start:
+                        return self.state_blocked
+                    filename = df.at[indices.start, "filename"]
+                    try:
+                        self.parser = pd.read_csv(
+                            self.open(filename), **self.csv_kwds
+                        )
+                    except IOError as e:
+                        logger.error("Cannot open file %s: %s", filename, e)
+                        self.parser = None
                         # fall through
         return self.state_ready
 
@@ -165,6 +172,8 @@ class SimpleCSVLoader(TableModule):
         if step_size == 0:  # bug
             logger.error("Received a step_size of 0")
             return self._return_run_step(self.state_ready, steps_run=0)
+        if self.throttle:
+            step_size = np.min([self.throttle, step_size])
         status = self.validate_parser(run_number)
         if status == self.state_terminated:
             raise ProgressiveStopIteration("no more filenames")
@@ -204,15 +213,14 @@ class SimpleCSVLoader(TableModule):
             logger.info("Loaded %d lines", self._rows_read)
             if self.force_valid_ids:
                 force_valid_id_columns(df)
-            if True:
-                if self.result is None:
-                    self._table_params["name"] = self.generate_table_name("table")
-                    self._table_params["dshape"] = dshape_from_dataframe(df)
-                    self._table_params["data"] = df
-                    self._table_params["create"] = True
-                    self.result = Table(**self._table_params)
-                else:
-                    self.table.append(df)
+            if self.result is None:
+                self._table_params["name"] = self.generate_table_name("table")
+                self._table_params["dshape"] = dshape_from_dataframe(df)
+                self._table_params["data"] = df
+                self._table_params["create"] = True
+                self.result = Table(**self._table_params)
+            else:
+                self.table.append(df)
         return self._return_run_step(self.state_ready, steps_run=creates)
 
 

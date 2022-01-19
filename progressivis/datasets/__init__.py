@@ -2,12 +2,16 @@ from __future__ import annotations
 
 import os
 import os.path
-from .random import generate_random_csv, generate_random_multivariate_normal_csv
-from functools import partial
 
+from functools import partial
+from progressivis import ProgressiveError
+from .random import (generate_random_csv,
+                     generate_random_multivariate_normal_csv,
+                     generate_multiscale_random_csv)
 from .wget import wget_file
 import bz2
 import zlib
+import pandas as pd
 import lzma
 
 from progressivis import ProgressiveError
@@ -17,40 +21,55 @@ from typing import Any, Dict, cast, Type
 DATA_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../data"))
 Z_CHUNK_SIZE = 16 * 1024 * 32
 
+def _check_kwds(kwds: Dict[str, Any], **defaults: Any) -> Dict[str, Any]:
+    if ('rows' in kwds) or ('cols' in kwds) and ('overwrite' not in kwds):
+        raise ValueError("'owerwrite' param. is mandatory when "
+                         "'rows' or 'cols' is specified")
+    res = kwds.copy()
+    for k, v in defaults.items():
+        if k in res:
+            continue
+        res[k] = v
+    return res
 
 def get_dataset(name: str, **kwds: Any) -> str:
     if not os.path.isdir(DATA_DIR):
         os.mkdir(DATA_DIR)
-    if name == "bigfile":
-        return generate_random_csv("%s/bigfile.csv" % DATA_DIR, 1000000, 30)
-    if name == "bigfile_mvn":
-        return generate_random_multivariate_normal_csv(
-            "%s/bigfile_mvn.csv" % DATA_DIR, 900000
-        )
-    if name == "smallfile":
-        return generate_random_csv("%s/smallfile.csv" % DATA_DIR, 30000, 10)
-    if name == "warlogs":
-        return wget_file(
-            filename="%s/warlogs.vec.bz2" % DATA_DIR,
-            url="http://www.cs.ubc.ca/labs/imager/video/2014/QSNE/warlogs.vec.bz2",
-            **kwds
-        )
-    if name == "mnist_784":
-        # This file [mnist_784.csv] is made available under the Public Domain
-        # Dedication and License v1.0 whose full text can be found at:
-        # http://opendatacommons.org/licenses/pddl/1.0/
-        return wget_file(
-            filename="%s/mnist_784.csv" % DATA_DIR,
-            url="https://datahub.io/machine-learning/mnist_784/r/mnist_784.csv",
-            **kwds
-        )
-    if name.startswith("cluster:"):
-        fname = name[len("cluster:") :] + ".txt"
-        return wget_file(
-            filename="%s/%s" % (DATA_DIR, fname),
-            url="http://cs.joensuu.fi/sipu/datasets/%s" % fname,
-        )
-    raise ProgressiveError("Unknown dataset %s" % name)
+    if name == 'bigfile':
+        kw = _check_kwds(kwds, rows=1_000_000, cols=30)
+        return generate_random_csv('%s/bigfile.csv'%DATA_DIR, **kw)
+    if name == 'bigfile_multiscale':
+        kw = _check_kwds(kwds, rows=5_000_000)
+        return generate_multiscale_random_csv('%s/bigfile_multiscale.csv'%DATA_DIR, **kw)
+    if name == 'bigfile_mvn':
+        kw = _check_kwds(kwds, rows=900_000)
+        return generate_random_multivariate_normal_csv('%s/bigfile_mvn.csv'%DATA_DIR, **kw)
+    if name == 'smallfile':
+        kw = _check_kwds(kwds, rows=30_000, cols=10)
+        return generate_random_csv('%s/smallfile.csv'%DATA_DIR, **kw)
+    if name == 'warlogs':
+        return wget_file(filename='%s/warlogs.vec.bz2'%DATA_DIR,
+                         url='http://www.cs.ubc.ca/labs/imager/video/2014/QSNE/warlogs.vec.bz2',
+                         **kwds)
+    if name == 'mnist_784':
+        # This file [mnist_784.csv] is made available under the Public Domain 
+        # Dedication and License v1.0 whose full text can be found at: http://opendatacommons.org/licenses/pddl/1.0/
+        return wget_file(filename='%s/mnist_784.csv'%DATA_DIR,
+                         url='https://datahub.io/machine-learning/mnist_784/r/mnist_784.csv',
+                         **kwds)
+    if name == 'nyc_taxis':
+        nyc_taxis_file = f"{DATA_DIR}/nyc_taxis.csv"
+        if not os.path.exists(nyc_taxis_file):
+            df = pd.read_csv('https://s3.amazonaws.com/nyc-tlc/trip+data/yellow_tripdata_2015-01.csv',
+                             index_col=False,  nrows=200_000)
+            df.to_csv(nyc_taxis_file)
+        return nyc_taxis_file
+    if name.startswith('cluster:'):
+        fname = name[len('cluster:'):] + ".txt"
+        return wget_file(filename='%s/%s'%(DATA_DIR, fname),
+                         url='http://cs.joensuu.fi/sipu/datasets/%s'%fname)
+    raise ProgressiveError('Unknown dataset %s'%name)
+
 
 
 class Compressor:

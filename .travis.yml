@@ -9,6 +9,7 @@ cache :
 
 
 install:
+  - rm -rf "$MINICONDA_DIR/etc";
   - if [[ -d $MINICONDA_DIR/etc ]]; then
        echo "Miniconda already installed";
     else

@@ -29,13 +29,15 @@ class OnlineVariance:
     Welford's algorithm computes the sample variance incrementally.
     """
 
+
     def __init__(self, ddof: int = 1) -> None:
+        self.reset()
         self.ddof: int = ddof
+    def reset(self):
         self.n: int = 0
         self.mean: float = 0.0
         self.M2: float = 0.0
         self.delta: float = 0
-        self.variance: float = 0
 
     def add(self, iterable: Iterable[float]) -> None:
         if iterable is not None:
@@ -49,8 +51,11 @@ class OnlineVariance:
         self.delta = datum - self.mean
         self.mean += self.delta / self.n
         self.M2 += self.delta * (datum - self.mean)
+
+    @property
+    def variance(self):
         n_ddof = self.n - self.ddof
-        self.variance = self.M2 / n_ddof if n_ddof else np.nan
+        return self.M2 / n_ddof if n_ddof else np.nan
 
     @property
     def std(self) -> float:
@@ -61,13 +66,11 @@ class VarH(TableModule):
     """
     Compute the variance of the columns of an input table.
     """
-
     parameters = [("history", np.dtype(int), 3)]
     inputs = [SlotDescriptor("table", type=Table, required=True)]
 
-    def __init__(self, columns: Optional[Columns] = None, **kwds: Any) -> None:
-        super().__init__(columns, dataframe_slot="table", **kwds)
-        # self._columns = columns
+    def __init__(self, **kwds: Any) -> None:
+        super().__init__(dataframe_slot="table", **kwds)
         self._data: Dict[str, OnlineVariance] = {}
         self.default_step_size = 1000
 
@@ -88,6 +91,7 @@ class VarH(TableModule):
             data.add(chunk[c])
             ret[c] = data.variance
         return ret
+
 
     def reset(self) -> None:
         if self.result is not None:
@@ -126,16 +130,29 @@ class Var(TableModule):
 
     inputs = [SlotDescriptor("table", type=Table, required=True)]
 
-    def __init__(self, columns: Optional[Columns] = None, **kwds: Any) -> None:
-        super().__init__(dataframe_slot="table", columns=columns, **kwds)
-        # self._columns = columns
+    def __init__(self, **kwds: Any) -> None:
+        super().__init__(dataframe_slot="table", **kwds)
         self._data: Dict[str, OnlineVariance] = {}
+        self._ignore_string_cols = ignore_string_cols
+        self._num_cols: Columns = None
         self.default_step_size = 1000
 
     def is_ready(self) -> bool:
         if self.get_input_slot("table").created.any():
             return True
         return super().is_ready()
+
+    def get_num_cols(self, input_df: BaseTable) -> Columns:
+        if self._num_cols is None:
+            if not self._columns:
+                self._num_cols = [c.name
+                                  for c in input_df._columns
+                                  if str(c.dshape) != 'string']
+            else:
+                self._num_cols = [c.name
+                        for c in input_df._columns
+                        if c.name in self._columns and str(c.dshape) != 'string']
+        return self._num_cols
 
     def op(self, chunk: BaseTable) -> Dict[str, float]:
         cols = chunk.columns
@@ -149,9 +166,13 @@ class Var(TableModule):
             ret[c] = data.variance
         return ret
 
+
     def reset(self) -> None:
         if self.result is not None:
             self.psdict.clear()
+        if self._data is not None:
+            for ov in self._data.values():
+                ov.reset()
 
     @process_slot("table", reset_cb="reset")
     @run_if_any
@@ -166,7 +187,10 @@ class Var(TableModule):
             if steps == 0:
                 return self._return_run_step(self.state_blocked, steps_run=0)
             input_df = dfslot.data()
-            op = self.op(self.filter_columns(input_df, fix_loc(indices)))
+            cols = None
+            if self._ignore_string_cols:
+                cols = self.get_num_cols(input_df)
+            op = self.op(self.filter_columns(input_df, fix_loc(indices), cols=cols))
             if self.result is None:
                 self.result = PsDict(op)
             else:

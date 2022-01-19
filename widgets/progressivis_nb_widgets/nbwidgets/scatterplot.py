@@ -7,6 +7,7 @@ from ipydatawidgets.widgets import DataWidget  # type: ignore
 from traitlets import Unicode, Any, Bool  # type: ignore
 from progressivis.core import JSONEncoderNp as JS, asynchronize
 import progressivis.core.aio as aio
+
 from .utils import data_union_serialization_compress, wait_for_change
 
 from typing import Any as AnyType, List, Coroutine, NoReturn, Sequence, TYPE_CHECKING
@@ -72,6 +73,7 @@ class Scatterplot(DataWidget, widgets.DOMWidget):  # type: ignore
                 wg.samples = st
             wg.data = JS.dumps(data_)
 
+
         async def _refresh() -> NoReturn:
             while True:
                 await aio.sleep(0.5)
@@ -84,6 +86,7 @@ class Scatterplot(DataWidget, widgets.DOMWidget):  # type: ignore
                 await asynchronize(_feed_widget, self, m)
 
         module.on_after_run(_after_run)
+
 
         async def _from_input_value() -> None:
             while True:
@@ -114,7 +117,6 @@ class Scatterplot(DataWidget, widgets.DOMWidget):  # type: ignore
                 dummy = module._json_cache.get("dummy", 555)
                 module._json_cache["dummy"] = -dummy
                 await asynchronize(_feed_widget, self, module)
-
         return [
             _from_input_value(),
             _from_input_move_point(),

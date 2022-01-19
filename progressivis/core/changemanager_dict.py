@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from .changemanager_base import BaseChangeManager
 from ..utils.psdict import PsDict, EMPTY_PSDICT
-
 # from ..table.tablechanges import TableChanges
 from .slot import Slot
 from .index_update import IndexUpdate

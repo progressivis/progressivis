@@ -5,6 +5,7 @@ from collections import defaultdict
 
 import numpy as np
 
+
 from progressivis.core.module import Module, ReturnRunStep, JSon
 from progressivis.table.nary import NAry
 from progressivis.stats import MCHistogram2D, Sample
@@ -27,6 +28,7 @@ from typing import (
 )
 
 Bounds = Tuple[float, float, float, float]
+
 
 if TYPE_CHECKING:
     from progressivis.core.scheduler import Scheduler

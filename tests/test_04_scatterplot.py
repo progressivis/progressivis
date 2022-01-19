@@ -4,7 +4,8 @@ from progressivis.vis import MCScatterPlot
 from progressivis.datasets import get_dataset
 from progressivis.stats import RandomTable
 from progressivis.core import aio
-from . import ProgressiveTest
+from . import ProgressiveTest, skipIf
+import os
 
 
 def print_len(x):
@@ -39,6 +40,9 @@ async def sleep_then_stop(s, t):
     print(s._run_list)
 
 
+@skipIf(
+    os.getenv("TRAVIS"), "skipped because is killed (sometimes) by the system on CI"
+)
 class TestScatterPlot(ProgressiveTest):
     def tearDown(self):
         TestScatterPlot.cleanup()
@@ -78,6 +82,7 @@ class TestScatterPlot(ProgressiveTest):
             cnt.input[0] = random.output.result
             prt = Print(proc=self.terse, scheduler=s)
             prt.input[0] = sp.output.result
+
 
         async def fake_input_1(scheduler: Scheduler, rn: int) -> None:
             module = scheduler["dyn_var_1"]

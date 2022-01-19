@@ -9,9 +9,9 @@ import re
 from itertools import tee
 from functools import wraps
 import functools as ft
+
 import threading
 import inspect
-
 from urllib.parse import urlparse as parse_url
 from urllib.parse import parse_qs
 
@@ -70,6 +70,7 @@ def is_int(n: Any) -> bool:
 # def is_str(s: Any) -> TypeGuard[str]:
 def is_str(s: Any) -> bool:
     return isinstance(s, str)
+
 
 
 # def is_slice(s: Any) -> TypeGuard[slice]:
@@ -924,7 +925,6 @@ async def asynchronize(f: Callable[..., Any], *args: Any, **kwargs: Any) -> Any:
     loop = aio.get_running_loop()
     fun = ft.partial(f, *args, **kwargs)
     return await loop.run_in_executor(None, fun)
-
 
 def gather_and_run(*args: Awaitable[Any]) -> None:
     """

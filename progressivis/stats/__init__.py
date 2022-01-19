@@ -9,8 +9,9 @@ from .histogram1d import Histogram1D
 from .histogram2d import Histogram2D
 from .mchistogram2d import MCHistogram2D
 from .sample import Sample
+from .distinct import Distinct
+from .correlation import Corr
 from .random_table import RandomTable, RandomDict
-
 
 __all__ = [
     "Stats",
@@ -29,4 +30,6 @@ __all__ = [
     "Sample",
     "RandomTable",
     "RandomDict",
+    "Distinct",
+    "Corr"
 ]
