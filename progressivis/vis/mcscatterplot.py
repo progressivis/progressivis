@@ -5,7 +5,9 @@ from collections import defaultdict
 
 import numpy as np
 
-from progressivis.core.module import Module, ReturnRunStep, JSon
+from progressivis.core.module import Module, ReturnRunStep
+from progressivis.core import JSon, notNone
+from progressivis.table.table_base import BaseTable
 from progressivis.table.nary import NAry
 from progressivis.stats import MCHistogram2D, Sample
 from progressivis.table.range_query_2d import RangeQuery2d
@@ -206,10 +208,10 @@ class MCScatterPlot(NAry):
         inp_table = inp.data()
         if inp_table is None:
             return None
-        last = inp_table.last()
-        if last is None:
+        assert isinstance(inp_table, BaseTable)
+        if len(inp_table) == 0:
             return None
-        row = last.to_dict()
+        row = notNone(inp_table.last()).to_dict()
         json_: JSon = {}
         if not (
             np.isnan(row["xmin"])

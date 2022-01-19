@@ -13,7 +13,7 @@ import numpy as np
 
 import logging
 
-from typing import Optional, Tuple, cast, Any
+from typing import Optional, Tuple, cast, Any, Union
 
 Bounds2D = Tuple[float, float, float, float]
 
@@ -48,7 +48,11 @@ class Histogram2D(TableModule):
     )
 
     def __init__(
-        self, x_column: str, y_column: str, with_output: bool = True, **kwds: Any
+        self,
+        x_column: Union[int, str],
+        y_column: Union[int, str],
+        with_output: bool = True,
+        **kwds: Any
     ) -> None:
         super(Histogram2D, self).__init__(dataframe_slot="table", **kwds)
         self.tags.add(self.TAG_VISUALIZATION)
@@ -91,8 +95,8 @@ class Histogram2D(TableModule):
         if min_df is None or len(min_df) == 0:
             return None
         k_ = (lambda x: x) if isinstance(self.x_column, str) else min_df.k_
-        xmin: float = cast(float, min_df[k_(self.x_column)])  # type: ignore
-        ymin: float = cast(float, min_df[k_(self.y_column)])  # type: ignore
+        xmin: float = cast(float, min_df[k_(self.x_column)])
+        ymin: float = cast(float, min_df[k_(self.y_column)])
         max_slot.created.next()
         max_df = max_slot.data()
         assert isinstance(max_df, PsDict)

@@ -14,6 +14,7 @@ from .module import Module, Every, Print
 from .bitmap import bitmap
 from .wait import Wait
 from .sink import Sink
+from .types import notNone, JSon, Index
 
 # pylint: disable=unused-import
 from .changemanager_bitmap import BitmapChangeManager
@@ -48,4 +49,7 @@ __all__ = [
     "Print",
     "Wait",
     "Sink",
+    "notNone",
+    "JSon",
+    "Index"
 ]

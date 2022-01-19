@@ -3,7 +3,7 @@ from progressivis import Print
 from progressivis.table.constant import Constant
 from progressivis.table.combine_first import CombineFirst
 from progressivis.table.table import Table
-from progressivis.core import aio
+from progressivis.core import aio, notNone
 
 
 import pandas as pd
@@ -45,9 +45,7 @@ class TestCombineFirst(ProgressiveTest):
         pr.input[0] = cf.output.result
         aio.run(s.start())
         # res = cf.trace_stats(max_runs=1)
-        df = cf.table
-        row = df.last()
-        self.assertFalse(row is None)
+        row = cf.table.last()
         assert row is not None
         last = row.to_dict()
         self.assertEquals(last["xmin"], 1)
@@ -88,10 +86,7 @@ class TestCombineFirst(ProgressiveTest):
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = cf.output.result
         aio.run(s.start())
-        df = cf.table
-        row = df.last()
-        assert row is not None
-        last = row.to_dict()
+        last = notNone(cf.table.last()).to_dict()
         self.assertTrue(
             last["xmin"] == 1
             and last["xmax"] == 2

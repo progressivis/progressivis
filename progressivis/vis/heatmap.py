@@ -13,8 +13,7 @@ import scipy as sp  # type: ignore
 from PIL import Image
 
 from progressivis.core.module import ReturnRunStep, JSon
-from progressivis.core.utils import indices_len
-from progressivis.core.slot import SlotDescriptor
+from progressivis.core import SlotDescriptor, notNone, indices_len
 from progressivis.table import Table
 from progressivis.table.module import TableModule
 from progressivis.stats.histogram2d import Histogram2D
@@ -161,8 +160,7 @@ class Heatmap(TableModule):
                 }
         df = self.table
         if df is not None and self._last_update != 0:
-            row = df.last()
-            json["image"] = row["filename"]
+            json["image"] = notNone(df.last())["filename"]
         return json
 
     def get_image(self, run_number: Optional[int] = None) -> Optional[str]:
@@ -170,8 +168,8 @@ class Heatmap(TableModule):
         table = self.table
         if table is None or len(table) == 0:
             return None
-        last = table.last()
-        assert last is not None  # len(table) > 0 so last is not None
+        last = notNone(table.last())
+        # assert last is not None  # len(table) > 0 so last is not None
         if run_number is None or run_number >= last["time"]:
             run_number = last["time"]
             filename = last["filename"]

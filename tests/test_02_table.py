@@ -9,7 +9,7 @@ from progressivis.table.table import Table
 from progressivis.io.csv_loader import CSVLoader
 from progressivis.datasets import get_dataset
 from progressivis.storage import Group
-from progressivis.core import aio, Sink
+from progressivis.core import aio, Sink, notNone
 import numpy as np
 import pandas as pd
 
@@ -175,9 +175,7 @@ class TestTable(ProgressiveTest):
         t["a"] = ivalues
         fvalues = np.random.rand(10)
         t["b"] = fvalues
-        row = t.last()
-        assert row is not None
-        last_ = list(row.values())
+        last_ = list(notNone(t.last()).values())
         self.assertEqual(last_, [t._column(0)[-1], t._column(1)[-1]])
         last_a = t.last("a")
         self.assertEqual(last_a, t._column(0)[-1])

@@ -2,7 +2,7 @@ from progressivis.table.bin_join import BinJoin
 from progressivis import Print
 from progressivis.stats import RandomTable, Min
 from progressivis.table.dict2table import Dict2Table
-from progressivis.core import aio
+from progressivis.core import aio, notNone
 
 from . import ProgressiveTest
 
@@ -26,8 +26,6 @@ class TestBinJoin(ProgressiveTest):
         pr.input[0] = bj.output[0]
         aio.run(s.start())
         res1 = random.table.min()
-        row = bj.table.last()
-        assert row is not None
-        res2 = row.to_dict()
+        res2 = notNone(bj.table.last()).to_dict()
         self.assertAlmostEqual(res1["_1"], res2["_1"])
         self.assertAlmostEqual(res1["_2"], res2["_2"])

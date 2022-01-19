@@ -925,7 +925,9 @@ class Module(metaclass=ModuleMeta):
         raise NotImplementedError("Updating parameters not implemented yet")
 
     def current_params(self) -> Row:
-        return cast(Row, self._params.last())
+        last = self._params.last()
+        assert last is not None
+        return last
 
     def set_current_params(self, v: Dict[str, Any]) -> Dict[str, Any]:
         current = self.current_params()

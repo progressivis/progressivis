@@ -5,10 +5,10 @@ import logging
 import numpy as np
 
 from ..core.utils import indices_len, fix_loc
-from ..core.slot import SlotDescriptor
+from ..core import SlotDescriptor, notNone, JSon
 from ..table.table import Table
 from ..table.nary import NAry
-from ..core.module import Module, ReturnRunStep, JSon
+from ..core.module import Module, ReturnRunStep
 from fast_histogram import histogram2d  # type: ignore
 
 from typing import Optional, Tuple, Any, Dict
@@ -260,13 +260,14 @@ class MCHistogram2D(NAry):
         if self._with_output:
             table = self.table
             table["array"].set_shape([p.ybins, p.xbins])
-            # ln = len(table)
-            last = table.last()
-            # assert last is not None
-            if last is None or last["time"] != run_number:
+            if len(table) == 0:
                 table.add(values)
             else:
-                table.loc[last.row] = values
+                last = notNone(table.last())
+                if last is not None and last["time"] != run_number:
+                    table.add(values)
+                else:
+                    table.loc[last.row] = values
         self.build_heatmap(values)
         return self._return_run_step(self.next_state(dfslot), steps_run=steps)
 

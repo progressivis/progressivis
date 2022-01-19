@@ -1,5 +1,5 @@
 from . import ProgressiveTest
-from progressivis.core import aio
+from progressivis.core import aio, notNone
 from progressivis import Every
 from progressivis.io import CSVLoader
 from progressivis.stats import Histogram1D, Min, Max
@@ -47,14 +47,14 @@ class TestHistogram1D(ProgressiveTest):
         pr.input[0] = histogram1d.output.result
         aio.run(s.start())
         _ = histogram1d.trace_stats()
-        row = histogram1d.table.last()
-        assert row is not None
-        last = row.to_dict()
+        last = notNone(histogram1d.table.last()).to_dict()
         h1 = last["array"]
         bounds = (last["min"], last["max"])
-        df = pd.read_csv(get_dataset("bigfile"),  # type: ignore
-                         header=None,
-                         usecols=[2])
+        df = pd.read_csv(
+            get_dataset("bigfile"),
+            header=None,
+            usecols=[2]  # type: ignore
+        )
         v = df.to_numpy().reshape(-1)
         h2, _ = np.histogram(  # type: ignore
             v, bins=histogram1d.params.bins, density=False, range=bounds
@@ -82,9 +82,7 @@ class TestHistogram1D(ProgressiveTest):
         pr.input[0] = histogram1d.output.result
         aio.run(s.start())
         _ = histogram1d.trace_stats()
-        row = histogram1d.table.last()
-        assert row is not None
-        last = row.to_dict()
+        last = notNone(histogram1d.table.last()).to_dict()
         h1 = last["array"]
         bounds = (last["min"], last["max"])
         tab = stirrer.table.loc[:, ["_2"]]

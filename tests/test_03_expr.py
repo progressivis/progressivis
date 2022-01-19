@@ -1,3 +1,6 @@
+# type: ignore
+from __future__ import annotations
+
 from . import ProgressiveTest
 from progressivis.core import aio
 from progressivis.datasets import get_dataset
@@ -6,16 +9,18 @@ from progressivis.core import Scheduler
 import progressivis.expr as pv
 from progressivis.expr.table import PipedInput
 
+from typing import Any
 
-def prtm(x):
+
+def prtm(x: Any) -> None:
     print("m: ", len(x))
 
 
-def prtM(x):
+def prtM(x: Any) -> None:
     print("M: ", len(x))
 
 
-def prtT(x):
+def prtT(x: Any) -> None:
     print("T: ", len(x))
 
 
@@ -24,11 +29,11 @@ def prtT(x):
 
 
 class TestExpr(ProgressiveTest):
-    def setUp(self):
+    def setUp(self) -> None:
         super(TestExpr, self).setUp()
         Scheduler.default = self.scheduler()
 
-    def test_load_csv(self):
+    def test_load_csv(self) -> None:
         """
         Connecting modules via function calls
         """
@@ -40,7 +45,9 @@ class TestExpr(ProgressiveTest):
             pv.echo(M, proc=prtM)
             trace = M["_trace"]
             pv.echo(trace, proc=prtT)
-            self.assertEqual(csv.scheduler(), csv.module.scheduler())
+            module = csv.module
+            assert module is not None
+            self.assertEqual(csv.scheduler(), module.scheduler())
         aio.run(csv.scheduler().start())
         table = csv.table
         lastm = m.table

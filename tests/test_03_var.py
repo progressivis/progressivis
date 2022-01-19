@@ -2,7 +2,7 @@ from . import ProgressiveTest
 
 from progressivis import Print
 from progressivis.stats import Var, VarH, RandomTable
-from progressivis.core import aio
+from progressivis.core import aio, notNone
 import numpy as np
 
 
@@ -18,10 +18,8 @@ class Testvar(ProgressiveTest):
         table = random.table
         assert table is not None
         res1 = np.array([float(e) for e in table.var(ddof=1).values()])
-        row = var.table.last()
-        assert row is not None
         res2 = np.array(
-            [float(e) for e in row.to_dict(ordered=True).values()]
+            [float(e) for e in notNone(var.table.last()).to_dict(ordered=True).values()]
         )
         print("res1:", res1)
         print("res2:", res2)

@@ -1,7 +1,7 @@
 "Test for Range Query"
 from __future__ import annotations
 
-from progressivis.core import aio
+from progressivis.core import aio, notNone
 from progressivis.table.constant import Constant
 from progressivis import Print
 from progressivis.stats import RandomTable
@@ -13,6 +13,8 @@ from progressivis.table.range_query import RangeQuery
 from progressivis.utils.psdict import PsDict
 from progressivis.table.stirrer import Stirrer
 
+from typing import Any
+
 
 class TestPercentiles(ProgressiveTest):
 
@@ -21,7 +23,7 @@ class TestPercentiles(ProgressiveTest):
     which is based on T-digest
     """
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         TestPercentiles.cleanup()
 
     def _impl_tst_percentiles(self, accuracy: float) -> None:
@@ -44,9 +46,9 @@ class TestPercentiles(ProgressiveTest):
         assert last is not None
         pdict = last.to_dict()
         v = random.table["_1"].values
-        p25 = np.percentile(v, 25.0)
-        p50 = np.percentile(v, 50.0)
-        p75 = np.percentile(v, 75.0)
+        p25 = np.percentile(v, 25.0)  # type: ignore
+        p50 = np.percentile(v, 50.0)  # type: ignore
+        p75 = np.percentile(v, 75.0)  # type: ignore
         print(
             "Table=> accuracy: ",
             accuracy,
@@ -65,7 +67,7 @@ class TestPercentiles(ProgressiveTest):
         self.assertAlmostEqual(p50, pdict["_50"], delta=0.01)
         self.assertAlmostEqual(p75, pdict["_75"], delta=0.01)
 
-    def _impl_stirred_tst_percentiles(self, accuracy: float, **kw) -> None:
+    def _impl_stirred_tst_percentiles(self, accuracy: float, **kw: Any) -> None:
         """ """
         s = self.scheduler()
         with s:
@@ -85,15 +87,13 @@ class TestPercentiles(ProgressiveTest):
             prt = Print(proc=self.terse, scheduler=s)
             prt.input[0] = percentiles.output.result
         aio.run(s.start())
-        last = percentiles.table.last()
-        assert last is not None
-        pdict = last.to_dict()
+        pdict = notNone(percentiles.table.last()).to_dict()
         # v = random.table()['_1'].values
         # from nose.tools import set_trace; set_trace()
         v = stirrer.table.to_array(columns=["_1"]).reshape(-1)
-        p25 = np.percentile(v, 25.0)
-        p50 = np.percentile(v, 50.0)
-        p75 = np.percentile(v, 75.0)
+        p25 = np.percentile(v, 25.0)  # type: ignore
+        p50 = np.percentile(v, 50.0)  # type: ignore
+        p75 = np.percentile(v, 75.0)  # type: ignore
         print(
             "Table=> accuracy: ",
             accuracy,
@@ -161,13 +161,11 @@ class TestPercentiles(ProgressiveTest):
             prt = Print(proc=self.terse, scheduler=s)
             prt.input[0] = percentiles.output.result
         aio.run(s.start())
-        last = percentiles.table.last()
-        assert last is not None
-        pdict = last.to_dict()
+        pdict = notNone(percentiles.table.last()).to_dict()
         v = range_qry.table["_1"].values
-        p25 = np.percentile(v, 25.0)
-        p50 = np.percentile(v, 50.0)
-        p75 = np.percentile(v, 75.0)
+        p25 = np.percentile(v, 25.0)  # type: ignore
+        p50 = np.percentile(v, 50.0)  # type: ignore
+        p75 = np.percentile(v, 75.0)  # type: ignore
         print(
             "TSV=> accuracy: ",
             accuracy,
@@ -186,7 +184,7 @@ class TestPercentiles(ProgressiveTest):
         self.assertAlmostEqual(p50, pdict["_50"], delta=0.01)
         self.assertAlmostEqual(p75, pdict["_75"], delta=0.01)
 
-    def _impl_stirred_tst_percentiles_rq(self, accuracy: float, **kw) -> None:
+    def _impl_stirred_tst_percentiles_rq(self, accuracy: float, **kw: Any) -> None:
         """ """
         s = self.scheduler()
         with s:
@@ -215,13 +213,11 @@ class TestPercentiles(ProgressiveTest):
             prt = Print(proc=self.terse, scheduler=s)
             prt.input[0] = percentiles.output.result
         aio.run(s.start())
-        last = percentiles.table.last()
-        assert last is not None
-        pdict = last.to_dict()
+        pdict = notNone(percentiles.table.last()).to_dict()
         v = range_qry.table["_1"].values
-        p25 = np.percentile(v, 25.0)
-        p50 = np.percentile(v, 50.0)
-        p75 = np.percentile(v, 75.0)
+        p25 = np.percentile(v, 25.0)  # type: ignore
+        p50 = np.percentile(v, 50.0)  # type: ignore
+        p75 = np.percentile(v, 75.0)  # type: ignore
         print(
             "TSV=> accuracy: ",
             accuracy,
