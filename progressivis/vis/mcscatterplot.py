@@ -12,7 +12,8 @@ from progressivis.table.range_query_2d import RangeQuery2d
 from progressivis.utils.errors import ProgressiveError
 from progressivis.core.utils import is_notebook, get_physical_base
 from progressivis.io import DynVar
-
+from ..table.table_base import BaseTable
+from progressivis.core import notNone
 from typing import (
     Optional,
     Tuple,
