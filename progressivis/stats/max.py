@@ -17,6 +17,13 @@ from typing import Optional, List, Dict, Union, Any, Tuple
 
 logger = logging.getLogger(__name__)
 
+
+def _max_func(x: Any, y: Any) -> Any:
+    try: # fixing funny behaviour when max() is called with np.float64
+        return np.maximum(x, y)
+    except Exception:
+        return max(x, y)
+
 class Max(TableModule):
     inputs = [SlotDescriptor("table", type=Table, required=True)]
 
@@ -49,7 +56,7 @@ class Max(TableModule):
                 self.result = PsDict(op)
             else:
                 for k, v in self.psdict.items():
-                    self.psdict[k] = np.maximum(op[k], v)
+                    self.psdict[k] = _max_func(op[k], v)
             return self._return_run_step(self.next_state(ctx.table), steps)
 
 

@@ -23,10 +23,10 @@ class TestProgressiveModule(ProgressiveTest):
     def test_tags(self) -> None:
         s = self.scheduler()
         simple = SimpleModule(scheduler=s)
-        self.assertEquals(simple.tags, set())  # no tags
+        self.assertEqual(simple.tags, set())  # no tags
         with Module.tagged("a", "b"):
             simple2 = SimpleModule(scheduler=s)
-        self.assertEquals(simple2.tags, set(["a", "b"]))
+        self.assertEqual(simple2.tags, set(["a", "b"]))
 
     def test_module(self) -> None:
         # pylint: disable=broad-except
@@ -52,7 +52,7 @@ class TestProgressiveModule(ProgressiveTest):
             self.assertFalse(module.is_visualization())
             self.assertIsNone(module.get_visualization())
             self.assertIsNone(module.get_data("error"))
-            self.assertEquals(module.last_time(), 0)
+            self.assertEqual(module.last_time(), 0)
             module.debug = True
             self.assertEqual(module.params.debug, True)
             module.set_current_params({"quantum": 2.0})

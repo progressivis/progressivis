@@ -4,6 +4,7 @@ from progressivis.stats import RandomTable, Max
 from progressivis.table.stirrer import Stirrer
 from progressivis.core import aio
 
+from typing import Any
 
 class TestStirrer(ProgressiveTest):
     def test_stirrer(self) -> None:

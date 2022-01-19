@@ -17,6 +17,11 @@ from typing import Optional, List, Dict, Union, Any, Tuple
 
 logger = logging.getLogger(__name__)
 
+def _min_func(x: Any, y: Any) -> Any:
+    try: # fixing funny behaviour when min() is called with np.float64
+        return np.minimum(x, y)
+    except Exception:
+        return min(x, y)
 
 class Min(TableModule):
     inputs = [SlotDescriptor("table", type=Table, required=True)]
@@ -51,7 +56,7 @@ class Min(TableModule):
             else:
 
                 for k, v in self.psdict.items():
-                    self.psdict[k] = np.minimum(op[k], v)
+                    self.psdict[k] = _min_func(op[k], v)
             return self._return_run_step(self.next_state(ctx.table), steps)
 
 

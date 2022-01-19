@@ -1,4 +1,4 @@
-from . import ProgressiveTest
+from . import ProgressiveTest, skip
 import pandas as pd
 from progressivis import Print
 from progressivis.stats import Var, VarH, RandomTable
@@ -26,7 +26,8 @@ df = pd.DataFrame({
 
 df2 = pd.concat([df, df*1.0])
 
-class TestScalers(ProgressiveTest):                       
+class TestScalers(ProgressiveTest):
+    @skip
     def test_min_max_scaler(self):
         s = self.scheduler()
         _, f = tf.mkstemp()
@@ -45,7 +46,8 @@ class TestScalers(ProgressiveTest):
             self.assertGreaterEqual(min(sc.result[c]), 0.0)
             self.assertLessEqual(max(sc.result[c]), 1.0)            
 
-    def t_est_min_max_scaler_tol(self):
+    @skip
+    def test_min_max_scaler_tol(self):
         s = self.scheduler()
         _, f = tf.mkstemp()
         print(f)

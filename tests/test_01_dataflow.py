@@ -193,7 +193,7 @@ class TestDataflow(ProgressiveTest):
         with s as dataflow:
             self.assertTrue(isinstance(dataflow, Dataflow))
             deps = dataflow.collateral_damage("table")
-            self.assertEquals(deps, set(["table", "min", "prt"]))
+            self.assertEqual(deps, set(["table", "min", "prt"]))
 
     def test_dataflow_4_dels2(self) -> None:
         s = self.scheduler()
@@ -208,7 +208,7 @@ class TestDataflow(ProgressiveTest):
         with s as dataflow:
             self.assertTrue(isinstance(dataflow, Dataflow))
             deps = dataflow.collateral_damage("table")
-            self.assertEquals(deps, set(["table", "min", "prt"]))
+            self.assertEqual(deps, set(["table", "min", "prt"]))
 
     def test_dataflow_5_dels_opt(self) -> None:
         s = self.scheduler()
@@ -224,11 +224,11 @@ class TestDataflow(ProgressiveTest):
         with s as dataflow:
             self.assertTrue(isinstance(dataflow, Dataflow))
             deps = dataflow.collateral_damage("prt2")
-            self.assertEquals(deps, set(["prt2"]))
+            self.assertEqual(deps, set(["prt2"]))
             deps = dataflow.collateral_damage("prt")
-            self.assertEquals(deps, set(["prt"]))
+            self.assertEqual(deps, set(["prt"]))
             deps = dataflow.collateral_damage("prt", "prt2")
-            self.assertEquals(deps, set(["prt", "prt2", "min", "table"]))
+            self.assertEqual(deps, set(["prt", "prt2", "min", "table"]))
 
     def test_dataflow_6_dynamic(self) -> None:
         s = self.scheduler()
@@ -247,11 +247,11 @@ class TestDataflow(ProgressiveTest):
                 print("Checking module deletion")
                 self.assertTrue(isinstance(dataflow, Dataflow))
                 deps = dataflow.collateral_damage("prt2")
-                self.assertEquals(deps, set(["prt2"]))
+                self.assertEqual(deps, set(["prt2"]))
                 deps = dataflow.collateral_damage("prt")
-                self.assertEquals(deps, set(["prt"]))
+                self.assertEqual(deps, set(["prt"]))
                 deps = dataflow.collateral_damage("prt", "prt2")
-                self.assertEquals(deps, set(["prt", "prt2"]))
+                self.assertEqual(deps, set(["prt", "prt2"]))
                 dataflow.delete_modules("prt2")
             s.on_loop(modify_2, 5)
 
@@ -260,9 +260,9 @@ class TestDataflow(ProgressiveTest):
             with s as dataflow:
                 print("Checking more module deletion")
                 deps = dataflow.collateral_damage("prt")
-                self.assertEquals(deps, {"prt"})
+                self.assertEqual(deps, {"prt"})
                 deps = dataflow.collateral_damage("prt", "sink")
-                self.assertEquals(deps, {"prt", "sink", "table"})
+                self.assertEqual(deps, {"prt", "sink", "table"})
                 dataflow.delete_modules("prt")
             s.on_loop(modify_3, 5)
 
@@ -271,7 +271,7 @@ class TestDataflow(ProgressiveTest):
             with s as dataflow:
                 print("Checking even more module deletion")
                 deps = dataflow.collateral_damage("sink")
-                self.assertEquals(deps, {"sink", "table"})
+                self.assertEqual(deps, {"sink", "table"})
                 dataflow.delete_modules("sink", "table")
 
         async def stop_error(scheduler: Scheduler, run_number: int) -> None:

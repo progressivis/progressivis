@@ -50,10 +50,10 @@ class TestCombineFirst(ProgressiveTest):
         self.assertFalse(row is None)
         assert row is not None
         last = row.to_dict()
-        self.assertEquals(last["xmin"], 1)
-        self.assertEquals(last["xmax"], 2)
-        self.assertEquals(last["ymin"], 5)
-        self.assertEquals(last["ymax"], 6)
+        self.assertEqual(last["xmin"], 1)
+        self.assertEqual(last["xmax"], 2)
+        self.assertEqual(last["ymin"], 5)
+        self.assertEqual(last["ymax"], 6)
 
     def test_combine_first_nan(self) -> None:
         s = self.scheduler(True)

@@ -147,6 +147,17 @@ class RangeQuery(TableModule):
     # def hist_index(self, hi: HistogramIndex) -> None:
     #     self._hist_index = hi
     #     self._impl = RangeQueryImpl(self._column, hi, approximate=self._approximate)
+    @property
+    def column(self):
+        return self.params.column
+
+    @property
+    def watched_key_lower(self):
+        return self.params.watched_key_lower or self.column
+
+    @property
+    def watched_key_upper(self):
+        return self.params.watched_key_upper or self.column
 
     def create_dependent_modules(
         self,
@@ -160,50 +171,45 @@ class RangeQuery(TableModule):
     ) -> RangeQuery:
         if self.input_module is not None:  # test if already called
             return self
-        with self.grouped():
-            scheduler = self.scheduler()
-            params = self.params
-            self.input_module = input_module
-            self.input_slot = input_slot
-            with scheduler:
-                hist_index = HistogramIndex(
+        scheduler = self.scheduler()
+        params = self.params
+        self.input_module = input_module
+        self.input_slot = input_slot
+        with scheduler:
+            hist_index = HistogramIndex(
                     column=params.column, group=self.name, scheduler=scheduler
                 )
-                hist_index.input.table = input_module.output[input_slot]
-                if min_ is None:
-                    min_ = Min(
-                        group=self.name, columns=[self._column], scheduler=scheduler
-                    )
-                    min_.input.table = hist_index.output.min_out
-                if max_ is None:
-                    max_ = Max(
-                        group=self.name, columns=[self._column], scheduler=scheduler
-                    )
-                    max_.input.table = hist_index.output.max_out
-                if min_value is None:
-                    min_value = Variable(group=self.name, scheduler=scheduler)
-                    min_value.input.like = min_.output.result
+            hist_index.input.table = input_module.output[input_slot]
+            if min_ is None:
+                min_ = Min(group=self.name, columns=[self.column], scheduler=scheduler)
+                min_.input.table = hist_index.output.min_out
+            if max_ is None:
+                max_ = Max(group=self.name, columns=[self.column], scheduler=scheduler)
+                max_.input.table = hist_index.output.max_out
+            if min_value is None:
+                min_value = Variable(group=self.name, scheduler=scheduler)
+                min_value.input.like = min_.output.result
 
-                if max_value is None:
-                    max_value = Variable(group=self.name, scheduler=scheduler)
-                    max_value.input.like = max_.output.result
+            if max_value is None:
+                max_value = Variable(group=self.name, scheduler=scheduler)
+                max_value.input.like = max_.output.result
 
-                range_query = self
-                range_query.hist_index = hist_index
-                range_query.input.hist = hist_index.output.result
-                range_query.input.table = input_module.output[input_slot]
-                if min_value:
-                    range_query.input.lower = min_value.output.result
-                if max_value:
-                    range_query.input.upper = max_value.output.result
-                range_query.input.min = min_.output.result
-                range_query.input.max = max_.output.result
+            range_query = self
+            range_query.hist_index = hist_index
+            range_query.input.hist = hist_index.output.result
+            range_query.input.table = input_module.output[input_slot]
+            if min_value:
+                range_query.input.lower = min_value.output.result
+            if max_value:
+                range_query.input.upper = max_value.output.result
+            range_query.input.min = min_.output.result
+            range_query.input.max = max_.output.result
 
-            self.min = min_
-            self.max = max_
-            self.min_value = min_value
-            self.max_value = max_value
-            return range_query
+        self.min = min_
+        self.max = max_
+        self.min_value = min_value
+        self.max_value = max_value
+        return range_query
 
     def _create_min_max(self) -> None:
         if self._min_table is None:
@@ -212,7 +218,7 @@ class RangeQuery(TableModule):
             self._max_table = PsDict({self.column: -np.inf})
 
     def _set_minmax_out(self, attr_: str, val: float) -> None:
-        d = {self._column: val}
+        d = {self.column: val}
         if getattr(self, attr_) is None:
             setattr(self, attr_, PsDict(d))
         else:
@@ -283,8 +289,8 @@ class RangeQuery(TableModule):
             or len(upper_slot.data()) == 0
         ):
             return self._return_run_step(self.state_blocked, steps_run=0)
-        lower_value = lower_slot.data().get(self._watched_key_lower)
-        upper_value = upper_slot.data().get(self._watched_key_upper)
+        lower_value = lower_slot.data().get(self.watched_key_lower)
+        upper_value = upper_slot.data().get(self.watched_key_upper)
         if (
             lower_slot.data() is None
             or upper_slot.data() is None
@@ -294,8 +300,8 @@ class RangeQuery(TableModule):
             or len(max_slot.data()) == 0
         ):
             return self._return_run_step(self.state_blocked, steps_run=0)
-        minv = min_slot.data().get(self._watched_key_lower)
-        maxv = max_slot.data().get(self._watched_key_upper)
+        minv = min_slot.data().get(self.watched_key_lower)
+        maxv = max_slot.data().get(self.watched_key_upper)
         if (
             lower_value is None
             or np.isnan(lower_value)
