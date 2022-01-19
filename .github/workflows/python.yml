@@ -41,6 +41,6 @@ jobs:
         conda activate progressivis
         mkdir data
         mv mnist_784.csv data
-	git clone https://github.com/apache/datasketches-cpp.git
-	pip install -e datasketches-cpp
+        git clone https://github.com/apache/datasketches-cpp.git
+        pip install -e datasketches-cpp
         python setup.py nosetests -w tests
