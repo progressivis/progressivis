@@ -1,4 +1,3 @@
-
 from __future__ import annotations
 
 import numpy as np
@@ -32,7 +31,6 @@ class _Selection:
 
     def remove(self, values: Iterable[int]) -> None:
         self._values = self._values - bitmap(values)
-
 
     def assign(self, values: Iterable[int]) -> None:
         self._values = bitmap(values)
@@ -177,8 +175,8 @@ class RangeQuery(TableModule):
         self.input_slot = input_slot
         with scheduler:
             hist_index = HistogramIndex(
-                    column=params.column, group=self.name, scheduler=scheduler
-                )
+                column=params.column, group=self.name, scheduler=scheduler
+            )
             hist_index.input.table = input_module.output[input_slot]
             if min_ is None:
                 min_ = Min(group=self.name, columns=[self.column], scheduler=scheduler)

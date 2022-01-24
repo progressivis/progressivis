@@ -103,7 +103,6 @@ class _HistogramIndexImpl(object):
         mean = float(len_c) / len_b
         return len(bm1) + len(bm2) < max(self._merge_coef * mean, self._merge_threshold)
 
-
     def merge_once(self) -> int:
         assert self.bins is not None
         assert len(self.bins) + 1 == len(self.bitmaps), "unexpected # of bins"

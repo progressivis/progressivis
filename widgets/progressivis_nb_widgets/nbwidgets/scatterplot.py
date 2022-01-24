@@ -54,9 +54,7 @@ class Scatterplot(DataWidget, widgets.DOMWidget):  # type: ignore
     to_hide = Any("[]").tag(sync=True)
 
     def link_module(
-        self,
-        module: MCScatterPlot,
-        refresh: bool = True
+        self, module: MCScatterPlot, refresh: bool = True
     ) -> List[Coroutine[Any, Any, None]]:
         def _feed_widget(wg: WidgetType, m: MCScatterPlot) -> None:
             val = m.to_json()
@@ -73,20 +71,17 @@ class Scatterplot(DataWidget, widgets.DOMWidget):  # type: ignore
                 wg.samples = st
             wg.data = JS.dumps(data_)
 
-
         async def _refresh() -> NoReturn:
             while True:
                 await aio.sleep(0.5)
 
         async def _after_run(
-            m: Module,
-            run_number: int
+            m: Module, run_number: int
         ) -> None:  # pylint: disable=unused-argument
             if not self.modal:
                 await asynchronize(_feed_widget, self, m)
 
         module.on_after_run(_after_run)
-
 
         async def _from_input_value() -> None:
             while True:
@@ -117,11 +112,10 @@ class Scatterplot(DataWidget, widgets.DOMWidget):  # type: ignore
                 dummy = module._json_cache.get("dummy", 555)
                 module._json_cache["dummy"] = -dummy
                 await asynchronize(_feed_widget, self, module)
-        return [
-            _from_input_value(),
-            _from_input_move_point(),
-            _awake(),
-        ] + ([_refresh()] if refresh else [])
+
+        return [_from_input_value(), _from_input_move_point(), _awake()] + (
+            [_refresh()] if refresh else []
+        )
 
     def __init__(self, *, disable: Sequence[Any] = tuple()):
         super().__init__()

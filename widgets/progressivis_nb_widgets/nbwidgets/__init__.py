@@ -16,6 +16,7 @@ from .utils import *
 
 from typing import List, Dict
 
+
 def _jupyter_nbextension_paths() -> List[Dict[str, str]]:
     """Called by Jupyter Notebook Server to detect if it is a valid nbextension and
     to install the widget

@@ -18,7 +18,7 @@ class ControlPanel(widgets.HBox):  # type: ignore # pylint: disable=too-many-anc
             tooltip="Start",
             icon="play",  # (FontAwesome names without the `fa-` prefix)
         )
-        
+
         self.bstop = widgets.Button(
             description="Stop",
             disabled=False,
@@ -26,7 +26,7 @@ class ControlPanel(widgets.HBox):  # type: ignore # pylint: disable=too-many-anc
             tooltip="Stop",
             icon="stop",
         )
-        
+
         self.bstep = widgets.Button(
             description="Step",
             disabled=True,
@@ -34,18 +34,13 @@ class ControlPanel(widgets.HBox):  # type: ignore # pylint: disable=too-many-anc
             tooltip="Step",
             icon="step-forward",
         )
-        
-        self.run_nb = widgets.HTML(
-            value="0",
-            placeholder="0",
-            description="",
-        )
+
+        self.run_nb = widgets.HTML(value="0", placeholder="0", description="",)
         self.status: str = "run"
         super().__init__([self.bstart, self.bstop, self.bstep, self.run_nb])
         self.bstart.on_click(self.resume())
         self.bstop.on_click(self.stop())
         self.bstep.on_click(self.step())
-
 
     @property
     def data(self) -> str:
@@ -54,7 +49,6 @@ class ControlPanel(widgets.HBox):  # type: ignore # pylint: disable=too-many-anc
     @data.setter
     def data(self, val: Any) -> None:
         self.run_nb.value = str(val)
-
 
     def stop(self) -> None:
         assert self.scheduler is not None

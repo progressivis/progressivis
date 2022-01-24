@@ -13,12 +13,6 @@ if TYPE_CHECKING:
 
 
 debug_console = None  # ipw.Output()
-"""
-{"table": [{"output_name": "table", "output_module": "csv_loader_1", "input_name": "df", "input_module": "every_1"}, {"output_name": "table", "output_module": "csv_loader_1", "input_name": "table", "input_module": "histogram_index_1"}, {"output_name": "table", "output_module": "csv_loader_1", "input_name": "table", "input_module": "histogram_index_2"}, {"output_name": "table", "output_module": "csv_loader_1", "input_name": "table", "input_module": "histogram_index_3"}, {"output_name": "table", "output_module": "csv_loader_1", "input_name": "table", "input_module": "histogram_index_4"}], "_trace": null}
-## range_query_2d
-{"min": [{"output_name": "min", "output_module": "range_query2d_2", "input_name": "table.00.03", "input_module": "mc_histogram2_d_1"}, {"output_name": "min", "output_module": "range_query2d_2", "input_name": "table.00.03", "input_module": "mc_histogram2_d_2"}], "max": [{"output_name": "max", "output_module": "range_query2d_2", "input_name": "table.00.04", "input_module": "mc_histogram2_d_1"}, {"output_name": "max", "output_module": "range_query2d_2", "input_name": "table.00.04", "input_module": "mc_histogram2_d_2"}], "table": [{"output_name": "table", "output_module": "range_query2d_2", "input_name": "data", "input_module": "mc_histogram2_d_2"}, {"output_name": "table", "output_module": "range_query2d_2", "input_name": "table", "input_module": "sample_2"}], "_trace": null}
-
-"""
 
 
 class ModuleWg(ipw.Tab):  # type: ignore # pylint: disable=too-many-ancestors

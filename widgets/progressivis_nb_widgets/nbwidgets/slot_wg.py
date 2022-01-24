@@ -5,10 +5,10 @@ from progressivis.table.paging_helper import PagingHelper
 from .utils import update_widget
 from .data_table import DataTable
 
-from typing import Any, Optional, NoReturn, TYPE_CHECKING
+from typing import Any, Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from progressivis import Table, Module
+    from progressivis import Module
 
 
 debug_console = None
@@ -18,10 +18,7 @@ _dmp = JSON.dumps
 
 class SlotWg(DataTable):
     def __init__(
-        self,
-        module: Module,
-        slot_name: str,
-        dconsole: Optional[Any] = None
+        self, module: Module, slot_name: str, dconsole: Optional[Any] = None
     ) -> None:
         global debug_console  # pylint: disable=global-statement
         debug_console = dconsole

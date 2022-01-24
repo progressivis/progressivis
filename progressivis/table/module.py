@@ -118,9 +118,12 @@ class TableModule(Module):
                 _columns.remove(column)  # maintain the order
         return _columns
 
-
     def filter_columns(
-        self, df: BaseTable, indices: Optional[Any] = None, slot: Optional[str] = None, cols: Columns = None
+        self,
+        df: BaseTable,
+        indices: Optional[Any] = None,
+        slot: Optional[str] = None,
+        cols: Columns = None,
     ) -> BaseTable:
         """
         Return the specified table filtered by the specified indices and

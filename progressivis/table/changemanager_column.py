@@ -45,5 +45,4 @@ class ColumnChangeManager(BaseChangeManager):
         )
 
 
-
 Slot.add_changemanager_type(BaseColumn, ColumnChangeManager)

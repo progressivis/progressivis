@@ -1,18 +1,17 @@
-import numpy as np
-import pandas as pd
 import logging
 from ..table.nary import NAry
 from ..utils.psdict import PsDict
 
 logger = logging.getLogger(__name__)
 
+
 class Hub(NAry):
     """
     Groups many (dict) outputs in one. Suppose there are no clashes
     Useful with Switch
     """
-    parameters = []
 
+    parameters = []
 
     def run_step(self, run_number, step_size, howlong):
         if self.result is None:

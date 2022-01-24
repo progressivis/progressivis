@@ -6,7 +6,7 @@ from jinja2 import Template
 from progressivis.core import JSONEncoderNp
 from .control_panel import ControlPanel
 from .sensitive_html import SensitiveHTML
-from .utils import update_widget
+from .utils import wait_for_change, wait_for_click, update_widget
 from .module_graph import ModuleGraph
 from .module_wg import ModuleWg
 
@@ -21,7 +21,7 @@ from typing import (
     Iterable,
     Coroutine,
     Set,
-    TYPE_CHECKING
+    TYPE_CHECKING,
 )
 
 if TYPE_CHECKING:
@@ -34,7 +34,8 @@ debug_console = ipw.Output()
 
 INDEX_TEMPLATE = """
 <table class="table table-striped table-bordered table-hover table-condensed">
-<thead><tr><th></th><th>Id</th><th>Class</th><th>State</th><th>Last Update</th><th>Order</th></tr></thead>
+<thead><tr><th></th><th>Id</th><th>Class</th><th>State</th><th>Last Update</th>
+<th>Order</th></tr></thead>
 <tbody>
 {% for m in modules%}
   <tr>
@@ -62,7 +63,7 @@ class PsBoard(ipw.VBox):  # type: ignore
         self,
         scheduler: Scheduler,
         order: Literal["asc", "desc"] = "asc",
-        refresh_rate: int = 5
+        refresh_rate: int = 5,
     ):
         global debug_console  # pylint: disable=global-statement
         self._order: Literal["asc", "desc"] = order
@@ -91,9 +92,7 @@ class PsBoard(ipw.VBox):  # type: ignore
             "last_update",
             "order",
         ]
-        self.htable = SensitiveHTML(
-            layout=ipw.Layout(height="500px", overflow="auto")
-        )
+        self.htable = SensitiveHTML(layout=ipw.Layout(height="500px", overflow="auto"))
         # self.refresh_event = None
         self.other_coros: List[Coroutine[Any, Any, None]] = []
         self.vis_register: Dict[str, List[WidgetType]] = defaultdict(list)
@@ -102,11 +101,7 @@ class PsBoard(ipw.VBox):  # type: ignore
         self.scheduler.on_tick(self._refresh_proc)
         self.scheduler.on_change(self._change_proc)
 
-    async def _refresh_proc(
-        self,
-        scheduler: Scheduler,
-        run_number: int
-    ) -> None:
+    async def _refresh_proc(self, scheduler: Scheduler, run_number: int) -> None:
         assert scheduler is self.scheduler
         self.last_refresh += 1
         if self.last_refresh < self.refresh_rate:
@@ -117,10 +112,9 @@ class PsBoard(ipw.VBox):  # type: ignore
         self._cache_js = None
         await self.refresh()
 
-    async def _change_proc(self,
-                           scheduler: Scheduler,
-                           added: Set[Module],
-                           deleted: Set[Module]) -> None:
+    async def _change_proc(
+        self, scheduler: Scheduler, added: Set[Module], deleted: Set[Module]
+    ) -> None:
         assert scheduler is self.scheduler
         # print("Dataflow changed")
         self.modules_changed = True
@@ -134,7 +128,7 @@ class PsBoard(ipw.VBox):  # type: ignore
         modules = sorted(
             modules,
             key=lambda x: cast(int, x["order"]),
-            reverse=(self._order == "desc")
+            reverse=(self._order == "desc"),
         )
         if not self.htable.html:
             await update_widget(self.htable, "sensitive_css_class", "ps-row-btn")
@@ -164,16 +158,19 @@ class PsBoard(ipw.VBox):  # type: ignore
         widget: WidgetType,
         module: Module,
         label: str = "Visualisation",
-        glue: Optional[Callable[[WidgetType, Module],
-                                Iterable[Coroutine[Any, Any, None]]]] = None
+        glue: Optional[
+            Callable[[WidgetType, Module], Iterable[Coroutine[Any, Any, None]]]
+        ] = None,
     ) -> None:
         """
         called from notebook
 
         if module_class is None and module_id is None:
-            raise ValueError("One and only one of 'module_class' and 'module_id' args must be defined")
+            raise ValueError("One and only one of 'module_class' "
+                              "and 'module_id' args must be defined")
         if not(module_class is None or module_id is None):
-            raise ValueError("One and only one of 'module_class' and 'module_id' args must be defined")
+            raise ValueError("One and only one of 'module_class' "
+            "and 'module_id' args must be defined")
         """
         linkable = hasattr(widget, "link_module")
         if not linkable and glue is None:
@@ -206,7 +203,7 @@ class PsBoard(ipw.VBox):  # type: ignore
             if len(self.tab.children) < 3:
                 self.tab.children += (self.current_module,)
             self.current_module.module_name = self.htable.value[
-                len(self.htable.sensitive_css_class) + 1 :
+                len(self.htable.sensitive_css_class) + 1:
             ]
             self.current_module.selection_changed = True
             self.tab.set_title(2, self.current_module.module_name)
