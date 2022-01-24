@@ -16,7 +16,6 @@ class OnlineCovariance(object):
         self.reset()
         self.ddof = ddof
 
-
     def reset(self):
         self.n = 0
         self.mean_x = 0
@@ -35,24 +34,26 @@ class OnlineCovariance(object):
         self.cm += dx * (y - self.mean_y)
 
     def add(self, array_x, array_y):
-            for x, y in zip(array_x, array_y):
-                self.include(x, y)
+        for x, y in zip(array_x, array_y):
+            self.include(x, y)
 
     @property
     def cov(self):
         div_ = self.n - self.ddof
-        return self.cm/div_ if div_ else np.nan
+        return self.cm / div_ if div_ else np.nan
+
 
 class Corr(TableModule):
     """
     Compute the covariance matrix (a dict, actually) of the columns of an input table.
     """
-    inputs = [SlotDescriptor('table', type=Table, required=True)]
 
-    def __init__(self, mode='Pearson', ignore_string_cols=False, **kwds):
-        assert mode in ('Pearson', 'CovarianceOnly')
+    inputs = [SlotDescriptor("table", type=Table, required=True)]
+
+    def __init__(self, mode="Pearson", ignore_string_cols=False, **kwds):
+        assert mode in ("Pearson", "CovarianceOnly")
         super().__init__(**kwds)
-        self._is_corr = (mode == 'Pearson')
+        self._is_corr = mode == "Pearson"
         self._data = {}
         self._vars = {}
         self._ignore_string_cols = ignore_string_cols
@@ -60,20 +61,22 @@ class Corr(TableModule):
         self.default_step_size = 1000
 
     def is_ready(self):
-        if self.get_input_slot('table').created.any():
+        if self.get_input_slot("table").created.any():
             return True
         return super().is_ready()
 
     def get_num_cols(self, input_df):
         if self._num_cols is None:
             if not self._columns:
-                self._num_cols = [c.name
-                                  for c in input_df._columns
-                                  if str(c.dshape) != 'string']
+                self._num_cols = [
+                    c.name for c in input_df._columns if str(c.dshape) != "string"
+                ]
             else:
-                self._num_cols = [c.name
-                        for c in input_df._columns
-                        if c.name in self._columns and str(c.dshape) != 'string']
+                self._num_cols = [
+                    c.name
+                    for c in input_df._columns
+                    if c.name in self._columns and str(c.dshape) != "string"
+                ]
         return self._num_cols
 
     def op(self, chunk):
@@ -92,7 +95,7 @@ class Corr(TableModule):
             done_.add(key)
             cov_[key] = data.cov
         if not self._is_corr:
-            return cov_ # covariance only
+            return cov_  # covariance only
         std_ = {}
         for c in cols:
             data = self._vars.get(c)
@@ -109,7 +112,7 @@ class Corr(TableModule):
             else:
                 kx = lk[0]
                 ky = lk[1]
-            corr_[k] = v/(std_[kx]*std_[ky])
+            corr_[k] = v / (std_[kx] * std_[ky])
         return corr_
 
     def reset(self):
@@ -122,16 +125,14 @@ class Corr(TableModule):
             for ov in self._vars.values():
                 ov.reset()
 
-
     def result_as_df(self, columns):
         """
         Convenience method
         """
-        res = pd.DataFrame(index=columns, columns=columns, dtype='float64')
+        res = pd.DataFrame(index=columns, columns=columns, dtype="float64")
         for kx, ky in product(columns, columns):
             res.loc[kx, ky] = self.result[frozenset([kx, ky])]
         return res
-
 
     @process_slot("table", reset_cb="reset")
     @run_if_any

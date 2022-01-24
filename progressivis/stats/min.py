@@ -13,15 +13,17 @@ from ..core.slot import SlotDescriptor, Slot
 from ..utils.psdict import PsDict
 from ..core.decorators import process_slot, run_if_any
 
-from typing import Optional, List, Dict, Union, Any, Tuple
+from typing import Optional, Dict, Union, Any, Tuple
 
 logger = logging.getLogger(__name__)
 
+
 def _min_func(x: Any, y: Any) -> Any:
-    try: # fixing funny behaviour when min() is called with np.float64
+    try:  # fixing funny behaviour when min() is called with np.float64
         return np.minimum(x, y)
     except Exception:
         return min(x, y)
+
 
 class Min(TableModule):
     inputs = [SlotDescriptor("table", type=Table, required=True)]

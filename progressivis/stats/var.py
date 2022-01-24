@@ -14,7 +14,7 @@ from ..table.table import Table
 from ..table.dshape import dshape_all_dtype
 from ..utils.psdict import PsDict
 
-from typing import Dict, Iterable, TYPE_CHECKING, Optional, Any
+from typing import Dict, Iterable, TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from progressivis.table.module import Columns
@@ -29,10 +29,10 @@ class OnlineVariance:
     Welford's algorithm computes the sample variance incrementally.
     """
 
-
     def __init__(self, ddof: int = 1) -> None:
         self.reset()
         self.ddof: int = ddof
+
     def reset(self):
         self.n: int = 0
         self.mean: float = 0.0
@@ -66,6 +66,7 @@ class VarH(TableModule):
     """
     Compute the variance of the columns of an input table.
     """
+
     parameters = [("history", np.dtype(int), 3)]
     inputs = [SlotDescriptor("table", type=Table, required=True)]
 
@@ -91,7 +92,6 @@ class VarH(TableModule):
             data.add(chunk[c])
             ret[c] = data.variance
         return ret
-
 
     def reset(self) -> None:
         if self.result is not None:
@@ -145,13 +145,15 @@ class Var(TableModule):
     def get_num_cols(self, input_df: BaseTable) -> Columns:
         if self._num_cols is None:
             if not self._columns:
-                self._num_cols = [c.name
-                                  for c in input_df._columns
-                                  if str(c.dshape) != 'string']
+                self._num_cols = [
+                    c.name for c in input_df._columns if str(c.dshape) != "string"
+                ]
             else:
-                self._num_cols = [c.name
-                        for c in input_df._columns
-                        if c.name in self._columns and str(c.dshape) != 'string']
+                self._num_cols = [
+                    c.name
+                    for c in input_df._columns
+                    if c.name in self._columns and str(c.dshape) != "string"
+                ]
         return self._num_cols
 
     def op(self, chunk: BaseTable) -> Dict[str, float]:
@@ -165,7 +167,6 @@ class Var(TableModule):
             data.add(chunk[c])
             ret[c] = data.variance
         return ret
-
 
     def reset(self) -> None:
         if self.result is not None:
