@@ -125,7 +125,7 @@ class Histogram1D(TableModule):
             histo = None
             if len(column) > 0:
                 histo, self._edges = np.histogram(  # type: ignore
-                    column, bins=bins, range=[curr_min, curr_max], density=False
+                    column, bins=bins, range=(curr_min, curr_max), density=False
                 )
                 self._h_cnt += len(column)
             if self._histo is None:

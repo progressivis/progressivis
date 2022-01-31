@@ -266,12 +266,12 @@ class MMapDataset(Dataset):
             for shap in shape[1:]:
                 length *= shap
             length *= size
-            shape = tuple([size] + list(shape[1:]))
+            shape = tuple(cast(List[int], [size] + list(shape[1:])))
         else:
             length = 1
             for shap in cast(List[int], size):
                 length *= shap
-            shape = size
+            shape = tuple(cast(List[int], size))
         dtype_ = np.dtype(np.int64) if self.dtype == OBJECT else self.dtype
         nb_item = length
         length *= dtype_.itemsize
@@ -288,10 +288,10 @@ class MMapDataset(Dataset):
         viewshape = self.view.shape
         size = np.asarray(shape)
         if (size > baseshape).any():  # type: ignore
-            self.view = None
+            # self.view = None
             newsize = []
             for shap, shape in zip(size, baseshape):
-                if shap > shape:
+                if shap > cast(int, shape):
                     shap = next_pow2(shap)
                 newsize.append(shap)
             self.base = np.resize(self.base, tuple(newsize))

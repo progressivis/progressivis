@@ -5,15 +5,23 @@ import logging
 
 from ..core.bitmap import bitmap
 from ..core.utils import indices_len
-from ..core.slot import SlotDescriptor
-from ..table.table import Table
+from ..core.slot import SlotDescriptor, Slot
+from ..table import Table, BaseTable, BaseColumn
 from ..table.module import TableModule
 from ..utils.psdict import PsDict
 from . import Min, Max, Histogram1D
 from ..core.decorators import process_slot, run_if_any
 from ..table.dshape import dshape_all_dtype
+from typing import Optional, Union, Dict, Tuple, Any, List, TYPE_CHECKING, cast
+
 
 logger = logging.getLogger(__name__)
+
+if TYPE_CHECKING:
+    from ..core.module import ReturnRunStep
+
+ColsTo = Dict[str, Tuple[float, float]]
+NumCol = Union[np.ndarray[Any, Any], BaseColumn]
 
 
 class MinMaxScaler(TableModule):
@@ -34,7 +42,12 @@ class MinMaxScaler(TableModule):
     ]
     outputs = [SlotDescriptor("info", type=PsDict, required=False)]
 
-    def __init__(self, usecols=None, reset_threshold=1000, **kwds):
+    def __init__(
+        self,
+        usecols: Optional[List[str]] = None,
+        reset_threshold: int = 1000,
+        **kwds: Any,
+    ):
         """
         usecols: scaled cols. all the other cols are transfered as is
         reset_threshold: when n_rows < reset_threshold min/max changes trigger
@@ -43,33 +56,35 @@ class MinMaxScaler(TableModule):
         super().__init__(**kwds)
         self._usecols = usecols
         self._reset_threshold = reset_threshold
-        self._cmin = {}  # current min
-        self._cmax = {}  # current max
+        self._cmin: Dict[str, float] = {}  # current min
+        self._cmax: Dict[str, float] = {}  # current max
         self._has_cmin_cmax = False
-        self._delta = None
-        self._control_data = None
+        # self._delta = None
+        self._control_data: Optional[Dict[str, int]] = None
         self._clipped = 0
         self._ignored = 0
-        self._info = None
+        self._info: Dict[str, int] = {}
 
-    def reset(self):
+    def reset(self) -> None:
         if self.result is not None:
-            self.result.truncate()
+            self.table.truncate()
         self._cmin.clear()
         self._cmax.clear()
         self._has_cmin_cmax = False
         self._control_data = None
         self._clipped = 0
         self._ignored = 0
-        if self._info is not None:
+        if self._info:
             self._info.update(
                 {"clipped": 0, "ignored": 0, "has_buffered": 0, "last_reset": 0}
             )
 
-    def scale(self, chunk, cols, usecols, clip_cols):
-        res = {}
+    def scale(
+        self, chunk: BaseTable, cols: List[str], usecols: List[str], clip_cols: ColsTo
+    ) -> Dict[str, NumCol]:
+        res: Dict[str, NumCol] = {}
         for c in cols:
-            arr = chunk[c]  # .to_array()
+            arr: Union[np.ndarray[Any, Any], BaseColumn] = chunk[c]  # .to_array()
             if c not in usecols:
                 res[c] = arr
                 continue
@@ -77,17 +92,18 @@ class MinMaxScaler(TableModule):
             max_ = self._cmax[c]
             width = max_ - min_
             _ = width  # for flake8
-            res[c] = ne.evaluate("(arr-min_)/width")
+            val: np.ndarray[Any, Any] = ne.evaluate("(arr-min_)/width")
+            res[c] = val
             if c in clip_cols:
-                if self._info is not None:
+                if self._info:
                     arr = res[c]  # helping the evaluator
                     self._info["clipped"] += np.sum(
                         ne.evaluate("(arr<0.0) | (arr>1.0)")
                     )
-                np.clip(res[c], 0.0, 1.0, out=res[c])
+                np.clip(val, 0.0, 1.0, out=val)
         return res
 
-    def get_ignore(self, chunk, oversized_cols):
+    def get_ignore(self, chunk: BaseTable, oversized_cols: ColsTo) -> bitmap:
         ignore = bitmap()
         for c, (min_, max_) in oversized_cols.items():
             arr = chunk[c]  # .to_array()
@@ -95,18 +111,20 @@ class MinMaxScaler(TableModule):
             ignore.update(np.where(ne.evaluate(f"(arr<{min_}) | (arr>{max_})"))[0])
         return ignore
 
-    def get_ignore_credit(self):
+    def get_ignore_credit(self) -> int:
         return (
             self.params["ignore_max"]
             if self._control_data is None
             else self._control_data["ignore_max"]
         ) - self._ignored
 
-    def get_delta(self, usecols, min_, max_):
-        delta = self.params["delta"]
+    def get_delta(
+        self, usecols: List[str], min_: Dict[str, float], max_: Dict[str, float]
+    ) -> Dict[str, float]:
+        delta: float = self.params["delta"]
         if self._control_data is not None:
             delta = self._control_data["delta"]
-        res = {}
+        res: Dict[str, float] = {}
         if delta < 0:
             for c in usecols:
                 extent = max_[c] - min_[c]
@@ -116,7 +134,7 @@ class MinMaxScaler(TableModule):
                 res[c] = delta
         return res
 
-    def starting(self):
+    def starting(self) -> None:
         super().starting()
         opt_slot = self.get_output_slot("info")
         if opt_slot:
@@ -126,39 +144,43 @@ class MinMaxScaler(TableModule):
             logger.debug("Not maintaining info")
             self.maintain_info(False)
 
-    def maintain_info(self, yes=True):
-        if yes and self._info is None:
+    def maintain_info(self, yes: bool = True) -> None:
+        if yes and not self._info:
             self._info = PsDict({"clipped": 0, "ignored": 0, "needs_changes": False})
         elif not yes:
-            self._info = None
+            self._info = {}
 
-    def info(self):
+    def info(self) -> Dict[str, int]:
         return self._info
 
-    def get_data(self, name):
+    def get_data(self, name: str) -> Any:
         if name == "info":
             return self.info()
         return super().get_data(name)
 
-    def check_bounds(self, min_data, max_data, usecols, to_clip, to_ignore):
-        self._delta = self.get_delta(usecols, min_data, max_data)
+    def check_bounds(self, min_data, max_data, usecols, to_clip, to_ignore) -> bool:
+        delta = self.get_delta(usecols, min_data, max_data)
         for c in usecols:
             if min_data[c] >= self._cmin[c] and max_data[c] <= self._cmax[c]:
                 continue
-            lax_min = self._cmin[c] - self._delta[c]
-            lax_max = self._cmax[c] + self._delta[c]
+            lax_min = self._cmin[c] - delta[c]
+            lax_max = self._cmax[c] + delta[c]
             if min_data[c] < lax_min or max_data[c] > lax_max:
                 to_ignore[c] = (lax_min, lax_max)
                 # continue
             to_clip[c] = (lax_min, lax_max)  # actually a simple set should suffice
         return not to_clip and not to_ignore
 
-    def update_bounds(self, min_data, max_data):
+    def update_bounds(
+        self, min_data: Dict[str, float], max_data: Dict[str, float]
+    ) -> None:
         self._cmin.update(min_data)
         self._cmax.update(max_data)
         self._has_cmin_cmax = True
 
-    def reset_min_max(self, dfslot, min_slot, max_slot, run_number):
+    def reset_min_max(
+        self, dfslot: Slot, min_slot: Slot, max_slot: Slot, run_number: int
+    ) -> None:
         dfslot.reset()
         dfslot.update(run_number)
         min_slot.reset()
@@ -173,7 +195,10 @@ class MinMaxScaler(TableModule):
     @process_slot("max")
     # @process_slot("control")
     @run_if_any
-    def run_step(self, run_number, step_size, howlong):
+    def run_step(
+        self, run_number: int, step_size: int, howlong: float
+    ) -> ReturnRunStep:
+        assert self.context
         with self.context as ctx:
             dfslot = ctx.table
             input_df = dfslot.data()
@@ -181,13 +206,13 @@ class MinMaxScaler(TableModule):
             min_data = min_slot.data()
             max_slot = ctx.max
             max_data = max_slot.data()
-            cols_to_clip = {}
-            cols_to_ignore = {}
+            cols_to_clip: ColsTo = {}
+            cols_to_ignore: ColsTo = {}
             if not (input_df and min_data and max_data):
                 return self._return_run_step(self.state_blocked, steps_run=0)
             cols = self._columns or input_df.columns
-            usecols = self._usecols or cols
-            self._delta = self.get_delta(usecols, min_data, max_data)
+            usecols: List[str] = self._usecols or cols
+            # self._delta = self.get_delta(usecols, min_data, max_data)
             control_slot = self.get_input_slot("control")
             if control_slot is not None:
                 self._control_data = control_slot.data()
@@ -200,8 +225,8 @@ class MinMaxScaler(TableModule):
                     if self._control_data.get("reset"):
                         self.reset_min_max(dfslot, min_slot, max_slot, run_number)
                         self._info["last_reset"] = run_number
-                    else:
-                        self._info["last_reset"] = self._control_data.get("reset")
+                    # else:
+                    #    self._info["last_reset"] = self._control_data.get("reset")
                     self._info["has_buffered"] = run_number
                 else:
                     if self._info and self._info.get("needs_changes"):
@@ -228,16 +253,16 @@ class MinMaxScaler(TableModule):
                 else:  # at start or after data reset
                     self.update_bounds(min_data, max_data)
 
-            indices = dfslot.created.next(step_size, as_slice=False)  # returns a slice
+            indices = dfslot.created.next(step_size, as_slice=False)  # returns a bitmap
             steps = indices_len(indices)
             if steps == 0:
                 return self._return_run_step(self.state_blocked, steps_run=0)
-            tbl = self.filter_columns(input_df, indices)
+            tbl: BaseTable = self.filter_columns(input_df, indices)
             ignore_ilocs = self.get_ignore(tbl, cols_to_ignore)
             if ignore_ilocs:
                 len_ii = len(ignore_ilocs)
                 if len_ii > self.get_ignore_credit():
-                    if self._info is not None:
+                    if self._info:
                         self._info["needs_changes"] = True
                         return self._return_run_step(
                             self.next_state(dfslot), steps // 2
@@ -246,11 +271,15 @@ class MinMaxScaler(TableModule):
                         self.reset_min_max(dfslot, min_slot, max_slot, run_number)
                         return self._return_run_step(self.state_blocked, steps_run=0)
                 self._ignored += len_ii
-                if self._info is not None:
+                if self._info:
                     self._info["ignored"] += len_ii
-                rm_ids = bitmap(np.array(indices)[ignore_ilocs])
+                rm_ids = bitmap(np.array(cast(list, indices))[cast(list, ignore_ilocs)])
                 indices = indices - rm_ids
-                tbl = tbl.loc[indices, :]
+                if not indices:
+                    return self._return_run_step(self.state_blocked, steps_run=0)
+                tbl_ii: Optional[BaseTable] = tbl.loc[indices, :]
+                assert tbl_ii
+                tbl = tbl_ii
             sc_data = self.scale(tbl, cols, usecols, cols_to_clip)
             if self.result is None:
                 ds = dshape_all_dtype(input_df.columns, np.dtype("float64"))
@@ -259,7 +288,7 @@ class MinMaxScaler(TableModule):
                     dshape=ds,  # input_df.dshape,
                     create=True,
                 )
-            self.result.append(sc_data, indices=indices)
+            self.table.append(sc_data, indices=indices)
             return self._return_run_step(self.next_state(dfslot), steps)
 
     def create_dependent_modules(self, input_module, input_slot="result", hist=False):

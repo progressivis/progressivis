@@ -7,16 +7,17 @@ import os.path
 import pandas as pd
 
 
-from typing import Optional, Any, List, Tuple
+from typing import Optional, Any, List, Sequence
 
 
 # filename='data/bigfile.csv'
 # rows = 1000000
 # cols = 30
 
-def generate_random_csv(filename: str,
-                        rows: int = 900_000,
-                        cols: int = 10, seed: int = 1234) -> str:
+
+def generate_random_csv(
+    filename: str, rows: int = 900_000, cols: int = 10, seed: int = 1234
+) -> str:
     if os.path.exists(filename):
         return filename
     try:
@@ -30,6 +31,7 @@ def generate_random_csv(filename: str,
         os.remove(filename)
         raise
     return filename
+
 
 def generate_random_multivariate_normal_csv(
     filename: str,
@@ -66,23 +68,27 @@ def generate_random_multivariate_normal_csv(
     np.savetxt(filename, X, delimiter=",", **kw)  # type: ignore
     return filename
 
+
 def generate_multiscale_random_csv(
-        filename: str,
-        rows: int = 5_000_000,
-        seed: int = 1234,
-        choice: Tuple[str] = ('A', 'B', 'C', 'D'),
-        overwrite: bool = False) -> str:
+    filename: str,
+    rows: int = 5_000_000,
+    seed: int = 1234,
+    choice: Sequence[str] = ("A", "B", "C", "D"),
+    overwrite: bool = False,
+) -> str:
     if os.path.exists(filename):
         return filename
     np.random.seed(seed)
-    df = pd.DataFrame({
-        'A': np.random.normal(0, 3, rows),
-        'B': np.random.normal(5, 2, rows),
-        'C': np.random.normal(-5, 4, rows),
-        'D': np.random.normal(5, 3, rows),
-        'I': np.random.randint(0, 10_000, size=rows, dtype=int),
-        'S': np.random.choice(choice, rows)
-    })
+    df = pd.DataFrame(
+        {
+            "A": np.random.normal(0, 3, rows),
+            "B": np.random.normal(5, 2, rows),
+            "C": np.random.normal(-5, 4, rows),
+            "D": np.random.normal(5, 3, rows),
+            "I": np.random.randint(0, 10_000, size=rows, dtype=int),
+            "S": np.random.choice(choice, rows),
+        }
+    )
     try:
         df.to_csv(filename, index=False)
     except (KeyboardInterrupt, SystemExit):

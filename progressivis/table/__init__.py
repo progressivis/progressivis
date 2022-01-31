@@ -1,4 +1,5 @@
 from .column import Column
+from .column_base import BaseColumn
 from .row import Row
 from .table_base import BaseTable, IndexTable, TableSelectedView
 from .table import Table
@@ -10,6 +11,7 @@ from .tracer import TableTracer  # initialize Tracert.default
 
 __all__ = [
     "Column",
+    "BaseColumn",
     "Row",
     "Table",
     "BaseTable",

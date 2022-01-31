@@ -22,7 +22,7 @@ from ..stats.histogram1d_categorical import Histogram1DCategorical
 from ..core.decorators import process_slot, run_if_any
 from ..table import TableSelectedView
 from ..table.dshape import dshape_fields
-
+from typing import Optional, Tuple, Any
 logger = logging.getLogger(__name__)
 
 
@@ -47,9 +47,9 @@ def _run_step_common(self_, super_call, run_number, step_size, howlong, is_strin
 
 
 class KLLSketchIf(KLLSketch):
-    def __init__(self, *args, **kw):
+    def __init__(self, *args: Any, **kw: Any):
         super().__init__(*args, **kw)
-        self._enabled = None
+        self._enabled: Optional[bool] = None
 
     def run_step(self, run_number, step_size, howlong):
         return _run_step_common(
@@ -103,7 +103,7 @@ class RangeQueryIf(RangeQuery):
         )
 
 
-def make_sketch_barplot(input_module, col, scheduler, input_slot="result"):
+def make_sketch_barplot(input_module: TableModule, col: int, scheduler: int, input_slot="result") -> Tuple[KLLSketch, Histogram1DCategorical]:
     s = scheduler
     sketch = KLLSketchIf(scheduler=s, column=col)
     sketch.params.binning = 128
@@ -123,7 +123,7 @@ class StatsExtender(TableModule):
     Adds statistics on input data
     """
 
-    parameters = []
+    # parameters = []
 
     inputs = [
         SlotDescriptor("table", type=Table, required=True),
