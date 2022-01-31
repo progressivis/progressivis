@@ -1,8 +1,7 @@
+from __future__ import annotations
 import numpy as np
 import numexpr as ne
 import logging
-
-
 from ..core.bitmap import bitmap
 from ..core.utils import indices_len
 from ..core.slot import SlotDescriptor, Slot

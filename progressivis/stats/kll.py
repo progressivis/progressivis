@@ -23,7 +23,7 @@ if TYPE_CHECKING:
 class KLLSketch(TableModule):
     parameters: Parameters = [
         ("binning", np.dtype(object), []),
-        ("quantiles", np.dtype(float), []),
+        ("quantiles", np.dtype(object), []),
     ]
     inputs = [SlotDescriptor("table", type=Table, required=True)]
 
