@@ -165,6 +165,7 @@ class RangeQuery(TableModule):
         max_: Optional[Module] = None,
         min_value: Optional[Module] = None,
         max_value: Optional[Module] = None,
+        hist_index: Optional[Module] = None,
         **kwds: Any
     ) -> RangeQuery:
         if self.input_module is not None:  # test if already called
@@ -174,9 +175,10 @@ class RangeQuery(TableModule):
         self.input_module = input_module
         self.input_slot = input_slot
         with scheduler:
-            hist_index = HistogramIndex(
-                column=params.column, group=self.name, scheduler=scheduler
-            )
+            if hist_index is None:
+                hist_index = HistogramIndex(
+                    column=params.column, group=self.name, scheduler=scheduler
+                )
             hist_index.input.table = input_module.output[input_slot]
             if min_ is None:
                 min_ = Min(group=self.name, columns=[self.column], scheduler=scheduler)

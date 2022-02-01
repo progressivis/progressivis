@@ -15,6 +15,7 @@ from progressivis.core.utils import (
     filepath_to_buffer,
     _infer_compression,
     force_valid_id_columns,
+    integer_types,
 )
 
 from typing import Dict, Any, Callable, Optional, Tuple, TYPE_CHECKING
@@ -35,7 +36,7 @@ class SimpleCSVLoader(TableModule):
         filter_: Optional[Callable[[pd.DataFrame], pd.DataFrame]] = None,
         force_valid_ids: bool = True,
         fillvalues: Optional[Dict[str, Any]] = None,
-        throttle: bool = False,    
+        throttle: bool = False,
         **kwds: Any
     ) -> None:
         super().__init__(**kwds)
@@ -46,7 +47,7 @@ class SimpleCSVLoader(TableModule):
         # When called with a specified chunksize, it returns a parser
         self.filepath_or_buffer = filepath_or_buffer
         self.force_valid_ids = force_valid_ids
-        if throttle and isinstance(throttle, integer_types+(float,)):
+        if throttle and isinstance(throttle, integer_types + (float,)):
             self.throttle = throttle
         else:
             self.throttle = False
@@ -56,8 +57,8 @@ class SimpleCSVLoader(TableModule):
         csv_kwds["compression"] = None
         self._encoding: Any = csv_kwds.get("encoding", None)
         csv_kwds["encoding"] = None
-        self._nrows = csv_kwds.get('nrows')
-        csv_kwds['nrows'] = None # nrows clashes with chunksize
+        self._nrows = csv_kwds.get("nrows")
+        csv_kwds["nrows"] = None  # nrows clashes with chunksize
 
         self._rows_read = 0
         if filter_ is not None and not callable(filter_):
@@ -157,9 +158,7 @@ class SimpleCSVLoader(TableModule):
                         return self.state_blocked
                     filename = df.at[indices.start, "filename"]
                     try:
-                        self.parser = pd.read_csv(
-                            self.open(filename), **self.csv_kwds
-                        )
+                        self.parser = pd.read_csv(self.open(filename), **self.csv_kwds)
                     except IOError as e:
                         logger.error("Cannot open file %s: %s", filename, e)
                         self.parser = None

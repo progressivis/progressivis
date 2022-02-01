@@ -20,7 +20,7 @@ LAST_BIN = N_BINS - 1
 wg_lock = aio.Lock()
 IS_DEBUG = True
 debug_console = None
-range_widget = None
+range_widgets = {}
 
 
 def bins_range_slider(desc):
@@ -36,6 +36,28 @@ def bins_range_slider(desc):
         readout=False,
         readout_format="d",
     )
+
+
+def make_observer(hname, sk_mod, lower_mod, upper_mod):
+    def _observe_range(val):
+        async def _coro(v):
+            async with wg_lock:
+                lo = v["new"][0]
+                up = v["new"][1]
+                res = sk_mod.result
+                hist = res["pmf"]
+                min_ = res["min"]
+                max_ = res["max"]
+                len_ = len(hist)
+                bins_ = np.linspace(min_, max_, len_)
+                lower = bins_[lo]
+                upper = bins_[up]
+                await lower_mod.from_input({hname: lower})
+                await upper_mod.from_input({hname: upper})
+
+        aio.create_task(_coro(val))
+
+    return _observe_range
 
 
 def my_print(*args, **kw):
@@ -65,9 +87,7 @@ def my_print_n(*args, repeat=1, **kw):
 
 
 def corr_as_vega_dataset(mod, columns=None):
-    """
-
-    """
+    """ """
     if columns is None:
         columns = mod._columns
 
@@ -124,6 +144,7 @@ def refresh_info_sketch(hout, hmod):
     bins_ = np.linspace(min_, max_, len_)
     rule_lower = np.zeros(len_, dtype="int32")
     rule_upper = np.zeros(len_, dtype="int32")
+    range_widget = range_widgets.get(hmod.column)
     if range_widget is not None:
         rule_lower[0] = range_widget.value[0]
         rule_upper[0] = range_widget.value[1]
@@ -225,7 +246,7 @@ class DataViewer(ipw.Tab):
         self._hdict = {}
         self._hist_tab = None
         self._hist_sel = set()
-        self._module.after_run_proc = _refresh_info(self)
+        self._module.on_after_run(_refresh_info(self))
         self.info_keys = {dec: dec.capitalize() for dec in module.decorations}
         self.info_keys_ext = dict(hist="Hist", corr="Corr", **self.info_keys)
         super().__init__(children=[])
@@ -235,7 +256,7 @@ class DataViewer(ipw.Tab):
         self.set_title(pos, name)
 
     def refresh_info(self):
-        global debug_console, range_widget
+        global debug_console
         if not self._module.visible_cols:
             return
         if not self.children:
@@ -283,7 +304,7 @@ class DataViewer(ipw.Tab):
                         is_string = True
                     else:
                         range_slider = bins_range_slider("Range:")
-                        range_widget = range_slider
+                        range_widgets[hname] = range_slider
                         hout = ipw.VBox(
                             [
                                 ipw.VBox(
@@ -301,41 +322,23 @@ class DataViewer(ipw.Tab):
                                 VegaWidget(spec=hist1d_spec_no_data),
                             ]
                         )
-
-                        def _observe_range(val):
-                            async def _coro(v):
-                                async with wg_lock:
-                                    lo = v["new"][0]
-                                    up = v["new"][1]
-                                    res = sk_mod.result
-                                    hist = res["pmf"]
-                                    min_ = res["min"]
-                                    max_ = res["max"]
-                                    len_ = len(hist)
-                                    bins_ = np.linspace(min_, max_, len_)
-                                    lower = bins_[lo]
-                                    upper = bins_[up]
-                                    await lower_mod.from_input({hname: lower})
-                                    await upper_mod.from_input({hname: upper})
-
-                            aio.create_task(_coro(val))
-
-                        range_slider.observe(_observe_range, "value")
-
+                        range_slider.observe(
+                            make_observer(hname, sk_mod, lower_mod, upper_mod), "value"
+                        )
                         is_string = False
                     self._hdict[hname] = hout
                     if is_string:
-                        bp_mod.after_run_proc = _refresh_info_barplot(hout, bp_mod)
+                        bp_mod.on_after_run(_refresh_info_barplot(hout, bp_mod))
                     else:
-                        sk_mod.after_run_proc = _refresh_info_sketch(hout, sk_mod)
-                        hmod_1d.after_run_proc = _refresh_info_hist_1d(hout, hmod_1d)
+                        sk_mod.on_after_run(_refresh_info_sketch(hout, sk_mod))
+                        hmod_1d.on_after_run(_refresh_info_hist_1d(hout, hmod_1d))
                 self._hist_tab = ipw.Tab()
                 self.children += (self._hist_tab,)
                 self.set_next_title("1D Hist")
             if hasattr(self._module, "corr"):
                 corr_out = VegaWidget(spec=corr_spec_no_data)
                 corr_mod = self._module.corr
-                corr_mod.after_run_proc = _refresh_info_corr(corr_out, corr_mod, self)
+                corr_mod.on_after_run(_refresh_info_corr(corr_out, corr_mod, self))
                 self.children += (corr_out,)
                 self.set_next_title("Corr")
             if IS_DEBUG:

@@ -1,7 +1,7 @@
 import logging
 from collections import Iterable
 
-from ..core import Print
+from ..core import Print, Sink
 from ..core.bitmap import bitmap
 from ..core.utils import indices_len
 from ..core.slot import SlotDescriptor
@@ -23,6 +23,7 @@ from ..core.decorators import process_slot, run_if_any
 from ..table import TableSelectedView
 from ..table.dshape import dshape_fields
 from typing import Optional, Tuple, Any
+
 logger = logging.getLogger(__name__)
 
 
@@ -103,13 +104,19 @@ class RangeQueryIf(RangeQuery):
         )
 
 
-def make_sketch_barplot(input_module: TableModule, col: int, scheduler: int, input_slot="result") -> Tuple[KLLSketch, Histogram1DCategorical]:
+def make_sketch_barplot(
+    input_module: TableModule, col: int, scheduler: int, input_slot="result"
+) -> Tuple[KLLSketch, Histogram1DCategorical]:
     s = scheduler
     sketch = KLLSketchIf(scheduler=s, column=col)
     sketch.params.binning = 128
     sketch.input.table = input_module.output[input_slot]
+    sink = Sink(scheduler=s)
+    sink.input.inp = sketch.output.result
     barplot = Histogram1DCategoricalIf(scheduler=s, column=col)
     barplot.input.table = input_module.output[input_slot]
+    sink = Sink(scheduler=s)
+    sink.input.inp = barplot.output.result
     # hub = Hub(scheduler=s)
     # hub.input.table = hist1d_num.output.result
     # hub.input.table = hist1d_str.output.result
@@ -189,7 +196,7 @@ class StatsExtender(TableModule):
             usecols = self._usecols or cols
             self.visible_cols = usecols
             for name_ in self.input_slot_names():
-                if name_ == "table":
+                if name_ in ("table", "_params"):
                     continue
                 dec_slot = self.get_input_slot(name_)
                 if dec_slot and dec_slot.has_buffered():
@@ -273,11 +280,13 @@ class StatsExtender(TableModule):
                 hist1d.input.min = range_query.output.min
                 hist1d.input.max = range_query.output.max
                 # sketching + barplot
+                sink = Sink(scheduler=s)
+                sink.input.inp = hist1d.output.result
                 h_col["sketching"], h_col["barplot"] = make_sketch_barplot(
                     input_module, col, s, input_slot="result"
                 )
-                lower.prioritize = set([h_col["sketching"].name])
-                upper.prioritize = set([h_col["sketching"].name])
+                # lower.prioritize = set([h_col["sketching"].name])
+                # upper.prioritize = set([h_col["sketching"].name])
         if var:
             self.var = Var(
                 scheduler=s, columns=self._get_usecols(var), ignore_string_cols=True
