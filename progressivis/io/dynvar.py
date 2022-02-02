@@ -36,9 +36,9 @@ class DynVar(TableModule):
     ) -> ReturnRunStep:
         return self._return_run_step(self.state_blocked, steps_run=1)
 
-    def predict_step_size(self, duration: int) -> int:
+    def predict_step_size(self, duration: float) -> int:
         return 1
-    
+
     async def from_input(self, input_: JSon) -> str:
         if not isinstance(input_, dict):
             raise ProgressiveError("Expecting a dictionary")

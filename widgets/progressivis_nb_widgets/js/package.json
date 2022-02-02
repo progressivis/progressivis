@@ -65,7 +65,7 @@
     "react": "^16.8.4",
     "react-dom": "^16.8.4",
     "sorttable": "^1.0.2",
-    "vega": "^4.4.0",
+    "vega": ">=5.17.3",
     "webcola": "^3.4.0"
   },
   "jupyterlab": {

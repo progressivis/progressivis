@@ -1,11 +1,17 @@
+from __future__ import annotations
+
 import logging
 
 from ..core.bitmap import bitmap
+from ..core.module import ReturnRunStep
 from ..core.utils import indices_len
 from ..core.slot import SlotDescriptor
 from ..table.table import Table
 from ..table.module import TableModule
 from ..table import TableSelectedView
+
+from typing import Callable, Optional, Any
+
 
 logger = logging.getLogger(__name__)
 
@@ -15,12 +21,12 @@ class Switch(TableModule):
     Select the output (result or result_else) ar runtime
     """
 
-    parameters = []
+    # parameters = []
 
     inputs = [SlotDescriptor("table", type=Table, required=True)]
     outputs = [SlotDescriptor("result_else", type=Table, required=False)]
 
-    def __init__(self, condition, **kwds):
+    def __init__(self, condition: Callable[..., Optional[bool]], **kwds: Any) -> None:
         """
         condition: callable which should return
         * None => undecidable (yet), run_step must return blocked_state
@@ -30,21 +36,21 @@ class Switch(TableModule):
         assert callable(condition)
         super().__init__(**kwds)
         self._condition = condition
-        self.result_else = None
-        self._output = None
+        self.result_else: Optional[TableSelectedView] = None
+        self._output: Optional[TableSelectedView] = None
 
-    def reset(self):
+    def reset(self) -> None:
         if self.result is not None:
-            self.result.selection = bitmap()
+            self.selected.selection = bitmap()
         if self.result_else is not None:
             self.result_else.selection = bitmap()
 
-    def get_data(self, name):
+    def get_data(self, name: str) -> Any:
         if name == "result_else":
             return self.result_else
         return super().get_data(name)
 
-    def run_step(self, run_number, step_size, howlong):
+    def run_step(self, run_number: int, step_size: int, howlong: float) -> ReturnRunStep:
         slot = self.get_input_slot("table")
         input_df = slot.data()
         if input_df is None or not slot.has_buffered():

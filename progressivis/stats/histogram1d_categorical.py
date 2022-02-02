@@ -1,3 +1,11 @@
+from __future__ import annotations
+
+import logging
+
+import numpy as np
+import pandas as pd
+
+from ..core.module import ReturnRunStep
 from ..core.slot import SlotDescriptor
 from ..core.utils import indices_len, fix_loc
 from ..table.module import TableModule
@@ -5,10 +13,9 @@ from ..table.table import Table
 from ..utils.psdict import PsDict
 from ..core.decorators import process_slot, run_if_any
 from ..utils.errors import ProgressiveError
-import numpy as np
-import pandas as pd
 
-import logging
+from typing import Any, List, Union
+
 
 logger = logging.getLogger(__name__)
 
@@ -22,20 +29,21 @@ class Histogram1DCategorical(TableModule):
 
     schema = "{ array: var * int32, min: float64, max: float64, time: int64 }"
 
-    def __init__(self, column, **kwds):
+    def __init__(self, column: List[Union[str, int]], **kwds: Any) -> None:
         super().__init__(dataframe_slot="table", **kwds)
         self.column = column
         self.total_read = 0
         self.default_step_size = 1000
         self.result = PsDict()
 
-    def reset(self):
+    def reset(self) -> None:
         if self.result:
-            self.result.clear()
+            self.psdict.clear()
 
     @process_slot("table", reset_cb="reset")
     @run_if_any
-    def run_step(self, run_number, step_size, howlong):
+    def run_step(self, run_number: int, step_size: int, howlong: float) -> ReturnRunStep:
+        assert self.context is not None
         with self.context as ctx:
             dfslot = ctx.table
             if not dfslot.created.any():
@@ -52,11 +60,11 @@ class Histogram1DCategorical(TableModule):
                 raise ProgressiveError(f"Type of '{self.column}' is" " not string")
             valcounts = pd.Series(column).value_counts().to_dict()
             for k, v in valcounts.items():
-                self.result[k] = v + self.result.get(k, 0)
+                self.psdict[k] = v + self.psdict.get(k, 0)
             return self._return_run_step(self.next_state(dfslot), steps_run=steps)
 
-    def is_visualization(self):
+    def is_visualization(self) -> bool:
         return True
 
-    def get_visualization(self):
+    def get_visualization(self) -> str:
         return "histogram1d_categorical"

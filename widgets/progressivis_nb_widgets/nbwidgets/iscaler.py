@@ -1,10 +1,12 @@
 import time
-import ipywidgets as ipw
+import ipywidgets as ipw  # type: ignore
 
 # import altair as alt
 import pandas as pd
 from progressivis.core import asynchronize, aio
-from vega.widget import VegaWidget
+from vega.widget import VegaWidget  # type: ignore
+
+from typing import Any, Callable
 
 spec_no_data = {
     "data": {"name": "data"},
@@ -59,8 +61,8 @@ spec_no_data = {
 }
 
 
-def _refresh_info(wg):
-    async def _coro(_1, _2):
+def _refresh_info(wg: Any) -> Callable[..., Any]:
+    async def _coro(_1: Any, _2: Any) -> None:
         _ = _1, _2
         await asynchronize(wg.refresh_info)
 

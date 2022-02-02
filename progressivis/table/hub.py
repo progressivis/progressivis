@@ -1,4 +1,8 @@
+from __future__ import annotations
+
 import logging
+
+from ..core.module import ReturnRunStep
 from ..table.nary import NAry
 from ..utils.psdict import PsDict
 
@@ -11,9 +15,9 @@ class Hub(NAry):
     Useful with Switch
     """
 
-    parameters = []
+    # parameters = []
 
-    def run_step(self, run_number, step_size, howlong):
+    def run_step(self, run_number: int, step_size: int, howlong: float) -> ReturnRunStep:
         if self.result is None:
             self.result = PsDict()
         steps = 0
@@ -23,6 +27,6 @@ class Hub(NAry):
                 d = slot.data()
                 steps += len(d)
                 assert isinstance(d, PsDict)
-                self.result.update(d)
+                self.psdict.update(d)
             slot.clear_buffers()
         return self._return_run_step(self.state_blocked, steps_run=steps)

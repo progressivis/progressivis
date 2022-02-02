@@ -33,7 +33,7 @@ class OnlineVariance:
         self.reset()
         self.ddof: int = ddof
 
-    def reset(self):
+    def reset(self) -> None:
         self.n: int = 0
         self.mean: float = 0.0
         self.M2: float = 0.0
@@ -53,7 +53,7 @@ class OnlineVariance:
         self.M2 += self.delta * (datum - self.mean)
 
     @property
-    def variance(self):
+    def variance(self) -> float:
         n_ddof = self.n - self.ddof
         return self.M2 / n_ddof if n_ddof else np.nan
 

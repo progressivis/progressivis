@@ -708,7 +708,7 @@ class BaseTable(metaclass=ABCMeta):
             self._flush_cache()
             updates = self._changes.compute_updates(start, now, mid, cleanup=cleanup)
             if updates is None:
-                updates = IndexUpdate(created=bitmap(self._index))
+                updates = IndexUpdate(created=bitmap(self.index))
             return updates
         return None
 

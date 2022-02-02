@@ -146,15 +146,15 @@ class RangeQuery(TableModule):
     #     self._hist_index = hi
     #     self._impl = RangeQueryImpl(self._column, hi, approximate=self._approximate)
     @property
-    def column(self):
-        return self.params.column
+    def column(self) -> str:
+        return str(self.params.column)
 
     @property
-    def watched_key_lower(self):
+    def watched_key_lower(self) -> str:
         return self.params.watched_key_lower or self.column
 
     @property
-    def watched_key_upper(self):
+    def watched_key_upper(self) -> str:
         return self.params.watched_key_upper or self.column
 
     def create_dependent_modules(
@@ -165,7 +165,7 @@ class RangeQuery(TableModule):
         max_: Optional[Module] = None,
         min_value: Optional[Module] = None,
         max_value: Optional[Module] = None,
-        hist_index: Optional[Module] = None,
+        hist_index: Optional[HistogramIndex] = None,
         **kwds: Any
     ) -> RangeQuery:
         if self.input_module is not None:  # test if already called

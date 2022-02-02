@@ -250,6 +250,7 @@ class Scheduler:
                 raise ProgressiveError(
                     "Trying to start scheduler task" " inside scheduler task"
                 )
+            print("Starting scheduler")
             self._task = True
         self.coros = list(coros)
         if tick_proc:
@@ -267,6 +268,8 @@ class Scheduler:
     ) -> None:
         from ..storage import init_temp_dir_if, cleanup_temp_dir, temp_dir
 
+        if self._task:
+            return
         self.shortcut_evt = aio.Event()
         self._hibernate_cond = aio.Condition()
         self._lock = aio.Lock()
@@ -367,7 +370,9 @@ class Scheduler:
         # for module in reversed(modules):
         #     module.ending()
         self._running = False
+
         self._stopped = True
+        self._task = False
         self._after_run()
         self.done()
 
@@ -419,7 +424,7 @@ class Scheduler:
             await self._run_tick_procs()
         if self.shortcut_evt is not None:
             self.shortcut_evt.set()
-        self._task = False
+        print("Leaving run loop")
 
     async def _next_module(self) -> AsyncGenerator[Module, None]:
         """
@@ -682,7 +687,7 @@ class Scheduler:
         "Return the last run number."
         return self._run_number
 
-    def _ipython_key_completions_(self):
+    def _ipython_key_completions_(self) -> List[str]:
         return list(self._modules.keys())
 
     async def for_input(self, module: Module) -> int:

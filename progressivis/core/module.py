@@ -243,13 +243,14 @@ class Module(metaclass=ModuleMeta):
         tracer = Tracer.default(name, storagegroup)
 
         self.tags = set(ModuleTag.tags)
-        self.order = -1
-        self.group = group or GroupContext.group
+        self.order: int = -1
+        self.group: Optional[str] = group or GroupContext.group
         self.tracer = tracer
         self._start_time: float = 0
         self._end_time: float = 0
         self._last_update: int = 0
-        self._state = Module.state_created
+        self._state: ModuleState = Module.state_created
+        self._saved_state: ModuleState = Module.state_invalid
         self._had_error = False
         self._parse_parameters(kwds)
 
@@ -729,6 +730,23 @@ class Module(metaclass=ModuleMeta):
 
     def is_running(self) -> bool:
         return self._state == Module.state_running
+
+    def is_suspended(self) -> bool:
+        return self._state == Module.state_suspended
+
+    def suspend(self) -> None:
+        if self._state == Module.state_running:
+            raise RuntimeError("Cannot suspend a running module (yet)")
+        elif self._state == Module.state_suspended:
+            return
+        self._saved_state = self._state
+        self._state = Module.state_suspended
+
+    def resume(self) -> None:
+        if self._state != Module.state_suspended:
+            raise RuntimeError("Cannot resume a module not suspended")
+        self._state = self._saved_state
+        self._saved_state = Module.state_invalid
 
     def prepare_run(self, run_number: int) -> None:
         "Switch from zombie to terminated, or update slots."

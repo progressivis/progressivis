@@ -18,7 +18,7 @@ from progressivis.core.utils import (
     integer_types,
 )
 
-from typing import Dict, Any, Callable, Optional, Tuple, TYPE_CHECKING
+from typing import Dict, Any, Callable, Optional, Tuple, Union, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from progressivis.core.module import ModuleState
@@ -36,7 +36,7 @@ class SimpleCSVLoader(TableModule):
         filter_: Optional[Callable[[pd.DataFrame], pd.DataFrame]] = None,
         force_valid_ids: bool = True,
         fillvalues: Optional[Dict[str, Any]] = None,
-        throttle: bool = False,
+        throttle: Union[bool, int, float] = False,
         **kwds: Any
     ) -> None:
         super().__init__(**kwds)
@@ -172,7 +172,7 @@ class SimpleCSVLoader(TableModule):
             logger.error("Received a step_size of 0")
             return self._return_run_step(self.state_ready, steps_run=0)
         if self.throttle:
-            step_size = np.min([self.throttle, step_size])
+            step_size = np.min([self.throttle, step_size])  # type: ignore
         status = self.validate_parser(run_number)
         if status == self.state_terminated:
             raise ProgressiveStopIteration("no more filenames")
