@@ -6,7 +6,7 @@ from jinja2 import Template
 from progressivis.core import JSONEncoderNp
 from .control_panel import ControlPanel
 from .sensitive_html import SensitiveHTML
-from .utils import wait_for_change, wait_for_click, update_widget
+from .utils import update_widget
 from .module_graph import ModuleGraph
 from .module_wg import ModuleWg
 
@@ -57,6 +57,20 @@ INDEX_TEMPLATE = """
 """
 
 
+def module_choice_hof(psboard: PsBoard) -> Callable:
+    def _module_choice(val):
+        if len(psboard.tab.children) < 3:
+            psboard.tab.children += (psboard.current_module,)
+        psboard.current_module.module_name = psboard.htable.value[
+            len(psboard.htable.sensitive_css_class) + 1 :
+        ]
+        psboard.current_module.selection_changed = True
+        psboard.tab.set_title(2, psboard.current_module.module_name)
+        psboard.tab.selected_index = 2
+
+    return _module_choice
+
+
 # pylint: disable=too-many-ancestors,too-many-instance-attributes
 class PsBoard(ipw.VBox):  # type: ignore
     def __init__(
@@ -93,6 +107,7 @@ class PsBoard(ipw.VBox):  # type: ignore
             "order",
         ]
         self.htable = SensitiveHTML(layout=ipw.Layout(height="500px", overflow="auto"))
+        self.htable.observe(module_choice_hof(self), "value")
         # self.refresh_event = None
         self.other_coros: List[Coroutine[Any, Any, None]] = []
         self.vis_register: Dict[str, List[WidgetType]] = defaultdict(list)
@@ -186,43 +201,9 @@ class PsBoard(ipw.VBox):  # type: ignore
             self.other_coros += widget.link_module(module, refresh=False)
         self.vis_register[module.name].append((widget, label))
 
-    # async def refresh_fun(self) -> None:
-    #     while True:
-    #         # await psboard.refresh_event.wait()
-    #         # psboard.refresh_event.clear()
-    #         json_ = self.scheduler.to_json(short=False)
-    #         # pylint: disable=protected-access
-    #         self._cache = JSONEncoderNp.dumps(json_, skipkeys=True)
-    #         self._cache_js = None
-    #         await self.refresh()
-    #         await aio.sleep(0.5)
-
-    async def module_choice(self) -> None:
-        while True:
-            await wait_for_change(self.htable, "value")
-            if len(self.tab.children) < 3:
-                self.tab.children += (self.current_module,)
-            self.current_module.module_name = self.htable.value[
-                len(self.htable.sensitive_css_class) + 1:
-            ]
-            self.current_module.selection_changed = True
-            self.tab.set_title(2, self.current_module.module_name)
-            self.tab.selected_index = 2
-
-    async def control_panel(psboard: PsBoard, action: str) -> None:
-        btn, cbk = psboard.cpanel.cb_args(action)
-        while True:
-            await wait_for_click(btn, cbk)
-
     @property
     def coroutines(self) -> List[Coroutine[Any, Any, Any]]:
-        return [
-            # self.refresh_fun(),
-            self.module_choice(),
-            self.control_panel("resume"),
-            self.control_panel("stop"),
-            self.control_panel("step"),
-        ] + self.other_coros
+        return []
 
     async def refresh(self) -> None:
         if self._cache is None:
