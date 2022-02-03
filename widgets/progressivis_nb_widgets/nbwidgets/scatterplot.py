@@ -103,7 +103,7 @@ class Scatterplot(DataWidget, widgets.DOMWidget):  # type: ignore
             aio.create_task(asynchronize(_feed_widget, self, module))  # TODO: improve
 
         self.observe(awake, "modal")
-        return []
+        # return []
 
     def __init__(self, *, disable: Sequence[Any] = tuple()):
         super().__init__()

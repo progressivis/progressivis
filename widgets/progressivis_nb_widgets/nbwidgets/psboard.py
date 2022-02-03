@@ -12,14 +12,11 @@ from .module_wg import ModuleWg
 
 from typing import (
     Any,
-    Optional,
     Literal,
     Callable,
     List,
     Dict,
     cast,
-    Iterable,
-    Coroutine,
     Set,
     TYPE_CHECKING,
 )
@@ -109,7 +106,6 @@ class PsBoard(ipw.VBox):  # type: ignore
         self.htable = SensitiveHTML(layout=ipw.Layout(height="500px", overflow="auto"))
         self.htable.observe(module_choice_hof(self), "value")
         # self.refresh_event = None
-        self.other_coros: List[Coroutine[Any, Any, None]] = []
         self.vis_register: Dict[str, List[WidgetType]] = defaultdict(list)
         # commons.update(tab=self.tab, scheduler=self.scheduler)
         super().__init__([self.cpanel, self.tab, debug_console])
@@ -172,10 +168,7 @@ class PsBoard(ipw.VBox):  # type: ignore
         self,
         widget: WidgetType,
         module: Module,
-        label: str = "Visualisation",
-        glue: Optional[
-            Callable[[WidgetType, Module], Iterable[Coroutine[Any, Any, None]]]
-        ] = None,
+        label: str = "Visualisation"
     ) -> None:
         """
         called from notebook
@@ -188,22 +181,14 @@ class PsBoard(ipw.VBox):  # type: ignore
             "and 'module_id' args must be defined")
         """
         linkable = hasattr(widget, "link_module")
-        if not linkable and glue is None:
+        if not linkable:
             raise ValueError(
                 "Registering a visualisation requires a linkable "
                 "widget (i.e. which implements the "
-                "'link_module' interface) or 'glue' arg to be "
-                "provides with a valid 'glue' function"
+                "'link_module' interface)"
             )
-        if glue is not None:
-            self.other_coros += glue(widget, module)
-        else:
-            self.other_coros += widget.link_module(module, refresh=False)
+        widget.link_module(module, refresh=False)
         self.vis_register[module.name].append((widget, label))
-
-    @property
-    def coroutines(self) -> List[Coroutine[Any, Any, Any]]:
-        return []
 
     async def refresh(self) -> None:
         if self._cache is None:
