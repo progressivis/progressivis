@@ -10,6 +10,7 @@ if TYPE_CHECKING:
 
 class ControlPanel(widgets.HBox):  # pylint: disable=too-many-ancestors
     def __init__(self, scheduler: Optional[Scheduler]) -> None:
+        self.scheduler = scheduler
         self.bstart = widgets.Button(
             description="Resume",
             disabled=True,
