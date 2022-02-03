@@ -172,7 +172,7 @@ class SimpleCSVLoader(TableModule):
             logger.error("Received a step_size of 0")
             return self._return_run_step(self.state_ready, steps_run=0)
         if self.throttle:
-            step_size = np.min([self.throttle, step_size])  # type: ignore
+            step_size = np.min([self.throttle, step_size])
         status = self.validate_parser(run_number)
         if status == self.state_terminated:
             raise ProgressiveStopIteration("no more filenames")

@@ -6,7 +6,7 @@ from ..table.table import Table
 from ..core.slot import SlotDescriptor
 from ..utils.psdict import PsDict
 from ..core.decorators import process_slot, run_if_any
-from datasketches import kll_floats_sketch  # type: ignore
+from datasketches import kll_floats_sketch
 from ..core.utils import integer_types
 from ..core.types import Floats
 from collections.abc import Sequence

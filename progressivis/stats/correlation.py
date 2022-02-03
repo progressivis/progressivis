@@ -59,7 +59,7 @@ class Corr(TableModule):
     inputs = [SlotDescriptor("table", type=Table, required=True)]
 
     def __init__(self,
-                 mode: Union[Literal["Pearson"], Literal["CovarianceOnly"]],
+                 mode: Union[Literal["Pearson"], Literal["CovarianceOnly"]] = "Pearson",
                  ignore_string_cols: bool = False,
                  **kwds: Any) -> None:
         assert mode in ("Pearson", "CovarianceOnly")

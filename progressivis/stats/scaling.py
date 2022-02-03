@@ -1,6 +1,6 @@
 from __future__ import annotations
 import numpy as np
-import numexpr as ne  # type: ignore
+import numexpr as ne
 import logging
 from ..core.bitmap import bitmap
 from ..core.utils import indices_len
@@ -12,7 +12,7 @@ from . import Min, Max, Histogram1D
 from ..core.decorators import process_slot, run_if_any
 from ..table.dshape import dshape_all_dtype
 
-from typing import Optional, Union, Dict, Tuple, Any, List, TYPE_CHECKING
+from typing import cast, Optional, Union, Dict, Tuple, Any, List, TYPE_CHECKING
 
 
 logger = logging.getLogger(__name__)
@@ -278,7 +278,7 @@ class MinMaxScaler(TableModule):
                 self._ignored += len_ii
                 if self._info:
                     self._info["ignored"] += len_ii
-                rm_ids = bitmap(np.array(indices)[ignore_ilocs])
+                rm_ids = bitmap(np.array(indices)[cast(list, ignore_ilocs)])
                 indices = indices - rm_ids
                 if not indices:
                     return self._return_run_step(self.state_blocked, steps_run=0)
