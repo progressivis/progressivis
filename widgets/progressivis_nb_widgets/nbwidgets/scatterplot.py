@@ -95,7 +95,7 @@ class Scatterplot(DataWidget, widgets.DOMWidget):  # type: ignore
 
         self.observe(from_input_move_point, "move_point")
 
-        def awake(_val: Any) -> []:
+        def awake(_val: Any) -> None:
             if module._json_cache is None or self.modal:
                 return
             dummy = module._json_cache.get("dummy", 555)
@@ -103,7 +103,6 @@ class Scatterplot(DataWidget, widgets.DOMWidget):  # type: ignore
             aio.create_task(asynchronize(_feed_widget, self, module))  # TODO: improve
 
         self.observe(awake, "modal")
-        # return []
 
     def __init__(self, *, disable: Sequence[Any] = tuple()):
         super().__init__()
