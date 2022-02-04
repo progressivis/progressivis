@@ -159,6 +159,7 @@ class Scheduler:
             if self.dataflow is not None:
                 self.dataflow.aborted()
                 self.dataflow = None
+            raise ProgressiveError(f"Invalid dataflow: {errors}")
 
     @property
     def name(self) -> str:
