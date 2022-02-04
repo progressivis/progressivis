@@ -42,7 +42,7 @@ class StatsFactory(TableModule):
 
     @process_slot("table", reset_cb="reset")
     @run_if_any
-    def run_step(self, run_number, step_size, howlong):
+    def run_step_NO(self, run_number, step_size, howlong):
         with self.context as ctx:
             dfslot = ctx.table
             input_df = dfslot.data()
@@ -57,7 +57,7 @@ class StatsFactory(TableModule):
 
     @process_slot("table", reset_cb="reset")
     @run_if_any
-    def run_step_OK(self, run_number, step_size, howlong):
+    def run_step(self, run_number, step_size, howlong):
         with self.context as ctx:
             dfslot = ctx.table
             input_df = dfslot.data()
