@@ -97,11 +97,11 @@ class Scheduler:
         self._running: bool = False
         self._stopped: bool = True
         self._runorder: Order = []
-        self._new_modules: Optional[List[Module]] = None
-        self._new_inputs: Dependencies = {}
-        self._new_outputs: Dict[str, Dict[str, List[Slot]]] = {}
-        self._new_runorder: Order = []
-        self._new_reachability: Reachability = {}
+        # self._new_modules: Optional[List[Module]] = None
+        # self._new_inputs: Dependencies = {}
+        # self._new_outputs: Dict[str, Dict[str, List[Slot]]] = {}
+        # self._new_runorder: Order = []
+        # self._new_reachability: Reachability = {}
         self._added_modules: Set[Module] = set()
         self._deleted_modules: Set[Module] = set()
         self._start: float = 0
@@ -143,17 +143,21 @@ class Scheduler:
 
     def __exit__(self, exc_type: Any, exc_value: Any, tb: Any) -> None:
         self._enter_cnt -= 1
-        if exc_type is None:
-            if self._enter_cnt == 0:
-                if self.dataflow is not None:
-                    self._commit(self.dataflow)
-        else:
-            logger.info("Aborting Dataflow with exception %s", exc_type)
+        if exc_type is not None:
+            logger.error("Aborting Dataflow with exception %s", exc_type)
             print(f"Aborting Dataflow with exception {exc_type}")
             traceback.print_tb(tb)
             if self._enter_cnt == 0:
                 if self.dataflow is not None:
                     self.dataflow.aborted()
+                self.dataflow = None
+        if self._enter_cnt > 0:
+            return
+        errors = self.dataflow.validate()
+        if errors:
+            logger.error("Dataflow has errors %s", errors)
+            if self.dataflow is not None:
+                self.dataflow.aborted()
                 self.dataflow = None
 
     @property
@@ -206,7 +210,7 @@ class Scheduler:
         html_head += f"""
 <p><b>Scheduler</b> {hex(id(self))}
         <b>{"running" if self.is_running() else "stopped"}</b>,
-        <b>modules:</b> {len(self._modules)},
+        <b>modules:</b> {len(self)},
         <b>run number:</b> {self.run_number()}
 </p>"""
         html_head += """
@@ -437,7 +441,7 @@ class Scheduler:
         self._start_inter = 0
         while not self._stopped:
             # Apply changes in the dataflow
-            if self._new_modules is not None:
+            if self.dataflow is not None and self._enter_cnt == 0:
                 self._update_modules()
                 self._run_index = 0
                 first_run = self._run_number
@@ -512,34 +516,27 @@ class Scheduler:
         :returns: None
 
         """
-        if self.dataflow is not None:
-            assert self._enter_cnt == 1
-            self._commit(self.dataflow)
-            self._enter_cnt = 0
-
-    def _commit(self, dataflow: Dataflow) -> None:
-        assert dataflow.version == self.version
-        self._new_runorder = dataflow.order_modules()  # raises if invalid
-        self._new_modules = list(dataflow.modules().values())
-        self._new_inputs = dataflow.inputs
-        self._new_outputs = dataflow.outputs
-        dataflow._compute_reachability(self._new_inputs)
-        self._new_reachability = dataflow.reachability
-        if self.dataflow is not None:
-            self.dataflow.committed()
-            self.dataflow = None
-        self.version += 1  # only increment if valid
-        # The slots in the module,_modules, and _runorder will be updated
-        # in _update_modules when the scheduler decides it is time to do so.
+        if self.dataflow is None or self._enter_cnt > 1:
+            return
+        self._enter_cnt = 0
         if not self._running:  # no need to delay updating the scheduler
             self._update_modules()
 
     def _update_modules(self) -> None:
-        if self._new_modules is None:
+        if self.dataflow is None or self._enter_cnt != 0:
             return
+        dataflow = self.dataflow
+        _new_runorder = dataflow.order_modules()  # raises if invalid
+        _new_modules = list(dataflow.modules().values())
+        _new_inputs = dataflow.inputs
+        _new_outputs = dataflow.outputs
+        dataflow._compute_reachability(_new_inputs)
+        _new_reachability = dataflow.reachability
+        dataflow.committed()
+        self.dataflow = None
         logger.info("Updating modules")
         prev_keys = set(self._modules.keys())
-        modules = {module.name: module for module in self._new_modules}
+        modules = {module.name: module for module in _new_modules}
         keys = set(modules.keys())
         added = keys - prev_keys
         deleted = prev_keys - keys
@@ -550,14 +547,14 @@ class Scheduler:
         self._modules = modules
         if not (deleted or added):
             logger.info("Scheduler updated with no new module(s)")
-        self._dependencies = self._new_inputs
-        self._reachability = self._new_reachability
+        self._dependencies = _new_inputs
+        self._reachability = _new_reachability
         logger.info("New dependencies: %s", self._dependencies)
         for mid, slots in self._dependencies.items():
-            modules[mid].reconnect(slots, self._new_outputs.get(mid, {}))
-        self._new_outputs = {}
-        self._new_inputs = {}
-        self._new_reachability = {}
+            modules[mid].reconnect(slots, _new_outputs.get(mid, {}))
+        _new_outputs = {}
+        _new_inputs = {}
+        _new_reachability = {}
         if added:
             logger.info("Scheduler adding modules %s", added)
             sorted_added = sorted(added)
@@ -565,10 +562,9 @@ class Scheduler:
             for mid in added:
                 modules[mid].starting()
             self._added_modules.update({self[mid] for mid in added})
-        self._new_modules = None
+        _new_modules = None
         self._run_list = []
-        self._runorder = self._new_runorder
-        self._new_runorder = []
+        self._runorder = _new_runorder
         logger.info("New module order: %s", self._runorder)
         for i, mid in enumerate(self._runorder):
             module = self._modules[mid]
@@ -648,7 +644,7 @@ class Scheduler:
         logger.info("Task finished")
 
     def __len__(self) -> int:
-        return len(self._modules)
+        return len(self.modules())
 
     def exists(self, moduleid: str) -> bool:
         "Return True if the moduleid exists in this scheduler."

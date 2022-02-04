@@ -364,6 +364,74 @@ class TestDataflow(ProgressiveTest):
         self.assertFalse("scatterplot_2" in s)
         # from nose.tools import set_trace; set_trace()
 
+    def test_dataflow_8_multiple(self) -> None:
+        s = self.scheduler()
+        table = RandomTable(
+            name="table", columns=["a", "b", "c"], throttle=1000, scheduler=s
+        )
+        sink = Sink(name="sink", scheduler=s)
+        sink.input.inp = table.output.result
+        s.commit()
+
+        # Start loading a dataset, then visualize it, then change the visualizations
+
+        async def modify_1(scheduler: Scheduler, run_number: int) -> None:
+            print("Adding scatterplot_1")
+            # from nose.tools import set_trace; set_trace()
+            with scheduler as dataflow:
+                dataflow1 = dataflow
+                sp = MCScatterPlot(
+                    name="scatterplot_1",
+                    classes=[("Scatterplot", "a", "b")],
+                    approximate=True,
+                    scheduler=scheduler,
+                )
+                sp.create_dependent_modules(table, "result")
+                print(f"Created scatterplot_1, groups: {dataflow.groups()}")
+
+            with scheduler as dataflow:
+                self.assertIs(dataflow, dataflow1)
+                prt = Print(name="print",
+                            proc=self.terse,
+                            scheduler=scheduler)
+                prt.input.df = table.output.result
+
+            scheduler.on_loop(modify_2, 10)  # Schedule the next activity
+
+        async def modify_2(scheduler: Scheduler, run_number: int) -> None:
+            print("Removing scatterplot_1")
+            self.assertTrue("scatterplot_1" in scheduler)
+            self.assertTrue("print" in scheduler)
+            with scheduler as dataflow:
+                print("Checking scatterplot_1 module deletion")
+                deps = dataflow.collateral_damage("scatterplot_1")
+                print(f"collateral_damage('scatterplot_1') = '{sorted(deps)}'")
+                dataflow.delete_modules(*deps)
+            scheduler.on_loop(modify_3, 10)
+
+        async def modify_3(scheduler: Scheduler, run_number: int) -> None:
+            print("Removing table")
+            self.assertFalse("scatterplot_1" in scheduler)
+            with scheduler as dataflow:
+                print("Checking sink+table modules deletion")
+                deps = dataflow.collateral_damage("sink", "print")
+                print(f"collateral_damage('sink') = '{sorted(deps)}'")
+                dataflow.delete_modules(*deps)
+
+        async def stop_error(scheduler: Scheduler, run_number: int) -> None:
+            self.assertFalse("Scheduler should have stopped")
+            await scheduler.stop()
+
+        s.on_loop(modify_1, 3)
+        s.on_loop(stop_error, 100)
+        aio.run(s.start())
+        self.assertFalse("scatterplot_1" in s)
+        self.assertFalse("print" in s)
+
+    def test_dataflow_9_errors(self) -> None:
+        # TODO tests with errors
+        pass
+
 
 if __name__ == "__main__":
     ProgressiveTest.main()

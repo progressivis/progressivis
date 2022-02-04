@@ -19,9 +19,8 @@ logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from ..core.module import ReturnRunStep
-
-ColsTo = Dict[str, Tuple[float, float]]
-NumCol = Union[np.ndarray[Any, Any], BaseColumn]
+    ColsTo = Dict[str, Tuple[float, float]]
+    NumCol = Union[np.ndarray[Any, Any], BaseColumn]
 
 
 class MinMaxScaler(TableModule):
