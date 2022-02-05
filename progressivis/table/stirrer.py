@@ -65,8 +65,7 @@ class Stirrer(TableModule):
         input_table = input_slot.data()
         if self.result is None:
             self.result = Table(
-                self.generate_table_name("stirrer"),
-                dshape=input_table.dshape,
+                self.generate_table_name("stirrer"), dshape=input_table.dshape,
             )
         raw_ids = self.table.index
         before_ = raw_ids  # bitmap(raw_ids[raw_ids >= 0])

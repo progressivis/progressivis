@@ -31,5 +31,5 @@ __all__ = [
     "RandomTable",
     "RandomDict",
     "Distinct",
-    "Corr"
+    "Corr",
 ]

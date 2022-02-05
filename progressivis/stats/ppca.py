@@ -16,7 +16,7 @@ from ..utils.psdict import PsDict
 from . import Sample
 import pandas as pd
 from sklearn.decomposition import IncrementalPCA  # type: ignore
-import numexpr as ne  # type: ignore
+import numexpr as ne
 
 from typing import Optional, Any, Dict, Union, Callable, cast, TYPE_CHECKING
 

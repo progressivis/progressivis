@@ -7,6 +7,7 @@ from __future__ import annotations
 from typing import Any, Dict, Set, List, TYPE_CHECKING, Optional, Union
 
 import logging
+
 # import pprint
 
 from uuid import uuid4
@@ -35,6 +36,7 @@ class Dataflow:
     interfering with the Scheduler. To update the Scheduler, it should
     be validated and committed first.
     """
+
     multiple_slots_name_generator = 1
 
     def __init__(self, scheduler: Scheduler):

@@ -76,12 +76,7 @@ def refresh_info_hist(hout, hmod):
     res = hmod.result.last().to_dict()
     hist = res["array"]
     # bins = np.linspace(min_, max_, len(hist))
-    source = pd.DataFrame(
-        {
-            "nbins": range(len(hist)),
-            "level": hist,
-        }
-    )
+    source = pd.DataFrame({"nbins": range(len(hist)), "level": hist})
     hout.update("data", remove="true", insert=source)
 
 

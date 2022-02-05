@@ -335,7 +335,9 @@ class TestOtherColsBinaries(ProgressiveTest):
         self.assertTrue(np.allclose(res1, res2, equal_nan=True))
 
 
-def add_other_cols_bin_tst(c: Type[TestOtherColsBinaries], k: str, ufunc: np.ufunc) -> None:
+def add_other_cols_bin_tst(
+    c: Type[TestOtherColsBinaries], k: str, ufunc: np.ufunc
+) -> None:
     cls = f"Cols{func2class_name(k)}"
     mod_name = f"cols_{k}_"
 
@@ -482,9 +484,7 @@ class TestBinaryTD(TestBin):
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = module.output.result
         aio.run(s.start())
-        res1 = np.add(
-            random1.table.to_array(), np.array(list(random2.psdict.values()))
-        )
+        res1 = np.add(random1.table.to_array(), np.array(list(random2.psdict.values())))
         res2 = module.table.to_array()
         self.assertTrue(module.name.startswith("binary_"))
         self.assertTrue(np.allclose(res1, res2, equal_nan=True))

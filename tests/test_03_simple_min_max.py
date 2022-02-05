@@ -40,7 +40,9 @@ class Max(TableModule):
         if self.result is not None:
             self.psdict.fill(-np.inf)
 
-    def run_step(self, run_number: int, step_size: int, howlong: float) -> ReturnRunStep:
+    def run_step(
+        self, run_number: int, step_size: int, howlong: float
+    ) -> ReturnRunStep:
         slot = self.get_input_slot("table")
         if slot.updated.any() or slot.deleted.any():
             slot.reset()
@@ -83,7 +85,9 @@ class MaxDec(TableModule):
 
     @process_slot("table", reset_cb="reset")
     @run_if_any
-    def run_step(self, run_number: int, step_size: int, howlong: float) -> ReturnRunStep:
+    def run_step(
+        self, run_number: int, step_size: int, howlong: float
+    ) -> ReturnRunStep:
         assert self.context
         with self.context as ctx:
             indices = ctx.table.created.next(step_size)  # returns a slice

@@ -1,15 +1,18 @@
+from __future__ import annotations
+
 from functools import singledispatch
 from collections import Iterable
 from itertools import product
-import ipywidgets as ipw
+import ipywidgets as ipw  # type: ignore
 import numpy as np
 import pandas as pd
 from progressivis.core import asynchronize, aio
-from vega.widget import VegaWidget
+from vega.widget import VegaWidget  # type: ignore
 from ._hist1d_schema import hist1d_spec_no_data, kll_spec_no_data
 from ._corr_schema import corr_spec_no_data
 from ._bar_schema import bar_spec_no_data
-from collections import defaultdict
+
+from typing import Any, Dict
 
 # https://stackoverflow.com/questions/59741643/how-to-specify-rule-line-with-a-single-value-in-vegalite
 
@@ -20,10 +23,10 @@ LAST_BIN = N_BINS - 1
 wg_lock = aio.Lock()
 IS_DEBUG = True
 debug_console = None
-range_widgets = {}
+range_widgets: Dict[str, Any] = {}
 
 
-def bins_range_slider(desc):
+def bins_range_slider(desc: str) -> ipw.IntRangeSlider:
     return ipw.IntRangeSlider(
         value=[0, LAST_BIN],
         min=0,
@@ -76,14 +79,14 @@ def my_print_once(*args):
     my_print(*args)
 
 
-nn_dict = defaultdict(int)
+# nn_dict: Dict[Any, int] = defaultdict(int)
 
 
-def my_print_n(*args, repeat=1, **kw):
-    if nn_dict[args] >= repeat:
-        return
-    nn_dict[args] += 1
-    my_print(*args, kw)
+# def my_print_n(*args, repeat=1, **kw):
+#     if nn_dict[args] >= repeat:
+#         return
+#     nn_dict[args] += 1
+#     my_print(*args, kw)
 
 
 def corr_as_vega_dataset(mod, columns=None):

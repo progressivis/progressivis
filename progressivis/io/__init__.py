@@ -15,5 +15,5 @@ __all__ = [
     "SimpleCSVLoader",
     "VECLoader",
     "Variable",
-    "DynVar"
+    "DynVar",
 ]

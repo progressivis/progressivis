@@ -77,11 +77,8 @@ class TestRangeQuery(ProgressiveTest):
         self.assertAlmostEqual(res1, res2)
 
     def _query_min_max_impl(
-            self,
-            random: RandomTable,
-            t_min: PsDict,
-            t_max: PsDict,
-            s: Scheduler) -> RangeQuery:
+        self, random: RandomTable, t_min: PsDict, t_max: PsDict, s: Scheduler
+    ) -> RangeQuery:
         min_value = Constant(table=t_min, scheduler=s)
         max_value = Constant(table=t_max, scheduler=s)
         range_qry = RangeQuery(column="_1", scheduler=s)

@@ -58,10 +58,12 @@ class Corr(TableModule):
 
     inputs = [SlotDescriptor("table", type=Table, required=True)]
 
-    def __init__(self,
-                 mode: Union[Literal["Pearson"], Literal["CovarianceOnly"]] = "Pearson",
-                 ignore_string_cols: bool = False,
-                 **kwds: Any) -> None:
+    def __init__(
+        self,
+        mode: Union[Literal["Pearson"], Literal["CovarianceOnly"]] = "Pearson",
+        ignore_string_cols: bool = False,
+        **kwds: Any
+    ) -> None:
         assert mode in ("Pearson", "CovarianceOnly")
         super().__init__(**kwds)
         self._is_corr: bool = mode == "Pearson"
@@ -147,7 +149,9 @@ class Corr(TableModule):
 
     @process_slot("table", reset_cb="reset")
     @run_if_any
-    def run_step(self, run_number: int, step_size: int, howlong: float) -> ReturnRunStep:
+    def run_step(
+        self, run_number: int, step_size: int, howlong: float
+    ) -> ReturnRunStep:
         assert self.context is not None
         with self.context as ctx:
             dfslot = ctx.table

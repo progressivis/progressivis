@@ -8,6 +8,7 @@ from progressivis.stats.cxxmax import Max, CxxMax  # type: ignore
 import numpy as np
 
 from typing import Dict, Any
+
 # CxxMax = None  # Skip for now
 
 

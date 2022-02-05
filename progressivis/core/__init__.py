@@ -51,5 +51,5 @@ __all__ = [
     "Sink",
     "notNone",
     "JSon",
-    "Index"
+    "Index",
 ]

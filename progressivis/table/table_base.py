@@ -110,7 +110,9 @@ class _Loc(_BaseLoc):
         ...
 
     @overload
-    def __getitem__(self, key: Tuple[int, Union[slice, List[str], List[int]]]) -> Optional[Row]:
+    def __getitem__(
+        self, key: Tuple[int, Union[slice, List[str], List[int]]]
+    ) -> Optional[Row]:
         ...
 
     @overload
@@ -126,8 +128,10 @@ class _Loc(_BaseLoc):
     @overload
     def __getitem__(
         self,
-        key: Tuple[Union[bitmap, np.ndarray[Any, Any], slice],
-                   Union[int, str, slice, List[str]]],
+        key: Tuple[
+            Union[bitmap, np.ndarray[Any, Any], slice],
+            Union[int, str, slice, List[str]],
+        ],
     ) -> Optional[BaseTable]:
         ...
 
@@ -815,7 +819,7 @@ class BaseTable(metaclass=ABCMeta):
     def __setitem__(
         self,
         key: Union[int, str],
-        values: Union[BaseColumn, np.ndarray[Any, Any], Iterable[Any]]
+        values: Union[BaseColumn, np.ndarray[Any, Any], Iterable[Any]],
     ) -> None:
         ...
 
@@ -825,8 +829,11 @@ class BaseTable(metaclass=ABCMeta):
         key: Union[
             List[Any], Tuple[Any, Any], np.ndarray[Any, Any], slice, Iterable[int]
         ],
-        values: Union[np.ndarray[Any, Any], BaseTable,
-                      Sequence[Union[BaseColumn, np.ndarray[Any, Any], Iterable[Any]]]]
+        values: Union[
+            np.ndarray[Any, Any],
+            BaseTable,
+            Sequence[Union[BaseColumn, np.ndarray[Any, Any], Iterable[Any]]],
+        ],
     ) -> None:
         ...
 

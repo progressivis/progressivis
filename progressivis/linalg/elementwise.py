@@ -171,7 +171,7 @@ def _simple_binary(
     cols1: List[str],
     cols2: List[str],
     cols_out: List[str],
-    **kwargs: Any
+    **kwargs: Any,
 ) -> Dict[str, Any]:
     axis = kwargs.pop("axis", 0)
     assert axis == 0
@@ -194,7 +194,7 @@ class ColsBinary(TableModule):
         first: List[str],
         second: List[str],
         cols_out: Optional[List[str]] = None,
-        **kwds: Any
+        **kwds: Any,
     ) -> None:
         super(ColsBinary, self).__init__(**kwds)
         self._ufunc = ufunc
@@ -269,7 +269,7 @@ def _binary(
     op: UFunc,
     other: BaseTable,
     other_cols: Optional[List[str]] = None,
-    **kwargs: Any
+    **kwargs: Any,
 ) -> Dict[str, Any]:
     if other_cols is None:
         other_cols = tbl.columns
@@ -408,12 +408,7 @@ for k, v in binary_dict_all.items():
     # binary_modules.append(_g[name])
 
 
-def _reduce(
-    tbl: BaseTable,
-    op: UFunc,
-    initial: Any,
-    **kwargs: Any
-) -> Dict[str, Any]:
+def _reduce(tbl: BaseTable, op: UFunc, initial: Any, **kwargs: Any) -> Dict[str, Any]:
     res = {}
     for col in tbl._columns:
         cn = col.name
@@ -424,7 +419,9 @@ def _reduce(
 class Reduce(TableModule):
     inputs = [SlotDescriptor("table", type=Table, required=True)]
 
-    def __init__(self, ufunc: np.ufunc, columns: Optional[List[str]] = None, **kwds: Any) -> None:
+    def __init__(
+        self, ufunc: np.ufunc, columns: Optional[List[str]] = None, **kwds: Any
+    ) -> None:
         assert ufunc.nin == 2
         super(Reduce, self).__init__(**kwds)
         self._ufunc = getattr(ufunc, "reduce")

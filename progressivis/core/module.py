@@ -539,10 +539,11 @@ class Module(metaclass=ModuleMeta):
         if not self.input_slot_multiple(name):
             return [name]  # self.get_input_slot(name)]
         prefix = name + "."
-        return sorted([  # maintains the creation order
-            iname for iname in self._input_slots
-            if iname.startswith(prefix)
-        ])
+        return sorted(
+            [  # maintains the creation order
+                iname for iname in self._input_slots if iname.startswith(prefix)
+            ]
+        )
 
     def get_input_module(self, name: str) -> Optional[Module]:
         "Return the specified input module"
@@ -569,9 +570,7 @@ class Module(metaclass=ModuleMeta):
         return self._input_slots.keys()
 
     def reconnect(
-        self,
-        inputs: Dict[str, Slot],
-        outputs: Dict[str, List[Slot]]
+        self, inputs: Dict[str, Slot], outputs: Dict[str, List[Slot]]
     ) -> None:
         logger.info(f"Module {self}, reconnect({inputs}, {outputs})")
         all_keys = set(self._input_slots.keys()) | set(inputs.keys())
@@ -596,12 +595,16 @@ class Module(metaclass=ModuleMeta):
                 if slot is None:  # deleted slot
                     if old_slot.original_name:
                         # self.input_descriptors.pop(name)
-                        logger.info(f"Deleted multiple input slot {name} in {self.name}")
+                        logger.info(
+                            f"Deleted multiple input slot {name} in {self.name}"
+                        )
                     else:
                         logger.info(f"Deleted input slot {name} in {self.name}")
                 else:  # slot is replaced
                     logger.info(f"Changing input slot {name} in {self.name}")
-                    if slot == old_slot:  # no need to replace when the slots are identical
+                    if (
+                        slot == old_slot
+                    ):  # no need to replace when the slots are identical
                         continue
 
         all_keys = set(self._output_slots.keys()) | set(outputs.keys())
@@ -614,7 +617,9 @@ class Module(metaclass=ModuleMeta):
                 logger.info(f"Module {self}, output '{name}': adding slots {slots}")
                 self._output_slots[name] = slots
             elif slots is None:  # deleting all the output slots
-                logger.info(f"Module {self}: output '{name}': removing slots {old_slots}")
+                logger.info(
+                    f"Module {self}: output '{name}': removing slots {old_slots}"
+                )
                 self._output_slots[name] = None
             else:
                 new_slots: List[Slot] = []
@@ -709,6 +714,9 @@ class Module(metaclass=ModuleMeta):
         assert next_state >= Module.state_ready and next_state <= Module.state_zombie
         self.steps_acc += steps_run
         return {"next_state": next_state, "steps_run": steps_run}
+
+    def _return_terminate(self, steps_run: int = 0) -> ReturnRunStep:
+        return {"next_state": Module.state_zombie, "steps_run": steps_run}
 
     def is_visualization(self) -> bool:
         return self.TAG_VISUALIZATION in self.tags
@@ -822,9 +830,7 @@ class Module(metaclass=ModuleMeta):
         # the module is blocked, cannot run any more, so it is terminated
         # too.
         logger.error(
-            "%s Not ready because is in weird state %s",
-            self.name,
-            self.state.name,
+            "%s Not ready because is in weird state %s", self.name, self.state.name,
         )
         return False
 

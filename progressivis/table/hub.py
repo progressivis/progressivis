@@ -1,23 +1,21 @@
 from __future__ import annotations
 
-import logging
-
 from ..core.module import ReturnRunStep
 from ..table.nary import NAry
 from ..utils.psdict import PsDict
 
-logger = logging.getLogger(__name__)
-
 
 class Hub(NAry):
     """
-    Groups many (dict) outputs in one. Suppose there are no clashes
+    Groups many (dict) outputs in one. Assume there is no clash
     Useful with Switch
     """
 
     # parameters = []
 
-    def run_step(self, run_number: int, step_size: int, howlong: float) -> ReturnRunStep:
+    def run_step(
+        self, run_number: int, step_size: int, howlong: float
+    ) -> ReturnRunStep:
         if self.result is None:
             self.result = PsDict()
         steps = 0

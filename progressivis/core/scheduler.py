@@ -44,7 +44,9 @@ if TYPE_CHECKING:
 TickCb = Callable[["Scheduler", int], None]
 TickCoro = Callable[["Scheduler", int], Coroutine[Any, Any, Any]]
 TickProc = Union[TickCb, TickCoro]
-ChangeProc = Callable[["Scheduler", Set["Module"], Set["Module"]], Coroutine[Any, Any, None]]
+ChangeProc = Callable[
+    ["Scheduler", Set["Module"], Set["Module"]], Coroutine[Any, Any, None]
+]
 Order = List[str]
 Reachability = Dict[str, List[str]]
 
@@ -146,7 +148,7 @@ class Scheduler:
                 if self.dataflow is not None:
                     self.dataflow.aborted()
                 self.dataflow = None
-        if self._enter_cnt > 0:
+        if self._enter_cnt > 0 or self.dataflow is None:
             return
         errors = self.dataflow.validate()
         if errors:
@@ -547,7 +549,6 @@ class Scheduler:
             for mid in added:
                 modules[mid].starting()
             self._added_modules.update({self[mid] for mid in added})
-        _new_modules = None
         self._run_list = []
         self._runorder = _new_runorder
         logger.info("New module order: %s", self._runorder)

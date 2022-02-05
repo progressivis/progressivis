@@ -21,7 +21,9 @@ class TestModule(Module):
     def __init__(self, **kwds: Any) -> None:
         super(TestModule, self).__init__(**kwds)
 
-    def run_step(self, run_number: int, step_size: int, howlong: float) -> ReturnRunStep:
+    def run_step(
+        self, run_number: int, step_size: int, howlong: float
+    ) -> ReturnRunStep:
         return self._return_run_step(self.state_blocked, 0)
 
 
@@ -391,9 +393,7 @@ class TestDataflow(ProgressiveTest):
 
             with scheduler as dataflow:
                 self.assertIs(dataflow, dataflow1)
-                prt = Print(name="print",
-                            proc=self.terse,
-                            scheduler=scheduler)
+                prt = Print(name="print", proc=self.terse, scheduler=scheduler)
                 prt.input.df = table.output.result
 
             scheduler.on_loop(modify_2, 10)  # Schedule the next activity
@@ -455,9 +455,7 @@ class TestDataflow(ProgressiveTest):
             with self.assertRaises(ProgressiveError):
                 with scheduler as dataflow:
                     self.assertIs(dataflow, dataflow1)
-                    prt = Print(name="print",
-                                proc=self.terse,
-                                scheduler=scheduler)
+                    prt = Print(name="print", proc=self.terse, scheduler=scheduler)
                     # prt.input.df = table.output.result
                     _ = prt
             scheduler.on_loop(modify_2, 3)  # Schedule the next activity

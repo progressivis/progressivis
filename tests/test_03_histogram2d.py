@@ -63,9 +63,7 @@ class TestHistogram2D(ProgressiveTest):
         h1 = last["array"]
         bounds = [[last["ymin"], last["ymax"]], [last["xmin"], last["xmax"]]]
         df = pd.read_csv(
-            get_dataset("bigfile"),
-            header=None,
-            usecols=[1, 2]  # type: ignore
+            get_dataset("bigfile"), header=None, usecols=[1, 2]  # type: ignore
         )
         v = df.to_numpy()  # .reshape(-1, 2)
         bins = [histogram2d.params.ybins, histogram2d.params.xbins]

@@ -72,7 +72,6 @@ def is_str(s: Any) -> bool:
     return isinstance(s, str)
 
 
-
 # def is_slice(s: Any) -> TypeGuard[slice]:
 def is_slice(s: Any) -> bool:
     return isinstance(s, slice)
@@ -925,6 +924,7 @@ async def asynchronize(f: Callable[..., Any], *args: Any, **kwargs: Any) -> Any:
     loop = aio.get_running_loop()
     fun = ft.partial(f, *args, **kwargs)
     return await loop.run_in_executor(None, fun)
+
 
 def gather_and_run(*args: Awaitable[Any]) -> None:
     """

@@ -7,7 +7,7 @@ from ..core.utils import fix_loc
 from ..table.module import TableModule
 from ..table.table_base import BaseTable
 from ..table.table import Table
-import numexpr as ne  # type: ignore
+import numexpr as ne
 
 
 from typing import Dict, Any, Tuple

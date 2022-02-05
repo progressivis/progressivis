@@ -85,7 +85,7 @@ class TestMixUfunc(ProgressiveTest):
         self,
         cls: Type[MixUfuncABC],
         ufunc1: np.ufunc = np.log,
-        ufunc2: np.ufunc = np.add
+        ufunc2: np.ufunc = np.add,
     ) -> None:
         s = self.scheduler()
         random1 = RandomTable(10, rows=100000, scheduler=s)

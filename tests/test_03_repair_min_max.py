@@ -58,7 +58,9 @@ class MyStirrer(TableModule):
         self.value = value
         self.done = False
 
-    def run_step(self, run_number: int, step_size: int, howlong: float) -> ReturnRunStep:
+    def run_step(
+        self, run_number: int, step_size: int, howlong: float
+    ) -> ReturnRunStep:
         input_slot = self.get_input_slot("table")
         # input_slot.update(run_number)
         steps = 0
@@ -69,8 +71,7 @@ class MyStirrer(TableModule):
         input_table = input_slot.data()
         if self.result is None:
             self.result = Table(
-                self.generate_table_name("stirrer"),
-                dshape=input_table.dshape,
+                self.generate_table_name("stirrer"), dshape=input_table.dshape,
             )
         v = input_table.loc[fix_loc(created), :]
         self.table.append(v)

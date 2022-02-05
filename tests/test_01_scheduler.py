@@ -19,7 +19,9 @@ class TestModule(Module):
     def __init__(self, **kwds: Any) -> None:
         super(TestModule, self).__init__(**kwds)
 
-    def run_step(self, run_number: int, step_size: int, howlong: float) -> ReturnRunStep:  # pragma no cover
+    def run_step(
+        self, run_number: int, step_size: int, howlong: float
+    ) -> ReturnRunStep:  # pragma no cover
         return self._return_run_step(self.state_blocked, 0)
 
 

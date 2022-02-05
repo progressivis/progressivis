@@ -165,10 +165,7 @@ class PsBoard(ipw.VBox):  # type: ignore
             await update_widget(self.htable, "data", data)
 
     def register_visualisation(
-        self,
-        widget: WidgetType,
-        module: Module,
-        label: str = "Visualisation"
+        self, widget: WidgetType, module: Module, label: str = "Visualisation"
     ) -> None:
         """
         called from notebook

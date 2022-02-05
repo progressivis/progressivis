@@ -87,7 +87,6 @@ class TestScatterPlot(ProgressiveTest):
             prt = Print(proc=self.terse, scheduler=s)
             prt.input[0] = sp.output.result
 
-
         async def fake_input_1(scheduler: Scheduler, rn: int) -> None:
             module = scheduler["dyn_var_1"]
             print("from input dyn_var_1")

@@ -1,15 +1,15 @@
 from __future__ import annotations
 
 import numpy as np
-import ipywidgets as widgets
-from ipydatawidgets import DataUnion
-from ipydatawidgets.widgets import DataWidget
-from traitlets import Unicode, Any, Bool
+import ipywidgets as widgets  # type: ignore
+from ipydatawidgets import DataUnion  # type: ignore
+from ipydatawidgets.widgets import DataWidget  # type: ignore
+from traitlets import Unicode, Any, Bool  # type: ignore
 from progressivis.core import JSONEncoderNp as JS, asynchronize
 import progressivis.core.aio as aio
 from .utils import data_union_serialization_compress
 
-from typing import Any as AnyType, List, Coroutine, Sequence, TYPE_CHECKING
+from typing import Any as AnyType, Sequence, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from progressivis import Module
@@ -55,7 +55,7 @@ class Scatterplot(DataWidget, widgets.DOMWidget):  # type: ignore
 
     def link_module(
         self, module: MCScatterPlot, refresh: bool = True
-    ) -> List[Coroutine[Any, Any, None]]:
+    ) -> None:  # -> List[Coroutine[Any, Any, None]]:
         def _feed_widget(wg: WidgetType, m: MCScatterPlot) -> None:
             val = m.to_json()
             data_ = {
@@ -90,10 +90,10 @@ class Scatterplot(DataWidget, widgets.DOMWidget):  # type: ignore
 
         self.observe(from_input_value, "value")
 
-        def from_input_move_point(_val: Any) -> None:
-            aio.create_task(module.move_point.from_input(self.move_point))
+        # def from_input_move_point(_val: Any) -> None:
+        #     aio.create_task(module.move_point.from_input(self.move_point))
 
-        self.observe(from_input_move_point, "move_point")
+        # self.observe(from_input_move_point, "move_point")
 
         def awake(_val: Any) -> None:
             if module._json_cache is None or self.modal:

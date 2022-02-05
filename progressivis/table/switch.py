@@ -50,7 +50,9 @@ class Switch(TableModule):
             return self.result_else
         return super().get_data(name)
 
-    def run_step(self, run_number: int, step_size: int, howlong: float) -> ReturnRunStep:
+    def run_step(
+        self, run_number: int, step_size: int, howlong: float
+    ) -> ReturnRunStep:
         slot = self.get_input_slot("table")
         input_df = slot.data()
         if input_df is None or not slot.has_buffered():

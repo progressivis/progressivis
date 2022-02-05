@@ -14,7 +14,7 @@ from progressivis.core.decorators import (
     or_all,
     run_if_any,
     and_any,
-    _CtxImpl
+    _CtxImpl,
 )
 import asyncio as aio
 
@@ -32,7 +32,9 @@ class FooABC(TableModule):
     def __init__(self, **kwds: Any) -> None:
         super().__init__(output_required=False, **kwds)
 
-    def run_step_impl(self, ctx: _CtxImpl, run_number: int, step_size: int) -> ReturnRunStep:
+    def run_step_impl(
+        self, ctx: _CtxImpl, run_number: int, step_size: int
+    ) -> ReturnRunStep:
         if self.result is None:
             self.result = Table(
                 self.generate_table_name("Foo"), dshape="{a: int, b: int}", create=True
@@ -46,7 +48,9 @@ class FooABC(TableModule):
 class RunIfAll(FooABC):
     @process_slot("a", "b", "c", "d", reset_if=False)
     @run_if_all
-    def run_step(self, run_number: int, step_size: int, howlong: float) -> ReturnRunStep:
+    def run_step(
+        self, run_number: int, step_size: int, howlong: float
+    ) -> ReturnRunStep:
         assert self.context
         with self.context as ctx:
             return self.run_step_impl(ctx, run_number, step_size)
@@ -58,7 +62,9 @@ class RunAlways(FooABC):
 
     @process_slot("a", "b", "c", "d", reset_if=False)
     @run_always
-    def run_step(self, run_number: int, step_size: int, howlong: float) -> ReturnRunStep:
+    def run_step(
+        self, run_number: int, step_size: int, howlong: float
+    ) -> ReturnRunStep:
         assert self.context
         with self.context as ctx:
             return self.run_step_impl(ctx, run_number, step_size)
@@ -81,7 +87,9 @@ class RunIfAllabOrAllcd(FooABC):
     @process_slot("a", "b", "c", "d", reset_if=False)  # type: ignore
     @run_if_all("a", "b")  # type: ignore
     @or_all("c", "d")  # type: ignore
-    def run_step(self, run_number: int, step_size: int, howlong: float) -> ReturnRunStep:
+    def run_step(
+        self, run_number: int, step_size: int, howlong: float
+    ) -> ReturnRunStep:
         assert self.context
         with self.context as ctx:
             return self.run_step_impl(ctx, run_number, step_size)
@@ -93,7 +101,9 @@ class RunIfAny(FooABC):
 
     @process_slot("a", "b", "c", "d", reset_if=False)  # type: ignore
     @run_if_any()  # type: ignore
-    def run_step(self, run_number: int, step_size: int, howlong: float) -> ReturnRunStep:
+    def run_step(
+        self, run_number: int, step_size: int, howlong: float
+    ) -> ReturnRunStep:
         assert self.context is not None
         with self.context as ctx:
             return self.run_step_impl(ctx, run_number, step_size)
@@ -103,7 +113,9 @@ class RunIfAnyAndAny(FooABC):
     @process_slot("a", "b", "c", "d", reset_if=False)  # type: ignore
     @run_if_any("a", "c")  # type: ignore
     @and_any("b", "d")  # type: ignore
-    def run_step(self, run_number: int, step_size: int, howlong: float) -> ReturnRunStep:
+    def run_step(
+        self, run_number: int, step_size: int, howlong: float
+    ) -> ReturnRunStep:
         assert self.context is not None
         with self.context as ctx:
             return self.run_step_impl(ctx, run_number, step_size)
@@ -123,13 +135,17 @@ class InvalidDoubleRun(FooABC):
     @process_slot("a", "b", "c", "d", reset_if=False)  # type: ignore
     @run_if_any("a", "c")  # type: ignore
     @run_if_any("b", "d")  # type: ignore
-    def run_step(self, run_number: int, step_size: int, howlong: float) -> ReturnRunStep:
+    def run_step(
+        self, run_number: int, step_size: int, howlong: float
+    ) -> ReturnRunStep:
         assert self.context is not None
         with self.context as ctx:
             return self.run_step_impl(ctx, run_number, step_size)
 
 
-def _4_csv_scenario(module: Module, s: Scheduler) -> Callable[[Scheduler, int], Coroutine[Any, Any, None]]:
+def _4_csv_scenario(
+    module: Module, s: Scheduler
+) -> Callable[[Scheduler, int], Coroutine[Any, Any, None]]:
     with s:
         csv_a = CSVLoader(
             get_dataset("smallfile"), index_col=False, header=None, scheduler=s
@@ -173,7 +189,9 @@ def _4_const_scenario(module: Module, s: Scheduler) -> Callable[[Scheduler, int]
     return _fun
 
 
-def _2_csv_2_const_scenario(module: Module, s: Scheduler) -> Callable[[Scheduler, int], None]:
+def _2_csv_2_const_scenario(
+    module: Module, s: Scheduler
+) -> Callable[[Scheduler, int], None]:
     csv_a = CSVLoader(
         get_dataset("smallfile"), index_col=False, header=None, scheduler=s
     )

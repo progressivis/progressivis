@@ -19,6 +19,7 @@ logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from ..core.module import ReturnRunStep
+
     ColsTo = Dict[str, Tuple[float, float]]
     NumCol = Union[np.ndarray[Any, Any], BaseColumn]
 
@@ -157,12 +158,14 @@ class MinMaxScaler(TableModule):
             return self.info()
         return super().get_data(name)
 
-    def check_bounds(self,
-                     min_data: Dict[str, float],
-                     max_data: Dict[str, float],
-                     usecols: List[str],
-                     to_clip: Dict[str, Tuple[float, float]],
-                     to_ignore: Dict[str, Tuple[float, float]]) -> bool:
+    def check_bounds(
+        self,
+        min_data: Dict[str, float],
+        max_data: Dict[str, float],
+        usecols: List[str],
+        to_clip: Dict[str, Tuple[float, float]],
+        to_ignore: Dict[str, Tuple[float, float]],
+    ) -> bool:
         delta = self.get_delta(usecols, min_data, max_data)
         for c in usecols:
             if min_data[c] >= self._cmin[c] and max_data[c] <= self._cmax[c]:
@@ -277,7 +280,7 @@ class MinMaxScaler(TableModule):
                 self._ignored += len_ii
                 if self._info:
                     self._info["ignored"] += len_ii
-                rm_ids = bitmap(np.array(indices)[cast(list, ignore_ilocs)])
+                rm_ids = bitmap(np.array(indices)[cast(List[int], ignore_ilocs)])
                 indices = indices - rm_ids
                 if not indices:
                     return self._return_run_step(self.state_blocked, steps_run=0)
@@ -295,10 +298,9 @@ class MinMaxScaler(TableModule):
             self.table.append(sc_data, indices=indices)
             return self._return_run_step(self.next_state(dfslot), steps)
 
-    def create_dependent_modules(self,
-                                 input_module: TableModule,
-                                 input_slot: str = "result",
-                                 hist: bool = False) -> None:
+    def create_dependent_modules(
+        self, input_module: TableModule, input_slot: str = "result", hist: bool = False
+    ) -> None:
         s = self.scheduler()
         self.input.table = input_module.output[input_slot]
         self.min = Min(scheduler=s)

@@ -7,7 +7,7 @@ from collections import OrderedDict, Mapping
 import logging
 import numpy as np
 import pandas as pd
-import numexpr as ne  # type: ignore
+import numexpr as ne
 from progressivis.core.utils import (
     integer_types,
     get_random_name,

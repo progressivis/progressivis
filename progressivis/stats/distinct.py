@@ -1,4 +1,3 @@
-
 from __future__ import annotations
 
 import logging
@@ -19,10 +18,9 @@ logger = logging.getLogger(__name__)
 class Distinct(TableModule):
     inputs = [SlotDescriptor("table", type=Table, required=True)]
 
-    def __init__(self,
-                 columns: Optional[List[str]] = None,
-                 threshold: int = 56,
-                 **kwds: Any) -> None:
+    def __init__(
+        self, columns: Optional[List[str]] = None, threshold: int = 56, **kwds: Any
+    ) -> None:
         super().__init__(**kwds)
         self._columns = columns
         self._threshold = threshold
@@ -40,7 +38,9 @@ class Distinct(TableModule):
 
     @process_slot("table", reset_cb="reset")
     @run_if_any
-    def run_step(self, run_number: int, step_size: int, howlong: float) -> ReturnRunStep:
+    def run_step(
+        self, run_number: int, step_size: int, howlong: float
+    ) -> ReturnRunStep:
         assert self.context is not None
         with self.context as ctx:
             # import pdb;pdb.set_trace()

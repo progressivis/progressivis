@@ -8,7 +8,7 @@ if TYPE_CHECKING:
     from progressivis.core.scheduler import Scheduler
 
 
-class ControlPanel(widgets.HBox):  # pylint: disable=too-many-ancestors
+class ControlPanel(widgets.HBox):  # type: ignore # pylint: disable=too-many-ancestors
     def __init__(self, scheduler: Optional[Scheduler]) -> None:
         self.scheduler = scheduler
         self.bstart = widgets.Button(

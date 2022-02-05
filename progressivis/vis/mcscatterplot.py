@@ -400,7 +400,7 @@ class MCScatterPlot(NAry):
             )
             for cl in self._classes:
                 if isinstance(cl, tuple):
-                    self._add_class(*cl)   # type: ignore
+                    self._add_class(*cl)  # type: ignore
                 elif isinstance(cl, dict):
                     self._add_class(**cl)
                 else:

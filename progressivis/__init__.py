@@ -22,9 +22,13 @@ from progressivis.core import (
 from progressivis.utils import ProgressiveError
 from progressivis.core import aio
 from progressivis.table import Table, Column, Row
-from IPython.core.magic import (Magics, magics_class,  # type: ignore
-                                cell_magic, line_cell_magic,
-                                needs_local_scope)
+from IPython.core.magic import (
+    Magics,
+    magics_class,  # type: ignore
+    cell_magic,
+    line_cell_magic,
+    needs_local_scope,
+)
 
 from typing import Dict, Optional, Any
 
@@ -89,13 +93,14 @@ def log_level(level: int = logging.DEBUG, package: str = "progressivis") -> None
 class ProgressivisMagic(Magics):  # type: ignore
     @line_cell_magic  # type: ignore
     @needs_local_scope  # type: ignore
-    def progressivis(self, line: str,
-                     cell: Optional[str] = None,
-                     local_ns: Any = None) -> Any:
+    def progressivis(
+        self, line: str, cell: Optional[str] = None, local_ns: Any = None
+    ) -> Any:
         from IPython.display import clear_output  # type: ignore
+
         if cell is None:
             clear_output()
-            for ln in yaml.dump(dict(eval(line, local_ns))).split('\n'):
+            for ln in yaml.dump(dict(eval(line, local_ns))).split("\n"):
                 print(ln)
             sys.stdout.flush()
         else:
@@ -105,12 +110,15 @@ class ProgressivisMagic(Magics):  # type: ignore
 
     @cell_magic  # type: ignore
     @needs_local_scope  # type: ignore
-    def from_input(self, line: str, cell: str, local_ns: Optional[Any] = None) -> aio.Task[Any]:
+    def from_input(
+        self, line: str, cell: str, local_ns: Optional[Any] = None
+    ) -> aio.Task[Any]:
         module = eval(line, local_ns)
         return aio.create_task(module.from_input(yaml.safe_load(cell)))
 
 
 def load_ipython_extension(ipython: Any) -> None:
     from IPython import get_ipython  # type: ignore
+
     ip = get_ipython()
     ip.register_magics(ProgressivisMagic)

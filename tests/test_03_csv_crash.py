@@ -400,7 +400,9 @@ class TestProgressiveLoadCSVCrash3(ProgressiveLoadCSVCrashRoot):
         aio.run(s.start())
         self.assertEqual(len(module.table), 2000000)
 
-    def _tst_10_read_multi_csv_file_compress_with_crash(self, file_list: List[str], tag: str) -> None:
+    def _tst_10_read_multi_csv_file_compress_with_crash(
+        self, file_list: List[str], tag: str
+    ) -> None:
         s = self.scheduler()
         module = CSVLoader(
             file_list, index_col=False, recovery_tag=tag, header=None, scheduler=s

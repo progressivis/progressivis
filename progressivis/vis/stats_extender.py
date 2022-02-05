@@ -27,7 +27,7 @@ from typing import Optional, Tuple, Any
 logger = logging.getLogger(__name__)
 
 
-def _is_string_col(table_, col):
+def _is_string_col(table_: Table, col: str):
     col_type = dict(dshape_fields(table_.dshape))[col]
     return str(col_type) == "string"
 
@@ -44,7 +44,7 @@ def _run_step_common(self_, super_call, run_number, step_size, howlong, is_strin
     if self_._enabled:
         return super_call(run_number, step_size, howlong)
     slot.clear_buffers()
-    return self_._return_run_step(self_.state_zombie, steps_run=0)
+    return self_._return_terminate()
 
 
 class KLLSketchIf(KLLSketch):

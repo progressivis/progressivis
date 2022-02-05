@@ -51,9 +51,7 @@ class TestHistogram1D(ProgressiveTest):
         h1 = last["array"]
         bounds = (last["min"], last["max"])
         df = pd.read_csv(
-            get_dataset("bigfile"),
-            header=None,
-            usecols=[2]  # type: ignore
+            get_dataset("bigfile"), header=None, usecols=[2]  # type: ignore
         )
         v = df.to_numpy().reshape(-1)
         h2, _ = np.histogram(  # type: ignore

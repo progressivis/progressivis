@@ -50,7 +50,9 @@ class MyResetter(TableModule):
         self._threshold = threshold
         self.result = PsDict({"reset": True})
 
-    def run_step(self, run_number: int, step_size: int, howlong: float) -> ReturnRunStep:
+    def run_step(
+        self, run_number: int, step_size: int, howlong: float
+    ) -> ReturnRunStep:
         input_slot = self.get_input_slot("table")
         input_slot.clear_buffers()
         data = input_slot.data()
@@ -67,7 +69,7 @@ class TestPPCA(ProgressiveTest):
         threshold: Optional[int] = None,
         resetter: Optional[MyResetter] = None,
         resetter_func: Optional[Callable[[Slot], Any]] = None,
-        scheduler: Optional[Scheduler] = None
+        scheduler: Optional[Scheduler] = None,
     ) -> float:
         global KNN, LABELS, INDICES
         if scheduler is None:
@@ -110,8 +112,7 @@ class TestPPCA(ProgressiveTest):
             KNN = KNeighborsClassifier(NNEIGHBOURS)
             arr = _array(data.table)
             df: pd.DataFrame = pd.read_csv(
-                dataset,
-                usecols=["class"]  # type: ignore
+                dataset, usecols=["class"]  # type: ignore
             )
             LABELS = df.values.reshape((-1,))
             indices_t = sample_without_replacement(

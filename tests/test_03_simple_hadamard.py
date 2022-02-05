@@ -27,7 +27,9 @@ class Hadamard(TableModule):
         if self.result is not None:
             self.table.resize(0)
 
-    def run_step(self, run_number: int, step_size: int, howlong: float) -> ReturnRunStep:
+    def run_step(
+        self, run_number: int, step_size: int, howlong: float
+    ) -> ReturnRunStep:
         x1 = self.get_input_slot("x1")
         x2 = self.get_input_slot("x2")
         if x1.updated.any() or x1.deleted.any() or x2.updated.any() or x2.deleted.any():

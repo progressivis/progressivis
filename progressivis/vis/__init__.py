@@ -1,4 +1,3 @@
-
 __all__ = ["Heatmap", "MCScatterPlot", "Histograms", "StatsExtender", "StatsFactory"]
 
 from progressivis.vis.heatmap import Heatmap
