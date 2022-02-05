@@ -1,4 +1,7 @@
 import logging
+
+import numpy as np
+
 from ..core import Sink
 from ..stats.kll import KLLSketch
 from ..table.module import TableModule
@@ -30,7 +33,9 @@ class StatsFactory(TableModule):
             scheduler = self.scheduler()
             with scheduler:
                 for col in input_df.columns:
-                    # TODO test if col is numerical?
+                    if input_df[col].dtype.char not in (np.typecodes['AllInteger'] +
+                                                        np.typecodes['AllFloat']):
+                        continue
                     print("adding stats on", col)
                     kll = KLLSketch(column=col, scheduler=scheduler)
                     sink = Sink(scheduler=scheduler)
