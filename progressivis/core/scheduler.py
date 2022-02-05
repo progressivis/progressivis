@@ -97,11 +97,6 @@ class Scheduler:
         self._running: bool = False
         self._stopped: bool = True
         self._runorder: Order = []
-        # self._new_modules: Optional[List[Module]] = None
-        # self._new_inputs: Dependencies = {}
-        # self._new_outputs: Dict[str, Dict[str, List[Slot]]] = {}
-        # self._new_runorder: Order = []
-        # self._new_reachability: Reachability = {}
         self._added_modules: Set[Module] = set()
         self._deleted_modules: Set[Module] = set()
         self._start: float = 0
@@ -363,17 +358,6 @@ class Scheduler:
         KEEP_RUNNING = min(50, len(self._run_list) * 3)
         self._keep_running = KEEP_RUNNING
         await aio.gather(*runners)
-        # print("Leaving run()")
-        # while True:
-        #     done, pending = await aio.wait(runners, return_when=aio.FIRST_COMPLETED)
-        #     # print(f"In scheduler, tasks {done} done")
-        #     if run_loop in done:
-        #         break
-        #     runners = list(pending)
-        # print("Leaving run()")
-        # modules = [self._modules[m] for m in self._runorder]
-        # for module in reversed(modules):
-        #     module.ending()
         self._running = False
 
         self._stopped = True
