@@ -125,6 +125,7 @@ class Scheduler:
         self._task = False
         self.shortcut_evt: aio.Event
         self.coros: List[Coroutine[Any, Any, Any]] = []
+        self._multiple_slots_name_generator = 1
 
     def new_run_number(self) -> int:
         self._run_number += 1
@@ -133,6 +134,7 @@ class Scheduler:
     def __enter__(self) -> Dataflow:
         if self.dataflow is None:
             self.dataflow = Dataflow(self)
+            self.dataflow.multiple_slots_name_generator = self._multiple_slots_name_generator
             self._enter_cnt = 1
         else:
             self._enter_cnt += 1
@@ -520,6 +522,7 @@ class Scheduler:
         dataflow._compute_reachability(_new_inputs)
         _new_reachability = dataflow.reachability
         dataflow.committed()
+        self._multiple_slots_name_generator = self.dataflow.multiple_slots_name_generator
         self.dataflow = None
         logger.info("Updating modules")
         prev_keys = set(self._modules.keys())
