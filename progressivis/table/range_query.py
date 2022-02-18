@@ -302,7 +302,7 @@ class RangeQuery(TableModule):
             return self._return_run_step(self.state_blocked, steps_run=0)
         minv = min_slot.data().get(self.watched_key_lower)
         maxv = max_slot.data().get(self.watched_key_upper)
-        if lower_value is any:
+        if lower_value == "*":
             lower_value = minv
         elif (
             lower_value is None
@@ -312,7 +312,7 @@ class RangeQuery(TableModule):
         ):
             lower_value = minv
             limit_changed = True
-        if upper_value is any:
+        if upper_value == "*":
             upper_value = maxv
         elif (
             upper_value is None

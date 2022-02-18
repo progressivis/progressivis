@@ -271,18 +271,19 @@ class _HistogramIndexImpl(object):
         """
         if lower > upper:
             lower, upper = upper, lower
-        pos = np.digitize([lower, upper], self.bins)  # type: ignore
-        union = bitmap.union(*self.bitmaps[pos[0] + 1 : pos[1]])
+        pos_lo, pos_up = np.digitize([lower, upper], self.bins)  # type: ignore
+        union = bitmap.union(*self.bitmaps[pos_lo + 1 : pos_up])
         if not approximate:
             detail = bitmap()
-            ids = np.array(self.bitmaps[pos[0]], np.int64)
+            ids = np.array(self.bitmaps[pos_lo], np.int64)
             values = self.column.loc[ids]
-            if pos[0] == pos[1]:
+            if pos_lo == pos_up:
                 selected = ids[(lower <= values) & (values < upper)]
                 detail.update(selected)
             else:
                 selected = ids[lower <= values]
-                ids = np.array(self.bitmaps[pos[1]], np.int64)
+                detail.update(selected)
+                ids = np.array(self.bitmaps[pos_up], np.int64)
                 values = self.column.loc[ids]
                 selected = ids[values < upper]
                 detail.update(selected)
