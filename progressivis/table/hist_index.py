@@ -272,22 +272,22 @@ class _HistogramIndexImpl(object):
         if lower > upper:
             lower, upper = upper, lower
         pos = np.digitize([lower, upper], self.bins)  # type: ignore
-        detail = bitmap()
+        union = bitmap.union(*self.bitmaps[pos[0] + 1 : pos[1]])
         if not approximate:
+            detail = bitmap()
             ids = np.array(self.bitmaps[pos[0]], np.int64)
             values = self.column.loc[ids]
             if pos[0] == pos[1]:
                 selected = ids[(lower <= values) & (values < upper)]
+                detail.update(selected)
             else:
                 selected = ids[lower <= values]
-                detail.update(selected)
                 ids = np.array(self.bitmaps[pos[1]], np.int64)
                 values = self.column.loc[ids]
                 selected = ids[values < upper]
                 detail.update(selected)
-        for bm in self.bitmaps[pos[0] + 1 : pos[1]]:
-            detail.update(bm)
-        return detail
+            union.update(detail)
+        return union
 
     def range_query_aslist(
         self, lower: float, upper: float, approximate: bool = APPROX
