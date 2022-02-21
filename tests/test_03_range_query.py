@@ -19,14 +19,14 @@ class TestRangeQuery(ProgressiveTest):
     def tearDown(self) -> None:
         TestRangeQuery.cleanup()
 
-    def test_range_query(self) -> None:
+    def _range_query_impl(self, lo, up) -> None:
         "Run tests of the RangeQuery module"
         s = self.scheduler()
         with s:
             random = RandomTable(2, rows=1000, scheduler=s)
-            t_min = PsDict({"_1": 0.3})
+            t_min = PsDict({"_1": lo})
             min_value = Constant(table=t_min, scheduler=s)
-            t_max = PsDict({"_1": 0.8})
+            t_max = PsDict({"_1": up})
             max_value = Constant(table=t_max, scheduler=s)
             range_qry = RangeQuery(column="_1", scheduler=s)
             range_qry.create_dependent_modules(
@@ -39,9 +39,21 @@ class TestRangeQuery(ProgressiveTest):
         idx = (
             range_qry.input_module.output["result"]
             .data()
-            .eval("(_1>0.3)&(_1<0.8)", result_object="index")
+            .eval(f"(_1>{lo})&(_1<{up})", result_object="index")
         )
         self.assertEqual(range_qry.table.index, bitmap(idx))
+
+    def test_range_query_04_06(self) -> None:
+        "Run tests of the RangeQuery module"
+        self._range_query_impl(0.4, 0.6)
+
+    def test_range_query_03_08(self) -> None:
+        "Run tests of the RangeQuery module"
+        self._range_query_impl(0.3, 0.8)
+
+    def test_range_query_01_09(self) -> None:
+        "Run tests of the RangeQuery module"
+        self._range_query_impl(0.1, 0.9)
 
     def test_hist_index_min_max(self) -> None:
         "Test min_out and max_out on HistogramIndex"

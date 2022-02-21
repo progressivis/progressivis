@@ -264,7 +264,7 @@ class _HistogramIndexImpl(object):
         return detail
 
     def range_query(
-        self, lower: float, upper: float, approximate: bool = APPROX
+            self, lower: float, upper: float, all_ids: bitmap, approximate: bool = APPROX
     ) -> bitmap:
         """
         Return the bitmap of all rows with values in range [`lower`, `upper`[
@@ -272,7 +272,11 @@ class _HistogramIndexImpl(object):
         if lower > upper:
             lower, upper = upper, lower
         pos_lo, pos_up = np.digitize([lower, upper], self.bins)  # type: ignore
-        union = bitmap.union(*self.bitmaps[pos_lo + 1 : pos_up])
+        if pos_up - pos_lo > len(self.bins)//2:
+            exclusion = self.bitmaps[:pos_lo + 1] + self.bitmaps[pos_up:]
+            union = all_ids - bitmap.union(*exclusion)
+        else:
+            union = bitmap.union(*self.bitmaps[pos_lo + 1 : pos_up])
         if not approximate:
             detail = bitmap()
             ids = np.array(self.bitmaps[pos_lo], np.int64)
@@ -298,18 +302,19 @@ class _HistogramIndexImpl(object):
         """
         if lower > upper:
             lower, upper = upper, lower
-        pos = np.digitize([lower, upper], self.bins)  # type: ignore
+        pos_lo, pos_up = np.digitize([lower, upper], self.bins)  # type: ignore
         detail = bitmap()
-        res = self.bitmaps[pos[0] + 1 : pos[1]]
+        res = self.bitmaps[pos_lo + 1 : pos_up]
         if not approximate:
-            ids = np.array(self.bitmaps[pos[0]], np.int64)
+            ids = np.array(self.bitmaps[pos_lo], np.int64)
             values = self.column.loc[ids]
-            if pos[0] == pos[1]:
+            if pos_lo == pos_up:
                 selected = ids[(lower <= values) & (values < upper)]
+                detail.update(selected)
             else:
                 selected = ids[lower <= values]
                 detail.update(selected)
-                ids = np.array(self.bitmaps[pos[1]], np.int64)
+                ids = np.array(self.bitmaps[pos_up], np.int64)
                 values = self.column.loc[ids]
                 selected = ids[values < upper]
                 detail.update(selected)
@@ -325,23 +330,24 @@ class _HistogramIndexImpl(object):
         if lower > upper:
             lower, upper = upper, lower
         only_locs = bitmap.asbitmap(only_locs)
-        pos = np.digitize([lower, upper], self.bins)  # type: ignore
-        detail = bitmap()
+        pos_lo, pos_up = np.digitize([lower, upper], self.bins)  # type: ignore
+        union = bitmap.union(*[(bm & only_locs) for bm in self.bitmaps[pos_lo + 1 : pos_up]])
         if not approximate:
-            ids = np.array(self.bitmaps[pos[0]] & only_locs, np.int64)
+            detail = bitmap()
+            ids = np.array(self.bitmaps[pos_lo] & only_locs, np.int64)
             values = self.column.loc[ids]
-            if pos[0] == pos[1]:
+            if pos_lo == pos_up:
                 selected = ids[(lower <= values) & (values < upper)]
+                detail.update(selected)
             else:
                 selected = ids[lower <= values]
                 detail.update(selected)
-                ids = np.array(self.bitmaps[pos[1]] & only_locs, np.int64)
+                ids = np.array(self.bitmaps[pos_up] & only_locs, np.int64)
                 values = self.column.loc[ids]
                 selected = ids[values < upper]
                 detail.update(selected)
-        for bm in self.bitmaps[pos[0] + 1 : pos[1]]:
-            detail.update(bm & only_locs)
-        return detail
+            union.update(detail)
+        return union
 
     def get_min_bin(self) -> Optional[bitmap]:
         for bm in self.bitmaps:
@@ -475,7 +481,6 @@ class HistogramIndex(TableModule):
         input_table = input_slot.data()
         # self._table = input_table
         self._impl.update_histogram(created, updated, deleted)
-        self.selected.selection = self.selection
         return self._return_run_step(self.next_state(input_slot), steps_run=steps)
 
     def _eval_to_ids(
@@ -548,7 +553,7 @@ class HistogramIndex(TableModule):
         Return the list of rows with values in range [`lower`, `upper`[
         """
         if self._impl:
-            return self._impl.range_query(lower, upper, approximate)
+            return self._impl.range_query(lower, upper, self.selection, approximate)
         # there are no histogram because init_threshold wasn't be reached yet
         # so we query the input table directly
         return self._eval_to_ids(
