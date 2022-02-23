@@ -1,12 +1,234 @@
-import numpy as np
-
-from ..core.module import ReturnRunStep
-from ..core import Sink
-from ..stats.kll import KLLSketch
+from __future__ import annotations
+import logging
+from ..core import Sink, Scheduler
+from ..stats import (
+    Min,
+    Max,
+    KLLSketch,
+    Histogram1D,
+    Histogram1DCategorical,
+    Var,
+    Distinct,
+    Corr,
+)
 from ..table.module import TableModule
 from ..table.table import Table
+from ..table.pattern import Pattern
 from ..core.slot import SlotDescriptor
 from ..core.decorators import process_slot, run_if_any
+from ..table.dshape import dshape_fields
+from ..table.range_query import RangeQuery
+from ..utils.psdict import PsDict
+from ..io import DynVar
+from typing import Any, Callable, TYPE_CHECKING
+import numpy as np
+import pandas as pd
+
+if TYPE_CHECKING:
+    from ..core.module import ReturnRunStep
+
+
+logger = logging.getLogger(__name__)
+
+
+def make_col_stats(imod: TableModule, col: str) -> Callable:
+    async def _col_stats(scheduler: Scheduler, run_number: int) -> None:
+        with scheduler:
+            print("adding stats on", col)
+            kll = KLLSketch(column=col, scheduler=scheduler)
+            sink = Sink(scheduler=scheduler)
+            kll.input.table = imod.output.result
+            sink.input.inp = kll.output.result
+
+    return _col_stats
+
+
+def get_col_name(col: str):
+    return col.split(":")[0]
+
+
+def is_string_col(col: str):
+    return col.split(":")[1] == "string"
+
+
+class Histogram1dPattern(Pattern):
+    def __init__(self, column: str, factory: StatsFactory, **kwds: Any) -> None:
+        """ """
+        super().__init__(**kwds)
+        self._column = column
+        self._factory = factory
+
+    def create_dependent_modules(self) -> None:
+        super().create_dependent_modules()
+        input_module = self._factory._input_module
+        input_slot = self._factory._input_slot
+        scheduler = self._factory.scheduler()
+        col = self._column
+        with scheduler:
+            # TODO replace sink with a real dependency
+            self.kll = KLLSketch(column=col, scheduler=scheduler)
+            self.kll.params.binning = 128
+            self.kll.input.table = input_module.output[input_slot]
+            self.sink.input.inp = self.kll.output.result
+            # TODO: reuse min max
+            self.max = Max(scheduler=scheduler, columns=[col])
+            self.max.input.table = input_module.output[input_slot]
+            self.min = Min(scheduler=scheduler, columns=[col])
+            self.min.input.table = input_module.output[input_slot]
+            self.lower = DynVar({col: "*"}, scheduler=scheduler)
+            self.upper = DynVar({col: "*"}, scheduler=scheduler)
+            self.range_query = RangeQuery(
+                scheduler=scheduler, column=col, columns=[col], approximate=True
+            )
+            self.range_query.params.column = col
+            self.range_query.create_dependent_modules(
+                input_module,
+                input_slot,
+                min_=self.min,
+                max_=self.max,
+                min_value=self.lower,
+                max_value=self.upper,
+            )
+            self.histogram1d = Histogram1D(scheduler=scheduler, column=col)
+            self.histogram1d.input.table = self.range_query.output.result
+            self.histogram1d.input.min = self.range_query.output.min
+            self.histogram1d.input.max = self.range_query.output.max
+            sink = Sink(scheduler=scheduler)
+            sink.input.inp = self.histogram1d.output.result
+
+
+class DataShape(TableModule):
+    """
+    Adds statistics on input data
+    """
+
+    inputs = [
+        SlotDescriptor("table", type=Table, required=True),
+    ]
+
+    def __init__(self, **kwds: Any) -> None:
+        """ """
+        super().__init__(**kwds)
+        pass
+
+    def reset(self):
+        pass
+
+    @process_slot("table", reset_cb="reset")
+    @run_if_any
+    def run_step(
+        self, run_number: int, step_size: int, howlong: float
+    ) -> ReturnRunStep:
+        with self.context as ctx:
+            slot = ctx.table
+            data = slot.data()
+            if not data:
+                return self._return_run_step(self.state_blocked, steps_run=0)
+            if slot.has_buffered():
+                slot.clear_buffers()
+            self.result = PsDict({k: str(v) for (k, v) in dshape_fields(data.dshape)})
+            # print(self.psdict)
+            return self._return_run_step(self.state_zombie, steps_run=0)
+
+
+def _add_max_col(col: str, factory: StatsFactory) -> None:
+    input_module = factory._input_module
+    scheduler = factory.scheduler()
+    with scheduler:
+        m = Max(columns=[col], scheduler=scheduler)
+        m.input.table = input_module.output.result
+        sink = Sink(scheduler=scheduler)
+        sink.input.inp = m.output.result
+        return m
+
+
+def _add_min_col(col: str, factory: StatsFactory) -> None:
+    input_module = factory._input_module
+    scheduler = factory.scheduler()
+    with scheduler:
+        m = Min(columns=[col], scheduler=scheduler)
+        m.input.table = input_module.output.result
+        sink = Sink(scheduler=scheduler)
+        sink.input.inp = m.output.result
+        return m
+
+
+def _add_var_col(col: str, factory: StatsFactory) -> None:
+    input_module = factory._input_module
+    scheduler = factory.scheduler()
+    with scheduler:
+        m = Var(columns=[col], scheduler=scheduler)
+        m.input.table = input_module.output.result
+        sink = Sink(scheduler=scheduler)
+        sink.input.inp = m.output.result
+        return m
+
+
+def _add_distinct_col(col: str, factory: StatsFactory) -> None:
+    input_module = factory._input_module
+    scheduler = factory.scheduler()
+    with scheduler:
+        m = Distinct(columns=[col], scheduler=scheduler)
+        m.input.table = input_module.output.result
+        sink = Sink(scheduler=scheduler)
+        sink.input.inp = m.output.result
+        return m
+
+
+def _add_correlation(factory: StatsFactory) -> None:
+    df = factory.last_selection.get("matrix")
+    columns = df.index[df.loc[:, "corr"]]
+    columns = [c.split(":")[0] for c in columns]
+    prev_corr = factory._multi_col_modules.get("corr")
+    print("CORRRR............1")
+    if prev_corr is not None:
+        if prev_corr._columns == columns:
+            return
+        print("CORRRR............2")
+        # list of column changed => remove old module
+        print("remove corr", prev_corr._columns)
+        factory._to_delete.append(prev_corr.name)
+        del factory._multi_col_modules["corr"]
+        print("CORRRR............3")
+    if len(columns) < 2:
+        print("correlation needs at least 2 cols")
+        return
+        print("CORRRR............4")
+    input_module = factory._input_module
+    scheduler = factory.scheduler()
+    with scheduler:
+        print("create corr", columns)
+        m = Corr(columns=list(columns), scheduler=scheduler)
+        m.input.table = input_module.output.result
+        sink = Sink(scheduler=scheduler)
+        sink.input.inp = m.output.result
+        factory._multi_col_modules["corr"] = m
+        return m
+
+
+def _add_barplot_col(col: str, factory: StatsFactory) -> None:
+    input_module = factory._input_module
+    scheduler = factory.scheduler()
+    with scheduler:
+        m = Histogram1DCategorical(scheduler=scheduler, column=col)
+        m.input.table = input_module.output.result
+        sink = Sink(scheduler=scheduler)
+        sink.input.inp = m.output.result
+        return m
+
+
+def _add_hist_col(col: str, factory: StatsFactory) -> None:
+    col_type = factory.types[col]
+    if col_type == "string":
+        return _add_barplot_col(col, factory)
+    scheduler = factory.scheduler()
+    with scheduler:
+        m = Histogram1dPattern(column=col, factory=factory, scheduler=scheduler)
+        # sink = Sink(scheduler=scheduler)
+        # sink.input.inp = m.output.result
+        m.create_dependent_modules()
+        print("add hist col")
+        return m
 
 
 class StatsFactory(TableModule):
@@ -16,30 +238,105 @@ class StatsFactory(TableModule):
 
     inputs = [
         SlotDescriptor("table", type=Table, required=True),
+        SlotDescriptor("selection", type=PsDict, required=True),
     ]
 
-    @process_slot("table", reset_cb="reset")
+    def __init__(
+        self, input_module: TableModule, input_slot: str = "result", **kwds: Any
+    ) -> None:
+        """ """
+        super().__init__(**kwds)
+        self._input_module = input_module
+        self._input_slot = input_slot
+        self._matrix = None
+        self.types = None
+        self._multi_col_funcs = set(["corr"])
+        self._multi_col_modules = {}
+        # self.functions = ["hide", "min", "max", "var", "distinct", "hist", "corr"]
+        # self.functions = ["hide", "hist", "min", "max", "var"]
+        self.func_dict = dict(
+            hide=None,
+            max=_add_max_col,
+            min=_add_min_col,
+            var=_add_var_col,
+            hist=_add_hist_col,
+            distinct=_add_distinct_col,
+            corr=_add_correlation,
+        )
+        self._sink = None
+
+    def reset(self):
+        pass
+
+    @process_slot("table", "selection", reset_cb="reset")
     @run_if_any
     def run_step(
         self, run_number: int, step_size: int, howlong: float
     ) -> ReturnRunStep:
-        assert self.context is not None
         with self.context as ctx:
-            dfslot = ctx.table
-            input_df = dfslot.data()
-            if not input_df or len(input_df) == 0:
+            slot = ctx.table
+            data = slot.data()
+            if not data:
                 return self._return_run_step(self.state_blocked, steps_run=0)
-            source_m = dfslot.output_module
+            if slot.has_buffered():
+                slot.clear_buffers()
+            if self._matrix is None:
+                print("Trace")
+                self.types = {k: str(v) for (k, v) in dshape_fields(data.dshape)}
+                cols = [f"{k}:{v}" for (k, v) in dshape_fields(data.dshape)]
+                funcs = self.func_dict.keys()
+                arr = np.zeros((len(cols), len(funcs)), dtype=object)
+                self._matrix = pd.DataFrame(arr, index=cols, columns=funcs)
+
+            sel_slot = ctx.selection
+            if not sel_slot.has_buffered():
+                return self._return_run_step(self.state_blocked, steps_run=0)
+            sel_slot.clear_buffers()
+            self.last_selection = sel_slot.data()
+            # print(sel_slot.data())
+            hidden_cols = self.last_selection.get("hidden_cols", [])
+            self._to_delete = []
+            for col in hidden_cols:
+                for cell in self._matrix.loc[col, :]:
+                    if cell:
+                        self._to_delete.append(cell.name)
+                self._matrix.loc[col, :] = 0
             scheduler = self.scheduler()
-            with scheduler:
-                for col in input_df.columns:
-                    if input_df[col].dtype.char not in (
-                        np.typecodes["AllInteger"] + np.typecodes["AllFloat"]
-                    ):
-                        continue
-                    print("adding stats on", col)
-                    kll = KLLSketch(column=col, scheduler=scheduler)
-                    sink = Sink(scheduler=scheduler)
-                    kll.input.table = source_m.output.result
-                    sink.input.inp = kll.output.result
-            return self._return_terminate()
+            df = self.last_selection.get("matrix")
+            if df is None:
+                return self._return_run_step(
+                    self.state_blocked, steps_run=len(self._to_delete)
+                )
+            print("df", df)
+            # import pdb;pdb.set_trace()
+            for func in df.columns:
+                if func in self._multi_col_funcs:
+                    self._multi_col_modules[func] = self.func_dict[func](self)
+                    continue
+                for attr in df.index:
+                    cell = df.loc[attr, func]
+                    if cell:
+                        print("True", attr, func)
+                        if not self._matrix.loc[attr, func]:
+                            col_name = get_col_name(attr)
+                            self._matrix.loc[attr, func] = self.func_dict[func](
+                                col_name, self
+                            )
+                    else:
+                        if self._matrix.loc[attr, func]:
+                            self._to_delete.append(self._matrix.loc[attr, func].name)
+                            self._matrix.loc[attr, func] = 0
+            print("self._to_delete", self._to_delete)
+            if self._to_delete:
+                with scheduler as dataflow:
+                    for m in self._to_delete:
+                        deps = dataflow.collateral_damage(m)
+                        print(m, deps)
+                        dataflow.delete_modules(*deps)
+                    # pass
+            return self._return_run_step(self.state_blocked, steps_run=0)
+
+    def create_dependent_modules(self, var_name=None):
+        s = self.scheduler()
+        self.variable = DynVar(name=var_name, scheduler=s)
+        self.input.selection = self.variable.output.result
