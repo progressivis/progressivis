@@ -20,7 +20,7 @@ from ..table.dshape import dshape_fields
 from ..table.range_query import RangeQuery
 from ..utils.psdict import PsDict
 from ..io import DynVar
-from typing import Any, Callable, TYPE_CHECKING
+from typing import Any, Dict, Callable, Optional, TYPE_CHECKING, cast
 import numpy as np
 import pandas as pd
 
@@ -43,14 +43,6 @@ def make_col_stats(imod: TableModule, col: str) -> Callable:
     return _col_stats
 
 
-def get_col_name(col: str):
-    return col.split(":")[0]
-
-
-def is_string_col(col: str):
-    return col.split(":")[1] == "string"
-
-
 class Histogram1dPattern(Pattern):
     def __init__(self, column: str, factory: StatsFactory, **kwds: Any) -> None:
         """ """
@@ -69,6 +61,7 @@ class Histogram1dPattern(Pattern):
             self.kll = KLLSketch(column=col, scheduler=scheduler)
             self.kll.params.binning = 128
             self.kll.input.table = input_module.output[input_slot]
+            assert self.sink
             self.sink.input.inp = self.kll.output.result
             # TODO: reuse min max
             self.max = Max(scheduler=scheduler, columns=[col])
@@ -119,6 +112,7 @@ class DataShape(TableModule):
     def run_step(
         self, run_number: int, step_size: int, howlong: float
     ) -> ReturnRunStep:
+        assert self.context
         with self.context as ctx:
             slot = ctx.table
             data = slot.data()
@@ -131,7 +125,7 @@ class DataShape(TableModule):
             return self._return_run_step(self.state_zombie, steps_run=0)
 
 
-def _add_max_col(col: str, factory: StatsFactory) -> None:
+def _add_max_col(col: str, factory: StatsFactory) -> Max:
     input_module = factory._input_module
     scheduler = factory.scheduler()
     with scheduler:
@@ -142,7 +136,7 @@ def _add_max_col(col: str, factory: StatsFactory) -> None:
         return m
 
 
-def _add_min_col(col: str, factory: StatsFactory) -> None:
+def _add_min_col(col: str, factory: StatsFactory) -> Min:
     input_module = factory._input_module
     scheduler = factory.scheduler()
     with scheduler:
@@ -153,7 +147,7 @@ def _add_min_col(col: str, factory: StatsFactory) -> None:
         return m
 
 
-def _add_var_col(col: str, factory: StatsFactory) -> None:
+def _add_var_col(col: str, factory: StatsFactory) -> Var:
     input_module = factory._input_module
     scheduler = factory.scheduler()
     with scheduler:
@@ -164,7 +158,7 @@ def _add_var_col(col: str, factory: StatsFactory) -> None:
         return m
 
 
-def _add_distinct_col(col: str, factory: StatsFactory) -> None:
+def _add_distinct_col(col: str, factory: StatsFactory) -> Distinct:
     input_module = factory._input_module
     scheduler = factory.scheduler()
     with scheduler:
@@ -175,29 +169,26 @@ def _add_distinct_col(col: str, factory: StatsFactory) -> None:
         return m
 
 
-def _add_correlation(factory: StatsFactory) -> None:
+def _add_correlation(col: str, factory: StatsFactory) -> Optional[Corr]:
+    _ = col  # keeps mypy happy ...
     df = factory.last_selection.get("matrix")
     columns = df.index[df.loc[:, "corr"]]
-    columns = [c.split(":")[0] for c in columns]
-    prev_corr = factory._multi_col_modules.get("corr")
-    print("CORRRR............1")
+    columns = list(columns)
+    prev_corr: Optional[Corr] = cast(
+        Optional[Corr], factory._multi_col_modules.get("corr")
+    )
     if prev_corr is not None:
         if prev_corr._columns == columns:
-            return
-        print("CORRRR............2")
+            return prev_corr
         # list of column changed => remove old module
         print("remove corr", prev_corr._columns)
         factory._to_delete.append(prev_corr.name)
         del factory._multi_col_modules["corr"]
-        print("CORRRR............3")
     if len(columns) < 2:
-        print("correlation needs at least 2 cols")
-        return
-        print("CORRRR............4")
+        return None
     input_module = factory._input_module
     scheduler = factory.scheduler()
     with scheduler:
-        print("create corr", columns)
         m = Corr(columns=list(columns), scheduler=scheduler)
         m.input.table = input_module.output.result
         sink = Sink(scheduler=scheduler)
@@ -206,7 +197,7 @@ def _add_correlation(factory: StatsFactory) -> None:
         return m
 
 
-def _add_barplot_col(col: str, factory: StatsFactory) -> None:
+def _add_barplot_col(col: str, factory: StatsFactory) -> Histogram1DCategorical:
     input_module = factory._input_module
     scheduler = factory.scheduler()
     with scheduler:
@@ -217,7 +208,8 @@ def _add_barplot_col(col: str, factory: StatsFactory) -> None:
         return m
 
 
-def _add_hist_col(col: str, factory: StatsFactory) -> None:
+def _add_hist_col(col: str, factory: StatsFactory) -> TableModule:
+    assert factory.types
     col_type = factory.types[col]
     if col_type == "string":
         return _add_barplot_col(col, factory)
@@ -229,6 +221,10 @@ def _add_hist_col(col: str, factory: StatsFactory) -> None:
         m.create_dependent_modules()
         print("add hist col")
         return m
+
+
+def _hide_func(col: str, factory: StatsFactory) -> None:
+    raise ValueError("hide function should not be called ...")
 
 
 class StatsFactory(TableModule):
@@ -248,14 +244,14 @@ class StatsFactory(TableModule):
         super().__init__(**kwds)
         self._input_module = input_module
         self._input_slot = input_slot
-        self._matrix = None
-        self.types = None
+        self._matrix: Optional[pd.DataFrame] = None
+        self.types: Optional[Dict[str, str]] = None
         self._multi_col_funcs = set(["corr"])
-        self._multi_col_modules = {}
+        self._multi_col_modules: Dict[str, Optional[TableModule]] = {}
         # self.functions = ["hide", "min", "max", "var", "distinct", "hist", "corr"]
         # self.functions = ["hide", "hist", "min", "max", "var"]
-        self.func_dict = dict(
-            hide=None,
+        self.func_dict: Dict[str, Callable] = dict(
+            hide=_hide_func,
             max=_add_max_col,
             min=_add_min_col,
             var=_add_var_col,
@@ -273,6 +269,7 @@ class StatsFactory(TableModule):
     def run_step(
         self, run_number: int, step_size: int, howlong: float
     ) -> ReturnRunStep:
+        assert self.context
         with self.context as ctx:
             slot = ctx.table
             data = slot.data()
@@ -283,7 +280,7 @@ class StatsFactory(TableModule):
             if self._matrix is None:
                 print("Trace")
                 self.types = {k: str(v) for (k, v) in dshape_fields(data.dshape)}
-                cols = [f"{k}:{v}" for (k, v) in dshape_fields(data.dshape)]
+                cols = [k for (k, v) in dshape_fields(data.dshape)]
                 funcs = self.func_dict.keys()
                 arr = np.zeros((len(cols), len(funcs)), dtype=object)
                 self._matrix = pd.DataFrame(arr, index=cols, columns=funcs)
@@ -307,20 +304,17 @@ class StatsFactory(TableModule):
                 return self._return_run_step(
                     self.state_blocked, steps_run=len(self._to_delete)
                 )
-            print("df", df)
-            # import pdb;pdb.set_trace()
             for func in df.columns:
                 if func in self._multi_col_funcs:
-                    self._multi_col_modules[func] = self.func_dict[func](self)
+                    self._multi_col_modules[func] = self.func_dict[func]("", self)
                     continue
                 for attr in df.index:
                     cell = df.loc[attr, func]
                     if cell:
                         print("True", attr, func)
                         if not self._matrix.loc[attr, func]:
-                            col_name = get_col_name(attr)
                             self._matrix.loc[attr, func] = self.func_dict[func](
-                                col_name, self
+                                attr, self
                             )
                     else:
                         if self._matrix.loc[attr, func]:

@@ -12,6 +12,7 @@ from .sparkline_progressbar import *
 from .plotting_progressbar import *
 from .iscaler import *
 from .data_viewer import *
+from .dyn_viewer import *
 from .utils import *
 
 from typing import List, Dict

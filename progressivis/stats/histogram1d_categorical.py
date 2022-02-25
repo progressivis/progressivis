@@ -14,7 +14,7 @@ from ..utils.psdict import PsDict
 from ..core.decorators import process_slot, run_if_any
 from ..utils.errors import ProgressiveError
 
-from typing import Any, List, Union
+from typing import Any, Union
 
 
 logger = logging.getLogger(__name__)
@@ -29,7 +29,7 @@ class Histogram1DCategorical(TableModule):
 
     schema = "{ array: var * int32, min: float64, max: float64, time: int64 }"
 
-    def __init__(self, column: List[Union[str, int]], **kwds: Any) -> None:
+    def __init__(self, column: Union[str, int], **kwds: Any) -> None:
         super().__init__(dataframe_slot="table", **kwds)
         self.column = column
         self.total_read = 0

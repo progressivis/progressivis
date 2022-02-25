@@ -5,25 +5,40 @@ import ipywidgets as ipw
 import numpy as np
 import pandas as pd
 from progressivis.core import asynchronize, aio
+from progressivis.utils.psdict import PsDict
+from progressivis.io import DynVar
+from progressivis.stats import KLLSketch, Corr, Histogram1D, Histogram1DCategorical
+from progressivis.vis import StatsFactory, DataShape, Histogram1dPattern
 from vega.widget import VegaWidget
 from ._hist1d_schema import hist1d_spec_no_data, kll_spec_no_data
 from ._corr_schema import corr_spec_no_data
 from ._bar_schema import bar_spec_no_data
-from collections import defaultdict
 
-# https://stackoverflow.com/questions/59741643/how-to-specify-rule-line-with-a-single-value-in-vegalite
+from typing import (
+    Any as AnyType,
+    cast,
+    Optional,
+    Dict,
+    Set,
+    Union,
+    List,
+    Tuple,
+    Callable,
+)
+
+WidgetType = AnyType
+
 
 N_BINS = 128
 LAST_BIN = N_BINS - 1
 
 
-wg_lock = aio.Lock()
-IS_DEBUG = True
+IS_DEBUG = False
 debug_console = None
-range_widgets = {}
+range_widgets: Dict[str, ipw.IntRangeSlider] = {}
 
 
-def bins_range_slider(desc):
+def bins_range_slider(desc: str) -> ipw.IntRangeSlider:
     return ipw.IntRangeSlider(
         value=[0, LAST_BIN],
         min=0,
@@ -38,12 +53,13 @@ def bins_range_slider(desc):
     )
 
 
-def _make_cbx_obs(dyn_viewer, col, func):
-    def _cbk(change):
+def _make_cbx_obs(dyn_viewer: "DynViewer", col: str, func: str) -> Callable:
+    def _cbk(change: AnyType):
         dyn_viewer._btn_apply.disabled = False
         if func == "hide":
             dyn_viewer.hidden_cols.append(col)
             dyn_viewer.visible_cols.remove(col)
+            assert dyn_viewer._hidden_sel_wg
             dyn_viewer._hidden_sel_wg.options = sorted(dyn_viewer.hidden_cols)
             gb = dyn_viewer.draw_matrix()
             dyn_viewer.unlock_conf()
@@ -56,8 +72,8 @@ def _make_cbx_obs(dyn_viewer, col, func):
     return _cbk
 
 
-def _make_btn_edit_cb(dyn_viewer):
-    def _cbk(btn):
+def _make_btn_edit_cb(dyn_viewer: "DynViewer") -> Callable:
+    def _cbk(btn: ipw.Button):
         btn.disabled = True
         dyn_viewer.save_for_cancel = (
             dyn_viewer.hidden_cols[:],
@@ -71,13 +87,14 @@ def _make_btn_edit_cb(dyn_viewer):
     return _cbk
 
 
-def _make_btn_cancel_cb(dyn_viewer):
-    def _cbk(btn):
+def _make_btn_cancel_cb(dyn_viewer: "DynViewer") -> Callable:
+    def _cbk(btn: ipw.Button):
         btn.disabled = True
         dyn_viewer._btn_edit.disabled = False
         hcols, vcols, df = dyn_viewer.save_for_cancel
         dyn_viewer.hidden_cols = hcols[:]
         dyn_viewer.visible_cols = vcols[:]
+        assert dyn_viewer._hidden_sel_wg
         dyn_viewer._hidden_sel_wg.options = dyn_viewer.hidden_cols
         gb = dyn_viewer.draw_matrix(df)
         dyn_viewer.lock_conf()
@@ -92,8 +109,8 @@ def _make_btn_cancel_cb(dyn_viewer):
     return _cbk
 
 
-def _make_btn_apply_cb(dyn_viewer):
-    def _cbk(btn):
+def _make_btn_apply_cb(dyn_viewer: "DynViewer") -> Callable:
+    def _cbk(btn: ipw.Button):
         btn.disabled = True
         dyn_viewer._btn_edit.disabled = False
         dyn_viewer._btn_cancel.disabled = True
@@ -113,8 +130,8 @@ def _make_btn_apply_cb(dyn_viewer):
     return _cbk
 
 
-def _make_selm_obs(dyn_viewer):
-    def _cbk(change):
+def _make_selm_obs(dyn_viewer: "DynViewer") -> Callable:
+    def _cbk(change: AnyType):
         if dyn_viewer.obs_flag:
             return
         try:
@@ -123,6 +140,7 @@ def _make_selm_obs(dyn_viewer):
             for col in cols:
                 dyn_viewer.hidden_cols.remove(col)
                 dyn_viewer.visible_cols.append(col)
+            assert dyn_viewer._hidden_sel_wg
             dyn_viewer._hidden_sel_wg.options = sorted(dyn_viewer.hidden_cols)
             gb = dyn_viewer.draw_matrix()
             dyn_viewer.unlock_conf()
@@ -137,7 +155,9 @@ def _make_selm_obs(dyn_viewer):
     return _cbk
 
 
-def make_button(label, disabled=False, cb=None):
+def make_button(
+    label: str, disabled: bool = False, cb: Optional[Callable] = None
+) -> ipw.Button:
     btn = ipw.Button(
         description=label,
         disabled=disabled,
@@ -150,58 +170,36 @@ def make_button(label, disabled=False, cb=None):
     return btn
 
 
-def make_observer(hname, sk_mod, lower_mod, upper_mod):
+def make_observer(
+    hname: str, sk_mod: KLLSketch, lower_mod: DynVar, upper_mod: DynVar
+) -> Callable:
     def _observe_range(val):
         async def _coro(v):
-            async with wg_lock:
-                lo = v["new"][0]
-                up = v["new"][1]
-                res = sk_mod.result
-                hist = res["pmf"]
-                min_ = res["min"]
-                max_ = res["max"]
-                len_ = len(hist)
-                bins_ = np.linspace(min_, max_, len_)
-                lower = bins_[lo]
-                upper = bins_[up]
-                await lower_mod.from_input({hname: lower})
-                await upper_mod.from_input({hname: upper})
+            lo = v["new"][0]
+            up = v["new"][1]
+            res = sk_mod.result
+            hist = res["pmf"]
+            min_ = res["min"]
+            max_ = res["max"]
+            len_ = len(hist)
+            bins_ = np.linspace(min_, max_, len_)
+            lower = bins_[lo]
+            upper = bins_[up]
+            await lower_mod.from_input({hname: lower})
+            await upper_mod.from_input({hname: upper})
 
         aio.create_task(_coro(val))
 
     return _observe_range
 
 
-def my_print(*args, **kw):
-    if debug_console:
-        with debug_console:
-            print(*args, **kw)
-
-
-once_dict = {}
-
-
-def my_print_once(*args):
-    if args in once_dict:
-        return
-    once_dict[args] = True
-    my_print(*args)
-
-
-nn_dict = defaultdict(int)
-
-
-def my_print_n(*args, repeat=1, **kw):
-    if nn_dict[args] >= repeat:
-        return
-    nn_dict[args] += 1
-    my_print(*args, kw)
-
-
-def corr_as_vega_dataset(mod, columns=None):
+def corr_as_vega_dataset(
+    mod: Corr, columns: Optional[List[str]] = None
+) -> List[Dict[str, AnyType]]:
     """ """
     if columns is None:
         columns = mod._columns
+        assert columns
 
     def _c(kx, ky):
         return mod.result[frozenset([kx, ky])]
@@ -212,7 +210,7 @@ def corr_as_vega_dataset(mod, columns=None):
     ]
 
 
-def categ_as_vega_dataset(categs):
+def categ_as_vega_dataset(categs: PsDict):
     return [{"category": k, "count": v} for (k, v) in categs.items()]
 
 
@@ -231,28 +229,28 @@ def format_label(arg):
 
 @format_label.register(float)
 @format_label.register(np.floating)
-def _(arg):
+def _np_floating_arg(arg):
     return f"{arg:.4f}"
 
 
 @format_label.register(str)
-def _(arg):
+def _str_arg(arg):
     return arg
 
 
 @format_label.register(Iterable)
-def _(arg):
+def _len_arg(arg):
     return str(len(arg))
 
 
-def refresh_info_sketch(hout, hmod):
+def refresh_info_sketch(hout: WidgetType, hmod: KLLSketch) -> None:
     if not hmod.result:
         return
-    res = hmod.result
+    res = hmod.psdict
     hist = res["pmf"]
-    min_ = res["min"]
-    max_ = res["max"]
-    len_ = len(hist)
+    min_: float = res["min"]
+    max_: float = res["max"]
+    len_: int = len(hist)
     bins_ = np.linspace(min_, max_, len_)
     rule_lower = np.zeros(len_, dtype="int32")
     rule_upper = np.zeros(len_, dtype="int32")
@@ -280,8 +278,16 @@ def refresh_info_sketch(hout, hmod):
     label_max.value = f" -- {bins_[range_widget.value[1]]:.2f}"
 
 
-def refresh_info_barplot(hout, hmod):
-    categs = hmod.result
+def _refresh_info_sketch(hout: WidgetType, hmod: KLLSketch) -> Callable:
+    async def _coro(_1, _2):
+        _ = _1, _2
+        await asynchronize(refresh_info_sketch, hout, hmod)
+
+    return _coro
+
+
+def refresh_info_barplot(hout: WidgetType, hmod: Histogram1DCategorical) -> None:
+    categs = hmod.psdict
     if not categs:
         return
     dataset = categ_as_vega_dataset(categs)
@@ -289,10 +295,20 @@ def refresh_info_barplot(hout, hmod):
     return
 
 
-def refresh_info_hist_1d(hout, h1d_mod):
-    if not h1d_mod.result:
+def _refresh_info_barplot(hout: WidgetType, hmod: Histogram1DCategorical) -> Callable:
+    async def _coro(_1, _2):
+        _ = _1, _2
+        await asynchronize(refresh_info_barplot, hout, hmod)
+
+    return _coro
+
+
+def refresh_info_hist_1d(hout: WidgetType, h1d_mod: Histogram1D) -> None:
+    if not h1d_mod.table:
         return
-    res = h1d_mod.result.last().to_dict()
+    last = h1d_mod.table.last()
+    assert last
+    res = last.to_dict()
     hist = res["array"]
     min_ = res["min"]
     max_ = res["max"]
@@ -301,63 +317,49 @@ def refresh_info_hist_1d(hout, h1d_mod):
     hout.children[1].update("data", remove="true", insert=source)
 
 
-def _refresh_info_sketch(hout, hmod):
-    async def _coro(_1, _2):
-        _ = _1, _2
-        await asynchronize(refresh_info_sketch, hout, hmod)
-
-    return _coro
-
-
-def _refresh_info_barplot(hout, hmod):
-    async def _coro(_1, _2):
-        _ = _1, _2
-        await asynchronize(refresh_info_barplot, hout, hmod)
-
-    return _coro
-
-
-def _refresh_info_hist_1d(hout, hmod):
+def _refresh_info_hist_1d(hout: WidgetType, h1d_mod: Histogram1D) -> Callable:
     async def _coro(_1, _2):
         _ = _1, _2
         # async with wg_lock:
-        await asynchronize(refresh_info_hist_1d, hout, hmod)
+        await asynchronize(refresh_info_hist_1d, hout, h1d_mod)
 
     return _coro
 
 
-def refresh_info_corr(cout, cmod, main_wg):
+def refresh_info_corr(cout: WidgetType, cmod: Corr) -> None:
     if not cmod.result:
         return
-    cols = cmod._columns  # main_wg.get_corr_sel()
+    cols = cmod._columns
     dataset = corr_as_vega_dataset(cmod, cols)
     cout.update("data", remove="true", insert=dataset)
 
 
-def _refresh_info_corr(cout, cmod, wg):
+def _refresh_info_corr(cout: WidgetType, cmod: Corr) -> Callable:
     async def _coro(_1, _2):
         _ = _1, _2
-        await asynchronize(refresh_info_corr, cout, cmod, wg)
+        await asynchronize(refresh_info_corr, cout, cmod)
 
     return _coro
 
 
-type_op_mismatches = dict(string=set(["min", "max", "var", "corr"]))
+type_op_mismatches: Dict[str, Set[str]] = dict(
+    string=set(["min", "max", "var", "corr"])
+)
 
 
-def get_flag_status(dt, op):
+def get_flag_status(dt: str, op: str) -> bool:
     return op in type_op_mismatches.get(dt, set())
 
 
 class DynTab(ipw.Tab):
-    def set_next_title(self, name):
+    def set_next_title(self, name: str) -> None:
         pos = len(self.children) - 1
         self.set_title(pos, name)
 
-    def get_titles(self):
+    def get_titles(self) -> List[str]:
         return [self.get_title(pos) for pos in range(len(self.children))]
 
-    def set_tab(self, title, wg, overwrite=True):
+    def set_tab(self, title: str, wg: WidgetType, overwrite: bool = True) -> None:
         all_titles = self.get_titles()
         if title in all_titles:
             if not overwrite:
@@ -384,21 +386,24 @@ class DynTab(ipw.Tab):
 
 
 class DynViewer(DynTab):
-    # scalar_functions = {'min': 'Min', 'max': 'Max'}
-    def __init__(self, dshape_mod, registry_mod, scheduler=None):
+    save_for_cancel: Tuple[AnyType, ...]
+
+    def __init__(self, dshape_mod: DataShape, registry_mod: StatsFactory):
         self._dshape_mod = dshape_mod
         self._registry_mod = registry_mod
-        self.hidden_cols = []
-        self._hidden_sel_wg = None
-        self.visible_cols = None
-        self._last_df = None
-        self.previous_visible_cols = []
-        self.info_labels = {}
-        self.info_cbx = {}
-        self._hdict = {}
-        self._hist_tab = None
-        self._hist_sel = set()
-        self._corr_sel = set()
+        self.hidden_cols: List[str] = []
+        self._hidden_sel_wg: Optional[ipw.SelectMultiple] = None
+        self.visible_cols: List[str] = []
+        self._last_df: Optional[pd.DataFrame] = None
+        self.previous_visible_cols: List[str] = []
+        self.info_labels: Dict[Tuple[str, str], ipw.Label] = {}
+        self.info_cbx: Dict[Tuple[str, str], ipw.Checkbox] = {}
+        self._hdict: Dict[
+            str, Tuple[Union[Histogram1dPattern, Histogram1DCategorical], WidgetType]
+        ] = {}
+        self._hist_tab: Optional[DynTab] = None
+        self._hist_sel: Set[AnyType] = set()
+        self._corr_sel: List[str] = []
         # self._dshape_mod.on_after_run(_refresh_info(self))
         self._dshape_mod.scheduler().on_loop(_refresh_info(self))
         self.all_functions = {
@@ -412,13 +417,15 @@ class DynViewer(DynTab):
         self.obs_flag = False
         super().__init__(children=[])
 
-    def draw_matrix(self, ext_df=None):
-        lst = [ipw.Label("")] + [ipw.Label(s) for s in self.all_functions.values()]
+    def draw_matrix(self, ext_df: Optional[pd.DataFrame] = None) -> ipw.GridBox:
+        lst: List[WidgetType] = [ipw.Label("")] + [
+            ipw.Label(s) for s in self.all_functions.values()
+        ]
         width_ = len(lst)
         df = self.matrix_to_df() if ext_df is None else ext_df
         for col in sorted(self.visible_cols):
-            _, col_type = col.split(":")
-            lst.append(ipw.Label(col))
+            col_type = self.col_types[col]
+            lst.append(ipw.Label(f"{col}:{col_type}"))
             for k in self.all_functions.keys():
                 lst.append(self._info_checkbox(col, k, get_flag_status(col_type, k)))
         gb = ipw.GridBox(
@@ -431,20 +438,22 @@ class DynViewer(DynTab):
                     self.info_cbx[(i, c)].value = bool(df.loc[i, c])
         return gb
 
-    def lock_conf(self):
+    def lock_conf(self) -> None:
+        assert self._hidden_sel_wg
         self._hidden_sel_wg.disabled = True
         for cbx in self.info_cbx.values():
             cbx.disabled = True
 
-    def unlock_conf(self):
+    def unlock_conf(self) -> None:
+        assert self._hidden_sel_wg
         self._hidden_sel_wg.disabled = False
         for (key, func), cbx in self.info_cbx.items():
-            _, dtype = key.split(":")
+            dtype = self.col_types[key]
             cbx.disabled = get_flag_status(dtype, func)
 
-    def matrix_to_df(self):
+    def matrix_to_df(self) -> Optional[pd.DataFrame]:
         if not self.info_cbx:
-            return
+            return None
         cols = self.visible_cols
         funcs = list(self.all_functions.keys())[1:]  # because 0 is "hide"
         arr = np.zeros((len(cols), len(funcs)), dtype=bool)
@@ -454,7 +463,7 @@ class DynViewer(DynTab):
         df = pd.DataFrame(arr, index=cols, columns=funcs)
         return df
 
-    def make_btn_bar(self):
+    def make_btn_bar(self) -> ipw.HBox:
         self._btn_edit = make_button("Edit", disabled=False, cb=_make_btn_edit_cb(self))
         self._btn_cancel = make_button(
             "Cancel", disabled=True, cb=_make_btn_cancel_cb(self)
@@ -465,18 +474,21 @@ class DynViewer(DynTab):
         self._btn_bar = ipw.HBox([self._btn_edit, self._btn_cancel, self._btn_apply])
         return self._btn_bar
 
-    def get_histogram_widget(self, hname, hist_mod):
-        if hname in self._hdict and self._hdict[hname][0] is hist_mod:
-            return self._hdict[hname][1]
-        name, type_ = hname.split(":")
+    def get_histogram_widget(
+        self, name: str, hist_mod: Union[Histogram1dPattern, Histogram1DCategorical]
+    ) -> Union[ipw.VBox, VegaWidget]:
+        if name in self._hdict and self._hdict[name][0] is hist_mod:
+            return self._hdict[name][1]
+        type_ = self.col_types[name]
+        hout: Union[ipw.VBox, VegaWidget]
         if type_ == "string":
             hout = VegaWidget(spec=bar_spec_no_data)
-            bp_mod = hist_mod
+            bp_mod = cast(Histogram1DCategorical, hist_mod)
             bp_mod.on_after_run(_refresh_info_barplot(hout, bp_mod))
         else:
+            hist_mod = cast(Histogram1dPattern, hist_mod)
             hmod_1d = hist_mod.histogram1d
             sk_mod = hist_mod.kll
-            # bp_mod = hdict["barplot"]
             lower_mod = hist_mod.lower
             upper_mod = hist_mod.upper
             range_slider = bins_range_slider("Range:")
@@ -503,13 +515,14 @@ class DynViewer(DynTab):
             )
             sk_mod.on_after_run(_refresh_info_sketch(hout, sk_mod))
             hmod_1d.on_after_run(_refresh_info_hist_1d(hout, hmod_1d))
-        self._hdict[hname] = [hist_mod, hout]
+        self._hdict[name] = (hist_mod, hout)
         return hout
 
-    def get_selection_set(self, func):
+    def get_selection_set(self, func: str) -> Set[str]:
+        assert self._last_df
         return set(self._last_df.index[self._last_df.loc[:, func] != 0])
 
-    def refresh_info(self):
+    def refresh_info(self) -> None:
         print(".", end="")
         global debug_console
         if self._dshape_mod.result is None:
@@ -524,9 +537,8 @@ class DynViewer(DynTab):
                 disabled=False,
             )
             self._hidden_sel_wg = selm
-            self.visible_cols = [
-                f"{k}:{t}" for (k, t) in self._dshape_mod.result.items()
-            ]
+            self.col_types = {k: str(t) for (k, t) in self._dshape_mod.psdict.items()}
+            self.visible_cols = list(self.col_types.keys())
             selm.observe(_make_selm_obs(self), "value")
             gb = self.draw_matrix()
             self.conf_box = ipw.VBox([selm, gb, self.make_btn_bar()])
@@ -544,7 +556,7 @@ class DynViewer(DynTab):
             ]
             width_ = len(lst)
             for col in self.visible_cols:
-                lst.append(ipw.Label(col))
+                lst.append(ipw.Label(f"{col}:{self.col_types[col]}"))
                 for k in self.scalar_functions.keys():
                     lst.append(self._info_label((col, k)))
             gb = ipw.GridBox(
@@ -559,7 +571,7 @@ class DynViewer(DynTab):
             self.set_tab("Main", gb)
         # refresh Main
         for col in self.visible_cols:
-            col_name = col.split(":")[0]
+            col_name = col
             for k in self.scalar_functions.keys():
                 lab = self.info_labels[(col, k)]
                 if not self.info_cbx[(col, k)].value:
@@ -590,44 +602,36 @@ class DynViewer(DynTab):
                 self._hist_sel = hist_sel
         else:
             self.remove_tab("Histograms")
-            self._hist_sel = None
+            self._hist_sel = set()
         # corr
         if self._last_df is not None and np.any(self._last_df.loc[:, "corr"]):
             if "corr" not in self._registry_mod._multi_col_modules:
                 return
-            corr_mod = self._registry_mod._multi_col_modules["corr"]
+            corr_mod = cast(Corr, self._registry_mod._multi_col_modules["corr"])
+            assert corr_mod
+            assert corr_mod._columns
             corr_sel = corr_mod._columns[:]
             if corr_sel != self._corr_sel:
                 corr_out = VegaWidget(spec=corr_spec_no_data)
                 self.set_tab("Correlation", corr_out)
-                corr_mod.on_after_run(_refresh_info_corr(corr_out, corr_mod, self))
+                corr_mod.on_after_run(_refresh_info_corr(corr_out, corr_mod))
                 self._corr_sel = corr_sel.copy()
-
         else:
             self.remove_tab("Correlation")
-            self._corr_sel = None
-
+            self._corr_sel = []
         if IS_DEBUG:
             all_titles = self.get_titles()
             if "Console" not in all_titles:
                 outp = ipw.Output()
                 self.set_tab("Console", outp)
-
         return
 
-    def get_corr_sel(self):
-        return [
-            col.split(":")[0]
-            for ((col, fnc), ck) in self.info_cbx.items()
-            if fnc == "corr" and ck.value
-        ]
-
-    def _info_label(self, k):
+    def _info_label(self, k) -> ipw.Label:
         lab = ipw.Label()
         self.info_labels[k] = lab
         return lab
 
-    def _info_checkbox(self, col, func, dis):
+    def _info_checkbox(self, col: str, func: str, dis: bool) -> ipw.Checkbox:
         cbx = ipw.Checkbox(value=False, description="", disabled=dis, indent=False)
         self.info_cbx[(col, func)] = cbx
         cbx.observe(_make_cbx_obs(self, col, func), "value")
