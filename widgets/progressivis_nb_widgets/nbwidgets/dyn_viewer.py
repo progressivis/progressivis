@@ -7,10 +7,22 @@ import pandas as pd
 from progressivis.core import asynchronize, aio
 from progressivis.utils.psdict import PsDict
 from progressivis.io import DynVar
-from progressivis.stats import KLLSketch, Corr, Histogram1D, Histogram1DCategorical
-from progressivis.vis import StatsFactory, DataShape, Histogram1dPattern
+from progressivis.stats import (
+    KLLSketch,
+    Corr,
+    Histogram1D,
+    Histogram2D,
+    Histogram1DCategorical,
+)
+from progressivis.vis import (
+    StatsFactory,
+    DataShape,
+    Histogram1dPattern,
+    Histogram2dPattern,
+)
 from vega.widget import VegaWidget
 from ._hist1d_schema import hist1d_spec_no_data, kll_spec_no_data
+from ._hist2d_schema import hist2d_spec_no_data
 from ._corr_schema import corr_spec_no_data
 from ._bar_schema import bar_spec_no_data
 
@@ -61,13 +73,24 @@ def _make_cbx_obs(dyn_viewer: "DynViewer", col: str, func: str) -> Callable:
             dyn_viewer.visible_cols.remove(col)
             assert dyn_viewer._hidden_sel_wg
             dyn_viewer._hidden_sel_wg.options = sorted(dyn_viewer.hidden_cols)
-            gb = dyn_viewer.draw_matrix()
+            gb = dyn_viewer.draw_matrices()
+            """h2d_gb = self.draw_h2d_matrix()
+            settings_tab = DynTab()
+            settings_tab.set_tab("General", gb)
+            settings_tab.set_tab("Heatmaps", h2d_gb)"""
             dyn_viewer.unlock_conf()
             dyn_viewer.conf_box.children = (
                 dyn_viewer._hidden_sel_wg,
                 gb,
                 dyn_viewer._btn_bar,
             )
+
+    return _cbk
+
+
+def _make_h2d_cbx_obs(dyn_viewer: "DynViewer", col: str, func: str) -> Callable:
+    def _cbk(change: AnyType):
+        dyn_viewer._btn_apply.disabled = False
 
     return _cbk
 
@@ -79,6 +102,7 @@ def _make_btn_edit_cb(dyn_viewer: "DynViewer") -> Callable:
             dyn_viewer.hidden_cols[:],
             dyn_viewer.visible_cols[:],
             dyn_viewer.matrix_to_df(),
+            dyn_viewer.matrix_to_h2d_df(),
         )
         dyn_viewer._btn_cancel.disabled = False
         dyn_viewer._btn_apply.disabled = True
@@ -91,12 +115,16 @@ def _make_btn_cancel_cb(dyn_viewer: "DynViewer") -> Callable:
     def _cbk(btn: ipw.Button):
         btn.disabled = True
         dyn_viewer._btn_edit.disabled = False
-        hcols, vcols, df = dyn_viewer.save_for_cancel
+        hcols, vcols, df, h2d_df = dyn_viewer.save_for_cancel
         dyn_viewer.hidden_cols = hcols[:]
         dyn_viewer.visible_cols = vcols[:]
         assert dyn_viewer._hidden_sel_wg
         dyn_viewer._hidden_sel_wg.options = dyn_viewer.hidden_cols
-        gb = dyn_viewer.draw_matrix(df)
+        gb = dyn_viewer.draw_matrices(df, h2d_df)
+        """h2d_gb = self.draw_h2d_matrix()
+        settings_tab = DynTab()
+        settings_tab.set_tab("General", gb)
+        settings_tab.set_tab("Heatmaps", h2d_gb)"""
         dyn_viewer.lock_conf()
         dyn_viewer.conf_box.children = (
             dyn_viewer._hidden_sel_wg,
@@ -118,9 +146,11 @@ def _make_btn_apply_cb(dyn_viewer: "DynViewer") -> Callable:
 
         async def _coro():
             dyn_viewer._last_df = dyn_viewer.matrix_to_df()
+            dyn_viewer._last_h2d_df = dyn_viewer.matrix_to_h2d_df()
             await dyn_viewer._registry_mod.variable.from_input(
                 {
                     "matrix": dyn_viewer._last_df,
+                    "h2d_matrix": dyn_viewer._last_h2d_df,
                     "hidden_cols": dyn_viewer.hidden_cols[:],
                 }
             )
@@ -142,7 +172,7 @@ def _make_selm_obs(dyn_viewer: "DynViewer") -> Callable:
                 dyn_viewer.visible_cols.append(col)
             assert dyn_viewer._hidden_sel_wg
             dyn_viewer._hidden_sel_wg.options = sorted(dyn_viewer.hidden_cols)
-            gb = dyn_viewer.draw_matrix()
+            gb = dyn_viewer.draw_matrices()
             dyn_viewer.unlock_conf()
             dyn_viewer.conf_box.children = (
                 dyn_viewer._hidden_sel_wg,
@@ -326,6 +356,25 @@ def _refresh_info_hist_1d(hout: WidgetType, h1d_mod: Histogram1D) -> Callable:
     return _coro
 
 
+def refresh_info_h2d(hout: WidgetType, h2d_mod: Histogram2D) -> None:
+    if not h2d_mod.table:
+        return
+    last = h2d_mod.table.last()
+    assert last
+    res = last.to_dict()
+    hist = res["array"]
+    hout.update("data", insert=hist, remove="true")
+
+
+def _refresh_info_h2d(hout: WidgetType, h2d_mod: Histogram2D) -> Callable:
+    async def _coro(_1, _2):
+        _ = _1, _2
+        # async with wg_lock:
+        await asynchronize(refresh_info_h2d, hout, h2d_mod)
+
+    return _coro
+
+
 def refresh_info_corr(cout: WidgetType, cmod: Corr) -> None:
     if not cmod.result:
         return
@@ -343,7 +392,7 @@ def _refresh_info_corr(cout: WidgetType, cmod: Corr) -> Callable:
 
 
 type_op_mismatches: Dict[str, Set[str]] = dict(
-    string=set(["min", "max", "var", "corr"])
+    string=set(["min", "max", "var", "corr", "hist2d"])
 )
 
 
@@ -385,6 +434,12 @@ class DynTab(ipw.Tab):
             self.set_title(i, t)
 
 
+# barplot 📊
+def _get_func_name(func: str) -> str:
+    _dictionary = {"hide": "❌", "corr": "Corr. Mx", "distinct": "≠", "hist": "1D Hist"}
+    return _dictionary.get(func, func.capitalize())
+
+
 class DynViewer(DynTab):
     save_for_cancel: Tuple[AnyType, ...]
 
@@ -395,19 +450,24 @@ class DynViewer(DynTab):
         self._hidden_sel_wg: Optional[ipw.SelectMultiple] = None
         self.visible_cols: List[str] = []
         self._last_df: Optional[pd.DataFrame] = None
+        self._last_h2d_df: Optional[pd.DataFrame] = None
         self.previous_visible_cols: List[str] = []
         self.info_labels: Dict[Tuple[str, str], ipw.Label] = {}
         self.info_cbx: Dict[Tuple[str, str], ipw.Checkbox] = {}
+        self.h2d_cbx: Dict[Tuple[str, str], ipw.Checkbox] = {}
         self._hdict: Dict[
             str, Tuple[Union[Histogram1dPattern, Histogram1DCategorical], WidgetType]
         ] = {}
+        self._h2d_dict: Dict[str, Tuple[Histogram2dPattern, WidgetType]] = {}
         self._hist_tab: Optional[DynTab] = None
         self._hist_sel: Set[AnyType] = set()
+        self._h2d_tab: Optional[DynTab] = None
+        self._h2d_sel: Set[AnyType] = set()
         self._corr_sel: List[str] = []
         # self._dshape_mod.on_after_run(_refresh_info(self))
-        self._dshape_mod.scheduler().on_loop(_refresh_info(self))
+        self._dshape_mod.scheduler().on_tick(_refresh_info(self))
         self.all_functions = {
-            dec: dec.capitalize() for dec in registry_mod.func_dict.keys()
+            dec: _get_func_name(dec) for dec in registry_mod.func_dict.keys()
         }
         self.scalar_functions = {
             k: v
@@ -430,7 +490,7 @@ class DynViewer(DynTab):
                 lst.append(self._info_checkbox(col, k, get_flag_status(col_type, k)))
         gb = ipw.GridBox(
             lst,
-            layout=ipw.Layout(grid_template_columns=f"250px repeat({width_-1}, 50px)"),
+            layout=ipw.Layout(grid_template_columns=f"200px repeat({width_-1}, 70px)"),
         )
         if df is not None:
             for i in df.index:
@@ -438,10 +498,48 @@ class DynViewer(DynTab):
                     self.info_cbx[(i, c)].value = bool(df.loc[i, c])
         return gb
 
+    def draw_h2d_matrix(self, ext_df: Optional[pd.DataFrame] = None) -> ipw.GridBox:
+        num_cols = sorted(
+            [col for col in self.visible_cols if self.col_types[col] != "string"]
+        )
+        len_ = len(num_cols)
+        lst: List[WidgetType] = [ipw.Label("")] + [
+            ipw.Label(str(i)) for i in range(len_)
+        ]
+        width_ = len(lst)
+        df = self.matrix_to_h2d_df() if ext_df is None else ext_df
+        for i, col in enumerate(num_cols):
+            lst.append(ipw.Label(f"{col} [{i}]"))
+            for k in num_cols:
+                lst.append(self._h2d_checkbox(col, k, col == k))
+        gb = ipw.GridBox(
+            lst,
+            layout=ipw.Layout(grid_template_columns=f"250px repeat({width_-1}, 50px)"),
+        )
+        if df is not None:
+            for k in df.index:
+                for c in df.columns:
+                    self.h2d_cbx[(k, c)].value = bool(df.loc[k, c])
+        return gb
+
+    def draw_matrices(
+        self,
+        ext_df: Optional[pd.DataFrame] = None,
+        ext_h2d_df: Optional[pd.DataFrame] = None,
+    ) -> DynTab:
+        gb = self.draw_matrix(ext_df)
+        h2d_gb = self.draw_h2d_matrix(ext_h2d_df)
+        settings_tab = DynTab()
+        settings_tab.set_tab("General", gb)
+        settings_tab.set_tab("Heatmaps", h2d_gb)
+        return settings_tab
+
     def lock_conf(self) -> None:
         assert self._hidden_sel_wg
         self._hidden_sel_wg.disabled = True
         for cbx in self.info_cbx.values():
+            cbx.disabled = True
+        for cbx in self.h2d_cbx.values():
             cbx.disabled = True
 
     def unlock_conf(self) -> None:
@@ -450,6 +548,8 @@ class DynViewer(DynTab):
         for (key, func), cbx in self.info_cbx.items():
             dtype = self.col_types[key]
             cbx.disabled = get_flag_status(dtype, func)
+        for (i, j), cbx in self.h2d_cbx.items():
+            cbx.disabled = i == j
 
     def matrix_to_df(self) -> Optional[pd.DataFrame]:
         if not self.info_cbx:
@@ -459,8 +559,21 @@ class DynViewer(DynTab):
         arr = np.zeros((len(cols), len(funcs)), dtype=bool)
         for i, c in enumerate(self.visible_cols):
             for j, f in enumerate(funcs):
-                arr[i, j] = self.info_cbx[(c, f)].value
+                arr[i, j] = bool(self.info_cbx[(c, f)].value)
         df = pd.DataFrame(arr, index=cols, columns=funcs)
+        return df
+
+    def matrix_to_h2d_df(self) -> Optional[pd.DataFrame]:
+        if not self.h2d_cbx:
+            return None
+        cols = [col for col in self.visible_cols if self.col_types[col] != "string"]
+        len_ = len(cols)
+        arr = np.zeros((len_, len_), dtype=bool)
+        for i, ci in enumerate(cols):
+            for j, cj in enumerate(cols):
+                arr[i, j] = bool(self.h2d_cbx[(ci, cj)].value)
+                pass
+        df = pd.DataFrame(arr, index=cols, columns=cols)
         return df
 
     def make_btn_bar(self) -> ipw.HBox:
@@ -518,12 +631,21 @@ class DynViewer(DynTab):
         self._hdict[name] = (hist_mod, hout)
         return hout
 
+    def get_h2d_widget(self, name: str, h2d_mod: Histogram2dPattern) -> VegaWidget:
+        if name in self._h2d_dict and self._h2d_dict[name][0] is h2d_mod:
+            return self._h2d_dict[name][1]
+        hout = VegaWidget(spec=hist2d_spec_no_data)
+        _mod = h2d_mod.histogram2d
+        _mod.on_after_run(_refresh_info_h2d(hout, _mod))
+        self._h2d_dict[name] = (h2d_mod, hout)
+        return hout
+
     def get_selection_set(self, func: str) -> Set[str]:
         assert self._last_df
         return set(self._last_df.index[self._last_df.loc[:, func] != 0])
 
     def refresh_info(self) -> None:
-        print(".", end="")
+        # print(".", end="")
         global debug_console
         if self._dshape_mod.result is None:
             return
@@ -533,42 +655,39 @@ class DynViewer(DynTab):
                 # options=[str(i) for i in range(100)],
                 value=[],
                 rows=5,
-                description="Show",
+                description="❎",
                 disabled=False,
             )
             self._hidden_sel_wg = selm
             self.col_types = {k: str(t) for (k, t) in self._dshape_mod.psdict.items()}
             self.visible_cols = list(self.col_types.keys())
             selm.observe(_make_selm_obs(self), "value")
-            gb = self.draw_matrix()
+            gb = self.draw_matrices()
             self.conf_box = ipw.VBox([selm, gb, self.make_btn_bar()])
             self.lock_conf()
-            self.children = (self.conf_box,)
-            self.set_next_title("Conf")
+            self.set_tab("Settings", self.conf_box)
         if self._registry_mod._matrix is None:
             return
         mod_matrix = self._registry_mod._matrix
-
+        mod_h2d_matrix = self._registry_mod._h2d_matrix
         if self.previous_visible_cols != self.visible_cols:
-            ####
+            # refresh Results grid
             lst = [ipw.Label("")] + [
                 ipw.Label(s) for s in self.scalar_functions.values()
             ]
             width_ = len(lst)
-            for col in self.visible_cols:
+            for col in sorted(self.visible_cols):
                 lst.append(ipw.Label(f"{col}:{self.col_types[col]}"))
                 for k in self.scalar_functions.keys():
                     lst.append(self._info_label((col, k)))
-            gb = ipw.GridBox(
+            gb_res = ipw.GridBox(
                 lst,
                 layout=ipw.Layout(
                     grid_template_columns=f"200px repeat({width_-1}, 120px)"
                 ),
             )
             self.previous_visible_cols = self.visible_cols[:]
-            # self.children += (gb,)
-            # self.set_next_title("Main")
-            self.set_tab("Main", gb)
+            self.set_tab("Simple results", gb_res)
         # refresh Main
         for col in self.visible_cols:
             col_name = col
@@ -603,6 +722,34 @@ class DynViewer(DynTab):
         else:
             self.remove_tab("Histograms")
             self._hist_sel = set()
+        # heatmaps (2D histograms)
+        if (
+            self._last_h2d_df is not None
+            and np.any(self._last_h2d_df.loc[:, :])
+            and mod_h2d_matrix is not None
+        ):
+            if self._h2d_tab is None:
+                self._h2d_tab = DynTab()
+            self.set_tab("Heatmaps", self._h2d_tab, overwrite=False)
+            h2d_sel = set(
+                [
+                    (ci, cj)
+                    for (ci, cj) in product(self._last_h2d_df.columns, repeat=2)
+                    if self._last_h2d_df.loc[ci, cj]
+                ]
+            )
+            if h2d_sel != self._h2d_sel:
+                self._h2d_tab.children = tuple([])
+                for ci, cj in h2d_sel:
+                    h2d_mod = mod_h2d_matrix.loc[ci, cj]
+                    assert h2d_mod
+                    title = f"{ci}/{cj}"
+                    h2d_wg = self.get_h2d_widget(title, h2d_mod)
+                    self._h2d_tab.set_tab(title, h2d_wg, overwrite=False)
+                self._h2d_sel = h2d_sel
+        else:
+            self.remove_tab("Heatmaps")
+            self._h2d_sel = set()
         # corr
         if self._last_df is not None and np.any(self._last_df.loc[:, "corr"]):
             if "corr" not in self._registry_mod._multi_col_modules:
@@ -632,7 +779,23 @@ class DynViewer(DynTab):
         return lab
 
     def _info_checkbox(self, col: str, func: str, dis: bool) -> ipw.Checkbox:
-        cbx = ipw.Checkbox(value=False, description="", disabled=dis, indent=False)
-        self.info_cbx[(col, func)] = cbx
-        cbx.observe(_make_cbx_obs(self, col, func), "value")
-        return cbx
+        """if func == "hist2d":
+            options = [elt for elt in self.visible_cols
+                       if self.col_types[elt] != "string" and elt != col]
+            wgt = ipw.Dropdown(layout={'width': 'max-content'},
+                                options=[""]+options,
+                                value="",
+                                description="",
+                                disabled=dis,
+            )
+        else:"""
+        wgt = ipw.Checkbox(value=False, description="", disabled=dis, indent=False)
+        self.info_cbx[(col, func)] = wgt
+        wgt.observe(_make_cbx_obs(self, col, func), "value")
+        return wgt
+
+    def _h2d_checkbox(self, col: str, func: str, dis: bool) -> ipw.Checkbox:
+        wgt = ipw.Checkbox(value=False, description="", disabled=dis, indent=False)
+        self.h2d_cbx[(col, func)] = wgt
+        wgt.observe(_make_h2d_cbx_obs(self, col, func), "value")
+        return wgt

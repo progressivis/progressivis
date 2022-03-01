@@ -1,11 +1,13 @@
 from __future__ import annotations
 import logging
+from itertools import product
 from ..core import Sink, Scheduler
 from ..stats import (
     Min,
     Max,
     KLLSketch,
     Histogram1D,
+    Histogram2D,
     Histogram1DCategorical,
     Var,
     Distinct,
@@ -34,7 +36,6 @@ logger = logging.getLogger(__name__)
 def make_col_stats(imod: TableModule, col: str) -> Callable:
     async def _col_stats(scheduler: Scheduler, run_number: int) -> None:
         with scheduler:
-            print("adding stats on", col)
             kll = KLLSketch(column=col, scheduler=scheduler)
             sink = Sink(scheduler=scheduler)
             kll.input.table = imod.output.result
@@ -90,6 +91,40 @@ class Histogram1dPattern(Pattern):
             sink.input.inp = self.histogram1d.output.result
 
 
+class Histogram2dPattern(Pattern):
+    def __init__(
+        self, x_column: str, y_column: str, factory: StatsFactory, **kwds: Any
+    ) -> None:
+        """ """
+        super().__init__(**kwds)
+        self._x_column = x_column
+        self._y_column = y_column
+        self._factory = factory
+
+    def create_dependent_modules(self) -> None:
+        super().create_dependent_modules()
+        input_module = self._factory._input_module
+        input_slot = self._factory._input_slot
+        scheduler = self._factory.scheduler()
+        x_col, y_col = self._x_column, self._y_column
+        with scheduler:
+            # TODO: reuse min max
+            self.max = Max(scheduler=scheduler, columns=[x_col, y_col])
+            self.max.input.table = input_module.output[input_slot]
+            self.min = Min(scheduler=scheduler, columns=[x_col, y_col])
+            self.min.input.table = input_module.output[input_slot]
+            self.histogram2d = Histogram2D(
+                x_column=x_col, y_column=y_col, scheduler=scheduler
+            )
+            self.histogram2d.input.table = input_module.output[input_slot]
+            self.histogram2d.input.min = self.min.output.result
+            self.histogram2d.input.max = self.max.output.result
+            self.histogram2d.params.xbins = 64
+            self.histogram2d.params.ybins = 64
+            sink = Sink(scheduler=scheduler)
+            sink.input.inp = self.histogram2d.output.result
+
+
 class DataShape(TableModule):
     """
     Adds statistics on input data
@@ -121,7 +156,6 @@ class DataShape(TableModule):
             if slot.has_buffered():
                 slot.clear_buffers()
             self.result = PsDict({k: str(v) for (k, v) in dshape_fields(data.dshape)})
-            # print(self.psdict)
             return self._return_run_step(self.state_zombie, steps_run=0)
 
 
@@ -181,7 +215,6 @@ def _add_correlation(col: str, factory: StatsFactory) -> Optional[Corr]:
         if prev_corr._columns == columns:
             return prev_corr
         # list of column changed => remove old module
-        print("remove corr", prev_corr._columns)
         factory._to_delete.append(prev_corr.name)
         del factory._multi_col_modules["corr"]
     if len(columns) < 2:
@@ -219,12 +252,27 @@ def _add_hist_col(col: str, factory: StatsFactory) -> TableModule:
         # sink = Sink(scheduler=scheduler)
         # sink.input.inp = m.output.result
         m.create_dependent_modules()
-        print("add hist col")
         return m
 
 
+def _pass_func(col: str, factory: StatsFactory) -> None:
+    print("Pass func")
+
+
 def _hide_func(col: str, factory: StatsFactory) -> None:
-    raise ValueError("hide function should not be called ...")
+    raise ValueError("hide function should never be called ...")
+
+
+def _h2d_func(cx: str, cy: str, factory: StatsFactory) -> Histogram2dPattern:
+    scheduler = factory.scheduler()
+    with scheduler:
+        m = Histogram2dPattern(
+            x_column=cx, y_column=cy, factory=factory, scheduler=scheduler
+        )
+        # sink = Sink(scheduler=scheduler)
+        # sink.input.inp = m.output.result
+        m.create_dependent_modules()
+        return m
 
 
 class StatsFactory(TableModule):
@@ -245,11 +293,10 @@ class StatsFactory(TableModule):
         self._input_module = input_module
         self._input_slot = input_slot
         self._matrix: Optional[pd.DataFrame] = None
+        self._h2d_matrix: Optional[pd.DataFrame] = None
         self.types: Optional[Dict[str, str]] = None
         self._multi_col_funcs = set(["corr"])
         self._multi_col_modules: Dict[str, Optional[TableModule]] = {}
-        # self.functions = ["hide", "min", "max", "var", "distinct", "hist", "corr"]
-        # self.functions = ["hide", "hist", "min", "max", "var"]
         self.func_dict: Dict[str, Callable] = dict(
             hide=_hide_func,
             max=_add_max_col,
@@ -278,19 +325,26 @@ class StatsFactory(TableModule):
             if slot.has_buffered():
                 slot.clear_buffers()
             if self._matrix is None:
-                print("Trace")
                 self.types = {k: str(v) for (k, v) in dshape_fields(data.dshape)}
                 cols = [k for (k, v) in dshape_fields(data.dshape)]
                 funcs = self.func_dict.keys()
                 arr = np.zeros((len(cols), len(funcs)), dtype=object)
                 self._matrix = pd.DataFrame(arr, index=cols, columns=funcs)
-
+            if self._h2d_matrix is None:
+                assert self.types
+                num_cols = [
+                    k
+                    for (k, _) in dshape_fields(data.dshape)
+                    if self.types[k] != "string"
+                ]
+                len_ = len(num_cols)
+                arr = np.zeros((len_, len_), dtype=object)
+                self._h2d_matrix = pd.DataFrame(arr, index=num_cols, columns=num_cols)
             sel_slot = ctx.selection
             if not sel_slot.has_buffered():
                 return self._return_run_step(self.state_blocked, steps_run=0)
             sel_slot.clear_buffers()
             self.last_selection = sel_slot.data()
-            # print(sel_slot.data())
             hidden_cols = self.last_selection.get("hidden_cols", [])
             self._to_delete = []
             for col in hidden_cols:
@@ -298,37 +352,62 @@ class StatsFactory(TableModule):
                     if cell:
                         self._to_delete.append(cell.name)
                 self._matrix.loc[col, :] = 0
-            scheduler = self.scheduler()
-            df = self.last_selection.get("matrix")
-            if df is None:
-                return self._return_run_step(
-                    self.state_blocked, steps_run=len(self._to_delete)
-                )
-            for func in df.columns:
-                if func in self._multi_col_funcs:
-                    self._multi_col_modules[func] = self.func_dict[func]("", self)
-                    continue
-                for attr in df.index:
-                    cell = df.loc[attr, func]
+            for col in hidden_cols:
+                for cell in self._h2d_matrix.loc[col, :]:
                     if cell:
-                        print("True", attr, func)
-                        if not self._matrix.loc[attr, func]:
-                            self._matrix.loc[attr, func] = self.func_dict[func](
-                                attr, self
-                            )
-                    else:
-                        if self._matrix.loc[attr, func]:
-                            self._to_delete.append(self._matrix.loc[attr, func].name)
-                            self._matrix.loc[attr, func] = 0
-            print("self._to_delete", self._to_delete)
+                        self._to_delete.append(cell.name)
+                self._h2d_matrix.loc[col, :] = 0
+            for col in hidden_cols:
+                for cell in self._h2d_matrix.loc[:, col]:
+                    if cell:
+                        self._to_delete.append(cell.name)
+                self._h2d_matrix.loc[col, :] = 0
+            scheduler = self.scheduler()
+            steps = len(self._to_delete) // 2  # or more ?
+            df = self.last_selection.get("matrix")
+            if df is not None:
+                for func in df.columns:
+                    if func in self._multi_col_funcs:
+                        self._multi_col_modules[func] = self.func_dict[func]("", self)
+                        steps += 1
+                        continue
+                    for attr in df.index:
+                        cell = df.loc[attr, func]
+                        if cell:
+                            if not self._matrix.loc[attr, func]:
+                                self._matrix.loc[attr, func] = self.func_dict[func](
+                                    attr, self
+                                )
+                        else:
+                            if self._matrix.loc[attr, func]:
+                                self._to_delete.append(
+                                    self._matrix.loc[attr, func].name
+                                )
+                                self._matrix.loc[attr, func] = 0
+                        steps += 1
+            df = self.last_selection.get("h2d_matrix")
+            if df is not None:
+                for cx, cy in product(df.columns, repeat=2):
+                    if cx == cy:
+                        continue
+                    cell = df.loc[cx, cy]
+                    if cell:
+                        if not self._h2d_matrix.loc[cx, cy]:
+                            self._h2d_matrix.loc[cx, cy] = _h2d_func(cx, cy, self)
+                        else:
+                            if self._h2d_matrix.loc[cx, cy]:
+                                self._to_delete.append(
+                                    self._h2d_matrix.loc[cx, cy].name
+                                )
+                                self._h2d_matrix.loc[cx, cy] = 0
+                        steps += 1
             if self._to_delete:
                 with scheduler as dataflow:
                     for m in self._to_delete:
                         deps = dataflow.collateral_damage(m)
-                        print(m, deps)
                         dataflow.delete_modules(*deps)
                     # pass
-            return self._return_run_step(self.state_blocked, steps_run=0)
+            return self._return_run_step(self.state_blocked, steps_run=steps)
 
     def create_dependent_modules(self, var_name=None):
         s = self.scheduler()
