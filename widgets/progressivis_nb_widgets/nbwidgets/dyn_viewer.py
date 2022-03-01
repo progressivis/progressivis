@@ -74,10 +74,6 @@ def _make_cbx_obs(dyn_viewer: "DynViewer", col: str, func: str) -> Callable:
             assert dyn_viewer._hidden_sel_wg
             dyn_viewer._hidden_sel_wg.options = sorted(dyn_viewer.hidden_cols)
             gb = dyn_viewer.draw_matrices()
-            """h2d_gb = self.draw_h2d_matrix()
-            settings_tab = DynTab()
-            settings_tab.set_tab("General", gb)
-            settings_tab.set_tab("Heatmaps", h2d_gb)"""
             dyn_viewer.unlock_conf()
             dyn_viewer.conf_box.children = (
                 dyn_viewer._hidden_sel_wg,
@@ -121,10 +117,6 @@ def _make_btn_cancel_cb(dyn_viewer: "DynViewer") -> Callable:
         assert dyn_viewer._hidden_sel_wg
         dyn_viewer._hidden_sel_wg.options = dyn_viewer.hidden_cols
         gb = dyn_viewer.draw_matrices(df, h2d_df)
-        """h2d_gb = self.draw_h2d_matrix()
-        settings_tab = DynTab()
-        settings_tab.set_tab("General", gb)
-        settings_tab.set_tab("Heatmaps", h2d_gb)"""
         dyn_viewer.lock_conf()
         dyn_viewer.conf_box.children = (
             dyn_viewer._hidden_sel_wg,
@@ -707,7 +699,7 @@ class DynViewer(DynTab):
         if self._last_df is not None and np.any(self._last_df.loc[:, "hist"]):
             if self._hist_tab is None:
                 self._hist_tab = DynTab()
-            self.set_tab("Histograms", self._hist_tab, overwrite=False)
+            self.set_tab("1D Histograms", self._hist_tab, overwrite=False)
             hist_sel = set(self._last_df.loc[:, "hist"])
             if hist_sel != self._hist_sel:
                 self._hist_tab.children = tuple([])
@@ -720,7 +712,7 @@ class DynViewer(DynTab):
                     self._hist_tab.set_tab(attr, hwg, overwrite=False)
                 self._hist_sel = hist_sel
         else:
-            self.remove_tab("Histograms")
+            self.remove_tab("1D Histograms")
             self._hist_sel = set()
         # heatmaps (2D histograms)
         if (
@@ -760,11 +752,11 @@ class DynViewer(DynTab):
             corr_sel = corr_mod._columns[:]
             if corr_sel != self._corr_sel:
                 corr_out = VegaWidget(spec=corr_spec_no_data)
-                self.set_tab("Correlation", corr_out)
+                self.set_tab("Correlation matrix", corr_out)
                 corr_mod.on_after_run(_refresh_info_corr(corr_out, corr_mod))
                 self._corr_sel = corr_sel.copy()
         else:
-            self.remove_tab("Correlation")
+            self.remove_tab("Correlation matrix")
             self._corr_sel = []
         if IS_DEBUG:
             all_titles = self.get_titles()
@@ -779,16 +771,6 @@ class DynViewer(DynTab):
         return lab
 
     def _info_checkbox(self, col: str, func: str, dis: bool) -> ipw.Checkbox:
-        """if func == "hist2d":
-            options = [elt for elt in self.visible_cols
-                       if self.col_types[elt] != "string" and elt != col]
-            wgt = ipw.Dropdown(layout={'width': 'max-content'},
-                                options=[""]+options,
-                                value="",
-                                description="",
-                                disabled=dis,
-            )
-        else:"""
         wgt = ipw.Checkbox(value=False, description="", disabled=dis, indent=False)
         self.info_cbx[(col, func)] = wgt
         wgt.observe(_make_cbx_obs(self, col, func), "value")
