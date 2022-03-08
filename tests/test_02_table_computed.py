@@ -1,4 +1,4 @@
-from . import ProgressiveTest
+from . import ProgressiveTest, skip
 
 from progressivis import Scheduler
 from progressivis.table.table import Table
@@ -13,6 +13,7 @@ class TestTableSelected(ProgressiveTest):
         super(TestTableSelected, self).setUp()
         self.scheduler_ = Scheduler.default
 
+    @skip
     def test_loc_table_selection(self) -> None:
         t = Table("table_for_sel", dshape="{a: int, b: float32}", create=True)
         t.resize(10)
