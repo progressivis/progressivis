@@ -390,6 +390,9 @@ class BaseTable(metaclass=ABCMeta):
             for (i, c) in enumerate(self._columns)
             if i in dict_.values()
         ]
+        columndict: Dict[str, int] = dict(zip(dict_.keys(), range(len(dict_))))
+        if not self.computed:
+            return columns, columndict
         cols_as_set: Set = set()
         if is_none_alike(cols):
             cols_as_set = set(self.computed.keys())
@@ -407,7 +410,6 @@ class BaseTable(metaclass=ABCMeta):
             if aka not in self._columndict.keys() and aka in cols_as_set
         ]
         columns += comp_cols
-        columndict: Dict[str, int] = dict(zip(dict_.keys(), range(len(dict_))))
         cc_dict: Dict[str, int] = {
             k: i
             for (i, k) in enumerate(set(self.computed.keys()) & cols_as_set, len(dict_))
