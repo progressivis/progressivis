@@ -208,7 +208,7 @@ class BaseTable(metaclass=ABCMeta):
         selection: Union[bitmap, slice] = slice(0, None),
         columns: Optional[List[BaseColumn]] = None,
         columndict: Optional[Dict[str, int]] = None,
-        computed: Dict[str, Tuple[str, Callable]] = {},
+        computed: Optional[Dict[str, Tuple[str, Callable]]] = None,
     ) -> None:
         self._base: Optional[BaseTable] = (
             base if (base is None or base._base is None) else base._base
@@ -220,7 +220,7 @@ class BaseTable(metaclass=ABCMeta):
         self._at = _At(self, True)
         self._masked = base
         self._dshape: DataShape = EMPTY_DSHAPE
-        self.computed = computed
+        self.computed = {} if computed is None else computed
 
     def drop(
         self, index: Any, raw_index: Optional[Any] = None, truncate: bool = False
