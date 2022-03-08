@@ -41,7 +41,6 @@ from typing import (
     Any,
     Optional,
     Dict,
-    Set,
     List,
     Tuple,
     TYPE_CHECKING,
@@ -208,7 +207,6 @@ class BaseTable(metaclass=ABCMeta):
         selection: Union[bitmap, slice] = slice(0, None),
         columns: Optional[List[BaseColumn]] = None,
         columndict: Optional[Dict[str, int]] = None,
-        computed: Dict[str, Tuple[str, Callable]] = {},
     ) -> None:
         self._base: Optional[BaseTable] = (
             base if (base is None or base._base is None) else base._base
@@ -220,7 +218,6 @@ class BaseTable(metaclass=ABCMeta):
         self._at = _At(self, True)
         self._masked = base
         self._dshape: DataShape = EMPTY_DSHAPE
-        self.computed = computed
 
     def drop(
         self, index: Any, raw_index: Optional[Any] = None, truncate: bool = False
@@ -382,7 +379,7 @@ class BaseTable(metaclass=ABCMeta):
     def make_projection(
         self, cols: Optional[List[str]], index: Any
     ) -> Tuple[List[BaseColumn], Dict[str, int]]:
-        from .column_selected import ColumnSelectedView, ColumnComputedView
+        from .column_selected import ColumnSelectedView
 
         dict_ = self._make_columndict_projection(cols)
         columns: List[BaseColumn] = [
@@ -391,30 +388,6 @@ class BaseTable(metaclass=ABCMeta):
             if i in dict_.values()
         ]
         columndict: Dict[str, int] = dict(zip(dict_.keys(), range(len(dict_))))
-        if not self.computed:
-            return columns, columndict
-        cols_as_set: Set = set()
-        if is_none_alike(cols):
-            cols_as_set = set(self.computed.keys())
-        elif isinstance(cols, str):
-            cols_as_set = set([cols])
-        elif isinstance(cols, Iterable) and all_string(cols):
-            cols_as_set = set(cols)
-        else:
-            logger.warning(f"computed columns will be ignored with selection {cols}")
-        comp_cols: List[BaseColumn] = [
-            ColumnComputedView(
-                base=self._columns[self._columndict[c]], index=index, aka=aka, func=func
-            )
-            for (aka, (c, func)) in self.computed.items()
-            if aka not in self._columndict.keys() and aka in cols_as_set
-        ]
-        columns += comp_cols
-        cc_dict: Dict[str, int] = {
-            k: i
-            for (i, k) in enumerate(set(self.computed.keys()) & cols_as_set, len(dict_))
-        }
-        columndict.update(cc_dict)
         return columns, columndict
 
     def _make_columndict_projection(
@@ -1268,9 +1241,6 @@ class BaseTable(metaclass=ABCMeta):
 
     def _flush_cache(self) -> None:
         pass
-
-    def add_computed(self, name: str, col: str, ufunc):
-        self.computed[name] = (col, ufunc)
 
 
 class IndexTable(BaseTable):

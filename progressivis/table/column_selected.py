@@ -6,7 +6,7 @@ import numpy as np
 
 from .column_proxy import ColumnProxy
 
-from typing import TYPE_CHECKING, Tuple, Any, Sequence, Callable
+from typing import TYPE_CHECKING, Tuple, Any, Sequence
 
 if TYPE_CHECKING:
     from .column_base import BaseColumn
@@ -50,23 +50,3 @@ class ColumnSelectedView(ColumnProxy):
         bm = self.index._any_to_bitmap(index)
         assert self._base is not None
         return self._base[bm]
-
-
-class ColumnComputedView(ColumnSelectedView):
-    def __init__(self, base: BaseColumn, index: IndexTable, aka: str, func: Callable):
-        super().__init__(base, index=index)
-        self.aka = aka
-        self.func = func
-
-    @property
-    def name(self):
-        return self.aka
-
-    @property
-    def value(self) -> np.ndarray[Any, Any]:
-        res = super().value
-        return self.func(res)  # type: ignore
-
-    def __getitem__(self, index: Any) -> Any:
-        res = super().__getitem__(index)
-        return self.func(res)  # type: ignore
