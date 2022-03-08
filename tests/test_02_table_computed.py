@@ -14,8 +14,12 @@ class TestTableSelected(ProgressiveTest):
         self.scheduler_ = Scheduler.default
 
     @skip
-    def test_loc_table_selection(self) -> None:
-        t = Table("table_for_sel", dshape="{a: int, b: float32}", create=True)
+    def test_loc_table_computed(self) -> None:
+        t = Table(
+            "table_for_test_computed_columns",
+            dshape="{a: int, b: float32}",
+            create=True,
+        )
         t.resize(10)
         ivalues = np.random.randint(100, size=20)
         t["a"] = ivalues[:10]
