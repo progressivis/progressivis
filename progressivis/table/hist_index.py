@@ -148,7 +148,9 @@ class _HistogramIndexImpl(object):
         s_vals = self.column.loc[samples]
 
         v = np.median(s_vals)  # type: ignore
-        if v == self.bins[i - 1] or v == self.bins[i]:  # there are a lot of identical
+        if v == self.bins[i - 1] or (
+            i < len(self.bins) and v == self.bins[i]
+        ):  # there are a lot of identical
             return  # values=> do not divide
         if i >= len(self.bins):
             assert self.bins[i - 1] < v
@@ -220,7 +222,8 @@ class _HistogramIndexImpl(object):
         For example, returning all values less than 10 (< 10) would be
         `query(operator.__lt__, 10)`
         """
-        pos = np.digitize(limit, self.bins)  # type: ignore
+        assert self.bins
+        pos = np.digitize(limit, self.bins)
         detail = bitmap()
         if not approximate:
             ids = np.array(self.bitmaps[pos], np.int64)
@@ -247,7 +250,8 @@ class _HistogramIndexImpl(object):
         Returns the subset of only_locs matching the query.
         """
         only_locs = bitmap.asbitmap(only_locs)
-        pos = np.digitize(limit, self.bins)  # type: ignore
+        assert self.bins
+        pos = np.digitize(limit, self.bins)
         detail = bitmap()
         if not approximate:
             ids = np.array(self.bitmaps[pos] & only_locs, np.int64)
@@ -264,16 +268,17 @@ class _HistogramIndexImpl(object):
         return detail
 
     def range_query(
-            self, lower: float, upper: float, all_ids: bitmap, approximate: bool = APPROX
+        self, lower: float, upper: float, all_ids: bitmap, approximate: bool = APPROX
     ) -> bitmap:
         """
         Return the bitmap of all rows with values in range [`lower`, `upper`[
         """
         if lower > upper:
             lower, upper = upper, lower
-        pos_lo, pos_up = np.digitize([lower, upper], self.bins)  # type: ignore
-        if pos_up - pos_lo > len(self.bins)//2:
-            exclusion = self.bitmaps[:pos_lo + 1] + self.bitmaps[pos_up:]
+        assert self.bins
+        pos_lo, pos_up = np.digitize([lower, upper], self.bins)
+        if pos_up - pos_lo > len(self.bins) // 2:
+            exclusion = self.bitmaps[: pos_lo + 1] + self.bitmaps[pos_up:]
             union = all_ids - bitmap.union(*exclusion)
         else:
             union = bitmap.union(*self.bitmaps[pos_lo + 1 : pos_up])
@@ -331,7 +336,9 @@ class _HistogramIndexImpl(object):
             lower, upper = upper, lower
         only_locs = bitmap.asbitmap(only_locs)
         pos_lo, pos_up = np.digitize([lower, upper], self.bins)  # type: ignore
-        union = bitmap.union(*[(bm & only_locs) for bm in self.bitmaps[pos_lo + 1 : pos_up]])
+        union = bitmap.union(
+            *[(bm & only_locs) for bm in self.bitmaps[pos_lo + 1 : pos_up]]
+        )
         if not approximate:
             detail = bitmap()
             ids = np.array(self.bitmaps[pos_lo] & only_locs, np.int64)
