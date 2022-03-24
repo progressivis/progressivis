@@ -50,6 +50,7 @@ SETTINGS_TAB_TITLE = "Settings"
 GENERAL_SET_TAB_TITLE = "General"
 HEATMAPS_SET_TAB_TITLE = "Heatmaps"
 SIMPLE_RESULTS_TAB_TITLE = "Simple results"
+# https://stackoverflow.com/questions/56949504/how-to-lazify-output-in-tabbed-layout-in-jupyter-notebook
 
 
 def bins_range_slider(desc: str, binning: int) -> ipw.IntRangeSlider:
@@ -68,7 +69,7 @@ def bins_range_slider(desc: str, binning: int) -> ipw.IntRangeSlider:
     )
 
 
-def narrow_label(text, w=70):
+def narrow_label(text: str, w: int = 70) -> ipw.Button:
     button = ipw.Button(
         description=text,
         disabled=False,
@@ -81,7 +82,7 @@ def narrow_label(text, w=70):
 
 
 def _make_cbx_obs(dyn_viewer: "DynViewer", col: str, func: str) -> Callable:
-    def _cbk(change: AnyType):
+    def _cbk(change: AnyType) -> None:
         dyn_viewer._btn_apply.disabled = False
         if func == "hide":
             dyn_viewer.hidden_cols.append(col)
@@ -100,14 +101,14 @@ def _make_cbx_obs(dyn_viewer: "DynViewer", col: str, func: str) -> Callable:
 
 
 def _make_h2d_cbx_obs(dyn_viewer: "DynViewer", col: str, func: str) -> Callable:
-    def _cbk(change: AnyType):
+    def _cbk(change: AnyType) -> None:
         dyn_viewer._btn_apply.disabled = False
 
     return _cbk
 
 
 def _make_btn_edit_cb(dyn_viewer: "DynViewer") -> Callable:
-    def _cbk(btn: ipw.Button):
+    def _cbk(btn: ipw.Button) -> None:
         btn.disabled = True
         dyn_viewer.save_for_cancel = (
             dyn_viewer.hidden_cols[:],
@@ -123,7 +124,7 @@ def _make_btn_edit_cb(dyn_viewer: "DynViewer") -> Callable:
 
 
 def _make_btn_cancel_cb(dyn_viewer: "DynViewer") -> Callable:
-    def _cbk(btn: ipw.Button):
+    def _cbk(btn: ipw.Button) -> None:
         btn.disabled = True
         dyn_viewer._btn_edit.disabled = False
         hcols, vcols, df, h2d_df = dyn_viewer.save_for_cancel
@@ -145,15 +146,16 @@ def _make_btn_cancel_cb(dyn_viewer: "DynViewer") -> Callable:
 
 
 def _make_btn_apply_cb(dyn_viewer: "DynViewer") -> Callable:
-    def _cbk(btn: ipw.Button):
+    def _cbk(btn: ipw.Button) -> None:
         btn.disabled = True
         dyn_viewer._btn_edit.disabled = False
         dyn_viewer._btn_cancel.disabled = True
         dyn_viewer.lock_conf()
 
-        async def _coro():
+        async def _coro() -> None:
             dyn_viewer._last_df = dyn_viewer.matrix_to_df()
             dyn_viewer._last_h2d_df = dyn_viewer.matrix_to_h2d_df()
+            dyn_viewer._selection_event = False
             await dyn_viewer._registry_mod.variable.from_input(
                 {
                     "matrix": dyn_viewer._last_df,
@@ -168,7 +170,7 @@ def _make_btn_apply_cb(dyn_viewer: "DynViewer") -> Callable:
 
 
 def _make_selm_obs(dyn_viewer: "DynViewer") -> Callable:
-    def _cbk(change: AnyType):
+    def _cbk(change: AnyType) -> None:
         if dyn_viewer.obs_flag:
             return
         try:
@@ -210,7 +212,7 @@ def make_button(
 def make_observer(
     hname: str, sk_mod: KLLSketch, lower_mod: DynVar, upper_mod: DynVar
 ) -> Callable:
-    def _observe_range(val):
+    def _observe_range(val: AnyType) -> None:
         async def _coro(v):
             lo = v["new"][0]
             up = v["new"][1]
@@ -288,6 +290,32 @@ def asynchronized(func: Callable) -> Callable:
     return asynchronizer
 
 
+def asynchronized_wg(func: Callable) -> Callable:
+    """
+    decorator
+    """
+
+    @wraps(func)
+    def asynchronizer(wg: AnyType, *args: AnyType) -> Callable:
+        async def _coro(_1, _2):
+            _ = _1, _2
+            if not wg._selection_event:
+                return
+            await asynchronize(func, wg, *args)
+
+        return _coro
+
+    return asynchronizer
+
+
+def set_selection_event(dyn_viewer: "DynViewer") -> Callable:
+    async def fun(a, b, c):
+        if not dyn_viewer._selection_event:
+            dyn_viewer._selection_event = True
+
+    return fun
+
+
 @asynchronized
 def refresh_info_sketch(
     hout: WidgetType, hmod: KLLSketch, name: str, tab: "TreeTab", main: "DynViewer"
@@ -330,11 +358,7 @@ def refresh_info_sketch(
 
 @asynchronized
 def refresh_info_barplot(
-    hout: WidgetType,
-    hmod: Histogram1DCategorical,
-    name: str,
-    tab: "TreeTab",
-    main: "DynViewer",
+    hout: WidgetType, hmod: Histogram1DCategorical, name: str, tab: "TreeTab"
 ) -> None:
     if not tab.is_visible(name) and hmod.updated_once:  # type: ignore
         return
@@ -348,7 +372,7 @@ def refresh_info_barplot(
 
 @asynchronized
 def refresh_info_hist_1d(
-    hout: WidgetType, h1d_mod: Histogram1D, name: str, tab: "TreeTab", main: "DynViewer"
+    hout: WidgetType, h1d_mod: Histogram1D, name: str, tab: "TreeTab"
 ) -> None:
     if (not tab.is_visible(name)) and h1d_mod.updated_once:  # type: ignore
         return
@@ -368,7 +392,7 @@ def refresh_info_hist_1d(
 
 @asynchronized
 def refresh_info_h2d(
-    hout: WidgetType, h2d_mod: Histogram2D, name: str, tab: "TreeTab", main: "DynViewer"
+    hout: WidgetType, h2d_mod: Histogram2D, name: str, tab: "TreeTab"
 ) -> None:
     if not tab.is_visible(name) and h2d_mod.updated_once:  # type: ignore
         return
@@ -383,9 +407,7 @@ def refresh_info_h2d(
 
 
 @asynchronized
-def refresh_info_corr(
-    cout: WidgetType, cmod: Corr, name: str, tab: "TreeTab", main: "DynViewer"
-) -> None:
+def refresh_info_corr(cout: WidgetType, cmod: Corr, name: str, tab: "TreeTab") -> None:
     if not tab.is_visible(name) and cmod.updated_once:  # type: ignore
         return
     if not cmod.result:
@@ -405,7 +427,7 @@ def get_flag_status(dt: str, op: str) -> bool:
     return op in type_op_mismatches.get(dt, set())
 
 
-class DynTab(ipw.Tab):
+class HandyTab(ipw.Tab):
     def set_next_title(self, name: str) -> None:
         pos = len(self.children) - 1
         self.set_title(pos, name)
@@ -443,14 +465,20 @@ class DynTab(ipw.Tab):
             return None
         return self.get_title(self.selected_index)
 
+    def get_selected_child(self):
+        if self.selected_index is None:
+            return None
+        return self.children[self.selected_index]
 
-class TreeTab(DynTab):
+
+class TreeTab(HandyTab):
     def __init__(
         self, upper: Optional["TreeTab"], known_as: str, *args: AnyType, **kw: AnyType
     ) -> None:
         super().__init__(*args, **kw)
         self.upper = upper
         self.known_as = known_as
+        self.mod_dict: Dict[str, Set[str]] = {}
 
     def is_visible(self, sel):
         if self.get_selected_title() != sel:
@@ -458,6 +486,27 @@ class TreeTab(DynTab):
         if self.upper is None:
             return True
         return self.upper.is_visible(self.known_as)
+
+
+def make_tab_observer(tab, sched):
+    def _tab_observer(wg):
+        key = tab.get_selected_title()
+        sched._module_selection = tab.mod_dict.get(key)
+
+    return _tab_observer
+
+
+def make_tab_observer_2l(tab, sched):
+    def _tab_observer(wg):
+        subtab = tab.get_selected_child()
+        if isinstance(subtab, TreeTab):
+            key = subtab.get_selected_title()
+            sched._module_selection = subtab.mod_dict.get(key)
+        else:
+            key = tab.get_selected_title()
+            sched._module_selection = tab.mod_dict.get(key)
+
+    return _tab_observer
 
 
 def _get_func_name(func: str) -> str:
@@ -484,9 +533,9 @@ class DynViewer(TreeTab):
             str, Tuple[Union[Histogram1dPattern, Histogram1DCategorical], WidgetType]
         ] = {}
         self._h2d_dict: Dict[str, Tuple[Histogram2dPattern, WidgetType]] = {}
-        self._hist_tab: Optional[DynTab] = None
+        self._hist_tab: Optional[TreeTab] = None
         self._hist_sel: Set[AnyType] = set()
-        self._h2d_tab: Optional[DynTab] = None
+        self._h2d_tab: Optional[TreeTab] = None
         self._h2d_sel: Set[AnyType] = set()
         self._corr_sel: List[str] = []
         self._dshape_mod.scheduler().on_tick(DynViewer.refresh_info(self))
@@ -501,7 +550,15 @@ class DynViewer(TreeTab):
         self.obs_flag = False
         self.range_widgets: Dict[str, ipw.IntRangeSlider] = {}
         self.updated_once = False
+        self._selection_event = True
+        self._registry_mod.scheduler().on_change(set_selection_event(self))
         super().__init__(upper=None, known_as="", children=[])
+        self.observe(
+            make_tab_observer_2l(self, self.get_scheduler()), names="selected_index"
+        )
+
+    def get_scheduler(self):
+        return self._registry_mod.scheduler()
 
     def draw_matrix(self, ext_df: Optional[pd.DataFrame] = None) -> ipw.GridBox:
         lst: List[WidgetType] = [ipw.Label("")] + [
@@ -551,7 +608,7 @@ class DynViewer(TreeTab):
         self,
         ext_df: Optional[pd.DataFrame] = None,
         ext_h2d_df: Optional[pd.DataFrame] = None,
-    ) -> DynTab:
+    ) -> TreeTab:
         gb = self.draw_matrix(ext_df)
         h2d_gb = self.draw_h2d_matrix(ext_h2d_df)
         settings_tab = TreeTab(upper=self, known_as=SETTINGS_TAB_TITLE)
@@ -612,19 +669,20 @@ class DynViewer(TreeTab):
         self._btn_bar = ipw.HBox([self._btn_edit, self._btn_cancel, self._btn_apply])
         return self._btn_bar
 
-    def get_histogram_widget(
+    def set_histogram_widget(
         self, name: str, hist_mod: Union[Histogram1dPattern, Histogram1DCategorical]
-    ) -> Union[ipw.VBox, VegaWidget]:
+    ) -> None:
         if name in self._hdict and self._hdict[name][0] is hist_mod:
-            return self._hdict[name][1]
+            return  # self._hdict[name][1], None # None means selection unchanged
         type_ = self.col_types[name]
         hout: Union[ipw.VBox, VegaWidget]
         if type_ == "string":
             hout = VegaWidget(spec=bar_spec_no_data)
             bp_mod = cast(Histogram1DCategorical, hist_mod)
             bp_mod.updated_once = False  # type: ignore
+            selection = bp_mod.path_to_origin()
             bp_mod.on_after_run(
-                refresh_info_barplot(hout, bp_mod, name, self._hist_tab, self)
+                refresh_info_barplot(hout, bp_mod, name, self._hist_tab)
             )
         else:
             hist_mod = cast(Histogram1dPattern, hist_mod)
@@ -654,32 +712,44 @@ class DynViewer(TreeTab):
             range_slider.observe(
                 make_observer(name, sk_mod, lower_mod, upper_mod), "value"
             )
+            selection1 = sk_mod.path_to_origin()
+            selection2 = hmod_1d.path_to_origin()
+            selection = selection1 | selection2
             sk_mod.updated_once = False  # type: ignore
             sk_mod.on_after_run(
                 refresh_info_sketch(hout, sk_mod, name, self._hist_tab, self)
             )
             hmod_1d.updated_once = False  # type: ignore
             hmod_1d.on_after_run(
-                refresh_info_hist_1d(hout, hmod_1d, name, self._hist_tab, self)
+                refresh_info_hist_1d(hout, hmod_1d, name, self._hist_tab)
             )
         self._hdict[name] = (hist_mod, hout)
-        return hout
+        # return hout, selection
+        assert self._hist_tab
+        self._hist_tab.set_tab(name, hout, overwrite=False)
+        self._hist_tab.mod_dict[name] = selection
 
-    def get_h2d_widget(self, name: str, h2d_mod: Histogram2dPattern) -> VegaWidget:
+    def set_module_selection(self, sel: Optional[Set[str]]) -> None:
+        self._registry_mod.scheduler()._module_selection = sel
+
+    def set_h2d_widget(self, name: str, h2d_mod: Histogram2dPattern) -> None:
         if name in self._h2d_dict and self._h2d_dict[name][0] is h2d_mod:
-            return self._h2d_dict[name][1]
+            return
         hout = VegaWidget(spec=hist2d_spec_no_data)
         _mod = h2d_mod.histogram2d
         _mod.updated_once = False  # type: ignore
-        _mod.on_after_run(refresh_info_h2d(hout, _mod, name, self._h2d_tab, self))
+        selection = _mod.path_to_origin()
+        _mod.on_after_run(refresh_info_h2d(hout, _mod, name, self._h2d_tab))
         self._h2d_dict[name] = (h2d_mod, hout)
-        return hout
+        assert self._h2d_tab
+        self._h2d_tab.set_tab(name, hout, overwrite=False)
+        self._h2d_tab.mod_dict[name] = selection
 
     def get_selection_set(self, func: str) -> Set[str]:
         assert self._last_df is not None
         return set(self._last_df.index[self._last_df.loc[:, func] != 0])
 
-    @asynchronized
+    @asynchronized_wg
     def refresh_info(self) -> None:
         # print(".", end="")
         if self._dshape_mod.result is None:
@@ -725,6 +795,7 @@ class DynViewer(TreeTab):
             self.set_tab(SIMPLE_RESULTS_TAB_TITLE, gb_res)
         # refresh Simple results
         if self.is_visible(SIMPLE_RESULTS_TAB_TITLE) or not self.updated_once:
+            self.set_module_selection(None)  # TODO : be more specific
             for col in self.visible_cols:
                 col_name = col
                 for k in self.scalar_functions.keys():
@@ -744,6 +815,10 @@ class DynViewer(TreeTab):
         if self._last_df is not None and np.any(self._last_df.loc[:, "hist"]):
             if self._hist_tab is None:
                 self._hist_tab = TreeTab(upper=self, known_as=HIST1D_TAB_TITLE)
+                self._hist_tab.observe(
+                    make_tab_observer(self._hist_tab, self.get_scheduler()),
+                    names="selected_index",
+                )
             self.set_tab(HIST1D_TAB_TITLE, self._hist_tab, overwrite=False)
             hist_sel = self.get_selection_set("hist")
             if hist_sel != self._hist_sel:
@@ -751,8 +826,7 @@ class DynViewer(TreeTab):
                 for attr in hist_sel:
                     hist_mod = mod_matrix.loc[attr, "hist"]
                     assert hist_mod
-                    hwg = self.get_histogram_widget(attr, hist_mod)
-                    self._hist_tab.set_tab(attr, hwg, overwrite=False)
+                    self.set_histogram_widget(attr, hist_mod)
                 self._hist_sel = hist_sel
         else:
             self.remove_tab(HIST1D_TAB_TITLE)
@@ -765,6 +839,10 @@ class DynViewer(TreeTab):
         ):
             if self._h2d_tab is None:
                 self._h2d_tab = TreeTab(upper=self, known_as=HIST2D_TAB_TITLE)
+                self._h2d_tab.observe(
+                    make_tab_observer(self._h2d_tab, self.get_scheduler()),
+                    names="selected_index",
+                )
             self.set_tab(HIST2D_TAB_TITLE, self._h2d_tab, overwrite=False)
             h2d_sel = set(
                 [
@@ -779,8 +857,7 @@ class DynViewer(TreeTab):
                     h2d_mod = mod_h2d_matrix.loc[ci, cj]
                     assert h2d_mod
                     title = f"{ci}/{cj}"
-                    h2d_wg = self.get_h2d_widget(title, h2d_mod)
-                    self._h2d_tab.set_tab(title, h2d_wg, overwrite=False)
+                    self.set_h2d_widget(title, h2d_mod)
                 self._h2d_sel = h2d_sel
         else:
             self.remove_tab(HIST2D_TAB_TITLE)
@@ -797,10 +874,13 @@ class DynViewer(TreeTab):
                 corr_out = VegaWidget(spec=corr_spec_no_data)
                 self.set_tab(CORR_MX_TAB_TITLE, corr_out)
                 corr_mod.updated_once = False  # type: ignore
+                selection = corr_mod.path_to_origin()
                 corr_mod.on_after_run(
-                    refresh_info_corr(corr_out, corr_mod, CORR_MX_TAB_TITLE, self, self)
+                    refresh_info_corr(corr_out, corr_mod, CORR_MX_TAB_TITLE, self)
                 )
+
                 self._corr_sel = corr_sel.copy()
+                self.mod_dict[CORR_MX_TAB_TITLE] = selection
         else:
             self.remove_tab(CORR_MX_TAB_TITLE)
             self._corr_sel = []

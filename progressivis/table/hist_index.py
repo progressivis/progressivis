@@ -222,7 +222,7 @@ class _HistogramIndexImpl(object):
         For example, returning all values less than 10 (< 10) would be
         `query(operator.__lt__, 10)`
         """
-        assert self.bins
+        assert self.bins is not None
         pos = np.digitize(limit, self.bins)
         detail = bitmap()
         if not approximate:
@@ -275,7 +275,7 @@ class _HistogramIndexImpl(object):
         """
         if lower > upper:
             lower, upper = upper, lower
-        assert self.bins
+        assert self.bins is not None
         pos_lo, pos_up = np.digitize([lower, upper], self.bins)
         if pos_up - pos_lo > len(self.bins) // 2:
             exclusion = self.bitmaps[: pos_lo + 1] + self.bitmaps[pos_up:]

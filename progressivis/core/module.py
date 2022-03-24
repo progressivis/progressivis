@@ -830,7 +830,9 @@ class Module(metaclass=ModuleMeta):
         # the module is blocked, cannot run any more, so it is terminated
         # too.
         logger.error(
-            "%s Not ready because is in weird state %s", self.name, self.state.name,
+            "%s Not ready because is in weird state %s",
+            self.name,
+            self.state.name,
         )
         return False
 
@@ -1040,6 +1042,23 @@ class Module(metaclass=ModuleMeta):
         self._stop(run_number)
         if exception:
             raise RuntimeError("{} {}".format(type(exception), exception))
+
+    def _path_to_origin_impl(self) -> List[Module]:
+        res = [
+            item
+            for sublist in [
+                slot.output_module._path_to_origin_impl()
+                for (sname, slot) in self._input_slots.items()
+                if sname != "_params" and slot is not None
+            ]
+            for item in sublist
+        ]
+        res.append(self)
+        return res
+
+    def path_to_origin(self) -> Set[str]:
+        lst = self._path_to_origin_impl()
+        return set([m.name for m in lst])
 
 
 class InputSlots:
