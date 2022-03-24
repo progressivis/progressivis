@@ -250,7 +250,7 @@ class _HistogramIndexImpl(object):
         Returns the subset of only_locs matching the query.
         """
         only_locs = bitmap.asbitmap(only_locs)
-        assert self.bins
+        assert self.bins is not None
         pos = np.digitize(limit, self.bins)
         detail = bitmap()
         if not approximate:
