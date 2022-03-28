@@ -11,6 +11,7 @@ import {register_config_editor} from './config-editor';
 import { SensitiveHTMLModel, SensitiveHTMLView } from './sensitive_html';
 import { DataTableModel, DataTableView } from './data_table';
 import { ScatterplotModel, ScatterplotView } from './scatterplot';
+import { PrevImagesModel, PrevImagesView } from './previmages';
 import { ModuleGraphModel, ModuleGraphView } from './module_graph';
 import { JsonHTMLModel, JsonHTMLView } from './json_html';
 import { SparkLineProgressBarModel, SparkLineProgressBarView,
@@ -20,6 +21,7 @@ import { SparkLineProgressBarModel, SparkLineProgressBarView,
 export {
   register_config_editor,
   ScatterplotModel, ScatterplotView,
+  PrevImagesModel, PrevImagesView,
   ModuleGraphModel, ModuleGraphView,
   JsonHTMLModel, JsonHTMLView,
   SparkLineProgressBarModel, SparkLineProgressBarView,

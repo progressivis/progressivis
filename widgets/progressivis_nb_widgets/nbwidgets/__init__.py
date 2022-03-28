@@ -2,6 +2,7 @@
 from ._version import version_info, __version__
 
 from .scatterplot import *
+from .previmages import *
 from .module_graph import *
 from .control_panel import *
 from .psboard import *
