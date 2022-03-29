@@ -4,7 +4,7 @@ import _ from 'lodash';
 import $ from 'jquery';
 import { new_id } from './base';
 import { elementReady } from './es6-element-ready';
-//import * as colormaps from './colormaps';
+import * as colormaps from './colormaps';
 import * as d3 from 'd3';
 import History from './history';
 import '../css/scatterplot.css';
@@ -79,11 +79,24 @@ function PrevImages(ipyView) {
       temp = document.createElement('template');
       temp.setAttribute('id', 'PrevImages');
       temp.innerHTML = `<div class="tab-content">
+    <div >
+      <div id=''>
+        <svg>
+          <filter id="gaussianBlur" width="100%" height="100%" x="0" y="0">
+            <feGaussianBlur id="gaussianBlurElement" in="SourceGraphic" stdDeviation="0" />
+            <feComponentTransfer id="colorMap">
+              <feFuncR type="table" tableValues="1 1 1"/>
+              <feFuncG type="table" tableValues="0.93 0.001 0"/>
+              <feFuncB type="table" tableValues="0.63 0.001 0"/>
+            </feComponentTransfer>
+          </filter>
+        </svg>
         <div class="form-inline">
           <div  id="historyGrp" style="height:80px;">
             <label>History</label>
             <table style="height:100px;border:1px solid black;border-collapse: collapse;"><tr><td width='300px' id="prevImages"></td>
 <td>Blur radius</td><td><input class="form-control" id="filterSlider" type="range" value="0" min="0" max="5" step="0.1"></input></td>
+<td>Color map</td><td><select id="colorMapSelect" class="form-control"></select></td>
 </tr></table>
           </div>
 
@@ -92,6 +105,9 @@ function PrevImages(ipyView) {
           <br/>
         </div>
        </div>
+    </div>
+  </div>
+  <!--div id="heatmapContainer" style="width:512px; height:512px;display: none;"></div-->
 `;
       document.body.appendChild(temp);
     }
@@ -128,9 +144,10 @@ function PrevImages(ipyView) {
 	    }
 	    dataURL = $(that)[0].toDataURL();
 	    $(targetCanvas).hide();
-      imageHistory.enqueueUnique(dataURL);
+	    imageHistory.enqueueUnique(dataURL);
+	          let svgQry = swith_id('PrevImages') + ' svg'
         svg
-          .select(targetSvg+' .heatmap')
+          .select(svgQry+' .heatmap')
           //.attr('x', ix)
           //.attr('y', iy)
           //.attr('width', iw)
@@ -141,19 +158,18 @@ function PrevImages(ipyView) {
         .select(swith_id('prevImages'))
         .selectAll('img')
         .data(imageHistory.getItems(), (d) => d);
-
       prevImgElements
         .enter()
         .append('img')
         .attr('width', 50)
         .attr('height', 50)
         .on('mouseover', (d) => {
-          d3.select(`${targetP} .heatmapCompare`)
+          d3.select(`${svgQry} .heatmapCompare`)
             .attr('xlink:href', d)
             .attr('visibility', 'inherit');
         })
         .on('mouseout', () => {
-          d3.select(`${targetP} .heatmapCompare`).attr(
+          d3.select(`${svgQry} .heatmapCompare`).attr(
             'visibility',
             'hidden'
           );
@@ -173,7 +189,25 @@ function PrevImages(ipyView) {
         .attr('height', 5)
         .remove();
     }); //end elementReady
+    }
+
+      /**
+   * @param select - a select element that will be mutated
+   * @param names - list of option names (the value of an option is set to its name)
+   */
+  function makeOptions(select, names) {
+    if (!select) {
+      console.warn('makeOptions requires an existing select element');
+      return;
+    }
+    names.forEach((name) => {
+      const option = document.createElement('option');
+      option.setAttribute('value', name);
+      option.innerHTML = name;
+      select.appendChild(option);
+    });
   }
+
     function _createSvg(target) {
 	console.log("calling ready", target);
 	let svgClass = target+'_svg';
@@ -191,13 +225,14 @@ function PrevImages(ipyView) {
             </feComponentTransfer>
           </filter>
         </svg>`;
+	/*
 	elementReady(targetP).then(() =>
 				   $(targetP).append('<svg class="'+svgClass+'"></svg>')
 				   //$(targetP).append(svgHtml)
-				  );
-	elementReady(svgClassP).then(() =>{
+				  );*/
+	//elementReady(svgClassP).then(() =>{
 	console.log("le svg", target, svgClassP, $(svgClassP));							     svg = d3
-		.select(svgClassP).attr('width', bounds.width).attr('height', bounds.height);
+		.select(swith_id('PrevImages') + ' svg').attr('width', bounds.width).attr('height', bounds.height);
           //.attr('x', bounds.x)
           //.attr('y', bounds.y);
 	 zoomable = svg
@@ -224,8 +259,8 @@ function PrevImages(ipyView) {
           //.attr('x', bounds.x)
           //.attr('y', bounds.y)
           .attr('width', bounds.width)
-		.attr('height', bounds.height).attr('filter','blur(5px)');
-          //.attr('filter', `url(filterId})`);
+	//	.attr('height', bounds.height).attr('filter','blur(5px)');
+          .attr('filter', `url(${swith_id('gaussianBlur')})`);
 	 svg.append('image')
           .attr('class', 'heatmapCompare')
           .style('pointer-events', 'none')
@@ -236,22 +271,28 @@ function PrevImages(ipyView) {
 		//	.style('z-index', 2)
           .attr('width', bounds.width)
 		.attr('height', bounds.height);
-	    /*
     const gaussianBlur = document.getElementById(
-      gaussianBlurElement
+      with_id('gaussianBlurElement')
     );
-    const filterSlider = $(filterId);
+    const filterSlider = $(swith_id('filterSlider'));
     filterSlider.change(function () {
       const value = this.value;
       gaussianBlur.setStdDeviation(value, value);
     });
     filterSlider.get(0).value = DEFAULT_SIGMA;
     gaussianBlur.setStdDeviation(DEFAULT_SIGMA, DEFAULT_SIGMA);
-*/
+    const colorMap = document.getElementById(with_id('colorMap'));
+    const colorMapSelect = $(swith_id('colorMapSelect'));
+    colorMapSelect.change(function() {
+      colormaps.makeTableFilter(colorMap, this.value);
+    });
+    colorMapSelect.get(0).value = DEFAULT_FILTER;
+    makeOptions(colorMapSelect.get(0), colormaps.getTableNames());
+    colormaps.makeTableFilter(colorMap, 'Default');
 	    //.attr('width', width + margin.left + margin.right)
       //.attr('height', height + margin.top + margin.bottom);
 	    //svg.call(d3.zoom());
-	});
+	//});
     }
     function _ready(t) {
 
