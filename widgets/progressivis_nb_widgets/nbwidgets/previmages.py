@@ -32,7 +32,7 @@ class PrevImages(widgets.DOMWidget):  # type: ignore
     # Version of the front-end module containing widget model
     _model_module_version = Unicode("^0.1.0").tag(sync=True)
 
-    canvas_query = Unicode("").tag(sync=True)
+    target = Unicode("").tag(sync=True)
 
     def update(self) -> None:
         self.send(dict(response=42))
