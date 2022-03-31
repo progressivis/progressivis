@@ -11,7 +11,7 @@ from traitlets import Unicode  # type: ignore
 # See js/src/previmages.js for the frontend counterpart to this file.
 
 
-@widgets.register
+@widgets.register  # type: ignore
 class PrevImages(widgets.DOMWidget):  # type: ignore
     """Progressivis PrevImages widget."""
 

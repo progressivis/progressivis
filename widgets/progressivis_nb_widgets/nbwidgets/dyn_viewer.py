@@ -8,6 +8,7 @@ import pandas as pd
 from progressivis.core import asynchronize, aio
 from progressivis.utils.psdict import PsDict
 from progressivis.io import DynVar
+from progressivis_nb_widgets.nbwidgets import PrevImages
 from progressivis.stats import (
     KLLSketch,
     Corr,
@@ -26,6 +27,7 @@ from ._hist1d_schema import hist1d_spec_no_data, kll_spec_no_data
 from ._hist2d_schema import hist2d_spec_no_data
 from ._corr_schema import corr_spec_no_data
 from ._bar_schema import bar_spec_no_data
+import time
 
 from typing import (
     Any as AnyType,
@@ -40,7 +42,6 @@ from typing import (
 )
 
 WidgetType = AnyType
-
 MAIN_TAB_TITLE = "Main"
 HIST1D_TAB_TITLE = "1D Histograms"
 HIST2D_TAB_TITLE = "Heatmaps"
@@ -314,6 +315,24 @@ def set_selection_event(dyn_viewer: "DynViewer") -> Callable:
             dyn_viewer._selection_event = True
 
     return fun
+
+
+class VegaWidgetHz(ipw.VBox):
+    def __init__(self, *args, **kw):
+        self.vega_wg = VegaWidget(*args, **kw)
+        self.classname = f"vegawidget-{id(self.vega_wg)}"
+        self.vega_wg.add_class(self.classname)
+        self.pim = PrevImages()
+        self.pim.target = self.classname
+        super().__init__([self.vega_wg, self.pim])
+
+    def update(self, *args, **kw):
+        self.vega_wg.update(*args, **kw)
+        time.sleep(0.1)
+        self.pim.update()
+
+
+_VegaWidget = VegaWidgetHz
 
 
 @asynchronized
@@ -675,9 +694,9 @@ class DynViewer(TreeTab):
         if name in self._hdict and self._hdict[name][0] is hist_mod:
             return  # self._hdict[name][1], None # None means selection unchanged
         type_ = self.col_types[name]
-        hout: Union[ipw.VBox, VegaWidget]
+        hout: Union[ipw.VBox, _VegaWidget]
         if type_ == "string":
-            hout = VegaWidget(spec=bar_spec_no_data)
+            hout = _VegaWidget(spec=bar_spec_no_data)
             bp_mod = cast(Histogram1DCategorical, hist_mod)
             bp_mod.updated_once = False  # type: ignore
             selection = bp_mod.path_to_origin()
@@ -692,11 +711,12 @@ class DynViewer(TreeTab):
             upper_mod = hist_mod.upper
             range_slider = bins_range_slider("Range:", cast(int, sk_mod.params.binning))
             self.range_widgets[name] = range_slider
+            vega_wg = _VegaWidget(spec=kll_spec_no_data)
             hout = ipw.VBox(
                 [
                     ipw.VBox(
                         [
-                            VegaWidget(spec=kll_spec_no_data),
+                            vega_wg,
                             ipw.HBox(
                                 [
                                     range_slider,
@@ -706,7 +726,7 @@ class DynViewer(TreeTab):
                             ),
                         ]
                     ),
-                    VegaWidget(spec=hist1d_spec_no_data),
+                    _VegaWidget(spec=hist1d_spec_no_data),
                 ]
             )
             range_slider.observe(
@@ -735,7 +755,7 @@ class DynViewer(TreeTab):
     def set_h2d_widget(self, name: str, h2d_mod: Histogram2dPattern) -> None:
         if name in self._h2d_dict and self._h2d_dict[name][0] is h2d_mod:
             return
-        hout = VegaWidget(spec=hist2d_spec_no_data)
+        hout = _VegaWidget(spec=hist2d_spec_no_data)
         _mod = h2d_mod.histogram2d
         _mod.updated_once = False  # type: ignore
         selection = _mod.path_to_origin()
@@ -871,7 +891,7 @@ class DynViewer(TreeTab):
             assert corr_mod._columns
             corr_sel = corr_mod._columns[:]
             if corr_sel != self._corr_sel:
-                corr_out = VegaWidget(spec=corr_spec_no_data)
+                corr_out = _VegaWidget(spec=corr_spec_no_data)
                 self.set_tab(CORR_MX_TAB_TITLE, corr_out)
                 corr_mod.updated_once = False  # type: ignore
                 selection = corr_mod.path_to_origin()
