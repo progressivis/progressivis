@@ -687,7 +687,8 @@ def filepath_to_buffer(
     if not is_str(filepath):
         # if start_byte:
         #    filepath.seek(start_byte)
-        return cast(io.IOBase, filepath), encoding, compression, filepath.size()
+        size = filepath.size() if hasattr(filepath, "size") else 0
+        return cast(io.IOBase, filepath), encoding, compression, size
     if is_url(filepath):
         headers = None
         if start_byte:

@@ -4,24 +4,27 @@ import logging
 
 import pandas as pd
 import numpy as np
-from progressivis import ProgressiveError, SlotDescriptor
-from progressivis.utils.errors import ProgressiveStopIteration
-from progressivis.utils.inspect import filter_kwds, extract_params_docstring
-from progressivis.table.module import TableModule
-from progressivis.core.module import ReturnRunStep
-from progressivis.table.table import Table
-from progressivis.table.dshape import dshape_from_dataframe
-from progressivis.core.utils import (
+from collections import defaultdict
+from .. import ProgressiveError, SlotDescriptor
+from ..utils.errors import ProgressiveStopIteration
+from ..utils.inspect import filter_kwds, extract_params_docstring
+from ..table.module import TableModule
+from ..core.module import ReturnRunStep
+from ..table.table import Table
+from ..table.dshape import dshape_from_dataframe
+from ..core.utils import (
     filepath_to_buffer,
     _infer_compression,
     force_valid_id_columns,
     integer_types,
+    is_str,
 )
+from ..utils import PsDict
 
 from typing import Dict, Any, Callable, Optional, Tuple, Union, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from progressivis.core.module import ModuleState
+    from ..core.module import ModuleState
     import io
 
 logger = logging.getLogger(__name__)
@@ -29,6 +32,9 @@ logger = logging.getLogger(__name__)
 
 class SimpleCSVLoader(TableModule):
     inputs = [SlotDescriptor("filenames", type=Table, required=False)]
+    outputs = [
+        SlotDescriptor("anomalies", type=PsDict, required=False),
+    ]
 
     def __init__(
         self,
@@ -37,7 +43,7 @@ class SimpleCSVLoader(TableModule):
         force_valid_ids: bool = True,
         fillvalues: Optional[Dict[str, Any]] = None,
         throttle: Union[bool, int, float] = False,
-        **kwds: Any
+        **kwds: Any,
     ) -> None:
         super().__init__(**kwds)
         self.default_step_size = kwds.get("chunksize", 1000)  # initial guess
@@ -72,9 +78,35 @@ class SimpleCSVLoader(TableModule):
         self._input_size = 0  # length of the file or input stream when available
         self._file_mode = False
         self._table_params: Dict[str, Any] = dict(name=self.name, fillvalues=fillvalues)
+        self._last_opened: Any = None
+        self._anomalies: Optional[PsDict] = None
 
     def rows_read(self) -> int:
         return self._rows_read
+
+    def starting(self) -> None:
+        super().starting()
+        opt_slot = self.get_output_slot("anomalies")
+        if opt_slot:
+            logger.debug("Maintaining anomalies")
+            self.maintain_anomalies(True)
+        else:
+            logger.debug("Not maintaining anomalies")
+            self.maintain_anomalies(False)
+
+    def maintain_anomalies(self, yes: bool = True) -> None:
+        if yes and self._anomalies is None:
+            self._anomalies = PsDict()
+        elif not yes:
+            self._anomalies = None
+
+    def anomalies(self) -> Optional[PsDict]:
+        return self._anomalies
+
+    def get_data(self, name: str) -> Any:
+        if name == "anomalies":
+            return self.anomalies()
+        return super().get_data(name)
 
     def is_ready(self) -> bool:
         if self.has_input_slot("filenames"):
@@ -105,6 +137,7 @@ class SimpleCSVLoader(TableModule):
         self._input_size = size
         self.csv_kwds["encoding"] = encoding
         self.csv_kwds["compression"] = compression
+        self._last_opened = filepath
         return istream
 
     def close(self) -> None:
@@ -165,6 +198,78 @@ class SimpleCSVLoader(TableModule):
                         # fall through
         return self.state_ready
 
+    def recovering(self, step_size: int) -> pd.DataFrame:
+        def _reopen_last():
+            if self._last_opened is None:
+                raise ValueError("Recovery failed")
+            if is_str(self._last_opened):
+                return self.open(self._last_opened)
+            if hasattr(self._last_opened, "seek"):
+                self._last_opened.seek(
+                    0
+                )  # NB seek is defined but not supported on HTTPResponse ...
+                return self._last_opened
+            raise ValueError("Recovery failed (2)")
+
+        assert self.csv_kwds.get("skiprows", 0) <= self.parser._currow  # type: ignore
+        kw = self.csv_kwds.copy()
+        skip = set(range(1, self.parser._currow + 1))  # type: ignore
+        kw["skiprows"] = skip
+        usecols = self.parser.orig_options.get("usecols")  # type: ignore
+        istream = _reopen_last()
+        na_filter = kw.get("na_filter")
+        # reading the same slice with no type constraint
+        df = pd.read_csv(
+            istream,
+            usecols=usecols,
+            skiprows=skip,
+            na_filter=na_filter,
+            nrows=step_size,
+        )  # type: ignore
+        anomalies = defaultdict(dict)  # type: ignore
+        last_id = self.table.last_id
+        for col, dt in zip(df.columns, df.dtypes):
+            dtt = self.table._column(col).dtype
+            if dtt == dt:
+                continue
+            try:
+                df[col] = df[col].astype(dtt)
+                continue
+            except ValueError:
+                pass
+            if np.issubdtype(dtt, np.integer):
+                na_int = np.iinfo(dtt).max
+                arr = np.empty(len(df), dtype=dtt)
+                for i, elt in df[col].items():
+                    try:
+                        arr[i] = int(elt)
+                    except Exception:
+                        arr[i] = na_int
+                        anomalies[last_id + i + 1][col] = elt
+                df[col] = arr
+            elif np.issubdtype(dtt, np.floating):
+                arr = np.empty(len(df), dtype=dtt)
+                for i, elt in df[col].items():
+                    try:
+                        arr[i] = float(elt)
+                    except Exception:
+                        arr[i] = np.nan
+                        if na_filter and elt == "":  # in this case
+                            continue  # do not report empty strings as anomalies
+                        anomalies[last_id + i + 1][col] = elt
+                df[col] = arr
+
+            else:
+                raise ValueError(f"Cannot recover dtype {dtt}")
+        kw["skiprows"].update(
+            range(self.parser._currow + 1, self.parser._currow + 1 + step_size)  # type: ignore
+        )
+        istream = _reopen_last()
+        self.parser = pd.read_csv(istream, **kw)
+        assert self._anomalies is not None
+        self._anomalies.update(anomalies)
+        return df
+
     def run_step(
         self, run_number: int, step_size: int, howlong: float
     ) -> ReturnRunStep:
@@ -198,6 +303,12 @@ class SimpleCSVLoader(TableModule):
                     raise
             self.parser = None
             return self._return_run_step(self.state_ready, steps_run=0)
+        except ValueError:
+            if self.table is not None and self.anomalies() is not None:
+                df = self.recovering(step_size)
+            else:
+                raise
+
         creates = len(df)
         if creates == 0:  # should not happen
             logger.error("Received 0 elements")
