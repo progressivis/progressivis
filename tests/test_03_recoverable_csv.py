@@ -112,6 +112,8 @@ class TestProgressiveLoadCSV(ProgressiveTest):
         sink.input.inp = module.output.result
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = module.output.anomalies
+        pr2 = Print(proc=self.terse, scheduler=s)
+        pr2.input[0] = module.output.missing
         aio.run(s.start())
         self.assertEqual(len(module.table), len(df))
         self.assertTrue(
@@ -123,6 +125,9 @@ class TestProgressiveLoadCSV(ProgressiveTest):
         assert anomalies
         self.assertTrue(i_row in anomalies)
         self.assertTrue(anomalies[i_row]["B"] == intruder)  # type: ignore
+        missing = module.missing()
+        assert missing
+        self.assertTrue(i_row in missing["B"])  # type:ignore
 
     def test_read_float_csv_with_intruder_not_na_64(self) -> None:
         self._func_read_float_csv_with_intruder(

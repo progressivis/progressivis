@@ -20,8 +20,9 @@ from ..core.utils import (
     is_str,
 )
 from ..utils import PsDict
+from ..core.bitmap import bitmap
 
-from typing import Dict, Any, Callable, Optional, Tuple, Union, TYPE_CHECKING
+from typing import Dict, Any, Type, Callable, Optional, Tuple, Union, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from ..core.module import ModuleState
@@ -34,6 +35,7 @@ class SimpleCSVLoader(TableModule):
     inputs = [SlotDescriptor("filenames", type=Table, required=False)]
     outputs = [
         SlotDescriptor("anomalies", type=PsDict, required=False),
+        SlotDescriptor("missing", type=PsDict, required=False),
     ]
 
     def __init__(
@@ -80,6 +82,7 @@ class SimpleCSVLoader(TableModule):
         self._table_params: Dict[str, Any] = dict(name=self.name, fillvalues=fillvalues)
         self._last_opened: Any = None
         self._anomalies: Optional[PsDict] = None
+        self._missing: Optional[PsDict] = None
 
     def rows_read(self) -> int:
         return self._rows_read
@@ -93,6 +96,13 @@ class SimpleCSVLoader(TableModule):
         else:
             logger.debug("Not maintaining anomalies")
             self.maintain_anomalies(False)
+        opt_slot = self.get_output_slot("missing")
+        if opt_slot:
+            logger.debug("Maintaining missing")
+            self.maintain_missing(True)
+        else:
+            logger.debug("Not maintaining missing")
+            self.maintain_missing(False)
 
     def maintain_anomalies(self, yes: bool = True) -> None:
         if yes and self._anomalies is None:
@@ -103,9 +113,20 @@ class SimpleCSVLoader(TableModule):
     def anomalies(self) -> Optional[PsDict]:
         return self._anomalies
 
+    def maintain_missing(self, yes: bool = True) -> None:
+        if yes and self._missing is None:
+            self._missing = PsDict()
+        elif not yes:
+            self._missing = None
+
+    def missing(self) -> Optional[PsDict]:
+        return self._missing
+
     def get_data(self, name: str) -> Any:
         if name == "anomalies":
             return self.anomalies()
+        if name == "missing":
+            return self.missing()
         return super().get_data(name)
 
     def is_ready(self) -> bool:
@@ -227,6 +248,7 @@ class SimpleCSVLoader(TableModule):
             nrows=step_size,
         )  # type: ignore
         anomalies = defaultdict(dict)  # type: ignore
+        missing: Dict[str, bitmap] = defaultdict(bitmap)
         last_id = self.table.last_id
         for col, dt in zip(df.columns, df.dtypes):
             dtt = self.table._column(col).dtype
@@ -237,37 +259,43 @@ class SimpleCSVLoader(TableModule):
                 continue
             except ValueError:
                 pass
+            na_: Union[int, float]
+            conv_: Union[Type[int], Type[float]]
             if np.issubdtype(dtt, np.integer):
-                na_int = np.iinfo(dtt).max
-                arr = np.empty(len(df), dtype=dtt)
-                for i, elt in df[col].items():
-                    try:
-                        arr[i] = int(elt)
-                    except Exception:
-                        arr[i] = na_int
-                        anomalies[last_id + i + 1][col] = elt
-                df[col] = arr
+                na_ = np.iinfo(dtt).max
+                conv_ = int
             elif np.issubdtype(dtt, np.floating):
-                arr = np.empty(len(df), dtype=dtt)
-                for i, elt in df[col].items():
-                    try:
-                        arr[i] = float(elt)
-                    except Exception:
-                        arr[i] = np.nan
-                        if na_filter and elt == "":  # in this case
-                            continue  # do not report empty strings as anomalies
-                        anomalies[last_id + i + 1][col] = elt
-                df[col] = arr
-
+                na_ = np.nan
+                conv_ = float
             else:
                 raise ValueError(f"Cannot recover dtype {dtt}")
+            arr = np.empty(len(df), dtype=dtt)
+            for i, elt in df[col].items():
+                try:
+                    arr[i] = conv_(elt)
+                except Exception:
+                    arr[i] = na_
+                    if na_ == np.nan and na_filter and elt == "":  # in this case
+                        continue  # do not report empty strings as anomalies
+                    id_ = last_id + i + 1
+                    if self._anomalies is not None:
+                        anomalies[id_][col] = elt
+                    if self._missing is not None:
+                        missing[col].add(id_)
+            df[col] = arr
         kw["skiprows"].update(
             range(self.parser._currow + 1, self.parser._currow + 1 + step_size)  # type: ignore
         )
         istream = _reopen_last()
         self.parser = pd.read_csv(istream, **kw)
-        assert self._anomalies is not None
-        self._anomalies.update(anomalies)
+        if self._anomalies is not None:
+            self._anomalies.update(anomalies)
+        if self._missing is not None:
+            for k, v in missing.items():
+                if k in self._missing:
+                    self._missing[k] |= v
+                else:
+                    self._missing[k] = v
         return df
 
     def run_step(
