@@ -6,7 +6,7 @@ import pandas as pd
 from . import ProgressiveTest
 from progressivis import Print
 from progressivis.core import aio, Sink
-from progressivis.io import SimpleCSVLoader
+from progressivis.io import SimpleCSVLoader, SimpleImputer
 
 from typing import Optional, Any, Tuple, Callable
 
@@ -60,18 +60,36 @@ class TestProgressiveLoadCSV(ProgressiveTest):
         aio.run(s.start())
         self.assertEqual(len(module.table), n_rows)
 
-    def _func_read_int_csv_with_intruder(self, dtype, intruder) -> None:
+    def _func_read_int_csv_with_intruder(
+        self, dtype, intruder, imputer=None, atol=0, fixed_step_size=0
+    ) -> None:
         s = self.scheduler()
         n_rows = 100_000
         i_row = n_rows - 42
         sio = make_int_csv(n_rows=n_rows, n_cols=3, intruder=(i_row, 1, intruder))
-        # csv_name = "/tmp/foo.csv"
-        # with open(csv_name, "w") as csv:
-        #     csv.write(sio.getvalue())
         df = pd.read_csv(sio)
         sio.seek(0)
-        df.loc[i_row, "B"] = np.iinfo(dtype).max
-        module = SimpleCSVLoader(sio, index_col=False, scheduler=s, dtype=dtype)
+
+        def _subst():
+            if not imputer:
+                return np.iinfo(dtype).max
+            strategy = imputer.get_strategy("B")
+            if strategy == "mean":
+                return df["B"].drop(i_row).astype(dtype).mean()
+            if strategy == "median":
+                return df["B"].drop(i_row).astype(dtype).median()
+            if strategy == "constant":
+                return 55
+            if strategy == "most_frequent":
+                assert fixed_step_size
+                return df.loc[: n_rows - fixed_step_size, "B"].astype(dtype).mode()[0]
+
+        df.loc[i_row, "B"] = _subst()
+        module = SimpleCSVLoader(
+            sio, index_col=False, scheduler=s, dtype=dtype, imputer=imputer
+        )
+        if fixed_step_size:
+            setattr(module, "predict_step_size", lambda x: fixed_step_size)
         self.assertTrue(module.result is None)
         sink = Sink(scheduler=s)
         sink.input.inp = module.output.result
@@ -79,9 +97,18 @@ class TestProgressiveLoadCSV(ProgressiveTest):
         pr.input[0] = module.output.anomalies
         aio.run(s.start())
         self.assertEqual(len(module.table), len(df))
-        self.assertTrue(
-            np.array_equal(module.table.to_array(), df.values.astype(dtype))
-        )
+        if imputer:
+            self.assertTrue(
+                abs(
+                    module.table.to_array()[i_row, 1]
+                    - df.values.astype(dtype)[i_row, 1]
+                )
+                <= atol
+            )
+        else:
+            self.assertTrue(
+                np.array_equal(module.table.to_array(), df.values.astype(dtype))
+            )
         anomalies = module.anomalies()
         assert anomalies
         self.assertTrue(i_row in anomalies)
@@ -93,19 +120,67 @@ class TestProgressiveLoadCSV(ProgressiveTest):
     def test_read_int_csv_with_intruder_32(self) -> None:
         self._func_read_int_csv_with_intruder(dtype="int32", intruder="Intruder")
 
-    # def test_read_int_csv_with_intruder_32_overflow(self) -> None:
-    #    self._func_read_int_csv_with_intruder(dtype="int32", intruder=str(2**40))
+    def test_read_int_csv_with_intruder_64_default(self) -> None:
+        self._func_read_int_csv_with_intruder(
+            dtype="int64", intruder="Intruder", imputer=SimpleImputer(), atol=20
+        )
 
-    def _func_read_float_csv_with_intruder(self, na_filter, intruder, dtype) -> None:
+    def test_read_int_csv_with_intruder_64_median(self) -> None:
+        self._func_read_int_csv_with_intruder(
+            dtype="int64",
+            intruder="Intruder",
+            imputer=SimpleImputer("median"),
+            atol=100,
+        )
+
+    def test_read_int_csv_with_intruder_64_freq(self) -> None:
+        self._func_read_int_csv_with_intruder(
+            dtype="int64",
+            intruder="Intruder",
+            imputer=SimpleImputer("most_frequent"),
+            fixed_step_size=10_000,
+        )
+
+    def test_read_int_csv_with_intruder_64_constant(self) -> None:
+        self._func_read_int_csv_with_intruder(
+            dtype="int64",
+            intruder="Intruder",
+            imputer=SimpleImputer("constant", fill_values=55),
+            fixed_step_size=10_000,
+        )
+
+    def _func_read_float_csv_with_intruder(
+        self, na_filter, dtype, intruder, imputer=None, atol=0
+    ) -> None:
         s = self.scheduler()
         n_rows = 100_000
         i_row = n_rows - 42
         sio = make_float_csv(n_rows=n_rows, n_cols=3, intruder=(i_row, 1, intruder))
         df = pd.read_csv(sio)
         sio.seek(0)
-        df.loc[i_row, "B"] = np.nan
+
+        def _subst():
+            if not imputer:
+                return np.nan
+            strategy = imputer.get_strategy("B")
+            if strategy == "mean":
+                return df["B"].drop(i_row).astype(dtype).mean()
+            if strategy == "median":
+                return df["B"].drop(i_row).astype(dtype).median()
+            if strategy == "constant":
+                return 55.0
+            # if strategy == "most_frequent":
+            #    assert fixed_step_size
+            #    return df.loc[: n_rows - fixed_step_size, "B"].astype(dtype).mode()[0]
+
+        df.loc[i_row, "B"] = _subst()
         module = SimpleCSVLoader(
-            sio, index_col=False, scheduler=s, dtype=dtype, na_filter=na_filter
+            sio,
+            index_col=False,
+            scheduler=s,
+            dtype=dtype,
+            na_filter=na_filter,
+            imputer=imputer,
         )
         self.assertTrue(module.result is None)
         sink = Sink(scheduler=s)
@@ -116,11 +191,22 @@ class TestProgressiveLoadCSV(ProgressiveTest):
         pr2.input[0] = module.output.missing
         aio.run(s.start())
         self.assertEqual(len(module.table), len(df))
-        self.assertTrue(
-            np.allclose(
-                module.table.to_array(), df.values.astype(dtype), equal_nan=True
+        if imputer:
+            print(module.table.to_array()[i_row, 1], df.values.astype(dtype)[i_row, 1])
+            self.assertTrue(
+                abs(
+                    module.table.to_array()[i_row, 1]
+                    - df.values.astype(dtype)[i_row, 1]
+                )
+                <= atol
             )
-        )
+        else:
+            self.assertTrue(
+                np.allclose(
+                    module.table.to_array(), df.values.astype(dtype), equal_nan=True
+                )
+            )
+
         anomalies = module.anomalies()
         assert anomalies
         self.assertTrue(i_row in anomalies)
@@ -147,6 +233,32 @@ class TestProgressiveLoadCSV(ProgressiveTest):
     def test_read_float_csv_with_intruder_na_32(self) -> None:
         self._func_read_float_csv_with_intruder(
             na_filter=True, intruder="Intruder", dtype="float32"
+        )
+
+    def test_read_float_csv_with_intruder_not_na_64_mean(self) -> None:
+        self._func_read_float_csv_with_intruder(
+            na_filter=False,
+            intruder="",
+            dtype="float64",
+            imputer=SimpleImputer(),
+            atol=20,
+        )
+
+    def test_read_float_csv_with_intruder_not_na_64_median(self) -> None:
+        self._func_read_float_csv_with_intruder(
+            na_filter=False,
+            intruder="",
+            dtype="float64",
+            imputer=SimpleImputer(strategy="median"),
+            atol=200,
+        )
+
+    def test_read_float_csv_with_intruder_not_na_64_constant(self) -> None:
+        self._func_read_float_csv_with_intruder(
+            na_filter=False,
+            intruder="",
+            dtype="float64",
+            imputer=SimpleImputer(strategy="constant", fill_values=55),
         )
 
 

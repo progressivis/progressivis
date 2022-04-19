@@ -72,6 +72,11 @@ def is_str(s: Any) -> bool:
     return isinstance(s, str)
 
 
+# def is_dict(s: Any) -> TypeGuard[dict]:
+def is_dict(s: Any) -> bool:
+    return isinstance(s, dict)
+
+
 # def is_slice(s: Any) -> TypeGuard[slice]:
 def is_slice(s: Any) -> bool:
     return isinstance(s, slice)
@@ -90,6 +95,10 @@ def is_iter_str(it: Any) -> bool:
         if not is_str(s):
             return False
     return True
+
+
+def nn(x: Any) -> bool:
+    return x is not None
 
 
 def len_none(item: Optional[Sized]) -> int:

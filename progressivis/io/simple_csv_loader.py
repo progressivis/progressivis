@@ -1,9 +1,14 @@
 from __future__ import annotations
 
 import logging
-
 import pandas as pd
 import numpy as np
+from datasketches import (
+    kll_floats_sketch,
+    kll_ints_sketch,
+    frequent_strings_sketch,
+    frequent_items_error_type,
+)
 from collections import defaultdict
 from .. import ProgressiveError, SlotDescriptor
 from ..utils.errors import ProgressiveStopIteration
@@ -18,7 +23,11 @@ from ..core.utils import (
     force_valid_id_columns,
     integer_types,
     is_str,
+    is_dict,
+    is_slice,
+    nn,
 )
+from ..stats.utils import OnlineMean
 from ..utils import PsDict
 from ..core.bitmap import bitmap
 
@@ -29,6 +38,118 @@ if TYPE_CHECKING:
     import io
 
 logger = logging.getLogger(__name__)
+
+
+class SimpleImputer:
+    def __init__(
+        self,
+        strategy: Optional[Union[str, Dict[str, str]]] = None,
+        default_strategy: Optional[str] = None,
+        fill_values: Optional[
+            Union[str, np.number, Dict[str, Union[str, np.number]]]
+        ] = None,
+    ):
+        if nn(default_strategy):
+            assert is_str(default_strategy)
+            if not is_dict(strategy):
+                raise ValueError(
+                    "'default_strategy' is allowed" " only when strategy is a dict"
+                )
+        _strategy: dict = (
+            {} if (strategy is None or is_str(strategy)) else strategy
+        )  # type: ignore
+        assert is_dict(_strategy)
+        _default_strategy = default_strategy or "mean"
+        self._impute_all: bool = False
+        if isinstance(strategy, str):
+            _default_strategy = strategy
+        self._strategy: Dict = defaultdict(lambda: _default_strategy, **_strategy)
+        if is_str(strategy) or strategy is None:
+            self._impute_all = True
+        if _default_strategy == "constant" or "constant" in _strategy:
+            assert nn(fill_values)
+            self._fill_values = (
+                fill_values if is_dict(fill_values) else defaultdict(lambda: fill_values)  # type: ignore
+            )
+        self._means: Dict[str, OnlineMean] = {}
+        self._medians: Dict[str, Union[kll_ints_sketch, kll_floats_sketch]] = {}
+        self._frequent: Dict[str, frequent_strings_sketch] = {}
+        self._dtypes: Dict[str, Union[str, np.dtype]] = {}
+        self._k = 200  # for sketching
+
+    def init(self, dtypes):
+        if self._impute_all:
+            self._dtypes = dtypes
+        else:
+            self._dtypes = {k: v for (k, v) in dtypes.items() if k in self.strategy}
+        for col, ty in self._dtypes.items():
+            strategy = self.get_strategy(col)
+            if strategy == "mean":
+                if not np.issubdtype(ty, np.number):
+                    raise ValueError(f"{strategy = } not compatible with {ty}")
+                self._means[col] = OnlineMean()
+            elif strategy == "median":
+                if np.issubdtype(ty, np.floating):
+                    self._medians[col] = kll_floats_sketch(self._k)
+                elif np.issubdtype(ty, np.integer):
+                    self._medians[col] = kll_ints_sketch(self._k)
+                else:
+                    raise ValueError(f"{strategy = } not compatible with {ty}")
+            elif strategy == "most_frequent":
+                self._frequent[col] = frequent_strings_sketch(self._k)
+            elif strategy != "constant":
+                raise ValueError(f"Unknown imputation {strategy = }")
+
+    def get_strategy(self, col):
+        return self._strategy[col]
+
+    def add_df(self, df):
+        for col, dt in self._dtypes.items():
+            strategy = self.get_strategy(col)
+            if strategy == "constant":
+                continue
+            add_strategy = getattr(self, f"add_{strategy}")
+            add_strategy(col, df[col], dt)
+
+    def add_mean(self, col, val, dt):
+        self._means[col].add(val)
+
+    def add_median(self, col, val, dt):
+        if np.issubdtype(dt, np.integer):
+            sk = kll_ints_sketch(self._k)
+        else:
+            assert np.issubdtype(dt, np.floating)
+            sk = kll_floats_sketch(self._k)
+        sk.update(val)
+        self._medians[col].merge(sk)
+
+    def add_most_frequent(self, col, val, dt):
+        fi = frequent_strings_sketch(self._k)
+        for s in val.astype(str):
+            fi.update(s)
+        self._frequent[col].merge(fi)
+
+    def add_constant(self, col, val, dt):
+        pass
+
+    def getvalue(self, col):
+        strategy = self.get_strategy(col)
+        get_val_strategy = getattr(self, f"get_val_{strategy}")
+        return get_val_strategy(col)
+
+    def get_val_mean(self, col):
+        return self._means[col].mean
+
+    def get_val_median(self, col):
+        return self._medians[col].get_quantile(0.5)
+
+    def get_val_most_frequent(self, col):
+        return self._frequent[col].get_frequent_items(
+            frequent_items_error_type.NO_FALSE_POSITIVES
+        )[0][0]
+
+    def get_val_constant(self, col):
+        return self._fill_values[col]
 
 
 class SimpleCSVLoader(TableModule):
@@ -45,6 +166,7 @@ class SimpleCSVLoader(TableModule):
         force_valid_ids: bool = True,
         fillvalues: Optional[Dict[str, Any]] = None,
         throttle: Union[bool, int, float] = False,
+        imputer: Optional[SimpleImputer] = None,
         **kwds: Any,
     ) -> None:
         super().__init__(**kwds)
@@ -69,7 +191,7 @@ class SimpleCSVLoader(TableModule):
         csv_kwds["nrows"] = None  # nrows clashes with chunksize
 
         self._rows_read = 0
-        if filter_ is not None and not callable(filter_):
+        if nn(filter_) and not callable(filter_):
             raise ProgressiveError("filter parameter should be callable or None")
         self._filter: Optional[Callable[[pd.DataFrame], pd.DataFrame]] = filter_
         self._input_stream: Optional[
@@ -80,6 +202,7 @@ class SimpleCSVLoader(TableModule):
         self._input_size = 0  # length of the file or input stream when available
         self._file_mode = False
         self._table_params: Dict[str, Any] = dict(name=self.name, fillvalues=fillvalues)
+        self._imputer = imputer
         self._last_opened: Any = None
         self._anomalies: Optional[PsDict] = None
         self._missing: Optional[PsDict] = None
@@ -143,7 +266,7 @@ class SimpleCSVLoader(TableModule):
         return True
 
     def open(self, filepath: Any) -> io.IOBase:
-        if self._input_stream is not None:
+        if nn(self._input_stream):
             self.close()
         compression: Optional[str] = _infer_compression(filepath, self._compression)
         istream: io.IOBase
@@ -184,7 +307,7 @@ class SimpleCSVLoader(TableModule):
 
     def validate_parser(self, run_number: int) -> ModuleState:
         if self.parser is None:
-            if self.filepath_or_buffer is not None:
+            if nn(self.filepath_or_buffer):
                 try:
                     self.parser = pd.read_csv(
                         self.open(self.filepath_or_buffer), **self.csv_kwds
@@ -207,7 +330,7 @@ class SimpleCSVLoader(TableModule):
                 df = fn_slot.data()
                 while self.parser is None:
                     indices = fn_slot.created.next(length=1)
-                    assert isinstance(indices, slice)
+                    assert is_slice(indices)
                     if indices.stop == indices.start:
                         return self.state_blocked
                     filename = df.at[indices.start, "filename"]
@@ -261,11 +384,12 @@ class SimpleCSVLoader(TableModule):
                 pass
             na_: Union[int, float]
             conv_: Union[Type[int], Type[float]]
+            imp = self._imputer
             if np.issubdtype(dtt, np.integer):
-                na_ = np.iinfo(dtt).max
+                na_ = imp.getvalue(col) if imp is not None else np.iinfo(dtt).max
                 conv_ = int
             elif np.issubdtype(dtt, np.floating):
-                na_ = np.nan
+                na_ = imp.getvalue(col) if imp is not None else np.nan
                 conv_ = float
             else:
                 raise ValueError(f"Cannot recover dtype {dtt}")
@@ -278,9 +402,9 @@ class SimpleCSVLoader(TableModule):
                     if na_ == np.nan and na_filter and elt == "":  # in this case
                         continue  # do not report empty strings as anomalies
                     id_ = last_id + i + 1
-                    if self._anomalies is not None:
+                    if nn(self._anomalies):
                         anomalies[id_][col] = elt
-                    if self._missing is not None:
+                    if nn(self._missing):
                         missing[col].add(id_)
             df[col] = arr
         kw["skiprows"].update(
@@ -332,7 +456,9 @@ class SimpleCSVLoader(TableModule):
             self.parser = None
             return self._return_run_step(self.state_ready, steps_run=0)
         except ValueError:
-            if self.table is not None and self.anomalies() is not None:
+            if nn(self.table) and (
+                nn(self.anomalies()) or nn(self.missing()) or nn(self._imputer)
+            ):
                 df = self.recovering(step_size)
             else:
                 raise
@@ -357,8 +483,12 @@ class SimpleCSVLoader(TableModule):
                 self._table_params["data"] = df
                 self._table_params["create"] = True
                 self.result = Table(**self._table_params)
+                if self._imputer is not None:
+                    self._imputer.init(df.dtypes)
             else:
                 self.table.append(df)
+            if self._imputer is not None:
+                self._imputer.add_df(df)
         return self._return_run_step(self.state_ready, steps_run=creates)
 
 
