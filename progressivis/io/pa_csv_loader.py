@@ -50,20 +50,18 @@ class PACSVLoader(TableModule):
         fillvalues: Optional[Dict[str, Any]] = None,
         throttle: Union[bool, int, float] = False,
         imputer: Optional[SimpleImputer] = None,
-        read_options=None,
-        parse_options=None,
-        convert_options=None,
+        read_options: Optional[pa.csv.ReadOptions] = None,
+        parse_options: Optional[pa.csv.ParseOptions] = None,
+        convert_options: Optional[pa.csv.ConvertOptions] = None,
         **kwds: Any,
     ) -> None:
         super().__init__(**kwds)
         self.default_step_size = kwds.get("chunksize", 1000)  # initial guess
         kwds.setdefault("chunksize", self.default_step_size)
         # Filter out the module keywords from the csv loader keywords
-        csv_kwds: Dict[str, Any] = dict(
-            read_options=read_options,
-            parse_options=parse_options,
-            convert_options=convert_options,
-        )
+        self._read_options = read_options
+        self._parse_options = parse_options
+        self._convert_options = convert_options
         # When called with a specified chunksize, it returns a parser
         self.filepath_or_buffer = filepath_or_buffer
         self.force_valid_ids = force_valid_ids
@@ -72,10 +70,8 @@ class PACSVLoader(TableModule):
         else:
             self.throttle = False
         self.parser: Optional[pd.TextReader] = None
-        self.csv_kwds = csv_kwds
-        self._compression: Any = csv_kwds.get("compression", "infer")
+        self._compression: Any = "infer"
         self._encoding: Any = read_options.encoding if read_options else None
-        self._nrows = csv_kwds.get("nrows")
         self._rows_read = 0
         if nn(filter_) and not callable(filter_):
             raise ProgressiveError("filter parameter should be callable or None")
@@ -194,7 +190,10 @@ class PACSVLoader(TableModule):
             if nn(self.filepath_or_buffer):
                 try:
                     self.parser = pa.csv.open_csv(
-                        self.open(self.filepath_or_buffer), **self.csv_kwds
+                        self.open(self.filepath_or_buffer),
+                        read_options=self._read_options,
+                        parse_options=self._parse_options,
+                        convert_options=self._convert_options
                     )
                 except IOError as e:
                     logger.error("Cannot open file %s: %s", self.filepath_or_buffer, e)
@@ -220,7 +219,10 @@ class PACSVLoader(TableModule):
                     filename = df.at[indices.start, "filename"]
                     try:
                         self.parser = pa.csv.open_csv(
-                            self.open(filename), **self.csv_kwds
+                            self.open(filename),
+                            read_options=self._read_options,
+                            parse_options=self._parse_options,
+                            convert_options=self._convert_options
                         )
                     except IOError as e:
                         logger.error("Cannot open file %s: %s", filename, e)
@@ -228,7 +230,7 @@ class PACSVLoader(TableModule):
                         # fall through
         return self.state_ready
 
-    def recovering(self, step_size: int) -> pd.DataFrame:
+    def __obsolete_recovering(self, step_size: int) -> pd.DataFrame:
         def _reopen_last():
             if self._last_opened is None:
                 raise ValueError("Recovery failed")
@@ -390,8 +392,6 @@ class PACSVLoader(TableModule):
 
 csv_docstring = (
     "PACSVLoader("
-    + extract_params_docstring(pa.csv.open_csv)
-    + ","
     + extract_params_docstring(PACSVLoader.__init__, only_defaults=True)
     + ",force_valid_ids=False,id=None,scheduler=None,tracer=None,predictor=None"
     + ",storage=None,input_descriptors=[],output_descriptors=[])"
