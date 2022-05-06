@@ -490,6 +490,7 @@ class RandomBytesIO:
         **kwargs: Any,
     ) -> None:
         self._pos = 0
+        self.closed = False  # for pyarrow
         self._reminder = ""
         self._cols = cols
         if size is not None and rows is not None:
@@ -874,7 +875,7 @@ def patch_this(
             run_step(self, run_number, step_size, howlong)
             """
             patch.before_run_step(module, *args, **kwargs)
-            ret = to_decorate(*args, **kwargs)
+            ret = to_decorate(*args, **kwargs)  # type: ignore
             patch.after_run_step(module, *args, **kwargs)
             return ret
 

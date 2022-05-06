@@ -3,10 +3,12 @@ from __future__ import annotations
 import logging
 import pandas as pd
 import numpy as np
+import pyarrow as pa
+import pyarrow.csv
 from collections import defaultdict
 from .. import ProgressiveError, SlotDescriptor
 from ..utils.errors import ProgressiveStopIteration
-from ..utils.inspect import filter_kwds, extract_params_docstring
+from ..utils.inspect import extract_params_docstring
 from ..table.module import TableModule
 from ..core.module import ReturnRunStep
 from ..table.table import Table
@@ -33,7 +35,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class SimpleCSVLoader(TableModule):
+class PACSVLoader(TableModule):
     inputs = [SlotDescriptor("filenames", type=Table, required=False)]
     outputs = [
         SlotDescriptor("anomalies", type=PsDict, required=False),
@@ -48,13 +50,20 @@ class SimpleCSVLoader(TableModule):
         fillvalues: Optional[Dict[str, Any]] = None,
         throttle: Union[bool, int, float] = False,
         imputer: Optional[SimpleImputer] = None,
+        read_options=None,
+        parse_options=None,
+        convert_options=None,
         **kwds: Any,
     ) -> None:
         super().__init__(**kwds)
         self.default_step_size = kwds.get("chunksize", 1000)  # initial guess
         kwds.setdefault("chunksize", self.default_step_size)
         # Filter out the module keywords from the csv loader keywords
-        csv_kwds: Dict[str, Any] = filter_kwds(kwds, pd.read_csv)
+        csv_kwds: Dict[str, Any] = dict(
+            read_options=read_options,
+            parse_options=parse_options,
+            convert_options=convert_options,
+        )
         # When called with a specified chunksize, it returns a parser
         self.filepath_or_buffer = filepath_or_buffer
         self.force_valid_ids = force_valid_ids
@@ -65,12 +74,8 @@ class SimpleCSVLoader(TableModule):
         self.parser: Optional[pd.TextReader] = None
         self.csv_kwds = csv_kwds
         self._compression: Any = csv_kwds.get("compression", "infer")
-        csv_kwds["compression"] = None
-        self._encoding: Any = csv_kwds.get("encoding", None)
-        csv_kwds["encoding"] = None
+        self._encoding: Any = read_options.encoding if read_options else None
         self._nrows = csv_kwds.get("nrows")
-        csv_kwds["nrows"] = None  # nrows clashes with chunksize
-
         self._rows_read = 0
         if nn(filter_) and not callable(filter_):
             raise ProgressiveError("filter parameter should be callable or None")
@@ -160,8 +165,6 @@ class SimpleCSVLoader(TableModule):
         self._input_encoding = encoding
         self._input_compression = compression
         self._input_size = size
-        self.csv_kwds["encoding"] = encoding
-        self.csv_kwds["compression"] = compression
         self._last_opened = filepath
         return istream
 
@@ -190,7 +193,7 @@ class SimpleCSVLoader(TableModule):
         if self.parser is None:
             if nn(self.filepath_or_buffer):
                 try:
-                    self.parser = pd.read_csv(
+                    self.parser = pa.csv.open_csv(
                         self.open(self.filepath_or_buffer), **self.csv_kwds
                     )
                 except IOError as e:
@@ -216,7 +219,9 @@ class SimpleCSVLoader(TableModule):
                         return self.state_blocked
                     filename = df.at[indices.start, "filename"]
                     try:
-                        self.parser = pd.read_csv(self.open(filename), **self.csv_kwds)
+                        self.parser = pa.csv.open_csv(
+                            self.open(filename), **self.csv_kwds
+                        )
                     except IOError as e:
                         logger.error("Cannot open file %s: %s", filename, e)
                         self.parser = None
@@ -323,9 +328,15 @@ class SimpleCSVLoader(TableModule):
         logger.info("loading %d lines", step_size)
         try:
             assert self.parser
-            df: pd.DataFrame = self.parser.read(
-                step_size
-            )  # raises StopIteration at EOF
+            chunks = []
+            cnt = step_size
+            creates = 0
+            while cnt > 0:
+                next_chunk = self.parser.read_next_batch()
+                chunks.append(next_chunk)
+                cnt -= next_chunk.num_rows
+                creates += next_chunk.num_rows
+            assert chunks
         except StopIteration:
             self.close()
             if self.has_input_slot("filenames"):
@@ -335,38 +346,42 @@ class SimpleCSVLoader(TableModule):
                 ) and not self._file_mode:
                     raise
             self.parser = None
-            return self._return_run_step(self.state_ready, steps_run=0)
+            if not chunks:
+                return self._return_run_step(self.state_ready, steps_run=0)
         except ValueError:
             if nn(self.table) and (
                 nn(self.anomalies()) or nn(self.missing()) or nn(self._imputer)
             ):
-                df = self.recovering(step_size)
+                # df = self.recovering(step_size)
+                pass
             else:
                 raise
-
-        creates = len(df)
+        df_list = [chnk.to_pandas() for chnk in chunks]
         if creates == 0:  # should not happen
             logger.error("Received 0 elements")
             raise ProgressiveStopIteration
         if self._filter is not None:
-            df = self._filter(df)
-        creates = len(df)
+            df_list = [self._filter(df) for df in df_list]
+            creates = sum([len(df) for df in df_list])
         if creates == 0:
             logger.info("frame has been filtered out")
         else:
+            assert chunks
             self._rows_read += creates
             logger.info("Loaded %d lines", self._rows_read)
             if self.force_valid_ids:
-                force_valid_id_columns(df)
+                for df in df_list:
+                    force_valid_id_columns(df)
             if self.result is None:
                 self._table_params["name"] = self.generate_table_name("table")
                 self._table_params["dshape"] = dshape_from_dataframe(df)
-                self._table_params["data"] = df
+                self._table_params["data"] = df_list[0]
                 self._table_params["create"] = True
                 self.result = Table(**self._table_params)
+                df_list = df_list[1:]
                 if self._imputer is not None:
                     self._imputer.init(df.dtypes)
-            else:
+            for df in df_list:
                 self.table.append(df)
             if self._imputer is not None:
                 self._imputer.add_df(df)
@@ -374,17 +389,17 @@ class SimpleCSVLoader(TableModule):
 
 
 csv_docstring = (
-    "SimpleCSVLoader("
-    + extract_params_docstring(pd.read_csv)
+    "PACSVLoader("
+    + extract_params_docstring(pa.csv.open_csv)
     + ","
-    + extract_params_docstring(SimpleCSVLoader.__init__, only_defaults=True)
+    + extract_params_docstring(PACSVLoader.__init__, only_defaults=True)
     + ",force_valid_ids=False,id=None,scheduler=None,tracer=None,predictor=None"
     + ",storage=None,input_descriptors=[],output_descriptors=[])"
 )
 try:
-    SimpleCSVLoader.__init__.__func__.__doc__ = csv_docstring  # type: ignore
+    PACSVLoader.__init__.__func__.__doc__ = csv_docstring  # type: ignore
 except Exception:
     try:
-        SimpleCSVLoader.__init__.__doc__ = csv_docstring
+        PACSVLoader.__init__.__doc__ = csv_docstring
     except Exception:
         pass

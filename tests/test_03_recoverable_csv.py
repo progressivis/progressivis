@@ -6,7 +6,8 @@ import pandas as pd
 from . import ProgressiveTest
 from progressivis import Print
 from progressivis.core import aio, Sink
-from progressivis.io import SimpleCSVLoader, SimpleImputer
+from progressivis.io import SimpleCSVLoader
+from progressivis.stats.utils import SimpleImputer
 
 from typing import Optional, Any, Tuple, Callable
 
