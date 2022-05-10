@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 import logging
+import copy
+from functools import partial
 import pandas as pd
 import numpy as np
 import pyarrow as pa
 import pyarrow.csv
-from collections import defaultdict
 from .. import ProgressiveError, SlotDescriptor
 from ..utils.errors import ProgressiveStopIteration
 from ..utils.inspect import extract_params_docstring
@@ -22,25 +23,39 @@ from ..core.utils import (
     is_slice,
     nn,
 )
-from ..utils import PsDict
-from ..core.bitmap import bitmap
 
-from typing import Dict, Any, Type, Callable, Optional, Tuple, Union, TYPE_CHECKING
+from typing import Dict, Any, Callable, Optional, Tuple, Union, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from ..core.module import ModuleState
     from ..stats.utils import SimpleImputer
     import io
 
+MAX_ATTEMPTS = 10_000
+
 logger = logging.getLogger(__name__)
+
+
+def tbl_to_pandas(tbl) -> pd.DataFrame:
+    null_mask = None
+    has_null = False
+    for col in tbl:
+        if not col.null_count:
+            continue
+        has_null = True
+        try:
+            null_mask |= col.is_null()
+        except TypeError:
+            assert null_mask is None
+            null_mask = col.is_null()
+    df = tbl.to_pandas()
+    if not has_null:
+        return df
+    return df.drop(np.array(null_mask).nonzero()[0])
 
 
 class PACSVLoader(TableModule):
     inputs = [SlotDescriptor("filenames", type=Table, required=False)]
-    outputs = [
-        SlotDescriptor("anomalies", type=PsDict, required=False),
-        SlotDescriptor("missing", type=PsDict, required=False),
-    ]
 
     def __init__(
         self,
@@ -53,6 +68,7 @@ class PACSVLoader(TableModule):
         read_options: Optional[pa.csv.ReadOptions] = None,
         parse_options: Optional[pa.csv.ParseOptions] = None,
         convert_options: Optional[pa.csv.ConvertOptions] = None,
+        drop_na: Optional[bool] = True,
         **kwds: Any,
     ) -> None:
         super().__init__(**kwds)
@@ -69,7 +85,8 @@ class PACSVLoader(TableModule):
             self.throttle = throttle
         else:
             self.throttle = False
-        self.parser: Optional[pd.TextReader] = None
+        self._parser: Optional[pa.csv.CSVStreamingReader] = None
+        self._parser_func: Optional[Callable] = None
         self._compression: Any = "infer"
         self._encoding: Any = read_options.encoding if read_options else None
         self._rows_read = 0
@@ -84,55 +101,13 @@ class PACSVLoader(TableModule):
         self._input_size = 0  # length of the file or input stream when available
         self._file_mode = False
         self._table_params: Dict[str, Any] = dict(name=self.name, fillvalues=fillvalues)
+        self._currow = 0
         self._imputer = imputer
         self._last_opened: Any = None
-        self._anomalies: Optional[PsDict] = None
-        self._missing: Optional[PsDict] = None
+        self._drop_na = drop_na
 
     def rows_read(self) -> int:
         return self._rows_read
-
-    def starting(self) -> None:
-        super().starting()
-        opt_slot = self.get_output_slot("anomalies")
-        if opt_slot:
-            logger.debug("Maintaining anomalies")
-            self.maintain_anomalies(True)
-        else:
-            logger.debug("Not maintaining anomalies")
-            self.maintain_anomalies(False)
-        opt_slot = self.get_output_slot("missing")
-        if opt_slot:
-            logger.debug("Maintaining missing")
-            self.maintain_missing(True)
-        else:
-            logger.debug("Not maintaining missing")
-            self.maintain_missing(False)
-
-    def maintain_anomalies(self, yes: bool = True) -> None:
-        if yes and self._anomalies is None:
-            self._anomalies = PsDict()
-        elif not yes:
-            self._anomalies = None
-
-    def anomalies(self) -> Optional[PsDict]:
-        return self._anomalies
-
-    def maintain_missing(self, yes: bool = True) -> None:
-        if yes and self._missing is None:
-            self._missing = PsDict()
-        elif not yes:
-            self._missing = None
-
-    def missing(self) -> Optional[PsDict]:
-        return self._missing
-
-    def get_data(self, name: str) -> Any:
-        if name == "anomalies":
-            return self.anomalies()
-        if name == "missing":
-            return self.missing()
-        return super().get_data(name)
 
     def is_ready(self) -> bool:
         if self.has_input_slot("filenames"):
@@ -141,6 +116,17 @@ class PACSVLoader(TableModule):
             if fn.created is None or fn.created.any():
                 return True
         return super().is_ready()
+
+    @property
+    def parser(self) -> pa.csv.CSVStreamingReader:
+        """
+        Sometimes pyarrow.csv.open_csv can raise an ArrowInvalid exception
+        so one prefers a late instanciation of the CSVStreamingReader
+        """
+        if self._parser is None:
+            assert self._parser_func is not None
+            self._parser = self._parser_func()
+        return self._parser
 
     def is_data_input(self) -> bool:
         # pylint: disable=no-self-use
@@ -162,6 +148,7 @@ class PACSVLoader(TableModule):
         self._input_compression = compression
         self._input_size = size
         self._last_opened = filepath
+        self._currow = 0
         return istream
 
     def close(self) -> None:
@@ -186,18 +173,21 @@ class PACSVLoader(TableModule):
         return (pos, self._input_size)
 
     def validate_parser(self, run_number: int) -> ModuleState:
-        if self.parser is None:
+        if self._parser_func is None:
             if nn(self.filepath_or_buffer):
                 try:
-                    self.parser = pa.csv.open_csv(
+                    self._parser_func = partial(
+                        pa.csv.open_csv,
                         self.open(self.filepath_or_buffer),
                         read_options=self._read_options,
                         parse_options=self._parse_options,
                         convert_options=self._convert_options
                     )
+                    self._parser = None
                 except IOError as e:
                     logger.error("Cannot open file %s: %s", self.filepath_or_buffer, e)
-                    self.parser = None
+                    self._parser = None
+                    self._parser_func = None
                     return self.state_terminated
                 self.filepath_or_buffer = None
                 self._file_mode = True
@@ -218,19 +208,27 @@ class PACSVLoader(TableModule):
                         return self.state_blocked
                     filename = df.at[indices.start, "filename"]
                     try:
-                        self.parser = pa.csv.open_csv(
+                        self._parser_func = partial(
+                            pa.csv.open_csv,
                             self.open(filename),
                             read_options=self._read_options,
                             parse_options=self._parse_options,
                             convert_options=self._convert_options
                         )
+                        self._parser = None
                     except IOError as e:
                         logger.error("Cannot open file %s: %s", filename, e)
-                        self.parser = None
+                        self._parser = None
+                        self._parser_func = None
                         # fall through
         return self.state_ready
 
-    def __obsolete_recovering(self, step_size: int) -> pd.DataFrame:
+    def recovering(self) -> pa.csv.RecordBatch:
+        """
+        transforms invalid values in NA values
+        """
+        currow: int = self._currow
+
         def _reopen_last():
             if self._last_opened is None:
                 raise ValueError("Recovery failed")
@@ -242,73 +240,55 @@ class PACSVLoader(TableModule):
                 )  # NB seek is defined but not supported on HTTPResponse ...
                 return self._last_opened
             raise ValueError("Recovery failed (2)")
-
-        assert self.csv_kwds.get("skiprows", 0) <= self.parser._currow  # type: ignore
-        kw = self.csv_kwds.copy()
-        skip = set(range(1, self.parser._currow + 1))  # type: ignore
-        kw["skiprows"] = skip
-        usecols = self.parser.orig_options.get("usecols")  # type: ignore
-        istream = _reopen_last()
-        na_filter = kw.get("na_filter")
-        # reading the same slice with no type constraint
-        df = pd.read_csv(
-            istream,
-            usecols=usecols,
-            skiprows=skip,
-            na_filter=na_filter,
-            nrows=step_size,
-        )  # type: ignore
-        anomalies = defaultdict(dict)  # type: ignore
-        missing: Dict[str, bitmap] = defaultdict(bitmap)
-        last_id = self.table.last_id
-        for col, dt in zip(df.columns, df.dtypes):
-            dtt = self.table._column(col).dtype
-            if dtt == dt:
-                continue
+        if self._read_options is not None:
+            ropts = copy.copy(self._read_options)
+        else:
+            ropts = pa.csv.ReadOptions()
+        if self._convert_options is not None:
+            cvopts = copy.copy(self._convert_options)
+        else:
+            cvopts = pa.csv.ConvertOptions()
+        popts = self._parse_options
+        if ropts.skip_rows_after_names:
+            assert ropts.skip_rows_after_names <= currow
+        ropts.skip_rows_after_names = currow
+        cvopts.null_values = [""]
+        max_attempts = ropts.block_size or MAX_ATTEMPTS
+        for _ in range(max_attempts):  # avoids infinite loop
             try:
-                df[col] = df[col].astype(dtt)
+                istream = _reopen_last()
+                readr = pa.csv.open_csv(istream, read_options=ropts,  # cannot use read_csv
+                                        convert_options=cvopts,  # here because
+                                        parse_options=popts)  # (apparently)
+                chunk = readr.read_next_batch()  # read_csv cannot read only one batch
+            except pa.ArrowInvalid as ee:
+                args = ee.args[0].split("'")
+                if len(args) != 3:
+                    raise
+                if not ("CSV conversion error to" in args[0] or
+                        "invalid value " in args[0]):
+                    raise
+                invalid = args[1]
+                cvopts.null_values += [invalid]  # cannot append
                 continue
-            except ValueError:
-                pass
-            na_: Union[int, float]
-            conv_: Union[Type[int], Type[float]]
-            imp = self._imputer
-            if np.issubdtype(dtt, np.integer):
-                na_ = imp.getvalue(col) if imp is not None else np.iinfo(dtt).max
-                conv_ = int
-            elif np.issubdtype(dtt, np.floating):
-                na_ = imp.getvalue(col) if imp is not None else np.nan
-                conv_ = float
-            else:
-                raise ValueError(f"Cannot recover dtype {dtt}")
-            arr = np.empty(len(df), dtype=dtt)
-            for i, elt in df[col].items():
-                try:
-                    arr[i] = conv_(elt)
-                except Exception:
-                    arr[i] = na_
-                    if na_ == np.nan and na_filter and elt == "":  # in this case
-                        continue  # do not report empty strings as anomalies
-                    id_ = last_id + i + 1
-                    if nn(self._anomalies):
-                        anomalies[id_][col] = elt
-                    if nn(self._missing):
-                        missing[col].add(id_)
-            df[col] = arr
-        kw["skiprows"].update(
-            range(self.parser._currow + 1, self.parser._currow + 1 + step_size)  # type: ignore
-        )
+            break
+        else:
+            raise ValueError("Internal error: infinite loop in recovering")
+        if self._read_options is None:
+            self._read_options = pa.csv.ReadOptions()
+        self._read_options.skip_rows_after_names = ropts.skip_rows_after_names + chunk.num_rows
+        assert self._read_options.skip_rows_after_names is not None
+        self._currow = self._read_options.skip_rows_after_names
         istream = _reopen_last()
-        self.parser = pd.read_csv(istream, **kw)
-        if self._anomalies is not None:
-            self._anomalies.update(anomalies)
-        if self._missing is not None:
-            for k, v in missing.items():
-                if k in self._missing:
-                    self._missing[k] |= v
-                else:
-                    self._missing[k] = v
-        return df
+        self._parser_func = partial(
+            pa.csv.open_csv,
+            istream,
+            read_options=self._read_options,
+            convert_options=self._convert_options,
+            parse_options=popts)
+        self._parser = None
+
+        return chunk
 
     def run_step(
         self, run_number: int, step_size: int, howlong: float
@@ -328,17 +308,20 @@ class PACSVLoader(TableModule):
             self.close()
             raise ProgressiveStopIteration("Unexpected situation")
         logger.info("loading %d lines", step_size)
+        pa_tables = []
+        cnt = step_size
+        creates = 0
         try:
             assert self.parser
-            chunks = []
-            cnt = step_size
-            creates = 0
             while cnt > 0:
-                next_chunk = self.parser.read_next_batch()
-                chunks.append(next_chunk)
-                cnt -= next_chunk.num_rows
-                creates += next_chunk.num_rows
-            assert chunks
+                _chunk = self.parser.read_next_batch()
+                _nrows = _chunk.num_rows
+                cnt -= _nrows
+                creates += _nrows
+                self._currow += _nrows
+                tbl = pa.Table.from_batches([_chunk])
+                pa_tables.append(tbl)
+            assert pa_tables
         except StopIteration:
             self.close()
             if self.has_input_slot("filenames"):
@@ -347,18 +330,22 @@ class PACSVLoader(TableModule):
                     fn_slot is None or fn_slot.output_module is None
                 ) and not self._file_mode:
                     raise
-            self.parser = None
-            if not chunks:
+            self._parser = None
+            self._parser_func = None
+            if not pa_tables:
                 return self._return_run_step(self.state_ready, steps_run=0)
-        except ValueError:
-            if nn(self.table) and (
-                nn(self.anomalies()) or nn(self.missing()) or nn(self._imputer)
-            ):
-                # df = self.recovering(step_size)
-                pass
+        except pa.ArrowInvalid:
+            if self._drop_na:
+                chnk = self.recovering()
+                nr = chnk.num_rows
+                cnt -= nr
+                creates += nr
+                tt = pa.Table.from_batches([chnk])
+                pa_tables.append(tt)
             else:
                 raise
-        df_list = [chnk.to_pandas() for chnk in chunks]
+
+        df_list = [tbl_to_pandas(tbl) for tbl in pa_tables]
         if creates == 0:  # should not happen
             logger.error("Received 0 elements")
             raise ProgressiveStopIteration
@@ -368,7 +355,7 @@ class PACSVLoader(TableModule):
         if creates == 0:
             logger.info("frame has been filtered out")
         else:
-            assert chunks
+            assert pa_tables
             self._rows_read += creates
             logger.info("Loaded %d lines", self._rows_read)
             if self.force_valid_ids:

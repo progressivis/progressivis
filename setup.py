@@ -128,7 +128,7 @@ setup(
         "numexpr>=2.6.1",
         "tables>=3.3.0",
         "pandas>=1.2.5",
-        "pyarrow>=6.0.1",
+        "pyarrow>=7.0.0",
         "scikit-learn>=1.0.0",
         "pyyaml>=5.4.1",
         "tdigest>=0.4.1.0",
