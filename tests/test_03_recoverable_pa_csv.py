@@ -7,7 +7,7 @@ from . import ProgressiveTest
 from progressivis import Print
 from progressivis.core import aio, Sink
 from progressivis.io import PACSVLoader
-from pyarrow.csv import ConvertOptions, ReadOptions, ParseOptions
+from pyarrow.csv import ConvertOptions, ReadOptions
 from typing import Optional, Any, Tuple, Callable, List
 
 
@@ -67,10 +67,7 @@ class TestProgressiveLoadCSV(ProgressiveTest):
     ) -> None:
         s = self.scheduler()
         n_rows = 100_000
-        rows = np.random.randint(0, n_rows - 1, size=100)
-        rows = [
-            3
-        ] + rows  # to be sure to have at least one intruder at the very beginning
+        rows = set(np.random.randint(0, n_rows - 1, size=1000))
         if intruder:
             intruders = [(r, 1, intruder + str(r)) for r in rows]
         else:
@@ -81,17 +78,11 @@ class TestProgressiveLoadCSV(ProgressiveTest):
         df = df.drop(rows)
         cvopts = ConvertOptions(column_types={c: dtype for c in df.columns})
         ropts = ReadOptions(block_size=100_000)
-
-        def _oups(*args, **kw):
-            print("OUPS", args, kw)
-
-        popts = ParseOptions(invalid_row_handler=_oups)
         module = PACSVLoader(
             bio,
             scheduler=s,
             read_options=ropts,
             convert_options=cvopts,
-            parse_options=popts,
         )
         if fixed_step_size:
             setattr(module, "predict_step_size", lambda x: fixed_step_size)
@@ -107,8 +98,8 @@ class TestProgressiveLoadCSV(ProgressiveTest):
         )
         anomalies = module.anomalies()
         assert anomalies
-        self.assertEqual(anomalies["skipped_cnt"], 101)
-        self.assertEqual(len(anomalies["invalid_values"]), 101)
+        self.assertEqual(anomalies["skipped_cnt"], len(rows))
+        self.assertEqual(len(anomalies["invalid_values"]), len(rows) if intruder else 0)
 
     def test_read_int_csv_with_na_64(self) -> None:
         self._func_read_int_csv_with_intruder(dtype="int64", intruder="")
@@ -131,8 +122,7 @@ class TestProgressiveLoadCSV(ProgressiveTest):
     ) -> None:
         s = self.scheduler()
         n_rows = 100_000
-        rows = np.random.randint(0, n_rows - 1, size=1000)
-        rows = [3] + rows
+        rows = set(np.random.randint(0, n_rows - 1, size=1000))
         if intruder:
             intruders = [(r, 1, intruder + str(r)) for r in rows]
         else:
@@ -143,17 +133,11 @@ class TestProgressiveLoadCSV(ProgressiveTest):
         df = df.drop(rows)
         cvopts = ConvertOptions(column_types={c: dtype for c in df.columns})
         ropts = ReadOptions(block_size=100_000)
-
-        def _oups(*args, **kw):
-            print("OUPS", args, kw)
-
-        popts = ParseOptions(invalid_row_handler=_oups)
         module = PACSVLoader(
             bio,
             scheduler=s,
             read_options=ropts,
             convert_options=cvopts,
-            parse_options=popts,
         )
         self.assertTrue(module.result is None)
         sink = Sink(scheduler=s)
@@ -169,8 +153,8 @@ class TestProgressiveLoadCSV(ProgressiveTest):
         )
         anomalies = module.anomalies()
         assert anomalies
-        self.assertEqual(anomalies["skipped_cnt"], 101)
-        self.assertEqual(len(anomalies["invalid_values"]), 101)
+        self.assertEqual(anomalies["skipped_cnt"], len(rows))
+        self.assertEqual(len(anomalies["invalid_values"]), len(rows) if intruder else 0)
 
     def test_read_float_csv_with_intruder_not_na_64(self) -> None:
         self._func_read_float_csv_with_intruder(
