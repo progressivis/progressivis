@@ -23,6 +23,7 @@ from ..core.utils import (
     is_slice,
     nn,
 )
+from ..utils import PsDict
 
 from typing import Dict, Any, Callable, Optional, Tuple, Union, TYPE_CHECKING
 
@@ -34,26 +35,11 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-def tbl_to_pandas(tbl) -> pd.DataFrame:
-    null_mask = None
-    has_null = False
-    for col in tbl:
-        if not col.null_count:
-            continue
-        has_null = True
-        try:
-            null_mask |= col.is_null()
-        except TypeError:
-            assert null_mask is None
-            null_mask = col.is_null()
-    df = tbl.to_pandas()
-    if not has_null:
-        return df
-    return df.drop(np.array(null_mask).nonzero()[0])
-
-
 class PACSVLoader(TableModule):
     inputs = [SlotDescriptor("filenames", type=Table, required=False)]
+    outputs = [
+        SlotDescriptor("anomalies", type=PsDict, required=False),
+    ]
 
     def __init__(
         self,
@@ -105,6 +91,7 @@ class PACSVLoader(TableModule):
         self._last_opened: Any = None
         self._drop_na = drop_na
         self._max_invalid_per_block = max_invalid_per_block
+        self._anomalies: Optional[PsDict] = None
 
     def rows_read(self) -> int:
         return self._rows_read
@@ -117,10 +104,55 @@ class PACSVLoader(TableModule):
                 return True
         return super().is_ready()
 
+    def starting(self) -> None:
+        super().starting()
+        opt_slot = self.get_output_slot("anomalies")
+        if opt_slot:
+            logger.debug("Maintaining anomalies")
+            self.maintain_anomalies(True)
+        else:
+            logger.debug("Not maintaining anomalies")
+            self.maintain_anomalies(False)
+
+    def maintain_anomalies(self, yes: bool = True) -> None:
+        if yes and self._anomalies is None:
+            self._anomalies = PsDict(dict(skipped_cnt=0, invalid_values=set()))
+        elif not yes:
+            self._anomalies = None
+
+    def anomalies(self) -> Optional[PsDict]:
+        return self._anomalies
+
+    def get_data(self, name: str) -> Any:
+        if name == "anomalies":
+            return self.anomalies()
+        return super().get_data(name)
+
+    def tbl_to_pandas(self, tbl) -> pd.DataFrame:
+        null_mask = None
+        has_null = False
+        for col in tbl:
+            if not col.null_count:
+                continue
+            has_null = True
+            try:
+                null_mask |= col.is_null()
+            except TypeError:
+                assert null_mask is None
+                null_mask = col.is_null()
+        df = tbl.to_pandas()
+        if not has_null:
+            return df
+        to_drop = np.array(null_mask).nonzero()[0]
+        if nn(self._anomalies):
+            self._anomalies["skipped_cnt"] += len(to_drop)
+        return df.drop(to_drop)
+
     @property
     def parser(self) -> pa.csv.CSVStreamingReader:
         """
-        Sometimes pyarrow.csv.open_csv can raise an ArrowInvalid exception
+        When data contains invalid values pyarrow.csv.open_csv can raise an ArrowInvalid
+        exception (even though no rows were fetched yet ...)
         so one prefers a late instanciation of the CSVStreamingReader
         """
         if self._parser is None:
@@ -181,7 +213,7 @@ class PACSVLoader(TableModule):
                         self.open(self.filepath_or_buffer),
                         read_options=self._read_options,
                         parse_options=self._parse_options,
-                        convert_options=self._convert_options
+                        convert_options=self._convert_options,
                     )
                     self._parser = None
                 except IOError as e:
@@ -201,7 +233,7 @@ class PACSVLoader(TableModule):
                 if fn_slot.deleted.any() or fn_slot.updated.any():
                     raise ProgressiveError("Cannot handle input file changes")
                 df = fn_slot.data()
-                while self.parser is None:
+                while self._parser_func is None:
                     indices = fn_slot.created.next(length=1)
                     assert is_slice(indices)
                     if indices.stop == indices.start:
@@ -213,7 +245,7 @@ class PACSVLoader(TableModule):
                             self.open(filename),
                             read_options=self._read_options,
                             parse_options=self._parse_options,
-                            convert_options=self._convert_options
+                            convert_options=self._convert_options,
                         )
                         self._parser = None
                     except IOError as e:
@@ -240,6 +272,7 @@ class PACSVLoader(TableModule):
                 )  # NB seek is defined but not supported on HTTPResponse ...
                 return self._last_opened
             raise ValueError("Recovery failed (2)")
+
         if self._read_options is not None:
             ropts = copy.copy(self._read_options)
         else:
@@ -256,26 +289,34 @@ class PACSVLoader(TableModule):
         for _ in range(self._max_invalid_per_block):  # avoids infinite loop
             try:
                 istream = _reopen_last()
-                readr = pa.csv.open_csv(istream, read_options=ropts,  # cannot use read_csv
-                                        convert_options=cvopts,  # here because
-                                        parse_options=popts)  # (apparently)
+                readr = pa.csv.open_csv(
+                    istream,
+                    read_options=ropts,  # cannot use read_csv
+                    convert_options=cvopts,  # here because
+                    parse_options=popts,
+                )  # (apparently)
                 chunk = readr.read_next_batch()  # read_csv cannot read only one batch
             except pa.ArrowInvalid as ee:
                 args = ee.args[0].split("'")
                 if len(args) != 3:
                     raise
-                if not ("CSV conversion error to" in args[0] or
-                        "invalid value " in args[0]):
+                if not (
+                    "CSV conversion error to" in args[0] or "invalid value " in args[0]
+                ):
                     raise
                 invalid = args[1]
                 cvopts.null_values += [invalid]  # cannot append
+                if nn(self._anomalies):
+                    self._anomalies["invalid_values"].add(invalid)
                 continue
             break
         else:
             raise ValueError("Internal error: infinite loop in recovering")
         if self._read_options is None:
             self._read_options = pa.csv.ReadOptions()
-        self._read_options.skip_rows_after_names = ropts.skip_rows_after_names + chunk.num_rows
+        self._read_options.skip_rows_after_names = (
+            ropts.skip_rows_after_names + chunk.num_rows
+        )
         assert self._read_options.skip_rows_after_names is not None
         self._currow = self._read_options.skip_rows_after_names
         istream = _reopen_last()
@@ -284,7 +325,8 @@ class PACSVLoader(TableModule):
             istream,
             read_options=self._read_options,
             convert_options=self._convert_options,
-            parse_options=popts)
+            parse_options=popts,
+        )
         self._parser = None
 
         return chunk
@@ -344,7 +386,7 @@ class PACSVLoader(TableModule):
             else:
                 raise
 
-        df_list = [tbl_to_pandas(tbl) for tbl in pa_tables]
+        df_list = [self.tbl_to_pandas(tbl) for tbl in pa_tables]
         if creates == 0:  # should not happen
             logger.error("Received 0 elements")
             raise ProgressiveStopIteration
