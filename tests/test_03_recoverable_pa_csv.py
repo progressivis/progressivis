@@ -65,11 +65,11 @@ class TestProgressiveLoadCSV(ProgressiveTest):
         self, dtype, intruder, fixed_step_size=0
     ) -> None:
         s = self.scheduler()
-        n_rows = 1000_000
-        rows = np.random.randint(0, n_rows-1, size=1000)
+        n_rows = 100_000
+        rows = np.random.randint(0, n_rows - 1, size=100)
         rows = [3] + rows
         if intruder:
-            intruders = [(r, 1, intruder+str(r)) for r in rows]
+            intruders = [(r, 1, intruder + str(r)) for r in rows]
         else:
             intruders = [(r, 1, intruder) for r in rows]
         bio = make_int_csv(n_rows=n_rows, n_cols=3, intruders=intruders)
@@ -81,12 +81,14 @@ class TestProgressiveLoadCSV(ProgressiveTest):
 
         def _oups(*args, **kw):
             print("OUPS", args, kw)
+
         popts = ParseOptions(invalid_row_handler=_oups)
         module = PACSVLoader(
-            bio, scheduler=s,
+            bio,
+            scheduler=s,
             read_options=ropts,
             convert_options=cvopts,
-            parse_options=popts
+            parse_options=popts,
         )
         if fixed_step_size:
             setattr(module, "predict_step_size", lambda x: fixed_step_size)
@@ -112,14 +114,18 @@ class TestProgressiveLoadCSV(ProgressiveTest):
         self._func_read_int_csv_with_intruder(dtype="int32", intruder="Intruder")
 
     def _func_read_float_csv_with_intruder(
-        self, na_filter, dtype, intruder, imputer=None,
+        self,
+        na_filter,
+        dtype,
+        intruder,
+        imputer=None,
     ) -> None:
         s = self.scheduler()
         n_rows = 100_000
-        rows = np.random.randint(0, n_rows-1, size=1000)
+        rows = np.random.randint(0, n_rows - 1, size=1000)
         rows = [3] + rows
         if intruder:
-            intruders = [(r, 1, intruder+str(r)) for r in rows]
+            intruders = [(r, 1, intruder + str(r)) for r in rows]
         else:
             intruders = [(r, 1, intruder) for r in rows]
         bio = make_float_csv(n_rows=n_rows, n_cols=3, intruders=intruders)
@@ -131,12 +137,14 @@ class TestProgressiveLoadCSV(ProgressiveTest):
 
         def _oups(*args, **kw):
             print("OUPS", args, kw)
+
         popts = ParseOptions(invalid_row_handler=_oups)
         module = PACSVLoader(
-            bio, scheduler=s,
+            bio,
+            scheduler=s,
             read_options=ropts,
             convert_options=cvopts,
-            parse_options=popts
+            parse_options=popts,
         )
         self.assertTrue(module.result is None)
         sink = Sink(scheduler=s)

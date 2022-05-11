@@ -31,8 +31,6 @@ if TYPE_CHECKING:
     from ..stats.utils import SimpleImputer
     import io
 
-MAX_ATTEMPTS = 10_000
-
 logger = logging.getLogger(__name__)
 
 
@@ -69,6 +67,7 @@ class PACSVLoader(TableModule):
         parse_options: Optional[pa.csv.ParseOptions] = None,
         convert_options: Optional[pa.csv.ConvertOptions] = None,
         drop_na: Optional[bool] = True,
+        max_invalid_per_block: int = 100,
         **kwds: Any,
     ) -> None:
         super().__init__(**kwds)
@@ -105,6 +104,7 @@ class PACSVLoader(TableModule):
         self._imputer = imputer
         self._last_opened: Any = None
         self._drop_na = drop_na
+        self._max_invalid_per_block = max_invalid_per_block
 
     def rows_read(self) -> int:
         return self._rows_read
@@ -253,8 +253,7 @@ class PACSVLoader(TableModule):
             assert ropts.skip_rows_after_names <= currow
         ropts.skip_rows_after_names = currow
         cvopts.null_values = [""]
-        max_attempts = ropts.block_size or MAX_ATTEMPTS
-        for _ in range(max_attempts):  # avoids infinite loop
+        for _ in range(self._max_invalid_per_block):  # avoids infinite loop
             try:
                 istream = _reopen_last()
                 readr = pa.csv.open_csv(istream, read_options=ropts,  # cannot use read_csv

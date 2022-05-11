@@ -242,7 +242,7 @@ class TestProgressiveLoadCSV(ProgressiveTest):
             intruder="",
             dtype="float64",
             imputer=SimpleImputer(),
-            atol=20,
+            atol=100,
         )
 
     def test_read_float_csv_with_intruder_not_na_64_median(self) -> None:
