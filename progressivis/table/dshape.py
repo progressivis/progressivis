@@ -4,6 +4,7 @@ import datashape as ds
 from datashape import DataShape as DataShape
 import pandas as pd
 import numpy as np
+import pyarrow as pa
 from progressivis.core.utils import integer_types, gen_columns
 
 from typing import (
@@ -89,6 +90,8 @@ def dshape_extract(
         return ds.dshape("{" + ", ".join(dshapes) + "}")
     if isinstance(data, pd.DataFrame):
         return dshape_from_dataframe(data)
+    if isinstance(data, pa.RecordBatch):
+        return dshape_from_pa_batch(data)
     if isinstance(data, dict):
         return dshape_from_dict(data)
     return None
@@ -178,6 +181,17 @@ def dshape_from_dataframe(df: pd.DataFrame) -> DataShape:
         shape = ",".join(
             ["%s:%s" % (df[c].name, dataframe_dshape(df[c].dtype)) for c in df]
         )
+    return ds.dshape("{" + shape + "}")
+
+
+def dshape_from_pa_batch(df: pa.RecordBatch) -> DataShape:
+    col_types = zip(df.schema.names, df.schema.types)
+    shape = ",".join(
+        [
+            f"{c}:{dataframe_dshape(np.dtype(t.to_pandas_dtype()))}"
+            for (c, t) in col_types
+        ]
+    )
     return ds.dshape("{" + shape + "}")
 
 

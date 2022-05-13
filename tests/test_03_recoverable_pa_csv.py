@@ -16,6 +16,7 @@ def make_num_csv(
     n_cols: int,
     rand_func: Callable,
     intruders: Optional[List[Tuple[int, int, Any]]] = None,
+    artifact: str = "",
 ) -> BytesIO:
     """
     intruders: List[Tuple(row, col, value)]
@@ -24,7 +25,7 @@ def make_num_csv(
     iarr = rand_func(0, 10_000, size=size)
     str_iarr = [str(i) for i in iarr]
     ord_a = ord("A")
-    colnames = [chr(i) for i in range(ord_a, ord_a + n_cols)]
+    colnames = [f"{chr(i)}{artifact}" for i in range(ord_a, ord_a + n_cols)]
     mx = np.array(colnames + str_iarr, dtype=object).reshape(-1, n_cols)
     if intruders:
         for intruder in intruders:
@@ -39,9 +40,12 @@ def make_num_csv(
 
 
 def make_int_csv(
-    n_rows: int, n_cols: int, intruders: Optional[List[Tuple[int, int, Any]]] = None
+    n_rows: int,
+    n_cols: int,
+    intruders: Optional[List[Tuple[int, int, Any]]] = None,
+    artifact: str = "",
 ) -> BytesIO:
-    return make_num_csv(n_rows, n_cols, np.random.randint, intruders)
+    return make_num_csv(n_rows, n_cols, np.random.randint, intruders, artifact=artifact)
 
 
 def make_float_csv(
@@ -51,23 +55,35 @@ def make_float_csv(
 
 
 class TestProgressiveLoadCSV(ProgressiveTest):
-    def test_read_csv(self) -> None:
+    def _read_csv(self, artifact: str = "", force_valid_ids: bool = True) -> None:
         s = self.scheduler()
         n_rows = 100_000
-        bio = make_int_csv(n_rows=n_rows, n_cols=3)
-        module = PACSVLoader(bio, index_col=False, scheduler=s)
+        bio = make_int_csv(n_rows=n_rows, n_cols=3, artifact=artifact)
+        module = PACSVLoader(
+            bio, index_col=False, scheduler=s, force_valid_ids=force_valid_ids
+        )
         self.assertTrue(module.result is None)
         sink = Sink(scheduler=s)
         sink.input.inp = module.output.result
         aio.run(s.start())
         self.assertEqual(len(module.table), n_rows)
 
+    def test_read_csv(self) -> None:
+        self._read_csv()
+
+    def test_read_csv_artifact_fail(self, artifact="?") -> None:
+        with self.assertRaises(RuntimeError):
+            self._read_csv(artifact=artifact, force_valid_ids=False)
+
+    def test_read_csv_artifact(self, artifact="?") -> None:
+        self._read_csv(artifact=artifact)
+
     def _func_read_int_csv_with_intruder(
         self, dtype, intruder, fixed_step_size=0
     ) -> None:
         s = self.scheduler()
         n_rows = 100_000
-        rows = set(np.random.randint(0, n_rows - 1, size=1000))
+        rows = set(np.random.randint(8000, n_rows - 1, size=1000))
         if intruder:
             intruders = [(r, 1, intruder + str(r)) for r in rows]
         else:
@@ -122,7 +138,7 @@ class TestProgressiveLoadCSV(ProgressiveTest):
     ) -> None:
         s = self.scheduler()
         n_rows = 100_000
-        rows = set(np.random.randint(0, n_rows - 1, size=1000))
+        rows = set(np.random.randint(8000, n_rows - 1, size=1000))
         if intruder:
             intruders = [(r, 1, intruder + str(r)) for r in rows]
         else:

@@ -3,7 +3,6 @@ from __future__ import annotations
 import logging
 import copy
 from functools import partial
-import pandas as pd
 import numpy as np
 import pyarrow as pa
 import pyarrow.csv
@@ -13,11 +12,12 @@ from ..utils.inspect import extract_params_docstring
 from ..table.module import TableModule
 from ..core.module import ReturnRunStep
 from ..table.table import Table
-from ..table.dshape import dshape_from_dataframe
+from ..table.dshape import dshape_from_pa_batch
 from ..core.utils import (
     filepath_to_buffer,
     _infer_compression,
-    force_valid_id_columns,
+    normalize_columns,
+    force_valid_id_columns_pa,
     integer_types,
     is_str,
     is_slice,
@@ -25,7 +25,7 @@ from ..core.utils import (
 )
 from ..utils import PsDict
 
-from typing import Dict, Any, Callable, Optional, Tuple, Union, TYPE_CHECKING
+from typing import List, Dict, Any, Callable, Optional, Tuple, Union, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from ..core.module import ModuleState
@@ -44,7 +44,7 @@ class PACSVLoader(TableModule):
     def __init__(
         self,
         filepath_or_buffer: Optional[Any] = None,
-        filter_: Optional[Callable[[pd.DataFrame], pd.DataFrame]] = None,
+        filter_: Optional[Callable[[pa.RecordBatch], pa.RecordBatch]] = None,
         force_valid_ids: bool = True,
         fillvalues: Optional[Dict[str, Any]] = None,
         throttle: Union[bool, int, float] = False,
@@ -77,7 +77,7 @@ class PACSVLoader(TableModule):
         self._rows_read = 0
         if nn(filter_) and not callable(filter_):
             raise ProgressiveError("filter parameter should be callable or None")
-        self._filter: Optional[Callable[[pd.DataFrame], pd.DataFrame]] = filter_
+        self._filter: Optional[Callable[[pa.RecordBatch], pa.RecordBatch]] = filter_
         self._input_stream: Optional[
             io.IOBase
         ] = None  # stream that returns a position through the 'tell()' method
@@ -92,6 +92,8 @@ class PACSVLoader(TableModule):
         self._drop_na = drop_na
         self._max_invalid_per_block = max_invalid_per_block
         self._anomalies: Optional[PsDict] = None
+        self._columns: Optional[List[str]] = None
+        self._last_schema: Optional[Union[pa.Schema, Dict[Any, Any]]] = None
 
     def rows_read(self) -> int:
         return self._rows_read
@@ -128,10 +130,10 @@ class PACSVLoader(TableModule):
             return self.anomalies()
         return super().get_data(name)
 
-    def tbl_to_pandas(self, tbl) -> pd.DataFrame:
+    def process_na_values(self, bat) -> pa.RecordBatch:
         null_mask = None
         has_null = False
-        for col in tbl:
+        for col in bat:
             if not col.null_count:
                 continue
             has_null = True
@@ -140,13 +142,11 @@ class PACSVLoader(TableModule):
             except TypeError:
                 assert null_mask is None
                 null_mask = col.is_null()
-        df = tbl.to_pandas()
         if not has_null:
-            return df
-        to_drop = np.array(null_mask).nonzero()[0]
+            return bat
         if nn(self._anomalies):
-            self._anomalies["skipped_cnt"] += len(to_drop)
-        return df.drop(to_drop)
+            self._anomalies["skipped_cnt"] += pa.compute.sum(null_mask).as_py()  # type: ignore
+        return bat.filter(pa.compute.invert(null_mask))
 
     @property
     def parser(self) -> pa.csv.CSVStreamingReader:
@@ -255,7 +255,7 @@ class PACSVLoader(TableModule):
                         # fall through
         return self.state_ready
 
-    def recovering(self) -> pa.csv.RecordBatch:
+    def recovering(self) -> pa.RecordBatch:
         """
         transforms invalid values in NA values
         """
@@ -273,6 +273,16 @@ class PACSVLoader(TableModule):
                 return self._last_opened
             raise ValueError("Recovery failed (2)")
 
+        if self._last_schema is None:
+            if not(self._convert_options is None or
+                   self._convert_options.column_types is None):
+                assert self._convert_options.column_types
+                self._last_schema = self._convert_options.column_types
+            else:
+                raise ValueError(
+                    "Cannot guess the schema."
+                    " Consider defining 'column_type' in ConvertOptions parameter"
+                )
         if self._read_options is not None:
             ropts = copy.copy(self._read_options)
         else:
@@ -286,6 +296,7 @@ class PACSVLoader(TableModule):
             assert ropts.skip_rows_after_names <= currow
         ropts.skip_rows_after_names = currow
         cvopts.null_values = [""]
+        cvopts.column_types = self._last_schema
         for _ in range(self._max_invalid_per_block):  # avoids infinite loop
             try:
                 istream = _reopen_last()
@@ -307,7 +318,7 @@ class PACSVLoader(TableModule):
                 invalid = args[1]
                 cvopts.null_values += [invalid]  # cannot append
                 if nn(self._anomalies):
-                    self._anomalies["invalid_values"].add(invalid)
+                    self._anomalies["invalid_values"].add(invalid)  # type: ignore
                 continue
             break
         else:
@@ -317,6 +328,9 @@ class PACSVLoader(TableModule):
         self._read_options.skip_rows_after_names = (
             ropts.skip_rows_after_names + chunk.num_rows
         )
+        if self._convert_options is None:
+            self._convert_options = pa.csv.ConvertOptions()
+        self._convert_options.column_types = self._last_schema
         assert self._read_options.skip_rows_after_names is not None
         self._currow = self._read_options.skip_rows_after_names
         istream = _reopen_last()
@@ -349,20 +363,21 @@ class PACSVLoader(TableModule):
             self.close()
             raise ProgressiveStopIteration("Unexpected situation")
         logger.info("loading %d lines", step_size)
-        pa_tables = []
+        pa_batches = []
         cnt = step_size
         creates = 0
         try:
             assert self.parser
             while cnt > 0:
-                _chunk = self.parser.read_next_batch()
-                _nrows = _chunk.num_rows
+                bat = self.parser.read_next_batch()
+                _nrows = bat.num_rows
                 cnt -= _nrows
                 creates += _nrows
                 self._currow += _nrows
-                tbl = pa.Table.from_batches([_chunk])
-                pa_tables.append(tbl)
-            assert pa_tables
+                pa_batches.append(bat)
+                if self._last_schema is None:
+                    self._last_schema = copy.copy(bat.schema)
+            assert pa_batches
         except StopIteration:
             self.close()
             if self.has_input_slot("filenames"):
@@ -373,7 +388,7 @@ class PACSVLoader(TableModule):
                     raise
             self._parser = None
             self._parser_func = None
-            if not pa_tables:
+            if not pa_batches:
                 return self._return_run_step(self.state_ready, steps_run=0)
         except pa.ArrowInvalid:
             if self._drop_na:
@@ -381,40 +396,42 @@ class PACSVLoader(TableModule):
                 nr = chnk.num_rows
                 cnt -= nr
                 creates += nr
-                tt = pa.Table.from_batches([chnk])
-                pa_tables.append(tt)
+                pa_batches.append(chnk)
             else:
                 raise
-
-        df_list = [self.tbl_to_pandas(tbl) for tbl in pa_tables]
+        bat_list = [self.process_na_values(bat) for bat in pa_batches]
         if creates == 0:  # should not happen
             logger.error("Received 0 elements")
             raise ProgressiveStopIteration
         if self._filter is not None:
-            df_list = [self._filter(df) for df in df_list]
-            creates = sum([len(df) for df in df_list])
+            bat_list = [self._filter(bat) for bat in bat_list]
+            creates = sum([len(bat) for bat in bat_list])
         if creates == 0:
             logger.info("frame has been filtered out")
         else:
-            assert pa_tables
+            assert pa_batches
             self._rows_read += creates
             logger.info("Loaded %d lines", self._rows_read)
             if self.force_valid_ids:
-                for df in df_list:
-                    force_valid_id_columns(df)
+                if self._columns is None:
+                    self._column = normalize_columns(bat_list[0].schema.names)
+                for i, bat in enumerate(bat_list):
+                    if bat.schema.names == self._columns:
+                        continue
+                    bat_list[i] = force_valid_id_columns_pa(bat)
             if self.result is None:
                 self._table_params["name"] = self.generate_table_name("table")
-                self._table_params["dshape"] = dshape_from_dataframe(df)
-                self._table_params["data"] = df_list[0]
+                self._table_params["dshape"] = dshape_from_pa_batch(bat_list[0])
+                self._table_params["data"] = bat_list[0]
                 self._table_params["create"] = True
                 self.result = Table(**self._table_params)
-                df_list = df_list[1:]
-                if self._imputer is not None:
-                    self._imputer.init(df.dtypes)
-            for df in df_list:
-                self.table.append(df)
-            if self._imputer is not None:
-                self._imputer.add_df(df)
+                bat_list = bat_list[1:]
+                # if self._imputer is not None:
+                #    self._imputer.init(bat.dtypes)
+            for bat in bat_list:
+                self.table.append(bat)
+            # if self._imputer is not None:
+            #    self._imputer.add_df(bat)
         return self._return_run_step(self.state_ready, steps_run=creates)
 
 

@@ -9,7 +9,7 @@ import re
 from itertools import tee
 from functools import wraps
 import functools as ft
-
+import pyarrow as pa
 import threading
 import inspect
 from urllib.parse import urlparse as parse_url
@@ -790,19 +790,28 @@ def get_physical_base(t: Any) -> Any:
     return t
 
 
-def force_valid_id_columns(df: pd.DataFrame) -> None:
+def normalize_columns(raw_columns: List[Any]) -> List[str]:
     uniq: Set[str] = set()
     columns: List[str] = []
-    i = 0
-    for c in df.columns:
-        i += 1
+    for i, c in enumerate(raw_columns, 1):
         if not isinstance(c, str):
             c = str(c)
         c = fix_identifier(c)
         while c in uniq:
             c += "_" + str(i)
         columns.append(c)
-    df.columns = columns
+    return columns
+
+
+def force_valid_id_columns(df: pd.DataFrame) -> None:
+    df.columns = normalize_columns(df.columns)
+
+
+def force_valid_id_columns_pa(rb: pa.RecordBatch) -> pa.RecordBatch:
+    columns: List[str] = normalize_columns(rb.schema.names)
+    if columns == rb.schema.names:
+        return rb
+    return pa.RecordBatch.from_arrays(rb.columns, names=columns)
 
 
 class Dialog:
