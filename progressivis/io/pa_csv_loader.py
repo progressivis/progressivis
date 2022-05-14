@@ -138,8 +138,8 @@ class PACSVLoader(TableModule):
                 continue
             has_null = True
             try:
-                null_mask |= col.is_null()
-            except TypeError:
+                null_mask = pa.compute.or_(null_mask, col.is_null())
+            except pa.ArrowNotImplementedError:
                 assert null_mask is None
                 null_mask = col.is_null()
         if not has_null:
