@@ -331,6 +331,7 @@ class PACSVLoader(TableModule):
         if self._convert_options is None:
             self._convert_options = pa.csv.ConvertOptions()
         self._convert_options.column_types = self._last_schema
+        self._convert_options.null_values = cvopts.null_values
         assert self._read_options.skip_rows_after_names is not None
         self._currow = self._read_options.skip_rows_after_names
         istream = _reopen_last()

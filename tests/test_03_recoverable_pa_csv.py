@@ -83,7 +83,7 @@ class TestProgressiveLoadCSV(ProgressiveTest):
     ) -> None:
         s = self.scheduler()
         n_rows = 100_000
-        rows = set(np.random.randint(8000, n_rows - 1, size=1000))
+        rows = set(np.random.randint(10_000, n_rows - 1, size=1000))
         if intruder:
             intruders = [(r, 1, intruder + str(r)) for r in rows]
         else:
@@ -138,7 +138,7 @@ class TestProgressiveLoadCSV(ProgressiveTest):
     ) -> None:
         s = self.scheduler()
         n_rows = 100_000
-        rows = set(np.random.randint(8000, n_rows - 1, size=1000))
+        rows = set(np.random.randint(10_000, n_rows - 1, size=1000))
         if intruder:
             intruders = [(r, 1, intruder + str(r)) for r in rows]
         else:

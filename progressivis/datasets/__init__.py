@@ -72,7 +72,7 @@ def get_dataset(name: str, **kwds: Any) -> str:
         nyc_taxis_file = f"{DATA_DIR}/nyc_taxis.csv"
         if not os.path.exists(nyc_taxis_file):
             df = pd.read_csv(
-                "https://s3.amazonaws.com/nyc-tlc/trip+data/yellow_tripdata_2015-01.csv",
+                "s3://dask-data/nyc-taxi/2015/yellow_tripdata_2015-01.csv",
                 index_col=False,
                 nrows=200_000,
             )
