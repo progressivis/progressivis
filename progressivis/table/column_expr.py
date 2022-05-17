@@ -78,7 +78,7 @@ class ColumnExpr(BaseColumn):
 
     @property
     def dshape(self) -> DataShape:
-        return self._dshape or dshape_create(self._dtype)  # type: ignore
+        return self._dshape or dshape_create(str(self._dtype))  # type: ignore
 
     @property
     def size(self) -> int:
