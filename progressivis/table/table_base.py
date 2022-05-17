@@ -208,7 +208,7 @@ class BaseTable(metaclass=ABCMeta):
         selection: Union[bitmap, slice] = slice(0, None),
         columns: Optional[List[BaseColumn]] = None,
         columndict: Optional[Dict[str, int]] = None,
-        computed: Optional[Dict[str, Tuple[str, Callable]]] = None,
+        computed: Optional[Dict[str, Dict[str, Any]]] = None,
     ) -> None:
         self._base: Optional[BaseTable] = (
             base if (base is None or base._base is None) else base._base
@@ -379,10 +379,31 @@ class BaseTable(metaclass=ABCMeta):
             self.to_dict(**kwds)
         return self.to_dict(**kwds)  # type: ignore
 
+    def make_computed(self, index: Any, meta: Dict[str, Any], name: str) -> BaseColumn:
+        from .column_selected import ColumnComputedView
+        from .column_expr import ColumnExpr
+
+        if meta["category"] == "ufunc":
+            base = self._columns[self._columndict[meta["column"]]]
+            return ColumnComputedView(
+                base=base, index=index, aka=name, func=meta["ufunc"]
+            )
+        assert meta["category"] == "expr"
+        return ColumnExpr(
+            name=name,
+            table=self,
+            index=index,
+            expr=meta["expr"],
+            cols=meta["cols"],
+            dtype=meta["dtype"],
+            shape=meta["shape"],
+            dshape=meta["dshape"],
+        )
+
     def make_projection(
         self, cols: Optional[List[str]], index: Any
     ) -> Tuple[List[BaseColumn], Dict[str, int]]:
-        from .column_selected import ColumnSelectedView, ColumnComputedView
+        from .column_selected import ColumnSelectedView
 
         dict_ = self._make_columndict_projection(cols)
         columns: List[BaseColumn] = [
@@ -403,10 +424,8 @@ class BaseTable(metaclass=ABCMeta):
         else:
             logger.warning(f"computed columns will be ignored with selection {cols}")
         comp_cols: List[BaseColumn] = [
-            ColumnComputedView(
-                base=self._columns[self._columndict[c]], index=index, aka=aka, func=func
-            )
-            for (aka, (c, func)) in self.computed.items()
+            self.make_computed(index, meta, aka)
+            for (aka, meta) in self.computed.items()
             if aka in cols_as_set and aka not in self._columndict.keys()
         ]
         columns += comp_cols
@@ -1269,8 +1288,20 @@ class BaseTable(metaclass=ABCMeta):
     def _flush_cache(self) -> None:
         pass
 
-    def add_computed(self, name: str, col: str, ufunc):
-        self.computed[name] = (col, ufunc)
+    def add_ufunc_column(self, name: str, col: str, ufunc: Callable) -> None:
+        self.computed[name] = dict(category="ufunc", ufunc=ufunc, column=col)
+
+    def add_expr_column(
+        self, name: str, cols: List[str], expr: str, dtype: str, shape=None, dshape=None
+    ) -> None:
+        self.computed[name] = dict(
+            category="expr",
+            expr=expr,
+            cols=cols,
+            dtype=dtype,
+            shape=shape,
+            dshape=dshape,
+        )
 
 
 class IndexTable(BaseTable):
