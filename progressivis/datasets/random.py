@@ -33,6 +33,14 @@ def generate_random_csv(
     return filename
 
 
+def generate_random_parquet(filename: str, csv_file: str, n_cols: int) -> str:
+    if os.path.exists(filename):
+        return filename
+    df = pd.read_csv(csv_file, names=[f"_{i}" for i in range(n_cols)])  # type:ignore
+    df.to_parquet(filename)
+    return filename
+
+
 def generate_random_multivariate_normal_csv(
     filename: str,
     rows: int,

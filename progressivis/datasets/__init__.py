@@ -7,6 +7,7 @@ from functools import partial
 from progressivis import ProgressiveError
 from .random import (
     generate_random_csv,
+    generate_random_parquet,
     generate_random_multivariate_normal_csv,
     generate_multiscale_random_csv,
 )
@@ -40,37 +41,51 @@ def get_dataset(name: str, **kwds: Any) -> str:
         os.mkdir(DATA_DIR)
     if name == "bigfile":
         kw = _check_kwds(kwds, rows=1_000_000, cols=30)
-        return generate_random_csv("%s/bigfile.csv" % DATA_DIR, **kw)
+        return generate_random_csv(f"{DATA_DIR}/bigfile.csv", **kw)
+    if name == "bigfile_parquet":
+        n_cols = 30
+        kw = _check_kwds(kwds, rows=1_000_000, cols=n_cols)
+        csv_file = generate_random_csv(f"{DATA_DIR}/bigfile.csv", **kw)
+        return generate_random_parquet(
+            f"{DATA_DIR}/bigfile.parquet", csv_file, n_cols=n_cols
+        )
     if name == "bigfile_multiscale":
         kw = _check_kwds(kwds, rows=5_000_000)
         return generate_multiscale_random_csv(
-            "%s/bigfile_multiscale.csv" % DATA_DIR, **kw
+            f"{DATA_DIR}/bigfile_multiscale.csv", **kw
         )
     if name == "bigfile_mvn":
         kw = _check_kwds(kwds, rows=900_000)
         return generate_random_multivariate_normal_csv(
-            "%s/bigfile_mvn.csv" % DATA_DIR, **kw
+            f"{DATA_DIR}/bigfile_mvn.csv", **kw
         )
     if name == "smallfile":
         kw = _check_kwds(kwds, rows=30_000, cols=10)
-        return generate_random_csv("%s/smallfile.csv" % DATA_DIR, **kw)
+        return generate_random_csv(f"{DATA_DIR}/smallfile.csv", **kw)
+    if name == "smallfile_parquet":
+        n_cols = 10
+        kw = _check_kwds(kwds, rows=30_000, cols=n_cols)
+        csv_file = generate_random_csv(f"{DATA_DIR}/smallfile.csv", **kw)
+        return generate_random_parquet(
+            f"{DATA_DIR}/smallfile.parquet", csv_file, n_cols=n_cols
+        )
+
     if name == "warlogs":
         return wget_file(
-            filename="%s/warlogs.vec.bz2" % DATA_DIR,
-            url="http://www.cs.ubc.ca/labs/imager/video/2014/QSNE/warlogs.vec.bz2",
-            **kwds,
+            filename=f"{DATA_DIR}/warlogs.vec.bz2",
+            url="http://www.cs.ubc.ca/labs/imager/video/2014/QSNE/warlogs.vec.bz2"
         )
     if name == "mnist_784":
         # This file [mnist_784.csv] is made available under the Public Domain
         # Dedication and License v1.0 whose full text can be found at: http://opendatacommons.org/licenses/pddl/1.0/
         return wget_file(
-            filename="%s/mnist_784.csv" % DATA_DIR,
-            url="https://datahub.io/machine-learning/mnist_784/r/mnist_784.csv",
-            **kwds,
+            filename=f"{DATA_DIR}/mnist_784.csv",
+            url="https://datahub.io/machine-learning/mnist_784/r/mnist_784.csv"
         )
     if name == "nyc_taxis":
         nyc_taxis_file = f"{DATA_DIR}/nyc_taxis.csv"
         if not os.path.exists(nyc_taxis_file):
+            # source: https://blog.dask.org/2017/01/12/dask-dataframes
             df = pd.read_csv(
                 "s3://dask-data/nyc-taxi/2015/yellow_tripdata_2015-01.csv",
                 index_col=False,
@@ -81,10 +96,10 @@ def get_dataset(name: str, **kwds: Any) -> str:
     if name.startswith("cluster:"):
         fname = name[len("cluster:") :] + ".txt"
         return wget_file(
-            filename="%s/%s" % (DATA_DIR, fname),
-            url="http://cs.joensuu.fi/sipu/datasets/%s" % fname,
+            filename=f"{DATA_DIR}/{fname}",
+            url=f"http://cs.joensuu.fi/sipu/datasets/{fname}",
         )
-    raise ProgressiveError("Unknown dataset %s" % name)
+    raise ProgressiveError(f"Unknown dataset {name}")
 
 
 class Compressor:

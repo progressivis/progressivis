@@ -5,6 +5,10 @@ class ArrowInvalid(Exception):
     ...
 
 
+class ArrowNotImplementedError(Exception):
+    ...
+
+
 class Schema:
 
     names: List[str]
@@ -33,6 +37,13 @@ class Table:
 
 class compute:
     @staticmethod
-    def sum(v: Any): ...
+    def sum(v: Any):
+        ...
+
     @staticmethod
-    def invert(v: Any): ...
+    def invert(v: Any):
+        ...
+
+    @staticmethod
+    def or_(v1: Any, v2: Any):
+        ...

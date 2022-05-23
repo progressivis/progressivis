@@ -6,10 +6,10 @@ from functools import partial
 import numpy as np
 import pyarrow as pa
 import pyarrow.csv
-from .. import ProgressiveError, SlotDescriptor
+from .base_loader import BaseLoader
+from .. import ProgressiveError
 from ..utils.errors import ProgressiveStopIteration
 from ..utils.inspect import extract_params_docstring
-from ..table.module import TableModule
 from ..core.module import ReturnRunStep
 from ..table.table import Table
 from ..table.dshape import dshape_from_pa_batch
@@ -23,7 +23,6 @@ from ..core.utils import (
     is_slice,
     nn,
 )
-from ..utils import PsDict
 
 from typing import List, Dict, Any, Callable, Optional, Tuple, Union, TYPE_CHECKING
 
@@ -35,12 +34,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class PACSVLoader(TableModule):
-    inputs = [SlotDescriptor("filenames", type=Table, required=False)]
-    outputs = [
-        SlotDescriptor("anomalies", type=PsDict, required=False),
-    ]
-
+class PACSVLoader(BaseLoader):
     def __init__(
         self,
         filepath_or_buffer: Optional[Any] = None,
@@ -74,7 +68,6 @@ class PACSVLoader(TableModule):
         self._parser_func: Optional[Callable] = None
         self._compression: Any = "infer"
         self._encoding: Any = read_options.encoding if read_options else None
-        self._rows_read = 0
         if nn(filter_) and not callable(filter_):
             raise ProgressiveError("filter parameter should be callable or None")
         self._filter: Optional[Callable[[pa.RecordBatch], pa.RecordBatch]] = filter_
@@ -91,62 +84,8 @@ class PACSVLoader(TableModule):
         self._last_opened: Any = None
         self._drop_na = drop_na
         self._max_invalid_per_block = max_invalid_per_block
-        self._anomalies: Optional[PsDict] = None
         self._columns: Optional[List[str]] = None
         self._last_schema: Optional[Union[pa.Schema, Dict[Any, Any]]] = None
-
-    def rows_read(self) -> int:
-        return self._rows_read
-
-    def is_ready(self) -> bool:
-        if self.has_input_slot("filenames"):
-            # Can be called before the first update so fn.created can be None
-            fn = self.get_input_slot("filenames")
-            if fn.created is None or fn.created.any():
-                return True
-        return super().is_ready()
-
-    def starting(self) -> None:
-        super().starting()
-        opt_slot = self.get_output_slot("anomalies")
-        if opt_slot:
-            logger.debug("Maintaining anomalies")
-            self.maintain_anomalies(True)
-        else:
-            logger.debug("Not maintaining anomalies")
-            self.maintain_anomalies(False)
-
-    def maintain_anomalies(self, yes: bool = True) -> None:
-        if yes and self._anomalies is None:
-            self._anomalies = PsDict(dict(skipped_cnt=0, invalid_values=set()))
-        elif not yes:
-            self._anomalies = None
-
-    def anomalies(self) -> Optional[PsDict]:
-        return self._anomalies
-
-    def get_data(self, name: str) -> Any:
-        if name == "anomalies":
-            return self.anomalies()
-        return super().get_data(name)
-
-    def process_na_values(self, bat) -> pa.RecordBatch:
-        null_mask = None
-        has_null = False
-        for col in bat:
-            if not col.null_count:
-                continue
-            has_null = True
-            try:
-                null_mask = pa.compute.or_(null_mask, col.is_null())
-            except pa.ArrowNotImplementedError:
-                assert null_mask is None
-                null_mask = col.is_null()
-        if not has_null:
-            return bat
-        if nn(self._anomalies):
-            self._anomalies["skipped_cnt"] += pa.compute.sum(null_mask).as_py()  # type: ignore
-        return bat.filter(pa.compute.invert(null_mask))
 
     @property
     def parser(self) -> pa.csv.CSVStreamingReader:
@@ -159,11 +98,6 @@ class PACSVLoader(TableModule):
             assert self._parser_func is not None
             self._parser = self._parser_func()
         return self._parser
-
-    def is_data_input(self) -> bool:
-        # pylint: disable=no-self-use
-        "Return True if this module brings new data"
-        return True
 
     def open(self, filepath: Any) -> io.IOBase:
         if nn(self._input_stream):
@@ -274,8 +208,10 @@ class PACSVLoader(TableModule):
             raise ValueError("Recovery failed (2)")
 
         if self._last_schema is None:
-            if not(self._convert_options is None or
-                   self._convert_options.column_types is None):
+            if not (
+                self._convert_options is None
+                or self._convert_options.column_types is None
+            ):
                 assert self._convert_options.column_types
                 self._last_schema = self._convert_options.column_types
             else:

@@ -242,7 +242,7 @@ class MBKMeans(TableModule):
 
     def to_json(self, short: bool = False, with_speed: bool = True) -> JSon:
         json = super().to_json(short, with_speed)
-        if short:
+        if short or self.table is None:
             return json
         return self._centers_to_json(json)
 
