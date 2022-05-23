@@ -22,6 +22,7 @@ def make_num_csv(
     intruders: List[Tuple(row, col, value)]
     """
     size = n_rows * n_cols
+    np.random.seed(42)
     iarr = rand_func(0, 10_000, size=size)
     str_iarr = [str(i) for i in iarr]
     ord_a = ord("A")
