@@ -14,9 +14,7 @@ from .random import (
 from .wget import wget_file
 import bz2
 import zlib
-import pandas as pd
 import lzma
-
 from typing import Any, Dict, cast, Type
 
 DATA_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../data"))
@@ -82,17 +80,6 @@ def get_dataset(name: str, **kwds: Any) -> str:
             filename=f"{DATA_DIR}/mnist_784.csv",
             url="https://datahub.io/machine-learning/mnist_784/r/mnist_784.csv"
         )
-    if name == "nyc_taxis":
-        nyc_taxis_file = f"{DATA_DIR}/nyc_taxis.csv"
-        if not os.path.exists(nyc_taxis_file):
-            # source: https://blog.dask.org/2017/01/12/dask-dataframes
-            df = pd.read_csv(
-                "s3://dask-data/nyc-taxi/2015/yellow_tripdata_2015-01.csv",
-                index_col=False,
-                nrows=200_000,
-            )
-            df.to_csv(nyc_taxis_file)
-        return nyc_taxis_file
     if name.startswith("cluster:"):
         fname = name[len("cluster:") :] + ".txt"
         return wget_file(

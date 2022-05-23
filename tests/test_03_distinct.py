@@ -1,4 +1,4 @@
-from . import ProgressiveTest
+from . import ProgressiveTest, skip
 import numpy as np
 from progressivis import Print
 from progressivis.io import SimpleCSVLoader
@@ -17,7 +17,7 @@ MIN_INT64 = np.iinfo(np.int64).min
 class TestDistinct(ProgressiveTest):
     #    def setUp(self):
     #        log_level(logging.INFO)
-
+    @skip  # TODO fix with a reliable dataset
     def test_distinct_categorical(self):
         s = self.scheduler()
         csv = SimpleCSVLoader(
