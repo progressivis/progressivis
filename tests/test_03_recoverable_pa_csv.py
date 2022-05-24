@@ -149,7 +149,7 @@ class TestProgressiveLoadCSV(ProgressiveTest):
         bio.seek(0)
         df = df.drop(rows)
         cvopts = ConvertOptions(column_types={c: dtype for c in df.columns})
-        ropts = ReadOptions(block_size=100_000)
+        ropts = ReadOptions(block_size=100_000, use_threads=False)
         module = PACSVLoader(
             bio,
             scheduler=s,
