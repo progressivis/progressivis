@@ -9,7 +9,7 @@ dependencies:
   - nodejs
   - pkgconfig
   - pip
-  - numpy>=1.21.4
+  - numpy==1.22.0
   - scipy>=0.18.1
   - numexpr>=2.6.1
   - pandas>=1.2.5
