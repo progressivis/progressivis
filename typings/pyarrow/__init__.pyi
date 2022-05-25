@@ -47,3 +47,6 @@ class compute:
     @staticmethod
     def or_(v1: Any, v2: Any):
         ...
+
+def array(v: Any, type: Any) -> Any:
+    ...

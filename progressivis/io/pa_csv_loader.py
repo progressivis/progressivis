@@ -85,7 +85,7 @@ class PACSVLoader(BaseLoader):
         self._drop_na = drop_na
         self._max_invalid_per_block = max_invalid_per_block
         self._columns: Optional[List[str]] = None
-        self._last_schema: Optional[Union[pa.Schema, Dict[Any, Any]]] = None
+        self._last_signature: Optional[Union[pa.Schema, Dict[Any, Any]]] = None
 
     @property
     def parser(self) -> pa.csv.CSVStreamingReader:
@@ -207,17 +207,22 @@ class PACSVLoader(BaseLoader):
                 return self._last_opened
             raise ValueError("Recovery failed (2)")
 
-        if self._last_schema is None:
-            if not (
-                self._convert_options is None
-                or self._convert_options.column_types is None
-            ):
-                assert self._convert_options.column_types
-                self._last_schema = self._convert_options.column_types
+        if self._last_signature is None:
+            if not (self._convert_options is None or self._read_options is None):
+                org_names = self._read_options.column_names
+                org_types = self._convert_options.column_types
+                assert org_names
+                assert org_types
+                assert isinstance(org_types, dict)
+                assert len(org_names) == len(org_types)
+                self._last_signature = {k: org_types[k] for k in org_names}
             else:
                 raise ValueError(
-                    "Cannot guess the schema."
-                    " Consider defining 'column_type' in ConvertOptions parameter"
+                    "Cannot infer the schema because invalid values appear"
+                    " early in the file.\n"
+                    " Consider defining:\n"
+                    "- 'column_name' in ReadOptions parameter\n"
+                    "- 'column_types' in ConvertOptions parameter as an exhaustive dict"
                 )
         if self._read_options is not None:
             ropts = copy.copy(self._read_options)
@@ -231,34 +236,39 @@ class PACSVLoader(BaseLoader):
         if ropts.skip_rows_after_names:
             assert ropts.skip_rows_after_names <= currow
         ropts.skip_rows_after_names = currow
-        cvopts.null_values = [""]
-        cvopts.column_types = self._last_schema
-        for _ in range(self._max_invalid_per_block):  # avoids infinite loop
-            try:
-                istream = _reopen_last()
-                readr = pa.csv.open_csv(
-                    istream,
-                    read_options=ropts,  # cannot use read_csv
-                    convert_options=cvopts,  # here because
-                    parse_options=popts,
-                )  # (apparently)
-                chunk = readr.read_next_batch()  # read_csv cannot read only one batch
-            except pa.ArrowInvalid as ee:
-                args = ee.args[0].split("'")
-                if len(args) != 3:
-                    raise
-                if not (
-                    "CSV conversion error to" in args[0] or "invalid value " in args[0]
-                ):
-                    raise
-                invalid = args[1]
-                cvopts.null_values += [invalid]  # cannot append
-                if nn(self._anomalies):
-                    self._anomalies["invalid_values"].add(invalid)  # type: ignore
+        _col_types = self._last_signature
+        cvopts.column_types = {}
+        istream = _reopen_last()
+        readr = pa.csv.open_csv(
+            istream,
+            read_options=ropts,  # cannot use read_csv
+            convert_options=cvopts,  # here because
+            parse_options=popts,
+        )  # (apparently)
+        chunk = readr.read_next_batch()  # read_csv cannot read only one batch
+        new_cols = []
+        assert isinstance(_col_types, dict)
+        for cn, ctype in _col_types.items():
+            if ctype == chunk[cn].type:
+                new_cols.append(chunk[cn])
                 continue
-            break
-        else:
-            raise ValueError("Internal error: infinite loop in recovering")
+            try:
+                col = chunk[cn].cast(ctype)
+                new_cols.append(col)
+                continue
+            except pa.ArrowInvalid:
+                pass
+            col = chunk[cn]
+            arr = np.empty(len(col), dtype=object)
+            for i, elt in enumerate(col):
+                try:
+                    arr[i] = elt.cast(ctype).as_py()
+                except pa.ArrowInvalid:
+                    arr[i] = None
+                    if nn(self._anomalies):
+                        self._anomalies["invalid_values"].add(elt.as_py())  # type: ignore
+            new_cols.append(pa.array(arr, type=ctype))
+        chunk = pa.RecordBatch.from_arrays(new_cols, names=list(_col_types.keys()))
         if self._read_options is None:
             self._read_options = pa.csv.ReadOptions()
         self._read_options.skip_rows_after_names = (
@@ -266,7 +276,7 @@ class PACSVLoader(BaseLoader):
         )
         if self._convert_options is None:
             self._convert_options = pa.csv.ConvertOptions()
-        self._convert_options.column_types = self._last_schema
+        self._convert_options.column_types = self._last_signature
         self._convert_options.null_values = cvopts.null_values
         assert self._read_options.skip_rows_after_names is not None
         self._currow = self._read_options.skip_rows_after_names
@@ -312,8 +322,8 @@ class PACSVLoader(BaseLoader):
                 creates += _nrows
                 self._currow += _nrows
                 pa_batches.append(bat)
-                if self._last_schema is None:
-                    self._last_schema = copy.copy(bat.schema)
+                if self._last_signature is None:
+                    self._last_signature = dict(zip(bat.schema.names, bat.schema.types))
             assert pa_batches
         except StopIteration:
             self.close()

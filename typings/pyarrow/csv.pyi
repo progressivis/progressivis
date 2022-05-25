@@ -7,6 +7,7 @@ class ReadOptions:
     skip_rows_after_names: Optional[int] = None
     block_size: Optional[int] = None
     encoding: str = "utf8"
+    column_names: Optional[List[str]] = None
 
     def __init__(
         self,
