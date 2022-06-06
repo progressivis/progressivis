@@ -3,12 +3,14 @@ from datetime import date
 import os
 import os.path as osp
 import pyarrow.parquet as pq
+from pyarrow.csv import read_csv
 from progressivis.datasets.wget import wget_file
 
 KILOBYTE = 1 << 10
 MEGABYTE = KILOBYTE ** 2
-URL = "https://s3.amazonaws.com/nyc-tlc/trip+data"
-FILE = "{transp}_tripdata_{year}-{month:0>2}.parquet"
+PQ_URL_BASE = "https://s3.amazonaws.com/nyc-tlc/trip+data"
+CSV_URL_BASE = "https://nyc-tlc.s3.amazonaws.com/csv_backup"
+FILE = "{transp}_tripdata_{year}-{month:0>2}.{ext}"
 TRANSPORTS = ["yellow", "green", "fhv", "fhvhv"]
 
 
@@ -58,7 +60,8 @@ def _validate_size(ctx, param, value):
 )
 @click.option("-d", "--dest", default="nyc-taxi", help="Destination directory")
 @click.option("-p", "--prefix", default="pq", help="Output file prefix (default: pq_)")
-def main(year, month, row_group_size, transport, dest, prefix):
+@click.option("-f", "--fromcsv", is_flag=True, help="Use csv backup files as input")
+def main(year, month, row_group_size, transport, dest, prefix, fromcsv):
     here = osp.dirname(osp.abspath(__file__))
     repo_root = osp.dirname(here)
     data_dir = osp.join(repo_root, dest)
@@ -76,14 +79,17 @@ def main(year, month, row_group_size, transport, dest, prefix):
         months = [m for m in months if m < today.month]
     for tr in transports:
         for mo in months:
-            aws_file = FILE.format(year=year, month=mo, transp=tr)
-            chunked_file = f"{data_dir}/{prefix}_{raw}_{aws_file}"
-            url = f"{URL}/{aws_file}"
+            aws_file = FILE.format(
+                year=year, month=mo, transp=tr, ext="csv" if fromcsv else "parquet"
+            )
+            out_file = FILE.format(year=year, month=mo, transp=tr, ext="parquet")
+            chunked_file = f"{data_dir}/{prefix}_{raw}_{out_file}"
+            url = f"{CSV_URL_BASE if fromcsv else PQ_URL_BASE}/{aws_file}"
             try:
                 if osp.exists(chunked_file):
                     raise ValueError(f"{chunked_file} already exists")
                 wget_file(filename=tmp_file, url=url)
-                table = pq.read_table(tmp_file)
+                table = read_csv(tmp_file) if fromcsv else pq.read_table(tmp_file)
                 pq.write_table(table, chunked_file, row_group_size=size)
 
             except Exception as ee:

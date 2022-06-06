@@ -13,7 +13,7 @@ dependencies:
   - scipy>=0.18.1
   - numexpr>=2.6.1
   - pandas>=1.2.5
-  - pyarrow>=7.0.0
+  - pyarrow>=8.0.0
   - pillow>=4.2.0
   - pyyaml>=5.4.1
   - requests

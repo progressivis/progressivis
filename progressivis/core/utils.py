@@ -668,9 +668,11 @@ def s3_get_filepath_or_buffer(
     filepath_or_buffer: Any,
     encoding: Optional[str] = None,
     compression: Optional[str] = None,
+    fs: Any = None,
 ) -> Any:
     # pylint: disable=unused-argument
-    fs = s3fs.S3FileSystem(anon=False)
+    if fs is None:
+        fs = s3fs.S3FileSystem(anon=False)
     from botocore.exceptions import NoCredentialsError  # type: ignore
 
     try:
@@ -682,7 +684,10 @@ def s3_get_filepath_or_buffer(
         # aren't valid for that bucket.
         # A NoCredentialsError is raised if you don't have creds
         # for that bucket.
-        fs = s3fs.S3FileSystem(anon=True)
+        if fs is None:
+            fs = s3fs.S3FileSystem(anon=True)
+        else:
+            raise
         filepath_or_buffer = fs.open(_strip_schema(filepath_or_buffer))
     return filepath_or_buffer, None, compression
 
@@ -693,6 +698,7 @@ def filepath_to_buffer(
     compression: Optional[str] = None,
     timeout: Optional[float] = None,
     start_byte: int = 0,
+    fs: Any = None,
 ) -> Tuple[io.IOBase, Optional[str], Optional[str], int]:
     if not is_str(filepath):
         # if start_byte:
@@ -712,7 +718,7 @@ def filepath_to_buffer(
         return cast(io.IOBase, req.raw), encoding, compression, int(size)
     if is_s3_url(filepath):
         reader, encoding, compression = s3_get_filepath_or_buffer(
-            filepath, encoding=encoding, compression=compression
+            filepath, encoding=encoding, compression=compression, fs=fs
         )
         return cast(io.IOBase, reader), encoding, compression, reader.size
     if _is_buffer_url(filepath):

@@ -14,8 +14,6 @@ from ..core.module import ReturnRunStep
 from ..table.table import Table
 from ..table.dshape import dshape_from_pa_batch
 from ..core.utils import (
-    filepath_to_buffer,
-    _infer_compression,
     normalize_columns,
     force_valid_id_columns_pa,
     integer_types,
@@ -29,7 +27,6 @@ from typing import List, Dict, Any, Callable, Optional, Tuple, Union, TYPE_CHECK
 if TYPE_CHECKING:
     from ..core.module import ModuleState
     from ..stats.utils import SimpleImputer
-    import io
 
 logger = logging.getLogger(__name__)
 
@@ -66,22 +63,12 @@ class PACSVLoader(BaseLoader):
             self.throttle = False
         self._parser: Optional[pa.csv.CSVStreamingReader] = None
         self._parser_func: Optional[Callable] = None
-        self._compression: Any = "infer"
-        self._encoding: Any = read_options.encoding if read_options else None
         if nn(filter_) and not callable(filter_):
             raise ProgressiveError("filter parameter should be callable or None")
         self._filter: Optional[Callable[[pa.RecordBatch], pa.RecordBatch]] = filter_
-        self._input_stream: Optional[
-            io.IOBase
-        ] = None  # stream that returns a position through the 'tell()' method
-        self._input_encoding: Optional[str] = None
-        self._input_compression: Optional[str] = None
-        self._input_size = 0  # length of the file or input stream when available
         self._file_mode = False
         self._table_params: Dict[str, Any] = dict(name=self.name, fillvalues=fillvalues)
-        self._currow = 0
         self._imputer = imputer
-        self._last_opened: Any = None
         self._drop_na = drop_na
         self._max_invalid_per_block = max_invalid_per_block
         self._columns: Optional[List[str]] = None
@@ -98,37 +85,6 @@ class PACSVLoader(BaseLoader):
             assert self._parser_func is not None
             self._parser = self._parser_func()
         return self._parser
-
-    def open(self, filepath: Any) -> io.IOBase:
-        if nn(self._input_stream):
-            self.close()
-        compression: Optional[str] = _infer_compression(filepath, self._compression)
-        istream: io.IOBase
-        encoding: Optional[str]
-        size: int
-        (istream, encoding, compression, size) = filepath_to_buffer(
-            filepath, encoding=self._encoding, compression=compression
-        )
-        self._input_stream = istream
-        self._input_encoding = encoding
-        self._input_compression = compression
-        self._input_size = size
-        self._last_opened = filepath
-        self._currow = 0
-        return istream
-
-    def close(self) -> None:
-        if self._input_stream is None:
-            return
-        try:
-            self._input_stream.close()
-            # pylint: disable=bare-except
-        except Exception:
-            pass
-        self._input_stream = None
-        self._input_encoding = None
-        self._input_compression = None
-        self._input_size = 0
 
     def get_progress(self) -> Tuple[int, int]:
         if self._input_size == 0:

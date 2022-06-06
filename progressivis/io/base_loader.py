@@ -6,10 +6,20 @@ from .. import SlotDescriptor
 from ..table.table import Table
 from ..utils import PsDict
 from ..core.utils import nn
-from typing import Optional, Any
+from typing import Optional, Any, TYPE_CHECKING
 import pyarrow as pa
+import pyarrow.compute
+from ..core.utils import (
+    filepath_to_buffer,
+    _infer_compression,
+)
 
 logger = logging.getLogger(__name__)
+
+# from typing import List, Dict, Any, Callable, Optional, Union, Generator, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import io
 
 
 class BaseLoader(TableModule):
@@ -22,6 +32,18 @@ class BaseLoader(TableModule):
         self._rows_read: int = 0
         self._anomalies: Optional[PsDict] = None
         super().__init__(*args, **kw)
+        self._input_stream: Optional[
+            io.IOBase
+        ] = None  # stream that returns a position through the 'tell()' method
+        self._encoding: Any = None
+        self._input_encoding: Optional[str] = None
+        self._input_compression: Optional[str] = None
+        self._input_size = 0  # length of the file or input stream when available
+        self._last_opened: Any = None
+        self._compression: Any = "infer"
+        self._encoding: None
+        self._currow = 0
+        self._fs: Any = kw.get("fs")
 
     def rows_read(self) -> int:
         return self._rows_read
@@ -80,3 +102,34 @@ class BaseLoader(TableModule):
         # pylint: disable=no-self-use
         "Return True if this module brings new data"
         return True
+
+    def open(self, filepath: Any) -> io.IOBase:
+        if nn(self._input_stream):
+            self.close()
+        compression: Optional[str] = _infer_compression(filepath, self._compression)
+        istream: io.IOBase
+        encoding: Optional[str]
+        size: int
+        (istream, encoding, compression, size) = filepath_to_buffer(
+            filepath, encoding=self._encoding, compression=compression, fs=self._fs
+        )
+        self._input_stream = istream
+        self._input_encoding = encoding
+        self._input_compression = compression
+        self._input_size = size
+        self._last_opened = filepath
+        self._currow = 0
+        return istream
+
+    def close(self) -> None:
+        if self._input_stream is None:
+            return
+        try:
+            self._input_stream.close()
+            # pylint: disable=bare-except
+        except Exception:
+            pass
+        self._input_stream = None
+        self._input_encoding = None
+        self._input_compression = None
+        self._input_size = 0

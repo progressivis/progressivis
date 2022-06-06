@@ -57,8 +57,6 @@ class ParquetLoader(BaseLoader):
         else:
             self.throttle = False
         self.parser: Optional[Generator] = None
-        self._compression: Any = "infer"
-        self._encoding: None
 
         if nn(filter_) and not callable(filter_):
             raise ProgressiveError("filter parameter should be callable or None")
@@ -66,14 +64,10 @@ class ParquetLoader(BaseLoader):
         self._input_stream: Optional[
             io.IOBase
         ] = None  # stream that returns a position through the 'tell()' method
-        self._input_encoding: Optional[str] = None
-        self._input_compression: Optional[str] = None
-        self._input_size = 0  # length of the file or input stream when available
+
         self._file_mode = False
         self._table_params: Dict[str, Any] = dict(name=self.name, fillvalues=fillvalues)
-        self._currow = 0
         self._imputer = imputer
-        self._last_opened: Any = None
         self._drop_na = drop_na
         self._columns: Optional[List[str]] = None
 
@@ -82,7 +76,7 @@ class ParquetLoader(BaseLoader):
             if nn(self.filepath_or_buffer):
                 try:
                     self.parser = pq.ParquetFile(
-                        self.filepath_or_buffer, **self.pqfile_kwds
+                        self.open(self.filepath_or_buffer), **self.pqfile_kwds
                     ).iter_batches(**self.iter_batches_kwds)
                 except IOError as e:
                     logger.error("Cannot open file %s: %s", self.filepath_or_buffer, e)
@@ -108,7 +102,7 @@ class ParquetLoader(BaseLoader):
                     filename = df.at[indices.start, "filename"]
                     try:
                         self.parser = pq.ParquetFile(
-                            filename, **self.pqfile_kwds
+                            self.open(filename), **self.pqfile_kwds
                         ).iter_batches(**self.iter_batches_kwds)
                     except IOError as e:
                         logger.error("Cannot open file %s: %s", filename, e)
