@@ -8,6 +8,7 @@ import logging
 import numpy as np
 import pandas as pd
 import numexpr as ne
+import pyarrow as pa
 from progressivis.core.utils import (
     integer_types,
     get_random_name,
@@ -357,11 +358,21 @@ class Table(IndexTable):
             self.loc[left_ind, :] = data
         elif all_arrays:
             from_ind = slice(0, length)
+            raw_indices = indices  # still bitmap here
             indices = indices_to_slice(indices)
             for colname in self:
                 tocol = self._column(colname)
                 fromcol = data[colname]
-                tocol[indices] = fromcol[from_ind]
+                fromcol_ind = fromcol[from_ind]
+                try:
+                    tocol[indices] = fromcol_ind
+                except ValueError:
+                    if isinstance(fromcol, pa.TimestampArray):
+                        for i, (k, elt) in enumerate(zip(raw_indices, fromcol_ind)):
+                            dt = elt.as_py()
+                            tocol[k] = dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second
+                    else:
+                        raise
         else:
             for colname in self:
                 tocol = self._column(colname)

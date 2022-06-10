@@ -61,7 +61,8 @@ def _validate_size(ctx, param, value):
 @click.option("-d", "--dest", default="nyc-taxi", help="Destination directory")
 @click.option("-p", "--prefix", default="pq", help="Output file prefix (default: pq_)")
 @click.option("-f", "--fromcsv", is_flag=True, help="Use csv backup files as input")
-def main(year, month, row_group_size, transport, dest, prefix, fromcsv):
+@click.option("-n", "--n_rows", default=0, help="Number of rows to write (default: all)")
+def main(year, month, row_group_size, transport, dest, prefix, fromcsv, n_rows):
     here = osp.dirname(osp.abspath(__file__))
     repo_root = osp.dirname(here)
     data_dir = osp.join(repo_root, dest)
@@ -90,6 +91,8 @@ def main(year, month, row_group_size, transport, dest, prefix, fromcsv):
                     raise ValueError(f"{chunked_file} already exists")
                 wget_file(filename=tmp_file, url=url)
                 table = read_csv(tmp_file) if fromcsv else pq.read_table(tmp_file)
+                if n_rows:
+                    table = table.slice(0, n_rows)
                 pq.write_table(table, chunked_file, row_group_size=size)
 
             except Exception as ee:

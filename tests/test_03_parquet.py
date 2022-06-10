@@ -35,7 +35,7 @@ class TestProgressiveLoadParquet(ProgressiveTest):
         # print("Done. Run time: %gs, loaded %d rows" % (s['duration'][-1], len(module.result)))
         return cnt
 
-    def test_read_csv(self) -> None:
+    def test_read_parquet(self) -> None:
         s = self.scheduler()
         module = ParquetLoader(
             get_dataset("bigfile_parquet"),
@@ -45,10 +45,9 @@ class TestProgressiveLoadParquet(ProgressiveTest):
         sink = Sink(scheduler=s)
         sink.input.inp = module.output.result
         aio.run(s.start())
-        # import pdb;pdb.set_trace()
         self.assertEqual(len(module.table), 1000000)
 
-    def test_read_csv_check_size(self) -> None:
+    def test_read_parquet_check_size(self) -> None:
         num_rows_list = []
         fixed_batch_size = 1234
 
@@ -67,13 +66,12 @@ class TestProgressiveLoadParquet(ProgressiveTest):
         sink = Sink(scheduler=s)
         sink.input.inp = module.output.result
         aio.run(s.start())
-        # import pdb;pdb.set_trace()
         num_rows_set = set(num_rows_list[:-1])
         self.assertEqual(len(num_rows_set), 1)
         self.assertEqual(num_rows_set.pop(), fixed_batch_size)
         self.assertEqual(len(module.table), 1000000)
 
-    def test_read_csv_with_cols(self) -> None:
+    def test_read_parquet_with_cols(self) -> None:
         s = self.scheduler()
         columns = ["_1", "_5", "_15"]
         module = ParquetLoader(
@@ -88,7 +86,7 @@ class TestProgressiveLoadParquet(ProgressiveTest):
         self.assertEqual(module.table.columns, columns)
         self.assertEqual(len(module.table), 1000000)
 
-    def test_read_multiple_csv(self) -> None:
+    def test_read_multiple_parquet(self) -> None:
         s = self.scheduler()
         filenames = Table(
             name="file_names",
@@ -101,12 +99,12 @@ class TestProgressiveLoadParquet(ProgressiveTest):
             },
         )
         cst = Constant(table=filenames, scheduler=s)
-        csv = ParquetLoader(scheduler=s)
-        csv.input.filenames = cst.output.result
+        parquet = ParquetLoader(scheduler=s)
+        parquet.input.filenames = cst.output.result
         sink = Sink(scheduler=s)
-        sink.input.inp = csv.output.result
-        aio.run(csv.start())
-        self.assertEqual(len(csv.table), 60000)
+        sink.input.inp = parquet.output.result
+        aio.run(parquet.start())
+        self.assertEqual(len(parquet.table), 60000)
 
 
 if __name__ == "__main__":
