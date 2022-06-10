@@ -66,7 +66,7 @@ class TestProgressiveGroupBy(ProgressiveTest):
         parquet = ParquetLoader(
             "nyc-taxi/short_500k_yellow_tripdata_2015-01.parquet",
             columns=[
-                "tpep_dropoff_datetime",
+                "tpep_pickup_datetime",
                 "passenger_count",
                 "extra",
                 "trip_distance",
@@ -75,7 +75,7 @@ class TestProgressiveGroupBy(ProgressiveTest):
         )
 
         def _day_func(tbl, i):
-            dt = tbl.loc[i, "tpep_dropoff_datetime"]
+            dt = tbl.loc[i, "tpep_pickup_datetime"]
             return tuple(dt[:3])
 
         self.assertTrue(parquet.result is None)
@@ -86,8 +86,8 @@ class TestProgressiveGroupBy(ProgressiveTest):
         aio.run(s.start())
         self.assertEqual(len(parquet.table), 300_000)
         self.assertEqual(
-            len(grby._index.keys()), 32
-        )  # the file contains few february records ...
+            len(grby._index.keys()), 31
+        )
 
 
 if __name__ == "__main__":
