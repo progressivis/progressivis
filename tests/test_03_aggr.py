@@ -13,21 +13,21 @@ PARQUET_FILE = "nyc-taxi/short_500k_yellow_tripdata_2015-01.parquet"
 
 # NB: if PARQUET_FILE does not exist yet, consider running:
 # python scripts/create_nyc_parquet.py -p short -t yellow -f -m1 -n 300000
+if not os.getenv("CI"):
+    TABLE = pq.read_table(PARQUET_FILE)  # type: ignore
+    TABLE_AGGR = TABLE.group_by("passenger_count").aggregate([("trip_distance", "mean")])  # type: ignore
+    TABLE_AGGR_2 = TABLE.group_by("passenger_count").aggregate(  # type: ignore
+        [("trip_distance", "mean"), ("trip_distance", "sum")]
+    )
+    TABLE_AGGR_3 = TABLE.group_by("passenger_count").aggregate(  # type: ignore
+        [("fare_amount", "mean"), ("trip_distance", "mean"), ("trip_distance", "sum")]
+    )
+    TABLE_AGGR_4 = TABLE.group_by(["passenger_count", "VendorID"]).aggregate(  # type: ignore
+        [("trip_distance", "mean")]
+    )
 
-TABLE = pq.read_table(PARQUET_FILE)  # type: ignore
-TABLE_AGGR = TABLE.group_by("passenger_count").aggregate([("trip_distance", "mean")])  # type: ignore
-TABLE_AGGR_2 = TABLE.group_by("passenger_count").aggregate(  # type: ignore
-    [("trip_distance", "mean"), ("trip_distance", "sum")]
-)
-TABLE_AGGR_3 = TABLE.group_by("passenger_count").aggregate(  # type: ignore
-    [("fare_amount", "mean"), ("trip_distance", "mean"), ("trip_distance", "sum")]
-)
-TABLE_AGGR_4 = TABLE.group_by(["passenger_count", "VendorID"]).aggregate(  # type: ignore
-    [("trip_distance", "mean")]
-)
-
-DF = TABLE.to_pandas()  # type: ignore
-DF_AGGR = DF.groupby(DF.tpep_pickup_datetime.dt.day).trip_distance.mean()  # type: ignore
+    DF = TABLE.to_pandas()  # type: ignore
+    DF_AGGR = DF.groupby(DF.tpep_pickup_datetime.dt.day).trip_distance.mean()  # type: ignore
 
 
 @skipIf(os.getenv("CI"), "skipped because local nyc taxi files are required")
