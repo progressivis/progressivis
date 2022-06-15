@@ -380,7 +380,7 @@ class Table(IndexTable):
                 for i in range(length):
                     tocol[indices[i]] = fromcol[i]
 
-    def add(self, row: Any, index: Optional[Any] = None) -> None:
+    def add(self, row: Any, index: Optional[Any] = None) -> int:
         "Add one row to the Table"
         assert len(row) == self.ncol
 
@@ -403,6 +403,7 @@ class Table(IndexTable):
             for colname, value in zip(self, row):
                 tocol = self._column(colname)
                 tocol[start] = value
+        return start
 
     def binary(
         self,

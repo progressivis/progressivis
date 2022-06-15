@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from itertools import product
 
-import numpy as np
 import pandas as pd
 
 from ..core.module import ReturnRunStep
@@ -10,45 +9,12 @@ from ..core.utils import indices_len, fix_loc
 from ..core.slot import SlotDescriptor
 from ..core.decorators import process_slot, run_if_any
 from ..table.table_base import BaseTable
-from ..table.column_base import BaseColumn
 from ..table.table import Table
 from ..table.module import TableModule
 from ..utils.psdict import PsDict
-from .var import OnlineVariance
+from .utils import OnlineVariance, OnlineCovariance
 
 from typing import Any, Union, Literal, Dict, Optional, List
-
-
-class OnlineCovariance:
-    def __init__(self, ddof: int = 1) -> None:
-        self.reset()
-        self.ddof = ddof
-
-    def reset(self) -> None:
-        self.n: float = 0
-        self.mean_x: float = 0
-        self.sum_x: float = 0
-        self.mean_y: float = 0
-        self.sum_y: float = 0
-        self.cm: float = 0
-
-    def include(self, x: float, y: float) -> None:
-        self.n += 1
-        dx = x - self.mean_x
-        self.sum_x += x
-        self.sum_y += y
-        self.mean_x = self.sum_x / self.n
-        self.mean_y = self.sum_y / self.n
-        self.cm += dx * (y - self.mean_y)
-
-    def add(self, array_x: BaseColumn, array_y: BaseColumn) -> None:
-        for x, y in zip(array_x, array_y):
-            self.include(x, y)
-
-    @property
-    def cov(self) -> float:
-        div_ = self.n - self.ddof
-        return self.cm / div_ if div_ else np.nan
 
 
 class Corr(TableModule):

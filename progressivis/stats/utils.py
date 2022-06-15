@@ -1,20 +1,61 @@
 import numpy as np
 from numbers import Number
-from typing import Iterable, Dict, Optional, Union
+from typing import Iterable, Dict, Optional, Union, Any
 from collections import defaultdict
+from abc import abstractmethod
 from datasketches import (
     kll_floats_sketch,
     kll_ints_sketch,
     frequent_strings_sketch,
     frequent_items_error_type,
 )
+from ..table.column_base import BaseColumn
 from ..core.utils import nn, is_str, is_dict
 
 
-class OnlineMean:
+class OnlineFunctor:
+    name = "functor"
+
+    @abstractmethod
+    def reset(self) -> None:
+        raise NotImplementedError("reset not defined")
+
+    @abstractmethod
+    def add(self, iterable: Iterable[float]) -> None:
+        raise NotImplementedError("add not defined")
+
+    @abstractmethod
+    def get_value(self) -> Any:
+        raise NotImplementedError("add not defined")
+
+
+class OnlineSum(OnlineFunctor):
     """
     Welford's algorithm
     """
+
+    name = "sum"
+
+    def __init__(self) -> None:
+        self.reset()
+
+    def reset(self) -> None:
+        self.sum: int = 0
+
+    def add(self, iterable: Iterable[float]) -> None:
+        if iterable is not None:
+            self.sum += sum(iterable)
+
+    def get_value(self) -> float:
+        return self.sum
+
+
+class OnlineMean(OnlineFunctor):
+    """
+    Welford's algorithm
+    """
+
+    name = "mean"
 
     def __init__(self) -> None:
         self.reset()
@@ -35,6 +76,92 @@ class OnlineMean:
         self.n += 1
         self.delta = datum - self.mean
         self.mean += self.delta / self.n
+
+    def get_value(self) -> float:
+        return self.mean
+
+
+# Should translate that to Cython eventually
+class OnlineVariance(OnlineFunctor):
+    """
+    Welford's algorithm computes the sample variance incrementally.
+    """
+
+    name = "variance"
+
+    def __init__(self, ddof: int = 1) -> None:
+        self.reset()
+        self.ddof: int = ddof
+
+    def reset(self) -> None:
+        self.n: int = 0
+        self.mean: float = 0.0
+        self.M2: float = 0.0
+        self.delta: float = 0
+
+    def add(self, iterable: Iterable[float]) -> None:
+        if iterable is not None:
+            for datum in iterable:
+                self.include(datum)
+
+    def include(self, datum: float) -> None:
+        if np.isnan(datum):
+            return
+        self.n += 1
+        self.delta = datum - self.mean
+        self.mean += self.delta / self.n
+        self.M2 += self.delta * (datum - self.mean)
+
+    @property
+    def variance(self) -> float:
+        n_ddof = self.n - self.ddof
+        return self.M2 / n_ddof if n_ddof else np.nan
+
+    @property
+    def std(self) -> float:
+        return np.sqrt(self.variance)  # type: ignore
+
+    def get_value(self) -> float:
+        return self.variance
+
+
+class OnlineStd(OnlineVariance):
+    name = "stddev"
+
+    def get_value(self) -> float:
+        return self.std
+
+
+class OnlineCovariance:  # not an OnlineFuctor
+    def __init__(self, ddof: int = 1) -> None:
+        self.reset()
+        self.ddof = ddof
+
+    def reset(self) -> None:
+        self.n: float = 0
+        self.mean_x: float = 0
+        self.sum_x: float = 0
+        self.mean_y: float = 0
+        self.sum_y: float = 0
+        self.cm: float = 0
+
+    def include(self, x: float, y: float) -> None:
+        self.n += 1
+        dx = x - self.mean_x
+        self.sum_x += x
+        self.sum_y += y
+        self.mean_x = self.sum_x / self.n
+        self.mean_y = self.sum_y / self.n
+        self.cm += dx * (y - self.mean_y)
+
+    def add(self, array_x: BaseColumn, array_y: BaseColumn) -> None:
+        for x, y in zip(array_x, array_y):
+            self.include(x, y)
+
+    @property
+    def cov(self) -> float:
+        div_ = self.n - self.ddof
+        return self.cm / div_ if div_ else np.nan
 
 
 class SimpleImputer:

@@ -14,10 +14,20 @@ from typing import Optional, List, Union, Any, Callable
 logger = logging.getLogger(__name__)
 
 
+class DateTime:
+    def __init__(self, column, mask):
+        idx = {fld: i for (i, fld) in enumerate("YMDhms")}
+        if not (set(list(mask)) < set(idx.keys())):
+            raise ValueError(f"unknown format: {mask}")
+        self.mask = mask
+        self.column = column
+        self.value = [i for (k, i) in idx.items() if k in mask]
+
+
 class GroupBy(TableModule):
     inputs = [SlotDescriptor("table", type=Table, required=True)]
 
-    def __init__(self, by: Union[List[str], Callable], **kwds: Any) -> None:
+    def __init__(self, by: Union[str, List[str], Callable, DateTime], **kwds: Any) -> None:
         super().__init__(**kwds)
         self.by = by
         self._index = defaultdict(bitmap)
@@ -32,23 +42,31 @@ class GroupBy(TableModule):
         for i in indices:
             key = self._input_table.loc[i, by]
             self._index[key].add(i)
-        # print("index", len(self._index))
 
     @process_created.register
     def _(self, by: list, indices: bitmap):
-        # import pdb;pdb.set_trace()
         for i in indices:
             gen = self._input_table.loc[i, by]
             self._index[tuple(gen)].add(i)
 
     @process_created.register
     def _(self, by: types.FunctionType, indices: bitmap):
-        # import pdb;pdb.set_trace()
         for i in indices:
             self._index[by(self._input_table, i)].add(i)
 
+    @process_created.register
+    def _(self, by: DateTime, indices: bitmap):
+        col = by.column
+        val = by.value
+        for i in indices:
+            dt_vect = self._input_table.loc[i, col]
+            self._index[tuple(dt_vect[val])].add(i)
+
     def process_deleted(indices):
         pass
+
+    def items(self):
+        return self._index.items()
 
     def run_step(
         self, run_number: int, step_size: int, howlong: float

@@ -13,53 +13,13 @@ from ..table.table_base import BaseTable
 from ..table.table import Table
 from ..table.dshape import dshape_all_dtype
 from ..utils.psdict import PsDict
-
-from typing import Dict, Iterable, TYPE_CHECKING, Any
+from .utils import OnlineVariance
+from typing import Dict, TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from progressivis.table.module import Columns
 
-
 logger = logging.getLogger(__name__)
-
-
-# Should translate that to Cython eventually
-class OnlineVariance:
-    """
-    Welford's algorithm computes the sample variance incrementally.
-    """
-
-    def __init__(self, ddof: int = 1) -> None:
-        self.reset()
-        self.ddof: int = ddof
-
-    def reset(self) -> None:
-        self.n: int = 0
-        self.mean: float = 0.0
-        self.M2: float = 0.0
-        self.delta: float = 0
-
-    def add(self, iterable: Iterable[float]) -> None:
-        if iterable is not None:
-            for datum in iterable:
-                self.include(datum)
-
-    def include(self, datum: float) -> None:
-        if np.isnan(datum):
-            return
-        self.n += 1
-        self.delta = datum - self.mean
-        self.mean += self.delta / self.n
-        self.M2 += self.delta * (datum - self.mean)
-
-    @property
-    def variance(self) -> float:
-        n_ddof = self.n - self.ddof
-        return self.M2 / n_ddof if n_ddof else np.nan
-
-    @property
-    def std(self) -> float:
-        return np.sqrt(self.variance)  # type: ignore
 
 
 class VarH(TableModule):

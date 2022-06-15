@@ -155,6 +155,8 @@ def np_dshape(v: Any, skip: int = 1) -> str:
             dshape = "int"
         elif isinstance(e, float):
             dshape = "float64"
+        elif isinstance(e, tuple):
+            dshape = np_dshape(np.array(e), skip=0)  # recursive call
         elif isinstance(e, np.ndarray):
             dshape = np_dshape(e, skip=0)  # recursive call
         else:
