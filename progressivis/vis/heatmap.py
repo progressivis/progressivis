@@ -98,7 +98,7 @@ class Heatmap(TableModule):
                 data += low
 
             image = Image.fromarray(data, mode="I")
-            image = image.transpose(Image.FLIP_TOP_BOTTOM)
+            image = image.transpose(Image.Transpose.FLIP_TOP_BOTTOM)
             filename = params.filename
         except Exception:
             image = None

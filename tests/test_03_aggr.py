@@ -6,6 +6,7 @@ from progressivis.core import aio, Sink
 from progressivis.io import ParquetLoader
 from progressivis.table.group_by import GroupBy, DateTime as DT
 from progressivis.table.aggregate import Aggregate
+from progressivis.table.stirrer import Stirrer
 import pyarrow.parquet as pq
 import numpy as np
 
@@ -15,7 +16,9 @@ PARQUET_FILE = "nyc-taxi/short_500k_yellow_tripdata_2015-01.parquet"
 # python scripts/create_nyc_parquet.py -p short -t yellow -f -m1 -n 300000
 if not os.getenv("CI"):
     TABLE = pq.read_table(PARQUET_FILE)  # type: ignore
-    TABLE_AGGR = TABLE.group_by("passenger_count").aggregate([("trip_distance", "mean")])  # type: ignore
+    TABLE_AGGR = TABLE.group_by("passenger_count").aggregate(
+        [("trip_distance", "mean"), ("trip_distance", "sum")]
+    )  # type: ignore
     TABLE_AGGR_2 = TABLE.group_by("passenger_count").aggregate(  # type: ignore
         [("trip_distance", "mean"), ("trip_distance", "sum")]
     )
@@ -55,6 +58,80 @@ class TestProgressiveAggregate(ProgressiveTest):
             np.allclose(
                 aggr.table["trip_distance_mean"].value,
                 TABLE_AGGR["trip_distance_mean"].to_numpy(),
+            )
+        )
+
+    def test_aggregate_1_col_delete(self) -> None:
+        s = self.scheduler()
+        removed = 11142
+        parquet = ParquetLoader(
+            PARQUET_FILE, columns=["passenger_count", "trip_distance"], scheduler=s,
+        )
+        self.assertTrue(parquet.result is None)
+        stirrer = Stirrer(
+            update_column="trip_distance",
+            delete_rows=[removed],
+            # update_rows=5,
+            fixed_step_size=1000,
+            scheduler=s,
+        )
+        stirrer.input[0] = parquet.output.result
+        grby = GroupBy(by="passenger_count", scheduler=s)
+        grby.input.table = stirrer.output.result
+        aggr = Aggregate(compute=[("trip_distance", "sum")], scheduler=s)
+        aggr.input.table = grby.output.result
+        sink = Sink(scheduler=s)
+        sink.input.inp = aggr.output.result
+        aio.run(s.start())
+        self.assertTrue(
+            np.array_equal(
+                aggr.table["passenger_count"].value,
+                TABLE_AGGR["passenger_count"].to_numpy(),
+            )
+        )
+        self.assertTrue(
+            np.allclose(
+                sum(TABLE_AGGR["trip_distance_sum"].to_numpy())
+                - sum(aggr.table.loc[:, "trip_distance_sum"].to_array()),
+                TABLE["trip_distance"][removed].as_py(),
+            )
+        )
+
+    def test_aggregate_1_col_update(self) -> None:
+        s = self.scheduler()
+        upd_id = 11142
+        new_val = 10.0
+        parquet = ParquetLoader(
+            PARQUET_FILE, columns=["passenger_count", "trip_distance"], scheduler=s,
+        )
+        self.assertTrue(parquet.result is None)
+        stirrer = Stirrer(
+            update_column="trip_distance",
+            update_rows=([upd_id], [new_val]),
+            fixed_step_size=1000,
+            scheduler=s,
+        )
+        stirrer.input[0] = parquet.output.result
+        grby = GroupBy(by="passenger_count", scheduler=s)
+        grby.input.table = stirrer.output.result
+        aggr = Aggregate(compute=[("trip_distance", "sum")], scheduler=s)
+        aggr.input.table = grby.output.result
+        sink = Sink(scheduler=s)
+        sink.input.inp = aggr.output.result
+        aio.run(s.start())
+        self.assertTrue(
+            np.array_equal(
+                aggr.table["passenger_count"].value,
+                TABLE_AGGR["passenger_count"].to_numpy(),
+            )
+        )
+        self.assertTrue(
+            np.allclose(
+                abs(
+                    sum(TABLE_AGGR["trip_distance_sum"].to_numpy())
+                    - sum(aggr.table.loc[:, "trip_distance_sum"].to_array())
+                ),
+                abs(new_val - TABLE["trip_distance"][upd_id].as_py()),
             )
         )
 

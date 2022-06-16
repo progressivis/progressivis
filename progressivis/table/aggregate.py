@@ -11,37 +11,38 @@ from ..stats.utils import (
     OnlineStd,
     OnlineSum,
 )
-from ..core.utils import is_str
 from progressivis.core.utils import indices_len
 from ..core.decorators import process_slot, run_if_any
 from .dshape import dshape_from_dict
-from .group_by import DateTime
-from typing import List, Union, Any, Dict, Tuple
+from .group_by import GroupBy, DateTime
+from typing import cast, List, Union, Any, Dict, Tuple, Type
 
 # See also : https://arrow.apache.org/docs/python/compute.html#py-grouped-aggrs
 
 
 class Aggregate(TableModule):
     inputs = [SlotDescriptor("table", type=Table, required=True)]
-    registry: Dict[str, OnlineFunctor] = dict(
+    registry: Dict[str, Type[OnlineFunctor]] = dict(
         mean=OnlineMean, variance=OnlineVariance, stddev=OnlineStd, sum=OnlineSum
     )
 
     def __init__(
-        self, compute: List[Tuple[str, Union[str, OnlineFunctor]]], **kwds: Any
+        self, compute: List[Tuple[str, Union[str, Type[OnlineFunctor]]]], **kwds: Any
     ) -> None:
         super().__init__(**kwds)
         self._compute = [
-            (n, self.registry[f] if is_str(f) else f) for (n, f) in compute
+            (n, self.registry[f] if isinstance(f, str) else f) for (n, f) in compute
         ]
         self._aggr_cols = {f"{n}_{f.name}": (n, f) for (n, f) in self._compute}
-        self._by_cols = None
-        self._local_index = {}
-        self._table_index = {}
+        self._by_cols: Any = None
+        self._local_index: Dict[Any, Any] = {}
+        self._table_index: Dict[Any, int] = {}
 
     def reset(self) -> None:
         if self.result is not None:
             self.table.resize(0)
+        self._local_index = {}
+        self._table_index = {}
 
     def update_row(self, grp, grp_ids, input_df):
         if grp not in self._local_index:
@@ -92,7 +93,7 @@ class Aggregate(TableModule):
             input_df = dfslot.data()
             if input_df is None:
                 return self._return_run_step(self.state_blocked, steps_run=0)
-            groupby_mod = dfslot.output_module
+            groupby_mod = cast(GroupBy, dfslot.output_module)
             if self._by_cols is None:
                 by = groupby_mod.by
                 if isinstance(by, str):

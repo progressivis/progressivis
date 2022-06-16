@@ -33,8 +33,8 @@ class Stirrer(TableModule):
     def __init__(self, **kwds: Any) -> None:
         super().__init__(**kwds)
         self._update_column: str = self.params.update_column
-        self._update_rows: bool = self.params.update_rows is not None
-        self._delete_rows: bool = self.params.delete_rows is not None
+        self._update_rows: Any = self.params.update_rows
+        self._delete_rows: Any = self.params.delete_rows
         self._delete_threshold: Optional[int] = self.params.delete_threshold
         self._update_threshold: Optional[int] = self.params.update_threshold
         self._mode = self.params.mode
@@ -88,8 +88,9 @@ class Stirrer(TableModule):
                 del self.table.loc[delete[:mid]]
                 del self.table.loc[delete[mid:]]
             elif delete:
-                steps += len(delete)
-                del self.table.loc[delete]
+                if bitmap(delete) in self.table.index and bitmap(delete) not in bitmap(created):
+                    steps += len(delete)
+                    del self.table.loc[delete]
         if self._update_rows and len(before_):
             before_ -= bitmap(delete)
             if isinstance(self._update_rows, int):
@@ -99,7 +100,12 @@ class Stirrer(TableModule):
             else:
                 updated = self._update_rows
             v = np.random.rand(len(updated))
-            if updated:
+            if isinstance(updated, tuple):
+                u_ids = bitmap(updated[0])
+                u_vals = updated[1]
+                steps += len(u_ids)
+                self.table.loc[u_ids, [self._update_column]] = u_vals
+            elif updated:
                 steps += len(updated)
                 self.table.loc[fix_loc(updated), [self._update_column]] = [v]
         return self._return_run_step(self.next_state(input_slot), steps_run=steps)
