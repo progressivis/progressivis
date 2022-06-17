@@ -5,31 +5,48 @@ from ..table.module import TableModule, ReturnRunStep
 from ..core.slot import SlotDescriptor
 from . import Table, TableSelectedView
 from ..core.bitmap import bitmap
-from progressivis.core.utils import indices_len, fix_loc
+from progressivis.core.utils import indices_len, fix_loc, norm_slice
 from collections import defaultdict
 from functools import singledispatchmethod as dispatch
 import types
 from collections import abc
-from typing import Optional, List, Union, Any, Callable, Dict
+from typing import Optional, List, Union, Any, Callable, Dict, Sequence
 
 logger = logging.getLogger(__name__)
 
 
-class DateTime:
-    def __init__(self, column: str, mask: str) -> None:
-        idx = {fld: i for (i, fld) in enumerate("YMDhms")}
-        if not (set(list(mask)) < set(idx.keys())):
-            raise ValueError(f"unknown format: {mask}")
-        self.mask = mask
+class SubColumn:
+    def __init__(self, column: str, selection: Union[Sequence[int], slice],
+                 tag: Optional[str] = None) -> None:
+        def _make_tag():
+            if tag:
+                return tag
+            if isinstance(selection, slice):
+                sl = norm_slice(selection)
+                return f"s{sl.start}_{sl.stop}{sl.step}"
+            if isinstance(selection, Sequence):
+                return "_".join([str(s) for s in selection])
+            raise ValueError(f"Tag error for {selection}")
         self.column = column
-        self.value = [i for (k, i) in idx.items() if k in mask]
+        self.tag = _make_tag()
+        self.selection = selection
+
+
+class DateTime(SubColumn):
+    def __init__(self, column: str, selection: str, tag: Optional[str] = None) -> None:
+        idx = {fld: i for (i, fld) in enumerate("YMDhms")}
+        if not (set(list(selection)) < set(idx.keys())):
+            raise ValueError(f"unknown format: {selection}")
+        self.tag = tag or selection
+        self.column = column
+        self.selection = [i for (k, i) in idx.items() if k in selection]
 
 
 class GroupBy(TableModule):
     inputs = [SlotDescriptor("table", type=Table, required=True)]
 
     def __init__(
-        self, by: Union[str, List[str], Callable, DateTime], **kwds: Any
+        self, by: Union[str, List[str], Callable, SubColumn], **kwds: Any
     ) -> None:
         super().__init__(**kwds)
         self.by = by
@@ -60,10 +77,10 @@ class GroupBy(TableModule):
             self._index[by(self._input_table, i)].add(i)
 
     @process_created.register
-    def _(self, by: DateTime, indices: bitmap) -> None:
+    def _(self, by: SubColumn, indices: bitmap) -> None:
         assert self._input_table is not None
         col = by.column
-        val = by.value
+        val = by.selection
         for i in indices:
             dt_vect = self._input_table.loc[i, col]
             self._index[tuple(dt_vect[val])].add(i)

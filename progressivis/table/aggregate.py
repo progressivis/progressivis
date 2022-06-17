@@ -14,7 +14,7 @@ from ..stats.utils import (
 from progressivis.core.utils import indices_len
 from ..core.decorators import process_slot, run_if_any
 from .dshape import dshape_from_dict
-from .group_by import GroupBy, DateTime
+from .group_by import GroupBy, SubColumn
 from typing import cast, List, Union, Any, Dict, Tuple, Type
 
 # See also : https://arrow.apache.org/docs/python/compute.html#py-grouped-aggrs
@@ -100,8 +100,8 @@ class Aggregate(TableModule):
                     self._by_cols = [by]
                 elif isinstance(by, list):
                     self._by_cols = by
-                elif isinstance(by, DateTime):
-                    self._by_cols = [f"{by.column}_{by.mask}"]
+                elif isinstance(by, SubColumn):
+                    self._by_cols = [f"{by.column}_{by.tag}"]
                 elif callable(by):
                     self._by_cols = ["by_col"]
                 else:

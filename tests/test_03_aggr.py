@@ -4,7 +4,7 @@ import os
 from . import ProgressiveTest, skipIf
 from progressivis.core import aio, Sink
 from progressivis.io import ParquetLoader
-from progressivis.table.group_by import GroupBy, DateTime as DT
+from progressivis.table.group_by import GroupBy, DateTime as DT, SubColumn as SC
 from progressivis.table.aggregate import Aggregate
 from progressivis.table.stirrer import Stirrer
 import pyarrow.parquet as pq
@@ -16,9 +16,9 @@ PARQUET_FILE = "nyc-taxi/short_500k_yellow_tripdata_2015-01.parquet"
 # python scripts/create_nyc_parquet.py -p short -t yellow -f -m1 -n 300000
 if not os.getenv("CI"):
     TABLE = pq.read_table(PARQUET_FILE)  # type: ignore
-    TABLE_AGGR = TABLE.group_by("passenger_count").aggregate(
+    TABLE_AGGR = TABLE.group_by("passenger_count").aggregate(  # type: ignore
         [("trip_distance", "mean"), ("trip_distance", "sum")]
-    )  # type: ignore
+    )
     TABLE_AGGR_2 = TABLE.group_by("passenger_count").aggregate(  # type: ignore
         [("trip_distance", "mean"), ("trip_distance", "sum")]
     )
@@ -92,8 +92,8 @@ class TestProgressiveAggregate(ProgressiveTest):
         self.assertTrue(
             np.allclose(
                 sum(TABLE_AGGR["trip_distance_sum"].to_numpy())
-                - sum(aggr.table.loc[:, "trip_distance_sum"].to_array()),
-                TABLE["trip_distance"][removed].as_py(),
+                - sum(aggr.table.loc[:, "trip_distance_sum"].to_array()),  # type: ignore
+                TABLE["trip_distance"][removed].as_py(),  # type: ignore
             )
         )
 
@@ -129,9 +129,9 @@ class TestProgressiveAggregate(ProgressiveTest):
             np.allclose(
                 abs(
                     sum(TABLE_AGGR["trip_distance_sum"].to_numpy())
-                    - sum(aggr.table.loc[:, "trip_distance_sum"].to_array())
+                    - sum(aggr.table.loc[:, "trip_distance_sum"].to_array())  # type: ignore
                 ),
-                abs(new_val - TABLE["trip_distance"][upd_id].as_py()),
+                abs(new_val - TABLE["trip_distance"][upd_id].as_py()),  # type: ignore
             )
         )
 
@@ -289,6 +289,48 @@ class TestProgressiveAggregate(ProgressiveTest):
             return tuple(dt[:3])
 
         grby = GroupBy(by=_day_func, scheduler=s)
+        grby.input.table = parquet.output.result
+        aggr = Aggregate(compute=[("trip_distance", "mean")], scheduler=s)
+        aggr.input.table = grby.output.result
+        sink = Sink(scheduler=s)
+        sink.input.inp = aggr.output.result
+        aio.run(s.start())
+        self.assertTrue(
+            np.allclose(
+                sorted(aggr.table["trip_distance_mean"].value), sorted(DF_AGGR.values)
+            )
+        )
+
+    def test_aggregate_by_subcolumn_slice(self) -> None:
+        s = self.scheduler()
+        parquet = ParquetLoader(
+            PARQUET_FILE,
+            columns=["tpep_pickup_datetime", "trip_distance"],
+            scheduler=s,
+        )
+        self.assertTrue(parquet.result is None)
+        grby = GroupBy(by=SC("tpep_pickup_datetime", slice(0, 3)), scheduler=s)
+        grby.input.table = parquet.output.result
+        aggr = Aggregate(compute=[("trip_distance", "mean")], scheduler=s)
+        aggr.input.table = grby.output.result
+        sink = Sink(scheduler=s)
+        sink.input.inp = aggr.output.result
+        aio.run(s.start())
+        self.assertTrue(
+            np.allclose(
+                sorted(aggr.table["trip_distance_mean"].value), sorted(DF_AGGR.values)
+            )
+        )
+
+    def test_aggregate_by_subcolumn_fancy(self) -> None:
+        s = self.scheduler()
+        parquet = ParquetLoader(
+            PARQUET_FILE,
+            columns=["tpep_pickup_datetime", "trip_distance"],
+            scheduler=s,
+        )
+        self.assertTrue(parquet.result is None)
+        grby = GroupBy(by=SC("tpep_pickup_datetime", [0, 1, 2]), scheduler=s)
         grby.input.table = parquet.output.result
         aggr = Aggregate(compute=[("trip_distance", "mean")], scheduler=s)
         aggr.input.table = grby.output.result
