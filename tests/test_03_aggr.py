@@ -4,7 +4,7 @@ import os
 from . import ProgressiveTest, skipIf
 from progressivis.core import aio, Sink
 from progressivis.io import ParquetLoader
-from progressivis.table.group_by import GroupBy, DateTime as DT, SubColumn as SC
+from progressivis.table.group_by import GroupBy, SubColumn as SC
 from progressivis.table.aggregate import Aggregate
 from progressivis.table.stirrer import Stirrer
 import pyarrow.parquet as pq
@@ -275,7 +275,7 @@ class TestProgressiveAggregate(ProgressiveTest):
             )
         )
 
-    def test_aggregate_by_days(self) -> None:
+    def test_aggregate_by_func(self) -> None:
         s = self.scheduler()
         parquet = ParquetLoader(
             PARQUET_FILE,
@@ -301,7 +301,7 @@ class TestProgressiveAggregate(ProgressiveTest):
             )
         )
 
-    def test_aggregate_by_subcolumn_slice(self) -> None:
+    def _aggregate_by_subcolumn(self, subcol: SC) -> None:
         s = self.scheduler()
         parquet = ParquetLoader(
             PARQUET_FILE,
@@ -309,7 +309,7 @@ class TestProgressiveAggregate(ProgressiveTest):
             scheduler=s,
         )
         self.assertTrue(parquet.result is None)
-        grby = GroupBy(by=SC("tpep_pickup_datetime", slice(0, 3)), scheduler=s)
+        grby = GroupBy(by=subcol, scheduler=s)
         grby.input.table = parquet.output.result
         aggr = Aggregate(compute=[("trip_distance", "mean")], scheduler=s)
         aggr.input.table = grby.output.result
@@ -323,46 +323,16 @@ class TestProgressiveAggregate(ProgressiveTest):
         )
 
     def test_aggregate_by_subcolumn_fancy(self) -> None:
-        s = self.scheduler()
-        parquet = ParquetLoader(
-            PARQUET_FILE,
-            columns=["tpep_pickup_datetime", "trip_distance"],
-            scheduler=s,
-        )
-        self.assertTrue(parquet.result is None)
-        grby = GroupBy(by=SC("tpep_pickup_datetime", [0, 1, 2]), scheduler=s)
-        grby.input.table = parquet.output.result
-        aggr = Aggregate(compute=[("trip_distance", "mean")], scheduler=s)
-        aggr.input.table = grby.output.result
-        sink = Sink(scheduler=s)
-        sink.input.inp = aggr.output.result
-        aio.run(s.start())
-        self.assertTrue(
-            np.allclose(
-                sorted(aggr.table["trip_distance_mean"].value), sorted(DF_AGGR.values)
-            )
-        )
+        return self._aggregate_by_subcolumn(SC("tpep_pickup_datetime").ix[[0, 1, 2]])
 
-    def test_aggregate_by_dt_ymd(self) -> None:
-        s = self.scheduler()
-        parquet = ParquetLoader(
-            PARQUET_FILE,
-            columns=["tpep_pickup_datetime", "trip_distance"],
-            scheduler=s,
-        )
-        self.assertTrue(parquet.result is None)
-        grby = GroupBy(by=DT("tpep_pickup_datetime", "YMD"), scheduler=s)
-        grby.input.table = parquet.output.result
-        aggr = Aggregate(compute=[("trip_distance", "mean")], scheduler=s)
-        aggr.input.table = grby.output.result
-        sink = Sink(scheduler=s)
-        sink.input.inp = aggr.output.result
-        aio.run(s.start())
-        self.assertTrue(
-            np.allclose(
-                sorted(aggr.table["trip_distance_mean"].value), sorted(DF_AGGR.values)
-            )
-        )
+    def test_aggregate_by_subcolumn_slice(self) -> None:
+        return self._aggregate_by_subcolumn(SC("tpep_pickup_datetime").ix[:3])
+
+    def test_aggregate_by_subcolumn_datetime_ix(self) -> None:
+        return self._aggregate_by_subcolumn(SC("tpep_pickup_datetime").dt["YMD"])  # YMDhms
+
+    def test_aggregate_by_subcolumn_datetime_dt(self) -> None:
+        return self._aggregate_by_subcolumn(SC("tpep_pickup_datetime").dt.year.month.day)
 
 
 if __name__ == "__main__":

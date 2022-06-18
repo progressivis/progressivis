@@ -5,41 +5,114 @@ from ..table.module import TableModule, ReturnRunStep
 from ..core.slot import SlotDescriptor
 from . import Table, TableSelectedView
 from ..core.bitmap import bitmap
-from progressivis.core.utils import indices_len, fix_loc, norm_slice
+from progressivis.core.utils import indices_len, fix_loc
 from collections import defaultdict
 from functools import singledispatchmethod as dispatch
 import types
 from collections import abc
 from typing import Optional, List, Union, Any, Callable, Dict, Sequence
-
+from abc import ABCMeta, abstractproperty
 logger = logging.getLogger(__name__)
+
+UTIME = ["year", "month", "day", "hour", "minute", "second"]
+UTIME_SET = set(UTIME)
+UTIME_D = {fld: i for (i, fld) in enumerate(UTIME)}
+UTIME_SHORT_D = {fld: i for (i, fld) in enumerate("YMDhms")}
+DT_MAX = 6
+
+
+class SubColumnABC(metaclass=ABCMeta):
+    def __init__(self, column: str) -> None:
+        self.column = column
+
+    @abstractproperty
+    def tag(self):
+        ...
+
+    @abstractproperty
+    def selection(self):
+        ...
+
+
+class SimpleSC(SubColumnABC):
+    def __init__(self, column, selection, tag=None):
+        super().__init__(column)
+        self._selection = selection
+        self._tag = tag
+
+    @property
+    def tag(self):
+        return self._tag
+
+    @property
+    def selection(self):
+        return self._selection
+
+
+class DTChain(SubColumnABC):
+    def __init__(self, column):
+        super().__init__(column)
+        self.bag = []
+
+    def __getattr__(self, name):
+        if len(self.bag) >= DT_MAX:
+            raise ValueError(f"Cannot chain more than {DT_MAX} items")
+        if name not in UTIME_D:
+            raise ValueError(f"Unknown item{name}")
+        i = UTIME_D[name]
+        if i in self.bag:
+            raise ValueError(f"Attempt to chain {name} twice")
+        self.bag.append(UTIME_D[name])
+        return self
+
+    def __getitem__(self, item):
+        if isinstance(item, str):
+            if not (set(list(item)) < set(UTIME_SHORT_D.keys())):
+                raise ValueError(f"unknown format: {item}")
+            selection = [i for (k, i) in UTIME_SHORT_D.items() if k in item]
+            return SimpleSC(self.column, selection, tag=item)
+
+    @property
+    def selection(self):
+        return self.bag
+
+    @property
+    def tag(self):
+        return "".join([k for (k, v) in UTIME_SHORT_D.items() if v in self.bag])
+
+
+class SCIndex:
+    def __init__(self, column: str) -> None:
+        self._column = column
+
+    def __getitem__(self, item):
+        if isinstance(item, str):
+            if not (set(list(item)) < set(UTIME_SHORT_D.keys())):
+                raise ValueError(f"unknown format: {item}")
+            selection = [i for (k, i) in UTIME_SHORT_D.items() if k in item]
+            return SimpleSC(self._column, selection, tag=item)
+        if isinstance(item, (slice, Sequence)):
+            return SimpleSC(self._column, item)
+        raise ValueError(f"Invalid item {item}")
 
 
 class SubColumn:
-    def __init__(self, column: str, selection: Union[Sequence[int], slice],
-                 tag: Optional[str] = None) -> None:
-        def _make_tag():
-            if tag:
-                return tag
-            if isinstance(selection, slice):
-                sl = norm_slice(selection)
-                return f"s{sl.start}_{sl.stop}{sl.step}"
-            if isinstance(selection, Sequence):
-                return "_".join([str(s) for s in selection])
-            raise ValueError(f"Tag error for {selection}")
-        self.column = column
-        self.tag = _make_tag()
-        self.selection = selection
+    def __init__(self, column: str) -> None:
+        self._column = column
+        self._dt = None
+        self._idx = None
 
+    @property
+    def dt(self):
+        if self._dt is None:
+            self._dt = DTChain(self._column)
+        return self._dt
 
-class DateTime(SubColumn):
-    def __init__(self, column: str, selection: str, tag: Optional[str] = None) -> None:
-        idx = {fld: i for (i, fld) in enumerate("YMDhms")}
-        if not (set(list(selection)) < set(idx.keys())):
-            raise ValueError(f"unknown format: {selection}")
-        self.tag = tag or selection
-        self.column = column
-        self.selection = [i for (k, i) in idx.items() if k in selection]
+    @property
+    def ix(self):
+        if self._idx is None:
+            self._idx = SCIndex(self._column)
+        return self._idx
 
 
 class GroupBy(TableModule):
@@ -77,7 +150,7 @@ class GroupBy(TableModule):
             self._index[by(self._input_table, i)].add(i)
 
     @process_created.register
-    def _(self, by: SubColumn, indices: bitmap) -> None:
+    def _(self, by: SubColumnABC, indices: bitmap) -> None:
         assert self._input_table is not None
         col = by.column
         val = by.selection
