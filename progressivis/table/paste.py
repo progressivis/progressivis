@@ -6,7 +6,7 @@ from progressivis.core.slot import SlotDescriptor
 from progressivis.utils.inspect import filter_kwds
 from .table import Table
 from .module import TableModule
-from .join import join
+from .join_by_id import join
 from .dshape import dshape_join
 from collections import OrderedDict
 

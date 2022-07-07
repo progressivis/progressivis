@@ -4,7 +4,7 @@ import os
 from . import ProgressiveTest, skipIf
 from progressivis.core import aio, Sink
 from progressivis.io import ParquetLoader
-from progressivis.table.group_by import GroupBy, DateTime as DT
+from progressivis.table.group_by import GroupBy, SubColumn as SC
 
 PASSENGERS = {0, 1, 2, 3, 4, 5, 6, 9}
 
@@ -105,7 +105,7 @@ class TestProgressiveGroupBy(ProgressiveTest):
             scheduler=s,
         )
         self.assertTrue(parquet.result is None)
-        grby = GroupBy(by=DT("tpep_pickup_datetime", "YMD"), scheduler=s)
+        grby = GroupBy(by=SC("tpep_pickup_datetime").dt["YMD"], scheduler=s)
         grby.input.table = parquet.output.result
         sink = Sink(scheduler=s)
         sink.input.inp = grby.output.result

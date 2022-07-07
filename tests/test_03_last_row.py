@@ -8,7 +8,7 @@ from progressivis.table.constant import Constant
 from progressivis.io import CSVLoader
 from progressivis.datasets import get_dataset
 from progressivis.table.table import Table
-from progressivis.table.join import Join
+from progressivis.table.join_by_id import Join
 from progressivis.core.utils import get_random_name
 from progressivis.core import aio, notNone
 
