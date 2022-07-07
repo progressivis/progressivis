@@ -88,6 +88,14 @@ class _double_buffer(ChangeBuffer):
             acc |= self._second.next(length=length, as_slice=False)
         return self.make_result(acc, as_slice)
 
+    @property
+    def all_changes(self) -> bitmap:
+        return self._first.changes | self._second.changes
+
+    def remove_from_all(self, ids: bitmap) -> None:
+        self._first.changes -= ids
+        self._second.changes -= ids
+
 
 class TableSelectedChangeManager(BaseChangeManager):
     """

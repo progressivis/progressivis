@@ -5,6 +5,7 @@ import logging
 import numpy as np
 
 from .column_proxy import ColumnProxy
+from ..core.utils import integer_types
 
 from typing import TYPE_CHECKING, Tuple, Any, Sequence, Callable
 
@@ -47,8 +48,10 @@ class ColumnSelectedView(ColumnProxy):
         return self._base[self.index.id_to_index(slice(None))]  # type: ignore
 
     def __getitem__(self, index: Any) -> Any:
-        bm = self.index._any_to_bitmap(index)
         assert self._base is not None
+        if isinstance(index, integer_types):
+            return self._base[index]
+        bm = self.index._any_to_bitmap(index)
         return self._base[bm]
 
 
@@ -68,5 +71,8 @@ class ColumnComputedView(ColumnSelectedView):
         return self.func(res)  # type: ignore
 
     def __getitem__(self, index: Any) -> Any:
-        res = super().__getitem__(index)
-        return self.func(res)  # type: ignore
+        values = super().__getitem__(index)
+        ret = self.func(values)  # type: ignore
+        if isinstance(index, integer_types):
+            return ret[()]  # because ret is a 0d ndarray here
+        return ret

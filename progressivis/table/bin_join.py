@@ -7,7 +7,7 @@ from progressivis.core.slot import SlotDescriptor
 from progressivis.utils.inspect import filter_kwds
 from progressivis.table.table import Table
 from progressivis.table.module import TableModule
-from progressivis.table.join import join, join_start, join_cont, join_reset
+from progressivis.table.join_by_id import join, join_start, join_cont, join_reset
 
 from typing import Any
 

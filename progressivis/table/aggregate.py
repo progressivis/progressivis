@@ -11,7 +11,6 @@ from ..stats.utils import (
     OnlineStd,
     OnlineSum,
 )
-from progressivis.core.utils import indices_len
 from ..core.decorators import process_slot, run_if_any
 from .dshape import dshape_from_dict
 from .group_by import GroupBy, SubColumnABC
@@ -87,7 +86,7 @@ class Aggregate(TableModule):
             indices = dfslot.created.next(
                 length=step_size, as_slice=False
             )  # returns a slice
-            steps = indices_len(indices)
+            steps = len(indices)
             if steps == 0:
                 return self._return_run_step(self.state_blocked, steps_run=0)
             input_df = dfslot.data()

@@ -2,251 +2,244 @@
 from __future__ import annotations
 
 import numpy as np
+import logging
+from ..core.utils import nn
+from ..core.bitmap import bitmap
+from ..core.module import ReturnRunStep
+from ..core.slot import SlotDescriptor
+from .module import TableModule
+from .group_by import GroupBy
+from .unique_index import UniqueIndex
+from . import Table, TableSelectedView
+from functools import cache
+from typing import Union, Literal, List, Any, Optional
 
-from progressivis.core.utils import Dialog, indices_len, inter_slice, fix_loc
-from progressivis.core.bitmap import bitmap
-from progressivis.core.module import ReturnRunStep
-from progressivis.utils.inspect import filter_kwds
-from progressivis.table.nary import NAry
-from progressivis.table.table_base import BaseTable
-from progressivis.table.table import Table
-from progressivis.table.dshape import dshape_join
-
-from typing import List, cast, Dict, Any, Optional, Callable, Sequence
-
-
-def join(
-    table: BaseTable,
-    other: BaseTable,
-    name: Optional[str] = None,
-    on: Optional[Any] = None,
-    how: str = "left",
-    lsuffix: str = "",
-    rsuffix: str = "",
-    sort: bool = False,
-) -> Table:
-    # pylint: disable=too-many-arguments, invalid-name
-    "Compute the join of two table."
-    if sort:
-        raise ValueError("'sort' not yet implemented in Table.join()")
-    if on is not None:
-        raise ValueError("'on' not yet implemented in Table.join()")
-    dshape, rename = dshape_join(table.dshape, other.dshape, lsuffix, rsuffix)
-    join_table = Table(name=name, dshape=dshape)
-    if how == "left":
-        if np.array_equal(table.index, other.index):  # type: ignore
-            join_table.resize(len(table), index=table.index)
-            left_cols = [rename["left"].get(c, c) for c in table.columns]
-            right_cols = [rename["right"].get(c, c) for c in other.columns]
-            join_table.loc[:, left_cols] = table.loc[:, table.columns]
-            join_table.loc[:, right_cols] = other.loc[:, other.columns]
-    else:
-        raise ValueError("how={} not yet implemented".format(how))
-    return join_table
+HOW = Union[Literal["inner"], Literal["outer"]]
+ON = Optional[Union[str, List[str]]]
 
 
-def join_reset(dialog: Dialog) -> None:
-    bag = dialog.bag
-    bag["first_orphans"] = bitmap([])
-    bag["second_orphans"] = bitmap([])
-    bag["existing_ids"] = None
+def make_ufunc(ucol, uindex, utable, dtype, fillna):
+    @cache
+    def _ufunc(inp):
+        indx = uindex.get(inp)
+        if indx is None:
+            return fillna
+        return utable.at[indx, ucol]
+
+    return np.vectorize(_ufunc, otypes=dtype)
 
 
-def join_start(
-    table: BaseTable,
-    other: BaseTable,
-    dialog: Dialog,
-    name: Optional[str] = None,
-    on: Optional[Any] = None,
-    how: str = "left",
-    created: Optional[Dict[str, Any]] = None,
-    updated: Optional[Dict[str, Any]] = None,
-    deleted: Optional[Dict[str, Any]] = None,
-    order: Sequence[str] = ("c", "u", "d"),
-    reset: bool = False,
-    lsuffix: str = "",
-    rsuffix: str = "",
-    sort: bool = False,
-) -> Dict[str, Any]:
-    # pylint: disable=too-many-arguments, invalid-name, too-many-locals, unused-argument
-    "Start the progressive join function"
-    if sort:
-        raise ValueError("'sort' not yet implemented in Table.join()")
-    if on is not None:
-        raise ValueError("'on' not yet implemented in Table.join()")
-    dshape, rename = dshape_join(table.dshape, other.dshape, lsuffix, rsuffix)
-    left_cols = [rename["left"].get(c, c) for c in table.columns]
-    right_cols = [rename["right"].get(c, c) for c in other.columns]
-    if how == "left":
-        # first, second = table, other
-        first_key, second_key = "table", "other"
-        first_cols, second_cols = left_cols, right_cols
-    elif how == "right":
-        # first, second = other, table
-        first_key, second_key = "other", "table"
-        first_cols, second_cols = right_cols, left_cols
-    else:
-        raise ValueError("how={} not yet implemented".format(how))
-
-    bag = dialog.bag
-    bag["dshape"] = dshape
-    bag["first_cols"] = first_cols
-    bag["second_cols"] = second_cols
-    bag["first_key"] = first_key
-    bag["second_key"] = second_key
-    bag["how"] = how
-    join_reset(dialog)
-    join_table = Table(name=name, dshape=dshape)
-    dialog.set_output_table(join_table)
-    dialog.set_started()
-    return join_cont(table, other, dialog, created, updated, deleted, order)
+logger = logging.getLogger(__name__)
 
 
-def join_cont(
-    table: BaseTable,
-    other: BaseTable,
-    dialog: Dialog,
-    created: Optional[Dict[str, Any]] = None,
-    updated: Optional[Dict[str, Any]] = None,
-    deleted: Optional[Dict[str, Any]] = None,
-    order: Sequence[str] = "cud",
-    reset: bool = False,
-) -> Dict[str, Any]:
-    # pylint: disable=too-many-arguments, invalid-name, too-many-locals, unused-argument
-    "Continue the progressive join function"
-    join_table = dialog.output_table
-    assert isinstance(join_table, BaseTable)
-    first_cols = dialog.bag["first_cols"]
-    second_cols = dialog.bag["second_cols"]
-    first_key = dialog.bag["first_key"]
-    second_key = dialog.bag["second_key"]
-    how = dialog.bag["how"]
-    if how == "left":
-        first, second = table, other
-    else:
-        first, second = other, table
-    _len = indices_len
-    _fix = fix_loc
-
-    def _void(obj: Any) -> bool:
-        if isinstance(obj, slice) and obj.start == obj.stop:
-            return True
-        return not obj
-
-    def _process_created_outer(ret: Dict[str, Any]) -> None:
-        pass
-
-    def _process_created(ret: Dict[str, Any]) -> None:
-        b = dialog.bag
-        if not created:
-            return
-        if how == "outer":
-            return _process_created_outer(ret)
-        # if first_key not in created: return
-        first_ids = created.get(first_key, None)
-        second_ids = created.get(second_key, None)
-        only_1st, common, only_2nd = inter_slice(first_ids, second_ids)
-        assert isinstance(join_table, Table)
-        if first_ids is not None:
-            new_size = _len(first_ids)
-            if (
-                isinstance(first_ids, slice)
-                and join_table.is_identity
-                and (
-                    join_table.last_id + 1 == first_ids.start or join_table.last_id == 0
-                )
-            ):
-                # the nice case (no gaps)
-                join_table.resize(new_size)
-            else:  # there are gaps ...we have to keep trace of existing ids
-                join_table.resize(new_size, index=bitmap.asbitmap(first_ids))
-                if b.get("existing_ids", None) is None:
-                    b["existing_ids"] = bitmap.asbitmap(join_table.index)
-                else:
-                    b["existing_ids"] = bitmap.union(
-                        b["existing_ids"], bitmap.asbitmap(first_ids)
-                    )
-            join_table.loc[_fix(first_ids), first_cols] = first.loc[
-                _fix(first_ids), first.columns
-            ]
-        if not _void(common):
-            join_table.loc[_fix(common), second_cols] = second.loc[
-                _fix(common), second.columns
-            ]
-        # first matching: older orphans on the second table with new orphans on the first
-        only_1st_bm = bitmap.asbitmap(only_1st)
-        paired = b["second_orphans"] & only_1st_bm
-        if paired:
-            join_table.loc[paired, second_cols] = second.loc[paired, second.columns]
-            b["second_orphans"] = b["second_orphans"] - paired
-            only_1st_bm -= paired
-        b["first_orphans"] = bitmap.union(b["first_orphans"], only_1st_bm)
-        # 2nd matching: older orphans on the first table with new orphans on the second
-        only_2nd_bm = bitmap.asbitmap(only_2nd)
-        paired = b["first_orphans"] & only_2nd_bm
-        if paired:
-            join_table.loc[paired, second_cols] = second.loc[paired, second.columns]
-            b["first_orphans"] = b["first_orphans"] - paired
-            only_2nd_bm -= paired
-        b["second_orphans"] = bitmap.union(b["second_orphans"], only_2nd_bm)
-
-    def _process_updated(ret: Dict[str, Any]) -> None:
-        if not updated:
-            return
-        assert isinstance(join_table, BaseTable)
-        first_ids = updated.get(first_key, None)
-        second_ids = updated.get(second_key, None)
-        if first_ids:
-            join_table.loc[_fix(first_ids), first_cols] = first.loc[
-                _fix(first_ids), first.columns
-            ]
-        if second_ids:
-            if join_table.is_identity:
-                xisting_ = slice(0, join_table.last_id + 1, 1)
-            else:
-                xisting_ = dialog.bag["existing_ids"]
-            _, common, _ = inter_slice(second_ids, xisting_)
-            join_table.loc[_fix(common), second_cols] = second.loc[
-                _fix(common), second.columns
-            ]
-
-    def _process_deleted(ret: Dict[str, Any]) -> None:
-        pass
-
-    order_dict: Dict[str, Callable[[Dict[str, Any]], None]] = {
-        "c": _process_created,
-        "u": _process_updated,
-        "d": _process_deleted,
-    }
-    ret: Dict[Any, Any] = {}
-    for operator in order:
-        order_dict[operator](ret)
-    return ret
+def _aslist(x) -> List[Any]:
+    if isinstance(x, list):
+        return x
+    return [x]
 
 
-class Join(NAry):
-    "Module executing join."
+class Join(TableModule):
+    """
+    {many|one}-to-one join module
 
-    def __init__(self, **kwds: Any) -> None:
-        """Join(on=None, how='left', lsuffix='', rsuffix='',
-        sort=False,name=None)
+    Slots:
+        primary: UniqueIndex output => table contains a primary key
+        related: GroupBy output => table providing the output index and containing the foreign key
+    Args:
+        primary_on: column or list of columns giving the primary key on the primary table
+        related_on:  column or list of columns giving the foreign key on the related table
+        on: shortcut when primary_on and related_on are identical
+        how: {inner|outer} NB: outer provides only outer rows on related table
+        kwds : argument to pass to the join function
+    """
+
+    inputs = [
+        SlotDescriptor("related", type=Table, required=True),
+        SlotDescriptor("primary", type=Table, required=True),
+    ]
+    outputs = [SlotDescriptor("primary_outer", type=Table, required=False)]
+
+    def __init__(self, *, how: HOW = "inner", fillna: Any = None, **kwds: Any) -> None:
+        super().__init__(**kwds)
+        self.how = how
+        self._fillna = fillna
+        self._suffix = ""
+        self._related_cols: Optional[List[str]] = None
+        self._virtual_cols: Optional[List[str]] = None
+        self._maintain_primary_outer = False
+        self._primary_outer = None
+
+    def create_dependent_modules(
+        self,
+        primary_module: TableModule,
+        related_module: TableModule,
+        *,
+        primary_slot: str = "result",
+        related_slot: str = "result",
+        primary_cols: Optional[List[str]] = None,
+        related_cols: Optional[List[str]] = None,
+        on: ON = None,
+        primary_on: ON = None,
+        related_on: ON = None,
+        suffix: str = "",
+    ) -> None:
         """
-        super(Join, self).__init__(**kwds)
-        self.join_kwds = filter_kwds(kwds, join)
+        Args:
+            primary_module: module providing the primary data source (primary key owner)
+            related_module: module providing the related data source (foreign key owner)
+            primary_slot: ...
+            related_slot: ...
+            primary_cols: primary table (virtual) columns to be included in the output view
+            related_cols: related table columns to be included in the output view
+            primary_on: column or list of columns giving the primary key on the primary table
+            related_on:  column or list of columns giving the foreign key on the related table
+            on: shortcut when primary_on and related_on are identical
+            suffix: ...
+        """
+
+        s = self.scheduler()
+        on_conf = (nn(on), nn(related_on), nn(primary_on))
+        if on_conf not in [(True, False, False), (False, True, True)]:
+            raise ValueError(
+                "Invalid combination of 'on', 'primary_on' and 'related_on'"
+            )
+        if nn(on):
+            related_on = primary_on = on
+        self.related_on = related_on
+        self.primary_on = primary_on
+        self._suffix = suffix
+        assert self.primary_on is not None and self.related_on is not None
+        grby = GroupBy(by=related_on, scheduler=s)
+        grby.input.table = related_module.output[related_slot]
+        self.input.related = grby.output.result
+        uidx = UniqueIndex(on=primary_on, scheduler=s)
+        uidx.input.table = primary_module.output[primary_slot]
+        self.input.primary = uidx.output.result
+        self._related_cols = related_cols
+        self._virtual_cols = primary_cols
+        self.on = related_on
+        self.unique_index = uidx
+        self.group_by = grby
+
+    def starting(self) -> None:
+        super().starting()
+        opt_slot = self.get_output_slot("primary_outer")
+        if opt_slot:
+            logger.debug("Maintaining primary outer")
+            self._maintain_primary_outer = True
+
+    def get_data(self, name: str) -> Any:
+        if name == "primary_outer":
+            return self._primary_outer
+        return super().get_data(name)
 
     def run_step(
         self, run_number: int, step_size: int, howlong: float
     ) -> ReturnRunStep:
-        frames: List[BaseTable] = []
-        for name in self.get_input_slot_multiple():
-            slot = self.get_input_slot(name)
-            table = cast(BaseTable, slot.data())
-            slot.clear_buffers()
-            frames.append(table)
-        table = frames[0]
-        for other in frames[1:]:
-            table = join(table, other, **self.join_kwds)
-        length = len(table)
+        if self.on is None:
+            raise ValueError(
+                "'on' parameter is not set."
+                " Consider running create_dependent_modules() before"
+            )
+        related_slot = self.get_input_slot("related")
+        primary_slot = self.get_input_slot("primary")
+        if related_slot is None or primary_slot is None:
+            return self._return_run_step(self.state_blocked, steps_run=0)
+        related_table = related_slot.data()
+        primary_table = primary_slot.data()
+        if related_table is None or primary_table is None:
+            return self._return_run_step(self.state_blocked, steps_run=0)
+        groupby_mod = related_slot.output_module
+        assert isinstance(groupby_mod, GroupBy)
+        uindex_mod = primary_slot.output_module
+        assert isinstance(uindex_mod, UniqueIndex)
         if self.result is None:
-            self.result = table
-        return self._return_run_step(self.state_blocked, steps_run=length)
+            ucols = self._virtual_cols or primary_table.columns
+            ucols = [uc for uc in ucols if uc not in _aslist(uindex_mod.on)]
+            related_cols = self._related_cols or related_table.columns
+            if set(related_cols) & set(ucols):
+                assert self._suffix
+
+            def _sx(x):
+                return f"{x}{self._suffix}" if x in related_cols else x
+
+            ucols_dict = {ucol: _sx(ucol) for ucol in ucols}
+            join_cols = related_cols + list(ucols_dict.values())
+            computed = {
+                sxcol: dict(
+                    ufunc=make_ufunc(
+                        ucol,
+                        uindex_mod.index,
+                        primary_table,
+                        [uindex_mod.table._column(ucol).dtype],
+                        self._fillna,
+                    ),
+                    category="ufunc",
+                    column=self.on,
+                )
+                for (ucol, sxcol) in ucols_dict.items()
+            }
+            self.result = TableSelectedView(
+                related_table, bitmap([]), columns=join_cols, computed=computed
+            )
+
+        if self._maintain_primary_outer and self._primary_outer is None:
+            self._primary_outer = TableSelectedView(
+                primary_table, bitmap(primary_table.index)
+            )
+        steps = 0
+        if related_slot.deleted.any():
+            deleted = related_slot.deleted.next(as_slice=False)
+            steps = 1
+            if deleted:
+                self.selected.selection -= deleted
+        if primary_slot.deleted.any():
+            deleted = related_slot.deleted.next(as_slice=False)
+            if self.how == "inner":
+                steps = 1
+                for key in uindex_mod.get_deleted_entries(deleted):
+                    deltd = groupby_mod.index.get(key, bitmap())
+                    if deltd:
+                        self.selected.selection -= deltd
+        if primary_slot.created.any():
+            cr = primary_slot.created.next(as_slice=False)
+            if nn(self._primary_outer):
+                self._primary_outer.selection |= cr
+        if related_slot.created.any():
+            uindex_terminated = uindex_mod.state == uindex_mod.state_terminated
+            if self.how == "inner" or not uindex_terminated:
+                created = related_slot.created.all_changes
+                for k, ids in groupby_mod.index.items():
+                    if k not in uindex_mod.index:
+                        continue
+                    common = ids & created
+                    if common:
+                        steps += len(common)
+                        self.selected.selection |= common
+                        if nn(self._primary_outer):
+                            i = uindex_mod.index[k]
+                            if i in self._primary_outer.selection:
+                                self._primary_outer.selection.remove(i)
+                        created -= common
+                        related_slot.created.remove_from_all(common)
+                    if steps >= step_size:
+                        break
+                if uindex_terminated and created:
+                    related_slot.created.remove_from_all(created)
+            else:
+                created = related_slot.created.next(length=step_size, as_slice=False)
+                self.selected.selection |= created
+                if nn(self._primary_outer):
+                    for k, ids in groupby_mod.index.items():
+                        if k not in uindex_mod.index:  # or not ids:
+                            continue
+                        i = uindex_mod.index[k]
+                        if i in self._primary_outer.selection:
+                            # TODO: check bitmap.remove()
+                            self._primary_outer.selection -= bitmap([i])
+
+        # currently updates are ignored
+        # NB: we assume that the updates do not concern the "join on" columns
+        related_slot.updated.next(as_slice=False)  # nop
+        primary_slot.updated.next(as_slice=False)  # nop
+        return self._return_run_step(self.next_state(related_slot), steps_run=steps)

@@ -5,7 +5,6 @@ from ..table.module import TableModule, ReturnRunStep
 from ..core.slot import SlotDescriptor
 from . import Table, TableSelectedView
 from ..core.bitmap import bitmap
-from progressivis.core.utils import indices_len, fix_loc
 from collections import defaultdict
 from functools import singledispatchmethod as dispatch
 import types
@@ -159,11 +158,15 @@ class GroupBy(TableModule):
             self._index[tuple(dt_vect[val])].add(i)
 
     def process_deleted(self, indices: bitmap) -> None:
-        for k, b in self._index.items():
+        for k in self._index.keys():
             self._index[k] -= indices
 
     def items(self) -> abc.ItemsView:
         return self._index.items()
+
+    @property
+    def index(self):
+        return self._index
 
     def run_step(
         self, run_number: int, step_size: int, howlong: float
@@ -181,22 +184,19 @@ class GroupBy(TableModule):
             deleted = input_slot.deleted.next(as_slice=False)
             # steps += indices_len(deleted) # deleted are constant time
             steps = 1
-            deleted = fix_loc(deleted)
             if deleted:
                 self.process_deleted(deleted)
                 self.selected.selection -= deleted
         created: Optional[bitmap] = None
         if input_slot.created.any():
             created = input_slot.created.next(length=step_size, as_slice=False)
-            created = fix_loc(created)
-            steps += indices_len(created)
+            steps += len(created)
             self.selected.selection |= created
             self.process_created(self.by, created)
         updated: Optional[bitmap] = None
         if input_slot.updated.any():
             updated = input_slot.updated.next(length=step_size, as_slice=False)
-            updated = fix_loc(updated)
-            steps += indices_len(updated)
+            steps += len(updated)
             # currently updates are ignored
             # NB: we assume that the updates do not concern the "grouped by" columns
         return self._return_run_step(self.next_state(input_slot), steps)

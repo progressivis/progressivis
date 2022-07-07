@@ -8,6 +8,8 @@ from collections import Mapping, Iterable
 import operator
 import logging
 import numpy as np
+import pandas as pd
+import datetime as dt
 from progressivis.core.index_update import IndexUpdate
 from progressivis.core.utils import (
     integer_types,
@@ -66,6 +68,10 @@ logger = logging.getLogger(__name__)
 
 
 FAST = 1
+
+
+def _to_datetime(arr):
+    return [dt.datetime(*elt) for elt in arr[:]]
 
 
 class _BaseLoc:
@@ -431,7 +437,7 @@ class BaseTable(metaclass=ABCMeta):
         columns += comp_cols
         cc_dict: Dict[str, int] = {
             k: i
-            for (i, k) in enumerate(set(self.computed.keys()) & cols_as_set, len(dict_))
+            for (i, k) in enumerate([e for e in self.computed.keys() if e in cols_as_set], len(dict_))
         }
         columndict.update(cc_dict)
         return columns, columndict
@@ -577,6 +583,13 @@ class BaseTable(metaclass=ABCMeta):
                     row.append(str(remove_nan(get_physical_base(col).loc[i])))
                 f.write(sep.join(row).encode("utf-8"))
                 f.write(b"\n")
+
+    def to_df(self, to_datetime=()) -> pd.DataFrame:
+        def _proc(col):
+            if col in to_datetime:
+                return _to_datetime(self[col].loc[:])
+            return self[col].loc[:]
+        return pd.DataFrame({col: _proc(col) for col in self.columns})
 
     def column_offsets(
         self, columns: List[str], shapes: Optional[List[Tuple[int, ...]]] = None
@@ -1449,9 +1462,12 @@ class TableSelectedView(BaseTable):
         base: Optional[BaseTable] = None,
         selection: Union[bitmap, slice] = slice(0, None),
         columns: Optional[List[str]] = None,
+        computed: Optional[Dict[str, Any]] = None
     ) -> None:
         super().__init__(base, columns=None, selection=selection)
         assert self._base
+        if computed is not None:
+            self._base.computed.update(computed)
         cols, coldict = self._base.make_projection(columns, self)
         self._columns = cols
         self._columndict = coldict
