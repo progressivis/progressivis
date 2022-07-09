@@ -388,12 +388,25 @@ class BaseTable(metaclass=ABCMeta):
     def make_computed(self, index: Any, meta: Dict[str, Any], name: str) -> BaseColumn:
         from .column_selected import ColumnComputedView
         from .column_expr import ColumnExpr
+        from .column_vfunc import ColumnVFunc
 
         if meta["category"] == "ufunc":
             base = self._columns[self._columndict[meta["column"]]]
             return ColumnComputedView(
                 base=base, index=index, aka=name, func=meta["ufunc"]
             )
+        if meta["category"] == "vfunc":
+            return ColumnVFunc(
+                name=name,
+                table=self,
+                index=index,
+                func=meta["vfunc"],
+                cols=meta["cols"],
+                dtype=meta["dtype"],
+                shape=meta["shape"],
+                dshape=meta["dshape"],
+            )
+
         assert meta["category"] == "expr"
         return ColumnExpr(
             name=name,
@@ -1303,6 +1316,16 @@ class BaseTable(metaclass=ABCMeta):
 
     def add_ufunc_column(self, name: str, col: str, ufunc: Callable) -> None:
         self.computed[name] = dict(category="ufunc", ufunc=ufunc, column=col)
+
+    def add_vect_func_column(self, name: str, cols: List[str], vfunc: Callable, dtype: str, shape=None, dshape=None) -> None:
+        self.computed[name] = dict(
+            category="vfunc",
+            vfunc=vfunc,
+            cols=cols,
+            dtype=dtype,
+            shape=shape,
+            dshape=dshape,
+        )
 
     def add_expr_column(
         self, name: str, cols: List[str], expr: str, dtype: str, shape=None, dshape=None

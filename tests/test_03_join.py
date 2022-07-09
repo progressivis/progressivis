@@ -89,8 +89,8 @@ class TestProgressiveJoin(ProgressiveTest):
         join.create_dependent_modules(
             related_module=parquet,
             primary_module=csv,
-            related_on="DOLocationID",
-            primary_on="LocationID",
+            related_on=["DOLocationID"],
+            primary_on=["LocationID"],
             related_cols=TAXI_COLS,
         )
         sink = Sink(scheduler=s)

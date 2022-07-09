@@ -88,15 +88,65 @@ class TestTableSelected(ProgressiveTest):
         view2 = view.loc[sel, ["b", "a_x_b"]]
         assert view2 is not None
         self.assertEqual(view2.shape, (3, 2))
-        self.assertTrue(np.allclose(ta.to_array()*tb.to_array(), taxb.to_array()))
+        self.assertTrue(np.allclose(ta.to_array() * tb.to_array(), taxb.to_array()))
         self.assertEqual(type(view), BaseTable)
         self.assertEqual(type(view2), BaseTable)
         self.assertTrue(np.array_equal(view[0].value, ivalues[5:8]))
         self.assertTrue(np.array_equal(view[1].value, fvalues[5:8]))
-        self.assertTrue(np.allclose(view[2].value, ivalues[5:8]*fvalues[5:8]))
+        self.assertTrue(np.allclose(view[2].value, ivalues[5:8] * fvalues[5:8]))
         self.assertEqual(view.at[6, "a"], ivalues[6])
         self.assertEqual(view.at[7, "b"], fvalues[7])
-        self.assertEqual(view.at[7, "a_x_b"], ivalues[7]*fvalues[7])
+        self.assertEqual(view.at[7, "a_x_b"], ivalues[7] * fvalues[7])
+        with self.assertRaises(KeyError):
+            self.assertEqual(view.at[4, "a"], ivalues[4])
+        with self.assertRaises(KeyError):
+            self.assertEqual(view.at[8, "a"], ivalues[8])
+
+    def test_loc_table_computed_vect_func(self) -> None:
+        t = Table(
+            "table_for_test_computed_columns_vf",
+            dshape="{a: int, b: float32}",
+            create=True,
+        )
+        t.resize(10)
+        ivalues = np.random.randint(100, size=20)
+        t["a"] = ivalues[:10]
+        fvalues = np.array(np.random.rand(20), np.float32)
+        t["b"] = fvalues[:10]
+        self.assertEqual(t.shape, (10, 2))
+        t.append({"a": ivalues[10:], "b": fvalues[10:]})
+        self.assertEqual(t.shape, (20, 2))
+
+        def _axb(i, local_dict):
+            return local_dict["a"] * local_dict["b"]
+
+        t.add_vect_func_column("a_x_b", vfunc=_axb, cols=["a", "b"], dtype="float32")
+        self.assertEqual(t.shape, (20, 2))
+        ta = t.loc[:, "a"]
+        tb = t.loc[:, "b"]
+        assert ta
+        assert tb
+        self.assertEqual(ta.shape, (20, 1))
+        self.assertEqual(tb.shape, (20, 1))
+        taxb = t.loc[:, "a_x_b"]
+        assert taxb
+        self.assertEqual(taxb.shape, (20, 1))
+        sel = bitmap(range(5, 8))
+        view = t.loc[sel, :]
+        assert view is not None
+        self.assertEqual(view.shape, (3, 3))
+        view2 = view.loc[sel, ["b", "a_x_b"]]
+        assert view2 is not None
+        self.assertEqual(view2.shape, (3, 2))
+        self.assertTrue(np.allclose(ta.to_array() * tb.to_array(), taxb.to_array()))
+        self.assertEqual(type(view), BaseTable)
+        self.assertEqual(type(view2), BaseTable)
+        self.assertTrue(np.array_equal(view[0].value, ivalues[5:8]))
+        self.assertTrue(np.array_equal(view[1].value, fvalues[5:8]))
+        self.assertTrue(np.allclose(view[2].value, ivalues[5:8] * fvalues[5:8]))
+        self.assertEqual(view.at[6, "a"], ivalues[6])
+        self.assertEqual(view.at[7, "b"], fvalues[7])
+        self.assertEqual(view.at[7, "a_x_b"], ivalues[7] * fvalues[7])
         with self.assertRaises(KeyError):
             self.assertEqual(view.at[4, "a"], ivalues[4])
         with self.assertRaises(KeyError):

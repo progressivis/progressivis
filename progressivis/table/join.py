@@ -11,22 +11,56 @@ from .module import TableModule
 from .group_by import GroupBy
 from .unique_index import UniqueIndex
 from . import Table, TableSelectedView
-from functools import cache
-from typing import Union, Literal, List, Any, Optional
+from typing import Union, Literal, List, Any, Optional, Dict
+
 
 HOW = Union[Literal["inner"], Literal["outer"]]
 ON = Optional[Union[str, List[str]]]
 
 
-def make_ufunc(ucol, uindex, utable, dtype, fillna):
-    @cache
-    def _ufunc(inp):
-        indx = uindex.get(inp)
-        if indx is None:
-            return fillna
-        return utable.at[indx, ucol]
+def make_ufunc(rel_on, ucol, uindex, utable, dtype, fillna, cache):
+    if isinstance(rel_on, (list, tuple)):
 
-    return np.vectorize(_ufunc, otypes=dtype)
+        def _ufunc(ix, local_dict):
+            for values in local_dict.values():
+                shape_0 = values.shape[0]
+                break
+            res = np.empty(shape_0, dtype=dtype)
+            all_values = zip(*local_dict.values())
+            for i, inp in enumerate(all_values):
+                try:
+                    val = cache[inp]
+                except KeyError:
+                    indx = uindex.get(inp)
+                    if indx is None:
+                        val = fillna
+                    else:
+                        val = utable.at[indx, ucol]
+                    cache[inp] = val
+                res[i] = val
+            return res
+
+    else:
+
+        def _ufunc(ix, local_dict):
+            for values in local_dict.values():
+                shape_0 = values.shape[0]
+                break
+            res = np.empty(shape_0, dtype=dtype)
+            for i, inp in enumerate(values):
+                try:
+                    val = cache[inp]
+                except KeyError:
+                    indx = uindex.get(inp)
+                    if indx is None:
+                        val = fillna
+                    else:
+                        val = utable.at[indx, ucol]
+                    cache[inp] = val
+                res[i] = val
+            return res
+
+    return _ufunc
 
 
 logger = logging.getLogger(__name__)
@@ -120,6 +154,7 @@ class Join(TableModule):
         self.on = related_on
         self.unique_index = uidx
         self.group_by = grby
+        self.cache_dict: Optional[Dict[str, Dict[Any, Any]]]
 
     def starting(self) -> None:
         super().starting()
@@ -164,18 +199,24 @@ class Join(TableModule):
                 return f"{x}{self._suffix}" if x in related_cols else x
 
             ucols_dict = {ucol: _sx(ucol) for ucol in ucols}
+            self.cache_dict = {c: {} for c in ucols_dict.values()}
             join_cols = related_cols + list(ucols_dict.values())
             computed = {
                 sxcol: dict(
-                    ufunc=make_ufunc(
+                    vfunc=make_ufunc(
+                        self.on,
                         ucol,
                         uindex_mod.index,
                         primary_table,
-                        [uindex_mod.table._column(ucol).dtype],
+                        uindex_mod.table._column(ucol).dtype,
                         self._fillna,
+                        self.cache_dict[sxcol],
                     ),
-                    category="ufunc",
-                    column=self.on,
+                    category="vfunc",
+                    cols=self.on,
+                    shape=None,
+                    dshape=None,
+                    dtype=object,
                 )
                 for (ucol, sxcol) in ucols_dict.items()
             }
@@ -194,6 +235,8 @@ class Join(TableModule):
             if deleted:
                 self.selected.selection -= deleted
         if primary_slot.deleted.any():
+            for d in self.cache_dict.values():
+                d.clear()
             deleted = related_slot.deleted.next(as_slice=False)
             if self.how == "inner":
                 steps = 1
@@ -219,14 +262,15 @@ class Join(TableModule):
                         if nn(self._primary_outer):
                             i = uindex_mod.index[k]
                             if i in self._primary_outer.selection:
-                                self._primary_outer.selection.remove(i)
+                                # TODO: check bitmap.remove()
+                                self._primary_outer.selection -= bitmap([i])
                         created -= common
                         related_slot.created.remove_from_all(common)
                     if steps >= step_size:
                         break
                 if uindex_terminated and created:
                     related_slot.created.remove_from_all(created)
-            else:
+            else:  # outer mode or primary table still in process
                 created = related_slot.created.next(length=step_size, as_slice=False)
                 self.selected.selection |= created
                 if nn(self._primary_outer):
