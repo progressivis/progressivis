@@ -403,7 +403,7 @@ class BaseTable(metaclass=ABCMeta):
                 func=meta["vfunc"],
                 cols=meta["cols"],
                 dtype=meta["dtype"],
-                shape=meta["shape"],
+                xshape=meta["xshape"],
                 dshape=meta["dshape"],
             )
 
@@ -415,7 +415,7 @@ class BaseTable(metaclass=ABCMeta):
             expr=meta["expr"],
             cols=meta["cols"],
             dtype=meta["dtype"],
-            shape=meta["shape"],
+            xshape=meta["xshape"],
             dshape=meta["dshape"],
         )
 
@@ -1317,25 +1317,25 @@ class BaseTable(metaclass=ABCMeta):
     def add_ufunc_column(self, name: str, col: str, ufunc: Callable) -> None:
         self.computed[name] = dict(category="ufunc", ufunc=ufunc, column=col)
 
-    def add_vect_func_column(self, name: str, cols: List[str], vfunc: Callable, dtype: str, shape=None, dshape=None) -> None:
+    def add_vect_func_column(self, name: str, cols: List[str], vfunc: Callable, dtype: str, xshape=(), dshape=None) -> None:
         self.computed[name] = dict(
             category="vfunc",
             vfunc=vfunc,
             cols=cols,
             dtype=dtype,
-            shape=shape,
+            xshape=xshape,
             dshape=dshape,
         )
 
     def add_expr_column(
-        self, name: str, cols: List[str], expr: str, dtype: str, shape=None, dshape=None
+        self, name: str, cols: List[str], expr: str, dtype: str, xshape=(), dshape=None
     ) -> None:
         self.computed[name] = dict(
             category="expr",
             expr=expr,
             cols=cols,
             dtype=dtype,
-            shape=shape,
+            xshape=xshape,
             dshape=dshape,
         )
 

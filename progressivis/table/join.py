@@ -101,7 +101,7 @@ class Join(TableModule):
         self._related_cols: Optional[List[str]] = None
         self._virtual_cols: Optional[List[str]] = None
         self._maintain_primary_outer = False
-        self._primary_outer = None
+        self._primary_outer: Optional[TableSelectedView] = None
 
     def create_dependent_modules(
         self,
@@ -143,10 +143,10 @@ class Join(TableModule):
         self.primary_on = primary_on
         self._suffix = suffix
         assert self.primary_on is not None and self.related_on is not None
-        grby = GroupBy(by=related_on, scheduler=s)
+        grby = GroupBy(by=self.related_on, scheduler=s)
         grby.input.table = related_module.output[related_slot]
         self.input.related = grby.output.result
-        uidx = UniqueIndex(on=primary_on, scheduler=s)
+        uidx = UniqueIndex(on=self.primary_on, scheduler=s)
         uidx.input.table = primary_module.output[primary_slot]
         self.input.primary = uidx.output.result
         self._related_cols = related_cols
@@ -214,9 +214,9 @@ class Join(TableModule):
                     ),
                     category="vfunc",
                     cols=self.on,
-                    shape=None,
-                    dshape=None,
-                    dtype=object,
+                    xshape=uindex_mod.table._column(ucol).shape[1:],
+                    dshape=uindex_mod.table._column(ucol).dshape,
+                    dtype=uindex_mod.table._column(ucol).dtype,
                 )
                 for (ucol, sxcol) in ucols_dict.items()
             }
@@ -229,14 +229,17 @@ class Join(TableModule):
                 primary_table, bitmap(primary_table.index)
             )
         steps = 0
+        if primary_slot.deleted.any() or primary_slot.updated.any():
+            if self.cache_dict:
+                for d in self.cache_dict.values():
+                    d.clear()
+            related_slot.reset()
+            return self._return_run_step(self.state_blocked, steps_run=0)
         if related_slot.deleted.any():
             deleted = related_slot.deleted.next(as_slice=False)
             steps = 1
             if deleted:
                 self.selected.selection -= deleted
-        if primary_slot.deleted.any():
-            for d in self.cache_dict.values():
-                d.clear()
             deleted = related_slot.deleted.next(as_slice=False)
             if self.how == "inner":
                 steps = 1
@@ -246,12 +249,12 @@ class Join(TableModule):
                         self.selected.selection -= deltd
         if primary_slot.created.any():
             cr = primary_slot.created.next(as_slice=False)
-            if nn(self._primary_outer):
+            if self._primary_outer is not None:
                 self._primary_outer.selection |= cr
         if related_slot.created.any():
             uindex_terminated = uindex_mod.state == uindex_mod.state_terminated
             if self.how == "inner" or not uindex_terminated:
-                created = related_slot.created.all_changes
+                created = related_slot.created.all_changes  # type: ignore
                 for k, ids in groupby_mod.index.items():
                     if k not in uindex_mod.index:
                         continue
@@ -259,21 +262,21 @@ class Join(TableModule):
                     if common:
                         steps += len(common)
                         self.selected.selection |= common
-                        if nn(self._primary_outer):
+                        if self._primary_outer is not None:
                             i = uindex_mod.index[k]
                             if i in self._primary_outer.selection:
                                 # TODO: check bitmap.remove()
                                 self._primary_outer.selection -= bitmap([i])
                         created -= common
-                        related_slot.created.remove_from_all(common)
+                        related_slot.created.remove_from_all(common)  # type: ignore
                     if steps >= step_size:
                         break
                 if uindex_terminated and created:
-                    related_slot.created.remove_from_all(created)
+                    related_slot.created.remove_from_all(created)  # type: ignore
             else:  # outer mode or primary table still in process
                 created = related_slot.created.next(length=step_size, as_slice=False)
                 self.selected.selection |= created
-                if nn(self._primary_outer):
+                if self._primary_outer is not None:
                     for k, ids in groupby_mod.index.items():
                         if k not in uindex_mod.index:  # or not ids:
                             continue
@@ -285,5 +288,4 @@ class Join(TableModule):
         # currently updates are ignored
         # NB: we assume that the updates do not concern the "join on" columns
         related_slot.updated.next(as_slice=False)  # nop
-        primary_slot.updated.next(as_slice=False)  # nop
         return self._return_run_step(self.next_state(related_slot), steps_run=steps)

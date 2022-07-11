@@ -27,9 +27,9 @@ class ColumnVFunc(BaseColumn):
         table: BaseTable,
         index: IndexTable,
         func: Callable,
-        cols: List[str],
+        cols: Union[str, List[str]],
         dtype: Union[np.dtype, str],
-        shape: Shape = None,
+        xshape: Shape = (),
         dshape: Optional[str] = None,
     ) -> None:
         """Create a column controlled by a self-sufficient, vectorized function."""
@@ -38,7 +38,8 @@ class ColumnVFunc(BaseColumn):
         self.func = func
         self.cols = cols
         self._dtype: np.dtype = np.dtype(dtype)
-        self._shape = shape
+        assert isinstance(xshape, tuple)
+        self._xshape = xshape
         self._dshape = dshape
 
     @property
@@ -47,7 +48,7 @@ class ColumnVFunc(BaseColumn):
 
     @property
     def shape(self) -> Shape:
-        return self._shape or (len(self._index),)
+        return (len(self._index), *self._xshape)
 
     def set_shape(self, shape: Sequence[int]) -> None:
         raise RuntimeError("Cannot set shape on %s" % type(self))
@@ -57,8 +58,7 @@ class ColumnVFunc(BaseColumn):
 
     @property
     def maxshape(self) -> Shape:
-        assert self._shape
-        return self._shape
+        return self.shape
 
     @property
     def dtype(self) -> np.dtype[Any]:

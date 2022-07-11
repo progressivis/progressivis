@@ -41,7 +41,7 @@ class ColumnExpr(BaseColumn):
         expr: str,
         cols: List[str],
         dtype: Union[np.dtype, str],
-        shape: Shape = None,
+        xshape: Shape = (),
         dshape: Optional[str] = None,
     ) -> None:
         """Create a new expression column."""
@@ -50,7 +50,7 @@ class ColumnExpr(BaseColumn):
         self.expr = expr
         self.cols = cols
         self._dtype: np.dtype = np.dtype(dtype)
-        self._shape = shape
+        self._xshape = xshape
         self._dshape = dshape
 
     @property
@@ -59,7 +59,7 @@ class ColumnExpr(BaseColumn):
 
     @property
     def shape(self) -> Shape:
-        return self._shape or (len(self._index),)
+        return (len(self._index), *self._xshape)
 
     def set_shape(self, shape: Sequence[int]) -> None:
         raise RuntimeError("Cannot set shape on %s" % type(self))
@@ -69,8 +69,7 @@ class ColumnExpr(BaseColumn):
 
     @property
     def maxshape(self) -> Shape:
-        assert self._shape
-        return self._shape
+        return self.shape
 
     @property
     def dtype(self) -> np.dtype[Any]:
