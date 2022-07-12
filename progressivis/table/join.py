@@ -191,7 +191,7 @@ class Join(TableModule):
         if self.result is None:
             ucols = self._virtual_cols or primary_table.columns
             ucols = [uc for uc in ucols if uc not in _aslist(uindex_mod.on)]
-            related_cols = self._related_cols or related_table.columns
+            related_cols = self._related_cols if nn(self._related_cols) else related_table.columns
             if set(related_cols) & set(ucols):
                 assert self._suffix
 
@@ -200,7 +200,7 @@ class Join(TableModule):
 
             ucols_dict = {ucol: _sx(ucol) for ucol in ucols}
             self.cache_dict = {c: {} for c in ucols_dict.values()}
-            join_cols = related_cols + list(ucols_dict.values())
+            join_cols = list(related_cols) + list(ucols_dict.values())
             computed = {
                 sxcol: dict(
                     vfunc=make_ufunc(

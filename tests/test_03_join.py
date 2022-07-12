@@ -7,6 +7,9 @@ from progressivis.io import ParquetLoader, SimpleCSVLoader
 from progressivis.table.join import Join
 import pandas as pd
 import numpy as np
+from itertools import product
+from io import StringIO
+from typing import Sequence, Tuple
 
 PARQUET_FILE = "nyc-taxi/newstyle_500k_yellow_tripdata_2015-01.parquet"
 # CSV_URL = "https://s3.amazonaws.com/nyc-tlc/misc/taxi+_zone_lookup.csv"
@@ -41,7 +44,7 @@ if not os.getenv("CI"):
     TAXIS = pd.read_parquet(PARQUET_FILE, columns=TAXI_COLS)  # type: ignore
     TAXIS["control_id"] = range(len(TAXIS))
     LOOKUP_SKIP_ROWS = [3, 4, 263, 264, 265]
-    LOOKUP = pd.read_csv(CSV_URL, skiprows=LOOKUP_SKIP_ROWS,)
+    LOOKUP = pd.read_csv(CSV_URL, skiprows=LOOKUP_SKIP_ROWS,)  # type: ignore
     LOOKUP["lookup_id"] = range(len(LOOKUP))
     INNER = TAXIS.join(
         LOOKUP.set_index("LocationID"), on="DOLocationID", how="inner"
@@ -78,6 +81,58 @@ if not os.getenv("CI"):
     ).sort_values("PULocationID")
 
 
+FK2_N = 10
+
+
+def generate_random_csv_left(
+    rows: int = 300_000, seed: int = 42, choice: Sequence[str] = ("A", "B", "C", "D"),
+) -> Tuple[pd.DataFrame, str]:
+    np.random.seed(seed)
+    df = pd.DataFrame(
+        {
+            "card_left": range(rows),
+            "I": np.random.randint(0, 10_000, size=rows, dtype=int),
+            "J": np.random.randint(0, 15_000, size=rows, dtype=int),
+            "FK_1": np.random.choice(choice, rows),
+            "FK_2": np.random.randint(0, FK2_N, size=rows, dtype=int),
+        }
+    )
+    sio = StringIO()
+    df.to_csv(sio, index=False)
+    sio.seek(0)
+    return df, sio.getvalue()
+
+
+def generate_random_csv_right(seq1=("A", "B", "C", "D"), seq2=range(FK2_N)) -> Tuple[pd.DataFrame, str]:
+    pk1, pk2 = list(zip(*product(seq1, seq2)))
+    info = [f"{tpl[0]}{tpl[1]}" for tpl in product(seq1, seq2)]
+    df = pd.DataFrame(
+        {
+            "PK_1": pk1[3:] + ("X", "Y", "Z"),
+            "PK_2": pk2[3:] + (-1, -6, -15),
+            "info": info[3:] + ["X_1", "Y_6", "Z_15"],
+            "card_right": range(len(info)),
+        }
+    )
+    sio = StringIO()
+    df.to_csv(sio, index=False)
+    sio.seek(0)
+    return df, sio.getvalue()
+
+
+df_right, csv_right = generate_random_csv_right()
+df_left, csv_left = generate_random_csv_left()
+df_inner = df_left.join(
+    df_right.set_index(["PK_1", "PK_2"]), on=["FK_1", "FK_2"], how="inner"
+)
+df_left_outer = df_left.join(
+    df_right.set_index(["PK_1", "PK_2"]), on=["FK_1", "FK_2"], how="left"
+)
+df_outer = df_left.join(
+    df_right.set_index(["PK_1", "PK_2"]), on=["FK_1", "FK_2"], how="outer"
+)
+
+
 @skipIf(os.getenv("CI"), "skipped because local nyc taxi files are required")
 class TestProgressiveJoin(ProgressiveTest):
     def test_inner(self) -> None:
@@ -96,6 +151,7 @@ class TestProgressiveJoin(ProgressiveTest):
         sink = Sink(scheduler=s)
         sink.input.inp = join.output.result
         aio.run(s.start())
+        assert join.table is not None
         df = join.table.to_df(
             to_datetime=["tpep_pickup_datetime", "tpep_dropoff_datetime"]
         )
@@ -133,6 +189,7 @@ class TestProgressiveJoin(ProgressiveTest):
         )
         for col in df.columns:
             self.assertTrue(np.array_equal(df[col].values, LEFT_OUTER[col].values))
+        assert join._primary_outer is not None
         df2 = join._primary_outer.to_df().rename(columns={"LocationID": "DOLocationID"})
         df_concat = (
             pd.concat([df[df2.columns], df2])
@@ -167,6 +224,7 @@ class TestProgressiveJoin(ProgressiveTest):
         sink = Sink(scheduler=s)
         sink.input.inp = join_pu.output.result
         aio.run(s.start())
+        assert join_pu.table is not None
         df = join_pu.table.to_df(
             to_datetime=["tpep_pickup_datetime", "tpep_dropoff_datetime"]
         )
@@ -217,7 +275,9 @@ class TestProgressiveJoin(ProgressiveTest):
         )
         for col in df.columns:
             self.assertTrue(np.array_equal(df[col].values, LEFT_OUTER_PU[col].values))
+        assert join._primary_outer is not None
         df2 = join._primary_outer.to_df().rename(columns={"LocationID": "PULocationID"})
+        assert join_pu._primary_outer is not None
         df3 = join_pu._primary_outer.to_df().rename(
             columns={"LocationID": "PULocationID"}
         )
@@ -240,3 +300,77 @@ class TestProgressiveJoin(ProgressiveTest):
         outer_pu__ = outer_pu_.sort_values(ord)[view_pu].fillna(0).set_index(df3.index)
         outer_pu__.columns = view
         self.assertTrue(outer_pu__.equals(df3[view]))
+
+
+class TestProgressiveJoin2(ProgressiveTest):
+    def test_inner(self) -> None:
+        s = self.scheduler()
+        sio_left = StringIO(csv_left)
+        sio_left.seek(0)
+        related = SimpleCSVLoader(sio_left, scheduler=s,)
+        sio_right = StringIO(csv_right)
+        sio_right.seek(0)
+        primary = SimpleCSVLoader(sio_right, scheduler=s,)
+        self.assertTrue(related.result is None)
+        join = Join(how="inner", scheduler=s)
+        join.create_dependent_modules(
+            related_module=related,
+            primary_module=primary,
+            related_on=["FK_1", "FK_2"],
+            primary_on=["PK_1", "PK_2"],
+            related_cols=df_left.columns,
+        )
+        sink = Sink(scheduler=s)
+        sink.input.inp = join.output.result
+        aio.run(s.start())
+        df = join.table.to_df()
+        self.assertEqual(len(df), len(df_inner))
+        self.assertEqual(set(df.columns), set(df_inner.columns))
+        sorted_inner = df_inner.sort_values("card_left")
+        for col in df.columns:
+            self.assertTrue(np.array_equal(df[col].values, sorted_inner[col].values))
+
+    def test_outer(self) -> None:
+        s = self.scheduler()
+        sio_left = StringIO(csv_left)
+        sio_left.seek(0)
+        related = SimpleCSVLoader(sio_left, scheduler=s,)
+        sio_right = StringIO(csv_right)
+        sio_right.seek(0)
+        primary = SimpleCSVLoader(sio_right, scheduler=s,)
+        self.assertTrue(related.result is None)
+        join = Join(how="outer", fillna=0, scheduler=s)
+        join.create_dependent_modules(
+            related_module=related,
+            primary_module=primary,
+            related_on=["FK_1", "FK_2"],
+            primary_on=["PK_1", "PK_2"],
+            related_cols=df_left.columns,
+        )
+        sink = Sink(scheduler=s)
+        sink.input.inp = join.output.result
+        sink2 = Sink(scheduler=s)
+        sink2.input.inp = join.output.primary_outer
+        aio.run(s.start())
+        df = join.table.to_df()
+        self.assertEqual(len(df), len(df_left_outer))
+        self.assertEqual(set(df.columns), set(df_left_outer.columns))
+        sorted_left_outer = df_left_outer.sort_values("card_left").fillna(0)
+        for col in df.columns:
+            self.assertTrue(
+                np.array_equal(df[col].values, sorted_left_outer[col].values)
+            )
+        assert join._primary_outer is not None
+        df2 = join._primary_outer.to_df().rename(
+            columns={"PK_1": "FK_1", "PK_2": "FK_2"}
+        )
+        df_concat = (
+            pd.concat([df[df2.columns], df2])
+            .set_index(["FK_1", "FK_2"])
+            .sort_values(["FK_1", "FK_2"])
+        )
+        sorted_outer = df_outer.sort_values(["FK_1", "FK_2"]).fillna(0)
+        for col in df_concat.columns:
+            self.assertTrue(
+                np.array_equal(df_concat[col].values, sorted_outer[col].values)
+            )
