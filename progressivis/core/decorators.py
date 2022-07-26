@@ -59,7 +59,6 @@ def process_slot(
     """
     this function includes reset_if, reset_cb in the closure
     """
-    # import pdb;pdb.set_trace()
     if isinstance(reset_if, str):
         assert reset_if in ("update", "delete")
         reset_if = (reset_if,)
@@ -73,7 +72,6 @@ def process_slot(
         """
         run_step() decorator
         """
-        # print("process slot deco", names)
         @wraps(run_step_)
         def run_step_wrapper(
             self: Module, run_number: int, step_size: int, howlong: float
@@ -81,7 +79,6 @@ def process_slot(
             """
             decoration
             """
-            # print("process slot wrapper", names, run_number)
             if self.context is None:
                 self.context = _Context()
             reset_all = False
@@ -140,7 +137,6 @@ def _slot_policy_rule(decname: str, *slots_maybe: str) -> RunStepCallable:
         this is the decorator.  it combines the decoration
         with the function to be decorated
         """
-        # print("policy deco", slots_maybe)
         has_hidden_attr = hasattr(to_decorate, "_hidden_progressivis_attr")
 
         @wraps(to_decorate)
@@ -150,8 +146,6 @@ def _slot_policy_rule(decname: str, *slots_maybe: str) -> RunStepCallable:
             """
             this function makes the decoration
             """
-            # import pdb;pdb.set_trace()
-            # print("policy wrapper", decname, slots_maybe, args, to_decorate.__name__, has_hidden_attr)
             if self.context is None:
                 raise ValueError("context not found. consider processing slots before")
             if not self.context._parsed:
