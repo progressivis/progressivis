@@ -166,7 +166,7 @@ class IScalerIn(ipw.GridBox):
             values = dict(self.values)  # shallow copy
             values["time"] = time.time()  # always make a change
             # wg._dict['reset'].value = False
-            loop = aio.get_event_loop()
+            loop = aio.get_running_loop()
             loop.create_task(m.control.from_input(values))
 
         return _cbk

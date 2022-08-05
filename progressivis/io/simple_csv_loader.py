@@ -51,8 +51,14 @@ class SimpleCSVLoader(TableModule):
         **kwds: Any,
     ) -> None:
         super().__init__(**kwds)
-        self.default_step_size = kwds.get("chunksize", 1000)  # initial guess
-        kwds.setdefault("chunksize", self.default_step_size)
+        self.default_step_size = 1000
+        chunksize_ = kwds.get("chunksize")
+        if isinstance(chunksize_, int):  # initial guess
+            self.default_step_size = chunksize_
+        if chunksize_ is None:
+            kwds["chunksize"] = self.default_step_size
+        else:
+            kwds.setdefault("chunksize", self.default_step_size)
         # Filter out the module keywords from the csv loader keywords
         csv_kwds: Dict[str, Any] = filter_kwds(kwds, pd.read_csv)
         # When called with a specified chunksize, it returns a parser
@@ -215,6 +221,8 @@ class SimpleCSVLoader(TableModule):
                     if indices.stop == indices.start:
                         return self.state_blocked
                     filename = df.at[indices.start, "filename"]
+                    assert "chunksize" in self.csv_kwds
+                    assert isinstance(self.csv_kwds["chunksize"], int)
                     try:
                         self.parser = pd.read_csv(self.open(filename), **self.csv_kwds)
                     except IOError as e:
@@ -322,7 +330,7 @@ class SimpleCSVLoader(TableModule):
             raise ProgressiveStopIteration("Unexpected situation")
         logger.info("loading %d lines", step_size)
         try:
-            assert self.parser
+            assert self.parser is not None
             df: pd.DataFrame = self.parser.read(
                 step_size
             )  # raises StopIteration at EOF

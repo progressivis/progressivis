@@ -5,8 +5,9 @@ from functools import wraps
 import ipywidgets as ipw
 import numpy as np
 import pandas as pd
-from progressivis.core import asynchronize, aio
+from progressivis.core import asynchronize, aio, Sink
 from progressivis.utils.psdict import PsDict
+from progressivis.table.module import TableModule
 from progressivis.io import DynVar
 from progressivis_nb_widgets.nbwidgets import PrevImages
 from progressivis.stats import (
@@ -18,15 +19,15 @@ from progressivis.stats import (
 )
 from progressivis.vis import (
     StatsFactory,
-    DataShape,
     Histogram1dPattern,
     Histogram2dPattern,
 )
 from vega.widget import VegaWidget
-from ._hist1d_schema import hist1d_spec_no_data, kll_spec_no_data
-from ._hist2d_schema import hist2d_spec_no_data
-from ._corr_schema import corr_spec_no_data
-from ._bar_schema import bar_spec_no_data
+from .._hist1d_schema import hist1d_spec_no_data, kll_spec_no_data
+from .._hist2d_schema import hist2d_spec_no_data
+from .._corr_schema import corr_spec_no_data
+from .._bar_schema import bar_spec_no_data
+from .utils import TreeTab, make_button, stage_register
 import time
 
 from typing import (
@@ -193,21 +194,6 @@ def _make_selm_obs(dyn_viewer: "DynViewer") -> Callable:
             dyn_viewer.obs_flag = False
 
     return _cbk
-
-
-def make_button(
-    label: str, disabled: bool = False, cb: Optional[Callable] = None
-) -> ipw.Button:
-    btn = ipw.Button(
-        description=label,
-        disabled=disabled,
-        button_style="",  # 'success', 'info', 'warning', 'danger' or ''
-        tooltip=label,
-        icon="check",  # (FontAwesome names without the `fa-` prefix)
-    )
-    if cb is not None:
-        btn.on_click(cb)
-    return btn
 
 
 def make_observer(
@@ -446,67 +432,6 @@ def get_flag_status(dt: str, op: str) -> bool:
     return op in type_op_mismatches.get(dt, set())
 
 
-class HandyTab(ipw.Tab):
-    def set_next_title(self, name: str) -> None:
-        pos = len(self.children) - 1
-        self.set_title(pos, name)
-
-    def get_titles(self) -> List[str]:
-        return [self.get_title(pos) for pos in range(len(self.children))]
-
-    def set_tab(self, title: str, wg: WidgetType, overwrite: bool = True) -> None:
-        all_titles = self.get_titles()
-        if title in all_titles:
-            if not overwrite:
-                return
-            pos = all_titles.index(title)
-            children_ = list(self.children)
-            children_[pos] = wg
-            self.children = tuple(children_)
-        else:
-            self.children += (wg,)
-            self.set_next_title(title)
-
-    def remove_tab(self, title):
-        all_titles = self.get_titles()
-        if title not in all_titles:
-            return
-        pos = all_titles.index(title)
-        children_ = list(self.children)
-        children_ = children_[:pos] + children_[pos + 1 :]
-        titles_ = all_titles[:pos] + all_titles[pos + 1 :]
-        self.children = tuple(children_)
-        for i, t in enumerate(titles_):
-            self.set_title(i, t)
-
-    def get_selected_title(self):
-        if self.selected_index is None:
-            return None
-        return self.get_title(self.selected_index)
-
-    def get_selected_child(self):
-        if self.selected_index is None:
-            return None
-        return self.children[self.selected_index]
-
-
-class TreeTab(HandyTab):
-    def __init__(
-        self, upper: Optional["TreeTab"], known_as: str, *args: AnyType, **kw: AnyType
-    ) -> None:
-        super().__init__(*args, **kw)
-        self.upper = upper
-        self.known_as = known_as
-        self.mod_dict: Dict[str, Set[str]] = {}
-
-    def is_visible(self, sel):
-        if self.get_selected_title() != sel:
-            return False
-        if self.upper is None:
-            return True
-        return self.upper.is_visible(self.known_as)
-
-
 def make_tab_observer(tab, sched):
     def _tab_observer(wg):
         key = tab.get_selected_title()
@@ -536,9 +461,17 @@ def _get_func_name(func: str) -> str:
 class DynViewer(TreeTab):
     save_for_cancel: Tuple[AnyType, ...]
 
-    def __init__(self, dshape_mod: DataShape, registry_mod: StatsFactory):
-        self._dshape_mod = dshape_mod
-        self._registry_mod = registry_mod
+    def __init__(
+        self,
+        frame: AnyType,
+        dtypes: Dict[str, AnyType],
+        input_module: TableModule,
+        input_slot: str = "result",
+    ):
+        self._frame = frame
+        self._dtypes = dtypes
+        self._input_module = input_module
+        self._input_slot = input_slot
         self.hidden_cols: List[str] = []
         self._hidden_sel_wg: Optional[ipw.SelectMultiple] = None
         self.visible_cols: List[str] = []
@@ -557,9 +490,10 @@ class DynViewer(TreeTab):
         self._h2d_tab: Optional[TreeTab] = None
         self._h2d_sel: Set[AnyType] = set()
         self._corr_sel: List[str] = []
-        self._dshape_mod.scheduler().on_tick(DynViewer.refresh_info(self))
+        self._input_module.scheduler().on_tick(DynViewer.refresh_info(self))
+        self._registry_mod = self.init_factory(input_module, input_slot)
         self.all_functions = {
-            dec: _get_func_name(dec) for dec in registry_mod.func_dict.keys()
+            dec: _get_func_name(dec) for dec in self._registry_mod.func_dict.keys()
         }
         self.scalar_functions = {
             k: v
@@ -575,6 +509,16 @@ class DynViewer(TreeTab):
         self.observe(
             make_tab_observer_2l(self, self.get_scheduler()), names="selected_index"
         )
+
+    def init_factory(self, input_module, input_slot):
+        s = input_module.scheduler()
+        with s:
+            factory = StatsFactory(input_module=input_module, scheduler=s)
+            factory.create_dependent_modules()
+            factory.input.table = input_module.output[input_slot]
+            sink = Sink(scheduler=s)
+            sink.input.inp = factory.output.result
+            return factory
 
     def get_scheduler(self):
         return self._registry_mod.scheduler()
@@ -718,11 +662,7 @@ class DynViewer(TreeTab):
                         [
                             vega_wg,
                             ipw.HBox(
-                                [
-                                    range_slider,
-                                    ipw.Label("Min:"),
-                                    ipw.Label("Max:"),
-                                ]
+                                [range_slider, ipw.Label("Min:"), ipw.Label("Max:")]
                             ),
                         ]
                     ),
@@ -772,8 +712,6 @@ class DynViewer(TreeTab):
     @asynchronized_wg
     def refresh_info(self) -> None:
         # print(".", end="")
-        if self._dshape_mod.result is None:
-            return
         if not self.children:
             selm = ipw.SelectMultiple(
                 options=self.hidden_cols,
@@ -783,7 +721,7 @@ class DynViewer(TreeTab):
                 disabled=False,
             )
             self._hidden_sel_wg = selm
-            self.col_types = {k: str(t) for (k, t) in self._dshape_mod.psdict.items()}
+            self.col_types = {k: str(t) for (k, t) in self._dtypes.items()}
             self.visible_cols = list(self.col_types.keys())
             selm.observe(_make_selm_obs(self), "value")
             gb = self.draw_matrices()
@@ -921,3 +859,6 @@ class DynViewer(TreeTab):
         self.h2d_cbx[(col, func)] = wgt
         wgt.observe(_make_h2d_cbx_obs(self, col, func), "value")
         return wgt
+
+
+stage_register["Descriptive statistics"] = DynViewer

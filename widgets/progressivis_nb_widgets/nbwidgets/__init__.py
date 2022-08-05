@@ -13,7 +13,9 @@ from .sparkline_progressbar import *
 from .plotting_progressbar import *
 from .iscaler import *
 from .data_viewer import *
-from .dyn_viewer import *
+from .stage_widgets.dyn_viewer import *
+from .stage_widgets.analysis_chain import *
+from .stage_widgets.group_by import *
 from .utils import *
 
 from typing import List, Dict

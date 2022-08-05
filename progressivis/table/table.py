@@ -53,38 +53,39 @@ __all__ = ["Table"]
 
 
 class Table(IndexTable):
-    """Create a Table data structure, made of a collectifrom progressivis.core.bitmap import bitmapon of columns.
+    """Create a Table data structure, made of a collection of columns.
 
     A Table is similar to Python Pandas or R DataFrame, but
     column-based and supporting fast addition of items.
 
     Args:
-        name : string
+        name: string
             The name of the table
-        data : optional container
+        data: optional container
             Data that will be appended to the table. It can be of multiple
             types.
             Table) another table is used to fill-up this table
             DataFrame) a Pandas DataFrame is copied to this table
             ndarray) a numpy array is copied. The dshape should be provided
-        dshape : data shape such as `{'a': int32, 'b': float64, 'c': string}`
+        dshape: data shape such as `{'a': int32, 'b': float64, 'c': string}`
             The column names and types as specified by the ``datashape`` library.
-        fillvalues : the default values of the columns specified as a dictionary
+        fillvalues: the default values of the columns specified as a dictionary
             Each column is created with a default ``fillvalue``. This parameter can
             specify the fillvalue of each column with 3 formats:
             a single value) which will be used by all the column creations
             a dictionary) associating a column name to a value
-            the '*' entry in a dictionary) for defaulting the fillvalue when not specified.
-        storagegroup : a factory used to create the columns
+            the '*' entry in a dictionary) for defaulting the fillvalue when not specified
+        storagegroup: a factory used to create the columns
             When not specified or `None` the default ``storage`` is used.
             Otherwise, a ``storagegroup`` is specified in Group.
-        chunks : the specification of the chunking of columns when the storagegroup supports it
+        chunks: the specification of the chunking of columns when the storagegroup
+            supports it.
             Like the ``fillvalue`` argument, it can be one value or a dict.
-        create : forces the creation of the column
+        create: forces the creation of the column
             The the storagegroup allows persistence, a table with the same name may exist
-            in the storagegroup. With ``create=False``, the previous value is loaded, whereas
-            with ``create=True`` it is replaced.
-        indices : the indices of the rows appended when data is specified, in case the
+            in the storagegroup. With ``create=False``, the previous value is loaded,
+            whereas with ``create=True`` it is replaced.
+        indices: the indices of the rows appended when data is specified, in case the
             table contents has to be joined with another table.
 
     Example:
@@ -370,7 +371,27 @@ class Table(IndexTable):
                     if isinstance(fromcol, pa.TimestampArray):
                         for i, (k, elt) in enumerate(zip(raw_indices, fromcol_ind)):
                             dt = elt.as_py()
-                            tocol[k] = dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second
+                            tocol[k] = (
+                                dt.year,
+                                dt.month,
+                                dt.day,
+                                dt.hour,
+                                dt.minute,
+                                dt.second,
+                            )
+                    elif isinstance(
+                        fromcol, pd.Series
+                    ) and fromcol.dtype.name.startswith("datetime"):
+                        for i, (k, dt) in enumerate(zip(raw_indices, fromcol_ind)):
+                            tocol[k] = (
+                                dt.year,
+                                dt.month,
+                                dt.day,
+                                dt.hour,
+                                dt.minute,
+                                dt.second,
+                            )
+
                     else:
                         raise
         else:
@@ -463,7 +484,7 @@ class Table(IndexTable):
             if off[0] + 1 == off[1]:
                 data[nam] = array[:, off[0]]
             else:
-                data[nam] = array[:, off[0] : off[1]]
+                data[nam] = array[:, off[0]: off[1]]
         return Table(name, data=data, dshape=str(dshape), **kwds)
 
     def eval(
@@ -485,8 +506,8 @@ class Table(IndexTable):
             result_object: string
                Posible values for result_object: {'raw_numexpr', 'index', 'view', 'table'}
                When expr is conditional.
-               Note: a result as 'view' is not guaranteed: it may be 'table' when the calculated
-               index is not sliceable
+               Note: a result as 'view' is not guaranteed: it may be 'table' when the
+               calculated index is not sliceable
                - 'table' or None when expr is an assignment
                Default values for result_object :
                - 'indices' when expr is conditional
