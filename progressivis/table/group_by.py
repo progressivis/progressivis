@@ -91,7 +91,7 @@ class SCIndex:
             selection = [i for (k, i) in UTIME_SHORT_D.items() if k in item]
             return SimpleSC(self._column, selection, tag=item)
         if isinstance(item, (slice, Sequence)):
-            return SimpleSC(self._column, item)
+            return SimpleSC(self._column, item, tag="ix")
         raise ValueError(f"Invalid item {item}")
 
 

@@ -69,5 +69,5 @@ class AnalysisChain(ipw.Accordion):
         self.set_title(0, "Schema discovery")
 
     @property
-    def _dtypes(self) -> Dict[str, AnyType]:
+    def _output_dtypes(self) -> Dict[str, AnyType]:
         return get_schema(self.sniffer)

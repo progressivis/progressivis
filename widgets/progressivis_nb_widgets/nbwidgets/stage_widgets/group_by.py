@@ -7,7 +7,8 @@ from .utils import (
 )
 import ipywidgets as ipw
 from progressivis.table.module import TableModule
-from progressivis.table.group_by import GroupBy, UTIME, DT_MAX, SubColumn as SC
+from progressivis.table.group_by import (GroupBy, UTIME, DT_MAX,
+                                         SubColumn as SC, UTIME_SHORT_D)
 from progressivis.core import Sink
 
 from typing import (
@@ -36,8 +37,7 @@ def make_add_group_by(obj: "GroupByW") -> Callable:
         else:
             dd, sel = obj.by_box.children
             col = dd.value
-            idx = sel.value
-            by = SC(undecorate(col)).ix[list(idx)]
+            by = SC(undecorate(col)).dt["".join(sel.value)]
             obj.by_box.children[0].disabled = True
             obj.by_box.children[1].disabled = True
         obj._output_module = obj.init_group_by(by)
@@ -79,7 +79,8 @@ def make_subcolumn_box(obj: "GroupByW") -> WidgetType:
 
 def make_sel_multiple(obj: "GroupByW"):
     selm = ipw.SelectMultiple(
-        options=obj._dtypes.keys(), value=[], rows=5, description="By", disabled=False,
+        options=[f"{col}:{t}" for (col, t) in obj._dtypes.items()],
+        value=[], rows=5, description="By", disabled=False,
     )
 
     def _f(val):
@@ -94,7 +95,7 @@ def make_sel_multiple(obj: "GroupByW"):
 
 def make_sel_multiple_dt(disabled: bool = True) -> WidgetType:
     return ipw.SelectMultiple(
-        options=list(zip(UTIME, range(len(UTIME)))),
+        options=list(zip(UTIME, UTIME_SHORT_D.keys())),
         value=[],
         rows=DT_MAX,
         description="==>",
@@ -142,6 +143,9 @@ class GroupByW(ipw.VBox):
         self._dtypes = dtypes
         self._input_module = input_module
         self._input_slot = input_slot
+        self._output_module = None
+        self._output_slot = "result"
+        self._output_dtypes = dtypes
         self.start_btn = make_button(
             "Activate", cb=make_add_group_by(self), disabled=True
         )
