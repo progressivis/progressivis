@@ -131,8 +131,10 @@ class PsDict(Dict[str, Any]):
             raise KeyError(f"Key {key} does not exist")
         if self._index is None:  # first deletion
             self._index = dict(zip(self.keys(), range(len(self))))
-        self._deleted[key] = self._index[key]
-        del self._index[key]
+        if key not in self._deleted:
+            self._deleted[key] = self._index[key]
+        if key in self._index:
+            del self._index[key]
         super().__delitem__(key)
 
     def clear(self) -> None:
