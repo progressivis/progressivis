@@ -27,7 +27,7 @@ from .._hist1d_schema import hist1d_spec_no_data, kll_spec_no_data
 from .._hist2d_schema import hist2d_spec_no_data
 from .._corr_schema import corr_spec_no_data
 from .._bar_schema import bar_spec_no_data
-from .utils import TreeTab, make_button, stage_register
+from .utils import TreeTab, make_button, stage_register, ChainingWidget, make_chaining_box
 import time
 
 from typing import (
@@ -463,15 +463,14 @@ class DynViewer(TreeTab):
 
     def __init__(
         self,
-        frame: AnyType,
         dtypes: Dict[str, AnyType],
         input_module: TableModule,
         input_slot: str = "result",
     ):
-        self._frame = frame
         self._dtypes = dtypes
         self._input_module = input_module
         self._input_slot = input_slot
+        self._modgroup = f"group_{id(self)}"
         self.hidden_cols: List[str] = []
         self._hidden_sel_wg: Optional[ipw.SelectMultiple] = None
         self.visible_cols: List[str] = []
@@ -490,7 +489,7 @@ class DynViewer(TreeTab):
         self._h2d_tab: Optional[TreeTab] = None
         self._h2d_sel: Set[AnyType] = set()
         self._corr_sel: List[str] = []
-        self._input_module.scheduler().on_tick(DynViewer.refresh_info(self))
+        input_module.scheduler().on_tick(DynViewer.refresh_info(self))
         self._registry_mod = self.init_factory(input_module, input_slot)
         self.all_functions = {
             dec: _get_func_name(dec) for dec in self._registry_mod.func_dict.keys()
@@ -860,5 +859,34 @@ class DynViewer(TreeTab):
         wgt.observe(_make_h2d_cbx_obs(self, col, func), "value")
         return wgt
 
+    def get_underlying_modules(self):
+        s = self._registry_mod.scheduler()
+        modules = s.group_modules(self._registry_mod.name)
+        print("to delete", modules)
+        return modules
 
-stage_register["Descriptive statistics"] = DynViewer
+
+class DescStatsW(ipw.VBox, ChainingWidget):
+    def __init__(
+            self,
+            frame: AnyType,
+            dtypes: Dict[str, AnyType],
+            input_module: TableModule,
+            input_slot: str = "result",
+    ) -> None:
+        super().__init__(frame=frame,
+                         dtypes=dtypes,
+                         input_module=input_module,
+                         input_slot=input_slot)
+        self._dyn_viewer = DynViewer(dtypes, input_module, input_slot)
+        self._chaining_box = make_chaining_box(self)
+        self.children = (
+            self._dyn_viewer,
+            self._chaining_box
+        )
+
+    def get_underlying_modules(self):
+        return self._dyn_viewer.get_underlying_modules()
+
+
+stage_register["Descriptive statistics"] = DescStatsW

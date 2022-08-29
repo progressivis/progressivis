@@ -3,7 +3,7 @@ from .utils import (
     stage_register,
     make_chaining_box,
     dongle_widget,
-    set_child,
+    set_child, ChainingWidget
 )
 from ..slot_wg import SlotWg
 
@@ -16,7 +16,7 @@ from typing import (
 )
 
 
-class DumpTableW(ipw.VBox):
+class DumpTableW(ipw.VBox, ChainingWidget):
     def __init__(
         self,
         frame: AnyType,
@@ -24,14 +24,10 @@ class DumpTableW(ipw.VBox):
         input_module: TableModule,
         input_slot: str = "result",
     ) -> None:
-        super().__init__()
-        self._frame = frame
-        self._dtypes = dtypes
-        self._input_module = input_module
-        self._input_slot = input_slot
-        self._output_module = input_module
-        self._output_slot = input_slot
-        self._output_dtypes = dtypes
+        super().__init__(frame=frame,
+                         dtypes=dtypes,
+                         input_module=input_module,
+                         input_slot=input_slot)
         sl_wg = SlotWg(input_module, input_slot)
         self.children = (sl_wg, dongle_widget())
         set_child(self, 1, make_chaining_box(self))
@@ -39,6 +35,9 @@ class DumpTableW(ipw.VBox):
 
     async def _refresh_proc(self, scheduler: Scheduler, run_number: int) -> None:
         await self.children[0].refresh()
+
+    def get_underlying_modules(self):
+        return []
 
 
 stage_register["Dump table"] = DumpTableW

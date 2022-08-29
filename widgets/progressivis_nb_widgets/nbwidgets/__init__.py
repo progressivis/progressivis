@@ -13,8 +13,10 @@ from .sparkline_progressbar import *
 from .plotting_progressbar import *
 from .iscaler import *
 from .data_viewer import *
-from .stage_widgets.dyn_viewer import *
+from .stage_widgets.desc_stats import *
 from .stage_widgets.analysis_chain import *
+from .stage_widgets.analysis_toc import *
+from .stage_widgets.utils import create_stage_widget, cleanup_cells
 from .stage_widgets.group_by import *
 from .utils import *
 

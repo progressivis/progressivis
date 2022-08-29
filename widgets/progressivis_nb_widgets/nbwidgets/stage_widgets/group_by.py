@@ -3,7 +3,7 @@ from .utils import (
     stage_register,
     make_chaining_box,
     dongle_widget,
-    set_child,
+    set_child, ChainingWidget
 )
 import ipywidgets as ipw
 from progressivis.table.module import TableModule
@@ -130,7 +130,7 @@ def make_gr_mode(obj: "GroupByW"):
     return wg
 
 
-class GroupByW(ipw.VBox):
+class GroupByW(ipw.VBox, ChainingWidget):
     def __init__(
         self,
         frame: AnyType,
@@ -138,14 +138,10 @@ class GroupByW(ipw.VBox):
         input_module: TableModule,
         input_slot: str = "result",
     ) -> None:
-        super().__init__()
-        self._frame = frame
-        self._dtypes = dtypes
-        self._input_module = input_module
-        self._input_slot = input_slot
-        self._output_module = None
-        self._output_slot = "result"
-        self._output_dtypes = dtypes
+        super().__init__(frame=frame,
+                         dtypes=dtypes,
+                         input_module=input_module,
+                         input_slot=input_slot)
         self.start_btn = make_button(
             "Activate", cb=make_add_group_by(self), disabled=True
         )
@@ -166,6 +162,9 @@ class GroupByW(ipw.VBox):
             sink = Sink(scheduler=s)
             sink.input.inp = grby.output.result
             return grby
+
+    def get_underlying_modules(self):
+        return [self._output_module]
 
 
 stage_register["Group by"] = GroupByW

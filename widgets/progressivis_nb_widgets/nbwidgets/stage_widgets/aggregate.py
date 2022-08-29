@@ -3,7 +3,7 @@ from .utils import (
     stage_register,
     make_chaining_box,
     dongle_widget,
-    set_child,
+    set_child, ChainingWidget
 )
 import ipywidgets as ipw
 import pandas as pd
@@ -73,7 +73,7 @@ def _make_start_btn(obj):
     return _cbk
 
 
-class AggregateW(ipw.VBox):
+class AggregateW(ipw.VBox, ChainingWidget):
     def __init__(
         self,
         frame: AnyType,
@@ -81,14 +81,10 @@ class AggregateW(ipw.VBox):
         input_module: TableModule,
         input_slot: str = "result",
     ) -> None:
-        super().__init__()
-        self._frame = frame
-        self._dtypes = dtypes
-        self._input_module = input_module
-        self._input_slot = input_slot
-        self._output_module = None
-        self._output_slot = "result"
-        self._output_dtypes = None
+        super().__init__(frame=frame,
+                         dtypes=dtypes,
+                         input_module=input_module,
+                         input_slot=input_slot)
         self.hidden_cols: List[str] = []
         fncs = ["hide"] + list(Aggregate.registry.keys())
         self.all_functions = dict(zip(fncs, fncs))
@@ -96,7 +92,6 @@ class AggregateW(ipw.VBox):
             options=self.hidden_cols, value=[], rows=5, description="❎", disabled=False,
         )
         self._hidden_sel_wg.observe(_make_selm_obs(self), "value")
-        # self.visible_cols: List[str] = [f"{col}:{t}" for (col, t) in self._dtypes.items()]
         self.visible_cols: List[str] = list(self._dtypes.keys())
         self.obs_flag = False
         self.info_cbx: Dict[Tuple[str, str], ipw.Checkbox] = {}
@@ -125,7 +120,6 @@ class AggregateW(ipw.VBox):
             ipw.Label(s) for s in self.all_functions.values()
         ]
         width_ = len(lst)
-        # df = self.matrix_to_df() if ext_df is None else ext_df
         for col in sorted(self.visible_cols):
             col_type = self._dtypes[col]
             lst.append(ipw.Label(f"{col}:{col_type}"))
@@ -142,6 +136,9 @@ class AggregateW(ipw.VBox):
         self.info_cbx[(col, func)] = wgt
         wgt.observe(_make_cbx_obs(self, col, func), "value")
         return wgt
+
+    def get_underlying_modules(self):
+        return [self._output_module]
 
 
 stage_register["Aggregate"] = AggregateW
