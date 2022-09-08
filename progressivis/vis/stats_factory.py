@@ -1,7 +1,7 @@
 from __future__ import annotations
 import logging
 from itertools import product
-from ..core import Sink, Scheduler
+from ..core import Sink
 from ..stats import (
     Min,
     Max,
@@ -13,6 +13,7 @@ from ..stats import (
     Distinct,
     Corr,
 )
+from ..core.module import GroupContext
 from ..table.module import TableModule
 from ..table.table import Table
 from ..table.pattern import Pattern
@@ -31,17 +32,6 @@ if TYPE_CHECKING:
 
 
 logger = logging.getLogger(__name__)
-
-
-def make_col_stats(imod: TableModule, col: str) -> Callable:
-    async def _col_stats(scheduler: Scheduler, run_number: int) -> None:
-        with scheduler:
-            kll = KLLSketch(column=col, scheduler=scheduler)
-            sink = Sink(scheduler=scheduler)
-            kll.input.table = imod.output.result
-            sink.input.inp = kll.output.result
-
-    return _col_stats
 
 
 class Histogram1dPattern(Pattern):
@@ -317,7 +307,7 @@ class StatsFactory(TableModule):
         self, run_number: int, step_size: int, howlong: float
     ) -> ReturnRunStep:
         assert self.context
-        with self.context as ctx:
+        with GroupContext(self), self.context as ctx:
             slot = ctx.table
             data = slot.data()
             if not data:
@@ -403,9 +393,8 @@ class StatsFactory(TableModule):
                         steps += 1
             if self._to_delete:
                 with scheduler as dataflow:
-                    for m in self._to_delete:
-                        deps = dataflow.collateral_damage(m)
-                        dataflow.delete_modules(*deps)
+                    deps = dataflow.collateral_damage(*self._to_delete)
+                    dataflow.delete_modules(*deps)
                     # pass
             return self._return_run_step(self.state_blocked, steps_run=steps)
 

@@ -675,14 +675,17 @@ class Scheduler:
     def _ipython_key_completions_(self) -> List[str]:
         return list(self._modules.keys())
 
+    async def wake_up(self):
+        async with self._hibernate_cond:
+            self._keep_running = KEEP_RUNNING
+            self._hibernate_cond.notify()
+
     async def for_input(self, module: Module) -> int:
         """
         Notify this scheduler that the module has received input
         that should be served fast.
         """
-        async with self._hibernate_cond:
-            self._keep_running = KEEP_RUNNING
-            self._hibernate_cond.notify()
+        await self.wake_up()
         sel = self._reachability.get(module.name, None)
         if sel:
             if not self._module_selection:
