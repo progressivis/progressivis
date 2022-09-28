@@ -8,7 +8,7 @@ from ..core.bitmap import bitmap
 from progressivis.core.utils import indices_len, fix_loc
 from functools import singledispatchmethod as dispatch
 from collections import abc
-from typing import Optional, List, Union, Any, Dict
+from typing import Optional, List, Union, Any, Dict, Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -31,8 +31,15 @@ class UniqueIndex(TableModule):
     @process_created.register
     def _(self, on: str, indices: bitmap) -> None:
         assert self._input_table is not None
+        ds = str(self._input_table._column(on).dshape)
+        if ds[0] in "123456789":  # ex: 6*uint16
+            def _key(i: int) -> Tuple[Any]:
+                return tuple(self._input_table.loc[i, on])
+        else:
+            def _key(i: int) -> Any:
+                return self._input_table.loc[i, on]
         for i in indices:
-            key = self._input_table.loc[i, on]
+            key = _key(i)
             assert (key not in self._index) or self._index[key] == i
             self._index[key] = i
             self._inverse[i] = key

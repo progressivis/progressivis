@@ -5,11 +5,11 @@ from .utils import (
     dongle_widget,
     set_child, ChainingWidget
 )
-import ipywidgets as ipw
-from progressivis.table.module import TableModule
-from progressivis.table.group_by import (GroupBy, UTIME, DT_MAX,
+import ipywidgets as ipw  # type: ignore
+from progressivis.table.module import TableModule  # type: ignore
+from progressivis.table.group_by import (GroupBy, UTIME, DT_MAX,  # type: ignore
                                          SubColumn as SC, UTIME_SHORT_D)
-from progressivis.core import Sink
+from progressivis.core import Sink  # type: ignore
 
 from typing import (
     Any as AnyType,
@@ -20,16 +20,12 @@ from typing import (
 WidgetType = AnyType
 
 
-def undecorate(typed_col: str) -> str:
-    return typed_col.split(":")[0]
-
-
 def make_add_group_by(obj: "GroupByW") -> Callable:
     def _cbk(btn: ipw.Button) -> None:
         obj.grouping_mode.disabled = True
         obj.by_box.disabled = True
         if obj.grouping_mode.value == "columns":
-            by = [undecorate(c) for c in obj.by_box.value]
+            by = obj.by_box.value
             assert by
             if len(by) == 1:
                 by = by[0]
@@ -37,21 +33,21 @@ def make_add_group_by(obj: "GroupByW") -> Callable:
         else:
             dd, sel = obj.by_box.children
             col = dd.value
-            by = SC(undecorate(col)).dt["".join(sel.value)]
+            by = SC(col).dt["".join(sel.value)]
             obj.by_box.children[0].disabled = True
             obj.by_box.children[1].disabled = True
         obj._output_module = obj.init_group_by(by)
         obj._output_slot = "result"
         btn.disabled = True
         set_child(obj, 3, make_chaining_box(obj))
-
+        obj.dag.requestAttention(obj.title, "widget", "PROGRESS_NOTIFICATION", "0")
     return _cbk
 
 
 def make_subcolumn_box(obj: "GroupByW") -> WidgetType:
     dd = ipw.Dropdown(
-        options=[""]
-        + [f"{col}:{t}" for (col, t) in obj._dtypes.items() if t == "datetime64"],
+        options=[("", "")]
+        + [(f"{col}:{t}", col) for (col, t) in obj._dtypes.items() if t == "datetime64"],
         value="",
         description="Datetime column:",
         disabled=False,
@@ -79,7 +75,7 @@ def make_subcolumn_box(obj: "GroupByW") -> WidgetType:
 
 def make_sel_multiple(obj: "GroupByW"):
     selm = ipw.SelectMultiple(
-        options=[f"{col}:{t}" for (col, t) in obj._dtypes.items()],
+        options=[(f"{col}:{t}", col) for (col, t) in obj._dtypes.items()],
         value=[], rows=5, description="By", disabled=False,
     )
 
@@ -133,15 +129,16 @@ def make_gr_mode(obj: "GroupByW"):
 class GroupByW(ipw.VBox, ChainingWidget):
     def __init__(
         self,
-        frame: AnyType,
+        parent: AnyType,
         dtypes: Dict[str, AnyType],
         input_module: TableModule,
-        input_slot: str = "result",
+        input_slot: str = "result", dag=None
     ) -> None:
-        super().__init__(frame=frame,
+        super().__init__(parent=parent,
                          dtypes=dtypes,
                          input_module=input_module,
-                         input_slot=input_slot)
+                         input_slot=input_slot, dag=dag)
+        self.dag_register()
         self.start_btn = make_button(
             "Activate", cb=make_add_group_by(self), disabled=True
         )
@@ -157,7 +154,7 @@ class GroupByW(ipw.VBox, ChainingWidget):
     def init_group_by(self, by: AnyType) -> GroupBy:
         s = self._input_module.scheduler()
         with s:
-            grby = GroupBy(by=by, scheduler=s)
+            grby = GroupBy(by=by, keepdims=True, scheduler=s)
             grby.input.table = self._input_module.output[self._input_slot]
             sink = Sink(scheduler=s)
             sink.input.inp = grby.output.result

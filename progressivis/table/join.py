@@ -3,12 +3,12 @@ from __future__ import annotations
 
 import numpy as np
 import logging
-from ..core.utils import nn
+from ..core.utils import nn, integer_types
 from ..core.bitmap import bitmap
 from ..core.module import ReturnRunStep
 from ..core.slot import SlotDescriptor
 from .module import TableModule
-from .group_by import GroupBy
+from .group_by import GroupBy, SubColumn as SC
 from .unique_index import UniqueIndex
 from . import Table, TableSelectedView
 from typing import Union, Literal, List, Any, Optional, Dict
@@ -18,9 +18,22 @@ HOW = Union[Literal["inner"], Literal["outer"]]
 ON = Optional[Union[str, List[str]]]
 
 
-def make_ufunc(rel_on, ucol, uindex, utable, dtype, fillna, cache):
-    if isinstance(rel_on, (list, tuple)):
+def _dt_to_mask(mask: str) -> Any:
+    if mask is None:
+        return
+    return np.array([
+        "Y" in mask,
+        "M" in mask,
+        "D" in mask,
+        "h" in mask,
+        "m" in mask,
+        "s" in mask
+    ], dtype=int)
 
+
+def make_ufunc(rel_on, ucol, uindex, utable, dtype, fillna, inv_mask, cache):
+    inv_mask = _dt_to_mask(inv_mask)
+    if isinstance(rel_on, (list, tuple)):
         def _ufunc(ix, local_dict):
             for values in local_dict.values():
                 shape_0 = values.shape[0]
@@ -44,10 +57,20 @@ def make_ufunc(rel_on, ucol, uindex, utable, dtype, fillna, cache):
 
         def _ufunc(ix, local_dict):
             for values in local_dict.values():
-                shape_0 = values.shape[0]
+                shape_ = values.shape
                 break
-            res = np.empty(shape_0, dtype=dtype)
+            if len(shape_) == 1:
+                def _cast_inp(x):
+                    return x
+            elif inv_mask is None:
+                def _cast_inp(x):
+                    return tuple(x)
+            else:
+                def _cast_inp(x):
+                    return tuple(x*inv_mask)
+            res = np.empty(shape_[0], dtype=dtype)
             for i, inp in enumerate(values):
+                inp = _cast_inp(inp)
                 try:
                     val = cache[inp]
                 except KeyError:
@@ -58,6 +81,8 @@ def make_ufunc(rel_on, ucol, uindex, utable, dtype, fillna, cache):
                         val = utable.at[indx, ucol]
                     cache[inp] = val
                 res[i] = val
+            if shape_[0] == 1 and isinstance(ix, integer_types):
+                return res[0]
             return res
 
     return _ufunc
@@ -78,7 +103,8 @@ class Join(TableModule):
 
     Slots:
         primary: UniqueIndex output => table contains a primary key
-        related: GroupBy output => table providing the output index and containing the foreign key
+        related: GroupBy output => table providing the output index and containing
+                 the foreign key
     Args:
         primary_on: column or list of columns giving the primary key on the primary table
         related_on:  column or list of columns giving the foreign key on the related table
@@ -93,10 +119,14 @@ class Join(TableModule):
     ]
     outputs = [SlotDescriptor("primary_outer", type=Table, required=False)]
 
-    def __init__(self, *, how: HOW = "inner", fillna: Any = None, **kwds: Any) -> None:
+    def __init__(self, *, how: HOW = "inner", fillna: Any = None,
+                 inv_mask: Any = None, **kwds: Any) -> None:
         super().__init__(**kwds)
         self.how = how
         self._fillna = fillna
+        if nn(inv_mask) and not isinstance(inv_mask, str):
+            raise ValueError(f"Mask type {type(inv_mask)} not implemented")
+        self._inv_mask = inv_mask
         self._suffix = ""
         self._related_cols: Optional[List[str]] = None
         self._virtual_cols: Optional[List[str]] = None
@@ -104,18 +134,18 @@ class Join(TableModule):
         self._primary_outer: Optional[TableSelectedView] = None
 
     def create_dependent_modules(
-        self,
-        primary_module: TableModule,
-        related_module: TableModule,
-        *,
-        primary_slot: str = "result",
-        related_slot: str = "result",
-        primary_cols: Optional[List[str]] = None,
-        related_cols: Optional[List[str]] = None,
-        on: ON = None,
-        primary_on: ON = None,
-        related_on: ON = None,
-        suffix: str = "",
+            self,
+            primary_module: TableModule,
+            related_module: TableModule,
+            *,
+            primary_slot: str = "result",
+            related_slot: str = "result",
+            primary_cols: Optional[List[str]] = None,
+            related_cols: Optional[List[str]] = None,
+            on: ON = None,
+            primary_on: ON = None,
+            related_on: ON = None,
+            suffix: str = "",
     ) -> None:
         """
         Args:
@@ -123,10 +153,13 @@ class Join(TableModule):
             related_module: module providing the related data source (foreign key owner)
             primary_slot: ...
             related_slot: ...
-            primary_cols: primary table (virtual) columns to be included in the output view
+            primary_cols: primary table (virtual) columns to be included in the output
+                          view
             related_cols: related table columns to be included in the output view
-            primary_on: column or list of columns giving the primary key on the primary table
-            related_on:  column or list of columns giving the foreign key on the related table
+            primary_on: column or list of columns giving the primary key on the primary
+                        table
+            related_on: column or list of columns giving the foreign key on the related
+                        table
             on: shortcut when primary_on and related_on are identical
             suffix: ...
         """
@@ -143,7 +176,14 @@ class Join(TableModule):
         self.primary_on = primary_on
         self._suffix = suffix
         assert self.primary_on is not None and self.related_on is not None
-        grby = GroupBy(by=self.related_on, scheduler=s)
+        if self._inv_mask is None:
+            grby = GroupBy(by=self.related_on, scheduler=s)
+        elif isinstance(self._inv_mask, str):
+            assert isinstance(self.related_on, str)
+            grby = GroupBy(by=SC(self.related_on).dt[self._inv_mask], keepdims=True, scheduler=s)
+        else:  # TODO: check the mask type
+            assert isinstance(self.related_on, str)
+            grby = GroupBy(by=SC(self.related_on).ix[self._inv_mask], keepdims=True, scheduler=s)
         grby.input.table = related_module.output[related_slot]
         self.input.related = grby.output.result
         uidx = UniqueIndex(on=self.primary_on, scheduler=s)
@@ -210,6 +250,7 @@ class Join(TableModule):
                         primary_table,
                         uindex_mod.table._column(ucol).dtype,
                         self._fillna,
+                        self._inv_mask,
                         self.cache_dict[sxcol],
                     ),
                     category="vfunc",

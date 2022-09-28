@@ -1,30 +1,52 @@
-import ipywidgets as ipw
+import ipywidgets as ipw  # type: ignore
 import numpy as np
 import pyarrow.parquet as pq
-from progressivis.table.dshape import dataframe_dshape as _ds
-from progressivis.io import ParquetLoader
-from progressivis.table.module import TableModule
+from progressivis.table.dshape import dataframe_dshape  # type: ignore
+from progressivis.io import ParquetLoader  # type: ignore
+from progressivis.table.module import TableModule  # type: ignore
 from .utils import (make_button, make_chaining_box,
                     set_child, dongle_widget, ChainingWidget)
 import os
 
 from typing import (
     Any as AnyType,
+    Optional,
     Dict,
     Callable,
 )
+
+
+def _ds(t):
+    ds = dataframe_dshape(t)
+    return "datetime64" if ds == "6*uint16" else ds
 
 
 def init_modules(obj: "ParquetLoaderW") -> ParquetLoader:
     sink = obj._input_module
     s = sink.scheduler()
     with s:
+        assert obj._sniffer is not None
         cols = list(obj._sniffer.get_dtypes().keys())
-        pq = ParquetLoader(obj._url.value,
-                           columns=cols,
-                           scheduler=s)
-        sink.input.inp = pq.output.result
-    return pq
+        pql = ParquetLoader(obj._url.value,
+                            columns=cols,
+                            scheduler=s)
+        sink.input.inp = pql.output.result
+
+        def _f(m, rnum):
+            if m.table is None:
+                return
+            pc = min(100*len(m.table)//obj._sniffer.pqfile.metadata.num_rows+1, 100)
+            obj.dag.updateSummary(obj.title, {"progress": pc})
+            if pc < 100:
+                obj.dag.requestAttention(obj.title, "widget",
+                                         "PROGRESS_NOTIFICATION", len(m.table))
+            else:
+                obj.dag.removeRequestAttention(obj.title,
+                                               "widget", "PROGRESS_NOTIFICATION")
+                obj.dag.requestAttention(obj.title, "widget", "STABILITY_REACHED")
+
+        pql.on_after_run(_f)
+    return pql
 
 
 class ColInfo(ipw.VBox):
@@ -100,6 +122,7 @@ def make_start_loader(obj: "ParquetLoaderW") -> Callable:
         obj._output_slot = "result"
         set_child(obj, 4, make_chaining_box(obj))
         btn.disabled = True
+        obj.dag.requestAttention(obj.title, "widget", "PROGRESS_NOTIFICATION", "")
     return _cbk
 
 
@@ -107,16 +130,19 @@ class ParquetLoaderW(ipw.VBox, ChainingWidget):
     last_created = None
 
     def __init__(self,
-                 frame: AnyType,
+                 parent: AnyType,
                  dtypes: Dict[str, AnyType],
                  input_module: TableModule,
                  input_slot: str = "result",
-                 url: str = "") -> None:
-        super().__init__(frame=frame,
+                 url: str = "", dag=None) -> None:
+        self._sniffer: Optional[Sniffer] = None
+        super().__init__(parent=parent,
                          dtypes=dtypes,
                          input_module=input_module,
-                         input_slot=input_slot)
-        self._url = ipw.Text(
+                         input_slot=input_slot, dag=dag)
+        self.dag.registerWidget(self, self.title, self.title, self.dom_id,
+                                [self.parent.title])
+        self._url = ipw.Text(  # type: ignore
             value=os.getenv("PROGRESSIVIS_DEFAULT_PARQUET"),
             placeholder='',
             description='File:',
@@ -126,14 +152,15 @@ class ParquetLoaderW(ipw.VBox, ChainingWidget):
         sniff_btn = make_button("Sniff ...",
                                 cb=make_sniffer(self))
         self._sniffer = None
-        self.children = [
+        self.children = tuple([
             self._url,
             sniff_btn,
             dongle_widget(""),  # sniffer
             dongle_widget(""),  # start loading
             dongle_widget("")   # chaining box
-        ]
+        ])
 
     @property
     def _output_dtypes(self) -> Dict[str, AnyType]:
+        assert self._sniffer is not None
         return self._sniffer.get_dtypes()

@@ -5,11 +5,11 @@ from .utils import (
     dongle_widget,
     set_child, ChainingWidget
 )
-import ipywidgets as ipw
+import ipywidgets as ipw  # type: ignore
 import pandas as pd
-from progressivis.table.module import TableModule
-from progressivis.table.aggregate import Aggregate
-from progressivis.core import Sink
+from progressivis.table.module import TableModule  # type: ignore
+from progressivis.table.aggregate import Aggregate  # type: ignore
+from progressivis.core import Sink  # type: ignore
 
 from typing import (
     Any as AnyType,
@@ -69,22 +69,24 @@ def _make_start_btn(obj):
         obj._output_slot = "result"
         btn.disabled = True
         set_child(obj, 3, make_chaining_box(obj))
-
+        obj.dag.requestAttention(obj.title, 'widget', "PROGRESS_NOTIFICATION", "0")
     return _cbk
 
 
 class AggregateW(ipw.VBox, ChainingWidget):
     def __init__(
         self,
-        frame: AnyType,
+        parent: AnyType,
         dtypes: Dict[str, AnyType],
         input_module: TableModule,
-        input_slot: str = "result",
+        input_slot: str = "result", dag=None
     ) -> None:
-        super().__init__(frame=frame,
+        super().__init__(parent=parent,
                          dtypes=dtypes,
                          input_module=input_module,
-                         input_slot=input_slot)
+                         input_slot=input_slot, dag=dag)
+        self.dag_register()
+
         self.hidden_cols: List[str] = []
         fncs = ["hide"] + list(Aggregate.registry.keys())
         self.all_functions = dict(zip(fncs, fncs))

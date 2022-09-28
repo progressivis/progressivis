@@ -1,4 +1,4 @@
-import ipywidgets as ipw
+import ipywidgets as ipw  # type: ignore
 from .utils import (
     stage_register,
     make_chaining_box,
@@ -7,8 +7,8 @@ from .utils import (
 )
 from ..slot_wg import SlotWg
 
-from progressivis.table.module import TableModule
-from progressivis.core.scheduler import Scheduler
+from progressivis.table.module import TableModule  # type: ignore
+from progressivis.core.scheduler import Scheduler  # type: ignore
 
 from typing import (
     Any as AnyType,
@@ -19,15 +19,18 @@ from typing import (
 class DumpTableW(ipw.VBox, ChainingWidget):
     def __init__(
         self,
-        frame: AnyType,
+        parent: AnyType,
         dtypes: Dict[str, AnyType],
         input_module: TableModule,
-        input_slot: str = "result",
+        input_slot: str = "result", dag=None
     ) -> None:
-        super().__init__(frame=frame,
+        super().__init__(parent=parent,
                          dtypes=dtypes,
                          input_module=input_module,
-                         input_slot=input_slot)
+                         input_slot=input_slot, dag=dag)
+        self.dag.registerWidget(self, self.title, self.title, self.dom_id,
+                                [self.parent.title])
+        self.dag.requestAttention(self.title, "widget", "PROGRESS_NOTIFICATION", "0")
         sl_wg = SlotWg(input_module, input_slot)
         self.children = (sl_wg, dongle_widget())
         set_child(self, 1, make_chaining_box(self))

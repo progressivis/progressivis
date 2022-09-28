@@ -1,5 +1,5 @@
 from __future__ import annotations
-
+import numpy as np
 import logging
 from ..table.module import TableModule, ReturnRunStep
 from ..core.slot import SlotDescriptor
@@ -118,10 +118,12 @@ class GroupBy(TableModule):
     inputs = [SlotDescriptor("table", type=Table, required=True)]
 
     def __init__(
-        self, by: Union[str, List[str], Callable, SubColumn], **kwds: Any
+            self, by: Union[str, List[str], Callable, SubColumn],
+            keepdims: bool = False, **kwds: Any
     ) -> None:
         super().__init__(**kwds)
         self.by = by
+        self._keepdims = keepdims
         self._index: Dict[Any, bitmap] = defaultdict(bitmap)
         self._input_table = None
 
@@ -153,9 +155,16 @@ class GroupBy(TableModule):
         assert self._input_table is not None
         col = by.column
         val = by.selection
-        for i in indices:
-            dt_vect = self._input_table.loc[i, col]
-            self._index[tuple(dt_vect[val])].add(i)
+        if self._keepdims:
+            mask_ = np.zeros(6, dtype=int)
+            mask_[val] = 1
+            for i in indices:
+                dt_vect = self._input_table.loc[i, col]
+                self._index[tuple(dt_vect*mask_)].add(i)
+        else:
+            for i in indices:
+                dt_vect = self._input_table.loc[i, col]
+                self._index[tuple(dt_vect[val])].add(i)
 
     def process_deleted(self, indices: bitmap) -> None:
         for k in self._index.keys():

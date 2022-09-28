@@ -1,10 +1,10 @@
-import ipywidgets as ipw
+import ipywidgets as ipw  # type: ignore
 import pandas as pd
-from progressivis.io.csv_sniffer import CSVSniffer
-from progressivis.io import SimpleCSVLoader
-from progressivis.table import Table
-from progressivis.table.module import TableModule
-from progressivis.table.constant import Constant
+from progressivis.io.csv_sniffer import CSVSniffer  # type: ignore
+from progressivis.io import SimpleCSVLoader  # type: ignore
+from progressivis.table import Table  # type: ignore
+from progressivis.table.module import TableModule  # type: ignore
+from progressivis.table.constant import Constant  # type: ignore
 from .utils import (make_button, make_chaining_box,
                     set_child, dongle_widget, get_schema, ChainingWidget)
 import os
@@ -19,6 +19,7 @@ from typing import (
 
 def init_modules(obj: "CsvLoaderW") -> SimpleCSVLoader:
     urls = obj._urls
+    assert obj._sniffer is not None
     params = obj._sniffer.params
     sink = obj._input_module
     s = sink.scheduler()
@@ -41,6 +42,7 @@ def make_sniffer(obj: "CsvLoaderW") -> Callable:
             to_sniff = urls[0]
         n_lines = obj._n_lines.value
         obj._sniffer = CSVSniffer(path=to_sniff, lines=n_lines)
+        assert obj._sniffer is not None
         set_child(obj, 3, obj._sniffer.box)
         start_btn = make_button("Start loading csv ...",
                                 cb=make_start_loader(obj))
@@ -56,6 +58,7 @@ def make_start_loader(obj: "CsvLoaderW") -> Callable:
         obj._output_slot = "result"
         set_child(obj, 4, make_chaining_box(obj))
         btn.disabled = True
+        obj.dag.requestAttention(obj.title, "widget", "PROGRESS_NOTIFICATION", "")
     return _cbk
 
 
@@ -63,16 +66,19 @@ class CsvLoaderW(ipw.VBox, ChainingWidget):
     last_created = None
 
     def __init__(self,
-                 frame: AnyType,
+                 parent: AnyType,
                  dtypes: Dict[str, AnyType],
                  input_module: TableModule,
                  input_slot: str = "result",
                  urls: List[str] = [], *,
+                 dag=None,
                  to_sniff: str = "", lines=100) -> None:
-        super().__init__(frame=frame,
+        super().__init__(parent=parent,
                          dtypes=dtypes,
                          input_module=input_module,
-                         input_slot=input_slot)
+                         input_slot=input_slot, dag=dag)
+        self.dag.registerWidget(self, self.title, self.title, self.dom_id,
+                                [self.parent.title])
         self._urls_wg = ipw.Textarea(
             value=os.getenv("PROGRESSIVIS_DEFAULT_CSV"),
             placeholder='',

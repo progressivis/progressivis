@@ -1,9 +1,11 @@
-import ipywidgets as ipw
-from progressivis.table.dshape import dataframe_dshape
-from progressivis.vis import DataShape
-from progressivis.core import Sink
-from IPython.display import Javascript, display
-
+import ipywidgets as ipw  # type: ignore
+from progressivis.table.dshape import dataframe_dshape  # type: ignore
+from progressivis.vis import DataShape  # type: ignore
+from progressivis.core import Sink  # type: ignore
+from progressivis.core.utils import normalize_columns  # type: ignore
+from IPython.display import Javascript, display  # type: ignore
+from collections import defaultdict
+import dagWidget  # type: ignore
 from typing import (
     Any as AnyType,
     Optional,
@@ -12,6 +14,17 @@ from typing import (
     List,
     Callable,
 )
+
+
+dag_widget = None
+
+
+def get_dag():
+    global dag_widget
+    if dag_widget is None:
+        dag_widget = dagWidget.HelloWorld()
+    return dag_widget
+
 
 WidgetType = AnyType
 
@@ -25,10 +38,12 @@ def get_param(d, key, default):
     return val
 
 
-def set_child(wg, i, child):
+def set_child(wg, i, child, title=""):
     children = list(wg.children)
     children[i] = child
     wg.children = tuple(children)
+    if title:
+        wg.set_title(i, title)
 
 
 def append_child(wg, child, title=""):
@@ -116,10 +131,12 @@ def get_schema(sniffer) -> AnyType:
         if col in parse_dates:
             return "datetime64"
         return dataframe_dshape(dt)
-
+    norm_cols = dict(zip(sniffer._df.columns, normalize_columns(sniffer._df.columns)))
     dtypes = {col: _ds(col, dt) for (col, dt) in sniffer._df.dtypes.to_dict().items()}
     if usecols is not None:
-        dtypes = {col: dtypes[col] for col in usecols}
+        dtypes = {norm_cols[col]: dtypes[col] for col in usecols}
+    else:
+        dtypes = {norm_cols[col]: t for (col, t) in dtypes.items()}
     return dtypes
 
 
@@ -138,35 +155,32 @@ def make_button(
     return btn
 
 
-def make_guess_types(obj, sel):
-    def _guess(m, run_number):
-        if m.result is None:
-            return
-        stage = stage_register[sel.value](obj._frame, m.result, obj._output_module)
-        append_child(obj._frame, stage, sel.value)
-
-    return _guess
-
-
-new_stage_cell = "display(Constructor.widget_by_id({key}))"
-
-
 def make_guess_types_toc2(obj, sel):
     def _guess(m, run_number):
         global parent_dtypes
         if m.result is None:
             return
-        parent_dtypes = m.result
+        parent_dtypes = {k: "datetime64" if str(v)[0] == "6"
+                         else v for (k, v) in m.result.items()}
         add_new_stage(obj, sel.value)
 
     return _guess
 
 
-stage_register = {}
+stage_register: Dict[str, AnyType] = {}
 parent_widget = None
 parent_dtypes = None
 # last_created = None
 widget_by_id = {}
+widget_by_key = {}
+widget_numbers: Dict[str, int] = defaultdict(int)
+
+
+class _Dag:
+    def __init__(self, label, number, dag):
+        self._label = label
+        self._number = number
+        self._dag = dag
 
 
 def create_stage_widget(key):
@@ -175,32 +189,34 @@ def create_stage_widget(key):
     dtypes = obj._output_dtypes
     if dtypes is None:
         dtypes = parent_dtypes
-    stage = stage_register[key](obj._frame + 1, dtypes, obj._output_module)
+    dag = _Dag(label=key, number=widget_numbers[key], dag=get_dag())
+    stage = stage_register[key](obj, dtypes, obj._output_module, dag=dag)
+    widget_numbers[key] += 1
     assert obj not in obj.subwidgets
     obj.subwidgets.append(stage)
-    stage.parent = obj
-    # last_created = stage
+    widget_by_key[(key, stage.number)] = stage
     widget_by_id[id(stage)] = stage
     return stage
 
 
-def create_loader_widget(ftype="csv"):
+def create_loader_widget(key, ftype="csv"):
     obj = parent_widget
     dtypes = None
     assert obj not in obj.subwidgets
+    dag = _Dag(label=key, number=widget_numbers[key], dag=get_dag())
     if ftype == "csv":
         from .csv_loader import CsvLoaderW
 
-        stage = CsvLoaderW(obj._frame + 1, dtypes, obj._output_module)
+        stage = CsvLoaderW(obj, dtypes, obj._output_module, dag=dag)
     else:
         assert ftype == "parquet"
         from .parquet_loader import ParquetLoaderW
 
-        stage = ParquetLoaderW(obj._frame + 1, dtypes, obj._output_module)
+        stage = ParquetLoaderW(obj, dtypes, obj._output_module, dag=dag)
+    widget_numbers[key] += 1
     obj.subwidgets.append(stage)
-    stage.parent = obj
-    # last_created = stage
     widget_by_id[id(stage)] = stage
+    widget_by_key[(key, stage.number)] = stage
     return stage
 
 
@@ -208,32 +224,19 @@ def get_widget_by_id(key):
     return widget_by_id[key]
 
 
-def _make_btn_start(obj: AnyType, sel: AnyType) -> Callable:
-    def _cbk(btn: ipw.Button) -> None:
-        if obj._output_dtypes is None:
-            s = obj._output_module.scheduler()
-            with s:
-                ds = DataShape(scheduler=s)
-                ds.input.table = obj._output_module.output.result
-                ds.on_after_run(make_guess_types(obj, sel))
-                sink = Sink(scheduler=s)
-                sink.input.inp = ds.output.result
-        else:
-            stage = stage_register[sel.value](
-                obj._frame, obj._output_dtypes, obj._output_module
-            )
-            append_child(obj._frame, stage, sel.value)
-
-    return _cbk
+def get_widget_by_key(key, num):
+    return widget_by_key[(key, num)]
 
 
 def _make_btn_start_toc2(obj: AnyType, sel: AnyType) -> Callable:
     def _cbk(btn: ipw.Button) -> None:
         global parent_widget
         parent_widget = obj
+        assert parent_widget
         if obj._output_dtypes is None:
             s = obj._output_module.scheduler()
             with s:
+                print("create_datashape")
                 ds = DataShape(scheduler=s)
                 ds.input.table = obj._output_module.output.result
                 ds.on_after_run(make_guess_types_toc2(obj, sel))
@@ -249,6 +252,7 @@ def _make_btn_start_loader(obj: AnyType, ftype: str) -> Callable:
     def _cbk(btn: ipw.Button) -> None:
         global parent_widget
         parent_widget = obj
+        assert parent_widget
         add_new_loader(obj, ftype)
 
     return _cbk
@@ -287,6 +291,7 @@ def _remove_subtree(obj):
         obj.parent.subwidgets.remove(obj)
     if tag in widget_by_id:
         del widget_by_id[tag]
+        del widget_by_key[(obj.label, obj.number)]
     obj.delete_underlying_modules()
 
 
@@ -298,7 +303,7 @@ def make_remove(obj):
 
 
 def make_chaining_box(obj):
-    fnc = _make_btn_start_toc2 if isinstance(obj._frame, int) else _make_btn_start
+    fnc = _make_btn_start_toc2
     sel = ipw.Dropdown(
         options=[""] + list(stage_register.keys()),
         value="",
@@ -414,37 +419,37 @@ def get_previous(obj):
     return get_previous(obj.subwidgets[-1])
 
 
+new_stage_cell = "Constructor.widget('{key}', {num})"
+
+
 def add_new_stage(parent, title):
-    level = parent._frame + 1
-    # previous = parent if not parent.subwidgets else parent.subwidgets[-1]
     previous = get_previous(parent)
     prev = id(previous)
     stage = create_stage_widget(title)
     tag = id(stage)
-    md = "#" * level + " " + title
-    code = new_stage_cell.format(key=tag)
+    n = stage.number
+    md = "## " + title + (f"[{n}]" if n else "")
+    code = new_stage_cell.format(key=title, num=n)
     s = js_func_toc.format(prev=prev, tag=tag, md=md, code=code)
     display(Javascript(s))
 
 
 def add_new_loader(parent, ftype="csv"):
     title = f"{ftype.upper()} loader"
-    level = parent._frame + 1
-    # previous = parent if not parent.subwidgets else parent.subwidgets[-1]
-    # prev = id(previous)
     prev = "no_previous"
-    stage = create_loader_widget(ftype)
+    stage = create_loader_widget(title, ftype)
     tag = id(stage)
-    md = "#" * level + " " + title
-    code = new_stage_cell.format(key=tag)
+    n = stage.number
+    md = "## " + title + (f"[{n}]" if n else "")
+    code = new_stage_cell.format(key=title, num=n)
     s = js_func_toc.format(prev=prev, tag=tag, md=md, code=code)
     display(Javascript(s))
 
 
 class ChainingWidget:
     def __init__(self, *args, **kw):
-        assert "frame" in kw
-        self._frame = kw["frame"]
+        assert "parent" in kw
+        self.parent = kw["parent"]
         assert "dtypes" in kw
         self._dtypes = kw["dtypes"]
         assert "input_module" in kw
@@ -454,7 +459,7 @@ class ChainingWidget:
         self._output_slot = self._input_slot
         if self._dtypes is not None:
             self._output_dtypes = self._dtypes
-        self.parent = None
+        self._dag = kw["dag"]
         self.subwidgets = []
         self.managed_modules = []
 
@@ -470,3 +475,33 @@ class ChainingWidget:
             # for m in obj.managed_modules:
             deps = dataflow.collateral_damage(*managed_modules)
             dataflow.delete_modules(*deps)
+
+    def dag_register(self):
+        return self.dag.registerWidget(self, self.title,
+                                       self.title,
+                                       self.dom_id,
+                                       [self.parent.title])
+
+    @property
+    def dag(self):
+        return self._dag._dag
+
+    @property
+    def dom_id(self):
+        return self.title.replace(" ", "-")
+
+    @property
+    def label(self):
+        return self._dag._label
+
+    @property
+    def number(self):
+        return self._dag._number
+
+    @property
+    def _frame(self):
+        return self.parent._frame+1
+
+    @property
+    def title(self):
+        return f"{self.label}[{self.number}]" if self.number else self.label

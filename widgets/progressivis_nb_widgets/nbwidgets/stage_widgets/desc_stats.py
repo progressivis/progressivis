@@ -2,27 +2,27 @@ from functools import singledispatch
 from collections import Iterable
 from itertools import product
 from functools import wraps
-import ipywidgets as ipw
+import ipywidgets as ipw  # type: ignore
 import numpy as np
 import pandas as pd
-from progressivis.core import asynchronize, aio, Sink
-from progressivis.utils.psdict import PsDict
-from progressivis.table.module import TableModule
-from progressivis.io import DynVar
+from progressivis.core import asynchronize, aio, Sink  # type: ignore
+from progressivis.utils.psdict import PsDict  # type: ignore
+from progressivis.table.module import TableModule  # type: ignore
+from progressivis.io import DynVar  # type: ignore
 from progressivis_nb_widgets.nbwidgets import PrevImages
-from progressivis.stats import (
+from progressivis.stats import (  # type: ignore
     KLLSketch,
     Corr,
     Histogram1D,
     Histogram2D,
     Histogram1DCategorical,
 )
-from progressivis.vis import (
+from progressivis.vis import (  # type: ignore
     StatsFactory,
     Histogram1dPattern,
     Histogram2dPattern,
 )
-from vega.widget import VegaWidget
+from vega.widget import VegaWidget  # type: ignore
 from .._hist1d_schema import hist1d_spec_no_data, kll_spec_no_data
 from .._hist2d_schema import hist2d_spec_no_data
 from .._corr_schema import corr_spec_no_data
@@ -869,16 +869,18 @@ class DynViewer(TreeTab):
 class DescStatsW(ipw.VBox, ChainingWidget):
     def __init__(
             self,
-            frame: AnyType,
+            parent: AnyType,
             dtypes: Dict[str, AnyType],
             input_module: TableModule,
-            input_slot: str = "result",
+            input_slot: str = "result", dag=None
     ) -> None:
-        super().__init__(frame=frame,
+        super().__init__(parent=parent,
                          dtypes=dtypes,
                          input_module=input_module,
-                         input_slot=input_slot)
+                         input_slot=input_slot, dag=dag)
         self._dyn_viewer = DynViewer(dtypes, input_module, input_slot)
+        self.dag_register()
+        self.dag.requestAttention(self.title, "widget", "PROGRESS_NOTIFICATION", "0")
         self._chaining_box = make_chaining_box(self)
         self.children = (
             self._dyn_viewer,
