@@ -73,7 +73,7 @@ class Constructor(ipw.VBox, ChainingWidget):
         return get_widget_by_id(key)
 
     @staticmethod
-    def widget(key, num):
+    def widget(key, num=0):
         return get_widget_by_key(key, num)
 
     @property

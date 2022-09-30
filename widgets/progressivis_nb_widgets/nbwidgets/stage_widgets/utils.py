@@ -177,10 +177,14 @@ widget_numbers: Dict[str, int] = defaultdict(int)
 
 
 class _Dag:
-    def __init__(self, label, number, dag):
+    def __init__(self, label, number, dag, alias=""):
         self._label = label
-        self._number = number
+        if alias:
+            self._number = 0
+        else:
+            self._number = number
         self._dag = dag
+        self._alias = alias
 
 
 def create_stage_widget(key):
@@ -199,11 +203,11 @@ def create_stage_widget(key):
     return stage
 
 
-def create_loader_widget(key, ftype="csv"):
+def create_loader_widget(key, ftype, alias):
     obj = parent_widget
     dtypes = None
     assert obj not in obj.subwidgets
-    dag = _Dag(label=key, number=widget_numbers[key], dag=get_dag())
+    dag = _Dag(label=key, number=widget_numbers[key], dag=get_dag(), alias=alias)
     if ftype == "csv":
         from .csv_loader import CsvLoaderW
 
@@ -216,7 +220,10 @@ def create_loader_widget(key, ftype="csv"):
     widget_numbers[key] += 1
     obj.subwidgets.append(stage)
     widget_by_id[id(stage)] = stage
-    widget_by_key[(key, stage.number)] = stage
+    if alias:
+        widget_by_key[(alias, 0)] = stage
+    else:
+        widget_by_key[(key, stage.number)] = stage
     return stage
 
 
@@ -248,13 +255,13 @@ def _make_btn_start_toc2(obj: AnyType, sel: AnyType) -> Callable:
     return _cbk
 
 
-def _make_btn_start_loader(obj: AnyType, ftype: str) -> Callable:
+def _make_btn_start_loader(obj: AnyType, ftype: str, alias: WidgetType) -> Callable:
     def _cbk(btn: ipw.Button) -> None:
         global parent_widget
         parent_widget = obj
         assert parent_widget
-        add_new_loader(obj, ftype)
-
+        add_new_loader(obj, ftype, alias.value)
+        alias.value = ""
     return _cbk
 
 
@@ -326,10 +333,14 @@ def make_chaining_box(obj):
 
 def make_loader_box(obj, ftype="csv"):
     fnc = _make_btn_start_loader
+    alias_inp = ipw.Text(value='',
+                         placeholder='optional alias',
+                         description=f"{ftype.upper()} loader:",
+                         disabled=False)
     btn = make_button(
-        f"Create {ftype.upper()} loader", disabled=False, cb=fnc(obj, ftype)
+        "Create", disabled=False, cb=fnc(obj, ftype, alias_inp)
     )
-    return ipw.HBox([btn])
+    return ipw.HBox([alias_inp, btn])
 
 
 cleanup_js_func = """
@@ -419,6 +430,7 @@ def get_previous(obj):
     return get_previous(obj.subwidgets[-1])
 
 
+new_stage_cell_0 = "Constructor.widget('{key}')"
 new_stage_cell = "Constructor.widget('{key}', {num})"
 
 
@@ -434,14 +446,21 @@ def add_new_stage(parent, title):
     display(Javascript(s))
 
 
-def add_new_loader(parent, ftype="csv"):
+def add_new_loader(parent, ftype, alias):
     title = f"{ftype.upper()} loader"
     prev = "no_previous"
-    stage = create_loader_widget(title, ftype)
+    stage = create_loader_widget(title, ftype, alias)
     tag = id(stage)
     n = stage.number
-    md = "## " + title + (f"[{n}]" if n else "")
-    code = new_stage_cell.format(key=title, num=n)
+    if alias:
+        md = f"## {alias}"
+        code = new_stage_cell_0.format(key=alias)
+    else:
+        md = "## " + title + (f"[{n}]" if n else "")
+        if n:
+            code = new_stage_cell.format(key=title, num=n)
+        else:
+            code = new_stage_cell_0.format(key=title)
     s = js_func_toc.format(prev=prev, tag=tag, md=md, code=code)
     display(Javascript(s))
 
@@ -504,4 +523,6 @@ class ChainingWidget:
 
     @property
     def title(self):
+        if self._dag._alias:
+            return self._dag._alias
         return f"{self.label}[{self.number}]" if self.number else self.label
