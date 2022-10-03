@@ -4,16 +4,11 @@ from __future__ import annotations
 from ..table.module import TableModule, ReturnRunStep
 from ..core.slot import SlotDescriptor, Slot
 from . import Table
-from ..stats.utils import (
-    OnlineFunctor,
-    OnlineMean,
-    OnlineVariance,
-    OnlineStd,
-    OnlineSum,
-)
+from ..stats.utils import aggr_registry
 from ..core.decorators import process_slot, run_if_any
 from .dshape import dshape_from_dict
 from .group_by import GroupBy, SubColumnABC
+from ..stats.utils import OnlineFunctor
 from typing import cast, List, Union, Any, Dict, Tuple, Type
 
 # See also : https://arrow.apache.org/docs/python/compute.html#py-grouped-aggrs
@@ -21,9 +16,7 @@ from typing import cast, List, Union, Any, Dict, Tuple, Type
 
 class Aggregate(TableModule):
     inputs = [SlotDescriptor("table", type=Table, required=True)]
-    registry: Dict[str, Type[OnlineFunctor]] = dict(
-        mean=OnlineMean, variance=OnlineVariance, stddev=OnlineStd, sum=OnlineSum
-    )
+    registry = aggr_registry
 
     def __init__(
         self, compute: List[Tuple[str, Union[str, Type[OnlineFunctor]]]], **kwds: Any

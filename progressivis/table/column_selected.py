@@ -6,13 +6,14 @@ import numpy as np
 
 from .column_proxy import ColumnProxy
 from ..core.utils import integer_types
-
-from typing import TYPE_CHECKING, Tuple, Any, Sequence, Callable
+from .dshape import dataframe_dshape, DataShape
+from typing import TYPE_CHECKING, Tuple, Any, Sequence, Callable, Optional
 
 if TYPE_CHECKING:
     from .column_base import BaseColumn
     from .table_base import IndexTable
 
+Shape = Tuple[int, ...]
 
 logger = logging.getLogger(__name__)
 
@@ -56,10 +57,26 @@ class ColumnSelectedView(ColumnProxy):
 
 
 class ColumnComputedView(ColumnSelectedView):
-    def __init__(self, base: BaseColumn, index: IndexTable, aka: str, func: Callable):
+    def __init__(self, base: BaseColumn, index: IndexTable, aka: str, func: Callable, dtype: Optional[np.dtype] = None, xshape: Shape = ()):
         super().__init__(base, index=index)
         self.aka = aka
         self.func = func
+        self._is_ufunc = isinstance(func, (np.ufunc, np.vectorize))
+        self._otype = dtype
+        self._xshape = xshape
+
+    @property
+    def dtype(self) -> np.dtype[Any]:
+        return self._otype if self._otype is not None else super().dtype  # type: ignore
+
+    @property
+    def shape(self) -> Shape:
+        return (len(self._index), *self._xshape)
+
+    @property
+    def dshape(self) -> DataShape:
+        return (dataframe_dshape(self._otype)
+                if self._otype is not None else super().dshape)  # type: ignore
 
     @property
     def name(self):
@@ -71,8 +88,13 @@ class ColumnComputedView(ColumnSelectedView):
         return self.func(res)  # type: ignore
 
     def __getitem__(self, index: Any) -> Any:
+        raw_index = index
+        index = [index] if isinstance(index, integer_types) else index
         values = super().__getitem__(index)
-        ret = self.func(values)  # type: ignore
-        if isinstance(index, integer_types):
-            return ret[()]  # because ret is a 0d ndarray here
+        if self._is_ufunc:
+            ret = self.func(values)  # type: ignore
+        else:
+            ret = np.apply_along_axis(self.func, 1, values)
+        if isinstance(raw_index, integer_types):
+            return ret[0]
         return ret

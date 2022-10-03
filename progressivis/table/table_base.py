@@ -160,7 +160,7 @@ class _Loc(_BaseLoc):
             btab._columndict = columndict
             btab._dshape = dshape_create(
                 "{"
-                + ",".join(["{}:{}".format(c.name, c.dshape) for c in btab._columns])
+                + ",".join([f"{c.name}:{c.dshape}" for c in btab._columns])
                 + "}"
             )
             btab._masked = self._table
@@ -393,7 +393,12 @@ class BaseTable(metaclass=ABCMeta):
         if meta["category"] == "ufunc":
             base = self._columns[self._columndict[meta["column"]]]
             return ColumnComputedView(
-                base=base, index=index, aka=name, func=meta["ufunc"]
+                base=base,
+                index=index,
+                aka=name,
+                func=meta["ufunc"],
+                dtype=meta["dtype"],
+                xshape=meta["xshape"],
             )
         if meta["category"] == "vfunc":
             return ColumnVFunc(
@@ -1314,8 +1319,16 @@ class BaseTable(metaclass=ABCMeta):
     def _flush_cache(self) -> None:
         pass
 
-    def add_ufunc_column(self, name: str, col: str, ufunc: Callable) -> None:
-        self.computed[name] = dict(category="ufunc", ufunc=ufunc, column=col)
+    def add_ufunc_column(self, name: str,
+                         col: str,
+                         ufunc: Callable,
+                         dtype: Optional[np.dtype[Any]] = None,
+                         xshape: Shape = ()) -> None:
+        self.computed[name] = dict(category="ufunc",
+                                   ufunc=ufunc,
+                                   column=col,
+                                   dtype=dtype,
+                                   xshape=xshape)
 
     def add_vect_func_column(self, name: str, cols: List[str], vfunc: Callable, dtype: str, xshape=(), dshape=None) -> None:
         self.computed[name] = dict(
@@ -1496,7 +1509,7 @@ class TableSelectedView(BaseTable):
         self._columndict = coldict
         self._dshape = dshape_create(
             "{"
-            + ",".join(["{}:{}".format(c.name, c.dshape) for c in self._columns])
+            + ",".join([f"{c.name}:{c.dshape}" for c in self._columns])
             + "}"
         )
 

@@ -1,6 +1,6 @@
 import numpy as np
 from numbers import Number
-from typing import Iterable, Dict, Optional, Union, Any
+from typing import Iterable, Dict, Optional, Union, Any, Set, Tuple, Type
 from collections import defaultdict
 from abc import abstractmethod
 from datasketches import (
@@ -11,6 +11,10 @@ from datasketches import (
 )
 from ..table.column_base import BaseColumn
 from ..core.utils import nn, is_str, is_dict
+import datetime
+import calendar
+
+Num = Union[float, int]
 
 
 class OnlineFunctor:
@@ -21,7 +25,7 @@ class OnlineFunctor:
         raise NotImplementedError("reset not defined")
 
     @abstractmethod
-    def add(self, iterable: Iterable[float]) -> None:
+    def add(self, iterable: Iterable[Any]) -> None:
         raise NotImplementedError("add not defined")
 
     @abstractmethod
@@ -29,30 +33,101 @@ class OnlineFunctor:
         raise NotImplementedError("add not defined")
 
 
+aggr_registry: Dict[str, Type[OnlineFunctor]] = {}
+
+
 class OnlineSum(OnlineFunctor):
     """
-    Welford's algorithm
+
     """
 
     name = "sum"
 
     def __init__(self) -> None:
+        self._sum: Num
         self.reset()
 
     def reset(self) -> None:
-        self.sum: int = 0
+        self._sum = 0
 
-    def add(self, iterable: Iterable[float]) -> None:
+    def add(self, iterable: Iterable[Num]) -> None:
         if iterable is not None:
-            self.sum += sum(iterable)
+            self._sum += sum(iterable)
+
+    def get_value(self) -> Num:
+        return self._sum
+
+
+aggr_registry[OnlineSum.name] = OnlineSum
+
+
+class OnlineCount(OnlineFunctor):
+    """
+
+    """
+
+    name = "count"
+
+    def __init__(self) -> None:
+        self.count: int
+        self.reset()
+
+    def reset(self) -> None:
+        self.count = 0
+
+    def add(self, iterable: Iterable[Any]) -> None:
+        if iterable is not None:
+            self.count += len(iterable)  # type: ignore
 
     def get_value(self) -> float:
-        return self.sum
+        return self.count
+
+
+aggr_registry[OnlineCount.name] = OnlineCount
+
+
+class OnlineSet(OnlineFunctor):
+    """
+
+    """
+
+    name = "set"
+
+    def __init__(self) -> None:
+        self.reset()
+
+    def reset(self) -> None:
+        self._set: Set[Any] = set()
+
+    def add(self, iterable: Iterable[Any]) -> None:
+        if iterable is not None:
+            self._set.update(set(iterable))
+
+    def get_value(self) -> Any:
+        return self._set
+
+
+aggr_registry[OnlineSet.name] = OnlineSet
+
+
+class OnlineUnique(OnlineSet):
+    """
+
+    """
+
+    name = "uniq"
+
+    def get_value(self) -> Any:
+        assert len(self._set) == 1
+        return list(self._set)[0]
+
+
+aggr_registry[OnlineUnique.name] = OnlineUnique
 
 
 class OnlineMean(OnlineFunctor):
     """
-    Welford's algorithm
+
     """
 
     name = "mean"
@@ -79,6 +154,9 @@ class OnlineMean(OnlineFunctor):
 
     def get_value(self) -> float:
         return self.mean
+
+
+aggr_registry[OnlineMean.name] = OnlineMean
 
 
 # Should translate that to Cython eventually
@@ -125,11 +203,17 @@ class OnlineVariance(OnlineFunctor):
         return self.variance
 
 
+aggr_registry[OnlineVariance.name] = OnlineVariance
+
+
 class OnlineStd(OnlineVariance):
     name = "stddev"
 
     def get_value(self) -> float:
         return self.std
+
+
+aggr_registry[OnlineStd.name] = OnlineStd
 
 
 class OnlineCovariance:  # not an OnlineFuctor
@@ -162,6 +246,14 @@ class OnlineCovariance:  # not an OnlineFuctor
     def cov(self) -> float:
         div_ = self.n - self.ddof
         return self.cm / div_ if div_ else np.nan
+
+
+def day_week_i(vec: Tuple[int, ...]) -> int:
+    return datetime.datetime(*vec).weekday()  # type: ignore
+
+
+def day_week(vec: Tuple[int, ...]) -> str:
+    return calendar.day_name[day_week_i(vec)]
 
 
 class SimpleImputer:

@@ -4,7 +4,7 @@ from progressivis import Scheduler
 from progressivis.table.table import Table
 from progressivis.table.table_base import BaseTable
 from progressivis.core.bitmap import bitmap
-
+from progressivis.stats.utils import day_week
 import numpy as np
 
 
@@ -55,6 +55,47 @@ class TestTableSelected(ProgressiveTest):
             self.assertEqual(view.at[4, "a"], ivalues[4])
         with self.assertRaises(KeyError):
             self.assertEqual(view.at[8, "a"], ivalues[8])
+
+    def test_loc_table_computed2(self) -> None:
+        t = Table(
+            "table_for_test_computed_columns2",
+            dshape="{a: 6*uint16, b: float32}",
+            create=True,
+        )
+        t.resize(10)
+        sz = 20
+        years = np.random.randint(2015, 2020, size=sz, dtype="uint16")
+        months = np.random.randint(1, 12, size=sz, dtype="uint16")
+        days = np.random.randint(1, 28, size=sz, dtype="uint16")
+        hours = np.random.randint(0, 23, size=sz, dtype="uint16")
+        mins = np.random.randint(0, 59, size=sz, dtype="uint16")
+        secs = np.random.randint(0, 59, size=sz, dtype="uint16")
+        dt_values = np.vstack([years, months, days, hours, mins, secs]).T
+        t["a"] = dt_values[:10]
+        fvalues = np.array(np.random.rand(20), np.float32)
+        t["b"] = fvalues[:10]
+        self.assertEqual(t.shape, (10, 7))
+        t.append({"a":  dt_values[10:], "b": fvalues[10:]})
+        self.assertEqual(t.shape, (20, 7))
+        t.add_ufunc_column("dayweek", "a", day_week, dtype=object)  # type: ignore
+        self.assertEqual(t.shape, (20, 7))
+        ta = t.loc[:, "a"]
+        assert ta
+        self.assertEqual(ta.shape, (20, 6))
+        tdw = t.loc[:, "dayweek"]
+        assert tdw
+        self.assertEqual(tdw.shape, (20, 1))
+        sel = bitmap(range(5, 8))
+        view = t.loc[sel, :]
+        assert view is not None
+        self.assertEqual(view.shape, (3, 8))
+        view2 = view.loc[sel, ["a", "dayweek"]]
+        assert view2 is not None
+        self.assertEqual(view2.shape, (3, 7))
+        self.assertTrue(
+            np.array_equal(
+                np.array([day_week(v) for v in ta["a"].loc[:]]),
+                tdw.to_array().reshape(-1)))
 
     def test_loc_table_computed_numexpr(self) -> None:
         t = Table(
