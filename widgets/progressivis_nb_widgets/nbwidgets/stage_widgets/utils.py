@@ -243,7 +243,6 @@ def _make_btn_start_toc2(obj: AnyType, sel: AnyType) -> Callable:
         if obj._output_dtypes is None:
             s = obj._output_module.scheduler()
             with s:
-                print("create_datashape")
                 ds = DataShape(scheduler=s)
                 ds.input.table = obj._output_module.output.result
                 ds.on_after_run(make_guess_types_toc2(obj, sel))
@@ -476,8 +475,8 @@ class ChainingWidget:
         self._input_slot = kw.get("input_slot", "result")
         self._output_module = self._input_module
         self._output_slot = self._input_slot
-        if self._dtypes is not None:
-            self._output_dtypes = self._dtypes
+        if self._dtypes is not None:  # i.e. not a loader
+            self._output_dtypes = None
         self._dag = kw["dag"]
         self.subwidgets = []
         self.managed_modules = []
@@ -487,7 +486,6 @@ class ChainingWidget:
 
     def delete_underlying_modules(self):
         managed_modules = self.get_underlying_modules()
-        print("underlying modules", managed_modules)
         if not managed_modules:
             return
         with self._input_module.scheduler() as dataflow:
