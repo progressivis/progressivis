@@ -5,11 +5,13 @@ from .group_by import GroupByW
 from .aggregate import AggregateW
 from .dump_table import DumpTableW
 from .join import JoinW
+from .multi_series import MultiSeriesW
 __all__ = [
     "Constructor",
     "DescStatsW",
     "GroupByW",
     "AggregateW",
     "DumpTableW",
-    "JoinW"
+    "JoinW",
+    "MultiSeriesW"
     ]

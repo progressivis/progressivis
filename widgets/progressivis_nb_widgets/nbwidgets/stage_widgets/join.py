@@ -151,7 +151,6 @@ class JoinW(ipw.VBox, ChainingWidget):
                 msk = mw.get_dt()
                 if msk != "YMDhms":
                     inv_mask = msk
-            print("inv mask", inv_mask)
             join = Join(how=self._how.value, inv_mask=inv_mask, scheduler=s)
             join.create_dependent_modules(
                 related_module=self._related_wg._output_module,
