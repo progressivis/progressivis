@@ -1504,7 +1504,13 @@ class TableSelectedView(BaseTable):
         assert self._base
         if computed is not None:
             self._base.computed.update(computed)
-        cols, coldict = self._base.make_projection(columns, self)
+        if base.columns:
+            columns_ = columns if columns else base.columns
+            comp_ = set() if computed is None else set(computed.keys())
+            allowed = set(base.columns) | comp_
+            columns_ = [c for c in columns_ if c in allowed]
+            assert columns_
+        cols, coldict = self._base.make_projection(columns_, self)
         self._columns = cols
         self._columndict = coldict
         self._dshape = dshape_create(

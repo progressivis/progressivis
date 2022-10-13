@@ -130,6 +130,7 @@ class JoinW(ipw.VBox, ChainingWidget):
         )
         self._btn_start = make_button("Start", disabled=True, cb=self._btn_start_cb)
         self.children = (gb, self._btn_ok, self._cols_setup, ipw.HBox([self._how, self._btn_start]), dongle_widget())
+        self.dag_register()
 
     def _btn_start_cb(self, btn):
         primary_cols = [k for (k, (ck, _, _)) in self._primary_cols_dict.items() if ck.value]
@@ -164,14 +165,12 @@ class JoinW(ipw.VBox, ChainingWidget):
             sink.input.inp = join.output.result
             self._output_module = join
         set_child(self, 4, make_chaining_box(self))
-        self.dag.requestAttention(self.title, "widget", "PROGRESS_NOTIFICATION", 0)
+        self.dag_running()
 
     def _btn_ok_cb(self, k):
         self._input_2.disabled = True
         self._role_2.disabled = True
-        self.dag.registerWidget(self, self.title, self.title, self.dom_id,
-                                [self.parent.title,
-                                 widget_by_key[self._input_2.value].title])
+        self.dag.addParent(self.title,  widget_by_key[self._input_2.value].title)
         if self._role_1.value == "primary":
             primary_wg = self.parent
             related_wg = widget_by_key[self._input_2.value]

@@ -328,5 +328,7 @@ class Join(TableModule):
 
         # currently updates are ignored
         # NB: we assume that the updates do not concern the "join on" columns
-        related_slot.updated.next(as_slice=False)  # nop
+        if related_slot.updated.any():
+            updates = related_slot.updated.next(as_slice=False)
+            steps += len(updates)
         return self._return_run_step(self.next_state(related_slot), steps_run=steps)

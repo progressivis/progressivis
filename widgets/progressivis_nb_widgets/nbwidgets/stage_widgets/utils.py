@@ -162,6 +162,7 @@ def make_guess_types_toc2(obj, sel):
             return
         parent_dtypes = {k: "datetime64" if str(v)[0] == "6"
                          else v for (k, v) in m.result.items()}
+        obj._output_dtypes = parent_dtypes
         add_new_stage(obj, sel.value)
 
     return _guess
@@ -498,6 +499,9 @@ class ChainingWidget:
                                        self.title,
                                        self.dom_id,
                                        [self.parent.title])
+
+    def dag_running(self, progress=0):
+        self.dag.updateSummary(self.title, {"progress": progress, "status": "RUNNING"})
 
     @property
     def dag(self):

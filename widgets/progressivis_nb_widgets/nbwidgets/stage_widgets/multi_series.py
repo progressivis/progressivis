@@ -137,7 +137,8 @@ class MultiSeriesW(ipw.VBox, ChainingWidget):
         self._vw = _VegaWidget(spec=multi_series_no_data)
         set_child(self, 2, self._vw)
         self._input_module.on_after_run(self._update_vw)
-        self.dag.requestAttention(self.title, "widget", "PROGRESS_NOTIFICATION", "0")
+        # self._input_module.scheduler().on_tick(self._update_vw)
+        self.dag_running()
 
 
 stage_register["MultiSeries"] = MultiSeriesW

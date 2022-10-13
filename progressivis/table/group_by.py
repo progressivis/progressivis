@@ -122,7 +122,8 @@ class GroupBy(TableModule):
             keepdims: bool = False, **kwds: Any
     ) -> None:
         super().__init__(**kwds)
-        self.by = by
+        self._raw_by = by
+        self.by = None
         self._keepdims = keepdims
         self._index: Dict[Any, bitmap] = defaultdict(bitmap)
         self._input_table = None
@@ -186,6 +187,25 @@ class GroupBy(TableModule):
         self._input_table = input_table = input_slot.data()
         if input_table is None:
             return self._return_run_step(self.state_blocked, steps_run=0)
+        if self.by is None:
+            if isinstance(self._raw_by, str):
+                by_shape = input_table._column(self._raw_by).shape
+                if len(by_shape) == 1:
+                    self.by = self._raw_by
+                elif len(by_shape) == 2:
+                    self.by = SimpleSC(self._raw_by, list(range(by_shape[1])))
+                else:
+                    raise ValueError(f"Group by not allowed for the {by_shape} shaped column {self._raw_by}")
+            elif isinstance(self._raw_by, list):
+                for c in self._raw_by:
+                    if not isinstance(c, str):
+                        raise ValueError("Multiple group by requires plain typed columns")
+                    by_shape = input_table._column(c).shape
+                    if len(by_shape) != 1:
+                        raise ValueError("Multiple group by requires plain typed columns")
+                self.by = self._raw_by
+            else:
+                self.by = self._raw_by
         if self.result is None:
             self.result = TableSelectedView(input_table, bitmap([]))
         deleted: Optional[bitmap] = None
@@ -204,8 +224,8 @@ class GroupBy(TableModule):
             self.process_created(self.by, created)
         updated: Optional[bitmap] = None
         if input_slot.updated.any():
-            updated = input_slot.updated.next(length=step_size, as_slice=False)
-            steps += len(updated)
             # currently updates are ignored
             # NB: we assume that the updates do not concern the "grouped by" columns
+            updated = input_slot.updated.next(length=step_size, as_slice=False)
+            steps += len(updated)
         return self._return_run_step(self.next_state(input_slot), steps)

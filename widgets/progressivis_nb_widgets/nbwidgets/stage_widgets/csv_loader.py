@@ -58,7 +58,8 @@ def make_start_loader(obj: "CsvLoaderW") -> Callable:
         obj._output_slot = "result"
         set_child(obj, 4, make_chaining_box(obj))
         btn.disabled = True
-        obj.dag.requestAttention(obj.title, "widget", "PROGRESS_NOTIFICATION", "")
+        obj.dag_running()
+
     return _cbk
 
 
@@ -77,8 +78,7 @@ class CsvLoaderW(ipw.VBox, ChainingWidget):
                          dtypes=dtypes,
                          input_module=input_module,
                          input_slot=input_slot, dag=dag)
-        self.dag.registerWidget(self, self.title, self.title, self.dom_id,
-                                [self.parent.title])
+        self.dag_register()
         self._urls_wg = ipw.Textarea(
             value=os.getenv("PROGRESSIVIS_DEFAULT_CSV"),
             placeholder='',

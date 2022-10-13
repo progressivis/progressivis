@@ -28,9 +28,9 @@ class DumpTableW(ipw.VBox, ChainingWidget):
                          dtypes=dtypes,
                          input_module=input_module,
                          input_slot=input_slot, dag=dag)
-        self.dag.registerWidget(self, self.title, self.title, self.dom_id,
-                                [self.parent.title])
-        self.dag.requestAttention(self.title, "widget", "PROGRESS_NOTIFICATION", "0")
+        self.dag_register()
+        self.dag_running()
+
         sl_wg = SlotWg(input_module, input_slot)
         self.children = (sl_wg, dongle_widget())
         set_child(self, 1, make_chaining_box(self))
@@ -43,4 +43,4 @@ class DumpTableW(ipw.VBox, ChainingWidget):
         return []
 
 
-stage_register["Dump table"] = DumpTableW
+stage_register["Dump_table"] = DumpTableW

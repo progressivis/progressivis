@@ -69,7 +69,7 @@ def _make_start_btn(obj):
         obj._output_slot = "result"
         btn.disabled = True
         set_child(obj, 3, make_chaining_box(obj))
-        obj.dag.requestAttention(obj.title, 'widget', "PROGRESS_NOTIFICATION", "0")
+        obj.dag_running()
     return _cbk
 
 

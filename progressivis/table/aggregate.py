@@ -62,11 +62,11 @@ class Aggregate(TableModule):
                 create=True,
             )
         if grp not in self._table_index:
-            id = self.table.add(row)
-            self._table_index[grp] = id
+            id_ = self.table.add(row)
+            self._table_index[grp] = id_
         else:
-            id = self._table_index[grp]
-            self.table.loc[id, row_dict.keys()] = row
+            id_ = self._table_index[grp]
+            self.table.loc[id_, row_dict.keys()] = row
 
     @process_slot("table", reset_cb="reset")
     @run_if_any
@@ -101,4 +101,5 @@ class Aggregate(TableModule):
             for grp, ids in groupby_mod.items():
                 grp_ids = ids & indices
                 self.update_row(grp, grp_ids, input_df)
-        return self._return_run_step(self.state_ready, steps_run=steps)
+                steps += len(grp_ids)
+        return self._return_run_step(self.next_state(dfslot), steps_run=steps)
