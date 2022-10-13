@@ -152,7 +152,8 @@ class TableSelectedChangeManager(BaseChangeManager):
         assert isinstance(data, TableSelectedView)
         if data is None or (run_number != 0 and run_number <= self._last_update):
             return
-        table = data.base
+        # table = data.base
+        table = data.get_original_base()
         selection = data.index
         self._mask_cm.update(run_number, selection, mid)
         self._table_cm.update(run_number, table, mid)
@@ -214,7 +215,8 @@ class TableSelectedChangeManager(BaseChangeManager):
         If the change manager has something buffered, then the module is
         ready to run immediately.
         """
-        return self._table_cm.has_buffered() or self._mask_cm.has_buffered()
+        # return self._table_cm.has_buffered() or self._mask_cm.has_buffered()
+        return super().has_buffered() or self._mask_cm.has_buffered()
 
     def last_update(self) -> int:
         "Return the date of the last update"
