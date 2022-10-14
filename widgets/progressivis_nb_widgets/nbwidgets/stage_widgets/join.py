@@ -2,6 +2,7 @@ from .utils import (
     make_button,
     stage_register,
     make_chaining_box,
+    make_guess_types_toc2,
     dongle_widget,
     append_child, set_child, ChainingWidget,
     widget_by_key
@@ -11,6 +12,7 @@ from progressivis.table.module import TableModule
 from progressivis.table.group_by import UTIME_SHORT_D
 from progressivis.table.join import Join
 from progressivis.core import Sink
+from progressivis.vis import DataShape  # type: ignore
 from typing import (
     Any as AnyType,
     Dict,
@@ -167,16 +169,27 @@ class JoinW(ipw.VBox, ChainingWidget):
         set_child(self, 4, make_chaining_box(self))
         self.dag_running()
 
-    def _btn_ok_cb(self, k):
+    def _btn_ok_cb(self, btn, dummy=None):
         self._input_2.disabled = True
         self._role_2.disabled = True
-        self.dag.addParent(self.title,  widget_by_key[self._input_2.value].title)
+        widget_1 = self.parent
+        widget_2 = widget_by_key[self._input_2.value]
+        if widget_2._output_dtypes is None:
+            s = widget_2._output_module.scheduler()
+            with s:
+                ds = DataShape(scheduler=s)
+                ds.input.table = widget_2._output_module.output.result
+                ds.on_after_run(make_guess_types_toc2(widget_2, self._input_2, self._btn_ok_cb))
+                sink = Sink(scheduler=s)
+                sink.input.inp = ds.output.result
+            return
+        self.dag.addParent(self.title,  widget_2.title)
         if self._role_1.value == "primary":
-            primary_wg = self.parent
-            related_wg = widget_by_key[self._input_2.value]
+            primary_wg = widget_1
+            related_wg = widget_2
         else:
-            primary_wg = widget_by_key[self._input_2.value]
-            related_wg = self.parent
+            primary_wg = widget_2
+            related_wg = widget_1
         self._primary_wg = primary_wg
         self._related_wg = related_wg
         # primary cols

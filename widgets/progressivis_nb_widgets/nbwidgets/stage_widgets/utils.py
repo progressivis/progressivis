@@ -155,7 +155,7 @@ def make_button(
     return btn
 
 
-def make_guess_types_toc2(obj, sel):
+def make_guess_types_toc2(obj, sel, fun):
     def _guess(m, run_number):
         global parent_dtypes
         if m.result is None:
@@ -163,7 +163,10 @@ def make_guess_types_toc2(obj, sel):
         parent_dtypes = {k: "datetime64" if str(v)[0] == "6"
                          else v for (k, v) in m.result.items()}
         obj._output_dtypes = parent_dtypes
-        add_new_stage(obj, sel.value)
+        fun(obj, sel.value)
+        with m.scheduler() as dataflow:
+            deps = dataflow.collateral_damage(m.name)
+            dataflow.delete_modules(*deps)
 
     return _guess
 
@@ -236,7 +239,7 @@ def get_widget_by_key(key, num):
     return widget_by_key[(key, num)]
 
 
-def _make_btn_start_toc2(obj: AnyType, sel: AnyType) -> Callable:
+def _make_btn_start_toc2(obj: AnyType, sel: AnyType, fun) -> Callable:
     def _cbk(btn: ipw.Button) -> None:
         global parent_widget
         parent_widget = obj
@@ -246,11 +249,11 @@ def _make_btn_start_toc2(obj: AnyType, sel: AnyType) -> Callable:
             with s:
                 ds = DataShape(scheduler=s)
                 ds.input.table = obj._output_module.output.result
-                ds.on_after_run(make_guess_types_toc2(obj, sel))
+                ds.on_after_run(make_guess_types_toc2(obj, sel, fun))
                 sink = Sink(scheduler=s)
                 sink.input.inp = ds.output.result
         else:
-            add_new_stage(obj, sel.value)
+            fun(obj, sel.value)
 
     return _cbk
 
@@ -318,7 +321,7 @@ def make_chaining_box(obj):
         description="Next stage",
         disabled=False,
     )
-    btn = make_button("Chain it", disabled=True, cb=fnc(obj, sel))
+    btn = make_button("Chain it", disabled=True, cb=fnc(obj, sel, add_new_stage))
     del_btn = make_button("Remove subtree", disabled=False, cb=make_remove(obj))
 
     def _on_sel_change(change):
