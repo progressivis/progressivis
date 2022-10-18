@@ -355,7 +355,7 @@ class CSVSniffer:
             with pd.option_context(
                 "display.max_rows", self.lines.value, "display.max_columns", 0
             ):
-                self.df_text.value = self._df._repr_html_()
+                self.df_text.value = self._df._repr_html_()  # type: ignore
         self.dataframe_to_columns()
         self.dataframe_to_params()
         return self._df
@@ -373,7 +373,7 @@ class CSVSniffer:
             with pd.option_context(
                 "display.max_rows", self.lines.value, "display.max_columns", 0
             ):
-                self.df2_text.value = self._df2._repr_html_()
+                self.df2_text.value = self._df2._repr_html_()  # type: ignore
         self.tab.selected_index = 2
 
     def dataframe_to_params(self) -> None:
@@ -403,7 +403,7 @@ class CSVSniffer:
                 del self.column[column]
         self.columns.options = list(df.columns)
         self.columns.disabled = False
-        self.show_column(df.columns[0])
+        self.show_column(df.columns[0])  # type: ignore
 
     def show_column(self, column: str) -> None:
         if column not in self.column:
@@ -453,6 +453,24 @@ class CSVSniffer:
             self.params["parse_dates"] = None
         self.set_cmdline()
 
+    def na_values_columns(self) -> None:
+        assert self._df is not None
+        na_values: Dict[str, Any] = {}
+        for name in list(self._df.columns):
+            col = self.column[name]
+            if not col.na_values_ck.value:
+                continue
+            if col.na_values_sep.value:
+                val = col.na_values_.value.split(col.na_values_sep.value)
+            else:
+                val = col.na_values_.value
+            na_values[name] = val
+        if na_values:
+            self.params["na_values"] = na_values
+        else:
+            self.params["na_values"] = None
+        self.set_cmdline()
+
     def load_dataframe(self) -> pd.DataFrame:
         "Full load the DataFrame with the GUI parameters"
         return cast(pd.DataFrame, pd.read_csv(self.path, **self.params))
@@ -498,6 +516,12 @@ class ColumnInfo:
         self.nunique = widgets.Text(
             description="Unique vals:", value=f"{series.nunique()}/{len(series)}"
         )
+        self.na_values_ck = widgets.Checkbox(description="NA values", indent=True, value=False)
+        self.na_values_ck.observe(self.na_values_ck_cb, "value")
+        self.na_values_ = widgets.Text(description="NA values:", value="")
+        self.na_values_.observe(self.na_values_cb, "value")
+        self.na_values_sep = widgets.Text(description="Separator:", value="", placeholder="if many values", disabled=True)
+        self.na_values_sep.observe(self.na_values_sep_cb, "value")
         self.box = widgets.VBox()
         self.box.children = [
             self.name,
@@ -506,6 +530,7 @@ class ColumnInfo:
             self.retype,
             self.use,
             self.nunique,
+            self.na_values_ck
         ]
 
     def retype_values(self) -> List[str]:
@@ -521,6 +546,28 @@ class ColumnInfo:
 
     def usecols_column(self, change: Dict[str, Any]) -> None:
         self.sniffer.usecols_columns()
+
+    def na_values_ck_cb(self, change: Dict[str, Any]) -> None:
+        if change["new"]:
+            self.box.children = list(self.box.children) + [
+                self.na_values_,
+                self.na_values_sep
+            ]
+        else:
+            self.na_values_.value = ""
+            self.na_values_sep.value = ""
+            self.box.children = self.box.children[:-2]
+
+    def na_values_cb(self, change: Dict[str, Any]) -> None:
+        if change["new"]:
+            self.na_values_sep.disabled = False
+        else:
+            self.na_values_sep.value = ""
+            self.na_values_sep.disabled = True
+        self.sniffer.na_values_columns()
+
+    def na_values_sep_cb(self, change: Dict[str, Any]) -> None:
+        self.sniffer.na_values_columns()
 
     def _test_column_type(self, newtype: Any) -> Optional[ValueError]:
         try:

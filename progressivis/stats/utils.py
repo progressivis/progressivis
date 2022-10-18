@@ -295,7 +295,7 @@ class SimpleImputer:
         if self._impute_all:
             self._dtypes = dtypes
         else:
-            self._dtypes = {k: v for (k, v) in dtypes.items() if k in self.strategy}
+            self._dtypes = {k: v for (k, v) in dtypes.items() if k in self._strategy}
         for col, ty in self._dtypes.items():
             strategy = self.get_strategy(col)
             if strategy == "mean":
