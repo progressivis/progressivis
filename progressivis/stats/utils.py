@@ -1,6 +1,6 @@
 import numpy as np
 from numbers import Number
-from typing import Iterable, Dict, Optional, Union, Any, Set, Tuple, Type
+from typing import Iterable, Dict, Optional, Union, Any, Set, Type
 from collections import defaultdict
 from abc import abstractmethod
 from datasketches import (
@@ -11,8 +11,6 @@ from datasketches import (
 )
 from ..table.column_base import BaseColumn
 from ..core.utils import nn, is_str, is_dict
-import datetime
-import calendar
 
 Num = Union[float, int]
 
@@ -246,14 +244,6 @@ class OnlineCovariance:  # not an OnlineFuctor
     def cov(self) -> float:
         div_ = self.n - self.ddof
         return self.cm / div_ if div_ else np.nan
-
-
-def day_week_i(vec: Tuple[int, ...]) -> int:
-    return datetime.datetime(*vec).weekday()  # type: ignore
-
-
-def day_week(vec: Tuple[int, ...]) -> str:
-    return calendar.day_name[day_week_i(vec)]
 
 
 class SimpleImputer:

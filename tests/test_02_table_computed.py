@@ -4,7 +4,7 @@ from progressivis import Scheduler
 from progressivis.table.table import Table
 from progressivis.table.table_base import BaseTable
 from progressivis.core.bitmap import bitmap
-from progressivis.stats.utils import day_week
+from progressivis.table.compute import week_day
 import numpy as np
 
 
@@ -77,24 +77,24 @@ class TestTableSelected(ProgressiveTest):
         self.assertEqual(t.shape, (10, 7))
         t.append({"a":  dt_values[10:], "b": fvalues[10:]})
         self.assertEqual(t.shape, (20, 7))
-        t.add_ufunc_column("dayweek", "a", day_week, dtype=object)  # type: ignore
+        t.add_ufunc_column("weekday", "a", week_day, dtype=object)  # type: ignore
         self.assertEqual(t.shape, (20, 7))
         ta = t.loc[:, "a"]
         assert ta
         self.assertEqual(ta.shape, (20, 6))
-        tdw = t.loc[:, "dayweek"]
+        tdw = t.loc[:, "weekday"]
         assert tdw
         self.assertEqual(tdw.shape, (20, 1))
         sel = bitmap(range(5, 8))
         view = t.loc[sel, :]
         assert view is not None
         self.assertEqual(view.shape, (3, 8))
-        view2 = view.loc[sel, ["a", "dayweek"]]
+        view2 = view.loc[sel, ["a", "weekday"]]
         assert view2 is not None
         self.assertEqual(view2.shape, (3, 7))
         self.assertTrue(
             np.array_equal(
-                np.array([day_week(v) for v in ta["a"].loc[:]]),
+                np.array([week_day(v) for v in ta["a"].loc[:]]),
                 tdw.to_array().reshape(-1)))
 
     def test_loc_table_computed_numexpr(self) -> None:
