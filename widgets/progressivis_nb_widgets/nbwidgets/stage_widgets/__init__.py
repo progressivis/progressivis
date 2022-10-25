@@ -6,6 +6,7 @@ from .aggregate import AggregateW
 from .dump_table import DumpTableW
 from .join import JoinW
 from .multi_series import MultiSeriesW
+from .scatterplot import ScatterplotW
 from .columns import ColumnsW
 __all__ = [
     "Constructor",
@@ -15,5 +16,6 @@ __all__ = [
     "DumpTableW",
     "JoinW",
     "MultiSeriesW",
+    "ScatterplotW",
     "ColumnsW"
     ]

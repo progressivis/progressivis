@@ -12,6 +12,15 @@ def week_day(vec: Tuple[int, ...]) -> str:
     return calendar.day_name[week_day_int(vec)]
 
 
+def ymd_string(vec: Tuple[int, ...]) -> str:
+    y, m, d, *_ = vec
+    return f"{y}-{m}-{d}"
+
+
+def is_weekend(vec: Tuple[int, ...]) -> bool:
+    return week_day_int(vec) >= 5
+
+
 class _Unchanged:
     pass
 

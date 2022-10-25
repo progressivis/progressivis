@@ -7,10 +7,12 @@ from .utils import (
 )
 import ipywidgets as ipw  # type: ignore
 import numpy as np
+import operator as op
 from progressivis.table.module import TableModule  # type: ignore
 from progressivis.table.repeater import Repeater, Computed  # type: ignore
 from progressivis.core import Sink  # type: ignore
-from progressivis.table.compute import week_day  # , UNCHANGED, make_if_else
+from progressivis.table.compute import (week_day, UNCHANGED,
+                                        make_if_else, ymd_string, is_weekend)
 
 from typing import (
     Any as AnyType,
@@ -29,7 +31,7 @@ UFUNCS = {
 }
 
 ALL_FUNCS = UFUNCS.copy()
-ALL_FUNCS.update({"week_day": week_day})
+ALL_FUNCS.update({"week_day": week_day, "is_weekend": is_weekend, "ymd_string": ymd_string})
 
 
 class FuncW(ipw.VBox):
@@ -58,6 +60,124 @@ class FuncW(ipw.VBox):
         super().__init__([self._name, self._dtype, self._use])
 
 
+class IfElseW(ipw.VBox):
+    def __init__(self, main):
+        self._main = main
+        self._name = ipw.Text(
+            value="", placeholder="mandatory", description="Name:",
+            disabled=False
+            )
+        self._name.observe(self._name_cb, names="value")
+        self._type = ipw.Dropdown(
+            options=[("object", lambda x: x), ("integer", int), ("floating", float)],
+            description="Type:",
+            ensure_option=True,
+            disabled=False
+        )
+        self._name_box = ipw.HBox([self._name, self._type])
+        self._is = ipw.Dropdown(
+            options=[("", None), (">", op.gt),
+                     ("<", op.lt), (">=", op.ge),
+                     ("<=", op.le), ("==", op.eq), ("NaN", np.isnan)],
+            description="Is",
+            ensure_option=True,
+            disabled=False
+        )
+        self._is.observe(self._is_cb, names="value")
+        self._than = ipw.Text(
+            value="", placeholder="", description="Than:",
+            disabled=False
+            )
+        self._than.observe(self._name_cb, names="value")
+        self._cond_box = ipw.HBox([self._is, self._than])
+
+        self._if_true_val = ipw.Text(
+            value="", placeholder="mandatory", description="If True:",
+            disabled=False
+            )
+        self._if_true_val.observe(self._name_cb, names="value")
+        self._if_true_ck = ipw.Checkbox(value=False, description="Unchanged",
+                                        disabled=False)
+        self._if_true_ck.observe(self._if_true_ck_cb, names="value")
+        self._if_true_box = ipw.HBox([self._if_true_val, self._if_true_ck])
+        self._if_false_val = ipw.Text(
+            value="", placeholder="mandatory", description="If False:",
+            disabled=False
+            )
+        self._if_false_val.observe(self._name_cb, names="value")
+        self._if_false_ck = ipw.Checkbox(value=False, description="Unchanged",
+                                         disabled=False)
+        self._if_false_ck.observe(self._if_false_ck_cb, names="value")
+        self._if_false_box = ipw.HBox([self._if_false_val, self._if_false_ck])
+        self._create_fnc = make_button(
+            "Create", disabled=True, cb=self._create_fnc_cb
+        )
+        super().__init__([self._name_box, self._cond_box,
+                          self._if_true_box, self._if_false_box,
+                          self._create_fnc])
+
+    def _name_cb(self, change: AnyType) -> None:
+        self._check_all()
+
+    def _is_cb(self, change: AnyType) -> None:
+        if change["new"] is np.isnan:
+            self._than.value = ""
+            self._than.disabled = True
+        else:
+            self._than.disabled = False
+        self._check_all()
+
+    def _if_true_ck_cb(self, change: AnyType) -> None:
+        if change["new"]:
+            self._if_true_val.value = ""
+            self._if_true_val.disabled = True
+        else:
+            self._if_true_val.disabled = False
+        self._check_all()
+
+    def _if_false_ck_cb(self, change: AnyType) -> None:
+        if change["new"]:
+            self._if_false_val.value = ""
+            self._if_false_val.disabled = True
+        else:
+            self._if_false_val.disabled = False
+        self._check_all()
+
+    def _check_all(self):
+        if not self._name.value:
+            self._create_fnc.disabled = True
+            return
+        if not self._is.value:
+            self._create_fnc.disabled = True
+            return
+        if not (self._if_true_val.value or self._if_true_ck.value):
+            self._create_fnc.disabled = True
+            return
+        if not (self._if_false_val.value or self._if_false_ck.value):
+            self._create_fnc.disabled = True
+            return
+        if self._if_true_ck.value and self._if_false_ck.value:
+            self._create_fnc.disabled = True
+            return
+        if self._is.value is not np.isnan and not self._than.value:
+            self._create_fnc.disabled = True
+            return
+        self._create_fnc.disabled = False
+
+    def _create_fnc_cb(self, btn):
+        name = self._name.value
+        assert name
+        op_ = self._is.value
+        assert op_ is not None
+        conv_ = self._type.value
+        than_ = None if op_ is np.isnan else conv_(self._than.value)
+        if_true = UNCHANGED if self._if_true_ck.value else conv_(self._if_true_val.value)
+        if_false = UNCHANGED if self._if_false_ck.value else conv_(self._if_false_val.value)
+        func = make_if_else(op_=op_, test_val=than_, if_true=if_true, if_false=if_false)
+        ALL_FUNCS.update({name: np.vectorize(func)})
+        self._main._functions.options = [""] + list(ALL_FUNCS.keys())
+
+
 class ColumnsW(ipw.VBox, ChainingWidget):
     def __init__(
         self,
@@ -73,6 +193,14 @@ class ColumnsW(ipw.VBox, ChainingWidget):
         self.dag_register()
         self._col_widgets = {}
         self._computed = []
+        self._numpy_ufuncs = ipw.Checkbox(value=True,
+                                          description="Activate",
+                                          disabled=False)
+        self._numpy_ufuncs.observe(self._numpy_ufuncs_cb, names="value")
+        self._if_else = IfElseW(self)
+        self._custom_funcs = ipw.Accordion(children=[self._numpy_ufuncs, self._if_else], selected_index=None)
+        self._custom_funcs.set_title(0, "Numpy universal functions")
+        self._custom_funcs.set_title(1, "Add If-Else expressions")
         cols_t = [f"{c}:{t}" for (c, t) in self._dtypes.items()]
         col_list = list(zip(cols_t, self._dtypes.keys()))
         self._columns = ipw.Select(disabled=False,
@@ -98,7 +226,7 @@ class ColumnsW(ipw.VBox, ChainingWidget):
             "Apply", disabled=False, cb=self._btn_apply_cb
         )
         self._chaining_box = _dw()
-        self.children = (self._hbox, self._func_table,
+        self.children = (self._custom_funcs, self._hbox, self._func_table,
                          ipw.HBox([self._stored_cols, self._keep_all]),
                          self._btn_apply,
                          self._chaining_box)
@@ -109,6 +237,14 @@ class ColumnsW(ipw.VBox, ChainingWidget):
             self._stored_cols.value = list(self._dtypes.keys())
         else:
             self._stored_cols.value = []
+
+    def _numpy_ufuncs_cb(self, change: AnyType) -> None:
+        if change["new"]:
+            ALL_FUNCS.update(UFUNCS)
+        else:
+            for k in UFUNCS.keys():
+                del ALL_FUNCS[k]
+        self._functions.options = [""] + list(ALL_FUNCS.keys())
 
     def _columns_cb(self, change: AnyType) -> None:
         val = change["new"]
@@ -155,7 +291,7 @@ class ColumnsW(ipw.VBox, ChainingWidget):
             func = ALL_FUNCS[fname]
             comp.add_ufunc_column(wg._name.value, col, func, np.dtype(wg._dtype.value))
         self._output_module = self.init_module(comp, columns=list(self._stored_cols.value))
-        set_child(self, 4, make_chaining_box(self))
+        set_child(self, 5, make_chaining_box(self))
         self.dag_running()
 
     def init_module(self, computed: Computed, columns: Optional[List[str]] = None) -> Repeater:
@@ -190,7 +326,7 @@ class ColumnsW(ipw.VBox, ChainingWidget):
             lst+lst2,
             layout=ipw.Layout(grid_template_columns=f"repeat({table_width}, 200px)"),
         )
-        set_child(self, 1, self._func_table)
+        set_child(self, 2, self._func_table)
 
     def get_underlying_modules(self):
         return [self._output_module]

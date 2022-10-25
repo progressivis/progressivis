@@ -94,7 +94,7 @@ class ColumnComputedView(ColumnSelectedView):
         if self._is_ufunc:
             ret = self.func(values)  # type: ignore
         else:
-            ret = np.apply_along_axis(self.func, 1, values)
+            ret = np.apply_along_axis(self.func, len(values.shape)-1, np.array(values))
         if isinstance(raw_index, integer_types):
             return ret[0]
         return ret
