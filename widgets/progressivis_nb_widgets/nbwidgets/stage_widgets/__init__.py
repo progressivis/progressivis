@@ -8,6 +8,7 @@ from .join import JoinW
 from .multi_series import MultiSeriesW
 from .scatterplot import ScatterplotW
 from .columns import ColumnsW
+from .histogram import HistogramW
 __all__ = [
     "Constructor",
     "DescStatsW",
@@ -17,5 +18,6 @@ __all__ = [
     "JoinW",
     "MultiSeriesW",
     "ScatterplotW",
-    "ColumnsW"
+    "ColumnsW",
+    "HistogramW"
     ]

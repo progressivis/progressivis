@@ -26,7 +26,7 @@ def init_modules(obj: "CsvLoaderW") -> SimpleCSVLoader:
     with s:
         filenames = pd.DataFrame({'filename': urls})
         cst = Constant(Table('filenames', data=filenames), scheduler=s)
-        csv = SimpleCSVLoader(scheduler=s, throttle=100, **params)
+        csv = SimpleCSVLoader(scheduler=s, **params)
         csv.input.filenames = cst.output[0]
         sink.input.inp = csv.output.result
         return csv

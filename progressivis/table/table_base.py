@@ -391,8 +391,12 @@ class BaseTable(metaclass=ABCMeta):
         from .column_vfunc import ColumnVFunc
 
         if meta["category"] == "ufunc":
-            base = self._columns[self._columndict[meta["column"]]]
-            return ColumnComputedView(
+            base_col = meta["column"]
+            if base_col in self.computed:
+                base = self.computed[base_col]["computed_col"]
+            else:
+                base = self._columns[self._columndict[base_col]]
+            computed_col = ColumnComputedView(
                 base=base,
                 index=index,
                 aka=name,
@@ -400,8 +404,10 @@ class BaseTable(metaclass=ABCMeta):
                 dtype=meta["dtype"],
                 xshape=meta["xshape"],
             )
+            meta["computed_col"] = computed_col
+            return computed_col
         if meta["category"] == "vfunc":
-            return ColumnVFunc(
+            computed_col = ColumnVFunc(
                 name=name,
                 table=self,
                 index=index,
@@ -411,9 +417,11 @@ class BaseTable(metaclass=ABCMeta):
                 xshape=meta["xshape"],
                 dshape=meta["dshape"],
             )
+            meta["computed_col"] = computed_col
+            return computed_col
 
         assert meta["category"] == "expr"
-        return ColumnExpr(
+        computed_col = ColumnExpr(
             name=name,
             table=self,
             index=index,
@@ -423,6 +431,8 @@ class BaseTable(metaclass=ABCMeta):
             xshape=meta["xshape"],
             dshape=meta["dshape"],
         )
+        meta["computed_col"] = computed_col
+        return computed_col
 
     def make_projection(
         self, cols: Optional[List[str]], index: Any

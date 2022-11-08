@@ -35,3 +35,14 @@ scatterplot_no_data = {
     "encoding": {
     }
 }
+
+histogram1d_no_data = {
+  "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+  "height": 400,
+  "width": 400,
+  "description": "An histogram template",
+  "data":  {"name": "data"},
+  "mark": "bar",
+  "encoding": {
+  }
+}
