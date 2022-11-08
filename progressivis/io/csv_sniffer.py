@@ -181,6 +181,8 @@ class CSVSniffer:
         # Column selection
         self.columns = widgets.Select(disabled=True, rows=7)
         self.columns.observe(self._columns_cb, names="value")
+        self.enable_all = widgets.Checkbox(description="Enable/disable all", value=True)
+        self.enable_all.observe(self._enable_all_cb, names="value")
         # Column details
         self.column: Dict[str, ColumnInfo] = {}
         self.no_detail = widgets.Label(value="No Column Selected")
@@ -189,7 +191,7 @@ class CSVSniffer:
         self.top = widgets.HBox(
             [
                 self.global_tab,
-                widgets.VBox([widgets.Label("Columns"), self.columns], layout=layout),
+                widgets.VBox([widgets.Label("Columns"), self.columns, self.enable_all], layout=layout),
                 widgets.VBox(
                     [widgets.Label("Selected Column"), self.details], layout=layout
                 ),
@@ -218,6 +220,10 @@ class CSVSniffer:
         else:
             self.params.pop(key, None)
         self.set_cmdline()
+
+    def _enable_all_cb(self, change: Dict[str, Any]) -> None:
+        for col in self.column.values():
+            col.use.value = change["new"]
 
     def _true_values_cb(self, change: Dict[str, Any]) -> None:
         self._parse_list("true_values", change["new"])
