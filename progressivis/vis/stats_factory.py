@@ -386,9 +386,7 @@ class StatsFactory(TableModule):
                             self._h2d_matrix.loc[cx, cy] = _h2d_func(cx, cy, self)
                     else:
                         if self._h2d_matrix.loc[cx, cy]:
-                            self._to_delete.append(
-                                self._h2d_matrix.loc[cx, cy].name
-                            )
+                            self._to_delete.append(self._h2d_matrix.loc[cx, cy].name)
                             self._h2d_matrix.loc[cx, cy] = 0
                         steps += 1
             if self._to_delete:

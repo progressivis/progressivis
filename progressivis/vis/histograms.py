@@ -108,7 +108,7 @@ class Histograms(NAry):
 
     def _histograms_to_json(self, json: JSon) -> JSon:
         histo_json = {}
-        for (column, value) in self._histogram.items():
+        for column, value in self._histogram.items():
             column = str(column)
             histo_json[column] = value.get_histogram()
         json["histograms"] = histo_json

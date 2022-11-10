@@ -6,7 +6,7 @@ structures they manage, typically a Table, a Column, or a bitmap.
 from __future__ import annotations
 
 import logging
-from .index_update import IndexUpdate
+from .delta import Delta
 from .bitmap import bitmap
 import weakref as wr
 
@@ -39,8 +39,8 @@ class BaseChangeManager:
         buffer_masked: bool = False,
     ) -> None:
         _ = slot
-        self._row_changes = IndexUpdate()
-        self._selection_changes = IndexUpdate()
+        self._row_changes = Delta()
+        self._selection_changes = Delta()
         self._base: Optional[_accessor] = None
         self._selection: Optional[_accessor] = None
         # The bitmaps are shared between _row_changes and the buffers.
@@ -95,13 +95,13 @@ class BaseChangeManager:
         logger.debug("reset(%d)", self._last_update)
 
     @property
-    def row_changes(self) -> IndexUpdate:
-        "Return the IndexUpdate keeping track of the row changes"
+    def row_changes(self) -> Delta:
+        "Return the Delta keeping track of the row changes"
         return self._row_changes
 
     @property
-    def mask_changes(self) -> IndexUpdate:
-        "Return the IndexUpdate keeping track of the mask changes"
+    def mask_changes(self) -> Delta:
+        "Return the Delta keeping track of the mask changes"
         return self._selection_changes
 
     def has_buffered(self) -> bool:

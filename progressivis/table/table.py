@@ -3,7 +3,8 @@ Main Table class
 """
 from __future__ import annotations
 
-from collections import OrderedDict, Mapping
+from collections import OrderedDict
+from collections.abc import Mapping
 import logging
 import numpy as np
 import pandas as pd
@@ -190,7 +191,7 @@ class Table(IndexTable):
         assert dshape_table_check(self._dshape)
         self._index = bitmap.deserialize(self._storagegroup.attrs[metadata.ATTR_INDEX])
         self._last_id = node.attrs[metadata.ATTR_LAST_ID]
-        for (name, dshape) in dshape_fields(self._dshape):
+        for name, dshape in dshape_fields(self._dshape):
             column = self._create_column(name)
             column.load_dataset(
                 dshape=dshape_create(dshape), nrow=nrow, shape=dshape_to_shape(dshape)
@@ -207,7 +208,7 @@ class Table(IndexTable):
         # create internal id dataset
         # self._ids = IdColumn(table=self, storagegroup=self.storagegroup)
         # self._ids.create_dataset(dshape=None, fillvalue=-1)
-        for (name, dshape) in dshape_fields(self._dshape):
+        for name, dshape in dshape_fields(self._dshape):
             assert name not in self._columndict
             shape = dshape_to_shape(dshape)
             fillvalue = fillvalues.get(name, None)
@@ -484,7 +485,7 @@ class Table(IndexTable):
             if off[0] + 1 == off[1]:
                 data[nam] = array[:, off[0]]
             else:
-                data[nam] = array[:, off[0]: off[1]]
+                data[nam] = array[:, off[0] : off[1]]
         return Table(name, data=data, dshape=str(dshape), **kwds)
 
     def eval(
@@ -540,8 +541,9 @@ class Table(IndexTable):
                 raise err
             if result_object is not None and result_object != "table":
                 raise ValueError(
-                    "result_object={} is not valid when expr "
-                    "is an assignment".format(result_object)
+                    "result_object={} is not valid when expr is an assignment".format(
+                        result_object
+                    )
                 )
         else:
             if result_object not in ("raw_numexpr", "index", "view", "table"):
@@ -559,9 +561,9 @@ class Table(IndexTable):
         # not an assign ...
 
         if res.dtype != "bool":
-            raise ValueError("expr must be an assignment " "or a conditional expr.!")
+            raise ValueError("expr must be an assignment or a conditional expr.!")
         if inplace:
-            raise ValueError("inplace eval of conditional expr " "not implemented!")
+            raise ValueError("inplace eval of conditional expr not implemented!")
         if result_object == "raw_numexpr":
             return res
         indices = indices[res]

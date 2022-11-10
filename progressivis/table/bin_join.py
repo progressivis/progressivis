@@ -76,7 +76,7 @@ class BinJoin(TableModule):
                 dialog=self._dialog,
                 created=created,
                 updated=updated,
-                **self.join_kwds
+                **self.join_kwds,
             )
         else:
             join_cont(

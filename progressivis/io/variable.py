@@ -36,7 +36,7 @@ class Variable(Constant):
             return error
         last: PsDict = copy.copy(self.psdict)
         error = ""
-        for (k, v) in input_.items():
+        for k, v in input_.items():
             if k in last:
                 last[k] = v
             else:

@@ -143,7 +143,7 @@ class VECLoader(TableModule):
         if True:
             for row in dataset:
                 tmp[:] = 0
-                for (col, val) in row.items():
+                for col, val in row.items():
                     tmp[col] = val
                 documents[i] = tmp
                 i += 1

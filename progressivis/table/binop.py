@@ -54,7 +54,7 @@ class Binop(TableModule):
         self,
         binop: Binoperator,
         combine: Union[None, str, Binoperator] = None,
-        **kwds: Any
+        **kwds: Any,
     ) -> None:
         super(Binop, self).__init__(**kwds)
         self.default_step_size = 1000

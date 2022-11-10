@@ -21,19 +21,16 @@ ON = Optional[Union[str, List[str]]]
 def _dt_to_mask(mask: str) -> Any:
     if mask is None:
         return
-    return np.array([
-        "Y" in mask,
-        "M" in mask,
-        "D" in mask,
-        "h" in mask,
-        "m" in mask,
-        "s" in mask
-    ], dtype=int)
+    return np.array(
+        ["Y" in mask, "M" in mask, "D" in mask, "h" in mask, "m" in mask, "s" in mask],
+        dtype=int,
+    )
 
 
 def make_ufunc(rel_on, ucol, uindex, utable, dtype, fillna, inv_mask, cache):
     inv_mask = _dt_to_mask(inv_mask)
     if isinstance(rel_on, (list, tuple)):
+
         def _ufunc(ix, local_dict):
             for values in local_dict.values():
                 shape_0 = values.shape[0]
@@ -60,14 +57,20 @@ def make_ufunc(rel_on, ucol, uindex, utable, dtype, fillna, inv_mask, cache):
                 shape_ = values.shape
                 break
             if len(shape_) == 1:
+
                 def _cast_inp(x):
                     return x
+
             elif inv_mask is None:
+
                 def _cast_inp(x):
                     return tuple(x)
+
             else:
+
                 def _cast_inp(x):
-                    return tuple(x*inv_mask)
+                    return tuple(x * inv_mask)
+
             res = np.empty(shape_[0], dtype=dtype)
             for i, inp in enumerate(values):
                 inp = _cast_inp(inp)
@@ -119,8 +122,14 @@ class Join(TableModule):
     ]
     outputs = [SlotDescriptor("primary_outer", type=Table, required=False)]
 
-    def __init__(self, *, how: HOW = "inner", fillna: Any = None,
-                 inv_mask: Any = None, **kwds: Any) -> None:
+    def __init__(
+        self,
+        *,
+        how: HOW = "inner",
+        fillna: Any = None,
+        inv_mask: Any = None,
+        **kwds: Any,
+    ) -> None:
         super().__init__(**kwds)
         self.how = how
         self._fillna = fillna
@@ -134,18 +143,18 @@ class Join(TableModule):
         self._primary_outer: Optional[TableSelectedView] = None
 
     def create_dependent_modules(
-            self,
-            primary_module: TableModule,
-            related_module: TableModule,
-            *,
-            primary_slot: str = "result",
-            related_slot: str = "result",
-            primary_cols: Optional[List[str]] = None,
-            related_cols: Optional[List[str]] = None,
-            on: ON = None,
-            primary_on: ON = None,
-            related_on: ON = None,
-            suffix: str = "",
+        self,
+        primary_module: TableModule,
+        related_module: TableModule,
+        *,
+        primary_slot: str = "result",
+        related_slot: str = "result",
+        primary_cols: Optional[List[str]] = None,
+        related_cols: Optional[List[str]] = None,
+        on: ON = None,
+        primary_on: ON = None,
+        related_on: ON = None,
+        suffix: str = "",
     ) -> None:
         """
         Args:
@@ -180,10 +189,14 @@ class Join(TableModule):
             grby = GroupBy(by=self.related_on, scheduler=s)
         elif isinstance(self._inv_mask, str):
             assert isinstance(self.related_on, str)
-            grby = GroupBy(by=SC(self.related_on).dt[self._inv_mask], keepdims=True, scheduler=s)
+            grby = GroupBy(
+                by=SC(self.related_on).dt[self._inv_mask], keepdims=True, scheduler=s
+            )
         else:  # TODO: check the mask type
             assert isinstance(self.related_on, str)
-            grby = GroupBy(by=SC(self.related_on).ix[self._inv_mask], keepdims=True, scheduler=s)
+            grby = GroupBy(
+                by=SC(self.related_on).ix[self._inv_mask], keepdims=True, scheduler=s
+            )
         grby.input.table = related_module.output[related_slot]
         self.input.related = grby.output.result
         uidx = UniqueIndex(on=self.primary_on, scheduler=s)
@@ -231,7 +244,9 @@ class Join(TableModule):
         if self.result is None:
             ucols = self._virtual_cols or primary_table.columns
             ucols = [uc for uc in ucols if uc not in _aslist(uindex_mod.on)]
-            related_cols = self._related_cols if nn(self._related_cols) else related_table.columns
+            related_cols = (
+                self._related_cols if nn(self._related_cols) else related_table.columns
+            )
             if set(related_cols) & set(ucols):
                 assert self._suffix
 

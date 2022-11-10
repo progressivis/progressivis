@@ -8,7 +8,7 @@ from abc import ABCMeta, abstractmethod
 from typing import Any, Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from progressivis.core.index_update import IndexUpdate
+    from progressivis.core.delta import Delta
 
 
 class BaseChanges(metaclass=ABCMeta):
@@ -35,8 +35,8 @@ class BaseChanges(metaclass=ABCMeta):
     @abstractmethod
     def compute_updates(
         self, last: int, now: int, mid: str, cleanup: bool = True
-    ) -> Optional[IndexUpdate]:
-        "Compute and return the list of changes as an IndexUpdate or None"
+    ) -> Optional[Delta]:
+        "Compute and return the list of changes as a Delta or None"
         return None
 
     @abstractmethod

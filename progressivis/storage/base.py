@@ -73,7 +73,7 @@ class DatasetFactory(StorageObject):
         shape: Optional[Shape] = None,
         dtype: Optional[DTypeLike] = None,
         data: Optional[Any] = None,
-        **kwds: Any
+        **kwds: Any,
     ) -> Dataset:
         pass
 
@@ -84,7 +84,7 @@ class DatasetFactory(StorageObject):
         shape: Shape,
         dtype: DTypeLike,
         exact: bool = False,
-        **kwds: Any
+        **kwds: Any,
     ) -> Dataset:
         pass
 
@@ -116,7 +116,7 @@ class Group(DatasetFactory):
         shape: Optional[Shape] = None,
         dtype: Optional[DTypeLike] = None,
         data: Optional[Any] = None,
-        **kwds: Any
+        **kwds: Any,
     ) -> Dataset:
         pass
 
@@ -127,7 +127,7 @@ class Group(DatasetFactory):
         shape: Shape,
         dtype: DTypeLike,
         exact: bool = False,
-        **kwds: Any
+        **kwds: Any,
     ) -> Dataset:
         pass
 

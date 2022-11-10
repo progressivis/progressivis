@@ -184,23 +184,6 @@ class Module(metaclass=ModuleMeta):
     state_terminated: ClassVar[ModuleState] = ModuleState.state_terminated
     state_invalid: ClassVar[ModuleState] = ModuleState.state_invalid
 
-    # state_created = 0
-    # state_ready = 1
-    # state_running = 2
-    # state_blocked = 3
-    # state_zombie = 4
-    # state_terminated = 5
-    # state_invalid = 6
-    # state_name = [
-    #     "created",
-    #     "ready",
-    #     "running",
-    #     "blocked",
-    #     "zombie",
-    #     "terminated",
-    #     "invalid",
-    # ]
-
     def __new__(cls, *args: Tuple[str, Any], **kwds: Any) -> Module:
         module = object.__new__(cls)
         # pylint: disable=protected-access
@@ -228,7 +211,7 @@ class Module(metaclass=ModuleMeta):
             name = dataflow.generate_name(self.pretty_typename())
         elif name in dataflow:
             raise ProgressiveError(
-                "module already exists in scheduler," " delete it first"
+                "module already exists in scheduler, delete it first"
             )
         self.name = name  # need to set the name so exception can remove it
         predictor = TimePredictor.default()
@@ -306,11 +289,6 @@ class Module(metaclass=ModuleMeta):
         """Return the dataflow associated with the module at creation time."""
         return self._scheduler.dataflow
 
-    # def create_dependent_modules(self, *params, **kwds) -> None:  # pragma no cover
-    #     """Create modules that this module depends on.
-    #     """
-    #     pass
-
     def close_all(self) -> None:
         if self._params is not None and self._params.storagegroup is not None:
             self._params.storagegroup.close_all()
@@ -358,7 +336,7 @@ class Module(metaclass=ModuleMeta):
         for desc in descriptor_list:
             if desc.name in slots:
                 raise ProgressiveError(
-                    "Duplicate slot name %s" f" in slot descriptor {desc.name}"
+                    f"Duplicate slot name %s in slot descriptor {desc.name}"
                 )
             slots[desc.name] = None
         return slots
@@ -384,7 +362,7 @@ class Module(metaclass=ModuleMeta):
             self.generate_table_name("params"), self.all_parameters
         )
         self.params = Row(self._params)
-        for (name, _, _) in self.all_parameters:
+        for name, _, _ in self.all_parameters:
             if name in kwds:
                 self.params[name] = kwds.pop(name)
 
@@ -796,9 +774,7 @@ class Module(metaclass=ModuleMeta):
                 term_count += 1
 
         logger.debug(
-            f"ready_count={ready_count}, "
-            f"term_count={term_count}, "
-            f"in_count={in_count}"
+            f"ready_count={ready_count}, term_count={term_count}, in_count={in_count}"
         )
         if self.state == Module.state_blocked:
             # if all the input slot modules are terminated or invalid
@@ -808,7 +784,7 @@ class Module(metaclass=ModuleMeta):
                 and term_count == in_count
             ):
                 logger.info(
-                    "%s becomes zombie because all its input slots" " are terminated",
+                    "%s becomes zombie because all its input slots are terminated",
                     self.name,
                 )
                 self.state = Module.state_zombie
@@ -981,7 +957,7 @@ class Module(metaclass=ModuleMeta):
         if quantum == 0:
             quantum = 0.1
             logger.error(
-                "Quantum is 0 in %s, setting it to a" " reasonable value", self.name
+                "Quantum is 0 in %s, setting it to a reasonable value", self.name
             )
         self.state = Module.state_running
         self._start_time = now
@@ -1017,8 +993,8 @@ class Module(metaclass=ModuleMeta):
                 self._start_time = now
             finally:
                 assert run_step_ret is not None, (
-                    "Error: %s run_step_ret"
-                    " not returning a dict" % self.pretty_typename()
+                    "Error: %s run_step_ret not returning a dict"
+                    % self.pretty_typename()
                 )
                 if self.debug:
                     run_step_ret["debug"] = True
@@ -1195,7 +1171,7 @@ def _oslot_to_json(slots: Optional[List[Slot]]) -> Optional[List[Optional[JSon]]
 def _create_table(tname: str, columns: Parameters) -> Table:
     dshape = ""
     data = {}
-    for (name, dtype, val) in columns:
+    for name, dtype, val in columns:
         if dshape:
             dshape += ","
         dshape += "%s: %s" % (name, dshape_from_dtype(dtype))

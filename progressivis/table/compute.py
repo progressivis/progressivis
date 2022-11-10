@@ -39,6 +39,7 @@ def make_if_else(op_, test_val, if_true=UNCHANGED, if_false=UNCHANGED):
 
     def _fun_if_false_unchanged(x):
         return if_true if op_(x, test_val) else x
+
     if if_true is UNCHANGED:
         return _fun_if_true_unchanged
     if if_false is UNCHANGED:

@@ -15,16 +15,17 @@ class Computed:
     def __init__(self, computed=None):
         self.computed = {} if computed is None else computed
 
-    def add_ufunc_column(self, name: str,
-                         col: str,
-                         ufunc: Callable,
-                         dtype: Optional[np.dtype[Any]] = None,
-                         xshape: Shape = ()) -> None:
-        self.computed[name] = dict(category="ufunc",
-                                   ufunc=ufunc,
-                                   column=col,
-                                   dtype=dtype,
-                                   xshape=xshape)
+    def add_ufunc_column(
+        self,
+        name: str,
+        col: str,
+        ufunc: Callable,
+        dtype: Optional[np.dtype[Any]] = None,
+        xshape: Shape = (),
+    ) -> None:
+        self.computed[name] = dict(
+            category="ufunc", ufunc=ufunc, column=col, dtype=dtype, xshape=xshape
+        )
 
 
 class Repeater(TableModule):
@@ -44,11 +45,12 @@ class Repeater(TableModule):
         if input_table is None:
             return self._return_run_step(self.state_blocked, steps_run=0)
         if self.result is None:
-            cols = (input_table.columns if
-                    self._columns is None
-                    else self._columns) + list(self._computed.keys())
-            self.result = TableSelectedView(input_table, bitmap([]), columns=cols,
-                                            computed=self._computed)
+            cols = (
+                input_table.columns if self._columns is None else self._columns
+            ) + list(self._computed.keys())
+            self.result = TableSelectedView(
+                input_table, bitmap([]), columns=cols, computed=self._computed
+            )
         deleted: Optional[bitmap] = None
         if input_slot.deleted.any():
             deleted = input_slot.deleted.next(as_slice=False)

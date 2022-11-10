@@ -29,7 +29,7 @@ class Stats(TableModule):
         min_column: Optional[str] = None,
         max_column: Optional[str] = None,
         reset_index: bool = False,
-        **kwds: Any
+        **kwds: Any,
     ) -> None:
         super(Stats, self).__init__(**kwds)
         self._column = column

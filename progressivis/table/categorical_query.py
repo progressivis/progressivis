@@ -27,7 +27,9 @@ class CategoricalQuery(TableModule):
             self.table.resize(0)
 
     def create_dependent_modules(
-        self, input_module: TableModule, input_slot: str = "result",
+        self,
+        input_module: TableModule,
+        input_slot: str = "result",
     ):
         s = self.scheduler()
         grby = GroupBy(by=self._column, scheduler=s)

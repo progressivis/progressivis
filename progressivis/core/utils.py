@@ -494,7 +494,7 @@ class RandomBytesIO:
         self._reminder = ""
         self._cols = cols
         if size is not None and rows is not None:
-            raise ValueError("'size' and 'rows' " "can not be supplied simultaneously")
+            raise ValueError("'size' and 'rows' can not be supplied simultaneously")
         self._generator = self.get_row_generator(**kwargs)
         self._yield_size = len(next(self._generator))
         self._size: int
@@ -512,9 +512,7 @@ class RandomBytesIO:
             self._size = rows * self._yield_size
         else:
             raise ValueError(
-                "One of 'size' and 'rows' "
-                "must be supplied (put 0 "
-                "for an infinite loop)"
+                "One of 'size' and 'rows' must be supplied (put 0 for an infinite loop)"
             )
 
     # WARNING: the choice of the mask must guarantee a fixed size for the rows
@@ -671,6 +669,7 @@ def s3_get_filepath_or_buffer(
     custom_fs: Any = None,
 ) -> Any:
     from botocore.exceptions import NoCredentialsError  # type: ignore
+
     try:
         # pylint: disable=unused-argument
         fs = custom_fs or s3fs.S3FileSystem(anon=False)

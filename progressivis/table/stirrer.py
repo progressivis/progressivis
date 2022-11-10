@@ -65,7 +65,8 @@ class Stirrer(TableModule):
         input_table = input_slot.data()
         if self.result is None:
             self.result = Table(
-                self.generate_table_name("stirrer"), dshape=input_table.dshape,
+                self.generate_table_name("stirrer"),
+                dshape=input_table.dshape,
             )
         raw_ids = self.table.index
         before_ = raw_ids  # bitmap(raw_ids[raw_ids >= 0])
@@ -88,7 +89,9 @@ class Stirrer(TableModule):
                 del self.table.loc[delete[:mid]]
                 del self.table.loc[delete[mid:]]
             elif delete:
-                if bitmap(delete) in self.table.index and bitmap(delete) not in bitmap(created):
+                if bitmap(delete) in self.table.index and bitmap(delete) not in bitmap(
+                    created
+                ):
                     steps += len(delete)
                     del self.table.loc[delete]
         if self._update_rows and len(before_):

@@ -74,7 +74,7 @@ class LinearTimePredictor(TimePredictor):
             self.a = a
         else:
             logger.debug(
-                "LinearPredictor %s: predictor fit found" " a negative slope, ignoring",
+                "LinearPredictor %s: predictor fit found a negative slope, ignoring",
                 self.name,
             )
 

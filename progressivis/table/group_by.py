@@ -11,6 +11,7 @@ import types
 from collections import abc
 from typing import Optional, List, Union, Any, Callable, Dict, Sequence
 from abc import ABCMeta, abstractproperty
+
 logger = logging.getLogger(__name__)
 
 UTIME = ["year", "month", "day", "hour", "minute", "second"]
@@ -118,8 +119,10 @@ class GroupBy(TableModule):
     inputs = [SlotDescriptor("table", type=Table, required=True)]
 
     def __init__(
-            self, by: Union[str, List[str], Callable, SubColumn],
-            keepdims: bool = False, **kwds: Any
+        self,
+        by: Union[str, List[str], Callable, SubColumn],
+        keepdims: bool = False,
+        **kwds: Any,
     ) -> None:
         super().__init__(**kwds)
         self._raw_by = by
@@ -161,7 +164,7 @@ class GroupBy(TableModule):
             mask_[val] = 1
             for i in indices:
                 dt_vect = self._input_table.loc[i, col]
-                self._index[tuple(dt_vect*mask_)].add(i)
+                self._index[tuple(dt_vect * mask_)].add(i)
         else:
             for i in indices:
                 dt_vect = self._input_table.loc[i, col]
@@ -195,14 +198,21 @@ class GroupBy(TableModule):
                 elif len(by_shape) == 2:
                     self.by = SimpleSC(self._raw_by, list(range(by_shape[1])))
                 else:
-                    raise ValueError(f"Group by not allowed for the {by_shape} shaped column {self._raw_by}")
+                    raise ValueError(
+                        f"Group by not allowed for the {by_shape} shaped column"
+                        f" {self._raw_by}"
+                    )
             elif isinstance(self._raw_by, list):
                 for c in self._raw_by:
                     if not isinstance(c, str):
-                        raise ValueError("Multiple group by requires plain typed columns")
+                        raise ValueError(
+                            "Multiple group by requires plain typed columns"
+                        )
                     by_shape = input_table._column(c).shape
                     if len(by_shape) != 1:
-                        raise ValueError("Multiple group by requires plain typed columns")
+                        raise ValueError(
+                            "Multiple group by requires plain typed columns"
+                        )
                 self.by = self._raw_by
             else:
                 self.by = self._raw_by

@@ -179,8 +179,7 @@ class Dataflow:
                 )
             else:
                 raise ProgressiveError(
-                    "Input slot %s already connected to"
-                    "slot %s in module %s"
+                    "Input slot %s already connected toslot %s in module %s"
                     % (
                         input_name,
                         self.inputs[input_module.name][input_name],
@@ -339,7 +338,8 @@ class Dataflow:
                 del outputs[slotdesc.name]
         if outputs:
             errors.append(
-                f"Invalid output slot(s) {list(outputs.keys())} for module {module.name}"
+                f"Invalid output slot(s) {list(outputs.keys())} for module"
+                f" {module.name}"
             )
         return errors
 
@@ -359,7 +359,7 @@ class Dataflow:
         row = []
         col = []
         data = []
-        for (vertex1, vertices) in dependencies.items():
+        for vertex1, vertices in dependencies.items():
             for vertex2 in vertices.values():
                 col.append(index[vertex1])
                 row.append(index[vertex2.output_module.name])

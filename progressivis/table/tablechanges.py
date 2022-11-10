@@ -8,7 +8,7 @@ from __future__ import annotations
 import logging
 
 
-from progressivis.core.index_update import IndexUpdate
+from progressivis.core.delta import Delta
 from progressivis.core.bitmap import bitmap
 from progressivis.table.tablechanges_base import BaseChanges
 
@@ -26,9 +26,7 @@ class Bookmark(object):
     "Bookmark for changes"
     __slots__ = ["time", "refcount", "update"]
 
-    def __init__(
-        self, time: int, refcount: int = 1, update: Optional[IndexUpdate] = None
-    ):
+    def __init__(self, time: int, refcount: int = 1, update: Optional[Delta] = None):
         self.time = time
         self.refcount = refcount
         self.update = update
@@ -37,8 +35,7 @@ class Bookmark(object):
 class TableChanges(BaseChanges):
     "Keep track of changes in tables"
 
-    # To keep track of changes in tables, we maintain a list of Deltas
-    # (IndexUpdate).
+    # To keep track of changes in tables, we maintain a list of Deltas.
     # Module slots register when they want to be notified of changes.
     # A registration creates an entry in the _mid_time dict that associates
     # the slot id (mid) with the registration time (the run_number).
@@ -56,7 +53,7 @@ class TableChanges(BaseChanges):
         ] = []  # list of bookmarks synchronized with times
         self._mid_time: Dict[str, int] = {}  # time associated with last mid update
 
-    def _last_update(self) -> Optional[IndexUpdate]:
+    def _last_update(self) -> Optional[Delta]:
         "Return the last delta to update"
         if not self._bookmarks:
             return None
@@ -107,16 +104,16 @@ class TableChanges(BaseChanges):
         # We create a new bookmark
         bookmark = Bookmark(time)
         self._times.append(time)
-        update: Optional[IndexUpdate]
+        update: Optional[Delta]
         if not self._bookmarks:
-            update = IndexUpdate(created=None, deleted=None, updated=None)
+            update = Delta(created=None, deleted=None, updated=None)
         else:
             update = self._bookmarks[-1].update
         # if some changes have already been collected, we create a fresh
-        # IndexUpdate, otherwise we share the same entry: multiple times
+        # Delta, otherwise we share the same entry: multiple times
         # will share the same set of changes.
         if update is None or update.created or update.deleted or update.updated:
-            update = IndexUpdate()
+            update = Delta()
         bookmark.update = update
         self._bookmarks.append(bookmark)
         assert len(self._bookmarks) == len(self._times)
@@ -141,7 +138,7 @@ class TableChanges(BaseChanges):
 
     def compute_updates(
         self, last: int, now: int, mid: str, cleanup: bool = True
-    ) -> Optional[IndexUpdate]:
+    ) -> Optional[Delta]:
         assert mid is not None
         time = now
         if last == 0:
@@ -160,9 +157,9 @@ class TableChanges(BaseChanges):
         self._save_time(time, mid)
         return update
 
-    def _combine_updates(self, update: IndexUpdate, start: int) -> IndexUpdate:
+    def _combine_updates(self, update: Delta, start: int) -> Delta:
         # TODO reuse cached results if it matches
-        new_u = IndexUpdate(
+        new_u = Delta(
             created=bitmap(update.created),
             deleted=bitmap(update.deleted),
             updated=bitmap(update.updated),

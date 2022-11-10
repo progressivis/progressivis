@@ -87,8 +87,8 @@ class Scheduler:
     def __init__(self, interaction_latency: int = 1):
         if interaction_latency <= 0:
             raise ProgressiveError(
-                "Invalid interaction_latency, "
-                "should be strictly positive: %s" % interaction_latency
+                "Invalid interaction_latency, should be strictly positive: %s"
+                % interaction_latency
             )
 
         # same as clear below
@@ -134,7 +134,9 @@ class Scheduler:
     def __enter__(self) -> Dataflow:
         if self.dataflow is None:
             self.dataflow = Dataflow(self)
-            self.dataflow.multiple_slots_name_generator = self._multiple_slots_name_generator
+            self.dataflow.multiple_slots_name_generator = (
+                self._multiple_slots_name_generator
+            )
             self._enter_cnt = 1
         else:
             self._enter_cnt += 1
@@ -180,7 +182,7 @@ class Scheduler:
         "Return a dictionary describing the scheduler"
         msg: Dict[str, Any] = {}
         mods = {}
-        for (name, module) in self.modules().items():
+        for name, module in self.modules().items():
             mods[name] = module.to_json(short=short)
         modules = sorted(mods.values(), key=functools.cmp_to_key(self._module_order))
         msg["modules"] = modules
@@ -252,7 +254,7 @@ class Scheduler:
         async with self._lock:
             if self._task:
                 raise ProgressiveError(
-                    "Trying to start scheduler task" " inside scheduler task"
+                    "Trying to start scheduler task inside scheduler task"
                 )
             print("Starting scheduler")
             self._task = True
@@ -396,7 +398,7 @@ class Scheduler:
                 self._keep_running -= 1
             if not self._consider_module(module):
                 logger.info(
-                    "Module %s not scheduled" " because of interactive mode",
+                    "Module %s not scheduled because of interactive mode",
                     module.name,
                 )
                 continue
@@ -405,7 +407,7 @@ class Scheduler:
             module.prepare_run(self._run_number)
             if not (module.is_ready() or self.has_input() or module.is_greedy()):
                 logger.info(
-                    "Module %s not scheduled" " because not ready and has no input",
+                    "Module %s not scheduled because not ready and has no input",
                     module.name,
                 )
                 blocked += 1
@@ -522,7 +524,9 @@ class Scheduler:
         dataflow._compute_reachability(_new_inputs)
         _new_reachability = dataflow.reachability
         dataflow.committed()
-        self._multiple_slots_name_generator = self.dataflow.multiple_slots_name_generator
+        self._multiple_slots_name_generator = (
+            self.dataflow.multiple_slots_name_generator
+        )
         self.dataflow = None
         logger.info("Updating modules")
         prev_keys = set(self._modules.keys())
@@ -652,7 +656,7 @@ class Scheduler:
         if self.dataflow is not None:
             self.dataflow.delete_modules(name)
         else:
-            raise ProgressiveError("Cannot delete module %s" "outside a context" % name)
+            raise ProgressiveError("Cannot delete module %soutside a context" % name)
 
     def __contains__(self, name: str) -> bool:
         if self.dataflow is not None:
@@ -738,7 +742,7 @@ class Scheduler:
         if quantum == 0:
             quantum = 0.1
             logger.info(
-                "Quantum is 0 in %s, setting it to" " a reasonable value", module.name
+                "Quantum is 0 in %s, setting it to a reasonable value", module.name
             )
         return quantum
 

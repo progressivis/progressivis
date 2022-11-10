@@ -249,7 +249,7 @@ class Parser:
                 header=header,
                 names=names,  # type: ignore
                 usecols=self._usecols,  # type: ignore
-                **kwds
+                **kwds,
             )
             if self._names is None:
                 self._names = read_df.columns.values
@@ -262,8 +262,9 @@ class Parser:
                 self._nb_cols = len(read_df.columns)
             elif self._nb_cols != len(read_df.columns):
                 raise ValueError(
-                    "Wrong number of cols "
-                    "{} instead of {}".format(len(read_df.columns), self._nb_cols)
+                    "Wrong number of cols {} instead of {}".format(
+                        len(read_df.columns), self._nb_cols
+                    )
                 )
             len_df = len(read_df)
             if len_df:
@@ -460,8 +461,9 @@ class InputSource:
         tell_ = self._stream.tell()
         if tell_ < self._input_size:
             raise ValueError(
-                "Inconsistent read: empty string"
-                " when position {} < size {}".format(tell_, self._input_size)
+                "Inconsistent read: empty string when position {} < size {}".format(
+                    tell_, self._input_size
+                )
             )
         if self.switch_to_next():
             _, r = self.read(n)
@@ -587,9 +589,8 @@ def recovery(
         overflow_df = pd.read_csv(BytesIO(overflow_df), **pd_kwds)
         if nb_cols != len(overflow_df.columns):
             raise ValueError(
-                "Inconsistent snapshot: wrong number of cols in df {} instead of {}".format(
-                    len(overflow_df.columns), nb_cols
-                )
+                "Inconsistent snapshot: wrong number of cols in df {} instead of {}"
+                .format(len(overflow_df.columns), nb_cols)
             )
     else:
         overflow_df = None

@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from .bitmap import bitmap
-from .index_update import IndexUpdate
+from .delta import Delta
 from .changemanager_base import BaseChangeManager
 
 from typing import (
@@ -44,9 +44,9 @@ class LiteralChangeManager(BaseChangeManager):
         super(LiteralChangeManager, self).reset(mid)
         self._last_value = None
 
-    def compute_updates(self, data: Any) -> IndexUpdate:
+    def compute_updates(self, data: Any) -> Delta:
         last_value = self._last_value
-        changes = IndexUpdate()
+        changes = Delta()
         if last_value == data:
             return changes
         if last_value is None:

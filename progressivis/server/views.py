@@ -326,7 +326,7 @@ async def _exit_(_):
 async def _logger_page(request):
     managers = logging.Logger.manager.loggerDict
     ret = []
-    for (module, log) in managers.items():
+    for module, log in managers.items():
         if isinstance(log, logging.Logger):
             ret.append(
                 {
@@ -348,7 +348,7 @@ async def _logger_page(request):
 async def _logger(_):
     managers = logging.Logger.manager.loggerDict
     ret = []
-    for (module, log) in managers.items():
+    for module, log in managers.items():
         if isinstance(log, logging.Logger):
             ret.append(
                 {

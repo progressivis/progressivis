@@ -125,7 +125,7 @@ class RangeQuery(TableModule):
         self,
         # hist_index: Optional[HistogramIndex] = None,
         approximate: bool = False,
-        **kwds: Any
+        **kwds: Any,
     ) -> None:
         super(RangeQuery, self).__init__(**kwds)
         self._impl: RangeQueryImpl = RangeQueryImpl(self.params.column, approximate)
@@ -166,7 +166,7 @@ class RangeQuery(TableModule):
         min_value: Optional[Module] = None,
         max_value: Optional[Module] = None,
         hist_index: Optional[HistogramIndex] = None,
-        **kwds: Any
+        **kwds: Any,
     ) -> RangeQuery:
         if self.input_module is not None:  # test if already called
             return self

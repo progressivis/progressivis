@@ -1,11 +1,11 @@
 from . import ProgressiveTest
 
-from progressivis.core.index_update import IndexUpdate
+from progressivis.core.delta import Delta
 
 
 class TestIndexUpdate(ProgressiveTest):
     def test_index_update(self) -> None:
-        iu = IndexUpdate(created=None, updated=None, deleted=None)
+        iu = Delta(created=None, updated=None, deleted=None)
         self.assertTrue(iu.test())
         iu2 = iu.copy()
         self.assertEqual(iu, iu2)

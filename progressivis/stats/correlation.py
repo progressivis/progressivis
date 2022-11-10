@@ -28,7 +28,7 @@ class Corr(TableModule):
         self,
         mode: Union[Literal["Pearson"], Literal["CovarianceOnly"]] = "Pearson",
         ignore_string_cols: bool = False,
-        **kwds: Any
+        **kwds: Any,
     ) -> None:
         assert mode in ("Pearson", "CovarianceOnly")
         super().__init__(**kwds)

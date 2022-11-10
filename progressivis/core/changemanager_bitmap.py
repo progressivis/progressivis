@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from .bitmap import bitmap
-from .index_update import IndexUpdate
+from .delta import Delta
 from .changemanager_base import BaseChangeManager
 from .slot import Slot
 
@@ -37,9 +37,9 @@ class BitmapChangeManager(BaseChangeManager):
         super(BitmapChangeManager, self).reset(mid)
         self._last_bm = None
 
-    def compute_updates(self, data: bitmap) -> IndexUpdate:
+    def compute_updates(self, data: bitmap) -> Delta:
         last_bm = self._last_bm
-        changes = IndexUpdate()
+        changes = Delta()
         if last_bm is None:
             if self.created.buffer:
                 changes.created.update(data)

@@ -201,12 +201,12 @@ class TableSelectedChangeManager(BaseChangeManager):
     """
     @property
     def row_changes(self):
-        "Return the IndexUpdate keeping track of the row changes"
+        "Return the Delta keeping track of the row changes"
         return self._table_cm._row_changes
 
     @property
     def mask_changes(self):
-        "Return the IndexUpdate keeping track of the mask changes"
+        "Return the Delta keeping track of the mask changes"
         return self._mask_cm._row_changes
     """
 

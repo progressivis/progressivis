@@ -18,7 +18,7 @@ class Wait(Module):
         super(Wait, self).__init__(**kwds)
         if np.isnan(self.params.delay) and self.params.reads == -1:
             raise ProgressiveError(
-                "Module %s needs either a delay or " "a number of reads, not both",
+                "Module %s needs either a delay or a number of reads, not both",
                 self.pretty_typename(),
             )
 

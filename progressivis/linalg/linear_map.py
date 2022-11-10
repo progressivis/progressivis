@@ -55,11 +55,11 @@ class LinearMap(TableModule):
                     return self._return_run_step(self.state_blocked, steps_run=0)
                 else:  # transformation.output_module is zombie etc.=> no hope
                     raise ValueError(
-                        "vectors size don't match " "the transformation matrix shape"
+                        "vectors size don't match the transformation matrix shape"
                     )
             elif len(transformation) > self._k_dim:
                 raise ValueError(
-                    "vectors size don't match " " the transformation matrix shape (2)"
+                    "vectors size don't match  the transformation matrix shape (2)"
                 )
             # here len(transformation) == self._k_dim
             if self._transf_cache is None:

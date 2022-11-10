@@ -36,7 +36,7 @@ class Percentiles(TableModule):
         self,
         column: str,
         percentiles: Optional[Union[List[float], np.ndarray[Any, Any]]] = None,
-        **kwds: Any
+        **kwds: Any,
     ) -> None:
         if not column:
             raise ProgressiveError("Need a column name")
@@ -53,8 +53,7 @@ class Percentiles(TableModule):
             if (percentiles > 1).any():  # type: ignore
                 percentiles = percentiles / 100.0
                 msg = (
-                    "percentiles should all be in the interval [0, 1]. "
-                    "Try {0} instead."
+                    "percentiles should all be in the interval [0, 1]. Try {0} instead."
                 )
                 raise ValueError(msg.format(list(percentiles)))
             if (percentiles != 0.5).all():  # median isn't included

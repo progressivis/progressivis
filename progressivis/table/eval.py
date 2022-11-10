@@ -83,7 +83,7 @@ def _eval_blocks(
     if not blen:
         # Compute the optimal block size (in elements)
         # The next is based on nothing so far, but should be based on experiments.
-        bsize = 2 ** 16
+        bsize = 2**16
         blen = int(bsize / typesize)
         # Protection against too large atomsizes
         if blen == 0:

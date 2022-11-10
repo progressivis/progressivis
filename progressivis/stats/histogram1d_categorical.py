@@ -21,8 +21,7 @@ logger = logging.getLogger(__name__)
 
 
 class Histogram1DCategorical(TableModule):
-    """
-    """
+    """ """
 
     parameters = [("bins", np.dtype(int), 128), ("delta", np.dtype(float), -5)]
     inputs = [SlotDescriptor("table", type=Table, required=True)]
@@ -59,7 +58,7 @@ class Histogram1DCategorical(TableModule):
             self.total_read += steps
             column = column.loc[fix_loc(indices)]
             if column.dtype != "O":
-                raise ProgressiveError(f"Type of '{self.column}' is" " not string")
+                raise ProgressiveError(f"Type of '{self.column}' is not string")
             valcounts = pd.Series(column).value_counts().to_dict()
             for k, v in valcounts.items():
                 self.psdict[k] = v + self.psdict.get(k, 0)

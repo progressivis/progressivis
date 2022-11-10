@@ -365,7 +365,7 @@ class Slot:
             cls = Slot.changemanager_classes.get(datatype)
             if cls is not None:
                 logger.info(
-                    "Creating changemanager %s for datatype %s" " of slot %s",
+                    "Creating changemanager %s for datatype %s of slot %s",
                     cls,
                     datatype,
                     slot,

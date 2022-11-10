@@ -57,7 +57,15 @@ class ColumnSelectedView(ColumnProxy):
 
 
 class ColumnComputedView(ColumnSelectedView):
-    def __init__(self, base: BaseColumn, index: IndexTable, aka: str, func: Callable, dtype: Optional[np.dtype] = None, xshape: Shape = ()):
+    def __init__(
+        self,
+        base: BaseColumn,
+        index: IndexTable,
+        aka: str,
+        func: Callable,
+        dtype: Optional[np.dtype] = None,
+        xshape: Shape = (),
+    ):
         super().__init__(base, index=index)
         self.aka = aka
         self.func = func
@@ -75,8 +83,9 @@ class ColumnComputedView(ColumnSelectedView):
 
     @property
     def dshape(self) -> DataShape:
-        return (dataframe_dshape(self._otype)
-                if self._otype is not None else super().dshape)  # type: ignore
+        return (
+            dataframe_dshape(self._otype) if self._otype is not None else super().dshape
+        )  # type: ignore
 
     @property
     def name(self):
@@ -94,7 +103,9 @@ class ColumnComputedView(ColumnSelectedView):
         if self._is_ufunc:
             ret = self.func(values)  # type: ignore
         else:
-            ret = np.apply_along_axis(self.func, len(values.shape)-1, np.array(values))
+            ret = np.apply_along_axis(
+                self.func, len(values.shape) - 1, np.array(values)
+            )
         if isinstance(raw_index, integer_types):
             return ret[0]
         return ret

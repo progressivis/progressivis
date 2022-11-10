@@ -52,7 +52,7 @@ class Histogram2D(TableModule):
         x_column: Union[int, str],
         y_column: Union[int, str],
         with_output: bool = True,
-        **kwds: Any
+        **kwds: Any,
     ) -> None:
         super(Histogram2D, self).__init__(dataframe_slot="table", **kwds)
         self.tags.add(self.TAG_VISUALIZATION)

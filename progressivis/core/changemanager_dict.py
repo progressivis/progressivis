@@ -5,7 +5,7 @@ from ..utils.psdict import PsDict, EMPTY_PSDICT
 
 # from ..table.tablechanges import TableChanges
 from .slot import Slot
-from .index_update import IndexUpdate
+from .delta import Delta
 import copy
 
 from typing import Any, Optional
@@ -52,9 +52,9 @@ class DictChangeManager(BaseChangeManager):
         self._last_dict = copy.copy(data)
         if last_dict is None:
             # BUG data.changes.add_created(data.ids)
-            changes = IndexUpdate(created=data.created_indices(EMPTY_PSDICT))
+            changes = Delta(created=data.created_indices(EMPTY_PSDICT))
         else:
-            changes = IndexUpdate(
+            changes = Delta(
                 created=data.created_indices(last_dict),
                 updated=data.updated_indices(last_dict),
                 deleted=data.deleted_indices(last_dict),

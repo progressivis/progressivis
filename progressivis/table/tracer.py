@@ -96,7 +96,7 @@ class TableTracer(Tracer):
     def after_run_step(self, ts: float, run_number: int, **kwds: Any) -> None:
         assert self.last_run_step_start
         row = self.last_run_step_start
-        for (name, dflt) in TableTracer.TRACER_INIT.items():
+        for name, dflt in TableTracer.TRACER_INIT.items():
             if name not in row:
                 row[name] = kwds.get(name, dflt)
         row["end"] = ts

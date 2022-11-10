@@ -17,7 +17,7 @@ class Reduce(NAry):
         right_in: str,
         outp: str,
         slots: List[Slot],
-        **binary_module_kwds: Any
+        **binary_module_kwds: Any,
     ) -> TableModule:
         if len(slots) < 2:
             raise ValueError("Reduce needs at least two unputs")

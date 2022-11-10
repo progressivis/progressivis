@@ -516,11 +516,18 @@ class ColumnInfo:
         self.nunique = widgets.Text(
             description="Unique vals:", value=f"{series.nunique()}/{len(series)}"
         )
-        self.na_values_ck = widgets.Checkbox(description="NA values", indent=True, value=False)
+        self.na_values_ck = widgets.Checkbox(
+            description="NA values", indent=True, value=False
+        )
         self.na_values_ck.observe(self.na_values_ck_cb, "value")
         self.na_values_ = widgets.Text(description="NA values:", value="")
         self.na_values_.observe(self.na_values_cb, "value")
-        self.na_values_sep = widgets.Text(description="Separator:", value="", placeholder="if many values", disabled=True)
+        self.na_values_sep = widgets.Text(
+            description="Separator:",
+            value="",
+            placeholder="if many values",
+            disabled=True,
+        )
         self.na_values_sep.observe(self.na_values_sep_cb, "value")
         self.box = widgets.VBox()
         self.box.children = [
@@ -530,7 +537,7 @@ class ColumnInfo:
             self.retype,
             self.use,
             self.nunique,
-            self.na_values_ck
+            self.na_values_ck,
         ]
 
     def retype_values(self) -> List[str]:
@@ -551,7 +558,7 @@ class ColumnInfo:
         if change["new"]:
             self.box.children = list(self.box.children) + [
                 self.na_values_,
-                self.na_values_sep
+                self.na_values_sep,
             ]
         else:
             self.na_values_.value = ""

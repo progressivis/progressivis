@@ -168,7 +168,7 @@ class RangeQuery2d(TableModule):
         self,
         # hist_index: Optional[HistogramIndex] = None,
         approximate: bool = False,
-        **kwds: Any
+        **kwds: Any,
     ) -> None:
         super(RangeQuery2d, self).__init__(**kwds)
         # self._hist_index_x: Optional[HistogramIndex] = None
@@ -204,7 +204,7 @@ class RangeQuery2d(TableModule):
         max_: Optional[Module] = None,
         min_value: Union[None, bool, Module] = None,
         max_value: Union[None, bool, Module] = None,
-        **kwds: Any
+        **kwds: Any,
     ) -> RangeQuery2d:
         """
         Beware, {min,max}_value=None is not the same as {min,max}_value=False.

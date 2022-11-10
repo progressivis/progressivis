@@ -8,9 +8,9 @@ from typing import Optional, Any
 from ..core.bitmap import bitmap
 
 
-class IndexUpdate:
+class Delta:
     """
-    IndexUpdate is used to keep track of chages occuring in linear data
+    Delta is used to keep track of changes occurring in linear data
     structures such as tables, columns, or bitmaps.
     """
 
@@ -28,7 +28,7 @@ class IndexUpdate:
         self.deleted: bitmap = deleted
 
     def __repr__(self) -> str:
-        return "IndexUpdate(created=%s,updated=%s,deleted=%s)" % (
+        return "Delta(created=%s,updated=%s,deleted=%s)" % (
             repr(self.created),
             repr(self.updated),
             repr(self.deleted),
@@ -41,7 +41,7 @@ class IndexUpdate:
         self.deleted.clear()
 
     def test(self, verbose: bool = False) -> bool:
-        "Test if the IndexUpdate is valid"
+        "Test if the Delta is valid"
         b = (
             bool(self.created & self.updated)
             or bool(self.created & self.deleted)
@@ -73,12 +73,12 @@ class IndexUpdate:
 
     def combine(
         self,
-        other: Optional[IndexUpdate],
+        other: Optional[Delta],
         update_created: bool = True,
         update_updated: bool = True,
         update_deleted: bool = True,
     ) -> None:
-        "Combine this IndexUpdate with another IndexUpdate"
+        "Combine this Delta with another Delta"
         if other is None:
             return
         if other.deleted:
@@ -111,7 +111,7 @@ class IndexUpdate:
 
     def __eq__(self, other: Any) -> bool:
         return self is other or (
-            isinstance(other, IndexUpdate)
+            isinstance(other, Delta)
             and self.created == other.created
             and self.updated == other.updated
             and self.deleted == other.deleted
@@ -120,13 +120,13 @@ class IndexUpdate:
     def __ne__(self, other: Any) -> bool:
         return not self == other
 
-    def copy(self) -> IndexUpdate:
+    def copy(self) -> Delta:
         "Copy this Indexupdate"
-        return IndexUpdate(
+        return Delta(
             created=bitmap(self.created),
             updated=bitmap(self.updated),
             deleted=bitmap(self.deleted),
         )
 
 
-NIL_IU = IndexUpdate()
+NIL_IU = Delta()

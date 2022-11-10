@@ -2,11 +2,8 @@
 Starts the progressivis server and launches a python progressivis application.
 """
 import sys
-import signal
 import logging
-from os import getenv
 import asyncio as aio
-import requests
 
 from progressivis import log_level
 from progressivis.server import start_server

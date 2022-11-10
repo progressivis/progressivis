@@ -1,5 +1,5 @@
 from __future__ import print_function
-from setuptools import setup, find_packages, Command
+from setuptools import setup, Command
 from setuptools.command.sdist import sdist
 from setuptools.command.build_py import build_py
 from setuptools.command.egg_info import egg_info
@@ -7,10 +7,11 @@ from subprocess import check_call
 import os
 import sys
 import platform
+from distutils import log
 
 CONDA_PREFIX = os.getenv('CONDA_PREFIX')
 PROGRESSIVIS_CXX = os.getenv('PROGRESSIVIS_CXX')
-#MY_BINDER = os.getenv('BINDER_REQUEST')
+# MY_BINDER = os.getenv('BINDER_REQUEST')
 
 here = os.path.dirname(os.path.abspath(__file__))
 node_root = os.path.join(here, 'progressivis_nb_widgets', 'js')
@@ -18,10 +19,9 @@ is_repo = os.path.exists(os.path.join(here, '.git'))
 
 npm_path = os.pathsep.join([
     os.path.join(node_root, 'node_modules', '.bin'),
-                os.environ.get('PATH', os.defpath),
+    os.environ.get('PATH', os.defpath),
 ])
 
-from distutils import log
 log.set_verbosity(log.DEBUG)
 log.info('setup.py entered')
 log.info('$PATH=%s' % os.environ['PATH'])
@@ -56,6 +56,7 @@ def js_prerelease(command, strict=False):
             update_package_data(self.distribution)
     return DecoratedCommand
 
+
 def update_package_data(distribution):
     """update package_data to catch changes during setup"""
     build_py = distribution.get_command_obj('build_py')
@@ -83,23 +84,23 @@ class NPM(Command):
         pass
 
     def get_npm_name(self):
-        npmName = 'npm';
+        npmName = 'npm'
         if platform.system() == 'Windows':
-            npmName = 'npm.cmd';
-            
-        return npmName;
-    
+            npmName = 'npm.cmd'
+
+        return npmName
+
     def has_npm(self):
-        npmName = self.get_npm_name();
+        npmName = self.get_npm_name()
         try:
             check_call([npmName, '--version'])
             return True
-        except:
+        except Exception:
             return False
 
     def should_run_npm_install(self):
-        package_json = os.path.join(node_root, 'package.json')
-        node_modules_exists = os.path.exists(self.node_modules)
+        # package_json = os.path.join(node_root, 'package.json')
+        # node_modules_exists = os.path.exists(self.node_modules)
         return self.has_npm()
 
     def run(self):
@@ -112,7 +113,7 @@ class NPM(Command):
 
         if self.should_run_npm_install():
             log.info("Installing build dependencies with npm.  This may take a while...")
-            npmName = self.get_npm_name();
+            npmName = self.get_npm_name()
             check_call([npmName, 'install'], cwd=node_root, stdout=sys.stdout, stderr=sys.stderr)
             os.utime(self.node_modules, None)
         check_call([npmName, 'run', 'build'], cwd=node_root, stdout=sys.stdout, stderr=sys.stderr)
@@ -125,6 +126,7 @@ class NPM(Command):
 
         # update package data in case this created new files
         update_package_data(self.distribution)
+
 
 version_ns = {}
 with open(os.path.join(here, 'progressivis_nb_widgets', 'nbwidgets', '_version.py')) as f:
@@ -142,7 +144,7 @@ setup_args = {
             'progressivis_nb_widgets/nbwidgets/static/index.js',
             'progressivis_nb_widgets/nbwidgets/static/index.js.map',
         ],),
-        ('etc/jupyter/nbconfig/notebook.d' ,['progressivis-nb-widgets.json'])
+        ('etc/jupyter/nbconfig/notebook.d', ['progressivis-nb-widgets.json'])
     ],
     'install_requires': [] if CONDA_PREFIX else [
         'ipywidgets>=7.0.0',
@@ -174,7 +176,7 @@ setup_args = {
         'Topic :: Multimedia :: Graphics',
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.7',
-        'Programming Language :: Python :: 3.8',        
+        'Programming Language :: Python :: 3.8',
     ],
 }
 

@@ -13,7 +13,7 @@ class DynVar(TableModule):
         self,
         init_val: Optional[Dict[str, Any]] = None,
         translation: Optional[Dict[str, Any]] = None,
-        **kwds: Any
+        **kwds: Any,
     ) -> None:
         super().__init__(**kwds)
         self.tags.add(self.TAG_INPUT)
@@ -50,7 +50,7 @@ class DynVar(TableModule):
                 for syn in self._translation[k]:
                     res[syn] = v
             values = res
-        for (k, v) in input_.items():
+        for k, v in input_.items():
             last[k] = v
         await self.scheduler().for_input(self)
         self.psdict.update(values)

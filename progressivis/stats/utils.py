@@ -35,9 +35,7 @@ aggr_registry: Dict[str, Type[OnlineFunctor]] = {}
 
 
 class OnlineSum(OnlineFunctor):
-    """
-
-    """
+    """ """
 
     name = "sum"
 
@@ -60,9 +58,7 @@ aggr_registry[OnlineSum.name] = OnlineSum
 
 
 class OnlineCount(OnlineFunctor):
-    """
-
-    """
+    """ """
 
     name = "count"
 
@@ -85,9 +81,7 @@ aggr_registry[OnlineCount.name] = OnlineCount
 
 
 class OnlineSet(OnlineFunctor):
-    """
-
-    """
+    """ """
 
     name = "set"
 
@@ -109,9 +103,7 @@ aggr_registry[OnlineSet.name] = OnlineSet
 
 
 class OnlineUnique(OnlineSet):
-    """
-
-    """
+    """ """
 
     name = "uniq"
 
@@ -124,9 +116,7 @@ aggr_registry[OnlineUnique.name] = OnlineUnique
 
 
 class OnlineMean(OnlineFunctor):
-    """
-
-    """
+    """ """
 
     name = "mean"
 
@@ -257,7 +247,7 @@ class SimpleImputer:
             assert is_str(default_strategy)
             if not is_dict(strategy):
                 raise ValueError(
-                    "'default_strategy' is allowed" " only when strategy is a dict"
+                    "'default_strategy' is allowed only when strategy is a dict"
                 )
         _strategy: Union[str, Dict[str, str]] = (
             {} if (strategy is None or is_str(strategy)) else strategy

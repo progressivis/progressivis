@@ -2,6 +2,6 @@
 Introduction
 ------------
 
-ProgressiVis at glance
+ProgressiVis at a glance
 ======================
 

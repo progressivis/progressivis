@@ -100,7 +100,7 @@ class Expr:
     def _validate_kwds(self) -> None:
         modules: Dict[str, Expr] = {}
         non_modules: Dict[str, Any] = {}
-        for (k, a) in self._kwds.items():
+        for k, a in self._kwds.items():
             if isinstance(a, Expr):
                 a.validate()
                 modules[k] = a
@@ -137,7 +137,7 @@ class Expr:
         for expr in self._expr_args:
             self._connect(module, expr, None)
 
-        for (input_slot, expr) in self._expr_kwds.items():
+        for input_slot, expr in self._expr_kwds.items():
             self._connect(module, expr, input_slot)
 
         self._module = module

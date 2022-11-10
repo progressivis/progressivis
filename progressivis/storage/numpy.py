@@ -34,7 +34,7 @@ class NumpyDataset(Dataset):
         shape: Optional[Shape] = None,
         dtype: Optional[DTypeLike] = None,
         data: Optional[Any] = None,
-        **kwds: Any
+        **kwds: Any,
     ) -> None:
         self._name = name
         self.base: np.ndarray[Any, Any]
@@ -141,7 +141,7 @@ class NumpyGroup(GroupImpl):
         shape: Optional[Shape] = None,
         dtype: Optional[DTypeLike] = None,
         data: Optional[Any] = None,
-        **kwds: Any
+        **kwds: Any,
     ) -> Dataset:
         if name in self.dict:
             raise KeyError("name %s already defined", name)

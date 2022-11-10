@@ -142,7 +142,6 @@ class GroupImpl(Group):
 # Taken from zarr.util
 def normalize_storage_path(path: str) -> str:
     if path:
-
         # convert backslash to forward slash
         path = path.replace("\\", "/")
 

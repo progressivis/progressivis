@@ -33,11 +33,15 @@ class UniqueIndex(TableModule):
         assert self._input_table is not None
         ds = str(self._input_table._column(on).dshape)
         if ds[0] in "123456789":  # ex: 6*uint16
+
             def _key(i: int) -> Tuple[Any]:
                 return tuple(self._input_table.loc[i, on])
+
         else:
+
             def _key(i: int) -> Any:
                 return self._input_table.loc[i, on]
+
         for i in indices:
             key = _key(i)
             assert (key not in self._index) or self._index[key] == i

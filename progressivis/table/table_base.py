@@ -4,13 +4,13 @@
 from __future__ import annotations
 
 from abc import ABCMeta
-from collections import Mapping, Iterable
+from collections.abc import Mapping, Iterable
 import operator
 import logging
 import numpy as np
 import pandas as pd
 import datetime as dt
-from progressivis.core.index_update import IndexUpdate
+from progressivis.core.delta import Delta
 from progressivis.core.utils import (
     integer_types,
     norm_slice,
@@ -159,9 +159,7 @@ class _Loc(_BaseLoc):
             btab._columns = columns
             btab._columndict = columndict
             btab._dshape = dshape_create(
-                "{"
-                + ",".join([f"{c.name}:{c.dshape}" for c in btab._columns])
-                + "}"
+                "{" + ",".join([f"{c.name}:{c.dshape}" for c in btab._columns]) + "}"
             )
             btab._masked = self._table
             return btab
@@ -455,7 +453,9 @@ class BaseTable(metaclass=ABCMeta):
         columns += comp_cols
         cc_dict: Dict[str, int] = {
             k: i
-            for (i, k) in enumerate([e for e in self.computed.keys() if e in cols_as_set], len(dict_))
+            for (i, k) in enumerate(
+                [e for e in self.computed.keys() if e in cols_as_set], len(dict_)
+            )
         }
         columndict.update(cc_dict)
         return columns, columndict
@@ -607,6 +607,7 @@ class BaseTable(metaclass=ABCMeta):
             if col in to_datetime:
                 return _to_datetime(self[col].loc[:])
             return self[col].loc[:]
+
         return pd.DataFrame({col: _proc(col) for col in self.columns})
 
     def column_offsets(
@@ -623,7 +624,7 @@ class BaseTable(metaclass=ABCMeta):
             dims = len(shape)
             if dims > 2:
                 raise ValueError(
-                    "Cannot convert table to numpy array because" "of shape %s", shape
+                    "Cannot convert table to numpy array becauseof shape %s", shape
                 )
             dim2 += dims
             offsets.append(dim2)
@@ -768,7 +769,7 @@ class BaseTable(metaclass=ABCMeta):
 
     def compute_updates(
         self, start: int, now: int, mid: str, cleanup: bool = True
-    ) -> Optional[IndexUpdate]:
+    ) -> Optional[Delta]:
         """Compute the updates (delta) that happened to this table since the last call.
 
         Parameters
@@ -782,14 +783,14 @@ class BaseTable(metaclass=ABCMeta):
             usually the name of a slot.
         Returns
         -------
-        updates: None or an IndexUpdate structure which describes the list
+        updates: None or a Delta structure which describes the list
              of rows created, updated, and deleted.
         """
         if self._changes:
             self._flush_cache()
             updates = self._changes.compute_updates(start, now, mid, cleanup=cleanup)
             if updates is None:
-                updates = IndexUpdate(created=bitmap(self.index))
+                updates = Delta(created=bitmap(self.index))
             return updates
         return None
 
@@ -917,8 +918,7 @@ class BaseTable(metaclass=ABCMeta):
     def __setitem__(self, colkey: Any, values: Any) -> None:
         if isinstance(colkey, tuple):
             raise ValueError(
-                "Adding new columns ({}) via __setitem__"
-                " not implemented".format(colkey)
+                "Adding new columns ({}) via __setitem__ not implemented".format(colkey)
             )
         if isinstance(colkey, (str, integer_types)):
             # NB: on Pandas, only strings are accepted!
@@ -935,8 +935,8 @@ class BaseTable(metaclass=ABCMeta):
     def _setitem_key(self, colkey: ColIndexer, rowkey: Indexer, values: Any) -> None:
         if is_none_alike(rowkey) and len(values) != len(self):
             raise ValueError(
-                "Length of values (%d) different "
-                "than length of table (%d)" % (len(values), len(self))
+                "Length of values (%d) different than length of table (%d)"
+                % (len(values), len(self))
             )
         column = self._column(colkey)
         if is_none_alike(rowkey):
@@ -953,7 +953,7 @@ class BaseTable(metaclass=ABCMeta):
         if not isinstance(values, Iterable):
             values = np.repeat(values, len_colnames)
         if isinstance(values, Mapping):
-            for (k, v) in values.items():
+            for k, v in values.items():
                 column = self._column(k)
                 if is_none_alike(rowkey):
                     column[self.index] = v
@@ -964,7 +964,7 @@ class BaseTable(metaclass=ABCMeta):
             if len(shape) > 1 and shape[1] != self.width(colnames):
                 # and not isinstance(values, BaseTable):
                 raise ValueError(
-                    "Shape [1] (width)) of columns and " "value shape do not match"
+                    "Shape [1] (width)) of columns and value shape do not match"
                 )
 
             if rowkey is None:
@@ -1319,18 +1319,27 @@ class BaseTable(metaclass=ABCMeta):
     def _flush_cache(self) -> None:
         pass
 
-    def add_ufunc_column(self, name: str,
-                         col: str,
-                         ufunc: Callable,
-                         dtype: Optional[np.dtype[Any]] = None,
-                         xshape: Shape = ()) -> None:
-        self.computed[name] = dict(category="ufunc",
-                                   ufunc=ufunc,
-                                   column=col,
-                                   dtype=dtype,
-                                   xshape=xshape)
+    def add_ufunc_column(
+        self,
+        name: str,
+        col: str,
+        ufunc: Callable,
+        dtype: Optional[np.dtype[Any]] = None,
+        xshape: Shape = (),
+    ) -> None:
+        self.computed[name] = dict(
+            category="ufunc", ufunc=ufunc, column=col, dtype=dtype, xshape=xshape
+        )
 
-    def add_vect_func_column(self, name: str, cols: List[str], vfunc: Callable, dtype: str, xshape=(), dshape=None) -> None:
+    def add_vect_func_column(
+        self,
+        name: str,
+        cols: List[str],
+        vfunc: Callable,
+        dtype: str,
+        xshape=(),
+        dshape=None,
+    ) -> None:
         self.computed[name] = dict(
             category="vfunc",
             vfunc=vfunc,
@@ -1498,12 +1507,14 @@ class TableSelectedView(BaseTable):
         base: Optional[BaseTable] = None,
         selection: Union[bitmap, slice] = slice(0, None),
         columns: Optional[List[str]] = None,
-        computed: Optional[Dict[str, Any]] = None
+        computed: Optional[Dict[str, Any]] = None,
     ) -> None:
         super().__init__(base, columns=None, selection=selection)
         assert self._base
         if computed is not None:
             self._base.computed.update(computed)
+        if base is None:
+            base = self
         if base.columns:
             columns_ = columns if columns else base.columns
             comp_ = set() if computed is None else set(computed.keys())
@@ -1514,9 +1525,7 @@ class TableSelectedView(BaseTable):
         self._columns = cols
         self._columndict = coldict
         self._dshape = dshape_create(
-            "{"
-            + ",".join([f"{c.name}:{c.dshape}" for c in self._columns])
-            + "}"
+            "{" + ",".join([f"{c.name}:{c.dshape}" for c in self._columns]) + "}"
         )
 
     @property

@@ -56,7 +56,6 @@ class Min(TableModule):
             if self.result is None:
                 self.result = PsDict(op)
             else:
-
                 for k, v in self.psdict.items():
                     self.psdict[k] = _min_func(op[k], v)
             return self._return_run_step(self.next_state(ctx.table), steps)

@@ -98,8 +98,6 @@ class ColumnVFunc(BaseColumn):
         cols = self.cols if isinstance(self.cols, list) else [self.cols]
         raw_index = index
         index = [index] if isinstance(index, integer_types) else index
-        context = {
-            k: self.table[k].loc[index] for k in cols
-        }
+        context = {k: self.table[k].loc[index] for k in cols}
         res = self.func(raw_index, local_dict=context)
         return res

@@ -363,7 +363,7 @@ def _on_module_quality(sid, mid):
 def _on_logger(sid):
     managers = logging.Logger.manager.loggerDict
     ret = []
-    for (module, log) in managers.items():
+    for module, log in managers.items():
         if isinstance(log, logging.Logger):
             ret.append(
                 {

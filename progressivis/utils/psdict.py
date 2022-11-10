@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from ..core.bitmap import bitmap
-from ..core.index_update import IndexUpdate
+from ..core.delta import Delta
 from ..table.dshape import DataShape, dshape_from_dict
 import numpy as np
 
@@ -32,12 +32,12 @@ class PsDict(Dict[str, Any]):
 
     def compute_updates(
         self, start: int, now: float, mid: Optional[str], cleanup: bool = True
-    ) -> Optional[IndexUpdate]:
+    ) -> Optional[Delta]:
         assert False, "compute_updates should not be called on PsDict"
         if self.changes:
             updates = self.changes.compute_updates(start, now, mid, cleanup=cleanup)
             if updates is None:
-                updates = IndexUpdate(created=bitmap(self.ids))
+                updates = Delta(created=bitmap(self.ids))
             return updates
         return None
 
