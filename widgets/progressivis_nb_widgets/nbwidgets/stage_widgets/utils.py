@@ -198,7 +198,8 @@ def create_stage_widget(key):
     if dtypes is None:
         dtypes = parent_dtypes
     dag = _Dag(label=key, number=widget_numbers[key], dag=get_dag())
-    stage = stage_register[key](obj, dtypes, obj._output_module, dag=dag)
+    ctx = dict(parent=obj, dtypes=dtypes, input_module=obj._output_module, dag=dag)
+    stage = stage_register[key](ctx)
     widget_numbers[key] += 1
     assert obj not in obj.subwidgets
     obj.subwidgets.append(stage)
@@ -212,15 +213,16 @@ def create_loader_widget(key, ftype, alias):
     dtypes = None
     assert obj not in obj.subwidgets
     dag = _Dag(label=key, number=widget_numbers[key], dag=get_dag(), alias=alias)
+    ctx = dict(parent=obj, dtypes=dtypes, input_module=obj._output_module, dag=dag)
     if ftype == "csv":
         from .csv_loader import CsvLoaderW
 
-        stage = CsvLoaderW(obj, dtypes, obj._output_module, dag=dag)
+        stage = CsvLoaderW(ctx)
     else:
         assert ftype == "parquet"
         from .parquet_loader import ParquetLoaderW
 
-        stage = ParquetLoaderW(obj, dtypes, obj._output_module, dag=dag)
+        stage = ParquetLoaderW(ctx)
     widget_numbers[key] += 1
     obj.subwidgets.append(stage)
     widget_by_id[id(stage)] = stage
@@ -469,7 +471,7 @@ def add_new_loader(parent, ftype, alias):
 
 
 class ChainingWidget:
-    def __init__(self, *args, **kw):
+    def __init__(self, kw):
         assert "parent" in kw
         self.parent = kw["parent"]
         assert "dtypes" in kw
@@ -531,3 +533,10 @@ class ChainingWidget:
         if self._dag._alias:
             return self._dag._alias
         return f"{self.label}[{self.number}]" if self.number else self.label
+
+
+class ChainingVBox(ipw.VBox, ChainingWidget):
+    def __init__(self, ctx, children=()):
+        ipw.VBox.__init__(self, children)
+        ChainingWidget.__init__(self, ctx)
+        self.dag_register()

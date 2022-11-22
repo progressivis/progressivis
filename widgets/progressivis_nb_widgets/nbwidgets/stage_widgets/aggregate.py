@@ -3,11 +3,10 @@ from .utils import (
     stage_register,
     make_chaining_box,
     dongle_widget,
-    set_child, ChainingWidget
+    set_child, ChainingVBox
 )
 import ipywidgets as ipw  # type: ignore
 import pandas as pd
-from progressivis.table.module import TableModule  # type: ignore
 from progressivis.table.aggregate import Aggregate  # type: ignore
 from progressivis.core import Sink  # type: ignore
 
@@ -73,20 +72,9 @@ def _make_start_btn(obj):
     return _cbk
 
 
-class AggregateW(ipw.VBox, ChainingWidget):
-    def __init__(
-        self,
-        parent: AnyType,
-        dtypes: Dict[str, AnyType],
-        input_module: TableModule,
-        input_slot: str = "result", dag=None
-    ) -> None:
-        super().__init__(parent=parent,
-                         dtypes=dtypes,
-                         input_module=input_module,
-                         input_slot=input_slot, dag=dag)
-        self.dag_register()
-
+class AggregateW(ChainingVBox):
+    def __init__(self, ctx: Dict[str, AnyType]) -> None:
+        super().__init__(ctx)
         self.hidden_cols: List[str] = []
         fncs = ["hide"] + list(Aggregate.registry.keys())
         self.all_functions = dict(zip(fncs, fncs))

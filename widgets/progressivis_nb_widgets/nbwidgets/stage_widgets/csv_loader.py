@@ -3,10 +3,9 @@ import pandas as pd
 from progressivis.io.csv_sniffer import CSVSniffer  # type: ignore
 from progressivis.io import SimpleCSVLoader  # type: ignore
 from progressivis.table import Table  # type: ignore
-from progressivis.table.module import TableModule  # type: ignore
 from progressivis.table.constant import Constant  # type: ignore
 from .utils import (make_button, make_chaining_box,
-                    set_child, dongle_widget, get_schema, ChainingWidget)
+                    set_child, dongle_widget, get_schema, ChainingVBox)
 import os
 
 from typing import (
@@ -63,22 +62,13 @@ def make_start_loader(obj: "CsvLoaderW") -> Callable:
     return _cbk
 
 
-class CsvLoaderW(ipw.VBox, ChainingWidget):
+class CsvLoaderW(ChainingVBox):
     last_created = None
 
-    def __init__(self,
-                 parent: AnyType,
-                 dtypes: Dict[str, AnyType],
-                 input_module: TableModule,
-                 input_slot: str = "result",
-                 urls: List[str] = [], *,
-                 dag=None,
+    def __init__(self, ctx,
+                 urls: List[str] = [],
                  to_sniff: str = "", lines=100) -> None:
-        super().__init__(parent=parent,
-                         dtypes=dtypes,
-                         input_module=input_module,
-                         input_slot=input_slot, dag=dag)
-        self.dag_register()
+        super().__init__(ctx)
         self._urls_wg = ipw.Textarea(
             value=os.getenv("PROGRESSIVIS_DEFAULT_CSV"),
             placeholder='',

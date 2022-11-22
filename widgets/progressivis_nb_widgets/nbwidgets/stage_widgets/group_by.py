@@ -3,10 +3,9 @@ from .utils import (
     stage_register,
     make_chaining_box,
     dongle_widget,
-    set_child, ChainingWidget
+    set_child, ChainingVBox
 )
 import ipywidgets as ipw  # type: ignore
-from progressivis.table.module import TableModule  # type: ignore
 from progressivis.table.group_by import (GroupBy, UTIME, DT_MAX,  # type: ignore
                                          SubColumn as SC, UTIME_SHORT_D)
 from progressivis.core import Sink  # type: ignore
@@ -126,19 +125,9 @@ def make_gr_mode(obj: "GroupByW"):
     return wg
 
 
-class GroupByW(ipw.VBox, ChainingWidget):
-    def __init__(
-        self,
-        parent: AnyType,
-        dtypes: Dict[str, AnyType],
-        input_module: TableModule,
-        input_slot: str = "result", dag=None
-    ) -> None:
-        super().__init__(parent=parent,
-                         dtypes=dtypes,
-                         input_module=input_module,
-                         input_slot=input_slot, dag=dag)
-        self.dag_register()
+class GroupByW(ChainingVBox):
+    def __init__(self, ctx: Dict[str, AnyType]) -> None:
+        super().__init__(ctx)
         self.start_btn = make_button(
             "Activate", cb=make_add_group_by(self), disabled=True
         )

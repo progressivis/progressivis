@@ -1,13 +1,11 @@
-import ipywidgets as ipw  # type: ignore
 from .utils import (
     stage_register,
     make_chaining_box,
     dongle_widget,
-    set_child, ChainingWidget
+    set_child, ChainingVBox
 )
 from ..slot_wg import SlotWg
 
-from progressivis.table.module import TableModule  # type: ignore
 from progressivis.core.scheduler import Scheduler  # type: ignore
 
 from typing import (
@@ -16,22 +14,11 @@ from typing import (
 )
 
 
-class DumpTableW(ipw.VBox, ChainingWidget):
-    def __init__(
-        self,
-        parent: AnyType,
-        dtypes: Dict[str, AnyType],
-        input_module: TableModule,
-        input_slot: str = "result", dag=None
-    ) -> None:
-        super().__init__(parent=parent,
-                         dtypes=dtypes,
-                         input_module=input_module,
-                         input_slot=input_slot, dag=dag)
-        self.dag_register()
+class DumpTableW(ChainingVBox):
+    def __init__(self, ctx: Dict[str, AnyType]) -> None:
+        super().__init__(ctx)
         self.dag_running()
-
-        sl_wg = SlotWg(input_module, input_slot)
+        sl_wg = SlotWg(self._input_module, self._input_slot)
         self.children = (sl_wg, dongle_widget())
         set_child(self, 1, make_chaining_box(self))
         self._input_module.scheduler().on_tick(self._refresh_proc)

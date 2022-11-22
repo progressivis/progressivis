@@ -3,7 +3,7 @@ from progressivis import Scheduler   # type: ignore
 from progressivis.io import DynVar  # type: ignore
 from progressivis.core import Sink, aio  # type: ignore
 from .utils import (make_button, make_loader_box, get_dag, _Dag,
-                    set_child, dongle_widget, ChainingWidget,
+                    set_child, dongle_widget, ChainingVBox,
                     get_widget_by_id, get_widget_by_key)
 
 from typing import (
@@ -46,18 +46,19 @@ def make_start_scheduler(obj: "Constructor") -> Callable:
     return _cbk
 
 
-class Constructor(ipw.VBox, ChainingWidget):
+class Constructor(ChainingVBox):
     last_created = None
 
     def __init__(self, urls: List[str] = [], *, name="root",
                  to_sniff: Optional[str] = None) -> None:
-        super().__init__(parent=None,
-                         dtypes=None,
-                         input_module=None,
-                         input_slot=None,
-                         dag=_Dag(label=name,
-                                  number=0,
-                                  dag=get_dag()))
+        ctx = dict(parent=None,
+                   dtypes=None,
+                   input_module=None,
+                   input_slot=None,
+                   dag=_Dag(label=name,
+                            number=0,
+                            dag=get_dag()))
+        ChainingVBox.__init__(self, ctx)
         start_btn = make_button("Start scheduler ...",
                                 cb=make_start_scheduler(self))
         self.children = [
@@ -83,3 +84,6 @@ class Constructor(ipw.VBox, ChainingWidget):
     @property
     def _frame(self):
         return 1
+
+    def dag_register(self):
+        pass

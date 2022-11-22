@@ -4,11 +4,10 @@ from .utils import (
     make_chaining_box,
     make_guess_types_toc2,
     dongle_widget,
-    append_child, set_child, ChainingWidget,
+    append_child, set_child, ChainingVBox,
     widget_by_key
 )
 import ipywidgets as ipw  # type: ignore
-from progressivis.table.module import TableModule
 from progressivis.table.group_by import UTIME_SHORT_D
 from progressivis.table.join import Join
 from progressivis.core import Sink
@@ -79,19 +78,9 @@ class MaskWidget(ipw.HBox):
         return "".join([sym*ck.value for (sym, ck) in zip(UTIME_SHORT_D, self._ck_tpl)])
 
 
-class JoinW(ipw.VBox, ChainingWidget):
-    def __init__(
-            self,
-            parent: AnyType,
-            dtypes: Dict[str, AnyType],
-            input_module: TableModule,
-            input_slot: str = "result",
-            dag=None
-    ) -> None:
-        super().__init__(parent=parent,
-                         dtypes=dtypes,
-                         input_module=input_module,
-                         input_slot=input_slot, dag=dag)
+class JoinW(ChainingVBox):
+    def __init__(self, ctx: Dict[str, AnyType]) -> None:
+        super().__init__(ctx)
         self._output_dtypes = None
         dd_list = [(f"{k}[{n}]" if n else k, (k, n)) for (k, n) in widget_by_key.keys()]
         self._input_1 = _l(self.parent.title)
@@ -132,7 +121,6 @@ class JoinW(ipw.VBox, ChainingWidget):
         )
         self._btn_start = make_button("Start", disabled=True, cb=self._btn_start_cb)
         self.children = (gb, self._btn_ok, self._cols_setup, ipw.HBox([self._how, self._btn_start]), dongle_widget())
-        self.dag_register()
 
     def _btn_start_cb(self, btn):
         primary_cols = [k for (k, (ck, _, _)) in self._primary_cols_dict.items() if ck.value]

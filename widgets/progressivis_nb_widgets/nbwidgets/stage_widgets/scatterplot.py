@@ -3,7 +3,7 @@ from .utils import (
     stage_register,
     dongle_widget,
     set_child,
-    ChainingWidget,
+    ChainingVBox,
 )
 from ._multi_series import scatterplot_no_data
 from .. import PrevImages
@@ -11,7 +11,6 @@ import ipywidgets as ipw  # type: ignore
 import time
 from vega.widget import VegaWidget  # type: ignore
 import pandas as pd
-from progressivis.table.module import TableModule
 from typing import Any as AnyType, Dict
 import copy
 
@@ -39,23 +38,9 @@ class VegaWidgetHz(ipw.VBox):
 _VegaWidget = VegaWidgetHz
 
 
-class ScatterplotW(ipw.VBox, ChainingWidget):
-    def __init__(
-        self,
-        parent: AnyType,
-        dtypes: Dict[str, AnyType],
-        input_module: TableModule,
-        input_slot: str = "result",
-        dag=None,
-    ) -> None:
-        super().__init__(
-            parent=parent,
-            dtypes=dtypes,
-            input_module=input_module,
-            input_slot=input_slot,
-            dag=dag,
-        )
-        self.dag_register()
+class ScatterplotW(ChainingVBox):
+    def __init__(self, ctx: Dict[str, AnyType]) -> None:
+        super().__init__(ctx)
         self._output_dtypes = None
         self._axis = {}
         lst = [_l("Axis"), _l("Column"),  _l("Symbol")]

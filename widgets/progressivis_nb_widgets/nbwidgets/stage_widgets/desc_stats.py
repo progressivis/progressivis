@@ -27,7 +27,7 @@ from .._hist1d_schema import hist1d_spec_no_data, kll_spec_no_data
 from .._hist2d_schema import hist2d_spec_no_data
 from .._corr_schema import corr_spec_no_data
 from .._bar_schema import bar_spec_no_data
-from .utils import TreeTab, make_button, stage_register, ChainingWidget, make_chaining_box
+from .utils import TreeTab, make_button, stage_register, ChainingVBox, make_chaining_box
 import time
 
 from typing import (
@@ -866,20 +866,10 @@ class DynViewer(TreeTab):
         return modules
 
 
-class DescStatsW(ipw.VBox, ChainingWidget):
-    def __init__(
-            self,
-            parent: AnyType,
-            dtypes: Dict[str, AnyType],
-            input_module: TableModule,
-            input_slot: str = "result", dag=None
-    ) -> None:
-        super().__init__(parent=parent,
-                         dtypes=dtypes,
-                         input_module=input_module,
-                         input_slot=input_slot, dag=dag)
-        self._dyn_viewer = DynViewer(dtypes, input_module, input_slot)
-        self.dag_register()
+class DescStatsW(ChainingVBox):
+    def __init__(self, ctx: Dict[str, AnyType]) -> None:
+        super().__init__(ctx)
+        self._dyn_viewer = DynViewer(self._dtypes, self._input_module, self._input_slot)
         self.dag.requestAttention(self.title, "widget", "PROGRESS_NOTIFICATION", "0")
         self._chaining_box = make_chaining_box(self)
         self.children = (
@@ -891,4 +881,4 @@ class DescStatsW(ipw.VBox, ChainingWidget):
         return self._dyn_viewer.get_underlying_modules()
 
 
-stage_register["Descriptive statistics"] = DescStatsW
+stage_register["Descriptive_statistics"] = DescStatsW

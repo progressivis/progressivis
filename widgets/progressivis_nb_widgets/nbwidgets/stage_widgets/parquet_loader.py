@@ -3,9 +3,8 @@ import numpy as np
 import pyarrow.parquet as pq
 from progressivis.table.dshape import dataframe_dshape  # type: ignore
 from progressivis.io import ParquetLoader  # type: ignore
-from progressivis.table.module import TableModule  # type: ignore
 from .utils import (make_button, make_chaining_box,
-                    set_child, dongle_widget, ChainingWidget)
+                    set_child, dongle_widget, ChainingVBox)
 import os
 
 from typing import (
@@ -126,22 +125,12 @@ def make_start_loader(obj: "ParquetLoaderW") -> Callable:
     return _cbk
 
 
-class ParquetLoaderW(ipw.VBox, ChainingWidget):
+class ParquetLoaderW(ChainingVBox):
     last_created = None
 
-    def __init__(self,
-                 parent: AnyType,
-                 dtypes: Dict[str, AnyType],
-                 input_module: TableModule,
-                 input_slot: str = "result",
-                 url: str = "", dag=None) -> None:
+    def __init__(self, ctx, url: str = "", dag=None) -> None:
         self._sniffer: Optional[Sniffer] = None
-        super().__init__(parent=parent,
-                         dtypes=dtypes,
-                         input_module=input_module,
-                         input_slot=input_slot, dag=dag)
-        self.dag.registerWidget(self, self.title, self.title, self.dom_id,
-                                [self.parent.title])
+        super().__init__(ctx)
         self._url = ipw.Text(  # type: ignore
             value=os.getenv("PROGRESSIVIS_DEFAULT_PARQUET"),
             placeholder='',

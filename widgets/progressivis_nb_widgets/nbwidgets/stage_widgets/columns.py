@@ -3,12 +3,11 @@ from .utils import (
     stage_register,
     make_chaining_box,
     dongle_widget,
-    set_child, ChainingWidget
+    set_child, ChainingVBox
 )
 import ipywidgets as ipw  # type: ignore
 import numpy as np
 import operator as op
-from progressivis.table.module import TableModule  # type: ignore
 from progressivis.table.repeater import Repeater, Computed  # type: ignore
 from progressivis.core import Sink  # type: ignore
 from progressivis.table.compute import (week_day, UNCHANGED,
@@ -178,19 +177,9 @@ class IfElseW(ipw.VBox):
         self._main._functions.options = [""] + list(ALL_FUNCS.keys())
 
 
-class ColumnsW(ipw.VBox, ChainingWidget):
-    def __init__(
-        self,
-        parent: AnyType,
-        dtypes: Dict[str, AnyType],
-        input_module: TableModule,
-        input_slot: str = "result", dag=None
-    ) -> None:
-        super().__init__(parent=parent,
-                         dtypes=dtypes,
-                         input_module=input_module,
-                         input_slot=input_slot, dag=dag)
-        self.dag_register()
+class ColumnsW(ChainingVBox):
+    def __init__(self, ctx: Dict[str, AnyType]) -> None:
+        super().__init__(ctx)
         self._col_widgets = {}
         self._computed = []
         self._numpy_ufuncs = ipw.Checkbox(value=True,
