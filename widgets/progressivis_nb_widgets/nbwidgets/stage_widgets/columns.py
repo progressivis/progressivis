@@ -1,9 +1,8 @@
 from .utils import (
     make_button,
     stage_register,
-    make_chaining_box,
     dongle_widget,
-    set_child, ChainingVBox
+    set_child, NodeVBox
 )
 import ipywidgets as ipw  # type: ignore
 import numpy as np
@@ -177,7 +176,7 @@ class IfElseW(ipw.VBox):
         self._main._functions.options = [""] + list(ALL_FUNCS.keys())
 
 
-class ColumnsW(ChainingVBox):
+class ColumnsW(NodeVBox):
     def __init__(self, ctx: Dict[str, AnyType]) -> None:
         super().__init__(ctx)
         self._col_widgets = {}
@@ -280,7 +279,7 @@ class ColumnsW(ChainingVBox):
             func = ALL_FUNCS[fname]
             comp.add_ufunc_column(wg._name.value, col, func, np.dtype(wg._dtype.value))
         self._output_module = self.init_module(comp, columns=list(self._stored_cols.value))
-        set_child(self, 5, make_chaining_box(self))
+        set_child(self, 5, self.make_chaining_box())
         self.dag_running()
 
     def init_module(self, computed: Computed, columns: Optional[List[str]] = None) -> Repeater:

@@ -1,9 +1,8 @@
 from .utils import (
     make_button,
     stage_register,
-    make_chaining_box,
     dongle_widget,
-    set_child, ChainingVBox
+    set_child, NodeVBox
 )
 import ipywidgets as ipw  # type: ignore
 import pandas as pd
@@ -26,53 +25,7 @@ def get_flag_status(dt: str, op: str) -> bool:
     return dt in ("string", "datetime64")  # op in type_op_mismatches.get(dt, set())
 
 
-def _make_selm_obs(obj: "AggregateW") -> Callable:
-    def _cbk(change: AnyType) -> None:
-        obj.obs_flag = True
-        cols = change["new"]
-        for col in cols:
-            obj.hidden_cols.remove(col)
-            obj.visible_cols.append(col)
-        assert obj._hidden_sel_wg
-        obj._hidden_sel_wg.options = sorted(obj.hidden_cols)
-        gb = obj.draw_matrix()
-        set_child(obj, 1, gb)
-
-    return _cbk
-
-
-def _make_cbx_obs(obj: "AggregateW", col: str, func: str) -> Callable:
-    def _cbk(change: AnyType) -> None:
-        if func == "hide":
-            obj.start_btn.disabled = True
-            obj.hidden_cols.append(col)
-            obj.visible_cols.remove(col)
-            assert obj._hidden_sel_wg
-            obj._hidden_sel_wg.options = sorted(obj.hidden_cols)
-            gb = obj.draw_matrix()
-            set_child(obj, 1, gb)
-        else:
-            obj.start_btn.disabled = False
-
-    return _cbk
-
-
-def _make_start_btn(obj):
-    def _cbk(btn: ipw.Button) -> None:
-        compute = [
-            (col, fnc)
-            for ((col, fnc), ck) in obj.info_cbx.items()
-            if fnc != "hide" and ck.value
-        ]
-        obj._output_module = obj.init_aggregate(compute)
-        obj._output_slot = "result"
-        btn.disabled = True
-        set_child(obj, 3, make_chaining_box(obj))
-        obj.dag_running()
-    return _cbk
-
-
-class AggregateW(ChainingVBox):
+class AggregateW(NodeVBox):
     def __init__(self, ctx: Dict[str, AnyType]) -> None:
         super().__init__(ctx)
         self.hidden_cols: List[str] = []
@@ -81,13 +34,13 @@ class AggregateW(ChainingVBox):
         self._hidden_sel_wg = ipw.SelectMultiple(
             options=self.hidden_cols, value=[], rows=5, description="❎", disabled=False,
         )
-        self._hidden_sel_wg.observe(_make_selm_obs(self), "value")
+        self._hidden_sel_wg.observe(self._selm_obs_cb, "value")
         self.visible_cols: List[str] = list(self._dtypes.keys())
         self.obs_flag = False
         self.info_cbx: Dict[Tuple[str, str], ipw.Checkbox] = {}
         self._grid = self.draw_matrix()
         self.start_btn = make_button(
-            "Activate", cb=_make_start_btn(self), disabled=True
+            "Activate", cb=self._start_btn_cb, disabled=True
         )
         self.children = (
             self._hidden_sel_wg,
@@ -124,8 +77,46 @@ class AggregateW(ChainingVBox):
     def _info_checkbox(self, col: str, func: str, dis: bool) -> ipw.Checkbox:
         wgt = ipw.Checkbox(value=False, description="", disabled=dis, indent=False)
         self.info_cbx[(col, func)] = wgt
-        wgt.observe(_make_cbx_obs(self, col, func), "value")
+        wgt.observe(self._make_cbx_obs(col, func), "value")
         return wgt
+
+    def _start_btn_cb(self, btn: ipw.Button) -> None:
+        compute = [
+            (col, fnc)
+            for ((col, fnc), ck) in self.info_cbx.items()
+            if fnc != "hide" and ck.value
+        ]
+        self._output_module = self.init_aggregate(compute)
+        self._output_slot = "result"
+        btn.disabled = True
+        set_child(self, 3, self.make_chaining_box())
+        self.dag_running()
+
+    def _selm_obs_cb(self, change: AnyType) -> None:
+        self.obs_flag = True
+        cols = change["new"]
+        for col in cols:
+            self.hidden_cols.remove(col)
+            self.visible_cols.append(col)
+        assert self._hidden_sel_wg
+        self._hidden_sel_wg.options = sorted(self.hidden_cols)
+        gb = self.draw_matrix()
+        set_child(self, 1, gb)
+
+    def _make_cbx_obs(self, col: str, func: str) -> Callable:
+        def _cbk(change: AnyType) -> None:
+            if func == "hide":
+                self.start_btn.disabled = True
+                self.hidden_cols.append(col)
+                self.visible_cols.remove(col)
+                assert self._hidden_sel_wg
+                self._hidden_sel_wg.options = sorted(self.hidden_cols)
+                gb = self.draw_matrix()
+                set_child(self, 1, gb)
+            else:
+                self.start_btn.disabled = False
+
+        return _cbk
 
     def get_underlying_modules(self):
         return [self._output_module]

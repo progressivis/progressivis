@@ -3,7 +3,7 @@ from .utils import (
     stage_register,
     dongle_widget,
     set_child,
-    ChainingVBox,
+    LeafVBox,
 )
 from ._multi_series import multi_series_no_data
 from .. import PrevImages
@@ -37,7 +37,7 @@ class VegaWidgetHz(ipw.VBox):
 _VegaWidget = VegaWidgetHz
 
 
-class MultiSeriesW(ChainingVBox):
+class MultiSeriesW(LeafVBox):
     def __init__(self, ctx: Dict[str, AnyType]) -> None:
         super().__init__(ctx)
         self._output_dtypes = None

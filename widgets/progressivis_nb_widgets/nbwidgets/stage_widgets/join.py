@@ -1,10 +1,9 @@
 from .utils import (
     make_button,
     stage_register,
-    make_chaining_box,
     make_guess_types_toc2,
     dongle_widget,
-    append_child, set_child, ChainingVBox,
+    append_child, set_child, NodeVBox,
     widget_by_key
 )
 import ipywidgets as ipw  # type: ignore
@@ -21,28 +20,6 @@ from typing import (
 
 WidgetType = AnyType
 _l = ipw.Label
-
-
-def _make_dd_cb(obj: "JoinW", col: str) -> Callable:
-    def _cbk(change: AnyType) -> None:
-        val = change["new"]
-        ck, dd, mw = obj._primary_cols_dict[col]
-        if val:
-            ck.value = False
-            ck.disabled = True
-            obj._btn_start.disabled = False
-            assert obj._primary_wg is not None
-            if obj._primary_wg._output_dtypes[col] == "datetime64":
-                mw.show()
-            else:
-                mw.hide()
-        else:
-            mw.hide()
-            ck.disabled = False
-            j = [dd for (_, dd, _) in obj._primary_cols_dict.values() if dd.value]
-            if not j:
-                obj._btn_start.disabled = True
-    return _cbk
 
 
 def _ck(name):
@@ -78,7 +55,7 @@ class MaskWidget(ipw.HBox):
         return "".join([sym*ck.value for (sym, ck) in zip(UTIME_SHORT_D, self._ck_tpl)])
 
 
-class JoinW(ChainingVBox):
+class JoinW(NodeVBox):
     def __init__(self, ctx: Dict[str, AnyType]) -> None:
         super().__init__(ctx)
         self._output_dtypes = None
@@ -154,7 +131,7 @@ class JoinW(ChainingVBox):
             sink = Sink(scheduler=s)
             sink.input.inp = join.output.result
             self._output_module = join
-        set_child(self, 4, make_chaining_box(self))
+        set_child(self, 4, self.make_chaining_box())
         self.dag_running()
 
     def _btn_ok_cb(self, btn, dummy=None):
@@ -198,7 +175,7 @@ class JoinW(ChainingVBox):
                               disabled=False,
                               layout={"width": "initial"})
             dtw = MaskWidget()
-            dd.observe(_make_dd_cb(self, col), "value")
+            dd.observe(self._make_dd_cb(col), "value")
             self._primary_cols_dict[col] = (ck, dd, dtw)
             lst.extend([_l(col), ck, dd, dtw])
         ck_all.observe(self._ck_all_cb, "value")
@@ -246,6 +223,27 @@ class JoinW(ChainingVBox):
     def _role_2_cb(self, change: Dict[str, AnyType]) -> None:
         role = change["new"]
         self._role_1.value = "primary" if role == "related" else "related"
+
+    def _make_dd_cb(self, col: str) -> Callable:
+        def _cbk(change: AnyType) -> None:
+            val = change["new"]
+            ck, dd, mw = self._primary_cols_dict[col]
+            if val:
+                ck.value = False
+                ck.disabled = True
+                self._btn_start.disabled = False
+                assert self._primary_wg is not None
+                if self._primary_wg._output_dtypes[col] == "datetime64":
+                    mw.show()
+                else:
+                    mw.hide()
+            else:
+                mw.hide()
+                ck.disabled = False
+                j = [dd for (_, dd, _) in self._primary_cols_dict.values() if dd.value]
+                if not j:
+                    self._btn_start.disabled = True
+        return _cbk
 
 
 stage_register["Join"] = JoinW

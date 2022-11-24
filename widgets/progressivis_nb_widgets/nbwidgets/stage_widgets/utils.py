@@ -314,38 +314,40 @@ def make_remove(obj):
     return _cbk
 
 
-def make_chaining_box(obj):
-    fnc = _make_btn_start_toc2
-    sel = ipw.Dropdown(
-        options=[""] + list(stage_register.keys()),
-        value="",
-        # rows=10,
-        description="Next stage",
-        disabled=False,
-    )
-    btn = make_button("Chain it", disabled=True, cb=fnc(obj, sel, add_new_stage))
-    del_btn = make_button("Remove subtree", disabled=False, cb=make_remove(obj))
+class ChainingMixin:
+    def make_chaining_box(self):
+        fnc = _make_btn_start_toc2
+        sel = ipw.Dropdown(
+            options=[""] + list(stage_register.keys()),
+            value="",
+            # rows=10,
+            description="Next stage",
+            disabled=False,
+        )
+        btn = make_button("Chain it", disabled=True, cb=fnc(self, sel, add_new_stage))
+        del_btn = make_button("Remove subtree", disabled=False, cb=make_remove(self))
 
-    def _on_sel_change(change):
-        if change["new"]:
-            btn.disabled = False
-        else:
-            btn.disabled = True
+        def _on_sel_change(change):
+            if change["new"]:
+                btn.disabled = False
+            else:
+                btn.disabled = True
 
-    sel.observe(_on_sel_change, names="value")
-    return ipw.HBox([sel, btn, del_btn])
+        sel.observe(_on_sel_change, names="value")
+        return ipw.HBox([sel, btn, del_btn])
 
 
-def make_loader_box(obj, ftype="csv"):
-    fnc = _make_btn_start_loader
-    alias_inp = ipw.Text(value='',
-                         placeholder='optional alias',
-                         description=f"{ftype.upper()} loader:",
-                         disabled=False)
-    btn = make_button(
-        "Create", disabled=False, cb=fnc(obj, ftype, alias_inp)
-    )
-    return ipw.HBox([alias_inp, btn])
+class LoaderMixin:
+    def make_loader_box(self, ftype="csv"):
+        fnc = _make_btn_start_loader
+        alias_inp = ipw.Text(value='',
+                             placeholder='optional alias',
+                             description=f"{ftype.upper()} loader:",
+                             disabled=False)
+        btn = make_button(
+            "Create", disabled=False, cb=fnc(self, ftype, alias_inp)
+        )
+        return ipw.HBox([alias_inp, btn])
 
 
 cleanup_js_func = """
@@ -535,8 +537,32 @@ class ChainingWidget:
         return f"{self.label}[{self.number}]" if self.number else self.label
 
 
-class ChainingVBox(ipw.VBox, ChainingWidget):
+class LeafVBox(ipw.VBox, ChainingWidget):
     def __init__(self, ctx, children=()):
         ipw.VBox.__init__(self, children)
         ChainingWidget.__init__(self, ctx)
+        self.dag_register()
+
+
+class NodeVBox(LeafVBox, ChainingMixin):
+    def __init__(self, ctx, children=()):
+        super().__init__(ctx, children)
+        self.dag_register()
+
+
+class RootVBox(LeafVBox, LoaderMixin):
+    def __init__(self, ctx, children=()):
+        super().__init__(ctx, children)
+        self.dag_register()
+
+
+class LeafCarrier(LeafVBox):
+    def __init__(self, ctx, guest):
+        super().__init__(ctx, (guest, dongle_widget()))
+        self.dag_register()
+
+
+class NodeCarrier(NodeVBox):
+    def __init__(self, ctx, guest):
+        super().__init__(ctx, (guest, dongle_widget()))
         self.dag_register()

@@ -3,7 +3,7 @@ from .utils import (
     stage_register,
     dongle_widget,
     set_child,
-    ChainingVBox,
+    LeafVBox,
 )
 from ._multi_series import histogram1d_no_data
 from .. import PrevImages
@@ -38,7 +38,7 @@ class VegaWidgetHz(ipw.VBox):
 _VegaWidget = VegaWidgetHz
 
 
-class HistogramW(ChainingVBox):
+class HistogramW(LeafVBox):
     def __init__(self, ctx: Dict[str, AnyType]) -> None:
         super().__init__(ctx)
         self._output_dtypes = None

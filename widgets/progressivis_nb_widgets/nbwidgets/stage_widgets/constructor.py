@@ -2,15 +2,14 @@ import ipywidgets as ipw  # type: ignore
 from progressivis import Scheduler   # type: ignore
 from progressivis.io import DynVar  # type: ignore
 from progressivis.core import Sink, aio  # type: ignore
-from .utils import (make_button, make_loader_box, get_dag, _Dag,
-                    set_child, dongle_widget, ChainingVBox,
+from .utils import (make_button, get_dag, _Dag,
+                    set_child, dongle_widget, RootVBox,
                     get_widget_by_id, get_widget_by_key)
 
 from typing import (
     Any as AnyType,
     Optional,
     List,
-    Callable,
 )
 
 
@@ -33,20 +32,7 @@ def init_dataflow() -> AnyType:
     return sink
 
 
-def make_start_scheduler(obj: "Constructor") -> Callable:
-    def _cbk(btn: ipw.Button) -> None:
-        init_module = init_dataflow()
-        obj._output_module = init_module
-        obj._output_slot = "result"
-        obj._output_dtypes = {}
-        set_child(obj, 2, make_loader_box(obj, ftype="csv"))
-        set_child(obj, 3, make_loader_box(obj, ftype="parquet"))
-        btn.disabled = True
-        obj.dag.registerWidget(obj, "root", "root", obj.dom_id, [])
-    return _cbk
-
-
-class Constructor(ChainingVBox):
+class Constructor(RootVBox):
     last_created = None
 
     def __init__(self, urls: List[str] = [], *, name="root",
@@ -58,9 +44,9 @@ class Constructor(ChainingVBox):
                    dag=_Dag(label=name,
                             number=0,
                             dag=get_dag()))
-        ChainingVBox.__init__(self, ctx)
+        super().__init__(ctx)
         start_btn = make_button("Start scheduler ...",
-                                cb=make_start_scheduler(self))
+                                cb=self._start_scheduler_cb)
         self.children = [
             ipw.HTML(f"<h2 id='{self.dom_id}'>{name}</h2>"),
             start_btn,
@@ -68,6 +54,16 @@ class Constructor(ChainingVBox):
             dongle_widget(""),
             self.dag
         ]
+
+    def _start_scheduler_cb(self, btn: ipw.Button) -> None:
+        init_module = init_dataflow()
+        self._output_module = init_module
+        self._output_slot = "result"
+        self._output_dtypes = {}
+        set_child(self, 2, self.make_loader_box(ftype="csv"))
+        set_child(self, 3, self.make_loader_box(ftype="parquet"))
+        btn.disabled = True
+        self.dag.registerWidget(self, "root", "root", self.dom_id, [])
 
     @staticmethod
     def widget_by_id(key):

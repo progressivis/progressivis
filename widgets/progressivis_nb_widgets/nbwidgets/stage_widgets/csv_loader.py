@@ -4,15 +4,14 @@ from progressivis.io.csv_sniffer import CSVSniffer  # type: ignore
 from progressivis.io import SimpleCSVLoader  # type: ignore
 from progressivis.table import Table  # type: ignore
 from progressivis.table.constant import Constant  # type: ignore
-from .utils import (make_button, make_chaining_box,
-                    set_child, dongle_widget, get_schema, ChainingVBox)
+from .utils import (make_button,
+                    set_child, dongle_widget, get_schema, NodeVBox)
 import os
 
 from typing import (
     Any as AnyType,
     Dict,
     List,
-    Callable,
 )
 
 
@@ -31,38 +30,7 @@ def init_modules(obj: "CsvLoaderW") -> SimpleCSVLoader:
         return csv
 
 
-def make_sniffer(obj: "CsvLoaderW") -> Callable:
-    def _cbk(btn: ipw.Button) -> None:
-        urls = obj._urls_wg.value.strip().split("\n")
-        assert urls
-        obj._urls = urls
-        to_sniff = obj._to_sniff.value.strip()
-        if not to_sniff:
-            to_sniff = urls[0]
-        n_lines = obj._n_lines.value
-        obj._sniffer = CSVSniffer(path=to_sniff, lines=n_lines)
-        assert obj._sniffer is not None
-        set_child(obj, 3, obj._sniffer.box)
-        start_btn = make_button("Start loading csv ...",
-                                cb=make_start_loader(obj))
-        set_child(obj, 4, start_btn)
-        btn.disabled = True
-    return _cbk
-
-
-def make_start_loader(obj: "CsvLoaderW") -> Callable:
-    def _cbk(btn: ipw.Button) -> None:
-        csv_module = init_modules(obj)
-        obj._output_module = csv_module
-        obj._output_slot = "result"
-        set_child(obj, 4, make_chaining_box(obj))
-        btn.disabled = True
-        obj.dag_running()
-
-    return _cbk
-
-
-class CsvLoaderW(ChainingVBox):
+class CsvLoaderW(NodeVBox):
     last_created = None
 
     def __init__(self, ctx,
@@ -90,7 +58,7 @@ class CsvLoaderW(ChainingVBox):
             disabled=False
         )
         sniff_btn = make_button("Sniff ...",
-                                cb=make_sniffer(self))
+                                cb=self._sniffer_cb)
         self._sniffer = None
         self.children = [
             self._urls_wg,
@@ -101,6 +69,30 @@ class CsvLoaderW(ChainingVBox):
             dongle_widget(""),
             dongle_widget("")
         ]
+
+    def _sniffer_cb(self, btn: ipw.Button) -> None:
+        urls = self._urls_wg.value.strip().split("\n")
+        assert urls
+        self._urls = urls
+        to_sniff = self._to_sniff.value.strip()
+        if not to_sniff:
+            to_sniff = urls[0]
+        n_lines = self._n_lines.value
+        self._sniffer = CSVSniffer(path=to_sniff, lines=n_lines)
+        assert self._sniffer is not None
+        set_child(self, 3, self._sniffer.box)
+        start_btn = make_button("Start loading csv ...",
+                                cb=self._start_loader_cb)
+        set_child(self, 4, start_btn)
+        btn.disabled = True
+
+    def _start_loader_cb(self, btn: ipw.Button) -> None:
+        csv_module = init_modules(self)
+        self._output_module = csv_module
+        self._output_slot = "result"
+        set_child(self, 4, self.make_chaining_box())
+        btn.disabled = True
+        self.dag_running()
 
     @property
     def _output_dtypes(self) -> Dict[str, AnyType]:

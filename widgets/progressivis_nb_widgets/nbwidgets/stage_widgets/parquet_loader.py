@@ -3,49 +3,20 @@ import numpy as np
 import pyarrow.parquet as pq
 from progressivis.table.dshape import dataframe_dshape  # type: ignore
 from progressivis.io import ParquetLoader  # type: ignore
-from .utils import (make_button, make_chaining_box,
-                    set_child, dongle_widget, ChainingVBox)
+from .utils import (make_button,
+                    set_child, dongle_widget, NodeVBox)
 import os
 
 from typing import (
     Any as AnyType,
     Optional,
     Dict,
-    Callable,
 )
 
 
 def _ds(t):
     ds = dataframe_dshape(t)
     return "datetime64" if ds == "6*uint16" else ds
-
-
-def init_modules(obj: "ParquetLoaderW") -> ParquetLoader:
-    sink = obj._input_module
-    s = sink.scheduler()
-    with s:
-        assert obj._sniffer is not None
-        cols = list(obj._sniffer.get_dtypes().keys())
-        pql = ParquetLoader(obj._url.value,
-                            columns=cols,
-                            scheduler=s)
-        sink.input.inp = pql.output.result
-
-        def _f(m, rnum):
-            if m.table is None:
-                return
-            pc = min(100*len(m.table)//obj._sniffer.pqfile.metadata.num_rows+1, 100)
-            obj.dag.updateSummary(obj.title, {"progress": pc})
-            if pc < 100:
-                obj.dag.requestAttention(obj.title, "widget",
-                                         "PROGRESS_NOTIFICATION", len(m.table))
-            else:
-                obj.dag.removeRequestAttention(obj.title,
-                                               "widget", "PROGRESS_NOTIFICATION")
-                obj.dag.requestAttention(obj.title, "widget", "STABILITY_REACHED")
-
-        pql.on_after_run(_f)
-    return pql
 
 
 class ColInfo(ipw.VBox):
@@ -102,30 +73,7 @@ class Sniffer(ipw.HBox):
         self.details.children = [col]
 
 
-def make_sniffer(obj: "ParquetLoaderW") -> Callable:
-    def _cbk(btn: ipw.Button) -> None:
-        url = obj._url.value.strip()
-        obj._sniffer = Sniffer(url)
-        set_child(obj, 3, obj._sniffer)
-        start_btn = make_button("Start loading ...",
-                                cb=make_start_loader(obj))
-        set_child(obj, 4, start_btn)
-        btn.disabled = True
-    return _cbk
-
-
-def make_start_loader(obj: "ParquetLoaderW") -> Callable:
-    def _cbk(btn: ipw.Button) -> None:
-        pq_module = init_modules(obj)
-        obj._output_module = pq_module
-        obj._output_slot = "result"
-        set_child(obj, 4, make_chaining_box(obj))
-        btn.disabled = True
-        obj.dag.requestAttention(obj.title, "widget", "PROGRESS_NOTIFICATION", "")
-    return _cbk
-
-
-class ParquetLoaderW(ChainingVBox):
+class ParquetLoaderW(NodeVBox):
     last_created = None
 
     def __init__(self, ctx, url: str = "", dag=None) -> None:
@@ -139,7 +87,7 @@ class ParquetLoaderW(ChainingVBox):
             layout=ipw.Layout(width="100%")
         )
         sniff_btn = make_button("Sniff ...",
-                                cb=make_sniffer(self))
+                                cb=self._sniffer_cb)
         self._sniffer = None
         self.children = tuple([
             self._url,
@@ -148,6 +96,50 @@ class ParquetLoaderW(ChainingVBox):
             dongle_widget(""),  # start loading
             dongle_widget("")   # chaining box
         ])
+
+    def _sniffer_cb(self, btn: ipw.Button) -> None:
+        url = self._url.value.strip()
+        self._sniffer = Sniffer(url)
+        set_child(self, 3, self._sniffer)
+        start_btn = make_button("Start loading ...",
+                                cb=self._start_loader_cb)
+        set_child(self, 4, start_btn)
+        btn.disabled = True
+
+    def _start_loader_cb(self, btn: ipw.Button) -> None:
+        pq_module = self.init_modules()
+        self._output_module = pq_module
+        self._output_slot = "result"
+        set_child(self, 4, self.make_chaining_box())
+        btn.disabled = True
+        self.dag.requestAttention(self.title, "widget", "PROGRESS_NOTIFICATION", "")
+
+    def init_modules(self) -> ParquetLoader:
+        sink = self._input_module
+        s = sink.scheduler()
+        with s:
+            assert self._sniffer is not None
+            cols = list(self._sniffer.get_dtypes().keys())
+            pql = ParquetLoader(self._url.value,
+                                columns=cols,
+                                scheduler=s)
+            sink.input.inp = pql.output.result
+
+            def _f(m, rnum):
+                if m.table is None:
+                    return
+                pc = min(100*len(m.table)//self._sniffer.pqfile.metadata.num_rows+1, 100)
+                self.dag.updateSummary(self.title, {"progress": pc})
+                if pc < 100:
+                    self.dag.requestAttention(self.title, "widget",
+                                              "PROGRESS_NOTIFICATION", len(m.table))
+                else:
+                    self.dag.removeRequestAttention(self.title,
+                                                    "widget", "PROGRESS_NOTIFICATION")
+                    self.dag.requestAttention(self.title, "widget", "STABILITY_REACHED")
+
+            pql.on_after_run(_f)
+        return pql
 
     @property
     def _output_dtypes(self) -> Dict[str, AnyType]:

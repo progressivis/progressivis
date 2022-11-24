@@ -27,7 +27,7 @@ from .._hist1d_schema import hist1d_spec_no_data, kll_spec_no_data
 from .._hist2d_schema import hist2d_spec_no_data
 from .._corr_schema import corr_spec_no_data
 from .._bar_schema import bar_spec_no_data
-from .utils import TreeTab, make_button, stage_register, ChainingVBox, make_chaining_box
+from .utils import TreeTab, make_button, stage_register, NodeVBox
 import time
 
 from typing import (
@@ -81,119 +81,6 @@ def narrow_label(text: str, w: int = 70) -> ipw.Button:
         layout=ipw.Layout(width=f"{w}px", height="40px"),
     )
     return button
-
-
-def _make_cbx_obs(dyn_viewer: "DynViewer", col: str, func: str) -> Callable:
-    def _cbk(change: AnyType) -> None:
-        dyn_viewer._btn_apply.disabled = False
-        if func == "hide":
-            dyn_viewer.hidden_cols.append(col)
-            dyn_viewer.visible_cols.remove(col)
-            assert dyn_viewer._hidden_sel_wg
-            dyn_viewer._hidden_sel_wg.options = sorted(dyn_viewer.hidden_cols)
-            gb = dyn_viewer.draw_matrices()
-            dyn_viewer.unlock_conf()
-            dyn_viewer.conf_box.children = (
-                dyn_viewer._hidden_sel_wg,
-                gb,
-                dyn_viewer._btn_bar,
-            )
-
-    return _cbk
-
-
-def _make_h2d_cbx_obs(dyn_viewer: "DynViewer", col: str, func: str) -> Callable:
-    def _cbk(change: AnyType) -> None:
-        dyn_viewer._btn_apply.disabled = False
-
-    return _cbk
-
-
-def _make_btn_edit_cb(dyn_viewer: "DynViewer") -> Callable:
-    def _cbk(btn: ipw.Button) -> None:
-        btn.disabled = True
-        dyn_viewer.save_for_cancel = (
-            dyn_viewer.hidden_cols[:],
-            dyn_viewer.visible_cols[:],
-            dyn_viewer.matrix_to_df(),
-            dyn_viewer.matrix_to_h2d_df(),
-        )
-        dyn_viewer._btn_cancel.disabled = False
-        dyn_viewer._btn_apply.disabled = True
-        dyn_viewer.unlock_conf()
-
-    return _cbk
-
-
-def _make_btn_cancel_cb(dyn_viewer: "DynViewer") -> Callable:
-    def _cbk(btn: ipw.Button) -> None:
-        btn.disabled = True
-        dyn_viewer._btn_edit.disabled = False
-        hcols, vcols, df, h2d_df = dyn_viewer.save_for_cancel
-        dyn_viewer.hidden_cols = hcols[:]
-        dyn_viewer.visible_cols = vcols[:]
-        assert dyn_viewer._hidden_sel_wg
-        dyn_viewer._hidden_sel_wg.options = dyn_viewer.hidden_cols
-        gb = dyn_viewer.draw_matrices(df, h2d_df)
-        dyn_viewer.lock_conf()
-        dyn_viewer.conf_box.children = (
-            dyn_viewer._hidden_sel_wg,
-            gb,
-            dyn_viewer._btn_bar,
-        )
-        dyn_viewer.lock_conf()
-        dyn_viewer._btn_apply.disabled = True
-
-    return _cbk
-
-
-def _make_btn_apply_cb(dyn_viewer: "DynViewer") -> Callable:
-    def _cbk(btn: ipw.Button) -> None:
-        btn.disabled = True
-        dyn_viewer._btn_edit.disabled = False
-        dyn_viewer._btn_cancel.disabled = True
-        dyn_viewer.lock_conf()
-
-        async def _coro() -> None:
-            dyn_viewer._last_df = dyn_viewer.matrix_to_df()
-            dyn_viewer._last_h2d_df = dyn_viewer.matrix_to_h2d_df()
-            dyn_viewer._selection_event = False
-            await dyn_viewer._registry_mod.variable.from_input(
-                {
-                    "matrix": dyn_viewer._last_df,
-                    "h2d_matrix": dyn_viewer._last_h2d_df,
-                    "hidden_cols": dyn_viewer.hidden_cols[:],
-                }
-            )
-
-        aio.create_task(_coro())
-
-    return _cbk
-
-
-def _make_selm_obs(dyn_viewer: "DynViewer") -> Callable:
-    def _cbk(change: AnyType) -> None:
-        if dyn_viewer.obs_flag:
-            return
-        try:
-            dyn_viewer.obs_flag = True
-            cols = change["new"]
-            for col in cols:
-                dyn_viewer.hidden_cols.remove(col)
-                dyn_viewer.visible_cols.append(col)
-            assert dyn_viewer._hidden_sel_wg
-            dyn_viewer._hidden_sel_wg.options = sorted(dyn_viewer.hidden_cols)
-            gb = dyn_viewer.draw_matrices()
-            dyn_viewer.unlock_conf()
-            dyn_viewer.conf_box.children = (
-                dyn_viewer._hidden_sel_wg,
-                gb,
-                dyn_viewer._btn_bar,
-            )
-        finally:
-            dyn_viewer.obs_flag = False
-
-    return _cbk
 
 
 def make_observer(
@@ -293,14 +180,6 @@ def asynchronized_wg(func: Callable) -> Callable:
         return _coro
 
     return asynchronizer
-
-
-def set_selection_event(dyn_viewer: "DynViewer") -> Callable:
-    async def fun(a, b, c):
-        if not dyn_viewer._selection_event:
-            dyn_viewer._selection_event = True
-
-    return fun
 
 
 class VegaWidgetHz(ipw.VBox):
@@ -503,7 +382,7 @@ class DynViewer(TreeTab):
         self.range_widgets: Dict[str, ipw.IntRangeSlider] = {}
         self.updated_once = False
         self._selection_event = True
-        self._registry_mod.scheduler().on_change(set_selection_event(self))
+        self._registry_mod.scheduler().on_change(self.set_selection_event())
         super().__init__(upper=None, known_as="", children=[])
         self.observe(
             make_tab_observer_2l(self, self.get_scheduler()), names="selected_index"
@@ -621,12 +500,12 @@ class DynViewer(TreeTab):
         return df
 
     def make_btn_bar(self) -> ipw.HBox:
-        self._btn_edit = make_button("Edit", disabled=False, cb=_make_btn_edit_cb(self))
+        self._btn_edit = make_button("Edit", disabled=False, cb=self._btn_edit_cb)
         self._btn_cancel = make_button(
-            "Cancel", disabled=True, cb=_make_btn_cancel_cb(self)
+            "Cancel", disabled=True, cb=self._btn_cancel_cb
         )
         self._btn_apply = make_button(
-            "Apply", disabled=True, cb=_make_btn_apply_cb(self)
+            "Apply", disabled=True, cb=self._btn_apply_cb
         )
         self._btn_bar = ipw.HBox([self._btn_edit, self._btn_cancel, self._btn_apply])
         return self._btn_bar
@@ -722,7 +601,7 @@ class DynViewer(TreeTab):
             self._hidden_sel_wg = selm
             self.col_types = {k: str(t) for (k, t) in self._dtypes.items()}
             self.visible_cols = list(self.col_types.keys())
-            selm.observe(_make_selm_obs(self), "value")
+            selm.observe(self._selm_obs_cb, "value")
             gb = self.draw_matrices()
             self.conf_box = ipw.VBox([selm, gb, self.make_btn_bar()])
             self.lock_conf()
@@ -850,13 +729,13 @@ class DynViewer(TreeTab):
     def _info_checkbox(self, col: str, func: str, dis: bool) -> ipw.Checkbox:
         wgt = ipw.Checkbox(value=False, description="", disabled=dis, indent=False)
         self.info_cbx[(col, func)] = wgt
-        wgt.observe(_make_cbx_obs(self, col, func), "value")
+        wgt.observe(self._make_cbx_obs(col, func), "value")
         return wgt
 
     def _h2d_checkbox(self, col: str, func: str, dis: bool) -> ipw.Checkbox:
         wgt = ipw.Checkbox(value=False, description="", disabled=dis, indent=False)
         self.h2d_cbx[(col, func)] = wgt
-        wgt.observe(_make_h2d_cbx_obs(self, col, func), "value")
+        wgt.observe(self._h2d_cbx_obs_cb, "value")
         return wgt
 
     def get_underlying_modules(self):
@@ -865,13 +744,112 @@ class DynViewer(TreeTab):
         print("to delete", modules)
         return modules
 
+    def _make_cbx_obs(self, col: str, func: str) -> Callable:
+        def _cbk(change: AnyType) -> None:
+            self._btn_apply.disabled = False
+            if func == "hide":
+                self.hidden_cols.append(col)
+                self.visible_cols.remove(col)
+                assert self._hidden_sel_wg
+                self._hidden_sel_wg.options = sorted(self.hidden_cols)
+                gb = self.draw_matrices()
+                self.unlock_conf()
+                self.conf_box.children = (
+                    self._hidden_sel_wg,
+                    gb,
+                    self._btn_bar,
+                )
 
-class DescStatsW(ChainingVBox):
+        return _cbk
+
+    def _h2d_cbx_obs_cb(self, change: AnyType) -> None:
+        self._btn_apply.disabled = False
+
+    def _btn_edit_cb(self, btn: ipw.Button) -> None:
+        btn.disabled = True
+        self.save_for_cancel = (
+            self.hidden_cols[:],
+            self.visible_cols[:],
+            self.matrix_to_df(),
+            self.matrix_to_h2d_df(),
+        )
+        self._btn_cancel.disabled = False
+        self._btn_apply.disabled = True
+        self.unlock_conf()
+
+    def _btn_cancel_cb(self, btn: ipw.Button) -> None:
+        btn.disabled = True
+        self._btn_edit.disabled = False
+        hcols, vcols, df, h2d_df = self.save_for_cancel
+        self.hidden_cols = hcols[:]
+        self.visible_cols = vcols[:]
+        assert self._hidden_sel_wg
+        self._hidden_sel_wg.options = self.hidden_cols
+        gb = self.draw_matrices(df, h2d_df)
+        self.lock_conf()
+        self.conf_box.children = (
+            self._hidden_sel_wg,
+            gb,
+            self._btn_bar,
+        )
+        self.lock_conf()
+        self._btn_apply.disabled = True
+
+    def _btn_apply_cb(self, btn: ipw.Button) -> None:
+        btn.disabled = True
+        self._btn_edit.disabled = False
+        self._btn_cancel.disabled = True
+        self.lock_conf()
+
+        async def _coro() -> None:
+            self._last_df = self.matrix_to_df()
+            self._last_h2d_df = self.matrix_to_h2d_df()
+            self._selection_event = False
+            await self._registry_mod.variable.from_input(
+                {
+                    "matrix": self._last_df,
+                    "h2d_matrix": self._last_h2d_df,
+                    "hidden_cols": self.hidden_cols[:],
+                }
+            )
+
+        aio.create_task(_coro())
+
+    def _selm_obs_cb(self, change: AnyType) -> None:
+        if self.obs_flag:
+            return
+        try:
+            self.obs_flag = True
+            cols = change["new"]
+            for col in cols:
+                self.hidden_cols.remove(col)
+                self.visible_cols.append(col)
+            assert self._hidden_sel_wg
+            self._hidden_sel_wg.options = sorted(self.hidden_cols)
+            gb = self.draw_matrices()
+            self.unlock_conf()
+            self.conf_box.children = (
+                self._hidden_sel_wg,
+                gb,
+                self._btn_bar,
+            )
+        finally:
+            self.obs_flag = False
+
+    def set_selection_event(self) -> Callable:
+        async def fun(a, b, c):
+            if not self._selection_event:
+                self._selection_event = True
+
+        return fun
+
+
+class DescStatsW(NodeVBox):
     def __init__(self, ctx: Dict[str, AnyType]) -> None:
         super().__init__(ctx)
         self._dyn_viewer = DynViewer(self._dtypes, self._input_module, self._input_slot)
         self.dag.requestAttention(self.title, "widget", "PROGRESS_NOTIFICATION", "0")
-        self._chaining_box = make_chaining_box(self)
+        self._chaining_box = self.make_chaining_box()
         self.children = (
             self._dyn_viewer,
             self._chaining_box

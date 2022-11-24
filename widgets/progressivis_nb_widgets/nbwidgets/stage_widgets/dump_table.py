@@ -1,8 +1,7 @@
 from .utils import (
     stage_register,
-    make_chaining_box,
     dongle_widget,
-    set_child, ChainingVBox
+    LeafVBox
 )
 from ..slot_wg import SlotWg
 
@@ -14,13 +13,13 @@ from typing import (
 )
 
 
-class DumpTableW(ChainingVBox):
+class DumpTableW(LeafVBox):
     def __init__(self, ctx: Dict[str, AnyType]) -> None:
         super().__init__(ctx)
         self.dag_running()
         sl_wg = SlotWg(self._input_module, self._input_slot)
         self.children = (sl_wg, dongle_widget())
-        set_child(self, 1, make_chaining_box(self))
+        # set_child(self, 1, self.make_chaining_box())
         self._input_module.scheduler().on_tick(self._refresh_proc)
 
     async def _refresh_proc(self, scheduler: Scheduler, run_number: int) -> None:
