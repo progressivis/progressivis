@@ -2,7 +2,7 @@ from .utils import (
     make_button,
     stage_register,
     dongle_widget,
-    set_child, NodeVBox
+    set_child, VBox
 )
 import ipywidgets as ipw  # type: ignore
 from progressivis.table.group_by import (GroupBy, UTIME, DT_MAX,  # type: ignore
@@ -11,7 +11,6 @@ from progressivis.core import Sink  # type: ignore
 
 from typing import (
     Any as AnyType,
-    Dict,
 )
 
 WidgetType = AnyType
@@ -27,9 +26,11 @@ def make_sel_multiple_dt(disabled: bool = True) -> WidgetType:
     )
 
 
-class GroupByW(NodeVBox):
-    def __init__(self, ctx: Dict[str, AnyType]) -> None:
-        super().__init__(ctx)
+class GroupByW(VBox):
+    def __init__(self) -> None:
+        super().__init__()
+
+    def init(self) -> None:
         self.start_btn = make_button(
             "Activate", cb=self._add_group_by_cb, disabled=True
         )
@@ -39,14 +40,13 @@ class GroupByW(NodeVBox):
             self.grouping_mode,
             self.by_box,
             self.start_btn,
-            dongle_widget(),
         )
 
     def init_group_by(self, by: AnyType) -> GroupBy:
-        s = self._input_module.scheduler()
+        s = self.input_module.scheduler()
         with s:
             grby = GroupBy(by=by, keepdims=True, scheduler=s)
-            grby.input.table = self._input_module.output[self._input_slot]
+            grby.input.table = self.input_module.output[self.input_slot]
             sink = Sink(scheduler=s)
             sink.input.inp = grby.output.result
             return grby
@@ -69,10 +69,10 @@ class GroupByW(NodeVBox):
             by = SC(col).dt["".join(sel.value)]
             self.by_box.children[0].disabled = True
             self.by_box.children[1].disabled = True
-        self._output_module = self.init_group_by(by)
-        self._output_slot = "result"
+        self.output_module = self.init_group_by(by)
+        self.output_slot = "result"
         btn.disabled = True
-        set_child(self, 3, self.make_chaining_box())
+        self.make_chaining_box()
         self.dag_running()
 
     def _on_grouping_cb(self, val: AnyType) -> None:
@@ -83,7 +83,7 @@ class GroupByW(NodeVBox):
         set_child(self, 1, self.by_box)
 
     def make_gr_mode(self) -> WidgetType:
-        if "datetime64" in self._dtypes.values():
+        if "datetime64" in self.input_dtypes.values():
             wg = ipw.RadioButtons(
                 options=["columns", "datetime subcolumn", "multi index subcolumn"],
                 description="Grouping mode:",
@@ -98,7 +98,7 @@ class GroupByW(NodeVBox):
 
     def make_sel_multiple(self) -> WidgetType:
         selm = ipw.SelectMultiple(
-            options=[(f"{col}:{t}", col) for (col, t) in self._dtypes.items()],
+            options=[(f"{col}:{t}", col) for (col, t) in self.dtypes.items()],
             value=[], rows=5, description="By", disabled=False,
         )
 
@@ -114,7 +114,9 @@ class GroupByW(NodeVBox):
     def make_subcolumn_box(self) -> WidgetType:
         dd = ipw.Dropdown(
             options=[("", "")]
-            + [(f"{col}:{t}", col) for (col, t) in self._dtypes.items() if t == "datetime64"],
+            + [(f"{col}:{t}", col)
+               for (col, t) in self.dtypes.items()
+               if t == "datetime64"],
             value="",
             description="Datetime column:",
             disabled=False,

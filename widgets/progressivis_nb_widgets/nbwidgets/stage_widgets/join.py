@@ -1,16 +1,12 @@
 from .utils import (
     make_button,
     stage_register,
-    make_guess_types_toc2,
-    dongle_widget,
-    append_child, set_child, NodeVBox,
-    widget_by_key
+    append_child, VBox,
 )
 import ipywidgets as ipw  # type: ignore
 from progressivis.table.group_by import UTIME_SHORT_D
 from progressivis.table.join import Join
 from progressivis.core import Sink
-from progressivis.vis import DataShape  # type: ignore
 from typing import (
     Any as AnyType,
     Dict,
@@ -37,7 +33,8 @@ class MaskWidget(ipw.HBox):
         self.hour = _ck("h")
         self.min_ = _ck("m")
         self.sec = _ck("s")
-        self._ck_tpl = tuple([self.year, self.month, self.day, self.hour, self.min_, self.sec])
+        self._ck_tpl = tuple([self.year, self.month, self.day,
+                              self.hour, self.min_, self.sec])
         super().__init__([])
 
     def show(self):
@@ -55,11 +52,14 @@ class MaskWidget(ipw.HBox):
         return "".join([sym*ck.value for (sym, ck) in zip(UTIME_SHORT_D, self._ck_tpl)])
 
 
-class JoinW(NodeVBox):
-    def __init__(self, ctx: Dict[str, AnyType]) -> None:
-        super().__init__(ctx)
-        self._output_dtypes = None
-        dd_list = [(f"{k}[{n}]" if n else k, (k, n)) for (k, n) in widget_by_key.keys()]
+class JoinW(VBox):
+    def __init__(self) -> None:
+        super().__init__()
+
+    def init(self) -> None:
+        self.output_dtypes = None
+        dd_list = [(f"{k}[{n}]" if n
+                    else k, (k, n)) for (k, n) in self.current_widget_keys]
         self._input_1 = _l(self.parent.title)
         self._role_1 = _l("primary")
         self._input_2 = ipw.Dropdown(  # type: ignore
@@ -97,23 +97,30 @@ class JoinW(NodeVBox):
             style={"description_width": "initial"},
         )
         self._btn_start = make_button("Start", disabled=True, cb=self._btn_start_cb)
-        self.children = (gb, self._btn_ok, self._cols_setup, ipw.HBox([self._how, self._btn_start]), dongle_widget())
+        self.children = (gb, self._btn_ok,
+                         self._cols_setup,
+                         ipw.HBox([self._how,
+                                   self._btn_start]))
 
     def _btn_start_cb(self, btn):
-        primary_cols = [k for (k, (ck, _, _)) in self._primary_cols_dict.items() if ck.value]
-        related_cols = [k for (k, ck) in self._related_cols_dict.items() if ck.value]
-        primary_on = [k for (k, (_, dd, _)) in self._primary_cols_dict.items() if dd.value]
-        related_on = [dd.value for (_, dd, _) in self._primary_cols_dict.values() if dd.value]
+        primary_cols = [k for (k, (ck, _, _)) in
+                        self._primary_cols_dict.items() if ck.value]
+        related_cols = [k for (k, ck) in
+                        self._related_cols_dict.items() if ck.value]
+        primary_on = [k for (k, (_, dd, _)) in
+                      self._primary_cols_dict.items() if dd.value]
+        related_on = [dd.value for (_, dd, _) in
+                      self._primary_cols_dict.values() if dd.value]
         assert primary_on
         assert related_on
         assert len(primary_on) == len(related_on)
         primary_on = primary_on[0] if len(primary_on) == 1 else primary_on
         related_on = related_on[0] if len(related_on) == 1 else related_on
-        s = self._input_module.scheduler()
+        s = self.input_module.scheduler()
         with s:
             inv_mask = None
             if (isinstance(primary_on,
-                           str) and self._primary_wg._output_dtypes[
+                           str) and self._primary_wg.output_dtypes[
                                primary_on] == "datetime64"):
                 _, _, mw = self._primary_cols_dict[primary_on]
                 msk = mw.get_dt()
@@ -121,8 +128,8 @@ class JoinW(NodeVBox):
                     inv_mask = msk
             join = Join(how=self._how.value, inv_mask=inv_mask, scheduler=s)
             join.create_dependent_modules(
-                related_module=self._related_wg._output_module,
-                primary_module=self._primary_wg._output_module,
+                related_module=self._related_wg.output_module,
+                primary_module=self._primary_wg.output_module,
                 related_on=related_on,
                 primary_on=primary_on,
                 related_cols=related_cols,
@@ -130,23 +137,17 @@ class JoinW(NodeVBox):
             )
             sink = Sink(scheduler=s)
             sink.input.inp = join.output.result
-            self._output_module = join
-        set_child(self, 4, self.make_chaining_box())
+            self.output_module = join
+        self.make_chaining_box()
         self.dag_running()
 
-    def _btn_ok_cb(self, btn, dummy=None):
+    def _btn_ok_cb(self, *args, **kw):
         self._input_2.disabled = True
         self._role_2.disabled = True
         widget_1 = self.parent
-        widget_2 = widget_by_key[self._input_2.value]
-        if widget_2._output_dtypes is None:
-            s = widget_2._output_module.scheduler()
-            with s:
-                ds = DataShape(scheduler=s)
-                ds.input.table = widget_2._output_module.output.result
-                ds.on_after_run(make_guess_types_toc2(widget_2, self._input_2, self._btn_ok_cb))
-                sink = Sink(scheduler=s)
-                sink.input.inp = ds.output.result
+        widget_2 = self.get_widget_by_key(self._input_2.value)
+        if widget_2.output_dtypes is None:
+            widget_2.compute_dtypes_then_call(self._btn_ok_cb, args, kw)
             return
         self.dag.addParent(self.title,  widget_2.title)
         if self._role_1.value == "primary":
@@ -164,8 +165,8 @@ class JoinW(NodeVBox):
                               indent=False)
         lst: List[WidgetType] = [_l(""), _l("Keep"), _l("Join on"), _l("Subcolumns"),
                                  _l("*"), ck_all, _l(""), _l("")]
-        for col, ty in primary_wg._output_dtypes.items():
-            on_list = [""] + [c for (c, t) in related_wg._output_dtypes.items() if t == ty]
+        for col, ty in primary_wg.output_dtypes.items():
+            on_list = [""] + [c for (c, t) in related_wg.output_dtypes.items() if t == ty]
             ck = ipw.Checkbox(value=True,
                               description="",
                               disabled=False,
@@ -191,7 +192,7 @@ class JoinW(NodeVBox):
                               indent=False)
         lst: List[WidgetType] = [_l(""), _l("Keep"),
                                  _l("*"), ck_all]
-        for col in related_wg._output_dtypes.keys():
+        for col in related_wg.output_dtypes.keys():
             ck = ipw.Checkbox(value=True,
                               description="",
                               disabled=False,
@@ -233,7 +234,7 @@ class JoinW(NodeVBox):
                 ck.disabled = True
                 self._btn_start.disabled = False
                 assert self._primary_wg is not None
-                if self._primary_wg._output_dtypes[col] == "datetime64":
+                if self._primary_wg.output_dtypes[col] == "datetime64":
                     mw.show()
                 else:
                     mw.hide()

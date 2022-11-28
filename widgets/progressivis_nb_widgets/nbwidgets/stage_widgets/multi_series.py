@@ -3,7 +3,7 @@ from .utils import (
     stage_register,
     dongle_widget,
     set_child,
-    LeafVBox,
+    VBox,
 )
 from ._multi_series import multi_series_no_data
 from .. import PrevImages
@@ -37,10 +37,12 @@ class VegaWidgetHz(ipw.VBox):
 _VegaWidget = VegaWidgetHz
 
 
-class MultiSeriesW(LeafVBox):
-    def __init__(self, ctx: Dict[str, AnyType]) -> None:
-        super().__init__(ctx)
-        self._output_dtypes = None
+class MultiSeriesW(VBox):
+    def __init__(self) -> None:
+        super().__init__()
+
+    def init(self):
+        self.output_dtypes = None
         self._axis = []
         lst = [_l("Axis"), _l("Column"), _l("* Factor"), _l("Symbol")]
         for i in range(N):
@@ -59,7 +61,7 @@ class MultiSeriesW(LeafVBox):
 
     def _axis_row(self, axis):
         axis_w = _l(axis)
-        col_list = [""] + list(self._dtypes.keys())
+        col_list = [""] + list(self.dtypes.keys())
         col = ipw.Dropdown(
             options=col_list,
             description="",
@@ -78,7 +80,7 @@ class MultiSeriesW(LeafVBox):
         return dict(axis=axis_w, col=col, factor=factor, sym=sym)
 
     def _update_vw(self, m, run_number):
-        tbl = self._input_module.table
+        tbl = self.input_module.table
         if tbl is None:
             print("no tbl")
             return
@@ -121,7 +123,7 @@ class MultiSeriesW(LeafVBox):
     def _btn_apply_cb(self, btn):
         self._vw = _VegaWidget(spec=multi_series_no_data)
         set_child(self, 2, self._vw)
-        self._input_module.on_after_run(self._update_vw)
+        self.input_module.on_after_run(self._update_vw)
         # self._input_module.scheduler().on_tick(self._update_vw)
         self.dag_running()
 

@@ -1,3 +1,4 @@
+import weakref
 import ipywidgets as ipw  # type: ignore
 from progressivis.table.dshape import dataframe_dshape  # type: ignore
 from progressivis.vis import DataShape  # type: ignore
@@ -162,7 +163,8 @@ def make_guess_types_toc2(obj, sel, fun):
             return
         parent_dtypes = {k: "datetime64" if str(v)[0] == "6"
                          else v for (k, v) in m.result.items()}
-        obj._output_dtypes = parent_dtypes
+        obj.output_dtypes = parent_dtypes
+        print("Sel Value", sel.value, fun)
         fun(obj, sel.value)
         with m.scheduler() as dataflow:
             deps = dataflow.collateral_damage(m.name)
@@ -199,7 +201,9 @@ def create_stage_widget(key):
         dtypes = parent_dtypes
     dag = _Dag(label=key, number=widget_numbers[key], dag=get_dag())
     ctx = dict(parent=obj, dtypes=dtypes, input_module=obj._output_module, dag=dag)
-    stage = stage_register[key](ctx)
+    guest = stage_register[key]()
+    stage = NodeCarrier(ctx, guest)
+    guest.init()
     widget_numbers[key] += 1
     assert obj not in obj.subwidgets
     obj.subwidgets.append(stage)
@@ -216,13 +220,13 @@ def create_loader_widget(key, ftype, alias):
     ctx = dict(parent=obj, dtypes=dtypes, input_module=obj._output_module, dag=dag)
     if ftype == "csv":
         from .csv_loader import CsvLoaderW
-
-        stage = CsvLoaderW(ctx)
+        loader = CsvLoaderW()
     else:
         assert ftype == "parquet"
         from .parquet_loader import ParquetLoaderW
-
-        stage = ParquetLoaderW(ctx)
+        loader = ParquetLoaderW()
+    stage = NodeCarrier(ctx, loader)
+    loader.init()
     widget_numbers[key] += 1
     obj.subwidgets.append(stage)
     widget_by_id[id(stage)] = stage
@@ -251,6 +255,7 @@ def _make_btn_start_toc2(obj: AnyType, sel: AnyType, fun) -> Callable:
             with s:
                 ds = DataShape(scheduler=s)
                 ds.input.table = obj._output_module.output.result
+                print("Obj Sel", obj, sel)
                 ds.on_after_run(make_guess_types_toc2(obj, sel, fun))
                 sink = Sink(scheduler=s)
                 sink.input.inp = ds.output.result
@@ -315,7 +320,7 @@ def make_remove(obj):
 
 
 class ChainingMixin:
-    def make_chaining_box(self):
+    def _make_chaining_box(self):
         fnc = _make_btn_start_toc2
         sel = ipw.Dropdown(
             options=[""] + list(stage_register.keys()),
@@ -537,6 +542,112 @@ class ChainingWidget:
         return f"{self.label}[{self.number}]" if self.number else self.label
 
 
+class GuestWidget:
+    def __init__(self) -> None:
+        self.__carrier = 0
+        print("init guest", id(self))
+
+    def init(self) -> None:
+        pass
+
+    @property
+    def carrier(self):
+        return self.__carrier()
+
+    @property
+    def dtypes(self):
+        return self.carrier._dtypes
+
+    @property
+    def input_dtypes(self):
+        return self.carrier._dtypes
+
+    @property
+    def input_module(self):
+        return self.carrier._input_module
+
+    @property
+    def input_slot(self):
+        return self.carrier._input_slot
+
+    @property
+    def output_module(self):
+        return self.carrier._output_module
+
+    @output_module.setter
+    def output_module(self, value):
+        self.carrier._output_module = value
+
+    @property
+    def output_slot(self):
+        return self.carrier._output_slot
+
+    @output_slot.setter
+    def output_slot(self, value):
+        self.carrier._output_slot = value
+
+    @property
+    def output_dtypes(self):
+        return self.carrier._output_dtypes
+
+    @output_dtypes.setter
+    def output_dtypes(self, value):
+        self.carrier._output_dtypes = value
+
+    @property
+    def parent(self):
+        return self.carrier.parent.children[0]
+
+    @property
+    def title(self):
+        return self.carrier.title
+
+    @property
+    def current_widget_keys(self):
+        return widget_by_key.keys()
+
+    @property
+    def dag(self):
+        return self.carrier.dag
+
+    def get_widget_by_key(self, key):
+        return widget_by_key[key].children[0]
+
+    def dag_running(self):
+        self.carrier.dag_running()
+
+    def make_chaining_box(self):
+        self.carrier.make_chaining_box()
+
+    def _make_guess_types(self, fun, args, kw):
+        def _guess(m, run_number):
+            if m.result is None:
+                return
+            self.output_dtypes = {k: "datetime64" if str(v)[0] == "6"
+                                  else v for (k, v) in m.result.items()}
+            fun(*args, **kw)
+            with m.scheduler() as dataflow:
+                deps = dataflow.collateral_damage(m.name)
+                dataflow.delete_modules(*deps)
+
+        return _guess
+
+    def compute_dtypes_then_call(self, func, args=(), kw={}):
+        s = self.output_module.scheduler()
+        with s:
+            ds = DataShape(scheduler=s)
+            ds.input.table = self.output_module.output.result
+            ds.on_after_run(self._make_guess_types(func, args, kw))
+            sink = Sink(scheduler=s)
+            sink.input.inp = ds.output.result
+
+
+class VBox(ipw.VBox, GuestWidget):
+    def __init__(self, *args, **kw):
+        ipw.VBox.__init__(self, *args, **kw)
+        GuestWidget.__init__(self)
+
+
 class LeafVBox(ipw.VBox, ChainingWidget):
     def __init__(self, ctx, children=()):
         ipw.VBox.__init__(self, children)
@@ -556,13 +667,15 @@ class RootVBox(LeafVBox, LoaderMixin):
         self.dag_register()
 
 
-class LeafCarrier(LeafVBox):
-    def __init__(self, ctx, guest):
-        super().__init__(ctx, (guest, dongle_widget()))
-        self.dag_register()
-
-
 class NodeCarrier(NodeVBox):
     def __init__(self, ctx, guest):
-        super().__init__(ctx, (guest, dongle_widget()))
+        super().__init__(ctx, (guest,))
+        guest._GuestWidget__carrier = weakref.ref(self)
+        print("set carrier guest", id(guest))
         self.dag_register()
+
+    def make_chaining_box(self):
+        if len(self.children) > 1:
+            raise ValueError("The chaining box already exists")
+        box = self._make_chaining_box()
+        self.children = (self.children[0], box)

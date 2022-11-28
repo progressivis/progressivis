@@ -2,7 +2,7 @@ from .utils import (
     make_button,
     stage_register,
     dongle_widget,
-    set_child, NodeVBox
+    set_child, VBox
 )
 import ipywidgets as ipw  # type: ignore
 import pandas as pd
@@ -25,9 +25,11 @@ def get_flag_status(dt: str, op: str) -> bool:
     return dt in ("string", "datetime64")  # op in type_op_mismatches.get(dt, set())
 
 
-class AggregateW(NodeVBox):
-    def __init__(self, ctx: Dict[str, AnyType]) -> None:
-        super().__init__(ctx)
+class AggregateW(VBox):
+    def __init__(self) -> None:
+        super().__init__()
+
+    def init(self):
         self.hidden_cols: List[str] = []
         fncs = ["hide"] + list(Aggregate.registry.keys())
         self.all_functions = dict(zip(fncs, fncs))
@@ -35,7 +37,7 @@ class AggregateW(NodeVBox):
             options=self.hidden_cols, value=[], rows=5, description="❎", disabled=False,
         )
         self._hidden_sel_wg.observe(self._selm_obs_cb, "value")
-        self.visible_cols: List[str] = list(self._dtypes.keys())
+        self.visible_cols: List[str] = list(self.dtypes.keys())
         self.obs_flag = False
         self.info_cbx: Dict[Tuple[str, str], ipw.Checkbox] = {}
         self._grid = self.draw_matrix()
@@ -50,10 +52,10 @@ class AggregateW(NodeVBox):
         )
 
     def init_aggregate(self, compute: AnyType) -> Aggregate:
-        s = self._input_module.scheduler()
+        s = self.input_module.scheduler()
         with s:
             aggr = Aggregate(compute=compute, scheduler=s)
-            aggr.input.table = self._input_module.output[self._input_slot]
+            aggr.input.table = self.input_module.output[self.input_slot]
             sink = Sink(scheduler=s)
             sink.input.inp = aggr.output.result
             return aggr
@@ -64,7 +66,7 @@ class AggregateW(NodeVBox):
         ]
         width_ = len(lst)
         for col in sorted(self.visible_cols):
-            col_type = self._dtypes[col]
+            col_type = self.dtypes[col]
             lst.append(ipw.Label(f"{col}:{col_type}"))
             for k in self.all_functions.keys():
                 lst.append(self._info_checkbox(col, k, get_flag_status(col_type, k)))
@@ -86,10 +88,10 @@ class AggregateW(NodeVBox):
             for ((col, fnc), ck) in self.info_cbx.items()
             if fnc != "hide" and ck.value
         ]
-        self._output_module = self.init_aggregate(compute)
-        self._output_slot = "result"
+        self.output_module = self.init_aggregate(compute)
+        self.output_slot = "result"
         btn.disabled = True
-        set_child(self, 3, self.make_chaining_box())
+        self.make_chaining_box()
         self.dag_running()
 
     def _selm_obs_cb(self, change: AnyType) -> None:
@@ -119,7 +121,7 @@ class AggregateW(NodeVBox):
         return _cbk
 
     def get_underlying_modules(self):
-        return [self._output_module]
+        return [self.output_module]
 
 
 stage_register["Aggregate"] = AggregateW

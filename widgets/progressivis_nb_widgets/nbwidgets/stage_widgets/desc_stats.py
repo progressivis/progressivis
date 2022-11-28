@@ -27,7 +27,7 @@ from .._hist1d_schema import hist1d_spec_no_data, kll_spec_no_data
 from .._hist2d_schema import hist2d_spec_no_data
 from .._corr_schema import corr_spec_no_data
 from .._bar_schema import bar_spec_no_data
-from .utils import TreeTab, make_button, stage_register, NodeVBox
+from .utils import TreeTab, make_button, stage_register, VBox
 import time
 
 from typing import (
@@ -844,16 +844,14 @@ class DynViewer(TreeTab):
         return fun
 
 
-class DescStatsW(NodeVBox):
-    def __init__(self, ctx: Dict[str, AnyType]) -> None:
-        super().__init__(ctx)
-        self._dyn_viewer = DynViewer(self._dtypes, self._input_module, self._input_slot)
+class DescStatsW(VBox):
+    def __init__(self) -> None:
+        super().__init__()
+
+    def init(self):
+        self._dyn_viewer = DynViewer(self.dtypes, self.input_module, self.input_slot)
         self.dag.requestAttention(self.title, "widget", "PROGRESS_NOTIFICATION", "0")
-        self._chaining_box = self.make_chaining_box()
-        self.children = (
-            self._dyn_viewer,
-            self._chaining_box
-        )
+        self.children = (self._dyn_viewer,)
 
     def get_underlying_modules(self):
         return self._dyn_viewer.get_underlying_modules()

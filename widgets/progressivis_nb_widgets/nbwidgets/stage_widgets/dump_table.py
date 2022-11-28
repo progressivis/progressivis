@@ -1,26 +1,22 @@
 from .utils import (
     stage_register,
-    dongle_widget,
-    LeafVBox
+    VBox
 )
 from ..slot_wg import SlotWg
 
 from progressivis.core.scheduler import Scheduler  # type: ignore
 
-from typing import (
-    Any as AnyType,
-    Dict,
-)
 
+class DumpTableW(VBox):
+    def __init__(self) -> None:
+        super().__init__()
 
-class DumpTableW(LeafVBox):
-    def __init__(self, ctx: Dict[str, AnyType]) -> None:
-        super().__init__(ctx)
+    def init(self) -> None:
         self.dag_running()
-        sl_wg = SlotWg(self._input_module, self._input_slot)
-        self.children = (sl_wg, dongle_widget())
+        sl_wg = SlotWg(self.input_module, self.input_slot)
+        self.children = (sl_wg,)
         # set_child(self, 1, self.make_chaining_box())
-        self._input_module.scheduler().on_tick(self._refresh_proc)
+        self.input_module.scheduler().on_tick(self._refresh_proc)
 
     async def _refresh_proc(self, scheduler: Scheduler, run_number: int) -> None:
         await self.children[0].refresh()

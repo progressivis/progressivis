@@ -2,7 +2,7 @@ from .utils import (
     make_button,
     stage_register,
     dongle_widget,
-    set_child, NodeVBox
+    set_child, VBox
 )
 import ipywidgets as ipw  # type: ignore
 import numpy as np
@@ -16,7 +16,6 @@ from typing import (
     Any as AnyType,
     Optional,
     List,
-    Dict,
 )
 
 WidgetType = AnyType
@@ -29,7 +28,9 @@ UFUNCS = {
 }
 
 ALL_FUNCS = UFUNCS.copy()
-ALL_FUNCS.update({"week_day": week_day, "is_weekend": is_weekend, "ymd_string": ymd_string})
+ALL_FUNCS.update({"week_day": week_day,
+                  "is_weekend": is_weekend,
+                  "ymd_string": ymd_string})
 
 
 class FuncW(ipw.VBox):
@@ -41,7 +42,7 @@ class FuncW(ipw.VBox):
             value=f"{colname}_{fname}", placeholder="mandatory", description="Name:",
             disabled=False
             )
-        type_ = self._main._dtypes[colname]
+        type_ = self._main.dtypes[colname]
         if type_ not in DTYPES:
             type_ = "object"
         self._dtype = ipw.Dropdown(
@@ -169,16 +170,20 @@ class IfElseW(ipw.VBox):
         assert op_ is not None
         conv_ = self._type.value
         than_ = None if op_ is np.isnan else conv_(self._than.value)
-        if_true = UNCHANGED if self._if_true_ck.value else conv_(self._if_true_val.value)
-        if_false = UNCHANGED if self._if_false_ck.value else conv_(self._if_false_val.value)
+        if_true = (UNCHANGED if self._if_true_ck.value
+                   else conv_(self._if_true_val.value))
+        if_false = (UNCHANGED if self._if_false_ck.value
+                    else conv_(self._if_false_val.value))
         func = make_if_else(op_=op_, test_val=than_, if_true=if_true, if_false=if_false)
         ALL_FUNCS.update({name: np.vectorize(func)})
         self._main._functions.options = [""] + list(ALL_FUNCS.keys())
 
 
-class ColumnsW(NodeVBox):
-    def __init__(self, ctx: Dict[str, AnyType]) -> None:
-        super().__init__(ctx)
+class ColumnsW(VBox):
+    def __init__(self) -> None:
+        super().__init__()
+
+    def init(self):
         self._col_widgets = {}
         self._computed = []
         self._numpy_ufuncs = ipw.Checkbox(value=True,
@@ -186,11 +191,13 @@ class ColumnsW(NodeVBox):
                                           disabled=False)
         self._numpy_ufuncs.observe(self._numpy_ufuncs_cb, names="value")
         self._if_else = IfElseW(self)
-        self._custom_funcs = ipw.Accordion(children=[self._numpy_ufuncs, self._if_else], selected_index=None)
+        self._custom_funcs = ipw.Accordion(
+            children=[self._numpy_ufuncs, self._if_else],
+            selected_index=None)
         self._custom_funcs.set_title(0, "Numpy universal functions")
         self._custom_funcs.set_title(1, "Add If-Else expressions")
-        cols_t = [f"{c}:{t}" for (c, t) in self._dtypes.items()]
-        col_list = list(zip(cols_t, self._dtypes.keys()))
+        cols_t = [f"{c}:{t}" for (c, t) in self.dtypes.items()]
+        col_list = list(zip(cols_t, self.dtypes.keys()))
         self._columns = ipw.Select(disabled=False,
                                    options=[("", "")]+col_list, rows=7)
         self._columns.observe(self._columns_cb, names="value")
@@ -222,7 +229,7 @@ class ColumnsW(NodeVBox):
     def _keep_all_cb(self, change: AnyType) -> None:
         val = change["new"]
         if val:
-            self._stored_cols.value = list(self._dtypes.keys())
+            self._stored_cols.value = list(self.dtypes.keys())
         else:
             self._stored_cols.value = []
 
@@ -278,15 +285,16 @@ class ColumnsW(NodeVBox):
                 continue
             func = ALL_FUNCS[fname]
             comp.add_ufunc_column(wg._name.value, col, func, np.dtype(wg._dtype.value))
-        self._output_module = self.init_module(comp, columns=list(self._stored_cols.value))
+        self.output_module = self.init_module(comp, columns=list(self._stored_cols.value))
         set_child(self, 5, self.make_chaining_box())
         self.dag_running()
 
-    def init_module(self, computed: Computed, columns: Optional[List[str]] = None) -> Repeater:
-        s = self._input_module.scheduler()
+    def init_module(self, computed: Computed,
+                    columns: Optional[List[str]] = None) -> Repeater:
+        s = self.input_module.scheduler()
         with s:
             rep = Repeater(computed=computed, columns=columns, scheduler=s)
-            rep.input.table = self._input_module.output[self._input_slot]
+            rep.input.table = self.input_module.output[self.input_slot]
             sink = Sink(scheduler=s)
             sink.input.inp = rep.output.result
             return rep
@@ -317,7 +325,7 @@ class ColumnsW(NodeVBox):
         set_child(self, 2, self._func_table)
 
     def get_underlying_modules(self):
-        return [self._output_module]
+        return [self.output_module]
 
 
 stage_register["View"] = ColumnsW

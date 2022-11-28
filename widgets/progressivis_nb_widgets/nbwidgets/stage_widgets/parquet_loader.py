@@ -3,8 +3,7 @@ import numpy as np
 import pyarrow.parquet as pq
 from progressivis.table.dshape import dataframe_dshape  # type: ignore
 from progressivis.io import ParquetLoader  # type: ignore
-from .utils import (make_button,
-                    set_child, dongle_widget, NodeVBox)
+from .utils import (make_button, set_child, dongle_widget, VBox)
 import os
 
 from typing import (
@@ -73,12 +72,12 @@ class Sniffer(ipw.HBox):
         self.details.children = [col]
 
 
-class ParquetLoaderW(NodeVBox):
-    last_created = None
+class ParquetLoaderW(VBox):
+    def __init__(self) -> None:
+        super().__init__()
 
-    def __init__(self, ctx, url: str = "", dag=None) -> None:
+    def init(self):
         self._sniffer: Optional[Sniffer] = None
-        super().__init__(ctx)
         self._url = ipw.Text(  # type: ignore
             value=os.getenv("PROGRESSIVIS_DEFAULT_PARQUET"),
             placeholder='',
@@ -94,28 +93,29 @@ class ParquetLoaderW(NodeVBox):
             sniff_btn,
             dongle_widget(""),  # sniffer
             dongle_widget(""),  # start loading
-            dongle_widget("")   # chaining box
         ])
 
     def _sniffer_cb(self, btn: ipw.Button) -> None:
         url = self._url.value.strip()
         self._sniffer = Sniffer(url)
-        set_child(self, 3, self._sniffer)
+        set_child(self, 2, self._sniffer)
         start_btn = make_button("Start loading ...",
                                 cb=self._start_loader_cb)
-        set_child(self, 4, start_btn)
+        set_child(self, 3, start_btn)
         btn.disabled = True
 
     def _start_loader_cb(self, btn: ipw.Button) -> None:
         pq_module = self.init_modules()
-        self._output_module = pq_module
-        self._output_slot = "result"
-        set_child(self, 4, self.make_chaining_box())
+        self.output_module = pq_module
+        self.output_slot = "result"
+        assert self._sniffer is not None
+        self.output_dtypes = self._sniffer.get_dtypes()
+        self.make_chaining_box()
         btn.disabled = True
         self.dag.requestAttention(self.title, "widget", "PROGRESS_NOTIFICATION", "")
 
     def init_modules(self) -> ParquetLoader:
-        sink = self._input_module
+        sink = self.input_module
         s = sink.scheduler()
         with s:
             assert self._sniffer is not None
@@ -140,8 +140,3 @@ class ParquetLoaderW(NodeVBox):
 
             pql.on_after_run(_f)
         return pql
-
-    @property
-    def _output_dtypes(self) -> Dict[str, AnyType]:
-        assert self._sniffer is not None
-        return self._sniffer.get_dtypes()

@@ -5,38 +5,21 @@ from progressivis.io import SimpleCSVLoader  # type: ignore
 from progressivis.table import Table  # type: ignore
 from progressivis.table.constant import Constant  # type: ignore
 from .utils import (make_button,
-                    set_child, dongle_widget, get_schema, NodeVBox)
+                    set_child, dongle_widget, get_schema, GuestWidget)
 import os
 
 from typing import (
-    Any as AnyType,
-    Dict,
     List,
 )
 
 
-def init_modules(obj: "CsvLoaderW") -> SimpleCSVLoader:
-    urls = obj._urls
-    assert obj._sniffer is not None
-    params = obj._sniffer.params
-    sink = obj._input_module
-    s = sink.scheduler()
-    with s:
-        filenames = pd.DataFrame({'filename': urls})
-        cst = Constant(Table('filenames', data=filenames), scheduler=s)
-        csv = SimpleCSVLoader(scheduler=s, **params)
-        csv.input.filenames = cst.output[0]
-        sink.input.inp = csv.output.result
-        return csv
-
-
-class CsvLoaderW(NodeVBox):
+class CsvLoaderW(ipw.VBox, GuestWidget):
     last_created = None
 
-    def __init__(self, ctx,
+    def __init__(self,
                  urls: List[str] = [],
                  to_sniff: str = "", lines=100) -> None:
-        super().__init__(ctx)
+        super().__init__()
         self._urls_wg = ipw.Textarea(
             value=os.getenv("PROGRESSIVIS_DEFAULT_CSV"),
             placeholder='',
@@ -87,13 +70,24 @@ class CsvLoaderW(NodeVBox):
         btn.disabled = True
 
     def _start_loader_cb(self, btn: ipw.Button) -> None:
-        csv_module = init_modules(self)
-        self._output_module = csv_module
-        self._output_slot = "result"
-        set_child(self, 4, self.make_chaining_box())
+        csv_module = self.init_modules()
+        self.output_module = csv_module
+        self.output_slot = "result"
+        self.output_dtypes = get_schema(self._sniffer)
+        self.make_chaining_box()
         btn.disabled = True
         self.dag_running()
 
-    @property
-    def _output_dtypes(self) -> Dict[str, AnyType]:
-        return get_schema(self._sniffer)
+    def init_modules(self) -> SimpleCSVLoader:
+        urls = self._urls
+        assert self._sniffer is not None
+        params = self._sniffer.params
+        sink = self.carrier._input_module
+        s = sink.scheduler()
+        with s:
+            filenames = pd.DataFrame({'filename': urls})
+            cst = Constant(Table('filenames', data=filenames), scheduler=s)
+            csv = SimpleCSVLoader(scheduler=s, **params)
+            csv.input.filenames = cst.output[0]
+            sink.input.inp = csv.output.result
+            return csv
