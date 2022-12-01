@@ -90,7 +90,7 @@ class Aggregate(TableModule):
                 by = groupby_mod.by
                 if isinstance(by, str):
                     self._by_cols = [by]
-                elif isinstance(by, list):
+                elif isinstance(by, (list, tuple)):
                     self._by_cols = by
                 elif isinstance(by, SubColumnABC):
                     self._by_cols = [f"{by.column}_{by.tag}"]

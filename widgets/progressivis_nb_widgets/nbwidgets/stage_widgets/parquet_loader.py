@@ -3,12 +3,11 @@ import numpy as np
 import pyarrow.parquet as pq
 from progressivis.table.dshape import dataframe_dshape  # type: ignore
 from progressivis.io import ParquetLoader  # type: ignore
-from .utils import (make_button, set_child, dongle_widget, VBox)
+from .utils import (make_button, VBoxSchema)
 import os
 
 from typing import (
     Any as AnyType,
-    Optional,
     Dict,
 )
 
@@ -72,13 +71,9 @@ class Sniffer(ipw.HBox):
         self.details.children = [col]
 
 
-class ParquetLoaderW(VBox):
-    def __init__(self) -> None:
-        super().__init__()
-
+class ParquetLoaderW(VBoxSchema):
     def init(self):
-        self._sniffer: Optional[Sniffer] = None
-        self._url = ipw.Text(  # type: ignore
+        url = ipw.Text(  # type: ignore
             value=os.getenv("PROGRESSIVIS_DEFAULT_PARQUET"),
             placeholder='',
             description='File:',
@@ -87,29 +82,26 @@ class ParquetLoaderW(VBox):
         )
         sniff_btn = make_button("Sniff ...",
                                 cb=self._sniffer_cb)
-        self._sniffer = None
-        self.children = tuple([
-            self._url,
-            sniff_btn,
-            dongle_widget(""),  # sniffer
-            dongle_widget(""),  # start loading
-        ])
+        self.schema = dict(
+            url=url,
+            sniff_btn=sniff_btn,
+            sniffer=None,
+            start_btn=None
+        )
 
     def _sniffer_cb(self, btn: ipw.Button) -> None:
-        url = self._url.value.strip()
-        self._sniffer = Sniffer(url)
-        set_child(self, 2, self._sniffer)
-        start_btn = make_button("Start loading ...",
-                                cb=self._start_loader_cb)
-        set_child(self, 3, start_btn)
+        url = self["url"].value.strip()
+        self["sniffer"] = Sniffer(url)
+        self["start_btn"] = make_button("Start loading ...",
+                                        cb=self._start_loader_cb)
         btn.disabled = True
 
     def _start_loader_cb(self, btn: ipw.Button) -> None:
         pq_module = self.init_modules()
         self.output_module = pq_module
         self.output_slot = "result"
-        assert self._sniffer is not None
-        self.output_dtypes = self._sniffer.get_dtypes()
+        assert isinstance(self["sniffer"], Sniffer)
+        self.output_dtypes = self["sniffer"].get_dtypes()
         self.make_chaining_box()
         btn.disabled = True
         self.dag.requestAttention(self.title, "widget", "PROGRESS_NOTIFICATION", "")
@@ -118,9 +110,9 @@ class ParquetLoaderW(VBox):
         sink = self.input_module
         s = sink.scheduler()
         with s:
-            assert self._sniffer is not None
-            cols = list(self._sniffer.get_dtypes().keys())
-            pql = ParquetLoader(self._url.value,
+            assert isinstance(self["sniffer"], Sniffer)
+            cols = list(self["sniffer"].get_dtypes().keys())
+            pql = ParquetLoader(self["url"].value,
                                 columns=cols,
                                 scheduler=s)
             sink.input.inp = pql.output.result
@@ -128,7 +120,7 @@ class ParquetLoaderW(VBox):
             def _f(m, rnum):
                 if m.table is None:
                     return
-                pc = min(100*len(m.table)//self._sniffer.pqfile.metadata.num_rows+1, 100)
+                pc = min(100*len(m.table)//self["sniffer"].pqfile.metadata.num_rows+1, 100)
                 self.dag.updateSummary(self.title, {"progress": pc})
                 if pc < 100:
                     self.dag.requestAttention(self.title, "widget",

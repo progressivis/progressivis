@@ -1,5 +1,5 @@
 from __future__ import annotations
-
+import time
 import ipywidgets as widgets  # type: ignore
 from ipydatawidgets.ndarray.serializers import (  # type: ignore
     array_to_compressed_json,
@@ -40,6 +40,24 @@ async def update_widget(wg: Any, attr: str, val: Any) -> None:
     await asynchronize(setattr, wg, attr, val)
 
 
+def historized_widget(widget_class, update_method):
+    from . import PrevImages
+
+    class _Hz(widgets.VBox):
+        def __init__(self, *args, **kw):
+            self.widget = widget_class(*args, **kw)
+            self._update_method = update_method
+            self.classname = f"historized_widget-{id(self.widget)}"
+            self.widget.add_class(self.classname)
+            self.history = PrevImages()
+            self.history.target = self.classname
+            super().__init__([self.widget, self.history])
+
+        def update(self, *args, **kw):
+            getattr(self.widget, self._update_method)(*args, **kw)
+            time.sleep(0.1)
+            self.history.update()
+    return _Hz
 #
 # The functions below  (data_union_to_json_compress, data_union_from_json_compress)
 # are adapted from ipydatawidgets

@@ -5,7 +5,7 @@ from progressivis.io import SimpleCSVLoader  # type: ignore
 from progressivis.table import Table  # type: ignore
 from progressivis.table.constant import Constant  # type: ignore
 from .utils import (make_button,
-                    set_child, dongle_widget, get_schema, GuestWidget)
+                    get_schema, VBoxSchema)
 import os
 
 from typing import (
@@ -13,61 +13,61 @@ from typing import (
 )
 
 
-class CsvLoaderW(ipw.VBox, GuestWidget):
-    last_created = None
-
-    def __init__(self,
-                 urls: List[str] = [],
-                 to_sniff: str = "", lines=100) -> None:
+class CsvLoaderW(VBoxSchema):
+    def __init__(self) -> None:
         super().__init__()
-        self._urls_wg = ipw.Textarea(
+        self._sniffer = None
+        self._urls = []
+
+    def init(self,
+             urls: List[str] = [],
+             to_sniff: str = "", lines=100) -> None:
+        urls_wg = ipw.Textarea(
             value=os.getenv("PROGRESSIVIS_DEFAULT_CSV"),
             placeholder='',
             description='URLS:',
             disabled=False,
             layout=ipw.Layout(width="100%")
         )
-        self._urls = None
-        self._to_sniff = ipw.Text(
+        to_sniff = ipw.Text(
             value=to_sniff,
             placeholder='',
             description='URL to sniff(optional):',
             disabled=False,
             layout=ipw.Layout(width="100%")
         )
-        self._n_lines = ipw.IntText(
+        n_lines = ipw.IntText(
             value=lines,
-            description='Lines:',
+            description='Rows:',
             disabled=False
         )
         sniff_btn = make_button("Sniff ...",
                                 cb=self._sniffer_cb)
-        self._sniffer = None
-        self.children = [
-            self._urls_wg,
-            self._to_sniff,
-            self._n_lines,
-            sniff_btn,
-            dongle_widget(""),
-            dongle_widget(""),
-            dongle_widget("")
-        ]
+        self.schema = dict(
+            urls_wg=urls_wg,
+            to_sniff=to_sniff,
+            n_lines=n_lines,
+            sniff_btn=sniff_btn,
+            sniffer=None,
+            start_btn=None,
+        )
 
     def _sniffer_cb(self, btn: ipw.Button) -> None:
-        urls = self._urls_wg.value.strip().split("\n")
+        urls = self["urls_wg"].value.strip().split("\n")
         assert urls
         self._urls = urls
-        to_sniff = self._to_sniff.value.strip()
+        to_sniff = self["to_sniff"].value.strip()
         if not to_sniff:
             to_sniff = urls[0]
-        n_lines = self._n_lines.value
+        n_lines = self["n_lines"].value
         self._sniffer = CSVSniffer(path=to_sniff, lines=n_lines)
-        assert self._sniffer is not None
-        set_child(self, 3, self._sniffer.box)
-        start_btn = make_button("Start loading csv ...",
-                                cb=self._start_loader_cb)
-        set_child(self, 4, start_btn)
+        self["sniffer"] = self._sniffer.box
+        self["start_btn"] = make_button("Start loading csv ...",
+                                        cb=self._start_loader_cb)
         btn.disabled = True
+        self["urls_wg"].disabled = True
+        self["to_sniff"].disabled = True
+        self["n_lines"].disabled = True
 
     def _start_loader_cb(self, btn: ipw.Button) -> None:
         csv_module = self.init_modules()
@@ -80,9 +80,8 @@ class CsvLoaderW(ipw.VBox, GuestWidget):
 
     def init_modules(self) -> SimpleCSVLoader:
         urls = self._urls
-        assert self._sniffer is not None
         params = self._sniffer.params
-        sink = self.carrier._input_module
+        sink = self.input_module
         s = sink.scheduler()
         with s:
             filenames = pd.DataFrame({'filename': urls})

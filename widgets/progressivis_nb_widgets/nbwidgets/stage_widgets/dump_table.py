@@ -15,7 +15,6 @@ class DumpTableW(VBox):
         self.dag_running()
         sl_wg = SlotWg(self.input_module, self.input_slot)
         self.children = (sl_wg,)
-        # set_child(self, 1, self.make_chaining_box())
         self.input_module.scheduler().on_tick(self._refresh_proc)
 
     async def _refresh_proc(self, scheduler: Scheduler, run_number: int) -> None:

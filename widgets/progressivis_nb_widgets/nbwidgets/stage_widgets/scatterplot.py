@@ -1,14 +1,11 @@
 from .utils import (
     make_button,
     stage_register,
-    dongle_widget,
-    set_child,
-    VBox,
+    VBoxSchema,
 )
+from ..utils import historized_widget
 from ._multi_series import scatterplot_no_data
-from .. import PrevImages
 import ipywidgets as ipw  # type: ignore
-import time
 from vega.widget import VegaWidget  # type: ignore
 import pandas as pd
 from typing import Any as AnyType, Dict
@@ -20,28 +17,10 @@ _l = ipw.Label
 N = 4  # 1X + 3Y
 
 
-class VegaWidgetHz(ipw.VBox):
-    def __init__(self, *args, **kw):
-        self.vega_wg = VegaWidget(*args, **kw)
-        self.classname = f"vegawidget-{id(self.vega_wg)}"
-        self.vega_wg.add_class(self.classname)
-        self.pim = PrevImages()
-        self.pim.target = self.classname
-        super().__init__([self.vega_wg, self.pim])
-
-    def update(self, *args, **kw):
-        self.vega_wg.update(*args, **kw)
-        time.sleep(0.1)
-        self.pim.update()
+_VegaWidget = historized_widget(VegaWidget, "update")
 
 
-_VegaWidget = VegaWidgetHz
-
-
-class ScatterplotW(VBox):
-    def __init__(self) -> None:
-        super().__init__()
-
+class ScatterplotW(VBoxSchema):
     def init(self):
         self.output_dtypes = None
         self._axis = {}
@@ -50,15 +29,14 @@ class ScatterplotW(VBox):
             row = self._axis_row(row_name)
             self._axis[row_name] = row
             lst.extend(row.values())
-        self._gb = ipw.GridBox(
+        gb = ipw.GridBox(
             lst,
             layout=ipw.Layout(grid_template_columns="5% 40% 40%"),
         )
-        self._btn_apply = self._btn_ok = make_button(
+        btn_apply = self._btn_ok = make_button(
             "Apply", disabled=True, cb=self._btn_apply_cb
         )
-        self._vw = dongle_widget()
-        self.children = (self._gb, self._btn_apply, self._vw)
+        self.schema = dict(grid=gb, btn_apply=btn_apply, vega=None)
 
     def _axis_row(self, axis):
         axis_w = _l(axis)
@@ -90,15 +68,12 @@ class ScatterplotW(VBox):
             shape_arr = tbl[self._shape_col].loc[:]
             df_dict[self._shape_sym] = shape_arr
         df = pd.DataFrame(df_dict)
-        self._vw.update("data", remove="true", insert=df)
+        self["vega"].update("data", remove="true", insert=df)
 
     def _col_xy_cb(self, change: Dict[str, AnyType]) -> None:
         self._x_col = self._axis["X"]["col"].value
         self._y_col = self._axis["Y"]["col"].value
-        if self._x_col and self._y_col:
-            self._btn_apply.disabled = False
-        else:
-            self._btn_apply.disabled = True
+        self["btn_apply"].disabled = not (self._x_col and self._y_col)
 
     def _btn_apply_cb(self, btn):
         sc_json = copy.deepcopy(scatterplot_no_data)
@@ -118,8 +93,7 @@ class ScatterplotW(VBox):
             shape_sym = self._axis["Shape"]["sym"].value
             self._shape_sym = shape_sym or self._shape_col
             sc_json["encoding"]["shape"] = {"field": self._shape_sym, "type": "nominal"}
-        self._vw = _VegaWidget(spec=sc_json)
-        set_child(self, 2, self._vw)
+        self["vega"] = _VegaWidget(spec=sc_json)
         self.input_module.scheduler().on_tick(self._update_vw)
         self.dag_running()
 

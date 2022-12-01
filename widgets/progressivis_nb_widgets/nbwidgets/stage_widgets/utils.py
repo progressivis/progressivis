@@ -164,7 +164,6 @@ def make_guess_types_toc2(obj, sel, fun):
         parent_dtypes = {k: "datetime64" if str(v)[0] == "6"
                          else v for (k, v) in m.result.items()}
         obj.output_dtypes = parent_dtypes
-        print("Sel Value", sel.value, fun)
         fun(obj, sel.value)
         with m.scheduler() as dataflow:
             deps = dataflow.collateral_damage(m.name)
@@ -255,7 +254,6 @@ def _make_btn_start_toc2(obj: AnyType, sel: AnyType, fun) -> Callable:
             with s:
                 ds = DataShape(scheduler=s)
                 ds.input.table = obj._output_module.output.result
-                print("Obj Sel", obj, sel)
                 ds.on_after_run(make_guess_types_toc2(obj, sel, fun))
                 sink = Sink(scheduler=s)
                 sink.input.inp = ds.output.result
@@ -545,7 +543,6 @@ class ChainingWidget:
 class GuestWidget:
     def __init__(self) -> None:
         self.__carrier = 0
-        print("init guest", id(self))
 
     def init(self) -> None:
         pass
@@ -671,7 +668,6 @@ class NodeCarrier(NodeVBox):
     def __init__(self, ctx, guest):
         super().__init__(ctx, (guest,))
         guest._GuestWidget__carrier = weakref.ref(self)
-        print("set carrier guest", id(guest))
         self.dag_register()
 
     def make_chaining_box(self):
@@ -679,3 +675,64 @@ class NodeCarrier(NodeVBox):
             raise ValueError("The chaining box already exists")
         box = self._make_chaining_box()
         self.children = (self.children[0], box)
+
+
+def _none_wg(wg):
+    return dongle_widget() if wg is None else wg
+
+
+class SchemaBox:
+    def __init__(self):
+        self.__schema = None
+
+    @property
+    def schema(self):
+        return self.__schema
+
+    @schema.setter
+    def schema(self, value):
+        if self.__schema is not None:
+            raise ValueError("Schema cannot be set more than once")
+        assert isinstance(value, tuple) or isinstance(value, dict)
+        if isinstance(value, tuple):
+            for k in value:
+                assert isinstance(k, str)
+            if self.children:
+                assert len(self.children) == len(value)
+            else:
+                self.children = [dongle_widget() for k in value]
+            self.__schema = value
+        else:  # i.e. value is dict
+            if self.schema:
+                raise ValueError("The box must be empty before setting a dict schema")
+            for k, v in value.items():
+                assert isinstance(k, str)
+                assert isinstance(v, ipw.DOMWidget) or v is None
+            self.__schema = tuple(value.keys())
+            self.children = tuple([_none_wg(v) for v in value.values()])
+
+    def __getitem__(self, key):
+        assert self.__schema and key in self.__schema
+        return self.children[self.__schema.index(key)]
+
+    def __setitem__(self, key, value):
+        assert self.__schema and key in self.__schema
+        set_child(self, self.__schema.index(key), _none_wg(value))
+
+
+class VBoxSchema(VBox, SchemaBox):
+    def __init__(self, *args, **kw):
+        VBox.__init__(self, *args, **kw)
+        SchemaBox.__init__(self)
+
+
+class IpyVBoxSchema(ipw.VBox, SchemaBox):
+    def __init__(self, *args, **kw):
+        ipw.VBox.__init__(self, *args, **kw)
+        SchemaBox.__init__(self)
+
+
+class IpyHBoxSchema(ipw.HBox, SchemaBox):
+    def __init__(self, *args, **kw):
+        ipw.HBox.__init__(self, *args, **kw)
+        SchemaBox.__init__(self)

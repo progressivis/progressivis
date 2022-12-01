@@ -3,7 +3,7 @@ from progressivis import Scheduler   # type: ignore
 from progressivis.io import DynVar  # type: ignore
 from progressivis.core import Sink, aio  # type: ignore
 from .utils import (make_button, get_dag, _Dag,
-                    set_child, dongle_widget, RootVBox,
+                    RootVBox, SchemaBox,
                     get_widget_by_id, get_widget_by_key)
 
 from typing import (
@@ -32,7 +32,7 @@ def init_dataflow() -> AnyType:
     return sink
 
 
-class Constructor(RootVBox):
+class Constructor(RootVBox, SchemaBox):
     last_created = None
 
     def __init__(self, urls: List[str] = [], *, name="root",
@@ -44,24 +44,25 @@ class Constructor(RootVBox):
                    dag=_Dag(label=name,
                             number=0,
                             dag=get_dag()))
-        super().__init__(ctx)
+        RootVBox.__init__(self, ctx)
+        SchemaBox.__init__(self)
         start_btn = make_button("Start scheduler ...",
                                 cb=self._start_scheduler_cb)
-        self.children = [
-            ipw.HTML(f"<h2 id='{self.dom_id}'>{name}</h2>"),
-            start_btn,
-            dongle_widget(""),
-            dongle_widget(""),
-            self.dag
-        ]
+        self.schema = dict(
+            h2=ipw.HTML(f"<h2 id='{self.dom_id}'>{name}</h2>"),
+            start_btn=start_btn,
+            csv=None,
+            parquet=None,
+            dag=self.dag
+        )
 
     def _start_scheduler_cb(self, btn: ipw.Button) -> None:
         init_module = init_dataflow()
         self._output_module = init_module
         self._output_slot = "result"
         self._output_dtypes = {}
-        set_child(self, 2, self.make_loader_box(ftype="csv"))
-        set_child(self, 3, self.make_loader_box(ftype="parquet"))
+        self["csv"] = self.make_loader_box(ftype="csv")
+        self["parquet"] = self.make_loader_box(ftype="parquet")
         btn.disabled = True
         self.dag.registerWidget(self, "root", "root", self.dom_id, [])
 

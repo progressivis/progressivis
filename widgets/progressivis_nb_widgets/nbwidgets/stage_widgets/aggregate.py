@@ -1,8 +1,7 @@
 from .utils import (
     make_button,
     stage_register,
-    dongle_widget,
-    set_child, VBox
+    VBoxSchema
 )
 import ipywidgets as ipw  # type: ignore
 import pandas as pd
@@ -25,30 +24,26 @@ def get_flag_status(dt: str, op: str) -> bool:
     return dt in ("string", "datetime64")  # op in type_op_mismatches.get(dt, set())
 
 
-class AggregateW(VBox):
-    def __init__(self) -> None:
-        super().__init__()
-
+class AggregateW(VBoxSchema):
     def init(self):
         self.hidden_cols: List[str] = []
         fncs = ["hide"] + list(Aggregate.registry.keys())
         self.all_functions = dict(zip(fncs, fncs))
-        self._hidden_sel_wg = ipw.SelectMultiple(
+        hidden_sel = ipw.SelectMultiple(
             options=self.hidden_cols, value=[], rows=5, description="❎", disabled=False,
         )
-        self._hidden_sel_wg.observe(self._selm_obs_cb, "value")
+        hidden_sel.observe(self._selm_obs_cb, "value")
         self.visible_cols: List[str] = list(self.dtypes.keys())
         self.obs_flag = False
         self.info_cbx: Dict[Tuple[str, str], ipw.Checkbox] = {}
-        self._grid = self.draw_matrix()
-        self.start_btn = make_button(
+        grid = self.draw_matrix()
+        start_btn = make_button(
             "Activate", cb=self._start_btn_cb, disabled=True
         )
-        self.children = (
-            self._hidden_sel_wg,
-            self._grid,
-            self.start_btn,
-            dongle_widget(),
+        self.schema = dict(
+            hidden_sel=hidden_sel,
+            grid=grid,
+            start_btn=start_btn,
         )
 
     def init_aggregate(self, compute: AnyType) -> Aggregate:
@@ -100,23 +95,19 @@ class AggregateW(VBox):
         for col in cols:
             self.hidden_cols.remove(col)
             self.visible_cols.append(col)
-        assert self._hidden_sel_wg
-        self._hidden_sel_wg.options = sorted(self.hidden_cols)
-        gb = self.draw_matrix()
-        set_child(self, 1, gb)
+        self["hidden_sel"].options = sorted(self.hidden_cols)
+        self["grid"] = self.draw_matrix()
 
     def _make_cbx_obs(self, col: str, func: str) -> Callable:
         def _cbk(change: AnyType) -> None:
             if func == "hide":
-                self.start_btn.disabled = True
+                self["start_btn"].disabled = True
                 self.hidden_cols.append(col)
                 self.visible_cols.remove(col)
-                assert self._hidden_sel_wg
-                self._hidden_sel_wg.options = sorted(self.hidden_cols)
-                gb = self.draw_matrix()
-                set_child(self, 1, gb)
+                self["hidden_sel"].options = sorted(self.hidden_cols)
+                self["grid"] = self.draw_matrix()
             else:
-                self.start_btn.disabled = False
+                self["start_btn"].disabled = False
 
         return _cbk
 

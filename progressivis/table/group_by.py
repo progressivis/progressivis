@@ -147,6 +147,13 @@ class GroupBy(TableModule):
             self._index[tuple(gen)].add(i)
 
     @process_created.register
+    def _(self, by: tuple, indices: bitmap) -> None:
+        assert self._input_table is not None
+        for i in indices:
+            gen = self._input_table.loc[i, by]
+            self._index[tuple(gen)].add(i)
+
+    @process_created.register
     def _(self, by: types.FunctionType, indices: bitmap) -> None:
         for i in indices:
             self._index[by(self._input_table, i)].add(i)

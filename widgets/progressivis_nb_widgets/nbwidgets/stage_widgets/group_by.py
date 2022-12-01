@@ -2,7 +2,7 @@ from .utils import (
     make_button,
     stage_register,
     dongle_widget,
-    set_child, VBox
+    VBoxSchema
 )
 import ipywidgets as ipw  # type: ignore
 from progressivis.table.group_by import (GroupBy, UTIME, DT_MAX,  # type: ignore
@@ -26,20 +26,14 @@ def make_sel_multiple_dt(disabled: bool = True) -> WidgetType:
     )
 
 
-class GroupByW(VBox):
-    def __init__(self) -> None:
-        super().__init__()
-
+class GroupByW(VBoxSchema):
     def init(self) -> None:
-        self.start_btn = make_button(
-            "Activate", cb=self._add_group_by_cb, disabled=True
-        )
-        self.grouping_mode = self.make_gr_mode()
-        self.by_box = self.make_sel_multiple()
-        self.children = (
-            self.grouping_mode,
-            self.by_box,
-            self.start_btn,
+        self.schema = dict(
+            grouping_mode=self.make_gr_mode(),
+            by_box=self.make_sel_multiple(),
+            start_btn=make_button(
+                "Activate", cb=self._add_group_by_cb, disabled=True
+            )
         )
 
     def init_group_by(self, by: AnyType) -> GroupBy:
@@ -55,20 +49,20 @@ class GroupByW(VBox):
         return [self._output_module]
 
     def _add_group_by_cb(self, btn: ipw.Button) -> None:
-        self.grouping_mode.disabled = True
-        self.by_box.disabled = True
-        if self.grouping_mode.value == "columns":
-            by = self.by_box.value
+        self["grouping_mode"].disabled = True
+        self["by_box"].disabled = True
+        if self["grouping_mode"].value == "columns":
+            by = self["by_box"].value
             assert by
             if len(by) == 1:
                 by = by[0]
-            self.by_box.disabled = True
+            self["by_box"].disabled = True
         else:
-            dd, sel = self.by_box.children
+            dd, sel = self["by_box"].children
             col = dd.value
             by = SC(col).dt["".join(sel.value)]
-            self.by_box.children[0].disabled = True
-            self.by_box.children[1].disabled = True
+            self["by_box"].children[0].disabled = True
+            self["by_box"].children[1].disabled = True
         self.output_module = self.init_group_by(by)
         self.output_slot = "result"
         btn.disabled = True
@@ -77,10 +71,9 @@ class GroupByW(VBox):
 
     def _on_grouping_cb(self, val: AnyType) -> None:
         if val["new"] == "columns":
-            self.by_box = self.make_sel_multiple()
+            self["by_box"] = self.make_sel_multiple()
         else:
-            self.by_box = self.make_subcolumn_box()
-        set_child(self, 1, self.by_box)
+            self["by_box"] = self.make_subcolumn_box()
 
     def make_gr_mode(self) -> WidgetType:
         if "datetime64" in self.input_dtypes.values():
@@ -93,7 +86,6 @@ class GroupByW(VBox):
             wg.observe(self._on_grouping_cb, names="value")
         else:
             wg = dongle_widget("columns")
-        self.start_btn.disabled = True
         return wg
 
     def make_sel_multiple(self) -> WidgetType:
@@ -103,10 +95,7 @@ class GroupByW(VBox):
         )
 
         def _f(val):
-            if val["new"]:
-                self.start_btn.disabled = False
-            else:
-                self.start_btn.disabled = True
+            self["start_btn"].disabled = not val["new"]
 
         selm.observe(_f, names="value")
         return selm
@@ -129,13 +118,10 @@ class GroupByW(VBox):
                 dt_sel.disabled = False
             else:
                 dt_sel.disabled = True
-                self.start_btn.disabled = True
+                self["start_btn"].disabled = True
 
         def _f_sel(val):
-            if val["new"]:
-                self.start_btn.disabled = False
-            else:
-                self.start_btn.disabled = True
+            self["start_btn"].disabled = not val["new"]
 
         dd.observe(_f, names="value")
         dt_sel.observe(_f_sel, names="value")

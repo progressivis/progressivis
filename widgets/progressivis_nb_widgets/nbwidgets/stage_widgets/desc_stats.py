@@ -9,7 +9,6 @@ from progressivis.core import asynchronize, aio, Sink  # type: ignore
 from progressivis.utils.psdict import PsDict  # type: ignore
 from progressivis.table.module import TableModule  # type: ignore
 from progressivis.io import DynVar  # type: ignore
-from progressivis_nb_widgets.nbwidgets import PrevImages
 from progressivis.stats import (  # type: ignore
     KLLSketch,
     Corr,
@@ -28,7 +27,7 @@ from .._hist2d_schema import hist2d_spec_no_data
 from .._corr_schema import corr_spec_no_data
 from .._bar_schema import bar_spec_no_data
 from .utils import TreeTab, make_button, stage_register, VBox
-import time
+from ..utils import historized_widget
 
 from typing import (
     Any as AnyType,
@@ -182,22 +181,7 @@ def asynchronized_wg(func: Callable) -> Callable:
     return asynchronizer
 
 
-class VegaWidgetHz(ipw.VBox):
-    def __init__(self, *args, **kw):
-        self.vega_wg = VegaWidget(*args, **kw)
-        self.classname = f"vegawidget-{id(self.vega_wg)}"
-        self.vega_wg.add_class(self.classname)
-        self.pim = PrevImages()
-        self.pim.target = self.classname
-        super().__init__([self.vega_wg, self.pim])
-
-    def update(self, *args, **kw):
-        self.vega_wg.update(*args, **kw)
-        time.sleep(0.1)
-        self.pim.update()
-
-
-_VegaWidget = VegaWidgetHz
+_VegaWidget = historized_widget(VegaWidget, "update")
 
 
 @asynchronized
