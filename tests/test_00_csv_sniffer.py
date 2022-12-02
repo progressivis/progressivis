@@ -1,12 +1,15 @@
-from . import ProgressiveTest
+from . import ProgressiveTest, skipIf
 import tempfile
 import os
 
 import fsspec  # type: ignore
 import pandas as pd
 
-from progressivis.io.csv_sniffer import CSVSniffer
 from progressivis.datasets import get_dataset
+try:
+    from progressivis.io.csv_sniffer import CSVSniffer
+except ModuleNotFoundError:
+    print("This test requires ipywidgets")
 
 
 def save_csv(suffix: str, contents: bytes) -> str:
@@ -24,6 +27,7 @@ def csv_with_delimiter(delimiter: str = ",") -> bytes:
     return bytes("a,b,c\r\n1,2,3\r\n4,5,6\r\n7,8,9".replace(",", delimiter), "utf-8")
 
 
+@skipIf(os.getenv("CI"), "skipped to avoid ipywidgets dependency in CI")
 class TestCSVSniffer(ProgressiveTest):
     def test_01_simple(self) -> None:
         sniffer = CSVSniffer(get_dataset("bigfile"))

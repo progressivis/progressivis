@@ -30,7 +30,7 @@ jobs:
       with:
         channels: conda-forge, anaconda
     - name: Create the conda environment
-      run: conda env create -q python=${{ matrix.python_version }} -f environment.yml
+      run: conda env create -q python=${{ matrix.python_version }} -f environment_ci.yml
 
     - name: Download a file
       run: wget --no-verbose https://datahub.io/machine-learning/mnist_784/r/mnist_784.csv -O mnist_784.csv

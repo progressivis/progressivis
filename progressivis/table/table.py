@@ -321,6 +321,22 @@ class Table(IndexTable):
         if data is self:
             data = data.to_dict(orient="list")
         data = self.parse_data(data, indices)
+        """
+        The following _get_slice() definition is motivate by the following warning and
+        because data is not always a DataFrame:
+        FutureWarning: The behavior of `series[i:j]` with an integer-dtype index is deprecated.
+        In a future version, this will be treated as *label-based* indexing,
+        consistent with e.g. `series[i]` lookups. To retain the old behavior,
+        use `series.iloc[i:j]`. To get the future behavior, use `series.loc[i:j]`
+        """
+        if isinstance(data, pd.DataFrame):
+            def _get_slice(df, sl):
+                return df.iloc[sl]
+
+        else:
+            def _get_slice(df, sl):
+                return df[sl]
+
         dshape = dshape_extract(data)
         if not dshape_compatible(dshape, self.dshape):
             raise ValueError(f"{dshape} incompatible data shape in append")
@@ -364,7 +380,8 @@ class Table(IndexTable):
             for colname in self:
                 tocol = self._column(colname)
                 fromcol = data[colname]
-                fromcol_ind = fromcol[from_ind]
+                # fromcol_ind = fromcol[from_ind]
+                fromcol_ind = _get_slice(fromcol, from_ind)
                 try:
                     tocol[indices] = fromcol_ind
                 except ValueError:
