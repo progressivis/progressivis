@@ -52,6 +52,14 @@ logger = logging.getLogger(__name__)
 __all__ = ["Table"]
 
 
+def _get_slice_df(df, sl):
+    return df.iloc[sl]
+
+
+def _get_slice_arr(arr, sl):
+    return arr[sl]
+
+
 class Table(IndexTable):
     """Create a Table data structure, made of a collection of columns.
 
@@ -330,13 +338,9 @@ class Table(IndexTable):
         use `series.iloc[i:j]`. To get the future behavior, use `series.loc[i:j]`
         """
         if isinstance(data, pd.DataFrame):
-            def _get_slice(df, sl):
-                return df.iloc[sl]
-
+            _get_slice = _get_slice_df
         else:
-            def _get_slice(df, sl):
-                return df[sl]
-
+            _get_slice = _get_slice_arr
         dshape = dshape_extract(data)
         if not dshape_compatible(dshape, self.dshape):
             raise ValueError(f"{dshape} incompatible data shape in append")

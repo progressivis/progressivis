@@ -50,7 +50,7 @@ class TestTableDel(ProgressiveTest):
         fvalues2: np.ndarray[Any, Any] = np.random.rand(sz_add) * 100
         dict_add = {"a": ivalues2, "b": fvalues2}
         ix = range(df.index[-1] + 1, df.index[-1] + 1 + sz_add)
-        df = df.append(pd.DataFrame(dict_add, index=ix))
+        df = pd.concat([df, pd.DataFrame(dict_add, index=ix)])
         t.append(data=dict_add)
         self.assertSetEqual(set(t.index), set(df.index))
 
@@ -74,6 +74,6 @@ class TestTableDel(ProgressiveTest):
         fvalues2: np.ndarray[Any, Any] = np.random.rand(sz_add) * 100
         dict_add = {"a": ivalues2, "b": fvalues2}
         ix = range(df.index[-1] + 1, df.index[-1] + 1 + sz_add)
-        df = df.append(pd.DataFrame(dict_add, index=ix))
+        df = pd.concat([df, pd.DataFrame(dict_add, index=ix)])
         t.append(data=dict_add)
         self.assertSetEqual(set(t.index), set(df.index))
