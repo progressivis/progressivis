@@ -9,6 +9,7 @@ from .multi_series import MultiSeriesW
 from .scatterplot import ScatterplotW
 from .columns import ColumnsW
 from .histogram import HistogramW
+from .iscaler import ScalerW
 __all__ = [
     "Constructor",
     "DescStatsW",
@@ -19,5 +20,6 @@ __all__ = [
     "MultiSeriesW",
     "ScatterplotW",
     "ColumnsW",
-    "HistogramW"
+    "HistogramW",
+    "ScalerW"
     ]

@@ -2,6 +2,7 @@ from __future__ import annotations
 import numpy as np
 import numexpr as ne
 import logging
+from ..core import Sink
 from ..core.bitmap import bitmap
 from ..core.utils import indices_len
 from ..core.slot import SlotDescriptor, Slot
@@ -289,7 +290,7 @@ class MinMaxScaler(TableModule):
                 tbl = tbl_ii
             sc_data = self.scale(tbl, cols, usecols, cols_to_clip)
             if self.result is None:
-                ds = dshape_all_dtype(input_df.columns, np.dtype("float64"))
+                ds = dshape_all_dtype(usecols, np.dtype("float64"))
                 self.result = Table(
                     self.generate_table_name("scaled"),
                     dshape=ds,  # input_df.dshape,
@@ -317,4 +318,6 @@ class MinMaxScaler(TableModule):
                 hist1d.input.table = input_module.output[input_slot]
                 hist1d.input.min = self.min.output.result
                 hist1d.input.max = self.max.output.result
+                sink = Sink(scheduler=s)
+                sink.input.inp = hist1d.output.result
                 self.hist[col] = hist1d
