@@ -31,21 +31,21 @@ import progressivis
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    'myst_parser',
-    'sphinx.ext.autodoc',
-    'sphinx.ext.napoleon',
+    "myst_parser",
+    "sphinx.ext.autodoc",
+    "sphinx.ext.napoleon",
     "sphinx_autodoc_typehints",
-    'sphinx.ext.autosummary',
-    'sphinx.ext.doctest', 'sphinx.ext.intersphinx',
-    'sphinx_gallery.gen_gallery',
+    "sphinx.ext.autosummary",
+    "sphinx.ext.doctest", "sphinx.ext.intersphinx",
+    # "sphinx_gallery.gen_gallery",
 ]
 sphinx_gallery_conf = {
     "doc_module": "progressivis",
-    'examples_dirs': './examples',   # path to your example scripts
-    'gallery_dirs': 'auto_examples',  # path to where to save gallery generated output
+    "examples_dirs": "./examples",   # path to your example scripts
+    "gallery_dirs": "auto_examples",  # path to where to save gallery generated output
 }
 # Add any paths that contain templates here, relative to this directory.
-templates_path = ['templates']
+templates_path = ["templates"]
 
 # generate autosummary even if no references
 autosummary_generate = True
@@ -53,16 +53,16 @@ autosummary_generate = True
 # The suffix(es) of source filenames.
 # You can specify multiple suffix as a list of string:
 #
-# source_suffix = ['.rst', '.md']
-source_suffix = '.rst'
+# source_suffix = [".rst", ".md"]
+source_suffix = ".rst"
 
 # The master toctree document.
-master_doc = 'index'
+master_doc = "index"
 
 # General information about the project.
-project = 'progressivis'
-copyright = '2018-2023, Inria, Jean-Daniel Fekete and the ProgressiVis contributors'
-authors = 'Jean-Daniel Fekete, Romain Primet, Christian Poli'
+project = "progressivis"
+copyright = "2018-2023, Inria, Jean-Daniel Fekete and the ProgressiVis contributors"
+authors = "Jean-Daniel Fekete, Romain Primet, Christian Poli"
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
