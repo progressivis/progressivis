@@ -17,10 +17,9 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
-#import os
-import sys
-#sys.path.insert(0, os.path.abspath('sphinxext'))
 
+import sys
+import progressivis
 
 # -- General configuration ------------------------------------------------
 
@@ -32,10 +31,19 @@ import sys
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    'sphinx.ext.autodoc', 'sphinx.ext.autosummary',
+    'myst_parser',
+    'sphinx.ext.autodoc',
+    'sphinx.ext.napoleon',
+    "sphinx_autodoc_typehints",
+    'sphinx.ext.autosummary',
     'sphinx.ext.doctest', 'sphinx.ext.intersphinx',
+    'sphinx_gallery.gen_gallery',
 ]
-
+sphinx_gallery_conf = {
+    "doc_module": "progressivis",
+    'examples_dirs': './examples',   # path to your example scripts
+    'gallery_dirs': 'auto_examples',  # path to where to save gallery generated output
+}
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['templates']
 
@@ -53,7 +61,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'progressivis'
-copyright = '2018, Jean-Daniel Fekete and the ProgressiVis contributors'
+copyright = '2018-2023, Inria, Jean-Daniel Fekete and the ProgressiVis contributors'
 authors = 'Jean-Daniel Fekete, Romain Primet, Christian Poli'
 
 # The version info for the project you're documenting, acts as replacement for
@@ -61,7 +69,6 @@ authors = 'Jean-Daniel Fekete, Romain Primet, Christian Poli'
 # built documents.
 #
 # The short X.Y version.
-import progressivis
 version = progressivis.__version__
 # The full version, including alpha/beta/rc tags.
 release = progressivis.__version__
@@ -95,8 +102,8 @@ pygments_style = 'sphinx'
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = 'alabaster'
-
+# html_theme = 'alabaster'
+html_theme = 'pydata_sphinx_theme'
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
@@ -188,4 +195,3 @@ intersphinx_mapping = {
     'scipy': ('https://docs.scipy.org/doc/scipy/reference', None),
     'matplotlib': ('https://matplotlib.org/', None),
 }
-

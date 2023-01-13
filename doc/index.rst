@@ -11,6 +11,7 @@ Welcome to progressivis's documentation!
    :caption: Contents:
 
    intro
+   lorem_ipsum
    reference
 
 Indices and tables

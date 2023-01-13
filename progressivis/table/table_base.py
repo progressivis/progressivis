@@ -658,6 +658,7 @@ class BaseTable(metaclass=ABCMeta):
     def index_to_id(self, ix: Any) -> Any:
         """Return the ids of the specified indices
         NB: useless for this implementation. kept for compat.
+
         Parameters
         ----------
         ix: the specification of an index or a list of indices
@@ -675,6 +676,7 @@ class BaseTable(metaclass=ABCMeta):
         # to be reimplemented with LRU-dict+pyroaring
         """Return the indices of the specified id or ids
         NB: useless for this implementation. kept for compat.
+
         Parameters
         ----------
         loc : an id or list of ids
@@ -783,17 +785,18 @@ class BaseTable(metaclass=ABCMeta):
 
         Parameters
         ----------
-        start: integer
+        start:
             Start is interpreted as a virtual time for `last time`
-        now: integer
+        now:
             Start is interpreted as a virtual time for `now`
-        mid: hashable object
+        mid:
             An identifier for the object that will ask for updates,
             usually the name of a slot.
+
         Returns
         -------
-        updates: None or an IndexUpdate structure which describes the list
-             of rows created, updated, and deleted.
+        :
+            None or an IndexUpdate structure which describes the list of rows created, updated, and deleted.
         """
         if self._changes:
             self._flush_cache()
@@ -1036,15 +1039,15 @@ class BaseTable(metaclass=ABCMeta):
 
         Parameters
         ----------
-        locs: a list of ids or None
+        locs:
             The rows to extract.  Locs can be specified with multiple formats:
             integer, list, numpy array, Iterable, or slice.
-        columns: a list or None
+        columns:
             the columns to extract or, if None, all the table columns
-        return_indices: Boolean
+        return_indices:
             if True, returns a tuple with the indices of the returned values
             as indices, followed by the array
-        ret: array or None
+        ret:
             if None, the returned array is allocated, otherwise, ret is reused.
             It should be an array of the right dtype and size otherwise it is
             ignored.
