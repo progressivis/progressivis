@@ -41,7 +41,7 @@ help:
 	@$(PRINTF) "    $(YELLOW)$$ conda remove -n $(ENVNAME) --all$(NC)\n"
 
 docenv:
-	@$(CONDA) env create -f  ../environment_ci.yml -n create -n $(ENVNAME)
+	@$(CONDA) env create -f  ../environment_ci.yml -n $(ENVNAME)
 	@$(CONDA) install --file=requirements_doc.txt -c conda-forge  -n $(ENVNAME) -y
 	@$(PRINTF) "To $(GREEN)activate$(NC) the $(YELLOW)$(ENVNAME)$(NC) environment, use:\n"
 	@$(PRINTF) "    $(YELLOW)$$ conda activate $(ENVNAME)$(NC)\n"
