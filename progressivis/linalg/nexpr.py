@@ -4,16 +4,16 @@ import numpy as np
 
 from ..core.module import ReturnRunStep
 from ..core.utils import fix_loc
-from ..table.module import TableModule
-from ..table.table_base import BaseTable
-from ..table.table import Table
+from ..table.module import PTableModule
+from ..table.table_base import BasePTable
+from ..table.table import PTable
 import numexpr as ne
 
 
 from typing import Dict, Any, Tuple
 
 
-def _make_local(df: BaseTable, px: str) -> Tuple[Any, Dict[str, np.ndarray[Any, Any]]]:
+def _make_local(df: BasePTable, px: str) -> Tuple[Any, Dict[str, np.ndarray[Any, Any]]]:
     arr: np.ndarray[Any, Any] = df.to_array()
     result: Dict[str, np.ndarray[Any, Any]] = {}
 
@@ -28,7 +28,7 @@ def _make_local(df: BaseTable, px: str) -> Tuple[Any, Dict[str, np.ndarray[Any, 
     return aux, result
 
 
-class NumExprABC(TableModule):
+class NumExprABC(PTableModule):
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self.expr: Dict[str, Any]
@@ -65,7 +65,7 @@ class NumExprABC(TableModule):
             else:
                 dshape_ = self.get_datashape_from_expr()
                 self.ref_expr = {k.split(":")[0]: v for (k, v) in self.expr.items()}
-            self.result = Table(
+            self.result = PTable(
                 self.generate_table_name("num_expr"), dshape=dshape_, create=True
             )
         local_env = {}

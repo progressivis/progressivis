@@ -4,23 +4,23 @@ import logging
 
 import numpy as np
 
-from .column_proxy import ColumnProxy
+from .column_proxy import PColumnProxy
 from ..core.utils import integer_types
 from .dshape import dataframe_dshape, DataShape
 from typing import TYPE_CHECKING, Tuple, Any, Sequence, Callable, Optional
 
 if TYPE_CHECKING:
-    from .column_base import BaseColumn
-    from .table_base import IndexTable
+    from .column_base import BasePColumn
+    from .table_base import IndexPTable
 
 Shape = Tuple[int, ...]
 
 logger = logging.getLogger(__name__)
 
 
-class ColumnSelectedView(ColumnProxy):
-    def __init__(self, base: BaseColumn, index: IndexTable):
-        super(ColumnSelectedView, self).__init__(base, index=index)
+class PColumnSelectedView(PColumnProxy):
+    def __init__(self, base: BasePColumn, index: IndexPTable):
+        super(PColumnSelectedView, self).__init__(base, index=index)
 
     @property
     def shape(self) -> Tuple[int, ...]:
@@ -52,12 +52,12 @@ class ColumnSelectedView(ColumnProxy):
         assert self._base is not None
         if isinstance(index, integer_types):
             return self._base[index]
-        bm = self.index._any_to_bitmap(index)
+        bm = self.index._any_to_pintset(index)
         return self._base[bm]
 
 
-class ColumnComputedView(ColumnSelectedView):
-    def __init__(self, base: BaseColumn, index: IndexTable, aka: str, func: Callable, dtype: Optional[np.dtype] = None, xshape: Shape = ()):
+class PColumnComputedView(PColumnSelectedView):
+    def __init__(self, base: BasePColumn, index: IndexPTable, aka: str, func: Callable, dtype: Optional[np.dtype] = None, xshape: Shape = ()):
         super().__init__(base, index=index)
         self.aka = aka
         self.func = func

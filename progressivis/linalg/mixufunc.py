@@ -4,16 +4,16 @@ import numpy as np
 
 from ..core.module import ReturnRunStep
 from ..core.utils import fix_loc
-from ..table.module import TableModule
-from ..table.table_base import BaseTable
-from ..table.table import Table
+from ..table.module import PTableModule
+from ..table.table_base import BasePTable
+from ..table.table import PTable
 
 
 from typing import Union, Dict, Any, Tuple, Callable
 
 
 def make_local(
-    df: Union[BaseTable, Dict[str, Any]], px: str
+    df: Union[BasePTable, Dict[str, Any]], px: str
 ) -> Dict[str, np.ndarray[Any, Any]]:
     if isinstance(df, dict):
         return make_local_dict(df, px)
@@ -43,7 +43,7 @@ def get_ufunc_args(
     return col_expr[0], (local_env[col_expr[1]], local_env[col_expr[2]])
 
 
-class MixUfuncABC(TableModule):
+class MixUfuncABC(PTableModule):
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
         self.expr: Dict[str, Any]
@@ -80,7 +80,7 @@ class MixUfuncABC(TableModule):
             else:
                 dshape_ = self.get_datashape_from_expr()
                 self.ref_expr = {k.split(":")[0]: v for (k, v) in self.expr.items()}
-            self.result = Table(
+            self.result = PTable(
                 self.generate_table_name("mix_ufunc"), dshape=dshape_, create=True
             )
         local_env = {}

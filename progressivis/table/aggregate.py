@@ -1,21 +1,21 @@
 from __future__ import annotations
 
 # import logging
-from ..table.module import TableModule, ReturnRunStep
+from ..table.module import PTableModule, ReturnRunStep
 from ..core.slot import SlotDescriptor, Slot
-from . import Table
+from . import PTable
 from ..stats.utils import aggr_registry
 from ..core.decorators import process_slot, run_if_any
 from .dshape import dshape_from_dict
-from .group_by import GroupBy, SubColumnABC
+from .group_by import GroupBy, SubPColumnABC
 from ..stats.utils import OnlineFunctor
 from typing import cast, List, Union, Any, Dict, Tuple, Type
 
 # See also : https://arrow.apache.org/docs/python/compute.html#py-grouped-aggrs
 
 
-class Aggregate(TableModule):
-    inputs = [SlotDescriptor("table", type=Table, required=True)]
+class Aggregate(PTableModule):
+    inputs = [SlotDescriptor("table", type=PTable, required=True)]
     registry = aggr_registry
 
     def __init__(
@@ -56,7 +56,7 @@ class Aggregate(TableModule):
             + [(col, computer.get_value()) for (col, computer) in row_dict.items()]
         )
         if self.result is None:
-            self.result = Table(
+            self.result = PTable(
                 name=self.generate_table_name("aggr"),
                 dshape=dshape_from_dict({k: [v] for (k, v) in row.items()}),
                 create=True,
@@ -92,7 +92,7 @@ class Aggregate(TableModule):
                     self._by_cols = [by]
                 elif isinstance(by, (list, tuple)):
                     self._by_cols = by
-                elif isinstance(by, SubColumnABC):
+                elif isinstance(by, SubPColumnABC):
                     self._by_cols = [f"{by.column}_{by.tag}"]
                 elif callable(by):
                     self._by_cols = ["by_col"]

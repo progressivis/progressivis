@@ -1,5 +1,5 @@
 """
-Main Table class
+Main PTable class
 """
 from __future__ import annotations
 
@@ -12,7 +12,7 @@ import pyarrow as pa
 from progressivis.core.utils import (
     integer_types,
     get_random_name,
-    slice_to_bitmap,
+    slice_to_pintset,
     all_int,
     are_instances,
     gen_columns,
@@ -36,10 +36,10 @@ from .dshape import (
     EMPTY_DSHAPE,
 )
 from . import metadata
-from .table_base import IndexTable, BaseTable
-from .column import Column
+from .table_base import IndexPTable, BasePTable
+from .column import PColumn
 
-from progressivis.core.bitmap import bitmap
+from progressivis.core.pintset import PIntSet
 
 from typing import Any, Dict, Optional, Union, cast, Tuple, Callable, List
 
@@ -49,7 +49,7 @@ Chunks = Union[None, int, Dict[str, Union[int, Tuple[int, ...]]]]
 
 logger = logging.getLogger(__name__)
 
-__all__ = ["Table"]
+__all__ = ["PTable"]
 
 
 def _get_slice_df(df, sl):
@@ -60,10 +60,10 @@ def _get_slice_arr(arr, sl):
     return arr[sl]
 
 
-class Table(IndexTable):
-    """Create a Table data structure, made of a collection of columns.
+class PTable(IndexPTable):
+    """Create a PTable data structure, made of a collection of columns.
 
-    A Table is similar to Python Pandas or R DataFrame, but
+    A PTable is similar to Python Pandas or R DataFrame, but
     column-based and supporting fast addition of items.
 
     Args:
@@ -72,7 +72,7 @@ class Table(IndexTable):
         data: optional container
             Data that will be appended to the table. It can be of multiple
             types.
-            Table) another table is used to fill-up this table
+            PTable) another table is used to fill-up this table
             DataFrame) a Pandas DataFrame is copied to this table
             ndarray) a numpy array is copied. The dshape should be provided
         dshape: data shape such as `{'a': int32, 'b': float64, 'c': string}`
@@ -97,8 +97,8 @@ class Table(IndexTable):
             table contents has to be joined with another table.
 
     Example:
-        >>> from progressivis.table import Table
-        >>> t = Table('my-table', dshape='{a: int32, b: float32, c: bool}', create=True)
+        >>> from progressivis.table import PTable
+        >>> t = PTable('my-table', dshape='{a: int32, b: float32, c: bool}', create=True)
         >>> len(t)
         0
         >>> t.columns
@@ -117,7 +117,7 @@ class Table(IndexTable):
         indices: Optional[Index] = None,
     ):
         # pylint: disable=too-many-arguments, too-many-branches
-        super(Table, self).__init__()
+        super(PTable, self).__init__()
         if not (fillvalues is None or isinstance(fillvalues, Mapping)):
             raise ValueError(
                 "Invalid fillvalues (%s) should be None or a dictionary" % fillvalues
@@ -128,7 +128,7 @@ class Table(IndexTable):
             )
         if data is not None:
             if create is not None and create is not True:
-                logger.warning("creating a Table with data and create=False")
+                logger.warning("creating a PTable with data and create=False")
             create = True
 
         self._chunks = chunks
@@ -189,14 +189,14 @@ class Table(IndexTable):
     def _load_table(self) -> None:
         node = self._storagegroup
         if metadata.ATTR_TABLE not in node.attrs:
-            raise ValueError('Group "%s" is not a Table', self.name)
+            raise ValueError('Group "%s" is not a PTable', self.name)
         version = node.attrs[metadata.ATTR_VERSION]
         if version != metadata.VALUE_VERSION:
-            raise ValueError('Invalid version "%s" for Table', version)
+            raise ValueError('Invalid version "%s" for PTable', version)
         nrow = node.attrs[metadata.ATTR_NROWS]
         self._dshape = dshape_create(node.attrs[metadata.ATTR_DATASHAPE])
         assert dshape_table_check(self._dshape)
-        self._index = bitmap.deserialize(self._storagegroup.attrs[metadata.ATTR_INDEX])
+        self._index = PIntSet.deserialize(self._storagegroup.attrs[metadata.ATTR_INDEX])
         self._last_id = node.attrs[metadata.ATTR_LAST_ID]
         for (name, dshape) in dshape_fields(self._dshape):
             column = self._create_column(name)
@@ -213,7 +213,7 @@ class Table(IndexTable):
         node.attrs[metadata.ATTR_INDEX] = self._index.serialize()
         node.attrs[metadata.ATTR_LAST_ID] = self.last_id
         # create internal id dataset
-        # self._ids = IdColumn(table=self, storagegroup=self.storagegroup)
+        # self._ids = IdPColumn(table=self, storagegroup=self.storagegroup)
         # self._ids.create_dataset(dshape=None, fillvalue=-1)
         for (name, dshape) in dshape_fields(self._dshape):
             assert name not in self._columndict
@@ -229,8 +229,8 @@ class Table(IndexTable):
                 shape=shape,
             )
 
-    def _create_column(self, name: str) -> Column:
-        column = Column(name, self, storagegroup=self.storagegroup)
+    def _create_column(self, name: str) -> PColumn:
+        column = PColumn(name, self, storagegroup=self.storagegroup)
         index = len(self._columns)
         self._columndict[name] = index
         self._columns.append(column)
@@ -256,11 +256,11 @@ class Table(IndexTable):
         self._storagegroup.attrs[metadata.ATTR_LAST_ID] = self.last_id
 
     def resize(
-        self, newsize: int, index: Optional[Union[bitmap, List[int]]] = None
+        self, newsize: int, index: Optional[Union[PIntSet, List[int]]] = None
     ) -> None:
         # NB: newsize means how many active rows the table must contain
         if index is not None:
-            index = bitmap.asbitmap(index)
+            index = PIntSet.aspintset(index)
             newsize_ = index.max() + 1 if index else 0
             if newsize < newsize_:
                 logger.warning(f"Wrong newsize={newsize}, fixed to {newsize_}")
@@ -270,7 +270,7 @@ class Table(IndexTable):
         # if delta < 0:
         #    return
         newsize = self.last_id + delta + 1
-        crt_index = bitmap(self._index)
+        crt_index = PIntSet(self._index)
         self._resize_rows(newsize, index)
         del_index = crt_index - self._index
         if del_index:
@@ -280,23 +280,23 @@ class Table(IndexTable):
         self._storagegroup.attrs[metadata.ATTR_NROWS] = newsize
         assert newsize is not None
         for column in self._columns:
-            col = cast(Column, column)
+            col = cast(PColumn, column)
             col._resize(newsize)
 
     def _allocate(
-        self, count: int, index: Optional[Union[bitmap, List[int]]] = None
-    ) -> bitmap:
+        self, count: int, index: Optional[Union[PIntSet, List[int]]] = None
+    ) -> PIntSet:
         start = self.last_id + 1
         index = (
-            bitmap(range(start, start + count))
+            PIntSet(range(start, start + count))
             if index is None
-            else bitmap.asbitmap(index)
+            else PIntSet.aspintset(index)
         )
         newsize = max(index.max(), self.last_id) + 1
         self.add_created(index)
         self._storagegroup.attrs[metadata.ATTR_NROWS] = newsize
         for column in self._columns:
-            col = cast(Column, column)
+            col = cast(PColumn, column)
             col._resize(newsize)
         self._resize_rows(newsize, index)
         return index
@@ -312,7 +312,7 @@ class Table(IndexTable):
             if are_instances(data.values(), np.ndarray) or are_instances(
                 data.values(), list
             ):
-                return data  # Table can parse this
+                return data  # PTable can parse this
         if isinstance(data, (np.ndarray, Mapping)):
             # delegate creation of structured data to pandas for now
             data = pd.DataFrame(data, columns=self.columns, index=indices)
@@ -320,7 +320,7 @@ class Table(IndexTable):
 
     def append(self, data: Any, indices: Optional[Any] = None) -> None:
         """
-        Append Table-like data to the Table.
+        Append PTable-like data to the PTable.
         The data has to be compatible. It can be from multiple sources
         [more details needed].
         """
@@ -348,7 +348,7 @@ class Table(IndexTable):
         all_arrays = True
 
         def _len(c: Any) -> int:
-            if isinstance(data, BaseTable):
+            if isinstance(data, BasePTable):
                 return len(c.value)
             return len(c)
 
@@ -363,14 +363,14 @@ class Table(IndexTable):
         if length == 0:
             return
         if isinstance(indices, slice):
-            indices = slice_to_bitmap(indices)
+            indices = slice_to_pintset(indices)
         if indices is not None and len(indices) != length:
             raise ValueError("Bad index length (%d/%d)", len(indices), length)
         init_indices = indices
         prev_last_id = self.last_id
         indices = self._allocate(length, indices)
-        if isinstance(data, BaseTable):
-            left_ind: Union[bitmap, slice]
+        if isinstance(data, BasePTable):
+            left_ind: Union[PIntSet, slice]
             if init_indices is None:
                 start = prev_last_id + 1
                 left_ind = slice(start, start + len(data) - 1)
@@ -379,7 +379,7 @@ class Table(IndexTable):
             self.loc[left_ind, :] = data
         elif all_arrays:
             from_ind = slice(0, length)
-            raw_indices = indices  # still bitmap here
+            raw_indices = indices  # still PIntSet here
             indices = indices_to_slice(indices)
             for colname in self:
                 tocol = self._column(colname)
@@ -423,7 +423,7 @@ class Table(IndexTable):
                     tocol[indices[i]] = fromcol[i]
 
     def add(self, row: Any, index: Optional[Any] = None) -> int:
-        "Add one row to the Table"
+        "Add one row to the PTable"
         assert len(row) == self.ncol
 
         if isinstance(row, Mapping):
@@ -453,13 +453,13 @@ class Table(IndexTable):
             [np.ndarray[Any, Any], Union[np.ndarray[Any, Any], int, float, bool]],
             np.ndarray[Any, Any],
         ],
-        other: BaseTable,
+        other: BasePTable,
         **kwargs: Any,
-    ) -> Union[Dict[str, np.ndarray[Any, Any]], BaseTable]:
-        res = super(Table, self).binary(op, other, **kwargs)
-        if isinstance(res, BaseTable):
+    ) -> Union[Dict[str, np.ndarray[Any, Any]], BasePTable]:
+        res = super(PTable, self).binary(op, other, **kwargs)
+        if isinstance(res, BasePTable):
             return res
-        return Table(None, data=res, create=True)
+        return PTable(None, data=res, create=True)
 
     @staticmethod
     def from_array(
@@ -469,7 +469,7 @@ class Table(IndexTable):
         offsets: Optional[Union[List[int], List[Tuple[int, int]]]] = None,
         dshape: Optional[Union[str, DataShape]] = None,
         **kwds: Any,
-    ) -> Table:
+    ) -> PTable:
         """offsets is a list of indices or pairs."""
         if offsets is None:
             offsets = [(i, i + 1) for i in range(array.shape[1])]
@@ -506,7 +506,7 @@ class Table(IndexTable):
                 data[nam] = array[:, off[0]]
             else:
                 data[nam] = array[:, off[0]: off[1]]
-        return Table(name, data=data, dshape=str(dshape), **kwds)
+        return PTable(name, data=data, dshape=str(dshape), **kwds)
 
     def eval(
         self,
@@ -576,7 +576,7 @@ class Table(IndexTable):
                 return res if key == l_col else self[key].values
 
             data = [(cname, cval(cname)) for cname in self.columns]
-            return Table(name=name, data=OrderedDict(data), indices=self.index)
+            return PTable(name=name, data=OrderedDict(data), indices=self.index)
         # not an assign ...
 
         if res.dtype != "bool":
@@ -595,4 +595,4 @@ class Table(IndexTable):
             return self.loc[ix_slice, :]
         # as a new table ...
         data = [(cname, self[cname].values[indices]) for cname in self.columns]
-        return Table(name=name, data=OrderedDict(data), indices=indices)
+        return PTable(name=name, data=OrderedDict(data), indices=indices)

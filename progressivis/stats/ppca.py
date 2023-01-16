@@ -7,12 +7,12 @@ import copy
 
 from ..core.module import ReturnRunStep
 from ..core.utils import indices_len, fix_loc
-from ..core.bitmap import bitmap
-from ..table.module import TableModule
-from ..table import BaseTable, Table, TableSelectedView
+from ..core.pintset import PIntSet
+from ..table.module import PTableModule
+from ..table import BasePTable, PTable, PTableSelectedView
 from ..core.decorators import process_slot, run_if_any
 from .. import SlotDescriptor
-from ..utils.psdict import PsDict
+from ..utils.psdict import PDict
 from . import Sample
 import pandas as pd
 from sklearn.decomposition import IncrementalPCA  # type: ignore
@@ -27,10 +27,10 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class PPCA(TableModule):
+class PPCA(PTableModule):
     parameters = [("n_components", np.dtype(int), 2)]
-    inputs = [SlotDescriptor("table", type=Table, required=True)]
-    outputs = [SlotDescriptor("transformer", type=PsDict, required=False)]
+    inputs = [SlotDescriptor("table", type=PTable, required=True)]
+    outputs = [SlotDescriptor("transformer", type=PDict, required=False)]
 
     def __init__(self, **kwds: Any) -> None:
         super().__init__(**kwds)
@@ -38,7 +38,7 @@ class PPCA(TableModule):
         self.inc_pca: Optional[IncrementalPCA] = None
         self.inc_pca_wtn: Optional[IncrementalPCA] = None
         self._as_array: Optional[str] = None
-        self._transformer = PsDict()
+        self._transformer = PDict()
 
     def predict_step_size(self, duration: float) -> int:
         p = super().predict_step_size(duration)
@@ -50,8 +50,8 @@ class PPCA(TableModule):
         self.inc_pca_wtn = None
         if self.result is not None:
             table = self.result
-            assert isinstance(table, TableSelectedView)
-            table.selection = bitmap()
+            assert isinstance(table, PTableSelectedView)
+            table.selection = PIntSet()
 
     def get_data(self, name: str) -> Any:
         if name == "transformer":
@@ -84,11 +84,11 @@ class PPCA(TableModule):
                 self._transformer["inc_pca"] = self.inc_pca
             self.inc_pca.partial_fit(avs)
             if self.result is None:
-                self.result = TableSelectedView(table, bitmap(indices))
+                self.result = PTableSelectedView(table, PIntSet(indices))
             else:
                 table = self.result
-                assert isinstance(table, TableSelectedView)
-                table.selection |= bitmap(indices)
+                assert isinstance(table, PTableSelectedView)
+                table.selection |= PIntSet(indices)
             return self._return_run_step(self.next_state(ctx.table), steps_run=steps)
 
     # def create_dependent_modules_buggy(
@@ -147,16 +147,16 @@ class PPCA(TableModule):
             self.reduced.create_dependent_modules(self.output.result)
 
 
-class PPCATransformer(TableModule):
+class PPCATransformer(PTableModule):
     inputs = [
-        SlotDescriptor("table", type=Table, required=True),
-        SlotDescriptor("samples", type=Table, required=True),
-        SlotDescriptor("transformer", type=PsDict, required=True),
-        SlotDescriptor("resetter", type=PsDict, required=False),
+        SlotDescriptor("table", type=PTable, required=True),
+        SlotDescriptor("samples", type=PTable, required=True),
+        SlotDescriptor("transformer", type=PDict, required=True),
+        SlotDescriptor("resetter", type=PDict, required=False),
     ]
     outputs = [
-        SlotDescriptor("samples", type=Table, required=False),
-        SlotDescriptor("prev_samples", type=Table, required=False),
+        SlotDescriptor("samples", type=PTable, required=False),
+        SlotDescriptor("prev_samples", type=PTable, required=False),
     ]
 
     def __init__(
@@ -178,13 +178,13 @@ class PPCATransformer(TableModule):
         self._threshold = threshold
         self._resetter_func = resetter_func
         self.inc_pca_wtn: Optional[IncrementalPCA] = None
-        self._samples: Optional[Table] = None
+        self._samples: Optional[PTable] = None
         self._samples_flag = False
-        self._prev_samples: Optional[Table] = None
+        self._prev_samples: Optional[PTable] = None
         self._prev_samples_flag = False
         self._as_array: Optional[str] = None
 
-    def _proc_as_array(self, data: BaseTable) -> np.ndarray[Any, Any]:
+    def _proc_as_array(self, data: BasePTable) -> np.ndarray[Any, Any]:
         if self._as_array is None:
             if len(data.columns) == 1:
                 self._as_array = data.columns[0]
@@ -219,7 +219,7 @@ class PPCATransformer(TableModule):
         self,
         inc_pca: IncrementalPCA,
         inc_pca_wtn: Optional[IncrementalPCA],
-        input_table: Table,
+        input_table: PTable,
         samples: Any,
     ) -> bool:
         if self.has_input_slot("resetter"):
@@ -249,7 +249,7 @@ class PPCATransformer(TableModule):
     def reset(self) -> None:
         if self.result is not None:
             table = self.result
-            assert isinstance(table, Table)
+            assert isinstance(table, PTable)
             table.resize(0)
 
     def starting(self) -> None:
@@ -272,22 +272,22 @@ class PPCATransformer(TableModule):
     def maintain_samples(self, vec: np.ndarray[Any, Any]) -> None:
         if not self._samples_flag:
             return
-        if isinstance(self._samples, Table):
+        if isinstance(self._samples, PTable):
             self._samples.loc[:, :] = vec
         else:
             df = self._make_df(vec)
-            self._samples = Table(
+            self._samples = PTable(
                 self.generate_table_name("s_ppca"), data=df, create=True
             )
 
     def maintain_prev_samples(self, vec: np.ndarray[Any, Any]) -> None:
         if not self._prev_samples_flag:
             return
-        if isinstance(self._prev_samples, Table):
+        if isinstance(self._prev_samples, PTable):
             self._prev_samples.loc[:, :] = vec
         else:
             df = self._make_df(vec)
-            self._prev_samples = Table(
+            self._prev_samples = PTable(
                 self.generate_table_name("ps_ppca"), data=df, create=True
             )
 
@@ -344,11 +344,11 @@ class PPCATransformer(TableModule):
             reduced = inc_pca.transform(data)
             df = self._make_df(reduced)
             if self.result is None:
-                self.result = Table(
+                self.result = PTable(
                     self.generate_table_name("ppca"), data=df, create=True
                 )
             else:
                 table = self.result
-                assert isinstance(table, Table)
+                assert isinstance(table, PTable)
                 table.append(df)
             return self._return_run_step(self.next_state(ctx.table), steps_run=steps)

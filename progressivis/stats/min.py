@@ -5,12 +5,12 @@ import logging
 import numpy as np
 
 from ..core.utils import indices_len, fix_loc
-from ..core.bitmap import bitmap
+from ..core.pintset import PIntSet
 from ..core.module import ReturnRunStep
-from ..table.module import TableModule
-from ..table.table import Table
+from ..table.module import PTableModule
+from ..table.table import PTable
 from ..core.slot import SlotDescriptor, Slot
-from ..utils.psdict import PsDict
+from ..utils.psdict import PDict
 from ..core.decorators import process_slot, run_if_any
 
 from typing import Optional, Dict, Union, Any, Tuple
@@ -25,8 +25,8 @@ def _min_func(x: Any, y: Any) -> Any:
         return min(x, y)
 
 
-class Min(TableModule):
-    inputs = [SlotDescriptor("table", type=Table, required=True)]
+class Min(PTableModule):
+    inputs = [SlotDescriptor("table", type=PTable, required=True)]
 
     def __init__(self, **kwds: Any) -> None:
         super().__init__(**kwds)
@@ -54,7 +54,7 @@ class Min(TableModule):
             input_df = ctx.table.data()
             op = self.filter_columns(input_df, fix_loc(indices)).min(keepdims=False)
             if self.result is None:
-                self.result = PsDict(op)
+                self.result = PDict(op)
             else:
 
                 for k, v in self.psdict.items():
@@ -70,8 +70,8 @@ def minimum_val_id(
     return current_val, current_id, False
 
 
-class ScalarMin(TableModule):
-    inputs = [SlotDescriptor("table", type=Table, required=True)]
+class ScalarMin(PTableModule):
+    inputs = [SlotDescriptor("table", type=PTable, required=True)]
 
     def __init__(self, **kwds: Any) -> None:
         super().__init__(**kwds)
@@ -93,7 +93,7 @@ class ScalarMin(TableModule):
         self.reset()
         slot.update(run_number)
 
-    def are_critical(self, updated_ids: bitmap, data: Table) -> bool:
+    def are_critical(self, updated_ids: PIntSet, data: PTable) -> bool:
         """
         check if updates invalidate the current min
         """
@@ -109,8 +109,8 @@ class ScalarMin(TableModule):
     ) -> ReturnRunStep:
         slot = self.get_input_slot("table")
         assert slot is not None
-        indices: Optional[Union[None, bitmap, slice]] = None
-        sensitive_ids_bm = bitmap(self._sensitive_ids.values())
+        indices: Optional[Union[None, PIntSet, slice]] = None
+        sensitive_ids_bm = PIntSet(self._sensitive_ids.values())
         if slot.deleted.any():
             del_ids = slot.deleted.next(as_slice=False)
             if del_ids & sensitive_ids_bm:
@@ -139,7 +139,7 @@ class ScalarMin(TableModule):
             self._sensitive_ids.update(idxop)
         if self.result is None:
             op = {k: input_df.loc[i, k] for (k, i) in idxop.items()}
-            self.result = PsDict(op)
+            self.result = PDict(op)
         else:
             rich_op = {k: (input_df.loc[i, k], i) for (k, i) in idxop.items()}
             for k, v in self.psdict.items():

@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 import logging
-from ..table.module import TableModule, ReturnRunStep
+from ..table.module import PTableModule, ReturnRunStep
 from ..core.slot import SlotDescriptor
-from . import Table, TableSelectedView
-from ..core.bitmap import bitmap
+from . import PTable, PTableSelectedView
+from ..core.pintset import PIntSet
 from progressivis.core.utils import indices_len, fix_loc
 from functools import singledispatchmethod as dispatch
 from collections import abc
@@ -13,8 +13,8 @@ from typing import Optional, List, Union, Any, Dict, Tuple
 logger = logging.getLogger(__name__)
 
 
-class UniqueIndex(TableModule):
-    inputs = [SlotDescriptor("table", type=Table, required=True)]
+class UniqueIndex(PTableModule):
+    inputs = [SlotDescriptor("table", type=PTable, required=True)]
 
     def __init__(self, on: Union[str, List[str]], **kwds: Any) -> None:
         super().__init__(**kwds)
@@ -29,7 +29,7 @@ class UniqueIndex(TableModule):
         raise NotImplementedError(f"Wrong type for {on}")
 
     @process_created.register
-    def _(self, on: str, indices: bitmap) -> None:
+    def _(self, on: str, indices: PIntSet) -> None:
         assert self._input_table is not None
         ds = str(self._input_table._column(on).dshape)
         if ds[0] in "123456789":  # ex: 6*uint16
@@ -47,7 +47,7 @@ class UniqueIndex(TableModule):
                 del self._deleted[i]
 
     @process_created.register
-    def _(self, on: list, indices: bitmap) -> None:
+    def _(self, on: list, indices: PIntSet) -> None:
         assert self._input_table is not None
         for i in indices:
             gen = self._input_table.loc[i, on]
@@ -58,7 +58,7 @@ class UniqueIndex(TableModule):
             if i in self._deleted:
                 del self._deleted[i]
 
-    def process_deleted(self, indices: bitmap) -> None:
+    def process_deleted(self, indices: PIntSet) -> None:
         for i in indices:
             key = self._inverse[i]
             del self._inverse[i]
@@ -89,8 +89,8 @@ class UniqueIndex(TableModule):
         if input_table is None:
             return self._return_run_step(self.state_blocked, steps_run=0)
         if self.result is None:
-            self.result = TableSelectedView(input_table, bitmap([]))
-        deleted: Optional[bitmap] = None
+            self.result = PTableSelectedView(input_table, PIntSet([]))
+        deleted: Optional[PIntSet] = None
         if input_slot.deleted.any():
             deleted = input_slot.deleted.next(as_slice=False)
             # steps += indices_len(deleted) # deleted are constant time
@@ -99,14 +99,14 @@ class UniqueIndex(TableModule):
             if deleted:
                 self.process_deleted(deleted)
                 self.selected.selection -= deleted
-        created: Optional[bitmap] = None
+        created: Optional[PIntSet] = None
         if input_slot.created.any():
             created = input_slot.created.next(length=step_size, as_slice=False)
             created = fix_loc(created)
             steps += indices_len(created)
             self.selected.selection |= created
             self.process_created(self.on, created)
-        updated: Optional[bitmap] = None
+        updated: Optional[PIntSet] = None
         if input_slot.updated.any():
             updated = input_slot.updated.next(length=step_size, as_slice=False)
             updated = fix_loc(updated)

@@ -2,11 +2,11 @@ from __future__ import annotations
 
 from . import ProgressiveTest
 from progressivis import Print, Scheduler
-from progressivis.table.module import TableModule
-from progressivis.table.table import Table
+from progressivis.table.module import PTableModule
+from progressivis.table.table import PTable
 from progressivis.core.slot import SlotDescriptor
-from progressivis.stats import RandomTable, ScalarMax, ScalarMin
-from progressivis.core.bitmap import bitmap
+from progressivis.stats import RandomPTable, ScalarMax, ScalarMin
+from progressivis.core.pintset import PIntSet
 from progressivis.core import aio
 from progressivis.core.utils import indices_len, fix_loc
 import numpy as np
@@ -39,8 +39,8 @@ def _reset_func_min(self_: ScalarMin) -> None:
 ScalarMin.reset = _reset_func_min  # type: ignore
 
 
-class MyStirrer(TableModule):
-    inputs = [SlotDescriptor("table", type=Table, required=True)]
+class MyStirrer(PTableModule):
+    inputs = [SlotDescriptor("table", type=PTable, required=True)]
 
     def __init__(
         self,
@@ -70,14 +70,14 @@ class MyStirrer(TableModule):
         steps = indices_len(created)
         input_table = input_slot.data()
         if self.result is None:
-            self.result = Table(
+            self.result = PTable(
                 self.generate_table_name("stirrer"), dshape=input_table.dshape,
             )
         v = input_table.loc[fix_loc(created), :]
         self.table.append(v)
         if not self.done:
             module = self.scheduler()[self.watched]
-            sensitive_ids = bitmap(getattr(module, "_sensitive_ids").values())
+            sensitive_ids = PIntSet(getattr(module, "_sensitive_ids").values())
             if sensitive_ids:
                 if self.proc_sensitive:
                     if self.mode == "delete":
@@ -109,7 +109,7 @@ class TestRepairMax(ProgressiveTest):
         max without deletes/updates
         """
         s = Scheduler()
-        random = RandomTable(2, rows=100000, scheduler=s)
+        random = RandomPTable(2, rows=100000, scheduler=s)
         max_ = ScalarMax(name="max_" + str(hash(random)), scheduler=s)
         max_.input[0] = random.output.result
         pr = Print(proc=self.terse, scheduler=s)
@@ -126,7 +126,7 @@ class TestRepairMax(ProgressiveTest):
         """
         s = Scheduler()
         ScalarMax._reset_calls_counter = 0  # type: ignore
-        random = RandomTable(2, rows=100000, scheduler=s)
+        random = RandomPTable(2, rows=100000, scheduler=s)
         max_ = ScalarMax(name="max_repair_test2", scheduler=s)
         stirrer = MyStirrer(watched="max_repair_test2", scheduler=s)
         stirrer.input[0] = random.output.result
@@ -146,7 +146,7 @@ class TestRepairMax(ProgressiveTest):
         """
         s = Scheduler()
         ScalarMax._reset_calls_counter = 0  # type: ignore
-        random = RandomTable(2, rows=100000, scheduler=s)
+        random = RandomPTable(2, rows=100000, scheduler=s)
         max_ = ScalarMax(name="max_repair_test3", scheduler=s)
         stirrer = MyStirrer(
             watched="max_repair_test3", proc_sensitive=False, scheduler=s
@@ -168,7 +168,7 @@ class TestRepairMax(ProgressiveTest):
         """
         s = Scheduler()
         ScalarMax._reset_calls_counter = 0  # type: ignore
-        random = RandomTable(2, rows=100000, scheduler=s)
+        random = RandomPTable(2, rows=100000, scheduler=s)
         max_ = ScalarMax(name="max_repair_test4", scheduler=s)
         stirrer = MyStirrer(
             watched="max_repair_test4", mode="update", value=9999.0, scheduler=s
@@ -190,7 +190,7 @@ class TestRepairMax(ProgressiveTest):
         """
         s = Scheduler()
         ScalarMax._reset_calls_counter = 0  # type: ignore
-        random = RandomTable(2, rows=100000, scheduler=s)
+        random = RandomPTable(2, rows=100000, scheduler=s)
         max_ = ScalarMax(name="max_repair_test4", scheduler=s)
         stirrer = MyStirrer(
             watched="max_repair_test4", mode="update", value=-9999.0, scheduler=s
@@ -212,7 +212,7 @@ class TestRepairMax(ProgressiveTest):
         """
         s = Scheduler()
         ScalarMax._reset_calls_counter = 0  # type: ignore
-        random = RandomTable(2, rows=100000, scheduler=s)
+        random = RandomPTable(2, rows=100000, scheduler=s)
         max_ = ScalarMax(name="max_repair_test5", scheduler=s)
         stirrer = MyStirrer(
             watched="max_repair_test5", proc_sensitive=False, mode="update", scheduler=s
@@ -242,7 +242,7 @@ class TestRepairMin(ProgressiveTest):
         min without deletes/updates
         """
         s = Scheduler()
-        random = RandomTable(2, rows=100000, scheduler=s)
+        random = RandomPTable(2, rows=100000, scheduler=s)
         min_ = ScalarMin(name="min_" + str(hash(random)), scheduler=s)
         min_.input[0] = random.output.result
         pr = Print(proc=self.terse, scheduler=s)
@@ -259,7 +259,7 @@ class TestRepairMin(ProgressiveTest):
         """
         s = Scheduler()
         ScalarMin._reset_calls_counter = 0  # type: ignore
-        random = RandomTable(2, rows=100000, scheduler=s)
+        random = RandomPTable(2, rows=100000, scheduler=s)
         min_ = ScalarMin(name="min_repair_test2", scheduler=s)
         stirrer = MyStirrer(watched="min_repair_test2", scheduler=s)
         stirrer.input[0] = random.output.result
@@ -279,7 +279,7 @@ class TestRepairMin(ProgressiveTest):
         """
         s = Scheduler()
         ScalarMin._reset_calls_counter = 0  # type: ignore
-        random = RandomTable(2, rows=100000, scheduler=s)
+        random = RandomPTable(2, rows=100000, scheduler=s)
         min_ = ScalarMin(name="min_repair_test3", scheduler=s)
         stirrer = MyStirrer(
             watched="min_repair_test3", proc_sensitive=False, scheduler=s
@@ -301,7 +301,7 @@ class TestRepairMin(ProgressiveTest):
         """
         s = Scheduler()
         ScalarMin._reset_calls_counter = 0  # type: ignore
-        random = RandomTable(2, rows=100000, scheduler=s)
+        random = RandomPTable(2, rows=100000, scheduler=s)
         min_ = ScalarMin(name="min_repair_test4", scheduler=s)
         stirrer = MyStirrer(
             watched="min_repair_test4", mode="update", value=-9999.0, scheduler=s
@@ -323,7 +323,7 @@ class TestRepairMin(ProgressiveTest):
         """
         s = Scheduler()
         ScalarMin._reset_calls_counter = 0  # type: ignore
-        random = RandomTable(2, rows=100000, scheduler=s)
+        random = RandomPTable(2, rows=100000, scheduler=s)
         min_ = ScalarMin(name="min_repair_test4", scheduler=s)
         stirrer = MyStirrer(
             watched="min_repair_test4", mode="update", value=9999.0, scheduler=s
@@ -345,7 +345,7 @@ class TestRepairMin(ProgressiveTest):
         """
         s = Scheduler()
         ScalarMin._reset_calls_counter = 0  # type: ignore
-        random = RandomTable(2, rows=100000, scheduler=s)
+        random = RandomPTable(2, rows=100000, scheduler=s)
         min_ = ScalarMin(name="min_repair_test5", scheduler=s)
         stirrer = MyStirrer(
             watched="min_repair_test5", proc_sensitive=False, mode="update", scheduler=s

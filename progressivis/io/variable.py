@@ -4,9 +4,9 @@ import logging
 import copy
 
 from progressivis import ProgressiveError, SlotDescriptor
-from progressivis.table.table import Table
+from progressivis.table.table import PTable
 from progressivis.table.constant import Constant
-from progressivis.utils.psdict import PsDict
+from progressivis.utils.psdict import PDict
 
 from typing import TYPE_CHECKING, Optional, Any
 
@@ -17,9 +17,9 @@ logger = logging.getLogger(__name__)
 
 
 class Variable(Constant):
-    inputs = [SlotDescriptor("like", type=(Table, PsDict), required=False)]
+    inputs = [SlotDescriptor("like", type=(PTable, PDict), required=False)]
 
-    def __init__(self, table: Optional[Table] = None, **kwds: Any) -> None:
+    def __init__(self, table: Optional[PTable] = None, **kwds: Any) -> None:
         super(Variable, self).__init__(table, **kwds)
         self.tags.add(self.TAG_INPUT)
 
@@ -34,7 +34,7 @@ class Variable(Constant):
             error = f"Variable {self.name} has to run once before receiving input"
             logger.error(error)
             return error
-        last: PsDict = copy.copy(self.psdict)
+        last: PDict = copy.copy(self.psdict)
         error = ""
         for (k, v) in input_.items():
             if k in last:
@@ -53,7 +53,7 @@ class Variable(Constant):
             if slot is not None:
                 like = slot.data()
                 if like is not None:
-                    if isinstance(like, Table):
+                    if isinstance(like, PTable):
                         last = like.last()
                         assert last is not None
                         like = last.to_dict(ordered=True)

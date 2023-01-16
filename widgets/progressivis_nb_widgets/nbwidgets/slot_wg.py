@@ -3,7 +3,7 @@ from __future__ import annotations
 from progressivis.core import JSONEncoderNp as JSON
 from progressivis.table.paging_helper import PagingHelper
 from .utils import update_widget
-from .data_table import DataTable
+from .data_table import DataPTable
 
 from typing import Any, Optional, TYPE_CHECKING
 
@@ -16,7 +16,7 @@ _dmp = JSON.dumps
 # https://datatables.net/examples/basic_init/alt_pagination.html
 
 
-class SlotWg(DataTable):
+class SlotWg(DataPTable):
     def __init__(
         self, module: Module, slot_name: str, dconsole: Optional[Any] = None
     ) -> None:

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 from progressivis.core.module import Module
-from progressivis.table.module import TableModule
+from progressivis.table.module import PTableModule
 
 from typing import (
     Type,
@@ -166,10 +166,10 @@ class Expr:
 
     def repipe(self, mod_name: str, out: Optional[str] = None) -> Expr:
         mod_ = self.scheduler()[mod_name]
-        if isinstance(mod_, TableModule):
-            from .table import TableExpr
+        if isinstance(mod_, PTableModule):
+            from .table import PTableExpr
 
-            return TableExpr(
+            return PTableExpr(
                 type(mod_), (), dict(lazy=True), module=mod_, output_slot=out
             )
         return Expr(type(mod_), (), dict(lazy=True), module=mod_, output_slot=out)

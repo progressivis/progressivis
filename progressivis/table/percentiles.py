@@ -2,24 +2,24 @@ from __future__ import annotations
 
 import numpy as np
 
-from . import Table, BaseTable
-from ..core.bitmap import bitmap
+from . import PTable, BasePTable
+from ..core.pintset import PIntSet
 from ..core.slot import SlotDescriptor
 from ..core.module import ReturnRunStep
-from .module import TableModule
+from .module import PTableModule
 from collections import OrderedDict
-from ..utils.psdict import PsDict
+from ..utils.psdict import PDict
 from .hist_index import HistogramIndex
 
 from typing import Any, Dict, List, cast
 
 
-class Percentiles(TableModule):
+class Percentiles(PTableModule):
     parameters = [("accuracy", np.dtype(float), 0.5)]
     inputs = [
-        SlotDescriptor("table", type=Table, required=True),
-        SlotDescriptor("percentiles", type=PsDict, required=True),
-        SlotDescriptor("hist", type=Table, required=True),
+        SlotDescriptor("table", type=PTable, required=True),
+        SlotDescriptor("percentiles", type=PDict, required=True),
+        SlotDescriptor("hist", type=PTable, required=True),
     ]
 
     def __init__(self, **kwds: Any) -> None:
@@ -30,31 +30,31 @@ class Percentiles(TableModule):
     def compute_percentiles(
         self,
         points: Dict[str, float],
-        input_table: BaseTable,
+        input_table: BasePTable,
         hist_index: HistogramIndex,
     ) -> Dict[str, float]:
         column = input_table[hist_index.column]
         hii = hist_index._impl
         assert hii is not None
 
-        def _filter_tsv(bm: bitmap) -> bitmap:
+        def _filter_tsv(bm: PIntSet) -> PIntSet:
             return bm & input_table.index
 
-        def _no_filtering(bm: bitmap) -> bitmap:
+        def _no_filtering(bm: PIntSet) -> PIntSet:
             return bm
 
-        _filter = _filter_tsv if isinstance(input_table, BaseTable) else _no_filtering
+        _filter = _filter_tsv if isinstance(input_table, BasePTable) else _no_filtering
         len_ = len(input_table)
         k_points = [p * (len_ + 1) * 0.01 for p in points.values()]
         max_k = max(k_points)
         ret_values: List[float] = []
         k_accuracy = self._accuracy * len_ * 0.01
         acc = 0
-        lbm = len(hii.bitmaps)
+        lbm = len(hii.pintsets)
         acc_list = np.empty(lbm, dtype=np.int64)
         sz_list = np.empty(lbm, dtype=np.int64)
-        bm_list: List[bitmap] = []
-        for i, bm in enumerate(hii.bitmaps):
+        bm_list: List[PIntSet] = []
+        for i, bm in enumerate(hii.pintsets):
             fbm = _filter(bm)
             sz = len(fbm)
             acc += sz
@@ -123,9 +123,9 @@ class Percentiles(TableModule):
         computed = self.compute_percentiles(
             percentiles_slot.data(), input_slot.data(), hist_index
         )
-        table: Table
+        table: PTable
         if not self.result:
-            table = Table(name=None, dshape=percentiles_slot.data().dshape)
+            table = PTable(name=None, dshape=percentiles_slot.data().dshape)
             table.add(computed)
             self.result = table
         else:

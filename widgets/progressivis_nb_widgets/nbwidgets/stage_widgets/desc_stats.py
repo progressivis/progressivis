@@ -6,8 +6,8 @@ import ipywidgets as ipw  # type: ignore
 import numpy as np
 import pandas as pd
 from progressivis.core import asynchronize, aio, Sink  # type: ignore
-from progressivis.utils.psdict import PsDict  # type: ignore
-from progressivis.table.module import TableModule  # type: ignore
+from progressivis.utils.psdict import PDict  # type: ignore
+from progressivis.table.module import PTableModule  # type: ignore
 from progressivis.io import DynVar  # type: ignore
 from progressivis.stats import (  # type: ignore
     KLLSketch,
@@ -122,7 +122,7 @@ def corr_as_vega_dataset(
     ]
 
 
-def categ_as_vega_dataset(categs: PsDict):
+def categ_as_vega_dataset(categs: PDict):
     return [{"category": k, "count": v} for (k, v) in categs.items()]
 
 
@@ -327,7 +327,7 @@ class DynViewer(TreeTab):
     def __init__(
         self,
         dtypes: Dict[str, AnyType],
-        input_module: TableModule,
+        input_module: PTableModule,
         input_slot: str = "result",
     ):
         self._dtypes = dtypes

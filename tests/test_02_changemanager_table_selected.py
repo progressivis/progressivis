@@ -1,26 +1,26 @@
 from . import ProgressiveTest
-from progressivis.table.table_base import TableSelectedView
-from progressivis.table.table import Table
-from progressivis.core.bitmap import bitmap
+from progressivis.table.table_base import PTableSelectedView
+from progressivis.table.table import PTable
+from progressivis.core.pintset import PIntSet
 from progressivis.table.changemanager_table_selected import (
-    TableSelectedChangeManager,
+    PTableSelectedChangeManager,
     FakeSlot,
 )
 
 
-class TestTableSelectedChangeManager(ProgressiveTest):
+class TestPTableSelectedChangeManager(ProgressiveTest):
     def setUp(self) -> None:
-        super(TestTableSelectedChangeManager, self).setUp()
+        super(TestPTableSelectedChangeManager, self).setUp()
         self.s = self.scheduler()
 
     def test_tablechangemanager(self) -> None:
         # pylint: disable=protected-access
-        table = Table(
+        table = PTable(
             "test_changemanager_table_selected",
             data={"a": [1, 2, 3], "b": [10.1, 0.2, 0.3]},
         )
-        selection = bitmap([1, 2])
-        table_selected: TableSelectedView = TableSelectedView(table, selection)
+        selection = PIntSet([1, 2])
+        table_selected: PTableSelectedView = PTableSelectedView(table, selection)
 
         s = self.s
         s._run_number = 1
@@ -28,7 +28,7 @@ class TestTableSelectedChangeManager(ProgressiveTest):
         slot = FakeSlot(table_selected)
 
         mid1 = "m1"
-        cm = TableSelectedChangeManager(
+        cm = PTableSelectedChangeManager(
             slot,
             buffer_exposed=True,
             buffer_updated=True,
@@ -41,7 +41,7 @@ class TestTableSelectedChangeManager(ProgressiveTest):
         self.assertEqual(cm.deleted.length(), 0)
 
         # mid2 = 2
-        cm2 = TableSelectedChangeManager(
+        cm2 = PTableSelectedChangeManager(
             slot,
             buffer_exposed=True,
             buffer_updated=True,
@@ -54,7 +54,7 @@ class TestTableSelectedChangeManager(ProgressiveTest):
         self.assertEqual(cm2.deleted.length(), 0)
 
         # mid3 = 3
-        cm3 = TableSelectedChangeManager(
+        cm3 = PTableSelectedChangeManager(
             slot,
             buffer_exposed=True,
             buffer_updated=True,
@@ -83,7 +83,7 @@ class TestTableSelectedChangeManager(ProgressiveTest):
         s._run_number += 1
         last = s._run_number
         table.append({"a": [5, 6, 7, 8], "b": [0.5, 0.6, 0.7, 0.8]})
-        table_selected.selection = bitmap(range(1, 8))
+        table_selected.selection = PIntSet(range(1, 8))
         cm.update(last, table_selected, mid=mid1)
         self.assertEqual(cm.last_update(), last)
         self.assertEqual(cm.created.next(), slice(3, 8))
@@ -93,7 +93,7 @@ class TestTableSelectedChangeManager(ProgressiveTest):
         s._run_number += 1
         last = s._run_number
         del table.loc[[1, 2, 3]]
-        table_selected.selection = bitmap(
+        table_selected.selection = PIntSet(
             [3, 4]
         )  # i.e 1,2,5,6,7 were deleted in selection
         cm.update(last, table_selected, mid=mid1)
@@ -113,9 +113,9 @@ class TestTableSelectedChangeManager(ProgressiveTest):
         table_selected._selection = slice(5, None)
         cm.update(last, table_selected, mid=mid1)
         self.assertEqual(cm.last_update(), last)
-        self.assertEqual(cm.base.created.changes, bitmap([8, 9, 10, 11]))
-        self.assertEqual(cm.selection.created.changes, bitmap([5, 6, 7, 8, 9, 10, 11]))
-        self.assertEqual(cm.selection.deleted.changes, bitmap([4]))
+        self.assertEqual(cm.base.created.changes, PIntSet([8, 9, 10, 11]))
+        self.assertEqual(cm.selection.created.changes, PIntSet([5, 6, 7, 8, 9, 10, 11]))
+        self.assertEqual(cm.selection.deleted.changes, PIntSet([4]))
         self.assertEqual(cm.updated.length(), 0)
         self.assertEqual(cm.base.deleted.length(), 0)
         self.assertEqual(cm.deleted.length(), 1)

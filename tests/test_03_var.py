@@ -1,7 +1,7 @@
 from . import ProgressiveTest
 
 from progressivis import Print
-from progressivis.stats import Var, VarH, RandomTable
+from progressivis.stats import Var, VarH, RandomPTable
 from progressivis.core import aio, notNone
 import numpy as np
 
@@ -9,7 +9,7 @@ import numpy as np
 class Testvar(ProgressiveTest):
     def test_var_h(self) -> None:
         s = self.scheduler()
-        random = RandomTable(1, rows=1000, scheduler=s)
+        random = RandomPTable(1, rows=1000, scheduler=s)
         var = VarH(scheduler=s)
         var.input[0] = random.output.result
         pr = Print(proc=self.terse, scheduler=s)
@@ -27,7 +27,7 @@ class Testvar(ProgressiveTest):
 
     def test_var(self) -> None:
         s = self.scheduler()
-        random = RandomTable(1, rows=1000, scheduler=s)
+        random = RandomPTable(1, rows=1000, scheduler=s)
         var = Var(scheduler=s)
         var.input[0] = random.output.result
         pr = Print(proc=self.terse, scheduler=s)

@@ -2,12 +2,12 @@ from __future__ import annotations
 
 from progressivis.utils.errors import ProgressiveStopIteration
 from progressivis.core.module import ReturnRunStep
-from .module import TableModule
+from .module import PTableModule
 from ..core import Sink
 from typing import Any, Optional
 
 
-class Pattern(TableModule):
+class Pattern(PTableModule):
     def __init__(self, **kwds: Any) -> None:
         super().__init__(**kwds)
         self.sink: Optional[Sink] = None

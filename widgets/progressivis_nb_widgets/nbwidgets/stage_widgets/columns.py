@@ -181,7 +181,7 @@ class IfElseW(ipw.VBox):
         self.main["cols_funcs"]["funcs"].options = [""] + list(ALL_FUNCS.keys())
 
 
-class ColumnsW(VBoxSchema):
+class PColumnsW(VBoxSchema):
     def init(self):
         self._col_widgets = {}
         self._computed = []
@@ -330,4 +330,4 @@ class ColumnsW(VBoxSchema):
         return [self.output_module]
 
 
-stage_register["View"] = ColumnsW
+stage_register["View"] = PColumnsW

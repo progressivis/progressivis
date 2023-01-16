@@ -21,24 +21,24 @@ from typing import (
 JSon = Dict[str, Any]
 
 if TYPE_CHECKING:
-    from .table_base import BaseTable
+    from .table_base import BasePTable
     from .dshape import DataShape
     import numpy as np
 
 
 class Row(MutableMapping[str, Any]):
-    """Wraps a dictionary interace around a row of a Table.
+    """Wraps a dictionary interace around a row of a PTable.
 
     Parameters
     ----------
-    table : Table to wrap
+    table : PTable to wrap
     index : the integer index of the row to wrap, or None if it has to remain the last
         row of the table
 
     Examples
     --------
-    >>> from progressivis.table import Table, Row
-    >>> table = Table('table', data={'a': [ 1, 2, 3], 'b': [10.1, 0.2, 0.3]})
+    >>> from progressivis.table import PTable, Row
+    >>> table = PTable('table', data={'a': [ 1, 2, 3], 'b': [10.1, 0.2, 0.3]})
     >>> row = Row(table) # wraps the last row
     >>> len(row)
     2
@@ -46,13 +46,13 @@ class Row(MutableMapping[str, Any]):
     3
     """
 
-    def __init__(self, table: BaseTable, index: Optional[int] = None) -> None:
+    def __init__(self, table: BasePTable, index: Optional[int] = None) -> None:
         super(Row, self).__setattr__("table", table)
         if index is not None and not isinstance(index, integer_types):
             raise ValueError('index should be an integer, not "%s"' % str(index))
         super(Row, self).__setattr__("index", index)
         self.index: Optional[int]
-        self.table: BaseTable
+        self.table: BasePTable
 
     @property
     def row(self) -> Optional[int]:

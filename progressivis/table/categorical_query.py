@@ -1,20 +1,20 @@
 from __future__ import annotations
 
 # import logging
-from ..table.module import TableModule, ReturnRunStep
+from ..table.module import PTableModule, ReturnRunStep
 from ..core.slot import SlotDescriptor, Slot
-from . import Table, TableSelectedView
-from ..core.bitmap import bitmap
+from . import PTable, PTableSelectedView
+from ..core.pintset import PIntSet
 from ..core.decorators import process_slot, run_if_any
 from .group_by import GroupBy
-from ..utils.psdict import PsDict
+from ..utils.psdict import PDict
 from typing import cast, Any, List
 
 
-class CategoricalQuery(TableModule):
+class CategoricalQuery(PTableModule):
     inputs = [
-        SlotDescriptor("table", type=Table, required=True),
-        SlotDescriptor("choice", type=PsDict, required=True),
+        SlotDescriptor("table", type=PTable, required=True),
+        SlotDescriptor("choice", type=PDict, required=True),
     ]
 
     def __init__(self, column: str, **kwds: Any) -> None:
@@ -27,7 +27,7 @@ class CategoricalQuery(TableModule):
             self.table.resize(0)
 
     def create_dependent_modules(
-        self, input_module: TableModule, input_slot: str = "result",
+        self, input_module: PTableModule, input_slot: str = "result",
     ):
         s = self.scheduler()
         grby = GroupBy(by=self._column, scheduler=s)
@@ -59,7 +59,7 @@ class CategoricalQuery(TableModule):
             if input_table is None:
                 return self._return_run_step(self.state_blocked, steps_run=0)
             if self.result is None:
-                self.result = TableSelectedView(input_table, bitmap([]))
+                self.result = PTableSelectedView(input_table, PIntSet([]))
             assert isinstance(dfslot.output_module, GroupBy)
             groupby_mod = cast(GroupBy, dfslot.output_module)
             assert self._column == groupby_mod.by

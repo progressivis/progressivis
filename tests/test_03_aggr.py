@@ -4,7 +4,7 @@ import os
 from . import ProgressiveTest, skipIf
 from progressivis.core import aio, Sink
 from progressivis.io import ParquetLoader
-from progressivis.table.group_by import GroupBy, SubColumn as SC
+from progressivis.table.group_by import GroupBy, SubPColumn as SC
 from progressivis.table.aggregate import Aggregate
 from progressivis.table.stirrer import Stirrer
 import pyarrow.parquet as pq

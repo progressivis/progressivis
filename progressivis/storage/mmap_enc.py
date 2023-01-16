@@ -10,7 +10,7 @@ from resource import getpagesize
 import marshal
 import numpy as np
 from functools import lru_cache
-from ..core.bitmap import bitmap
+from ..core.pintset import PIntSet
 
 from typing import Any, TYPE_CHECKING
 
@@ -46,7 +46,7 @@ class MMapObject(object):
         self.sizes = np.frombuffer(self.mmap, np.uint32)  # type: ignore
         if self._new_file:
             self.sizes[0] = 1
-        self._freelist = [bitmap() for _ in range(FREELIST_SIZE)]
+        self._freelist = [PIntSet() for _ in range(FREELIST_SIZE)]
 
     def _allocate(self, size: int) -> None:
         self.mmap.resize(size * PAGESIZE)

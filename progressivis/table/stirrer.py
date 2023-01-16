@@ -6,10 +6,10 @@ import random
 import numpy as np
 
 from progressivis.core.utils import indices_len, fix_loc
-from progressivis.core.bitmap import bitmap
+from progressivis.core.pintset import PIntSet
 from progressivis.core.slot import SlotDescriptor
-from .module import TableModule
-from . import Table, TableSelectedView
+from .module import PTableModule
+from . import PTable, PTableSelectedView
 
 from typing import Optional, Any, TYPE_CHECKING
 
@@ -17,7 +17,7 @@ if TYPE_CHECKING:
     from progressivis.core.module import ReturnRunStep
 
 
-class Stirrer(TableModule):
+class Stirrer(PTableModule):
     parameters = [
         ("update_column", np.dtype(np.object_), ""),
         ("update_rows", np.dtype(np.object_), None),
@@ -28,7 +28,7 @@ class Stirrer(TableModule):
         ("fixed_step_size", np.dtype(np.int_), 0),
         ("mode", np.dtype(np.object_), "random"),
     ]
-    inputs = [SlotDescriptor("table", type=Table, required=True)]
+    inputs = [SlotDescriptor("table", type=PTable, required=True)]
 
     def __init__(self, **kwds: Any) -> None:
         super().__init__(**kwds)
@@ -40,7 +40,7 @@ class Stirrer(TableModule):
         self._mode = self.params.mode
         self._steps = 0
 
-    def test_delete_threshold(self, val: bitmap) -> bool:
+    def test_delete_threshold(self, val: PIntSet) -> bool:
         if self._delete_threshold is None:
             return True
         return len(val) > self._delete_threshold
@@ -64,13 +64,13 @@ class Stirrer(TableModule):
         self._steps += steps
         input_table = input_slot.data()
         if self.result is None:
-            self.result = Table(
+            self.result = PTable(
                 self.generate_table_name("stirrer"), dshape=input_table.dshape,
             )
         raw_ids = self.table.index
-        before_ = raw_ids  # bitmap(raw_ids[raw_ids >= 0])
+        before_ = raw_ids  # PIntSet(raw_ids[raw_ids >= 0])
         v = input_table.loc[fix_loc(created), :]
-        self.table.append(v)  # indices=bitmap(created))
+        self.table.append(v)  # indices=PIntSet(created))
         delete = []
         if self._delete_rows and self.test_delete_threshold(before_):
             if isinstance(self._delete_rows, int):
@@ -88,11 +88,11 @@ class Stirrer(TableModule):
                 del self.table.loc[delete[:mid]]
                 del self.table.loc[delete[mid:]]
             elif delete:
-                if bitmap(delete) in self.table.index and bitmap(delete) not in bitmap(created):
+                if PIntSet(delete) in self.table.index and PIntSet(delete) not in PIntSet(created):
                     steps += len(delete)
                     del self.table.loc[delete]
         if self._update_rows and len(before_):
-            before_ -= bitmap(delete)
+            before_ -= PIntSet(delete)
             if isinstance(self._update_rows, int):
                 updated = random.sample(
                     tuple(before_), min(self._update_rows, len(before_))
@@ -101,7 +101,7 @@ class Stirrer(TableModule):
                 updated = self._update_rows
             v = np.random.rand(len(updated))
             if isinstance(updated, tuple):
-                u_ids = bitmap(updated[0])
+                u_ids = PIntSet(updated[0])
                 u_vals = updated[1]
                 steps += len(u_ids)
                 self.table.loc[u_ids, [self._update_column]] = u_vals
@@ -111,7 +111,7 @@ class Stirrer(TableModule):
         return self._return_run_step(self.next_state(input_slot), steps_run=steps)
 
 
-class StirrerView(TableModule):
+class StirrerView(PTableModule):
     parameters = [
         ("update_column", np.dtype(object), ""),
         ("delete_rows", np.dtype(object), None),
@@ -119,7 +119,7 @@ class StirrerView(TableModule):
         ("fixed_step_size", np.dtype(np.int_), 0),
         ("mode", np.dtype(object), "random"),
     ]
-    inputs = [SlotDescriptor("table", type=Table, required=True)]
+    inputs = [SlotDescriptor("table", type=PTable, required=True)]
 
     def __init__(self, **kwds: Any) -> None:
         super().__init__(**kwds)
@@ -128,7 +128,7 @@ class StirrerView(TableModule):
         self._delete_threshold: Optional[int] = self.params.delete_threshold
         self._mode: str = self.params.mode
 
-    def test_delete_threshold(self, val: bitmap) -> bool:
+    def test_delete_threshold(self, val: PIntSet) -> bool:
         if self._delete_threshold is None:
             return True
         return len(val) > self._delete_threshold
@@ -148,8 +148,8 @@ class StirrerView(TableModule):
         steps = indices_len(created)
         input_table = input_slot.data()
         if self.result is None:
-            self.result = TableSelectedView(input_table, bitmap([]))
-        before_ = bitmap(self.table.index)
+            self.result = PTableSelectedView(input_table, PIntSet([]))
+        before_ = PIntSet(self.table.index)
         self.selected.selection |= created
         # print(len(self.table.index))
         delete = []
@@ -164,5 +164,5 @@ class StirrerView(TableModule):
                 delete = before_
             else:
                 delete = self._delete_rows
-            self.selected.selection -= bitmap(delete)
+            self.selected.selection -= PIntSet(delete)
         return self._return_run_step(self.next_state(input_slot), steps_run=steps)

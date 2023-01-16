@@ -3,11 +3,11 @@ from .constructor import Constructor
 from .desc_stats import DescStatsW
 from .group_by import GroupByW
 from .aggregate import AggregateW
-from .dump_table import DumpTableW
+from .dump_table import DumpPTableW
 from .join import JoinW
 from .multi_series import MultiSeriesW
 from .scatterplot import ScatterplotW
-from .columns import ColumnsW
+from .columns import PColumnsW
 from .histogram import HistogramW
 from .iscaler import ScalerW
 __all__ = [
@@ -15,11 +15,11 @@ __all__ = [
     "DescStatsW",
     "GroupByW",
     "AggregateW",
-    "DumpTableW",
+    "DumpPTableW",
     "JoinW",
     "MultiSeriesW",
     "ScatterplotW",
-    "ColumnsW",
+    "PColumnsW",
     "HistogramW",
     "ScalerW"
     ]

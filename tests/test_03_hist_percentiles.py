@@ -4,13 +4,13 @@ from __future__ import annotations
 from progressivis.core import aio, notNone
 from progressivis.table.constant import Constant
 from progressivis import Print
-from progressivis.stats import RandomTable
+from progressivis.stats import RandomPTable
 from progressivis.table.hist_index import HistogramIndex
 from progressivis.table.percentiles import Percentiles
 import numpy as np
 from . import ProgressiveTest, main
 from progressivis.table.range_query import RangeQuery
-from progressivis.utils.psdict import PsDict
+from progressivis.utils.psdict import PDict
 from progressivis.table.stirrer import Stirrer
 
 from typing import Any
@@ -30,10 +30,10 @@ class TestPercentiles(ProgressiveTest):
         """ """
         s = self.scheduler()
         with s:
-            random = RandomTable(2, rows=10000, scheduler=s)
+            random = RandomPTable(2, rows=10000, scheduler=s)
             hist_index = HistogramIndex(column="_1", scheduler=s)
             hist_index.input[0] = random.output.result
-            t_percentiles = PsDict({"_25": 25.0, "_50": 50.0, "_75": 75.0})
+            t_percentiles = PDict({"_25": 25.0, "_50": 50.0, "_75": 75.0})
             which_percentiles = Constant(table=t_percentiles, scheduler=s)
             percentiles = Percentiles(accuracy=accuracy, scheduler=s)
             percentiles.input[0] = random.output.result
@@ -50,7 +50,7 @@ class TestPercentiles(ProgressiveTest):
         p50 = np.percentile(v, 50.0)  # type: ignore
         p75 = np.percentile(v, 75.0)  # type: ignore
         print(
-            "Table=> accuracy: ",
+            "PTable=> accuracy: ",
             accuracy,
             " 25:",
             p25,
@@ -71,14 +71,14 @@ class TestPercentiles(ProgressiveTest):
         """ """
         s = self.scheduler()
         with s:
-            random = RandomTable(2, rows=10000, scheduler=s)
+            random = RandomPTable(2, rows=10000, scheduler=s)
             stirrer = Stirrer(
                 update_column="_2", fixed_step_size=1000, scheduler=s, **kw
             )
             stirrer.input[0] = random.output.result
             hist_index = HistogramIndex(column="_1", scheduler=s)
             hist_index.input[0] = stirrer.output.result
-            t_percentiles = PsDict({"_25": 25.0, "_50": 50.0, "_75": 75.0})
+            t_percentiles = PDict({"_25": 25.0, "_50": 50.0, "_75": 75.0})
             which_percentiles = Constant(table=t_percentiles, scheduler=s)
             percentiles = Percentiles(accuracy=accuracy, scheduler=s)
             percentiles.input[0] = stirrer.output.result
@@ -95,7 +95,7 @@ class TestPercentiles(ProgressiveTest):
         p50 = np.percentile(v, 50.0)  # type: ignore
         p75 = np.percentile(v, 75.0)  # type: ignore
         print(
-            "Table=> accuracy: ",
+            "PTable=> accuracy: ",
             accuracy,
             " 25:",
             p25,
@@ -140,10 +140,10 @@ class TestPercentiles(ProgressiveTest):
         """ """
         s = self.scheduler()
         with s:
-            random = RandomTable(2, rows=10000, scheduler=s)
-            t_min = PsDict({"_1": 0.3})
+            random = RandomPTable(2, rows=10000, scheduler=s)
+            t_min = PDict({"_1": 0.3})
             min_value = Constant(table=t_min, scheduler=s)
-            t_max = PsDict({"_1": 0.8})
+            t_max = PDict({"_1": 0.8})
             max_value = Constant(table=t_max, scheduler=s)
             range_qry = RangeQuery(column="_1", scheduler=s)
             range_qry.create_dependent_modules(
@@ -152,7 +152,7 @@ class TestPercentiles(ProgressiveTest):
 
             hist_index = range_qry.hist_index
             assert hist_index
-            t_percentiles = PsDict({"_25": 25.0, "_50": 50.0, "_75": 75.0})
+            t_percentiles = PDict({"_25": 25.0, "_50": 50.0, "_75": 75.0})
             which_percentiles = Constant(table=t_percentiles, scheduler=s)
             percentiles = Percentiles(accuracy=accuracy, scheduler=s)
             percentiles.input[0] = range_qry.output.result
@@ -188,14 +188,14 @@ class TestPercentiles(ProgressiveTest):
         """ """
         s = self.scheduler()
         with s:
-            random = RandomTable(2, rows=10000, scheduler=s)
+            random = RandomPTable(2, rows=10000, scheduler=s)
             stirrer = Stirrer(
                 update_column="_2", fixed_step_size=1000, scheduler=s, **kw
             )
             stirrer.input[0] = random.output.result
-            t_min = PsDict({"_1": 0.3})
+            t_min = PDict({"_1": 0.3})
             min_value = Constant(table=t_min, scheduler=s)
-            t_max = PsDict({"_1": 0.8})
+            t_max = PDict({"_1": 0.8})
             max_value = Constant(table=t_max, scheduler=s)
             range_qry = RangeQuery(column="_1", scheduler=s)
             range_qry.create_dependent_modules(
@@ -204,7 +204,7 @@ class TestPercentiles(ProgressiveTest):
 
             hist_index = range_qry.hist_index
             assert hist_index
-            t_percentiles = PsDict({"_25": 25.0, "_50": 50.0, "_75": 75.0})
+            t_percentiles = PDict({"_25": 25.0, "_50": 50.0, "_75": 75.0})
             which_percentiles = Constant(table=t_percentiles, scheduler=s)
             percentiles = Percentiles(accuracy=accuracy, scheduler=s)
             percentiles.input[0] = range_qry.output.result

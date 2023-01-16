@@ -12,8 +12,8 @@ import pdb
 
 import numpy as np
 from progressivis.utils.errors import ProgressiveError, ProgressiveStopIteration
-from progressivis.table.table_base import BaseTable
-from progressivis.table.table import Table
+from progressivis.table.table_base import BasePTable
+from progressivis.table.table import PTable
 from progressivis.table.dshape import dshape_from_dtype
 from progressivis.table.row import Row
 from progressivis.storage import Group
@@ -168,8 +168,8 @@ class Module(metaclass=ModuleMeta):
     TAG_GREEDY = "greedy"
     TAG_DEPENDENT = "dependent"
 
-    inputs = [SlotDescriptor(PARAMETERS_SLOT, type=BaseTable, required=False)]
-    outputs = [SlotDescriptor(TRACE_SLOT, type=BaseTable, required=False)]
+    inputs = [SlotDescriptor(PARAMETERS_SLOT, type=BasePTable, required=False)]
+    outputs = [SlotDescriptor(TRACE_SLOT, type=BasePTable, required=False)]
     all_inputs: ClassVar[List[SlotDescriptor]]  # defined by metaclass, declare for mypy
     all_outputs: ClassVar[
         List[SlotDescriptor]
@@ -869,7 +869,7 @@ class Module(metaclass=ModuleMeta):
         ), "State %s invalid in module %s" % (s, self.name)
         self._state = s
 
-    def trace_stats(self, max_runs: Optional[int] = None) -> Table:
+    def trace_stats(self, max_runs: Optional[int] = None) -> PTable:
         return self.tracer.trace_stats(max_runs)
 
     def predict_step_size(self, duration: float) -> int:
@@ -1192,7 +1192,7 @@ def _oslot_to_json(slots: Optional[List[Slot]]) -> Optional[List[Optional[JSon]]
     return [_islot_to_json(s) for s in slots]
 
 
-def _create_table(tname: str, columns: Parameters) -> Table:
+def _create_table(tname: str, columns: Parameters) -> PTable:
     dshape = ""
     data = {}
     for (name, dtype, val) in columns:
@@ -1202,6 +1202,6 @@ def _create_table(tname: str, columns: Parameters) -> Table:
         data[name] = val
     dshape = "{" + dshape + "}"
     assert Group.default_internal
-    table = Table(tname, dshape=dshape, storagegroup=Group.default_internal(tname))
+    table = PTable(tname, dshape=dshape, storagegroup=Group.default_internal(tname))
     table.add(data)
     return table

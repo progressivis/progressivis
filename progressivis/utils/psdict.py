@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from ..core.bitmap import bitmap
+from ..core.pintset import PIntSet
 from ..core.index_update import IndexUpdate
 from ..table.dshape import DataShape, dshape_from_dict
 import numpy as np
@@ -12,7 +12,7 @@ if TYPE_CHECKING:
     from progressivis.core.changemanager_dict import DictChangeManager
 
 
-class PsDict(Dict[str, Any]):
+class PDict(Dict[str, Any]):
     "progressive dictionary"
 
     def __init__(self, other: Optional[Dict[str, Any]] = None, **kwargs: Any) -> None:
@@ -33,11 +33,11 @@ class PsDict(Dict[str, Any]):
     def compute_updates(
         self, start: int, now: float, mid: Optional[str], cleanup: bool = True
     ) -> Optional[IndexUpdate]:
-        assert False, "compute_updates should not be called on PsDict"
+        assert False, "compute_updates should not be called on PDict"
         if self.changes:
             updates = self.changes.compute_updates(start, now, mid, cleanup=cleanup)
             if updates is None:
-                updates = IndexUpdate(created=bitmap(self.ids))
+                updates = IndexUpdate(created=PIntSet(self.ids))
             return updates
         return None
 
@@ -96,15 +96,15 @@ class PsDict(Dict[str, Any]):
             if k in self._deleted:  # a previously deleted key was added later
                 del self._deleted[k]
 
-    def created_indices(self, prev: PsDict) -> bitmap:
+    def created_indices(self, prev: PDict) -> PIntSet:
         if self._index is None:
-            return bitmap(range(len(prev), len(self)))
+            return PIntSet(range(len(prev), len(self)))
         new_keys = set(self.keys()) - set(prev.keys())
-        return bitmap((i for (k, i) in self._index.items() if k in new_keys))
+        return PIntSet((i for (k, i) in self._index.items() if k in new_keys))
 
-    def updated_indices(self, prev: PsDict) -> bitmap:
+    def updated_indices(self, prev: PDict) -> PIntSet:
         if self._index is None:
-            return bitmap(
+            return PIntSet(
                 (
                     i
                     for (i, x, y) in zip(range(len(prev)), prev.values(), self.values())
@@ -112,7 +112,7 @@ class PsDict(Dict[str, Any]):
                 )
             )
         common_keys = set(self.keys()) & set(prev.keys())
-        return bitmap(
+        return PIntSet(
             (
                 i
                 for (k, i) in self._index.items()
@@ -120,11 +120,11 @@ class PsDict(Dict[str, Any]):
             )
         )
 
-    def deleted_indices(self, prev: PsDict) -> bitmap:
+    def deleted_indices(self, prev: PDict) -> PIntSet:
         if self._index is None:
-            return bitmap()
+            return PIntSet()
         del_keys = set(prev.keys()) - set(self.keys())
-        return bitmap((i for (k, i) in self._deleted.items() if k in del_keys))
+        return PIntSet((i for (k, i) in self._deleted.items() if k in del_keys))
 
     def __delitem__(self, key: str) -> None:
         if key not in self:
@@ -148,10 +148,10 @@ class PsDict(Dict[str, Any]):
         return self[list(self)[i]]
 
     @property
-    def ids(self) -> bitmap:
+    def ids(self) -> PIntSet:
         if self._index is None:
-            return bitmap(range(len(self)))
-        return bitmap(self._index.values())
+            return PIntSet(range(len(self)))
+        return PIntSet(self._index.values())
 
 
-EMPTY_PSDICT = PsDict()
+EMPTY_PSDICT = PDict()

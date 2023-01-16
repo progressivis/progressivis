@@ -14,8 +14,8 @@ from PIL import Image
 
 from progressivis.core.module import ReturnRunStep, JSon
 from progressivis.core import SlotDescriptor, notNone, indices_len
-from progressivis.table import Table
-from progressivis.table.module import TableModule
+from progressivis.table import PTable
+from progressivis.table.module import PTableModule
 from progressivis.stats.histogram2d import Histogram2D
 
 from typing import cast, Optional, Any
@@ -24,7 +24,7 @@ from typing import cast, Optional, Any
 logger = logging.getLogger(__name__)
 
 
-class Heatmap(TableModule):
+class Heatmap(PTableModule):
     "Heatmap module"
     parameters = [
         ("cmax", np.dtype(float), np.nan),
@@ -34,7 +34,7 @@ class Heatmap(TableModule):
         ("filename", np.dtype(object), None),
         ("history", np.dtype(int), 3),
     ]
-    inputs = [SlotDescriptor("array", type=Table)]
+    inputs = [SlotDescriptor("array", type=PTable)]
 
     # schema = [('image', np.dtype(object), None),
     #           ('filename', np.dtype(object), None),
@@ -47,7 +47,7 @@ class Heatmap(TableModule):
         self.colormap = colormap
         self.default_step_size = 1
         name = self.generate_table_name("Heatmap")
-        self.result = Table(name, dshape=Heatmap.schema, create=True)
+        self.result = PTable(name, dshape=Heatmap.schema, create=True)
 
     def predict_step_size(self, duration: float) -> int:
         _ = duration

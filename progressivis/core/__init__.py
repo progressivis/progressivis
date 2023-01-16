@@ -11,13 +11,13 @@ from .scheduler import Scheduler
 from .slot import Slot, SlotDescriptor
 from .storagemanager import StorageManager
 from .module import Module, Every, Print
-from .bitmap import bitmap
+from .pintset import PIntSet
 from .wait import Wait
 from .sink import Sink
 from .types import notNone, JSon, Index
 
 # pylint: disable=unused-import
-from .changemanager_bitmap import BitmapChangeManager
+from .changemanager_pintset import PIntSetChangeManager
 from .changemanager_dict import DictChangeManager
 
 
@@ -34,9 +34,9 @@ __all__ = [
     "integer_types",
     "JSONEncoderNp",
     "asynchronize",
-    "bitmap",
+    "PIntSet",
     "Scheduler",
-    "BitmapChangeManager",
+    "PIntSetChangeManager",
     "DictChangeManager",
     "version",
     "__version__",

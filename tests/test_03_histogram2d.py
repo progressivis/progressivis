@@ -4,7 +4,7 @@ from . import ProgressiveTest
 from progressivis.core import aio, notNone
 from progressivis import Every
 from progressivis.io import CSVLoader
-from progressivis.stats import RandomTable
+from progressivis.stats import RandomPTable
 from progressivis.stats import Histogram2D, Min, Max
 from progressivis.vis import Heatmap
 from progressivis.datasets import get_dataset
@@ -73,7 +73,7 @@ class TestHistogram2D(ProgressiveTest):
 
     def t_histogram2d_impl(self, **kw: Any) -> None:
         s = self.scheduler()
-        random = RandomTable(3, rows=100000, scheduler=s)
+        random = RandomPTable(3, rows=100000, scheduler=s)
         stirrer = Stirrer(update_column="_2", fixed_step_size=1000, scheduler=s, **kw)
         stirrer.input[0] = random.output.result
         min_ = Min(scheduler=s)
@@ -105,7 +105,7 @@ class TestHistogram2D(ProgressiveTest):
 
     def test_histogram2d4(self) -> None:
         s = self.scheduler()
-        random = RandomTable(3, rows=100000, scheduler=s)
+        random = RandomPTable(3, rows=100000, scheduler=s)
         stirrer = StirrerView(
             update_column="_2", fixed_step_size=1000, scheduler=s, delete_rows=5
         )

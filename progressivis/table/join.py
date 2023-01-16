@@ -4,13 +4,13 @@ from __future__ import annotations
 import numpy as np
 import logging
 from ..core.utils import nn, integer_types
-from ..core.bitmap import bitmap
+from ..core.pintset import PIntSet
 from ..core.module import ReturnRunStep
 from ..core.slot import SlotDescriptor
-from .module import TableModule
-from .group_by import GroupBy, SubColumn as SC
+from .module import PTableModule
+from .group_by import GroupBy, SubPColumn as SC
 from .unique_index import UniqueIndex
-from . import Table, TableSelectedView
+from . import PTable, PTableSelectedView
 from typing import Union, Literal, List, Any, Optional, Dict
 
 
@@ -97,7 +97,7 @@ def _aslist(x) -> List[Any]:
     return [x]
 
 
-class Join(TableModule):
+class Join(PTableModule):
     """
     {many|one}-to-one join module
 
@@ -114,10 +114,10 @@ class Join(TableModule):
     """
 
     inputs = [
-        SlotDescriptor("related", type=Table, required=True),
-        SlotDescriptor("primary", type=Table, required=True),
+        SlotDescriptor("related", type=PTable, required=True),
+        SlotDescriptor("primary", type=PTable, required=True),
     ]
-    outputs = [SlotDescriptor("primary_outer", type=Table, required=False)]
+    outputs = [SlotDescriptor("primary_outer", type=PTable, required=False)]
 
     def __init__(self, *, how: HOW = "inner", fillna: Any = None,
                  inv_mask: Any = None, **kwds: Any) -> None:
@@ -131,12 +131,12 @@ class Join(TableModule):
         self._related_cols: Optional[List[str]] = None
         self._virtual_cols: Optional[List[str]] = None
         self._maintain_primary_outer = False
-        self._primary_outer: Optional[TableSelectedView] = None
+        self._primary_outer: Optional[PTableSelectedView] = None
 
     def create_dependent_modules(
             self,
-            primary_module: TableModule,
-            related_module: TableModule,
+            primary_module: PTableModule,
+            related_module: PTableModule,
             *,
             primary_slot: str = "result",
             related_slot: str = "result",
@@ -261,13 +261,13 @@ class Join(TableModule):
                 )
                 for (ucol, sxcol) in ucols_dict.items()
             }
-            self.result = TableSelectedView(
-                related_table, bitmap([]), columns=join_cols, computed=computed
+            self.result = PTableSelectedView(
+                related_table, PIntSet([]), columns=join_cols, computed=computed
             )
 
         if self._maintain_primary_outer and self._primary_outer is None:
-            self._primary_outer = TableSelectedView(
-                primary_table, bitmap(primary_table.index)
+            self._primary_outer = PTableSelectedView(
+                primary_table, PIntSet(primary_table.index)
             )
         steps = 0
         if primary_slot.deleted.any() or primary_slot.updated.any():
@@ -285,7 +285,7 @@ class Join(TableModule):
             if self.how == "inner":
                 steps = 1
                 for key in uindex_mod.get_deleted_entries(deleted):
-                    deltd = groupby_mod.index.get(key, bitmap())
+                    deltd = groupby_mod.index.get(key, PIntSet())
                     if deltd:
                         self.selected.selection -= deltd
         if primary_slot.created.any():
@@ -306,8 +306,8 @@ class Join(TableModule):
                         if self._primary_outer is not None:
                             i = uindex_mod.index[k]
                             if i in self._primary_outer.selection:
-                                # TODO: check bitmap.remove()
-                                self._primary_outer.selection -= bitmap([i])
+                                # TODO: check PIntSet.remove()
+                                self._primary_outer.selection -= PIntSet([i])
                         created -= common
                         related_slot.created.remove_from_all(common)  # type: ignore
                     if steps >= step_size:
@@ -323,8 +323,8 @@ class Join(TableModule):
                             continue
                         i = uindex_mod.index[k]
                         if i in self._primary_outer.selection:
-                            # TODO: check bitmap.remove()
-                            self._primary_outer.selection -= bitmap([i])
+                            # TODO: check PIntSet.remove()
+                            self._primary_outer.selection -= PIntSet([i])
 
         # currently updates are ignored
         # NB: we assume that the updates do not concern the "join on" columns

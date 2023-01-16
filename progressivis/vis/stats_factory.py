@@ -14,14 +14,14 @@ from ..stats import (
     Corr,
 )
 from ..core.module import GroupContext
-from ..table.module import TableModule
-from ..table.table import Table
+from ..table.module import PTableModule
+from ..table.table import PTable
 from ..table.pattern import Pattern
 from ..core.slot import SlotDescriptor
 from ..core.decorators import process_slot, run_if_any
 from ..table.dshape import dshape_fields
 from ..table.range_query import RangeQuery
-from ..utils.psdict import PsDict
+from ..utils.psdict import PDict
 from ..io import DynVar
 from typing import Any, Dict, Callable, Optional, TYPE_CHECKING, cast
 import numpy as np
@@ -115,13 +115,13 @@ class Histogram2dPattern(Pattern):
             sink.input.inp = self.histogram2d.output.result
 
 
-class DataShape(TableModule):
+class DataShape(PTableModule):
     """
     Adds statistics on input data
     """
 
     inputs = [
-        SlotDescriptor("table", type=Table, required=True),
+        SlotDescriptor("table", type=PTable, required=True),
     ]
 
     def __init__(self, **kwds: Any) -> None:
@@ -145,7 +145,7 @@ class DataShape(TableModule):
                 return self._return_run_step(self.state_blocked, steps_run=0)
             if slot.has_buffered():
                 slot.clear_buffers()
-            self.result = PsDict({k: str(v) for (k, v) in dshape_fields(data.dshape)})
+            self.result = PDict({k: str(v) for (k, v) in dshape_fields(data.dshape)})
             return self._return_run_step(self.state_zombie, steps_run=0)
 
 
@@ -231,7 +231,7 @@ def _add_barplot_col(col: str, factory: StatsFactory) -> Histogram1DCategorical:
         return m
 
 
-def _add_hist_col(col: str, factory: StatsFactory) -> TableModule:
+def _add_hist_col(col: str, factory: StatsFactory) -> PTableModule:
     assert factory.types
     col_type = factory.types[col]
     if col_type == "string":
@@ -265,18 +265,18 @@ def _h2d_func(cx: str, cy: str, factory: StatsFactory) -> Histogram2dPattern:
         return m
 
 
-class StatsFactory(TableModule):
+class StatsFactory(PTableModule):
     """
     Adds statistics on input data
     """
 
     inputs = [
-        SlotDescriptor("table", type=Table, required=True),
-        SlotDescriptor("selection", type=PsDict, required=True),
+        SlotDescriptor("table", type=PTable, required=True),
+        SlotDescriptor("selection", type=PDict, required=True),
     ]
 
     def __init__(
-        self, input_module: TableModule, input_slot: str = "result", **kwds: Any
+        self, input_module: PTableModule, input_slot: str = "result", **kwds: Any
     ) -> None:
         """ """
         super().__init__(**kwds)
@@ -286,7 +286,7 @@ class StatsFactory(TableModule):
         self._h2d_matrix: Optional[pd.DataFrame] = None
         self.types: Optional[Dict[str, str]] = None
         self._multi_col_funcs = set(["corr"])
-        self._multi_col_modules: Dict[str, Optional[TableModule]] = {}
+        self._multi_col_modules: Dict[str, Optional[PTableModule]] = {}
         self.func_dict: Dict[str, Callable] = dict(
             hide=_hide_func,
             max=_add_max_col,

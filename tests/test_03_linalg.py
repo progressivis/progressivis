@@ -29,20 +29,20 @@ from progressivis.linalg._elementwise import (
     Arccosh,
 )
 import progressivis.linalg as arr
-from progressivis.core.bitmap import bitmap
-from progressivis.stats import RandomTable, RandomDict
+from progressivis.core.pintset import PIntSet
+from progressivis.stats import RandomPTable, RandomDict
 import numpy as np
 
 from typing import Any, Type, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from progressivis.table.module import TableModule
+    from progressivis.table.module import PTableModule
 
 
 class TestUnary(ProgressiveTest):
     def test_unary(self) -> None:
         s = self.scheduler()
-        random = RandomTable(10, rows=100_000, scheduler=s)
+        random = RandomPTable(10, rows=100_000, scheduler=s)
         module = Unary(np.log, scheduler=s)
         module.input[0] = random.output.result
         pr = Print(proc=self.terse, scheduler=s)
@@ -55,7 +55,7 @@ class TestUnary(ProgressiveTest):
 
     def test_unary2(self) -> None:
         s = self.scheduler()
-        random = RandomTable(10, rows=100_000, scheduler=s)
+        random = RandomPTable(10, rows=100_000, scheduler=s)
         module = Unary(np.log, columns=["_3", "_5", "_7"], scheduler=s)
         module.input[0] = random.output.result
         pr = Print(proc=self.terse, scheduler=s)
@@ -68,7 +68,7 @@ class TestUnary(ProgressiveTest):
 
     def _t_stirred_unary(self, **kw: Any) -> None:
         s = self.scheduler()
-        random = RandomTable(10, rows=100_000, scheduler=s)
+        random = RandomPTable(10, rows=100_000, scheduler=s)
         stirrer = Stirrer(update_column="_3", fixed_step_size=1000, scheduler=s, **kw)
         stirrer.input[0] = random.output.result
         module = Unary(np.log, columns=["_3", "_5", "_7"], scheduler=s)
@@ -87,10 +87,10 @@ class TestUnary(ProgressiveTest):
     def test_unary4(self) -> None:
         self._t_stirred_unary(update_rows=5)
 
-    def _t_impl(self, cls: Type[TableModule], ufunc: np.ufunc, mod_name: str) -> None:
+    def _t_impl(self, cls: Type[PTableModule], ufunc: np.ufunc, mod_name: str) -> None:
         print("Testing", mod_name)
         s = self.scheduler()
-        random = RandomTable(10, rows=10_000, scheduler=s)
+        random = RandomPTable(10, rows=10_000, scheduler=s)
         module = cls(scheduler=s)
         module.input[0] = random.output.result
         pr = Print(proc=self.terse, scheduler=s)
@@ -121,7 +121,7 @@ class TestOtherUnaries(ProgressiveTest):
         module_name = "arccosh_"
         print("Testing", module_name)
         s = self.scheduler()
-        random = RandomTable(
+        random = RandomPTable(
             10, random=lambda x: np.random.rand(x) * 10000.0, rows=100_000, scheduler=s
         )
         module = Arccosh(scheduler=s)
@@ -138,7 +138,7 @@ class TestOtherUnaries(ProgressiveTest):
         module_name = "invert_"
         print("Testing", module_name)
         s = self.scheduler()
-        random = RandomTable(
+        random = RandomPTable(
             10,
             random=lambda x: np.random.randint(100_000, size=x),  # type: ignore
             dtype="int64",
@@ -159,7 +159,7 @@ class TestOtherUnaries(ProgressiveTest):
         module_name = "bitwise_not_"
         print("Testing", module_name)
         s = self.scheduler()
-        random = RandomTable(
+        random = RandomPTable(
             10,
             random=lambda x: np.random.randint(100_000, size=x),  # type: ignore
             dtype="int64",
@@ -182,7 +182,7 @@ class TestColsBinary(ProgressiveTest):
     def test_cols_binary(self) -> None:
         s = self.scheduler()
         cols = 10
-        random = RandomTable(cols, rows=100_000, scheduler=s)
+        random = RandomPTable(cols, rows=100_000, scheduler=s)
         module = ColsBinary(
             np.add, first=["_3", "_5", "_7"], second=["_4", "_6", "_8"], scheduler=s
         )
@@ -200,7 +200,7 @@ class TestColsBinary(ProgressiveTest):
     def test_cols_binary2(self) -> None:
         s = self.scheduler()
         cols = 10
-        random = RandomTable(cols, rows=100, scheduler=s)
+        random = RandomPTable(cols, rows=100, scheduler=s)
         module = ColsBinary(
             np.add,
             first=["_3", "_5", "_7"],
@@ -217,7 +217,7 @@ class TestColsBinary(ProgressiveTest):
     def t_stirred_cols_binary(self, **kw: Any) -> None:
         s = self.scheduler()
         cols = 10
-        random = RandomTable(cols, rows=10_000, scheduler=s)
+        random = RandomPTable(cols, rows=10_000, scheduler=s)
         stirrer = Stirrer(update_column="_3", fixed_step_size=1000, scheduler=s, **kw)
         stirrer.input[0] = random.output.result
         module = ColsBinary(
@@ -240,10 +240,10 @@ class TestColsBinary(ProgressiveTest):
     def test_cols_binary4(self) -> None:
         self.t_stirred_cols_binary(update_rows=5)
 
-    def _t_impl(self, cls: Type[TableModule], ufunc: np.ufunc, mod_name: str) -> None:
+    def _t_impl(self, cls: Type[PTableModule], ufunc: np.ufunc, mod_name: str) -> None:
         print("Testing", mod_name)
         s = self.scheduler()
-        random = RandomTable(10, rows=10_000, scheduler=s)
+        random = RandomPTable(10, rows=10_000, scheduler=s)
         module = cls(
             first=["_3", "_5", "_7"],
             second=["_4", "_6", "_8"],
@@ -277,11 +277,11 @@ for k, ufunc in binary_dict_gen_tst.items():
 
 
 class TestOtherColsBinaries(ProgressiveTest):
-    def _t_impl(self, cls: Type[TableModule], ufunc: np.ufunc, mod_name: str) -> None:
+    def _t_impl(self, cls: Type[PTableModule], ufunc: np.ufunc, mod_name: str) -> None:
         print("Testing", mod_name)
         s = self.scheduler()
         cols = 10
-        random = RandomTable(
+        random = RandomPTable(
             cols,
             rows=10_000,
             scheduler=s,
@@ -310,7 +310,7 @@ class TestOtherColsBinaries(ProgressiveTest):
         print("Testing", mod_name)
         s = self.scheduler()
         cols = 10
-        random = RandomTable(
+        random = RandomPTable(
             cols,
             rows=10_000,
             scheduler=s,
@@ -354,15 +354,15 @@ for k, ufunc in binary_dict_int_tst.items():
 
 
 class TestBin(ProgressiveTest):
-    def _t_impl(self, cls: Type[TableModule], ufunc: np.ufunc, mod_name: str) -> None:
+    def _t_impl(self, cls: Type[PTableModule], ufunc: np.ufunc, mod_name: str) -> None:
         pass
 
 
 class TestBinary(TestBin):
     def test_binary(self) -> None:
         s = self.scheduler()
-        random1 = RandomTable(3, rows=100_000, scheduler=s)
-        random2 = RandomTable(3, rows=100_000, scheduler=s)
+        random1 = RandomPTable(3, rows=100_000, scheduler=s)
+        random2 = RandomPTable(3, rows=100_000, scheduler=s)
         module = Binary(np.add, scheduler=s)
         module.input.first = random1.output.result
         module.input.second = random2.output.result
@@ -377,15 +377,15 @@ class TestBinary(TestBin):
     def test_binary2(self) -> None:
         s = self.scheduler()
         cols = 10
-        _ = RandomTable(cols, rows=100_000, scheduler=s)
-        _ = RandomTable(cols, rows=100_000, scheduler=s)
+        _ = RandomPTable(cols, rows=100_000, scheduler=s)
+        _ = RandomPTable(cols, rows=100_000, scheduler=s)
         with self.assertRaises(AssertionError):
             _ = Binary(np.add, columns=["_3", "_5", "_7"], scheduler=s)
 
     def test_binary3(self) -> None:
         s = self.scheduler()
-        random1 = RandomTable(10, rows=100_000, scheduler=s)
-        random2 = RandomTable(10, rows=100_000, scheduler=s)
+        random1 = RandomPTable(10, rows=100_000, scheduler=s)
+        random2 = RandomPTable(10, rows=100_000, scheduler=s)
         module = Binary(
             np.add,
             columns={"first": ["_3", "_5", "_7"], "second": ["_4", "_6", "_8"]},
@@ -406,8 +406,8 @@ class TestBinary(TestBin):
 
     def _t_stirred_binary(self, **kw: Any) -> None:
         s = self.scheduler()
-        random1 = RandomTable(10, rows=100000, scheduler=s)
-        random2 = RandomTable(10, rows=100000, scheduler=s)
+        random1 = RandomPTable(10, rows=100000, scheduler=s)
+        random2 = RandomPTable(10, rows=100000, scheduler=s)
         stirrer1 = Stirrer(update_column="_3", fixed_step_size=1000, scheduler=s, **kw)
         stirrer1.input[0] = random1.output.result
         stirrer2 = Stirrer(update_column="_3", fixed_step_size=1000, scheduler=s, **kw)
@@ -424,7 +424,7 @@ class TestBinary(TestBin):
         aio.run(s.start())
         idx1 = stirrer1.table.index.to_array()
         idx2 = stirrer2.table.index.to_array()
-        common = bitmap(idx1) & bitmap(idx2)
+        common = PIntSet(idx1) & PIntSet(idx2)
         bt1 = stirrer1.table.loc[common, :]
         bt2 = stirrer2.table.loc[common, :]
         assert bt1 is not None and bt2 is not None
@@ -441,11 +441,11 @@ class TestBinary(TestBin):
     def test_stirred_binary2(self) -> None:
         self._t_stirred_binary(update_rows=5)
 
-    def _t_impl(self, cls: Type[TableModule], ufunc: np.ufunc, mod_name: str) -> None:
+    def _t_impl(self, cls: Type[PTableModule], ufunc: np.ufunc, mod_name: str) -> None:
         print("Testing", mod_name)
         s = self.scheduler()
-        random1 = RandomTable(3, rows=10_000, scheduler=s)
-        random2 = RandomTable(3, rows=10_000, scheduler=s)
+        random1 = RandomPTable(3, rows=10_000, scheduler=s)
+        random2 = RandomPTable(3, rows=10_000, scheduler=s)
         module = cls(scheduler=s)
         module.input.first = random1.output.result
         module.input.second = random2.output.result
@@ -476,7 +476,7 @@ class TestBinaryTD(TestBin):
     def test_binary(self) -> None:
         s = self.scheduler()
         cols = 3
-        random1 = RandomTable(cols, rows=100000, scheduler=s)
+        random1 = RandomPTable(cols, rows=100000, scheduler=s)
         random2 = RandomDict(cols, scheduler=s)
         module = Binary(np.add, scheduler=s)
         module.input.first = random1.output.result
@@ -492,7 +492,7 @@ class TestBinaryTD(TestBin):
     def test_binary2(self) -> None:
         s = self.scheduler()
         cols = 10
-        _ = RandomTable(cols, rows=100_000, scheduler=s)
+        _ = RandomPTable(cols, rows=100_000, scheduler=s)
         _ = RandomDict(cols, scheduler=s)
         with self.assertRaises(AssertionError):
             _ = Binary(np.add, columns=["_3", "_5", "_7"], scheduler=s)
@@ -500,7 +500,7 @@ class TestBinaryTD(TestBin):
     def test_binary3(self) -> None:
         s = self.scheduler()
         cols = 10
-        random1 = RandomTable(cols, rows=100_000, scheduler=s)
+        random1 = RandomPTable(cols, rows=100_000, scheduler=s)
         random2 = RandomDict(cols, scheduler=s)
         module = Binary(
             np.add,
@@ -520,11 +520,11 @@ class TestBinaryTD(TestBin):
         self.assertTrue(module.name.startswith("binary_"))
         self.assertTrue(np.allclose(res1, res2, equal_nan=True))
 
-    def _t_impl(self, cls: Type[TableModule], ufunc: np.ufunc, mod_name: str) -> None:
+    def _t_impl(self, cls: Type[PTableModule], ufunc: np.ufunc, mod_name: str) -> None:
         print("Testing", mod_name)
         s = self.scheduler()
         cols = 3
-        random1 = RandomTable(3, rows=10_000, scheduler=s)
+        random1 = RandomPTable(3, rows=10_000, scheduler=s)
         random2 = RandomDict(cols, scheduler=s)
         module = cls(scheduler=s)
         module.input.first = random1.output.result
@@ -543,17 +543,17 @@ for k, ufunc in binary_dict_gen_tst.items():
 
 
 class TestOtherBinaries(ProgressiveTest):
-    def _t_impl(self, cls: Type[TableModule], ufunc: np.ufunc, mod_name: str) -> None:
+    def _t_impl(self, cls: Type[PTableModule], ufunc: np.ufunc, mod_name: str) -> None:
         print("Testing", mod_name)
         s = self.scheduler()
-        random1 = RandomTable(
+        random1 = RandomPTable(
             3,
             rows=100_000,
             scheduler=s,
             random=lambda x: np.random.randint(10, size=x),  # type: ignore
             dtype="int64",
         )
-        random2 = RandomTable(
+        random2 = RandomPTable(
             3,
             rows=100_000,
             scheduler=s,
@@ -575,8 +575,8 @@ class TestOtherBinaries(ProgressiveTest):
         cls, ufunc, mod_name = Ldexp, np.ldexp, "ldexp_"
         print("Testing", mod_name)
         s = self.scheduler()
-        random1 = RandomTable(3, rows=100_000, scheduler=s)
-        random2 = RandomTable(
+        random1 = RandomPTable(3, rows=100_000, scheduler=s)
+        random2 = RandomPTable(
             3,
             rows=100_000,
             scheduler=s,
@@ -614,7 +614,7 @@ for k, ufunc in binary_dict_int_tst.items():
 class TestReduce(ProgressiveTest):
     def test_reduce(self) -> None:
         s = self.scheduler()
-        random = RandomTable(10, rows=100_000, scheduler=s)
+        random = RandomPTable(10, rows=100_000, scheduler=s)
         module = Reduce(np.add, scheduler=s)
         module.input[0] = random.output.result
         pr = Print(proc=self.terse, scheduler=s)
@@ -627,7 +627,7 @@ class TestReduce(ProgressiveTest):
 
     def test_reduce2(self) -> None:
         s = self.scheduler()
-        random = RandomTable(10, rows=100_000, scheduler=s)
+        random = RandomPTable(10, rows=100_000, scheduler=s)
         module = Reduce(np.add, columns=["_3", "_5", "_7"], scheduler=s)
         module.input[0] = random.output.result
         pr = Print(proc=self.terse, scheduler=s)
@@ -638,10 +638,10 @@ class TestReduce(ProgressiveTest):
         self.assertTrue(module.name.startswith("reduce_"))
         self.assertTrue(np.allclose(res1, res2, equal_nan=True))
 
-    def _t_impl(self, cls: Type[TableModule], ufunc: np.ufunc, mod_name: str) -> None:
+    def _t_impl(self, cls: Type[PTableModule], ufunc: np.ufunc, mod_name: str) -> None:
         print("Testing", mod_name)
         s = self.scheduler()
-        random = RandomTable(10, rows=10_000, scheduler=s)
+        random = RandomPTable(10, rows=10_000, scheduler=s)
         module = cls(scheduler=s)
         module.input[0] = random.output.result
         pr = Print(proc=self.terse, scheduler=s)
@@ -674,7 +674,7 @@ class TestCustomFunctions(ProgressiveTest):
 
         CustomUnary = make_unary(custom_unary)
         s = self.scheduler()
-        random = RandomTable(10, rows=100_000, scheduler=s)
+        random = RandomPTable(10, rows=100_000, scheduler=s)
         module = CustomUnary(scheduler=s)
         module.input[0] = random.output.result
         pr = Print(proc=self.terse, scheduler=s)
@@ -691,8 +691,8 @@ class TestCustomFunctions(ProgressiveTest):
 
         CustomBinary = make_binary(custom_binary)
         s = self.scheduler()
-        random1 = RandomTable(3, rows=100_000, scheduler=s)
-        random2 = RandomTable(3, rows=100_000, scheduler=s)
+        random1 = RandomPTable(3, rows=100_000, scheduler=s)
+        random2 = RandomPTable(3, rows=100_000, scheduler=s)
         module = CustomBinary(scheduler=s)
         module.input.first = random1.output.result
         module.input.second = random2.output.result
@@ -713,7 +713,7 @@ class TestCustomFunctions(ProgressiveTest):
 
         CustomBinaryReduce = make_reduce(custom_binary)
         s = self.scheduler()
-        random = RandomTable(10, rows=100_000, scheduler=s)
+        random = RandomPTable(10, rows=100_000, scheduler=s)
         module = CustomBinaryReduce(scheduler=s)
         module.input[0] = random.output.result
         pr = Print(proc=self.terse, scheduler=s)
@@ -726,10 +726,10 @@ class TestCustomFunctions(ProgressiveTest):
 
 
 class TestOtherReduces(ProgressiveTest):
-    def _t_impl(self, cls: Type[TableModule], ufunc: np.ufunc, mod_name: str) -> None:
+    def _t_impl(self, cls: Type[PTableModule], ufunc: np.ufunc, mod_name: str) -> None:
         print("Testing", mod_name)
         s = self.scheduler()
-        random = RandomTable(
+        random = RandomPTable(
             3,
             rows=10_000,
             scheduler=s,
@@ -770,7 +770,7 @@ class TestDecorators(ProgressiveTest):
             return (x + np.sin(x)) / (x + np.cos(x))  # type: ignore
 
         s = self.scheduler()
-        random = RandomTable(10, rows=100_000, scheduler=s)
+        random = RandomPTable(10, rows=100_000, scheduler=s)
         module = CustomUnary(scheduler=s)
         module.input[0] = random.output.result
         pr = Print(proc=self.terse, scheduler=s)
@@ -787,8 +787,8 @@ class TestDecorators(ProgressiveTest):
             return (x + np.sin(y)) / (x + np.cos(y))  # type: ignore
 
         s = self.scheduler()
-        random1 = RandomTable(3, rows=100_000, scheduler=s)
-        random2 = RandomTable(3, rows=100_000, scheduler=s)
+        random1 = RandomPTable(3, rows=100_000, scheduler=s)
+        random2 = RandomPTable(3, rows=100_000, scheduler=s)
         module = CustomBinary(scheduler=s)
         module.input.first = random1.output.result
         module.input.second = random2.output.result
@@ -809,7 +809,7 @@ class TestDecorators(ProgressiveTest):
             return (x + np.sin(y)) / (x + np.cos(y))  # type: ignore
 
         s = self.scheduler()
-        random = RandomTable(10, rows=100_000, scheduler=s)
+        random = RandomPTable(10, rows=100_000, scheduler=s)
         module = CustomBinaryReduce(scheduler=s)
         module.input[0] = random.output.result
         pr = Print(proc=self.terse, scheduler=s)

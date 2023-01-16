@@ -5,7 +5,7 @@ from progressivis.core import aio, Sink
 from progressivis.io import SimpleCSVLoader
 from progressivis.table.categorical_query import CategoricalQuery
 from progressivis.table.constant import Constant
-from progressivis.utils.psdict import PsDict
+from progressivis.utils.psdict import PDict
 import pandas as pd
 import numpy as np
 from io import StringIO
@@ -43,7 +43,7 @@ class TestProgressiveCatQuery(ProgressiveTest):
         query.create_dependent_modules(
             input_module=csv
         )
-        ct = Constant(PsDict({"only": ["A", "C"]}), scheduler=s)
+        ct = Constant(PDict({"only": ["A", "C"]}), scheduler=s)
         query.input.choice = ct.output.result
         sink = Sink(scheduler=s)
         sink.input.inp = query.output.result

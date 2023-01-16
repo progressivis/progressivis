@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from progressivis import Print, ProgressiveError
 from progressivis.io import CSVLoader
-from progressivis.stats import Min, Max, RandomTable
+from progressivis.stats import Min, Max, RandomPTable
 from progressivis.datasets import get_dataset
 from progressivis.core import aio, SlotDescriptor, Sink, Scheduler
 from progressivis.core.module import Module, ReturnRunStep
@@ -121,7 +121,7 @@ class TestDataflow(ProgressiveTest):
     def test_dataflow_1_dynamic(self) -> None:
         scheduler = self.scheduler(clean=True)
 
-        table = RandomTable(
+        table = RandomPTable(
             name="table", columns=["a"], throttle=1000, scheduler=scheduler
         )
         m = Min(name="min", scheduler=scheduler)
@@ -153,7 +153,7 @@ class TestDataflow(ProgressiveTest):
     def test_dataflow_2_add_remove(self) -> None:
         scheduler = self.scheduler(clean=True)
 
-        table = RandomTable(
+        table = RandomPTable(
             name="table", columns=["a"], throttle=1000, scheduler=scheduler
         )
         m = Min(name="min", scheduler=scheduler)
@@ -185,7 +185,7 @@ class TestDataflow(ProgressiveTest):
 
     def test_dataflow_3_dels(self) -> None:
         s = self.scheduler()
-        table = RandomTable(name="table", columns=["a"], throttle=1000, scheduler=s)
+        table = RandomPTable(name="table", columns=["a"], throttle=1000, scheduler=s)
         m = Min(name="min", scheduler=s)
         m.input.table = table.output.result
         prt = Print(name="prt", scheduler=s)
@@ -199,7 +199,7 @@ class TestDataflow(ProgressiveTest):
 
     def test_dataflow_4_dels2(self) -> None:
         s = self.scheduler()
-        table = RandomTable(name="table", columns=["a"], throttle=1000, scheduler=s)
+        table = RandomPTable(name="table", columns=["a"], throttle=1000, scheduler=s)
         m = TestModule(name="min", scheduler=s)
         m.input.a = table.output.result
         prt = Print(name="prt", scheduler=s)
@@ -214,7 +214,7 @@ class TestDataflow(ProgressiveTest):
 
     def test_dataflow_5_dels_opt(self) -> None:
         s = self.scheduler()
-        table = RandomTable(name="table", columns=["a"], throttle=1000, scheduler=s)
+        table = RandomPTable(name="table", columns=["a"], throttle=1000, scheduler=s)
         m = TestModule(name="min", scheduler=s)
         m.input.a = table.output.result
         prt = Print(name="prt", scheduler=s)
@@ -234,7 +234,7 @@ class TestDataflow(ProgressiveTest):
 
     def test_dataflow_6_dynamic(self) -> None:
         s = self.scheduler()
-        table = RandomTable(name="table", columns=["a"], throttle=1000, scheduler=s)
+        table = RandomPTable(name="table", columns=["a"], throttle=1000, scheduler=s)
         sink = Sink(name="sink", scheduler=s)
         sink.input.inp = table.output.result
         prt = Print(name="prt", proc=self.terse, scheduler=s)
@@ -287,7 +287,7 @@ class TestDataflow(ProgressiveTest):
 
     def test_dataflow_7_dynamic(self) -> None:
         s = self.scheduler()
-        table = RandomTable(
+        table = RandomPTable(
             name="table", columns=["a", "b", "c"], throttle=1000, scheduler=s
         )
         sink = Sink(name="sink", scheduler=s)
@@ -368,7 +368,7 @@ class TestDataflow(ProgressiveTest):
 
     def test_dataflow_8_multiple(self) -> None:
         s = self.scheduler()
-        table = RandomTable(
+        table = RandomPTable(
             name="table", columns=["a", "b", "c"], throttle=1000, scheduler=s
         )
         sink = Sink(name="sink", scheduler=s)
@@ -430,7 +430,7 @@ class TestDataflow(ProgressiveTest):
 
     def test_dataflow_9_errors(self) -> None:
         s = self.scheduler()
-        table = RandomTable(
+        table = RandomPTable(
             name="table", columns=["a", "b", "c"], throttle=1000, scheduler=s
         )
         sink = Sink(name="sink", scheduler=s)

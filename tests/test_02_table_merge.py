@@ -3,7 +3,7 @@ from collections import OrderedDict
 import pandas as pd
 
 from progressivis import Scheduler
-from progressivis.table.table import Table
+from progressivis.table.table import PTable
 from progressivis.table.merge import merge
 
 from . import ProgressiveTest
@@ -40,22 +40,22 @@ df_right2 = pd.DataFrame(
 )
 
 
-class TestMergeTable(ProgressiveTest):
+class TestMergePTable(ProgressiveTest):
     def setUp(self) -> None:
-        super(TestMergeTable, self).setUp()
+        super(TestMergePTable, self).setUp()
         self.scheduler_ = Scheduler.default
 
     def test_merge1(self) -> None:
-        table_left = Table(name="table_left", data=df_left1, create=True)
+        table_left = PTable(name="table_left", data=df_left1, create=True)
         print(repr(table_left))
-        table_right = Table(
+        table_right = PTable(
             name="table_right",
             data=df_right1,
             create=True,
             indices=df_right1.index.values,
         )
         print(repr(table_right))
-        # table_right2 = Table(name='table_right2', data=df_right2, create=True)
+        # table_right2 = PTable(name='table_right2', data=df_right2, create=True)
         table_merge = merge(
             table_left,
             table_right,

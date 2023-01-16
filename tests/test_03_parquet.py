@@ -4,18 +4,18 @@ from . import ProgressiveTest
 from progressivis.core import aio, Sink
 from progressivis.io import ParquetLoader
 from progressivis.table.constant import Constant
-from progressivis.table.table import Table
+from progressivis.table.table import PTable
 from progressivis.datasets import get_dataset
 
 
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from progressivis.table.module import TableModule
+    from progressivis.table.module import PTableModule
 
 
 class TestProgressiveLoadParquet(ProgressiveTest):
-    def runit(self, module: TableModule) -> int:
+    def runit(self, module: PTableModule) -> int:
         module.run(1)
         table = module.table
         self.assertFalse(table is None)
@@ -88,7 +88,7 @@ class TestProgressiveLoadParquet(ProgressiveTest):
 
     def test_read_multiple_parquet(self) -> None:
         s = self.scheduler()
-        filenames = Table(
+        filenames = PTable(
             name="file_names",
             dshape="{filename: string}",
             data={

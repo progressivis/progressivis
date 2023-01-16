@@ -11,8 +11,8 @@ from abc import abstractmethod
 from progressivis.core.module import ReturnRunStep
 from ..utils.errors import ProgressiveError, ProgressiveStopIteration
 from progressivis import SlotDescriptor
-from ..table.module import TableModule
-from ..table.table import Table
+from ..table.module import PTableModule
+from ..table.table import PTable
 from ..table.dshape import dshape_from_dtype
 from ..core.utils import integer_types
 from sklearn.datasets import make_blobs  # type: ignore
@@ -62,12 +62,12 @@ def xy_to_dict(
     return res, labs
 
 
-class BlobsTableABC(TableModule):
+class BlobsPTableABC(PTableModule):
     """Isotropic Gaussian blobs => table
     The purpose of the "reservoir" approach is to ensure the reproducibility of the results
     """
 
-    outputs = [SlotDescriptor("labels", type=Table, required=False)]
+    outputs = [SlotDescriptor("labels", type=PTable, required=False)]
     kw_fun: Optional[Callable[..., Any]] = None
 
     def __init__(
@@ -104,7 +104,7 @@ class BlobsTableABC(TableModule):
         self._reservoir: Optional[
             Tuple[np.ndarray[Any, Any], np.ndarray[Any, Any]]
         ] = None
-        self._labels: Optional[Table] = None
+        self._labels: Optional[PTable] = None
         self._reservoir_idx = 0
         if throttle and isinstance(throttle, integer_types + (float,)):
             self.throttle: Union[int, bool, float] = throttle
@@ -112,7 +112,7 @@ class BlobsTableABC(TableModule):
             self.throttle = False
         dshape = ", ".join([f"{col}: {dtype}" for col in self.columns])
         dshape = "{" + dshape + "}"
-        table = Table(self.generate_table_name("table"), dshape=dshape, create=True)
+        table = PTable(self.generate_table_name("table"), dshape=dshape, create=True)
         self.result = table
         self.columns = table.columns
 
@@ -128,7 +128,7 @@ class BlobsTableABC(TableModule):
 
     def maintain_labels(self, yes: bool = True) -> None:
         if yes and self._labels is None:
-            self._labels = Table(
+            self._labels = PTable(
                 self.generate_table_name("blobs_labels"),
                 dshape="{labels: int64}",
                 create=True,
@@ -136,7 +136,7 @@ class BlobsTableABC(TableModule):
         elif not yes:
             self._labels = None
 
-    def labels(self) -> Optional[Table]:
+    def labels(self) -> Optional[PTable]:
         return self._labels
 
     def get_data(self, name: str) -> Any:
@@ -194,7 +194,7 @@ class BlobsTableABC(TableModule):
         return self._return_run_step(next_state, steps_run=step_size)
 
 
-class BlobsTable(BlobsTableABC):
+class BlobsPTable(BlobsPTableABC):
     kw_fun = make_blobs
 
     def __init__(self, *args: Any, **kwds: Any) -> None:
@@ -218,7 +218,7 @@ class BlobsTable(BlobsTableABC):
         self._reservoir_idx = 0
 
 
-class MVBlobsTable(BlobsTableABC):
+class MVBlobsPTable(BlobsPTableABC):
     kw_fun = make_mv_blobs
 
     def __init__(self, *args: Any, **kwds: Any) -> None:

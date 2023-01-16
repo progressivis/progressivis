@@ -3,9 +3,9 @@ from __future__ import annotations
 from ..core.module import JSon, ReturnRunStep
 from ..core.utils import indices_len, fix_loc
 from ..core.slot import SlotDescriptor, Slot
-from ..table.module import TableModule
-from ..table import Table
-from ..utils.psdict import PsDict
+from ..table.module import PTableModule
+from ..table import PTable
+from ..utils.psdict import PDict
 from fast_histogram import histogram2d  # type: ignore
 from ..core.decorators import process_slot, run_if_any
 
@@ -20,7 +20,7 @@ Bounds2D = Tuple[float, float, float, float]
 logger = logging.getLogger(__name__)
 
 
-class Histogram2D(TableModule):
+class Histogram2D(PTableModule):
     parameters = [
         ("xbins", np.dtype(int), 256),
         ("ybins", np.dtype(int), 256),
@@ -29,9 +29,9 @@ class Histogram2D(TableModule):
         ("history", np.dtype(int), 3),
     ]
     inputs = [
-        SlotDescriptor("table", type=Table, required=True),
-        SlotDescriptor("min", type=PsDict, required=True),
-        SlotDescriptor("max", type=PsDict, required=True),
+        SlotDescriptor("table", type=PTable, required=True),
+        SlotDescriptor("min", type=PDict, required=True),
+        SlotDescriptor("max", type=PDict, required=True),
     ]
 
     schema = (
@@ -66,7 +66,7 @@ class Histogram2D(TableModule):
         self._bounds: Optional[Bounds2D] = None
         self._with_output = with_output
         self._heatmap_cache: Optional[Tuple[JSon, Bounds2D]] = None
-        self.result = Table(
+        self.result = PTable(
             self.generate_table_name("Histogram2D"),
             dshape=Histogram2D.schema,
             chunks={"array": (1, 64, 64)},
@@ -91,7 +91,7 @@ class Histogram2D(TableModule):
     def get_bounds(self, min_slot: Slot, max_slot: Slot) -> Optional[Bounds2D]:
         min_slot.created.next()
         min_df = min_slot.data()
-        assert isinstance(min_df, PsDict)
+        assert isinstance(min_df, PDict)
         if min_df is None or len(min_df) == 0:
             return None
         k_ = (lambda x: x) if isinstance(self.x_column, str) else min_df.k_
@@ -99,7 +99,7 @@ class Histogram2D(TableModule):
         ymin: float = cast(float, min_df[k_(self.y_column)])
         max_slot.created.next()
         max_df = max_slot.data()
-        assert isinstance(max_df, PsDict)
+        assert isinstance(max_df, PDict)
         if max_df is None or len(max_df) == 0:
             return None
         k_ = (lambda x: x) if isinstance(self.x_column, str) else max_df.k_
@@ -202,7 +202,7 @@ class Histogram2D(TableModule):
                 dfslot.update(run_number)
             elif (
                 dfslot.selection.deleted.any() and self._histo is not None
-            ):  # i.e. TableSelectedView
+            ):  # i.e. PTableSelectedView
                 input_df = dfslot.data().base  # the original table
                 # we assume that deletions are only local to the view
                 # and the related records still exist in the original table ...

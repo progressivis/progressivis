@@ -18,7 +18,7 @@ from urllib.parse import parse_qs
 import numpy as np
 import keyword
 import uuid
-from .bitmap import bitmap
+from .pintset import PIntSet
 from ..core import aio
 
 import collections.abc as collections_abc  # only works on python 3.3+
@@ -52,9 +52,9 @@ from typing import (
 if TYPE_CHECKING:
     from progressivis.core.scheduler import Scheduler
     from progressivis.core.module import Module, ReturnRunStep
-    from progressivis.table.module import TableModule
-    from progressivis.table.table_base import BaseTable
-    from progressivis.utils import PsDict
+    from progressivis.table.module import PTableModule
+    from progressivis.table.table_base import BasePTable
+    from progressivis.utils import PDict
 
     PatchRunStepCallable = Callable[[int, int, float], ReturnRunStep]
 
@@ -264,7 +264,7 @@ def indices_len(ind: Union[None, Sized, slice]) -> int:
             return len(range(*ind.indices(ind.stop)))
     if ind is None:
         return 0
-    # assert isinstance(ind, bitmap), f"wrong type {type(ind)}"
+    # assert isinstance(ind, PIntSet), f"wrong type {type(ind)}"
     return len(ind)
 
 
@@ -288,7 +288,7 @@ def next_pow2(v: int) -> int:
     return v + 1
 
 
-def indices_to_slice(indices: bitmap) -> Union[slice, bitmap]:
+def indices_to_slice(indices: PIntSet) -> Union[slice, PIntSet]:
     if len(indices) == 0:
         return slice(0, 0)
     s = None
@@ -304,7 +304,7 @@ def indices_to_slice(indices: bitmap) -> Union[slice, bitmap]:
 
 
 # def _first_slice(indices):
-#     # assert isinstance(indices, bitmap)
+#     # assert isinstance(indices, PIntSet)
 #     ei = enumerate(indices, indices[0])
 #     mask = np.equal(*zip(*ei))
 #     arr = np.array(indices)
@@ -346,8 +346,8 @@ def is_full_slice(sl: slice) -> bool:
 
 
 def inter_slice(this: Optional[slice], that: Optional[slice]) -> Any:
-    # Union[None, slice, bitmap, Tuple[...]]:
-    bz = bitmap([])
+    # Union[None, slice, PIntSet, Tuple[...]]:
+    bz = PIntSet([])
     if this is None:
         assert that is not None
         return bz, bz, norm_slice(that)
@@ -361,9 +361,9 @@ def inter_slice(this: Optional[slice], that: Optional[slice]) -> Any:
             return bz, this, bz
         if this.step == 1 and this.step == 1:
             if this.start >= that.start and this.stop <= that.stop:
-                return bz, this, bitmap(that) - bitmap(this)
+                return bz, this, PIntSet(that) - PIntSet(this)
             if that.start >= this.start and that.stop <= this.stop:
-                return bitmap(this) - bitmap(that), that, bz
+                return PIntSet(this) - PIntSet(that), that, bz
             if this.stop <= that.start or that.stop <= this.start:
                 return this, bz, that
             if this.start < that.start:
@@ -380,8 +380,8 @@ def inter_slice(this: Optional[slice], that: Optional[slice]) -> Any:
             else:
                 return only_right, common_, only_left
         # else: # TODO: can we improve it when step >1 ?
-    thisbm = bitmap.asbitmap(this)
-    thatbm = bitmap.asbitmap(that)
+    thisbm = PIntSet.aspintset(this)
+    thatbm = PIntSet.aspintset(that)
     commonbm = thisbm & thatbm
     only_this = thisbm - thatbm
     only_that = thatbm - thisbm
@@ -390,15 +390,15 @@ def inter_slice(this: Optional[slice], that: Optional[slice]) -> Any:
 
 def slice_to_array(sl: Any) -> Any:
     if isinstance(sl, slice):
-        # return bitmap(range(*sl.indices(sl.stop)))
-        return bitmap(sl)
+        # return PIntSet(range(*sl.indices(sl.stop)))
+        return PIntSet(sl)
     return sl
 
 
-def slice_to_bitmap(sl: slice, stop: Optional[int] = None) -> bitmap:
+def slice_to_pintset(sl: slice, stop: Optional[int] = None) -> PIntSet:
     stop = sl.stop if stop is None else stop
     assert isinstance(stop, int)
-    return bitmap(range(*sl.indices(stop)))
+    return PIntSet(range(*sl.indices(stop)))
 
 
 def slice_to_arange(sl: Union[slice, np.ndarray[Any, Any]]) -> np.ndarray[Any, Any]:
@@ -816,7 +816,7 @@ def force_valid_id_columns_pa(rb: pa.RecordBatch) -> pa.RecordBatch:
 
 
 class Dialog:
-    def __init__(self, module: TableModule, started: bool = False):
+    def __init__(self, module: PTableModule, started: bool = False):
         self._module = module
         self.bag: Dict[str, Any] = dict()
         self._started: bool = started
@@ -825,7 +825,7 @@ class Dialog:
         self._started = v
         return self
 
-    def set_output_table(self, res: Union[None, BaseTable, PsDict]) -> Dialog:
+    def set_output_table(self, res: Union[None, BasePTable, PDict]) -> Dialog:
         self._module.result = res
         return self
 
@@ -834,7 +834,7 @@ class Dialog:
         return self._started
 
     @property
-    def output_table(self) -> Union[BaseTable, PsDict, None]:
+    def output_table(self) -> Union[BasePTable, PDict, None]:
         return self._module.result
 
 
@@ -922,7 +922,7 @@ class JSONEncoderNp(js.JSONEncoder):
             return bool(o)
         if isinstance(o, np.ndarray):
             return o.tolist()
-        if isinstance(o, bitmap):
+        if isinstance(o, PIntSet):
             return list(o)
         return js.JSONEncoder.default(self, o)
 
@@ -977,8 +977,8 @@ def is_notebook() -> bool:
 
 
 def filter_cols(
-    df: BaseTable, columns: Optional[List[str]] = None, indices: Optional[Any] = None
-) -> BaseTable:
+    df: BasePTable, columns: Optional[List[str]] = None, indices: Optional[Any] = None
+) -> BasePTable:
     """
     Return the specified table filtered by the specified indices and
     limited to the columns of interest.
@@ -986,7 +986,7 @@ def filter_cols(
     if columns is None:
         if indices is None:
             return df
-        return cast(BaseTable, df.loc[indices])
+        return cast(BasePTable, df.loc[indices])
     cols = columns
     if cols is None:
         return None

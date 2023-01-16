@@ -1,7 +1,7 @@
 from . import ProgressiveTest
 
 from progressivis.storage.base import StorageEngine, Group, Dataset  # , Attribute
-from progressivis.table.table import Table
+from progressivis.table.table import PTable
 
 import numpy as np
 
@@ -54,16 +54,16 @@ class TestStorageEngine(ProgressiveTest):
         #         t = self._create_table(None)
         #         self.assertEqual(t.storagegroup, e)
 
-    def _create_table(self, storageengine: str, group: Group) -> Table:
+    def _create_table(self, storageengine: str, group: Group) -> PTable:
         if storageengine == "mmap":
-            t = Table(
+            t = PTable(
                 "table_" + str(storageengine),
                 dshape="{a: int64, b: real}",
                 data={"a": [1, 2, 3], "b": [0.1, 0.2, 0.3]},
                 storagegroup=group,
             )
         else:
-            t = Table(
+            t = PTable(
                 "table_" + str(storageengine),
                 dshape="{a: int64, b: real, c: string}",
                 data={

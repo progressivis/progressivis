@@ -1,13 +1,13 @@
 from . import ProgressiveTest
 
 
-from progressivis.table.table import Table
+from progressivis.table.table import PTable
 from progressivis.table.row import Row
 
 
 class TestRow(ProgressiveTest):
     def test_row(self) -> None:
-        table = Table(
+        table = PTable(
             "table", data={"a": [1, 2, 3], "b": [10.1, 0.2, 0.3]}, create=True
         )
 

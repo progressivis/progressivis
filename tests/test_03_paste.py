@@ -1,7 +1,7 @@
-from progressivis.table.dict2table import Dict2Table
+from progressivis.table.dict2table import Dict2PTable
 from progressivis.table.paste import Paste
 from progressivis import Print
-from progressivis.stats import RandomTable, Min
+from progressivis.stats import RandomPTable, Min
 from progressivis.core import aio, notNone
 
 
@@ -11,14 +11,14 @@ from . import ProgressiveTest
 class TestPaste(ProgressiveTest):
     def test_paste(self) -> None:
         s = self.scheduler()
-        random = RandomTable(10, rows=10000, scheduler=s)
+        random = RandomPTable(10, rows=10000, scheduler=s)
         min_1 = Min(name="min_1" + str(hash(random)), scheduler=s, columns=["_1"])
         min_1.input[0] = random.output.result
-        d2t_1 = Dict2Table(scheduler=s)
+        d2t_1 = Dict2PTable(scheduler=s)
         d2t_1.input.dict_ = min_1.output.result
         min_2 = Min(name="min_2" + str(hash(random)), scheduler=s, columns=["_2"])
         min_2.input[0] = random.output.result
-        d2t_2 = Dict2Table(scheduler=s)
+        d2t_2 = Dict2PTable(scheduler=s)
         d2t_2.input.dict_ = min_2.output.result
         bj = Paste(scheduler=s)
         bj.input.first = d2t_1.output.result

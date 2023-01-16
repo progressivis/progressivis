@@ -24,7 +24,7 @@ class MultiSeriesW(VBoxSchema):
     def init(self):
         self.output_dtypes = None
         self._axis = []
-        lst = [_l("Axis"), _l("Column"), _l("* Factor"), _l("Symbol")]
+        lst = [_l("Axis"), _l("PColumn"), _l("* Factor"), _l("Symbol")]
         for i in range(N):
             row = self._axis_row("Y" if i else "X")
             self._axis.append(row)

@@ -1,14 +1,14 @@
 from . import ProgressiveTest
 from progressivis.table.paging_helper import PagingHelper
-from progressivis.table.table import Table
-from progressivis.core.bitmap import bitmap
+from progressivis.table.table import PTable
+from progressivis.core.pintset import PIntSet
 
 import numpy as np
 
 
 class TestPagingHelper(ProgressiveTest):
     def test_paging_helper_t(self) -> None:
-        t = Table("table_for_paging", dshape="{a: int, b: float32}", create=True)
+        t = PTable("table_for_paging", dshape="{a: int, b: float32}", create=True)
         t.resize(200)
         _ = np.arange(200)
         ivalues = np.random.randint(100, size=200)
@@ -25,7 +25,7 @@ class TestPagingHelper(ProgressiveTest):
         page = ph_t.get_page(0, 10)
         self.assertEqual(page[0][0], 0)
         self.assertEqual(page[-1][0], 10)
-        sel = bitmap(range(10, 75, 2))
+        sel = PIntSet(range(10, 75, 2))
         print(sel)
         view = t.loc[sel, :]
         self.assertTrue(view is not None)

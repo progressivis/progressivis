@@ -12,10 +12,10 @@ import aiohttp_jinja2  # type: ignore
 
 from .app import progressivis_bp, path_to_module, stop_server, PROJECT_ROOT
 from ..core import JSONEncoderNp
-from ..utils.psdict import PsDict
+from ..utils.psdict import PDict
 from ..table.paging_helper import PagingHelper
 
-routes = web.RouteTableDef()
+routes = web.RoutePTableDef()
 
 logger = logging.getLogger(__name__)
 
@@ -246,7 +246,7 @@ async def _df(request):
     if df is None:
         raise web.HTTPNotFound()
     if request.method == "POST":
-        if isinstance(df, PsDict):
+        if isinstance(df, PDict):
             return _json_response({"columns": ["index"] + list(df.keys())})
         else:
             return _json_response({"columns": ["index"] + df.columns})
@@ -292,7 +292,7 @@ async def _dfslice(request):
     length_ = int(form["length"])
     # if slot in ('table', 'min_out', 'max_out'):
     #    import pdb; pdb.set_trace()
-    if isinstance(df, PsDict):
+    if isinstance(df, PDict):
         return _json_response(
             {
                 "draw": draw_,

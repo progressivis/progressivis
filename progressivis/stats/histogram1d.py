@@ -3,9 +3,9 @@ from __future__ import annotations
 from ..core.module import JSon, ReturnRunStep
 from ..core.utils import indices_len, fix_loc, integer_types
 from ..core.slot import SlotDescriptor, Slot
-from ..table.module import TableModule
-from ..table.table import Table
-from ..utils.psdict import PsDict
+from ..table.module import PTableModule
+from ..table.table import PTable
+from ..utils.psdict import PDict
 from ..core.decorators import process_slot, run_if_any
 import numpy as np
 
@@ -17,14 +17,14 @@ from typing import Union, Optional, Tuple, Dict, Any
 logger = logging.getLogger(__name__)
 
 
-class Histogram1D(TableModule):
+class Histogram1D(PTableModule):
     """ """
 
     parameters = [("bins", np.dtype(int), 128), ("delta", np.dtype(float), -5)]
     inputs = [
-        SlotDescriptor("table", type=Table, required=True),
-        SlotDescriptor("min", type=PsDict, required=True),
-        SlotDescriptor("max", type=PsDict, required=True),
+        SlotDescriptor("table", type=PTable, required=True),
+        SlotDescriptor("min", type=PDict, required=True),
+        SlotDescriptor("max", type=PDict, required=True),
     ]
 
     schema = "{ array: var * int32, min: float64, max: float64, time: int64 }"
@@ -39,7 +39,7 @@ class Histogram1D(TableModule):
         self._edges: Optional[np.ndarray[Any, Any]] = None
         self._bounds: Optional[Tuple[float, float]] = None
         self._h_cnt = 0
-        self.result = Table(
+        self.result = PTable(
             self.generate_table_name("Histogram1D"),
             dshape=Histogram1D.schema,
             chunks={"array": (16384, 128)},

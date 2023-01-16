@@ -7,7 +7,7 @@ from progressivis.table.last_row import LastRow
 from progressivis.table.constant import Constant
 from progressivis.io import CSVLoader
 from progressivis.datasets import get_dataset
-from progressivis.table.table import Table
+from progressivis.table.table import PTable
 from progressivis.table.join_by_id import Join
 from progressivis.core.utils import get_random_name
 from progressivis.core import aio, notNone
@@ -31,8 +31,8 @@ class TestLastRow(ProgressiveTest):
 
     def test_last_row_simple(self) -> None:
         s = self.scheduler()
-        t1 = Table(name=get_random_name("cst1"), data={"xmin": [1], "xmax": [2]})
-        t2 = Table(name=get_random_name("cst2"), data={"ymin": [3], "ymax": [4]})
+        t1 = PTable(name=get_random_name("cst1"), data={"xmin": [1], "xmax": [2]})
+        t2 = PTable(name=get_random_name("cst2"), data={"ymin": [3], "ymax": [4]})
         cst1 = Constant(t1, scheduler=s)
         cst2 = Constant(t2, scheduler=s)
         join = Join(scheduler=s)

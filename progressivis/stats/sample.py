@@ -13,12 +13,12 @@ import numpy as np
 
 from progressivis.core.module import ReturnRunStep
 from progressivis import SlotDescriptor
-from ..core.bitmap import bitmap
-from ..table import Table
-from ..table.module import TableModule
+from ..core.pintset import PIntSet
+from ..table import PTable
+from ..table.module import PTableModule
 from ..core.utils import indices_len
 from ..core.decorators import process_slot, run_if_any
-from ..table import TableSelectedView
+from ..table import PTableSelectedView
 
 from typing import Optional, Any
 
@@ -29,10 +29,10 @@ def has_len(d: object) -> bool:
     return hasattr(d, "__len__")
 
 
-class Sample(TableModule):
+class Sample(PTableModule):
     parameters = [("samples", np.dtype(int), 50)]
-    inputs = [SlotDescriptor("table", type=Table)]
-    outputs = [SlotDescriptor("select", type=bitmap, required=False)]
+    inputs = [SlotDescriptor("table", type=PTable)]
+    outputs = [SlotDescriptor("select", type=PIntSet, required=False)]
 
     def __init__(self, required: str = "result", **kwds: Any) -> None:
         assert required in ("result", "select")
@@ -41,37 +41,37 @@ class Sample(TableModule):
             # Change the descriptor so required
             # The original SD is kept in the shared outputs/all_outputs
             # class variables
-            sd = SlotDescriptor("select", type=Table, required=True)
+            sd = SlotDescriptor("select", type=PTable, required=True)
             self.output_descriptors["select"] = sd
 
-        self._tmp_table = Table(
+        self._tmp_table = PTable(
             self.generate_table_name("sample"), dshape="{select: int64}", create=True
         )
         self._size = 0  # holds the size consumed from the input table so far
-        self._bitmap: Optional[bitmap] = None
-        self.result: Optional[TableSelectedView] = None
+        self._PIntSet: Optional[PIntSet] = None
+        self.result: Optional[PTableSelectedView] = None
 
     def reset(self) -> None:
         self._tmp_table.resize(0)
         self._size = 0
-        self._bitmap = None
+        self._PIntSet = None
         slot = self.get_input_slot("table")
         if slot is not None:
             slot.reset()
 
     def get_data(self, name: str) -> Any:
         if name == "select":
-            return self.get_bitmap()
+            return self.get_PIntSet()
         if self.result is not None:
-            self.result.selection = self.get_bitmap()
+            self.result.selection = self.get_PIntSet()
         return super(Sample, self).get_data(name)
 
-    def get_bitmap(self) -> bitmap:
-        if self._bitmap is None:
+    def get_PIntSet(self) -> PIntSet:
+        if self._PIntSet is None:
             len_ = len(self._tmp_table["select"])
             # Avoid "ValueError: Iteration of zero-sized operands is not enabled"
-            self._bitmap = bitmap(self._tmp_table["select"]) if len_ else bitmap()
-        return self._bitmap
+            self._PIntSet = PIntSet(self._tmp_table["select"]) if len_ else PIntSet()
+        return self._PIntSet
 
     @process_slot("table", reset_if="delete", reset_cb="reset")
     @run_if_any
@@ -81,7 +81,7 @@ class Sample(TableModule):
         assert self.context
         with self.context as ctx:
             if self.result is None:
-                self.result = TableSelectedView(ctx.table.data(), bitmap([]))
+                self.result = PTableSelectedView(ctx.table.data(), PIntSet([]))
             indices = ctx.table.created.next(length=step_size, as_slice=False)
             steps = indices_len(indices)
             k = int(self.params.samples)
@@ -98,7 +98,7 @@ class Sample(TableModule):
             if len(indices) == 0:  # nothing else to do
                 self._size = size
                 if steps:
-                    self._bitmap = None
+                    self._PIntSet = None
                 return self._return_run_step(self.state_blocked, steps_run=steps)
 
             t = 4 * k
@@ -118,7 +118,7 @@ class Sample(TableModule):
             if len(indices) == 0:
                 self._size = size
                 if steps:
-                    self._bitmap = None
+                    self._PIntSet = None
                 return self._return_run_step(self.state_blocked, steps_run=steps)
 
             logger.info("Fast sampling with %d indices", len(indices))
@@ -139,5 +139,5 @@ class Sample(TableModule):
 
             self._size = size
             if steps:
-                self._bitmap = None
+                self._PIntSet = None
             return self._return_run_step(self.state_blocked, steps_run=steps)

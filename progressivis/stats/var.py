@@ -8,27 +8,27 @@ from ..core.module import ReturnRunStep
 from ..core.utils import indices_len, fix_loc
 from ..core.slot import SlotDescriptor, Slot
 from ..core.decorators import process_slot, run_if_any
-from ..table.module import TableModule
-from ..table.table_base import BaseTable
-from ..table.table import Table
+from ..table.module import PTableModule
+from ..table.table_base import BasePTable
+from ..table.table import PTable
 from ..table.dshape import dshape_all_dtype
-from ..utils.psdict import PsDict
+from ..utils.psdict import PDict
 from .utils import OnlineVariance
 from typing import Dict, TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from progressivis.table.module import Columns
+    from progressivis.table.module import PColumns
 
 logger = logging.getLogger(__name__)
 
 
-class VarH(TableModule):
+class VarH(PTableModule):
     """
     Compute the variance of the columns of an input table.
     """
 
     parameters = [("history", np.dtype(int), 3)]
-    inputs = [SlotDescriptor("table", type=Table, required=True)]
+    inputs = [SlotDescriptor("table", type=PTable, required=True)]
 
     def __init__(self, **kwds: Any) -> None:
         super().__init__(dataframe_slot="table", **kwds)
@@ -41,7 +41,7 @@ class VarH(TableModule):
             return True
         return super().is_ready()
 
-    def op(self, chunk: BaseTable) -> Dict[str, float]:
+    def op(self, chunk: BasePTable) -> Dict[str, float]:
         cols = chunk.columns
         ret: Dict[str, float] = {}
         for c in cols:
@@ -73,7 +73,7 @@ class VarH(TableModule):
             op = self.op(self.filter_columns(input_df, fix_loc(indices)))
             if self.result is None:
                 ds = dshape_all_dtype(input_df.columns, np.dtype("float64"))
-                self.result = Table(
+                self.result = PTable(
                     self.generate_table_name("var"),
                     dshape=ds,  # input_df.dshape,
                     create=True,
@@ -82,19 +82,19 @@ class VarH(TableModule):
             return self._return_run_step(self.next_state(dfslot), steps)
 
 
-class Var(TableModule):
+class Var(PTableModule):
     """
     Compute the variance of the columns of an input table.
     This variant didn't keep history
     """
 
-    inputs = [SlotDescriptor("table", type=Table, required=True)]
+    inputs = [SlotDescriptor("table", type=PTable, required=True)]
 
     def __init__(self, ignore_string_cols: bool = False, **kwds: Any) -> None:
         super().__init__(dataframe_slot="table", **kwds)
         self._data: Dict[str, OnlineVariance] = {}
         self._ignore_string_cols: bool = ignore_string_cols
-        self._num_cols: Columns = None
+        self._num_cols: PColumns = None
         self.default_step_size = 1000
 
     def is_ready(self) -> bool:
@@ -102,7 +102,7 @@ class Var(TableModule):
             return True
         return super().is_ready()
 
-    def get_num_cols(self, input_df: BaseTable) -> Columns:
+    def get_num_cols(self, input_df: BasePTable) -> PColumns:
         if self._num_cols is None:
             if not self._columns:
                 self._num_cols = [
@@ -116,7 +116,7 @@ class Var(TableModule):
                 ]
         return self._num_cols
 
-    def op(self, chunk: BaseTable) -> Dict[str, float]:
+    def op(self, chunk: BasePTable) -> Dict[str, float]:
         cols = chunk.columns
         ret: Dict[str, float] = {}
         for c in cols:
@@ -153,7 +153,7 @@ class Var(TableModule):
                 cols = self.get_num_cols(input_df)
             op = self.op(self.filter_columns(input_df, fix_loc(indices), cols=cols))
             if self.result is None:
-                self.result = PsDict(op)
+                self.result = PDict(op)
             else:
                 self.psdict.update(op)
             return self._return_run_step(self.next_state(dfslot), steps)

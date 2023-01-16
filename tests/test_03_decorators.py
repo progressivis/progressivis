@@ -5,8 +5,8 @@ from progressivis.table.constant import Constant
 from progressivis.core.slot import SlotDescriptor
 from progressivis.core.module import ReturnRunStep
 from progressivis.datasets import get_dataset
-from progressivis.table.module import TableModule
-from progressivis.table.table import Table
+from progressivis.table.module import PTableModule
+from progressivis.table.table import PTable
 from progressivis.core.decorators import (
     process_slot,
     run_if_all,
@@ -21,12 +21,12 @@ import asyncio as aio
 from typing import Any, Callable, Coroutine
 
 
-class FooABC(TableModule):
+class FooABC(PTableModule):
     inputs = [
-        SlotDescriptor("a", type=Table, required=True),
-        SlotDescriptor("b", type=Table, required=True),
-        SlotDescriptor("c", type=Table, required=True),
-        SlotDescriptor("d", type=Table, required=True),
+        SlotDescriptor("a", type=PTable, required=True),
+        SlotDescriptor("b", type=PTable, required=True),
+        SlotDescriptor("c", type=PTable, required=True),
+        SlotDescriptor("d", type=PTable, required=True),
     ]
 
     def __init__(self, **kwds: Any) -> None:
@@ -36,7 +36,7 @@ class FooABC(TableModule):
         self, ctx: _CtxImpl, run_number: int, step_size: int
     ) -> ReturnRunStep:
         if self.result is None:
-            self.result = Table(
+            self.result = PTable(
                 self.generate_table_name("Foo"), dshape="{a: int, b: int}", create=True
             )
         for sn in "abcd":
@@ -172,7 +172,7 @@ def _4_csv_scenario(
 
 
 def _4_const_scenario(module: Module, s: Scheduler) -> Callable[[Scheduler, int], None]:
-    table_ = Table("const_4_scenario", dshape="{a: int}", create=True)
+    table_ = PTable("const_4_scenario", dshape="{a: int}", create=True)
     const_a = Constant(table=table_, scheduler=s)
     const_b = Constant(table=table_, scheduler=s)
     const_c = Constant(table=table_, scheduler=s)
@@ -198,9 +198,9 @@ def _2_csv_2_const_scenario(
     csv_b = CSVLoader(
         get_dataset("smallfile"), index_col=False, header=None, scheduler=s
     )
-    table_c = Table("const_c_2_csv_2_const_scenario", dshape="{a: int}", create=True)
+    table_c = PTable("const_c_2_csv_2_const_scenario", dshape="{a: int}", create=True)
     const_c = Constant(table=table_c, scheduler=s)
-    table_d = Table("const_d_2_csv_2_const_scenario", dshape="{a: int}", create=True)
+    table_d = PTable("const_d_2_csv_2_const_scenario", dshape="{a: int}", create=True)
     const_d = Constant(table=table_d, scheduler=s)
     module.input.a = csv_a.output.result
     module.input.b = csv_b.output.result

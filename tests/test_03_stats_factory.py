@@ -3,11 +3,11 @@ from . import ProgressiveTest
 from progressivis.core import aio
 from progressivis import Print, Scheduler
 from progressivis.vis import StatsFactory, DataShape
-from progressivis.stats import RandomTable
+from progressivis.stats import RandomPTable
 import numpy as np
 import pandas as pd
 from typing import Any, Dict
-from progressivis.stats.blobs_table import BlobsTable
+from progressivis.stats.blobs_table import BlobsPTable
 from progressivis.core import Sink
 
 
@@ -34,7 +34,7 @@ class TestStatsFactory(ProgressiveTest):
     def test_datashape(self):
         np.random.seed(42)
         s = self.scheduler()
-        random = RandomTable(3, rows=10_000, scheduler=s)
+        random = RandomPTable(3, rows=10_000, scheduler=s)
         ds = DataShape(scheduler=s)
         ds.input.table = random.output.result
         pr = Print(proc=self.terse, scheduler=s)
@@ -45,7 +45,7 @@ class TestStatsFactory(ProgressiveTest):
     def test_sf(self):
         np.random.seed(42)
         s = self.scheduler()
-        random = RandomTable(3, rows=10_000, scheduler=s)
+        random = RandomPTable(3, rows=10_000, scheduler=s)
         sf = StatsFactory(input_module=random, scheduler=s)
         sf.create_dependent_modules(var_name="my_dyn_var")
         sf.input.table = random.output.result
@@ -69,7 +69,7 @@ class TestStatsFactory(ProgressiveTest):
         centers = [(0.1, 0.3, 0.5), (0.7, 0.5, 3.3), (-0.4, -0.3, -11.1)]
         cols = ["A", "B", "C"]
         with s:
-            data = BlobsTable(
+            data = BlobsPTable(
                 columns=cols,
                 centers=centers,
                 cluster_std=0.2,

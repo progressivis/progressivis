@@ -13,7 +13,7 @@ from .mchistogram2d import MCHistogram2D
 from .sample import Sample
 from .distinct import Distinct
 from .correlation import Corr
-from .random_table import RandomTable, RandomDict
+from .random_table import RandomPTable, RandomDict
 
 __all__ = [
     "Stats",
@@ -32,7 +32,7 @@ __all__ = [
     "Histogram2D",
     "MCHistogram2D",
     "Sample",
-    "RandomTable",
+    "RandomPTable",
     "RandomDict",
     "Distinct",
     "Corr",

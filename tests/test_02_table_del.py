@@ -1,7 +1,7 @@
 from . import ProgressiveTest
 
 from progressivis import Scheduler
-from progressivis.table.table import Table
+from progressivis.table.table import PTable
 
 import numpy as np
 import pandas as pd
@@ -9,13 +9,13 @@ import pandas as pd
 from typing import Any
 
 
-class TestTableDel(ProgressiveTest):
+class TestPTableDel(ProgressiveTest):
     def setUp(self) -> None:
         super().setUp()
         self.scheduler_ = Scheduler.default
 
     def test_del(self) -> None:
-        t = Table("table_filtering", dshape="{a: int, b: float32}", create=True)
+        t = PTable("table_filtering", dshape="{a: int, b: float32}", create=True)
         sz = 1000
         sz_del = 100
         t.resize(sz)
@@ -31,7 +31,7 @@ class TestTableDel(ProgressiveTest):
         self.assertListEqual(list(t.index), list(df.index))
 
     def test_del2(self) -> None:
-        t = Table("table_filtering", dshape="{a: int, b: float32}", create=True)
+        t = PTable("table_filtering", dshape="{a: int, b: float32}", create=True)
         sz = 20
         sz_del = 10
         sz_add = 5
@@ -55,7 +55,7 @@ class TestTableDel(ProgressiveTest):
         self.assertSetEqual(set(t.index), set(df.index))
 
     def test_del3(self) -> None:
-        t = Table("table_filtering", dshape="{a: int, b: float32}", create=True)
+        t = PTable("table_filtering", dshape="{a: int, b: float32}", create=True)
         sz = 20
         sz_del = 10
         sz_add = 15

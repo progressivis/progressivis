@@ -7,8 +7,8 @@ import numpy as np
 from progressivis.core.module import ReturnRunStep
 from progressivis.core.utils import indices_len, fix_loc, get_random_name
 from progressivis.core.slot import SlotDescriptor
-from progressivis.table.module import TableModule
-from progressivis.table.table import Table
+from progressivis.table.module import PTableModule
+from progressivis.table.table import PTable
 
 from typing import Optional, Any, Union
 
@@ -19,9 +19,9 @@ from typing import Optional, Any, Union
 logger = logging.getLogger(__name__)
 
 
-class Stats(TableModule):
+class Stats(PTableModule):
     parameters = [("history", np.dtype(int), 3)]
-    inputs = [SlotDescriptor("table", type=Table, required=True)]
+    inputs = [SlotDescriptor("table", type=PTable, required=True)]
 
     def __init__(
         self,
@@ -47,7 +47,7 @@ class Stats(TableModule):
         self.schema = (
             "{" + self._min_column + ": float64, " + self._max_column + ": float64}"
         )
-        self.result = Table(get_random_name("stats_"), dshape=self.schema)
+        self.result = PTable(get_random_name("stats_"), dshape=self.schema)
 
     def is_ready(self) -> bool:
         slot = self.get_input_slot("table")

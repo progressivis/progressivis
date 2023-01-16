@@ -6,7 +6,7 @@ from progressivis.io import CSVLoader
 from progressivis.datasets import get_dataset
 from progressivis.table.bin_join import BinJoin
 from progressivis.table.constant import Constant
-from progressivis.table.table import Table
+from progressivis.table.table import PTable
 from progressivis.table.reduce import Reduce
 from progressivis.core import aio
 import pandas as pd
@@ -56,7 +56,7 @@ class TestJoin3(ProgressiveTest):
     def test_join_simple(self) -> None:
         s = self.scheduler()
         cst1 = Constant(
-            Table(
+            PTable(
                 name="test_join_simple_cst1",
                 data=pd.DataFrame({"xmin": [1], "xmax": [2]}),
                 create=True,
@@ -64,7 +64,7 @@ class TestJoin3(ProgressiveTest):
             scheduler=s,
         )
         cst2 = Constant(
-            Table(
+            PTable(
                 name="test_join_simple_cst2",
                 data=pd.DataFrame({"ymin": [3], "ymax": [4]}),
                 create=True,
@@ -72,7 +72,7 @@ class TestJoin3(ProgressiveTest):
             scheduler=s,
         )
         cst3 = Constant(
-            Table(
+            PTable(
                 name="test_join_simple_cst3",
                 data=pd.DataFrame({"zmin": [5], "zmax": [6]}),
                 create=True,

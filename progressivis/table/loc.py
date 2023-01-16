@@ -3,7 +3,7 @@ from __future__ import annotations
 import numpy as np
 
 from progressivis.core.utils import integer_types
-from progressivis.core.bitmap import bitmap
+from progressivis.core.pintset import PIntSet
 
 from typing import Any, Iterable
 
@@ -32,7 +32,7 @@ class Loc:
                 return Loc.NDARRAY
             elif locs.dtype == np.bool_:
                 return Loc.NDBOOLARRAY
-        elif isinstance(locs, bitmap):
+        elif isinstance(locs, PIntSet):
             return Loc.BITMAP
         elif isinstance(locs, Iterable):
             return Loc.ITERABLE

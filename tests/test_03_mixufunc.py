@@ -7,8 +7,8 @@ from . import ProgressiveTest
 from progressivis.core import aio
 from progressivis import Print
 from progressivis.linalg.mixufunc import MixUfuncABC
-from progressivis.stats import RandomTable, RandomDict
-from progressivis.table.table import Table
+from progressivis.stats import RandomPTable, RandomDict
+from progressivis.table.table import PTable
 
 # from progressivis.core.decorators import *
 from progressivis.core import SlotDescriptor
@@ -18,12 +18,12 @@ from typing import Any, Type
 
 class MixUfuncSample(MixUfuncABC):
     inputs = [
-        SlotDescriptor("first", type=Table, required=True),
-        SlotDescriptor("second", type=Table, required=True),
+        SlotDescriptor("first", type=PTable, required=True),
+        SlotDescriptor("second", type=PTable, required=True),
     ]
     outputs = [
         SlotDescriptor(
-            "result", type=Table, required=False, datashape={"first": ["_1", "_2"]}
+            "result", type=PTable, required=False, datashape={"first": ["_1", "_2"]}
         )
     ]
     expr = {"_1": (np.add, "first._2", "second._3"), "_2": (np.log, "second._3")}
@@ -31,10 +31,10 @@ class MixUfuncSample(MixUfuncABC):
 
 class MixUfuncSample2(MixUfuncABC):
     inputs = [
-        SlotDescriptor("first", type=Table, required=True),
-        SlotDescriptor("second", type=Table, required=True),
+        SlotDescriptor("first", type=PTable, required=True),
+        SlotDescriptor("second", type=PTable, required=True),
     ]
-    outputs = [SlotDescriptor("result", type=Table, required=False)]
+    outputs = [SlotDescriptor("result", type=PTable, required=False)]
     expr = {
         "_1:float64": (np.add, "first._2", "second._3"),
         "_2:float64": (np.log, "second._3"),
@@ -51,10 +51,10 @@ custom_unary_ufunc: Any = np.frompyfunc(custom_unary, 1, 1)  # type: ignore
 
 class MixUfuncCustomUnary(MixUfuncABC):
     inputs = [
-        SlotDescriptor("first", type=Table, required=True),
-        SlotDescriptor("second", type=Table, required=True),
+        SlotDescriptor("first", type=PTable, required=True),
+        SlotDescriptor("second", type=PTable, required=True),
     ]
-    outputs = [SlotDescriptor("table", type=Table, required=False)]
+    outputs = [SlotDescriptor("table", type=PTable, required=False)]
     expr = {
         "_1:float64": (np.add, "first._2", "second._3"),
         "_2:float64": (custom_unary_ufunc, "second._3"),
@@ -70,10 +70,10 @@ custom_binary_ufunc: Any = np.frompyfunc(custom_binary, 2, 1)  # type: ignore
 
 class MixUfuncCustomBinary(MixUfuncABC):
     inputs = [
-        SlotDescriptor("first", type=Table, required=True),
-        SlotDescriptor("second", type=Table, required=True),
+        SlotDescriptor("first", type=PTable, required=True),
+        SlotDescriptor("second", type=PTable, required=True),
     ]
-    outputs = [SlotDescriptor("table", type=Table, required=False)]
+    outputs = [SlotDescriptor("table", type=PTable, required=False)]
     expr = {
         "_1:float64": (custom_binary_ufunc, "first._2", "second._3"),
         "_2:float64": (np.log, "second._3"),
@@ -88,8 +88,8 @@ class TestMixUfunc(ProgressiveTest):
         ufunc2: np.ufunc = np.add,
     ) -> None:
         s = self.scheduler()
-        random1 = RandomTable(10, rows=100000, scheduler=s)
-        random2 = RandomTable(10, rows=100000, scheduler=s)
+        random1 = RandomPTable(10, rows=100000, scheduler=s)
+        random2 = RandomPTable(10, rows=100000, scheduler=s)
         module = cls(
             columns={"first": ["_1", "_2", "_3"], "second": ["_1", "_2", "_3"]},
             scheduler=s,
@@ -115,7 +115,7 @@ class TestMixUfunc(ProgressiveTest):
     def t_mix_ufunc_table_dict_impl(self, cls: Type[MixUfuncABC]) -> None:
         s = self.scheduler()
         random1 = RandomDict(10, scheduler=s)
-        random2 = RandomTable(10, rows=100000, scheduler=s)
+        random2 = RandomPTable(10, rows=100000, scheduler=s)
         module = cls(
             columns={"first": ["_1", "_2", "_3"], "second": ["_1", "_2", "_3"]},
             scheduler=s,

@@ -1,31 +1,31 @@
 """
-Changes (Delta) inside tables/columns/bitmaps.
+Changes (Delta) inside tables/columns/pintsets.
 """
 from __future__ import annotations
 
 from typing import Optional, Any
 
-from ..core.bitmap import bitmap
+from ..core.pintset import PIntSet
 
 
 class IndexUpdate:
     """
     IndexUpdate is used to keep track of chages occuring in linear data
-    structures such as tables, columns, or bitmaps.
+    structures such as tables, columns, or pintsets.
     """
 
     def __init__(
         self,
-        created: Optional[bitmap] = None,
-        updated: Optional[bitmap] = None,
-        deleted: Optional[bitmap] = None,
+        created: Optional[PIntSet] = None,
+        updated: Optional[PIntSet] = None,
+        deleted: Optional[PIntSet] = None,
     ):
-        created = created if isinstance(created, bitmap) else bitmap(created)
-        updated = updated if isinstance(updated, bitmap) else bitmap(updated)
-        deleted = deleted if isinstance(deleted, bitmap) else bitmap(deleted)
-        self.created: bitmap = created
-        self.updated: bitmap = updated
-        self.deleted: bitmap = deleted
+        created = created if isinstance(created, PIntSet) else PIntSet(created)
+        updated = updated if isinstance(updated, PIntSet) else PIntSet(updated)
+        deleted = deleted if isinstance(deleted, PIntSet) else PIntSet(deleted)
+        self.created: PIntSet = created
+        self.updated: PIntSet = updated
+        self.deleted: PIntSet = deleted
 
     def __repr__(self) -> str:
         return "IndexUpdate(created=%s,updated=%s,deleted=%s)" % (
@@ -53,19 +53,19 @@ class IndexUpdate:
             print("self.updated & self.deleted", self.updated & self.deleted)
         return not b
 
-    def add_created(self, bm: bitmap) -> None:
+    def add_created(self, bm: PIntSet) -> None:
         "Add created items"
         self.created.update(bm)
         self.deleted -= bm
         self.updated -= bm
 
-    def add_updated(self, bm: bitmap) -> None:
+    def add_updated(self, bm: PIntSet) -> None:
         "Add updated items"
         self.updated.update(bm)
         self.updated -= self.created
         self.updated -= self.deleted
 
-    def add_deleted(self, bm: bitmap) -> None:
+    def add_deleted(self, bm: PIntSet) -> None:
         "Add deleted items"
         self.deleted.update(bm)
         self.updated -= bm
@@ -123,9 +123,9 @@ class IndexUpdate:
     def copy(self) -> IndexUpdate:
         "Copy this Indexupdate"
         return IndexUpdate(
-            created=bitmap(self.created),
-            updated=bitmap(self.updated),
-            deleted=bitmap(self.deleted),
+            created=PIntSet(self.created),
+            updated=PIntSet(self.updated),
+            deleted=PIntSet(self.deleted),
         )
 
 

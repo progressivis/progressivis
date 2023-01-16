@@ -20,7 +20,7 @@ from typing import (
 )
 
 if TYPE_CHECKING:
-    from .table_base import BaseTable
+    from .table_base import BasePTable
 
 
 def dshape_print(dshape: Union[ds.Mono, str]) -> str:
@@ -98,7 +98,7 @@ def dshape_extract(
 
 
 def dshape_projection(
-    table: BaseTable,
+    table: BasePTable,
     columns: Optional[List[str]] = None,
     names: Optional[List[str]] = None,
 ) -> DataShape:
@@ -118,7 +118,7 @@ def dshape_projection(
     return ds.dshape("{" + ",".join(dshapes) + "}")
 
 
-def dshape_from_columns(table: BaseTable, columns: List[str], dshape: Any) -> DataShape:
+def dshape_from_columns(table: BasePTable, columns: List[str], dshape: Any) -> DataShape:
     dshapes: List[str] = []
     for colname in columns:
         col = table._column(colname)
@@ -199,7 +199,7 @@ def dshape_from_pa_batch(df: pa.RecordBatch) -> DataShape:
 
 
 def array_dshape(
-    df: Union[np.ndarray[Any, Any], BaseTable, pd.DataFrame], array_col: str
+    df: Union[np.ndarray[Any, Any], BasePTable, pd.DataFrame], array_col: str
 ) -> DataShape:
     if isinstance(df, np.ndarray):
         shape = dataframe_dshape(df.dtype)

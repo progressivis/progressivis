@@ -5,9 +5,9 @@ import logging
 
 from ..core.slot import SlotDescriptor
 from ..core.module import ReturnRunStep
-from .module import TableModule
-from ..core.bitmap import bitmap
-from .table import Table
+from .module import PTableModule
+from ..core.pintset import PIntSet
+from .table import PTable
 
 from typing import Any, Callable, Union, Optional, Dict
 
@@ -44,10 +44,10 @@ ops: Dict[str, Binoperator] = {
 inv_ops: Dict[Binoperator, str] = {v: k for k, v in ops.items()}
 
 
-class Binop(TableModule):
+class Binop(PTableModule):
     inputs = [
-        SlotDescriptor("arg1", type=Table, required=True),
-        SlotDescriptor("arg2", type=Table, required=True),
+        SlotDescriptor("arg1", type=PTable, required=True),
+        SlotDescriptor("arg2", type=PTable, required=True),
     ]
 
     def __init__(
@@ -68,11 +68,11 @@ class Binop(TableModule):
             self._combine = combine
         else:
             self._combine = ops[combine]
-        self._bitmap: Optional[bitmap] = None
+        self._PIntSet: Optional[PIntSet] = None
 
     def get_data(self, name: str) -> Any:
         if name == "select":
-            return self._bitmap
+            return self._PIntSet
         if name == "table":
             slot = self.get_input_slot("table")
             if slot is not None:
@@ -97,12 +97,12 @@ class Binop(TableModule):
             or len(arg2_data) == 0
         ):
             # nothing to do if no filter is specified
-            self._bitmap = None
+            self._PIntSet = None
             return self._return_run_step(self.state_blocked, steps_run=1)
         if arg1_slot.deleted.any() or arg2_slot.deleted.any():
             arg1_slot.reset()
             arg1_slot.reset()
-            self._bitmap = None
+            self._PIntSet = None
             arg1_slot.update(run_number)
             arg2_slot.update(run_number)
 
@@ -112,6 +112,6 @@ class Binop(TableModule):
         cr2 = arg2_slot.created.next(as_slice=False)
         up2 = arg2_slot.updated.next(as_slice=False)
         work = cr1 | up1 | cr2 | up2
-        work &= bitmap(slice(0, length))
+        work &= PIntSet(slice(0, length))
         work.pop(step_size)
         return self._return_run_step(self.state_blocked, steps_run=1)

@@ -2,15 +2,15 @@ import logging
 from collections import Iterable
 
 from ..core import Print, Sink
-from ..core.bitmap import bitmap
+from ..core.pintset import PIntSet
 from ..core.utils import indices_len
 from ..core.slot import SlotDescriptor
-from ..table.table import Table
-from ..table.module import TableModule
+from ..table.table import PTable
+from ..table.module import PTableModule
 from ..table.range_query import RangeQuery
 from ..table.hist_index import HistogramIndex
 from ..io import DynVar
-from ..utils.psdict import PsDict
+from ..utils.psdict import PDict
 
 # from .var import OnlineVariance
 from ..stats import Min, Max, Var, Distinct, Corr
@@ -20,14 +20,14 @@ from ..stats.kll import KLLSketch
 from ..stats import Histogram1D
 from ..stats.histogram1d_categorical import Histogram1DCategorical
 from ..core.decorators import process_slot, run_if_any
-from ..table import TableSelectedView
+from ..table import PTableSelectedView
 from ..table.dshape import dshape_fields
 from typing import Optional, Tuple, Any
 
 logger = logging.getLogger(__name__)
 
 
-def _is_string_col(table_: Table, col: str):
+def _is_string_col(table_: PTable, col: str):
     col_type = dict(dshape_fields(table_.dshape))[col]
     return str(col_type) == "string"
 
@@ -105,7 +105,7 @@ class RangeQueryIf(RangeQuery):
 
 
 def make_sketch_barplot(
-    input_module: TableModule, col: int, scheduler: int, input_slot="result"
+    input_module: PTableModule, col: int, scheduler: int, input_slot="result"
 ) -> Tuple[KLLSketch, Histogram1DCategorical]:
     s = scheduler
     sketch = KLLSketchIf(scheduler=s, column=col)
@@ -125,7 +125,7 @@ def make_sketch_barplot(
     return sketch, barplot
 
 
-class StatsExtender(TableModule):
+class StatsExtender(PTableModule):
     """
     Adds statistics on input data
     """
@@ -133,14 +133,14 @@ class StatsExtender(TableModule):
     # parameters = []
 
     inputs = [
-        SlotDescriptor("table", type=Table, required=True),
-        SlotDescriptor("min", type=PsDict, required=False),
-        SlotDescriptor("max", type=PsDict, required=False),
-        SlotDescriptor("var", type=PsDict, required=False),
-        SlotDescriptor("distinct", type=PsDict, required=False),
-        SlotDescriptor("corr", type=PsDict, required=False),
+        SlotDescriptor("table", type=PTable, required=True),
+        SlotDescriptor("min", type=PDict, required=False),
+        SlotDescriptor("max", type=PDict, required=False),
+        SlotDescriptor("var", type=PDict, required=False),
+        SlotDescriptor("distinct", type=PDict, required=False),
+        SlotDescriptor("corr", type=PDict, required=False),
     ]
-    outputs = [SlotDescriptor("dshape", type=PsDict, required=False)]
+    outputs = [SlotDescriptor("dshape", type=PDict, required=False)]
 
     def __init__(self, usecols=None, **kwds):
         """
@@ -156,7 +156,7 @@ class StatsExtender(TableModule):
 
     def reset(self):
         if self.result is not None:
-            self.result.selection = bitmap()
+            self.result.selection = PIntSet()
 
     def starting(self):
         super().starting()
@@ -172,7 +172,7 @@ class StatsExtender(TableModule):
             return
         self._raw_dshape = data.dshape
         if self._dshape is None:
-            self._dshape = PsDict()
+            self._dshape = PDict()
         self._dshape.update(dshape_fields(data.dshape))
 
     def get_data(self, name):
@@ -207,7 +207,7 @@ class StatsExtender(TableModule):
                 return self._return_run_step(self.state_blocked, steps_run=0)
             self.maintain_dshape(input_df)
             if self.result is None:
-                self.result = TableSelectedView(input_df, bitmap([]))
+                self.result = PTableSelectedView(input_df, PIntSet([]))
             self.result.selection |= indices
             return self._return_run_step(self.next_state(dfslot), steps)
 

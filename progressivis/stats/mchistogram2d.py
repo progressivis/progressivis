@@ -6,7 +6,7 @@ import numpy as np
 
 from ..core.utils import indices_len, fix_loc
 from ..core import SlotDescriptor, notNone, JSon
-from ..table.table import Table
+from ..table.table import PTable
 from ..table.nary import NAry
 from ..core.module import Module, ReturnRunStep
 from fast_histogram import histogram2d  # type: ignore
@@ -26,7 +26,7 @@ class MCHistogram2D(NAry):
         ("ydelta", np.dtype(float), -5),  # means 5%
         ("history", np.dtype(int), 3),
     ]
-    inputs = [SlotDescriptor("data", type=Table, required=True)]
+    inputs = [SlotDescriptor("data", type=PTable, required=True)]
 
     schema = (
         "{"
@@ -54,7 +54,7 @@ class MCHistogram2D(NAry):
         self._bounds: Optional[Bounds] = None
         self._with_output = with_output
         self._heatmap_cache: Optional[Tuple[JSon, Bounds]] = None
-        self.result = Table(
+        self.result = PTable(
             self.generate_table_name("MCHistogram2D"),
             dshape=MCHistogram2D.schema,
             chunks={"array": (1, 64, 64)},
@@ -197,7 +197,7 @@ class MCHistogram2D(NAry):
         # (i.e. no reset)
         p = self.params
         steps = 0
-        # dfslot.data() is a Table() then deleted records are not available
+        # dfslot.data() is a PTable() then deleted records are not available
         # anymore => reset
         if dfslot.base.deleted.any():
             self.reset()

@@ -6,17 +6,17 @@ from ..core.module import ReturnRunStep
 from ..core.utils import indices_len, fix_loc
 from ..core.slot import SlotDescriptor
 from ..core.decorators import process_slot, run_if_any
-from ..table.module import TableModule
-from ..table.table import Table
-from ..utils.psdict import PsDict
+from ..table.module import PTableModule
+from ..table.table import PTable
+from ..utils.psdict import PDict
 
 from typing import Any, List, Optional
 
 logger = logging.getLogger(__name__)
 
 
-class Distinct(TableModule):
-    inputs = [SlotDescriptor("table", type=Table, required=True)]
+class Distinct(PTableModule):
+    inputs = [SlotDescriptor("table", type=PTable, required=True)]
 
     def __init__(
         self, columns: Optional[List[str]] = None, threshold: int = 56, **kwds: Any
@@ -49,7 +49,7 @@ class Distinct(TableModule):
             input_df = ctx.table.data()
             op = self.filter_columns(input_df, fix_loc(indices))
             if self.result is None:
-                self.result = PsDict({k: set() for k in op.columns})
+                self.result = PDict({k: set() for k in op.columns})
             for k, v in self.psdict.items():
                 if v is None:  # too many values already detected
                     continue

@@ -4,8 +4,8 @@ import numpy as np
 
 from ..core.module import ReturnRunStep
 from ..core.utils import indices_len, fix_loc, filter_cols
-from ..table.module import TableModule
-from ..table.table import Table
+from ..table.module import PTableModule
+from ..table.table import PTable
 from ..table.dshape import dshape_projection
 from ..core.decorators import process_slot, run_if_any
 from .. import SlotDescriptor
@@ -14,10 +14,10 @@ from .. import SlotDescriptor
 from typing import List, Optional, Any
 
 
-class LinearMap(TableModule):
+class LinearMap(PTableModule):
     inputs = [
-        SlotDescriptor("vectors", type=Table, required=True),
-        SlotDescriptor("transformation", type=Table, required=True),
+        SlotDescriptor("vectors", type=PTable, required=True),
+        SlotDescriptor("transformation", type=PTable, required=True),
     ]
 
     def __init__(self, transf_columns: Optional[List[str]] = None, **kwds: Any) -> None:
@@ -74,7 +74,7 @@ class LinearMap(TableModule):
             res = np.matmul(array, self._transf_cache)
             if self.result is None:
                 dshape_ = dshape_projection(transformation, self._transf_columns)
-                self.result = Table(
+                self.result = PTable(
                     self.generate_table_name("linear_map"), dshape=dshape_, create=True
                 )
             self.table.append(res)

@@ -1,6 +1,6 @@
-from progressivis.core.bitmap import bitmap
+from progressivis.core.pintset import PIntSet
 from progressivis.core.changemanager_dict import DictChangeManager
-from progressivis.utils.psdict import PsDict
+from progressivis.utils.psdict import PDict
 from progressivis.table.changemanager_table_selected import FakeSlot
 from . import ProgressiveTest
 
@@ -8,7 +8,7 @@ from . import ProgressiveTest
 class TestDictChangeManager(ProgressiveTest):
     def test_dictchangemanager(self) -> None:
         mid1 = "m1"
-        d = PsDict(a=1, b=2, c=3)
+        d = PDict(a=1, b=2, c=3)
         slot = FakeSlot(d)
         cm = DictChangeManager(slot)
         self.assertEqual(cm.last_update(), 0)
@@ -21,7 +21,7 @@ class TestDictChangeManager(ProgressiveTest):
         self.assertEqual(cm.created.length(), 3)
         self.assertEqual(cm.updated.length(), 0)
         self.assertEqual(cm.deleted.length(), 0)
-        d = PsDict(a=1, b=2 + 1, c=3 + 1, d=4, e=5)
+        d = PDict(a=1, b=2 + 1, c=3 + 1, d=4, e=5)
         slot = FakeSlot(d)
         cm = DictChangeManager(slot)
         cm.update(2, d, mid1)
@@ -37,7 +37,7 @@ class TestDictChangeManager(ProgressiveTest):
         cm.update(3, d, mid1)
         self.assertEqual(cm.last_update(), 3)
         self.assertEqual(cm.created.next(), slice(5, 6))
-        self.assertEqual(cm.updated.next(), bitmap([2, 4]))
+        self.assertEqual(cm.updated.next(), PIntSet([2, 4]))
         self.assertEqual(cm.deleted.length(), 0)
         del d["b"]
         d["e"] *= 2

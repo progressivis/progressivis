@@ -6,14 +6,14 @@ import itertools as it
 
 from ..core.module import Module, ReturnRunStep
 from ..core.slot import SlotDescriptor
-from ..core.bitmap import bitmap
+from ..core.pintset import PIntSet
 from ..core.utils import indices_len
-from ..utils.psdict import PsDict
+from ..utils.psdict import PDict
 from ..io import Variable
 from ..stats import Min, Max
-from .table_base import TableSelectedView, BaseTable
-from .table import Table
-from .module import TableModule
+from .table_base import PTableSelectedView, BasePTable
+from .table import PTable
+from .module import PTableModule
 from .hist_index import HistogramIndex
 from .merge_dict import MergeDict
 
@@ -21,17 +21,17 @@ from typing import Optional, Any, cast, Union, Iterable
 
 
 class _Selection(object):
-    def __init__(self, values: Optional[bitmap] = None) -> None:
-        self._values = bitmap([]) if values is None else values
+    def __init__(self, values: Optional[PIntSet] = None) -> None:
+        self._values = PIntSet([]) if values is None else values
 
     def update(self, values: Iterable[int]) -> None:
         self._values.update(values)
 
     def remove(self, values: Iterable[int]) -> None:
-        self._values = self._values - bitmap(values)
+        self._values = self._values - PIntSet(values)
 
     def assign(self, values: Iterable[int]) -> None:
-        self._values = bitmap(values)
+        self._values = PIntSet(values)
 
 
 class RangeQuery2dImpl:  # (ModuleImpl):
@@ -44,7 +44,7 @@ class RangeQuery2dImpl:  # (ModuleImpl):
         approximate: bool,
     ) -> None:
         super(RangeQuery2dImpl, self).__init__()
-        self._table: Optional[BaseTable] = None
+        self._table: Optional[BasePTable] = None
         self._column_x = column_x
         self._column_y = column_y
         # self.bins = None
@@ -63,9 +63,9 @@ class RangeQuery2dImpl:  # (ModuleImpl):
         lower_y: float,
         upper_y: float,
         limit_changed: bool,
-        created: Optional[bitmap] = None,
-        updated: Optional[bitmap] = None,
-        deleted: Optional[bitmap] = None,
+        created: Optional[PIntSet] = None,
+        updated: Optional[PIntSet] = None,
+        deleted: Optional[PIntSet] = None,
     ) -> None:
         assert self.result
         if limit_changed:
@@ -84,7 +84,7 @@ class RangeQuery2dImpl:  # (ModuleImpl):
                 )
                 new_sel = new_sel_x & new_sel_y
             else:
-                new_sel = bitmap.union(
+                new_sel = PIntSet.union(
                     *(x & y for x, y in it.product(new_sel_x, new_sel_y))
                 )
             self.result.assign(new_sel)
@@ -111,7 +111,7 @@ class RangeQuery2dImpl:  # (ModuleImpl):
 
     def start(
         self,
-        table: BaseTable,
+        table: BasePTable,
         hist_index_x: HistogramIndex,
         hist_index_y: HistogramIndex,
         lower_x: float,
@@ -119,9 +119,9 @@ class RangeQuery2dImpl:  # (ModuleImpl):
         lower_y: float,
         upper_y: float,
         limit_changed: bool,
-        created: Optional[bitmap] = None,
-        updated: Optional[bitmap] = None,
-        deleted: Optional[bitmap] = None,
+        created: Optional[PIntSet] = None,
+        updated: Optional[PIntSet] = None,
+        deleted: Optional[PIntSet] = None,
     ) -> None:
         self.result = _Selection()
         self._table = table
@@ -140,7 +140,7 @@ class RangeQuery2dImpl:  # (ModuleImpl):
         )
 
 
-class RangeQuery2d(TableModule):
+class RangeQuery2d(PTableModule):
     parameters = [
         ("column_x", np.dtype(object), "unknown"),
         ("column_y", np.dtype(object), "unknown"),
@@ -151,17 +151,17 @@ class RangeQuery2d(TableModule):
         # ('hist_index', object, None) # to improve ...
     ]
     inputs = [
-        SlotDescriptor("table", type=Table, required=True),
-        SlotDescriptor("lower", type=PsDict, required=False),
-        SlotDescriptor("upper", type=PsDict, required=False),
-        SlotDescriptor("min", type=PsDict, required=False),
-        SlotDescriptor("max", type=PsDict, required=False),
-        SlotDescriptor("hist_x", type=Table, required=True),
-        SlotDescriptor("hist_y", type=Table, required=True),
+        SlotDescriptor("table", type=PTable, required=True),
+        SlotDescriptor("lower", type=PDict, required=False),
+        SlotDescriptor("upper", type=PDict, required=False),
+        SlotDescriptor("min", type=PDict, required=False),
+        SlotDescriptor("max", type=PDict, required=False),
+        SlotDescriptor("hist_x", type=PTable, required=True),
+        SlotDescriptor("hist_y", type=PTable, required=True),
     ]
     outputs = [
-        SlotDescriptor("min", type=Table, required=False),
-        SlotDescriptor("max", type=Table, required=False),
+        SlotDescriptor("min", type=PTable, required=False),
+        SlotDescriptor("max", type=PTable, required=False),
     ]
 
     def __init__(
@@ -193,8 +193,8 @@ class RangeQuery2d(TableModule):
             self._watched_key_upper_y = self._column_y
         self.default_step_size = 1000
         self.input_module: Optional[Module] = None
-        self._min_table: Optional[PsDict] = None
-        self._max_table: Optional[PsDict] = None
+        self._min_table: Optional[PDict] = None
+        self._max_table: Optional[PDict] = None
 
     def create_dependent_modules(
         self,
@@ -290,17 +290,17 @@ class RangeQuery2d(TableModule):
 
     def _create_min_max(self) -> None:
         if self._min_table is None:
-            self._min_table = PsDict({self._column_x: np.inf, self._column_y: np.inf})
-            # Table(name=None, dshape=self.min_max_dshape)
+            self._min_table = PDict({self._column_x: np.inf, self._column_y: np.inf})
+            # PTable(name=None, dshape=self.min_max_dshape)
         if self._max_table is None:
-            self._max_table = PsDict({self._column_x: -np.inf, self._column_y: -np.inf})
-            # Table(name=None, dshape=self.min_max_dshape)
+            self._max_table = PDict({self._column_x: -np.inf, self._column_y: -np.inf})
+            # PTable(name=None, dshape=self.min_max_dshape)
 
     def _set_minmax_out(self, attr_: str, val_x: float, val_y: float) -> None:
         d = {self._column_x: val_x, self._column_y: val_y}
         if getattr(self, attr_) is None:
-            setattr(self, attr_, PsDict(d))
-            # Table(name=None, dshape=self.min_max_dshape)
+            setattr(self, attr_, PDict(d))
+            # PTable(name=None, dshape=self.min_max_dshape)
         else:
             getattr(self, attr_).update(d)
 
@@ -323,24 +323,24 @@ class RangeQuery2d(TableModule):
         input_slot = self.get_input_slot("table")
         # input_slot.update(run_number)
         steps = 0
-        deleted: Optional[bitmap] = None
+        deleted: Optional[PIntSet] = None
         if input_slot.deleted.any():
             deleted = input_slot.deleted.next(length=step_size, as_slice=False)
             steps += indices_len(deleted)
-        created: Optional[bitmap] = None
+        created: Optional[PIntSet] = None
         if input_slot.created.any():
             created = input_slot.created.next(length=step_size, as_slice=False)
             steps += indices_len(created)
-        updated: Optional[bitmap] = None
+        updated: Optional[PIntSet] = None
         if input_slot.updated.any():
             updated = input_slot.updated.next(length=step_size, as_slice=False)
             steps += indices_len(updated)
         input_table = input_slot.data()
         if input_table is None:
             return self._return_run_step(self.state_blocked, steps_run=0)
-        assert isinstance(input_table, BaseTable)
+        assert isinstance(input_table, BasePTable)
         if self.result is None:
-            self.result = TableSelectedView(input_table, bitmap([]))
+            self.result = PTableSelectedView(input_table, PIntSet([]))
         self._create_min_max()
         # param = self.params
         #

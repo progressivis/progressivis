@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 import logging
-from ..table.module import TableModule
+from ..table.module import PTableModule
 from .. import SlotDescriptor
-from ..table.table import Table
-from ..utils import PsDict
+from ..table.table import PTable
+from ..utils import PDict
 from ..core.utils import nn
 from typing import Optional, Any, TYPE_CHECKING
 import pyarrow as pa
@@ -22,15 +22,15 @@ if TYPE_CHECKING:
     import io
 
 
-class BaseLoader(TableModule):
-    inputs = [SlotDescriptor("filenames", type=Table, required=False)]
+class BaseLoader(PTableModule):
+    inputs = [SlotDescriptor("filenames", type=PTable, required=False)]
     outputs = [
-        SlotDescriptor("anomalies", type=PsDict, required=False),
+        SlotDescriptor("anomalies", type=PDict, required=False),
     ]
 
     def __init__(self, *args, **kw):
         self._rows_read: int = 0
-        self._anomalies: Optional[PsDict] = None
+        self._anomalies: Optional[PDict] = None
         super().__init__(*args, **kw)
         self._input_stream: Optional[
             io.IOBase
@@ -68,11 +68,11 @@ class BaseLoader(TableModule):
 
     def maintain_anomalies(self, yes: bool = True) -> None:
         if yes and self._anomalies is None:
-            self._anomalies = PsDict(dict(skipped_cnt=0, invalid_values=set()))
+            self._anomalies = PDict(dict(skipped_cnt=0, invalid_values=set()))
         elif not yes:
             self._anomalies = None
 
-    def anomalies(self) -> Optional[PsDict]:
+    def anomalies(self) -> Optional[PDict]:
         return self._anomalies
 
     def get_data(self, name: str) -> Any:

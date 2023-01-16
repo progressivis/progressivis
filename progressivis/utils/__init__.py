@@ -1,4 +1,4 @@
 from .errors import ProgressiveError
-from .psdict import PsDict
+from .psdict import PDict
 
-__all__ = ["ProgressiveError", "PsDict"]
+__all__ = ["ProgressiveError", "PDict"]

@@ -4,11 +4,11 @@ from progressivis.core.utils import indices_len
 
 import numpy as np
 
-from . import BaseTable, Table, TableSelectedView
+from . import BasePTable, PTable, PTableSelectedView
 from ..core.module import ReturnRunStep
 from ..core.slot import SlotDescriptor
-from .module import TableModule
-from ..core.bitmap import bitmap
+from .module import PTableModule
+from ..core.pintset import PIntSet
 
 # from .mod_impl import ModuleImpl
 from .binop import ops
@@ -24,19 +24,19 @@ def _get_physical_table(t: np.ndarray[Any, Any]) -> np.ndarray[Any, Any]:
 
 
 class _Selection(object):
-    def __init__(self, values: Optional[bitmap] = None) -> None:
-        self._values = bitmap([]) if values is None else values
+    def __init__(self, values: Optional[PIntSet] = None) -> None:
+        self._values = PIntSet([]) if values is None else values
 
-    def update(self, values: bitmap) -> None:
+    def update(self, values: PIntSet) -> None:
         self._values.update(values)
 
-    def remove(self, values: bitmap) -> None:
-        self._values = self._values - bitmap(values)
+    def remove(self, values: PIntSet) -> None:
+        self._values = self._values - PIntSet(values)
 
-    def assign(self, values: bitmap) -> None:
+    def assign(self, values: PIntSet) -> None:
         self._values = values
 
-    def add(self, values: bitmap) -> None:
+    def add(self, values: PIntSet) -> None:
         self._values |= values
 
 
@@ -44,7 +44,7 @@ class BisectImpl:  # (ModuleImpl):
     def __init__(self, column: str, op: str, hist_index: HistogramIndex):
         super(BisectImpl, self).__init__()
         self.is_started = False
-        self._table: Optional[BaseTable] = None
+        self._table: Optional[BasePTable] = None
         self._column = column
         if isinstance(op, str):
             self._op = ops[op]
@@ -58,9 +58,9 @@ class BisectImpl:  # (ModuleImpl):
         self,
         limit: float,
         limit_changed: bool,
-        created: Optional[bitmap] = None,
-        updated: Optional[bitmap] = None,
-        deleted: Optional[bitmap] = None,
+        created: Optional[PIntSet] = None,
+        updated: Optional[PIntSet] = None,
+        deleted: Optional[PIntSet] = None,
     ) -> None:
         if limit_changed:
             new_sel = self._hist_index.query(self._op, limit)
@@ -78,12 +78,12 @@ class BisectImpl:  # (ModuleImpl):
 
     def start(
         self,
-        table: BaseTable,
+        table: BasePTable,
         limit: float,
         limit_changed: bool,
-        created: Optional[bitmap] = None,
-        updated: Optional[bitmap] = None,
-        deleted: Optional[bitmap] = None,
+        created: Optional[PIntSet] = None,
+        updated: Optional[PIntSet] = None,
+        deleted: Optional[PIntSet] = None,
     ) -> None:
         self._table = table
         self.result = _Selection()
@@ -91,7 +91,7 @@ class BisectImpl:  # (ModuleImpl):
         self.resume(limit, limit_changed, created, updated, deleted)
 
 
-class Bisect(TableModule):
+class Bisect(PTableModule):
     """ """
 
     parameters = [
@@ -101,8 +101,8 @@ class Bisect(TableModule):
         # ('hist_index', object, None) # to improve ...
     ]
     inputs = [
-        SlotDescriptor("table", type=Table, required=True),
-        SlotDescriptor("limit", type=Table, required=False),
+        SlotDescriptor("table", type=PTable, required=True),
+        SlotDescriptor("limit", type=PTable, required=False),
     ]
 
     def __init__(self, hist_index: HistogramIndex, **kwds: Any) -> None:
@@ -134,7 +134,7 @@ class Bisect(TableModule):
         if input_table is None:
             return self._return_run_step(self.state_blocked, steps_run=0)
         if self.result is None:
-            self.result = TableSelectedView(input_table, bitmap([]))
+            self.result = PTableSelectedView(input_table, PIntSet([]))
         if steps == 0:
             return self._return_run_step(self.state_blocked, steps_run=0)
         param = self.params

@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 from ..core.tracer_base import Tracer
-from .table import Table
+from .table import PTable
 import numpy as np
 
 from typing import Optional, List, Dict, Union, cast, Any
 
 
-class TableTracer(Tracer):
+class PTableTracer(Tracer):
     TRACER_DSHAPE = (
         "{"
         "type: string,"
@@ -42,13 +42,13 @@ class TableTracer(Tracer):
     )
 
     def __init__(self, name: str, storagegroup: Any) -> None:
-        self.table = Table(
+        self.table = PTable(
             "trace_" + name,
-            dshape=TableTracer.TRACER_DSHAPE,
+            dshape=PTableTracer.TRACER_DSHAPE,
             storagegroup=storagegroup,
             chunks=256,
         )
-        self.table.add(TableTracer.TRACER_INIT)
+        self.table.add(PTableTracer.TRACER_INIT)
         self.step_count = 0
         self.last_run_step_start: Optional[Dict[str, Union[int, float, str]]] = None
         self.last_run_step_details = ""
@@ -57,11 +57,11 @@ class TableTracer(Tracer):
         ] = None
         self.last_run_details = ""
 
-    def trace_stats(self, max_runs: Optional[int] = None) -> Table:
+    def trace_stats(self, max_runs: Optional[int] = None) -> PTable:
         return self.table
 
     def start_run(self, ts: float, run_number: int, **kwds: Any) -> None:
-        self.last_run_start = dict(TableTracer.TRACER_INIT)  # type: ignore
+        self.last_run_start = dict(PTableTracer.TRACER_INIT)  # type: ignore
         self.last_run_start["start"] = ts
         self.last_run_start["run"] = run_number
         self.step_count = 0
@@ -96,7 +96,7 @@ class TableTracer(Tracer):
     def after_run_step(self, ts: float, run_number: int, **kwds: Any) -> None:
         assert self.last_run_step_start
         row = self.last_run_step_start
-        for (name, dflt) in TableTracer.TRACER_INIT.items():
+        for (name, dflt) in PTableTracer.TRACER_INIT.items():
             if name not in row:
                 row[name] = kwds.get(name, dflt)
         row["end"] = ts
@@ -141,4 +141,4 @@ class TableTracer(Tracer):
         return res
 
 
-Tracer.default = TableTracer
+Tracer.default = PTableTracer

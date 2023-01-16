@@ -6,7 +6,7 @@ from typing import Callable, Any, Optional, List, TYPE_CHECKING
 
 
 if TYPE_CHECKING:
-    from progressivis.table import Table
+    from progressivis.table import PTable
 
 
 class Tracer(metaclass=ABCMeta):
@@ -41,7 +41,7 @@ class Tracer(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def trace_stats(self, max_runs: Optional[int] = None) -> Table:
+    def trace_stats(self, max_runs: Optional[int] = None) -> PTable:
         _ = max_runs  # keeps pylint mute
         raise NotImplementedError("trace_stats")
 

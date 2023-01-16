@@ -7,7 +7,7 @@ from typing import Callable, Any, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from ..core.scheduler import Scheduler
-    from .table_base import BaseTable
+    from .table_base import BasePTable
 
 
 class WaitForData(Module):
@@ -19,11 +19,11 @@ class WaitForData(Module):
     """
 
     inputs = [
-        SlotDescriptor("table", type=BaseTable, required=True),
+        SlotDescriptor("table", type=BasePTable, required=True),
     ]
 
     def __init__(
-        self, proc: Callable[[Scheduler, BaseTable], None], **kwds: Any
+        self, proc: Callable[[Scheduler, BasePTable], None], **kwds: Any
     ) -> None:
         super(WaitForData, self).__init__(**kwds)
         self._proc = proc

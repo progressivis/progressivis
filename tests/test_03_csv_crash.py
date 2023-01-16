@@ -18,7 +18,7 @@ from progressivis.stats.counter import Counter
 from progressivis.storage import IS_PERSISTENT
 from progressivis.storage import cleanup_temp_dir, init_temp_dir_if
 from progressivis.core import aio, Sink, Scheduler
-from progressivis.table.module import TableModule
+from progressivis.table.module import PTableModule
 
 from typing import cast, Optional, List
 
@@ -48,7 +48,7 @@ async def sleep_then_stop(s: Scheduler, t: float) -> None:
 
 
 def trace_after_stop(s: Scheduler) -> None:
-    t = cast(TableModule, s["csv_loader_1"]).table
+    t = cast(PTableModule, s["csv_loader_1"]).table
     print("crashed when len(_table) ==", len(t), "last_id:", t._last_id)
     i = t._last_id
     row = t.loc[i - 1, :]

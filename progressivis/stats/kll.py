@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 from ..core.utils import indices_len, fix_loc
-from ..table.module import TableModule
-from ..table.table import Table
+from ..table.module import PTableModule
+from ..table.table import PTable
 from ..core.slot import SlotDescriptor
-from ..utils.psdict import PsDict
+from ..utils.psdict import PDict
 from ..core.decorators import process_slot, run_if_any
 from datasketches import kll_floats_sketch
 from ..core.utils import integer_types
@@ -20,12 +20,12 @@ if TYPE_CHECKING:
     from ..core.module import Parameters, ReturnRunStep
 
 
-class KLLSketch(TableModule):
+class KLLSketch(PTableModule):
     parameters: Parameters = [
         ("binning", np.dtype(object), []),
         ("quantiles", np.dtype(object), []),
     ]
-    inputs = [SlotDescriptor("table", type=Table, required=True)]
+    inputs = [SlotDescriptor("table", type=PTable, required=True)]
 
     def __init__(self, column: str, k: int = 200, **kwds: Any) -> None:
         super().__init__(**kwds)
@@ -90,7 +90,7 @@ class KLLSketch(TableModule):
                     pmf = kll.get_pmf(splits[:-1])
             res = dict(max=max_, min=min_, quantiles=quantiles, splits=splits, pmf=pmf)
             if self.result is None:
-                self.result = PsDict(res)
+                self.result = PDict(res)
             else:
                 self.psdict.update(res)
             return self._return_run_step(self.next_state(ctx.table), steps)

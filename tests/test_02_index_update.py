@@ -11,9 +11,9 @@ class TestIndexUpdate(ProgressiveTest):
         self.assertEqual(iu, iu2)
         self.assertEqual(
             repr(iu),
-            "IndexUpdate(created=bitmap([]),"
-            "updated=bitmap([]),"
-            "deleted=bitmap([]))",
+            "IndexUpdate(created=PIntSet([]),"
+            "updated=PIntSet([]),"
+            "deleted=PIntSet([]))",
         )
         iu2.created.update([1, 2, 3])
         self.assertTrue(iu != iu2)

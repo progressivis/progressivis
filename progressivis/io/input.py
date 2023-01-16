@@ -2,21 +2,21 @@ from __future__ import annotations
 
 import numpy as np
 
-from progressivis.table import Table
-from progressivis.table.module import TableModule
+from progressivis.table import PTable
+from progressivis.table.module import PTableModule
 from progressivis.core.module import ReturnRunStep, JSon
 
 from typing import Any
 
 
-class Input(TableModule):
+class Input(PTableModule):
     parameters = [("history", np.dtype(int), 3)]
     schema = "{input: string}"
 
     def __init__(self, **kwds: Any) -> None:
         super(Input, self).__init__(**kwds)
         self.tags.add(self.TAG_INPUT)
-        table = Table(name=None, dshape=Input.schema, create=True)
+        table = PTable(name=None, dshape=Input.schema, create=True)
         self.result = table
         self._last = len(table)
         self.default_step_size = 1000000

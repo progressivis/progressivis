@@ -6,11 +6,11 @@ import numpy as np
 
 from ..core.module import ReturnRunStep
 from ..core.utils import indices_len, fix_loc
-from ..table.module import TableModule
-from ..table import Table, BaseTable
+from ..table.module import PTableModule
+from ..table import PTable, BasePTable
 from ..core.decorators import process_slot, run_if_any
 from .. import SlotDescriptor
-from ..utils.psdict import PsDict
+from ..utils.psdict import PDict
 from ..core.module import ModuleMeta
 from ..table.dshape import dshape_projection
 from ..table.slot_join import SlotJoin
@@ -76,11 +76,11 @@ def info() -> None:
     print("binary dict", binary_dict_all)
 
 
-class Unary(TableModule):
-    inputs = [SlotDescriptor("table", type=Table, required=True)]
+class Unary(PTableModule):
+    inputs = [SlotDescriptor("table", type=PTable, required=True)]
     outputs = [
         SlotDescriptor(
-            "result", type=Table, required=False, datashape={"table": "#columns"}
+            "result", type=PTable, required=False, datashape={"table": "#columns"}
         )
     ]
 
@@ -102,7 +102,7 @@ class Unary(TableModule):
             return self._return_run_step(self.state_blocked, steps_run=0)
         if self.result is None:
             dshape_ = self.get_output_datashape("result")
-            self.result = Table(
+            self.result = PTable(
                 self.generate_table_name(f"unary_{self._ufunc.__name__}"),
                 dshape=dshape_,
                 create=True,
@@ -166,7 +166,7 @@ for k, v in unary_dict_all.items():
 
 
 def _simple_binary(
-    tbl: BaseTable,
+    tbl: BasePTable,
     op: UFunc,
     cols1: List[str],
     cols2: List[str],
@@ -184,9 +184,9 @@ def _simple_binary(
     return res
 
 
-class ColsBinary(TableModule):
-    inputs = [SlotDescriptor("table", type=Table, required=True)]
-    outputs = [SlotDescriptor("result", type=Table, required=False)]
+class ColsBinary(PTableModule):
+    inputs = [SlotDescriptor("table", type=PTable, required=True)]
+    outputs = [SlotDescriptor("result", type=PTable, required=False)]
 
     def __init__(
         self,
@@ -220,7 +220,7 @@ class ColsBinary(TableModule):
             self._cols_out = self._first
         if self.result is None:
             dshape_ = dshape_projection(data_in, self._first, self._cols_out)
-            self.result = Table(
+            self.result = PTable(
                 self.generate_table_name(f"simple_binary_{self._ufunc.__name__}"),
                 dshape=dshape_,
                 create=True,
@@ -265,9 +265,9 @@ class ColsBinary(TableModule):
 
 
 def _binary(
-    tbl: BaseTable,
+    tbl: BasePTable,
     op: UFunc,
-    other: BaseTable,
+    other: BasePTable,
     other_cols: Optional[List[str]] = None,
     **kwargs: Any,
 ) -> Dict[str, Any]:
@@ -297,14 +297,14 @@ for k, v in binary_dict_all.items():
     # binary_modules.append(_g[name])
 
 
-class Binary(TableModule):
+class Binary(PTableModule):
     inputs = [
-        SlotDescriptor("first", type=Table, required=True),
-        SlotDescriptor("second", type=(Table, PsDict), required=True),
+        SlotDescriptor("first", type=PTable, required=True),
+        SlotDescriptor("second", type=(PTable, PDict), required=True),
     ]
     outputs = [
         SlotDescriptor(
-            "result", type=Table, required=False, datashape={"first": "#columns"}
+            "result", type=PTable, required=False, datashape={"first": "#columns"}
         )
     ]
 
@@ -331,7 +331,7 @@ class Binary(TableModule):
         data2 = second.data()
         if not (data and data2):
             return self._return_run_step(self.state_blocked, steps_run=0)
-        _t2t = isinstance(data2, BaseTable)
+        _t2t = isinstance(data2, BasePTable)
         if not _t2t and second.has_buffered():  # i.e. second is a dict
             first.reset()
             second.reset()
@@ -343,13 +343,13 @@ class Binary(TableModule):
         steps_todo = step_size
         if self.result is None:
             dshape_ = self.get_output_datashape("result")
-            self.result = Table(
+            self.result = PTable(
                 self.generate_table_name(f"binary_{self._ufunc.__name__}"),
                 dshape=dshape_,
                 create=True,
             )
         if self._join is None:
-            slots_ = (first, second) if isinstance(data2, BaseTable) else (first,)
+            slots_ = (first, second) if isinstance(data2, BasePTable) else (first,)
             self._join = self.make_slot_join(*slots_)
         with self._join as join:
             if join.has_deleted():
@@ -408,7 +408,7 @@ for k, v in binary_dict_all.items():
     # binary_modules.append(_g[name])
 
 
-def _reduce(tbl: BaseTable, op: UFunc, initial: Any, **kwargs: Any) -> Dict[str, Any]:
+def _reduce(tbl: BasePTable, op: UFunc, initial: Any, **kwargs: Any) -> Dict[str, Any]:
     res = {}
     for col in tbl._columns:
         cn = col.name
@@ -416,8 +416,8 @@ def _reduce(tbl: BaseTable, op: UFunc, initial: Any, **kwargs: Any) -> Dict[str,
     return res
 
 
-class Reduce(TableModule):
-    inputs = [SlotDescriptor("table", type=Table, required=True)]
+class Reduce(PTableModule):
+    inputs = [SlotDescriptor("table", type=PTable, required=True)]
 
     def __init__(
         self, ufunc: np.ufunc, columns: Optional[List[str]] = None, **kwds: Any
@@ -430,7 +430,7 @@ class Reduce(TableModule):
 
     def reset(self) -> None:
         if self.result is not None:
-            cast(PsDict, self.result).clear()  # is a PsDict
+            cast(PDict, self.result).clear()  # is a PDict
 
     @process_slot("table", reset_cb="reset")
     @run_if_any
@@ -442,7 +442,7 @@ class Reduce(TableModule):
             data_in = ctx.table.data()
             psdict = self.result
             if psdict is None:
-                psdict = PsDict()
+                psdict = PDict()
                 self.result = psdict
             else:
                 psdict = self.psdict

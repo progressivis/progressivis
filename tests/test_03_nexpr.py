@@ -6,8 +6,8 @@ from progressivis.core import aio
 from progressivis import Print
 from progressivis.linalg.nexpr import NumExprABC
 import numpy as np
-from progressivis.stats import RandomTable
-from progressivis.table.table import Table
+from progressivis.stats import RandomPTable
+from progressivis.table.table import PTable
 from progressivis.core import SlotDescriptor
 import numexpr as ne  # type: ignore
 
@@ -16,12 +16,12 @@ from typing import Type, Tuple, Any
 
 class NumExprSample(NumExprABC):
     inputs = [
-        SlotDescriptor("first", type=Table, required=True),
-        SlotDescriptor("second", type=Table, required=True),
+        SlotDescriptor("first", type=PTable, required=True),
+        SlotDescriptor("second", type=PTable, required=True),
     ]
     outputs = [
         SlotDescriptor(
-            "result", type=Table, required=False, datashape={"first": ["_1", "_2"]}
+            "result", type=PTable, required=False, datashape={"first": ["_1", "_2"]}
         )
     ]
     expr = {"_1": "{first._2}+2*{second._3}", "_2": "{first._3}-5*{second._2}"}
@@ -29,10 +29,10 @@ class NumExprSample(NumExprABC):
 
 class NumExprSample2(NumExprABC):
     inputs = [
-        SlotDescriptor("first", type=Table, required=True),
-        SlotDescriptor("second", type=Table, required=True),
+        SlotDescriptor("first", type=PTable, required=True),
+        SlotDescriptor("second", type=PTable, required=True),
     ]
-    outputs = [SlotDescriptor("table", type=Table, required=False)]
+    outputs = [SlotDescriptor("table", type=PTable, required=False)]
     expr = {
         "_1:float64": "{first._2}+2*{second._3}",
         "_2:float64": "{first._3}-5*{second._2}",
@@ -42,8 +42,8 @@ class NumExprSample2(NumExprABC):
 class TestNumExpr(ProgressiveTest):
     def t_num_expr_impl(self, cls: Type[NumExprABC]) -> Tuple[Any, ...]:
         s = self.scheduler()
-        random1 = RandomTable(10, rows=100000, scheduler=s)
-        random2 = RandomTable(10, rows=100000, scheduler=s)
+        random1 = RandomPTable(10, rows=100000, scheduler=s)
+        random2 = RandomPTable(10, rows=100000, scheduler=s)
         module = cls(
             columns={"first": ["_1", "_2", "_3"], "second": ["_1", "_2", "_3"]},
             scheduler=s,

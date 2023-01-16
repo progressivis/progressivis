@@ -7,8 +7,8 @@ import pandas as pd
 from progressivis import SlotDescriptor
 from progressivis.utils.errors import ProgressiveError, ProgressiveStopIteration
 from progressivis.utils.inspect import filter_kwds, extract_params_docstring
-from progressivis.table.module import TableModule
-from progressivis.table.table import Table
+from progressivis.table.module import PTableModule
+from progressivis.table.table import PTable
 from progressivis.table.dshape import (
     dshape_from_dataframe,
     array_dshape,
@@ -37,12 +37,12 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class CSVLoader(TableModule):
+class CSVLoader(PTableModule):
     """
     Warning : this module do not wait for "filenames"
     """
 
-    inputs = [SlotDescriptor("filenames", type=Table, required=False)]
+    inputs = [SlotDescriptor("filenames", type=PTable, required=False)]
 
     def __init__(
         self,
@@ -94,9 +94,9 @@ class CSVLoader(TableModule):
         )
         self._recovery = recovery
         self._recovery_table_size = recovery_table_size
-        self._recovery_table: Optional[Table] = None
+        self._recovery_table: Optional[PTable] = None
         self._recovery_table_name = f"csv_loader_recovery_{recovery_tag}"
-        self._recovery_table_inv: Optional[Table] = None
+        self._recovery_table_inv: Optional[PTable] = None
         self._recovery_table_inv_name = f"csv_loader_recovery_invariant_{recovery_tag}"
         self._save_step_size = save_step_size
         self._last_saved_id = 0
@@ -107,14 +107,14 @@ class CSVLoader(TableModule):
 
     def recovery_tables_exist(self) -> bool:
         try:
-            Table(name=self._recovery_table_name, create=False)
+            PTable(name=self._recovery_table_name, create=False)
         except ValueError as ve:
             if "exist" in ve.args[0]:
                 print("WARNING: recovery table does not exist")
                 return False
             raise
         try:
-            Table(name=self._recovery_table_inv_name, create=False)
+            PTable(name=self._recovery_table_inv_name, create=False)
         except Exception as ve:
             # FIXME JDF: is that the right way?
             if "exist" in ve.args[0]:  # FIXME
@@ -125,9 +125,9 @@ class CSVLoader(TableModule):
 
     def trunc_recovery_tables(self) -> None:
         len_ = 0
-        rt: Optional[Table] = None
+        rt: Optional[PTable] = None
         try:
-            rt = Table(name=self._recovery_table_name, create=False)
+            rt = PTable(name=self._recovery_table_name, create=False)
             len_ = len(rt)
         except Exception:
             pass
@@ -135,7 +135,7 @@ class CSVLoader(TableModule):
             rt.drop(slice(None, None, None), truncate=True)
         len_ = 0
         try:
-            rt = Table(name=self._recovery_table_inv_name, create=False)
+            rt = PTable(name=self._recovery_table_inv_name, create=False)
             len_ = len(rt)
         except Exception:
             pass
@@ -207,11 +207,11 @@ class CSVLoader(TableModule):
                 else:  # do recovery
                     try:
                         if self._recovery_table is None:
-                            self._recovery_table = Table(
+                            self._recovery_table = PTable(
                                 name=self._recovery_table_name, create=False
                             )
                         if self._recovery_table_inv is None:
-                            self._recovery_table_inv = Table(
+                            self._recovery_table_inv = PTable(
                                 name=self._recovery_table_inv_name, create=False
                             )
                         if self.result is None:
@@ -219,7 +219,7 @@ class CSVLoader(TableModule):
                                 "table_name"
                             ].loc[0]
                             self._table_params["create"] = False
-                            table = Table(**self._table_params)
+                            table = PTable(**self._table_params)
                             self.result = table
                             table.last_id
                     except Exception as e:  # TODO: specify the exception?
@@ -391,12 +391,12 @@ class CSVLoader(TableModule):
                     self._table_params["data"] = data
                     self._table_params["dshape"] = dshape
                     self._table_params["create"] = True
-                    self.result = Table(**self._table_params)
+                    self.result = PTable(**self._table_params)
                 else:
                     self._table_params["name"] = self._recovered_csv_table_name
                     # self._table_params['dshape'] = dshape
                     self._table_params["create"] = False
-                    table = Table(**self._table_params)
+                    table = PTable(**self._table_params)
                     self.result = table
                     table.append(self._data_as_array(pd.concat(df_list)))
             else:
@@ -414,12 +414,12 @@ class CSVLoader(TableModule):
                 snapshot = self.parser.get_snapshot(
                     run_number=run_number, table_name=table.name, last_id=table.last_id,
                 )
-                self._recovery_table = Table(
+                self._recovery_table = PTable(
                     name=self._recovery_table_name,
                     data=pd.DataFrame(snapshot, index=[0]),
                     create=True,
                 )
-                self._recovery_table_inv = Table(
+                self._recovery_table_inv = PTable(
                     name=self._recovery_table_inv_name,
                     data=pd.DataFrame(
                         dict(table_name=table.name, csv_input=self.filepath_or_buffer,),

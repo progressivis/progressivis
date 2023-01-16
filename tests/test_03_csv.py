@@ -5,7 +5,7 @@ from . import ProgressiveTest
 from progressivis.core import aio, Sink
 from progressivis.io import CSVLoader
 from progressivis.table.constant import Constant
-from progressivis.table.table import Table
+from progressivis.table.table import PTable
 from progressivis.datasets import get_dataset
 from progressivis.core.utils import RandomBytesIO
 
@@ -53,7 +53,7 @@ class TestProgressiveLoadCSV(ProgressiveTest):
 
     def test_read_multiple_csv(self) -> None:
         s = self.scheduler()
-        filenames = Table(
+        filenames = PTable(
             name="file_names",
             dshape="{filename: string}",
             data={"filename": [get_dataset("smallfile"), get_dataset("smallfile")]},
@@ -68,7 +68,7 @@ class TestProgressiveLoadCSV(ProgressiveTest):
 
     def test_read_multiple_fake_csv(self) -> None:
         s = self.scheduler()
-        filenames = Table(
+        filenames = PTable(
             name="file_names2",
             dshape="{filename: string}",
             data={

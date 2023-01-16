@@ -5,7 +5,7 @@ from progressivis.stats import Stats
 from progressivis.io import CSVLoader
 from progressivis.table.merge import Merge
 from progressivis.table.constant import Constant
-from progressivis.table.table import Table
+from progressivis.table.table import PTable
 from progressivis.datasets import get_dataset
 from progressivis.core import aio
 import pandas as pd
@@ -39,10 +39,10 @@ class TestMerge(ProgressiveTest):
     def test_merge_simple(self) -> None:
         s = self.scheduler()
         cst1 = Constant(
-            Table(name=None, data=pd.DataFrame({"xmin": [1], "xmax": [2]})), scheduler=s
+            PTable(name=None, data=pd.DataFrame({"xmin": [1], "xmax": [2]})), scheduler=s
         )
         cst2 = Constant(
-            Table(name=None, data=pd.DataFrame({"ymin": [3], "ymax": [4]})), scheduler=s
+            PTable(name=None, data=pd.DataFrame({"ymin": [3], "ymax": [4]})), scheduler=s
         )
         merge = Merge(left_index=True, right_index=True, scheduler=s)
         merge.input[0] = cst1.output.result

@@ -2,7 +2,7 @@ import ipywidgets as ipw  # type: ignore
 import pandas as pd
 from progressivis.io.csv_sniffer import CSVSniffer  # type: ignore
 from progressivis.io import SimpleCSVLoader  # type: ignore
-from progressivis.table import Table  # type: ignore
+from progressivis.table import PTable  # type: ignore
 from progressivis.table.constant import Constant  # type: ignore
 from .utils import (make_button,
                     get_schema, VBoxSchema)
@@ -85,7 +85,7 @@ class CsvLoaderW(VBoxSchema):
         s = sink.scheduler()
         with s:
             filenames = pd.DataFrame({'filename': urls})
-            cst = Constant(Table('filenames', data=filenames), scheduler=s)
+            cst = Constant(PTable('filenames', data=filenames), scheduler=s)
             csv = SimpleCSVLoader(scheduler=s, **params)
             csv.input.filenames = cst.output[0]
             sink.input.inp = csv.output.result

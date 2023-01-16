@@ -3,7 +3,7 @@ from __future__ import annotations
 from .core import Expr
 from ..table.constant import Constant
 from progressivis.core.module import Module
-from progressivis.table.module import TableModule
+from progressivis.table.module import PTableModule
 
 from typing import (
     Optional,
@@ -18,34 +18,34 @@ from typing import (
 )
 
 if TYPE_CHECKING:
-    from progressivis.table.table_base import BaseTable
+    from progressivis.table.table_base import BasePTable
 
 
-class TableExpr(Expr):
+class PTableExpr(Expr):
     def __init__(
         self,
-        module_class: Type[TableModule],
+        module_class: Type[PTableModule],
         args: Any,
         kwds: Dict[str, Any],
-        module: Optional[TableModule] = None,
+        module: Optional[PTableModule] = None,
         output_slot: Optional[str] = None,
         output_slot_table: str = "table",
     ):
-        super(TableExpr, self).__init__(
+        super(PTableExpr, self).__init__(
             module_class, args, kwds, module=module, output_slot=output_slot
         )
         self._output_slot_table = output_slot_table
 
     @property
-    def table(self) -> BaseTable:
-        assert isinstance(self._module, TableModule)
+    def table(self) -> BasePTable:
+        assert isinstance(self._module, PTableModule)
         return self._module.table
 
-    def select(self, columns: List[str]) -> TableExpr:
-        return TableExpr(Constant, self.table.loc[:, columns], kwds={})
+    def select(self, columns: List[str]) -> PTableExpr:
+        return PTableExpr(Constant, self.table.loc[:, columns], kwds={})
 
     # def filter(self, predicate):
-    #     return TableExpr(Filter, self.module, predicate)
+    #     return PTableExpr(Filter, self.module, predicate)
 
 
 class Pipeable:

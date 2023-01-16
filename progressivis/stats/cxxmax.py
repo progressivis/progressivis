@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from progressivis.core.module import ReturnRunStep
 from progressivis.core.slot import SlotDescriptor
-from progressivis.table.module import TableModule
-from progressivis.table.table import Table
+from progressivis.table.module import PTableModule
+from progressivis.table.table import PTable
 
 try:
     from .cxx_max import Max as CxxMax  # type: ignore
@@ -19,9 +19,9 @@ from typing import List, Optional, Any
 logger = logging.getLogger(__name__)
 
 
-class Max(TableModule):
+class Max(PTableModule):
     parameters = [("history", np.dtype(int), 3)]
-    inputs = [SlotDescriptor("table", type=Table, required=True)]
+    inputs = [SlotDescriptor("table", type=PTable, required=True)]
 
     def __init__(self, columns: Optional[List[str]] = None, **kwds: Any) -> None:
         super(Max, self).__init__(**kwds)

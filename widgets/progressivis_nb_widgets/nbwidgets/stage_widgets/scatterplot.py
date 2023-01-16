@@ -24,7 +24,7 @@ class ScatterplotW(VBoxSchema):
     def init(self):
         self.output_dtypes = None
         self._axis = {}
-        lst = [_l("Axis"), _l("Column"),  _l("Symbol")]
+        lst = [_l("Axis"), _l("PColumn"),  _l("Symbol")]
         for row_name in ["X", "Y", "Color", "Shape"]:
             row = self._axis_row(row_name)
             self._axis[row_name] = row

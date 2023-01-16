@@ -2,15 +2,15 @@
 
 from progressivis.core.changemanager_base import BaseChangeManager
 
-from .column_base import BaseColumn
-from .tablechanges import TableChanges
+from .column_base import BasePColumn
+from .tablechanges import PTableChanges
 from ..core.slot import Slot
 from typing import Any
 
 
-class ColumnChangeManager(BaseChangeManager):
+class PColumnChangeManager(BaseChangeManager):
     """
-    Manage changes that occured in a Column between runs.
+    Manage changes that occured in a PColumn between runs.
     """
 
     def __init__(
@@ -22,7 +22,7 @@ class ColumnChangeManager(BaseChangeManager):
         buffer_exposed: bool = False,
         buffer_masked: bool = False,
     ) -> None:
-        super(ColumnChangeManager, self).__init__(
+        super(PColumnChangeManager, self).__init__(
             slot,
             buffer_created,
             buffer_updated,
@@ -32,10 +32,10 @@ class ColumnChangeManager(BaseChangeManager):
         )
         data = slot.data()
         if data.changes is None:
-            data.changes = TableChanges()
+            data.changes = PTableChanges()
 
     def update(self, run_number: int, data: Any, mid: str) -> None:
-        assert isinstance(data, BaseColumn)
+        assert isinstance(data, BasePColumn)
         if data is None or (run_number != 0 and run_number <= self._last_update):
             return
         changes = data.compute_updates(self._last_update, run_number, mid)
@@ -45,4 +45,4 @@ class ColumnChangeManager(BaseChangeManager):
         )
 
 
-Slot.add_changemanager_type(BaseColumn, ColumnChangeManager)
+Slot.add_changemanager_type(BasePColumn, PColumnChangeManager)

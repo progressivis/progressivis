@@ -11,7 +11,7 @@ import http.server as http_srv
 from progressivis.core import aio, Sink
 from progressivis.io import CSVLoader
 from progressivis.table.constant import Constant
-from progressivis.table.table import Table
+from progressivis.table.table import PTable
 from progressivis.datasets import get_dataset, get_dataset_bz2, DATA_DIR
 
 from typing import Any, Optional
@@ -134,7 +134,7 @@ class TestProgressiveLoadCSVOverHTTP(ProgressiveTest):
         self._http_proc = p
         time.sleep(SLEEP)
         s = self.scheduler()
-        filenames = Table(
+        filenames = PTable(
             name="file_names",
             dshape="{filename: string}",
             data={"filename": [make_url("smallfile"), make_url("smallfile")]},
@@ -191,7 +191,7 @@ class TestProgressiveLoadCSVOverHTTP(ProgressiveTest):
         self._http_proc = p
         time.sleep(SLEEP)
         s = self.scheduler()
-        filenames = Table(
+        filenames = PTable(
             name="file_names",
             dshape="{filename: string}",
             data={

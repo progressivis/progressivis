@@ -1,41 +1,41 @@
 """
-TableModule is the base class for all the modules updating internally a Table
+PTableModule is the base class for all the modules updating internally a PTable
 and exposing it as an output slot.
 """
 from __future__ import annotations
 
 from ..core.module import Module, ReturnRunStep, JSon  # noqa: F401
 from ..core.slot import SlotDescriptor, Slot
-from .table_base import TableSelectedView, BaseTable
-from .table import Table
+from .table_base import PTableSelectedView, BasePTable
+from .table import PTable
 from .slot_join import SlotJoin
-from progressivis.utils import PsDict
+from progressivis.utils import PDict
 
 from typing import Optional, Dict, List, Union, Any, cast
 
 
-Columns = Union[None, List[str]]  # , Dict[str, List[str]]]
+PColumns = Union[None, List[str]]  # , Dict[str, List[str]]]
 
 
 # pylint: disable=abstract-method
-class TableModule(Module):
+class PTableModule(Module):
     "Base class for modules managing tables."
-    outputs = [SlotDescriptor("result", type=Table, required=True)]
+    outputs = [SlotDescriptor("result", type=PTable, required=True)]
 
     def __init__(
         self,
-        columns: Optional[Columns] = None,
+        columns: Optional[PColumns] = None,
         output_required: Optional[bool] = True,
         **kwds: Any,
     ) -> None:
-        super(TableModule, self).__init__(**kwds)
+        super(PTableModule, self).__init__(**kwds)
         if "table_slot" in kwds:
             raise RuntimeError("don't use table_slot")
         if not output_required:
             # Change the descriptor so it's not required any more
             # The original SD is kept in the shared outputs/all_outputs
             # class variables
-            sd = SlotDescriptor("result", type=Table, required=False)
+            sd = SlotDescriptor("result", type=PTable, required=False)
             self.output_descriptors["result"] = sd
         self._columns: Optional[List[str]] = None
         self._columns_dict: Dict[str, List[str]] = {}
@@ -52,7 +52,7 @@ class TableModule(Module):
                 break
         else:
             assert columns is None
-        self.__result: Union[None, BaseTable, PsDict] = None
+        self.__result: Union[None, BasePTable, PDict] = None
 
     def get_first_input_slot(self) -> Optional[str]:
         for k in self.input_slot_names():
@@ -60,39 +60,39 @@ class TableModule(Module):
         return None
 
     def close_all(self) -> None:
-        super(TableModule, self).close_all()
-        if isinstance(self.__result, Table) and self.__result.storagegroup is not None:
+        super(PTableModule, self).close_all()
+        if isinstance(self.__result, PTable) and self.__result.storagegroup is not None:
             self.__result.storagegroup.close_all()
 
     @property
-    def result(self) -> Union[None, BaseTable, PsDict]:
+    def result(self) -> Union[None, BasePTable, PDict]:
         return self.__result
 
     @result.setter
-    def result(self, val: Union[BaseTable, PsDict, None]) -> None:
+    def result(self, val: Union[BasePTable, PDict, None]) -> None:
         if self.__result is not None:
             raise KeyError("result cannot be assigned more than once")
         self.__result = val
 
     @property
-    def table(self) -> Table:
-        return cast(Table, self.__result)
+    def table(self) -> PTable:
+        return cast(PTable, self.__result)
 
     @property
-    def psdict(self) -> PsDict:
-        return cast(PsDict, self.__result)
+    def psdict(self) -> PDict:
+        return cast(PDict, self.__result)
 
     @property
-    def selected(self) -> TableSelectedView:
-        return cast(TableSelectedView, self.__result)
+    def selected(self) -> PTableSelectedView:
+        return cast(PTableSelectedView, self.__result)
 
     def get_data(self, name: str) -> Any:
         if name in ("result", "table"):
             return self.result
-        return super(TableModule, self).get_data(name)
+        return super(PTableModule, self).get_data(name)
 
     def get_columns(
-        self, table: Union[BaseTable, Dict[str, Any]], slot: Optional[str] = None
+        self, table: Union[BasePTable, Dict[str, Any]], slot: Optional[str] = None
     ) -> List[str]:
         """
         Return all the columns of interest from the specified table.
@@ -120,11 +120,11 @@ class TableModule(Module):
 
     def filter_columns(
         self,
-        df: BaseTable,
+        df: BasePTable,
         indices: Optional[Any] = None,
         slot: Optional[str] = None,
-        cols: Columns = None,
-    ) -> BaseTable:
+        cols: PColumns = None,
+    ) -> BasePTable:
         """
         Return the specified table filtered by the specified indices and
         limited to the columns of interest.
@@ -134,7 +134,7 @@ class TableModule(Module):
         ):
             if indices is None:
                 return df
-            return cast(BaseTable, df.loc[indices])
+            return cast(BasePTable, df.loc[indices])
         cols = cols or self.get_columns(df, slot)
         if cols is None:
             return None

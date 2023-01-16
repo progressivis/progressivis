@@ -1,17 +1,17 @@
 "Base Module for modules supporting a variable number in input slots."
 from __future__ import annotations
 
-from progressivis.table.module import TableModule
+from progressivis.table.module import PTableModule
 from progressivis.core.module import ReturnRunStep
-from progressivis.table import BaseTable
+from progressivis.table import BasePTable
 from progressivis.core.slot import SlotDescriptor
 
 from typing import List, Optional, Any
 
 
-class NAry(TableModule):
+class NAry(PTableModule):
     "Base class for modules supporting a variable number of input slots."
-    inputs = [SlotDescriptor("table", type=BaseTable, required=True, multiple=True)]
+    inputs = [SlotDescriptor("table", type=BasePTable, required=True, multiple=True)]
 
     def __init__(self, nary: str = "table", **kwds: Any) -> None:
         super(NAry, self).__init__(**kwds)

@@ -7,9 +7,9 @@ from progressivis.core import aio
 from progressivis.io import CSVLoader
 from progressivis.stats.ppca import PPCA
 from progressivis.datasets import get_dataset
-from progressivis.table.module import TableModule
-from progressivis.table.table import Table
-from progressivis.utils.psdict import PsDict
+from progressivis.table.module import PTableModule
+from progressivis.table.table import PTable
+from progressivis.utils.psdict import PDict
 from progressivis.core.slot import SlotDescriptor, Slot
 from sklearn.neighbors import KNeighborsClassifier  # type: ignore
 from sklearn.utils.random import sample_without_replacement  # type: ignore
@@ -38,17 +38,17 @@ INDICES = None
 KNN: Optional[KNeighborsClassifier] = None
 
 
-def _array(tbl: Table) -> np.ndarray[Any, Any]:
+def _array(tbl: PTable) -> np.ndarray[Any, Any]:
     return tbl["array"].values
 
 
-class MyResetter(TableModule):
-    inputs = [SlotDescriptor("table", type=Table, required=True)]
+class MyResetter(PTableModule):
+    inputs = [SlotDescriptor("table", type=PTable, required=True)]
 
     def __init__(self, threshold: int, **kwds: Any) -> None:
         super().__init__(**kwds)
         self._threshold = threshold
-        self.result = PsDict({"reset": True})
+        self.result = PDict({"reset": True})
 
     def run_step(
         self, run_number: int, step_size: int, howlong: float

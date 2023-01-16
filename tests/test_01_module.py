@@ -1,4 +1,4 @@
-from progressivis import Module, Every, ProgressiveError, Table
+from progressivis import Module, Every, ProgressiveError, PTable
 
 from . import ProgressiveTest
 from progressivis.core.module import ReturnRunStep
@@ -58,7 +58,7 @@ class TestProgressiveModule(ProgressiveTest):
             module.set_current_params({"quantum": 2.0})
             self.assertEqual(module.params.quantum, 2.0)
             params = module.get_data("_params")
-            self.assertIsInstance(params, Table)
+            self.assertIsInstance(params, PTable)
             del s["a"]
         self.assertEqual(s.exists("a"), False)
         # module.describe()

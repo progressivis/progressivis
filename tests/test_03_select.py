@@ -4,13 +4,13 @@ from . import ProgressiveTest, skip
 
 from progressivis import Print, Every
 from progressivis.io import CSVLoader
-from progressivis.utils import PsDict
+from progressivis.utils import PDict
 from progressivis.table.select import Select
 from progressivis.table.constant import Constant
 from progressivis.stats import Sample
 from progressivis.datasets import get_dataset
 from progressivis.core import aio
-from progressivis.core.bitmap import bitmap
+from progressivis.core.pintset import PIntSet
 
 from typing import Any
 
@@ -36,7 +36,7 @@ class TestSelect(ProgressiveTest):
         aio.run(s.start())
         print(repr(q.table))
         self.assertEqual(len(q.table), 100)
-        self.assertEqual(bitmap(q.table.index), sample.get_data("select"))
+        self.assertEqual(PIntSet(q.table.index), sample.get_data("select"))
 
     @skip("Need to implement select on tables")
     def test_select(self) -> None:
@@ -48,7 +48,7 @@ class TestSelect(ProgressiveTest):
             force_valid_ids=True,
             scheduler=s,
         )
-        cst = Constant(PsDict({"query": ["_1 < 0.5"]}), scheduler=s)
+        cst = Constant(PDict({"query": ["_1 < 0.5"]}), scheduler=s)
         q = Select(scheduler=s)
         q.input[0] = csv.output.df
         q.input.query = cst.output.df

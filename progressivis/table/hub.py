@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from ..core.module import ReturnRunStep
 from ..table.nary import NAry
-from ..utils.psdict import PsDict
+from ..utils.psdict import PDict
 
 
 class Hub(NAry):
@@ -17,14 +17,14 @@ class Hub(NAry):
         self, run_number: int, step_size: int, howlong: float
     ) -> ReturnRunStep:
         if self.result is None:
-            self.result = PsDict()
+            self.result = PDict()
         steps = 0
         for name in self.get_input_slot_multiple():
             slot = self.get_input_slot(name)
             if slot.has_buffered():
                 d = slot.data()
                 steps += len(d)
-                assert isinstance(d, PsDict)
+                assert isinstance(d, PDict)
                 self.psdict.update(d)
             slot.clear_buffers()
         return self._return_run_step(self.state_blocked, steps_run=steps)

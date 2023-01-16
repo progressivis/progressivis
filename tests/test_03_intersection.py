@@ -1,9 +1,9 @@
-from progressivis.table.table import Table
+from progressivis.table.table import PTable
 from progressivis.table.constant import Constant
 from progressivis import Print
-from progressivis.stats import RandomTable
+from progressivis.stats import RandomPTable
 from progressivis.table.bisectmod import Bisect
-from progressivis.core.bitmap import bitmap
+from progressivis.core.pintset import PIntSet
 from progressivis.table.hist_index import HistogramIndex
 from progressivis.table.intersection import Intersection
 from progressivis.table.stirrer import Stirrer
@@ -17,10 +17,10 @@ from typing import Any
 class TestIntersection(ProgressiveTest):
     def test_intersection(self) -> None:
         s = self.scheduler()
-        random = RandomTable(2, rows=100000, scheduler=s)
-        t_min = Table(name=None, dshape="{_1: float64}", data={"_1": [0.3]})
+        random = RandomPTable(2, rows=100000, scheduler=s)
+        t_min = PTable(name=None, dshape="{_1: float64}", data={"_1": [0.3]})
         min_value = Constant(table=t_min, scheduler=s)
-        t_max = Table(name=None, dshape="{_1: float64}", data={"_1": [0.8]})
+        t_max = PTable(name=None, dshape="{_1: float64}", data={"_1": [0.8]})
         max_value = Constant(table=t_max, scheduler=s)
         hist_index = HistogramIndex(column="_1", scheduler=s)
         hist_index.create_dependent_modules(random, "result")
@@ -44,16 +44,16 @@ class TestIntersection(ProgressiveTest):
             .data()
             .eval("(_1>0.3)&(_1<0.8)", result_object="index")
         )
-        self.assertEqual(inter.table.index, bitmap(idx))
+        self.assertEqual(inter.table.index, PIntSet(idx))
 
     def _impl_stirred_tst_intersection(self, **kw: Any) -> None:
         s = self.scheduler()
-        random = RandomTable(2, rows=100000, scheduler=s)
+        random = RandomPTable(2, rows=100000, scheduler=s)
         stirrer = Stirrer(update_column="_2", fixed_step_size=1000, scheduler=s, **kw)
         stirrer.input[0] = random.output.result
-        t_min = Table(name=None, dshape="{_1: float64}", data={"_1": [0.3]})
+        t_min = PTable(name=None, dshape="{_1: float64}", data={"_1": [0.3]})
         min_value = Constant(table=t_min, scheduler=s)
-        t_max = Table(name=None, dshape="{_1: float64}", data={"_1": [0.8]})
+        t_max = PTable(name=None, dshape="{_1: float64}", data={"_1": [0.8]})
         max_value = Constant(table=t_max, scheduler=s)
         hist_index = HistogramIndex(column="_1", scheduler=s)
         hist_index.create_dependent_modules(stirrer, "result")
@@ -77,7 +77,7 @@ class TestIntersection(ProgressiveTest):
             .data()
             .eval("(_1>0.3)&(_1<0.8)", result_object="index")
         )
-        self.assertEqual(inter.table.index, bitmap(idx))
+        self.assertEqual(inter.table.index, PIntSet(idx))
 
     def test_intersection2(self) -> None:
         self._impl_stirred_tst_intersection(delete_rows=5)

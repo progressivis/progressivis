@@ -18,7 +18,7 @@ from progressivis.core import (
     Print,
 )
 from progressivis.utils import ProgressiveError
-from progressivis.table import Table, Column, Row
+from progressivis.table import PTable, PColumn, Row
 
 from typing import Dict
 
@@ -35,8 +35,8 @@ __all__ = [
     "StorageManager",
     "Every",
     "Print",
-    "Table",
-    "Column",
+    "PTable",
+    "PColumn",
     "Row",
 ]
 

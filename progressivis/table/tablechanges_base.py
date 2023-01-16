@@ -1,5 +1,5 @@
 """
-Base class for object keeping track of changes in a Table/Column
+Base class for object keeping track of changes in a PTable/PColumn
 """
 from __future__ import annotations
 
@@ -12,24 +12,24 @@ if TYPE_CHECKING:
 
 
 class BaseChanges(metaclass=ABCMeta):
-    "Base class for object keeping track of changes in a Table"
+    "Base class for object keeping track of changes in a PTable"
 
     def __str__(self) -> str:
         return str(type(self))
 
     @abstractmethod
     def add_created(self, locs: Any) -> None:
-        "Add ids of items created in the Table"
+        "Add ids of items created in the PTable"
         pass
 
     @abstractmethod
     def add_updated(self, locs: Any) -> None:
-        "Add ids of items updated in the Table"
+        "Add ids of items updated in the PTable"
         pass
 
     @abstractmethod
     def add_deleted(self, locs: Any) -> None:
-        "Add ids of items deleted from the Table"
+        "Add ids of items deleted from the PTable"
         pass
 
     @abstractmethod

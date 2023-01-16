@@ -25,7 +25,7 @@ from typing import (
 )
 
 if TYPE_CHECKING:
-    from .table_base import IndexTable, TableChanges
+    from .table_base import IndexPTable, PTableChanges
     from .dshape import DataShape
     from ..core.index_update import IndexUpdate
 
@@ -35,7 +35,7 @@ logger = logging.getLogger(__name__)
 
 class _Loc:
     # pylint: disable=too-few-public-methods
-    def __init__(self, column: BaseColumn) -> None:
+    def __init__(self, column: BasePColumn) -> None:
         self.column = column
 
     def parse_loc(self, loc: Any) -> Any:
@@ -57,16 +57,16 @@ class _Loc:
         self.column[index] = value
 
 
-class BaseColumn(metaclass=ABCMeta):
+class BasePColumn(metaclass=ABCMeta):
     """
     Base class for columns.
     """
 
     # pylint: disable=too-many-public-methods
-    def __init__(self, name: str, index: IndexTable, base: Optional[BaseColumn] = None):
-        self._index: IndexTable = index
+    def __init__(self, name: str, index: IndexPTable, base: Optional[BasePColumn] = None):
+        self._index: IndexPTable = index
         self._name: str = name
-        self._base: Optional[BaseColumn] = base
+        self._base: Optional[BasePColumn] = base
 
     @property
     def loc(self) -> Any:
@@ -79,12 +79,12 @@ class BaseColumn(metaclass=ABCMeta):
         return self._name
 
     @property
-    def index(self) -> IndexTable:
+    def index(self) -> IndexPTable:
         "Retur the index"
         return self._index
 
     @property
-    def base(self) -> Optional[BaseColumn]:
+    def base(self) -> Optional[BasePColumn]:
         "Return the base column or None"
         return self._base
 
@@ -246,17 +246,17 @@ class BaseColumn(metaclass=ABCMeta):
     #     return [i * c for i, c in zip(chunk, chunks)]
 
     @property
-    def changes(self) -> Optional[TableChanges]:
+    def changes(self) -> Optional[PTableChanges]:
         "Return the ChangeManager associated with the index of this column"
         if self._index is None:
             return None
         return self._index.changes
 
     @changes.setter
-    def changes(self, tablechange: Optional[TableChanges]) -> None:
+    def changes(self, tablechange: Optional[PTableChanges]) -> None:
         "Set the ChangeManager associated with the index of this column"
         if self.index is None:
-            raise RuntimeError("Column has no index")
+            raise RuntimeError("PColumn has no index")
         self.index.changes = tablechange
 
     def compute_updates(
@@ -285,7 +285,7 @@ class BaseColumn(metaclass=ABCMeta):
             [np.ndarray[Any, Any], Union[np.ndarray[Any, Any], int, float, bool, str]],
             np.ndarray[Any, Any],
         ],
-        other: Union[np.ndarray[Any, Any], BaseColumn, int, float, bool, str],
+        other: Union[np.ndarray[Any, Any], BasePColumn, int, float, bool, str],
         **kwargs: Dict[str, Any],
     ) -> np.ndarray[Any, Any]:
         "Binary function manager"
@@ -295,7 +295,7 @@ class BaseColumn(metaclass=ABCMeta):
         value: np.ndarray[Any, Any]
         if isinstance(other, (np.ndarray, int, float, bool, str)):
             value = operation(self.value, other)
-        elif isinstance(other, BaseColumn):
+        elif isinstance(other, BasePColumn):
             value = operation(self.value, other.value)
         else:
             raise ValueError(f"Invalid type {type(other)}")
@@ -304,100 +304,100 @@ class BaseColumn(metaclass=ABCMeta):
     def __abs__(self, **kwargs: Dict[str, Any]) -> np.ndarray[Any, Any]:
         return self.unary(np.abs, **kwargs)
 
-    def __add__(self, other: BaseColumn) -> np.ndarray[Any, Any]:
+    def __add__(self, other: BasePColumn) -> np.ndarray[Any, Any]:
         return self.binary(operator.add, other)
 
-    def __radd__(self, other: BaseColumn) -> np.ndarray[Any, Any]:
+    def __radd__(self, other: BasePColumn) -> np.ndarray[Any, Any]:
         return other.binary(operator.add, self)
 
-    def __and__(self, other: BaseColumn) -> np.ndarray[Any, Any]:
+    def __and__(self, other: BasePColumn) -> np.ndarray[Any, Any]:
         return self.binary(operator.and_, other)
 
-    def __rand__(self, other: BaseColumn) -> np.ndarray[Any, Any]:
+    def __rand__(self, other: BasePColumn) -> np.ndarray[Any, Any]:
         return other.binary(operator.and_, self)
 
-    def __eq__(self, other: BaseColumn):  # type: ignore
+    def __eq__(self, other: BasePColumn):  # type: ignore
         return self.binary(operator.eq, other)
 
-    def __gt__(self, other: BaseColumn) -> np.ndarray[Any, Any]:
+    def __gt__(self, other: BasePColumn) -> np.ndarray[Any, Any]:
         return self.binary(operator.gt, other)
 
-    def __ge__(self, other: BaseColumn) -> np.ndarray[Any, Any]:
+    def __ge__(self, other: BasePColumn) -> np.ndarray[Any, Any]:
         return self.binary(operator.ge, other)
 
     def __invert__(self) -> np.ndarray[Any, Any]:
         return self.unary(np.invert)
 
-    def __lshift__(self, other: BaseColumn) -> np.ndarray[Any, Any]:
+    def __lshift__(self, other: BasePColumn) -> np.ndarray[Any, Any]:
         return self.binary(operator.lshift, other)
 
-    def __rlshift__(self, other: BaseColumn) -> np.ndarray[Any, Any]:
+    def __rlshift__(self, other: BasePColumn) -> np.ndarray[Any, Any]:
         return other.binary(operator.lshift, self)
 
-    def __lt__(self, other: BaseColumn) -> np.ndarray[Any, Any]:
+    def __lt__(self, other: BasePColumn) -> np.ndarray[Any, Any]:
         return self.binary(operator.lt, other)
 
-    def __le__(self, other: BaseColumn) -> np.ndarray[Any, Any]:
+    def __le__(self, other: BasePColumn) -> np.ndarray[Any, Any]:
         return self.binary(operator.le, other)
 
-    def __mod__(self, other: BaseColumn) -> np.ndarray[Any, Any]:
+    def __mod__(self, other: BasePColumn) -> np.ndarray[Any, Any]:
         return self.binary(operator.mod, other)
 
-    def __rmod__(self, other: BaseColumn) -> np.ndarray[Any, Any]:
+    def __rmod__(self, other: BasePColumn) -> np.ndarray[Any, Any]:
         return other.binary(operator.mod, self)
 
-    def __mul__(self, other: BaseColumn) -> np.ndarray[Any, Any]:
+    def __mul__(self, other: BasePColumn) -> np.ndarray[Any, Any]:
         return self.binary(operator.mul, other)
 
-    def __rmul__(self, other: BaseColumn) -> np.ndarray[Any, Any]:
+    def __rmul__(self, other: BasePColumn) -> np.ndarray[Any, Any]:
         return other.binary(operator.mul, self)
 
     def __ne__(self, other: Any) -> bool:
         return any(self.binary(operator.ne, other))
 
-    def __or__(self, other: BaseColumn) -> np.ndarray[Any, Any]:
+    def __or__(self, other: BasePColumn) -> np.ndarray[Any, Any]:
         return self.binary(operator.or_, other)
 
-    def __pos__(self) -> BaseColumn:
+    def __pos__(self) -> BasePColumn:
         return self
 
-    def __ror__(self, other: BaseColumn) -> np.ndarray[Any, Any]:
+    def __ror__(self, other: BasePColumn) -> np.ndarray[Any, Any]:
         return other.binary(operator.or_, self)
 
-    def __pow__(self, other: BaseColumn) -> np.ndarray[Any, Any]:
+    def __pow__(self, other: BasePColumn) -> np.ndarray[Any, Any]:
         return self.binary(operator.pow, other)
 
-    def __rpow__(self, other: BaseColumn) -> np.ndarray[Any, Any]:
+    def __rpow__(self, other: BasePColumn) -> np.ndarray[Any, Any]:
         return other.binary(operator.pow, self)
 
-    def __rshift__(self, other: BaseColumn) -> np.ndarray[Any, Any]:
+    def __rshift__(self, other: BasePColumn) -> np.ndarray[Any, Any]:
         return self.binary(operator.rshift, other)
 
-    def __rrshift__(self, other: BaseColumn) -> np.ndarray[Any, Any]:
+    def __rrshift__(self, other: BasePColumn) -> np.ndarray[Any, Any]:
         return other.binary(operator.rshift, self)
 
-    def __sub__(self, other: BaseColumn) -> np.ndarray[Any, Any]:
+    def __sub__(self, other: BasePColumn) -> np.ndarray[Any, Any]:
         return self.binary(operator.sub, other)
 
-    def __rsub__(self, other: BaseColumn) -> np.ndarray[Any, Any]:
+    def __rsub__(self, other: BasePColumn) -> np.ndarray[Any, Any]:
         return other.binary(operator.sub, self)
 
-    def __truediv__(self, other: BaseColumn) -> np.ndarray[Any, Any]:
+    def __truediv__(self, other: BasePColumn) -> np.ndarray[Any, Any]:
         return self.binary(operator.truediv, other)
 
-    def __rtruediv__(self, other: BaseColumn) -> np.ndarray[Any, Any]:
+    def __rtruediv__(self, other: BasePColumn) -> np.ndarray[Any, Any]:
         return other.binary(operator.truediv, self)
 
-    def __floordiv__(self, other: BaseColumn) -> np.ndarray[Any, Any]:
+    def __floordiv__(self, other: BasePColumn) -> np.ndarray[Any, Any]:
         return self.binary(operator.floordiv, other)
 
-    def __rfloordiv__(self, other: BaseColumn) -> np.ndarray[Any, Any]:
+    def __rfloordiv__(self, other: BasePColumn) -> np.ndarray[Any, Any]:
         return other.binary(operator.floordiv, self)
 
-    def __xor__(self, other: BaseColumn) -> np.ndarray[Any, Any]:
+    def __xor__(self, other: BasePColumn) -> np.ndarray[Any, Any]:
         return self.binary(operator.xor, other)
 
-    def __rxor__(self, other: BaseColumn) -> np.ndarray[Any, Any]:
+    def __rxor__(self, other: BasePColumn) -> np.ndarray[Any, Any]:
         return other.binary(operator.xor, self)
 
     def any(self, **kwargs: Dict[str, Any]) -> bool:

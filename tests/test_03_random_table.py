@@ -1,7 +1,7 @@
 from . import ProgressiveTest
 from progressivis.core import aio
 from progressivis import Every
-from progressivis.stats.random_table import RandomTable
+from progressivis.stats.random_table import RandomPTable
 
 from typing import Any
 
@@ -11,10 +11,10 @@ def print_len(x: Any) -> None:
         print(len(x))
 
 
-class TestRandomTable(ProgressiveTest):
+class TestRandomPTable(ProgressiveTest):
     def test_random_table(self) -> None:
         s = self.scheduler()
-        module = RandomTable(["a", "b"], rows=10000, scheduler=s)
+        module = RandomPTable(["a", "b"], rows=10000, scheduler=s)
         self.assertEqual(module.table.columns[0], "a")
         self.assertEqual(module.table.columns[1], "b")
         self.assertEqual(len(module.table.columns), 2)  # add the UPDATE_COLUMN
@@ -30,7 +30,7 @@ class TestRandomTable(ProgressiveTest):
     def test_random_table2(self) -> None:
         s = self.scheduler()
         # produces more than 4M rows per second on my laptop
-        module = RandomTable(10, rows=1000000, force_valid_ids=True, scheduler=s)
+        module = RandomPTable(10, rows=1000000, force_valid_ids=True, scheduler=s)
         self.assertEqual(len(module.table.columns), 10)  # add the UPDATE_COLUMN
         self.assertEqual(module.table.columns[0], "_1")
         self.assertEqual(module.table.columns[1], "_2")

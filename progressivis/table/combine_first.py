@@ -5,10 +5,10 @@ import logging
 import numpy as np
 
 from ..core.module import ReturnRunStep
-from ..core.bitmap import bitmap
+from ..core.pintset import PIntSet
 from .nary import NAry
-from .table_base import BaseTable
-from .table import Table
+from .table_base import BasePTable
+from .table import PTable
 from .dshape import dshape_union
 
 from typing import List, Optional
@@ -18,24 +18,24 @@ logger = logging.getLogger(__name__)
 
 
 def combine_first(
-    table: BaseTable, other: BaseTable, name: Optional[str] = None
-) -> Table:
+    table: BasePTable, other: BasePTable, name: Optional[str] = None
+) -> PTable:
     dshape = dshape_union(table.dshape, other.dshape)
-    comb_table = Table(name=name, dshape=dshape)
+    comb_table = PTable(name=name, dshape=dshape)
     if np.all(table.index == other.index):  # the gentle case
         comb_table.resize(len(table.index), index=table.index)
         for cname in table.columns:
             comb_table.loc[:, [cname]] = table.loc[:, [cname]]
             if cname in other.columns:
-                nans = bitmap(np.nonzero(np.isnan(table._column(cname).values))[0])
+                nans = PIntSet(np.nonzero(np.isnan(table._column(cname).values))[0])
                 comb_table.loc[nans, [cname]] = other.loc[nans, [cname]]
         for cname in other.columns:
             if cname in table.columns:
                 continue
             comb_table.loc[:, [cname]] = other.loc[:, [cname]]
     else:
-        self_set = bitmap(table.index)
-        other_set = bitmap(other.index)
+        self_set = PIntSet(table.index)
+        other_set = PIntSet(other.index)
         comb_idx = self_set | other_set
         common_set = self_set & other_set
         # common_idx = sorted(common_set)
@@ -66,7 +66,7 @@ class CombineFirst(NAry):
         self, run_number: int, step_size: int, howlong: float
     ) -> ReturnRunStep:
         logger.debug("Entering CombineFirst::run_step")
-        frames: List[BaseTable] = []
+        frames: List[BasePTable] = []
         for name in self.get_input_slot_multiple():
             slot = self.get_input_slot(name)
             slot.clear_buffers()
@@ -77,6 +77,6 @@ class CombineFirst(NAry):
             df = combine_first(df, other)
         steps = len(df)
         if self.result is not None:
-            self.result = None  # TableModule does not want to reassign result
+            self.result = None  # PTableModule does not want to reassign result
         self.result = df
         return self._return_run_step(self.state_blocked, steps_run=steps)

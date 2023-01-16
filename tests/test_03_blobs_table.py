@@ -3,7 +3,7 @@ from __future__ import annotations
 from . import ProgressiveTest
 from progressivis.core import aio
 from progressivis import Every
-from progressivis.stats.blobs_table import BlobsTable, MVBlobsTable
+from progressivis.stats.blobs_table import BlobsPTable, MVBlobsPTable
 from progressivis.linalg import Add
 import numpy as np
 
@@ -18,10 +18,10 @@ def print_len(x: Any) -> None:
 centers = [(0.1, 0.3), (0.7, 0.5), (-0.4, -0.3)]
 
 
-class TestBlobsTable(ProgressiveTest):
+class TestBlobsPTable(ProgressiveTest):
     def test_blobs_table(self) -> None:
         s = self.scheduler()
-        module = BlobsTable(["a", "b"], centers=centers, rows=10000, scheduler=s)
+        module = BlobsPTable(["a", "b"], centers=centers, rows=10000, scheduler=s)
         self.assertEqual(module.table.columns[0], "a")
         self.assertEqual(module.table.columns[1], "b")
         self.assertEqual(len(module.table.columns), 2)
@@ -35,11 +35,11 @@ class TestBlobsTable(ProgressiveTest):
         s = self.scheduler()
         sz = 100000
         centers = [(0.1, 0.3), (0.7, 0.5), (-0.4, -0.3)]
-        blob1 = BlobsTable(
+        blob1 = BlobsPTable(
             ["a", "b"], centers=centers, cluster_std=0.2, rows=sz, scheduler=s
         )
         blob1.default_step_size = 1500
-        blob2 = BlobsTable(
+        blob2 = BlobsPTable(
             ["a", "b"], centers=centers, cluster_std=0.2, rows=sz, scheduler=s
         )
         blob2.default_step_size = 200
@@ -61,10 +61,10 @@ means = [0.1, 0.3], [0.7, 0.5], [-0.4, -0.3]
 covs = [[0.01, 0], [0, 0.09]], [[0.04, 0], [0, 0.01]], [[0.09, 0.04], [0.04, 0.02]]
 
 
-class TestMVBlobsTable(ProgressiveTest):
+class TestMVBlobsPTable(ProgressiveTest):
     def test_mv_blobs_table(self) -> None:
         s = self.scheduler()
-        module = MVBlobsTable(
+        module = MVBlobsPTable(
             ["a", "b"], means=means, covs=covs, rows=10000, scheduler=s
         )
         self.assertEqual(module.table.columns[0], "a")
@@ -79,9 +79,9 @@ class TestMVBlobsTable(ProgressiveTest):
     def test_mv_blobs_table2(self) -> None:
         s = self.scheduler()
         sz = 100000
-        blob1 = MVBlobsTable(["a", "b"], means=means, covs=covs, rows=sz, scheduler=s)
+        blob1 = MVBlobsPTable(["a", "b"], means=means, covs=covs, rows=sz, scheduler=s)
         blob1.default_step_size = 1500
-        blob2 = MVBlobsTable(["a", "b"], means=means, covs=covs, rows=sz, scheduler=s)
+        blob2 = MVBlobsPTable(["a", "b"], means=means, covs=covs, rows=sz, scheduler=s)
         blob2.default_step_size = 200
         add = Add(scheduler=s)
         add.input.first = blob1.output.result

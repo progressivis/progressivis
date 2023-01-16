@@ -4,13 +4,13 @@ import numpy as np
 
 from progressivis.core.module import Module, ReturnRunStep
 from progressivis.core.slot import SlotDescriptor
-from progressivis.core.bitmap import bitmap
+from progressivis.core.pintset import PIntSet
 from progressivis.core.utils import indices_len
 from ..io import Variable
 from ..stats import Min, Max
-from ..utils.psdict import PsDict
-from . import BaseTable, Table, TableSelectedView
-from .module import TableModule
+from ..utils.psdict import PDict
+from . import BasePTable, PTable, PTableSelectedView
+from .module import PTableModule
 from .hist_index import HistogramIndex
 
 # from .mod_impl import ModuleImpl
@@ -23,26 +23,26 @@ from typing import Optional, Any, cast, Iterable
 
 
 class _Selection:
-    def __init__(self, values: Optional[bitmap] = None):
-        self._values = bitmap([]) if values is None else values
+    def __init__(self, values: Optional[PIntSet] = None):
+        self._values = PIntSet([]) if values is None else values
 
     def update(self, values: Iterable[int]) -> None:
         self._values.update(values)
 
     def remove(self, values: Iterable[int]) -> None:
-        self._values = self._values - bitmap(values)
+        self._values = self._values - PIntSet(values)
 
     def assign(self, values: Iterable[int]) -> None:
-        self._values = bitmap(values)
+        self._values = PIntSet(values)
 
     def add(self, values: Iterable[int]) -> None:
-        self._values |= bitmap(values)
+        self._values |= PIntSet(values)
 
 
 class RangeQueryImpl:  # (ModuleImpl):
     def __init__(self, column: list[str], approximate: bool):
         super(RangeQueryImpl, self).__init__()
-        self._table: Optional[BaseTable] = None
+        self._table: Optional[BasePTable] = None
         self._column = column
         # self.bins = None
         # self._hist_index = hist_index
@@ -56,9 +56,9 @@ class RangeQueryImpl:  # (ModuleImpl):
         lower: float,
         upper: float,
         limit_changed: bool,
-        created: Optional[bitmap] = None,
-        updated: Optional[bitmap] = None,
-        deleted: Optional[bitmap] = None,
+        created: Optional[PIntSet] = None,
+        updated: Optional[PIntSet] = None,
+        deleted: Optional[PIntSet] = None,
     ) -> None:
         assert self.result
         if limit_changed:
@@ -84,14 +84,14 @@ class RangeQueryImpl:  # (ModuleImpl):
 
     def start(
         self,
-        table: BaseTable,
+        table: BasePTable,
         hist_index: HistogramIndex,
         lower: float,
         upper: float,
         limit_changed: bool,
-        created: Optional[bitmap] = None,
-        updated: Optional[bitmap] = None,
-        deleted: Optional[bitmap] = None,
+        created: Optional[PIntSet] = None,
+        updated: Optional[PIntSet] = None,
+        deleted: Optional[PIntSet] = None,
     ) -> None:
         self._table = table
         self.result = _Selection()
@@ -99,7 +99,7 @@ class RangeQueryImpl:  # (ModuleImpl):
         self.resume(hist_index, lower, upper, limit_changed, created, updated, deleted)
 
 
-class RangeQuery(TableModule):
+class RangeQuery(PTableModule):
     """ """
 
     parameters = [
@@ -109,16 +109,16 @@ class RangeQuery(TableModule):
         # ('hist_index', object, None) # to improve ...
     ]
     inputs = [
-        SlotDescriptor("table", type=Table, required=True),
-        SlotDescriptor("lower", type=Table, required=False),
-        SlotDescriptor("upper", type=Table, required=False),
-        SlotDescriptor("min", type=PsDict, required=False),
-        SlotDescriptor("max", type=PsDict, required=False),
-        SlotDescriptor("hist", type=Table, required=True),
+        SlotDescriptor("table", type=PTable, required=True),
+        SlotDescriptor("lower", type=PTable, required=False),
+        SlotDescriptor("upper", type=PTable, required=False),
+        SlotDescriptor("min", type=PDict, required=False),
+        SlotDescriptor("max", type=PDict, required=False),
+        SlotDescriptor("hist", type=PTable, required=True),
     ]
     outputs = [
-        SlotDescriptor("min", type=Table, required=False),
-        SlotDescriptor("max", type=Table, required=False),
+        SlotDescriptor("min", type=PTable, required=False),
+        SlotDescriptor("max", type=PTable, required=False),
     ]
 
     def __init__(
@@ -133,8 +133,8 @@ class RangeQuery(TableModule):
         self._approximate = approximate
         self.default_step_size = 1000
         self.input_module: Optional[Module] = None
-        self._min_table: Optional[PsDict] = None
-        self._max_table: Optional[PsDict] = None
+        self._min_table: Optional[PDict] = None
+        self._max_table: Optional[PDict] = None
         self.hist_index: Optional[HistogramIndex] = None
 
     # @property
@@ -213,14 +213,14 @@ class RangeQuery(TableModule):
 
     def _create_min_max(self) -> None:
         if self._min_table is None:
-            self._min_table = PsDict({self.column: np.inf})
+            self._min_table = PDict({self.column: np.inf})
         if self._max_table is None:
-            self._max_table = PsDict({self.column: -np.inf})
+            self._max_table = PDict({self.column: -np.inf})
 
     def _set_minmax_out(self, attr_: str, val: float) -> None:
         d = {self.column: val}
         if getattr(self, attr_) is None:
-            setattr(self, attr_, PsDict(d))
+            setattr(self, attr_, PDict(d))
         else:
             getattr(self, attr_).update(d)
 
@@ -330,21 +330,21 @@ class RangeQuery(TableModule):
             return self._return_run_step(self.state_blocked, steps_run=0)
         # ...
         steps = 0
-        deleted: Optional[bitmap] = None
+        deleted: Optional[PIntSet] = None
         if input_slot.deleted.any():
             deleted = input_slot.deleted.next(length=step_size, as_slice=False)
             steps += indices_len(deleted)
-        created: Optional[bitmap] = None
+        created: Optional[PIntSet] = None
         if input_slot.created.any():
             created = input_slot.created.next(length=step_size, as_slice=False)
             steps += indices_len(created)
-        updated: Optional[bitmap] = None
+        updated: Optional[PIntSet] = None
         if input_slot.updated.any():
             updated = input_slot.updated.next(length=step_size, as_slice=False)
             steps += indices_len(updated)
         input_table = input_slot.data()
         if self.result is None:
-            self.result = TableSelectedView(input_table, bitmap([]))
+            self.result = PTableSelectedView(input_table, PIntSet([]))
         assert self._impl
         hist_slot = self.get_input_slot("hist")
         hist_slot.clear_buffers()

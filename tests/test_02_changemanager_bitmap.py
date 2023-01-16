@@ -1,14 +1,14 @@
-from progressivis.core.bitmap import bitmap
-from progressivis.core.changemanager_bitmap import BitmapChangeManager
+from progressivis.core.pintset import PIntSet
+from progressivis.core.changemanager.pintset import BitmapChangeManager
 from progressivis.table.changemanager_table_selected import FakeSlot
 
 from . import ProgressiveTest
 
 
 class TestBitmapChangeManager(ProgressiveTest):
-    def test_bitmapchangemanager(self) -> None:
+    def test_PIntSetchangemanager(self) -> None:
         mid1 = "m1"
-        bm = bitmap([1, 2, 3])
+        bm = PIntSet([1, 2, 3])
         slot = FakeSlot(bm)
 
         cm = BitmapChangeManager(slot)
@@ -23,7 +23,7 @@ class TestBitmapChangeManager(ProgressiveTest):
         self.assertEqual(cm.updated.length(), 0)
         self.assertEqual(cm.deleted.length(), 0)
 
-        bm = bitmap([2, 3, 4])
+        bm = PIntSet([2, 3, 4])
         cm.update(2, bm, mid1)
         self.assertEqual(cm.last_update(), 2)
         # 1 should be removed because deleted at ts=2
@@ -32,14 +32,14 @@ class TestBitmapChangeManager(ProgressiveTest):
         # 0 has been created then deleted before it got consumed
         self.assertEqual(cm.deleted.length(), 0)
 
-        bm = bitmap([3, 4, 5])
+        bm = PIntSet([3, 4, 5])
         cm.update(3, bm, mid1)
         self.assertEqual(cm.last_update(), 3)
         self.assertEqual(cm.created.next(), slice(5, 6))
         self.assertEqual(cm.updated.length(), 0)
         self.assertEqual(cm.deleted.length(), 1)  # 2 is deleted but buffered
 
-        bm = bitmap([2, 3, 4])
+        bm = PIntSet([2, 3, 4])
         cm.update(4, bm, mid1)
         self.assertEqual(cm.last_update(), 4)
         # 2 has been created before it was consumed so it becomes updated

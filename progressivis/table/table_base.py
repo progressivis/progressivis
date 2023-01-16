@@ -1,4 +1,4 @@
-"""Base class for Tables
+"""Base class for PTables
 """
 
 from __future__ import annotations
@@ -27,9 +27,9 @@ from progressivis.core.utils import (
     get_physical_base,
 )
 from progressivis.core.config import get_option
-from progressivis.core.bitmap import bitmap
+from progressivis.core.pintset import PIntSet
 from .dshape import dshape_print, dshape_create, DataShape, EMPTY_DSHAPE
-from .tablechanges import TableChanges as TableChanges
+from .tablechanges import PTableChanges as PTableChanges
 
 import sys
 
@@ -54,10 +54,10 @@ from typing import (
 )
 
 if TYPE_CHECKING:
-    from .column_base import BaseColumn
+    from .column_base import BasePColumn
     from .row import Row
 
-    BinaryRet = Union[Dict[str, np.ndarray[Any, Any]], "BaseTable"]
+    BinaryRet = Union[Dict[str, np.ndarray[Any, Any]], "BasePTable"]
     ColIndexer = Union[int, np.integer[Any], str]
 
 Shape = Tuple[int, ...]
@@ -76,7 +76,7 @@ def _to_datetime(arr):
 
 class _BaseLoc:
     # pylint: disable=too-few-public-methods
-    def __init__(self, this_table: BaseTable, as_loc: bool = True) -> None:
+    def __init__(self, this_table: BasePTable, as_loc: bool = True) -> None:
         self._table = this_table
         self._as_loc = as_loc
 
@@ -90,24 +90,24 @@ class _BaseLoc:
         locs = None
         if self._as_loc:  # i.e loc mode
             locs = index
-            index = self._table._any_to_bitmap(index)
+            index = self._table._any_to_pintset(index)
         return index, col_key, locs
 
-    def parse_key_to_bitmap(self, key: Indexer) -> Tuple[Any, Any, Any]:
+    def parse_key_to_pintset(self, key: Indexer) -> Tuple[Any, Any, Any]:
         if isinstance(key, tuple):
             if len(key) != 2:
                 raise ValueError('getitem not implemented for key "%s"' % key)
             raw_index, col_key = key
         else:
             raw_index, col_key = key, slice(None)
-        index = self._table._any_to_bitmap(raw_index)
+        index = self._table._any_to_pintset(raw_index)
         return index, col_key, raw_index
 
 
 class _Loc(_BaseLoc):
     # pylint: disable=too-few-public-methods
     def __delitem__(self, key: Indexer) -> None:
-        index, col_key, raw_index = self.parse_key_to_bitmap(key)
+        index, col_key, raw_index = self.parse_key_to_pintset(key)
         if not is_none_alike(col_key):
             raise ValueError('Cannot delete key "%s"' % key)
         self._table.drop(index, raw_index)
@@ -128,22 +128,22 @@ class _Loc(_BaseLoc):
 
     @overload
     def __getitem__(
-        self, key: Union[bitmap, np.ndarray[Any, Any], slice, List[str], List[int]]
-    ) -> Optional[BaseTable]:
+        self, key: Union[PIntSet, np.ndarray[Any, Any], slice, List[str], List[int]]
+    ) -> Optional[BasePTable]:
         ...
 
     @overload
     def __getitem__(
         self,
         key: Tuple[
-            Union[bitmap, np.ndarray[Any, Any], slice],
+            Union[PIntSet, np.ndarray[Any, Any], slice],
             Union[int, str, slice, List[str]],
         ],
-    ) -> Optional[BaseTable]:
+    ) -> Optional[BasePTable]:
         ...
 
     def __getitem__(self, key: Indexer) -> Any:
-        index, col_key, raw_index = self.parse_key_to_bitmap(key)
+        index, col_key, raw_index = self.parse_key_to_pintset(key)
         if not (is_slice(raw_index) or index in self._table.index):
             diff_ = index - self._table.index
             raise KeyError(f"Non existing indices {diff_}")
@@ -154,7 +154,7 @@ class _Loc(_BaseLoc):
             return row
         elif isinstance(index, Iterable):
             base = self._table.get_original_base()
-            btab = BaseTable(selection=raw_index, base=base)
+            btab = BasePTable(selection=raw_index, base=base)
             columns, columndict = self._table.make_projection(col_key, btab)
             btab._columns = columns
             btab._columndict = columndict
@@ -168,7 +168,7 @@ class _Loc(_BaseLoc):
         raise ValueError('getitem not implemented for index "%s"', index)
 
     def __setitem__(self, key: Indexer, value: Any) -> Any:
-        index, col_key, raw_index = self.parse_key_to_bitmap(key)
+        index, col_key, raw_index = self.parse_key_to_pintset(key)
         if isinstance(raw_index, integer_types):
             index = raw_index
         self._table.setitem_2d(index, col_key, value)
@@ -204,23 +204,23 @@ class _At(_BaseLoc):
         self._table[col_key][index] = value
 
 
-class BaseTable(metaclass=ABCMeta):
+class BasePTable(metaclass=ABCMeta):
     # pylint: disable=too-many-public-methods, too-many-instance-attributes
-    """Base class for Tables."""
+    """Base class for PTables."""
 
     def __init__(
         self,
-        base: Optional[BaseTable] = None,
-        selection: Union[bitmap, slice] = slice(0, None),
-        columns: Optional[List[BaseColumn]] = None,
+        base: Optional[BasePTable] = None,
+        selection: Union[PIntSet, slice] = slice(0, None),
+        columns: Optional[List[BasePColumn]] = None,
         columndict: Optional[Dict[str, int]] = None,
         computed: Optional[Dict[str, Dict[str, Any]]] = None,
     ) -> None:
-        self._base: Optional[BaseTable] = (
+        self._base: Optional[BasePTable] = (
             base if (base is None or base._base is None) else base._base
         )
-        self._selection: Union[slice, bitmap] = selection
-        self._columns: List[BaseColumn] = [] if columns is None else columns
+        self._selection: Union[slice, PIntSet] = selection
+        self._columns: List[BasePColumn] = [] if columns is None else columns
         self._columndict: Dict[str, int] = dict() if columndict is None else columndict
         self._loc = _Loc(self, True)
         self._at = _At(self, True)
@@ -257,7 +257,7 @@ class BaseTable(metaclass=ABCMeta):
             length,
         )
 
-    def get_original_base(self) -> BaseTable:
+    def get_original_base(self) -> BasePTable:
         if self._base is None:
             return self
         return self._base
@@ -385,10 +385,10 @@ class BaseTable(metaclass=ABCMeta):
             self.to_dict(**kwds)
         return self.to_dict(**kwds)  # type: ignore
 
-    def make_computed(self, index: Any, meta: Dict[str, Any], name: str) -> BaseColumn:
-        from .column_selected import ColumnComputedView
-        from .column_expr import ColumnExpr
-        from .column_vfunc import ColumnVFunc
+    def make_computed(self, index: Any, meta: Dict[str, Any], name: str) -> BasePColumn:
+        from .column_selected import PColumnComputedView
+        from .column_expr import PColumnExpr
+        from .column_vfunc import PColumnVFunc
 
         if meta["category"] == "ufunc":
             base_col = meta["column"]
@@ -396,7 +396,7 @@ class BaseTable(metaclass=ABCMeta):
                 base = self.computed[base_col]["computed_col"]
             else:
                 base = self._columns[self._columndict[base_col]]
-            computed_col = ColumnComputedView(
+            computed_col = PColumnComputedView(
                 base=base,
                 index=index,
                 aka=name,
@@ -407,7 +407,7 @@ class BaseTable(metaclass=ABCMeta):
             meta["computed_col"] = computed_col
             return computed_col
         if meta["category"] == "vfunc":
-            computed_col = ColumnVFunc(
+            computed_col = PColumnVFunc(
                 name=name,
                 table=self,
                 index=index,
@@ -421,7 +421,7 @@ class BaseTable(metaclass=ABCMeta):
             return computed_col
 
         assert meta["category"] == "expr"
-        computed_col = ColumnExpr(
+        computed_col = PColumnExpr(
             name=name,
             table=self,
             index=index,
@@ -436,12 +436,12 @@ class BaseTable(metaclass=ABCMeta):
 
     def make_projection(
         self, cols: Optional[List[str]], index: Any
-    ) -> Tuple[List[BaseColumn], Dict[str, int]]:
-        from .column_selected import ColumnSelectedView
+    ) -> Tuple[List[BasePColumn], Dict[str, int]]:
+        from .column_selected import PColumnSelectedView
 
         dict_ = self._make_columndict_projection(cols)
-        columns: List[BaseColumn] = [
-            ColumnSelectedView(base=c, index=index)
+        columns: List[BasePColumn] = [
+            PColumnSelectedView(base=c, index=index)
             for (i, c) in enumerate(self._columns)
             if i in dict_.values()
         ]
@@ -457,7 +457,7 @@ class BaseTable(metaclass=ABCMeta):
             cols_as_set = set(cols)
         else:
             logger.warning(f"computed columns will be ignored with selection {cols}")
-        comp_cols: List[BaseColumn] = [
+        comp_cols: List[BasePColumn] = [
             self.make_computed(index, meta, aka)
             for (aka, meta) in self.computed.items()
             if aka in cols_as_set and aka not in self._columndict.keys()
@@ -569,7 +569,7 @@ class BaseTable(metaclass=ABCMeta):
             ret["data"] = data
             return ret
         if orient == "datatable":
-            # not a pandas compliant mode but useful for JS DataTable
+            # not a pandas compliant mode but useful for JS DataPTable
             ret2 = []
             for i in self.index:
                 line = [i]
@@ -644,7 +644,7 @@ class BaseTable(metaclass=ABCMeta):
         "Return the list of column names in this table"
         return list(self._columndict.keys())
 
-    def _column(self, name: ColIndexer) -> BaseColumn:
+    def _column(self, name: ColIndexer) -> BasePColumn:
         if isinstance(name, integer_types):
             return self._columns[name]
         return self._columns[self._columndict[name]]
@@ -669,7 +669,7 @@ class BaseTable(metaclass=ABCMeta):
         """
         if is_int(ix):
             return ix
-        locs = self._any_to_bitmap(ix)
+        locs = self._any_to_pintset(ix)
         return locs
 
     def id_to_index(self, loc: Any, as_slice: bool = True) -> Any:
@@ -681,7 +681,7 @@ class BaseTable(metaclass=ABCMeta):
         ----------
         loc : an id or list of ids
             The format can be: integer, list, numpy array, Iterable, or slice.
-            Note that a bitmap is an list, and array, and a bitmap are all
+            Note that a PIntSet is an list, and array, and a PIntSet are all
             Iterables but are managed in an efficient way.
         as_slice : boolean
             If True, try to convert the result into a slice if possible and
@@ -689,20 +689,20 @@ class BaseTable(metaclass=ABCMeta):
         """
         return self.index_to_id(loc)
 
-    def _compute_index(self) -> bitmap:
+    def _compute_index(self) -> PIntSet:
         assert self._base is not None
-        res = self._base._any_to_bitmap(self._selection)
+        res = self._base._any_to_pintset(self._selection)
         prev = self._masked
         while prev is not None:
-            bm = self._base._any_to_bitmap(prev._selection)
+            bm = self._base._any_to_pintset(prev._selection)
             res &= bm
             prev = prev._masked
         return res
 
     @property
-    def index(self) -> bitmap:
+    def index(self) -> PIntSet:
         "Return the object in change of indexing this table"
-        # return self._base._any_to_bitmap(self._mask)
+        # return self._base._any_to_pintset(self._mask)
         return self._compute_index()
 
     @property
@@ -718,35 +718,35 @@ class BaseTable(metaclass=ABCMeta):
     def __len__(self) -> int:
         return self.nrow
 
-    def _slice_to_bitmap(
+    def _slice_to_pintset(
         self, sl: slice, fix_loc: bool = True, existing_only: bool = True
-    ) -> bitmap:
+    ) -> PIntSet:
         stop = sl.stop or self.last_xid
         nsl = norm_slice(sl, fix_loc, stop=stop)
-        ret = bitmap(nsl)
+        ret = PIntSet(nsl)
         if existing_only:
             ret &= self.index
         return ret
 
-    def _any_to_bitmap(
+    def _any_to_pintset(
         self,
-        locs: Union[bitmap, int, np.integer[Any], Iterable[Any], slice],
+        locs: Union[PIntSet, int, np.integer[Any], Iterable[Any], slice],
         copy: bool = True,
         fix_loc: bool = True,
         existing_only: bool = True,
-    ) -> bitmap:
-        if isinstance(locs, bitmap):
+    ) -> PIntSet:
+        if isinstance(locs, PIntSet):
             return locs[:] if copy else locs
         if isinstance(locs, integer_types):
-            return bitmap([locs])
+            return PIntSet([locs])
         if isinstance(locs, Iterable):
             if all_bool(locs):
                 assert isinstance(locs, Iterable)
-                return bitmap(np.nonzero(locs))  # type: ignore
+                return PIntSet(np.nonzero(locs))  # type: ignore
             else:
-                return bitmap(locs)
+                return PIntSet(locs)
         if isinstance(locs, slice):
-            return self._slice_to_bitmap(locs, fix_loc, existing_only)
+            return self._slice_to_pintset(locs, fix_loc, existing_only)
         raise KeyError(f"Invalid type {type(locs)} for key {locs}")
 
     @property
@@ -760,18 +760,18 @@ class BaseTable(metaclass=ABCMeta):
         return self._dshape
 
     @property
-    def base(self) -> Optional[BaseTable]:
+    def base(self) -> Optional[BasePTable]:
         "Return the base table for views, or None if the table is not a view"
         return self._base
 
     @property
-    def changes(self) -> Optional[TableChanges]:
-        "Return the TableChange manager associated with this table or None"
+    def changes(self) -> Optional[PTableChanges]:
+        "Return the PTableChange manager associated with this table or None"
         return self._changes
 
     @changes.setter
-    def changes(self, tablechange: Optional[TableChanges]) -> None:
-        "Set the TableChange manager, or unset with None"
+    def changes(self, tablechange: Optional[PTableChanges]) -> None:
+        "Set the PTableChange manager, or unset with None"
         self._changes = tablechange
 
     def reset_updates(self, mid: str) -> None:
@@ -802,12 +802,12 @@ class BaseTable(metaclass=ABCMeta):
             self._flush_cache()
             updates = self._changes.compute_updates(start, now, mid, cleanup=cleanup)
             if updates is None:
-                updates = IndexUpdate(created=bitmap(self.index))
+                updates = IndexUpdate(created=PIntSet(self.index))
             return updates
         return None
 
     @overload
-    def __getitem__(self, key: Union[int, str]) -> BaseColumn:
+    def __getitem__(self, key: Union[int, str]) -> BasePColumn:
         ...
 
     @overload
@@ -816,11 +816,11 @@ class BaseTable(metaclass=ABCMeta):
         key: Union[
             List[Any], Tuple[Any, Any], np.ndarray[Any, Any], slice, Iterable[int]
         ],
-    ) -> Tuple[BaseColumn, ...]:
+    ) -> Tuple[BasePColumn, ...]:
         ...
 
     def __getitem__(self, key: Any) -> Any:
-        # hack, use t[['a', 'b'], 1] to get a list instead of a TableView
+        # hack, use t[['a', 'b'], 1] to get a list instead of a PTableView
         fast = False
         if isinstance(key, tuple):
             key = key[0]  # i.e. columns
@@ -845,7 +845,7 @@ class BaseTable(metaclass=ABCMeta):
 
     def iterrows(self) -> Iterator[Optional[Row]]:
         "Return an iterator returning rows and their ids"
-        raise NotImplementedError("iterrow not implemented in BaseTable")
+        raise NotImplementedError("iterrow not implemented in BasePTable")
 
     @overload
     def last(self, key: Optional[int] = None) -> Optional[Row]:
@@ -877,10 +877,10 @@ class BaseTable(metaclass=ABCMeta):
         raise ValueError('last not implemented for key "%s"' % key)
 
     def __delitem__(self, key: Indexer) -> None:
-        bm = self._any_to_bitmap(key, fix_loc=False, existing_only=False)
+        bm = self._any_to_pintset(key, fix_loc=False, existing_only=False)
         if not bm:
             return
-        res = self._any_to_bitmap(self._selection)
+        res = self._any_to_pintset(self._selection)
         # if not (bm in self.index or isinstance(key, slice)):
         #    raise ValueError('Invalid locs')
         if isinstance(key, slice):
@@ -909,7 +909,7 @@ class BaseTable(metaclass=ABCMeta):
     def __setitem__(
         self,
         key: Union[int, str],
-        values: Union[BaseColumn, np.ndarray[Any, Any], Iterable[Any]],
+        values: Union[BasePColumn, np.ndarray[Any, Any], Iterable[Any]],
     ) -> None:
         ...
 
@@ -921,8 +921,8 @@ class BaseTable(metaclass=ABCMeta):
         ],
         values: Union[
             np.ndarray[Any, Any],
-            BaseTable,
-            Sequence[Union[BaseColumn, np.ndarray[Any, Any], Iterable[Any]]],
+            BasePTable,
+            Sequence[Union[BasePColumn, np.ndarray[Any, Any], Iterable[Any]]],
         ],
     ) -> None:
         ...
@@ -975,7 +975,7 @@ class BaseTable(metaclass=ABCMeta):
         elif hasattr(values, "shape"):
             shape = values.shape
             if len(shape) > 1 and shape[1] != self.width(colnames):
-                # and not isinstance(values, BaseTable):
+                # and not isinstance(values, BasePTable):
                 raise ValueError(
                     "Shape [1] (width)) of columns and " "value shape do not match"
                 )
@@ -988,7 +988,7 @@ class BaseTable(metaclass=ABCMeta):
                     wid = column.shape[1]
                     column[rowkey, 0:wid] = values[i : i + wid]
                 else:  # i.e. len(column.shape) == 1
-                    if isinstance(values, BaseTable):
+                    if isinstance(values, BasePTable):
                         column[rowkey] = values[i]
                     elif len(shape) == 1:  # values is a row
                         column[rowkey] = values[i]
@@ -1016,7 +1016,7 @@ class BaseTable(metaclass=ABCMeta):
     def columns_common_dtype(
         self, columns: Optional[List[str]] = None
     ) -> np.dtype[Any]:
-        """Return the dtype that BaseTable.to_array would return.
+        """Return the dtype that BasePTable.to_array would return.
 
         Parameters
         ----------
@@ -1063,8 +1063,8 @@ class BaseTable(metaclass=ABCMeta):
         if locs is None:
             indices = self.index
         elif isinstance(locs, slice):
-            indices = self._slice_to_bitmap(locs)
-            # indices = self._any_to_bitmap(locs)
+            indices = self._slice_to_pintset(locs)
+            # indices = self._any_to_pintset(locs)
         else:
             indices = locs
         shape: Shape = (indices_len(indices), offsets[-1])
@@ -1110,7 +1110,7 @@ class BaseTable(metaclass=ABCMeta):
             [np.ndarray[Any, Any], Union[np.ndarray[Any, Any], int, float, bool]],
             np.ndarray[Any, Any],
         ],
-        other: BaseTable,
+        other: BasePTable,
         **kwargs: Any,
     ) -> BinaryRet:
         axis = kwargs.pop("axis", 0)
@@ -1131,16 +1131,16 @@ class BaseTable(metaclass=ABCMeta):
     def __abs__(self, **kwargs: Any) -> UnaryRet:
         return self.unary(np.abs, **kwargs)
 
-    def __add__(self, other: BaseTable) -> BinaryRet:
+    def __add__(self, other: BasePTable) -> BinaryRet:
         return self.binary(operator.add, other)
 
-    def __radd__(self, other: BaseTable) -> BinaryRet:
+    def __radd__(self, other: BasePTable) -> BinaryRet:
         return other.binary(operator.add, self)
 
-    def __and__(self, other: BaseTable) -> BinaryRet:
+    def __and__(self, other: BasePTable) -> BinaryRet:
         return self.binary(operator.and_, other)
 
-    def __rand__(self, other: BaseTable) -> BinaryRet:
+    def __rand__(self, other: BasePTable) -> BinaryRet:
         return other.binary(operator.and_, self)
 
     # def __div__(self, other):
@@ -1150,94 +1150,94 @@ class BaseTable(metaclass=ABCMeta):
     #     return other.binary(operator.div, self)
 
     def __eq__(self, other: Any) -> Any:
-        if not isinstance(other, BaseTable):
+        if not isinstance(other, BasePTable):
             return False
         return self.binary(operator.eq, other)
 
-    def __gt__(self, other: BaseTable) -> BinaryRet:
+    def __gt__(self, other: BasePTable) -> BinaryRet:
         return self.binary(operator.gt, other)
 
-    def __ge__(self, other: BaseTable) -> BinaryRet:
+    def __ge__(self, other: BasePTable) -> BinaryRet:
         return self.binary(operator.ge, other)
 
     def __invert__(self) -> UnaryRet:
         return self.unary(np.invert)
 
-    def __lshift__(self, other: BaseTable) -> BinaryRet:
+    def __lshift__(self, other: BasePTable) -> BinaryRet:
         return self.binary(operator.lshift, other)
 
-    def __rlshift__(self, other: BaseTable) -> BinaryRet:
+    def __rlshift__(self, other: BasePTable) -> BinaryRet:
         return other.binary(operator.lshift, self)
 
-    def __lt__(self, other: BaseTable) -> BinaryRet:
+    def __lt__(self, other: BasePTable) -> BinaryRet:
         return self.binary(operator.lt, other)
 
-    def __le__(self, other: BaseTable) -> BinaryRet:
+    def __le__(self, other: BasePTable) -> BinaryRet:
         return self.binary(operator.le, other)
 
-    def __mod__(self, other: BaseTable) -> BinaryRet:
+    def __mod__(self, other: BasePTable) -> BinaryRet:
         return self.binary(operator.mod, other)
 
-    def __rmod__(self, other: BaseTable) -> BinaryRet:
+    def __rmod__(self, other: BasePTable) -> BinaryRet:
         return other.binary(operator.mod, self)
 
-    def __mul__(self, other: BaseTable) -> BinaryRet:
+    def __mul__(self, other: BasePTable) -> BinaryRet:
         return self.binary(operator.mul, other)
 
-    def __rmul__(self, other: BaseTable) -> BinaryRet:
+    def __rmul__(self, other: BasePTable) -> BinaryRet:
         return other.binary(operator.mul, self)
 
     def __ne__(self, other: Any) -> Any:
-        if not isinstance(other, BaseTable):
+        if not isinstance(other, BasePTable):
             return False
         return self.binary(operator.ne, other)
 
     def __neg__(self) -> Dict[str, Any]:
         return self.unary(np.negative)
 
-    def __or__(self, other: BaseTable) -> BinaryRet:
+    def __or__(self, other: BasePTable) -> BinaryRet:
         return self.binary(operator.or_, other)
 
-    def __pos__(self) -> BaseTable:
+    def __pos__(self) -> BasePTable:
         return self
 
-    def __ror__(self, other: BaseTable) -> BinaryRet:
+    def __ror__(self, other: BasePTable) -> BinaryRet:
         return other.binary(operator.or_, self)
 
-    def __pow__(self, other: BaseTable) -> BinaryRet:
+    def __pow__(self, other: BasePTable) -> BinaryRet:
         return self.binary(operator.pow, other)
 
-    def __rpow__(self, other: BaseTable) -> BinaryRet:
+    def __rpow__(self, other: BasePTable) -> BinaryRet:
         return other.binary(operator.pow, self)
 
-    def __rshift__(self, other: BaseTable) -> BinaryRet:
+    def __rshift__(self, other: BasePTable) -> BinaryRet:
         return self.binary(operator.rshift, other)
 
-    def __rrshift__(self, other: BaseTable) -> BinaryRet:
+    def __rrshift__(self, other: BasePTable) -> BinaryRet:
         return other.binary(operator.rshift, self)
 
-    def __sub__(self, other: BaseTable) -> BinaryRet:
+    def __sub__(self, other: BasePTable) -> BinaryRet:
         return self.binary(operator.sub, other)
 
-    def __rsub__(self, other: BaseTable) -> BinaryRet:
+    def __rsub__(self, other: BasePTable) -> BinaryRet:
         return other.binary(operator.sub, self)
 
-    def __truediv__(self, other: BaseTable) -> BinaryRet:
+    def __truediv__(self, other: BasePTable) -> BinaryRet:
         return self.binary(operator.truediv, other)
 
-    def __rtruediv__(self, other: BaseTable) -> BinaryRet:
+    def __rtruediv__(self, other: BasePTable) -> BinaryRet:
         return other.binary(operator.truediv, self)
 
-    def __floordiv__(self, other: BaseTable) -> BinaryRet:
+    def __floordiv__(self, other: BasePTable) -> BinaryRet:
         return self.binary(operator.floordiv, other)
 
-    def __rfloordiv__(self, other: BaseTable) -> BinaryRet:
+    def __rfloordiv__(self, other: BasePTable) -> BinaryRet:
         return other.binary(operator.floordiv, self)
 
-    def __xor__(self, other: BaseTable) -> BinaryRet:
+    def __xor__(self, other: BasePTable) -> BinaryRet:
         return self.binary(operator.xor, other)
 
-    def __rxor__(self, other: BaseTable) -> BinaryRet:
+    def __rxor__(self, other: BasePTable) -> BinaryRet:
         return other.binary(operator.xor, self)
 
     def any(self, **kwargs: Any) -> UnaryRet:
@@ -1289,8 +1289,8 @@ class BaseTable(metaclass=ABCMeta):
         # TODO
         pass
 
-    def _normalize_locs(self, locs: Indexer) -> bitmap:
-        return self._any_to_bitmap(locs)
+    def _normalize_locs(self, locs: Indexer) -> PIntSet:
+        return self._any_to_pintset(locs)
         """if locs is None:
             if bool(self._freelist):
                 locs = iter(self)
@@ -1298,9 +1298,9 @@ class BaseTable(metaclass=ABCMeta):
                 locs = iter(self.dataset)
         elif isinstance(locs, integer_types):
             locs = [locs]
-        return bitmap(locs)"""
+        return PIntSet(locs)"""
 
-    def equals(self, other: BaseTable) -> bool:
+    def equals(self, other: BasePTable) -> bool:
         if self is other:
             return True
         return bool(np.all(self._columns == other._columns))
@@ -1324,8 +1324,8 @@ class BaseTable(metaclass=ABCMeta):
             cols = tbl.columns
         return [tbl[c].dataset.base for c in cols]  # type: ignore
 
-    def cxx_api_info_index(self) -> Tuple[bool, bitmap, int]:
-        # ix = Int64HashTable() if self.is_identity else self._ids._ids_dict._ht
+    def cxx_api_info_index(self) -> Tuple[bool, PIntSet, int]:
+        # ix = Int64HashPTable() if self.is_identity else self._ids._ids_dict._ht
         # return self.is_identity, ix, self.last_id
         return False, self.index, self.last_id
 
@@ -1366,11 +1366,11 @@ class BaseTable(metaclass=ABCMeta):
         )
 
 
-class IndexTable(BaseTable):
-    def __init__(self, index: Optional[bitmap] = None) -> None:
+class IndexPTable(BasePTable):
+    def __init__(self, index: Optional[PIntSet] = None) -> None:
         super().__init__()
-        self._index: bitmap = bitmap() if index is None else index
-        self._cached_index: Optional[bitmap] = None  # hack
+        self._index: PIntSet = PIntSet() if index is None else index
+        self._cached_index: Optional[PIntSet] = None  # hack
         self._last_id: int = -1
         self._changes = None
 
@@ -1378,22 +1378,22 @@ class IndexTable(BaseTable):
     def _flush_cache(self) -> None:
         self._cached_index = None
 
-    def touch(self, index: Optional[bitmap] = None) -> None:
+    def touch(self, index: Optional[PIntSet] = None) -> None:
         if index is self._cached_index:
             return
         self._cached_index = index
         self.add_updated(index)
 
     @property
-    def index(self) -> bitmap:
+    def index(self) -> PIntSet:
         "Return the object in change of indexing this table"
-        return bitmap(self._index)  # returns a copy to prevent unwanted
+        return PIntSet(self._index)  # returns a copy to prevent unwanted
 
     @index.setter
     def index(self, indices: Any) -> None:
         "Modify the object in change of indexing this table"
         raise NotImplementedError("Cannot change index")
-        # indices = self._any_to_bitmap(indices)
+        # indices = self._any_to_pintset(indices)
         # if indices not in self._observed.index:
         #     raise ValueError(f"Not existing indices {indices-self._observed.index}")
         # created_ = indices - self._index
@@ -1428,26 +1428,26 @@ class IndexTable(BaseTable):
         # self.notify_observers('created', locs)
         # TODO simplify tablechanges to ignore add_created etc. when no bookmark exist
         if self._changes is None:
-            self._changes = TableChanges()
+            self._changes = PTableChanges()
         locs = self._normalize_locs(locs)
         self._changes.add_created(locs)
 
     def add_updated(self, locs: Any) -> None:
         # self.notify_observers('updated', locs)
         if self._changes is None:
-            self._changes = TableChanges()
+            self._changes = PTableChanges()
         locs = self._normalize_locs(locs)
         self._changes.add_updated(locs)
 
     def add_deleted(self, locs: Any) -> None:
         # self.notify_observers('deleted', locs)
         if self._changes is None:
-            self._changes = TableChanges()
+            self._changes = PTableChanges()
         locs = self._normalize_locs(locs)
         self._changes.add_deleted(locs)
 
     def __delitem__(self, key: Any) -> None:
-        bm = self._any_to_bitmap(key, fix_loc=False, existing_only=False)
+        bm = self._any_to_pintset(key, fix_loc=False, existing_only=False)
         if not bm:
             return
         # if not (bm in self.index or isinstance(key, slice)):
@@ -1473,7 +1473,7 @@ class IndexTable(BaseTable):
             self._index.remove(int(raw_index))
         else:
             # self.__delitem__(index)
-            index = self._any_to_bitmap(index)
+            index = self._any_to_pintset(index)
             self._index -= index
         if truncate:  # useful 4 csv recovery
             self._last_id = self._index.max() if self._index else -1
@@ -1483,9 +1483,9 @@ class IndexTable(BaseTable):
 
     def _resize_rows(self, newsize: int, index: Optional[Any] = None) -> None:
         # self._ids.resize(newsize, index)
-        created = bitmap()
+        created = PIntSet()
         if index is not None:
-            index = self._any_to_bitmap(index)
+            index = self._any_to_pintset(index)
             created = index - self._index
             if index and index.min() > self.last_id:
                 self._index |= index
@@ -1496,20 +1496,20 @@ class IndexTable(BaseTable):
         else:
             # assert self._is_identity
             if newsize >= self.last_id + 1:
-                new_ids = bitmap(range(self.last_id + 1, newsize))
+                new_ids = PIntSet(range(self.last_id + 1, newsize))
                 created = new_ids - self._index
                 self._index |= new_ids
             else:
-                self._index &= bitmap(range(0, newsize))
+                self._index &= PIntSet(range(0, newsize))
         if created:
             self.add_created(created)
 
 
-class TableSelectedView(BaseTable):
+class PTableSelectedView(BasePTable):
     def __init__(
         self,
-        base: Optional[BaseTable] = None,
-        selection: Union[bitmap, slice] = slice(0, None),
+        base: Optional[BasePTable] = None,
+        selection: Union[PIntSet, slice] = slice(0, None),
         columns: Optional[List[str]] = None,
         computed: Optional[Dict[str, Any]] = None
     ) -> None:
@@ -1533,14 +1533,14 @@ class TableSelectedView(BaseTable):
         )
 
     @property
-    def selection(self) -> bitmap:
-        return bitmap(self._selection)
+    def selection(self) -> PIntSet:
+        return PIntSet(self._selection)
 
     @selection.setter
-    def selection(self, sel: Union[bitmap, slice]) -> None:
-        if isinstance(sel, bitmap):
+    def selection(self, sel: Union[PIntSet, slice]) -> None:
+        if isinstance(sel, PIntSet):
             self._selection = sel.copy()
         elif isinstance(sel, slice):
             self._selection = sel
         else:
-            raise ValueError("Selection must be a bitmap or a slice")
+            raise ValueError("Selection must be a PIntSet or a slice")

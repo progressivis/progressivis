@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 from ..core.module import Module, ReturnRunStep
-from ..core.bitmap import bitmap
+from ..core.pintset import PIntSet
 from progressivis.utils.errors import ProgressiveError
 from ..core.utils import indices_len, is_valid_identifier
 from ..core.slot import SlotDescriptor
-from .module import TableModule
-from .table import Table
+from .module import PTableModule
+from .table import PTable
 
 from typing import Optional, Any
 
@@ -15,11 +15,11 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-class Select(TableModule):
+class Select(PTableModule):
     inputs = [
         SlotDescriptor(
             "table",
-            type=Table,
+            type=PTable,
             required=True,
             buffer_created=False,
             buffer_updated=True,
@@ -27,7 +27,7 @@ class Select(TableModule):
         ),
         SlotDescriptor(
             "select",
-            type=bitmap,
+            type=PIntSet,
             required=True,
             buffer_created=True,
             buffer_updated=False,
@@ -98,11 +98,11 @@ class Select(TableModule):
                     "%s: %s" % (col, table[col].dshape) for col in self._columns
                 ]
                 dshape = "{" + ",".join(cols_dshape) + "}"
-            self.__result = Table(
+            self.__result = PTable(
                 self.generate_table_name(table.name), dshape=dshape, create=True
             )
 
-        assert isinstance(self.__result, Table)
+        assert isinstance(self.__result, PTable)
         if select_slot.deleted.any():
             indices = select_slot.deleted.next(length=step_size * 2, as_slice=False)
             s = indices_len(indices)
@@ -113,7 +113,7 @@ class Select(TableModule):
 
         if step_size > 0 and select_slot.created.any():
             indices = select_slot.created.next(length=step_size, as_slice=False)
-            assert isinstance(indices, bitmap)
+            assert isinstance(indices, PIntSet)
             s = indices_len(indices)
             logger.info("creating %s", indices)
             steps += s
@@ -137,7 +137,7 @@ class Select(TableModule):
 
         if step_size > 0 and table_slot.updated.any():
             indices = table_slot.updated.next(length=step_size, as_slice=False)
-            assert isinstance(indices, bitmap)
+            assert isinstance(indices, PIntSet)
             logger.info("updating %d", indices)
             s = indices_len(indices)
             steps += s

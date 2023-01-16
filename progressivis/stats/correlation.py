@@ -8,21 +8,21 @@ from ..core.module import ReturnRunStep
 from ..core.utils import indices_len, fix_loc
 from ..core.slot import SlotDescriptor
 from ..core.decorators import process_slot, run_if_any
-from ..table.table_base import BaseTable
-from ..table.table import Table
-from ..table.module import TableModule
-from ..utils.psdict import PsDict
+from ..table.table_base import BasePTable
+from ..table.table import PTable
+from ..table.module import PTableModule
+from ..utils.psdict import PDict
 from .utils import OnlineVariance, OnlineCovariance
 
 from typing import Any, Union, Literal, Dict, Optional, List
 
 
-class Corr(TableModule):
+class Corr(PTableModule):
     """
     Compute the covariance matrix (a dict, actually) of the columns of an input table.
     """
 
-    inputs = [SlotDescriptor("table", type=Table, required=True)]
+    inputs = [SlotDescriptor("table", type=PTable, required=True)]
 
     def __init__(
         self,
@@ -44,7 +44,7 @@ class Corr(TableModule):
             return True
         return super().is_ready()
 
-    def get_num_cols(self, input_df: BaseTable) -> List[str]:
+    def get_num_cols(self, input_df: BasePTable) -> List[str]:
         if self._num_cols is None:
             if not self._columns:
                 self._num_cols = [
@@ -58,7 +58,7 @@ class Corr(TableModule):
                 ]
         return self._num_cols
 
-    def op(self, chunk: BaseTable) -> Dict[Any, Any]:
+    def op(self, chunk: BasePTable) -> Dict[Any, Any]:
         cols = chunk.columns
         cov_: Dict[frozenset[str], float] = {}
         done_ = set()
@@ -131,7 +131,7 @@ class Corr(TableModule):
                 cols = self.get_num_cols(input_df)
             cov_ = self.op(self.filter_columns(input_df, fix_loc(indices), cols=cols))
             if self.result is None:
-                self.result = PsDict(other=cov_)
+                self.result = PDict(other=cov_)
             else:
                 self.psdict.update(cov_)
             return self._return_run_step(self.next_state(dfslot), steps)

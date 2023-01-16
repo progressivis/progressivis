@@ -4,8 +4,8 @@ from __future__ import annotations
 from progressivis.core.module import ReturnRunStep
 from progressivis.core.slot import SlotDescriptor
 from progressivis.utils.inspect import filter_kwds
-from .table import Table
-from .module import TableModule
+from .table import PTable
+from .module import PTableModule
 from .join_by_id import join
 from .dshape import dshape_join
 from collections import OrderedDict
@@ -13,20 +13,20 @@ from collections import OrderedDict
 from typing import Any
 
 
-class Paste(TableModule):
+class Paste(PTableModule):
     """
     Binary join module to join two tables and return a third one.
 
     Slots:
-        first : Table module producing the first table to join
-        second : Table module producing the second table to join
+        first : PTable module producing the first table to join
+        second : PTable module producing the second table to join
     Args:
         kwds : argument to pass to the join function
     """
 
     inputs = [
-        SlotDescriptor("first", type=Table, required=True),
-        SlotDescriptor("second", type=Table, required=True),
+        SlotDescriptor("first", type=PTable, required=True),
+        SlotDescriptor("second", type=PTable, required=True),
     ]
 
     def __init__(self, **kwds: Any) -> None:
@@ -57,7 +57,7 @@ class Paste(TableModule):
         second_slot.updated.next(length=step_size)
         if self.result is None:
             dshape, rename = dshape_join(first_table.dshape, second_table.dshape)
-            self.result = Table(name=None, dshape=dshape)
+            self.result = PTable(name=None, dshape=dshape)
         if len(first_table) == 0 or len(second_table) == 0:
             return self._return_run_step(self.state_blocked, steps_run=0)
         col_0 = first_table.columns[0]

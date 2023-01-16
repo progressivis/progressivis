@@ -12,7 +12,7 @@ from progressivis.table.range_query_2d import RangeQuery2d
 from progressivis.utils.errors import ProgressiveError
 from progressivis.core.utils import is_notebook, get_physical_base
 from progressivis.io import DynVar
-from ..table.table_base import BaseTable
+from ..table.table_base import BasePTable
 from progressivis.core import notNone
 from typing import (
     Optional,
@@ -208,7 +208,7 @@ class MCScatterPlot(NAry):
         inp_table = inp.data()
         if inp_table is None:
             return None
-        assert isinstance(inp_table, BaseTable)
+        assert isinstance(inp_table, BasePTable)
         if len(inp_table) == 0:
             return None
         row = notNone(inp_table.last()).to_dict()

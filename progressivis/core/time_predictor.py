@@ -10,7 +10,7 @@ from typing import Optional, TYPE_CHECKING
 
 
 if TYPE_CHECKING:
-    from progressivis.table import Table
+    from progressivis.table import PTable
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +22,7 @@ class TimePredictor:
         self.name: Optional[str] = None
 
     @abstractmethod
-    def fit(self, trace_df: Table) -> None:
+    def fit(self, trace_df: PTable) -> None:
         pass
 
     @abstractmethod
@@ -45,7 +45,7 @@ class LinearTimePredictor(TimePredictor):
         self.a: float = 0
         self.calls: int = 0
 
-    def fit(self, trace_df: Table) -> None:
+    def fit(self, trace_df: PTable) -> None:
         self.calls += 1
         if trace_df is None:
             return

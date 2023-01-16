@@ -9,14 +9,14 @@ from sklearn.cluster import MiniBatchKMeans  # type: ignore
 from sklearn.utils.validation import check_random_state  # type: ignore
 from progressivis import ProgressiveError, SlotDescriptor
 from progressivis.core.module import ReturnRunStep, JSon, Module
-from progressivis.core.bitmap import bitmap
+from progressivis.core.pintset import PIntSet
 from progressivis.core.utils import indices_len
-from ..table.module import TableModule
-from ..table.table_base import BaseTable
-from ..table import Table, TableSelectedView
+from ..table.module import PTableModule
+from ..table.table_base import BasePTable
+from ..table import PTable, PTableSelectedView
 from ..table.dshape import dshape_from_dtype, dshape_from_columns
 from ..io import DynVar
-from ..utils.psdict import PsDict
+from ..utils.psdict import PDict
 from ..core.decorators import process_slot, run_if_any
 from ..table.filtermod import FilterMod
 from ..stats import Var
@@ -26,20 +26,20 @@ from typing import Optional, Union, List, Dict, Any
 logger = logging.getLogger(__name__)
 
 
-class MBKMeans(TableModule):
+class MBKMeans(PTableModule):
     """
     Mini-batch k-means using the sklearn implementation.
     """
 
     parameters = [("samples", np.dtype(int), 50)]
     inputs = [
-        SlotDescriptor("table", type=Table, required=True),
-        SlotDescriptor("var", type=Table, required=True),
-        SlotDescriptor("moved_center", type=PsDict, required=False),
+        SlotDescriptor("table", type=PTable, required=True),
+        SlotDescriptor("var", type=PTable, required=True),
+        SlotDescriptor("moved_center", type=PDict, required=False),
     ]
     outputs = [
-        SlotDescriptor("labels", type=Table, required=False),
-        SlotDescriptor("conv", type=PsDict, required=False),
+        SlotDescriptor("labels", type=PTable, required=False),
+        SlotDescriptor("conv", type=PDict, required=False),
     ]
 
     def __init__(
@@ -63,12 +63,12 @@ class MBKMeans(TableModule):
         )
         self.n_clusters = n_clusters
         self.default_step_size = 100
-        self._labels: Optional[Table] = None
+        self._labels: Optional[PTable] = None
         self._remaining_inits = 10
         self._initialization_steps = 0
         self._is_input = is_input
         self._tol = tol
-        self._conv_out = PsDict({"convergence": "unknown"})
+        self._conv_out = PDict({"convergence": "unknown"})
         self.params.samples = n_clusters
         self._is_greedy: bool = is_greedy
         self._arrays: Optional[Dict[int, np.ndarray[Any, Any]]] = None
@@ -106,7 +106,7 @@ class MBKMeans(TableModule):
 
     def maintain_labels(self, yes: bool = True) -> None:
         if yes and self._labels is None:
-            self._labels = Table(
+            self._labels = PTable(
                 self.generate_table_name("labels"),
                 dshape="{labels: int64}",
                 create=True,
@@ -114,7 +114,7 @@ class MBKMeans(TableModule):
         elif not yes:
             self._labels = None
 
-    def labels(self) -> Optional[Table]:
+    def labels(self) -> Optional[PTable]:
         return self._labels
 
     def get_data(self, name: str) -> Any:
@@ -127,7 +127,7 @@ class MBKMeans(TableModule):
     def is_greedy(self) -> bool:
         return self._is_greedy
 
-    def _process_labels(self, locs: bitmap) -> None:
+    def _process_labels(self, locs: PIntSet) -> None:
         labels = self.mbk.labels_
         assert self._labels is not None
         u_locs = locs & self._labels.index  # ids to update
@@ -231,7 +231,7 @@ class MBKMeans(TableModule):
         if self.result is None:
             assert X is not None
             dshape = dshape_from_columns(input_df, cols, dshape_from_dtype(X.dtype))
-            self.result = Table(
+            self.result = PTable(
                 self.generate_table_name("centers"), dshape=dshape, create=True
             )
             self.result.resize(self.mbk.cluster_centers_.shape[0])
@@ -267,7 +267,7 @@ class MBKMeans(TableModule):
         centroids.loc[c, columns] = values
         # TODO unpack the table
         centers = centroids.loc[c, columns]
-        assert isinstance(centers, BaseTable)
+        assert isinstance(centers, BasePTable)
         self.mbk.cluster_centers_[c] = list(centers)
         return self.mbk.cluster_centers_.tolist()
 
@@ -288,14 +288,14 @@ class MBKMeans(TableModule):
             self.input.var = v.output.result
 
 
-class MBKMeansFilter(TableModule):
+class MBKMeansFilter(PTableModule):
     """
     Filters data corresponding to a specific label
     """
 
     inputs = [
-        SlotDescriptor("table", type=Table, required=True),
-        SlotDescriptor("labels", type=Table, required=True),
+        SlotDescriptor("table", type=PTable, required=True),
+        SlotDescriptor("labels", type=PTable, required=True),
     ]
 
     def __init__(self, sel: Any, **kwds: Any) -> None:
@@ -319,7 +319,7 @@ class MBKMeansFilter(TableModule):
             if steps == 0:
                 return self._return_run_step(self.state_blocked, steps_run=0)
             if self.result is None:
-                self.result = TableSelectedView(
+                self.result = PTableSelectedView(
                     ctx.table.data(), ctx.labels.data().selection
                 )
             else:

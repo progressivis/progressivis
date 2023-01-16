@@ -5,7 +5,7 @@ import numpy as np
 from progressivis.storage.mmap import MMapGroup
 from progressivis.storage.mmap_enc import MAX_SHORT
 from progressivis.storage.base import Group, Dataset
-from progressivis.table.table import Table
+from progressivis.table.table import PTable
 from . import ProgressiveTest, skipIf
 import pandas as pd
 from progressivis.storage import IS_PERSISTENT as MMAP
@@ -70,7 +70,7 @@ class TestMMap(ProgressiveTest):
         # self.scheduler._run_number = 1
         self._rmtree()
         df = pd.DataFrame({"a": [1, 2, 3], "b": [0.1, 0.2, 0.3], "c": ["a", "b", "cd"]})
-        t = Table("table_2", data=df)
+        t = PTable("table_2", data=df)
         self.assertEqual(len(t), len(df))
         for colname in df:
             coldf = df[colname]
@@ -87,7 +87,7 @@ class TestMMap(ProgressiveTest):
         self._rmtree()
         print("test_mmap4")
         df = pd.DataFrame({"a": np.arange(10000), "b": np.random.rand(10000)})
-        t = Table("table_4", data=df)
+        t = PTable("table_4", data=df)
         np.min(t["b"])  # type: ignore
         self.assertEqual(len(t), len(df))
         self._rmtree()
@@ -95,7 +95,7 @@ class TestMMap(ProgressiveTest):
     def test_mmap5(self) -> None:
         # pylint: disable=protected-access
         self._rmtree()
-        t = Table("table_mmap_5", dshape="{anint: int, atext: string}")
+        t = PTable("table_mmap_5", dshape="{anint: int, atext: string}")
         for i in range(100):
             t.add(dict(anint=i, atext="abc"))
             t.add(dict(anint=i, atext="xyz"))
@@ -107,7 +107,7 @@ class TestMMap(ProgressiveTest):
         # pylint: disable=protected-access
         long_text = "a" * LONG_SIZE
         self._rmtree()
-        t = Table("table_mmap_6", dshape="{anint: int, atext: string}")
+        t = PTable("table_mmap_6", dshape="{anint: int, atext: string}")
         for i in range(100):
             t.add(dict(anint=i, atext=long_text))
         nb_str = len(set(t._column("atext").storagegroup["atext"].view))  # type: ignore
@@ -118,7 +118,7 @@ class TestMMap(ProgressiveTest):
         long_text = initial
         cnt = len(initial)
         self._rmtree()
-        t = Table(t_name, dshape="{anint: int, atext: string}")
+        t = PTable(t_name, dshape="{anint: int, atext: string}")
         t.add(dict(anint=1, atext=long_text))
         for i in range(10):
             if stride >= 0:
@@ -151,7 +151,7 @@ class TestMMap(ProgressiveTest):
 
     @skipIf(not MMAP, "storage is not mmap, test skipped")
     def test_mmap_drop(self) -> None:
-        def _free_chunk_nb(t: Table) -> int:
+        def _free_chunk_nb(t: PTable) -> int:
             return sum(
                 [
                     len(e)
@@ -160,7 +160,7 @@ class TestMMap(ProgressiveTest):
             )
 
         self._rmtree()
-        t = Table("table_mmap_drop", dshape="{anint: int, atext: string}")
+        t = PTable("table_mmap_drop", dshape="{anint: int, atext: string}")
         for i in range(100):
             t.add(dict(anint=i, atext="a" * LONG_SIZE))
         del t.loc[[1, 3, 5]]
@@ -173,8 +173,8 @@ class TestMMap(ProgressiveTest):
         self.assertEqual(len(t), 66)
         self.assertEqual(_free_chunk_nb(t), 34)
 
-    def _create_table(self, group: Any) -> Table:
-        table = Table(
+    def _create_table(self, group: Any) -> PTable:
+        table = PTable(
             "table",
             dshape="{a: int64, b: real, c: string, d: 10*int}",
             data={
@@ -188,8 +188,8 @@ class TestMMap(ProgressiveTest):
         self.assertEqual(len(table), 3)
         return table
 
-    def _create_table2(self, group: Any) -> Table:
-        t = Table(
+    def _create_table2(self, group: Any) -> PTable:
+        t = PTable(
             "table",
             dshape="{a: int, b: float32, c: string, d: 10*int}",
             create=True,

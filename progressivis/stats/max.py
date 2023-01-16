@@ -5,12 +5,12 @@ import logging
 import numpy as np
 
 from ..core.utils import indices_len, fix_loc
-from ..core.bitmap import bitmap
+from ..core.pintset import PIntSet
 from ..core.module import ReturnRunStep
-from ..table.module import TableModule
-from ..table.table import Table
+from ..table.module import PTableModule
+from ..table.table import PTable
 from ..core.slot import SlotDescriptor, Slot
-from ..utils.psdict import PsDict
+from ..utils.psdict import PDict
 from ..core.decorators import process_slot, run_if_any
 
 from typing import Optional, Dict, Union, Any, Tuple
@@ -25,8 +25,8 @@ def _max_func(x: Any, y: Any) -> Any:
         return max(x, y)
 
 
-class Max(TableModule):
-    inputs = [SlotDescriptor("table", type=Table, required=True)]
+class Max(PTableModule):
+    inputs = [SlotDescriptor("table", type=PTable, required=True)]
 
     def __init__(self, **kwds: Any) -> None:
         super().__init__(**kwds)
@@ -54,7 +54,7 @@ class Max(TableModule):
             input_df = ctx.table.data()
             op = self.filter_columns(input_df, fix_loc(indices)).max(keepdims=False)
             if self.result is None:
-                self.result = PsDict(op)
+                self.result = PDict(op)
             else:
                 for k, v in self.psdict.items():
                     self.psdict[k] = _max_func(op[k], v)
@@ -69,8 +69,8 @@ def maximum_val_id(
     return current_val, current_id, False
 
 
-class ScalarMax(TableModule):
-    inputs = [SlotDescriptor("table", type=Table, required=True)]
+class ScalarMax(PTableModule):
+    inputs = [SlotDescriptor("table", type=PTable, required=True)]
 
     def __init__(self, **kwds: Any) -> None:
         super().__init__(**kwds)
@@ -92,7 +92,7 @@ class ScalarMax(TableModule):
         self.reset()
         slot.update(run_number)
 
-    def are_critical(self, updated_ids: bitmap, data: Table) -> bool:
+    def are_critical(self, updated_ids: PIntSet, data: PTable) -> bool:
         """
         check if updates invalidate the current max
         """
@@ -108,8 +108,8 @@ class ScalarMax(TableModule):
     ) -> ReturnRunStep:
         slot = self.get_input_slot("table")
         assert slot is not None
-        indices: Optional[Union[None, bitmap, slice]] = None
-        sensitive_ids_bm = bitmap(self._sensitive_ids.values())
+        indices: Optional[Union[None, PIntSet, slice]] = None
+        sensitive_ids_bm = PIntSet(self._sensitive_ids.values())
         if slot.deleted.any():
             del_ids = slot.deleted.next(as_slice=False)
             if del_ids & sensitive_ids_bm:
@@ -138,7 +138,7 @@ class ScalarMax(TableModule):
             self._sensitive_ids.update(idxop)
         if self.result is None:
             op = {k: input_df.loc[i, k] for (k, i) in idxop.items()}
-            self.result = PsDict(op)
+            self.result = PDict(op)
         else:
             rich_op = {k: (input_df.loc[i, k], i) for (k, i) in idxop.items()}
             for k, v in self.psdict.items():

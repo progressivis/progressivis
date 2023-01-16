@@ -2,42 +2,42 @@ from . import ProgressiveTest
 
 import numpy as np
 
-from progressivis.table.column import Column
-from progressivis.table.changemanager_column import ColumnChangeManager
-from progressivis.table.tablechanges import TableChanges
+from progressivis.table.column import PColumn
+from progressivis.table.changemanager_column import PColumnChangeManager
+from progressivis.table.tablechanges import PTableChanges
 from progressivis.table.changemanager_table_selected import FakeSlot
 
 
-class TestColumnChangeManager(ProgressiveTest):
+class TestPColumnChangeManager(ProgressiveTest):
     def setUp(self) -> None:
-        super(TestColumnChangeManager, self).setUp()
+        super(TestPColumnChangeManager, self).setUp()
         self.scheduler_ = self.scheduler()
 
     def test_columnchangemanager(self) -> None:
         # pylint: disable=protected-access
-        column = Column("test_changemanager_column", None, data=np.array([1, 2, 3]))
+        column = PColumn("test_changemanager_column", None, data=np.array([1, 2, 3]))
         s = self.scheduler_
-        column.changes = TableChanges()
+        column.changes = PTableChanges()
         s._run_number = 1
         last = s._run_number
         slot = FakeSlot(column)
 
         mid1 = "m1"
-        cm = ColumnChangeManager(slot, buffer_updated=True, buffer_deleted=True)
+        cm = PColumnChangeManager(slot, buffer_updated=True, buffer_deleted=True)
         self.assertEqual(cm.last_update(), 0)
         self.assertEqual(cm.created.length(), 0)
         self.assertEqual(cm.updated.length(), 0)
         self.assertEqual(cm.deleted.length(), 0)
 
         mid2 = "m2"
-        cm2 = ColumnChangeManager(slot, buffer_updated=True, buffer_deleted=True)
+        cm2 = PColumnChangeManager(slot, buffer_updated=True, buffer_deleted=True)
         self.assertEqual(cm2.last_update(), 0)
         self.assertEqual(cm2.created.length(), 0)
         self.assertEqual(cm2.updated.length(), 0)
         self.assertEqual(cm2.deleted.length(), 0)
 
         # mid3 = 3
-        cm3 = ColumnChangeManager(slot, buffer_updated=True, buffer_deleted=True)
+        cm3 = PColumnChangeManager(slot, buffer_updated=True, buffer_deleted=True)
         self.assertEqual(cm3.last_update(), 0)
         self.assertEqual(cm3.created.length(), 0)
         self.assertEqual(cm3.updated.length(), 0)

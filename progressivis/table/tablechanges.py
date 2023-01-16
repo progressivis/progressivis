@@ -1,5 +1,5 @@
 """
-TableChanges keep track of the changes (creation, updates, deletions)
+PTableChanges keep track of the changes (creation, updates, deletions)
 in tables/columns.
 """
 from __future__ import annotations
@@ -9,7 +9,7 @@ import logging
 
 
 from progressivis.core.index_update import IndexUpdate
-from progressivis.core.bitmap import bitmap
+from progressivis.core.pintset import PIntSet
 from progressivis.table.tablechanges_base import BaseChanges
 
 from typing import Optional, List, Dict
@@ -34,7 +34,7 @@ class Bookmark(object):
         self.update = update
 
 
-class TableChanges(BaseChanges):
+class PTableChanges(BaseChanges):
     "Keep track of changes in tables"
 
     # To keep track of changes in tables, we maintain a list of Deltas
@@ -121,19 +121,19 @@ class TableChanges(BaseChanges):
         self._bookmarks.append(bookmark)
         assert len(self._bookmarks) == len(self._times)
 
-    def add_created(self, locs: bitmap) -> None:
+    def add_created(self, locs: PIntSet) -> None:
         update = self._last_update()
         if update is None:
             return
         update.add_created(locs)
 
-    def add_updated(self, locs: bitmap) -> None:
+    def add_updated(self, locs: PIntSet) -> None:
         update = self._last_update()
         if update is None:
             return
         update.add_updated(locs)
 
-    def add_deleted(self, locs: bitmap) -> None:
+    def add_deleted(self, locs: PIntSet) -> None:
         update = self._last_update()
         if update is None:
             return
@@ -163,9 +163,9 @@ class TableChanges(BaseChanges):
     def _combine_updates(self, update: IndexUpdate, start: int) -> IndexUpdate:
         # TODO reuse cached results if it matches
         new_u = IndexUpdate(
-            created=bitmap(update.created),
-            deleted=bitmap(update.deleted),
-            updated=bitmap(update.updated),
+            created=PIntSet(update.created),
+            deleted=PIntSet(update.deleted),
+            updated=PIntSet(update.updated),
         )
 
         last_u = None

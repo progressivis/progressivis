@@ -11,10 +11,10 @@ import numpy as np
 from ..core.module import ReturnRunStep
 from ..core.utils import integer_types
 from ..utils.errors import ProgressiveError, ProgressiveStopIteration
-from ..table.module import TableModule
-from ..table.table import Table
+from ..table.module import PTableModule
+from ..table.table import PTable
 from ..table.constant import Constant
-from ..utils.psdict import PsDict
+from ..utils.psdict import PDict
 
 from typing import List, Dict, Union, Any, Callable
 
@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 RAND = np.random.rand
 
 
-class RandomTable(TableModule):
+class RandomPTable(PTableModule):
     "Random table generator module"
 
     def __init__(
@@ -35,7 +35,7 @@ class RandomTable(TableModule):
         throttle: Union[int, np.integer[Any], float, bool] = False,
         **kwds: Any,
     ) -> None:
-        super(RandomTable, self).__init__(**kwds)
+        super(RandomPTable, self).__init__(**kwds)
         self.tags.add(self.TAG_SOURCE)
         self.default_step_size = 1000
         self.columns: Union[List[str], np.ndarray[Any, Any]]
@@ -53,7 +53,7 @@ class RandomTable(TableModule):
             self.throttle = False
         dshape = ", ".join([f"{col}: {dtype}" for col in self.columns])
         dshape = "{" + dshape + "}"
-        table = Table(self.generate_table_name("table"), dshape=dshape, create=True)
+        table = PTable(self.generate_table_name("table"), dshape=dshape, create=True)
         self.result = table
         self.columns = table.columns
 
@@ -91,4 +91,4 @@ class RandomDict(Constant):
     def __init__(self, columns: int, **kwds: Any) -> None:
         keys = [f"_{i}" for i in range(1, columns + 1)]
         vals = np.random.rand(columns)
-        super().__init__(PsDict(dict(zip(keys, vals))), **kwds)
+        super().__init__(PDict(dict(zip(keys, vals))), **kwds)

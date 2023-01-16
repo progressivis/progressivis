@@ -1,6 +1,6 @@
 from . import ProgressiveTest
 from progressivis import Print, Scheduler
-from progressivis.stats import RandomTable, Max
+from progressivis.stats import RandomPTable, Max
 from progressivis.table.stirrer import Stirrer
 from progressivis.table.switch import Switch
 from progressivis.core import aio
@@ -11,7 +11,7 @@ import numpy as np
 class TestSwitch(ProgressiveTest):
     def test_switch_if_then(self):
         s = Scheduler()
-        random = RandomTable(2, rows=100000, scheduler=s)
+        random = RandomPTable(2, rows=100000, scheduler=s)
         stirrer = Stirrer(
             update_column="_1",
             delete_rows=5,
@@ -35,7 +35,7 @@ class TestSwitch(ProgressiveTest):
 
     def test_switch_if_else(self):
         s = Scheduler()
-        random = RandomTable(2, rows=100000, scheduler=s)
+        random = RandomPTable(2, rows=100000, scheduler=s)
         stirrer = Stirrer(
             update_column="_1",
             delete_rows=5,

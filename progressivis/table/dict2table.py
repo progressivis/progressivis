@@ -2,24 +2,24 @@ from __future__ import annotations
 
 from progressivis.core.slot import SlotDescriptor
 from progressivis.core.module import ReturnRunStep
-from .module import TableModule
-from ..utils.psdict import PsDict
-from .table import Table
+from .module import PTableModule
+from ..utils.psdict import PDict
+from .table import PTable
 
 from typing import Any
 
 
-class Dict2Table(TableModule):
+class Dict2PTable(PTableModule):
     """
     dict to table convertor
 
     Slots:
-        dict_ : Table module producing the first table to join
+        dict_ : PTable module producing the first table to join
     Args:
         kwds : argument to pass to the join function
     """
 
-    inputs = [SlotDescriptor("dict_", type=PsDict, required=True)]
+    inputs = [SlotDescriptor("dict_", type=PDict, required=True)]
 
     def __init__(self, **kwds: Any) -> None:
         super().__init__(**kwds)
@@ -42,7 +42,7 @@ class Dict2Table(TableModule):
         dict_slot.updated.next()
         dict_slot.deleted.next()
         if self.result is None:
-            self.result = Table(name=None, dshape=dict_.dshape)
+            self.result = PTable(name=None, dshape=dict_.dshape)
         if len(self.result) == 0:  # or history:
             self.table.append(dict_.as_row)
         else:

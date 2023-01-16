@@ -1,45 +1,45 @@
 from . import ProgressiveTest
 
-from progressivis.table.column import Column
+from progressivis.table.column import PColumn
 
-from progressivis.table.table_base import IndexTable
-from progressivis.core.bitmap import bitmap
+from progressivis.table.table_base import IndexPTable
+from progressivis.core.pintset import PIntSet
 
 import numpy as np
 
 
-class TestColumn(ProgressiveTest):
+class TestPColumn(ProgressiveTest):
     def test_column(self) -> None:
-        index = IndexTable()
+        index = IndexPTable()
         self.assertTrue(index.is_identity)
         self.assertEqual(index.last_id, -1)
         self.assertEqual(index.changes, None)
 
-        col1 = Column("col1", index)
+        col1 = PColumn("col1", index)
         self.assertEqual(col1.name, "col1")
         self.assertIs(col1.index, index)
         self.assertIsNone(col1.base)
         self.assertIsNone(col1.dataset)
         self.assertIsNotNone(col1.storagegroup)
         a = np.arange(10)
-        col2 = Column("col2", None, data=a)
+        col2 = PColumn("col2", None, data=a)
         self.assertEqual(col2.name, "col2")
-        self.assertIsInstance(col2.index, IndexTable)
+        self.assertIsInstance(col2.index, IndexPTable)
         self.assertEqual(col2.size, 10)
         self.assertEqual(col2.shape, (10,))
         assert col2.dataset is not None
         self.assertTrue(np.array_equal(col2.dataset[:], a))
-        self.assertEqual(str(col2.index), 'IndexTable("anonymous", dshape="{}")[10]')
-        # self.assertEqual(repr(col2.index), 'IdColumn("_ID", dshape=int64)[10][IDENTITY]')
+        self.assertEqual(str(col2.index), 'IndexPTable("anonymous", dshape="{}")[10]')
+        # self.assertEqual(repr(col2.index), 'IdPColumn("_ID", dshape=int64)[10][IDENTITY]')
 
         with self.assertRaises(ValueError):
-            col2 = Column("col2.1", None, data=a, indices=[1, 2, 3, 4])
+            col2 = PColumn("col2.1", None, data=a, indices=[1, 2, 3, 4])
         with self.assertRaises(ValueError):
-            col2 = Column("col2.2", None)
+            col2 = PColumn("col2.2", None)
         with self.assertRaises(ValueError):
-            col2 = Column("col2.3", None, data=[1, 2, 3])  # not handled yet
-        col2a = Column("col2a", None, data=col2)
-        self.assertIsInstance(col2a.index, IndexTable)
+            col2 = PColumn("col2.3", None, data=[1, 2, 3])  # not handled yet
+        col2a = PColumn("col2a", None, data=col2)
+        self.assertIsInstance(col2a.index, IndexPTable)
         self.assertTrue(col2a.index.is_identity)
         self.assertEqual(col2a.size, 10)
         self.assertEqual(col2a.shape, (10,))
@@ -82,20 +82,20 @@ class TestColumn(ProgressiveTest):
         assert col2a.dataset is not None
         self.assertTrue(np.array_equal(col2a.dataset[:], np.arange(8)))
 
-        del col2a[bitmap([])]  # should do nothing
+        del col2a[PIntSet([])]  # should do nothing
         self.assertTrue(col2a.index.is_identity)
         self.assertEqual(len(col2a), 8)
         assert col2a.dataset is not None
         self.assertTrue(np.array_equal(col2a.dataset[:], np.arange(8)))
 
-        del col2a[bitmap([7])]
+        del col2a[PIntSet([7])]
         self.assertTrue(col2a.index.is_identity)
         self.assertEqual(len(col2a), 7)
         assert col2a.dataset is not None
         self.assertTrue(np.array_equal(col2a.dataset[:], np.arange(7)))
 
         with self.assertRaises(ValueError):
-            del col2a[bitmap([1, 2, 9, 10])]
+            del col2a[PIntSet([1, 2, 9, 10])]
 
         # del col2a[np.array([])]  column.__del__ does not work with []
         self.assertTrue(col2a.index.is_identity)
@@ -127,11 +127,11 @@ class TestColumn(ProgressiveTest):
         # with self.assertRaises(RuntimeError):
         #    col2a.index[4] = 4
         del col2a[5:11]
-        self.assertEqual(len(col2a), 25)  # was 24 in ColumnId variant
+        self.assertEqual(len(col2a), 25)  # was 24 in PColumnId variant
 
-        col3 = Column("col3", None, dshape="float64", fillvalue=0)
+        col3 = PColumn("col3", None, dshape="float64", fillvalue=0)
         self.assertEqual(col3.name, "col3")
-        self.assertIsInstance(col3.index, IndexTable)
+        self.assertIsInstance(col3.index, IndexPTable)
         self.assertEqual(col3.shape, (0,))
         self.assertIsInstance(col3.chunks, tuple)
 

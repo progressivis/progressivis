@@ -1,16 +1,16 @@
-"Change manager for SelectedTable"
+"Change manager for SelectedPTable"
 from __future__ import annotations
 
-from .table_base import TableSelectedView
+from .table_base import PTableSelectedView
 from ..core.changemanager_base import (
     BaseChangeManager,
     _accessor,
     _base_accessor,
     ChangeBuffer,
 )
-from ..core.changemanager_bitmap import BitmapChangeManager
+from ..core.changemanager_pintset import PIntSetChangeManager
 from ..core.slot import Slot
-from ..core.bitmap import bitmap
+from ..core.pintset import PIntSet
 
 import sys
 
@@ -46,18 +46,18 @@ class _double_buffer(ChangeBuffer):
         self._second.clear()
 
     @overload
-    def make_result(self, res: bitmap, as_slice: Literal[True]) -> slice:
+    def make_result(self, res: PIntSet, as_slice: Literal[True]) -> slice:
         ...
 
     @overload
-    def make_result(self, res: bitmap, as_slice: Literal[False]) -> bitmap:
+    def make_result(self, res: PIntSet, as_slice: Literal[False]) -> PIntSet:
         ...
 
     @overload
-    def make_result(self, res: bitmap, as_slice: bool) -> Union[bitmap, slice]:
+    def make_result(self, res: PIntSet, as_slice: bool) -> Union[PIntSet, slice]:
         ...
 
-    def make_result(self, res: bitmap, as_slice: bool) -> Any:
+    def make_result(self, res: PIntSet, as_slice: bool) -> Any:
         return res.to_slice_maybe() if as_slice else res
 
     def __len__(self) -> int:
@@ -76,7 +76,7 @@ class _double_buffer(ChangeBuffer):
         if length is None:
             length = len(self._first.changes | self._second.changes)
         "Return the next items in the buffer"
-        acc = bitmap()
+        acc = PIntSet()
         while length and self._first.any():
             # prevents to return second ids twice
             new_ids = (
@@ -89,17 +89,17 @@ class _double_buffer(ChangeBuffer):
         return self.make_result(acc, as_slice)
 
     @property
-    def all_changes(self) -> bitmap:
+    def all_changes(self) -> PIntSet:
         return self._first.changes | self._second.changes
 
-    def remove_from_all(self, ids: bitmap) -> None:
+    def remove_from_all(self, ids: PIntSet) -> None:
         self._first.changes -= ids
         self._second.changes -= ids
 
 
-class TableSelectedChangeManager(BaseChangeManager):
+class PTableSelectedChangeManager(BaseChangeManager):
     """
-    Manage changes that occured in a TableSelectedView between runs.
+    Manage changes that occured in a PTableSelectedView between runs.
     """
 
     def __init__(
@@ -112,7 +112,7 @@ class TableSelectedChangeManager(BaseChangeManager):
         buffer_masked: bool = False,
     ) -> None:
         data = slot.data()
-        assert isinstance(data, TableSelectedView)
+        assert isinstance(data, PTableSelectedView)
         bmslot = FakeSlot(data.index)  # not required formally
         tbslot = FakeSlot(data._base)
         super().__init__(
@@ -123,7 +123,7 @@ class TableSelectedChangeManager(BaseChangeManager):
             buffer_exposed,
             buffer_masked,
         )
-        self._mask_cm = BitmapChangeManager(
+        self._mask_cm = PIntSetChangeManager(
             bmslot,
             buffer_created=buffer_exposed,
             buffer_updated=False,
@@ -131,9 +131,9 @@ class TableSelectedChangeManager(BaseChangeManager):
             buffer_exposed=False,
             buffer_masked=False,
         )
-        from .changemanager_table import TableChangeManager
+        from .changemanager_table import PTableChangeManager
 
-        self._table_cm = TableChangeManager(
+        self._table_cm = PTableChangeManager(
             tbslot,
             buffer_created=buffer_created,
             buffer_updated=buffer_updated,
@@ -149,7 +149,7 @@ class TableSelectedChangeManager(BaseChangeManager):
         self._table_cm.reset(mid)
 
     def update(self, run_number: int, data: Any, mid: str) -> None:
-        assert isinstance(data, TableSelectedView)
+        assert isinstance(data, PTableSelectedView)
         if data is None or (run_number != 0 and run_number <= self._last_update):
             return
         # table = data.base
@@ -223,4 +223,4 @@ class TableSelectedChangeManager(BaseChangeManager):
         return max(self._table_cm._last_update, self._mask_cm._last_update)
 
 
-Slot.add_changemanager_type(TableSelectedView, TableSelectedChangeManager)
+Slot.add_changemanager_type(PTableSelectedView, PTableSelectedChangeManager)

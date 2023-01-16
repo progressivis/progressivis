@@ -1,13 +1,13 @@
 """
 Base class for change managers.
 Change managers are used by slots to maintain the list of changes in the data
-structures they manage, typically a Table, a Column, or a bitmap.
+structures they manage, typically a PTable, a PColumn, or a PIntSet.
 """
 from __future__ import annotations
 
 import logging
 from .index_update import IndexUpdate
-from .bitmap import bitmap
+from .pintset import PIntSet
 import weakref as wr
 
 import sys
@@ -43,7 +43,7 @@ class BaseChangeManager:
         self._selection_changes = IndexUpdate()
         self._base: Optional[_accessor] = None
         self._selection: Optional[_accessor] = None
-        # The bitmaps are shared between _row_changes and the buffers.
+        # The pintsets are shared between _row_changes and the buffers.
         # To remain shared, they should never be assigned to, only updated.
         self._created = ChangeBuffer(buffer_created, self._row_changes.created)
         self._updated = ChangeBuffer(buffer_updated, self._row_changes.updated)
@@ -148,7 +148,7 @@ class BaseChangeManager:
         print("masked", self._masked.changes)
 
 
-def _next(bm: bitmap, length: Optional[int], as_slice: bool) -> Union[bitmap, slice]:
+def _next(bm: PIntSet, length: Optional[int], as_slice: bool) -> Union[PIntSet, slice]:
     if length is None:
         length = len(bm)
     ret = bm.pop(length)
@@ -158,7 +158,7 @@ def _next(bm: bitmap, length: Optional[int], as_slice: bool) -> Union[bitmap, sl
 
 
 class ChangeBuffer:
-    def __init__(self, default: bool, changes: bitmap):
+    def __init__(self, default: bool, changes: PIntSet):
         self.buffer = default
         self.changes = changes
 
@@ -191,11 +191,11 @@ class ChangeBuffer:
         ...
 
     @overload
-    def next(self, length: Optional[int] = None, *, as_slice: Literal[False]) -> bitmap:
+    def next(self, length: Optional[int] = None, *, as_slice: Literal[False]) -> PIntSet:
         ...
 
     @overload
-    def next(self, length: Optional[int], *, as_slice: bool) -> Union[bitmap, slice]:
+    def next(self, length: Optional[int], *, as_slice: bool) -> Union[PIntSet, slice]:
         ...
 
     def next(self, length: Optional[int] = None, *, as_slice: bool = True) -> Any:
@@ -204,18 +204,18 @@ class ChangeBuffer:
             return None
         return _next(self.changes, length, as_slice)
 
-    def pop(self, bm: bitmap) -> None:
+    def pop(self, bm: PIntSet) -> None:
         "Remove a set of items from the buffer"
         if self.buffer:
             self.changes -= bm
 
-    def push(self, bm: bitmap) -> None:
+    def push(self, bm: PIntSet) -> None:
         "Adds a sset of items in the buffer"
         if self.buffer:
             self.changes |= bm
 
 
-EMPTY_BUFFER = ChangeBuffer(False, bitmap())
+EMPTY_BUFFER = ChangeBuffer(False, PIntSet())
 
 
 class _accessor:

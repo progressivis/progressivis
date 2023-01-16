@@ -7,9 +7,9 @@ import numpy as np
 
 from ..core.module import ReturnRunStep
 from ..core.slot import SlotDescriptor
-from .module import TableModule
-from ..core.bitmap import bitmap
-from .table import Table
+from .module import PTableModule
+from ..core.pintset import PIntSet
+from .table import PTable
 
 from typing import Optional, Any
 
@@ -28,12 +28,12 @@ ops = {
 }
 
 
-class CmpQueryLast(TableModule):
+class CmpQueryLast(PTableModule):
     inputs = [
-        SlotDescriptor("table", type=Table, required=True),
-        SlotDescriptor("cmp", type=Table, required=True),
+        SlotDescriptor("table", type=PTable, required=True),
+        SlotDescriptor("cmp", type=PTable, required=True),
     ]
-    outputs = [SlotDescriptor("select", type=bitmap, required=False)]
+    outputs = [SlotDescriptor("select", type=PIntSet, required=False)]
 
     def __init__(self, op: str = "<", combine: str = "and", **kwds: Any) -> None:
         super(CmpQueryLast, self).__init__(**kwds)
@@ -42,11 +42,11 @@ class CmpQueryLast(TableModule):
         self._op = ops[op]
         self.combine = combine
         self._combine = ops[combine]
-        self._bitmap: Optional[bitmap] = None
+        self._PIntSet: Optional[PIntSet] = None
 
     def get_data(self, name: str) -> Any:
         if name == "select":
-            return self._bitmap
+            return self._PIntSet
         if name == "table":
             self.get_input_slot("table").data()
         return super(CmpQueryLast, self).get_data(name)
@@ -69,18 +69,18 @@ class CmpQueryLast(TableModule):
             or len(cmp_data) == 0
         ):
             # nothing to do if no filter is specified
-            self._bitmap = None
+            self._PIntSet = None
             return self._return_run_step(self.state_blocked, steps_run=1)
         if table_slot.deleted.any() or cmp_slot.deleted.any():
             # restart from scatch
             table_slot.reset()
-            self._bitmap = None
+            self._PIntSet = None
             table_slot.update(run_number)
             cmp_slot.update(run_number)
 
         cr = table_slot.created.next(as_slice=False)
         if cr is None:
-            cr = bitmap()
+            cr = PIntSet()
         up = table_slot.updated.next(as_slice=False)
         work = cr | up
         ids = work.pop(step_size)
@@ -92,7 +92,7 @@ class CmpQueryLast(TableModule):
         aids = np.asarray(ids, dtype=np.int64)
         indices = table_data.id_to_index(aids)
         last = cmp_data.last()
-        results: Optional[bitmap] = None
+        results: Optional[PIntSet] = None
         for colname in last:
             if colname in table_data:
                 arg1 = table_data._column(colname)
@@ -100,14 +100,14 @@ class CmpQueryLast(TableModule):
                 res = self._op(arg1[indices], arg2)
                 res = aids[res]
                 if results is None:
-                    results = bitmap(res)
+                    results = PIntSet(res)
                 else:
-                    results = self._combine(results, bitmap(res))
+                    results = self._combine(results, PIntSet(res))
 
-        if self._bitmap is None:
-            self._bitmap = results
+        if self._PIntSet is None:
+            self._PIntSet = results
         else:
-            self._bitmap -= bitmap(indices)
-            self._bitmap |= results
+            self._PIntSet -= PIntSet(indices)
+            self._PIntSet |= results
 
         return self._return_run_step(self.next_state(table_slot), steps_run=steps)

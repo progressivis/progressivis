@@ -4,8 +4,8 @@ import datashape as ds
 
 from collections import OrderedDict
 from progressivis import Scheduler
-from progressivis.table.table_base import BaseTable
-from progressivis.table.table import Table
+from progressivis.table.table_base import BasePTable
+from progressivis.table.table import PTable
 from progressivis.io.csv_loader import CSVLoader
 from progressivis.datasets import get_dataset
 from progressivis.storage import Group
@@ -14,10 +14,10 @@ import numpy as np
 import pandas as pd
 
 
-class TestTable(ProgressiveTest):
+class TestPTable(ProgressiveTest):
     # pylint: disable=protected-access
     def setUp(self) -> None:
-        super(TestTable, self).setUp()
+        super(TestPTable, self).setUp()
         self.scheduler_ = Scheduler.default
         assert Group.default is not None
         self.storagegroup = Group.default()
@@ -34,7 +34,7 @@ class TestTable(ProgressiveTest):
         self.fill_table()
 
     def test_loc_tableview(self) -> None:
-        t = Table("table_loc", dshape="{a: int, b: float32}", create=True)
+        t = PTable("table_loc", dshape="{a: int, b: float32}", create=True)
         t.resize(10)
         ivalues = np.random.randint(100, size=20)
         t["a"] = ivalues[:10]
@@ -43,7 +43,7 @@ class TestTable(ProgressiveTest):
         t.append({"a": ivalues[10:], "b": fvalues[10:]})
         view = t.loc[2:11]
         assert view is not None
-        self.assertEqual(type(view), BaseTable)
+        self.assertEqual(type(view), BasePTable)
         self.assertTrue(np.array_equal(view._column(0)[:], ivalues[2:12]))
         view_view = view.loc[3:7]
         assert view_view is not None
@@ -57,13 +57,13 @@ class TestTable(ProgressiveTest):
         )
         table_view = view.loc[[3, 4, 6, 9]]
         assert table_view is not None
-        self.assertEqual(type(table_view), BaseTable)
+        self.assertEqual(type(table_view), BasePTable)
         self.assertTrue(
             np.array_equal(table_view._column(0).values, view._column(0)[[3, 4, 6, 9]])
         )
         table_view = view.loc[[3, 4, 6, 9]]
         assert table_view is not None
-        self.assertEqual(type(table_view), BaseTable)
+        self.assertEqual(type(table_view), BasePTable)
         self.assertTrue(
             np.array_equal(
                 table_view._column(0).values,
@@ -72,7 +72,7 @@ class TestTable(ProgressiveTest):
         )
 
     def test_set_loc(self) -> None:
-        t = Table("table_set_loc", dshape="{a: int, b: float32}", create=True)
+        t = PTable("table_set_loc", dshape="{a: int, b: float32}", create=True)
         t.resize(20)
         ivalues = np.random.randint(100, size=20)
         t["a"] = ivalues
@@ -124,7 +124,7 @@ class TestTable(ProgressiveTest):
         self.assertTrue(np.array_equal(t._column(1)[3:7], np.repeat(1011, 4)))
 
     def test_at(self) -> None:
-        t = Table("table_at", dshape="{a: int, b: float32}", create=True)
+        t = PTable("table_at", dshape="{a: int, b: float32}", create=True)
         t.resize(20)
         ivalues = np.random.randint(100, size=20)
         t["a"] = ivalues
@@ -142,7 +142,7 @@ class TestTable(ProgressiveTest):
         self.assertEqual(iat_, view._column(1)[3])
 
     def test_set_at(self) -> None:
-        t = Table("table_set_at", dshape="{a: int, b: float32}", create=True)
+        t = PTable("table_set_at", dshape="{a: int, b: float32}", create=True)
         t.resize(20)
         ivalues = np.random.randint(100, size=20)
         t["a"] = ivalues
@@ -169,7 +169,7 @@ class TestTable(ProgressiveTest):
         self.assertEqual(t._column(0)[t.id_to_index(view_view.index_to_id(2))], 1005)
 
     def test_last(self) -> None:
-        t = Table("table_last", dshape="{a: int, b: float32}", create=True)
+        t = PTable("table_last", dshape="{a: int, b: float32}", create=True)
         t.resize(10)
         ivalues = np.random.randint(100, size=10)
         t["a"] = ivalues
@@ -183,7 +183,7 @@ class TestTable(ProgressiveTest):
         self.assertEqual(list(last_a_b), last_)
 
     def create_table(self) -> None:
-        t = Table(
+        t = PTable(
             "table",
             storagegroup=self.storagegroup,
             dshape="{a: int, b: float32, c: string, d: 10*int}",
@@ -195,19 +195,19 @@ class TestTable(ProgressiveTest):
         col2 = t[0]
         self.assertTrue(col1 is col2)
 
-        t = Table(
+        t = PTable(
             "table",
             storagegroup=self.storagegroup,
             dshape="{a: int, b: float32, c: string, d: 10*int}",
         )
         self.assertTrue(t is not None)
 
-        t = Table("table", storagegroup=self.storagegroup)
+        t = PTable("table", storagegroup=self.storagegroup)
         self.assertEqual(
             t.dshape, ds.dshape("{a: int, b: float32, c: string, d: 10 * int}")
         )
 
-        t2 = Table(
+        t2 = PTable(
             "bar_table",
             dshape="{a: int64, b: float64}",
             fillvalues={"a": -1},
@@ -217,15 +217,15 @@ class TestTable(ProgressiveTest):
         self.assertEqual(t2[0].fillvalue, -1)
 
     def fill_table(self) -> None:
-        t = Table("table", storagegroup=self.storagegroup)
+        t = PTable("table", storagegroup=self.storagegroup)
         self._fill_table(t)
 
-    def _fill_table(self, t: Table) -> None:
-        # Try with a 10 elements Table
+    def _fill_table(self, t: PTable) -> None:
+        # Try with a 10 elements PTable
         t.resize(10)
         # Fill one column with a simple list
         ivalues = range(10)
-        t["a"] = ivalues  # Table._setitem_key
+        t["a"] = ivalues  # PTable._setitem_key
         icol = t["a"].value
         for i in range(len(ivalues)):
             self.assertEqual(ivalues[i], icol[i])
@@ -284,18 +284,18 @@ class TestTable(ProgressiveTest):
             self.fail("ExpectedException not raised")
 
     def update_table(self) -> None:
-        t = Table("table", storagegroup=self.storagegroup)
+        t = PTable("table", storagegroup=self.storagegroup)
         self._update_table(t)
 
     def delete_table(self) -> None:
-        t = Table("table", storagegroup=self.storagegroup)
+        t = PTable("table", storagegroup=self.storagegroup)
         self._delete_table(t)
 
     def examine_table(self) -> None:
-        _ = Table("table", storagegroup=self.storagegroup)
+        _ = PTable("table", storagegroup=self.storagegroup)
         pass
 
-    def _update_table(self, t: Table) -> None:
+    def _update_table(self, t: PTable) -> None:
         # pylint: disable=protected-access
         self.assertEqual(len(t), 10)
         # t.scheduler._run_number = 1
@@ -309,7 +309,7 @@ class TestTable(ProgressiveTest):
         _ = t.loc[:, "a"]
         _ = t.loc[:]
 
-    def _delete_table(self, t: Table) -> None:
+    def _delete_table(self, t: PTable) -> None:
         self.assertEqual(t.index_to_id(2), 2)
         a = t["a"]
         self.assertEqual(a[2], a.fillvalue)
@@ -325,7 +325,7 @@ class TestTable(ProgressiveTest):
             cnt += 1
         self.assertEqual(len(t), cnt)
 
-    def _delete_table2(self, t: Table) -> None:
+    def _delete_table2(self, t: PTable) -> None:
         with self.assertRaises(KeyError):
             c = t.loc[2]
             print(c)
@@ -334,7 +334,7 @@ class TestTable(ProgressiveTest):
         # pylint: disable=protected-access
         # self.scheduler._run_number = 1
         df = pd.DataFrame({"a": [1, 2, 3], "b": [0.1, 0.2, 0.3], "c": ["a", "b", "cd"]})
-        t = Table("table_2", data=df)
+        t = PTable("table_2", data=df)
         self.assertEqual(len(t), len(df))
         for colname in df:
             coldf = df[colname]
@@ -367,7 +367,7 @@ class TestTable(ProgressiveTest):
         # print(dshape_extract(d))
         df = pd.DataFrame(d)
         # self.scheduler._run_number = 1
-        t = Table("table_3", data=d)
+        t = PTable("table_3", data=d)
         self.assertEqual(len(t), len(df))
         for colname in df:
             coldf = df[colname]
@@ -418,7 +418,7 @@ class TestTable(ProgressiveTest):
         # print(t)
 
     def test_read_direct(self) -> None:
-        t = Table("table_read_direct", dshape="{a: int, b: float32}", create=True)
+        t = PTable("table_read_direct", dshape="{a: int, b: float32}", create=True)
         t.resize(10)
         ivalues = np.random.randint(100, size=10)
         t["a"] = ivalues
@@ -439,7 +439,7 @@ class TestTable(ProgressiveTest):
         self.assertTrue(np.allclose(fvalues[2:7], gvalues[5:10]))
 
     def test_to_array(self) -> None:
-        t = Table("table_to_array", dshape="{a: int, b: float32, c: real}", create=True)
+        t = PTable("table_to_array", dshape="{a: int, b: float32, c: real}", create=True)
         t.resize(10)
         ivalues = np.random.randint(100, size=10)
         t["a"] = ivalues
@@ -458,7 +458,7 @@ class TestTable(ProgressiveTest):
         self.assertTrue(np.allclose(b[:], arr[:, 1]))
         self.assertTrue(np.allclose(c[:], arr[:, 2]))
 
-        # Columns
+        # PColumns
         arr = t.to_array(columns=["a", "b"])
         self.assertEqual(arr.dtype, np.float64)
         self.assertEqual(arr.shape[0], t.nrow)
@@ -493,7 +493,7 @@ class TestTable(ProgressiveTest):
     def test_convert(self) -> None:
         arr = np.random.rand(10, 5)
 
-        t = Table.from_array(arr)
+        t = PTable.from_array(arr)
         self.assertIsNotNone(t)
         self.assertEqual(len(t.columns), arr.shape[1])
         self.assertEqual(t.columns, ["_1", "_2", "_3", "_4", "_5"])
@@ -502,7 +502,7 @@ class TestTable(ProgressiveTest):
         self.assertTrue(np.allclose(arr, arr2))
 
         columns = ["a", "b", "c"]
-        t = Table.from_array(arr, columns=columns, offsets=[0, 1, 3, 5])
+        t = PTable.from_array(arr, columns=columns, offsets=[0, 1, 3, 5])
         self.assertIsNotNone(t)
         self.assertEqual(len(t.columns), 3)
         self.assertEqual(t.columns, columns)

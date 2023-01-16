@@ -38,19 +38,19 @@ class Sniffer(ipw.HBox):
         decorated = [(f"{n}:{np.dtype(t).name}", n) for (n, t) in zip(names, types)]
         self.info_cols = {n: ColInfo(self.pqfile.schema.column(i), np.dtype(types[i]))
                           for (i, n) in enumerate(names)}
-        # Column selection
+        # PColumn selection
         self.columns = ipw.Select(disabled=False, rows=7, options=decorated)
         self.columns.observe(self._columns_cb, names="value")
-        # Column details
+        # PColumn details
         self.column: Dict[str, ColInfo] = {}
-        self.no_detail = ipw.Label(value="No Column Selected")
+        self.no_detail = ipw.Label(value="No PColumn Selected")
         self.details = ipw.Box([self.no_detail], label="Details")
         layout = ipw.Layout(border="solid")
         # Toplevel Box
         self.children = (
-                ipw.VBox([ipw.Label("Columns"), self.columns], layout=layout),
+                ipw.VBox([ipw.Label("PColumns"), self.columns], layout=layout),
                 ipw.VBox(
-                    [ipw.Label("Selected Column"), self.details], layout=layout
+                    [ipw.Label("Selected PColumn"), self.details], layout=layout
                 ),
         )
 

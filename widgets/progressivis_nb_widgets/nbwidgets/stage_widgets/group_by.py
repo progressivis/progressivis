@@ -6,7 +6,7 @@ from .utils import (
 )
 import ipywidgets as ipw  # type: ignore
 from progressivis.table.group_by import (GroupBy, UTIME, DT_MAX,  # type: ignore
-                                         SubColumn as SC, UTIME_SHORT_D)
+                                         SubPColumn as SC, UTIME_SHORT_D)
 from progressivis.core import Sink  # type: ignore
 
 from typing import (

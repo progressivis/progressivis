@@ -6,13 +6,13 @@ from . import ProgressiveTest
 
 from progressivis.core import aio
 from progressivis import Print
-from progressivis.stats import Min, RandomTable
-from progressivis.table.module import TableModule
-from progressivis.table.table import Table
+from progressivis.stats import Min, RandomPTable
+from progressivis.table.module import PTableModule
+from progressivis.table.table import PTable
 from progressivis.core.slot import SlotDescriptor
 from progressivis.core.decorators import process_slot, run_if_any
 from progressivis.core.utils import indices_len, fix_loc
-from progressivis.utils.psdict import PsDict
+from progressivis.utils.psdict import PDict
 
 from typing import Any, Dict, TYPE_CHECKING
 
@@ -20,12 +20,12 @@ if TYPE_CHECKING:
     from progressivis.core.module import ReturnRunStep
 
 
-class Max(TableModule):
+class Max(PTableModule):
     """
     Simplified Max, adapted for documentation
     """
 
-    inputs = [SlotDescriptor("table", type=Table, required=True)]
+    inputs = [SlotDescriptor("table", type=PTable, required=True)]
 
     def __init__(self, **kwds: Any) -> None:
         super().__init__(**kwds)
@@ -56,19 +56,19 @@ class Max(TableModule):
         data = slot.data()
         op = data.loc[fix_loc(indices)].max(keepdims=False)
         if self.result is None:
-            self.result = PsDict(op)
+            self.result = PDict(op)
         else:
             for k, v in self.psdict.items():
                 self.result[k] = np.maximum(op[k], v)
         return self._return_run_step(self.next_state(slot), steps_run=steps)
 
 
-class MaxDec(TableModule):
+class MaxDec(PTableModule):
     """
     Simplified Max with decorated run_step(), adapted for documentation
     """
 
-    inputs = [SlotDescriptor("table", type=Table, required=True)]
+    inputs = [SlotDescriptor("table", type=PTable, required=True)]
 
     def __init__(self, **kwds: Any) -> None:
         super().__init__(**kwds)
@@ -95,7 +95,7 @@ class MaxDec(TableModule):
             input_df = ctx.table.data()
             op = input_df.loc[fix_loc(indices)].max(keepdims=False)
             if self.result is None:
-                self.result = PsDict(op)
+                self.result = PDict(op)
             else:
                 for k, v in self.psdict.items():
                     self.result[k] = np.maximum(op[k], v)
@@ -105,7 +105,7 @@ class MaxDec(TableModule):
 class TestMinMax(ProgressiveTest):
     def te_st_min(self) -> None:
         s = self.scheduler()
-        random = RandomTable(10, rows=10000, scheduler=s)
+        random = RandomPTable(10, rows=10000, scheduler=s)
         min_ = Min(name="min_" + str(hash(random)), scheduler=s)
         min_.input[0] = random.output.result
         pr = Print(proc=self.terse, scheduler=s)
@@ -125,7 +125,7 @@ class TestMinMax(ProgressiveTest):
 
     def test_max(self) -> None:
         s = self.scheduler()
-        random = RandomTable(10, rows=10000, scheduler=s)
+        random = RandomPTable(10, rows=10000, scheduler=s)
         max_ = Max(name="max_" + str(hash(random)), scheduler=s)
         max_.input[0] = random.output.result
         pr = Print(proc=self.terse, scheduler=s)

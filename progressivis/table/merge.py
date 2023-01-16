@@ -3,8 +3,8 @@ from __future__ import annotations
 
 from progressivis.core.module import ReturnRunStep
 from .nary import NAry
-from .table_base import BaseTable
-from .table import Table
+from .table_base import BasePTable
+from .table import PTable
 from .dshape import dshape_join
 from progressivis.utils.inspect import filter_kwds
 
@@ -12,8 +12,8 @@ from typing import Dict, Any, cast, List, Tuple, Optional
 
 
 def merge(
-    left: BaseTable,
-    right: BaseTable,
+    left: BasePTable,
+    right: BasePTable,
     name: Optional[str] = None,
     how: str = "inner",
     on: Any = None,
@@ -26,17 +26,17 @@ def merge(
     copy: bool = True,
     indicator: bool = False,
     merge_ctx: Optional[Dict[str, Any]] = None,
-) -> Table:
+) -> PTable:
     # pylint: disable=too-many-arguments, invalid-name, unused-argument, too-many-locals
     "Merge function"
     lsuffix, rsuffix = suffixes
     if not all((left_index, right_index)):
         raise ValueError(
             "currently, only right_index=True and "
-            "left_index=True are allowed in Table.merge()"
+            "left_index=True are allowed in PTable.merge()"
         )
     dshape, rename = dshape_join(left.dshape, right.dshape, lsuffix, rsuffix)
-    merge_table = Table(name=name, dshape=dshape)
+    merge_table = PTable(name=name, dshape=dshape)
     if how == "inner":
         merge_ids = left.index & right.index
         new_ids = left.index & merge_ids
@@ -46,7 +46,7 @@ def merge(
         merge_table.loc[merge_ids, left_cols] = left.loc[merge_ids, left.columns]
         merge_table.loc[merge_ids, right_cols] = right.loc[merge_ids, right.columns]
     else:
-        raise ValueError("how={} not implemented in Table.merge()".format(how))
+        raise ValueError("how={} not implemented in PTable.merge()".format(how))
     if isinstance(merge_ctx, dict):
         merge_ctx["dshape"] = dshape
         merge_ctx["left_cols"] = left_cols
@@ -54,9 +54,9 @@ def merge(
     return merge_table
 
 
-def merge_cont(left: BaseTable, right: BaseTable, merge_ctx: Dict[str, Any]) -> Table:
+def merge_cont(left: BasePTable, right: BasePTable, merge_ctx: Dict[str, Any]) -> PTable:
     "merge continuation function"
-    merge_table = Table(name=None, dshape=merge_ctx["dshape"])
+    merge_table = PTable(name=None, dshape=merge_ctx["dshape"])
     merge_ids = left.index & right.index
     new_ids = left.index & merge_ids
     merge_table.resize(len(new_ids), index=new_ids)
@@ -85,10 +85,10 @@ class Merge(NAry):
     def run_step(
         self, run_number: int, step_size: int, howlong: float
     ) -> ReturnRunStep:
-        frames: List[BaseTable] = []
+        frames: List[BasePTable] = []
         for name in self.get_input_slot_multiple():
             slot = self.get_input_slot(name)
-            df = cast(BaseTable, slot.data())
+            df = cast(BasePTable, slot.data())
             slot.clear_buffers()
             frames.append(df)
         df = frames[0]

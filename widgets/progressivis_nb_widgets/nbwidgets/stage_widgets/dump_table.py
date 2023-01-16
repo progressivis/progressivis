@@ -7,7 +7,7 @@ from ..slot_wg import SlotWg
 from progressivis.core.scheduler import Scheduler  # type: ignore
 
 
-class DumpTableW(VBox):
+class DumpPTableW(VBox):
     def __init__(self) -> None:
         super().__init__()
 
@@ -24,4 +24,4 @@ class DumpTableW(VBox):
         return []
 
 
-stage_register["Dump_table"] = DumpTableW
+stage_register["Dump_table"] = DumpPTableW

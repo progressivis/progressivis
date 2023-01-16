@@ -1,7 +1,7 @@
 from . import ProgressiveTest
 import pandas as pd
 from progressivis import Print
-from progressivis.stats import RandomTable
+from progressivis.stats import RandomPTable
 from progressivis.stats.correlation import Corr
 from progressivis.core import aio
 import numpy as np
@@ -10,7 +10,7 @@ import numpy as np
 class TestCorr(ProgressiveTest):
     def test_online_cov(self):
         s = self.scheduler()
-        random = RandomTable(2, rows=100_000, scheduler=s)
+        random = RandomPTable(2, rows=100_000, scheduler=s)
         cov = Corr(mode="CovarianceOnly", scheduler=s)
         cov.input[0] = random.output.result
         pr = Print(proc=self.terse, scheduler=s)
@@ -22,7 +22,7 @@ class TestCorr(ProgressiveTest):
 
     def test_online_corr(self):
         s = self.scheduler()
-        random = RandomTable(2, rows=100_000, scheduler=s)
+        random = RandomPTable(2, rows=100_000, scheduler=s)
         corr = Corr(scheduler=s)
         # corr.create_dependent_modules(random)
         corr.input.table = random.output.result

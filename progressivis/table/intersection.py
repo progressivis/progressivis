@@ -6,14 +6,14 @@ from __future__ import annotations
 
 from progressivis.core.module import ReturnRunStep
 from progressivis.core.utils import indices_len
-from progressivis.core.bitmap import bitmap
+from progressivis.core.pintset import PIntSet
 from progressivis.table.nary import NAry
-from progressivis.table.table_base import BaseTable, TableSelectedView
+from progressivis.table.table_base import BasePTable, PTableSelectedView
 
 from typing import Any, List
 
 
-def _get_physical_table(t: BaseTable) -> BaseTable:
+def _get_physical_table(t: BasePTable) -> BasePTable:
     return t.base or t
 
 
@@ -31,9 +31,9 @@ class Intersection(NAry):
     def run_step_progress(
         self, run_number: int, step_size: int, howlong: float
     ) -> ReturnRunStep:
-        _b = bitmap.asbitmap
-        # to_delete: List[bitmap]
-        to_create: List[bitmap]
+        _b = PIntSet.aspintset
+        # to_delete: List[PIntSet]
+        to_create: List[PIntSet]
         steps = 0
         tables = []
         ph_table = None
@@ -42,7 +42,7 @@ class Intersection(NAry):
         for name in self.get_input_slot_multiple():
             slot = self.get_input_slot(name)
             t = slot.data()
-            assert isinstance(t, BaseTable)
+            assert isinstance(t, BasePTable)
             if ph_table is None:
                 ph_table = _get_physical_table(t)
             else:
@@ -70,17 +70,17 @@ class Intersection(NAry):
                 steps += indices_len(created)
         if steps == 0:
             return self._return_run_step(self.state_blocked, steps_run=0)
-        # to_delete = bitmap.union(*to_delete)
-        to_create_4sure = bitmap()
+        # to_delete = PIntSet.union(*to_delete)
+        to_create_4sure = PIntSet()
         if len(to_create) == len(tables):
-            to_create_4sure = bitmap.intersection(*to_create)
+            to_create_4sure = PIntSet.intersection(*to_create)
 
-        to_create_maybe = bitmap.union(*to_create)
+        to_create_maybe = PIntSet.union(*to_create)
 
         if not self.result:
-            self.result = TableSelectedView(ph_table, bitmap([]))
+            self.result = PTableSelectedView(ph_table, PIntSet([]))
         if reset_:
-            self.selected.selection = bitmap([])
+            self.selected.selection = PIntSet([])
         self.selected.selection = self.selected.index | to_create_4sure
         to_create_maybe -= to_create_4sure
         eff_create = to_create_maybe
@@ -101,7 +101,7 @@ class Intersection(NAry):
                 continue
             slot = self.get_input_slot(name)
             t = slot.data()
-            assert isinstance(t, BaseTable)
+            assert isinstance(t, BasePTable)
             if ph_table is None:
                 ph_table = _get_physical_table(t)
             else:
@@ -120,6 +120,6 @@ class Intersection(NAry):
         if steps == 0:
             return self._return_run_step(self.state_blocked, 0)
         if not self.result:
-            self.result = TableSelectedView(ph_table, bitmap([]))
-        self.selected.selection = bitmap.intersection(*[t.index for t in tables])
+            self.result = PTableSelectedView(ph_table, PIntSet([]))
+        self.selected.selection = PIntSet.intersection(*[t.index for t in tables])
         return self._return_run_step(self.state_blocked, steps)

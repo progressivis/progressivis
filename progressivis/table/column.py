@@ -12,11 +12,11 @@ try:
 except ImportError:
     from progressivis.core.utils import indices_to_slice
 
-from .column_base import BaseColumn
+from .column_base import BasePColumn
 from .dshape import dshape_to_h5py, np_dshape, dshape_create, DataShape, EMPTY_DSHAPE
 from . import metadata
-from .table_base import IndexTable
-from ..core.bitmap import bitmap
+from .table_base import IndexPTable
+from ..core.pintset import PIntSet
 
 from typing import Any, Optional, Union, Tuple
 
@@ -25,15 +25,15 @@ from ..core.types import Chunks, Index, Shape
 
 logger = logging.getLogger(__name__)
 
-__all__ = ["Column"]
+__all__ = ["PColumn"]
 
 
-class Column(BaseColumn):
+class PColumn(BasePColumn):
     def __init__(
         self,
         name: str,
-        index: Optional[IndexTable],
-        base: Optional[BaseColumn] = None,
+        index: Optional[IndexPTable],
+        base: Optional[BasePColumn] = None,
         storagegroup: Optional[Group] = None,
         dshape: Optional[Union[None, DataShape, str]] = None,
         fillvalue: Optional[Any] = None,
@@ -53,11 +53,11 @@ class Column(BaseColumn):
                 length = len(data)
                 if indices and length != len(indices):
                     raise ValueError("Bad index length (%d/%d)", len(indices), length)
-            index = IndexTable()
-        super(Column, self).__init__(name, index, base=base)
+            index = IndexPTable()
+        super(PColumn, self).__init__(name, index, base=base)
         if storagegroup is None:
             if index is not None and hasattr(index, "storagegroup"):
-                # i.e. isinstance(index, Table)
+                # i.e. isinstance(index, PTable)
                 storagegroup = getattr(index, "storagegroup")
                 assert isinstance(storagegroup, Group)
             else:
@@ -79,17 +79,17 @@ class Column(BaseColumn):
     def storagegroup(self) -> Group:
         return self._storagegroup
 
-    def _allocate(self, count: int, indices: Any = None) -> bitmap:
+    def _allocate(self, count: int, indices: Any = None) -> PIntSet:
         start = self.index.last_id + 1
         if indices is not None:
-            ret = self.index._any_to_bitmap(indices)
+            ret = self.index._any_to_pintset(indices)
             assert ret
             if ret & self.index.index:
                 raise ValueError("Indices contain duplicates")
             newsize = start + ret.max() + 1
         else:
             newsize = start + count
-            ret = bitmap(range(start, newsize))
+            ret = PIntSet(range(start, newsize))
         self._resize(newsize)
         self.index._resize_rows(newsize, ret)
         return ret
@@ -98,7 +98,7 @@ class Column(BaseColumn):
         if data is None:
             return
         length = len(data)
-        is_array = isinstance(data, (np.ndarray, list, BaseColumn))
+        is_array = isinstance(data, (np.ndarray, list, BasePColumn))
         if indices is not None and len(indices) != length:
             raise ValueError("Bad index length (%d/%d)", len(indices), length)
         indices = self._allocate(len(data), indices)
@@ -311,7 +311,7 @@ class Column(BaseColumn):
             #                source_sel = fancy_to_mask(source_sel, self.shape)
             self.dataset.read_direct(array, source_sel, dest_sel)
         else:
-            super(Column, self).read_direct(array, source_sel, dest_sel)
+            super(PColumn, self).read_direct(array, source_sel, dest_sel)
 
     def __setitem__(self, index: Index, val: Any) -> None:
         assert self.dataset is not None

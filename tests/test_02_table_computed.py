@@ -1,20 +1,20 @@
 from . import ProgressiveTest
 
 from progressivis import Scheduler
-from progressivis.table.table import Table
-from progressivis.table.table_base import BaseTable
-from progressivis.core.bitmap import bitmap
+from progressivis.table.table import PTable
+from progressivis.table.table_base import BasePTable
+from progressivis.core.pintset import PIntSet
 from progressivis.table.compute import week_day
 import numpy as np
 
 
-class TestTableSelected(ProgressiveTest):
+class TestPTableSelected(ProgressiveTest):
     def setUp(self) -> None:
-        super(TestTableSelected, self).setUp()
+        super(TestPTableSelected, self).setUp()
         self.scheduler_ = Scheduler.default
 
     def test_loc_table_computed(self) -> None:
-        t = Table(
+        t = PTable(
             "table_for_test_computed_columns",
             dshape="{a: int, b: float32}",
             create=True,
@@ -35,7 +35,7 @@ class TestTableSelected(ProgressiveTest):
         tab = t.loc[:, "arcsin_b"]
         assert tab
         self.assertEqual(tab.shape, (20, 1))
-        sel = bitmap(range(5, 8))
+        sel = PIntSet(range(5, 8))
         view = t.loc[sel, :]
         assert view is not None
         self.assertEqual(view.shape, (3, 3))
@@ -43,8 +43,8 @@ class TestTableSelected(ProgressiveTest):
         assert view2 is not None
         self.assertEqual(view2.shape, (3, 2))
         self.assertTrue(np.allclose(np.arcsin(tb.to_array()), tab.to_array()))
-        self.assertEqual(type(view), BaseTable)
-        self.assertEqual(type(view2), BaseTable)
+        self.assertEqual(type(view), BasePTable)
+        self.assertEqual(type(view2), BasePTable)
         self.assertTrue(np.array_equal(view[0].value, ivalues[5:8]))
         self.assertTrue(np.array_equal(view[1].value, fvalues[5:8]))
         self.assertTrue(np.array_equal(view[2].value, np.arcsin(fvalues[5:8])))
@@ -57,7 +57,7 @@ class TestTableSelected(ProgressiveTest):
             self.assertEqual(view.at[8, "a"], ivalues[8])
 
     def test_loc_table_computed2(self) -> None:
-        t = Table(
+        t = PTable(
             "table_for_test_computed_columns2",
             dshape="{a: 6*uint16, b: float32}",
             create=True,
@@ -85,7 +85,7 @@ class TestTableSelected(ProgressiveTest):
         tdw = t.loc[:, "weekday"]
         assert tdw
         self.assertEqual(tdw.shape, (20, 1))
-        sel = bitmap(range(5, 8))
+        sel = PIntSet(range(5, 8))
         view = t.loc[sel, :]
         assert view is not None
         self.assertEqual(view.shape, (3, 8))
@@ -98,7 +98,7 @@ class TestTableSelected(ProgressiveTest):
                 tdw.to_array().reshape(-1)))
 
     def test_loc_table_computed_numexpr(self) -> None:
-        t = Table(
+        t = PTable(
             "table_for_test_computed_columns_ne",
             dshape="{a: int, b: float32}",
             create=True,
@@ -122,7 +122,7 @@ class TestTableSelected(ProgressiveTest):
         taxb = t.loc[:, "a_x_b"]
         assert taxb
         self.assertEqual(taxb.shape, (20, 1))
-        sel = bitmap(range(5, 8))
+        sel = PIntSet(range(5, 8))
         view = t.loc[sel, :]
         assert view is not None
         self.assertEqual(view.shape, (3, 3))
@@ -130,8 +130,8 @@ class TestTableSelected(ProgressiveTest):
         assert view2 is not None
         self.assertEqual(view2.shape, (3, 2))
         self.assertTrue(np.allclose(ta.to_array() * tb.to_array(), taxb.to_array()))
-        self.assertEqual(type(view), BaseTable)
-        self.assertEqual(type(view2), BaseTable)
+        self.assertEqual(type(view), BasePTable)
+        self.assertEqual(type(view2), BasePTable)
         self.assertTrue(np.array_equal(view[0].value, ivalues[5:8]))
         self.assertTrue(np.array_equal(view[1].value, fvalues[5:8]))
         self.assertTrue(np.allclose(view[2].value, ivalues[5:8] * fvalues[5:8]))
@@ -144,7 +144,7 @@ class TestTableSelected(ProgressiveTest):
             self.assertEqual(view.at[8, "a"], ivalues[8])
 
     def test_loc_table_computed_vect_func(self) -> None:
-        t = Table(
+        t = PTable(
             "table_for_test_computed_columns_vf",
             dshape="{a: int, b: float32}",
             create=True,
@@ -172,7 +172,7 @@ class TestTableSelected(ProgressiveTest):
         taxb = t.loc[:, "a_x_b"]
         assert taxb
         self.assertEqual(taxb.shape, (20, 1))
-        sel = bitmap(range(5, 8))
+        sel = PIntSet(range(5, 8))
         view = t.loc[sel, :]
         assert view is not None
         self.assertEqual(view.shape, (3, 3))
@@ -180,8 +180,8 @@ class TestTableSelected(ProgressiveTest):
         assert view2 is not None
         self.assertEqual(view2.shape, (3, 2))
         self.assertTrue(np.allclose(ta.to_array() * tb.to_array(), taxb.to_array()))
-        self.assertEqual(type(view), BaseTable)
-        self.assertEqual(type(view2), BaseTable)
+        self.assertEqual(type(view), BasePTable)
+        self.assertEqual(type(view2), BasePTable)
         self.assertTrue(np.array_equal(view[0].value, ivalues[5:8]))
         self.assertTrue(np.array_equal(view[1].value, fvalues[5:8]))
         self.assertTrue(np.allclose(view[2].value, ivalues[5:8] * fvalues[5:8]))

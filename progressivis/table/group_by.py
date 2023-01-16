@@ -1,10 +1,10 @@
 from __future__ import annotations
 import numpy as np
 import logging
-from ..table.module import TableModule, ReturnRunStep
+from ..table.module import PTableModule, ReturnRunStep
 from ..core.slot import SlotDescriptor
-from . import Table, TableSelectedView
-from ..core.bitmap import bitmap
+from . import PTable, PTableSelectedView
+from ..core.pintset import PIntSet
 from collections import defaultdict
 from functools import singledispatchmethod as dispatch
 import types
@@ -20,7 +20,7 @@ UTIME_SHORT_D = {fld: i for (i, fld) in enumerate("YMDhms")}
 DT_MAX = 6
 
 
-class SubColumnABC(metaclass=ABCMeta):
+class SubPColumnABC(metaclass=ABCMeta):
     def __init__(self, column: str) -> None:
         self.column = column
 
@@ -33,7 +33,7 @@ class SubColumnABC(metaclass=ABCMeta):
         ...
 
 
-class SimpleSC(SubColumnABC):
+class SimpleSC(SubPColumnABC):
     def __init__(self, column, selection, tag=None):
         super().__init__(column)
         self._selection = selection
@@ -48,7 +48,7 @@ class SimpleSC(SubColumnABC):
         return self._selection
 
 
-class DTChain(SubColumnABC):
+class DTChain(SubPColumnABC):
     def __init__(self, column):
         super().__init__(column)
         self.bag = []
@@ -95,7 +95,7 @@ class SCIndex:
         raise ValueError(f"Invalid item {item}")
 
 
-class SubColumn:
+class SubPColumn:
     def __init__(self, column: str) -> None:
         self._column = column
         self._dt = None
@@ -114,18 +114,18 @@ class SubColumn:
         return self._idx
 
 
-class GroupBy(TableModule):
-    inputs = [SlotDescriptor("table", type=Table, required=True)]
+class GroupBy(PTableModule):
+    inputs = [SlotDescriptor("table", type=PTable, required=True)]
 
     def __init__(
-            self, by: Union[str, List[str], Callable, SubColumn],
+            self, by: Union[str, List[str], Callable, SubPColumn],
             keepdims: bool = False, **kwds: Any
     ) -> None:
         super().__init__(**kwds)
         self._raw_by = by
         self.by = None
         self._keepdims = keepdims
-        self._index: Dict[Any, bitmap] = defaultdict(bitmap)
+        self._index: Dict[Any, PIntSet] = defaultdict(PIntSet)
         self._input_table = None
 
     @dispatch
@@ -133,33 +133,33 @@ class GroupBy(TableModule):
         raise NotImplementedError(f"Wrong type for {by}")
 
     @process_created.register
-    def _(self, by: str, indices: bitmap) -> None:
+    def _(self, by: str, indices: PIntSet) -> None:
         assert self._input_table is not None
         for i in indices:
             key = self._input_table.loc[i, by]
             self._index[key].add(i)
 
     @process_created.register
-    def _(self, by: list, indices: bitmap) -> None:
+    def _(self, by: list, indices: PIntSet) -> None:
         assert self._input_table is not None
         for i in indices:
             gen = self._input_table.loc[i, by]
             self._index[tuple(gen)].add(i)
 
     @process_created.register
-    def _(self, by: tuple, indices: bitmap) -> None:
+    def _(self, by: tuple, indices: PIntSet) -> None:
         assert self._input_table is not None
         for i in indices:
             gen = self._input_table.loc[i, by]
             self._index[tuple(gen)].add(i)
 
     @process_created.register
-    def _(self, by: types.FunctionType, indices: bitmap) -> None:
+    def _(self, by: types.FunctionType, indices: PIntSet) -> None:
         for i in indices:
             self._index[by(self._input_table, i)].add(i)
 
     @process_created.register
-    def _(self, by: SubColumnABC, indices: bitmap) -> None:
+    def _(self, by: SubPColumnABC, indices: PIntSet) -> None:
         assert self._input_table is not None
         col = by.column
         val = by.selection
@@ -174,7 +174,7 @@ class GroupBy(TableModule):
                 dt_vect = self._input_table.loc[i, col]
                 self._index[tuple(dt_vect[val])].add(i)
 
-    def process_deleted(self, indices: bitmap) -> None:
+    def process_deleted(self, indices: PIntSet) -> None:
         for k in self._index.keys():
             self._index[k] -= indices
 
@@ -214,8 +214,8 @@ class GroupBy(TableModule):
             else:
                 self.by = self._raw_by
         if self.result is None:
-            self.result = TableSelectedView(input_table, bitmap([]))
-        deleted: Optional[bitmap] = None
+            self.result = PTableSelectedView(input_table, PIntSet([]))
+        deleted: Optional[PIntSet] = None
         if input_slot.deleted.any():
             deleted = input_slot.deleted.next(as_slice=False)
             # steps += indices_len(deleted) # deleted are constant time
@@ -223,13 +223,13 @@ class GroupBy(TableModule):
             if deleted:
                 self.process_deleted(deleted)
                 self.selected.selection -= deleted
-        created: Optional[bitmap] = None
+        created: Optional[PIntSet] = None
         if input_slot.created.any():
             created = input_slot.created.next(length=step_size, as_slice=False)
             steps += len(created)
             self.selected.selection |= created
             self.process_created(self.by, created)
-        updated: Optional[bitmap] = None
+        updated: Optional[PIntSet] = None
         if input_slot.updated.any():
             # currently updates are ignored
             # NB: we assume that the updates do not concern the "grouped by" columns

@@ -7,9 +7,9 @@ from collections import defaultdict
 from .. import ProgressiveError, SlotDescriptor
 from ..utils.errors import ProgressiveStopIteration
 from ..utils.inspect import filter_kwds, extract_params_docstring
-from ..table.module import TableModule
+from ..table.module import PTableModule
 from ..core.module import ReturnRunStep
-from ..table.table import Table
+from ..table.table import PTable
 from ..table.dshape import dshape_from_dataframe
 from ..core.utils import (
     filepath_to_buffer,
@@ -20,8 +20,8 @@ from ..core.utils import (
     is_slice,
     nn,
 )
-from ..utils import PsDict
-from ..core.bitmap import bitmap
+from ..utils import PDict
+from ..core.pintset import PIntSet
 
 from typing import Dict, Any, Type, Callable, Optional, Tuple, Union, TYPE_CHECKING
 
@@ -33,11 +33,11 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class SimpleCSVLoader(TableModule):
-    inputs = [SlotDescriptor("filenames", type=Table, required=False)]
+class SimpleCSVLoader(PTableModule):
+    inputs = [SlotDescriptor("filenames", type=PTable, required=False)]
     outputs = [
-        SlotDescriptor("anomalies", type=PsDict, required=False),
-        SlotDescriptor("missing", type=PsDict, required=False),
+        SlotDescriptor("anomalies", type=PDict, required=False),
+        SlotDescriptor("missing", type=PDict, required=False),
     ]
 
     def __init__(
@@ -91,8 +91,8 @@ class SimpleCSVLoader(TableModule):
         self._table_params: Dict[str, Any] = dict(name=self.name, fillvalues=fillvalues)
         self._imputer = imputer
         self._last_opened: Any = None
-        self._anomalies: Optional[PsDict] = None
-        self._missing: Optional[PsDict] = None
+        self._anomalies: Optional[PDict] = None
+        self._missing: Optional[PDict] = None
 
     def rows_read(self) -> int:
         return self._rows_read
@@ -116,20 +116,20 @@ class SimpleCSVLoader(TableModule):
 
     def maintain_anomalies(self, yes: bool = True) -> None:
         if yes and self._anomalies is None:
-            self._anomalies = PsDict()
+            self._anomalies = PDict()
         elif not yes:
             self._anomalies = None
 
-    def anomalies(self) -> Optional[PsDict]:
+    def anomalies(self) -> Optional[PDict]:
         return self._anomalies
 
     def maintain_missing(self, yes: bool = True) -> None:
         if yes and self._missing is None:
-            self._missing = PsDict()
+            self._missing = PDict()
         elif not yes:
             self._missing = None
 
-    def missing(self) -> Optional[PsDict]:
+    def missing(self) -> Optional[PDict]:
         return self._missing
 
     def get_data(self, name: str) -> Any:
@@ -260,7 +260,7 @@ class SimpleCSVLoader(TableModule):
             nrows=step_size,
         )  # type: ignore
         anomalies = defaultdict(dict)  # type: ignore
-        missing: Dict[str, bitmap] = defaultdict(bitmap)
+        missing: Dict[str, PIntSet] = defaultdict(PIntSet)
         last_id = self.table.last_id
         for col, dt in zip(df.columns, df.dtypes):
             dtt = self.table._column(col).dtype
@@ -371,7 +371,7 @@ class SimpleCSVLoader(TableModule):
                 self._table_params["dshape"] = dshape_from_dataframe(df)
                 self._table_params["data"] = df
                 self._table_params["create"] = True
-                self.result = Table(**self._table_params)
+                self.result = PTable(**self._table_params)
                 if self._imputer is not None:
                     self._imputer.init(df.dtypes)
             else:

@@ -4,9 +4,9 @@ import logging
 
 import numpy as np
 from progressivis.core.utils import integer_types
-from .column_base import BaseColumn
+from .column_base import BasePColumn
 from .dshape import dshape_create, DataShape
-from .table_base import IndexTable, BaseTable
+from .table_base import IndexPTable, BasePTable
 
 from typing import Any, Optional, Tuple, List, Callable
 
@@ -17,15 +17,15 @@ Shape = Tuple[int, ...]
 
 logger = logging.getLogger(__name__)
 
-__all__ = ["ColumnVFunc"]
+__all__ = ["PColumnVFunc"]
 
 
-class ColumnVFunc(BaseColumn):
+class PColumnVFunc(BasePColumn):
     def __init__(
         self,
         name: str,
-        table: BaseTable,
-        index: IndexTable,
+        table: BasePTable,
+        index: IndexPTable,
         func: Callable,
         cols: Union[str, List[str]],
         dtype: Union[np.dtype, str],

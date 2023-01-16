@@ -2,13 +2,13 @@ from __future__ import annotations
 
 import logging
 
-from . import Table
+from . import PTable
 from progressivis.core.slot import SlotDescriptor
 from progressivis.core.module import ReturnRunStep
-from .module import TableModule
+from .module import PTableModule
 from ..core.utils import indices_len, fix_loc
-from ..core.bitmap import bitmap
-from . import TableSelectedView
+from ..core.pintset import PIntSet
+from . import PTableSelectedView
 import numpy as np
 
 from typing import Any
@@ -16,20 +16,20 @@ from typing import Any
 logger = logging.getLogger(__name__)
 
 
-class FilterMod(TableModule):
+class FilterMod(PTableModule):
     parameters = [
         ("expr", np.dtype(object), "unknown"),
         ("user_dict", np.dtype(object), None),
     ]
 
-    inputs = [SlotDescriptor("table", type=Table, required=True)]
+    inputs = [SlotDescriptor("table", type=PTable, required=True)]
 
     def __init__(self, **kwds: Any) -> None:
         super().__init__(**kwds)
 
     def reset(self) -> None:
         if self.result is not None:
-            self.selected.selection = bitmap([])
+            self.selected.selection = PIntSet([])
 
     def run_step(
         self, run_number: int, step_size: int, howlong: float
@@ -40,7 +40,7 @@ class FilterMod(TableModule):
         if input_table is None:
             return self._return_run_step(self.state_blocked, steps_run=0)
         if self.result is None:
-            self.result = TableSelectedView(input_table, bitmap([]))
+            self.result = PTableSelectedView(input_table, PIntSet([]))
         steps = 0
         if input_slot.updated.any():
             input_slot.reset()
@@ -60,7 +60,7 @@ class FilterMod(TableModule):
                 as_slice=False,
                 result_object="index",
             )
-            self.selected.selection |= bitmap(eval_idx)
+            self.selected.selection |= PIntSet(eval_idx)
         if not steps:
             return self._return_run_step(self.state_blocked, steps_run=0)
         return self._return_run_step(self.next_state(input_slot), steps)

@@ -3,7 +3,7 @@ import os
 from progressivis.core import aio
 from progressivis import Print
 from progressivis.stats.kll import KLLSketch
-from progressivis.stats import RandomTable
+from progressivis.stats import RandomPTable
 import numpy as np
 from datasketches import kll_floats_sketch
 
@@ -19,7 +19,7 @@ class TestKll(ProgressiveTest):
     def test_kll(self):
         np.random.seed(42)
         s = self.scheduler()
-        random = RandomTable(3, rows=10_000, scheduler=s)
+        random = RandomPTable(3, rows=10_000, scheduler=s)
         kll = KLLSketch(column="_1", scheduler=s)
         kll.input[0] = random.output.result
         pr = Print(proc=self.terse, scheduler=s)
@@ -37,7 +37,7 @@ class TestKll(ProgressiveTest):
     def test_kll2(self):
         np.random.seed(42)
         s = self.scheduler()
-        random = RandomTable(3, rows=10_000, scheduler=s)
+        random = RandomPTable(3, rows=10_000, scheduler=s)
         kll = KLLSketch(column="_1", scheduler=s)
         kll.params.quantiles = QUANTILES
         kll.input[0] = random.output.result
@@ -52,7 +52,7 @@ class TestKll(ProgressiveTest):
     def test_kll3(self):
         np.random.seed(42)
         s = self.scheduler()
-        random = RandomTable(3, rows=10_000, scheduler=s)
+        random = RandomPTable(3, rows=10_000, scheduler=s)
         kll = KLLSketch(column="_1", scheduler=s)
         kll.params.binning = BINS
         kll.input[0] = random.output.result
@@ -72,7 +72,7 @@ class TestKll(ProgressiveTest):
     def test_kll4(self):
         np.random.seed(42)
         s = self.scheduler()
-        random = RandomTable(3, rows=10_000, scheduler=s)
+        random = RandomPTable(3, rows=10_000, scheduler=s)
         kll = KLLSketch(column="_1", scheduler=s)
         kll.params.binning = SPLITS_SEQ
         kll.input[0] = random.output.result
@@ -88,7 +88,7 @@ class TestKll(ProgressiveTest):
     def test_kll5(self):
         np.random.seed(42)
         s = self.scheduler()
-        random = RandomTable(3, rows=10_000, scheduler=s)
+        random = RandomPTable(3, rows=10_000, scheduler=s)
         kll = KLLSketch(column="_1", scheduler=s)
         kll.params.binning = SPLITS_DICT
         kll.input[0] = random.output.result

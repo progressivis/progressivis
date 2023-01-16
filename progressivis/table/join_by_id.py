@@ -4,35 +4,35 @@ from __future__ import annotations
 import numpy as np
 
 from progressivis.core.utils import Dialog, indices_len, inter_slice, fix_loc
-from progressivis.core.bitmap import bitmap
+from progressivis.core.pintset import PIntSet
 from progressivis.core.module import ReturnRunStep
 from progressivis.utils.inspect import filter_kwds
 from progressivis.table.nary import NAry
-from progressivis.table.table_base import BaseTable
-from progressivis.table.table import Table
+from progressivis.table.table_base import BasePTable
+from progressivis.table.table import PTable
 from progressivis.table.dshape import dshape_join
 
 from typing import List, cast, Dict, Any, Optional, Callable, Sequence
 
 
 def join(
-    table: BaseTable,
-    other: BaseTable,
+    table: BasePTable,
+    other: BasePTable,
     name: Optional[str] = None,
     on: Optional[Any] = None,
     how: str = "left",
     lsuffix: str = "",
     rsuffix: str = "",
     sort: bool = False,
-) -> Table:
+) -> PTable:
     # pylint: disable=too-many-arguments, invalid-name
     "Compute the join of two table."
     if sort:
-        raise ValueError("'sort' not yet implemented in Table.join()")
+        raise ValueError("'sort' not yet implemented in PTable.join()")
     if on is not None:
-        raise ValueError("'on' not yet implemented in Table.join()")
+        raise ValueError("'on' not yet implemented in PTable.join()")
     dshape, rename = dshape_join(table.dshape, other.dshape, lsuffix, rsuffix)
-    join_table = Table(name=name, dshape=dshape)
+    join_table = PTable(name=name, dshape=dshape)
     if how == "left":
         if np.array_equal(table.index, other.index):  # type: ignore
             join_table.resize(len(table), index=table.index)
@@ -47,14 +47,14 @@ def join(
 
 def join_reset(dialog: Dialog) -> None:
     bag = dialog.bag
-    bag["first_orphans"] = bitmap([])
-    bag["second_orphans"] = bitmap([])
+    bag["first_orphans"] = PIntSet([])
+    bag["second_orphans"] = PIntSet([])
     bag["existing_ids"] = None
 
 
 def join_start(
-    table: BaseTable,
-    other: BaseTable,
+    table: BasePTable,
+    other: BasePTable,
     dialog: Dialog,
     name: Optional[str] = None,
     on: Optional[Any] = None,
@@ -71,9 +71,9 @@ def join_start(
     # pylint: disable=too-many-arguments, invalid-name, too-many-locals, unused-argument
     "Start the progressive join function"
     if sort:
-        raise ValueError("'sort' not yet implemented in Table.join()")
+        raise ValueError("'sort' not yet implemented in PTable.join()")
     if on is not None:
-        raise ValueError("'on' not yet implemented in Table.join()")
+        raise ValueError("'on' not yet implemented in PTable.join()")
     dshape, rename = dshape_join(table.dshape, other.dshape, lsuffix, rsuffix)
     left_cols = [rename["left"].get(c, c) for c in table.columns]
     right_cols = [rename["right"].get(c, c) for c in other.columns]
@@ -96,15 +96,15 @@ def join_start(
     bag["second_key"] = second_key
     bag["how"] = how
     join_reset(dialog)
-    join_table = Table(name=name, dshape=dshape)
+    join_table = PTable(name=name, dshape=dshape)
     dialog.set_output_table(join_table)
     dialog.set_started()
     return join_cont(table, other, dialog, created, updated, deleted, order)
 
 
 def join_cont(
-    table: BaseTable,
-    other: BaseTable,
+    table: BasePTable,
+    other: BasePTable,
     dialog: Dialog,
     created: Optional[Dict[str, Any]] = None,
     updated: Optional[Dict[str, Any]] = None,
@@ -115,7 +115,7 @@ def join_cont(
     # pylint: disable=too-many-arguments, invalid-name, too-many-locals, unused-argument
     "Continue the progressive join function"
     join_table = dialog.output_table
-    assert isinstance(join_table, BaseTable)
+    assert isinstance(join_table, BasePTable)
     first_cols = dialog.bag["first_cols"]
     second_cols = dialog.bag["second_cols"]
     first_key = dialog.bag["first_key"]
@@ -146,7 +146,7 @@ def join_cont(
         first_ids = created.get(first_key, None)
         second_ids = created.get(second_key, None)
         only_1st, common, only_2nd = inter_slice(first_ids, second_ids)
-        assert isinstance(join_table, Table)
+        assert isinstance(join_table, PTable)
         if first_ids is not None:
             new_size = _len(first_ids)
             if (
@@ -159,12 +159,12 @@ def join_cont(
                 # the nice case (no gaps)
                 join_table.resize(new_size)
             else:  # there are gaps ...we have to keep trace of existing ids
-                join_table.resize(new_size, index=bitmap.asbitmap(first_ids))
+                join_table.resize(new_size, index=PIntSet.aspintset(first_ids))
                 if b.get("existing_ids", None) is None:
-                    b["existing_ids"] = bitmap.asbitmap(join_table.index)
+                    b["existing_ids"] = PIntSet.aspintset(join_table.index)
                 else:
-                    b["existing_ids"] = bitmap.union(
-                        b["existing_ids"], bitmap.asbitmap(first_ids)
+                    b["existing_ids"] = PIntSet.union(
+                        b["existing_ids"], PIntSet.aspintset(first_ids)
                     )
             join_table.loc[_fix(first_ids), first_cols] = first.loc[
                 _fix(first_ids), first.columns
@@ -174,26 +174,26 @@ def join_cont(
                 _fix(common), second.columns
             ]
         # first matching: older orphans on the second table with new orphans on the first
-        only_1st_bm = bitmap.asbitmap(only_1st)
+        only_1st_bm = PIntSet.aspintset(only_1st)
         paired = b["second_orphans"] & only_1st_bm
         if paired:
             join_table.loc[paired, second_cols] = second.loc[paired, second.columns]
             b["second_orphans"] = b["second_orphans"] - paired
             only_1st_bm -= paired
-        b["first_orphans"] = bitmap.union(b["first_orphans"], only_1st_bm)
+        b["first_orphans"] = PIntSet.union(b["first_orphans"], only_1st_bm)
         # 2nd matching: older orphans on the first table with new orphans on the second
-        only_2nd_bm = bitmap.asbitmap(only_2nd)
+        only_2nd_bm = PIntSet.aspintset(only_2nd)
         paired = b["first_orphans"] & only_2nd_bm
         if paired:
             join_table.loc[paired, second_cols] = second.loc[paired, second.columns]
             b["first_orphans"] = b["first_orphans"] - paired
             only_2nd_bm -= paired
-        b["second_orphans"] = bitmap.union(b["second_orphans"], only_2nd_bm)
+        b["second_orphans"] = PIntSet.union(b["second_orphans"], only_2nd_bm)
 
     def _process_updated(ret: Dict[str, Any]) -> None:
         if not updated:
             return
-        assert isinstance(join_table, BaseTable)
+        assert isinstance(join_table, BasePTable)
         first_ids = updated.get(first_key, None)
         second_ids = updated.get(second_key, None)
         if first_ids:
@@ -237,10 +237,10 @@ class Join(NAry):
     def run_step(
         self, run_number: int, step_size: int, howlong: float
     ) -> ReturnRunStep:
-        frames: List[BaseTable] = []
+        frames: List[BasePTable] = []
         for name in self.get_input_slot_multiple():
             slot = self.get_input_slot(name)
-            table = cast(BaseTable, slot.data())
+            table = cast(BasePTable, slot.data())
             slot.clear_buffers()
             frames.append(table)
         table = frames[0]

@@ -1,10 +1,10 @@
 # Borrowed from bcolz.chunked_eval
-# Should be adapted to return either a value in a column, or a boolean in a bitmap.
+# Should be adapted to return either a value in a column, or a boolean in a PIntSet.
 # Should also provide an eval/select progressive module.
 
 import numpy as np
 
-from .column_base import BaseColumn
+from .column_base import BasePColumn
 
 from typing import Any, Dict, Optional
 
@@ -54,10 +54,10 @@ def _eval(
         if hasattr(var, "dtype"):  # numpy/carray arrays
             if isinstance(var, np.ndarray):  # numpy array
                 typesize += var.dtype.itemsize * np.prod(var.shape[1:])
-            elif isinstance(var, BaseColumn):
+            elif isinstance(var, BasePColumn):
                 typesize += var.dtype.itemsize
             else:
-                raise ValueError("only numpy/Column objects supported")
+                raise ValueError("only numpy/PColumn objects supported")
         if is_sequence_like(var):
             if vlen > 1 and vlen != len(var):
                 raise ValueError("arrays must have the same length")

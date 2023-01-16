@@ -4,18 +4,18 @@ from . import ProgressiveTest
 from progressivis.core import aio, Sink
 from progressivis.io import PACSVLoader
 from progressivis.table.constant import Constant
-from progressivis.table.table import Table
+from progressivis.table.table import PTable
 from progressivis.datasets import get_dataset  # , RandomBytesIO
 from progressivis.core.utils import RandomBytesIO
 
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from progressivis.table.module import TableModule
+    from progressivis.table.module import PTableModule
 
 
 class TestProgressiveLoadCSV(ProgressiveTest):
-    def runit(self, module: TableModule) -> int:
+    def runit(self, module: PTableModule) -> int:
         module.run(1)
         table = module.table
         self.assertFalse(table is None)
@@ -64,7 +64,7 @@ class TestProgressiveLoadCSV(ProgressiveTest):
 
     def test_read_multiple_csv(self) -> None:
         s = self.scheduler()
-        filenames = Table(
+        filenames = PTable(
             name="file_names",
             dshape="{filename: string}",
             data={"filename": [get_dataset("smallfile"), get_dataset("smallfile")]},
@@ -81,7 +81,7 @@ class TestProgressiveLoadCSV(ProgressiveTest):
 
     def test_read_multiple_fake_csv(self) -> None:
         s = self.scheduler()
-        filenames = Table(
+        filenames = PTable(
             name="file_names2",
             dshape="{filename: string}",
             data={

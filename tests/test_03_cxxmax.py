@@ -1,7 +1,7 @@
 from . import ProgressiveTest, skipIf
 from progressivis.core import aio
 from progressivis import Print
-from progressivis.stats import RandomTable
+from progressivis.stats import RandomPTable
 from progressivis.table.stirrer import Stirrer, StirrerView
 from progressivis.stats.cxxmax import Max, CxxMax  # type: ignore
 
@@ -23,7 +23,7 @@ class TestCxxMax(ProgressiveTest):
     @skipIf(CxxMax is None, "C++ module is missing")
     def test_max(self) -> None:
         s = self.scheduler()
-        random = RandomTable(10, rows=10_000, scheduler=s)
+        random = RandomPTable(10, rows=10_000, scheduler=s)
         max_ = Max(name="max_" + str(hash(random)), scheduler=s)
         max_.input[0] = random.output.result
         pr = Print(proc=self.terse, scheduler=s)
@@ -36,7 +36,7 @@ class TestCxxMax(ProgressiveTest):
     @skipIf(CxxMax is None, "C++ module is missing")
     def test_stirrer(self) -> None:
         s = self.scheduler()
-        random = RandomTable(2, rows=100_000, scheduler=s)
+        random = RandomPTable(2, rows=100_000, scheduler=s)
         stirrer = Stirrer(
             update_column="_1",
             delete_rows=5,
@@ -57,7 +57,7 @@ class TestCxxMax(ProgressiveTest):
     @skipIf(CxxMax is None, "C++ module is missing")
     def test_stirrer_view(self) -> None:
         s = self.scheduler()
-        random = RandomTable(2, rows=100_000, scheduler=s)
+        random = RandomPTable(2, rows=100_000, scheduler=s)
         stirrer = StirrerView(
             update_column="_1",
             delete_rows=5,

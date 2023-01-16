@@ -1,7 +1,7 @@
-"Change Manager for bitmap"
+"Change Manager for PIntSet"
 from __future__ import annotations
 
-from .bitmap import bitmap
+from .pintset import PIntSet
 from .index_update import IndexUpdate
 from .changemanager_base import BaseChangeManager
 from .slot import Slot
@@ -9,9 +9,9 @@ from .slot import Slot
 from typing import Any, Optional
 
 
-class BitmapChangeManager(BaseChangeManager):
+class PIntSetChangeManager(BaseChangeManager):
     """
-    Manage changes that occured in a Bitmap between runs.
+    Manage changes that occured in a PIntSet between runs.
     """
 
     def __init__(
@@ -23,7 +23,7 @@ class BitmapChangeManager(BaseChangeManager):
         buffer_exposed: bool = False,
         buffer_masked: bool = False,
     ):
-        super(BitmapChangeManager, self).__init__(
+        super().__init__(
             slot,
             buffer_created,
             buffer_updated,
@@ -31,13 +31,13 @@ class BitmapChangeManager(BaseChangeManager):
             buffer_exposed,
             buffer_masked,
         )
-        self._last_bm: Optional[bitmap] = None
+        self._last_bm: Optional[PIntSet] = None
 
     def reset(self, mid: str) -> None:
-        super(BitmapChangeManager, self).reset(mid)
+        super().reset(mid)
         self._last_bm = None
 
-    def compute_updates(self, data: bitmap) -> IndexUpdate:
+    def compute_updates(self, data: PIntSet) -> IndexUpdate:
         last_bm = self._last_bm
         changes = IndexUpdate()
         if last_bm is None:
@@ -48,12 +48,12 @@ class BitmapChangeManager(BaseChangeManager):
                 changes.created.update(data - last_bm)
             if self.deleted.buffer:
                 changes.deleted.update(last_bm - data)
-        self._last_bm = bitmap(data)
+        self._last_bm = PIntSet(data)
         return changes
 
     def update(self, run_number: int, data: Any, mid: str) -> None:
         # pylint: disable=unused-argument
-        assert isinstance(data, bitmap)
+        assert isinstance(data, PIntSet)
         if data is None or (run_number != 0 and run_number <= self._last_update):
             return
 
@@ -64,4 +64,4 @@ class BitmapChangeManager(BaseChangeManager):
         )
 
 
-Slot.add_changemanager_type(bitmap, BitmapChangeManager)
+Slot.add_changemanager_type(PIntSet, PIntSetChangeManager)

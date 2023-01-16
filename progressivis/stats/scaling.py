@@ -3,12 +3,12 @@ import numpy as np
 import numexpr as ne
 import logging
 from ..core import Sink
-from ..core.bitmap import bitmap
+from ..core.pintset import PIntSet
 from ..core.utils import indices_len
 from ..core.slot import SlotDescriptor, Slot
-from ..table import Table, BaseTable, BaseColumn
-from ..table.module import TableModule
-from ..utils.psdict import PsDict
+from ..table import PTable, BasePTable, BasePColumn
+from ..table.module import PTableModule
+from ..utils.psdict import PDict
 from . import Min, Max, Histogram1D
 from ..core.decorators import process_slot, run_if_any
 from ..table.dshape import dshape_all_dtype
@@ -22,10 +22,10 @@ if TYPE_CHECKING:
     from ..core.module import ReturnRunStep
 
     ColsTo = Dict[str, Tuple[float, float]]
-    NumCol = Union[np.ndarray[Any, Any], BaseColumn]
+    NumCol = Union[np.ndarray[Any, Any], BasePColumn]
 
 
-class MinMaxScaler(TableModule):
+class MinMaxScaler(PTableModule):
     """
     Scaler
     """
@@ -36,12 +36,12 @@ class MinMaxScaler(TableModule):
     ]  # 5%, 0
 
     inputs = [
-        SlotDescriptor("table", type=Table, required=True),
-        SlotDescriptor("min", type=PsDict, required=True),
-        SlotDescriptor("max", type=PsDict, required=True),
-        SlotDescriptor("control", type=PsDict, required=False),
+        SlotDescriptor("table", type=PTable, required=True),
+        SlotDescriptor("min", type=PDict, required=True),
+        SlotDescriptor("max", type=PDict, required=True),
+        SlotDescriptor("control", type=PDict, required=False),
     ]
-    outputs = [SlotDescriptor("info", type=PsDict, required=False)]
+    outputs = [SlotDescriptor("info", type=PDict, required=False)]
 
     def __init__(
         self,
@@ -81,11 +81,11 @@ class MinMaxScaler(TableModule):
             )
 
     def scale(
-        self, chunk: BaseTable, cols: List[str], usecols: List[str], clip_cols: ColsTo
+        self, chunk: BasePTable, cols: List[str], usecols: List[str], clip_cols: ColsTo
     ) -> Dict[str, NumCol]:
         res: Dict[str, NumCol] = {}
         for c in cols:
-            arr: Union[np.ndarray[Any, Any], BaseColumn] = chunk[c]  # .to_array()
+            arr: Union[np.ndarray[Any, Any], BasePColumn] = chunk[c]  # .to_array()
             if c not in usecols:
                 res[c] = arr
                 continue
@@ -104,8 +104,8 @@ class MinMaxScaler(TableModule):
                 np.clip(val, 0.0, 1.0, out=val)
         return res
 
-    def get_ignore(self, chunk: BaseTable, oversized_cols: ColsTo) -> bitmap:
-        ignore = bitmap()
+    def get_ignore(self, chunk: BasePTable, oversized_cols: ColsTo) -> PIntSet:
+        ignore = PIntSet()
         for c, (min_, max_) in oversized_cols.items():
             arr = chunk[c]  # .to_array()
             _ = arr  # for flake8
@@ -147,7 +147,7 @@ class MinMaxScaler(TableModule):
 
     def maintain_info(self, yes: bool = True) -> None:
         if yes and not self._info:
-            self._info = PsDict({"clipped": 0, "ignored": 0, "needs_changes": False})
+            self._info = PDict({"clipped": 0, "ignored": 0, "needs_changes": False})
         elif not yes:
             self._info = {}
 
@@ -261,11 +261,11 @@ class MinMaxScaler(TableModule):
                 else:  # at start or after data reset
                     self.update_bounds(min_data, max_data)
 
-            indices = dfslot.created.next(step_size, as_slice=False)  # returns a bitmap
+            indices = dfslot.created.next(step_size, as_slice=False)  # returns a PIntSet
             steps = indices_len(indices)
             if steps == 0:
                 return self._return_run_step(self.state_blocked, steps_run=0)
-            tbl: BaseTable = self.filter_columns(input_df, indices)
+            tbl: BasePTable = self.filter_columns(input_df, indices)
             ignore_ilocs = self.get_ignore(tbl, cols_to_ignore)
             if ignore_ilocs:
                 len_ii = len(ignore_ilocs)
@@ -281,17 +281,17 @@ class MinMaxScaler(TableModule):
                 self._ignored += len_ii
                 if self._info:
                     self._info["ignored"] += len_ii
-                rm_ids = bitmap(np.array(indices)[cast(List[int], ignore_ilocs)])
+                rm_ids = PIntSet(np.array(indices)[cast(List[int], ignore_ilocs)])
                 indices = indices - rm_ids
                 if not indices:
                     return self._return_run_step(self.state_blocked, steps_run=0)
-                tbl_ii: Optional[BaseTable] = tbl.loc[indices, :]
+                tbl_ii: Optional[BasePTable] = tbl.loc[indices, :]
                 assert tbl_ii
                 tbl = tbl_ii
             sc_data = self.scale(tbl, cols, usecols, cols_to_clip)
             if self.result is None:
                 ds = dshape_all_dtype(usecols, np.dtype("float64"))
-                self.result = Table(
+                self.result = PTable(
                     self.generate_table_name("scaled"),
                     dshape=ds,  # input_df.dshape,
                     create=True,
@@ -300,7 +300,7 @@ class MinMaxScaler(TableModule):
             return self._return_run_step(self.next_state(dfslot), steps)
 
     def create_dependent_modules(
-        self, input_module: TableModule, input_slot: str = "result", hist: bool = False
+        self, input_module: PTableModule, input_slot: str = "result", hist: bool = False
     ) -> None:
         s = self.scheduler()
         self.input.table = input_module.output[input_slot]

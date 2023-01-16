@@ -8,8 +8,8 @@ from io import IOBase
 from bz2 import BZ2File
 from gzip import GzipFile
 
-from progressivis.table.table import Table
-from progressivis.table.module import TableModule
+from progressivis.table.table import PTable
+from progressivis.table.module import PTableModule
 from progressivis.core.module import ReturnRunStep
 
 from sklearn.feature_extraction import DictVectorizer  # type: ignore
@@ -53,7 +53,7 @@ def vec_loader(
         return (dictionary.fit_transform(dataset), dictionary.get_feature_names())
 
 
-class VECLoader(TableModule):
+class VECLoader(PTableModule):
     def __init__(
         self, filename: str, dtype: Type[Any] = np.float64, **kwds: Any
     ) -> None:
@@ -69,7 +69,7 @@ class VECLoader(TableModule):
         # When created with a specified chunksize, it returns the parser
         self._rows_read = 0
         self._csr_matrix = None
-        self.result = Table(
+        self.result = PTable(
             self.generate_table_name("documents"),
             dshape="{document: var * float32}",
             fillvalues={"document": 0},

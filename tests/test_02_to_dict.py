@@ -1,8 +1,8 @@
 from . import ProgressiveTest
-from progressivis.table.table import Table
+from progressivis.table.table import PTable
 
-# from progressivis.table.table_selected import TableSelectedView
-from progressivis.core.bitmap import bitmap
+# from progressivis.table.table_selected import PTableSelectedView
+from progressivis.core.pintset import PIntSet
 
 import pandas as pd
 
@@ -17,7 +17,7 @@ class TestToDict(ProgressiveTest):
                 "c": ["a", "b", "cd", "ef", "fg", "gh", "hi", "ij"],
             }
         )
-        t = Table(name=None, data=df)
+        t = PTable(name=None, data=df)
         df = df.drop(df.index[[3, 4]])
         del t.loc[[3, 4]]
         # del t.loc[3]
@@ -40,11 +40,11 @@ class TestToDict(ProgressiveTest):
                 "c": ["a", "b", "cd", "ef", "fg", "gh", "hi", "ij"],
             }
         )
-        t_ = Table(name=None, data=df)
+        t_ = PTable(name=None, data=df)
         df = df.drop(df.index[[3, 4]])
-        sel = bitmap(t_.index) - bitmap([3, 4])
+        sel = PIntSet(t_.index) - PIntSet([3, 4])
         # del t.loc[[3,4]]
-        t = t_.loc[sel, :]  # TableSelectedView(t_, sel)
+        t = t_.loc[sel, :]  # PTableSelectedView(t_, sel)
         assert t is not None
         # del t.loc[3]
         # print(df.to_dict(orient='records'))

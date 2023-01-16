@@ -3,8 +3,8 @@ from __future__ import annotations
 import numpy as np
 
 from ..core.module import ReturnRunStep, JSon
-from ..table.module import TableModule
-from ..table import Table
+from ..table.module import PTableModule
+from ..table import PTable
 from ..core.utils import indices_len
 from progressivis import SlotDescriptor
 
@@ -16,14 +16,14 @@ except Exception:
 from typing import Optional, Any
 
 
-class KernelDensity(TableModule):
+class KernelDensity(PTableModule):
     parameters = [
         ("samples", np.dtype(object), 1),
         ("bins", np.dtype(int), 1),
         ("threshold", np.dtype(int), 1000),
         ("knn", np.dtype(int), 100),
     ]
-    inputs = [SlotDescriptor("table", type=Table, required=True)]
+    inputs = [SlotDescriptor("table", type=PTable, required=True)]
 
     def __init__(self, **kwds: Any) -> None:
         self._kde: Optional[KNNKernelDensity] = None

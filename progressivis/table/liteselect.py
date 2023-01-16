@@ -5,10 +5,10 @@ import logging
 from ..core.utils import indices_len
 from ..core.slot import SlotDescriptor
 from ..core.module import ReturnRunStep
-from .module import TableModule
-from .table import Table
-from ..core.bitmap import bitmap
-from . import TableSelectedView
+from .module import PTableModule
+from .table import PTable
+from ..core.pintset import PIntSet
+from . import PTableSelectedView
 
 from typing import Any
 
@@ -16,10 +16,10 @@ from typing import Any
 logger = logging.getLogger(__name__)
 
 
-class LiteSelect(TableModule):
+class LiteSelect(PTableModule):
     inputs = [
-        SlotDescriptor("table", type=Table, required=True),
-        SlotDescriptor("select", type=bitmap, required=True),
+        SlotDescriptor("table", type=PTable, required=True),
+        SlotDescriptor("select", type=PIntSet, required=True),
     ]
 
     def __init__(self, **kwds: Any) -> None:
@@ -47,14 +47,14 @@ class LiteSelect(TableModule):
 
         steps = 0
         if self.result is None:
-            self.result = TableSelectedView(table, bitmap([]))
+            self.result = PTableSelectedView(table, PIntSet([]))
 
         if select_slot.deleted.any():
             indices = select_slot.deleted.next(length=step_size, as_slice=False)
             s = indices_len(indices)
             # print("LITESELECT: -", s)
             logger.info("deleting %s", indices)
-            self.selected.selection -= bitmap.asbitmap(indices)
+            self.selected.selection -= PIntSet.aspintset(indices)
             # step_size -= s//2
 
         if step_size > 0 and select_slot.created.any():
@@ -63,6 +63,6 @@ class LiteSelect(TableModule):
             logger.info("creating %s", indices)
             steps += s
             # step_size -= s
-            self.selected.selection |= bitmap.asbitmap(indices)
+            self.selected.selection |= PIntSet.aspintset(indices)
 
         return self._return_run_step(self.next_state(select_slot), steps_run=steps)

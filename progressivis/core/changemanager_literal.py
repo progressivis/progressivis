@@ -1,7 +1,7 @@
 "Change Manager for literal values (supporting ==)"
 from __future__ import annotations
 
-from .bitmap import bitmap
+from .pintset import PIntSet
 from .index_update import IndexUpdate
 from .changemanager_base import BaseChangeManager
 
@@ -19,7 +19,7 @@ class LiteralChangeManager(BaseChangeManager):
     Manage changes that occured in a literal value between runs.
     """
 
-    VALUE = bitmap([0])
+    VALUE = PIntSet([0])
 
     def __init__(
         self,

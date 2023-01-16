@@ -178,22 +178,22 @@ class CSVSniffer:
         for i, title in enumerate(["Delimiters", "Dates", "Header", "Special values"]):
             self.global_tab.set_title(i, title)
 
-        # Column selection
+        # PColumn selection
         self.columns = widgets.Select(disabled=True, rows=7)
         self.columns.observe(self._columns_cb, names="value")
         self.enable_all = widgets.Checkbox(description="Enable/disable all", value=True)
         self.enable_all.observe(self._enable_all_cb, names="value")
-        # Column details
-        self.column: Dict[str, ColumnInfo] = {}
-        self.no_detail = widgets.Label(value="No Column Selected")
+        # PColumn details
+        self.column: Dict[str, PColumnInfo] = {}
+        self.no_detail = widgets.Label(value="No PColumn Selected")
         self.details = widgets.Box([self.no_detail], label="Details")
         # Toplevel Box
         self.top = widgets.HBox(
             [
                 self.global_tab,
-                widgets.VBox([widgets.Label("Columns"), self.columns, self.enable_all], layout=layout),
+                widgets.VBox([widgets.Label("PColumns"), self.columns, self.enable_all], layout=layout),
                 widgets.VBox(
-                    [widgets.Label("Selected Column"), self.details], layout=layout
+                    [widgets.Label("Selected PColumn"), self.details], layout=layout
                 ),
             ]
         )
@@ -209,7 +209,7 @@ class CSVSniffer:
             ]
         )
         self.testBtn.on_click(self.test_cmd)
-        self.column_info: List[ColumnInfo] = []
+        self.column_info: List[PColumnInfo] = []
         self.clear()
         self.dataframe()
 
@@ -251,7 +251,7 @@ class CSVSniffer:
 
     def _columns_cb(self, change: Dict[str, Any]) -> None:
         column = change["new"]
-        # print(f"Column: '{column}'")
+        # print(f"PColumn: '{column}'")
         self.show_column(column)
 
     def set_delimiter(self, delim: str) -> None:
@@ -400,7 +400,7 @@ class CSVSniffer:
         for column in df.columns:
             col = df[column]
             if self.column.get(column) is None:
-                col = ColumnInfo(self, col)
+                col = PColumnInfo(self, col)
                 self.column[column] = col
         for column in list(self.column):
             if column not in df.columns:
@@ -482,7 +482,7 @@ class CSVSniffer:
         return cast(pd.DataFrame, pd.read_csv(self.path, **self.params))
 
 
-class ColumnInfo:
+class PColumnInfo:
     numeric_types = [
         "int8",
         "uint8",

@@ -1,6 +1,6 @@
 from . import ProgressiveTest
 from progressivis import Print, Scheduler
-from progressivis.stats import RandomTable, Max, Min
+from progressivis.stats import RandomPTable, Max, Min
 from progressivis.table.stirrer import Stirrer
 from progressivis.table.switch import Switch
 from progressivis.table.hub import Hub
@@ -12,7 +12,7 @@ import numpy as np
 class TestHub(ProgressiveTest):
     def test_hub_if_then(self):
         s = Scheduler()
-        random = RandomTable(2, rows=100000, scheduler=s)
+        random = RandomPTable(2, rows=100000, scheduler=s)
         stirrer = Stirrer(
             update_column="_1",
             delete_rows=5,
@@ -39,7 +39,7 @@ class TestHub(ProgressiveTest):
 
     def test_hub_if_else(self):
         s = Scheduler()
-        random = RandomTable(2, rows=100000, scheduler=s)
+        random = RandomPTable(2, rows=100000, scheduler=s)
         stirrer = Stirrer(
             update_column="_1",
             delete_rows=5,

@@ -1,7 +1,7 @@
 from . import ProgressiveTest
 import numpy as np
 from progressivis import Print
-from progressivis.stats import IdxMax, IdxMin, Max, Min, RandomTable
+from progressivis.stats import IdxMax, IdxMin, Max, Min, RandomPTable
 from progressivis.table.stirrer import Stirrer
 from progressivis.core import aio, notNone
 
@@ -14,7 +14,7 @@ class TestIdxMax(ProgressiveTest):
 
     def test_idxmax(self) -> None:
         s = self.scheduler()
-        random = RandomTable(10, rows=10000, throttle=1000, scheduler=s)
+        random = RandomPTable(10, rows=10000, throttle=1000, scheduler=s)
         idxmax = IdxMax(scheduler=s)
         idxmax.input[0] = random.output.result
         max_ = Max(scheduler=s)
@@ -34,7 +34,7 @@ class TestIdxMax(ProgressiveTest):
 
     def test_idxmax2(self) -> None:
         s = self.scheduler()
-        random = RandomTable(10, rows=10000, throttle=1000, scheduler=s)
+        random = RandomPTable(10, rows=10000, throttle=1000, scheduler=s)
         stirrer = Stirrer(
             update_column="_1", delete_rows=5, fixed_step_size=100, scheduler=s
         )
@@ -59,7 +59,7 @@ class TestIdxMax(ProgressiveTest):
 
     def test_idxmin(self) -> None:
         s = self.scheduler()
-        random = RandomTable(10, rows=10000, throttle=1000, scheduler=s)
+        random = RandomPTable(10, rows=10000, throttle=1000, scheduler=s)
         idxmin = IdxMin(scheduler=s)
         idxmin.input[0] = random.output.result
         min_ = Min(scheduler=s)
@@ -79,7 +79,7 @@ class TestIdxMax(ProgressiveTest):
 
     def test_idxmin2(self) -> None:
         s = self.scheduler()
-        random = RandomTable(10, rows=10000, throttle=1000, scheduler=s)
+        random = RandomPTable(10, rows=10000, throttle=1000, scheduler=s)
         stirrer = Stirrer(
             update_column="_1", delete_rows=5, fixed_step_size=100, scheduler=s
         )

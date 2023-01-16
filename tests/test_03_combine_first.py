@@ -2,7 +2,7 @@ from . import ProgressiveTest
 from progressivis import Print
 from progressivis.table.constant import Constant
 from progressivis.table.combine_first import CombineFirst
-from progressivis.table.table import Table
+from progressivis.table.table import PTable
 from progressivis.core import aio, notNone
 
 
@@ -14,7 +14,7 @@ class TestCombineFirst(ProgressiveTest):
     def test_combine_first_dup(self) -> None:
         s = self.scheduler(True)
         cst1 = Constant(
-            Table(
+            PTable(
                 name="tcf_xmin_xmax",
                 data=pd.DataFrame({"xmin": [1], "xmax": [2]}),
                 create=True,
@@ -22,7 +22,7 @@ class TestCombineFirst(ProgressiveTest):
             scheduler=s,
         )
         cst2 = Constant(
-            Table(
+            PTable(
                 name="tcf_ymin_ymax",
                 data=pd.DataFrame({"ymin": [5], "ymax": [6]}),
                 create=True,
@@ -30,7 +30,7 @@ class TestCombineFirst(ProgressiveTest):
             scheduler=s,
         )
         cst3 = Constant(
-            Table(
+            PTable(
                 name="tcf_ymin_ymax2",
                 data=pd.DataFrame({"ymin": [3], "ymax": [4]}),
                 create=True,
@@ -56,7 +56,7 @@ class TestCombineFirst(ProgressiveTest):
     def test_combine_first_nan(self) -> None:
         s = self.scheduler(True)
         cst1 = Constant(
-            Table(
+            PTable(
                 name="tcf_xmin_xmax_nan",
                 data=pd.DataFrame({"xmin": [1], "xmax": [2]}),
                 create=True,
@@ -64,7 +64,7 @@ class TestCombineFirst(ProgressiveTest):
             scheduler=s,
         )
         cst2 = Constant(
-            Table(
+            PTable(
                 name="tcf_ymin_ymax_nan",
                 data=pd.DataFrame({"ymin": [np.nan], "ymax": [np.nan]}),
                 create=True,
@@ -72,7 +72,7 @@ class TestCombineFirst(ProgressiveTest):
             scheduler=s,
         )
         cst3 = Constant(
-            Table(
+            PTable(
                 name="tcf_ymin_ymax2_nan",
                 data=pd.DataFrame({"ymin": [3], "ymax": [4]}),
                 create=True,

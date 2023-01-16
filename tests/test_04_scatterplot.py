@@ -4,7 +4,7 @@ from progressivis import Every, Print, Scheduler
 from progressivis.io import CSVLoader
 from progressivis.vis import MCScatterPlot
 from progressivis.datasets import get_dataset
-from progressivis.stats import RandomTable
+from progressivis.stats import RandomPTable
 from progressivis.core import aio
 from . import ProgressiveTest, skipIf
 import os
@@ -77,7 +77,7 @@ class TestScatterPlot(ProgressiveTest):
     def test_scatterplot2(self) -> None:
         s = self.scheduler(clean=True)
         with s:
-            random = RandomTable(2, rows=2000000, throttle=1000, scheduler=s)
+            random = RandomPTable(2, rows=2000000, throttle=1000, scheduler=s)
             sp = MCScatterPlot(
                 scheduler=s, classes=[("Scatterplot", "_1", "_2")], approximate=True
             )

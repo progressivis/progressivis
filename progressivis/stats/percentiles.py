@@ -3,8 +3,8 @@ from __future__ import annotations
 from progressivis.core.module import ReturnRunStep
 from ..utils.errors import ProgressiveError
 from ..core.utils import indices_len, fix_loc
-from ..table.module import TableModule
-from ..table.table import Table
+from ..table.module import PTableModule
+from ..table.table import PTable
 from ..core.slot import SlotDescriptor
 from ..core.decorators import process_slot, run_if_any
 
@@ -25,12 +25,12 @@ def _pretty_name(x: float) -> str:
         return "_%.1f%%" % x
 
 
-class Percentiles(TableModule):
+class Percentiles(PTableModule):
     parameters = [
         ("percentiles", np.dtype(np.object_), [0.25, 0.5, 0.75]),
         ("history", np.dtype(int), 3),
     ]
-    inputs = [SlotDescriptor("table", type=Table)]
+    inputs = [SlotDescriptor("table", type=PTable)]
 
     def __init__(
         self,
@@ -65,7 +65,7 @@ class Percentiles(TableModule):
         self._percentiles = percentiles
         self._pername: List[str] = [_pretty_name(x) for x in self._percentiles]
         dshape = "{" + ",".join(["%s: real" % n for n in self._pername]) + "}"
-        self.result = Table(
+        self.result = PTable(
             self.generate_table_name("percentiles"), dshape=dshape, create=True
         )
 

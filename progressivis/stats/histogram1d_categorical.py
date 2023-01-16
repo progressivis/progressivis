@@ -8,9 +8,9 @@ import pandas as pd
 from ..core.module import ReturnRunStep
 from ..core.slot import SlotDescriptor
 from ..core.utils import indices_len, fix_loc
-from ..table.module import TableModule
-from ..table.table import Table
-from ..utils.psdict import PsDict
+from ..table.module import PTableModule
+from ..table.table import PTable
+from ..utils.psdict import PDict
 from ..core.decorators import process_slot, run_if_any
 from ..utils.errors import ProgressiveError
 
@@ -20,12 +20,12 @@ from typing import Any, Union
 logger = logging.getLogger(__name__)
 
 
-class Histogram1DCategorical(TableModule):
+class Histogram1DCategorical(PTableModule):
     """
     """
 
     parameters = [("bins", np.dtype(int), 128), ("delta", np.dtype(float), -5)]
-    inputs = [SlotDescriptor("table", type=Table, required=True)]
+    inputs = [SlotDescriptor("table", type=PTable, required=True)]
 
     schema = "{ array: var * int32, min: float64, max: float64, time: int64 }"
 
@@ -34,7 +34,7 @@ class Histogram1DCategorical(TableModule):
         self.column = column
         self.total_read = 0
         self.default_step_size = 1000
-        self.result = PsDict()
+        self.result = PDict()
 
     def reset(self) -> None:
         if self.result:

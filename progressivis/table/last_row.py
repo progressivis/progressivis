@@ -2,14 +2,14 @@ from __future__ import annotations
 
 from progressivis.core.slot import SlotDescriptor
 from progressivis.core.module import ReturnRunStep
-from .module import TableModule
-from .table import Table
+from .module import PTableModule
+from .table import PTable
 
 from typing import Optional, Any
 
 
-class LastRow(TableModule):
-    inputs = [SlotDescriptor("table", type=Table, required=True)]
+class LastRow(PTableModule):
+    inputs = [SlotDescriptor("table", type=PTable, required=True)]
 
     def __init__(self, reset_index: Optional[bool] = True, **kwds: Any) -> None:
         super(LastRow, self).__init__(**kwds)
@@ -29,7 +29,7 @@ class LastRow(TableModule):
         if df is not None:
             last = df.last()
             if self.result is None:
-                self.result = Table(
+                self.result = PTable(
                     self.generate_table_name("LastRow"), dshape=df.dshape
                 )
                 if self._reset_index:

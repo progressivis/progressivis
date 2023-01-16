@@ -4,19 +4,19 @@ from __future__ import annotations
 from collections import namedtuple
 
 from progressivis.core.changemanager_base import BaseChangeManager
-from .table import Table
-from .tablechanges import TableChanges
+from .table import PTable
+from .tablechanges import PTableChanges
 from ..core.slot import Slot
 
 from typing import Any, Set
 
 
-ColumnUpdate = namedtuple("ColumnUpdate", ["created", "updated", "deleted"])
+PColumnUpdate = namedtuple("PColumnUpdate", ["created", "updated", "deleted"])
 
 
-class TableChangeManager(BaseChangeManager):
+class PTableChangeManager(BaseChangeManager):
     """
-    Manage changes that occured in a Table between runs.
+    Manage changes that occured in a PTable between runs.
     """
 
     def __init__(
@@ -28,7 +28,7 @@ class TableChangeManager(BaseChangeManager):
         buffer_exposed: bool = False,
         buffer_masked: bool = False,
     ) -> None:
-        super(TableChangeManager, self).__init__(
+        super(PTableChangeManager, self).__init__(
             slot,
             buffer_created,
             buffer_updated,
@@ -41,17 +41,17 @@ class TableChangeManager(BaseChangeManager):
         self._column_changes: Set[str] = set()
         data = slot.data()
         if data.changes is None:
-            data.changes = TableChanges()
+            data.changes = PTableChanges()
 
     def reset(self, mid: str) -> None:
-        super(TableChangeManager, self).reset(mid)
+        super(PTableChangeManager, self).reset(mid)
         data = self._slot.data()
         data.reset_updates(mid)
 
     def update(self, run_number: int, data: Any, mid: str) -> None:
         if data is None or (run_number != 0 and run_number <= self._last_update):
             return
-        assert isinstance(data, Table)
+        assert isinstance(data, PTable)
         changes = data.compute_updates(self._last_update, run_number, mid)
         self._last_update = run_number
         self._row_changes.combine(
@@ -65,8 +65,8 @@ class TableChangeManager(BaseChangeManager):
             self._column_changes = set()
 
     @property
-    def column_changes(self) -> ColumnUpdate:
-        return ColumnUpdate(created=self._column_changes, updated=set(), deleted=set())
+    def column_changes(self) -> PColumnUpdate:
+        return PColumnUpdate(created=self._column_changes, updated=set(), deleted=set())
 
 
-Slot.add_changemanager_type(Table, TableChangeManager)
+Slot.add_changemanager_type(PTable, PTableChangeManager)

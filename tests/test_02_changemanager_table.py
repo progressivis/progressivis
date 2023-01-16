@@ -1,37 +1,37 @@
-"test TableChangeManager"
+"test PTableChangeManager"
 
-from progressivis.table.table import Table
-from progressivis.table.changemanager_table import TableChangeManager
+from progressivis.table.table import PTable
+from progressivis.table.changemanager_table import PTableChangeManager
 from progressivis.table.changemanager_table_selected import FakeSlot
-from progressivis.table.tablechanges import TableChanges
-from progressivis.core.bitmap import bitmap
+from progressivis.table.tablechanges import PTableChanges
+from progressivis.core.pintset import PIntSet
 
 from . import ProgressiveTest
 
 
-class TestTableChangeManager(ProgressiveTest):
-    "Test case for TableChangeManager"
+class TestPTableChangeManager(ProgressiveTest):
+    "Test case for PTableChangeManager"
 
     def setUp(self) -> None:
-        super(TestTableChangeManager, self).setUp()
+        super(TestPTableChangeManager, self).setUp()
         self._scheduler = self.scheduler()
 
     def test_tablechangemanager(self) -> None:
         "main test"
         # pylint: disable=protected-access,too-many-locals,too-many-statements
-        table = Table(
+        table = PTable(
             "test_changemanager_table", data={"a": [1, 2, 3], "b": [10.1, 0.2, 0.3]}
         )
         col_a = table["a"]
         col_b = table["b"]
         s = self.scheduler()
-        table.changes = TableChanges()
+        table.changes = PTableChanges()
         s._run_number = 1
         last = s._run_number
         slot = FakeSlot(table)
 
         mid1 = "m1"
-        changemanager = TableChangeManager(
+        changemanager = PTableChangeManager(
             slot, buffer_updated=True, buffer_deleted=True
         )
         self.assertEqual(changemanager.last_update(), 0)
@@ -40,13 +40,13 @@ class TestTableChangeManager(ProgressiveTest):
         self.assertEqual(changemanager.deleted.length(), 0)
 
         mid2 = "m2"
-        cm2 = TableChangeManager(slot, buffer_updated=True, buffer_deleted=True)
+        cm2 = PTableChangeManager(slot, buffer_updated=True, buffer_deleted=True)
         self.assertEqual(cm2.last_update(), 0)
         self.assertEqual(cm2.created.length(), 0)
         self.assertEqual(cm2.updated.length(), 0)
         self.assertEqual(cm2.deleted.length(), 0)
 
-        cm3 = TableChangeManager(slot, buffer_updated=True, buffer_deleted=True)
+        cm3 = PTableChangeManager(slot, buffer_updated=True, buffer_deleted=True)
         self.assertEqual(cm3.last_update(), 0)
         self.assertEqual(cm3.created.length(), 0)
         self.assertEqual(cm3.updated.length(), 0)
@@ -159,7 +159,7 @@ class TestTableChangeManager(ProgressiveTest):
         self.assertEqual(cm2.last_update(), last2)
         self.assertEqual(cm2.created.next(), slice(6, 8))
         # new behaviour, prev. slice(5, 6)
-        self.assertEqual(cm2.updated.next(), bitmap([0, 5]))
+        self.assertEqual(cm2.updated.next(), PIntSet([0, 5]))
         self.assertEqual(list(cm2.deleted.next(as_slice=False)), [2, 4])
 
         # TODO test reset

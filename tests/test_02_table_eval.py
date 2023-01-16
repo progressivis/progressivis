@@ -6,19 +6,19 @@ import pandas as pd
 from . import ProgressiveTest, skip
 
 from progressivis import Scheduler
-from progressivis.table.table import Table
+from progressivis.table.table import PTable
 
 
 from typing import Any, cast
 
 
-class TestTableEval(ProgressiveTest):
+class TestPTableEval(ProgressiveTest):
     def setUp(self) -> None:
-        super(TestTableEval, self).setUp()
+        super(TestPTableEval, self).setUp()
         self.scheduler_ = Scheduler.default
 
     def test_filtering(self) -> None:
-        t = Table("table_filtering", dshape="{a: int, b: float32}", create=True)
+        t = PTable("table_filtering", dshape="{a: int, b: float32}", create=True)
         t.resize(20)
         ivalues = np.random.randint(100, size=20)
         t["a"] = ivalues
@@ -47,7 +47,7 @@ class TestTableEval(ProgressiveTest):
         small_fun("(a>10) & (a <80)", "view")
 
     def test_filtering2(self) -> None:
-        t = Table("table_filtering", dshape="{a: int, b: float32}", create=True)
+        t = PTable("table_filtering", dshape="{a: int, b: float32}", create=True)
         sz = 1000
         sz_del = 100
         t.resize(sz)
@@ -70,7 +70,7 @@ class TestTableEval(ProgressiveTest):
         small_fun_index("(a>10) & (a <80)")
 
     def test_assign(self) -> None:
-        t = Table("table_eval_assign", dshape="{a: int, b: float32}", create=True)
+        t = PTable("table_eval_assign", dshape="{a: int, b: float32}", create=True)
         t.resize(20)
         ivalues = np.random.randint(100, size=20)
         t["a"] = ivalues
@@ -88,7 +88,7 @@ class TestTableEval(ProgressiveTest):
 
     @skip("Not Ready")
     def test_user_dict(self) -> None:
-        t = Table("table_user_dict", dshape="{a: int, b: float32}", create=True)
+        t = PTable("table_user_dict", dshape="{a: int, b: float32}", create=True)
         t.resize(20)
         ivalues = np.random.randint(100, size=20)
         t["a"] = ivalues

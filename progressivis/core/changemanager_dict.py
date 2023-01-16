@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 from .changemanager_base import BaseChangeManager
-from ..utils.psdict import PsDict, EMPTY_PSDICT
+from ..utils.psdict import PDict, EMPTY_PSDICT
 
-# from ..table.tablechanges import TableChanges
+# from ..table.tablechanges import PTableChanges
 from .slot import Slot
 from .index_update import IndexUpdate
 import copy
@@ -33,10 +33,10 @@ class DictChangeManager(BaseChangeManager):
             buffer_exposed,
             buffer_masked,
         )
-        self._last_dict: Optional[PsDict] = None
+        self._last_dict: Optional[PDict] = None
         # data = slot.data()
         # if data.changes is None:
-        #     data.changes = TableChanges()
+        #     data.changes = PTableChanges()
 
     def reset(self, mid: str) -> None:
         super(DictChangeManager, self).reset(mid)
@@ -44,7 +44,7 @@ class DictChangeManager(BaseChangeManager):
 
     def update(self, run_number: int, data: Any, mid: str) -> None:
         # pylint: disable=unused-argument
-        assert isinstance(data, PsDict)
+        assert isinstance(data, PDict)
         if data is None or (run_number != 0 and run_number <= self._last_update):
             return
         data.fix_indices()
@@ -66,4 +66,4 @@ class DictChangeManager(BaseChangeManager):
         )
 
 
-Slot.add_changemanager_type(PsDict, DictChangeManager)
+Slot.add_changemanager_type(PDict, DictChangeManager)

@@ -9,7 +9,7 @@ from datasketches import (
     frequent_strings_sketch,
     frequent_items_error_type,
 )
-from ..table.column_base import BaseColumn
+from ..table.column_base import BasePColumn
 from ..core.utils import nn, is_str, is_dict
 
 Num = Union[float, int]
@@ -236,7 +236,7 @@ class OnlineCovariance:  # not an OnlineFuctor
         self.mean_y = self.sum_y / self.n
         self.cm += dx * (y - self.mean_y)
 
-    def add(self, array_x: BaseColumn, array_y: BaseColumn) -> None:
+    def add(self, array_x: BasePColumn, array_y: BasePColumn) -> None:
         for x, y in zip(array_x, array_y):
             self.include(x, y)
 

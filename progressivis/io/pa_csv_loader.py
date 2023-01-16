@@ -11,7 +11,7 @@ from .. import ProgressiveError
 from ..utils.errors import ProgressiveStopIteration
 from ..utils.inspect import extract_params_docstring
 from ..core.module import ReturnRunStep
-from ..table.table import Table
+from ..table.table import PTable
 from ..table.dshape import dshape_from_pa_batch
 from ..core.utils import (
     normalize_columns,
@@ -327,7 +327,7 @@ class PACSVLoader(BaseLoader):
                 self._table_params["dshape"] = dshape_from_pa_batch(bat_list[0])
                 self._table_params["data"] = bat_list[0]
                 self._table_params["create"] = True
-                self.result = Table(**self._table_params)
+                self.result = PTable(**self._table_params)
                 bat_list = bat_list[1:]
                 # if self._imputer is not None:
                 #    self._imputer.init(bat.dtypes)

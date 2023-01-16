@@ -5,7 +5,7 @@ import logging
 import numpy as np
 
 from progressivis.core.utils import integer_types
-from progressivis.core.bitmap import bitmap
+from progressivis.core.pintset import PIntSet
 from .base import Dataset
 from .hierarchy import AttributeImpl
 
@@ -118,7 +118,7 @@ class RangeDataset(Dataset):
             return self[np.fromiter(args, dtype=np.int64, count=count)]  # type: ignore
         elif isinstance(args, slice):
             return np.arange(*args.indices(self.size), dtype=np.int64)
-        elif isinstance(args, bitmap):
+        elif isinstance(args, PIntSet):
             if args.max() >= self.size:
                 raise IndexError(
                     "Some index in %s out of bounds for size %d", args, self.size

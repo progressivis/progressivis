@@ -5,14 +5,14 @@ from traitlets import Unicode, Any  # type: ignore
 
 
 @widgets.register
-class DataTable(widgets.DOMWidget):  # type: ignore
-    """Progressivis DataTable widget."""
+class DataPTable(widgets.DOMWidget):  # type: ignore
+    """Progressivis DataPTable widget."""
 
     # Name of the widget view class in front-end
-    _view_name = Unicode("DataTableView").tag(sync=True)
+    _view_name = Unicode("DataPTableView").tag(sync=True)
 
     # Name of the widget model class in front-end
-    _model_name = Unicode("DataTableModel").tag(sync=True)
+    _model_name = Unicode("DataPTableModel").tag(sync=True)
 
     # Name of the front-end module containing widget view
     _view_module = Unicode("progressivis-nb-widgets").tag(sync=True)

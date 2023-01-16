@@ -4,9 +4,9 @@ from . import ProgressiveTest
 
 from progressivis.core import aio
 from progressivis import Print
-from progressivis.stats import RandomTable
-from progressivis.table.module import TableModule
-from progressivis.table.table import Table
+from progressivis.stats import RandomPTable
+from progressivis.table.module import PTableModule
+from progressivis.table.table import PTable
 from progressivis.core.slot import SlotDescriptor
 from progressivis.core.utils import fix_loc
 import numpy as np
@@ -17,10 +17,10 @@ if TYPE_CHECKING:
     from progressivis.core.module import ReturnRunStep
 
 
-class Hadamard(TableModule):
+class Hadamard(PTableModule):
     inputs = [
-        SlotDescriptor("x1", type=Table, required=True),
-        SlotDescriptor("x2", type=Table, required=True),
+        SlotDescriptor("x1", type=PTable, required=True),
+        SlotDescriptor("x2", type=PTable, required=True),
     ]
 
     def reset(self) -> None:
@@ -49,7 +49,7 @@ class Hadamard(TableModule):
         for col in data1.columns:
             res[col] = np.multiply(data1[col].value, data2[col].value)
         if self.result is None:
-            self.result = Table(name="simple_hadamard", data=res, create=True)
+            self.result = PTable(name="simple_hadamard", data=res, create=True)
         else:
             self.table.append(res)
         return self._return_run_step(self.next_state(x1), steps_run=step_size)
@@ -58,8 +58,8 @@ class Hadamard(TableModule):
 class TestHadamard(ProgressiveTest):
     def test_hadamard(self) -> None:
         s = self.scheduler()
-        random1 = RandomTable(3, rows=100000, scheduler=s)
-        random2 = RandomTable(3, rows=100000, scheduler=s)
+        random1 = RandomPTable(3, rows=100000, scheduler=s)
+        random2 = RandomPTable(3, rows=100000, scheduler=s)
         module = Hadamard(scheduler=s)
         module.input.x1 = random1.output.result
         module.input.x2 = random2.output.result

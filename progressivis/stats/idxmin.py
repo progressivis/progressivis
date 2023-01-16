@@ -11,8 +11,8 @@ import numpy as np
 from ..core.module import ReturnRunStep
 from ..core.utils import indices_len, fix_loc
 from ..core.slot import SlotDescriptor
-from ..table.module import TableModule
-from ..table.table import Table
+from ..table.module import PTableModule
+from ..table.table import PTable
 from ..core.decorators import process_slot, run_if_any
 
 from typing import Optional, Any
@@ -21,17 +21,17 @@ from typing import Optional, Any
 logger = logging.getLogger(__name__)
 
 
-class IdxMin(TableModule):
+class IdxMin(PTableModule):
     parameters = [("history", np.dtype(int), 3)]
-    inputs = [SlotDescriptor("table", type=Table, required=True)]
-    outputs = [SlotDescriptor("min", type=Table, required=False)]
+    inputs = [SlotDescriptor("table", type=PTable, required=True)]
+    outputs = [SlotDescriptor("min", type=PTable, required=False)]
 
     def __init__(self, **kwds: Any) -> None:
         super(IdxMin, self).__init__(**kwds)
-        self._min: Optional[Table] = None
+        self._min: Optional[PTable] = None
         self.default_step_size = 10000
 
-    def min(self) -> Optional[Table]:
+    def min(self) -> Optional[PTable]:
         return self._min
 
     def get_data(self, name: str) -> Any:
@@ -66,7 +66,7 @@ class IdxMin(TableModule):
             input_table = dfslot.data()
             op = self.filter_columns(input_table, fix_loc(indices)).idxmin()
             if self.result is None:
-                self.result = Table(
+                self.result = PTable(
                     self.generate_table_name("table"),
                     dshape=input_table.dshape,
                     create=True,
@@ -78,7 +78,7 @@ class IdxMin(TableModule):
                         ix, col
                     ]  # lookup value, is there a better way?
                 if self._min is None:
-                    self._min = Table(
+                    self._min = PTable(
                         self.generate_table_name("_min"),
                         dshape=input_table.dshape,
                         create=True,

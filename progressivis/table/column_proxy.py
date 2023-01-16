@@ -1,21 +1,21 @@
 "Proxy for column"
 from __future__ import annotations
 
-from .column_base import BaseColumn
+from .column_base import BasePColumn
 
 from typing import Sequence, TYPE_CHECKING, Tuple, Any, List, cast
 
 if TYPE_CHECKING:
-    from .table_base import IndexTable
+    from .table_base import IndexPTable
     from .dshape import DataShape
     import numpy as np
 
 
-class ColumnProxy(BaseColumn):
+class PColumnProxy(BasePColumn):
     "Proxy class for a column"
 
-    def __init__(self, base: BaseColumn, index: IndexTable) -> None:
-        super(ColumnProxy, self).__init__(name=base.name, base=base, index=index)
+    def __init__(self, base: BasePColumn, index: IndexPTable) -> None:
+        super(PColumnProxy, self).__init__(name=base.name, base=base, index=index)
 
     @property
     def chunks(self) -> Tuple[int, ...]:

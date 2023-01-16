@@ -12,7 +12,7 @@ from progressivis.core.module import JSon
 from progressivis.table.nary import NAry
 from progressivis.core.slot import SlotDescriptor
 from progressivis.stats import Histogram1D
-from progressivis.table.table_base import BaseTable
+from progressivis.table.table_base import BasePTable
 
 from typing import cast, Any, Dict, List, Optional
 
@@ -23,12 +23,12 @@ class Histograms(NAry):
     "Visualize a table with multiple histograms"
     parameters = [("bins", np.dtype(int), 128), ("delta", np.dtype(float), -5)]  # 5%
     inputs = [
-        SlotDescriptor("min", type=BaseTable, required=True),
-        SlotDescriptor("max", type=BaseTable, required=True),
+        SlotDescriptor("min", type=BasePTable, required=True),
+        SlotDescriptor("max", type=BasePTable, required=True),
     ]
     outputs = [
-        SlotDescriptor("min", type=BaseTable, required=False),
-        SlotDescriptor("max", type=BaseTable, required=False),
+        SlotDescriptor("min", type=BasePTable, required=False),
+        SlotDescriptor("max", type=BasePTable, required=False),
     ]
 
     def __init__(self, columns: Optional[List[str]] = None, **kwds: Any) -> None:
@@ -38,9 +38,9 @@ class Histograms(NAry):
         self._columns = columns
         self._histogram: Dict[str, Histogram1D] = {}
 
-    def table_(self) -> BaseTable:
+    def table_(self) -> BasePTable:
         "Return the table"
-        return cast(BaseTable, self.get_input_slot("table").data())
+        return cast(BasePTable, self.get_input_slot("table").data())
 
     def get_data(self, name: str) -> Any:
         if name == "min":
