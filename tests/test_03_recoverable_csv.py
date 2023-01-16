@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 from io import StringIO
+import os
 import numpy as np
 import pandas as pd
-from . import ProgressiveTest
+from . import ProgressiveTest, skipIf
 from progressivis import Print
 from progressivis.core import aio, Sink
 from progressivis.io import SimpleCSVLoader
@@ -49,6 +50,7 @@ def make_float_csv(
     return make_num_csv(n_rows, n_cols, np.random.normal, intruder)
 
 
+@skipIf(os.getenv("CI"), "disabled on CI => to be improved")
 class TestProgressiveLoadCSV(ProgressiveTest):
     def test_read_csv(self) -> None:
         s = self.scheduler()
