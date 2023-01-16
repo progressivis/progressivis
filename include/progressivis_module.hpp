@@ -333,7 +333,7 @@ public:
 	}, row[i]);
     }
     py::dict d = py::cast(data);
-    py::object Table_ = py::module::import("progressivis.table").attr("Table");
+    py::object Table_ = py::module::import("progressivis.table").attr("PTable");
     py::object tbl = Table_(tname, d);
     output_ =  makeTableObject(tbl);
   }

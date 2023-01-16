@@ -1,5 +1,5 @@
 from progressivis.core.pintset import PIntSet
-from progressivis.core.changemanager.pintset import BitmapChangeManager
+from progressivis.core.changemanager_pintset import PIntSetChangeManager
 from progressivis.table.changemanager_table_selected import FakeSlot
 
 from . import ProgressiveTest
@@ -11,7 +11,7 @@ class TestBitmapChangeManager(ProgressiveTest):
         bm = PIntSet([1, 2, 3])
         slot = FakeSlot(bm)
 
-        cm = BitmapChangeManager(slot)
+        cm = PIntSetChangeManager(slot)
         self.assertEqual(cm.last_update(), 0)
         self.assertEqual(cm.created.length(), 0)
         self.assertEqual(cm.updated.length(), 0)
