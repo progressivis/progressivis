@@ -4,11 +4,11 @@ import logging
 
 import pandas as pd
 
-from progressivis import SlotDescriptor
 from progressivis.utils.errors import ProgressiveError, ProgressiveStopIteration
 from progressivis.utils.inspect import filter_kwds, extract_params_docstring
-from progressivis.table.module import PTableModule
+from progressivis.table.module import PModule
 from progressivis.table.table import PTable
+from ..core.module import input_slot, output_slot
 from progressivis.table.dshape import (
     dshape_from_dataframe,
     array_dshape,
@@ -37,12 +37,14 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class CSVLoader(PTableModule):
+@input_slot("filenames", PTable, required=False)
+@output_slot("result", PTable)
+class CSVLoader(PModule):
     """
     Warning : this module do not wait for "filenames"
     """
 
-    inputs = [SlotDescriptor("filenames", type=PTable, required=False)]
+    # inputs = [SlotDescriptor("filenames", type=PTable, required=False)]
 
     def __init__(
         self,
@@ -104,6 +106,7 @@ class CSVLoader(PTableModule):
             self._recovery = False
         if not self._recovery:
             self.trunc_recovery_tables()
+        self.result: Optional[PTable]
 
     def recovery_tables_exist(self) -> bool:
         try:
@@ -225,7 +228,7 @@ class CSVLoader(PTableModule):
                     except Exception as e:  # TODO: specify the exception?
                         logger.error(f"Cannot acces recovery table {e}")
                         return self.state_terminated
-                    table = self.table
+                    table = self.result
                     try:
                         last_ = self._recovery_table.eval(
                             "last_id=={}".format(len(table)), as_slice=False
@@ -330,7 +333,7 @@ class CSVLoader(PTableModule):
         return ret, dshape_from_dict(ret)
 
     def _needs_save(self) -> bool:
-        table = self.table
+        table = self.result
         if table is None:
             return False
         return table.last_id >= self._last_saved_id + self._save_step_size
@@ -384,7 +387,7 @@ class CSVLoader(PTableModule):
                 for df in df_list:
                     force_valid_id_columns(df)
             if self.result is None:
-                table = self.table
+                table = self.result
                 data, dshape = self._data_as_array(pd.concat(df_list))
                 if not self._recovery:
                     self._table_params["name"] = self.generate_table_name("table")
@@ -400,7 +403,7 @@ class CSVLoader(PTableModule):
                     self.result = table
                     table.append(self._data_as_array(pd.concat(df_list)))
             else:
-                table = self.table
+                table = self.result
                 for df in df_list:
                     data, dshape = self._data_as_array(df)
                     table.append(data)
@@ -410,7 +413,7 @@ class CSVLoader(PTableModule):
                 and self._recovery_table is None
                 and self._save_context
             ):
-                table = self.table
+                table = self.result
                 snapshot = self.parser.get_snapshot(
                     run_number=run_number, table_name=table.name, last_id=table.last_id,
                 )
@@ -429,6 +432,7 @@ class CSVLoader(PTableModule):
                 )
                 self._last_saved_id = table.last_id
             elif self.parser.is_flushed() and needs_save and self._save_context:
+                assert table is not None
                 snapshot = self.parser.get_snapshot(
                     run_number=run_number, last_id=table.last_id, table_name=table.name,
                 )

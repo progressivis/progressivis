@@ -7,7 +7,7 @@ from progressivis.core import aio
 from progressivis.io import CSVLoader
 from progressivis.stats.ppca import PPCA
 from progressivis.datasets import get_dataset
-from progressivis.table.module import PTableModule
+from progressivis.table.module import PDictModule
 from progressivis.table.table import PTable
 from progressivis.utils.psdict import PDict
 from progressivis.core.slot import SlotDescriptor, Slot
@@ -42,7 +42,7 @@ def _array(tbl: PTable) -> np.ndarray[Any, Any]:
     return tbl["array"].values
 
 
-class MyResetter(PTableModule):
+class MyResetter(PDictModule):
     inputs = [SlotDescriptor("table", type=PTable, required=True)]
 
     def __init__(self, threshold: int, **kwds: Any) -> None:
@@ -57,7 +57,7 @@ class MyResetter(PTableModule):
         input_slot.clear_buffers()
         data = input_slot.data()
         if data and len(data) >= self._threshold:
-            self.psdict["reset"] = False
+            self.result["reset"] = False
         return self._return_run_step(self.next_state(input_slot), steps_run=step_size)
 
 

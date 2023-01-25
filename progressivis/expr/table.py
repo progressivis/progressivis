@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 from .core import Expr
+from ..core.psdict import PDict
 from ..table.constant import Constant
 from progressivis.core.module import Module
-from progressivis.table.module import PTableModule
+from progressivis.table.module import PTableModule, PDictModule
 
 from typing import (
     Optional,
@@ -21,7 +22,7 @@ if TYPE_CHECKING:
     from progressivis.table.table_base import BasePTable
 
 
-class PTableExpr(Expr):
+class PDataExpr(Expr):
     def __init__(
         self,
         module_class: Type[PTableModule],
@@ -31,18 +32,18 @@ class PTableExpr(Expr):
         output_slot: Optional[str] = None,
         output_slot_table: str = "table",
     ):
-        super(PTableExpr, self).__init__(
+        super().__init__(
             module_class, args, kwds, module=module, output_slot=output_slot
         )
         self._output_slot_table = output_slot_table
 
     @property
-    def table(self) -> BasePTable:
-        assert isinstance(self._module, PTableModule)
-        return self._module.table
+    def result(self) -> Union[BasePTable, PDict]:
+        assert isinstance(self._module, (PTableModule, PDictModule))
+        return self._module.result
 
-    def select(self, columns: List[str]) -> PTableExpr:
-        return PTableExpr(Constant, self.table.loc[:, columns], kwds={})
+    def select(self, columns: List[str]) -> PDataExpr:
+        return PDataExpr(Constant, self.result.loc[:, columns], kwds={})
 
     # def filter(self, predicate):
     #     return PTableExpr(Filter, self.module, predicate)

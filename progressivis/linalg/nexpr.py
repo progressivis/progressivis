@@ -36,7 +36,7 @@ class NumExprABC(PTableModule):
 
     def reset(self) -> None:
         if self.result is not None:
-            self.table.resize(0)
+            self.result.resize(0)
 
     def run_step(
         self, run_number: int, step_size: int, howlong: float
@@ -93,13 +93,13 @@ class NumExprABC(PTableModule):
             vars_dict[n] = fobj
         result = {}
         steps = None
-        for c in self.table.columns:
+        for c in self.result.columns:
             col_expr_ = self.ref_expr[c]
 
             col_expr_ = col_expr_.format(**vars_dict)
             result[c] = ne.evaluate(col_expr_, local_dict=local_env)
             if steps is None:
                 steps = len(result[c])
-        self.table.append(result)
+        self.result.append(result)
         assert steps is not None and first_slot is not None
         return self._return_run_step(self.next_state(first_slot), steps_run=steps)

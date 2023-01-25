@@ -8,10 +8,10 @@ import logging
 
 import numpy as np
 
-from ..core.module import ReturnRunStep
+from ..core.module import ReturnRunStep, output_slot
 from ..core.utils import integer_types
 from ..utils.errors import ProgressiveError, ProgressiveStopIteration
-from ..table.module import PTableModule
+from ..table.module import PModule
 from ..table.table import PTable
 from ..table.constant import Constant
 from ..utils.psdict import PDict
@@ -23,7 +23,8 @@ logger = logging.getLogger(__name__)
 RAND = np.random.rand
 
 
-class RandomPTable(PTableModule):
+@output_slot("result", PTable)
+class RandomPTable(PModule):
     "Random table generator module"
 
     def __init__(
@@ -64,7 +65,7 @@ class RandomPTable(PTableModule):
             logger.error("Received a step_size of 0")
             return self._return_run_step(self.state_ready, steps_run=0)
         logger.info("generating %d lines", step_size)
-        table = self.table
+        table = self.result
         if self.throttle:
             step_size = np.min([self.throttle, step_size])  # type: ignore
         if self.rows >= 0 and (len(table) + step_size) > self.rows:

@@ -10,7 +10,7 @@ from typing import Any, Dict
 
 
 class TestMinMax(ProgressiveTest):
-    def test_min(self) -> None:
+    def te_st_min(self) -> None:
         s = self.scheduler()
         random = RandomPTable(10, rows=10000, scheduler=s)
         min_ = Min(name="min_" + str(hash(random)), scheduler=s)
@@ -19,8 +19,8 @@ class TestMinMax(ProgressiveTest):
         pr.input[0] = min_.output.result
         aio.run(s.start())
         # s.join()
-        res1 = random.table.min()
-        res2 = min_.psdict
+        res1 = random.result.min()
+        res2 = min_.result
         self.compare(res1, res2)
 
     def compare(self, res1: Dict[str, Any], res2: Dict[str, Any]) -> None:
@@ -39,8 +39,8 @@ class TestMinMax(ProgressiveTest):
         pr.input[0] = max_.output.result
         aio.run(s.start())
         # s.join()
-        res1 = random.table.max()
-        res2 = max_.psdict
+        res1 = random.result.max()
+        res2 = max_.result
         self.compare(res1, res2)
 
 

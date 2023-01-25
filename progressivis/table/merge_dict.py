@@ -3,19 +3,19 @@ from __future__ import annotations
 from progressivis.core.utils import Dialog
 from progressivis.core.slot import SlotDescriptor
 from progressivis.core.module import ReturnRunStep
-from progressivis.table.module import PTableModule
+from progressivis.table.module import PDictModule
 from progressivis.utils.psdict import PDict
 
 from typing import Any
 
 
-class MergeDict(PTableModule):
+class MergeDict(PDictModule):
     """
     Binary join module to join two dict and return a third one.
 
     Slots:
-        first : PTable module producing the first dict to join
-        second : PTable module producing the second dict to join
+        first : PDict module producing the first dict to join
+        second : PDict module producing the second dict to join
     Args:
         kwds : argument to pass to the join function
     """
@@ -50,6 +50,6 @@ class MergeDict(PTableModule):
         if self.result is None:
             self.result = PDict(**first_dict, **second_dict)
         else:
-            self.psdict.update(first_dict)
-            self.psdict.update(second_dict)
+            self.result.update(first_dict)
+            self.result.update(second_dict)
         return self._return_run_step(self.next_state(first_slot), steps_run=1)

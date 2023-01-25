@@ -332,7 +332,7 @@ class PACSVLoader(BaseLoader):
                 # if self._imputer is not None:
                 #    self._imputer.init(bat.dtypes)
             for bat in bat_list:
-                self.table.append(bat)
+                self.result.append(bat)
             # if self._imputer is not None:
             #    self._imputer.add_df(bat)
         return self._return_run_step(self.state_ready, steps_run=creates)

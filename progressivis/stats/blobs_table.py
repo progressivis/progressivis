@@ -157,8 +157,8 @@ class BlobsPTableABC(PTableModule):
         logger.info("generating %d lines", step_size)
         if self.throttle:
             step_size = np.min([self.throttle, step_size])  # type: ignore
-        if self.rows >= 0 and (len(self.table) + step_size) > self.rows:
-            step_size = self.rows - len(self.table)
+        if self.rows >= 0 and (len(self.result) + step_size) > self.rows:
+            step_size = self.rows - len(self.result)
             logger.info("truncating to %d lines", step_size)
             if step_size <= 0:
                 raise ProgressiveStopIteration
@@ -182,10 +182,10 @@ class BlobsPTableABC(PTableModule):
                 )
                 self._reservoir_idx += steps
                 steps = 0
-            self.table.append(blobs_dict)
+            self.result.append(blobs_dict)
             if self._labels is not None:
                 self._labels.append({"labels": y_})
-        if len(self.table) == self.rows:
+        if len(self.result) == self.rows:
             next_state = self.state_zombie
         elif self.throttle:
             next_state = self.state_blocked

@@ -1,14 +1,14 @@
 from __future__ import annotations
 
 from progressivis import ProgressiveError
-from ..table.module import PTableModule
+from ..table.module import PDictModule
 from progressivis.core.module import ReturnRunStep, JSon
 from ..utils.psdict import PDict
 
 from typing import Dict, Any, Optional
 
 
-class DynVar(PTableModule):
+class DynVar(PDictModule):
     def __init__(
         self,
         init_val: Optional[Dict[str, Any]] = None,
@@ -42,7 +42,7 @@ class DynVar(PTableModule):
     async def from_input(self, input_: JSon) -> str:
         if not isinstance(input_, dict):
             raise ProgressiveError("Expecting a dictionary")
-        last = PDict(self.psdict)  # shallow copy
+        last = PDict(self.result)  # shallow copy
         values = input_
         if self._translation is not None:
             res = {}
@@ -53,6 +53,9 @@ class DynVar(PTableModule):
         for (k, v) in input_.items():
             last[k] = v
         await self.scheduler().for_input(self)
-        self.psdict.update(values)
+        if self.result is None:
+            self.result = PDict(values)
+        else:
+            self.result.update(values)
         self._has_input = True
         return ""

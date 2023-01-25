@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 from ..core.module import ReturnRunStep
-from ..table.nary import NAry
+from ..table.nary import NAryDict
 from ..utils.psdict import PDict
 
 
-class Hub(NAry):
+class Hub(NAryDict):
     """
     Groups many (dict) outputs in one. Assume there is no clash
     Useful with Switch
@@ -25,6 +25,6 @@ class Hub(NAry):
                 d = slot.data()
                 steps += len(d)
                 assert isinstance(d, PDict)
-                self.psdict.update(d)
+                self.result.update(d)
             slot.clear_buffers()
         return self._return_run_step(self.state_blocked, steps_run=steps)

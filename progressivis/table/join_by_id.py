@@ -5,9 +5,9 @@ import numpy as np
 
 from progressivis.core.utils import Dialog, indices_len, inter_slice, fix_loc
 from progressivis.core.pintset import PIntSet
-from progressivis.core.module import ReturnRunStep
+from progressivis.core.module import ReturnRunStep, input_slot, output_slot
 from progressivis.utils.inspect import filter_kwds
-from progressivis.table.nary import NAry
+from progressivis.table.module import PModule
 from progressivis.table.table_base import BasePTable
 from progressivis.table.table import PTable
 from progressivis.table.dshape import dshape_join
@@ -224,7 +224,9 @@ def join_cont(
     return ret
 
 
-class Join(NAry):
+@input_slot("table", PTable, multiple=True)
+@output_slot("result", PTable)
+class Join(PModule):
     "Module executing join."
 
     def __init__(self, **kwds: Any) -> None:
@@ -238,7 +240,7 @@ class Join(NAry):
         self, run_number: int, step_size: int, howlong: float
     ) -> ReturnRunStep:
         frames: List[BasePTable] = []
-        for name in self.get_input_slot_multiple():
+        for name in self.get_input_slot_multiple("table"):
             slot = self.get_input_slot(name)
             table = cast(BasePTable, slot.data())
             slot.clear_buffers()

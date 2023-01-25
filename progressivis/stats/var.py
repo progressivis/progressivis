@@ -4,11 +4,11 @@ import logging
 
 import numpy as np
 
-from ..core.module import ReturnRunStep
+from ..core.module import ReturnRunStep, input_slot, output_slot, set_parameter
 from ..core.utils import indices_len, fix_loc
-from ..core.slot import SlotDescriptor, Slot
+from ..core.slot import Slot
 from ..core.decorators import process_slot, run_if_any
-from ..table.module import PTableModule
+from ..table.module import PModule
 from ..table.table_base import BasePTable
 from ..table.table import PTable
 from ..table.dshape import dshape_all_dtype
@@ -22,13 +22,16 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class VarH(PTableModule):
+@input_slot("table", PTable)
+@set_parameter("history", np.dtype(int), 3)
+@output_slot("result", PTable)
+class VarH(PModule):
     """
     Compute the variance of the columns of an input table.
     """
 
-    parameters = [("history", np.dtype(int), 3)]
-    inputs = [SlotDescriptor("table", type=PTable, required=True)]
+    # #parameters = [("history", np.dtype(int), 3)]
+    # #inputs = [SlotDescriptor("table", type=PTable, required=True)]
 
     def __init__(self, **kwds: Any) -> None:
         super().__init__(dataframe_slot="table", **kwds)
@@ -55,7 +58,7 @@ class VarH(PTableModule):
 
     def reset(self) -> None:
         if self.result is not None:
-            self.table.resize(0)
+            self.result.resize(0)
 
     @process_slot("table", reset_cb="reset")
     @run_if_any
@@ -78,17 +81,19 @@ class VarH(PTableModule):
                     dshape=ds,  # input_df.dshape,
                     create=True,
                 )
-            self.table.append(op, indices=[run_number])
+            self.result.append(op, indices=[run_number])
             return self._return_run_step(self.next_state(dfslot), steps)
 
 
-class Var(PTableModule):
+@input_slot("table", PTable)
+@output_slot("result", PDict)
+class Var(PModule):
     """
     Compute the variance of the columns of an input table.
     This variant didn't keep history
     """
 
-    inputs = [SlotDescriptor("table", type=PTable, required=True)]
+    # #inputs = [SlotDescriptor("table", type=PTable, required=True)]
 
     def __init__(self, ignore_string_cols: bool = False, **kwds: Any) -> None:
         super().__init__(dataframe_slot="table", **kwds)
@@ -130,7 +135,7 @@ class Var(PTableModule):
 
     def reset(self) -> None:
         if self.result is not None:
-            self.psdict.clear()
+            self.result.clear()
         if self._data is not None:
             for ov in self._data.values():
                 ov.reset()
@@ -155,5 +160,5 @@ class Var(PTableModule):
             if self.result is None:
                 self.result = PDict(op)
             else:
-                self.psdict.update(op)
+                self.result.update(op)
             return self._return_run_step(self.next_state(dfslot), steps)

@@ -5,7 +5,7 @@ import copy
 
 from progressivis import ProgressiveError, SlotDescriptor
 from progressivis.table.table import PTable
-from progressivis.table.constant import Constant
+from progressivis.table.constant import ConstDict
 from progressivis.utils.psdict import PDict
 
 from typing import TYPE_CHECKING, Optional, Any
@@ -16,10 +16,10 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class Variable(Constant):
+class Variable(ConstDict):
     inputs = [SlotDescriptor("like", type=(PTable, PDict), required=False)]
 
-    def __init__(self, table: Optional[PTable] = None, **kwds: Any) -> None:
+    def __init__(self, table: Optional[PDict] = None, **kwds: Any) -> None:
         super(Variable, self).__init__(table, **kwds)
         self.tags.add(self.TAG_INPUT)
 
@@ -34,7 +34,7 @@ class Variable(Constant):
             error = f"Variable {self.name} has to run once before receiving input"
             logger.error(error)
             return error
-        last: PDict = copy.copy(self.psdict)
+        last: PDict = copy.copy(self.result)
         error = ""
         for (k, v) in input_.items():
             if k in last:
@@ -42,7 +42,7 @@ class Variable(Constant):
             else:
                 error += f"Invalid key {k} ignored. "
         await self.scheduler().for_input(self)
-        self.psdict.update(last)
+        self.result.update(last)
         return error
 
     def run_step(
@@ -57,6 +57,6 @@ class Variable(Constant):
                         last = like.last()
                         assert last is not None
                         like = last.to_dict(ordered=True)
-                    self.result = copy.copy(like)
+                    self.result = PDict(like)
                     self._ignore_inputs = True
         return self._return_run_step(self.state_blocked, steps_run=1)

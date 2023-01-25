@@ -8,7 +8,7 @@ import pandas as pd
 from ..core.module import ReturnRunStep
 from ..core.slot import SlotDescriptor
 from ..core.utils import indices_len, fix_loc
-from ..table.module import PTableModule
+from ..table.module import PDictModule
 from ..table.table import PTable
 from ..utils.psdict import PDict
 from ..core.decorators import process_slot, run_if_any
@@ -20,7 +20,7 @@ from typing import Any, Union
 logger = logging.getLogger(__name__)
 
 
-class Histogram1DCategorical(PTableModule):
+class Histogram1DCategorical(PDictModule):
     """
     """
 
@@ -38,7 +38,7 @@ class Histogram1DCategorical(PTableModule):
 
     def reset(self) -> None:
         if self.result:
-            self.psdict.clear()
+            self.result.clear()
 
     @process_slot("table", reset_cb="reset")
     @run_if_any
@@ -61,8 +61,9 @@ class Histogram1DCategorical(PTableModule):
             if column.dtype != "O":
                 raise ProgressiveError(f"Type of '{self.column}' is" " not string")
             valcounts = pd.Series(column).value_counts().to_dict()
+            assert self.result is not None
             for k, v in valcounts.items():
-                self.psdict[k] = v + self.psdict.get(k, 0)
+                self.result[k] = v + self.result.get(k, 0)
             return self._return_run_step(self.next_state(dfslot), steps_run=steps)
 
     def is_visualization(self) -> bool:

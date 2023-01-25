@@ -4,11 +4,11 @@ import logging
 import pandas as pd
 import numpy as np
 from collections import defaultdict
-from .. import ProgressiveError, SlotDescriptor
+from .. import ProgressiveError
 from ..utils.errors import ProgressiveStopIteration
 from ..utils.inspect import filter_kwds, extract_params_docstring
-from ..table.module import PTableModule
-from ..core.module import ReturnRunStep
+from ..table.module import PModule
+from ..core.module import ReturnRunStep, input_slot, output_slot
 from ..table.table import PTable
 from ..table.dshape import dshape_from_dataframe
 from ..core.utils import (
@@ -33,12 +33,16 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class SimpleCSVLoader(PTableModule):
-    inputs = [SlotDescriptor("filenames", type=PTable, required=False)]
+@input_slot("filenames", PTable, required=False)
+@output_slot("result", PTable)
+@output_slot("anomalies", PDict, required=False)
+@output_slot("missing", PDict, required=False)
+class SimpleCSVLoader(PModule):
+    """inputs = [SlotDescriptor("filenames", type=PTable, required=False)]
     outputs = [
         SlotDescriptor("anomalies", type=PDict, required=False),
         SlotDescriptor("missing", type=PDict, required=False),
-    ]
+    ]"""
 
     def __init__(
         self,
@@ -68,7 +72,7 @@ class SimpleCSVLoader(PTableModule):
             self.throttle = throttle
         else:
             self.throttle = False
-        self.parser: Optional[pd.TextReader] = None
+        self.parser: Optional[pd.io.parsers.readers.TextFileReader] = None
         self.csv_kwds = csv_kwds
         self._compression: Any = csv_kwds.get("compression", "infer")
         csv_kwds["compression"] = None
@@ -91,8 +95,9 @@ class SimpleCSVLoader(PTableModule):
         self._table_params: Dict[str, Any] = dict(name=self.name, fillvalues=fillvalues)
         self._imputer = imputer
         self._last_opened: Any = None
-        self._anomalies: Optional[PDict] = None
-        self._missing: Optional[PDict] = None
+        self.anomalies: Optional[PDict]
+        self.missing: Optional[PDict]
+        self.result: PTable
 
     def rows_read(self) -> int:
         return self._rows_read
@@ -115,29 +120,16 @@ class SimpleCSVLoader(PTableModule):
             self.maintain_missing(False)
 
     def maintain_anomalies(self, yes: bool = True) -> None:
-        if yes and self._anomalies is None:
-            self._anomalies = PDict()
+        if yes and self.anomalies is None:
+            self.anomalies = PDict()
         elif not yes:
-            self._anomalies = None
-
-    def anomalies(self) -> Optional[PDict]:
-        return self._anomalies
+            self.anomalies = None
 
     def maintain_missing(self, yes: bool = True) -> None:
-        if yes and self._missing is None:
-            self._missing = PDict()
+        if yes and self.missing is None:
+            self.missing = PDict()
         elif not yes:
-            self._missing = None
-
-    def missing(self) -> Optional[PDict]:
-        return self._missing
-
-    def get_data(self, name: str) -> Any:
-        if name == "anomalies":
-            return self.anomalies()
-        if name == "missing":
-            return self.missing()
-        return super().get_data(name)
+            self.missing = None
 
     def is_ready(self) -> bool:
         if self.has_input_slot("filenames"):
@@ -261,9 +253,9 @@ class SimpleCSVLoader(PTableModule):
         )  # type: ignore
         anomalies = defaultdict(dict)  # type: ignore
         missing: Dict[str, PIntSet] = defaultdict(PIntSet)
-        last_id = self.table.last_id
+        last_id = self.result.last_id
         for col, dt in zip(df.columns, df.dtypes):
-            dtt = self.table._column(col).dtype
+            dtt = self.result._column(col).dtype
             if dtt == dt:
                 continue
             try:
@@ -291,9 +283,9 @@ class SimpleCSVLoader(PTableModule):
                     if na_ == np.nan and na_filter and elt == "":  # in this case
                         continue  # do not report empty strings as anomalies
                     id_ = last_id + i + 1
-                    if nn(self._anomalies):
+                    if nn(self.anomalies):
                         anomalies[id_][col] = elt
-                    if nn(self._missing):
+                    if nn(self.missing):
                         missing[col].add(id_)
             df[col] = arr
         kw["skiprows"].update(
@@ -301,14 +293,14 @@ class SimpleCSVLoader(PTableModule):
         )
         istream = _reopen_last()
         self.parser = pd.read_csv(istream, **kw)
-        if self._anomalies is not None:
-            self._anomalies.update(anomalies)
-        if self._missing is not None:
+        if self.anomalies is not None:
+            self.anomalies.update(anomalies)
+        if self.missing is not None:
             for k, v in missing.items():
-                if k in self._missing:
-                    self._missing[k] |= v
+                if k in self.missing:
+                    self.missing[k] |= v
                 else:
-                    self._missing[k] = v
+                    self.missing[k] = v
         return df
 
     def run_step(
@@ -345,8 +337,8 @@ class SimpleCSVLoader(PTableModule):
             self.parser = None
             return self._return_run_step(self.state_ready, steps_run=0)
         except ValueError:
-            if nn(self.table) and (
-                nn(self.anomalies()) or nn(self.missing()) or nn(self._imputer)
+            if nn(self.result) and (
+                nn(self.anomalies) or nn(self.missing) or nn(self._imputer)
             ):
                 df = self.recovering(step_size)
             else:
@@ -375,7 +367,7 @@ class SimpleCSVLoader(PTableModule):
                 if self._imputer is not None:
                     self._imputer.init(df.dtypes)
             else:
-                self.table.append(df)
+                self.result.append(df)
             if self._imputer is not None:
                 self._imputer.add_df(df)
         return self._return_run_step(self.state_ready, steps_run=creates)

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from ..core.utils import indices_len, fix_loc
-from ..table.module import PTableModule
+from ..table.module import PDictModule
 from ..table.table import PTable
 from ..core.slot import SlotDescriptor
 from ..utils.psdict import PDict
@@ -20,7 +20,7 @@ if TYPE_CHECKING:
     from ..core.module import Parameters, ReturnRunStep
 
 
-class KLLSketch(PTableModule):
+class KLLSketch(PDictModule):
     parameters: Parameters = [
         ("binning", np.dtype(object), []),
         ("quantiles", np.dtype(object), []),
@@ -41,7 +41,7 @@ class KLLSketch(PTableModule):
 
     def reset(self) -> None:
         if self.result is not None:
-            self.psdict.clear()
+            self.result.clear()
         self._kll = kll_floats_sketch(self._k)
 
     @process_slot("table", reset_cb="reset")
@@ -92,5 +92,5 @@ class KLLSketch(PTableModule):
             if self.result is None:
                 self.result = PDict(res)
             else:
-                self.psdict.update(res)
+                self.result.update(res)
             return self._return_run_step(self.next_state(ctx.table), steps)

@@ -6,7 +6,7 @@ from ..core.module import ReturnRunStep
 from ..core.utils import indices_len, fix_loc
 from ..core.slot import SlotDescriptor
 from ..core.decorators import process_slot, run_if_any
-from ..table.module import PTableModule
+from ..table.module import PDictModule
 from ..table.table import PTable
 from ..utils.psdict import PDict
 
@@ -15,7 +15,7 @@ from typing import Any, List, Optional
 logger = logging.getLogger(__name__)
 
 
-class Distinct(PTableModule):
+class Distinct(PDictModule):
     inputs = [SlotDescriptor("table", type=PTable, required=True)]
 
     def __init__(
@@ -33,7 +33,7 @@ class Distinct(PTableModule):
 
     def reset(self) -> None:
         if self.result is not None:
-            for k in self.psdict.keys():
+            for k in self.result.keys():
                 self.result[k] = set()
 
     @process_slot("table", reset_cb="reset")
@@ -50,18 +50,18 @@ class Distinct(PTableModule):
             op = self.filter_columns(input_df, fix_loc(indices))
             if self.result is None:
                 self.result = PDict({k: set() for k in op.columns})
-            for k, v in self.psdict.items():
+            for k, v in self.result.items():
                 if v is None:  # too many values already detected
                     continue
                 s = set(op[k].tolist())
                 if len(s) > self._threshold:
-                    self.psdict[k] = None
+                    self.result[k] = None
                     continue  # shortcut
-                self.psdict[k].update(s)
+                self.result[k].update(s)
                 if len(self.result[k]) > self._threshold:
-                    self.psdict[k] = None
+                    self.result[k] = None
             if not [
-                v for v in self.psdict.values() if v is not None
+                v for v in self.result.values() if v is not None
             ]:  # no hope to detect categorical columns
                 return self._return_run_step(self.state_ready, steps_run=steps)
             return self._return_run_step(self.next_state(ctx.table), steps)

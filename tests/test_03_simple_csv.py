@@ -26,7 +26,7 @@ class TestProgressiveLoadCSV(ProgressiveTest):
             module.run(cnt)
             cnt += 1
             # s = module.trace_stats(max_runs=1)
-            table = module.table
+            table = module.result
             _ = len(table)
             # print "Run time: %gs, loaded %d rows" % (s['duration'].irow(-1), ln)
             # self.assertEqual(ln-l, len(df[df[module.UPDATE_COLUMN]==module.last_update()]))
@@ -44,7 +44,7 @@ class TestProgressiveLoadCSV(ProgressiveTest):
         sink = Sink(scheduler=s)
         sink.input.inp = module.output.result
         aio.run(s.start())
-        self.assertEqual(len(module.table), 1000000)
+        self.assertEqual(len(module.result), 1000000)
 
     def test_read_fake_csv(self) -> None:
         s = self.scheduler()
@@ -58,7 +58,7 @@ class TestProgressiveLoadCSV(ProgressiveTest):
         sink = Sink(scheduler=s)
         sink.input.inp = module.output.result
         aio.run(s.start())
-        self.assertEqual(len(module.table), 1000000)
+        self.assertEqual(len(module.result), 1000000)
 
     def test_read_multiple_csv(self) -> None:
         s = self.scheduler()
@@ -73,7 +73,7 @@ class TestProgressiveLoadCSV(ProgressiveTest):
         sink = Sink(scheduler=s)
         sink.input.inp = csv.output.result
         aio.run(csv.start())
-        self.assertEqual(len(csv.table), 60000)
+        self.assertEqual(len(csv.result), 60000)
 
     def test_read_multiple_fake_csv(self) -> None:
         s = self.scheduler()
@@ -93,7 +93,7 @@ class TestProgressiveLoadCSV(ProgressiveTest):
         sink = Sink(scheduler=s)
         sink.input.inp = csv.output.result
         aio.run(csv.start())
-        self.assertEqual(len(csv.table), 60000)
+        self.assertEqual(len(csv.result), 60000)
 
 
 if __name__ == "__main__":

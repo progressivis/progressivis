@@ -10,14 +10,14 @@ from ..core.slot import SlotDescriptor
 from ..core.decorators import process_slot, run_if_any
 from ..table.table_base import BasePTable
 from ..table.table import PTable
-from ..table.module import PTableModule
+from ..table.module import PDictModule
 from ..utils.psdict import PDict
 from .utils import OnlineVariance, OnlineCovariance
 
 from typing import Any, Union, Literal, Dict, Optional, List
 
 
-class Corr(PTableModule):
+class Corr(PDictModule):
     """
     Compute the covariance matrix (a dict, actually) of the columns of an input table.
     """
@@ -95,8 +95,8 @@ class Corr(PTableModule):
         return corr_
 
     def reset(self) -> None:
-        if self.result is None:
-            self.table.resize(0)
+        if self.result is not None:
+            self.result.clear()
         if self._data is not None:
             for oc in self._data.values():
                 oc.reset()
@@ -110,7 +110,7 @@ class Corr(PTableModule):
         """
         res = pd.DataFrame(index=columns, columns=columns, dtype="float64")
         for kx, ky in product(columns, columns):
-            res.loc[kx, ky] = self.psdict[frozenset([kx, ky])]  # type: ignore
+            res.loc[kx, ky] = self.result[frozenset([kx, ky])]  # type: ignore
         return res
 
     @process_slot("table", reset_cb="reset")
@@ -133,5 +133,5 @@ class Corr(PTableModule):
             if self.result is None:
                 self.result = PDict(other=cov_)
             else:
-                self.psdict.update(cov_)
+                self.result.update(cov_)
             return self._return_run_step(self.next_state(dfslot), steps)

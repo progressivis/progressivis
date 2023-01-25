@@ -138,7 +138,7 @@ class MBKMeans(PTableModule):
         if not a_locs:  # 2nd shortcut
             assert self._labels is not None
             return
-        df = pd.DataFrame({"labels": labels}, index=locs)
+        df = pd.DataFrame({"labels": labels}, index=locs)  # type: ignore
         u_labels = df.loc[u_locs, "labels"]
         a_labels = df.loc[a_locs, "labels"]
         self._labels.loc[u_locs, "labels"] = u_labels
@@ -235,19 +235,20 @@ class MBKMeans(PTableModule):
                 self.generate_table_name("centers"), dshape=dshape, create=True
             )
             self.result.resize(self.mbk.cluster_centers_.shape[0])
-        self.psdict[cols] = self.mbk.cluster_centers_  # type: ignore
+        self.result[cols] = self.mbk.cluster_centers_  # type: ignore
         if is_conv:
             return self._return_run_step(self.state_blocked, iter_)
         return self._return_run_step(self.state_ready, iter_)
 
     def to_json(self, short: bool = False, with_speed: bool = True) -> JSon:
         json = super().to_json(short, with_speed)
-        if short or self.table is None:
+        if short or self.result is None:
             return json
         return self._centers_to_json(json)
 
     def _centers_to_json(self, json: JSon) -> JSon:
-        json["cluster_centers"] = self.table.to_json()
+        assert self.result is not None
+        json["cluster_centers"] = self.result.to_json()
         return json
 
     def set_centroid(self, c: int, values: List[float]) -> List[float]:
@@ -255,8 +256,8 @@ class MBKMeans(PTableModule):
             c = int(c)
         except ValueError:
             pass
-
-        centroids = self.table
+        assert self.result is not None
+        centroids = self.result
         # idx = centroids.id_to_index(c)
 
         dfslot = self.get_input_slot("table")

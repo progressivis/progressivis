@@ -4,9 +4,9 @@ import logging
 
 import numpy as np
 
-from ..core.module import ReturnRunStep
+from ..core.module import ReturnRunStep, nary_slot, output_slot
 from ..core.pintset import PIntSet
-from .nary import NAry
+from .module import PModule
 from .table_base import BasePTable
 from .table import PTable
 from .dshape import dshape_union
@@ -61,13 +61,17 @@ def combine_first(
     return comb_table
 
 
-class CombineFirst(NAry):
+# @input_slot("table", PTable, multiple=True)
+@nary_slot("table", PTable)
+@output_slot("result", PTable)
+class CombineFirst(PModule):
     def run_step(
         self, run_number: int, step_size: int, howlong: float
     ) -> ReturnRunStep:
+        self.result: Optional[PTable]
         logger.debug("Entering CombineFirst::run_step")
         frames: List[BasePTable] = []
-        for name in self.get_input_slot_multiple():
+        for name in self.get_input_slot_multiple("table"):
             slot = self.get_input_slot(name)
             slot.clear_buffers()
             df = slot.data()

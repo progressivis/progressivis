@@ -1,8 +1,8 @@
 from .core import Expr
-from .table import PTableExpr, Pipeable
+from .table import PDataExpr, Pipeable
 from progressivis.io.csv_loader import CSVLoader
 from progressivis import Print
 
 
-load_csv = Pipeable(PTableExpr, CSVLoader)
+load_csv = Pipeable(PDataExpr, CSVLoader)
 echo = Pipeable(Expr, Print)

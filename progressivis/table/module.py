@@ -18,9 +18,9 @@ PColumns = Union[None, List[str]]  # , Dict[str, List[str]]]
 
 
 # pylint: disable=abstract-method
-class PTableModule(Module):
-    "Base class for modules managing tables."
-    outputs = [SlotDescriptor("result", type=PTable, required=True)]
+class PModule(Module):
+    "Base class for modules managing tables or dicts."
+    outputs = []  # #SlotDescriptor("result", type=PTable, required=True)]
 
     def __init__(
         self,
@@ -28,7 +28,7 @@ class PTableModule(Module):
         output_required: Optional[bool] = True,
         **kwds: Any,
     ) -> None:
-        super(PTableModule, self).__init__(**kwds)
+        super().__init__(**kwds)
         if "table_slot" in kwds:
             raise RuntimeError("don't use table_slot")
         if not output_required:
@@ -52,44 +52,11 @@ class PTableModule(Module):
                 break
         else:
             assert columns is None
-        self.__result: Union[None, BasePTable, PDict] = None
 
     def get_first_input_slot(self) -> Optional[str]:
         for k in self.input_slot_names():
             return k
         return None
-
-    def close_all(self) -> None:
-        super(PTableModule, self).close_all()
-        if isinstance(self.__result, PTable) and self.__result.storagegroup is not None:
-            self.__result.storagegroup.close_all()
-
-    @property
-    def result(self) -> Union[None, BasePTable, PDict]:
-        return self.__result
-
-    @result.setter
-    def result(self, val: Union[BasePTable, PDict, None]) -> None:
-        if self.__result is not None:
-            raise KeyError("result cannot be assigned more than once")
-        self.__result = val
-
-    @property
-    def table(self) -> PTable:
-        return cast(PTable, self.__result)
-
-    @property
-    def psdict(self) -> PDict:
-        return cast(PDict, self.__result)
-
-    @property
-    def selected(self) -> PTableSelectedView:
-        return cast(PTableSelectedView, self.__result)
-
-    def get_data(self, name: str) -> Any:
-        if name in ("result", "table"):
-            return self.result
-        return super(PTableModule, self).get_data(name)
 
     def get_columns(
         self, table: Union[BasePTable, Dict[str, Any]], slot: Optional[str] = None
@@ -196,5 +163,73 @@ class PTableModule(Module):
             return "{{{cols}}}".format(cols=",".join(expr.keys()))
         raise ValueError("expr attribute not defined")
 
+
+class PTableModule(PModule):
+    "Base class for modules managing tables."
+    outputs = [SlotDescriptor("result", type=PTable, required=True)]
+
+    def __init__(
+        self,
+        columns: Optional[PColumns] = None,
+        output_required: Optional[bool] = True,
+        **kwds: Any,
+    ) -> None:
+        super().__init__(columns, output_required, **kwds)
+        self.__result: Union[None, BasePTable] = None
+
+    @property
+    def result(self) -> Union[None, BasePTable]:
+        return self.__result
+
+    @result.setter
+    def result(self, val: Union[BasePTable, None]) -> None:
+        if self.__result is not None:
+            raise KeyError("result cannot be assigned more than once")
+        self.__result = val
+
+    def close_all(self) -> None:
+        super().close_all()
+        if isinstance(self.__result, PTable) and self.__result.storagegroup is not None:
+            self.__result.storagegroup.close_all()
+
+    @property
+    def selected(self) -> PTableSelectedView:
+        return cast(PTableSelectedView, self.__result)
+
     def make_slot_join(self, *slots: Slot) -> SlotJoin:
         return SlotJoin(self, *slots)
+
+    def get_data(self, name: str) -> Any:
+        if name in ("result", "table"):
+            return self.result
+        return super().get_data(name)
+
+
+class PDictModule(PModule):
+    "Base class for modules managing dicts."
+    outputs = [SlotDescriptor("result", type=PDict, required=True)]
+
+    def __init__(
+        self,
+        columns: Optional[PColumns] = None,
+        output_required: Optional[bool] = True,
+        **kwds: Any,
+    ) -> None:
+        super().__init__(columns, output_required, **kwds)
+        self.__result: Union[None, PDict] = None
+
+    @property
+    def result(self) -> Union[None, PDict]:
+        return self.__result
+
+    @result.setter
+    def result(self, val: Union[PDict, None]) -> None:
+        if self.__result is not None:
+            raise KeyError("result cannot be assigned more than once")
+        self.__result = val
+
+    def get_data(self, name: str) -> Any:
+        print("name", name)
+        if name in ("result", "psdict"):
+            return self.result
+        return super().get_data(name)

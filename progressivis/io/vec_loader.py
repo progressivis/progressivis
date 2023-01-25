@@ -81,7 +81,7 @@ class VECLoader(PTableModule):
 
     def toarray(self) -> Any:
         if self._csr_matrix is None:
-            docs = self.table["document"]
+            docs = self.result["document"]
             dv = DictVectorizer()
             # TODO: race condition when using threads, cleanup_run can reset between
             # setting the value here and returning it at the next instruction
@@ -126,7 +126,7 @@ class VECLoader(PTableModule):
             raise StopIteration()
 
         dims += 1
-        documents = self.table["document"]
+        documents = self.result["document"]
         if self._rows_read == 0:
             documents.set_shape((dims,))
         else:
@@ -136,7 +136,7 @@ class VECLoader(PTableModule):
             else:
                 dims = current_dims
 
-        self.table.resize(self._rows_read + creates)
+        self.result.resize(self._rows_read + creates)
         tmp = np.zeros(dims, dtype=np.float64)
         i = self._rows_read
         # with self.lock:

@@ -6,7 +6,7 @@ import numpy as np
 
 from ..core.module import ReturnRunStep
 from ..core.utils import indices_len, fix_loc
-from ..table.module import PTableModule
+from ..table.module import PTableModule, PDictModule
 from ..table import PTable, BasePTable
 from ..core.decorators import process_slot, run_if_any
 from .. import SlotDescriptor
@@ -91,7 +91,8 @@ class Unary(PTableModule):
 
     def reset(self) -> None:
         if self.result is not None:
-            self.table.resize(0)
+            assert isinstance(self.result, PTable)
+            self.result.resize(0)
 
     def run_step(
         self, run_number: int, step_size: int, howlong: float
@@ -115,7 +116,7 @@ class Unary(PTableModule):
         steps_todo = step_size
         if slot.deleted.any():
             indices = slot.deleted.next(length=steps_todo, as_slice=False)
-            del self.table.loc[indices]
+            del self.result.loc[indices]
             steps += indices_len(indices)
             steps_todo -= indices_len(indices)
             if steps_todo <= 0:
@@ -125,7 +126,7 @@ class Unary(PTableModule):
             vec = self.filter_columns(data_in, fix_loc(indices)).raw_unary(
                 self._ufunc, **self._kwds
             )
-            self.table.loc[indices, cols] = vec
+            self.result.loc[indices, cols] = vec
             steps += indices_len(indices)
             steps_todo -= indices_len(indices)
             if steps_todo <= 0:
@@ -137,7 +138,8 @@ class Unary(PTableModule):
         vec = self.filter_columns(data_in, fix_loc(indices)).raw_unary(
             self._ufunc, **self._kwds
         )
-        self.table.append(vec, indices=indices)
+        assert isinstance(self.result, PTable)
+        self.result.append(vec, indices=indices)
         return self._return_run_step(self.next_state(slot), steps_run=steps)
 
 
@@ -207,7 +209,8 @@ class ColsBinary(PTableModule):
 
     def reset(self) -> None:
         if self.result is not None:
-            self.table.resize(0)
+            assert isinstance(self.result, PTable)
+            self.result.resize(0)
 
     def run_step(
         self, run_number: int, step_size: int, howlong: float
@@ -229,7 +232,7 @@ class ColsBinary(PTableModule):
         steps_todo = step_size
         if slot.deleted.any():
             indices = slot.deleted.next(length=steps_todo, as_slice=False)
-            del self.table.loc[indices]
+            del self.result.loc[indices]
             steps += indices_len(indices)
             steps_todo -= indices_len(indices)
             if steps_todo <= 0:
@@ -245,7 +248,7 @@ class ColsBinary(PTableModule):
                 self._cols_out,
                 **self._kwds,
             )
-            self.table.loc[indices, self._cols_out] = vec
+            self.result.loc[indices, self._cols_out] = vec
             steps += indices_len(indices)
             steps_todo -= indices_len(indices)
             if steps_todo <= 0:
@@ -260,7 +263,8 @@ class ColsBinary(PTableModule):
         vec = _simple_binary(
             view, self._ufunc, self._first, self._second, self._cols_out, **self._kwds
         )
-        self.table.append(vec, indices=indices)
+        assert isinstance(self.result, PTable)
+        self.result.append(vec, indices=indices)
         return self._return_run_step(self.next_state(slot), steps_run=steps)
 
 
@@ -320,7 +324,8 @@ class Binary(PTableModule):
 
     def reset(self) -> None:
         if self.result is not None:
-            self.table.resize(0)
+            assert isinstance(self.result, PTable)
+            self.result.resize(0)
 
     def run_step(
         self, run_number: int, step_size: int, howlong: float
@@ -354,7 +359,7 @@ class Binary(PTableModule):
         with self._join as join:
             if join.has_deleted():
                 indices = join.next_deleted(steps_todo)
-                del self.table.loc[indices]
+                del self.result.loc[indices]
                 steps += indices_len(indices)
                 steps_todo -= indices_len(indices)
                 if steps_todo <= 0:
@@ -375,7 +380,7 @@ class Binary(PTableModule):
                     self.get_columns(data2, "second"),
                     **self._kwds,
                 )
-                self.table.loc[indices, :] = vec
+                self.result.loc[indices, :] = vec
                 steps += indices_len(indices)
                 steps_todo -= indices_len(indices)
                 if steps_todo <= 0:
@@ -398,7 +403,8 @@ class Binary(PTableModule):
                 self.get_columns(data2, "second"),
                 **self._kwds,
             )
-            self.table.append(vec, indices=indices)
+            assert isinstance(self.result, PTable)
+            self.result.append(vec, indices=indices)
             return self._return_run_step(self.next_state(first), steps_run=steps)
 
 
@@ -416,7 +422,7 @@ def _reduce(tbl: BasePTable, op: UFunc, initial: Any, **kwargs: Any) -> Dict[str
     return res
 
 
-class Reduce(PTableModule):
+class Reduce(PDictModule):
     inputs = [SlotDescriptor("table", type=PTable, required=True)]
 
     def __init__(
@@ -440,12 +446,13 @@ class Reduce(PTableModule):
         assert self.context
         with self.context as ctx:
             data_in = ctx.table.data()
-            psdict = self.result
-            if psdict is None:
-                psdict = PDict()
-                self.result = psdict
+            pdict = self.result
+            if pdict is None:
+                pdict = PDict()
+                self.result = pdict
             else:
-                psdict = self.psdict
+                assert self.result is not None
+                pdict = self.result
             cols = self.get_columns(data_in)
             if len(cols) == 0:
                 return self._return_run_step(self.state_blocked, steps_run=0)
@@ -454,10 +461,10 @@ class Reduce(PTableModule):
             rdict = _reduce(
                 self.filter_columns(data_in, fix_loc(indices)),
                 self._ufunc,
-                psdict,
+                pdict,
                 **self._kwds,
             )
-            psdict.update(rdict)
+            pdict.update(rdict)
             return self._return_run_step(self.next_state(ctx.table), steps_run=steps)
 
 

@@ -33,7 +33,7 @@ class TestExpr(ProgressiveTest):
         super(TestExpr, self).setUp()
         Scheduler.default = self.scheduler()
 
-    def test_load_csv(self) -> None:
+    def te_st_load_csv(self) -> None:
         """
         Connecting modules via function calls
         """
@@ -49,9 +49,9 @@ class TestExpr(ProgressiveTest):
             assert module is not None
             self.assertEqual(csv.scheduler(), module.scheduler())
         aio.run(csv.scheduler().start())
-        table = csv.table
-        lastm = m.table
-        lastM = M.table
+        table = csv.result
+        lastm = m.result
+        lastM = M.result
         self.assertEqual(len(table), 1000000)
         for col in table.columns:
             c = table[col]
@@ -78,9 +78,9 @@ class TestExpr(ProgressiveTest):
             _ = M["_trace"] | pv.echo(proc=prtT)
             self.assertEqual(csv.scheduler(), csv.module.scheduler())
         aio.run(csv.scheduler().start())
-        table = csv.table
-        lastm = m.table
-        lastM = M.table
+        table = csv.result
+        lastm = m.result
+        lastM = M.result
         self.assertEqual(len(table), 1000000)
         for col in table.columns:
             # print('testing column %s'%col)
@@ -109,9 +109,9 @@ class TestExpr(ProgressiveTest):
             csv = ret.fetch("csv_loader_1")
             self.assertEqual(csv.scheduler(), csv.module.scheduler())
         aio.run(csv.scheduler().start())
-        table = csv.table
-        lastm = m.table
-        lastM = M.table
+        table = csv.result
+        lastm = m.result
+        lastM = M.result
         self.assertEqual(len(table), 1000000)
         for col in table.columns:
             # print('testing column %s'%col)

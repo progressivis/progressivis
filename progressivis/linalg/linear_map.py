@@ -29,7 +29,7 @@ class LinearMap(PTableModule):
 
     def reset(self) -> None:
         if self.result is not None:
-            self.table.resize(0)
+            self.result.resize(0)
         self._transf_cache = None
 
     @process_slot("vectors", "transformation", reset_cb="reset")
@@ -77,5 +77,5 @@ class LinearMap(PTableModule):
                 self.result = PTable(
                     self.generate_table_name("linear_map"), dshape=dshape_, create=True
                 )
-            self.table.append(res)
+            self.result.append(res)
             return self._return_run_step(self.next_state(ctx.vectors), steps_run=steps)

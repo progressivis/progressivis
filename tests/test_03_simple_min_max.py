@@ -7,7 +7,7 @@ from . import ProgressiveTest
 from progressivis.core import aio
 from progressivis import Print
 from progressivis.stats import Min, RandomPTable
-from progressivis.table.module import PTableModule
+from progressivis.table.module import PDictModule
 from progressivis.table.table import PTable
 from progressivis.core.slot import SlotDescriptor
 from progressivis.core.decorators import process_slot, run_if_any
@@ -20,7 +20,7 @@ if TYPE_CHECKING:
     from progressivis.core.module import ReturnRunStep
 
 
-class Max(PTableModule):
+class Max(PDictModule):
     """
     Simplified Max, adapted for documentation
     """
@@ -38,7 +38,7 @@ class Max(PTableModule):
 
     def reset(self) -> None:
         if self.result is not None:
-            self.psdict.fill(-np.inf)
+            self.result.fill(-np.inf)
 
     def run_step(
         self, run_number: int, step_size: int, howlong: float
@@ -47,7 +47,7 @@ class Max(PTableModule):
         if slot.updated.any() or slot.deleted.any():
             slot.reset()
             if self.result is not None:
-                self.psdict.clear()  # resize(0)
+                self.result.clear()  # resize(0)
             slot.update(run_number)
         indices = slot.created.next(step_size)
         steps = indices_len(indices)
@@ -58,12 +58,12 @@ class Max(PTableModule):
         if self.result is None:
             self.result = PDict(op)
         else:
-            for k, v in self.psdict.items():
+            for k, v in self.result.items():
                 self.result[k] = np.maximum(op[k], v)
         return self._return_run_step(self.next_state(slot), steps_run=steps)
 
 
-class MaxDec(PTableModule):
+class MaxDec(PDictModule):
     """
     Simplified Max with decorated run_step(), adapted for documentation
     """
@@ -81,7 +81,7 @@ class MaxDec(PTableModule):
 
     def reset(self) -> None:
         if self.result is not None:
-            self.psdict.fill(-np.inf)
+            self.result.fill(-np.inf)
 
     @process_slot("table", reset_cb="reset")
     @run_if_any
@@ -97,7 +97,7 @@ class MaxDec(PTableModule):
             if self.result is None:
                 self.result = PDict(op)
             else:
-                for k, v in self.psdict.items():
+                for k, v in self.result.items():
                     self.result[k] = np.maximum(op[k], v)
             return self._return_run_step(self.next_state(ctx.table), steps_run=steps)
 
@@ -113,7 +113,7 @@ class TestMinMax(ProgressiveTest):
         aio.run(s.start())
         # s.join()
         res1 = random.table.min()
-        res2 = min_.psdict
+        res2 = min_.result
         self.compare(res1, res2)
 
     def compare(self, res1: Dict[str, Any], res2: Dict[str, Any]) -> None:
@@ -133,7 +133,7 @@ class TestMinMax(ProgressiveTest):
         aio.run(s.start())
         # s.join()
         res1 = random.table.max()
-        res2 = max_.psdict
+        res2 = max_.result
         self.compare(res1, res2)
 
 

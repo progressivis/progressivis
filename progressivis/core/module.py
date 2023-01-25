@@ -3,7 +3,7 @@ Base class for progressive modules.
 """
 from __future__ import annotations
 
-from abc import ABCMeta, abstractmethod
+from abc import abstractmethod
 from traceback import print_exc
 import re
 import logging
@@ -66,34 +66,6 @@ ReturnRunStep = Dict[str, int]
 logger = logging.getLogger(__name__)
 
 
-class ModuleMeta(ABCMeta):
-    """Module metaclass is needed to collect the input parameter list
-    in the field ``all_parameters''.
-    """
-
-    def __init__(cls, name: str, bases: Any, attrs: Dict[str, Any]) -> None:
-        if "parameters" not in attrs:
-            cls.parameters: List[Parameters] = []
-        if "inputs" not in attrs:
-            cls.inputs: List[SlotDescriptor] = []
-        if "outputs" not in attrs:
-            cls.outputs: List[SlotDescriptor] = []
-        all_parameters = list(cls.parameters)
-        all_inputs = list(cls.inputs)
-        all_outputs = {c.name: c for c in cls.outputs}
-        for base in bases:
-            all_parameters += getattr(base, "all_parameters", [])
-            all_inputs += getattr(base, "all_inputs", [])
-            for outp in getattr(base, "all_outputs", []):
-                assert isinstance(outp, SlotDescriptor)
-                if outp.name not in all_outputs:
-                    all_outputs[outp.name] = outp
-        cls.all_parameters = all_parameters
-        cls.all_inputs = all_inputs
-        cls.all_outputs = list(all_outputs.values())
-        super(ModuleMeta, cls).__init__(name, bases, attrs)
-
-
 class ModuleTag:
     tags: Set[str] = set()
 
@@ -151,7 +123,7 @@ class ModuleCallbackList(List[ModuleProc]):
         return ret
 
 
-class Module(metaclass=ModuleMeta):
+class Module:  # #(metaclass=ModuleMeta):
     """The Module class is the base class for all the progressive modules."""
 
     parameters: Parameters = [
@@ -174,7 +146,7 @@ class Module(metaclass=ModuleMeta):
     all_outputs: ClassVar[
         List[SlotDescriptor]
     ]  # defined by metaclass, declare for mypy
-
+    output_attrs: List[str] = []
     state_created: ClassVar[ModuleState] = ModuleState.state_created
     state_ready: ClassVar[ModuleState] = ModuleState.state_ready
     state_running: ClassVar[ModuleState] = ModuleState.state_running
@@ -684,6 +656,8 @@ class Module(metaclass=ModuleMeta):
             return self.tracer.trace_stats()
         if name == Module.PARAMETERS_SLOT:
             return self._params
+        if name in type(self).output_attrs:
+            return getattr(self, name)
         return None
 
     @abstractmethod
@@ -1060,6 +1034,18 @@ class Module(metaclass=ModuleMeta):
         lst = self._path_to_origin_impl()
         return set([m.name for m in lst])
 
+    @property
+    def all_parameters(self):
+        return self.parameters
+
+    @property
+    def all_inputs(self):
+        return self.inputs
+
+    @property
+    def all_outputs(self):
+        return self.outputs
+
 
 class InputSlots:
     # pylint: disable=too-few-public-methods
@@ -1138,9 +1124,95 @@ def _print_len(x: Sized) -> None:
         print(len(x))
 
 
+def set_parameter(name, type, value):
+    """
+    class decorator
+    """
+    def module_decorator(module):
+        par = (name, type, value)
+        asdict = {p[0]: p for p in module.parameters}
+        if name in asdict:
+            asdict[name] = par
+            module.parameters = list(asdict.values())
+        else:
+            module.parameters = [par] + module.parameters  # do not use += here
+        return module
+    return module_decorator
+
+
+def input_slot(name, type=None, required=True, multiple=False):
+    """
+    class decorator
+    """
+    def module_decorator(module):
+        sd = SlotDescriptor(name=name,
+                            type=type,
+                            required=required,
+                            multiple=multiple)
+        asdict = {s.name: s for s in module.inputs}
+        if name in asdict:
+            asdict[name] = sd
+            module.inputs = list(asdict.values())
+        else:
+            module.inputs = [sd] + module.inputs  # do not use += here
+        return module
+    return module_decorator
+
+
+def nary_slot(name, type=None, required=True):
+    return input_slot(name, type, required, multiple=True)
+
+
+def make_get(private_name):
+    def result_get(self):
+        return getattr(self, private_name)
+    return result_get
+
+
+def make_set(private_name, stype):
+    def result_set(self, value):
+        if value is not None:
+            if not isinstance(value, stype):
+                raise ValueError(f"{value} have to be an {stype}")
+        if getattr(self, private_name) is not None:
+            raise KeyError("result cannot be assigned more than once")
+        setattr(self, private_name, value)
+    return result_set
+
+
+def add_output_to_module(module, name, stype):
+    no_clash = "_progressivis"
+    private_name = f"__{name}_{no_clash}"
+    setattr(module, private_name, None)
+    result_get = make_get(private_name)
+    result_set = make_set(private_name, stype)
+    setattr(module, name, property(result_get, result_set))
+    module.output_attrs = [name] + module.output_attrs
+
+
+def output_slot(name, type=None, required=True):
+    """
+    class decorator
+    """
+    def module_decorator(module):
+        sd = SlotDescriptor(name=name,
+                            type=type,
+                            required=required)
+        asdict = {s.name: s for s in module.outputs}
+        if name in asdict:
+            asdict[name] = sd
+            module.outputs = list(asdict.values())
+        else:
+            module.outputs = [sd] + module.outputs  # do not use += here
+        add_output_to_module(module, name, type)
+        return module
+    return module_decorator
+
+
+@input_slot("df")
 class Every(Module):
     "Module running a function at each iteration"
-    inputs = [SlotDescriptor("df")]
+    # #inputs = [SlotDescriptor("df")]
 
     def __init__(
         self,

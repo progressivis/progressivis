@@ -61,7 +61,7 @@ class TestProgressiveLoadCSV(ProgressiveTest):
         sink = Sink(scheduler=s)
         sink.input.inp = module.output.result
         aio.run(s.start())
-        self.assertEqual(len(module.table), n_rows)
+        self.assertEqual(len(module.result), n_rows)
 
     def _func_read_int_csv_with_intruder(
         self, dtype, intruder, imputer=None, atol=0, fixed_step_size=0
@@ -99,20 +99,20 @@ class TestProgressiveLoadCSV(ProgressiveTest):
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = module.output.anomalies
         aio.run(s.start())
-        self.assertEqual(len(module.table), len(df))
+        self.assertEqual(len(module.result), len(df))
         if imputer:
             self.assertTrue(
                 abs(
-                    module.table.to_array()[i_row, 1]
+                    module.result.to_array()[i_row, 1]
                     - df.values.astype(dtype)[i_row, 1]
                 )
                 <= atol
             )
         else:
             self.assertTrue(
-                np.array_equal(module.table.to_array(), df.values.astype(dtype))
+                np.array_equal(module.result.to_array(), df.values.astype(dtype))
             )
-        anomalies = module.anomalies()
+        anomalies = module.anomalies
         assert anomalies
         self.assertTrue(i_row in anomalies)
         self.assertTrue(anomalies[i_row]["B"] == intruder)  # type:ignore
@@ -193,12 +193,12 @@ class TestProgressiveLoadCSV(ProgressiveTest):
         pr2 = Print(proc=self.terse, scheduler=s)
         pr2.input[0] = module.output.missing
         aio.run(s.start())
-        self.assertEqual(len(module.table), len(df))
+        self.assertEqual(len(module.result), len(df))
         if imputer:
-            print(module.table.to_array()[i_row, 1], df.values.astype(dtype)[i_row, 1])
+            print(module.result.to_array()[i_row, 1], df.values.astype(dtype)[i_row, 1])
             self.assertTrue(
                 abs(
-                    module.table.to_array()[i_row, 1]
+                    module.result.to_array()[i_row, 1]
                     - df.values.astype(dtype)[i_row, 1]
                 )
                 <= atol
@@ -206,15 +206,15 @@ class TestProgressiveLoadCSV(ProgressiveTest):
         else:
             self.assertTrue(
                 np.allclose(
-                    module.table.to_array(), df.values.astype(dtype), equal_nan=True
+                    module.result.to_array(), df.values.astype(dtype), equal_nan=True
                 )
             )
 
-        anomalies = module.anomalies()
+        anomalies = module.anomalies
         assert anomalies
         self.assertTrue(i_row in anomalies)
         self.assertTrue(anomalies[i_row]["B"] == intruder)  # type: ignore
-        missing = module.missing()
+        missing = module.missing
         assert missing
         self.assertTrue(i_row in missing["B"])  # type:ignore
 
