@@ -1,13 +1,12 @@
 from __future__ import annotations
 
 from progressivis import Scheduler, Slot
-from progressivis.table.nary import NAry
 from progressivis.core.module import Module
 
 from typing import Type, Any, List
 
 
-class Reduce(NAry):
+class Reduce(Module):
     "Reduce binary modules over multiple inputs"
 
     @staticmethod

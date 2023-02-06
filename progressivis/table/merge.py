@@ -1,8 +1,7 @@
 "Merge module."
 from __future__ import annotations
 
-from progressivis.core.module import ReturnRunStep
-from .nary import NAry
+from progressivis.core.module import Module, ReturnRunStep
 from .table_base import BasePTable
 from .table import PTable
 from .dshape import dshape_join
@@ -69,7 +68,7 @@ def merge_cont(left: BasePTable, right: BasePTable, merge_ctx: Dict[str, Any]) -
     return merge_table
 
 
-class Merge(NAry):
+class Merge(Module):
     "Merge module"
 
     def __init__(self, **kwds: Any) -> None:
