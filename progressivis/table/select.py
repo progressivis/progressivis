@@ -88,7 +88,7 @@ class Select(Module):
         #                    buffer_updated=False,
         #                    buffer_deleted=True)
         steps = 0
-        if self.__result is None:
+        if self.result is None:
             if self._columns is None:
                 dshape = table.dshape
             else:
@@ -96,16 +96,16 @@ class Select(Module):
                     "%s: %s" % (col, table[col].dshape) for col in self._columns
                 ]
                 dshape = "{" + ",".join(cols_dshape) + "}"
-            self.__result = PTable(
+            self.result = PTable(
                 self.generate_table_name(table.name), dshape=dshape, create=True
             )
 
-        assert isinstance(self.__result, PTable)
+        assert isinstance(self.result, PTable)
         if select_slot.deleted.any():
             indices = select_slot.deleted.next(length=step_size * 2, as_slice=False)
             s = indices_len(indices)
             logger.info("deleting %s", indices)
-            del self.__result.loc[indices]
+            del self.result.loc[indices]
             steps += s // 2
             step_size -= s // 2
 
@@ -124,14 +124,14 @@ class Select(Module):
                 #   self._table._column(i).append(values, indices=ind)
                 for i in indices:
                     row = table.row(i)
-                    self.__result.add(row, index=i)
+                    self.result.add(row, index=i)
             else:
                 row = {c: None for c in self._columns}
                 for i in indices:
                     idx = table.id_to_index(i)
                     for c in self._columns:
                         row[c] = table[c][idx]
-                    self.__result.add(row, index=i)
+                    self.result.add(row, index=i)
 
         if step_size > 0 and table_slot.updated.any():
             indices = table_slot.updated.next(length=step_size, as_slice=False)
@@ -142,14 +142,14 @@ class Select(Module):
             step_size -= s
             if self._columns is None:
                 for i in indices:
-                    self.__result.loc[i] = table.loc[i]
+                    self.result.loc[i] = table.loc[i]
             else:
                 row = {c: None for c in self._columns}
                 for i in indices:
                     for c in self._columns:
                         idx = table.id_to_index(i)
                         row[c] = table[c][idx]
-                    self.__result.loc[i] = row
+                    self.result.loc[i] = row
         return self._return_run_step(self.next_state(select_slot), steps_run=steps)
 
     @staticmethod

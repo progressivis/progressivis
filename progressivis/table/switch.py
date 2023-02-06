@@ -32,13 +32,11 @@ class Switch(Module):
         assert callable(condition)
         super().__init__(**kwds)
         self._condition = condition
-        self.result: Optional[PTableSelectedView]
-        self.result_else: Optional[PTableSelectedView]
         self._output: Optional[PTableSelectedView] = None
 
     def reset(self) -> None:
         if self.result is not None:
-            self.selected.selection = PIntSet()
+            self.result.selection = PIntSet()
         if self.result_else is not None:
             self.result_else.selection = PIntSet()
 

@@ -66,7 +66,6 @@ class CombineFirst(Module):
     def run_step(
         self, run_number: int, step_size: int, howlong: float
     ) -> ReturnRunStep:
-        self.result: Optional[PTable]
         logger.debug("Entering CombineFirst::run_step")
         frames: List[BasePTable] = []
         for name in self.get_input_slot_multiple("table"):

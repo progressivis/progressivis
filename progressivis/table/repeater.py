@@ -28,7 +28,7 @@ class Computed:
 
 
 @def_input("table", PTable)
-@def_output("result", PTable)
+@def_output("result", PTableSelectedView)
 class Repeater(Module):
     def __init__(self, computed: Computed, **kwds: Any) -> None:
         super().__init__(**kwds)
@@ -55,12 +55,12 @@ class Repeater(Module):
             deleted = input_slot.deleted.next(as_slice=False)
             steps = 1
             if deleted:
-                self.selected.selection -= deleted
+                self.result.selection -= deleted
         created: Optional[PIntSet] = None
         if input_slot.created.any():
             created = input_slot.created.next(length=step_size, as_slice=False)
             steps += len(created)
-            self.selected.selection |= created
+            self.result.selection |= created
         updated: Optional[PIntSet] = None
         if input_slot.updated.any():
             # currently updates are ignored

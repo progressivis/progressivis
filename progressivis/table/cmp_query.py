@@ -40,7 +40,6 @@ class CmpQueryLast(Module):
         self._op = ops[op]
         self.combine = combine
         self._combine = ops[combine]
-        self.select: Optional[PIntSet]
 
     def run_step(
         self, run_number: int, step_size: int, howlong: float

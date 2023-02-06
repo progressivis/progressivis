@@ -10,7 +10,7 @@ from progressivis.core.pintset import PIntSet
 from ..core.module import Module, def_parameter, def_input, def_output
 from . import PTable, PTableSelectedView
 
-from typing import Optional, Any, TYPE_CHECKING
+from typing import Optional, List, Any, Union, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from progressivis.core.module import ReturnRunStep
@@ -69,7 +69,7 @@ class Stirrer(Module):
         before_ = raw_ids  # PIntSet(raw_ids[raw_ids >= 0])
         v = input_table.loc[fix_loc(created), :]
         self.result.append(v)  # indices=PIntSet(created))
-        delete = []
+        delete: Union[List[int], PIntSet] = []
         if self._delete_rows and self.test_delete_threshold(before_):
             if isinstance(self._delete_rows, int):
                 delete = random.sample(

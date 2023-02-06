@@ -50,7 +50,7 @@ class LiteSelect(Module):
             s = indices_len(indices)
             # print("LITESELECT: -", s)
             logger.info("deleting %s", indices)
-            self.selected.selection -= PIntSet.aspintset(indices)
+            self.result.selection -= PIntSet.aspintset(indices)
             # step_size -= s//2
 
         if step_size > 0 and select_slot.created.any():
@@ -59,6 +59,6 @@ class LiteSelect(Module):
             logger.info("creating %s", indices)
             steps += s
             # step_size -= s
-            self.selected.selection |= PIntSet.aspintset(indices)
+            self.result.selection |= PIntSet.aspintset(indices)
 
         return self._return_run_step(self.next_state(select_slot), steps_run=steps)

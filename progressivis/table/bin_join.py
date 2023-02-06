@@ -41,7 +41,7 @@ class BinJoin(Module):
             first_slot.reset()
             second_slot.reset()
             if self.result is not None:
-                self.table.resize(0)
+                self.result.resize(0)
                 join_reset(self._dialog)
             first_slot.update(run_number)
             second_slot.update(run_number)

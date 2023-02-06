@@ -85,7 +85,7 @@ class Merge(Module):
         self, run_number: int, step_size: int, howlong: float
     ) -> ReturnRunStep:
         frames: List[BasePTable] = []
-        for name in self.get_input_slot_multiple():
+        for name in self.get_input_slot_multiple("table"):
             slot = self.get_input_slot(name)
             df = cast(BasePTable, slot.data())
             slot.clear_buffers()

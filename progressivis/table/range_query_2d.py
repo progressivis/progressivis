@@ -186,8 +186,6 @@ class RangeQuery2d(Module):
             self._watched_key_upper_y = self._column_y
         self.default_step_size = 1000
         self.input_module: Optional[Module] = None
-        self._min_table: Optional[PDict]
-        self._max_table: Optional[PDict]
 
     def create_dependent_modules(
         self,

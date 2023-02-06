@@ -130,8 +130,6 @@ class RangeQuery(Module):
         self._approximate = approximate
         self.default_step_size = 1000
         self.input_module: Optional[Module] = None
-        self._min_table: Optional[PDict]
-        self._max_table: Optional[PDict]
         self.hist_index: Optional[HistogramIndex] = None
 
     # @property

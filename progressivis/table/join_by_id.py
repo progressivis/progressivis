@@ -225,7 +225,7 @@ def join_cont(
 
 
 @def_input("table", PTable, multiple=True)
-@def_output("result", PTable)
+@def_output("result", BasePTable)
 class Join(Module):
     "Module executing join."
 

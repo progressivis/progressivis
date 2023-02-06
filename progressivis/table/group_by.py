@@ -114,18 +114,21 @@ class SubPColumn:
         return self._idx
 
 
+ByType = Union[str, List[str], Callable, SubPColumnABC]
+
+
 @def_input("table", PTable, required=False)
 @def_output("result", PTableSelectedView)
 class GroupBy(Module):
     def __init__(
         self,
-        by: Union[str, List[str], Callable, SubPColumn],
+        by: ByType,
         keepdims: bool = False,
         **kwds: Any,
     ) -> None:
         super().__init__(**kwds)
         self._raw_by = by
-        self.by = None
+        self.by: Optional[ByType] = None
         self._keepdims = keepdims
         self._index: Dict[Any, PIntSet] = defaultdict(PIntSet)
         self._input_table = None

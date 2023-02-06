@@ -25,7 +25,7 @@ class FilterMod(Module):
 
     def reset(self) -> None:
         if self.result is not None:
-            self.selected.selection = PIntSet([])
+            self.result.selection = PIntSet([])
 
     def run_step(
         self, run_number: int, step_size: int, howlong: float

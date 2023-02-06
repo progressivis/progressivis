@@ -138,8 +138,6 @@ class Join(Module):
         self._related_cols: Optional[List[str]] = None
         self._virtual_cols: Optional[List[str]] = None
         self._maintain_primary_outer = False
-        self.result: Optional[PTableSelectedView]
-        self._primary_outer: Optional[PTableSelectedView]
 
     def create_dependent_modules(
         self,
@@ -250,6 +248,7 @@ class Join(Module):
             ucols_dict = {ucol: _sx(ucol) for ucol in ucols}
             self.cache_dict = {c: {} for c in ucols_dict.values()}
             join_cols = list(related_cols) + list(ucols_dict.values())
+            assert uindex_mod.result is not None
             computed = {
                 sxcol: dict(
                     vfunc=make_ufunc(

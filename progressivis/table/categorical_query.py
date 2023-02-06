@@ -24,7 +24,7 @@ class CategoricalQuery(Module):
 
     def reset(self) -> None:
         if self.result is not None:
-            self.table.resize(0)
+            self.result.selection = PIntSet()
 
     def create_dependent_modules(
         self,
