@@ -470,7 +470,7 @@ class PTable(IndexPTable):
         dshape: Optional[Union[str, DataShape]] = None,
         **kwds: Any,
     ) -> PTable:
-        """offsets is a list of indices or pairs."""
+        """Offsets is a list of indices or pairs."""
         if offsets is None:
             offsets = [(i, i + 1) for i in range(array.shape[1])]
         elif offsets is not None:
