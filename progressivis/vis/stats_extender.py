@@ -4,9 +4,8 @@ from collections import Iterable
 from ..core import Print, Sink
 from ..core.pintset import PIntSet
 from ..core.utils import indices_len
-from ..core.slot import SlotDescriptor
 from ..table.table import PTable
-from ..table.module import PTableModule
+from ..core.module import Module, def_input, def_output
 from ..table.range_query import RangeQuery
 from ..table.hist_index import HistogramIndex
 from ..io import DynVar
@@ -105,7 +104,7 @@ class RangeQueryIf(RangeQuery):
 
 
 def make_sketch_barplot(
-    input_module: PTableModule, col: int, scheduler: int, input_slot="result"
+    input_module: Module, col: int, scheduler: int, input_slot="result"
 ) -> Tuple[KLLSketch, Histogram1DCategorical]:
     s = scheduler
     sketch = KLLSketchIf(scheduler=s, column=col)
@@ -125,22 +124,18 @@ def make_sketch_barplot(
     return sketch, barplot
 
 
-class StatsExtender(PTableModule):
+@def_input("table", PTable)
+@def_input("min", PDict, required=False)
+@def_input("max", PDict, required=False)
+@def_input("var", PDict, required=False)
+@def_input("distinct", PDict, required=False)
+@def_input("corr", PDict, required=False)
+@def_output("result", PTableSelectedView)
+@def_output("dshape", PDict, required=False)
+class StatsExtender(Module):
     """
     Adds statistics on input data
     """
-
-    # parameters = []
-
-    inputs = [
-        SlotDescriptor("table", type=PTable, required=True),
-        SlotDescriptor("min", type=PDict, required=False),
-        SlotDescriptor("max", type=PDict, required=False),
-        SlotDescriptor("var", type=PDict, required=False),
-        SlotDescriptor("distinct", type=PDict, required=False),
-        SlotDescriptor("corr", type=PDict, required=False),
-    ]
-    outputs = [SlotDescriptor("dshape", type=PDict, required=False)]
 
     def __init__(self, usecols=None, **kwds):
         """
@@ -151,7 +146,7 @@ class StatsExtender(PTableModule):
         self.visible_cols = []
         self.decorations = []
         self._raw_dshape = None
-        self._dshape = None
+        self.dshape = None
         self._dshape_flag = False
 
     def reset(self):
@@ -171,18 +166,9 @@ class StatsExtender(PTableModule):
         if not self._dshape_flag or self._raw_dshape == data.dshape:
             return
         self._raw_dshape = data.dshape
-        if self._dshape is None:
-            self._dshape = PDict()
-        self._dshape.update(dshape_fields(data.dshape))
-
-    def get_data(self, name):
-        if name == "dshape":
-            return self._dshape
-        return super().get_data(name)
-
-    @property
-    def dshape(self):
-        return self._dshape
+        if self.dshape is None:
+            self.dshape = PDict()
+        self.dshape.update(dshape_fields(data.dshape))
 
     @process_slot("table", reset_cb="reset")
     @run_if_any

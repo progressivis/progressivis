@@ -29,7 +29,7 @@ class TestCxxMax(ProgressiveTest):
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = max_.output.result
         aio.run(s.start())
-        res1 = random.table.max()
+        res1 = random.result.max()
         res2 = max_.cxx_module.get_output_table().last().to_dict(ordered=True)
         self.compare(res1, res2)
 
@@ -50,7 +50,7 @@ class TestCxxMax(ProgressiveTest):
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = max_.output.result
         aio.run(s.start())
-        res1 = random.table.max()
+        res1 = random.result.max()
         res2 = max_.cxx_module.get_output_table().last().to_dict(ordered=True)
         self.compare(res1, res2)
 
@@ -71,7 +71,7 @@ class TestCxxMax(ProgressiveTest):
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = max_.output.result
         aio.run(s.start())
-        res1 = random.table.max()
+        res1 = random.result.max()
         res2 = max_.cxx_module.get_output_table().last().to_dict(ordered=True)
         self.compare(res1, res2)
 

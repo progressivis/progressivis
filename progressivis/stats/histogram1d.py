@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from ..core.module import JSon, ReturnRunStep
+from ..core.module import JSon, ReturnRunStep, def_input, def_output, def_parameter
 from ..core.utils import indices_len, fix_loc, integer_types
-from ..core.slot import SlotDescriptor, Slot
-from ..table.module import PTableModule
+from ..core.slot import Slot
+from ..core.module import Module
 from ..table.table import PTable
 from ..utils.psdict import PDict
 from ..core.decorators import process_slot, run_if_any
@@ -17,15 +17,14 @@ from typing import Union, Optional, Tuple, Dict, Any
 logger = logging.getLogger(__name__)
 
 
-class Histogram1D(PTableModule):
+@def_parameter("bins", np.dtype(int), 128)
+@def_parameter("delta", np.dtype(float), -5)
+@def_input("table", PTable)
+@def_input("min", PDict)
+@def_input("max", PDict)
+@def_output("result", PTable)
+class Histogram1D(Module):
     """ """
-
-    parameters = [("bins", np.dtype(int), 128), ("delta", np.dtype(float), -5)]
-    inputs = [
-        SlotDescriptor("table", type=PTable, required=True),
-        SlotDescriptor("min", type=PDict, required=True),
-        SlotDescriptor("max", type=PDict, required=True),
-    ]
 
     schema = "{ array: var * int32, min: float64, max: float64, time: int64 }"
 
@@ -53,7 +52,7 @@ class Histogram1D(PTableModule):
         self.total_read = 0
         self._h_cnt = 0
         if self.result:
-            self.table.resize(0)
+            self.result.resize(0)
 
     def is_ready(self) -> bool:
         if self._bounds and self.get_input_slot("table").created.any():
@@ -138,8 +137,8 @@ class Histogram1D(PTableModule):
                 "max": [curr_max],
                 "time": [run_number],
             }
-            self.table["array"].set_shape((self.params.bins,))
-            self.table.append(values)
+            self.result["array"].set_shape((self.params.bins,))
+            self.result.append(values)
             return self._return_run_step(self.next_state(dfslot), steps_run=steps)
 
     def get_bounds(

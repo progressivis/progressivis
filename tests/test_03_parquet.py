@@ -11,13 +11,13 @@ from progressivis.datasets import get_dataset
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from progressivis.table.module import PTableModule
+    from progressivis.core.module import Module
 
 
 class TestProgressiveLoadParquet(ProgressiveTest):
-    def runit(self, module: PTableModule) -> int:
+    def runit(self, module: Module) -> int:
         module.run(1)
-        table = module.table
+        table = module.result
         self.assertFalse(table is None)
         _ = len(table)
         cnt = 2
@@ -26,7 +26,7 @@ class TestProgressiveLoadParquet(ProgressiveTest):
             module.run(cnt)
             cnt += 1
             # s = module.trace_stats(max_runs=1)
-            table = module.table
+            table = module.result
             _ = len(table)
             # print "Run time: %gs, loaded %d rows" % (s['duration'].irow(-1), ln)
             # self.assertEqual(ln-l, len(df[df[module.UPDATE_COLUMN]==module.last_update()]))
@@ -45,7 +45,7 @@ class TestProgressiveLoadParquet(ProgressiveTest):
         sink = Sink(scheduler=s)
         sink.input.inp = module.output.result
         aio.run(s.start())
-        self.assertEqual(len(module.table), 1000000)
+        self.assertEqual(len(module.result), 1000_000)
 
     def test_read_parquet_check_size(self) -> None:
         num_rows_list = []
@@ -69,7 +69,7 @@ class TestProgressiveLoadParquet(ProgressiveTest):
         num_rows_set = set(num_rows_list[:-1])
         self.assertEqual(len(num_rows_set), 1)
         self.assertEqual(num_rows_set.pop(), fixed_batch_size)
-        self.assertEqual(len(module.table), 1000000)
+        self.assertEqual(len(module.result), 1000_000)
 
     def test_read_parquet_with_cols(self) -> None:
         s = self.scheduler()
@@ -83,8 +83,8 @@ class TestProgressiveLoadParquet(ProgressiveTest):
         sink = Sink(scheduler=s)
         sink.input.inp = module.output.result
         aio.run(s.start())
-        self.assertEqual(module.table.columns, columns)
-        self.assertEqual(len(module.table), 1000000)
+        self.assertEqual(module.result.columns, columns)
+        self.assertEqual(len(module.result), 1000_000)
 
     def test_read_multiple_parquet(self) -> None:
         s = self.scheduler()
@@ -104,7 +104,7 @@ class TestProgressiveLoadParquet(ProgressiveTest):
         sink = Sink(scheduler=s)
         sink.input.inp = parquet.output.result
         aio.run(parquet.start())
-        self.assertEqual(len(parquet.table), 60000)
+        self.assertEqual(len(parquet.result), 60_000)
 
 
 if __name__ == "__main__":

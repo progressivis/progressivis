@@ -24,9 +24,9 @@ class TestIdxMax(ProgressiveTest):
         pr2 = Print(proc=self.terse, scheduler=s)
         pr2.input[0] = max_.output.result
         aio.run(s.start())
-        max1 = max_.psdict
+        max1 = max_.result
         # print('max1', max1)
-        max = idxmax.max()
+        max = idxmax._max
         assert max is not None
         max2 = notNone(max.last()).to_dict()
         # print('max2', max2)
@@ -49,9 +49,9 @@ class TestIdxMax(ProgressiveTest):
         pr2.input[0] = max_.output.result
         aio.run(s.start())
         # import pdb;pdb.set_trace()
-        max1 = max_.psdict
+        max1 = max_.result
         # print('max1', max1)
-        max = idxmax.max()
+        max = idxmax._max
         assert max is not None
         max2 = notNone(max.last()).to_dict()
         # print('max2', max2)
@@ -69,9 +69,9 @@ class TestIdxMax(ProgressiveTest):
         pr2 = Print(proc=self.terse, scheduler=s)
         pr2.input[0] = min_.output.result
         aio.run(s.start())
-        min1 = min_.psdict
+        min1 = min_.result
         # print('min1', min1)
-        min = idxmin.min()
+        min = idxmin._min
         assert min is not None
         min2 = notNone(min.last()).to_dict()
         # print('min2', min2)
@@ -93,9 +93,9 @@ class TestIdxMax(ProgressiveTest):
         pr2 = Print(proc=self.terse, scheduler=s)
         pr2.input[0] = min_.output.result
         aio.run(s.start())
-        min1 = min_.psdict
+        min1 = min_.result
         # print('min1', min1)
-        min = idxmin.min()
+        min = idxmin._min
         assert min is not None
         min2 = notNone(min.last()).to_dict()
         # print('min2', min2)

@@ -74,7 +74,7 @@ class SlotDescriptor:
             f"SlotDescriptor({self.name}, "
             f"type={self.type}, "
             f"required={self.required}, "
-            f"multiple={self.required})"
+            f"multiple={self.multiple})"
         )
 
     def __repr__(self) -> str:

@@ -3,11 +3,11 @@ from __future__ import annotations
 import logging
 import copy
 
-from progressivis import ProgressiveError, SlotDescriptor
+from progressivis import ProgressiveError
 from progressivis.table.table import PTable
 from progressivis.table.constant import ConstDict
 from progressivis.utils.psdict import PDict
-
+from progressivis.core.module import def_input
 from typing import TYPE_CHECKING, Optional, Any
 
 if TYPE_CHECKING:
@@ -16,9 +16,8 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
+@def_input("like", type=(PTable, PDict), required=False)
 class Variable(ConstDict):
-    inputs = [SlotDescriptor("like", type=(PTable, PDict), required=False)]
-
     def __init__(self, table: Optional[PDict] = None, **kwds: Any) -> None:
         super(Variable, self).__init__(table, **kwds)
         self.tags.add(self.TAG_INPUT)

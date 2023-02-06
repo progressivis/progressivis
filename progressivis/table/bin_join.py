@@ -1,18 +1,19 @@
 "Binary Join module."
 from __future__ import annotations
 
-from progressivis.core.module import ReturnRunStep
+from progressivis.core.module import Module, ReturnRunStep, def_input, def_output
 from progressivis.core.utils import Dialog, indices_len
-from progressivis.core.slot import SlotDescriptor
 from progressivis.utils.inspect import filter_kwds
 from progressivis.table.table import PTable
-from progressivis.table.module import PTableModule
 from progressivis.table.join_by_id import join, join_start, join_cont, join_reset
 
 from typing import Any
 
 
-class BinJoin(PTableModule):
+@def_input("first", PTable)
+@def_input("second", PTable)
+@def_output("result", PTable)
+class BinJoin(Module):
     """
     Binary join module to join two tables and return a third one.
 
@@ -22,11 +23,6 @@ class BinJoin(PTableModule):
     Args:
         kwds : argument to pass to the join function
     """
-
-    inputs = [
-        SlotDescriptor("first", type=PTable, required=True),
-        SlotDescriptor("second", type=PTable, required=True),
-    ]
 
     def __init__(self, **kwds: Any) -> None:
         super(BinJoin, self).__init__(**kwds)
@@ -76,7 +72,7 @@ class BinJoin(PTableModule):
                 dialog=self._dialog,
                 created=created,
                 updated=updated,
-                **self.join_kwds
+                **self.join_kwds,
             )
         else:
             join_cont(

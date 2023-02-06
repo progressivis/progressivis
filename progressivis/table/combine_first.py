@@ -4,9 +4,8 @@ import logging
 
 import numpy as np
 
-from ..core.module import ReturnRunStep, nary_slot, output_slot
+from ..core.module import Module, ReturnRunStep, def_input, def_output
 from ..core.pintset import PIntSet
-from .module import PModule
 from .table_base import BasePTable
 from .table import PTable
 from .dshape import dshape_union
@@ -61,10 +60,9 @@ def combine_first(
     return comb_table
 
 
-# @input_slot("table", PTable, multiple=True)
-@nary_slot("table", PTable)
-@output_slot("result", PTable)
-class CombineFirst(PModule):
+@def_input("table", PTable, multiple=True)
+@def_output("result", PTable)
+class CombineFirst(Module):
     def run_step(
         self, run_number: int, step_size: int, howlong: float
     ) -> ReturnRunStep:
@@ -81,6 +79,6 @@ class CombineFirst(PModule):
             df = combine_first(df, other)
         steps = len(df)
         if self.result is not None:
-            self.result = None  # PTableModule does not want to reassign result
+            self.result = None  # Module does not want to reassign result
         self.result = df
         return self._return_run_step(self.state_blocked, steps_run=steps)

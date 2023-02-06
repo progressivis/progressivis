@@ -22,14 +22,14 @@ class TestBlobsPTable(ProgressiveTest):
     def test_blobs_table(self) -> None:
         s = self.scheduler()
         module = BlobsPTable(["a", "b"], centers=centers, rows=10000, scheduler=s)
-        self.assertEqual(module.table.columns[0], "a")
-        self.assertEqual(module.table.columns[1], "b")
-        self.assertEqual(len(module.table.columns), 2)
+        self.assertEqual(module.result.columns[0], "a")
+        self.assertEqual(module.result.columns[1], "b")
+        self.assertEqual(len(module.result.columns), 2)
         prlen = Every(proc=self.terse, constant_time=True, scheduler=s)
         prlen.input[0] = module.output.result
         aio.run(s.start())
         # s.join()
-        self.assertEqual(len(module.table), 10000)
+        self.assertEqual(len(module.result), 10000)
 
     def test_blobs_table2(self) -> None:
         s = self.scheduler()
@@ -50,10 +50,10 @@ class TestBlobsPTable(ProgressiveTest):
         prlen.input[0] = add.output.result
         aio.run(s.start())
         # s.join()
-        self.assertEqual(len(blob1.table), sz)
-        self.assertEqual(len(blob2.table), sz)
-        arr1 = blob1.table.to_array()
-        arr2 = blob2.table.to_array()
+        self.assertEqual(len(blob1.result), sz)
+        self.assertEqual(len(blob2.result), sz)
+        arr1 = blob1.result.to_array()
+        arr2 = blob2.result.to_array()
         self.assertTrue(np.allclose(arr1, arr2))
 
 
@@ -67,14 +67,14 @@ class TestMVBlobsPTable(ProgressiveTest):
         module = MVBlobsPTable(
             ["a", "b"], means=means, covs=covs, rows=10000, scheduler=s
         )
-        self.assertEqual(module.table.columns[0], "a")
-        self.assertEqual(module.table.columns[1], "b")
-        self.assertEqual(len(module.table.columns), 2)
+        self.assertEqual(module.result.columns[0], "a")
+        self.assertEqual(module.result.columns[1], "b")
+        self.assertEqual(len(module.result.columns), 2)
         prlen = Every(proc=self.terse, constant_time=True, scheduler=s)
         prlen.input[0] = module.output.result
         aio.run(s.start())
         # s.join()
-        self.assertEqual(len(module.table), 10000)
+        self.assertEqual(len(module.result), 10000)
 
     def test_mv_blobs_table2(self) -> None:
         s = self.scheduler()
@@ -90,8 +90,8 @@ class TestMVBlobsPTable(ProgressiveTest):
         prlen.input[0] = add.output.result
         aio.run(s.start())
         # s.join()
-        self.assertEqual(len(blob1.table), sz)
-        self.assertEqual(len(blob2.table), sz)
-        arr1 = blob1.table.to_array()
-        arr2 = blob2.table.to_array()
+        self.assertEqual(len(blob1.result), sz)
+        self.assertEqual(len(blob2.result), sz)
+        arr1 = blob1.result.to_array()
+        arr2 = blob2.result.to_array()
         self.assertTrue(np.allclose(arr1, arr2))

@@ -1,13 +1,14 @@
 from __future__ import annotations
 
 from progressivis.utils.errors import ProgressiveStopIteration
-from progressivis.core.module import ReturnRunStep
-from .module import PTableModule
+from progressivis.core.module import Module, ReturnRunStep, def_output
+from .table import PTable
 from ..core import Sink
 from typing import Any, Optional
 
 
-class Pattern(PTableModule):
+@def_output("result", PTable)
+class Pattern(Module):
     def __init__(self, **kwds: Any) -> None:
         super().__init__(**kwds)
         self.sink: Optional[Sink] = None

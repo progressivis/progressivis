@@ -8,7 +8,7 @@ from .. import ProgressiveError
 from .base_loader import BaseLoader
 from ..utils.errors import ProgressiveStopIteration
 from ..utils.inspect import filter_kwds, extract_params_docstring
-from ..core.module import ReturnRunStep
+from ..core.module import ReturnRunStep, def_input, def_output
 from ..table.table import PTable
 from ..table.dshape import dshape_from_pa_batch
 from ..core.utils import (
@@ -18,7 +18,7 @@ from ..core.utils import (
     is_slice,
     nn,
 )
-
+from ..utils import PDict
 from typing import List, Dict, Any, Callable, Optional, Union, Generator, TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -29,6 +29,9 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
+@def_input("filenames", PTable, required=False)
+@def_output("anomalies", PDict, required=False)
+@def_output("result", PTable)
 class ParquetLoader(BaseLoader):
     def __init__(
         self,

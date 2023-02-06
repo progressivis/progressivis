@@ -3,14 +3,15 @@ from __future__ import annotations
 import numpy as np
 
 from progressivis.table import PTable
-from progressivis.table.module import PTableModule
-from progressivis.core.module import ReturnRunStep, JSon
+from progressivis.core.module import Module
+from progressivis.core.module import ReturnRunStep, JSon, def_output, def_parameter
 
 from typing import Any
 
 
-class Input(PTableModule):
-    parameters = [("history", np.dtype(int), 3)]
+@def_parameter("history", np.dtype(int), 3)
+@def_output("result", PTable)
+class Input(Module):
     schema = "{input: string}"
 
     def __init__(self, **kwds: Any) -> None:

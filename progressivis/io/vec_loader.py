@@ -9,7 +9,7 @@ from bz2 import BZ2File
 from gzip import GzipFile
 
 from progressivis.table.table import PTable
-from progressivis.table.module import PTableModule
+from progressivis.core.module import Module
 from progressivis.core.module import ReturnRunStep
 
 from sklearn.feature_extraction import DictVectorizer  # type: ignore
@@ -53,7 +53,7 @@ def vec_loader(
         return (dictionary.fit_transform(dataset), dictionary.get_feature_names())
 
 
-class VECLoader(PTableModule):
+class VECLoader(Module):
     def __init__(
         self, filename: str, dtype: Type[Any] = np.float64, **kwds: Any
     ) -> None:

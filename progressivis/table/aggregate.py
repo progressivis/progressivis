@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 # import logging
-from ..table.module import PTableModule, ReturnRunStep
-from ..core.slot import SlotDescriptor, Slot
+from ..core.module import Module, ReturnRunStep, def_input, def_output
+from ..core.slot import Slot
 from . import PTable
 from ..stats.utils import aggr_registry
 from ..core.decorators import process_slot, run_if_any
@@ -14,8 +14,9 @@ from typing import cast, List, Union, Any, Dict, Tuple, Type
 # See also : https://arrow.apache.org/docs/python/compute.html#py-grouped-aggrs
 
 
-class Aggregate(PTableModule):
-    inputs = [SlotDescriptor("table", type=PTable, required=True)]
+@def_input("table", PTable, required=False)
+@def_output("result", PTable)
+class Aggregate(Module):
     registry = aggr_registry
 
     def __init__(
@@ -32,7 +33,7 @@ class Aggregate(PTableModule):
 
     def reset(self) -> None:
         if self.result is not None:
-            self.table.resize(0)
+            self.result.resize(0)
         self._local_index = {}
         self._table_index = {}
 
@@ -62,11 +63,11 @@ class Aggregate(PTableModule):
                 create=True,
             )
         if grp not in self._table_index:
-            id_ = self.table.add(row)
+            id_ = self.result.add(row)
             self._table_index[grp] = id_
         else:
             id_ = self._table_index[grp]
-            self.table.loc[id_, row_dict.keys()] = row
+            self.result.loc[id_, row_dict.keys()] = row
 
     @process_slot("table", reset_cb="reset")
     @run_if_any

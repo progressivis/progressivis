@@ -2,15 +2,19 @@ from __future__ import annotations
 
 import numpy as np
 
-from progressivis.core.module import Module, ReturnRunStep
-from progressivis.core.slot import SlotDescriptor
+from progressivis.core.module import (
+    Module,
+    ReturnRunStep,
+    def_input,
+    def_output,
+    def_parameter,
+)
 from progressivis.core.pintset import PIntSet
 from progressivis.core.utils import indices_len
 from ..io import Variable
 from ..stats import Min, Max
 from ..utils.psdict import PDict
 from . import BasePTable, PTable, PTableSelectedView
-from .module import PTableModule
 from .hist_index import HistogramIndex
 
 # from .mod_impl import ModuleImpl
@@ -99,33 +103,26 @@ class RangeQueryImpl:  # (ModuleImpl):
         self.resume(hist_index, lower, upper, limit_changed, created, updated, deleted)
 
 
-class RangeQuery(PTableModule):
+@def_parameter("column", np.dtype(object), "unknown")
+@def_parameter("watched_key_lower", np.dtype(object), "")
+@def_parameter("watched_key_upper", np.dtype(object), "")
+@def_input("table", PTable)
+@def_input("lower", PDict, required=False)
+@def_input("upper", PDict, required=False)
+@def_input("min", PDict, required=False)
+@def_input("max", PDict, required=False)
+@def_input("hist", PTable)
+@def_output("result", PTableSelectedView)
+@def_output("min", PDict, attr_name="_min_table", required=False)
+@def_output("max", PDict, attr_name="_max_table", required=False)
+class RangeQuery(Module):
     """ """
-
-    parameters = [
-        ("column", np.dtype(object), "unknown"),
-        ("watched_key_lower", np.dtype(object), ""),
-        ("watched_key_upper", np.dtype(object), ""),
-        # ('hist_index', object, None) # to improve ...
-    ]
-    inputs = [
-        SlotDescriptor("table", type=PTable, required=True),
-        SlotDescriptor("lower", type=PTable, required=False),
-        SlotDescriptor("upper", type=PTable, required=False),
-        SlotDescriptor("min", type=PDict, required=False),
-        SlotDescriptor("max", type=PDict, required=False),
-        SlotDescriptor("hist", type=PTable, required=True),
-    ]
-    outputs = [
-        SlotDescriptor("min", type=PTable, required=False),
-        SlotDescriptor("max", type=PTable, required=False),
-    ]
 
     def __init__(
         self,
         # hist_index: Optional[HistogramIndex] = None,
         approximate: bool = False,
-        **kwds: Any
+        **kwds: Any,
     ) -> None:
         super(RangeQuery, self).__init__(**kwds)
         self._impl: RangeQueryImpl = RangeQueryImpl(self.params.column, approximate)
@@ -133,8 +130,8 @@ class RangeQuery(PTableModule):
         self._approximate = approximate
         self.default_step_size = 1000
         self.input_module: Optional[Module] = None
-        self._min_table: Optional[PDict] = None
-        self._max_table: Optional[PDict] = None
+        self._min_table: Optional[PDict]
+        self._max_table: Optional[PDict]
         self.hist_index: Optional[HistogramIndex] = None
 
     # @property
@@ -166,7 +163,7 @@ class RangeQuery(PTableModule):
         min_value: Optional[Module] = None,
         max_value: Optional[Module] = None,
         hist_index: Optional[HistogramIndex] = None,
-        **kwds: Any
+        **kwds: Any,
     ) -> RangeQuery:
         if self.input_module is not None:  # test if already called
             return self
@@ -229,13 +226,6 @@ class RangeQuery(PTableModule):
 
     def _set_max_out(self, val: float) -> None:
         return self._set_minmax_out("_max_table", val)
-
-    def get_data(self, name: str) -> Any:
-        if name == "min":
-            return self._min_table
-        if name == "max":
-            return self._max_table
-        return super(RangeQuery, self).get_data(name)
 
     def run_step(
         self, run_number: int, step_size: int, howlong: float
@@ -370,5 +360,5 @@ class RangeQuery(PTableModule):
                 deleted=deleted,
             )
         assert self._impl.result
-        self.selected.selection = self._impl.result._values
+        self.result.selection = self._impl.result._values
         return self._return_run_step(self.next_state(input_slot), steps)

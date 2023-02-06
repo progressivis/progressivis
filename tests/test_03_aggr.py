@@ -50,13 +50,13 @@ class TestProgressiveAggregate(ProgressiveTest):
         aio.run(s.start())
         self.assertTrue(
             np.array_equal(
-                aggr.table["passenger_count"].value,
+                aggr.result["passenger_count"].value,
                 TABLE_AGGR["passenger_count"].to_numpy(),
             )
         )
         self.assertTrue(
             np.allclose(
-                aggr.table["trip_distance_mean"].value,
+                aggr.result["trip_distance_mean"].value,
                 TABLE_AGGR["trip_distance_mean"].to_numpy(),
             )
         )
@@ -85,14 +85,14 @@ class TestProgressiveAggregate(ProgressiveTest):
         aio.run(s.start())
         self.assertTrue(
             np.array_equal(
-                aggr.table["passenger_count"].value,
+                aggr.result["passenger_count"].value,
                 TABLE_AGGR["passenger_count"].to_numpy(),
             )
         )
         self.assertTrue(
             np.allclose(
                 sum(TABLE_AGGR["trip_distance_sum"].to_numpy())
-                - sum(aggr.table.loc[:, "trip_distance_sum"].to_array()),  # type: ignore
+                - sum(aggr.result.loc[:, "trip_distance_sum"].to_array()),  # type: ignore
                 TABLE["trip_distance"][removed].as_py(),  # type: ignore
             )
         )
@@ -121,7 +121,7 @@ class TestProgressiveAggregate(ProgressiveTest):
         aio.run(s.start())
         self.assertTrue(
             np.array_equal(
-                aggr.table["passenger_count"].value,
+                aggr.result["passenger_count"].value,
                 TABLE_AGGR["passenger_count"].to_numpy(),
             )
         )
@@ -129,7 +129,7 @@ class TestProgressiveAggregate(ProgressiveTest):
             np.allclose(
                 abs(
                     sum(TABLE_AGGR["trip_distance_sum"].to_numpy())
-                    - sum(aggr.table.loc[:, "trip_distance_sum"].to_array())  # type: ignore
+                    - sum(aggr.result.loc[:, "trip_distance_sum"].to_array())  # type: ignore
                 ),
                 abs(new_val - TABLE["trip_distance"][upd_id].as_py()),  # type: ignore
             )
@@ -150,13 +150,13 @@ class TestProgressiveAggregate(ProgressiveTest):
         aio.run(s.start())
         self.assertTrue(
             np.array_equal(
-                aggr.table["passenger_count"].value,
+                aggr.result["passenger_count"].value,
                 TABLE_AGGR["passenger_count"].to_numpy(),
             )
         )
         self.assertTrue(
             np.allclose(
-                aggr.table["trip_distance_mean"].value,
+                aggr.result["trip_distance_mean"].value,
                 TABLE_AGGR["trip_distance_mean"].to_numpy(),
             )
         )
@@ -178,19 +178,19 @@ class TestProgressiveAggregate(ProgressiveTest):
         aio.run(s.start())
         self.assertTrue(
             np.array_equal(
-                aggr.table["passenger_count"].value,
+                aggr.result["passenger_count"].value,
                 TABLE_AGGR_2["passenger_count"].to_numpy(),
             )
         )
         self.assertTrue(
             np.allclose(
-                aggr.table["trip_distance_mean"].value,
+                aggr.result["trip_distance_mean"].value,
                 TABLE_AGGR_2["trip_distance_mean"].to_numpy(),
             )
         )
         self.assertTrue(
             np.allclose(
-                aggr.table["trip_distance_sum"].value,
+                aggr.result["trip_distance_sum"].value,
                 TABLE_AGGR_2["trip_distance_sum"].to_numpy(),
             )
         )
@@ -219,25 +219,25 @@ class TestProgressiveAggregate(ProgressiveTest):
         aio.run(s.start())
         self.assertTrue(
             np.array_equal(
-                aggr.table["passenger_count"].value,
+                aggr.result["passenger_count"].value,
                 TABLE_AGGR_3["passenger_count"].to_numpy(),
             )
         )
         self.assertTrue(
             np.allclose(
-                aggr.table["fare_amount_mean"].value,
+                aggr.result["fare_amount_mean"].value,
                 TABLE_AGGR_3["fare_amount_mean"].to_numpy(),
             )
         )
         self.assertTrue(
             np.allclose(
-                aggr.table["trip_distance_mean"].value,
+                aggr.result["trip_distance_mean"].value,
                 TABLE_AGGR_3["trip_distance_mean"].to_numpy(),
             )
         )
         self.assertTrue(
             np.allclose(
-                aggr.table["trip_distance_sum"].value,
+                aggr.result["trip_distance_sum"].value,
                 TABLE_AGGR_3["trip_distance_sum"].to_numpy(),
             )
         )
@@ -259,18 +259,18 @@ class TestProgressiveAggregate(ProgressiveTest):
         aio.run(s.start())
         self.assertTrue(
             np.array_equal(
-                aggr.table["passenger_count"].value,
+                aggr.result["passenger_count"].value,
                 TABLE_AGGR_4["passenger_count"].to_numpy(),
             )
         )
         self.assertTrue(
             np.array_equal(
-                aggr.table["VendorID"].value, TABLE_AGGR_4["VendorID"].to_numpy()
+                aggr.result["VendorID"].value, TABLE_AGGR_4["VendorID"].to_numpy()
             )
         )
         self.assertTrue(
             np.allclose(
-                aggr.table["trip_distance_mean"].value,
+                aggr.result["trip_distance_mean"].value,
                 TABLE_AGGR_4["trip_distance_mean"].to_numpy(),
             )
         )
@@ -297,7 +297,7 @@ class TestProgressiveAggregate(ProgressiveTest):
         aio.run(s.start())
         self.assertTrue(
             np.allclose(
-                sorted(aggr.table["trip_distance_mean"].value), sorted(DF_AGGR.values)
+                sorted(aggr.result["trip_distance_mean"].value), sorted(DF_AGGR.values)
             )
         )
 
@@ -318,7 +318,7 @@ class TestProgressiveAggregate(ProgressiveTest):
         aio.run(s.start())
         self.assertTrue(
             np.allclose(
-                sorted(aggr.table["trip_distance_mean"].value), sorted(DF_AGGR.values)
+                sorted(aggr.result["trip_distance_mean"].value), sorted(DF_AGGR.values)
             )
         )
 

@@ -10,7 +10,7 @@ from .base_loader import BaseLoader
 from .. import ProgressiveError
 from ..utils.errors import ProgressiveStopIteration
 from ..utils.inspect import extract_params_docstring
-from ..core.module import ReturnRunStep
+from ..core.module import ReturnRunStep, def_input, def_output
 from ..table.table import PTable
 from ..table.dshape import dshape_from_pa_batch
 from ..core.utils import (
@@ -21,7 +21,7 @@ from ..core.utils import (
     is_slice,
     nn,
 )
-
+from ..utils import PDict
 from typing import List, Dict, Any, Callable, Optional, Tuple, Union, TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -31,6 +31,9 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
+@def_input("filenames", PTable, required=False)
+@def_output("anomalies", PDict, required=False)
+@def_output("result", PTable)
 class PACSVLoader(BaseLoader):
     def __init__(
         self,
@@ -221,8 +224,8 @@ class PACSVLoader(BaseLoader):
                     arr[i] = elt.cast(ctype).as_py()
                 except pa.ArrowInvalid:
                     arr[i] = None
-                    if nn(self._anomalies):
-                        self._anomalies["invalid_values"].add(elt.as_py())  # type: ignore
+                    if nn(self.anomalies):
+                        self.anomalies["invalid_values"].add(elt.as_py())  # type: ignore
             new_cols.append(pa.array(arr, type=ctype))
         chunk = pa.RecordBatch.from_arrays(new_cols, names=list(_col_types.keys()))
         if self._read_options is None:

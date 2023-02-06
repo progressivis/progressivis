@@ -26,8 +26,8 @@ class TestBisect(ProgressiveTest):
         pr.input[0] = bisect_.output.result
         aio.run(s.start())
         # hist_index._impl.dump()
-        idx = random.table.eval("_1>0.5", result_object="index")
-        self.assertEqual(bisect_.table.index, PIntSet(idx))
+        idx = random.result.eval("_1>0.5", result_object="index")
+        self.assertEqual(bisect_.result.index, PIntSet(idx))
 
     def test_bisect2(self) -> None:
         s = self.scheduler()
@@ -51,8 +51,8 @@ class TestBisect(ProgressiveTest):
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = bisect_.output.result
         aio.run(s.start())
-        idx = stirrer.table.eval("_1>0.5", result_object="index")
-        self.assertEqual(bisect_.table.index, PIntSet(idx))
+        idx = stirrer.result.eval("_1>0.5", result_object="index")
+        self.assertEqual(bisect_.result.index, PIntSet(idx))
 
     def test_bisect3(self) -> None:
         s = self.scheduler()
@@ -72,8 +72,8 @@ class TestBisect(ProgressiveTest):
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = bisect_.output.result
         aio.run(s.start())
-        idx = stirrer.table.eval("_1>0.5", result_object="index")
-        self.assertEqual(bisect_.table.index, PIntSet(idx))
+        idx = stirrer.result.eval("_1>0.5", result_object="index")
+        self.assertEqual(bisect_.result.index, PIntSet(idx))
 
 
 if __name__ == "__main__":

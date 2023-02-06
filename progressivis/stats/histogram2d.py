@@ -1,9 +1,15 @@
 from __future__ import annotations
 
-from ..core.module import JSon, ReturnRunStep
+from ..core.module import (
+    Module,
+    JSon,
+    ReturnRunStep,
+    def_input,
+    def_output,
+    def_parameter,
+)
 from ..core.utils import indices_len, fix_loc
-from ..core.slot import SlotDescriptor, Slot
-from ..table.module import PTableModule
+from ..core.slot import Slot
 from ..table import PTable
 from ..utils.psdict import PDict
 from fast_histogram import histogram2d  # type: ignore
@@ -20,19 +26,17 @@ Bounds2D = Tuple[float, float, float, float]
 logger = logging.getLogger(__name__)
 
 
-class Histogram2D(PTableModule):
-    parameters = [
-        ("xbins", np.dtype(int), 256),
-        ("ybins", np.dtype(int), 256),
-        ("xdelta", np.dtype(float), -5),  # means 5%
-        ("ydelta", np.dtype(float), -5),  # means 5%
-        ("history", np.dtype(int), 3),
-    ]
-    inputs = [
-        SlotDescriptor("table", type=PTable, required=True),
-        SlotDescriptor("min", type=PDict, required=True),
-        SlotDescriptor("max", type=PDict, required=True),
-    ]
+@def_parameter("xbins", np.dtype(int), 256)
+@def_parameter("ybins", np.dtype(int), 256)
+@def_parameter("xdelta", np.dtype(float), -5)
+@def_parameter("ydelta", np.dtype(float), -5)
+@def_parameter("history", np.dtype(int), 3)
+@def_input("table", PTable)
+@def_input("min", PDict)
+@def_input("max", PDict)
+@def_output("result", PTable)
+class Histogram2D(Module):
+    """ """
 
     schema = (
         "{"
@@ -52,7 +56,7 @@ class Histogram2D(PTableModule):
         x_column: Union[int, str],
         y_column: Union[int, str],
         with_output: bool = True,
-        **kwds: Any
+        **kwds: Any,
     ) -> None:
         super(Histogram2D, self).__init__(dataframe_slot="table", **kwds)
         self.tags.add(self.TAG_VISUALIZATION)
@@ -80,7 +84,7 @@ class Histogram2D(PTableModule):
         self.total_read = 0
         self.get_input_slot("table").reset()
         if self.result:
-            self.table.resize(0)
+            self.result.resize(0)
 
     def is_ready(self) -> bool:
         # If we have created data but no valid min/max, we can only wait
@@ -256,7 +260,7 @@ class Histogram2D(PTableModule):
                 "time": run_number,
             }
             if self._with_output:
-                table = self.table
+                table = self.result
                 table["array"].set_shape([p.ybins, p.xbins])
                 last = table.last()
                 if last is None or last["time"] != run_number:

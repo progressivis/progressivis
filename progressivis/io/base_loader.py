@@ -1,9 +1,7 @@
 from __future__ import annotations
 
 import logging
-from ..table.module import PTableModule
-from .. import SlotDescriptor
-from ..table.table import PTable
+from ..core.module import Module
 from ..utils import PDict
 from ..core.utils import nn
 from typing import Optional, Any, TYPE_CHECKING
@@ -22,15 +20,12 @@ if TYPE_CHECKING:
     import io
 
 
-class BaseLoader(PTableModule):
-    inputs = [SlotDescriptor("filenames", type=PTable, required=False)]
-    outputs = [
-        SlotDescriptor("anomalies", type=PDict, required=False),
-    ]
+class BaseLoader(Module):
+    """ """
 
     def __init__(self, *args, **kw):
         self._rows_read: int = 0
-        self._anomalies: Optional[PDict] = None
+        self.anomalies: Optional[PDict]
         super().__init__(*args, **kw)
         self._input_stream: Optional[
             io.IOBase
@@ -67,18 +62,10 @@ class BaseLoader(PTableModule):
             self.maintain_anomalies(False)
 
     def maintain_anomalies(self, yes: bool = True) -> None:
-        if yes and self._anomalies is None:
-            self._anomalies = PDict(dict(skipped_cnt=0, invalid_values=set()))
+        if yes and self.anomalies is None:
+            self.anomalies = PDict(dict(skipped_cnt=0, invalid_values=set()))
         elif not yes:
-            self._anomalies = None
-
-    def anomalies(self) -> Optional[PDict]:
-        return self._anomalies
-
-    def get_data(self, name: str) -> Any:
-        if name == "anomalies":
-            return self.anomalies()
-        return super().get_data(name)
+            self.anomalies = None
 
     def process_na_values(self, bat) -> pa.RecordBatch:
         null_mask = None
@@ -94,8 +81,8 @@ class BaseLoader(PTableModule):
                 null_mask = col.is_null()
         if not has_null:
             return bat
-        if nn(self._anomalies):
-            self._anomalies["skipped_cnt"] += pa.compute.sum(null_mask).as_py()  # type: ignore
+        if nn(self.anomalies):
+            self.anomalies["skipped_cnt"] += pa.compute.sum(null_mask).as_py()  # type: ignore
         return bat.filter(pa.compute.invert(null_mask))
 
     def is_data_input(self) -> bool:

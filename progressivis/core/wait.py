@@ -1,19 +1,20 @@
 from __future__ import annotations
 
 from progressivis.utils.errors import ProgressiveError
-from progressivis.core.module import Module, ReturnRunStep
-from progressivis.core.slot import SlotDescriptor
-
+from progressivis.core.module import (Module,
+                                      ReturnRunStep,
+                                      def_input,
+                                      def_output,
+                                      def_parameter)
 import numpy as np
-
 from typing import Any
 
 
+@def_parameter("delay", np.dtype(float), np.nan)
+@def_parameter("reads", np.dtype(int), -1)
+@def_input("inp", required=True)
+@def_output("out", required=False)
 class Wait(Module):
-    parameters = [("delay", np.dtype(float), np.nan), ("reads", np.dtype(int), -1)]
-    inputs = [SlotDescriptor("inp", required=True)]
-    outputs = [SlotDescriptor("out", required=False)]
-
     def __init__(self, **kwds: Any) -> None:
         super(Wait, self).__init__(**kwds)
         if np.isnan(self.params.delay) and self.params.reads == -1:

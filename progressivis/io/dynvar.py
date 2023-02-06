@@ -1,19 +1,20 @@
 from __future__ import annotations
 
 from progressivis import ProgressiveError
-from ..table.module import PDictModule
-from progressivis.core.module import ReturnRunStep, JSon
+from ..core.module import Module
+from progressivis.core.module import ReturnRunStep, JSon, def_output
 from ..utils.psdict import PDict
 
 from typing import Dict, Any, Optional
 
 
-class DynVar(PDictModule):
+@def_output("result", PDict)
+class DynVar(Module):
     def __init__(
         self,
         init_val: Optional[Dict[str, Any]] = None,
         translation: Optional[Dict[str, Any]] = None,
-        **kwds: Any
+        **kwds: Any,
     ) -> None:
         super().__init__(**kwds)
         self.tags.add(self.TAG_INPUT)

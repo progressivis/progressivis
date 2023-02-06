@@ -1,11 +1,9 @@
 from __future__ import annotations
 
-from ..core.module import Module, ReturnRunStep
+from ..core.module import Module, ReturnRunStep, def_input, def_output
 from ..core.pintset import PIntSet
 from progressivis.utils.errors import ProgressiveError
 from ..core.utils import indices_len, is_valid_identifier
-from ..core.slot import SlotDescriptor
-from .module import PTableModule
 from .table import PTable
 
 from typing import Optional, Any
@@ -15,25 +13,25 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-class Select(PTableModule):
-    inputs = [
-        SlotDescriptor(
-            "table",
-            type=PTable,
-            required=True,
-            buffer_created=False,
-            buffer_updated=True,
-            buffer_deleted=False,
-        ),
-        SlotDescriptor(
-            "select",
-            type=PIntSet,
-            required=True,
-            buffer_created=True,
-            buffer_updated=False,
-            buffer_deleted=True,
-        ),
-    ]
+@def_input(
+    "table",
+    type=PTable,
+    required=True,
+    buffer_created=False,
+    buffer_updated=True,
+    buffer_deleted=False,
+)
+@def_input(
+    "select",
+    type=PIntSet,
+    required=True,
+    buffer_created=True,
+    buffer_updated=False,
+    buffer_deleted=True,
+)
+@def_output("result", PTable)
+class Select(Module):
+    """ """
 
     def __init__(self, **kwds: Any) -> None:
         super(Select, self).__init__(**kwds)

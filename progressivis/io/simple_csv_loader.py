@@ -7,8 +7,8 @@ from collections import defaultdict
 from .. import ProgressiveError
 from ..utils.errors import ProgressiveStopIteration
 from ..utils.inspect import filter_kwds, extract_params_docstring
-from ..table.module import PModule
-from ..core.module import ReturnRunStep, input_slot, output_slot
+from ..core.module import Module
+from ..core.module import ReturnRunStep, def_input, def_output
 from ..table.table import PTable
 from ..table.dshape import dshape_from_dataframe
 from ..core.utils import (
@@ -33,16 +33,12 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-@input_slot("filenames", PTable, required=False)
-@output_slot("result", PTable)
-@output_slot("anomalies", PDict, required=False)
-@output_slot("missing", PDict, required=False)
-class SimpleCSVLoader(PModule):
-    """inputs = [SlotDescriptor("filenames", type=PTable, required=False)]
-    outputs = [
-        SlotDescriptor("anomalies", type=PDict, required=False),
-        SlotDescriptor("missing", type=PDict, required=False),
-    ]"""
+@def_input("filenames", PTable, required=False)
+@def_output("result", PTable)
+@def_output("anomalies", PDict, required=False)
+@def_output("missing", PDict, required=False)
+class SimpleCSVLoader(Module):
+    """ """
 
     def __init__(
         self,
@@ -95,9 +91,6 @@ class SimpleCSVLoader(PModule):
         self._table_params: Dict[str, Any] = dict(name=self.name, fillvalues=fillvalues)
         self._imputer = imputer
         self._last_opened: Any = None
-        self.anomalies: Optional[PDict]
-        self.missing: Optional[PDict]
-        self.result: PTable
 
     def rows_read(self) -> int:
         return self._rows_read

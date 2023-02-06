@@ -4,11 +4,10 @@ import logging
 
 import numpy as np
 
-from ..core.module import ReturnRunStep, input_slot, output_slot, set_parameter
+from ..core.module import Module, ReturnRunStep, def_input, def_output, def_parameter
 from ..core.utils import indices_len, fix_loc
 from ..core.slot import Slot
 from ..core.decorators import process_slot, run_if_any
-from ..table.module import PModule
 from ..table.table_base import BasePTable
 from ..table.table import PTable
 from ..table.dshape import dshape_all_dtype
@@ -17,21 +16,18 @@ from .utils import OnlineVariance
 from typing import Dict, TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from progressivis.table.module import PColumns
+    from progressivis.core.module import PColumns
 
 logger = logging.getLogger(__name__)
 
 
-@input_slot("table", PTable)
-@set_parameter("history", np.dtype(int), 3)
-@output_slot("result", PTable)
-class VarH(PModule):
+@def_input("table", PTable)
+@def_parameter("history", np.dtype(int), 3)
+@def_output("result", PTable)
+class VarH(Module):
     """
     Compute the variance of the columns of an input table.
     """
-
-    # #parameters = [("history", np.dtype(int), 3)]
-    # #inputs = [SlotDescriptor("table", type=PTable, required=True)]
 
     def __init__(self, **kwds: Any) -> None:
         super().__init__(dataframe_slot="table", **kwds)
@@ -85,15 +81,13 @@ class VarH(PModule):
             return self._return_run_step(self.next_state(dfslot), steps)
 
 
-@input_slot("table", PTable)
-@output_slot("result", PDict)
-class Var(PModule):
+@def_input("table", PTable)
+@def_output("result", PDict)
+class Var(Module):
     """
     Compute the variance of the columns of an input table.
     This variant didn't keep history
     """
-
-    # #inputs = [SlotDescriptor("table", type=PTable, required=True)]
 
     def __init__(self, ignore_string_cols: bool = False, **kwds: Any) -> None:
         super().__init__(dataframe_slot="table", **kwds)

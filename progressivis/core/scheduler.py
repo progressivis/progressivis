@@ -36,7 +36,7 @@ KEEP_RUNNING = 5
 SHORTCUT_TIME: float = 1.5
 
 if TYPE_CHECKING:
-    from progressivis.core.module import Module
+    from progressivis.core.module import BaseModule
     from progressivis.core.slot import Slot
 
     Dependencies = Dict[str, Dict[str, Slot]]
@@ -45,7 +45,7 @@ TickCb = Callable[["Scheduler", int], None]
 TickCoro = Callable[["Scheduler", int], Coroutine[Any, Any, Any]]
 TickProc = Union[TickCb, TickCoro]
 ChangeProc = Callable[
-    ["Scheduler", Set["Module"], Set["Module"]], Coroutine[Any, Any, None]
+    ["Scheduler", Set["BaseModule"], Set["BaseModule"]], Coroutine[Any, Any, None]
 ]
 Order = List[str]
 Reachability = Dict[str, List[str]]
@@ -94,13 +94,13 @@ class Scheduler:
         # same as clear below
         Scheduler._last_id += 1
         self._name: int = Scheduler._last_id
-        self._modules: Dict[str, Module] = {}
+        self._modules: Dict[str, BaseModule] = {}
         self._dependencies: Dependencies
         self._running: bool = False
         self._stopped: bool = True
         self._runorder: Order = []
-        self._added_modules: Set[Module] = set()
-        self._deleted_modules: Set[Module] = set()
+        self._added_modules: Set[BaseModule] = set()
+        self._deleted_modules: Set[BaseModule] = set()
         self._start: float = 0
         self._step_once = False
         self._run_number = 0
@@ -109,7 +109,7 @@ class Scheduler:
         self._loop_procs = CallbackList()
         self._change_procs: Set[ChangeProc] = set()
         self.version = 0
-        self._run_list: List[Module] = []
+        self._run_list: List[BaseModule] = []
         self._run_index = 0
         self._module_selection: Optional[Set[str]] = None
         self._selection_target_time: float = -1
@@ -419,7 +419,7 @@ class Scheduler:
             self.shortcut_evt.set()
         print("Leaving run loop")
 
-    async def _next_module(self) -> AsyncGenerator[Module, None]:
+    async def _next_module(self) -> AsyncGenerator[BaseModule, None]:
         """
         Generator the yields a possibly infinite sequence of modules.
         Handles order recomputation and starting logic if needed.
@@ -472,10 +472,10 @@ class Scheduler:
 
     def all_blocked(self) -> bool:
         "Return True if all the modules are blocked, False otherwise"
-        from .module import Module
+        from .module import BaseModule
 
         for module in self._run_list:
-            if module.state not in (Module.state_blocked, Module.state_suspended):
+            if module.state not in (BaseModule.state_blocked, BaseModule.state_suspended):
                 # print("all_blocked: False")
                 return False
         # print("all_blocked: True")
@@ -573,7 +573,7 @@ class Scheduler:
             if not has_run:
                 logger.info("sleeping %f", 0.2)
                 print("Sleeping 0.2")
-                aio.sleep(0.2)
+                await aio.sleep(0.2)
         self._run_index = 0
 
     async def idle_proc_runner(self) -> None:
@@ -639,11 +639,11 @@ class Scheduler:
         "Return True if the moduleid exists in this scheduler."
         return moduleid in self
 
-    def modules(self) -> Dict[str, Module]:
+    def modules(self) -> Dict[str, BaseModule]:
         "Return the dictionary of modules."
         return self._modules
 
-    def __getitem__(self, mid: str) -> Module:
+    def __getitem__(self, mid: str) -> BaseModule:
         if self.dataflow is not None:
             return self.dataflow[mid]
         return self._modules[mid]
@@ -680,7 +680,7 @@ class Scheduler:
             self._keep_running = KEEP_RUNNING
             self._hibernate_cond.notify()
 
-    async def for_input(self, module: Module) -> int:
+    async def for_input(self, module: BaseModule) -> int:
         """
         Notify this scheduler that the module has received input
         that should be served fast.
@@ -709,7 +709,7 @@ class Scheduler:
             return False
         return True
 
-    def _consider_module(self, module: Module) -> bool:
+    def _consider_module(self, module: BaseModule) -> bool:
         # FIxME For now, accept all modules in input management
         if not self.has_input():
             return True
@@ -727,7 +727,7 @@ class Scheduler:
             return 0
         return max(0, self._selection_target_time - self.timer())
 
-    def fix_quantum(self, module: Module, quantum: float) -> float:
+    def fix_quantum(self, module: BaseModule, quantum: float) -> float:
         "Fix the quantum of the specified module"
         if (
             self.has_input()

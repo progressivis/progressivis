@@ -10,11 +10,11 @@ from abc import abstractmethod
 
 from progressivis.core.module import ReturnRunStep
 from ..utils.errors import ProgressiveError, ProgressiveStopIteration
-from progressivis import SlotDescriptor
-from ..table.module import PTableModule
+from ..core.module import Module
 from ..table.table import PTable
 from ..table.dshape import dshape_from_dtype
 from ..core.utils import integer_types
+from ..core.module import def_output
 from sklearn.datasets import make_blobs  # type: ignore
 from sklearn.utils import shuffle as multi_shuffle  # type: ignore
 
@@ -62,12 +62,13 @@ def xy_to_dict(
     return res, labs
 
 
-class BlobsPTableABC(PTableModule):
+@def_output("result", type=PTable)
+@def_output("labels", type=PTable, required=False)
+class BlobsPTableABC(Module):
     """Isotropic Gaussian blobs => table
     The purpose of the "reservoir" approach is to ensure the reproducibility of the results
     """
 
-    outputs = [SlotDescriptor("labels", type=PTable, required=False)]
     kw_fun: Optional[Callable[..., Any]] = None
 
     def __init__(
@@ -104,7 +105,6 @@ class BlobsPTableABC(PTableModule):
         self._reservoir: Optional[
             Tuple[np.ndarray[Any, Any], np.ndarray[Any, Any]]
         ] = None
-        self._labels: Optional[PTable] = None
         self._reservoir_idx = 0
         if throttle and isinstance(throttle, integer_types + (float,)):
             self.throttle: Union[int, bool, float] = throttle
@@ -127,22 +127,14 @@ class BlobsPTableABC(PTableModule):
             self.maintain_labels(False)
 
     def maintain_labels(self, yes: bool = True) -> None:
-        if yes and self._labels is None:
-            self._labels = PTable(
+        if yes and self.labels is None:
+            self.labels = PTable(
                 self.generate_table_name("blobs_labels"),
                 dshape="{labels: int64}",
                 create=True,
             )
         elif not yes:
-            self._labels = None
-
-    def labels(self) -> Optional[PTable]:
-        return self._labels
-
-    def get_data(self, name: str) -> Any:
-        if name == "labels":
-            return self.labels()
-        return super().get_data(name)
+            self.labels = None
 
     @abstractmethod
     def fill_reservoir(self) -> None:
@@ -183,8 +175,8 @@ class BlobsPTableABC(PTableModule):
                 self._reservoir_idx += steps
                 steps = 0
             self.result.append(blobs_dict)
-            if self._labels is not None:
-                self._labels.append({"labels": y_})
+            if self.labels is not None:
+                self.labels.append({"labels": y_})
         if len(self.result) == self.rows:
             next_state = self.state_zombie
         elif self.throttle:

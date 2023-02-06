@@ -1,11 +1,9 @@
 "Binary Join module."
 from __future__ import annotations
 
-from progressivis.core.module import ReturnRunStep
-from progressivis.core.slot import SlotDescriptor
+from progressivis.core.module import Module, ReturnRunStep, def_input, def_output
 from progressivis.utils.inspect import filter_kwds
 from .table import PTable
-from .module import PTableModule
 from .join_by_id import join
 from .dshape import dshape_join
 from collections import OrderedDict
@@ -13,7 +11,10 @@ from collections import OrderedDict
 from typing import Any
 
 
-class Paste(PTableModule):
+@def_input("first", PTable)
+@def_input("second", PTable)
+@def_output("result", PTable)
+class Paste(Module):
     """
     Binary join module to join two tables and return a third one.
 
@@ -23,11 +24,6 @@ class Paste(PTableModule):
     Args:
         kwds : argument to pass to the join function
     """
-
-    inputs = [
-        SlotDescriptor("first", type=PTable, required=True),
-        SlotDescriptor("second", type=PTable, required=True),
-    ]
 
     def __init__(self, **kwds: Any) -> None:
         super(Paste, self).__init__(**kwds)
@@ -48,7 +44,7 @@ class Paste(PTableModule):
             first_slot.reset()
             second_slot.reset()
             if self.result is not None:
-                self.table.resize(0)
+                self.result.resize(0)
             first_slot.update(run_number)
             second_slot.update(run_number)
         first_slot.created.next(length=step_size)
@@ -62,8 +58,8 @@ class Paste(PTableModule):
             return self._return_run_step(self.state_blocked, steps_run=0)
         col_0 = first_table.columns[0]
         col_1 = second_table.columns[0]
-        if len(self.table) == 0:
-            self.table.append(
+        if len(self.result) == 0:
+            self.result.append(
                 OrderedDict(
                     [
                         (col_0, first_table.last(col_0)),
@@ -73,9 +69,9 @@ class Paste(PTableModule):
                 indices=[0],
             )
         else:
-            assert len(self.table) == 1
-            if first_table.last(col_0) != self.table.last(col_0):
+            assert len(self.result) == 1
+            if first_table.last(col_0) != self.result.last(col_0):
                 self.result[col_0].loc[0] = first_table.last(col_0)
-            if second_table.last(col_1) != self.table.last(col_1):
+            if second_table.last(col_1) != self.result.last(col_1):
                 self.result[col_1].loc[0] = second_table.last(col_1)
         return self._return_run_step(self.next_state(first_slot), steps_run=1)

@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 from progressivis.core import asynchronize, aio, Sink  # type: ignore
 from progressivis.utils.psdict import PDict  # type: ignore
-from progressivis.table.module import PTableModule  # type: ignore
+from progressivis.core.module import Module  # type: ignore
 from progressivis.io import DynVar  # type: ignore
 from progressivis.stats import (  # type: ignore
     KLLSketch,
@@ -327,7 +327,7 @@ class DynViewer(TreeTab):
     def __init__(
         self,
         dtypes: Dict[str, AnyType],
-        input_module: PTableModule,
+        input_module: Module,
         input_slot: str = "result",
     ):
         self._dtypes = dtypes
@@ -485,12 +485,8 @@ class DynViewer(TreeTab):
 
     def make_btn_bar(self) -> ipw.HBox:
         self._btn_edit = make_button("Edit", disabled=False, cb=self._btn_edit_cb)
-        self._btn_cancel = make_button(
-            "Cancel", disabled=True, cb=self._btn_cancel_cb
-        )
-        self._btn_apply = make_button(
-            "Apply", disabled=True, cb=self._btn_apply_cb
-        )
+        self._btn_cancel = make_button("Cancel", disabled=True, cb=self._btn_cancel_cb)
+        self._btn_apply = make_button("Apply", disabled=True, cb=self._btn_apply_cb)
         self._btn_bar = ipw.HBox([self._btn_edit, self._btn_cancel, self._btn_apply])
         return self._btn_bar
 

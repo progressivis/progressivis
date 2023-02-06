@@ -4,8 +4,7 @@ import numpy as np
 
 import itertools as it
 
-from ..core.module import Module, ReturnRunStep
-from ..core.slot import SlotDescriptor
+from ..core.module import Module, ReturnRunStep, def_input, def_output, def_parameter
 from ..core.pintset import PIntSet
 from ..core.utils import indices_len
 from ..utils.psdict import PDict
@@ -13,7 +12,6 @@ from ..io import Variable
 from ..stats import Min, Max
 from .table_base import PTableSelectedView, BasePTable
 from .table import PTable
-from .module import PTableModule
 from .hist_index import HistogramIndex
 from .merge_dict import MergeDict
 
@@ -140,35 +138,30 @@ class RangeQuery2dImpl:  # (ModuleImpl):
         )
 
 
-class RangeQuery2d(PTableModule):
-    parameters = [
-        ("column_x", np.dtype(object), "unknown"),
-        ("column_y", np.dtype(object), "unknown"),
-        ("watched_key_lower_x", np.dtype(object), ""),
-        ("watched_key_upper_x", np.dtype(object), ""),
-        ("watched_key_lower_y", np.dtype(object), ""),
-        ("watched_key_upper_y", np.dtype(object), ""),
-        # ('hist_index', object, None) # to improve ...
-    ]
-    inputs = [
-        SlotDescriptor("table", type=PTable, required=True),
-        SlotDescriptor("lower", type=PDict, required=False),
-        SlotDescriptor("upper", type=PDict, required=False),
-        SlotDescriptor("min", type=PDict, required=False),
-        SlotDescriptor("max", type=PDict, required=False),
-        SlotDescriptor("hist_x", type=PTable, required=True),
-        SlotDescriptor("hist_y", type=PTable, required=True),
-    ]
-    outputs = [
-        SlotDescriptor("min", type=PTable, required=False),
-        SlotDescriptor("max", type=PTable, required=False),
-    ]
+@def_parameter("column_x", np.dtype(object), "unknown")
+@def_parameter("column_y", np.dtype(object), "unknown")
+@def_parameter("watched_key_lower_x", np.dtype(object), "")
+@def_parameter("watched_key_upper_x", np.dtype(object), "")
+@def_parameter("watched_key_lower_y", np.dtype(object), "")
+@def_parameter("watched_key_upper_y", np.dtype(object), "")
+@def_input("table", PTable)
+@def_input("lower", PDict, required=False)
+@def_input("upper", PDict, required=False)
+@def_input("min", PDict, required=False)
+@def_input("max", PDict, required=False)
+@def_input("hist_x", PTable)
+@def_input("hist_y", PTable)
+@def_output("result", PTableSelectedView)
+@def_output("min", PDict, attr_name="_min_table", required=False)
+@def_output("max", PDict, attr_name="_max_table", required=False)
+class RangeQuery2d(Module):
+    """ """
 
     def __init__(
         self,
         # hist_index: Optional[HistogramIndex] = None,
         approximate: bool = False,
-        **kwds: Any
+        **kwds: Any,
     ) -> None:
         super(RangeQuery2d, self).__init__(**kwds)
         # self._hist_index_x: Optional[HistogramIndex] = None
@@ -193,8 +186,8 @@ class RangeQuery2d(PTableModule):
             self._watched_key_upper_y = self._column_y
         self.default_step_size = 1000
         self.input_module: Optional[Module] = None
-        self._min_table: Optional[PDict] = None
-        self._max_table: Optional[PDict] = None
+        self._min_table: Optional[PDict]
+        self._max_table: Optional[PDict]
 
     def create_dependent_modules(
         self,
@@ -204,7 +197,7 @@ class RangeQuery2d(PTableModule):
         max_: Optional[Module] = None,
         min_value: Union[None, bool, Module] = None,
         max_value: Union[None, bool, Module] = None,
-        **kwds: Any
+        **kwds: Any,
     ) -> RangeQuery2d:
         """
         Beware, {min,max}_value=None is not the same as {min,max}_value=False.
@@ -281,7 +274,6 @@ class RangeQuery2d(PTableModule):
                     range_query.input.upper = max_value.output.result
                 range_query.input.min = min_.output.result
                 range_query.input.max = max_.output.result
-
             self.min = min_
             self.max = max_
             self.min_value = min_value
@@ -309,13 +301,6 @@ class RangeQuery2d(PTableModule):
 
     def _set_max_out(self, val_x: float, val_y: float) -> None:
         return self._set_minmax_out("_max_table", val_x, val_y)
-
-    def get_data(self, name: str) -> Any:
-        if name == "min":
-            return self._min_table
-        if name == "max":
-            return self._max_table
-        return super(RangeQuery2d, self).get_data(name)
 
     def run_step(
         self, run_number: int, step_size: int, howlong: float
@@ -471,7 +456,7 @@ class RangeQuery2d(PTableModule):
                 deleted=deleted,
             )
             assert self._impl.result
-            self.selected.selection = self._impl.result._values
+            self.result.selection = self._impl.result._values
         else:
             self._impl.resume(
                 cast(HistogramIndex, hist_x_slot.output_module),
@@ -486,5 +471,5 @@ class RangeQuery2d(PTableModule):
                 deleted=deleted,
             )
             assert self._impl.result
-            self.selected.selection = self._impl.result._values
+            self.result.selection = self._impl.result._values
         return self._return_run_step(self.next_state(input_slot), steps)

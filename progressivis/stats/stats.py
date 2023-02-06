@@ -4,9 +4,9 @@ import logging
 
 import numpy as np
 
-from progressivis.core.module import ReturnRunStep, input_slot, output_slot, set_parameter
+from progressivis.core.module import ReturnRunStep, def_input, def_output, def_parameter
 from progressivis.core.utils import indices_len, fix_loc, get_random_name
-from progressivis.table.module import PModule
+from progressivis.core.module import Module
 from progressivis.table.table import PTable
 
 from typing import Optional, Any, Union
@@ -18,20 +18,17 @@ from typing import Optional, Any, Union
 logger = logging.getLogger(__name__)
 
 
-@input_slot("table", PTable)
-@set_parameter("history", np.dtype(int), 3)
-@output_slot("result", PTable)
-class Stats(PModule):
-    # #parameters = [("history", np.dtype(int), 3)]
-    # #inputs = [SlotDescriptor("table", type=PTable, required=True)]
-
+@def_input("table", PTable)
+@def_parameter("history", np.dtype(int), 3)
+@def_output("result", PTable)
+class Stats(Module):
     def __init__(
         self,
         column: Union[str, int],
         min_column: Optional[str] = None,
         max_column: Optional[str] = None,
         reset_index: bool = False,
-        **kwds: Any
+        **kwds: Any,
     ) -> None:
         super(Stats, self).__init__(**kwds)
         self._column = column

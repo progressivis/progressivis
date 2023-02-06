@@ -5,13 +5,11 @@ import logging
 import numpy as np
 import copy
 
-from ..core.module import ReturnRunStep
+from ..core.module import Module, ReturnRunStep, def_input, def_output, def_parameter
 from ..core.utils import indices_len, fix_loc
 from ..core.pintset import PIntSet
-from ..table.module import PTableModule
 from ..table import BasePTable, PTable, PTableSelectedView
 from ..core.decorators import process_slot, run_if_any
-from .. import SlotDescriptor
 from ..utils.psdict import PDict
 from . import Sample
 import pandas as pd
@@ -27,10 +25,12 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class PPCA(PTableModule):
-    parameters = [("n_components", np.dtype(int), 2)]
-    inputs = [SlotDescriptor("table", type=PTable, required=True)]
-    outputs = [SlotDescriptor("transformer", type=PDict, required=False)]
+@def_parameter("n_components", np.dtype(int), 2)
+@def_input("table", PTable)
+@def_output("result", PTableSelectedView)
+@def_output("transformer", PDict, required=False)
+class PPCA(Module):
+    """ """
 
     def __init__(self, **kwds: Any) -> None:
         super().__init__(**kwds)
@@ -38,7 +38,6 @@ class PPCA(PTableModule):
         self.inc_pca: Optional[IncrementalPCA] = None
         self.inc_pca_wtn: Optional[IncrementalPCA] = None
         self._as_array: Optional[str] = None
-        self._transformer = PDict()
 
     def predict_step_size(self, duration: float) -> int:
         p = super().predict_step_size(duration)
@@ -52,11 +51,6 @@ class PPCA(PTableModule):
             table = self.result
             assert isinstance(table, PTableSelectedView)
             table.selection = PIntSet()
-
-    def get_data(self, name: str) -> Any:
-        if name == "transformer":
-            return self._transformer
-        return super().get_data(name)
 
     @process_slot("table", reset_cb="reset")
     @run_if_any
@@ -81,7 +75,7 @@ class PPCA(PTableModule):
             avs = vs[self._as_array].values if self._as_array else vs.to_array()
             if self.inc_pca is None:
                 self.inc_pca = IncrementalPCA(n_components=self.params.n_components)
-                self._transformer["inc_pca"] = self.inc_pca
+                self.transformer["inc_pca"] = self.inc_pca
             self.inc_pca.partial_fit(avs)
             if self.result is None:
                 self.result = PTableSelectedView(table, PIntSet(indices))
@@ -90,33 +84,6 @@ class PPCA(PTableModule):
                 assert isinstance(table, PTableSelectedView)
                 table.selection |= PIntSet(indices)
             return self._return_run_step(self.next_state(ctx.table), steps_run=steps)
-
-    # def create_dependent_modules_buggy(
-    #     self,
-    #     atol=0.0,
-    #     rtol=0.001,
-    #     trace=False,
-    #     threshold=None,
-    #     resetter=None,
-    #     resetter_slot="result",
-    # ):
-    #     scheduler = self.scheduler()
-    #     with scheduler:
-    #         self.reduced = PPCATransformer(
-    #             scheduler=scheduler,
-    #             atol=atol,
-    #             rtol=rtol,
-    #             trace=trace,
-    #             threshold=threshold,
-    #             group=self.name,
-    #         )
-    #         self.reduced.input.table = self.output.result
-    #         self.reduced.input.transformer = self.output.transformer
-    #         if resetter is not None:
-    #             resetter = resetter(scheduler=scheduler)
-    #             resetter.input.table = self.output.result
-    #             self.reduced.input.resetter = resetter.output[resetter_slot]
-    #         self.reduced.create_dependent_modules(self.output.result)
 
     def create_dependent_modules(
         self,
@@ -147,17 +114,15 @@ class PPCA(PTableModule):
             self.reduced.create_dependent_modules(self.output.result)
 
 
-class PPCATransformer(PTableModule):
-    inputs = [
-        SlotDescriptor("table", type=PTable, required=True),
-        SlotDescriptor("samples", type=PTable, required=True),
-        SlotDescriptor("transformer", type=PDict, required=True),
-        SlotDescriptor("resetter", type=PDict, required=False),
-    ]
-    outputs = [
-        SlotDescriptor("samples", type=PTable, required=False),
-        SlotDescriptor("prev_samples", type=PTable, required=False),
-    ]
+@def_input("table", type=PTable, required=True)
+@def_input("samples", type=PTable, required=True)
+@def_input("transformer", type=PDict, required=True)
+@def_input("resetter", type=PDict, required=False)
+@def_output("result", PTable)
+@def_output("samples", type=PTable, attr_name="_samples", required=False)
+@def_output("prev_samples", type=PTable, attr_name="_prev_samples", required=False)
+class PPCATransformer(Module):
+    """ """
 
     def __init__(
         self,
@@ -178,9 +143,7 @@ class PPCATransformer(PTableModule):
         self._threshold = threshold
         self._resetter_func = resetter_func
         self.inc_pca_wtn: Optional[IncrementalPCA] = None
-        self._samples: Optional[PTable] = None
         self._samples_flag = False
-        self._prev_samples: Optional[PTable] = None
         self._prev_samples_flag = False
         self._as_array: Optional[str] = None
 
@@ -290,13 +253,6 @@ class PPCATransformer(PTableModule):
             self._prev_samples = PTable(
                 self.generate_table_name("ps_ppca"), data=df, create=True
             )
-
-    def get_data(self, name: str) -> Any:
-        if name == "samples":
-            return self._samples
-        if name == "prev_samples":
-            return self._prev_samples
-        return super().get_data(name)
 
     def _make_df(
         self, data: np.ndarray[Any, Any]

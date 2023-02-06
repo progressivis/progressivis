@@ -18,8 +18,8 @@ class TestLinearMap(ProgressiveTest):
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = module.output.result
         aio.run(s.start())
-        res1 = np.matmul(vectors.table.to_array(), transf.table.to_array())
-        res2 = module.table.to_array()
+        res1 = np.matmul(vectors.result.to_array(), transf.result.to_array())
+        res2 = module.result.to_array()
         self.assertTrue(np.allclose(res1, res2, equal_nan=True))
 
     def test_linear_map2(self) -> None:
@@ -32,8 +32,8 @@ class TestLinearMap(ProgressiveTest):
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = module.output.result
         aio.run(s.start())
-        res1 = np.matmul(vectors.table.to_array()[:, 2:5], transf.table.to_array())
-        res2 = module.table.to_array()
+        res1 = np.matmul(vectors.result.to_array()[:, 2:5], transf.result.to_array())
+        res2 = module.result.to_array()
         self.assertTrue(np.allclose(res1, res2, equal_nan=True))
 
     def test_linear_map3(self) -> None:
@@ -51,7 +51,7 @@ class TestLinearMap(ProgressiveTest):
         pr.input[0] = module.output.result
         aio.run(s.start())
         res1 = np.matmul(
-            vectors.table.to_array()[:, 2:5], transf.table.to_array()[:, 3:7]
+            vectors.result.to_array()[:, 2:5], transf.result.to_array()[:, 3:7]
         )
-        res2 = module.table.to_array()
+        res2 = module.result.to_array()
         self.assertTrue(np.allclose(res1, res2, equal_nan=True))

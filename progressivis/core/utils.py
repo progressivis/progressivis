@@ -52,7 +52,6 @@ from typing import (
 if TYPE_CHECKING:
     from progressivis.core.scheduler import Scheduler
     from progressivis.core.module import Module, ReturnRunStep
-    from progressivis.table.module import PTableModule
     from progressivis.table.table_base import BasePTable
     from progressivis.utils import PDict
 
@@ -671,6 +670,7 @@ def s3_get_filepath_or_buffer(
     custom_fs: Any = None,
 ) -> Any:
     from botocore.exceptions import NoCredentialsError  # type: ignore
+
     try:
         # pylint: disable=unused-argument
         fs = custom_fs or s3fs.S3FileSystem(anon=False)
@@ -816,7 +816,7 @@ def force_valid_id_columns_pa(rb: pa.RecordBatch) -> pa.RecordBatch:
 
 
 class Dialog:
-    def __init__(self, module: PTableModule, started: bool = False):
+    def __init__(self, module: Module, started: bool = False):
         self._module = module
         self.bag: Dict[str, Any] = dict()
         self._started: bool = started

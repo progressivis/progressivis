@@ -1,7 +1,7 @@
-from progressivis import Module, Every, ProgressiveError, PTable
+from progressivis import Every, ProgressiveError, PTable
 
 from . import ProgressiveTest
-from progressivis.core.module import ReturnRunStep
+from progressivis.core.module import Module, ReturnRunStep
 
 from typing import Any
 

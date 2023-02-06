@@ -67,7 +67,7 @@ class TestProgressiveLoadCSV(ProgressiveTest):
         sink = Sink(scheduler=s)
         sink.input.inp = module.output.result
         aio.run(s.start())
-        self.assertEqual(len(module.table), n_rows)
+        self.assertEqual(len(module.result), n_rows)
 
     def test_read_csv(self) -> None:
         self._read_csv()
@@ -109,11 +109,11 @@ class TestProgressiveLoadCSV(ProgressiveTest):
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = module.output.anomalies
         aio.run(s.start())
-        self.assertEqual(len(module.table), len(df))
+        self.assertEqual(len(module.result), len(df))
         self.assertTrue(
-            np.array_equal(module.table.to_array(), df.values.astype(dtype))
+            np.array_equal(module.result.to_array(), df.values.astype(dtype))
         )
-        anomalies = module.anomalies()
+        anomalies = module.anomalies
         assert anomalies
         self.assertEqual(anomalies["skipped_cnt"], len(rows))
         self.assertEqual(len(anomalies["invalid_values"]), len(rows) if intruder else 0)
@@ -162,13 +162,13 @@ class TestProgressiveLoadCSV(ProgressiveTest):
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = module.output.anomalies
         aio.run(s.start())
-        self.assertEqual(len(module.table), len(df))
+        self.assertEqual(len(module.result), len(df))
         self.assertTrue(
             np.allclose(
-                module.table.to_array(), df.values.astype(dtype), equal_nan=True
+                module.result.to_array(), df.values.astype(dtype), equal_nan=True
             )
         )
-        anomalies = module.anomalies()
+        anomalies = module.anomalies
         assert anomalies
         self.assertEqual(anomalies["skipped_cnt"], len(rows))
         self.assertEqual(len(anomalies["invalid_values"]), len(rows) if intruder else 0)

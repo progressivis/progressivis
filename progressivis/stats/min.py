@@ -6,10 +6,10 @@ import numpy as np
 
 from ..core.utils import indices_len, fix_loc
 from ..core.pintset import PIntSet
-from ..core.module import ReturnRunStep
-from ..table.module import PTableModule
+from ..core.module import ReturnRunStep, def_input, def_output
+from ..core.module import Module
 from ..table.table import PTable
-from ..core.slot import SlotDescriptor, Slot
+from ..core.slot import Slot
 from ..utils.psdict import PDict
 from ..core.decorators import process_slot, run_if_any
 
@@ -25,9 +25,9 @@ def _min_func(x: Any, y: Any) -> Any:
         return min(x, y)
 
 
-class Min(PTableModule):
-    inputs = [SlotDescriptor("table", type=PTable, required=True)]
-
+@def_input("table", PTable)
+@def_output("result", PDict)
+class Min(Module):
     def __init__(self, **kwds: Any) -> None:
         super().__init__(**kwds)
         self.default_step_size = 10000
@@ -40,7 +40,7 @@ class Min(PTableModule):
 
     def reset(self) -> None:
         if self.result is not None:
-            self.psdict.fill(np.inf)
+            self.result.fill(np.inf)
 
     @process_slot("table", reset_cb="reset")
     @run_if_any
@@ -57,8 +57,8 @@ class Min(PTableModule):
                 self.result = PDict(op)
             else:
 
-                for k, v in self.psdict.items():
-                    self.psdict[k] = _min_func(op[k], v)
+                for k, v in self.result.items():
+                    self.result[k] = _min_func(op[k], v)
             return self._return_run_step(self.next_state(ctx.table), steps)
 
 
@@ -70,9 +70,9 @@ def minimum_val_id(
     return current_val, current_id, False
 
 
-class ScalarMin(PTableModule):
-    inputs = [SlotDescriptor("table", type=PTable, required=True)]
-
+@def_input("table", PTable)
+@def_output("result", PDict)
+class ScalarMin(Module):
     def __init__(self, **kwds: Any) -> None:
         super().__init__(**kwds)
         self.default_step_size = 10000
@@ -86,7 +86,7 @@ class ScalarMin(PTableModule):
 
     def reset(self) -> None:
         if self.result is not None:
-            self.psdict.fill(np.inf)
+            self.result.fill(np.inf)
 
     def reset_all(self, slot: Slot, run_number: int) -> None:
         slot.reset()
@@ -100,7 +100,7 @@ class ScalarMin(PTableModule):
         for col, id in self._sensitive_ids.items():
             if id not in updated_ids:
                 continue
-            if bool(data.loc[id, col] > self.psdict[col]):
+            if bool(data.loc[id, col] > self.result[col]):
                 return True
         return False
 
@@ -142,14 +142,14 @@ class ScalarMin(PTableModule):
             self.result = PDict(op)
         else:
             rich_op = {k: (input_df.loc[i, k], i) for (k, i) in idxop.items()}
-            for k, v in self.psdict.items():
+            for k, v in self.result.items():
                 candidate_val, candidate_id = rich_op[k]
-                current_val = self.psdict[k]
+                current_val = self.result[k]
                 current_id = self._sensitive_ids[k]
                 new_val, new_id, tst = minimum_val_id(
                     candidate_val, candidate_id, current_val, current_id
                 )
                 if tst:
-                    self.psdict[k] = new_val
+                    self.result[k] = new_val
                     self._sensitive_ids[k] = new_id
         return self._return_run_step(self.next_state(slot), steps_run=steps)

@@ -1,8 +1,7 @@
 from __future__ import annotations
 import numpy as np
 import logging
-from ..table.module import PTableModule, ReturnRunStep
-from ..core.slot import SlotDescriptor
+from ..core.module import Module, ReturnRunStep, def_input, def_output
 from . import PTable, PTableSelectedView
 from ..core.pintset import PIntSet
 from typing import Optional, Any, Callable, Tuple
@@ -28,9 +27,9 @@ class Computed:
         )
 
 
-class Repeater(PTableModule):
-    inputs = [SlotDescriptor("table", type=PTable, required=True)]
-
+@def_input("table", PTable)
+@def_output("result", PTable)
+class Repeater(Module):
     def __init__(self, computed: Computed, **kwds: Any) -> None:
         super().__init__(**kwds)
         self._computed = computed.computed

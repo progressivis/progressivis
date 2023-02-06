@@ -4,8 +4,8 @@ from progressivis import Print, ProgressiveError
 from progressivis.io import CSVLoader
 from progressivis.stats import Min, Max, RandomPTable
 from progressivis.datasets import get_dataset
-from progressivis.core import aio, SlotDescriptor, Sink, Scheduler
-from progressivis.core.module import Module, ReturnRunStep
+from progressivis.core import aio, Sink, Scheduler
+from progressivis.core.module import BaseModule, ReturnRunStep, def_input, def_output
 from progressivis.core.dataflow import Dataflow
 from progressivis.vis import MCScatterPlot
 
@@ -14,10 +14,11 @@ from . import ProgressiveTest
 from typing import Any
 
 
-class TestModule(Module):
-    inputs = [SlotDescriptor("a"), SlotDescriptor("b", required=False)]
-    outputs = [SlotDescriptor("c"), SlotDescriptor("d", required=False)]
-
+@def_input("a")
+@def_input("b", required=False)
+@def_output("c")
+@def_output("d", required=False)
+class TestModule(BaseModule):
     def __init__(self, **kwds: Any) -> None:
         super(TestModule, self).__init__(**kwds)
 

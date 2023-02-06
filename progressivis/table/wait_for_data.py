@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-from ..core.module import Module, ReturnRunStep
-from ..core.slot import SlotDescriptor
+from ..core.module import Module, ReturnRunStep, def_input
 
 from typing import Callable, Any, TYPE_CHECKING
 
@@ -10,6 +9,7 @@ if TYPE_CHECKING:
     from .table_base import BasePTable
 
 
+@def_input("table", type=BasePTable, required=True)
 class WaitForData(Module):
     """
     Calls a function when a table has some data and terminate.
@@ -17,10 +17,6 @@ class WaitForData(Module):
     Module useful to create modules according to the actual types and initial values
     of a table.
     """
-
-    inputs = [
-        SlotDescriptor("table", type=BasePTable, required=True),
-    ]
 
     def __init__(
         self, proc: Callable[[Scheduler, BasePTable], None], **kwds: Any

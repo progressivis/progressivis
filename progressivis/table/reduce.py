@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from progressivis import Scheduler, Slot
 from progressivis.table.nary import NAry
-from progressivis.table.module import PTableModule
+from progressivis.core.module import Module
 
 from typing import Type, Any, List
 
@@ -12,13 +12,13 @@ class Reduce(NAry):
 
     @staticmethod
     def expand(
-        binary_module: Type[PTableModule],
+        binary_module: Type[Module],
         left_in: str,
         right_in: str,
         outp: str,
         slots: List[Slot],
-        **binary_module_kwds: Any
-    ) -> PTableModule:
+        **binary_module_kwds: Any,
+    ) -> Module:
         if len(slots) < 2:
             raise ValueError("Reduce needs at least two unputs")
         scheduler = binary_module_kwds.get("scheduler")

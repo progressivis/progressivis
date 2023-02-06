@@ -2,15 +2,15 @@ from __future__ import annotations
 
 from . import ProgressiveTest, skipIf
 from progressivis import Scheduler, Every
-from progressivis.core.module import ReturnRunStep
+from progressivis.core.module import ReturnRunStep, def_input, def_output
 from progressivis.core import aio
 from progressivis.io import CSVLoader
 from progressivis.stats.ppca import PPCA
 from progressivis.datasets import get_dataset
-from progressivis.table.module import PDictModule
+from progressivis.core.module import Module
 from progressivis.table.table import PTable
 from progressivis.utils.psdict import PDict
-from progressivis.core.slot import SlotDescriptor, Slot
+from progressivis.core.slot import Slot
 from sklearn.neighbors import KNeighborsClassifier  # type: ignore
 from sklearn.utils.random import sample_without_replacement  # type: ignore
 
@@ -42,9 +42,9 @@ def _array(tbl: PTable) -> np.ndarray[Any, Any]:
     return tbl["array"].values
 
 
-class MyResetter(PDictModule):
-    inputs = [SlotDescriptor("table", type=PTable, required=True)]
-
+@def_input("table", PTable)
+@def_output("result", PDict)
+class MyResetter(Module):
     def __init__(self, threshold: int, **kwds: Any) -> None:
         super().__init__(**kwds)
         self._threshold = threshold
@@ -106,23 +106,21 @@ class TestPPCA(ProgressiveTest):
         prn.input[0] = ppca.reduced.output.result
         aio.run(s.start())
         pca_ = ppca._transformer["inc_pca"]
-        recovered = pca_.inverse_transform(_array(ppca.reduced.table))
+        recovered = pca_.inverse_transform(_array(ppca.reduced.result))
         if KNN is None:
             print("Init KNN")
             KNN = KNeighborsClassifier(NNEIGHBOURS)
-            arr = _array(data.table)
-            df: pd.DataFrame = pd.read_csv(
-                dataset, usecols=["class"]  # type: ignore
-            )
+            arr = _array(data.result)
+            df: pd.DataFrame = pd.read_csv(dataset, usecols=["class"])  # type: ignore
             LABELS = df.values.reshape((-1,))
             indices_t = sample_without_replacement(
-                n_population=len(data.table),
+                n_population=len(data.result),
                 n_samples=TRAIN_SAMPLE_SIZE,
                 random_state=RANDOM_STATE,
             )
             KNN.fit(arr[indices_t], LABELS[indices_t])
         indices_p = sample_without_replacement(
-            n_population=len(data.table),
+            n_population=len(data.result),
             n_samples=PREDICT_SAMPLE_SIZE,
             random_state=RANDOM_STATE * 2 + 1,
         )

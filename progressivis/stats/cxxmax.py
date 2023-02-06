@@ -1,8 +1,7 @@
 from __future__ import annotations
 
-from progressivis.core.module import ReturnRunStep
-from progressivis.core.slot import SlotDescriptor
-from progressivis.table.module import PTableModule
+from progressivis.core.module import ReturnRunStep, def_input, def_output, def_parameter
+from progressivis.core.module import Module
 from progressivis.table.table import PTable
 
 try:
@@ -19,10 +18,10 @@ from typing import List, Optional, Any
 logger = logging.getLogger(__name__)
 
 
-class Max(PTableModule):
-    parameters = [("history", np.dtype(int), 3)]
-    inputs = [SlotDescriptor("table", type=PTable, required=True)]
-
+@def_input("table", PTable)
+@def_parameter("history", np.dtype(int), 3)
+@def_output("result", PTable)
+class Max(Module):
     def __init__(self, columns: Optional[List[str]] = None, **kwds: Any) -> None:
         super(Max, self).__init__(**kwds)
         self._columns = columns

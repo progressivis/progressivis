@@ -5,9 +5,8 @@ import logging
 import numpy as np
 
 from progressivis.core.module import ReturnRunStep
-from progressivis.table.module import PTableModule
+from progressivis.core.module import Module, def_input, def_output, def_parameter
 from progressivis.table.table import PTable
-from progressivis.core.slot import SlotDescriptor
 
 try:
     from .cxx_sample import Sample as CxxSample  # type: ignore
@@ -19,10 +18,10 @@ from typing import List, Optional, Any
 logger = logging.getLogger(__name__)
 
 
-class Sample(PTableModule):
-    parameters = [("history", np.dtype(int), 3)]
-    inputs = [SlotDescriptor("table", type=PTable, required=True)]
-
+@def_parameter("history", np.dtype(int), 3)
+@def_input("table", PTable)
+@def_output("result", PTable)
+class Sample(Module):
     def __init__(self, columns: Optional[List[str]] = None, **kwds: Any) -> None:
         super().__init__(**kwds)
         self._columns = columns

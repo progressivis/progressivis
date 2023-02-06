@@ -405,7 +405,7 @@ class TestPTable(ProgressiveTest):
         sink = Sink(name="sink", scheduler=self.scheduler_)
         sink.input.inp = module.output.result
         aio.run(self.scheduler_.start(persist=True))
-        t = module.table
+        t = module.result
         self.assertFalse(t is None)
         self.assertEqual(len(t), 30000)
         df = pd.read_csv(

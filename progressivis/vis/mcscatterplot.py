@@ -5,14 +5,14 @@ from collections import defaultdict
 
 import numpy as np
 
-from progressivis.core.module import Module, ReturnRunStep, JSon
-from progressivis.table.nary import NAry
+from progressivis.core.module import Module, ReturnRunStep, JSon, def_input
 from progressivis.stats import MCHistogram2D, Sample
 from progressivis.table.range_query_2d import RangeQuery2d
 from progressivis.utils.errors import ProgressiveError
 from progressivis.core.utils import is_notebook, get_physical_base
 from progressivis.io import DynVar
 from ..table.table_base import BasePTable
+from ..table import PTable
 from progressivis.core import notNone
 from typing import (
     Optional,
@@ -117,7 +117,8 @@ class _DataClass:
             return scatterplot
 
 
-class MCScatterPlot(NAry):
+@def_input("table", PTable, multiple=True)
+class MCScatterPlot(Module):
     "Module visualizing a multiclass scatterplot."
 
     def __init__(
@@ -348,7 +349,7 @@ class MCScatterPlot(NAry):
     def run_step(
         self, run_number: int, step_size: int, howlong: float
     ) -> ReturnRunStep:
-        for name in self.get_input_slot_multiple(self.nary):
+        for name in self.get_input_slot_multiple("table"):
             slot = self.get_input_slot(name)
             # slot.update(run_number)
             if slot.has_buffered():

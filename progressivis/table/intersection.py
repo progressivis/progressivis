@@ -4,10 +4,9 @@ Range Query module.
 """
 from __future__ import annotations
 
-from progressivis.core.module import ReturnRunStep
+from progressivis.core.module import Module, ReturnRunStep, def_input, def_output
 from progressivis.core.utils import indices_len
 from progressivis.core.pintset import PIntSet
-from progressivis.table.nary import NAry
 from progressivis.table.table_base import BasePTable, PTableSelectedView
 
 from typing import Any, List
@@ -17,7 +16,9 @@ def _get_physical_table(t: BasePTable) -> BasePTable:
     return t.base or t
 
 
-class Intersection(NAry):
+@def_input("table", type=BasePTable, multiple=True)
+@def_output("result", PTableSelectedView)
+class Intersection(Module):
     "Intersection Module"
     # parameters = []
 
@@ -39,7 +40,7 @@ class Intersection(NAry):
         ph_table = None
         # assert len(self.inputs) > 0
         reset_ = False
-        for name in self.get_input_slot_multiple():
+        for name in self.get_input_slot_multiple("table"):
             slot = self.get_input_slot(name)
             t = slot.data()
             assert isinstance(t, BasePTable)
@@ -80,13 +81,13 @@ class Intersection(NAry):
         if not self.result:
             self.result = PTableSelectedView(ph_table, PIntSet([]))
         if reset_:
-            self.selected.selection = PIntSet([])
-        self.selected.selection = self.selected.index | to_create_4sure
+            self.result.selection = PIntSet([])
+        self.result.selection = self.result.index | to_create_4sure
         to_create_maybe -= to_create_4sure
         eff_create = to_create_maybe
         for t in tables:
             eff_create &= t.index
-        self.selected.selection = self.selected.index | eff_create
+        self.result.selection = self.result.index | eff_create
         return self._return_run_step(self.state_blocked, steps)
 
     def run_step_seq(
@@ -96,7 +97,7 @@ class Intersection(NAry):
         tables = []
         ph_table = None
         # assert len(self.inputs) > 0
-        for name in self.get_input_slot_multiple():
+        for name in self.get_input_slot_multiple("table"):
             if not name.startswith("table"):
                 continue
             slot = self.get_input_slot(name)
@@ -121,5 +122,10 @@ class Intersection(NAry):
             return self._return_run_step(self.state_blocked, 0)
         if not self.result:
             self.result = PTableSelectedView(ph_table, PIntSet([]))
-        self.selected.selection = PIntSet.intersection(*[t.index for t in tables])
+        self.result.selection = PIntSet.intersection(*[t.index for t in tables])
         return self._return_run_step(self.state_blocked, steps)
+
+    def run_step(
+        self, run_number: int, step_size: int, howlong: float
+    ) -> ReturnRunStep:  # pragma no cover
+        raise NotImplementedError("run_step not defined")

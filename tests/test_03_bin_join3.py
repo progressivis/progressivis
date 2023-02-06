@@ -98,7 +98,7 @@ class TestJoin3(ProgressiveTest):
         aio.run(s.start())
         res = join.trace_stats(max_runs=1)
         print(res)
-        df = join.table
+        df = join.result
         last = df.loc[df.index[-1]]
         assert last is not None
         self.assertTrue(

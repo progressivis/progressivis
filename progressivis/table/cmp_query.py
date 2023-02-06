@@ -5,9 +5,7 @@ import logging
 
 import numpy as np
 
-from ..core.module import ReturnRunStep
-from ..core.slot import SlotDescriptor
-from .module import PTableModule
+from ..core.module import Module, ReturnRunStep, def_input, def_output
 from ..core.pintset import PIntSet
 from .table import PTable
 
@@ -28,12 +26,12 @@ ops = {
 }
 
 
-class CmpQueryLast(PTableModule):
-    inputs = [
-        SlotDescriptor("table", type=PTable, required=True),
-        SlotDescriptor("cmp", type=PTable, required=True),
-    ]
-    outputs = [SlotDescriptor("select", type=PIntSet, required=False)]
+@def_input("table", PTable)
+@def_input("cmp", PTable)
+@def_output("result", PTable, required=False)
+@def_output("select", PIntSet, required=False)
+class CmpQueryLast(Module):
+    """ """
 
     def __init__(self, op: str = "<", combine: str = "and", **kwds: Any) -> None:
         super(CmpQueryLast, self).__init__(**kwds)
@@ -42,14 +40,7 @@ class CmpQueryLast(PTableModule):
         self._op = ops[op]
         self.combine = combine
         self._combine = ops[combine]
-        self._PIntSet: Optional[PIntSet] = None
-
-    def get_data(self, name: str) -> Any:
-        if name == "select":
-            return self._PIntSet
-        if name == "table":
-            self.get_input_slot("table").data()
-        return super(CmpQueryLast, self).get_data(name)
+        self.select: Optional[PIntSet]
 
     def run_step(
         self, run_number: int, step_size: int, howlong: float
@@ -69,12 +60,14 @@ class CmpQueryLast(PTableModule):
             or len(cmp_data) == 0
         ):
             # nothing to do if no filter is specified
-            self._PIntSet = None
+            if self.select is not None:
+                self.select.clear()
             return self._return_run_step(self.state_blocked, steps_run=1)
         if table_slot.deleted.any() or cmp_slot.deleted.any():
             # restart from scatch
             table_slot.reset()
-            self._PIntSet = None
+            if self.select is not None:
+                self.select.clear()
             table_slot.update(run_number)
             cmp_slot.update(run_number)
 
@@ -104,10 +97,10 @@ class CmpQueryLast(PTableModule):
                 else:
                     results = self._combine(results, PIntSet(res))
 
-        if self._PIntSet is None:
-            self._PIntSet = results
+        if self.select is None:
+            self.select = results
         else:
-            self._PIntSet -= PIntSet(indices)
-            self._PIntSet |= results
+            self.select.difference_update(PIntSet(indices))
+            self.select.update(results)
 
         return self._return_run_step(self.next_state(table_slot), steps_run=steps)

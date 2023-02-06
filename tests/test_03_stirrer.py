@@ -25,7 +25,7 @@ class TestStirrer(ProgressiveTest):
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = max_.output.result
         aio.run(s.start())
-        res1 = stirrer.table.max()
+        res1 = stirrer.result.max()
         res2 = max_.result
         self.compare(res1, res2)
 

@@ -2,9 +2,8 @@ from __future__ import annotations
 
 from progressivis.core.module import ReturnRunStep
 from ..core.utils import indices_len
-from ..table.module import PTableModule
+from ..core.module import Module, def_input, def_output
 from ..table.table import PTable
-from ..core.slot import SlotDescriptor
 from ..core.decorators import process_slot, run_if_any
 import pandas as pd
 
@@ -15,9 +14,9 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-class Counter(PTableModule):
-    inputs = [SlotDescriptor("table", type=PTable, required=True)]
-
+@def_input("table", PTable)
+@def_output("result", PTable)
+class Counter(Module):
     def __init__(self, **kwds: Any):
         super(Counter, self).__init__(**kwds)
         self.default_step_size = 10000
@@ -29,7 +28,7 @@ class Counter(PTableModule):
 
     def reset(self) -> None:
         if self.result is not None:
-            self.table.resize(0)
+            self.result.resize(0)
 
     @process_slot("table", reset_cb="reset")
     @run_if_any
@@ -49,7 +48,7 @@ class Counter(PTableModule):
                     self.generate_table_name("counter"), data=data, create=True
                 )
             elif len(self.result) == 0:
-                self.table.append(data)
+                self.result.append(data)
             else:
-                self.table["counter"].loc[0] += steps
+                self.result["counter"].loc[0] += steps
             return self._return_run_step(self.next_state(dfslot), steps_run=steps)

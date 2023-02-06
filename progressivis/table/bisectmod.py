@@ -5,9 +5,7 @@ from progressivis.core.utils import indices_len
 import numpy as np
 
 from . import BasePTable, PTable, PTableSelectedView
-from ..core.module import ReturnRunStep
-from ..core.slot import SlotDescriptor
-from .module import PTableModule
+from ..core.module import Module, ReturnRunStep, def_input, def_output, def_parameter
 from ..core.pintset import PIntSet
 
 # from .mod_impl import ModuleImpl
@@ -91,19 +89,14 @@ class BisectImpl:  # (ModuleImpl):
         self.resume(limit, limit_changed, created, updated, deleted)
 
 
-class Bisect(PTableModule):
+@def_parameter("column", np.dtype(object), "unknown")
+@def_parameter("op", np.dtype(object), ">")
+@def_parameter("limit_key", np.dtype(object), "")
+@def_input("table", PTable, required=True)
+@def_input("limit", PTable, required=False)
+@def_output("result", PTableSelectedView)
+class Bisect(Module):
     """ """
-
-    parameters = [
-        ("column", np.dtype(object), "unknown"),
-        ("op", np.dtype(object), ">"),
-        ("limit_key", np.dtype(object), ""),
-        # ('hist_index', object, None) # to improve ...
-    ]
-    inputs = [
-        SlotDescriptor("table", type=PTable, required=True),
-        SlotDescriptor("limit", type=PTable, required=False),
-    ]
 
     def __init__(self, hist_index: HistogramIndex, **kwds: Any) -> None:
         super(Bisect, self).__init__(**kwds)
@@ -172,5 +165,5 @@ class Bisect(PTableModule):
                 updated=updated,
                 deleted=deleted,
             )
-        self.selected.selection = self._impl.result._values
+        self.result.selection = self._impl.result._values
         return self._return_run_step(self.next_state(input_slot), steps)

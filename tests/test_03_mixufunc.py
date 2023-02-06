@@ -9,32 +9,25 @@ from progressivis import Print
 from progressivis.linalg.mixufunc import MixUfuncABC
 from progressivis.stats import RandomPTable, RandomDict
 from progressivis.table.table import PTable
-
-# from progressivis.core.decorators import *
-from progressivis.core import SlotDescriptor
-
+from progressivis.core.module import def_input, def_output
 from typing import Any, Type
 
 
+@def_input("first", type=PTable)
+@def_input("second", type=PTable)
+@def_output("result", type=PTable, required=False, datashape={"first": ["_1", "_2"]})
 class MixUfuncSample(MixUfuncABC):
-    inputs = [
-        SlotDescriptor("first", type=PTable, required=True),
-        SlotDescriptor("second", type=PTable, required=True),
-    ]
-    outputs = [
-        SlotDescriptor(
-            "result", type=PTable, required=False, datashape={"first": ["_1", "_2"]}
-        )
-    ]
+    """ """
+
     expr = {"_1": (np.add, "first._2", "second._3"), "_2": (np.log, "second._3")}
 
 
+@def_input("first", type=PTable)
+@def_input("second", type=PTable)
+@def_output("result", type=PTable, required=False)
 class MixUfuncSample2(MixUfuncABC):
-    inputs = [
-        SlotDescriptor("first", type=PTable, required=True),
-        SlotDescriptor("second", type=PTable, required=True),
-    ]
-    outputs = [SlotDescriptor("result", type=PTable, required=False)]
+    """ """
+
     expr = {
         "_1:float64": (np.add, "first._2", "second._3"),
         "_2:float64": (np.log, "second._3"),
@@ -49,12 +42,12 @@ def custom_unary(x: float) -> float:
 custom_unary_ufunc: Any = np.frompyfunc(custom_unary, 1, 1)  # type: ignore
 
 
+@def_input("first", type=PTable)
+@def_input("second", type=PTable)
+@def_output("result", type=PTable, required=False)
 class MixUfuncCustomUnary(MixUfuncABC):
-    inputs = [
-        SlotDescriptor("first", type=PTable, required=True),
-        SlotDescriptor("second", type=PTable, required=True),
-    ]
-    outputs = [SlotDescriptor("table", type=PTable, required=False)]
+    """ """
+
     expr = {
         "_1:float64": (np.add, "first._2", "second._3"),
         "_2:float64": (custom_unary_ufunc, "second._3"),
@@ -68,12 +61,12 @@ def custom_binary(x: float, y: float) -> float:
 custom_binary_ufunc: Any = np.frompyfunc(custom_binary, 2, 1)  # type: ignore
 
 
+@def_input("first", type=PTable)
+@def_input("second", type=PTable)
+@def_output("result", type=PTable, required=False)
 class MixUfuncCustomBinary(MixUfuncABC):
-    inputs = [
-        SlotDescriptor("first", type=PTable, required=True),
-        SlotDescriptor("second", type=PTable, required=True),
-    ]
-    outputs = [SlotDescriptor("table", type=PTable, required=False)]
+    """ """
+
     expr = {
         "_1:float64": (custom_binary_ufunc, "first._2", "second._3"),
         "_2:float64": (np.log, "second._3"),
@@ -100,15 +93,15 @@ class TestMixUfunc(ProgressiveTest):
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = module.output.result
         aio.run(s.start())
-        first = random1.table.to_array()
+        first = random1.result.to_array()
         first_2 = first[:, 1]
         _ = first[:, 2]
-        second = random2.table.to_array()
+        second = random2.result.to_array()
         _ = second[:, 1]
         second_3 = second[:, 2]
         ne_1 = ufunc2(first_2, second_3).astype("float64")
         ne_2 = ufunc1(second_3).astype("float64")
-        res = module.table.to_array()
+        res = module.result.to_array()
         self.assertTrue(np.allclose(res[:, 0], ne_1, equal_nan=True))
         self.assertTrue(np.allclose(res[:, 1], ne_2, equal_nan=True))
 
@@ -126,15 +119,15 @@ class TestMixUfunc(ProgressiveTest):
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = module.output.result
         aio.run(s.start())
-        first = list(random1.psdict.values())
+        first = list(random1.result.values())
         first_2 = first[1]
         _ = first[2]
-        second = random2.table.to_array()
+        second = random2.result.to_array()
         _ = second[:, 1]
         second_3 = second[:, 2]
         ne_1 = np.add(first_2, second_3)
         ne_2 = np.log(second_3)
-        res = module.table.to_array()
+        res = module.result.to_array()
         self.assertTrue(np.allclose(res[:, 0], ne_1, equal_nan=True))
         self.assertTrue(np.allclose(res[:, 1], ne_2, equal_nan=True))
 

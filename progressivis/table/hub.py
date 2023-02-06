@@ -1,11 +1,12 @@
 from __future__ import annotations
 
-from ..core.module import ReturnRunStep
-from ..table.nary import NAryDict
+from ..core.module import Module, ReturnRunStep, def_input, def_output
 from ..utils.psdict import PDict
 
 
-class Hub(NAryDict):
+@def_input("table", PDict, multiple=True)
+@def_output("result", PDict)
+class Hub(Module):
     """
     Groups many (dict) outputs in one. Assume there is no clash
     Useful with Switch
@@ -19,7 +20,7 @@ class Hub(NAryDict):
         if self.result is None:
             self.result = PDict()
         steps = 0
-        for name in self.get_input_slot_multiple():
+        for name in self.get_input_slot_multiple("table"):
             slot = self.get_input_slot(name)
             if slot.has_buffered():
                 d = slot.data()

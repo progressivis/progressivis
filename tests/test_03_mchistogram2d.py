@@ -59,7 +59,7 @@ class TestMCHistogram2D(ProgressiveTest):
         pr = Every(proc=self.terse, scheduler=s)
         pr.input[0] = heatmap.output.result
         aio.run(csv.scheduler().start())
-        last = notNone(histogram2d.table.last()).to_dict()
+        last = notNone(histogram2d.result.last()).to_dict()
         h1 = last["array"]
         bounds = [[last["ymin"], last["ymax"]], [last["xmin"], last["xmax"]]]
         df = pd.read_csv(
@@ -91,10 +91,10 @@ class TestMCHistogram2D(ProgressiveTest):
         pr = Every(proc=self.terse, scheduler=s)
         pr.input[0] = heatmap.output.result
         aio.run(s.start())
-        last = notNone(histogram2d.table.last()).to_dict()
+        last = notNone(histogram2d.result.last()).to_dict()
         h1 = last["array"]
         bounds = [[last["ymin"], last["ymax"]], [last["xmin"], last["xmax"]]]
-        t = stirrer.table.loc[:, ["_1", "_2"]]
+        t = stirrer.result.loc[:, ["_1", "_2"]]
         assert t is not None
         v = t.to_array()
         bins = [histogram2d.params.ybins, histogram2d.params.xbins]
@@ -125,10 +125,10 @@ class TestMCHistogram2D(ProgressiveTest):
         pr = Every(proc=self.terse, scheduler=s)
         pr.input[0] = heatmap.output.result
         aio.run(s.start())
-        last = notNone(histogram2d.table.last()).to_dict()
+        last = notNone(histogram2d.result.last()).to_dict()
         h1 = last["array"]
         bounds = [[last["ymin"], last["ymax"]], [last["xmin"], last["xmax"]]]
-        tmp = stirrer.table.loc[:, ["_1", "_2"]]
+        tmp = stirrer.result.loc[:, ["_1", "_2"]]
         assert tmp is not None
         v = tmp.to_array()
         bins = [histogram2d.params.ybins, histogram2d.params.xbins]

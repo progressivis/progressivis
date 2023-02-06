@@ -8,36 +8,27 @@ import logging
 
 import numpy as np
 
-from ..core.module import ReturnRunStep
+from ..core.module import Module, ReturnRunStep, def_input, def_output, def_parameter
 from ..core.utils import indices_len, fix_loc
-from ..core.slot import SlotDescriptor
-from ..table.module import PTableModule
 from ..table.table import PTable
 from ..core.decorators import process_slot, run_if_any
 
-from typing import Optional, Any
+from typing import Any
 
 
 logger = logging.getLogger(__name__)
 
 
-class IdxMin(PTableModule):
-    parameters = [("history", np.dtype(int), 3)]
-    inputs = [SlotDescriptor("table", type=PTable, required=True)]
-    outputs = [SlotDescriptor("min", type=PTable, required=False)]
+@def_parameter("history", np.dtype(int), 3)
+@def_input("table", type=PTable)
+@def_output("min", PTable, attr_name="_min", required=False)
+@def_output("result", PTable)
+class IdxMin(Module):
+    """ """
 
     def __init__(self, **kwds: Any) -> None:
         super(IdxMin, self).__init__(**kwds)
-        self._min: Optional[PTable] = None
         self.default_step_size = 10000
-
-    def min(self) -> Optional[PTable]:
-        return self._min
-
-    def get_data(self, name: str) -> Any:
-        if name == "min":
-            return self.min()
-        return super(IdxMin, self).get_data(name)
 
     def is_ready(self) -> bool:
         slot = self.get_input_slot("table")
@@ -47,7 +38,7 @@ class IdxMin(PTableModule):
 
     def reset(self) -> None:
         if self.result is not None:
-            self.table.resize(0)
+            self.result.resize(0)
         if self._min is not None:
             self._min.resize(0)
 
@@ -84,10 +75,10 @@ class IdxMin(PTableModule):
                         create=True,
                     )
                 self._min.append(min_, indices=[run_number])
-                self.table.append(op, indices=[run_number])
+                self.result.append(op, indices=[run_number])
             else:
                 prev_min = self._min.last()
-                prev_idx = self.table.last()
+                prev_idx = self.result.last()
                 assert prev_min is not None and prev_idx is not None
                 min_ = OrderedDict(prev_min.items())
                 for col, ix in op.items():
@@ -97,14 +88,14 @@ class IdxMin(PTableModule):
                     elif np.isnan(min_[col]) or val < min_[col]:
                         op[col] = prev_idx[col]
                         min_[col] = val
-                self.table.append(op, indices=[run_number])
+                self.result.append(op, indices=[run_number])
                 self._min.append(min_, indices=[run_number])
-                if len(self.table) > self.params.history:
-                    data = self.table.loc[self.table.index[-self.params.history :]]
+                if len(self.result) > self.params.history:
+                    data = self.result.loc[self.result.index[-self.params.history :]]
                     assert data is not None
                     row = data.to_dict(orient="list")
-                    self.table.resize(0)
-                    self.table.append(row)
+                    self.result.resize(0)
+                    self.result.append(row)
 
                     data = self._min.loc[self._min.index[-self.params.history :]]
                     assert data is not None

@@ -8,9 +8,7 @@ import logging
 import numbers
 import numpy as np
 
-from progressivis.core.module import JSon
-from progressivis.table.nary import NAry
-from progressivis.core.slot import SlotDescriptor
+from progressivis.core.module import Module, ReturnRunStep, JSon, def_input, def_output, def_parameter
 from progressivis.stats import Histogram1D
 from progressivis.table.table_base import BasePTable
 
@@ -19,17 +17,14 @@ from typing import cast, Any, Dict, List, Optional
 logger = logging.getLogger(__name__)
 
 
-class Histograms(NAry):
+@def_parameter("bins", np.dtype(int), 128)
+@def_parameter("delta", np.dtype(float), -5)
+@def_input("min", BasePTable)
+@def_input("max", BasePTable)
+@def_output("min", BasePTable, required=False)
+@def_output("max", BasePTable, required=False)
+class Histograms(Module):
     "Visualize a table with multiple histograms"
-    parameters = [("bins", np.dtype(int), 128), ("delta", np.dtype(float), -5)]  # 5%
-    inputs = [
-        SlotDescriptor("min", type=BasePTable, required=True),
-        SlotDescriptor("max", type=BasePTable, required=True),
-    ]
-    outputs = [
-        SlotDescriptor("min", type=BasePTable, required=False),
-        SlotDescriptor("max", type=BasePTable, required=False),
-    ]
 
     def __init__(self, columns: Optional[List[str]] = None, **kwds: Any) -> None:
         super(Histograms, self).__init__(**kwds)
@@ -113,3 +108,8 @@ class Histograms(NAry):
             histo_json[column] = value.get_histogram()
         json["histograms"] = histo_json
         return json
+
+    def run_step(
+        self, run_number: int, step_size: int, howlong: float
+    ) -> ReturnRunStep:  # pragma no cover
+        raise NotImplementedError("run_step not defined")

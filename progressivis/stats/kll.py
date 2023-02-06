@@ -1,10 +1,9 @@
 from __future__ import annotations
 
 from ..core.utils import indices_len, fix_loc
-from ..table.module import PDictModule
 from ..table.table import PTable
-from ..core.slot import SlotDescriptor
 from ..utils.psdict import PDict
+from ..core.module import Module, def_input, def_output, def_parameter
 from ..core.decorators import process_slot, run_if_any
 from datasketches import kll_floats_sketch
 from ..core.utils import integer_types
@@ -17,15 +16,15 @@ from typing import Any, TYPE_CHECKING
 logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
-    from ..core.module import Parameters, ReturnRunStep
+    from ..core.module import ReturnRunStep
 
 
-class KLLSketch(PDictModule):
-    parameters: Parameters = [
-        ("binning", np.dtype(object), []),
-        ("quantiles", np.dtype(object), []),
-    ]
-    inputs = [SlotDescriptor("table", type=PTable, required=True)]
+@def_parameter("binning", np.dtype(object), [])
+@def_parameter("quantiles", np.dtype(object), [])
+@def_input("table", type=PTable)
+@def_output("result", PDict)
+class KLLSketch(Module):
+    """ """
 
     def __init__(self, column: str, k: int = 200, **kwds: Any) -> None:
         super().__init__(**kwds)

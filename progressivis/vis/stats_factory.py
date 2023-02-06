@@ -13,11 +13,10 @@ from ..stats import (
     Distinct,
     Corr,
 )
-from ..core.module import GroupContext
-from ..table.module import PTableModule
+from ..core.module import GroupContext, def_input, def_output
+from ..core.module import Module
 from ..table.table import PTable
 from ..table.pattern import Pattern
-from ..core.slot import SlotDescriptor
 from ..core.decorators import process_slot, run_if_any
 from ..table.dshape import dshape_fields
 from ..table.range_query import RangeQuery
@@ -34,6 +33,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
+@def_output("result", PTable)
 class Histogram1dPattern(Pattern):
     def __init__(self, column: str, factory: StatsFactory, **kwds: Any) -> None:
         """ """
@@ -81,6 +81,7 @@ class Histogram1dPattern(Pattern):
             sink.input.inp = self.histogram1d.output.result
 
 
+@def_output("result", PTable)
 class Histogram2dPattern(Pattern):
     def __init__(
         self, x_column: str, y_column: str, factory: StatsFactory, **kwds: Any
@@ -115,14 +116,12 @@ class Histogram2dPattern(Pattern):
             sink.input.inp = self.histogram2d.output.result
 
 
-class DataShape(PTableModule):
+@def_input("table", PTable)
+@def_output("result", PDict)
+class DataShape(Module):
     """
     Adds statistics on input data
     """
-
-    inputs = [
-        SlotDescriptor("table", type=PTable, required=True),
-    ]
 
     def __init__(self, **kwds: Any) -> None:
         """ """
@@ -231,7 +230,7 @@ def _add_barplot_col(col: str, factory: StatsFactory) -> Histogram1DCategorical:
         return m
 
 
-def _add_hist_col(col: str, factory: StatsFactory) -> PTableModule:
+def _add_hist_col(col: str, factory: StatsFactory) -> Module:
     assert factory.types
     col_type = factory.types[col]
     if col_type == "string":
@@ -265,18 +264,16 @@ def _h2d_func(cx: str, cy: str, factory: StatsFactory) -> Histogram2dPattern:
         return m
 
 
-class StatsFactory(PTableModule):
+@def_input("table", PTable)
+@def_input("selection", PDict)
+@def_output("result", PTable)
+class StatsFactory(Module):
     """
     Adds statistics on input data
     """
 
-    inputs = [
-        SlotDescriptor("table", type=PTable, required=True),
-        SlotDescriptor("selection", type=PDict, required=True),
-    ]
-
     def __init__(
-        self, input_module: PTableModule, input_slot: str = "result", **kwds: Any
+        self, input_module: Module, input_slot: str = "result", **kwds: Any
     ) -> None:
         """ """
         super().__init__(**kwds)
@@ -286,7 +283,7 @@ class StatsFactory(PTableModule):
         self._h2d_matrix: Optional[pd.DataFrame] = None
         self.types: Optional[Dict[str, str]] = None
         self._multi_col_funcs = set(["corr"])
-        self._multi_col_modules: Dict[str, Optional[PTableModule]] = {}
+        self._multi_col_modules: Dict[str, Optional[Module]] = {}
         self.func_dict: Dict[str, Callable] = dict(
             hide=_hide_func,
             max=_add_max_col,
@@ -386,9 +383,7 @@ class StatsFactory(PTableModule):
                             self._h2d_matrix.loc[cx, cy] = _h2d_func(cx, cy, self)
                     else:
                         if self._h2d_matrix.loc[cx, cy]:
-                            self._to_delete.append(
-                                self._h2d_matrix.loc[cx, cy].name
-                            )
+                            self._to_delete.append(self._h2d_matrix.loc[cx, cy].name)
                             self._h2d_matrix.loc[cx, cy] = 0
                         steps += 1
             if self._to_delete:

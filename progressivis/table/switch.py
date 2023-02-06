@@ -3,11 +3,9 @@ from __future__ import annotations
 import logging
 
 from ..core.pintset import PIntSet
-from ..core.module import ReturnRunStep
+from ..core.module import Module, ReturnRunStep, def_input, def_output
 from ..core.utils import indices_len
-from ..core.slot import SlotDescriptor
 from ..table.table import PTable
-from ..table.module import PTableModule
 from ..table import PTableSelectedView
 
 from typing import Callable, Optional, Any
@@ -16,15 +14,13 @@ from typing import Callable, Optional, Any
 logger = logging.getLogger(__name__)
 
 
-class Switch(PTableModule):
+@def_input("table", PTable)
+@def_output("result", PTableSelectedView)
+@def_output("result_else", PTableSelectedView)
+class Switch(Module):
     """
     Select the output (result or result_else) ar runtime
     """
-
-    # parameters = []
-
-    inputs = [SlotDescriptor("table", type=PTable, required=True)]
-    outputs = [SlotDescriptor("result_else", type=PTable, required=False)]
 
     def __init__(self, condition: Callable[..., Optional[bool]], **kwds: Any) -> None:
         """
@@ -36,7 +32,8 @@ class Switch(PTableModule):
         assert callable(condition)
         super().__init__(**kwds)
         self._condition = condition
-        self.result_else: Optional[PTableSelectedView] = None
+        self.result: Optional[PTableSelectedView]
+        self.result_else: Optional[PTableSelectedView]
         self._output: Optional[PTableSelectedView] = None
 
     def reset(self) -> None:
@@ -44,11 +41,6 @@ class Switch(PTableModule):
             self.selected.selection = PIntSet()
         if self.result_else is not None:
             self.result_else.selection = PIntSet()
-
-    def get_data(self, name: str) -> Any:
-        if name == "result_else":
-            return self.result_else
-        return super().get_data(name)
 
     def run_step(
         self, run_number: int, step_size: int, howlong: float

@@ -25,7 +25,7 @@ class TestBinJoin(ProgressiveTest):
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = bj.output[0]
         aio.run(s.start())
-        res1 = random.table.min()
-        res2 = notNone(bj.table.last()).to_dict()
+        res1 = random.result.min()
+        res2 = notNone(bj.result.last()).to_dict()
         self.assertAlmostEqual(res1["_1"], res2["_1"])
         self.assertAlmostEqual(res1["_2"], res2["_2"])

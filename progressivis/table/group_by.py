@@ -1,8 +1,7 @@
 from __future__ import annotations
 import numpy as np
 import logging
-from ..table.module import PTableModule, ReturnRunStep
-from ..core.slot import SlotDescriptor
+from ..core.module import Module, ReturnRunStep, def_input, def_output
 from . import PTable, PTableSelectedView
 from ..core.pintset import PIntSet
 from collections import defaultdict
@@ -11,6 +10,7 @@ import types
 from collections import abc
 from typing import Optional, List, Union, Any, Callable, Dict, Sequence
 from abc import ABCMeta, abstractproperty
+
 logger = logging.getLogger(__name__)
 
 UTIME = ["year", "month", "day", "hour", "minute", "second"]
@@ -114,12 +114,14 @@ class SubPColumn:
         return self._idx
 
 
-class GroupBy(PTableModule):
-    inputs = [SlotDescriptor("table", type=PTable, required=True)]
-
+@def_input("table", PTable, required=False)
+@def_output("result", PTableSelectedView)
+class GroupBy(Module):
     def __init__(
-            self, by: Union[str, List[str], Callable, SubPColumn],
-            keepdims: bool = False, **kwds: Any
+        self,
+        by: Union[str, List[str], Callable, SubPColumn],
+        keepdims: bool = False,
+        **kwds: Any,
     ) -> None:
         super().__init__(**kwds)
         self._raw_by = by
@@ -168,7 +170,7 @@ class GroupBy(PTableModule):
             mask_[val] = 1
             for i in indices:
                 dt_vect = self._input_table.loc[i, col]
-                self._index[tuple(dt_vect*mask_)].add(i)
+                self._index[tuple(dt_vect * mask_)].add(i)
         else:
             for i in indices:
                 dt_vect = self._input_table.loc[i, col]
@@ -202,14 +204,20 @@ class GroupBy(PTableModule):
                 elif len(by_shape) == 2:
                     self.by = SimpleSC(self._raw_by, list(range(by_shape[1])))
                 else:
-                    raise ValueError(f"Group by not allowed for the {by_shape} shaped column {self._raw_by}")
+                    raise ValueError(
+                        f"Group by not allowed for the {by_shape} shaped column {self._raw_by}"
+                    )
             elif isinstance(self._raw_by, list):
                 for c in self._raw_by:
                     if not isinstance(c, str):
-                        raise ValueError("Multiple group by requires plain typed columns")
+                        raise ValueError(
+                            "Multiple group by requires plain typed columns"
+                        )
                     by_shape = input_table._column(c).shape
                     if len(by_shape) != 1:
-                        raise ValueError("Multiple group by requires plain typed columns")
+                        raise ValueError(
+                            "Multiple group by requires plain typed columns"
+                        )
                 self.by = self._raw_by
             else:
                 self.by = self._raw_by
@@ -222,12 +230,12 @@ class GroupBy(PTableModule):
             steps = 1
             if deleted:
                 self.process_deleted(deleted)
-                self.selected.selection -= deleted
+                self.result.selection -= deleted
         created: Optional[PIntSet] = None
         if input_slot.created.any():
             created = input_slot.created.next(length=step_size, as_slice=False)
             steps += len(created)
-            self.selected.selection |= created
+            self.result.selection |= created
             self.process_created(self.by, created)
         updated: Optional[PIntSet] = None
         if input_slot.updated.any():

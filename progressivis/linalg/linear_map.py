@@ -2,23 +2,22 @@ from __future__ import annotations
 
 import numpy as np
 
-from ..core.module import ReturnRunStep
+from ..core.module import ReturnRunStep, def_input, def_output
 from ..core.utils import indices_len, fix_loc, filter_cols
-from ..table.module import PTableModule
+from ..core.module import Module
 from ..table.table import PTable
 from ..table.dshape import dshape_projection
 from ..core.decorators import process_slot, run_if_any
-from .. import SlotDescriptor
 
 
 from typing import List, Optional, Any
 
 
-class LinearMap(PTableModule):
-    inputs = [
-        SlotDescriptor("vectors", type=PTable, required=True),
-        SlotDescriptor("transformation", type=PTable, required=True),
-    ]
+@def_input("vectors", type=PTable)
+@def_input("transformation", type=PTable)
+@def_output("result", PTable)
+class LinearMap(Module):
+    """ """
 
     def __init__(self, transf_columns: Optional[List[str]] = None, **kwds: Any) -> None:
         super().__init__(**kwds)

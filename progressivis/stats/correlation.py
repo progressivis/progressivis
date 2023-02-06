@@ -4,31 +4,30 @@ from itertools import product
 
 import pandas as pd
 
-from ..core.module import ReturnRunStep
+from ..core.module import ReturnRunStep, def_input, def_output
 from ..core.utils import indices_len, fix_loc
-from ..core.slot import SlotDescriptor
 from ..core.decorators import process_slot, run_if_any
 from ..table.table_base import BasePTable
 from ..table.table import PTable
-from ..table.module import PDictModule
+from ..core.module import Module
 from ..utils.psdict import PDict
 from .utils import OnlineVariance, OnlineCovariance
 
 from typing import Any, Union, Literal, Dict, Optional, List
 
 
-class Corr(PDictModule):
+@def_input("table", PTable)
+@def_output("result", PDict)
+class Corr(Module):
     """
     Compute the covariance matrix (a dict, actually) of the columns of an input table.
     """
-
-    inputs = [SlotDescriptor("table", type=PTable, required=True)]
 
     def __init__(
         self,
         mode: Union[Literal["Pearson"], Literal["CovarianceOnly"]] = "Pearson",
         ignore_string_cols: bool = False,
-        **kwds: Any
+        **kwds: Any,
     ) -> None:
         assert mode in ("Pearson", "CovarianceOnly")
         super().__init__(**kwds)

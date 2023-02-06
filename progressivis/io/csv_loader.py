@@ -6,9 +6,9 @@ import pandas as pd
 
 from progressivis.utils.errors import ProgressiveError, ProgressiveStopIteration
 from progressivis.utils.inspect import filter_kwds, extract_params_docstring
-from progressivis.table.module import PModule
+from progressivis.core.module import Module
 from progressivis.table.table import PTable
-from ..core.module import input_slot, output_slot
+from ..core.module import def_input, def_output
 from progressivis.table.dshape import (
     dshape_from_dataframe,
     array_dshape,
@@ -37,14 +37,12 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-@input_slot("filenames", PTable, required=False)
-@output_slot("result", PTable)
-class CSVLoader(PModule):
+@def_input("filenames", PTable, required=False)
+@def_output("result", PTable)
+class CSVLoader(Module):
     """
     Warning : this module do not wait for "filenames"
     """
-
-    # inputs = [SlotDescriptor("filenames", type=PTable, required=False)]
 
     def __init__(
         self,
@@ -106,7 +104,6 @@ class CSVLoader(PModule):
             self._recovery = False
         if not self._recovery:
             self.trunc_recovery_tables()
-        self.result: Optional[PTable]
 
     def recovery_tables_exist(self) -> bool:
         try:
@@ -415,7 +412,9 @@ class CSVLoader(PModule):
             ):
                 table = self.result
                 snapshot = self.parser.get_snapshot(
-                    run_number=run_number, table_name=table.name, last_id=table.last_id,
+                    run_number=run_number,
+                    table_name=table.name,
+                    last_id=table.last_id,
                 )
                 self._recovery_table = PTable(
                     name=self._recovery_table_name,
@@ -425,7 +424,10 @@ class CSVLoader(PModule):
                 self._recovery_table_inv = PTable(
                     name=self._recovery_table_inv_name,
                     data=pd.DataFrame(
-                        dict(table_name=table.name, csv_input=self.filepath_or_buffer,),
+                        dict(
+                            table_name=table.name,
+                            csv_input=self.filepath_or_buffer,
+                        ),
                         index=[0],
                     ),
                     create=True,
@@ -434,7 +436,9 @@ class CSVLoader(PModule):
             elif self.parser.is_flushed() and needs_save and self._save_context:
                 assert table is not None
                 snapshot = self.parser.get_snapshot(
-                    run_number=run_number, last_id=table.last_id, table_name=table.name,
+                    run_number=run_number,
+                    last_id=table.last_id,
+                    table_name=table.name,
                 )
                 assert self._recovery_table
                 self._recovery_table.add(snapshot)

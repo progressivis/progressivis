@@ -4,7 +4,7 @@ import numpy as np
 
 from ..core.module import ReturnRunStep
 from ..core.utils import fix_loc
-from ..table.module import PTableModule
+from ..core.module import Module
 from ..table.table_base import BasePTable
 from ..table.table import PTable
 
@@ -43,7 +43,7 @@ def get_ufunc_args(
     return col_expr[0], (local_env[col_expr[1]], local_env[col_expr[2]])
 
 
-class MixUfuncABC(PTableModule):
+class MixUfuncABC(Module):
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
         self.expr: Dict[str, Any]

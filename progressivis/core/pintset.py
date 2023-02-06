@@ -183,6 +183,10 @@ class PIntSet(Iterable[int]):
     def symmetric_difference_update(self, other: PIntSet) -> None:
         self.bm.symmetric_difference_update(other.bm)
 
+    def difference_update(self, *others: PIntSet) -> None:
+        bms = [elt.bm for elt in others]
+        self.bm.difference_update(*bms)
+
     def contains_range(self, start: int, end: int) -> bool:
         return self.bm.contains_range(start, end)
 

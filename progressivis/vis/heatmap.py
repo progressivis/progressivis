@@ -12,10 +12,16 @@ import numpy as np
 import scipy as sp  # type: ignore
 from PIL import Image
 
-from progressivis.core.module import ReturnRunStep, JSon
-from progressivis.core import SlotDescriptor, notNone, indices_len
+from progressivis.core.module import (
+    ReturnRunStep,
+    JSon,
+    def_input,
+    def_output,
+    def_parameter,
+)
+from progressivis.core import notNone, indices_len
 from progressivis.table import PTable
-from progressivis.table.module import PTableModule
+from progressivis.core.module import Module
 from progressivis.stats.histogram2d import Histogram2D
 
 from typing import cast, Optional, Any
@@ -24,17 +30,18 @@ from typing import cast, Optional, Any
 logger = logging.getLogger(__name__)
 
 
-class Heatmap(PTableModule):
-    "Heatmap module"
-    parameters = [
-        ("cmax", np.dtype(float), np.nan),
-        ("cmin", np.dtype(float), np.nan),
-        ("high", np.dtype(int), 65536),
-        ("low", np.dtype(int), 0),
-        ("filename", np.dtype(object), None),
-        ("history", np.dtype(int), 3),
-    ]
-    inputs = [SlotDescriptor("array", type=PTable)]
+@def_parameter("cmax", np.dtype(float), np.nan)
+@def_parameter("cmin", np.dtype(float), np.nan)
+@def_parameter("high", np.dtype(int), 65536)
+@def_parameter("low", np.dtype(int), 0)
+@def_parameter("filename", np.dtype(object), None)
+@def_parameter("history", np.dtype(int), 3)
+@def_input("array", PTable)
+@def_output("result", PTable)
+class Heatmap(Module):
+    """
+    Heatmap module
+    """
 
     # schema = [('image', np.dtype(object), None),
     #           ('filename', np.dtype(object), None),
@@ -122,7 +129,7 @@ class Heatmap(PTableModule):
             res = str(base64.b64encode(buffered.getvalue()), "ascii")
             filename = "data:image/png;base64," + res
 
-        table = self.table
+        table = self.result
         last = table.last()
         if last is None or last["time"] != run_number:
             values = {"filename": filename, "time": run_number}
@@ -158,14 +165,14 @@ class Heatmap(PTableModule):
                     "xmax": row["xmax"],
                     "ymax": row["ymax"],
                 }
-        df = self.table
+        df = self.result
         if df is not None and self._last_update != 0:
             json["image"] = notNone(df.last())["filename"]
         return json
 
     def get_image(self, run_number: Optional[int] = None) -> Optional[str]:
         filename: Optional[str]
-        table = self.table
+        table = self.result
         if table is None or len(table) == 0:
             return None
         last = notNone(table.last())

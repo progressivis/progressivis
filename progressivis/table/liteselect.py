@@ -3,9 +3,7 @@ from __future__ import annotations
 import logging
 
 from ..core.utils import indices_len
-from ..core.slot import SlotDescriptor
-from ..core.module import ReturnRunStep
-from .module import PTableModule
+from ..core.module import Module, ReturnRunStep, def_input, def_output
 from .table import PTable
 from ..core.pintset import PIntSet
 from . import PTableSelectedView
@@ -16,12 +14,10 @@ from typing import Any
 logger = logging.getLogger(__name__)
 
 
-class LiteSelect(PTableModule):
-    inputs = [
-        SlotDescriptor("table", type=PTable, required=True),
-        SlotDescriptor("select", type=PIntSet, required=True),
-    ]
-
+@def_input("table", PTable)
+@def_input("select", PIntSet)
+@def_output("result", PTableSelectedView)
+class LiteSelect(Module):
     def __init__(self, **kwds: Any) -> None:
         super(LiteSelect, self).__init__(**kwds)
         self.default_step_size = 1000

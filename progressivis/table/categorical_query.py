@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 # import logging
-from ..table.module import PTableModule, ReturnRunStep
-from ..core.slot import SlotDescriptor, Slot
+from ..core.module import Module, ReturnRunStep, def_input, def_output
+from ..core.slot import Slot
 from . import PTable, PTableSelectedView
 from ..core.pintset import PIntSet
 from ..core.decorators import process_slot, run_if_any
@@ -11,11 +11,11 @@ from ..utils.psdict import PDict
 from typing import cast, Any, List
 
 
-class CategoricalQuery(PTableModule):
-    inputs = [
-        SlotDescriptor("table", type=PTable, required=True),
-        SlotDescriptor("choice", type=PDict, required=True),
-    ]
+@def_input("table", PTable)
+@def_input("choice", PDict)
+@def_output("result", PTableSelectedView)
+class CategoricalQuery(Module):
+    """ """
 
     def __init__(self, column: str, **kwds: Any) -> None:
         super().__init__(**kwds)
@@ -27,7 +27,9 @@ class CategoricalQuery(PTableModule):
             self.table.resize(0)
 
     def create_dependent_modules(
-        self, input_module: PTableModule, input_slot: str = "result",
+        self,
+        input_module: Module,
+        input_slot: str = "result",
     ):
         s = self.scheduler()
         grby = GroupBy(by=self._column, scheduler=s)
@@ -67,6 +69,6 @@ class CategoricalQuery(PTableModule):
                 if grp not in self._only:
                     continue
                 grp_ids = ids & indices if indices else ids
-                self.selected.selection |= grp_ids
+                self.result.selection |= grp_ids
                 # self.update_row(grp, grp_ids, input_table)
         return self._return_run_step(self.state_ready, steps_run=steps)

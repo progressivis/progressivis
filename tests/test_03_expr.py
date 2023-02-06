@@ -33,7 +33,7 @@ class TestExpr(ProgressiveTest):
         super(TestExpr, self).setUp()
         Scheduler.default = self.scheduler()
 
-    def te_st_load_csv(self) -> None:
+    def test_load_csv(self) -> None:
         """
         Connecting modules via function calls
         """

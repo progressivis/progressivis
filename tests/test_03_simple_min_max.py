@@ -7,9 +7,9 @@ from . import ProgressiveTest
 from progressivis.core import aio
 from progressivis import Print
 from progressivis.stats import Min, RandomPTable
-from progressivis.table.module import PDictModule
+from progressivis.core.module import Module
+from progressivis.core.module import def_input, def_output
 from progressivis.table.table import PTable
-from progressivis.core.slot import SlotDescriptor
 from progressivis.core.decorators import process_slot, run_if_any
 from progressivis.core.utils import indices_len, fix_loc
 from progressivis.utils.psdict import PDict
@@ -20,12 +20,12 @@ if TYPE_CHECKING:
     from progressivis.core.module import ReturnRunStep
 
 
-class Max(PDictModule):
+@def_input("table", PTable)
+@def_output("result", PDict)
+class Max(Module):
     """
     Simplified Max, adapted for documentation
     """
-
-    inputs = [SlotDescriptor("table", type=PTable, required=True)]
 
     def __init__(self, **kwds: Any) -> None:
         super().__init__(**kwds)
@@ -63,12 +63,12 @@ class Max(PDictModule):
         return self._return_run_step(self.next_state(slot), steps_run=steps)
 
 
-class MaxDec(PDictModule):
+@def_input("table", PTable)
+@def_output("result", PDict)
+class MaxDec(Module):
     """
     Simplified Max with decorated run_step(), adapted for documentation
     """
-
-    inputs = [SlotDescriptor("table", type=PTable, required=True)]
 
     def __init__(self, **kwds: Any) -> None:
         super().__init__(**kwds)
@@ -112,7 +112,7 @@ class TestMinMax(ProgressiveTest):
         pr.input[0] = min_.output.result
         aio.run(s.start())
         # s.join()
-        res1 = random.table.min()
+        res1 = random.result.min()
         res2 = min_.result
         self.compare(res1, res2)
 
@@ -132,7 +132,7 @@ class TestMinMax(ProgressiveTest):
         pr.input[0] = max_.output.result
         aio.run(s.start())
         # s.join()
-        res1 = random.table.max()
+        res1 = random.result.max()
         res2 = max_.result
         self.compare(res1, res2)
 

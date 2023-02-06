@@ -11,10 +11,14 @@ import logging
 
 import numpy as np
 from progressivis.core.pintset import PIntSet
-from progressivis.core.slot import SlotDescriptor
 from progressivis.core.utils import slice_to_arange, fix_loc
-from progressivis.core.module import ReturnRunStep, Module
-from .module import PTableModule
+from progressivis.core.module import (
+    Module,
+    ReturnRunStep,
+    def_input,
+    def_output,
+    def_parameter,
+)
 from . import PTable
 from ..core.utils import indices_len
 from . import PTableSelectedView
@@ -369,20 +373,16 @@ class _HistogramIndexImpl(object):
         return None
 
 
-class HistogramIndex(PTableModule):
+@def_parameter("bins", np.dtype(int), 126)  # actually 128 with "-inf" and "inf"
+@def_parameter("init_threshold", np.dtype(int), 1)
+@def_input("table", PTable)
+@def_output("result", PTableSelectedView)
+@def_output("min_out", PTable, required=False)
+@def_output("max_out", PTable, required=False)
+class HistogramIndex(Module):
     """
     Compute and maintain an histogram index
     """
-
-    parameters = [
-        ("bins", np.dtype(int), 126),  # actually 128 with "-inf" and "inf"
-        ("init_threshold", np.dtype(int), 1),
-    ]
-    inputs = [SlotDescriptor("table", type=PTable, required=True)]
-    outputs = [
-        SlotDescriptor("min_out", type=PTable, required=False),
-        SlotDescriptor("max_out", type=PTable, required=False),
-    ]
 
     def __init__(self, column: str, **kwds: Any) -> None:
         super(HistogramIndex, self).__init__(

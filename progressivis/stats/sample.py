@@ -10,12 +10,16 @@ from __future__ import annotations
 import logging
 
 import numpy as np
-
-from progressivis.core.module import ReturnRunStep
-from progressivis import SlotDescriptor
+from progressivis.core.slot import SlotDescriptor
+from progressivis.core.module import (
+    Module,
+    ReturnRunStep,
+    def_input,
+    def_output,
+    def_parameter,
+)
 from ..core.pintset import PIntSet
 from ..table import PTable
-from ..table.module import PTableModule
 from ..core.utils import indices_len
 from ..core.decorators import process_slot, run_if_any
 from ..table import PTableSelectedView
@@ -29,10 +33,14 @@ def has_len(d: object) -> bool:
     return hasattr(d, "__len__")
 
 
-class Sample(PTableModule):
-    parameters = [("samples", np.dtype(int), 50)]
-    inputs = [SlotDescriptor("table", type=PTable)]
-    outputs = [SlotDescriptor("select", type=PIntSet, required=False)]
+@def_parameter("samples", np.dtype(int), 50)
+@def_input("table", type=PTable)
+@def_output("result", type=PTableSelectedView)
+@def_output(
+    "select", type=PIntSet, attr_name="pintset", custom_attr=True, required=False
+)
+class Sample(Module):
+    """ """
 
     def __init__(self, required: str = "result", **kwds: Any) -> None:
         assert required in ("result", "select")
@@ -48,30 +56,29 @@ class Sample(PTableModule):
             self.generate_table_name("sample"), dshape="{select: int64}", create=True
         )
         self._size = 0  # holds the size consumed from the input table so far
-        self._PIntSet: Optional[PIntSet] = None
-        self.result: Optional[PTableSelectedView] = None
+        self.pintset: Optional[PIntSet] = None
 
     def reset(self) -> None:
         self._tmp_table.resize(0)
         self._size = 0
-        self._PIntSet = None
+        self.pintset = None
         slot = self.get_input_slot("table")
         if slot is not None:
             slot.reset()
 
     def get_data(self, name: str) -> Any:
         if name == "select":
-            return self.get_PIntSet()
+            return self.getpintset()
         if self.result is not None:
-            self.result.selection = self.get_PIntSet()
+            self.result.selection = self.getpintset()
         return super(Sample, self).get_data(name)
 
-    def get_PIntSet(self) -> PIntSet:
-        if self._PIntSet is None:
+    def getpintset(self) -> PIntSet:
+        if self.pintset is None:
             len_ = len(self._tmp_table["select"])
             # Avoid "ValueError: Iteration of zero-sized operands is not enabled"
-            self._PIntSet = PIntSet(self._tmp_table["select"]) if len_ else PIntSet()
-        return self._PIntSet
+            self.pintset = PIntSet(self._tmp_table["select"]) if len_ else PIntSet()
+        return self.pintset
 
     @process_slot("table", reset_if="delete", reset_cb="reset")
     @run_if_any
@@ -98,7 +105,7 @@ class Sample(PTableModule):
             if len(indices) == 0:  # nothing else to do
                 self._size = size
                 if steps:
-                    self._PIntSet = None
+                    self.pintset = None
                 return self._return_run_step(self.state_blocked, steps_run=steps)
 
             t = 4 * k
@@ -118,7 +125,7 @@ class Sample(PTableModule):
             if len(indices) == 0:
                 self._size = size
                 if steps:
-                    self._PIntSet = None
+                    self.pintset = None
                 return self._return_run_step(self.state_blocked, steps_run=steps)
 
             logger.info("Fast sampling with %d indices", len(indices))
@@ -139,5 +146,5 @@ class Sample(PTableModule):
 
             self._size = size
             if steps:
-                self._PIntSet = None
+                self.pintset = None
             return self._return_run_step(self.state_blocked, steps_run=steps)

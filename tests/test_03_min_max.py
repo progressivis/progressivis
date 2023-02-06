@@ -10,7 +10,7 @@ from typing import Any, Dict
 
 
 class TestMinMax(ProgressiveTest):
-    def te_st_min(self) -> None:
+    def test_min(self) -> None:
         s = self.scheduler()
         random = RandomPTable(10, rows=10000, scheduler=s)
         min_ = Min(name="min_" + str(hash(random)), scheduler=s)

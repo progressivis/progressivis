@@ -4,19 +4,19 @@ import sys
 
 import numpy as np
 
-from ..core.module import ReturnRunStep
+from ..core.module import ReturnRunStep, def_input, def_output
 from ..core.utils import indices_len, fix_loc
-from ..table.module import PTableModule, PDictModule
+from ..core.module import Module
 from ..table import PTable, BasePTable
 from ..core.decorators import process_slot, run_if_any
-from .. import SlotDescriptor
 from ..utils.psdict import PDict
-from ..core.module import ModuleMeta
 from ..table.dshape import dshape_projection
-from ..table.slot_join import SlotJoin
+from ..core.slot_join import SlotJoin
 from collections import OrderedDict
 
 from typing import List, cast, Any, Optional, Dict, Union, Callable
+
+ModuleMeta = type
 
 UFunc = Union[np.ufunc, Callable[..., Any]]
 
@@ -76,14 +76,9 @@ def info() -> None:
     print("binary dict", binary_dict_all)
 
 
-class Unary(PTableModule):
-    inputs = [SlotDescriptor("table", type=PTable, required=True)]
-    outputs = [
-        SlotDescriptor(
-            "result", type=PTable, required=False, datashape={"table": "#columns"}
-        )
-    ]
-
+@def_input("table", type=PTable, required=True)
+@def_output("result", type=PTable, required=False, datashape={"table": "#columns"})
+class Unary(Module):
     def __init__(self, ufunc: UFunc, **kwds: Any) -> None:
         super(Unary, self).__init__(**kwds)
         self._ufunc: UFunc = ufunc
@@ -186,10 +181,9 @@ def _simple_binary(
     return res
 
 
-class ColsBinary(PTableModule):
-    inputs = [SlotDescriptor("table", type=PTable, required=True)]
-    outputs = [SlotDescriptor("result", type=PTable, required=False)]
-
+@def_input("table", type=PTable, required=True)
+@def_output("result", type=PTable, required=False)
+class ColsBinary(Module):
     def __init__(
         self,
         ufunc: UFunc,
@@ -301,17 +295,10 @@ for k, v in binary_dict_all.items():
     # binary_modules.append(_g[name])
 
 
-class Binary(PTableModule):
-    inputs = [
-        SlotDescriptor("first", type=PTable, required=True),
-        SlotDescriptor("second", type=(PTable, PDict), required=True),
-    ]
-    outputs = [
-        SlotDescriptor(
-            "result", type=PTable, required=False, datashape={"first": "#columns"}
-        )
-    ]
-
+@def_input("first", type=PTable, required=True)
+@def_input("second", type=PTable, required=True)
+@def_output("result", PTable, required=False, datashape={"first": "#columns"})
+class Binary(Module):
     def __init__(self, ufunc: UFunc, **kwds: Any):
         super(Binary, self).__init__(**kwds)
         self._ufunc = ufunc
@@ -422,9 +409,9 @@ def _reduce(tbl: BasePTable, op: UFunc, initial: Any, **kwargs: Any) -> Dict[str
     return res
 
 
-class Reduce(PDictModule):
-    inputs = [SlotDescriptor("table", type=PTable, required=True)]
-
+@def_input("table", type=PTable, required=True)
+@def_output("result", PDict)
+class Reduce(Module):
     def __init__(
         self, ufunc: np.ufunc, columns: Optional[List[str]] = None, **kwds: Any
     ) -> None:
@@ -432,7 +419,7 @@ class Reduce(PDictModule):
         super(Reduce, self).__init__(**kwds)
         self._ufunc = getattr(ufunc, "reduce")
         self._columns = columns
-        self._kwds = {}
+        self._kwds = kwds
 
     def reset(self) -> None:
         if self.result is not None:
@@ -446,6 +433,7 @@ class Reduce(PDictModule):
         assert self.context
         with self.context as ctx:
             data_in = ctx.table.data()
+            cols = self.get_columns(data_in)
             pdict = self.result
             if pdict is None:
                 pdict = PDict()
@@ -453,7 +441,6 @@ class Reduce(PDictModule):
             else:
                 assert self.result is not None
                 pdict = self.result
-            cols = self.get_columns(data_in)
             if len(cols) == 0:
                 return self._return_run_step(self.state_blocked, steps_run=0)
             indices = ctx.table.created.next(length=step_size)
@@ -462,7 +449,7 @@ class Reduce(PDictModule):
                 self.filter_columns(data_in, fix_loc(indices)),
                 self._ufunc,
                 pdict,
-                **self._kwds,
+                **({"dtype": self._kwds["dtype"]} if "dtype" in self._kwds else {}),
             )
             pdict.update(rdict)
             return self._return_run_step(self.next_state(ctx.table), steps_run=steps)

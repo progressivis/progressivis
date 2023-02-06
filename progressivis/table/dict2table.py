@@ -1,25 +1,23 @@
 from __future__ import annotations
 
-from progressivis.core.slot import SlotDescriptor
-from progressivis.core.module import ReturnRunStep
-from .module import PTableModule
+from progressivis.core.module import Module, ReturnRunStep, def_input, def_output
 from ..utils.psdict import PDict
 from .table import PTable
 
 from typing import Any
 
 
-class Dict2PTable(PTableModule):
+@def_input("dict_", PDict, required=False)
+@def_output("result", PTable)
+class Dict2PTable(Module):
     """
     dict to table convertor
 
     Slots:
-        dict_ : PTable module producing the first table to join
+        dict_ : slot providing a PDict
     Args:
         kwds : argument to pass to the join function
     """
-
-    inputs = [SlotDescriptor("dict_", type=PDict, required=True)]
 
     def __init__(self, **kwds: Any) -> None:
         super().__init__(**kwds)
@@ -44,7 +42,7 @@ class Dict2PTable(PTableModule):
         if self.result is None:
             self.result = PTable(name=None, dshape=dict_.dshape)
         if len(self.result) == 0:  # or history:
-            self.table.append(dict_.as_row)
+            self.result.append(dict_.as_row)
         else:
-            self.table.loc[0] = dict_.array
+            self.result.loc[0] = dict_.array
         return self._return_run_step(self.next_state(dict_slot), steps_run=1)

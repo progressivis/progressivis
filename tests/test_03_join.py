@@ -151,8 +151,8 @@ class TestProgressiveJoin(ProgressiveTest):
         sink = Sink(scheduler=s)
         sink.input.inp = join.output.result
         aio.run(s.start())
-        assert join.table is not None
-        df = join.table.to_df(
+        assert join.result is not None
+        df = join.result.to_df(
             to_datetime=["tpep_pickup_datetime", "tpep_dropoff_datetime"]
         )
         self.assertEqual(len(df), len(INNER))
@@ -180,7 +180,7 @@ class TestProgressiveJoin(ProgressiveTest):
         sink2 = Sink(scheduler=s)
         sink2.input.inp = join.output.primary_outer
         aio.run(s.start())
-        df = join.table.to_df(
+        df = join.result.to_df(
             to_datetime=["tpep_pickup_datetime", "tpep_dropoff_datetime"]
         )
         self.assertEqual(len(df), len(LEFT_OUTER))
@@ -224,8 +224,8 @@ class TestProgressiveJoin(ProgressiveTest):
         sink = Sink(scheduler=s)
         sink.input.inp = join_pu.output.result
         aio.run(s.start())
-        assert join_pu.table is not None
-        df = join_pu.table.to_df(
+        assert join_pu.result is not None
+        df = join_pu.result.to_df(
             to_datetime=["tpep_pickup_datetime", "tpep_dropoff_datetime"]
         )
         self.assertEqual(len(df), len(INNER_PU))
@@ -265,7 +265,7 @@ class TestProgressiveJoin(ProgressiveTest):
         sink3 = Sink(scheduler=s)
         sink3.input.inp = join_pu.output.primary_outer
         aio.run(s.start())
-        df = join_pu.table.to_df(
+        df = join_pu.result.to_df(
             to_datetime=["tpep_pickup_datetime", "tpep_dropoff_datetime"]
         )
         self.assertEqual(len(df), len(LEFT_OUTER_PU))
@@ -323,7 +323,7 @@ class TestProgressiveJoin2(ProgressiveTest):
         sink = Sink(scheduler=s)
         sink.input.inp = join.output.result
         aio.run(s.start())
-        df = join.table.to_df()
+        df = join.result.to_df()
         self.assertEqual(len(df), len(df_inner))
         self.assertEqual(set(df.columns), set(df_inner.columns))
         sorted_inner = df_inner.sort_values("card_left")
@@ -352,7 +352,7 @@ class TestProgressiveJoin2(ProgressiveTest):
         sink2 = Sink(scheduler=s)
         sink2.input.inp = join.output.primary_outer
         aio.run(s.start())
-        df = join.table.to_df()
+        df = join.result.to_df()
         self.assertEqual(len(df), len(df_left_outer))
         self.assertEqual(set(df.columns), set(df_left_outer.columns))
         sorted_left_outer = df_left_outer.sort_values("card_left").fillna(0)

@@ -7,11 +7,17 @@ import numpy as np
 import pandas as pd
 from sklearn.cluster import MiniBatchKMeans  # type: ignore
 from sklearn.utils.validation import check_random_state  # type: ignore
-from progressivis import ProgressiveError, SlotDescriptor
-from progressivis.core.module import ReturnRunStep, JSon, Module
+from progressivis import ProgressiveError
+from progressivis.core.module import (
+    ReturnRunStep,
+    JSon,
+    def_input,
+    def_output,
+    def_parameter,
+)
 from progressivis.core.pintset import PIntSet
 from progressivis.core.utils import indices_len
-from ..table.module import PTableModule
+from ..core.module import Module
 from ..table.table_base import BasePTable
 from ..table import PTable, PTableSelectedView
 from ..table.dshape import dshape_from_dtype, dshape_from_columns
@@ -26,21 +32,17 @@ from typing import Optional, Union, List, Dict, Any
 logger = logging.getLogger(__name__)
 
 
-class MBKMeans(PTableModule):
+@def_parameter("samples", np.dtype(int), 50)
+@def_input("table", PTable)
+@def_input("var", PTable)
+@def_input("moved_center", type=PDict, required=False)
+@def_output("result", PTable)
+@def_output("labels", type=PTable, attr_name="_labels", required=False)
+@def_output("conv", type=PDict, attr_name="_conv_out", required=False)
+class MBKMeans(Module):
     """
     Mini-batch k-means using the sklearn implementation.
     """
-
-    parameters = [("samples", np.dtype(int), 50)]
-    inputs = [
-        SlotDescriptor("table", type=PTable, required=True),
-        SlotDescriptor("var", type=PTable, required=True),
-        SlotDescriptor("moved_center", type=PDict, required=False),
-    ]
-    outputs = [
-        SlotDescriptor("labels", type=PTable, required=False),
-        SlotDescriptor("conv", type=PDict, required=False),
-    ]
 
     def __init__(
         self,
@@ -63,7 +65,6 @@ class MBKMeans(PTableModule):
         )
         self.n_clusters = n_clusters
         self.default_step_size = 100
-        self._labels: Optional[PTable] = None
         self._remaining_inits = 10
         self._initialization_steps = 0
         self._is_input = is_input
@@ -113,16 +114,6 @@ class MBKMeans(PTableModule):
             )
         elif not yes:
             self._labels = None
-
-    def labels(self) -> Optional[PTable]:
-        return self._labels
-
-    def get_data(self, name: str) -> Any:
-        if name == "labels":
-            return self.labels()
-        if name == "conv":
-            return self._conv_out
-        return super().get_data(name)
 
     def is_greedy(self) -> bool:
         return self._is_greedy
@@ -289,15 +280,13 @@ class MBKMeans(PTableModule):
             self.input.var = v.output.result
 
 
-class MBKMeansFilter(PTableModule):
+@def_input("table", PTable)
+@def_input("labels", PTable)
+@def_output("result", PTableSelectedView)
+class MBKMeansFilter(Module):
     """
     Filters data corresponding to a specific label
     """
-
-    inputs = [
-        SlotDescriptor("table", type=PTable, required=True),
-        SlotDescriptor("labels", type=PTable, required=True),
-    ]
 
     def __init__(self, sel: Any, **kwds: Any) -> None:
         self._sel = sel
@@ -324,7 +313,7 @@ class MBKMeansFilter(PTableModule):
                     ctx.table.data(), ctx.labels.data().selection
                 )
             else:
-                self.selected.selection = ctx.labels.data().selection
+                self.result.selection = ctx.labels.data().selection
             return self._return_run_step(self.next_state(ctx.table), steps_run=steps)
 
     def create_dependent_modules(

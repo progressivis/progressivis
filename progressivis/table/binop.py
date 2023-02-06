@@ -3,9 +3,7 @@ from __future__ import annotations
 import operator
 import logging
 
-from ..core.slot import SlotDescriptor
-from ..core.module import ReturnRunStep
-from .module import PTableModule
+from ..core.module import Module, ReturnRunStep, def_input, def_output
 from ..core.pintset import PIntSet
 from .table import PTable
 
@@ -44,17 +42,15 @@ ops: Dict[str, Binoperator] = {
 inv_ops: Dict[Binoperator, str] = {v: k for k, v in ops.items()}
 
 
-class Binop(PTableModule):
-    inputs = [
-        SlotDescriptor("arg1", type=PTable, required=True),
-        SlotDescriptor("arg2", type=PTable, required=True),
-    ]
-
+@def_input("arg1", PTable)
+@def_input("arg2", PTable)
+@def_output("result", PTable)
+class Binop(Module):
     def __init__(
         self,
         binop: Binoperator,
         combine: Union[None, str, Binoperator] = None,
-        **kwds: Any
+        **kwds: Any,
     ) -> None:
         super(Binop, self).__init__(**kwds)
         self.default_step_size = 1000
@@ -68,17 +64,6 @@ class Binop(PTableModule):
             self._combine = combine
         else:
             self._combine = ops[combine]
-        self._PIntSet: Optional[PIntSet] = None
-
-    def get_data(self, name: str) -> Any:
-        if name == "select":
-            return self._PIntSet
-        if name == "table":
-            slot = self.get_input_slot("table")
-            if slot is not None:
-                return slot.data()
-            return None
-        return super(Binop, self).get_data(name)
 
     def run_step(
         self, run_number: int, step_size: int, howlong: float
@@ -97,12 +82,10 @@ class Binop(PTableModule):
             or len(arg2_data) == 0
         ):
             # nothing to do if no filter is specified
-            self._PIntSet = None
             return self._return_run_step(self.state_blocked, steps_run=1)
         if arg1_slot.deleted.any() or arg2_slot.deleted.any():
             arg1_slot.reset()
             arg1_slot.reset()
-            self._PIntSet = None
             arg1_slot.update(run_number)
             arg2_slot.update(run_number)
 

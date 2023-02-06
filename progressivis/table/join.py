@@ -5,9 +5,7 @@ import numpy as np
 import logging
 from ..core.utils import nn, integer_types
 from ..core.pintset import PIntSet
-from ..core.module import ReturnRunStep
-from ..core.slot import SlotDescriptor
-from .module import PTableModule
+from ..core.module import Module, ReturnRunStep, def_input, def_output
 from .group_by import GroupBy, SubPColumn as SC
 from .unique_index import UniqueIndex
 from . import PTable, PTableSelectedView
@@ -21,19 +19,16 @@ ON = Optional[Union[str, List[str]]]
 def _dt_to_mask(mask: str) -> Any:
     if mask is None:
         return
-    return np.array([
-        "Y" in mask,
-        "M" in mask,
-        "D" in mask,
-        "h" in mask,
-        "m" in mask,
-        "s" in mask
-    ], dtype=int)
+    return np.array(
+        ["Y" in mask, "M" in mask, "D" in mask, "h" in mask, "m" in mask, "s" in mask],
+        dtype=int,
+    )
 
 
 def make_ufunc(rel_on, ucol, uindex, utable, dtype, fillna, inv_mask, cache):
     inv_mask = _dt_to_mask(inv_mask)
     if isinstance(rel_on, (list, tuple)):
+
         def _ufunc(ix, local_dict):
             for values in local_dict.values():
                 shape_0 = values.shape[0]
@@ -60,14 +55,20 @@ def make_ufunc(rel_on, ucol, uindex, utable, dtype, fillna, inv_mask, cache):
                 shape_ = values.shape
                 break
             if len(shape_) == 1:
+
                 def _cast_inp(x):
                     return x
+
             elif inv_mask is None:
+
                 def _cast_inp(x):
                     return tuple(x)
+
             else:
+
                 def _cast_inp(x):
-                    return tuple(x*inv_mask)
+                    return tuple(x * inv_mask)
+
             res = np.empty(shape_[0], dtype=dtype)
             for i, inp in enumerate(values):
                 inp = _cast_inp(inp)
@@ -97,7 +98,13 @@ def _aslist(x) -> List[Any]:
     return [x]
 
 
-class Join(PTableModule):
+@def_input("primary", PTable)
+@def_input("related", PTable)
+@def_output("result", PTableSelectedView)
+@def_output(
+    "primary_outer", PTableSelectedView, required=False, attr_name="_primary_outer"
+)
+class Join(Module):
     """
     {many|one}-to-one join module
 
@@ -113,14 +120,14 @@ class Join(PTableModule):
         kwds : argument to pass to the join function
     """
 
-    inputs = [
-        SlotDescriptor("related", type=PTable, required=True),
-        SlotDescriptor("primary", type=PTable, required=True),
-    ]
-    outputs = [SlotDescriptor("primary_outer", type=PTable, required=False)]
-
-    def __init__(self, *, how: HOW = "inner", fillna: Any = None,
-                 inv_mask: Any = None, **kwds: Any) -> None:
+    def __init__(
+        self,
+        *,
+        how: HOW = "inner",
+        fillna: Any = None,
+        inv_mask: Any = None,
+        **kwds: Any,
+    ) -> None:
         super().__init__(**kwds)
         self.how = how
         self._fillna = fillna
@@ -131,21 +138,22 @@ class Join(PTableModule):
         self._related_cols: Optional[List[str]] = None
         self._virtual_cols: Optional[List[str]] = None
         self._maintain_primary_outer = False
-        self._primary_outer: Optional[PTableSelectedView] = None
+        self.result: Optional[PTableSelectedView]
+        self._primary_outer: Optional[PTableSelectedView]
 
     def create_dependent_modules(
-            self,
-            primary_module: PTableModule,
-            related_module: PTableModule,
-            *,
-            primary_slot: str = "result",
-            related_slot: str = "result",
-            primary_cols: Optional[List[str]] = None,
-            related_cols: Optional[List[str]] = None,
-            on: ON = None,
-            primary_on: ON = None,
-            related_on: ON = None,
-            suffix: str = "",
+        self,
+        primary_module: Module,
+        related_module: Module,
+        *,
+        primary_slot: str = "result",
+        related_slot: str = "result",
+        primary_cols: Optional[List[str]] = None,
+        related_cols: Optional[List[str]] = None,
+        on: ON = None,
+        primary_on: ON = None,
+        related_on: ON = None,
+        suffix: str = "",
     ) -> None:
         """
         Args:
@@ -180,10 +188,14 @@ class Join(PTableModule):
             grby = GroupBy(by=self.related_on, scheduler=s)
         elif isinstance(self._inv_mask, str):
             assert isinstance(self.related_on, str)
-            grby = GroupBy(by=SC(self.related_on).dt[self._inv_mask], keepdims=True, scheduler=s)
+            grby = GroupBy(
+                by=SC(self.related_on).dt[self._inv_mask], keepdims=True, scheduler=s
+            )
         else:  # TODO: check the mask type
             assert isinstance(self.related_on, str)
-            grby = GroupBy(by=SC(self.related_on).ix[self._inv_mask], keepdims=True, scheduler=s)
+            grby = GroupBy(
+                by=SC(self.related_on).ix[self._inv_mask], keepdims=True, scheduler=s
+            )
         grby.input.table = related_module.output[related_slot]
         self.input.related = grby.output.result
         uidx = UniqueIndex(on=self.primary_on, scheduler=s)
@@ -202,11 +214,6 @@ class Join(PTableModule):
         if opt_slot:
             logger.debug("Maintaining primary outer")
             self._maintain_primary_outer = True
-
-    def get_data(self, name: str) -> Any:
-        if name == "primary_outer":
-            return self._primary_outer
-        return super().get_data(name)
 
     def run_step(
         self, run_number: int, step_size: int, howlong: float
@@ -231,7 +238,9 @@ class Join(PTableModule):
         if self.result is None:
             ucols = self._virtual_cols or primary_table.columns
             ucols = [uc for uc in ucols if uc not in _aslist(uindex_mod.on)]
-            related_cols = self._related_cols if nn(self._related_cols) else related_table.columns
+            related_cols = (
+                self._related_cols if nn(self._related_cols) else related_table.columns
+            )
             if set(related_cols) & set(ucols):
                 assert self._suffix
 
@@ -248,16 +257,16 @@ class Join(PTableModule):
                         ucol,
                         uindex_mod.index,
                         primary_table,
-                        uindex_mod.table._column(ucol).dtype,
+                        uindex_mod.result._column(ucol).dtype,
                         self._fillna,
                         self._inv_mask,
                         self.cache_dict[sxcol],
                     ),
                     category="vfunc",
                     cols=self.on,
-                    xshape=uindex_mod.table._column(ucol).shape[1:],
-                    dshape=uindex_mod.table._column(ucol).dshape,
-                    dtype=uindex_mod.table._column(ucol).dtype,
+                    xshape=uindex_mod.result._column(ucol).shape[1:],
+                    dshape=uindex_mod.result._column(ucol).dshape,
+                    dtype=uindex_mod.result._column(ucol).dtype,
                 )
                 for (ucol, sxcol) in ucols_dict.items()
             }
@@ -280,14 +289,14 @@ class Join(PTableModule):
             deleted = related_slot.deleted.next(as_slice=False)
             steps = 1
             if deleted:
-                self.selected.selection -= deleted
+                self.result.selection -= deleted
             deleted = related_slot.deleted.next(as_slice=False)
             if self.how == "inner":
                 steps = 1
                 for key in uindex_mod.get_deleted_entries(deleted):
                     deltd = groupby_mod.index.get(key, PIntSet())
                     if deltd:
-                        self.selected.selection -= deltd
+                        self.result.selection -= deltd
         if primary_slot.created.any():
             cr = primary_slot.created.next(as_slice=False)
             if self._primary_outer is not None:
@@ -302,7 +311,7 @@ class Join(PTableModule):
                     common = ids & created
                     if common:
                         steps += len(common)
-                        self.selected.selection |= common
+                        self.result.selection |= common
                         if self._primary_outer is not None:
                             i = uindex_mod.index[k]
                             if i in self._primary_outer.selection:
@@ -316,7 +325,7 @@ class Join(PTableModule):
                     related_slot.created.remove_from_all(created)  # type: ignore
             else:  # outer mode or primary table still in process
                 created = related_slot.created.next(length=step_size, as_slice=False)
-                self.selected.selection |= created
+                self.result.selection |= created
                 if self._primary_outer is not None:
                     for k, ids in groupby_mod.index.items():
                         if k not in uindex_mod.index:  # or not ids:

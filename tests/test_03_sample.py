@@ -27,7 +27,7 @@ class TestSample(ProgressiveTest):
         prt.input[0] = smp.output.result
         aio.run(csv.scheduler().start())
         # print(repr(smp.result))
-        self.assertEqual(len(smp.table), 10)
+        self.assertEqual(len(smp.result), 10)
 
 
 if __name__ == "__main__":

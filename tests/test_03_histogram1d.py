@@ -47,7 +47,7 @@ class TestHistogram1D(ProgressiveTest):
         pr.input[0] = histogram1d.output.result
         aio.run(s.start())
         _ = histogram1d.trace_stats()
-        last = notNone(histogram1d.table.last()).to_dict()
+        last = notNone(histogram1d.result.last()).to_dict()
         h1 = last["array"]
         bounds = (last["min"], last["max"])
         df = pd.read_csv(
@@ -80,10 +80,10 @@ class TestHistogram1D(ProgressiveTest):
         pr.input[0] = histogram1d.output.result
         aio.run(s.start())
         _ = histogram1d.trace_stats()
-        last = notNone(histogram1d.table.last()).to_dict()
+        last = notNone(histogram1d.result.last()).to_dict()
         h1 = last["array"]
         bounds = (last["min"], last["max"])
-        tab = stirrer.table.loc[:, ["_2"]]
+        tab = stirrer.result.loc[:, ["_2"]]
         assert tab is not None
         v = tab.to_array().reshape(-1)
         h2, _ = np.histogram(  # type: ignore

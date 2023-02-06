@@ -1,15 +1,16 @@
 from __future__ import annotations
 
 from progressivis.core.utils import Dialog
-from progressivis.core.slot import SlotDescriptor
-from progressivis.core.module import ReturnRunStep
-from progressivis.table.module import PDictModule
+from progressivis.core.module import Module, ReturnRunStep, def_input, def_output
 from progressivis.utils.psdict import PDict
 
 from typing import Any
 
 
-class MergeDict(PDictModule):
+@def_input("first", PDict)
+@def_input("second", PDict)
+@def_output("result", PDict)
+class MergeDict(Module):
     """
     Binary join module to join two dict and return a third one.
 
@@ -19,11 +20,6 @@ class MergeDict(PDictModule):
     Args:
         kwds : argument to pass to the join function
     """
-
-    inputs = [
-        SlotDescriptor("first", type=PDict, required=True),
-        SlotDescriptor("second", type=PDict, required=True),
-    ]
 
     def __init__(self, **kwds: Any) -> None:
         super().__init__(**kwds)

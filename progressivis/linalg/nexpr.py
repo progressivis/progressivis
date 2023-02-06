@@ -4,7 +4,7 @@ import numpy as np
 
 from ..core.module import ReturnRunStep
 from ..core.utils import fix_loc
-from ..table.module import PTableModule
+from ..core.module import Module
 from ..table.table_base import BasePTable
 from ..table.table import PTable
 import numexpr as ne
@@ -28,7 +28,7 @@ def _make_local(df: BasePTable, px: str) -> Tuple[Any, Dict[str, np.ndarray[Any,
     return aux, result
 
 
-class NumExprABC(PTableModule):
+class NumExprABC(Module):
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self.expr: Dict[str, Any]

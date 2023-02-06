@@ -1,11 +1,15 @@
 from __future__ import annotations
 
-from progressivis.core.module import ReturnRunStep
+from progressivis.core.module import (
+    Module,
+    ReturnRunStep,
+    def_input,
+    def_output,
+    def_parameter,
+)
 from ..utils.errors import ProgressiveError
 from ..core.utils import indices_len, fix_loc
-from ..table.module import PTableModule
 from ..table.table import PTable
-from ..core.slot import SlotDescriptor
 from ..core.decorators import process_slot, run_if_any
 
 import numpy as np
@@ -25,18 +29,18 @@ def _pretty_name(x: float) -> str:
         return "_%.1f%%" % x
 
 
-class Percentiles(PTableModule):
-    parameters = [
-        ("percentiles", np.dtype(np.object_), [0.25, 0.5, 0.75]),
-        ("history", np.dtype(int), 3),
-    ]
-    inputs = [SlotDescriptor("table", type=PTable)]
+@def_parameter("percentiles", np.dtype(np.object_), [0.25, 0.5, 0.75])
+@def_parameter("history", np.dtype(int), 3)
+@def_input("table", PTable)
+@def_output("result", PTable)
+class Percentiles(Module):
+    """ """
 
     def __init__(
         self,
         column: str,
         percentiles: Optional[Union[List[float], np.ndarray[Any, Any]]] = None,
-        **kwds: Any
+        **kwds: Any,
     ) -> None:
         if not column:
             raise ProgressiveError("Need a column name")
@@ -93,7 +97,7 @@ class Percentiles(PTableModule):
             input_df = dfslot.data()
             x = self.filter_columns(input_df, fix_loc(indices))
             self.tdigest.batch_update(x[0])
-            df = self.table
+            df = self.result
             values = {}
             for n, p in zip(self._pername, self._percentiles):
                 values[n] = self.tdigest.percentile(p * 100)

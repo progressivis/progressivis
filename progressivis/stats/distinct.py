@@ -2,11 +2,10 @@ from __future__ import annotations
 
 import logging
 
-from ..core.module import ReturnRunStep
+from ..core.module import ReturnRunStep, def_input, def_output
 from ..core.utils import indices_len, fix_loc
-from ..core.slot import SlotDescriptor
 from ..core.decorators import process_slot, run_if_any
-from ..table.module import PDictModule
+from ..core.module import Module
 from ..table.table import PTable
 from ..utils.psdict import PDict
 
@@ -15,9 +14,9 @@ from typing import Any, List, Optional
 logger = logging.getLogger(__name__)
 
 
-class Distinct(PDictModule):
-    inputs = [SlotDescriptor("table", type=PTable, required=True)]
-
+@def_input("table", PTable)
+@def_output("result", PDict)
+class Distinct(Module):
     def __init__(
         self, columns: Optional[List[str]] = None, threshold: int = 56, **kwds: Any
     ) -> None:

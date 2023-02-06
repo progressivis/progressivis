@@ -5,9 +5,9 @@ import logging
 from ..core import Sink
 from ..core.pintset import PIntSet
 from ..core.utils import indices_len
-from ..core.slot import SlotDescriptor, Slot
+from ..core.slot import Slot
 from ..table import PTable, BasePTable, BasePColumn
-from ..table.module import PTableModule
+from ..core.module import Module, def_input, def_output, def_parameter
 from ..utils.psdict import PDict
 from . import Min, Max, Histogram1D
 from ..core.decorators import process_slot, run_if_any
@@ -25,23 +25,18 @@ if TYPE_CHECKING:
     NumCol = Union[np.ndarray[Any, Any], BasePColumn]
 
 
-class MinMaxScaler(PTableModule):
+@def_parameter("delta", np.dtype(float), -5)
+@def_parameter("ignore_max", np.dtype(int), 0)
+@def_input("table", PTable)
+@def_input("min", PDict)
+@def_input("max", PDict)
+@def_input("control", PDict, required=False)
+@def_output("result", PTable)
+@def_output("info", PDict, required=False)
+class MinMaxScaler(Module):
     """
     Scaler
     """
-
-    parameters = [
-        ("delta", np.dtype(float), -5),
-        ("ignore_max", np.dtype(int), 0),
-    ]  # 5%, 0
-
-    inputs = [
-        SlotDescriptor("table", type=PTable, required=True),
-        SlotDescriptor("min", type=PDict, required=True),
-        SlotDescriptor("max", type=PDict, required=True),
-        SlotDescriptor("control", type=PDict, required=False),
-    ]
-    outputs = [SlotDescriptor("info", type=PDict, required=False)]
 
     def __init__(
         self,
@@ -64,7 +59,6 @@ class MinMaxScaler(PTableModule):
         self._control_data: Optional[Dict[str, int]] = None
         self._clipped = 0
         self._ignored = 0
-        self._info: Dict[str, int] = {}
 
     def reset(self) -> None:
         if self.result is not None:
@@ -75,8 +69,8 @@ class MinMaxScaler(PTableModule):
         self._control_data = None
         self._clipped = 0
         self._ignored = 0
-        if self._info:
-            self._info.update(
+        if self.info:
+            self.info.update(
                 {"clipped": 0, "ignored": 0, "has_buffered": 0, "last_reset": 0}
             )
 
@@ -96,11 +90,9 @@ class MinMaxScaler(PTableModule):
             val: np.ndarray[Any, Any] = ne.evaluate("(arr-min_)/width")
             res[c] = val
             if c in clip_cols:
-                if self._info:
+                if self.info:
                     arr = res[c]  # helping the evaluator
-                    self._info["clipped"] += np.sum(
-                        ne.evaluate("(arr<0.0) | (arr>1.0)")
-                    )
+                    self.info["clipped"] += np.sum(ne.evaluate("(arr<0.0) | (arr>1.0)"))
                 np.clip(val, 0.0, 1.0, out=val)
         return res
 
@@ -146,18 +138,10 @@ class MinMaxScaler(PTableModule):
             self.maintain_info(False)
 
     def maintain_info(self, yes: bool = True) -> None:
-        if yes and not self._info:
-            self._info = PDict({"clipped": 0, "ignored": 0, "needs_changes": False})
+        if yes and not self.info:
+            self.info = PDict({"clipped": 0, "ignored": 0, "needs_changes": False})
         elif not yes:
-            self._info = {}
-
-    def info(self) -> Dict[str, int]:
-        return self._info
-
-    def get_data(self, name: str) -> Any:
-        if name == "info":
-            return self.info()
-        return super().get_data(name)
+            self.info = {}
 
     def check_bounds(
         self,
@@ -228,16 +212,14 @@ class MinMaxScaler(PTableModule):
                     return self._return_run_step(self.state_blocked, steps_run=0)
                 if control_slot.has_buffered():
                     control_slot.clear_buffers()
-                    if self._info and self._info.get("needs_changes"):
-                        self._info["needs_changes"] = False
+                    if self.info and self.info.get("needs_changes"):
+                        self.info["needs_changes"] = False
                     if self._control_data.get("reset"):
                         self.reset_min_max(dfslot, min_slot, max_slot, run_number)
-                        self._info["last_reset"] = run_number
-                    # else:
-                    #    self._info["last_reset"] = self._control_data.get("reset")
-                    self._info["has_buffered"] = run_number
+                        self.info["last_reset"] = run_number
+                    self.info["has_buffered"] = run_number
                 else:
-                    if self._info and self._info.get("needs_changes"):
+                    if self.info and self.info.get("needs_changes"):
                         return self._return_run_step(self.state_blocked, steps_run=0)
             if min_slot.has_buffered() or max_slot.has_buffered():
                 min_slot.clear_buffers()
@@ -261,7 +243,9 @@ class MinMaxScaler(PTableModule):
                 else:  # at start or after data reset
                     self.update_bounds(min_data, max_data)
 
-            indices = dfslot.created.next(step_size, as_slice=False)  # returns a PIntSet
+            indices = dfslot.created.next(
+                step_size, as_slice=False
+            )  # returns a PIntSet
             steps = indices_len(indices)
             if steps == 0:
                 return self._return_run_step(self.state_blocked, steps_run=0)
@@ -270,8 +254,8 @@ class MinMaxScaler(PTableModule):
             if ignore_ilocs:
                 len_ii = len(ignore_ilocs)
                 if len_ii > self.get_ignore_credit():
-                    if self._info:
-                        self._info["needs_changes"] = True
+                    if self.info:
+                        self.info["needs_changes"] = True
                         return self._return_run_step(
                             self.next_state(dfslot), steps // 2
                         )
@@ -279,8 +263,8 @@ class MinMaxScaler(PTableModule):
                         self.reset_min_max(dfslot, min_slot, max_slot, run_number)
                         return self._return_run_step(self.state_blocked, steps_run=0)
                 self._ignored += len_ii
-                if self._info:
-                    self._info["ignored"] += len_ii
+                if self.info:
+                    self.info["ignored"] += len_ii
                 rm_ids = PIntSet(np.array(indices)[cast(List[int], ignore_ilocs)])
                 indices = indices - rm_ids
                 if not indices:
@@ -300,7 +284,7 @@ class MinMaxScaler(PTableModule):
             return self._return_run_step(self.next_state(dfslot), steps)
 
     def create_dependent_modules(
-        self, input_module: PTableModule, input_slot: str = "result", hist: bool = False
+        self, input_module: Module, input_slot: str = "result", hist: bool = False
     ) -> None:
         s = self.scheduler()
         self.input.table = input_module.output[input_slot]

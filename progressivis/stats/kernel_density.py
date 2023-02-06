@@ -2,11 +2,9 @@ from __future__ import annotations
 
 import numpy as np
 
-from ..core.module import ReturnRunStep, JSon
-from ..table.module import PTableModule
+from ..core.module import Module, ReturnRunStep, JSon, def_input, def_parameter
 from ..table import PTable
 from ..core.utils import indices_len
-from progressivis import SlotDescriptor
 
 try:
     from .knnkde import KNNKernelDensity
@@ -16,15 +14,13 @@ except Exception:
 from typing import Optional, Any
 
 
-class KernelDensity(PTableModule):
-    parameters = [
-        ("samples", np.dtype(object), 1),
-        ("bins", np.dtype(int), 1),
-        ("threshold", np.dtype(int), 1000),
-        ("knn", np.dtype(int), 100),
-    ]
-    inputs = [SlotDescriptor("table", type=PTable, required=True)]
-
+@def_parameter("samples", np.dtype(object), 1)
+@def_parameter("bins", np.dtype(int), 1)
+@def_parameter("threshold", np.dtype(int), 1000)
+@def_parameter("knn", np.dtype(int), 100)
+@def_input("table", PTable)
+# @def_output("result", PTable)
+class KernelDensity(Module):
     def __init__(self, **kwds: Any) -> None:
         self._kde: Optional[KNNKernelDensity] = None
         self._json_cache: JSon = {}

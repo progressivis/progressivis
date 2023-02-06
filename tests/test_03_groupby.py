@@ -29,7 +29,7 @@ class TestProgressiveGroupBy(ProgressiveTest):
         sink = Sink(scheduler=s)
         sink.input.inp = grby.output.result
         aio.run(s.start())
-        self.assertEqual(len(parquet.table), 300_000)
+        self.assertEqual(len(parquet.result), 300_000)
         self.assertEqual(set(grby._index.keys()), PASSENGERS)
 
     def test_group_by_2_cols(self) -> None:
@@ -45,7 +45,7 @@ class TestProgressiveGroupBy(ProgressiveTest):
         sink = Sink(scheduler=s)
         sink.input.inp = grby.output.result
         aio.run(s.start())
-        self.assertEqual(len(parquet.table), 300_000)
+        self.assertEqual(len(parquet.result), 300_000)
         self.assertEqual(len(grby._index.keys()), 36)
 
     def test_group_by_function(self) -> None:
@@ -61,7 +61,7 @@ class TestProgressiveGroupBy(ProgressiveTest):
         sink = Sink(scheduler=s)
         sink.input.inp = grby.output.result
         aio.run(s.start())
-        self.assertEqual(len(parquet.table), 300_000)
+        self.assertEqual(len(parquet.result), 300_000)
         self.assertEqual(len(grby._index.keys()), 10)
 
     def test_group_by_days(self) -> None:
@@ -87,7 +87,7 @@ class TestProgressiveGroupBy(ProgressiveTest):
         sink = Sink(scheduler=s)
         sink.input.inp = grby.output.result
         aio.run(s.start())
-        self.assertEqual(len(parquet.table), 300_000)
+        self.assertEqual(len(parquet.result), 300_000)
         self.assertEqual(
             len(grby._index.keys()), 31
         )
@@ -110,7 +110,7 @@ class TestProgressiveGroupBy(ProgressiveTest):
         sink = Sink(scheduler=s)
         sink.input.inp = grby.output.result
         aio.run(s.start())
-        self.assertEqual(len(parquet.table), 300_000)
+        self.assertEqual(len(parquet.result), 300_000)
         self.assertEqual(
             len(grby._index.keys()), 31
         )

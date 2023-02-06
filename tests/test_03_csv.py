@@ -35,7 +35,7 @@ class TestProgressiveLoadCSV(ProgressiveTest):
         sink = Sink(name="sink", scheduler=s)
         sink.input.inp = module.output.result
         aio.run(s.start())
-        self.assertEqual(len(module.table), 1000000)
+        self.assertEqual(len(module.result), 1000000)
 
     def test_read_fake_csv(self) -> None:
         s = self.scheduler()
@@ -49,7 +49,7 @@ class TestProgressiveLoadCSV(ProgressiveTest):
         sink = Sink(name="sink", scheduler=s)
         sink.input.inp = module.output.result
         aio.run(s.start())
-        self.assertEqual(len(module.table), 1000000)
+        self.assertEqual(len(module.result), 1000000)
 
     def test_read_multiple_csv(self) -> None:
         s = self.scheduler()
@@ -64,7 +64,7 @@ class TestProgressiveLoadCSV(ProgressiveTest):
         sink = Sink(name="sink", scheduler=s)
         sink.input.inp = csv.output.result
         aio.run(csv.start())
-        self.assertEqual(len(csv.table), 60000)
+        self.assertEqual(len(csv.result), 60000)
 
     def test_read_multiple_fake_csv(self) -> None:
         s = self.scheduler()
@@ -84,7 +84,7 @@ class TestProgressiveLoadCSV(ProgressiveTest):
         sink = Sink(name="sink", scheduler=s)
         sink.input.inp = csv.output.result
         aio.run(csv.start())
-        self.assertEqual(len(csv.table), 60000)
+        self.assertEqual(len(csv.result), 60000)
 
     def test_as_array(self) -> None:
         s = self.scheduler()
@@ -99,7 +99,7 @@ class TestProgressiveLoadCSV(ProgressiveTest):
         sink.input.inp = module.output.result
         self.assertTrue(module.result is None)
         aio.run(s.start())
-        table = module.table
+        table = module.result
         self.assertEqual(len(table), 1000000)
         self.assertEqual(table.columns, ["array"])
         self.assertEqual(table["array"].shape, (1000000, 30))
@@ -120,7 +120,7 @@ class TestProgressiveLoadCSV(ProgressiveTest):
         sink.input.inp = module.output.result
         self.assertTrue(module.result is None)
         aio.run(s.start())
-        table = module.table
+        table = module.result
         self.assertEqual(len(table), 1000000)
         self.assertEqual(table.columns, ["firsthalf", "secondhalf"])
         self.assertEqual(table["firsthalf"].shape, (1000000, 13))
@@ -139,7 +139,7 @@ class TestProgressiveLoadCSV(ProgressiveTest):
             sink.input.inp = module.output.result
             self.assertTrue(module.result is None)
             aio.run(s.start())
-            table = module.table
+            table = module.result
             self.assertEqual(len(table), 70000)
             self.assertEqual(table.columns, ["array", "class"])
             self.assertEqual(table["array"].shape, (70000, 784))

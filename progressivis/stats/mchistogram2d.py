@@ -5,10 +5,9 @@ import logging
 import numpy as np
 
 from ..core.utils import indices_len, fix_loc
-from ..core import SlotDescriptor, notNone, JSon
+from ..core import notNone, JSon
 from ..table.table import PTable
-from ..table.nary import NAry
-from ..core.module import Module, ReturnRunStep
+from ..core.module import Module, ReturnRunStep, def_input, def_output, def_parameter
 from fast_histogram import histogram2d  # type: ignore
 
 from typing import Optional, Tuple, Any, Dict
@@ -18,15 +17,16 @@ Bounds = Tuple[float, float, float, float]
 logger = logging.getLogger(__name__)
 
 
-class MCHistogram2D(NAry):
-    parameters = [
-        ("xbins", np.dtype(int), 256),
-        ("ybins", np.dtype(int), 256),
-        ("xdelta", np.dtype(float), -5),  # means 5%
-        ("ydelta", np.dtype(float), -5),  # means 5%
-        ("history", np.dtype(int), 3),
-    ]
-    inputs = [SlotDescriptor("data", type=PTable, required=True)]
+@def_parameter("xbins", np.dtype(int), 256)
+@def_parameter("ybins", np.dtype(int), 256)
+@def_parameter("xdelta", np.dtype(float), -5)  # means 5%
+@def_parameter("ydelta", np.dtype(float), -5)  # means 5%
+@def_parameter("history", np.dtype(int), 3)
+@def_input("table", type=PTable, required=True, multiple=True)
+@def_input("data", type=PTable, required=True)
+@def_output("result", type=PTable)
+class MCHistogram2D(Module):
+    """ """
 
     schema = (
         "{"
@@ -66,7 +66,7 @@ class MCHistogram2D(NAry):
         self.total_read = 0
         self.get_input_slot("data").reset()
         if self.result:
-            self.table.resize(1)
+            self.result.resize(1)
 
     def predict_step_size(self, duration: float) -> int:
         return Module.predict_step_size(self, duration)
@@ -258,7 +258,7 @@ class MCHistogram2D(NAry):
             "time": run_number,
         }
         if self._with_output:
-            table = self.table
+            table = self.result
             table["array"].set_shape([p.ybins, p.xbins])
             if len(table) == 0:
                 table.add(values)

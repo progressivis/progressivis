@@ -5,10 +5,9 @@ import logging
 import numpy as np
 import pandas as pd
 
-from ..core.module import ReturnRunStep
-from ..core.slot import SlotDescriptor
+from ..core.module import ReturnRunStep, def_input, def_output, def_parameter
 from ..core.utils import indices_len, fix_loc
-from ..table.module import PDictModule
+from ..core.module import Module
 from ..table.table import PTable
 from ..utils.psdict import PDict
 from ..core.decorators import process_slot, run_if_any
@@ -20,12 +19,12 @@ from typing import Any, Union
 logger = logging.getLogger(__name__)
 
 
-class Histogram1DCategorical(PDictModule):
-    """
-    """
-
-    parameters = [("bins", np.dtype(int), 128), ("delta", np.dtype(float), -5)]
-    inputs = [SlotDescriptor("table", type=PTable, required=True)]
+@def_parameter("bins", np.dtype(int), 128)
+@def_parameter("delta", np.dtype(float), -5)
+@def_input("table", PTable)
+@def_output("result", PDict)
+class Histogram1DCategorical(Module):
+    """ """
 
     schema = "{ array: var * int32, min: float64, max: float64, time: int64 }"
 

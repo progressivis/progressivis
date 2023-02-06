@@ -22,7 +22,7 @@ SLEEP = 1
 
 
 class ThrottledReqHandler(RangeRequestHandler):  # type: ignore
-    threshold = 10 ** 6
+    threshold = 10**6
     sleep_times = 3
 
     def copyfile(self, src: Any, dest: Any) -> None:
@@ -51,7 +51,7 @@ def _close(module: CSVLoader) -> None:
         pass
 
 
-def run_throttled_server(port: int = 8000, threshold: int = 10 ** 6) -> None:
+def run_throttled_server(port: int = 8000, threshold: int = 10**6) -> None:
     _ = get_dataset("smallfile")
     _ = get_dataset("bigfile")
     _ = get_dataset_bz2("smallfile")
@@ -109,10 +109,10 @@ class TestProgressiveLoadCSVOverHTTP(ProgressiveTest):
         sink.input.inp = module.output.result
         aio.run(s.start())
         _close(module)
-        self.assertEqual(len(module.table), 1000000)
+        self.assertEqual(len(module.result), 1000000)
 
     def test_02_read_http_csv_crash_recovery(self) -> None:
-        p = Process(target=run_throttled_server, args=(8000, 10 ** 7))
+        p = Process(target=run_throttled_server, args=(8000, 10**7))
         p.start()
         self._http_proc = p
         time.sleep(SLEEP)
@@ -126,10 +126,10 @@ class TestProgressiveLoadCSVOverHTTP(ProgressiveTest):
         aio.run(s.start())
         _close(module)
         # self.assertGreater(module.parser._recovery_cnt, 0)
-        self.assertEqual(len(module.table), 1000000)
+        self.assertEqual(len(module.result), 1000000)
 
     def test_03_read_multiple_csv_crash_recovery(self) -> None:
-        p = Process(target=run_throttled_server, args=(8000, 10 ** 6))
+        p = Process(target=run_throttled_server, args=(8000, 10**6))
         p.start()
         self._http_proc = p
         time.sleep(SLEEP)
@@ -146,7 +146,7 @@ class TestProgressiveLoadCSVOverHTTP(ProgressiveTest):
         sink.input.inp = csv.output.result
         aio.run(csv.start())
         _close(csv)
-        self.assertEqual(len(csv.table), 60000)
+        self.assertEqual(len(csv.result), 60000)
 
     def test_04_read_http_csv_bz2_no_crash(self) -> None:
         p = Process(target=run_simple_server, args=())
@@ -162,10 +162,10 @@ class TestProgressiveLoadCSVOverHTTP(ProgressiveTest):
         sink.input.inp = module.output.result
         aio.run(s.start())
         _close(module)
-        self.assertEqual(len(module.table), 1000000)
+        self.assertEqual(len(module.result), 1000000)
 
     def test_05_read_http_csv_bz2_crash_recovery(self) -> None:
-        p = Process(target=run_throttled_server, args=(8000, 10 ** 7))
+        p = Process(target=run_throttled_server, args=(8000, 10**7))
         p.start()
         self._http_proc = p
         time.sleep(SLEEP)
@@ -183,10 +183,10 @@ class TestProgressiveLoadCSVOverHTTP(ProgressiveTest):
         aio.run(s.start())
         _close(module)
         # self.assertGreater(module.parser._recovery_cnt, 0)
-        self.assertEqual(len(module.table), 1000000)
+        self.assertEqual(len(module.result), 1000000)
 
     def test_06_read_multiple_csv_bz2_crash_recovery(self) -> None:
-        p = Process(target=run_throttled_server, args=(8000, 10 ** 6))
+        p = Process(target=run_throttled_server, args=(8000, 10**6))
         p.start()
         self._http_proc = p
         time.sleep(SLEEP)
@@ -208,7 +208,7 @@ class TestProgressiveLoadCSVOverHTTP(ProgressiveTest):
         sink.input.inp = csv.output.result
         aio.run(csv.start())
         _close(csv)
-        self.assertEqual(len(csv.table), 60000)
+        self.assertEqual(len(csv.result), 60000)
 
 
 if __name__ == "__main__":

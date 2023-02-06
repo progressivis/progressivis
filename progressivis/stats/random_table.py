@@ -8,12 +8,12 @@ import logging
 
 import numpy as np
 
-from ..core.module import ReturnRunStep, output_slot
+from ..core.module import ReturnRunStep, def_output
 from ..core.utils import integer_types
 from ..utils.errors import ProgressiveError, ProgressiveStopIteration
-from ..table.module import PModule
+from ..core.module import Module
 from ..table.table import PTable
-from ..table.constant import Constant
+from ..table.constant import ConstDict
 from ..utils.psdict import PDict
 
 from typing import List, Dict, Union, Any, Callable
@@ -23,8 +23,8 @@ logger = logging.getLogger(__name__)
 RAND = np.random.rand
 
 
-@output_slot("result", PTable)
-class RandomPTable(PModule):
+@def_output("result", PTable)
+class RandomPTable(Module):
     "Random table generator module"
 
     def __init__(
@@ -88,7 +88,7 @@ class RandomPTable(PModule):
         return self._return_run_step(next_state, steps_run=step_size)
 
 
-class RandomDict(Constant):
+class RandomDict(ConstDict):
     def __init__(self, columns: int, **kwds: Any) -> None:
         keys = [f"_{i}" for i in range(1, columns + 1)]
         vals = np.random.rand(columns)

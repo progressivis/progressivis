@@ -11,11 +11,11 @@ from progressivis.core.utils import RandomBytesIO
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from progressivis.table.module import PTableModule
+    from progressivis.core.module import Module
 
 
 class TestProgressiveLoadCSV(ProgressiveTest):
-    def runit(self, module: PTableModule) -> int:
+    def runit(self, module: Module) -> int:
         module.run(1)
         table = module.table
         self.assertFalse(table is None)

@@ -2,13 +2,10 @@ from __future__ import annotations
 
 import logging
 
-from . import PTable
-from progressivis.core.slot import SlotDescriptor
-from progressivis.core.module import ReturnRunStep
-from .module import PTableModule
+from . import PTable, PTableSelectedView
+from ..core.module import Module, ReturnRunStep, def_input, def_output, def_parameter
 from ..core.utils import indices_len, fix_loc
 from ..core.pintset import PIntSet
-from . import PTableSelectedView
 import numpy as np
 
 from typing import Any
@@ -16,13 +13,12 @@ from typing import Any
 logger = logging.getLogger(__name__)
 
 
-class FilterMod(PTableModule):
-    parameters = [
-        ("expr", np.dtype(object), "unknown"),
-        ("user_dict", np.dtype(object), None),
-    ]
-
-    inputs = [SlotDescriptor("table", type=PTable, required=True)]
+@def_parameter("expr", np.dtype(object), "unknown")
+@def_parameter("user_dict", np.dtype(object), None)
+@def_input("table", PTable)
+@def_output("result", PTableSelectedView)
+class FilterMod(Module):
+    """ """
 
     def __init__(self, **kwds: Any) -> None:
         super().__init__(**kwds)
@@ -48,7 +44,7 @@ class FilterMod(PTableModule):
             self.reset()
         if input_slot.deleted.any():
             deleted = input_slot.deleted.next(length=step_size, as_slice=False)
-            self.selected.selection -= deleted
+            self.result.selection -= deleted
             steps += indices_len(deleted)
         if input_slot.created.any():
             created = input_slot.created.next(length=step_size, as_slice=False)
@@ -60,7 +56,7 @@ class FilterMod(PTableModule):
                 as_slice=False,
                 result_object="index",
             )
-            self.selected.selection |= PIntSet(eval_idx)
+            self.result.selection |= PIntSet(eval_idx)
         if not steps:
             return self._return_run_step(self.state_blocked, steps_run=0)
         return self._return_run_step(self.next_state(input_slot), steps)

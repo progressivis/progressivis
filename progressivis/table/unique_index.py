@@ -1,8 +1,7 @@
 from __future__ import annotations
 
 import logging
-from ..table.module import PTableModule, ReturnRunStep
-from ..core.slot import SlotDescriptor
+from ..core.module import Module, ReturnRunStep, def_input, def_output
 from . import PTable, PTableSelectedView
 from ..core.pintset import PIntSet
 from progressivis.core.utils import indices_len, fix_loc
@@ -13,9 +12,9 @@ from typing import Optional, List, Union, Any, Dict, Tuple
 logger = logging.getLogger(__name__)
 
 
-class UniqueIndex(PTableModule):
-    inputs = [SlotDescriptor("table", type=PTable, required=True)]
-
+@def_input("table", type=PTable)
+@def_output("result", PTableSelectedView)
+class UniqueIndex(Module):
     def __init__(self, on: Union[str, List[str]], **kwds: Any) -> None:
         super().__init__(**kwds)
         self.on = on
@@ -33,11 +32,15 @@ class UniqueIndex(PTableModule):
         assert self._input_table is not None
         ds = str(self._input_table._column(on).dshape)
         if ds[0] in "123456789":  # ex: 6*uint16
+
             def _key(i: int) -> Tuple[Any]:
                 return tuple(self._input_table.loc[i, on])
+
         else:
+
             def _key(i: int) -> Any:
                 return self._input_table.loc[i, on]
+
         for i in indices:
             key = _key(i)
             assert (key not in self._index) or self._index[key] == i
@@ -98,13 +101,13 @@ class UniqueIndex(PTableModule):
             deleted = fix_loc(deleted)
             if deleted:
                 self.process_deleted(deleted)
-                self.selected.selection -= deleted
+                self.result.selection -= deleted
         created: Optional[PIntSet] = None
         if input_slot.created.any():
             created = input_slot.created.next(length=step_size, as_slice=False)
             created = fix_loc(created)
             steps += indices_len(created)
-            self.selected.selection |= created
+            self.result.selection |= created
             self.process_created(self.on, created)
         updated: Optional[PIntSet] = None
         if input_slot.updated.any():

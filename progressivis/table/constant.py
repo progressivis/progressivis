@@ -1,15 +1,16 @@
 from __future__ import annotations
 
 from progressivis.utils.errors import ProgressiveStopIteration
-from progressivis.core.module import ReturnRunStep
+from progressivis.core.module import ReturnRunStep, def_output
 from .table import PTable
-from .module import PTableModule, PDictModule
+from ..core.module import Module
 from ..utils.psdict import PDict
 
 from typing import Union, Any
 
 
-class Constant(PTableModule):
+@def_output("result", PTable)
+class Constant(Module):
     def __init__(self, table: Union[None, PTable], **kwds: Any) -> None:
         super().__init__(**kwds)
         assert table is None or isinstance(table, PTable)
@@ -24,7 +25,8 @@ class Constant(PTableModule):
         raise ProgressiveStopIteration()
 
 
-class ConstDict(PDictModule):
+@def_output("result", PDict)
+class ConstDict(Module):
     def __init__(self, pdict: Union[None, PDict], **kwds: Any) -> None:
         super().__init__(**kwds)
         assert pdict is None or isinstance(pdict, PDict)

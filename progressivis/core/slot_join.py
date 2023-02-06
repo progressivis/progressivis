@@ -1,22 +1,22 @@
 from __future__ import annotations
 
 from ..core.pintset import PIntSet
-from .. import Slot
-from ..table import BasePTable
 import operator
 from functools import reduce
 import weakref
-
+from .slot import Slot
 
 from typing import Any, TYPE_CHECKING
 
 
 if TYPE_CHECKING:
-    from progressivis.table.module import PTableModule
+    from progressivis.core.module import Module
 
 
 class SlotJoin:
-    def __init__(self, module: PTableModule, *slots: Slot):
+    def __init__(self, module: Module, *slots: Slot):
+        from ..table import BasePTable
+
         assert len(slots) > 0
         for slot in slots:
             assert isinstance(slot, Slot)
@@ -34,7 +34,7 @@ class SlotJoin:
             raise exc_type(exc_value)
 
     @property
-    def _module(self) -> PTableModule:
+    def _module(self) -> Module:
         module = self._module_wr()
         assert module is not None
         return module
@@ -63,7 +63,7 @@ class SlotJoin:
             if todo <= 0:
                 break
         if not raw:
-            existing = PIntSet(self._module.table.index)
+            existing = PIntSet(self._module.result.index)
             return res & existing
         return res
 
@@ -85,7 +85,7 @@ class SlotJoin:
         changes_ = [slot.deleted.changes for slot in self._slots]
         res = reduce(operator.or_, changes_)
         if not raw:
-            existing = PIntSet(self._module.table.index)
+            existing = PIntSet(self._module.result.index)
             res &= existing
         return res != PIntSet()
 

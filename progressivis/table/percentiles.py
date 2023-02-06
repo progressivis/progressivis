@@ -4,9 +4,7 @@ import numpy as np
 
 from . import PTable, BasePTable
 from ..core.pintset import PIntSet
-from ..core.slot import SlotDescriptor
-from ..core.module import ReturnRunStep
-from .module import PTableModule
+from ..core.module import Module, ReturnRunStep, def_input, def_output, def_parameter
 from collections import OrderedDict
 from ..utils.psdict import PDict
 from .hist_index import HistogramIndex
@@ -14,13 +12,13 @@ from .hist_index import HistogramIndex
 from typing import Any, Dict, List, cast
 
 
-class Percentiles(PTableModule):
-    parameters = [("accuracy", np.dtype(float), 0.5)]
-    inputs = [
-        SlotDescriptor("table", type=PTable, required=True),
-        SlotDescriptor("percentiles", type=PDict, required=True),
-        SlotDescriptor("hist", type=PTable, required=True),
-    ]
+@def_parameter("accuracy", np.dtype(float), 0.5)
+@def_input("table", PTable)
+@def_input("percentiles", PDict)
+@def_input("hist", PTable)
+@def_output("result", PTable)
+class Percentiles(Module):
+    """ """
 
     def __init__(self, **kwds: Any) -> None:
         super(Percentiles, self).__init__(**kwds)
@@ -129,5 +127,5 @@ class Percentiles(PTableModule):
             table.add(computed)
             self.result = table
         else:
-            self.table.loc[0, :] = list(computed.values())
+            self.result.loc[0, :] = list(computed.values())
         return self._return_run_step(self.next_state(input_slot), steps)

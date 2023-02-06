@@ -1,11 +1,9 @@
 from . import ProgressiveTest
-from progressivis import Module, Scheduler
+from progressivis import Scheduler
 from progressivis.io import CSVLoader
 from progressivis.table.constant import Constant
-from progressivis.core.slot import SlotDescriptor
-from progressivis.core.module import ReturnRunStep
+from progressivis.core.module import Module, ReturnRunStep, def_input, def_output
 from progressivis.datasets import get_dataset
-from progressivis.table.module import PTableModule
 from progressivis.table.table import PTable
 from progressivis.core.decorators import (
     process_slot,
@@ -21,14 +19,12 @@ import asyncio as aio
 from typing import Any, Callable, Coroutine
 
 
-class FooABC(PTableModule):
-    inputs = [
-        SlotDescriptor("a", type=PTable, required=True),
-        SlotDescriptor("b", type=PTable, required=True),
-        SlotDescriptor("c", type=PTable, required=True),
-        SlotDescriptor("d", type=PTable, required=True),
-    ]
-
+@def_input("a", PTable)
+@def_input("b", PTable)
+@def_input("c", PTable)
+@def_input("d", PTable)
+@def_output("result", PTable)
+class FooABC(Module):
     def __init__(self, **kwds: Any) -> None:
         super().__init__(output_required=False, **kwds)
 
@@ -41,7 +37,7 @@ class FooABC(PTableModule):
             )
         for sn in "abcd":
             getattr(ctx, sn).created.next()
-        self.table.append({"a": [run_number], "b": [step_size]})
+        self.result.append({"a": [run_number], "b": [step_size]})
         return self._return_run_step(self.state_blocked, steps_run=0)
 
 

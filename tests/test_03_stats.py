@@ -24,8 +24,8 @@ class TestStats(ProgressiveTest):
         pr = Print(proc=self.terse, name="print", scheduler=s)
         pr.input[0] = stats.output.result
         aio.run(s.start())
-        table = csv_module.table
-        stable = stats.table
+        table = csv_module.result
+        stable = stats.result
         last = notNone(stable.last())
         tmin = table["_1"].min()
         self.assertTrue(np.isclose(tmin, last["__1_min"]))

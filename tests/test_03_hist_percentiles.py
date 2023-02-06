@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from progressivis.core import aio, notNone
-from progressivis.table.constant import Constant
+from progressivis.table.constant import ConstDict
 from progressivis import Print
 from progressivis.stats import RandomPTable
 from progressivis.table.hist_index import HistogramIndex
@@ -34,7 +34,7 @@ class TestPercentiles(ProgressiveTest):
             hist_index = HistogramIndex(column="_1", scheduler=s)
             hist_index.input[0] = random.output.result
             t_percentiles = PDict({"_25": 25.0, "_50": 50.0, "_75": 75.0})
-            which_percentiles = Constant(table=t_percentiles, scheduler=s)
+            which_percentiles = ConstDict(pdict=t_percentiles, scheduler=s)
             percentiles = Percentiles(accuracy=accuracy, scheduler=s)
             percentiles.input[0] = random.output.result
             percentiles.input.percentiles = which_percentiles.output.result
@@ -42,10 +42,10 @@ class TestPercentiles(ProgressiveTest):
             prt = Print(proc=self.terse, scheduler=s)
             prt.input[0] = percentiles.output.result
         aio.run(s.start())
-        last = percentiles.table.last()
+        last = percentiles.result.last()
         assert last is not None
         pdict = last.to_dict()
-        v = random.table["_1"].values
+        v = random.result["_1"].values
         p25 = np.percentile(v, 25.0)  # type: ignore
         p50 = np.percentile(v, 50.0)  # type: ignore
         p75 = np.percentile(v, 75.0)  # type: ignore
@@ -79,7 +79,7 @@ class TestPercentiles(ProgressiveTest):
             hist_index = HistogramIndex(column="_1", scheduler=s)
             hist_index.input[0] = stirrer.output.result
             t_percentiles = PDict({"_25": 25.0, "_50": 50.0, "_75": 75.0})
-            which_percentiles = Constant(table=t_percentiles, scheduler=s)
+            which_percentiles = ConstDict(pdict=t_percentiles, scheduler=s)
             percentiles = Percentiles(accuracy=accuracy, scheduler=s)
             percentiles.input[0] = stirrer.output.result
             percentiles.input.percentiles = which_percentiles.output.result
@@ -87,10 +87,10 @@ class TestPercentiles(ProgressiveTest):
             prt = Print(proc=self.terse, scheduler=s)
             prt.input[0] = percentiles.output.result
         aio.run(s.start())
-        pdict = notNone(percentiles.table.last()).to_dict()
+        pdict = notNone(percentiles.result.last()).to_dict()
         # v = random.table()['_1'].values
         # from nose.tools import set_trace; set_trace()
-        v = stirrer.table.to_array(columns=["_1"]).reshape(-1)
+        v = stirrer.result.to_array(columns=["_1"]).reshape(-1)
         p25 = np.percentile(v, 25.0)  # type: ignore
         p50 = np.percentile(v, 50.0)  # type: ignore
         p75 = np.percentile(v, 75.0)  # type: ignore
@@ -142,9 +142,9 @@ class TestPercentiles(ProgressiveTest):
         with s:
             random = RandomPTable(2, rows=10000, scheduler=s)
             t_min = PDict({"_1": 0.3})
-            min_value = Constant(table=t_min, scheduler=s)
+            min_value = ConstDict(pdict=t_min, scheduler=s)
             t_max = PDict({"_1": 0.8})
-            max_value = Constant(table=t_max, scheduler=s)
+            max_value = ConstDict(pdict=t_max, scheduler=s)
             range_qry = RangeQuery(column="_1", scheduler=s)
             range_qry.create_dependent_modules(
                 random, "result", min_value=min_value, max_value=max_value
@@ -153,7 +153,7 @@ class TestPercentiles(ProgressiveTest):
             hist_index = range_qry.hist_index
             assert hist_index
             t_percentiles = PDict({"_25": 25.0, "_50": 50.0, "_75": 75.0})
-            which_percentiles = Constant(table=t_percentiles, scheduler=s)
+            which_percentiles = ConstDict(pdict=t_percentiles, scheduler=s)
             percentiles = Percentiles(accuracy=accuracy, scheduler=s)
             percentiles.input[0] = range_qry.output.result
             percentiles.input.percentiles = which_percentiles.output.result
@@ -161,8 +161,8 @@ class TestPercentiles(ProgressiveTest):
             prt = Print(proc=self.terse, scheduler=s)
             prt.input[0] = percentiles.output.result
         aio.run(s.start())
-        pdict = notNone(percentiles.table.last()).to_dict()
-        v = range_qry.table["_1"].values
+        pdict = notNone(percentiles.result.last()).to_dict()
+        v = range_qry.result["_1"].values
         p25 = np.percentile(v, 25.0)  # type: ignore
         p50 = np.percentile(v, 50.0)  # type: ignore
         p75 = np.percentile(v, 75.0)  # type: ignore
@@ -194,9 +194,9 @@ class TestPercentiles(ProgressiveTest):
             )
             stirrer.input[0] = random.output.result
             t_min = PDict({"_1": 0.3})
-            min_value = Constant(table=t_min, scheduler=s)
+            min_value = ConstDict(pdict=t_min, scheduler=s)
             t_max = PDict({"_1": 0.8})
-            max_value = Constant(table=t_max, scheduler=s)
+            max_value = ConstDict(pdict=t_max, scheduler=s)
             range_qry = RangeQuery(column="_1", scheduler=s)
             range_qry.create_dependent_modules(
                 stirrer, "result", min_value=min_value, max_value=max_value
@@ -205,7 +205,7 @@ class TestPercentiles(ProgressiveTest):
             hist_index = range_qry.hist_index
             assert hist_index
             t_percentiles = PDict({"_25": 25.0, "_50": 50.0, "_75": 75.0})
-            which_percentiles = Constant(table=t_percentiles, scheduler=s)
+            which_percentiles = ConstDict(pdict=t_percentiles, scheduler=s)
             percentiles = Percentiles(accuracy=accuracy, scheduler=s)
             percentiles.input[0] = range_qry.output.result
             percentiles.input.percentiles = which_percentiles.output.result
@@ -213,8 +213,8 @@ class TestPercentiles(ProgressiveTest):
             prt = Print(proc=self.terse, scheduler=s)
             prt.input[0] = percentiles.output.result
         aio.run(s.start())
-        pdict = notNone(percentiles.table.last()).to_dict()
-        v = range_qry.table["_1"].values
+        pdict = notNone(percentiles.result.last()).to_dict()
+        v = range_qry.result["_1"].values
         p25 = np.percentile(v, 25.0)  # type: ignore
         p50 = np.percentile(v, 50.0)  # type: ignore
         p75 = np.percentile(v, 75.0)  # type: ignore
