@@ -5,7 +5,7 @@ from progressivis.io import CSVLoader
 from progressivis.stats import Min, Max, RandomPTable
 from progressivis.datasets import get_dataset
 from progressivis.core import aio, Sink, Scheduler
-from progressivis.core.module import BaseModule, ReturnRunStep, def_input, def_output
+from progressivis.core.module import Module, ReturnRunStep, def_input, def_output
 from progressivis.core.dataflow import Dataflow
 from progressivis.vis import MCScatterPlot
 
@@ -18,7 +18,7 @@ from typing import Any
 @def_input("b", required=False)
 @def_output("c")
 @def_output("d", required=False)
-class TestModule(BaseModule):
+class TestModule(Module):
     def __init__(self, **kwds: Any) -> None:
         super(TestModule, self).__init__(**kwds)
 

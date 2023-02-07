@@ -63,7 +63,7 @@ class SlotJoin:
             if todo <= 0:
                 break
         if not raw:
-            existing = PIntSet(self._module.result.index)
+            existing = PIntSet(self._module.result.index)  # type: ignore
             return res & existing
         return res
 
@@ -85,7 +85,7 @@ class SlotJoin:
         changes_ = [slot.deleted.changes for slot in self._slots]
         res = reduce(operator.or_, changes_)
         if not raw:
-            existing = PIntSet(self._module.result.index)
+            existing = PIntSet(self._module.result.index)  # type: ignore
             res &= existing
         return res != PIntSet()
 

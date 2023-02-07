@@ -24,7 +24,7 @@ from ..core import aio
 import collections.abc as collections_abc  # only works on python 3.3+
 
 from multiprocessing import Process
-from pandas.io.common import is_url
+from pandas.io.common import is_url  # type: ignore
 import pandas as pd
 
 import requests
@@ -791,7 +791,7 @@ def get_physical_base(t: Any) -> Any:
     return t
 
 
-def normalize_columns(raw_columns: List[Any]) -> List[str]:
+def normalize_columns(raw_columns: Union[List[Any], pd.Index]) -> List[str]:
     uniq: Set[str] = set()
     columns: List[str] = []
     for i, c in enumerate(raw_columns, 1):
@@ -805,7 +805,7 @@ def normalize_columns(raw_columns: List[Any]) -> List[str]:
 
 
 def force_valid_id_columns(df: pd.DataFrame) -> None:
-    df.columns = normalize_columns(df.columns)
+    df.columns = normalize_columns(df.columns)  # type: ignore
 
 
 def force_valid_id_columns_pa(rb: pa.RecordBatch) -> pa.RecordBatch:
@@ -826,7 +826,7 @@ class Dialog:
         return self
 
     def set_output_table(self, res: Union[None, BasePTable, PDict]) -> Dialog:
-        self._module.result = res
+        self._module.result = res  # type: ignore
         return self
 
     @property
@@ -835,7 +835,7 @@ class Dialog:
 
     @property
     def output_table(self) -> Union[BasePTable, PDict, None]:
-        return self._module.result
+        return self._module.result  # type: ignore
 
 
 def spy(*args: Any, **kwargs: Any) -> None:
@@ -903,6 +903,8 @@ def decorate(scheduler: Scheduler, patch: ModulePatch) -> None:
         patch.applied = True
 
     for m in scheduler.modules().values():
+        if not isinstance(m, Module):
+            continue  # for mypy
         if patch.patch_condition(m):
             decorate_module(m, patch)
 

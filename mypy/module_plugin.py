@@ -25,7 +25,7 @@ def decl_deco_hook(ctx: ClassDefContext) -> None:
 
 class ModulePlugin(Plugin):
     def get_class_decorator_hook(self, fullname: str) -> CB[ClassDefContext]:
-        if fullname == "progressivis.core.module_base.def_output":
+        if fullname == "progressivis.core.module.def_output":
             return decl_deco_hook
 
 
