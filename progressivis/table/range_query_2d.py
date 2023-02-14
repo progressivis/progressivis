@@ -3,8 +3,7 @@ from __future__ import annotations
 import numpy as np
 
 import itertools as it
-
-from ..core.module import Module, ReturnRunStep, def_input, def_output, def_parameter
+from ..core.module import Module, ReturnRunStep, def_input, def_output, def_parameter, document
 from ..core.pintset import PIntSet
 from ..core.utils import indices_len
 from ..utils.psdict import PDict
@@ -138,31 +137,42 @@ class RangeQuery2dImpl:  # (ModuleImpl):
         )
 
 
-@def_parameter("column_x", np.dtype(object), "unknown")
+@document
+@def_parameter("column_x", np.dtype(object), "unknown", doc="titi")
 @def_parameter("column_y", np.dtype(object), "unknown")
-@def_parameter("watched_key_lower_x", np.dtype(object), "")
+@def_parameter("watched_key_lower_x", np.dtype(object), "", doc="**tutu**")
 @def_parameter("watched_key_upper_x", np.dtype(object), "")
 @def_parameter("watched_key_lower_y", np.dtype(object), "")
 @def_parameter("watched_key_upper_y", np.dtype(object), "")
 @def_input("table", PTable)
-@def_input("lower", PDict, required=False)
+@def_input("lower", PDict, required=False, doc="lower doc")
 @def_input("upper", PDict, required=False)
 @def_input("min", PDict, required=False)
 @def_input("max", PDict, required=False)
 @def_input("hist_x", PTable)
 @def_input("hist_y", PTable)
 @def_output("result", PTableSelectedView)
-@def_output("min", PDict, attr_name="_min_table", required=False)
+@def_output("min", PDict, attr_name="_min_table", required=False, doc="min doc")
 @def_output("max", PDict, attr_name="_max_table", required=False)
 class RangeQuery2d(Module):
-    """ """
-
+    """
+    Range Query module
+    A RangeQuery2d makes a selection on 2 axes
+    """
     def __init__(
         self,
         # hist_index: Optional[HistogramIndex] = None,
         approximate: bool = False,
         **kwds: Any,
     ) -> None:
+        """
+        Parameters
+        ----------
+        approximate:
+            approx ...
+        kwds:
+            keywords
+        """
         super(RangeQuery2d, self).__init__(**kwds)
         # self._hist_index_x: Optional[HistogramIndex] = None
         # self._hist_index_y: Optional[HistogramIndex] = None

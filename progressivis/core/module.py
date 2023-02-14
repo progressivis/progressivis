@@ -27,7 +27,6 @@ from .time_predictor import TimePredictor
 from .storagemanager import StorageManager
 from .scheduler import Scheduler
 from .slot_join import SlotJoin
-
 from typing import (
     cast,
     Any,
@@ -126,23 +125,22 @@ class ModuleCallbackList(List[ModuleProc]):
 
 class Module(metaclass=ABCMeta):
     """The Module class is the base class for all the progressive modules."""
-
     parameters: Parameters = [
         ("quantum", np.dtype(float), 0.5),
         ("debug", np.dtype(bool), False),
     ]
     TRACE_SLOT = "_trace"
     PARAMETERS_SLOT = "_params"
-
     TAG_VISUALIZATION = "visualization"
     TAG_INPUT = "input"
     TAG_SOURCE = "source"
     TAG_GREEDY = "greedy"
     TAG_DEPENDENT = "dependent"
-
     inputs = [SlotDescriptor(PARAMETERS_SLOT, type=BasePTable, required=False)]
     outputs = [SlotDescriptor(TRACE_SLOT, type=BasePTable, required=False)]
+    doc_building = False
     output_attrs: Dict[str, str] = {}
+    output_types: Dict[str, Any] = {}
     state_created: ClassVar[ModuleState] = ModuleState.state_created
     state_ready: ClassVar[ModuleState] = ModuleState.state_ready
     state_running: ClassVar[ModuleState] = ModuleState.state_running
@@ -284,6 +282,94 @@ class Module(metaclass=ABCMeta):
         created within a scope, typically dependent modules.
         """
         return ModuleTag(*tags)
+
+    @staticmethod
+    def doc_building():
+        import sys
+        if sys.path[-1] == "/progressivis/sphinx_marker/":
+            print("doc building")
+            return True
+        print("no doc")
+        return False
+
+    @classmethod
+    def finalize_doc(cls):
+        if not cls.doc_building:
+            print("finalize: nothing to do on", cls)
+        doclist = [cls.__doc__, "\n"]
+        sd_keys = list(SlotDescriptor.__init__.__annotations__.keys())[1:]  # exclude "name"
+        sd_defs = dict(zip(sd_keys, SlotDescriptor.__init__.__defaults__))
+        print("sd_defs", sd_defs)
+
+        def _section(n, s):
+            sp = n * " "
+            doclist.append(sp)
+            doclist.append(s)
+            doclist.append("\n")
+            doclist.append(sp)
+            doclist.append("_"*len(s))
+            doclist.append("\n")
+
+        def _param(n, name, typ, val):
+            sp = n * " "
+            sp2 = (n + 4) * " "
+            typ = (f"np.{t.name}"
+                   if type(t).__module__ == "numpy"
+                   else str(t))
+            doclist.append(sp)
+            doclist.append(f"{name}: {typ}\n")
+            doclist.append(sp2)
+            dv = "\"\"" if val == "" else val
+            doclist.append(f"default: {dv}\n")
+            if name in params_doc:
+                doclist.append(sp2)
+                doclist.append(f", {params_doc[name]}\n")
+
+        def _slot(n, sd, cls, mode="in"):
+            sp = n * " "
+            sp2 = (n + 4) * " "
+            doclist.append(sp)
+            doclist.append(f"{sd.name}: {sd.type.__name__}\n")
+            no_defaults = []
+            for k, v in sd_defs.items():
+                if k == "type":
+                    continue
+                crt = getattr(sd, k)
+                if crt != v:
+                    no_defaults.append(f"{k}: {crt}")
+            if mode == "out":
+                attr_name = cls.output_attrs[sd.name]
+                if attr_name != sd.name:
+                    no_defaults.append(f"attr_name: {attr_name}")
+                if attr_name not in cls.output_types:
+                    no_defaults.append("custom_attr: True")
+            if no_defaults:
+                doclist.append(sp2)
+                nd = ", ".join(no_defaults)
+                doclist.append(f"{nd}\n")
+            slot_doc = inputs_doc if mode == "in" else outputs_doc
+            if sd.name in slot_doc:
+                doclist.append(sp2)
+                doclist.append(f", {slot_doc[sd.name]}\n")
+
+        if cls.parameters:
+            _section(4, "Module parameters")
+            for (n, t, v) in cls.parameters:
+                _param(8, n, t, v)
+        if cls.inputs:
+            _section(4, "Input slots")
+            for sd in cls.inputs:
+                if sd.name == "_params":
+                    continue
+                _slot(8, sd, cls)
+        if cls.outputs:
+            _section(4, "Output slots")
+            for sd in cls.outputs:
+                if sd.name == "_trace":
+                    continue
+                _slot(8, sd, cls, "out")
+
+        cls.__doc__ = "".join(doclist)
 
     def grouped(self) -> GroupContext:
         """Create a context manager to add group to a set of modules
@@ -1264,11 +1350,22 @@ def _print_len(x: Sized) -> None:
         print(len(x))
 
 
-def def_parameter(name, type, value):
+DOC_ = None
+params_doc = {}
+inputs_doc = {}
+outputs_doc = {}
+
+
+def def_parameter(name, type, value, *, doc=""):
     """
     class decorator
     """
+    global DOC_
+    if DOC_ is None:
+        DOC_ = Module.doc_building()
+
     def module_decorator(module):
+        module.doc_building = DOC_
         par = (name, type, value)
         asdict = {p[0]: p for p in module.parameters}
         if name in asdict:
@@ -1276,15 +1373,22 @@ def def_parameter(name, type, value):
             module.parameters = list(asdict.values())
         else:
             module.parameters = [par] + module.parameters  # do not use += here
+        if DOC_ and doc:
+            params_doc[name] = doc
         return module
     return module_decorator
 
 
-def def_input(name, type=None, **kw):
+def def_input(name, type=None, *, doc="", **kw):
     """
     class decorator
     """
+    global DOC_
+    if DOC_ is None:
+        DOC_ = Module.doc_building()
+
     def module_decorator(module):
+        module.doc_building = DOC_
         sd = SlotDescriptor(name=name,
                             type=type, **kw)
         asdict = {s.name: s for s in module.inputs}
@@ -1293,6 +1397,9 @@ def def_input(name, type=None, **kw):
             module.inputs = list(asdict.values())
         else:
             module.inputs = [sd] + module.inputs  # do not use += here
+        if DOC_ and doc:
+            inputs_doc[name] = doc
+        return module
         return module
     return module_decorator
 
@@ -1333,14 +1440,19 @@ def add_output_to_module(module, name, attr_name, custom_attr, stype):
     module.output_types[attr_name] = stype
 
 
-def def_output(name, type=None, attr_name=None, custom_attr=False, **kw):
+def def_output(name, type=None, *, attr_name=None, custom_attr=False, doc="", **kw):
     """
     class decorator
     """
+    global DOC_
+    if DOC_ is None:
+        DOC_ = Module.doc_building()
+
     if attr_name is None:
         attr_name = name
 
     def module_decorator(module):
+        module.doc_building = DOC_
         sd = SlotDescriptor(name=name,
                             type=type, **kw)
         asdict = {s.name: s for s in module.outputs}
@@ -1350,8 +1462,19 @@ def def_output(name, type=None, attr_name=None, custom_attr=False, **kw):
         else:
             module.outputs = [sd] + module.outputs  # do not use += here
         add_output_to_module(module, name, attr_name, custom_attr, type)
+        if DOC_ and doc:
+            outputs_doc[name] = doc
         return module
     return module_decorator
+
+
+def document(module):
+    module.finalize_doc()
+    print("params doc", module, params_doc)
+    params_doc.clear()
+    inputs_doc.clear()
+    outputs_doc.clear()
+    return module
 
 
 @def_input("df")

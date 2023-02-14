@@ -8,6 +8,7 @@ from progressivis.core.module import (
     def_input,
     def_output,
     def_parameter,
+    document
 )
 from progressivis.core.pintset import PIntSet
 from progressivis.core.utils import indices_len
@@ -103,17 +104,23 @@ class RangeQueryImpl:  # (ModuleImpl):
         self.resume(hist_index, lower, upper, limit_changed, created, updated, deleted)
 
 
-@def_parameter("column", np.dtype(object), "unknown")
+@document
+@def_parameter("column", np.dtype(object), "unknown", doc="short description of the **column** parameter")
 @def_parameter("watched_key_lower", np.dtype(object), "")
 @def_parameter("watched_key_upper", np.dtype(object), "")
 @def_input("table", PTable)
-@def_input("lower", PDict, required=False)
+@def_input("lower", PDict, required=False, doc="short description of the **lower** input slot")
 @def_input("upper", PDict, required=False)
 @def_input("min", PDict, required=False)
 @def_input("max", PDict, required=False)
 @def_input("hist", PTable)
-@def_output("result", PTableSelectedView)
-@def_output("min", PDict, attr_name="_min_table", required=False)
+@def_output("result", PTableSelectedView, doc="short description of the **result** output slot")
+@def_output("min", PDict, attr_name="_min_table", required=False, doc=(
+    "a longer description of the **min** output slot: "
+    "Lorem ipsum dolor sit amet, consectetur "
+    "adipiscing elit, sed do eiusmod tempor "
+    "incididunt ut labore et dolore magna aliqua."
+))
 @def_output("max", PDict, attr_name="_max_table", required=False)
 class RangeQuery(Module):
     """ """

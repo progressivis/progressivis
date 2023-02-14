@@ -17,6 +17,7 @@ from progressivis.core.module import (
     def_input,
     def_output,
     def_parameter,
+    document
 )
 from ..core.pintset import PIntSet
 from ..table import PTable
@@ -33,6 +34,7 @@ def has_len(d: object) -> bool:
     return hasattr(d, "__len__")
 
 
+@document
 @def_parameter("samples", np.dtype(int), 50)
 @def_input("table", type=PTable)
 @def_output("result", type=PTableSelectedView)
