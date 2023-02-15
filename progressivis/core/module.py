@@ -123,6 +123,10 @@ class ModuleCallbackList(List[ModuleProc]):
         return ret
 
 
+class Dependency:
+    pass
+
+
 class Module(metaclass=ABCMeta):
     """The Module class is the base class for all the progressive modules."""
     parameters: Parameters = [
@@ -221,7 +225,7 @@ class Module(metaclass=ABCMeta):
         self._saved_state: ModuleState = Module.state_invalid
         self._had_error = False
         self._parse_parameters(kwds)
-
+        self.dep = Dependency()
         # always present
         input_descriptors = self.all_inputs
         output_descriptors = self.all_outputs
@@ -286,7 +290,7 @@ class Module(metaclass=ABCMeta):
     @staticmethod
     def doc_building():
         import sys
-        if sys.path[-1] == "/progressivis/sphinx_marker/":
+        if "/progressivis/sphinx_marker/" in sys.path:
             print("doc building")
             return True
         print("no doc")
@@ -296,6 +300,7 @@ class Module(metaclass=ABCMeta):
     def finalize_doc(cls):
         if not cls.doc_building:
             print("finalize: nothing to do on", cls)
+            return
         doclist = [cls.__doc__, "\n"]
         sd_keys = list(SlotDescriptor.__init__.__annotations__.keys())[1:]  # exclude "name"
         sd_defs = dict(zip(sd_keys, SlotDescriptor.__init__.__defaults__))

@@ -8,7 +8,7 @@ from progressivis.core.module import (
     def_input,
     def_output,
     def_parameter,
-    document
+    document,
 )
 from progressivis.core.pintset import PIntSet
 from progressivis.core.utils import indices_len
@@ -105,22 +105,37 @@ class RangeQueryImpl:  # (ModuleImpl):
 
 
 @document
-@def_parameter("column", np.dtype(object), "unknown", doc="short description of the **column** parameter")
+@def_parameter(
+    "column",
+    np.dtype(object),
+    "unknown",
+    doc="short description of the **column** parameter",
+)
 @def_parameter("watched_key_lower", np.dtype(object), "")
 @def_parameter("watched_key_upper", np.dtype(object), "")
 @def_input("table", PTable)
-@def_input("lower", PDict, required=False, doc="short description of the **lower** input slot")
+@def_input(
+    "lower", PDict, required=False, doc="short description of the **lower** input slot"
+)
 @def_input("upper", PDict, required=False)
 @def_input("min", PDict, required=False)
 @def_input("max", PDict, required=False)
 @def_input("hist", PTable)
-@def_output("result", PTableSelectedView, doc="short description of the **result** output slot")
-@def_output("min", PDict, attr_name="_min_table", required=False, doc=(
-    "a longer description of the **min** output slot: "
-    "Lorem ipsum dolor sit amet, consectetur "
-    "adipiscing elit, sed do eiusmod tempor "
-    "incididunt ut labore et dolore magna aliqua."
-))
+@def_output(
+    "result", PTableSelectedView, doc="short description of the **result** output slot"
+)
+@def_output(
+    "min",
+    PDict,
+    attr_name="_min_table",
+    required=False,
+    doc=(
+        "a longer description of the **min** output slot: "
+        "Lorem ipsum dolor sit amet, consectetur "
+        "adipiscing elit, sed do eiusmod tempor "
+        "incididunt ut labore et dolore magna aliqua."
+    ),
+)
 @def_output("max", PDict, attr_name="_max_table", required=False)
 class RangeQuery(Module):
     """ """
@@ -197,7 +212,7 @@ class RangeQuery(Module):
                 max_value.input.like = max_.output.result
 
             range_query = self
-            range_query.hist_index = hist_index
+            range_query.dep.hist_index = hist_index
             range_query.input.hist = hist_index.output.result
             range_query.input.table = input_module.output[input_slot]
             if min_value:
@@ -207,10 +222,10 @@ class RangeQuery(Module):
             range_query.input.min = min_.output.result
             range_query.input.max = max_.output.result
 
-        self.min = min_
-        self.max = max_
-        self.min_value = min_value
-        self.max_value = max_value
+        self.dep.min = min_
+        self.dep.max = max_
+        self.dep.min_value = min_value
+        self.dep.max_value = max_value
         return range_query
 
     def _create_min_max(self) -> None:
@@ -237,64 +252,39 @@ class RangeQuery(Module):
     ) -> ReturnRunStep:
         input_slot = self.get_input_slot("table")
         self._create_min_max()
+        hist_slot = self.get_input_slot("hist")
+        hist_slot.clear_buffers()
         #
         # lower/upper
         #
         lower_slot = self.get_input_slot("lower")
-        # lower_slot.update(run_number)
         upper_slot = self.get_input_slot("upper")
         limit_changed = False
-        if lower_slot.deleted.any():
-            lower_slot.deleted.next()
-        if lower_slot.updated.any():
-            lower_slot.updated.next()
+        if (
+            lower_slot.updated.any()
+            or lower_slot.created.any()
+            or upper_slot.updated.any()
+            or upper_slot.created.any()
+        ):
             limit_changed = True
-        if lower_slot.created.any():
-            lower_slot.created.next()
-            limit_changed = True
-        if not (lower_slot is upper_slot):
-            # upper_slot.update(run_number)
-            if upper_slot.deleted.any():
-                upper_slot.deleted.next()
-            if upper_slot.updated.any():
-                upper_slot.updated.next()
-                limit_changed = True
-            if upper_slot.created.any():
-                upper_slot.created.next()
-                limit_changed = True
+        lower_slot.clear_buffers()
+        upper_slot.clear_buffers()
         #
         # min/max
         #
         min_slot = self.get_input_slot("min")
         min_slot.clear_buffers()
-        # min_slot.update(run_number)
-        # min_slot.created.next()
-        # min_slot.updated.next()
-        # min_slot.deleted.next()
         max_slot = self.get_input_slot("max")
         max_slot.clear_buffers()
-        # max_slot.update(run_number)
-        # max_slot.created.next()
-        # max_slot.updated.next()
-        # max_slot.deleted.next()
-        if (
-            lower_slot.data() is None
-            or upper_slot.data() is None
-            or len(lower_slot.data()) == 0
-            or len(upper_slot.data()) == 0
+        if not (
+            lower_slot.has_data()
+            and upper_slot.has_data()
+            and min_slot.has_data()
+            and max_slot.has_data()
         ):
             return self._return_run_step(self.state_blocked, steps_run=0)
         lower_value = lower_slot.data().get(self.watched_key_lower)
         upper_value = upper_slot.data().get(self.watched_key_upper)
-        if (
-            lower_slot.data() is None
-            or upper_slot.data() is None
-            or min_slot.data() is None
-            or max_slot.data() is None
-            or len(min_slot.data()) == 0
-            or len(max_slot.data()) == 0
-        ):
-            return self._return_run_step(self.state_blocked, steps_run=0)
         minv = min_slot.data().get(self.watched_key_lower)
         maxv = max_slot.data().get(self.watched_key_upper)
         if lower_value == "*":
@@ -341,8 +331,6 @@ class RangeQuery(Module):
         if self.result is None:
             self.result = PTableSelectedView(input_table, PIntSet([]))
         assert self._impl
-        hist_slot = self.get_input_slot("hist")
-        hist_slot.clear_buffers()
         if not self._impl.is_started:
             self._impl.start(
                 input_table,

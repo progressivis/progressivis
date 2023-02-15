@@ -111,6 +111,9 @@ class Slot:
         "Return the data associated with this slot"
         return self.output_module.get_data(self.output_name)
 
+    def has_data(self) -> bool:
+        return self.data() is not None and len(self.data()) > 0
+
     def scheduler(self) -> Scheduler:
         "Return the scheduler associated with this slot"
         return self.output_module.scheduler()

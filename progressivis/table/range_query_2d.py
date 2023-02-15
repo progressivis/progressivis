@@ -3,7 +3,14 @@ from __future__ import annotations
 import numpy as np
 
 import itertools as it
-from ..core.module import Module, ReturnRunStep, def_input, def_output, def_parameter, document
+from ..core.module import (
+    Module,
+    ReturnRunStep,
+    def_input,
+    def_output,
+    def_parameter,
+    document,
+)
 from ..core.pintset import PIntSet
 from ..core.utils import indices_len
 from ..utils.psdict import PDict
@@ -159,6 +166,7 @@ class RangeQuery2d(Module):
     Range Query module
     A RangeQuery2d makes a selection on 2 axes
     """
+
     def __init__(
         self,
         # hist_index: Optional[HistogramIndex] = None,
@@ -223,12 +231,12 @@ class RangeQuery2d(Module):
                 hist_index_x = HistogramIndex(
                     column=params.column_x, group=self.name, scheduler=scheduler
                 )
-                self.hist_index_x = hist_index_x
+                self.dep.hist_index_x = hist_index_x
                 hist_index_x.input.table = input_module.output[input_slot]
                 hist_index_y = HistogramIndex(
                     column=params.column_y, group=self.name, scheduler=scheduler
                 )
-                self.hist_index_y = hist_index_y
+                self.dep.hist_index_y = hist_index_y
                 hist_index_y.input.table = input_module.output[input_slot]
                 if min_ is None:
                     min_x = Min(
@@ -282,10 +290,10 @@ class RangeQuery2d(Module):
                     range_query.input.upper = max_value.output.result
                 range_query.input.min = min_.output.result
                 range_query.input.max = max_.output.result
-            self.min = min_
-            self.max = max_
-            self.min_value = min_value
-            self.max_value = max_value
+            self.dep.min = min_
+            self.dep.max = max_
+            self.dep.min_value = min_value
+            self.dep.max_value = max_value
             return range_query
 
     def _create_min_max(self) -> None:
@@ -313,6 +321,10 @@ class RangeQuery2d(Module):
     def run_step(
         self, run_number: int, step_size: int, howlong: float
     ) -> ReturnRunStep:
+        hist_x_slot = self.get_input_slot("hist_x")
+        hist_x_slot.clear_buffers()
+        hist_y_slot = self.get_input_slot("hist_y")
+        hist_y_slot.clear_buffers()
         input_slot = self.get_input_slot("table")
         # input_slot.update(run_number)
         steps = 0
@@ -340,47 +352,29 @@ class RangeQuery2d(Module):
         # lower/upper
         #
         lower_slot = self.get_input_slot("lower")
-        # lower_slot.update(run_number)
         upper_slot = self.get_input_slot("upper")
         limit_changed = False
-        if lower_slot.deleted.any():
-            lower_slot.deleted.next()
-        if lower_slot.updated.any():
-            lower_slot.updated.next()
+        if (
+            lower_slot.updated.any()
+            or lower_slot.created.any()
+            or upper_slot.updated.any()
+            or upper_slot.created.any()
+        ):
             limit_changed = True
-        if lower_slot.created.any():
-            lower_slot.created.next()
-            limit_changed = True
-        if not (lower_slot is upper_slot):
-            # upper_slot.update(run_number)
-            if upper_slot.deleted.any():
-                upper_slot.deleted.next()
-            if upper_slot.updated.any():
-                upper_slot.updated.next()
-                limit_changed = True
-            if upper_slot.created.any():
-                upper_slot.created.next()
-                limit_changed = True
+        lower_slot.clear_buffers()
+        upper_slot.clear_buffers()
         #
         # min/max
         #
         min_slot = self.get_input_slot("min")
         min_slot.clear_buffers()
-        # min_slot.update(run_number)
-        # min_slot.created.next()
-        # min_slot.updated.next()
-        # min_slot.deleted.next()
         max_slot = self.get_input_slot("max")
         max_slot.clear_buffers()
-        # max_slot.update(run_number)
-        # max_slot.created.next()
-        # max_slot.updated.next()
-        # max_slot.deleted.next()
-        if (
-            lower_slot.data() is None
-            or upper_slot.data() is None
-            or len(lower_slot.data()) == 0
-            or len(upper_slot.data()) == 0
+        if not (
+            lower_slot.has_data()
+            and upper_slot.has_data()
+            and min_slot.has_data()
+            and max_slot.has_data()
         ):
             return self._return_run_step(self.state_blocked, steps_run=0)
         # X ...
@@ -389,13 +383,6 @@ class RangeQuery2d(Module):
         # Y ...
         lower_value_y = lower_slot.data().get(self._watched_key_lower_y)
         upper_value_y = upper_slot.data().get(self._watched_key_upper_y)
-        if (
-            lower_slot.data() is None
-            or upper_slot.data() is None
-            or len(min_slot.data()) == 0
-            or len(max_slot.data()) == 0
-        ):
-            return self._return_run_step(self.state_blocked, steps_run=0)
         # X ...
         minv_x = min_slot.data().get(self._watched_key_lower_x)
         maxv_x = max_slot.data().get(self._watched_key_upper_x)
@@ -443,10 +430,6 @@ class RangeQuery2d(Module):
         if steps == 0 and not limit_changed:
             return self._return_run_step(self.state_blocked, steps_run=0)
         # ...
-        hist_x_slot = self.get_input_slot("hist_x")
-        hist_x_slot.clear_buffers()
-        hist_y_slot = self.get_input_slot("hist_y")
-        hist_y_slot.clear_buffers()
 
         assert self._impl
         if not self._impl.is_started:

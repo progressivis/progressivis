@@ -7,7 +7,10 @@ from typing import Any
 
 
 def decl_deco_hook(ctx: ClassDefContext) -> None:
-    pymod = import_module(".".join(ctx.cls.fullname.split(".")[:-1]))
+    try:
+        pymod = import_module(".".join(ctx.cls.fullname.split(".")[:-1]))
+    except ModuleNotFoundError:  # e.g. tests.test_NN_name.TestClass
+        return
     module = pymod.__dict__[ctx.cls.name]
     for attr in module.output_attrs.values():
         if attr not in module.output_types:
