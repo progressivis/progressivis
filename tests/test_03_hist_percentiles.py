@@ -150,7 +150,7 @@ class TestPercentiles(ProgressiveTest):
                 random, "result", min_value=min_value, max_value=max_value
             )
 
-            hist_index = range_qry.hist_index
+            hist_index = range_qry.dep.hist_index
             assert hist_index
             t_percentiles = PDict({"_25": 25.0, "_50": 50.0, "_75": 75.0})
             which_percentiles = ConstDict(pdict=t_percentiles, scheduler=s)
@@ -202,7 +202,7 @@ class TestPercentiles(ProgressiveTest):
                 stirrer, "result", min_value=min_value, max_value=max_value
             )
 
-            hist_index = range_qry.hist_index
+            hist_index = range_qry.dep.hist_index
             assert hist_index
             t_percentiles = PDict({"_25": 25.0, "_50": 50.0, "_75": 75.0})
             which_percentiles = ConstDict(pdict=t_percentiles, scheduler=s)
