@@ -1,5 +1,5 @@
 import logging
-from collections import Iterable
+from collections.abc import Iterable
 
 from ..core import Print, Sink
 from ..core.pintset import PIntSet

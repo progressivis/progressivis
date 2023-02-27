@@ -10,20 +10,19 @@ on:
 
 jobs:
   run:
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
 
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest]
-        python_version: [3.8, 3.9]
+        python_version: ["3.9", "3.10", "3.11"]
 
     defaults:
       run:
         shell: bash
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
 
     - name: Setup conda
       uses: conda-incubator/setup-miniconda@v2
@@ -48,4 +47,6 @@ jobs:
 
     - name: Coverage
       run: |
+        source /usr/share/miniconda/etc/profile.d/conda.sh
+        conda activate progressivis
         coverage report -m

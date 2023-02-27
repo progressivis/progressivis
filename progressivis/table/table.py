@@ -3,7 +3,8 @@ Main PTable class
 """
 from __future__ import annotations
 
-from collections import OrderedDict, Mapping
+from collections import OrderedDict
+from collections.abc import Mapping
 import logging
 import numpy as np
 import pandas as pd
