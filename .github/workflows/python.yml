@@ -44,7 +44,7 @@ jobs:
         git clone https://github.com/apache/datasketches-cpp.git
         pip install -e datasketches-cpp
         python -m pip install pytest pytest-cov
-        coverage run -m pytest ipytablewidgets/tests -vv
+        coverage run -m pytest tests -vv
 
     - name: Coverage
       run: |
