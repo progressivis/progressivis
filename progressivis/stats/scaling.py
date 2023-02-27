@@ -288,13 +288,13 @@ class MinMaxScaler(Module):
     ) -> None:
         s = self.scheduler()
         self.input.table = input_module.output[input_slot]
-        self.min = Min(scheduler=s)
-        self.min.input.table = input_module.output[input_slot]
-        self.max = Max(scheduler=s)
-        self.max.input.table = input_module.output[input_slot]
+        self.dep.min = Min(scheduler=s)
+        self.dep.min.input.table = input_module.output[input_slot]
+        self.dep.max = Max(scheduler=s)
+        self.dep.max.input.table = input_module.output[input_slot]
         self.input.min = self.min.output.result
         self.input.max = self.max.output.result
-        self.hist: Dict[str, Histogram1D] = {}
+        self.dep.hist: Dict[str, Histogram1D] = {}
         if hist:
             assert self._usecols  # TODO: avoid this requirement
             for col in self._usecols:
@@ -304,4 +304,4 @@ class MinMaxScaler(Module):
                 hist1d.input.max = self.max.output.result
                 sink = Sink(scheduler=s)
                 sink.input.inp = hist1d.output.result
-                self.hist[col] = hist1d
+                self.dep.hist[col] = hist1d

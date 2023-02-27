@@ -43,4 +43,9 @@ jobs:
         mv mnist_784.csv data
         git clone https://github.com/apache/datasketches-cpp.git
         pip install -e datasketches-cpp
-        python setup.py nosetests -w tests
+        python -m pip install pytest pytest-cov
+        coverage run -m pytest ipytablewidgets/tests -vv
+
+    - name: Coverage
+      run: |
+        coverage report -m

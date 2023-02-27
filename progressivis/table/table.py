@@ -56,7 +56,7 @@ def _get_slice_df(df, sl):
     return df.iloc[sl]
 
 
-def _get_slice_arr(arr, sl):
+def _get_slice_arr(arr, sl) :
     return arr[sl]
 
 

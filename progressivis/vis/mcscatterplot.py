@@ -58,8 +58,8 @@ class _DataClass:
         self.max: Any = None
         self.histogram2d: Optional[MCHistogram2D] = None
         self.heatmap = None
-        self.min_value: Optional[DynVar] = that.min_value
-        self.max_value: Optional[DynVar] = that.max_value
+        self.min_value: Optional[DynVar] = that.dep.min_value
+        self.max_value: Optional[DynVar] = that.dep.max_value
         self.sample: Union[None, Literal["default"], Module] = None
         self.range_query_2d: Optional[Module] = None
 
@@ -389,12 +389,12 @@ class MCScatterPlot(Module):
         self.input_slot = input_slot
         with self.grouped():
             scheduler = self.scheduler()
-            self.min_value = DynVar(
+            self.dep.min_value = DynVar(
                 {k: None for k in self._translated_keys},
                 translation=self._translation,
                 scheduler=scheduler,
             )
-            self.max_value = DynVar(
+            self.dep.max_value = DynVar(
                 {k: None for k in self._translated_keys},
                 translation=self._translation,
                 scheduler=scheduler,

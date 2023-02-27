@@ -35,6 +35,7 @@ class CategoricalQuery(Module):
         grby = GroupBy(by=self._column, scheduler=s)
         grby.input.table = input_module.output[input_slot]
         self.input.table = grby.output.result
+        self.dep.grby = grby
 
     @process_slot("table", "choice", reset_cb="reset")
     @run_if_any

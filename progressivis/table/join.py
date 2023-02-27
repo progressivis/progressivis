@@ -202,8 +202,8 @@ class Join(Module):
         self._related_cols = related_cols
         self._virtual_cols = primary_cols
         self.on = related_on
-        self.unique_index = uidx
-        self.group_by = grby
+        self.dep.unique_index = uidx
+        self.dep.group_by = grby
         self.cache_dict: Optional[Dict[str, Dict[Any, Any]]]
 
     def starting(self) -> None:

@@ -23,5 +23,5 @@ class Pattern(Module):
 
     def create_dependent_modules(self) -> None:
         s = self.scheduler()
-        self.sink = Sink(scheduler=s)
-        self.sink.input.inp = self.output.result
+        self.dep.sink = Sink(scheduler=s)
+        self.dep.sink.input.inp = self.output.result

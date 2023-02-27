@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections import Iterable
+from collections.abc import Iterable
 import logging
 
 import numpy as np

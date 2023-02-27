@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 from abc import ABCMeta
-from collections import Mapping, Iterable
+from collections.abc import Mapping, Iterable
 import operator
 import logging
 import numpy as np

@@ -97,7 +97,7 @@ class PPCA(Module):
     ) -> None:
         with self.grouped():
             s = self.scheduler()
-            self.reduced = PPCATransformer(
+            self.dep.reduced = PPCATransformer(
                 scheduler=s,
                 atol=atol,
                 rtol=rtol,
@@ -106,12 +106,12 @@ class PPCA(Module):
                 resetter_func=resetter_func,
                 group=self.name,
             )
-            self.reduced.input.table = self.output.result
-            self.reduced.input.transformer = self.output.transformer
+            self.dep.reduced.input.table = self.output.result
+            self.dep.reduced.input.transformer = self.output.transformer
             if resetter is not None:
                 assert callable(resetter_func)
-                self.reduced.input.resetter = resetter.output[resetter_slot]
-            self.reduced.create_dependent_modules(self.output.result)
+                self.dep.reduced.input.resetter = resetter.output[resetter_slot]
+            self.dep.reduced.create_dependent_modules(self.output.result)
 
 
 @def_input("table", type=PTable, required=True)
@@ -159,7 +159,7 @@ class PPCATransformer(Module):
         with self.grouped():
             scheduler = self.scheduler()
             with scheduler:
-                self.sample = Sample(
+                self.dep.sample = Sample(
                     samples=100, required="select", group=self.name, scheduler=scheduler
                 )
                 self.sample.input.table = input_slot

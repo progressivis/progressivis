@@ -49,36 +49,37 @@ class Histogram1dPattern(Pattern):
         col = self._column
         with scheduler:
             # TODO replace sink with a real dependency
-            self.kll = KLLSketch(column=col, scheduler=scheduler)
-            self.kll.params.binning = 128
-            self.kll.input.table = input_module.output[input_slot]
-            assert self.sink
-            self.sink.input.inp = self.kll.output.result
+            self.dep.kll = KLLSketch(column=col, scheduler=scheduler)
+            self.dep.kll.params.binning = 128
+            self.dep.kll.input.table = input_module.output[input_slot]
+            assert self.dep.sink
+            self.dep.sink.input.inp = self.dep.kll.output.result
             # TODO: reuse min max
-            self.max = Max(scheduler=scheduler, columns=[col])
-            self.max.input.table = input_module.output[input_slot]
-            self.min = Min(scheduler=scheduler, columns=[col])
-            self.min.input.table = input_module.output[input_slot]
-            self.lower = DynVar({col: "*"}, scheduler=scheduler)
-            self.upper = DynVar({col: "*"}, scheduler=scheduler)
-            self.range_query = RangeQuery(
+            self.dep.max = Max(scheduler=scheduler, columns=[col])
+            self.dep.max.input.table = input_module.output[input_slot]
+            self.dep.min = Min(scheduler=scheduler, columns=[col])
+            self.dep.min.input.table = input_module.output[input_slot]
+            self.dep.lower = DynVar({col: "*"}, scheduler=scheduler)
+            self.dep.upper = DynVar({col: "*"}, scheduler=scheduler)
+            self.dep.range_query = RangeQuery(
                 scheduler=scheduler, column=col, columns=[col], approximate=True
             )
-            self.range_query.params.column = col
-            self.range_query.create_dependent_modules(
+            self.dep.range_query.params.column = col
+            self.dep.range_query.create_dependent_modules(
                 input_module,
                 input_slot,
-                min_=self.min,
-                max_=self.max,
-                min_value=self.lower,
-                max_value=self.upper,
+                min_=self.dep.min,
+                max_=self.dep.max,
+                min_value=self.dep.lower,
+                max_value=self.dep.upper,
             )
-            self.histogram1d = Histogram1D(scheduler=scheduler, column=col)
-            self.histogram1d.input.table = self.range_query.output.result
-            self.histogram1d.input.min = self.range_query.output.min
-            self.histogram1d.input.max = self.range_query.output.max
+            histogram1d = Histogram1D(scheduler=scheduler, column=col)
+            histogram1d.input.table = self.dep.range_query.output.result
+            histogram1d.input.min = self.dep.range_query.output.min
+            histogram1d.input.max = self.dep.range_query.output.max
+            self.dep.histogram1d = histogram1d
             sink = Sink(scheduler=scheduler)
-            sink.input.inp = self.histogram1d.output.result
+            sink.input.inp = self.dep.histogram1d.output.result
 
 
 @def_output("result", PTable)
@@ -100,18 +101,19 @@ class Histogram2dPattern(Pattern):
         x_col, y_col = self._x_column, self._y_column
         with scheduler:
             # TODO: reuse min max
-            self.max = Max(scheduler=scheduler, columns=[x_col, y_col])
-            self.max.input.table = input_module.output[input_slot]
-            self.min = Min(scheduler=scheduler, columns=[x_col, y_col])
-            self.min.input.table = input_module.output[input_slot]
-            self.histogram2d = Histogram2D(
+            self.dep.max = Max(scheduler=scheduler, columns=[x_col, y_col])
+            self.dep.max.input.table = input_module.output[input_slot]
+            self.dep.min = Min(scheduler=scheduler, columns=[x_col, y_col])
+            self.dep.min.input.table = input_module.output[input_slot]
+            histogram2d = Histogram2D(
                 x_column=x_col, y_column=y_col, scheduler=scheduler
             )
-            self.histogram2d.input.table = input_module.output[input_slot]
-            self.histogram2d.input.min = self.min.output.result
-            self.histogram2d.input.max = self.max.output.result
-            self.histogram2d.params.xbins = 64
-            self.histogram2d.params.ybins = 64
+            histogram2d.input.table = input_module.output[input_slot]
+            histogram2d.input.min = self.dep.min.output.result
+            histogram2d.input.max = self.dep.max.output.result
+            histogram2d.params.xbins = 64
+            histogram2d.params.ybins = 64
+            self.dep.histogram2d = histogram2d
             sink = Sink(scheduler=scheduler)
             sink.input.inp = self.histogram2d.output.result
 

@@ -65,11 +65,11 @@ class Select(Module):
             select.input.df = input_module.output[input_slot]
             select.input.query = query.output.query
 
-            self.query = query
-            self.min = query.min
-            self.max = query.max
-            self.min_value = query.min_value
-            self.max_value = query.max_value
+            self.dep.query = query
+            self.dep.min = query.min
+            self.dep.max = query.max
+            self.dep.min_value = query.min_value
+            self.dep.max_value = query.max_value
             return select
 
     def run_step(

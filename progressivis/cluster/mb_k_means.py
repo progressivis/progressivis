@@ -272,10 +272,10 @@ class MBKMeans(Module):
             self.input.table = input_module.output[input_slot]
             self.input_slot = input_slot
             c = DynVar(group=self.name, scheduler=s)
-            self.moved_center = c
+            self.dep.moved_center = c
             self.input.moved_center = c.output.result
             v = Var(group=self.name, scheduler=s)
-            self.variance = v
+            self.dep.variance = v
             v.input.table = input_module.output[input_slot]
             self.input.var = v.output.result
 
@@ -323,6 +323,6 @@ class MBKMeansFilter(Module):
             scheduler = self.scheduler()
             filter_ = FilterMod(expr=f"labels=={self._sel}", scheduler=scheduler)
             filter_.input.table = mbkmeans.output.labels
-            self.filter = filter_
+            self.dep.filter = filter_
             self.input.labels = filter_.output.result
             self.input.table = data_module.output[data_slot]

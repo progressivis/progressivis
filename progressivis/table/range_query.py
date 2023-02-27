@@ -109,17 +109,60 @@ class RangeQueryImpl:  # (ModuleImpl):
     "column",
     np.dtype(object),
     "unknown",
-    doc="short description of the **column** parameter",
+    doc=(
+        "The column in the **table** input slot concerned by the query. "
+        "This parameter is mandatory"
+        )
 )
-@def_parameter("watched_key_lower", np.dtype(object), "")
-@def_parameter("watched_key_upper", np.dtype(object), "")
-@def_input("table", PTable)
+@def_parameter(
+    "watched_key_lower",
+    np.dtype(object), "",
+    doc=(
+        "The key in the **lower** input slot (which is a **PDict**) "
+        "giving the lower bound of the query. "
+        "When unset (i.e. ==\"\"), the **column** parameter is used instead."
+    )
+)
+@def_parameter(
+    "watched_key_upper",
+    np.dtype(object), "",
+    doc=(
+        "The key in the **upper** input slot (which is a **PDict**) "
+        "giving the upper bound of the query. "
+        "When unset (i.e. ==\"\"), the **column** parameter is used instead."
+    )
+)
+@def_input("table", PTable, doc="Provides data to be queried.")
 @def_input(
-    "lower", PDict, required=False, doc="short description of the **lower** input slot"
+    "lower", PDict,
+    doc=(
+        "Provides a **PDict** object containing the lower bound of the query. "
+        "The key giving the bound is set by the **watched_key_lower** parameter "
+        "when it is different from the **column** parameter."
+        )
 )
-@def_input("upper", PDict, required=False)
-@def_input("min", PDict, required=False)
-@def_input("max", PDict, required=False)
+@def_input(
+    "upper", PDict,
+    doc=(
+        "Provides a **PDict** object containing the upper bound of the query. "
+        "The key giving the bound is set by the **watched_key_upper** parameter "
+        "when it is different from the **column** parameter."
+        )
+)
+@def_input(
+    "min", PDict,
+    doc=(
+        "The minimum value in the input data. This mandatory parameter could be provided "
+        "by the `create_dependent_modules()` method."
+        )
+)
+@def_input(
+    "max", PDict,
+    doc=(
+        "The maximum value in the input data. This mandatory parameter could be provided"
+        "by the `create_dependent_modules()` method."
+    )
+)
 @def_input("hist", PTable)
 @def_output(
     "result", PTableSelectedView, doc="short description of the **result** output slot"

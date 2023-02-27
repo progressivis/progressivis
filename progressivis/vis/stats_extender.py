@@ -224,20 +224,20 @@ class StatsExtender(Module):
         s = self.scheduler()
         self.input.table = input_module.output[input_slot]
         if min_ or hist:
-            self.min = Min(scheduler=s, columns=self._get_usecols_hist(min_, hist))
-            self.min.input.table = input_module.output[input_slot]
+            self.dep.min = Min(scheduler=s, columns=self._get_usecols_hist(min_, hist))
+            self.dep.min.input.table = input_module.output[input_slot]
             self.input.min = self.min.output.result
             self.decorations.append("min")
         if max_ or hist:
-            self.max = Max(scheduler=s, columns=self._get_usecols_hist(max_, hist))
-            self.max.input.table = input_module.output[input_slot]
+            self.dep.max = Max(scheduler=s, columns=self._get_usecols_hist(max_, hist))
+            self.dep.max.input.table = input_module.output[input_slot]
             self.input.max = self.max.output.result
             self.decorations.append("max")
-        self.hist = {}
+        self.dep.hist = {}
         if hist:
             for col in self._get_usecols(hist):
-                self.hist[col] = {}
-                h_col = self.hist[col]
+                self.dep.hist[col] = {}
+                h_col = self.dep.hist[col]
                 # dyn variables
                 h_col["lower"] = lower = DynVar({col: None}, scheduler=s)
                 h_col["upper"] = upper = DynVar({col: None}, scheduler=s)
