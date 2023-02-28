@@ -20,3 +20,4 @@ s3fs
 requests
 fast-histogram
 rangehttpserver
+datasketches
