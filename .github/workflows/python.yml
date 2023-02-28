@@ -38,9 +38,9 @@ jobs:
         git clone https://github.com/RoaringBitmap/CRoaring.git
         git clone https://github.com/xtensor-stack/xtensor-python.git
         git clone https://github.com/lemire/CRoaringUnityBuild.git
-        pip install -e datasketches-cpp
-        pip install --nodeps -e .
-        python -m pip install pytest pytest-cov
+        pip install -e datasketches-cpp --user
+        pip install --nodeps -e . --user
+        python -m pip install pytest pytest-cov --user
         coverage run -m pytest tests -vv
 
     - name: Coverage
