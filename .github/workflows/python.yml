@@ -30,7 +30,7 @@ jobs:
       run: |
         mkdir data
         mv mnist_784.csv data
-        pip install -r requirements_ci.txt
+        python -m pip install -r requirements_ci.txt
         git clone https://github.com/apache/datasketches-cpp.git
         git clone https://github.com/pybind/pybind11.git
         git clone https://github.com/xtensor-stack/xtensor.git
@@ -38,9 +38,9 @@ jobs:
         git clone https://github.com/RoaringBitmap/CRoaring.git
         git clone https://github.com/xtensor-stack/xtensor-python.git
         git clone https://github.com/lemire/CRoaringUnityBuild.git
-        pip install -e datasketches-cpp --user
-        pip install --nodeps -e . --user
-        python -m pip install pytest pytest-cov --user
+        python -m pip install -e datasketches-cpp --user
+        python -m pip install --nodeps -e . --user
+        python -m python -m pip install pytest pytest-cov --user
         coverage run -m pytest tests -vv
 
     - name: Coverage
