@@ -8,31 +8,35 @@ import versioneer
 from setuptools import setup, Command
 from setuptools.extension import Extension
 
-CONDA_PREFIX = os.getenv('CONDA_PREFIX')
-MYBINDER = os.getenv('USER') == 'jovyan'
+CONDA_PREFIX = os.getenv("CONDA_PREFIX")
+MYBINDER = os.getenv("USER") == "jovyan"
 WITH_CXX = not MYBINDER
 
 
-PACKAGES = ['progressivis',
-            'progressivis.utils',
-            'progressivis.core',
-            'progressivis.storage',
-            'progressivis.io',
-            'progressivis.stats',
-            'progressivis.datasets',
-            'progressivis.vis',
-            'progressivis.cluster',
-            'progressivis.server',
-            'progressivis.table']
+PACKAGES = [
+    "progressivis",
+    "progressivis.utils",
+    "progressivis.core",
+    "progressivis.storage",
+    "progressivis.io",
+    "progressivis.stats",
+    "progressivis.datasets",
+    "progressivis.vis",
+    "progressivis.cluster",
+    "progressivis.server",
+    "progressivis.table",
+]
 
 
 def _cythonize(exts):
     from Cython.Build import cythonize
+
     return cythonize(exts)
 
 
 def _np_get_include():
     import numpy as np
+
     return np.get_include()
 
 
@@ -73,25 +77,35 @@ EXTENSIONS = [
         "progressivis.utils.fast",
         ["progressivis/utils/fast.pyx"],
         include_dirs=[_np_get_include()],
-        extra_compile_args=['-Wfatal-errors'],
-    )]
+        extra_compile_args=["-Wfatal-errors"],
+    )
+]
 
-EXT_PYBIND11 = [
-    Extension(
-        'progressivis.stats.cxx_max',
-        ['progressivis/stats/cxx_max.cpp'],
-        include_dirs=[
-            'include',
-            _np_get_include(),
-            os.path.join(sys.prefix, 'include'),
-            os.path.join(CONDA_PREFIX, 'include'),
-            os.path.join(sys.prefix, 'Library', 'include')
-        ],
-        extra_compile_args=['-std=c++17', '-Wall', '-O0', '-g'],
-        extra_link_args=["-lroaring"],
-        language='c++'
-    ),
-] if CONDA_PREFIX else []  # avoids conda dependency ...
+EXT_PYBIND11 = (
+    [
+        Extension(
+            "progressivis.stats.cxx_max",
+            ["progressivis/stats/cxx_max.cpp"],
+            include_dirs=[
+                "include",
+                _np_get_include(),
+                "pybind11/include",
+                "xtensor/include",
+                "xtensor-python/include",
+                "xtl/include",
+                "CRoaringUnityBuild",
+                os.path.join(sys.prefix, "include"),
+                os.path.join(CONDA_PREFIX, "include"),
+                os.path.join(sys.prefix, "Library", "include"),
+            ],
+            extra_compile_args=["-std=c++17", "-Wall", "-O0", "-g"],
+            # extra_link_args=["-lroaring"],
+            language="c++",
+        ),
+    ]
+    if CONDA_PREFIX
+    else []
+)  # avoids conda dependency ...
 
 
 def read(fname):
@@ -110,19 +124,23 @@ setup(
     license="BSD",
     keywords="Progressive analytics visualization",
     packages=PACKAGES,
-    long_description=read('README.md'),
-    classifiers=["Development Status :: 2 - PRe-Alpha",
-                 "Topic :: Scientific/Engineering :: Visualization",
-                 "Topic :: Scientific/Engineering :: Information Analysis",
-                 "License :: OSI Approved :: BSD License"],
-    platforms='any',
+    long_description=read("README.md"),
+    classifiers=[
+        "Development Status :: 2 - PRe-Alpha",
+        "Topic :: Scientific/Engineering :: Visualization",
+        "Topic :: Scientific/Engineering :: Information Analysis",
+        "License :: OSI Approved :: BSD License",
+    ],
+    platforms="any",
     # Project uses reStructuredText, so ensure that the docutils get
     # installed or upgraded on the target machine
     # install_requires=required,
-    install_requires=[] if CONDA_PREFIX else [
+    install_requires=[]
+    if CONDA_PREFIX
+    else [
         "Pillow>=4.2.0",
         "cython",
-        'pybind11>=2.0.1',
+        "pybind11>=2.0.1",
         "numpy==1.22.0",
         "scipy>=0.18.1",
         "numexpr>=2.6.1",
@@ -145,7 +163,8 @@ setup(
         # "aiohttp",
         # "aiohttp_jinja2",
         # "python_socketio",
-        "click"],
+        "click",
+    ],
     # "pptable",
     setup_requires=["cython", "numpy", "pybind11", "mypy"] if WITH_CXX else [],
     cmdclass=versioneer.get_cmdclass({"bench": RunBench}),
@@ -153,5 +172,5 @@ setup(
     package_data={
         # If any package contains *.md, *.txt or *.rst files, include them:
         "doc": ["*.md", "*.rst"],
-        }
-    )
+    },
+)

@@ -15,7 +15,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python_version: ["3.9", "3.10"]
+        python_version: ["3.10"]
 
     defaults:
       run:
@@ -23,30 +23,26 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
-
-    - name: Setup conda
-      uses: conda-incubator/setup-miniconda@v2
-      with:
-        channels: conda-forge, anaconda
-    - name: Create the conda environment
-      run: conda env create -q python=${{ matrix.python_version }} -f environment_ci.yml
-
     - name: Download a file
       run: wget --no-verbose https://datahub.io/machine-learning/mnist_784/r/mnist_784.csv -O mnist_784.csv
 
     - name: Run tests
       run: |
-        source /usr/share/miniconda/etc/profile.d/conda.sh
-        conda activate progressivis
         mkdir data
         mv mnist_784.csv data
+        pip install -r requirements_ci.txt
         git clone https://github.com/apache/datasketches-cpp.git
+        git clone https://github.com/pybind/pybind11.git
+        git clone https://github.com/xtensor-stack/xtensor.git
+        git clone https://github.com/xtensor-stack/xtl.git
+        git clone https://github.com/RoaringBitmap/CRoaring.git
+        git clone https://github.com/xtensor-stack/xtensor-python.git
+        git clone https://github.com/lemire/CRoaringUnityBuild.git
         pip install -e datasketches-cpp
+        pip install --nodeps -e .
         python -m pip install pytest pytest-cov
         coverage run -m pytest tests -vv
 
     - name: Coverage
       run: |
-        source /usr/share/miniconda/etc/profile.d/conda.sh
-        conda activate progressivis
         coverage report -m

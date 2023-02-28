@@ -3,8 +3,8 @@
 #include "xtensor/xmath.hpp"
 #include "xtensor/xarray.hpp"
 #include "xtensor/xview.hpp"
-#include "roaring/roaring.h"
-
+#include "roaring.hh"
+#include "roaring.c"
 #define FORCE_IMPORT_ARRAY
 #define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
 #include "xtensor-python/pyarray.hpp"
