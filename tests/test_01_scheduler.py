@@ -7,23 +7,6 @@ from progressivis.io import CSVLoader
 from progressivis.stats import Min
 from progressivis.datasets import get_dataset
 from progressivis.core import aio, Sink
-from progressivis.core.module import Module, ReturnRunStep, def_input, def_output
-
-from typing import Any
-
-
-@def_input("a")
-@def_input("b", required=False)
-@def_output("c")
-@def_output("d", required=False)
-class TestModule(Module):
-    def __init__(self, **kwds: Any) -> None:
-        super(TestModule, self).__init__(**kwds)
-
-    def run_step(
-        self, run_number: int, step_size: int, howlong: float
-    ) -> ReturnRunStep:  # pragma no cover
-        return self._return_run_step(self.state_blocked, 0)
 
 
 class TestScheduler(ProgressiveTest):

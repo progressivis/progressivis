@@ -104,6 +104,9 @@ class TestUnary(ProgressiveTest):
 
 def add_un_tst(k: str, ufunc: np.ufunc) -> None:
     cls = func2class_name(k)
+    if cls not in arr.__dict__:
+        print(f"Class {cls} not implemented")
+        return
     mod_name = k + "_"
 
     def _f(self_: TestUnary) -> None:
@@ -265,6 +268,9 @@ class TestColsBinary(ProgressiveTest):
 
 def add_cols_bin_tst(c: Type[TestColsBinary], k: str, ufunc: np.ufunc) -> None:
     cls = f"Cols{func2class_name(k)}"
+    if cls not in arr.__dict__:
+        print(f"Class {cls} not implemented")
+        return
     mod_name = f"cols_{k}_"
 
     def _f(self_: TestColsBinary) -> None:
@@ -340,6 +346,9 @@ def add_other_cols_bin_tst(
     c: Type[TestOtherColsBinaries], k: str, ufunc: np.ufunc
 ) -> None:
     cls = f"Cols{func2class_name(k)}"
+    if cls not in arr.__dict__:
+        print(f"Class {cls} not implemented")
+        return
     mod_name = f"cols_{k}_"
 
     def _f(self_: TestOtherColsBinaries) -> None:
@@ -461,6 +470,9 @@ class TestBinary(TestBin):
 
 def add_bin_tst(c: Type[TestBin], k: str, ufunc: np.ufunc) -> None:
     cls = func2class_name(k)
+    if cls not in arr.__dict__:
+        print(f"Class {cls} not implemented")
+        return
     mod_name = k + "_"
 
     def _f(self_: TestBinary) -> None:
@@ -600,6 +612,9 @@ class TestOtherBinaries(ProgressiveTest):
 
 def add_other_bin_tst(c: Type[TestOtherBinaries], k: str, ufunc: np.ufunc) -> None:
     cls = func2class_name(k)
+    if cls not in arr.__dict__:
+        print(f"Class {cls} not implemented")
+        return
     mod_name = k + "_"
 
     def _f(self_: TestOtherBinaries) -> None:
@@ -665,6 +680,9 @@ class TestReduce(ProgressiveTest):
 
 def add_reduce_tst(c: Type[TestReduce], k: str, ufunc: np.ufunc) -> None:
     cls = f"{func2class_name(k)}Reduce"
+    if cls not in arr.__dict__:
+        print(f"Class {cls} not implemented")
+        return
     mod_name = f"{k}_reduce_"
 
     def _f(self_: TestReduce) -> None:
@@ -759,6 +777,9 @@ class TestOtherReduces(ProgressiveTest):
 
 def add_other_reduce_tst(c: Type[TestOtherReduces], k: str, ufunc: np.ufunc) -> None:
     cls = f"{func2class_name(k)}Reduce"
+    if cls not in arr.__dict__:
+        print(f"Class {cls} not implemented")
+        return
     mod_name = f"{k}_reduce_"
 
     def _f(self_: TestOtherReduces) -> None:

@@ -18,9 +18,9 @@ from typing import Any
 @def_input("b", required=False)
 @def_output("c")
 @def_output("d", required=False)
-class TestModule(Module):
+class TstModule(Module):
     def __init__(self, **kwds: Any) -> None:
-        super(TestModule, self).__init__(**kwds)
+        super().__init__(**kwds)
 
     def run_step(
         self, run_number: int, step_size: int, howlong: float
@@ -201,7 +201,7 @@ class TestDataflow(ProgressiveTest):
     def test_dataflow_4_dels2(self) -> None:
         s = self.scheduler()
         table = RandomPTable(name="table", columns=["a"], throttle=1000, scheduler=s)
-        m = TestModule(name="min", scheduler=s)
+        m = TstModule(name="min", scheduler=s)
         m.input.a = table.output.result
         prt = Print(name="prt", scheduler=s)
         prt.input.df = m.output.c
@@ -216,7 +216,7 @@ class TestDataflow(ProgressiveTest):
     def test_dataflow_5_dels_opt(self) -> None:
         s = self.scheduler()
         table = RandomPTable(name="table", columns=["a"], throttle=1000, scheduler=s)
-        m = TestModule(name="min", scheduler=s)
+        m = TstModule(name="min", scheduler=s)
         m.input.a = table.output.result
         prt = Print(name="prt", scheduler=s)
         prt.input.df = m.output.c

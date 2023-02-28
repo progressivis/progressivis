@@ -38,6 +38,7 @@ from ._elementwise import (
     Exp,
     Exp2,
     Expm1,
+    Expm1x,
     Fabs,
     Floor,
     Frexp,
