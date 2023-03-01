@@ -21,3 +21,5 @@ requests
 fast-histogram
 rangehttpserver
 datasketches
+pytest
+pytest_cov

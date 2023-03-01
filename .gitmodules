@@ -1,0 +1,3 @@
+[submodule "CRoaringUnityBuild"]
+	path = CRoaringUnityBuild
+	url = https://github.com/lemire/CRoaringUnityBuild.git

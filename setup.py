@@ -81,31 +81,26 @@ EXTENSIONS = [
     )
 ]
 
-EXT_PYBIND11 = (
-    [
-        Extension(
-            "progressivis.stats.cxx_max",
-            ["progressivis/stats/cxx_max.cpp"],
-            include_dirs=[
-                "include",
-                _np_get_include(),
-                "pybind11/include",
-                "xtensor/include",
-                "xtensor-python/include",
-                "xtl/include",
-                "CRoaringUnityBuild",
-                os.path.join(sys.prefix, "include"),
-                os.path.join(CONDA_PREFIX, "include"),
-                os.path.join(sys.prefix, "Library", "include"),
-            ],
-            extra_compile_args=["-std=c++17", "-Wall", "-O0", "-g"],
-            # extra_link_args=["-lroaring"],
-            language="c++",
-        ),
-    ]
-    if CONDA_PREFIX
-    else []
-)  # avoids conda dependency ...
+EXT_PYBIND11 = [
+    Extension(
+        "progressivis.stats.cxx_max",
+        ["progressivis/stats/cxx_max.cpp"],
+        include_dirs=[
+            "include",
+            _np_get_include(),
+            "pybind11/include",
+            "xtensor/include",
+            "xtensor-python/include",
+            "xtl/include",
+            "CRoaringUnityBuild",
+            os.path.join(sys.prefix, "include"),
+            os.path.join(CONDA_PREFIX, "include"),
+            os.path.join(sys.prefix, "Library", "include"),
+        ],
+        extra_compile_args=["-std=c++17", "-Wall", "-O0", "-g"],
+        language="c++",
+    ),
+]
 
 
 def read(fname):
@@ -135,9 +130,7 @@ setup(
     # Project uses reStructuredText, so ensure that the docutils get
     # installed or upgraded on the target machine
     # install_requires=required,
-    install_requires=[]
-    if CONDA_PREFIX
-    else [
+    install_requires=[
         "Pillow>=4.2.0",
         "cython",
         "pybind11>=2.0.1",
