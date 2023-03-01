@@ -37,6 +37,7 @@ jobs:
         git clone https://github.com/RoaringBitmap/CRoaring.git
         git clone https://github.com/xtensor-stack/xtensor-python.git
         git submodule init
+        git submodule update
         python -m pip install --no-deps -e .
         coverage run -m pytest tests -vv
 
