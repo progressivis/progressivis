@@ -1,3 +1,15 @@
 [submodule "CRoaringUnityBuild"]
 	path = CRoaringUnityBuild
 	url = https://github.com/lemire/CRoaringUnityBuild.git
+[submodule "progressivis/pybind11"]
+	path = progressivis/pybind11
+	url = https://github.com/pybind/pybind11.git
+[submodule "progressivis/xtensor"]
+	path = progressivis/xtensor
+	url = https://github.com/xtensor-stack/xtensor.git
+[submodule "progressivis/xtl"]
+	path = progressivis/xtl
+	url = https://github.com/xtensor-stack/xtl.git
+[submodule "progressivis/xtensor-python"]
+	path = progressivis/xtensor-python
+	url = https://github.com/xtensor-stack/xtensor-python.git
