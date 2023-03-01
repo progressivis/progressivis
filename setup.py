@@ -8,7 +8,7 @@ import versioneer
 from setuptools import setup, Command
 from setuptools.extension import Extension
 
-CONDA_PREFIX = os.getenv("CONDA_PREFIX")
+CONDA_PREFIX = os.getenv("CONDA_PREFIX", "")
 MYBINDER = os.getenv("USER") == "jovyan"
 WITH_CXX = not MYBINDER
 
