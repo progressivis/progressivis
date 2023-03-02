@@ -129,6 +129,7 @@ class TestProgressiveLoadCSVOverHTTP(ProgressiveTest):
         # self.assertGreater(module.parser._recovery_cnt, 0)
         self.assertEqual(len(module.result), 1000000)
 
+    @skipIf(os.getenv("CI"), "not reliable enough, to be improved")
     def test_03_read_multiple_csv_crash_recovery(self) -> None:
         p = Process(target=run_throttled_server, args=(8000, 10**6))
         p.start()
@@ -149,7 +150,6 @@ class TestProgressiveLoadCSVOverHTTP(ProgressiveTest):
         _close(csv)
         self.assertEqual(len(csv.result), 60000)
 
-    @skipIf(os.getenv("CI"), "not reliable enough, to be improved")
     def test_04_read_http_csv_bz2_no_crash(self) -> None:
         p = Process(target=run_simple_server, args=())
         p.start()
