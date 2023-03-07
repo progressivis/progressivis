@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import ipywidgets as widgets  # type: ignore
+import ipywidgets as widgets
 
 from typing import Any, TYPE_CHECKING, Callable, Optional
 

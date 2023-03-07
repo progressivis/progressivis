@@ -23,12 +23,14 @@ from ..core.utils import (
 from ..utils import PDict
 from ..core.pintset import PIntSet
 
-from typing import Dict, Any, Type, Callable, Optional, Tuple, Union, TYPE_CHECKING
+from typing import Dict, Any, Type, Callable, Optional, Tuple, Union, TYPE_CHECKING, cast
 
+from pandas._typing import ReadCsvBuffer
 if TYPE_CHECKING:
     from ..core.module import ModuleState
     from ..stats.utils import SimpleImputer
     import io
+
 
 logger = logging.getLogger(__name__)
 
@@ -182,7 +184,8 @@ class SimpleCSVLoader(Module):
             if nn(self.filepath_or_buffer):
                 try:
                     self.parser = pd.read_csv(
-                        self.open(self.filepath_or_buffer), **self.csv_kwds
+                        cast(ReadCsvBuffer, self.open(self.filepath_or_buffer)),
+                        **self.csv_kwds
                     )
                 except IOError as e:
                     logger.error("Cannot open file %s: %s", self.filepath_or_buffer, e)
@@ -209,7 +212,9 @@ class SimpleCSVLoader(Module):
                     assert "chunksize" in self.csv_kwds
                     assert isinstance(self.csv_kwds["chunksize"], int)
                     try:
-                        self.parser = pd.read_csv(self.open(filename), **self.csv_kwds)
+                        self.parser = pd.read_csv(cast(ReadCsvBuffer,
+                                                       self.open(filename)),
+                                                  **self.csv_kwds)
                     except IOError as e:
                         logger.error("Cannot open file %s: %s", filename, e)
                         self.parser = None
@@ -246,6 +251,7 @@ class SimpleCSVLoader(Module):
         )  # type: ignore
         anomalies = defaultdict(dict)  # type: ignore
         missing: Dict[str, PIntSet] = defaultdict(PIntSet)
+        assert self.result is not None
         last_id = self.result.last_id
         for col, dt in zip(df.columns, df.dtypes):
             dtt = self.result._column(col).dtype

@@ -3,7 +3,7 @@ from __future__ import annotations
 from functools import singledispatch
 from collections import Iterable
 from itertools import product
-import ipywidgets as ipw  # type: ignore
+import ipywidgets as ipw
 import numpy as np
 import pandas as pd
 from progressivis.core import asynchronize, aio

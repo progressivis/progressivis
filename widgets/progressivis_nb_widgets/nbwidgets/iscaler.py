@@ -1,5 +1,5 @@
 import time
-import ipywidgets as ipw  # type: ignore
+import ipywidgets as ipw
 
 # import altair as alt
 import pandas as pd

@@ -148,6 +148,7 @@ class MCHistogram2D(Module):
     ) -> ReturnRunStep:
         dfslot = self.get_input_slot("data")
         # dfslot.update(run_number)
+        assert self.result is not None
         if dfslot.updated.any():
             logger.debug("reseting histogram")
             self.reset()

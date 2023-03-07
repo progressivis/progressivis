@@ -62,7 +62,7 @@ class MinMaxScaler(Module):
 
     def reset(self) -> None:
         if self.result is not None:
-            self.table.truncate()
+            self.result.truncate()
         self._cmin.clear()
         self._cmax.clear()
         self._has_cmin_cmax = False
@@ -140,8 +140,6 @@ class MinMaxScaler(Module):
     def maintain_info(self, yes: bool = True) -> None:
         if yes and not self.info:
             self.info = PDict({"clipped": 0, "ignored": 0, "needs_changes": False})
-        elif not yes:
-            self.info = {}
 
     def check_bounds(
         self,
@@ -216,8 +214,10 @@ class MinMaxScaler(Module):
                         self.info["needs_changes"] = False
                     if self._control_data.get("reset"):
                         self.reset_min_max(dfslot, min_slot, max_slot, run_number)
-                        self.info["last_reset"] = run_number
-                    self.info["has_buffered"] = run_number
+                        if self.info is not None:
+                            self.info["last_reset"] = run_number
+                    if self.info is not None:
+                        self.info["has_buffered"] = run_number
                 else:
                     if self.info and self.info.get("needs_changes"):
                         return self._return_run_step(self.state_blocked, steps_run=0)
@@ -280,7 +280,7 @@ class MinMaxScaler(Module):
                     dshape=ds,  # input_df.dshape,
                     create=True,
                 )
-            self.table.append(sc_data, indices=indices)
+            self.result.append(sc_data, indices=indices)
             return self._return_run_step(self.next_state(dfslot), steps)
 
     def create_dependent_modules(
@@ -292,16 +292,16 @@ class MinMaxScaler(Module):
         self.dep.min.input.table = input_module.output[input_slot]
         self.dep.max = Max(scheduler=s)
         self.dep.max.input.table = input_module.output[input_slot]
-        self.input.min = self.min.output.result
-        self.input.max = self.max.output.result
-        self.dep.hist: Dict[str, Histogram1D] = {}
+        self.input.min = self.dep.min.output.result
+        self.input.max = self.dep.max.output.result
+        self.dep.hist = {}
         if hist:
             assert self._usecols  # TODO: avoid this requirement
             for col in self._usecols:
                 hist1d = Histogram1D(scheduler=s, column=col)
                 hist1d.input.table = input_module.output[input_slot]
-                hist1d.input.min = self.min.output.result
-                hist1d.input.max = self.max.output.result
+                hist1d.input.min = self.dep.min.output.result
+                hist1d.input.max = self.dep.max.output.result
                 sink = Sink(scheduler=s)
                 sink.input.inp = hist1d.output.result
                 self.dep.hist[col] = hist1d

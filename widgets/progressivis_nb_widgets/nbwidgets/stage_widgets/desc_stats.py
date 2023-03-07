@@ -2,21 +2,21 @@ from functools import singledispatch
 from collections import Iterable
 from itertools import product
 from functools import wraps
-import ipywidgets as ipw  # type: ignore
+import ipywidgets as ipw
 import numpy as np
 import pandas as pd
-from progressivis.core import asynchronize, aio, Sink  # type: ignore
-from progressivis.utils.psdict import PDict  # type: ignore
-from progressivis.core.module import Module  # type: ignore
-from progressivis.io import DynVar  # type: ignore
-from progressivis.stats import (  # type: ignore
+from progressivis.core import asynchronize, aio, Sink
+from progressivis.utils.psdict import PDict
+from progressivis.core.module import Module
+from progressivis.io import DynVar
+from progressivis.stats import (
     KLLSketch,
     Corr,
     Histogram1D,
     Histogram2D,
     Histogram1DCategorical,
 )
-from progressivis.vis import (  # type: ignore
+from progressivis.vis import (
     StatsFactory,
     Histogram1dPattern,
     Histogram2dPattern,
@@ -192,7 +192,7 @@ def refresh_info_sketch(
         return
     if not hmod.result:
         return
-    res = hmod.psdict
+    res = hmod.result
     hist = res["pmf"]
     min_: float = res["min"]
     max_: float = res["max"]
@@ -230,7 +230,7 @@ def refresh_info_barplot(
 ) -> None:
     if not tab.is_visible(name) and hmod.updated_once:  # type: ignore
         return
-    categs = hmod.psdict
+    categs = hmod.result
     if not categs:
         return
     dataset = categ_as_vega_dataset(categs)
@@ -244,9 +244,9 @@ def refresh_info_hist_1d(
 ) -> None:
     if (not tab.is_visible(name)) and h1d_mod.updated_once:  # type: ignore
         return
-    if not h1d_mod.table:
+    if not h1d_mod.result:
         return
-    last = h1d_mod.table.last()
+    last = h1d_mod.result.last()
     assert last
     res = last.to_dict()
     hist = res["array"]
@@ -264,9 +264,9 @@ def refresh_info_h2d(
 ) -> None:
     if not tab.is_visible(name) and h2d_mod.updated_once:  # type: ignore
         return
-    if not h2d_mod.table:
+    if not h2d_mod.result:
         return
-    last = h2d_mod.table.last()
+    last = h2d_mod.result.last()
     assert last
     res = last.to_dict()
     hist = res["array"]
@@ -496,7 +496,7 @@ class DynViewer(TreeTab):
         if name in self._hdict and self._hdict[name][0] is hist_mod:
             return  # self._hdict[name][1], None # None means selection unchanged
         type_ = self.col_types[name]
-        hout: Union[ipw.VBox, _VegaWidget]
+        hout: ipw.VBox
         if type_ == "string":
             hout = _VegaWidget(spec=bar_spec_no_data)
             bp_mod = cast(Histogram1DCategorical, hist_mod)
@@ -507,10 +507,10 @@ class DynViewer(TreeTab):
             )
         else:
             hist_mod = cast(Histogram1dPattern, hist_mod)
-            hmod_1d = hist_mod.histogram1d
-            sk_mod = hist_mod.kll
-            lower_mod = hist_mod.lower
-            upper_mod = hist_mod.upper
+            hmod_1d = hist_mod.dep.histogram1d
+            sk_mod = hist_mod.dep.kll
+            lower_mod = hist_mod.dep.lower
+            upper_mod = hist_mod.dep.upper
             range_slider = bins_range_slider("Range:", cast(int, sk_mod.params.binning))
             self.range_widgets[name] = range_slider
             vega_wg = _VegaWidget(spec=kll_spec_no_data)
@@ -554,7 +554,7 @@ class DynViewer(TreeTab):
         if name in self._h2d_dict and self._h2d_dict[name][0] is h2d_mod:
             return
         hout = _VegaWidget(spec=hist2d_spec_no_data)
-        _mod = h2d_mod.histogram2d
+        _mod = h2d_mod.dep.histogram2d
         _mod.updated_once = False  # type: ignore
         selection = _mod.path_to_origin()
         _mod.on_after_run(refresh_info_h2d(hout, _mod, name, self._h2d_tab))

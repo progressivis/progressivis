@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections import defaultdict
-import ipywidgets as ipw  # type: ignore
+import ipywidgets as ipw
 from jinja2 import Template
 from progressivis.core import JSONEncoderNp
 from .control_panel import ControlPanel

@@ -8,15 +8,10 @@ from progressivis.table.table import PTable
 from progressivis.datasets import get_dataset
 
 
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from progressivis.core.module import Module
-
-
 class TestProgressiveLoadParquet(ProgressiveTest):
-    def runit(self, module: Module) -> int:
+    def runit(self, module: ParquetLoader) -> int:
         module.run(1)
+        assert module.result is not None
         table = module.result
         self.assertFalse(table is None)
         _ = len(table)
@@ -45,6 +40,7 @@ class TestProgressiveLoadParquet(ProgressiveTest):
         sink = Sink(scheduler=s)
         sink.input.inp = module.output.result
         aio.run(s.start())
+        assert module.result is not None
         self.assertEqual(len(module.result), 1000_000)
 
     def test_read_parquet_check_size(self) -> None:
@@ -66,6 +62,7 @@ class TestProgressiveLoadParquet(ProgressiveTest):
         sink = Sink(scheduler=s)
         sink.input.inp = module.output.result
         aio.run(s.start())
+        assert module.result is not None
         num_rows_set = set(num_rows_list[:-1])
         self.assertEqual(len(num_rows_set), 1)
         self.assertEqual(num_rows_set.pop(), fixed_batch_size)
@@ -83,6 +80,7 @@ class TestProgressiveLoadParquet(ProgressiveTest):
         sink = Sink(scheduler=s)
         sink.input.inp = module.output.result
         aio.run(s.start())
+        assert module.result is not None
         self.assertEqual(module.result.columns, columns)
         self.assertEqual(len(module.result), 1000_000)
 
@@ -104,6 +102,7 @@ class TestProgressiveLoadParquet(ProgressiveTest):
         sink = Sink(scheduler=s)
         sink.input.inp = parquet.output.result
         aio.run(parquet.start())
+        assert parquet.result is not None
         self.assertEqual(len(parquet.result), 60_000)
 
 

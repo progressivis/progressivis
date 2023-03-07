@@ -4,6 +4,11 @@ from sqlmypy import add_var_to_class, CB  # type: ignore
 from mypy.nodes import TypeInfo
 from mypy.types import Instance, UnionType, NoneTyp
 from typing import Any
+import sys
+import os
+root_dir = os.path.dirname(os.path.dirname(__file__))
+
+sys.path.insert(1, root_dir)  # in order to import progressivis tests
 
 
 def decl_deco_hook(ctx: ClassDefContext) -> None:
@@ -19,8 +24,11 @@ def decl_deco_hook(ctx: ClassDefContext) -> None:
         if typ is not None:
             fullname = f"{typ.__module__}.{typ.__name__}"
             sym = ctx.api.lookup_fully_qualified_or_none(fullname)
-            assert sym is not None
-            assert isinstance(sym.node, TypeInfo)
+            if sym is None:
+                print(f"{fullname} not found")
+                return
+            if not isinstance(sym.node, TypeInfo):
+                print(f"{sym.node} is not a TypeInfo")
             typ = Instance(sym.node, [])
             typ = UnionType([typ, NoneTyp()])
         add_var_to_class(attr, typ, ctx.cls.info)

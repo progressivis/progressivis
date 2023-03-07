@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import numpy as np
-import ipywidgets as widgets  # type: ignore
+import ipywidgets as widgets
 from ipydatawidgets import DataUnion  # type: ignore
 from ipydatawidgets.widgets import DataWidget  # type: ignore
 from traitlets import Unicode, Any, Bool  # type: ignore

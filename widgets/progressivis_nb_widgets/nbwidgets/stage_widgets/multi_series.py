@@ -6,7 +6,7 @@ from .utils import (
 )
 from ..utils import historized_widget
 from ._multi_series import multi_series_no_data
-import ipywidgets as ipw  # type: ignore
+import ipywidgets as ipw
 from vega.widget import VegaWidget  # type: ignore
 import pandas as pd
 from typing import Any as AnyType, Dict

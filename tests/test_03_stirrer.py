@@ -25,6 +25,8 @@ class TestStirrer(ProgressiveTest):
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = max_.output.result
         aio.run(s.start())
+        assert stirrer.result is not None
+        assert max_.result is not None
         res1 = stirrer.result.max()
         res2 = max_.result
         self.compare(res1, res2)
@@ -33,8 +35,6 @@ class TestStirrer(ProgressiveTest):
         v1 = np.array(list(res1.values()))
         v2 = np.array(list(res2.values()))
         self.assertEqual(v1.shape, v2.shape)
-        # print('v1 = ', v1)
-        # print('v2 = ', v2)
         self.assertTrue(np.allclose(v1, v2))
 
 

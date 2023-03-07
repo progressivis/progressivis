@@ -75,6 +75,8 @@ class PPCA(Module):
             avs = vs[self._as_array].values if self._as_array else vs.to_array()
             if self.inc_pca is None:
                 self.inc_pca = IncrementalPCA(n_components=self.params.n_components)
+                if self.transformer is None:
+                    self.transformer = PDict()
                 self.transformer["inc_pca"] = self.inc_pca
             self.inc_pca.partial_fit(avs)
             if self.result is None:
@@ -162,18 +164,19 @@ class PPCATransformer(Module):
                 self.dep.sample = Sample(
                     samples=100, required="select", group=self.name, scheduler=scheduler
                 )
-                self.sample.input.table = input_slot
-                self.input.samples = self.sample.output.select
+                self.dep.sample.input.table = input_slot
+                self.input.samples = self.dep.sample.output.select
 
     def trace_if(self, ret: bool, mean: float, max_: float, len_: int) -> bool:
         if self._trace:
             row: Dict[Union[int, str], Any] = dict(
                 Action="RESET" if ret else "PASS", Mean=mean, Max=max_, Length=len_
             )
+            row_df = pd.DataFrame(row, index=[0])
             if self._trace_df is None:
-                self._trace_df = pd.DataFrame(row, index=[0])
+                self._trace_df = row_df
             else:
-                self._trace_df = self._trace_df.append(row, ignore_index=True)
+                self._trace_df = pd.concat([self._trace_df, row_df], ignore_index=True)
             if self._trace == "verbose":
                 print(row)
         return ret

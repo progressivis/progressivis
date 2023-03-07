@@ -26,7 +26,6 @@ class TestMMap(ProgressiveTest):
         super(TestMMap, self).tearDown()
 
     def _rmtree(self) -> None:
-        # from nose.tools import set_trace; set_trace()
         cleanup_temp_dir()
 
     def test_mmap(self) -> None:
@@ -72,7 +71,7 @@ class TestMMap(ProgressiveTest):
         df = pd.DataFrame({"a": [1, 2, 3], "b": [0.1, 0.2, 0.3], "c": ["a", "b", "cd"]})
         t = PTable("table_2", data=df)
         self.assertEqual(len(t), len(df))
-        for colname in df:
+        for colname in df.columns:
             coldf = df[colname]
             colt = t[colname]
             self.assertEqual(len(coldf), len(colt))
@@ -154,8 +153,8 @@ class TestMMap(ProgressiveTest):
         def _free_chunk_nb(t: PTable) -> int:
             return sum(
                 [
-                    len(e)
-                    for e in t._column("atext").storagegroup["atext"]._strings._freelist  # type: ignore
+                    len(e)  # type: ignore
+                    for e in t._column("atext").storagegroup["atext"]._strings._freelist   # type: ignore
                 ]
             )
 

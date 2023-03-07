@@ -124,7 +124,11 @@ class ModuleCallbackList(List[ModuleProc]):
 
 
 class Dependency:
-    pass
+    def __setattr__(self, name: str, value: Any) -> None:  # for mypy
+        super().__setattr__(name, value)
+
+    def __getattr__(self, name: str) -> Any:  # for mypy
+        return super().__getattr__(name)  # type: ignore
 
 
 class Module(metaclass=ABCMeta):
@@ -142,7 +146,6 @@ class Module(metaclass=ABCMeta):
     TAG_DEPENDENT = "dependent"
     inputs = [SlotDescriptor(PARAMETERS_SLOT, type=BasePTable, required=False)]
     outputs = [SlotDescriptor(TRACE_SLOT, type=BasePTable, required=False)]
-    doc_building = False
     output_attrs: Dict[str, str] = {}
     output_types: Dict[str, Any] = {}
     state_created: ClassVar[ModuleState] = ModuleState.state_created

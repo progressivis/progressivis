@@ -19,6 +19,10 @@ from typing import (
     TYPE_CHECKING,
 )
 
+
+ExtensionDtype = pd.api.extensions.ExtensionDtype
+
+
 if TYPE_CHECKING:
     from .table_base import BasePTable
 
@@ -129,7 +133,7 @@ def dshape_from_columns(table: BasePTable, columns: List[str], dshape: Any) -> D
     return ds.dshape("{" + ",".join(dshapes) + "}")
 
 
-def dataframe_dshape(dtype: np.dtype[Any]) -> str:
+def dataframe_dshape(dtype: Union[np.dtype[Any], ExtensionDtype]) -> str:
     if dtype == OBJECT:
         return "string"
     if dtype.name.startswith("datetime"):
@@ -205,7 +209,7 @@ def array_dshape(
         shape = dataframe_dshape(df.dtype)
         length = df.shape[1]
     else:
-        col_dshapes = set([dataframe_dshape(df[c].dtype) for c in df])
+        col_dshapes = set([dataframe_dshape(df[c].dtype) for c in df.columns])
         if len(col_dshapes) != 1:
             raise ValueError("All column must have the same data type")
         shape = col_dshapes.pop()

@@ -57,6 +57,7 @@ class MyResetter(Module):
         input_slot.clear_buffers()
         data = input_slot.data()
         if data and len(data) >= self._threshold:
+            assert self.result is not None
             self.result["reset"] = False
         return self._return_run_step(self.next_state(input_slot), steps_run=step_size)
 
@@ -103,10 +104,12 @@ class TestPPCA(ProgressiveTest):
         )
 
         prn = Every(scheduler=s, proc=_print)
-        prn.input[0] = ppca.reduced.output.result
+        prn.input[0] = ppca.dep.reduced.output.result
         aio.run(s.start())
-        pca_ = ppca._transformer["inc_pca"]
-        recovered = pca_.inverse_transform(_array(ppca.reduced.result))
+        assert ppca.transformer is not None
+        assert data.result is not None
+        pca_ = ppca.transformer["inc_pca"]
+        recovered = pca_.inverse_transform(_array(ppca.dep.reduced.result))
         if KNN is None:
             print("Init KNN")
             KNN = KNeighborsClassifier(NNEIGHBOURS)

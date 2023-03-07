@@ -1,10 +1,10 @@
 import weakref
-import ipywidgets as ipw  # type: ignore
-from progressivis.table.dshape import dataframe_dshape  # type: ignore
-from progressivis.vis import DataShape  # type: ignore
-from progressivis.core import Sink  # type: ignore
-from progressivis.core.utils import normalize_columns  # type: ignore
-from IPython.display import Javascript, display  # type: ignore
+import ipywidgets as ipw
+from progressivis.table.dshape import dataframe_dshape
+from progressivis.vis import DataShape
+from progressivis.core import Sink
+from progressivis.core.utils import normalize_columns
+from IPython.display import Javascript, display
 from collections import defaultdict
 import dagWidget  # type: ignore
 from typing import (
@@ -80,7 +80,7 @@ class HandyTab(ipw.Tab):
             children_[pos] = wg
             self.children = tuple(children_)
         else:
-            self.children += (wg,)
+            self.children += (wg,)  # type: ignore
             self.set_next_title(title)
 
     def remove_tab(self, title):

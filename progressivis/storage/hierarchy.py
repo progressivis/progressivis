@@ -33,7 +33,7 @@ class GroupImpl(Group):
         data: Optional[Any] = None,
         **kwds: Any,
     ) -> Dataset:
-        pass
+        return None  # type: ignore
 
     def _create_attribute(
         self, dict_values: Optional[Dict[str, Any]] = None

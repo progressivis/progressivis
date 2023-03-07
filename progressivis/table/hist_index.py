@@ -415,6 +415,7 @@ class HistogramIndex(Module):
             if min_bin is None:
                 return None
             if self._min_table is None:
+                assert self._input_table is not None
                 self._min_table = PTableSelectedView(self._input_table, PIntSet([]))
             assert self._min_table is not None
             self._min_table.selection = min_bin
@@ -424,6 +425,7 @@ class HistogramIndex(Module):
             if max_bin is None:
                 return None
             if self._max_table is None:
+                assert self._input_table is not None
                 self._max_table = PTableSelectedView(self._input_table, PIntSet([]))
             self._max_table.selection = max_bin
             return self._max_table

@@ -4,7 +4,7 @@ from .utils import (
 )
 from ..slot_wg import SlotWg
 
-from progressivis.core.scheduler import Scheduler  # type: ignore
+from progressivis.core.scheduler import Scheduler
 
 
 class DumpPTableW(VBox):

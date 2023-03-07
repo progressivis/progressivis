@@ -33,8 +33,6 @@ class TestMerge(ProgressiveTest):
         prlen.input[0] = csv.output.result
         aio.run(s.start())
         _ = merge.trace_stats(max_runs=1)
-        # pd.set_option('display.expand_frame_repr', False)
-        # print(res)
 
     def test_merge_simple(self) -> None:
         s = self.scheduler()
@@ -51,9 +49,7 @@ class TestMerge(ProgressiveTest):
         pr.input[0] = merge.output.result
         aio.run(s.start())
         _ = merge.trace_stats(max_runs=1)
-        # pd.set_option('display.expand_frame_repr', False)
-        # print(res)
-        df = merge.table
+        df = merge.result
         last = df.loc[df.index[-1]]
         assert last is not None
         self.assertTrue(

@@ -109,6 +109,7 @@ class TestProgressiveLoadCSVOverHTTP(ProgressiveTest):
         sink.input.inp = module.output.result
         aio.run(s.start())
         _close(module)
+        assert module.result is not None
         self.assertEqual(len(module.result), 1000000)
 
     @skipIf(os.getenv("CI"), "not reliable enough, to be improved")
@@ -126,7 +127,7 @@ class TestProgressiveLoadCSVOverHTTP(ProgressiveTest):
         sink.input.inp = module.output.result
         aio.run(s.start())
         _close(module)
-        # self.assertGreater(module.parser._recovery_cnt, 0)
+        assert module.result is not None
         self.assertEqual(len(module.result), 1000000)
 
     @skipIf(os.getenv("CI"), "not reliable enough, to be improved")
@@ -148,6 +149,7 @@ class TestProgressiveLoadCSVOverHTTP(ProgressiveTest):
         sink.input.inp = csv.output.result
         aio.run(csv.start())
         _close(csv)
+        assert csv.result is not None
         self.assertEqual(len(csv.result), 60000)
 
     def test_04_read_http_csv_bz2_no_crash(self) -> None:
@@ -164,6 +166,7 @@ class TestProgressiveLoadCSVOverHTTP(ProgressiveTest):
         sink.input.inp = module.output.result
         aio.run(s.start())
         _close(module)
+        assert module.result is not None
         self.assertEqual(len(module.result), 1000000)
 
     def test_05_read_http_csv_bz2_crash_recovery(self) -> None:
@@ -184,7 +187,7 @@ class TestProgressiveLoadCSVOverHTTP(ProgressiveTest):
         sink.input.inp = module.output.result
         aio.run(s.start())
         _close(module)
-        # self.assertGreater(module.parser._recovery_cnt, 0)
+        assert module.result is not None
         self.assertEqual(len(module.result), 1000000)
 
     def test_06_read_multiple_csv_bz2_crash_recovery(self) -> None:
@@ -210,6 +213,7 @@ class TestProgressiveLoadCSVOverHTTP(ProgressiveTest):
         sink.input.inp = csv.output.result
         aio.run(csv.start())
         _close(csv)
+        assert csv.result is not None
         self.assertEqual(len(csv.result), 60000)
 
 

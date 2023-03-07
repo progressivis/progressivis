@@ -67,6 +67,7 @@ class TestProgressiveLoadCSV(ProgressiveTest):
         sink = Sink(scheduler=s)
         sink.input.inp = module.output.result
         aio.run(s.start())
+        assert module.result is not None
         self.assertEqual(len(module.result), n_rows)
 
     def test_read_csv(self) -> None:
@@ -92,7 +93,7 @@ class TestProgressiveLoadCSV(ProgressiveTest):
         bio = make_int_csv(n_rows=n_rows, n_cols=3, intruders=intruders)
         df = pd.read_csv(bio)
         bio.seek(0)
-        df = df.drop(rows)
+        df = df.drop(list(rows))
         cvopts = ConvertOptions(column_types={c: dtype for c in df.columns})
         ropts = ReadOptions(block_size=100_000)
         module = PACSVLoader(
@@ -109,6 +110,7 @@ class TestProgressiveLoadCSV(ProgressiveTest):
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = module.output.anomalies
         aio.run(s.start())
+        assert module.result is not None
         self.assertEqual(len(module.result), len(df))
         self.assertTrue(
             np.array_equal(module.result.to_array(), df.values.astype(dtype))
@@ -147,9 +149,9 @@ class TestProgressiveLoadCSV(ProgressiveTest):
         bio = make_float_csv(n_rows=n_rows, n_cols=3, intruders=intruders)
         df = pd.read_csv(bio)
         bio.seek(0)
-        df = df.drop(rows)
+        df = df.drop(list(rows))
         cvopts = ConvertOptions(column_types={c: dtype for c in df.columns})
-        ropts = ReadOptions(block_size=1000_000, column_names=df.columns, skip_rows=1)
+        ropts = ReadOptions(block_size=1000_000, column_names=list(df.columns), skip_rows=1)
         module = PACSVLoader(
             bio,
             scheduler=s,
@@ -162,6 +164,7 @@ class TestProgressiveLoadCSV(ProgressiveTest):
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = module.output.anomalies
         aio.run(s.start())
+        assert module.result is not None
         self.assertEqual(len(module.result), len(df))
         self.assertTrue(
             np.allclose(

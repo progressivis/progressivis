@@ -389,7 +389,7 @@ class BasePTable(metaclass=ABCMeta):
         from .column_selected import PColumnComputedView
         from .column_expr import PColumnExpr
         from .column_vfunc import PColumnVFunc
-
+        computed_col: BasePColumn
         if meta["category"] == "ufunc":
             base_col = meta["column"]
             if base_col in self.computed:
@@ -1508,7 +1508,7 @@ class IndexPTable(BasePTable):
 class PTableSelectedView(BasePTable):
     def __init__(
         self,
-        base: Optional[BasePTable] = None,
+        base: BasePTable,
         selection: Union[PIntSet, slice] = slice(0, None),
         columns: Optional[List[str]] = None,
         computed: Optional[Dict[str, Any]] = None

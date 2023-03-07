@@ -42,6 +42,8 @@ class TestPercentiles(ProgressiveTest):
             prt = Print(proc=self.terse, scheduler=s)
             prt.input[0] = percentiles.output.result
         aio.run(s.start())
+        assert percentiles.result is not None
+        assert random.result is not None
         last = percentiles.result.last()
         assert last is not None
         pdict = last.to_dict()
@@ -87,9 +89,9 @@ class TestPercentiles(ProgressiveTest):
             prt = Print(proc=self.terse, scheduler=s)
             prt.input[0] = percentiles.output.result
         aio.run(s.start())
+        assert percentiles.result is not None
+        assert stirrer.result is not None
         pdict = notNone(percentiles.result.last()).to_dict()
-        # v = random.table()['_1'].values
-        # from nose.tools import set_trace; set_trace()
         v = stirrer.result.to_array(columns=["_1"]).reshape(-1)
         p25 = np.percentile(v, 25.0)  # type: ignore
         p50 = np.percentile(v, 50.0)  # type: ignore
@@ -107,7 +109,6 @@ class TestPercentiles(ProgressiveTest):
             p75,
             pdict["_75"],
         )
-        # from nose.tools import set_trace; set_trace()
         self.assertAlmostEqual(p25, pdict["_25"], delta=0.01)
         self.assertAlmostEqual(p50, pdict["_50"], delta=0.01)
         self.assertAlmostEqual(p75, pdict["_75"], delta=0.01)
@@ -161,6 +162,8 @@ class TestPercentiles(ProgressiveTest):
             prt = Print(proc=self.terse, scheduler=s)
             prt.input[0] = percentiles.output.result
         aio.run(s.start())
+        assert percentiles.result is not None
+        assert range_qry.result is not None
         pdict = notNone(percentiles.result.last()).to_dict()
         v = range_qry.result["_1"].values
         p25 = np.percentile(v, 25.0)  # type: ignore
@@ -213,6 +216,8 @@ class TestPercentiles(ProgressiveTest):
             prt = Print(proc=self.terse, scheduler=s)
             prt.input[0] = percentiles.output.result
         aio.run(s.start())
+        assert percentiles.result is not None
+        assert range_qry.result is not None
         pdict = notNone(percentiles.result.last()).to_dict()
         v = range_qry.result["_1"].values
         p25 = np.percentile(v, 25.0)  # type: ignore

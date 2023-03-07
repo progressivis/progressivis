@@ -25,11 +25,10 @@ class TestIdxMax(ProgressiveTest):
         pr2.input[0] = max_.output.result
         aio.run(s.start())
         max1 = max_.result
-        # print('max1', max1)
+        assert max1 is not None
         max = idxmax._max
         assert max is not None
         max2 = notNone(max.last()).to_dict()
-        # print('max2', max2)
         self.compare(max1, max2)
 
     def test_idxmax2(self) -> None:
@@ -48,13 +47,11 @@ class TestIdxMax(ProgressiveTest):
         pr2 = Print(proc=self.terse, scheduler=s)
         pr2.input[0] = max_.output.result
         aio.run(s.start())
-        # import pdb;pdb.set_trace()
         max1 = max_.result
-        # print('max1', max1)
+        assert max1 is not None
         max = idxmax._max
         assert max is not None
         max2 = notNone(max.last()).to_dict()
-        # print('max2', max2)
         self.compare(max1, max2)
 
     def test_idxmin(self) -> None:
@@ -70,11 +67,10 @@ class TestIdxMax(ProgressiveTest):
         pr2.input[0] = min_.output.result
         aio.run(s.start())
         min1 = min_.result
-        # print('min1', min1)
+        assert min1 is not None
         min = idxmin._min
         assert min is not None
         min2 = notNone(min.last()).to_dict()
-        # print('min2', min2)
         self.compare(min1, min2)
 
     def test_idxmin2(self) -> None:
@@ -94,18 +90,15 @@ class TestIdxMax(ProgressiveTest):
         pr2.input[0] = min_.output.result
         aio.run(s.start())
         min1 = min_.result
-        # print('min1', min1)
+        assert min1 is not None
         min = idxmin._min
         assert min is not None
         min2 = notNone(min.last()).to_dict()
-        # print('min2', min2)
         self.compare(min1, min2)
 
     def compare(self, res1: Dict[str, Any], res2: Dict[str, Any]) -> None:
         v1 = np.array(list(res1.values()))
         v2 = np.array(list(res2.values()))
-        # print('v1 = ', v1, res1.keys())
-        # print('v2 = ', v2, res2.keys())
         self.assertTrue(np.allclose(v1, v2))
 
 

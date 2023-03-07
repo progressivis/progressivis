@@ -27,7 +27,7 @@ class _CtxImpl:
         self._has_buffered: Set[str] = set()
 
     def __getattr__(self, name: str) -> Slot:
-        ...
+        return super().__getattr__(self, name)  # type: ignore
 
 
 class _Context:

@@ -15,7 +15,7 @@ from ..core import JSONEncoderNp
 from ..utils.psdict import PDict
 from ..table.paging_helper import PagingHelper
 
-routes = web.RoutePTableDef()
+routes = web.RouteTableDef()
 
 logger = logging.getLogger(__name__)
 

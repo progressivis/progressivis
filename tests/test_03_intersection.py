@@ -26,11 +26,9 @@ class TestIntersection(ProgressiveTest):
         hist_index.create_dependent_modules(random, "result")
         bisect_min = Bisect(column="_1", op=">", hist_index=hist_index, scheduler=s)
         bisect_min.input[0] = hist_index.output.result
-        # bisect_.input[0] = random.output.result
         bisect_min.input.limit = min_value.output.result
         bisect_max = Bisect(column="_1", op="<", hist_index=hist_index, scheduler=s)
         bisect_max.input[0] = hist_index.output.result
-        # bisect_.input[0] = random.output.result
         bisect_max.input.limit = max_value.output.result
         inter = Intersection(scheduler=s)
         inter.input[0] = bisect_min.output.result
@@ -39,6 +37,7 @@ class TestIntersection(ProgressiveTest):
         pr.input[0] = inter.output.result
         aio.run(s.start())
         assert hist_index.input_module is not None
+        assert inter.result is not None
         idx = (
             hist_index.input_module.output["result"]
             .data()
@@ -59,11 +58,9 @@ class TestIntersection(ProgressiveTest):
         hist_index.create_dependent_modules(stirrer, "result")
         bisect_min = Bisect(column="_1", op=">", hist_index=hist_index, scheduler=s)
         bisect_min.input[0] = hist_index.output.result
-        # bisect_.input[0] = random.output.result
         bisect_min.input.limit = min_value.output.result
         bisect_max = Bisect(column="_1", op="<", hist_index=hist_index, scheduler=s)
         bisect_max.input[0] = hist_index.output.result
-        # bisect_.input[0] = random.output.result
         bisect_max.input.limit = max_value.output.result
         inter = Intersection(scheduler=s)
         inter.input[0] = bisect_min.output.result
@@ -72,6 +69,7 @@ class TestIntersection(ProgressiveTest):
         pr.input[0] = inter.output.result
         aio.run(s.start())
         assert hist_index.input_module is not None
+        assert inter.result is not None
         idx = (
             hist_index.input_module.output["result"]
             .data()

@@ -5,6 +5,7 @@ from progressivis.table.table import PTable
 from progressivis.core.pintset import PIntSet
 
 import pandas as pd
+import numpy as np
 
 
 class TestToDict(ProgressiveTest):
@@ -18,7 +19,7 @@ class TestToDict(ProgressiveTest):
             }
         )
         t = PTable(name=None, data=df)
-        df = df.drop(df.index[[3, 4]])
+        df = df.drop(df.index[np.array([3, 4])])  # np.array() is only for mypy ...
         del t.loc[[3, 4]]
         # del t.loc[3]
         # print(df.to_dict(orient='index'))
@@ -41,7 +42,7 @@ class TestToDict(ProgressiveTest):
             }
         )
         t_ = PTable(name=None, data=df)
-        df = df.drop(df.index[[3, 4]])
+        df = df.drop(df.index[np.array([3, 4])])
         sel = PIntSet(t_.index) - PIntSet([3, 4])
         # del t.loc[[3,4]]
         t = t_.loc[sel, :]  # PTableSelectedView(t_, sel)

@@ -44,7 +44,7 @@ class TestCombineFirst(ProgressiveTest):
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = cf.output.result
         aio.run(s.start())
-        # res = cf.trace_stats(max_runs=1)
+        assert cf.result is not None
         row = cf.result.last()
         assert row is not None
         last = row.to_dict()
@@ -86,6 +86,7 @@ class TestCombineFirst(ProgressiveTest):
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = cf.output.result
         aio.run(s.start())
+        assert cf.result is not None
         last = notNone(cf.result.last()).to_dict()
         self.assertTrue(
             last["xmin"] == 1

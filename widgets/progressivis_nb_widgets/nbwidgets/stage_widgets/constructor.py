@@ -1,7 +1,7 @@
-import ipywidgets as ipw  # type: ignore
-from progressivis import Scheduler   # type: ignore
-from progressivis.io import DynVar  # type: ignore
-from progressivis.core import Sink, aio  # type: ignore
+import ipywidgets as ipw
+from progressivis import Scheduler
+from progressivis.io import DynVar
+from progressivis.core import Sink, aio
 from .utils import (make_button, get_dag, _Dag,
                     RootVBox, SchemaBox,
                     get_widget_by_id, get_widget_by_key)

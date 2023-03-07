@@ -102,11 +102,6 @@ class Expm1(Unary):
         super(Expm1, self).__init__(np.expm1, **kwds)
 
 
-class Expm1x(Unary):
-    def __init__(self, *args: Any, **kwds: Any):
-        super().__init__(np.expm1x, **kwds)
-
-
 class Fabs(Unary):
     def __init__(self, *args: Any, **kwds: Any):
         super(Fabs, self).__init__(np.fabs, **kwds)

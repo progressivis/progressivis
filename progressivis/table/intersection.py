@@ -79,6 +79,7 @@ class Intersection(Module):
         to_create_maybe = PIntSet.union(*to_create)
 
         if not self.result:
+            assert ph_table is not None
             self.result = PTableSelectedView(ph_table, PIntSet([]))
         if reset_:
             self.result.selection = PIntSet([])
@@ -121,6 +122,7 @@ class Intersection(Module):
         if steps == 0:
             return self._return_run_step(self.state_blocked, 0)
         if not self.result:
+            assert ph_table is not None
             self.result = PTableSelectedView(ph_table, PIntSet([]))
         self.result.selection = PIntSet.intersection(*[t.index for t in tables])
         return self._return_run_step(self.state_blocked, steps)

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from .core import Expr
 from ..utils.psdict import PDict
-from ..table.constant import Constant
+from ..table.constant import Constant, ConstDict
 from progressivis.core.module import Module
 
 from typing import (
@@ -38,10 +38,13 @@ class PDataExpr(Expr):
 
     @property
     def result(self) -> Union[BasePTable, PDict]:
-        assert isinstance(self._module, (Module, Module))
+        assert isinstance(self._module, Module)
+        assert hasattr(self._module, "result")
         return self._module.result
 
     def select(self, columns: List[str]) -> PDataExpr:
+        if isinstance(self.result, PDict):
+            return PDataExpr(ConstDict, PDict({k: v for (k, v) in self.result.items() if k in columns}), kwds={})
         return PDataExpr(Constant, self.result.loc[:, columns], kwds={})
 
     # def filter(self, predicate):

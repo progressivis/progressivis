@@ -24,6 +24,8 @@ class TestStats(ProgressiveTest):
         pr = Print(proc=self.terse, name="print", scheduler=s)
         pr.input[0] = stats.output.result
         aio.run(s.start())
+        assert csv_module.result is not None
+        assert stats.result is not None
         table = csv_module.result
         stable = stats.result
         last = notNone(stable.last())

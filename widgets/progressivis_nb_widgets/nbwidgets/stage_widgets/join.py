@@ -3,12 +3,13 @@ from .utils import (
     stage_register,
     append_child, VBox,
 )
-import ipywidgets as ipw  # type: ignore
+import ipywidgets as ipw
 from progressivis.table.group_by import UTIME_SHORT_D
 from progressivis.table.join import Join
 from progressivis.core import Sink
 from typing import (
     Any as AnyType,
+    Any,
     Dict,
     Callable,
     List
@@ -141,7 +142,7 @@ class JoinW(VBox):
         self.make_chaining_box()
         self.dag_running()
 
-    def _btn_ok_cb(self, *args, **kw):
+    def _btn_ok_cb(self, *args: Any, **kw: Any) -> None:
         self._input_2.disabled = True
         self._role_2.disabled = True
         widget_1 = self.parent
@@ -190,8 +191,7 @@ class JoinW(VBox):
                               description="",
                               disabled=False,
                               indent=False)
-        lst: List[WidgetType] = [_l(""), _l("Keep"),
-                                 _l("*"), ck_all]
+        lst = [_l(""), _l("Keep"), _l("*"), ck_all]
         for col in related_wg.output_dtypes.keys():
             ck = ipw.Checkbox(value=True,
                               description="",

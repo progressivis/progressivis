@@ -2,8 +2,8 @@ from . import ProgressiveTest, skipIf
 
 import random
 from itertools import chain
-
 import numpy as np
+
 
 IERR = False
 try:
@@ -26,7 +26,7 @@ class TestFast(ProgressiveTest):
         pass
 
     def test_check_contiguity(self) -> None:
-        a = np.arange(10, dtype=np.int32)
+        a = np.arange(10, dtype=np.uint32)
         with self.assertRaises(ValueError):
             check_contiguity(a)
         a = np.arange(100, dtype=np.uint32).reshape(10, 10)
@@ -35,10 +35,10 @@ class TestFast(ProgressiveTest):
         a = np.arange(100, dtype=np.uint32)
         c = check_contiguity(a)
         self.assertEqual(c, PROP_IDENTITY)
-        a[50:] += 1
+        a[50:] += np.uint32(1)
         c = check_contiguity(a)
         self.assertEqual(c, PROP_START_AT_0 | PROP_MONOTONIC_INC)
-        a[:50] += 1
+        a[:50] += np.uint32(1)
         c = check_contiguity(a)
         self.assertEqual(c, PROP_MONOTONIC_INC | PROP_CONTIGUOUS)
 

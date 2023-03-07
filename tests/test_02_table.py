@@ -336,7 +336,7 @@ class TestPTable(ProgressiveTest):
         df = pd.DataFrame({"a": [1, 2, 3], "b": [0.1, 0.2, 0.3], "c": ["a", "b", "cd"]})
         t = PTable("table_2", data=df)
         self.assertEqual(len(t), len(df))
-        for colname in df:
+        for colname in df.columns:
             coldf = df[colname]
             colt = t[colname]
             self.assertEqual(len(coldf), len(colt))
@@ -369,7 +369,7 @@ class TestPTable(ProgressiveTest):
         # self.scheduler._run_number = 1
         t = PTable("table_3", data=d)
         self.assertEqual(len(t), len(df))
-        for colname in df:
+        for colname in df.columns:
             coldf = df[colname]
             colt = t[colname]
             self.assertEqual(len(coldf), len(colt))
@@ -407,6 +407,7 @@ class TestPTable(ProgressiveTest):
         aio.run(self.scheduler_.start(persist=True))
         t = module.result
         self.assertFalse(t is None)
+        assert t is not None  # only for mypy
         self.assertEqual(len(t), 30000)
         df = pd.read_csv(
             filepath_or_buffer=get_dataset("smallfile"), index_col=False, header=None

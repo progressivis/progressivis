@@ -115,6 +115,8 @@ class TestRepairMax(ProgressiveTest):
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = max_.output.result
         aio.run(s.start())
+        assert random.result is not None
+        assert max_.result is not None
         res1 = random.result.max()
         res2 = max_.result
         self.compare(res1, res2)
@@ -134,6 +136,8 @@ class TestRepairMax(ProgressiveTest):
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = max_.output.result
         aio.run(s.start())
+        assert stirrer.result is not None
+        assert max_.result is not None
         self.assertEqual(ScalarMax._reset_calls_counter, 1)  # type: ignore
         res1 = stirrer.result.max()
         res2 = max_.result
@@ -156,6 +160,8 @@ class TestRepairMax(ProgressiveTest):
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = max_.output.result
         aio.run(s.start())
+        assert stirrer.result is not None
+        assert max_.result is not None
         self.assertEqual(ScalarMax._reset_calls_counter, 0)  # type: ignore
         res1 = stirrer.result.max()
         res2 = max_.result
@@ -178,6 +184,8 @@ class TestRepairMax(ProgressiveTest):
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = max_.output.result
         aio.run(s.start())
+        assert stirrer.result is not None
+        assert max_.result is not None
         self.assertEqual(ScalarMax._reset_calls_counter, 0)  # type: ignore
         res1 = stirrer.result.max()
         res2 = max_.result
@@ -200,6 +208,8 @@ class TestRepairMax(ProgressiveTest):
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = max_.output.result
         aio.run(s.start())
+        assert stirrer.result is not None
+        assert max_.result is not None
         self.assertEqual(ScalarMax._reset_calls_counter, 1)  # type: ignore
         res1 = stirrer.result.max()
         res2 = max_.result
@@ -222,6 +232,8 @@ class TestRepairMax(ProgressiveTest):
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = max_.output.result
         aio.run(s.start())
+        assert stirrer.result is not None
+        assert max_.result is not None
         self.assertEqual(ScalarMax._reset_calls_counter, 0)  # type: ignore
         res1 = stirrer.result.max()
         res2 = max_.result
@@ -248,6 +260,8 @@ class TestRepairMin(ProgressiveTest):
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = min_.output.result
         aio.run(s.start())
+        assert random.result is not None
+        assert min_.result is not None
         res1 = random.result.min()
         res2 = min_.result
         self.compare(res1, res2)
@@ -267,6 +281,8 @@ class TestRepairMin(ProgressiveTest):
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = min_.output.result
         aio.run(s.start())
+        assert stirrer.result is not None
+        assert min_.result is not None
         self.assertEqual(ScalarMin._reset_calls_counter, 1)  # type: ignore
         res1 = stirrer.result.min()
         res2 = min_.result
@@ -289,6 +305,8 @@ class TestRepairMin(ProgressiveTest):
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = min_.output.result
         aio.run(s.start())
+        assert stirrer.result is not None
+        assert min_.result is not None
         self.assertEqual(ScalarMin._reset_calls_counter, 0)  # type: ignore
         res1 = stirrer.result.min()
         res2 = min_.result
@@ -311,6 +329,8 @@ class TestRepairMin(ProgressiveTest):
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = min_.output.result
         aio.run(s.start())
+        assert stirrer.result is not None
+        assert min_.result is not None
         self.assertEqual(ScalarMin._reset_calls_counter, 0)  # type: ignore
         res1 = stirrer.result.min()
         res2 = min_.result
@@ -333,6 +353,8 @@ class TestRepairMin(ProgressiveTest):
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = min_.output.result
         aio.run(s.start())
+        assert stirrer.result is not None
+        assert min_.result is not None
         self.assertEqual(ScalarMin._reset_calls_counter, 1)  # type: ignore
         res1 = stirrer.result.min()
         res2 = min_.result
@@ -355,6 +377,8 @@ class TestRepairMin(ProgressiveTest):
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = min_.output.result
         aio.run(s.start())
+        assert stirrer.result is not None
+        assert min_.result is not None
         self.assertEqual(ScalarMin._reset_calls_counter, 0)  # type: ignore
         res1 = stirrer.result.min()
         res2 = min_.result
@@ -363,8 +387,6 @@ class TestRepairMin(ProgressiveTest):
     def compare(self, res1: Dict[str, Any], res2: Dict[str, Any]) -> None:
         v1 = np.array(list(res1.values()))
         v2 = np.array(list(res2.values()))
-        # print('v1 = ', v1, res1.keys())
-        # print('v2 = ', v2, res2.keys())
         self.assertTrue(np.allclose(v1, v2))
 
 

@@ -251,7 +251,7 @@ class SimpleImputer:
         self,
         strategy: Optional[Union[str, Dict[str, str]]] = None,
         default_strategy: Optional[str] = None,
-        fill_values: Optional[Union[str, Number, Dict[str, Union[str, Number]]]] = None,
+        fill_values: Optional[Union[str, int, Number, Dict[str, Union[str, Number]]]] = None,
     ):
         if nn(default_strategy):
             assert is_str(default_strategy)

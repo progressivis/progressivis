@@ -1,24 +1,24 @@
-import ipywidgets as ipw  # type: ignore
+import ipywidgets as ipw
 import numpy as np
 import pyarrow.parquet as pq
-from progressivis.table.dshape import dataframe_dshape  # type: ignore
-from progressivis.io import ParquetLoader  # type: ignore
+from progressivis.table.dshape import dataframe_dshape, ExtensionDtype
+from progressivis.io import ParquetLoader
 from .utils import (make_button, VBoxSchema)
 import os
 
 from typing import (
-    Any as AnyType,
-    Dict,
+    Any, Any as AnyType,
+    Dict, Union
 )
 
 
-def _ds(t):
+def _ds(t: Union[np.dtype[Any], ExtensionDtype]) -> str:
     ds = dataframe_dshape(t)
     return "datetime64" if ds == "6*uint16" else ds
 
 
 class ColInfo(ipw.VBox):
-    def __init__(self, raw_info, dtype, *args, **kw):
+    def __init__(self, raw_info, dtype, *args, **kw) -> None:
         super().__init__(*args, **kw)
         self.info = ipw.Textarea("\n".join(str(raw_info).strip().split("\n")[1:]),
                                  rows=12)
@@ -28,7 +28,7 @@ class ColInfo(ipw.VBox):
 
 
 class Sniffer(ipw.HBox):
-    def __init__(self, url, *args, **kw):
+    def __init__(self, url, *args, **kw) -> None:
         super().__init__(*args, **kw)
         self.pqfile = pq.ParquetFile(url)
         self.schema = self.pqfile.schema.to_arrow_schema()

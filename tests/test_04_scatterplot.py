@@ -72,6 +72,7 @@ class TestScatterPlot(ProgressiveTest):
             # sts = sleep_then_stop(s, 5)
         s.on_loop(self._stop, 5)
         aio.run(csv.scheduler().start())
+        assert csv.result is not None
         self.assertEqual(len(csv.result), 30_000)
 
     def test_scatterplot2(self) -> None:

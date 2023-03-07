@@ -1,6 +1,6 @@
 from __future__ import annotations
 import time
-import ipywidgets as widgets  # type: ignore
+import ipywidgets as widgets
 from ipydatawidgets.ndarray.serializers import (  # type: ignore
     array_to_compressed_json,
     array_from_compressed_json,
@@ -76,7 +76,7 @@ def data_union_to_json_compress(value: Any, widget: Any) -> Dict[str, Any]:
 def data_union_from_json_compress(value: Any, widget: Any) -> Any:
     """Deserializer for union of NDArray and NDArrayWidget"""
     if isinstance(value, str) and value.startswith("IPY_MODEL_"):
-        return widgets.widget_serialization["from_json"](value, widget)
+        return widgets.widget_serialization["from_json"](value, widget)  # type: ignore
     return array_from_compressed_json(value, widget)
 
 

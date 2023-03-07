@@ -48,5 +48,6 @@ class TestProgressiveCatQuery(ProgressiveTest):
         sink = Sink(scheduler=s)
         sink.input.inp = query.output.result
         aio.run(s.start())
+        assert query.result is not None
         df = query.result.to_df()
         self.assertTrue(df.equals(a_c.reset_index(drop=True)))

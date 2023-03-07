@@ -15,9 +15,7 @@ MIN_INT64 = np.iinfo(np.int64).min
 
 
 class TestDistinct(ProgressiveTest):
-    #    def setUp(self):
-    #        log_level(logging.INFO)
-    @skip  # TODO fix with a reliable dataset
+    @skip("skipped: TODO fix with a reliable dataset")
     def test_distinct_categorical(self):
         s = self.scheduler()
         csv = SimpleCSVLoader(
@@ -28,6 +26,7 @@ class TestDistinct(ProgressiveTest):
         prt = Print(proc=self.terse, scheduler=s)
         prt.input[0] = dist.output.result
         aio.run(csv.scheduler().start())
+        dist.result is not None
         res = dist.result
         self.assertEqual(res["passenger_count"], {0, 1, 2, 3, 4, 5, 6, 9})
         self.assertEqual(res["trip_distance"], None)

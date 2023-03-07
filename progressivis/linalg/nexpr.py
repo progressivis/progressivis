@@ -10,7 +10,7 @@ from ..table.table import PTable
 import numexpr as ne
 
 
-from typing import Dict, Any, Tuple
+from typing import Dict, Any, Tuple, Optional
 
 
 def _make_local(df: BasePTable, px: str) -> Tuple[Any, Dict[str, np.ndarray[Any, Any]]]:
@@ -31,6 +31,7 @@ def _make_local(df: BasePTable, px: str) -> Tuple[Any, Dict[str, np.ndarray[Any,
 class NumExprABC(Module):
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
+        self.result: Optional[PTable]  # only for mypy
         self.expr: Dict[str, Any]
         self.ref_expr: Dict[str, Any] = self.expr
 

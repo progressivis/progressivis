@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import ipywidgets as widgets  # type: ignore
+import ipywidgets as widgets
 from traitlets import Unicode  # type: ignore
 
 # from typing import Any as AnyType

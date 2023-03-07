@@ -31,7 +31,7 @@ class FooABC(Module):
     def run_step_impl(
         self, ctx: _CtxImpl, run_number: int, step_size: int
     ) -> ReturnRunStep:
-        if self.result is None:
+        if self.result is None:  # type: ignore
             self.result = PTable(
                 self.generate_table_name("Foo"), dshape="{a: int, b: int}", create=True
             )

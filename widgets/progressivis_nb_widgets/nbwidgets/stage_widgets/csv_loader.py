@@ -1,23 +1,23 @@
-import ipywidgets as ipw  # type: ignore
+import ipywidgets as ipw
 import pandas as pd
-from progressivis.io.csv_sniffer import CSVSniffer  # type: ignore
-from progressivis.io import SimpleCSVLoader  # type: ignore
-from progressivis.table import PTable  # type: ignore
-from progressivis.table.constant import Constant  # type: ignore
+from progressivis.io.csv_sniffer import CSVSniffer
+from progressivis.io import SimpleCSVLoader
+from progressivis.table import PTable
+from progressivis.table.constant import Constant
 from .utils import (make_button,
                     get_schema, VBoxSchema)
 import os
 
 from typing import (
-    List,
+    List, Optional
 )
 
 
 class CsvLoaderW(VBoxSchema):
     def __init__(self) -> None:
         super().__init__()
-        self._sniffer = None
-        self._urls = []
+        self._sniffer: Optional[CSVSniffer] = None
+        self._urls: List[str] = []
 
     def init(self,
              urls: List[str] = [],
@@ -29,7 +29,7 @@ class CsvLoaderW(VBoxSchema):
             disabled=False,
             layout=ipw.Layout(width="100%")
         )
-        to_sniff = ipw.Text(
+        to_sniff_ = ipw.Text(
             value=to_sniff,
             placeholder='',
             description='URL to sniff(optional):',
@@ -45,7 +45,7 @@ class CsvLoaderW(VBoxSchema):
                                 cb=self._sniffer_cb)
         self.schema = dict(
             urls_wg=urls_wg,
-            to_sniff=to_sniff,
+            to_sniff=to_sniff_,
             n_lines=n_lines,
             sniff_btn=sniff_btn,
             sniffer=None,
@@ -80,6 +80,7 @@ class CsvLoaderW(VBoxSchema):
 
     def init_modules(self) -> SimpleCSVLoader:
         urls = self._urls
+        assert self._sniffer is not None
         params = self._sniffer.params
         sink = self.input_module
         s = sink.scheduler()

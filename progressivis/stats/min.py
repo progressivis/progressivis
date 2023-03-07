@@ -97,6 +97,7 @@ class ScalarMin(Module):
         """
         check if updates invalidate the current min
         """
+        assert self.result is not None
         for col, id in self._sensitive_ids.items():
             if id not in updated_ids:
                 continue

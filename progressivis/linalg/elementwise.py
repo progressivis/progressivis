@@ -44,7 +44,7 @@ binary_except = not_tested_binaries + other_tested_binaries
 
 
 unary_dict_all = {
-    k: v for (k, v) in np.__dict__.items() if isinstance(v, np.ufunc) and v.nin == 1
+    v.__name__: v for (k, v) in np.__dict__.items() if isinstance(v, np.ufunc) and v.nin == 1
 }
 
 binary_dict_all = {

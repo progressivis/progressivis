@@ -47,6 +47,7 @@ class TestHistogram1D(ProgressiveTest):
         pr.input[0] = histogram1d.output.result
         aio.run(s.start())
         _ = histogram1d.trace_stats()
+        assert histogram1d.result is not None
         last = notNone(histogram1d.result.last()).to_dict()
         h1 = last["array"]
         bounds = (last["min"], last["max"])
@@ -79,6 +80,8 @@ class TestHistogram1D(ProgressiveTest):
         pr = Every(proc=self.terse, scheduler=s)
         pr.input[0] = histogram1d.output.result
         aio.run(s.start())
+        assert histogram1d.result is not None
+        assert stirrer.result is not None
         _ = histogram1d.trace_stats()
         last = notNone(histogram1d.result.last()).to_dict()
         h1 = last["array"]

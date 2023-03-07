@@ -114,7 +114,7 @@ class SubPColumn:
         return self._idx
 
 
-ByType = Union[str, List[str], Callable, SubPColumnABC]
+ByType = Union[str, List[str], Callable, SubPColumnABC, SubPColumn]
 
 
 @def_input("table", PTable, required=False)

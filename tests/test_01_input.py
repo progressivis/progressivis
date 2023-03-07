@@ -23,6 +23,7 @@ class TestInput(ProgressiveTest):
             pr = Print(proc=self.terse, scheduler=s)
             pr.input.df = inp.output.result
         aio.run_gather(s.start(), _do_line(inp, s))
+        assert inp.result is not None
         self.assertEqual(len(inp.result), 10)
 
 

@@ -48,6 +48,7 @@ class TestProgressiveAggregate(ProgressiveTest):
         sink = Sink(scheduler=s)
         sink.input.inp = aggr.output.result
         aio.run(s.start())
+        assert aggr.result is not None
         self.assertTrue(
             np.array_equal(
                 aggr.result["passenger_count"].value,
@@ -83,6 +84,7 @@ class TestProgressiveAggregate(ProgressiveTest):
         sink = Sink(scheduler=s)
         sink.input.inp = aggr.output.result
         aio.run(s.start())
+        assert aggr.result is not None
         self.assertTrue(
             np.array_equal(
                 aggr.result["passenger_count"].value,
@@ -119,6 +121,7 @@ class TestProgressiveAggregate(ProgressiveTest):
         sink = Sink(scheduler=s)
         sink.input.inp = aggr.output.result
         aio.run(s.start())
+        assert aggr.result is not None
         self.assertTrue(
             np.array_equal(
                 aggr.result["passenger_count"].value,
@@ -148,6 +151,7 @@ class TestProgressiveAggregate(ProgressiveTest):
         sink = Sink(scheduler=s)
         sink.input.inp = aggr.output.result
         aio.run(s.start())
+        assert aggr.result is not None
         self.assertTrue(
             np.array_equal(
                 aggr.result["passenger_count"].value,
@@ -176,6 +180,7 @@ class TestProgressiveAggregate(ProgressiveTest):
         sink = Sink(scheduler=s)
         sink.input.inp = aggr.output.result
         aio.run(s.start())
+        assert aggr.result is not None
         self.assertTrue(
             np.array_equal(
                 aggr.result["passenger_count"].value,
@@ -217,6 +222,7 @@ class TestProgressiveAggregate(ProgressiveTest):
         sink = Sink(scheduler=s)
         sink.input.inp = aggr.output.result
         aio.run(s.start())
+        assert aggr.result is not None
         self.assertTrue(
             np.array_equal(
                 aggr.result["passenger_count"].value,
@@ -257,6 +263,7 @@ class TestProgressiveAggregate(ProgressiveTest):
         sink = Sink(scheduler=s)
         sink.input.inp = aggr.output.result
         aio.run(s.start())
+        assert aggr.result is not None
         self.assertTrue(
             np.array_equal(
                 aggr.result["passenger_count"].value,
@@ -295,6 +302,7 @@ class TestProgressiveAggregate(ProgressiveTest):
         sink = Sink(scheduler=s)
         sink.input.inp = aggr.output.result
         aio.run(s.start())
+        assert aggr.result is not None
         self.assertTrue(
             np.allclose(
                 sorted(aggr.result["trip_distance_mean"].value), sorted(DF_AGGR.values)
@@ -316,6 +324,7 @@ class TestProgressiveAggregate(ProgressiveTest):
         sink = Sink(scheduler=s)
         sink.input.inp = aggr.output.result
         aio.run(s.start())
+        assert aggr.result is not None
         self.assertTrue(
             np.allclose(
                 sorted(aggr.result["trip_distance_mean"].value), sorted(DF_AGGR.values)

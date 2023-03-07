@@ -32,8 +32,6 @@ class TestJoin3(ProgressiveTest):
         stat2.input[0] = csv.output.result
         stat3 = Stats(3, reset_index=True, scheduler=s)
         stat3.input[0] = csv.output.result
-        # join=Join(scheduler=s)
-        # import pdb;pdb.set_trace()
         join = Reduce.expand(
             BinJoin,
             "first",
@@ -42,9 +40,6 @@ class TestJoin3(ProgressiveTest):
             [stat1.output.stats, stat2.output.stats, stat3.output.stats],
             scheduler=s,
         )
-        # reduce_.input[0] = stat1.output.stats
-        # reduce_.input[0] = stat2.output.stats
-        # join = reduce_.expand()
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = join.output.result
         prlen = Every(proc=self.terse, constant_time=True, scheduler=s)
@@ -79,12 +74,6 @@ class TestJoin3(ProgressiveTest):
             ),
             scheduler=s,
         )
-        # join=Join(scheduler=s)
-        # reduce_ = Reduce(BinJoin, "first", "second", "table", scheduler=s)
-        # reduce_.input[0] = cst1.output.result
-        # reduce_.input[0] = cst2.output.result
-        # reduce_.input[0] = cst3.output.result
-        # join = reduce_.expand()
         join = Reduce.expand(
             BinJoin,
             "first",
@@ -98,7 +87,9 @@ class TestJoin3(ProgressiveTest):
         aio.run(s.start())
         res = join.trace_stats(max_runs=1)
         print(res)
+        assert isinstance(join, BinJoin)
         df = join.result
+        assert df is not None
         last = df.loc[df.index[-1]]
         assert last is not None
         self.assertTrue(

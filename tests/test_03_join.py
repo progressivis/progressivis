@@ -9,7 +9,7 @@ import pandas as pd
 import numpy as np
 from itertools import product
 from io import StringIO
-from typing import Sequence, Tuple
+from typing import Sequence, Tuple, List, cast
 
 PARQUET_FILE = "nyc-taxi/newstyle_500k_yellow_tripdata_2015-01.parquet"
 # CSV_URL = "https://s3.amazonaws.com/nyc-tlc/misc/taxi+_zone_lookup.csv"
@@ -180,6 +180,7 @@ class TestProgressiveJoin(ProgressiveTest):
         sink2 = Sink(scheduler=s)
         sink2.input.inp = join.output.primary_outer
         aio.run(s.start())
+        assert join.result is not None
         df = join.result.to_df(
             to_datetime=["tpep_pickup_datetime", "tpep_dropoff_datetime"]
         )
@@ -265,6 +266,7 @@ class TestProgressiveJoin(ProgressiveTest):
         sink3 = Sink(scheduler=s)
         sink3.input.inp = join_pu.output.primary_outer
         aio.run(s.start())
+        assert join_pu.result is not None
         df = join_pu.result.to_df(
             to_datetime=["tpep_pickup_datetime", "tpep_dropoff_datetime"]
         )
@@ -281,7 +283,7 @@ class TestProgressiveJoin(ProgressiveTest):
         df3 = join_pu._primary_outer.to_df().rename(
             columns={"LocationID": "PULocationID"}
         )
-        view = list(df2.columns)[1:]  # i.e. 'Borough', 'Zone', 'service_zone'
+        view: List[str] = list(df2.columns)[1:]  # i.e. 'Borough', 'Zone', 'service_zone'
         inner_ = OUTER_PU.query("VendorID==VendorID")
         outer_pu_ = OUTER_PU.query("VendorID!=VendorID and Zone!=Zone")
         outer_1_ = OUTER_PU.query("VendorID!=VendorID and Zone_pu!=Zone_pu")
@@ -298,7 +300,7 @@ class TestProgressiveJoin(ProgressiveTest):
         )
         view_pu = [f"{c}_pu" for c in view]
         outer_pu__ = outer_pu_.sort_values(ord)[view_pu].fillna(0).set_index(df3.index)
-        outer_pu__.columns = view
+        outer_pu__.columns = cast(pd.Index, view)
         self.assertTrue(outer_pu__.equals(df3[view]))
 
 
@@ -318,11 +320,12 @@ class TestProgressiveJoin2(ProgressiveTest):
             primary_module=primary,
             related_on=["FK_1", "FK_2"],
             primary_on=["PK_1", "PK_2"],
-            related_cols=df_left.columns,
+            related_cols=cast(List[str], df_left.columns),
         )
         sink = Sink(scheduler=s)
         sink.input.inp = join.output.result
         aio.run(s.start())
+        assert join.result is not None
         df = join.result.to_df()
         self.assertEqual(len(df), len(df_inner))
         self.assertEqual(set(df.columns), set(df_inner.columns))
@@ -345,13 +348,14 @@ class TestProgressiveJoin2(ProgressiveTest):
             primary_module=primary,
             related_on=["FK_1", "FK_2"],
             primary_on=["PK_1", "PK_2"],
-            related_cols=df_left.columns,
+            related_cols=cast(List[str], df_left.columns),
         )
         sink = Sink(scheduler=s)
         sink.input.inp = join.output.result
         sink2 = Sink(scheduler=s)
         sink2.input.inp = join.output.primary_outer
         aio.run(s.start())
+        assert join.result is not None
         df = join.result.to_df()
         self.assertEqual(len(df), len(df_left_outer))
         self.assertEqual(set(df.columns), set(df_left_outer.columns))

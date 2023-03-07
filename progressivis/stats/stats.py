@@ -60,6 +60,9 @@ class Stats(Module):
         prev_min = prev_max = np.nan
         dfslot = self.get_input_slot("table")
         assert dfslot is not None
+        assert self.result is not None
+        if dfslot.data() is None:
+            return self._return_run_step(self.state_blocked, steps_run=0)
         if dfslot.updated.any() or dfslot.deleted.any():
             dfslot.reset()
             dfslot.update(run_number)

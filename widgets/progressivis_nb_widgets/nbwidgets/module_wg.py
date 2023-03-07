@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import ipywidgets as ipw  # type: ignore
+import ipywidgets as ipw
 
 from .utils import update_widget
 from .slot_wg import SlotWg
@@ -34,6 +34,7 @@ class ModuleWg(ipw.Tab):  # type: ignore # pylint: disable=too-many-ancestors
         # # pylint: disable=protected-access
         # json_ = _idx._cache_js
         # assert json_ is not None
+        assert self.module_name is not None
         self.set_title(0, self.module_name)
         await update_widget(self._main, "data", module_json)
         await update_widget(

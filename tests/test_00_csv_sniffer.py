@@ -43,6 +43,7 @@ class TestCSVSniffer(ProgressiveTest):
             self.assertEqual(dialect.delimiter, delimiter)
             self.assertEqual(dialect.lineterminator, "\r\n")
             df = sniffer.dataframe()
+            assert df is not None
             self.assertTrue(DF.equals(df))
             # self.assertEqual(sniffer.params['names'], ['a', 'b', 'c'])
         finally:

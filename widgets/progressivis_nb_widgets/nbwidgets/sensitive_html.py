@@ -1,4 +1,4 @@
-import ipywidgets as widgets  # type: ignore
+import ipywidgets as widgets
 from traitlets import Unicode, Any  # type: ignore
 
 # See js/lib/widgets.js for the frontend counterpart to this file.

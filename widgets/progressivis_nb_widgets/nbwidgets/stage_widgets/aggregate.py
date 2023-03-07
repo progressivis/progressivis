@@ -3,10 +3,10 @@ from .utils import (
     stage_register,
     VBoxSchema
 )
-import ipywidgets as ipw  # type: ignore
+import ipywidgets as ipw
 import pandas as pd
-from progressivis.table.aggregate import Aggregate  # type: ignore
-from progressivis.core import Sink  # type: ignore
+from progressivis.table.aggregate import Aggregate
+from progressivis.core import Sink
 
 from typing import (
     Any as AnyType,
@@ -25,7 +25,7 @@ def get_flag_status(dt: str, op: str) -> bool:
 
 
 class AggregateW(VBoxSchema):
-    def init(self):
+    def init(self) -> None:
         self.hidden_cols: List[str] = []
         fncs = ["hide"] + list(Aggregate.registry.keys())
         self.all_functions = dict(zip(fncs, fncs))

@@ -4,25 +4,25 @@ from .utils import (
     dongle_widget,
     VBoxSchema, IpyHBoxSchema
 )
-import ipywidgets as ipw  # type: ignore
+import ipywidgets as ipw
 import numpy as np
 import operator as op
 import weakref
-from progressivis.table.repeater import Repeater, Computed  # type: ignore
-from progressivis.core import Sink  # type: ignore
+from progressivis.table.repeater import Repeater, Computed
+from progressivis.core import Sink
 from progressivis.table.compute import (week_day, UNCHANGED,
                                         make_if_else, ymd_string, is_weekend)
 
 from typing import (
     Any as AnyType,
     Optional,
-    List,
+    List, Dict, Callable
 )
 
 WidgetType = AnyType
 
-DTYPES = [np.dtype(e).name for lst in np.sctypes.values() for e in lst] + ["datetime64"]
-UFUNCS = {
+DTYPES = [np.dtype(e).name for lst in np.sctypes.values() for e in lst] + ["datetime64"]  # type: ignore
+UFUNCS: Dict[str, Callable] = {
     k: v for (k, v) in np.__dict__.items() if isinstance(v, np.ufunc) and v.nin == 1
 }
 

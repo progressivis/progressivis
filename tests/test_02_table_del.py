@@ -6,7 +6,7 @@ from progressivis.table.table import PTable
 import numpy as np
 import pandas as pd
 
-from typing import Any
+from typing import Any, List, cast
 
 
 class TestPTableDel(ProgressiveTest):
@@ -27,7 +27,7 @@ class TestPTableDel(ProgressiveTest):
         df = pd.DataFrame(t.to_dict())
         to_del = np.random.randint(len(t) - 1, size=sz_del)
         del t.loc[to_del]
-        df = df.drop(to_del)
+        df = df.drop(cast(List[int], to_del))
         self.assertListEqual(list(t.index), list(df.index))
 
     def test_del2(self) -> None:
@@ -44,12 +44,13 @@ class TestPTableDel(ProgressiveTest):
         df = pd.DataFrame(t.to_dict())
         to_del = np.random.randint(len(t) - 1, size=sz_del)
         del t.loc[to_del]
-        df = df.drop(to_del)
+        df = df.drop(cast(List[int], to_del))
         self.assertListEqual(list(t.index), list(df.index))
         ivalues2: np.ndarray[Any, Any] = np.random.randint(100, size=sz_add)
         fvalues2: np.ndarray[Any, Any] = np.random.rand(sz_add) * 100
         dict_add = {"a": ivalues2, "b": fvalues2}
-        ix = range(df.index[-1] + 1, df.index[-1] + 1 + sz_add)
+        last_i = cast(int, df.index[-1])
+        ix = range(last_i + 1, last_i + 1 + sz_add)
         df = pd.concat([df, pd.DataFrame(dict_add, index=ix)])
         t.append(data=dict_add)
         self.assertSetEqual(set(t.index), set(df.index))
@@ -68,12 +69,13 @@ class TestPTableDel(ProgressiveTest):
         df = pd.DataFrame(t.to_dict())
         to_del = np.random.randint(len(t) - 1, size=sz_del)
         del t.loc[to_del]
-        df = df.drop(to_del)
+        df = df.drop(cast(List[int], to_del))
         self.assertListEqual(list(t.index), list(df.index))
         ivalues2: np.ndarray[Any, Any] = np.random.randint(100, size=sz_add)
         fvalues2: np.ndarray[Any, Any] = np.random.rand(sz_add) * 100
         dict_add = {"a": ivalues2, "b": fvalues2}
-        ix = range(df.index[-1] + 1, df.index[-1] + 1 + sz_add)
+        last_i = cast(int, df.index[-1])
+        ix = range(last_i + 1, last_i + 1 + sz_add)
         df = pd.concat([df, pd.DataFrame(dict_add, index=ix)])
         t.append(data=dict_add)
         self.assertSetEqual(set(t.index), set(df.index))

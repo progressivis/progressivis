@@ -22,7 +22,7 @@ from ..table.dshape import dshape_fields
 from ..table.range_query import RangeQuery
 from ..utils.psdict import PDict
 from ..io import DynVar
-from typing import Any, Dict, Callable, Optional, TYPE_CHECKING, cast
+from typing import Any, Dict, Callable, Optional, TYPE_CHECKING, cast, List
 import numpy as np
 import pandas as pd
 
@@ -115,7 +115,7 @@ class Histogram2dPattern(Pattern):
             histogram2d.params.ybins = 64
             self.dep.histogram2d = histogram2d
             sink = Sink(scheduler=scheduler)
-            sink.input.inp = self.histogram2d.output.result
+            sink.input.inp = self.dep.histogram2d.output.result
 
 
 @def_input("table", PTable)
@@ -315,10 +315,10 @@ class StatsFactory(Module):
                 slot.clear_buffers()
             if self._matrix is None:
                 self.types = {k: str(v) for (k, v) in dshape_fields(data.dshape)}
-                cols = [k for (k, v) in dshape_fields(data.dshape)]
-                funcs = self.func_dict.keys()
-                arr = np.zeros((len(cols), len(funcs)), dtype=object)
-                self._matrix = pd.DataFrame(arr, index=cols, columns=funcs)
+                cols: List[str] = [k for (k, v) in dshape_fields(data.dshape)]
+                funcs = list(self.func_dict.keys())
+                arr: np.ndarray[Any, Any] = np.zeros((len(cols), len(funcs)), dtype=object)
+                self._matrix = pd.DataFrame(data=arr, index=cols, columns=funcs)
             if self._h2d_matrix is None:
                 assert self.types
                 num_cols = [
@@ -339,16 +339,19 @@ class StatsFactory(Module):
             for col in hidden_cols:
                 for cell in self._matrix.loc[col, :]:
                     if cell:
+                        assert isinstance(cell, Module)
                         self._to_delete.append(cell.name)
                 self._matrix.loc[col, :] = 0
             for col in hidden_cols:
                 for cell in self._h2d_matrix.loc[col, :]:
                     if cell:
+                        assert isinstance(cell, Module)
                         self._to_delete.append(cell.name)
                 self._h2d_matrix.loc[col, :] = 0
             for col in hidden_cols:
                 for cell in self._h2d_matrix.loc[:, col]:
                     if cell:
+                        assert isinstance(cell, Module)
                         self._to_delete.append(cell.name)
                 self._h2d_matrix.loc[col, :] = 0
             scheduler = self.scheduler()
@@ -361,32 +364,35 @@ class StatsFactory(Module):
                         steps += 1
                         continue
                     for attr in df.index:
-                        cell = df.loc[attr, func]
+                        cell = df.at[attr, func]
                         if cell:
-                            if not self._matrix.loc[attr, func]:
-                                self._matrix.loc[attr, func] = self.func_dict[func](
+                            if not self._matrix.at[attr, func]:
+                                self._matrix.at[attr, func] = self.func_dict[func](
                                     attr, self
                                 )
                         else:
-                            if self._matrix.loc[attr, func]:
+                            if self._matrix.at[attr, func]:
                                 self._to_delete.append(
-                                    self._matrix.loc[attr, func].name
+                                    self._matrix.at[attr, func].name
                                 )
-                                self._matrix.loc[attr, func] = 0
+                                self._matrix.at[attr, func] = 0
                         steps += 1
             df = self.last_selection.get("h2d_matrix")
             if df is not None:
                 for cx, cy in product(df.columns, repeat=2):
+                    assert isinstance(cx, str) and isinstance(cy, str)
                     if cx == cy:
                         continue
-                    cell = df.loc[cx, cy]
+                    cell = df.at[cx, cy]
                     if cell:
-                        if not self._h2d_matrix.loc[cx, cy]:
-                            self._h2d_matrix.loc[cx, cy] = _h2d_func(cx, cy, self)
+                        if not self._h2d_matrix.at[cx, cy]:
+                            self._h2d_matrix.at[cx, cy] = _h2d_func(cx, cy, self)
                     else:
-                        if self._h2d_matrix.loc[cx, cy]:
-                            self._to_delete.append(self._h2d_matrix.loc[cx, cy].name)
-                            self._h2d_matrix.loc[cx, cy] = 0
+                        m = self._h2d_matrix.at[cx, cy]
+                        if m:
+                            assert isinstance(m, Module)
+                            self._to_delete.append(m.name)
+                            self._h2d_matrix.at[cx, cy] = 0
                         steps += 1
             if self._to_delete:
                 with scheduler as dataflow:

@@ -91,10 +91,10 @@ def get_dataset(name: str, **kwds: Any) -> str:
 
 class Compressor:
     def compress(self, data: bytes) -> bytes:
-        ...
+        return None  # type: ignore
 
     def flush(self) -> bytes:
-        ...
+        return None  # type: ignore
 
 
 compressors: Dict[str, Dict[str, Any]] = dict(

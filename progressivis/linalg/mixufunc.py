@@ -9,7 +9,7 @@ from ..table.table_base import BasePTable
 from ..table.table import PTable
 
 
-from typing import Union, Dict, Any, Tuple, Callable
+from typing import Union, Dict, Any, Tuple, Callable, Optional
 
 
 def make_local(
@@ -48,6 +48,7 @@ class MixUfuncABC(Module):
         super().__init__(*args, **kwargs)
         self.expr: Dict[str, Any]
         self.ref_expr: Dict[str, Any] = self.expr
+        self.result: Optional[PTable]  # only for mypy
 
     def reset(self) -> None:
         if self.result is not None:

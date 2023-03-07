@@ -7,11 +7,11 @@ import zlib
 import json
 from collections import OrderedDict
 import functools as ft
-
-from requests.packages.urllib3.exceptions import HTTPError
+# see: https://github.com/python/typeshed/issues/6893
+from requests.packages.urllib3.exceptions import HTTPError  # type: ignore
 import numpy as np
 import pandas as pd
-from pandas.core.dtypes.inference import is_file_like, is_sequence
+from pandas.core.dtypes.inference import is_file_like, is_sequence  # type: ignore
 import lzma
 
 from progressivis.core.utils import filepath_to_buffer, _infer_compression, is_str
@@ -24,8 +24,11 @@ from typing import (
     List,
     Tuple,
     cast,
+    Sequence,
+    Literal
 )
 
+HeaderType = Union[None, int, Sequence[int], Literal['infer']]
 
 SAMPLE_SIZE = 5
 MARGIN = 0.05
@@ -38,7 +41,7 @@ HEADER_CHUNK = 50
 
 class Decompressor:
     def decompress(self, chunk: bytes) -> bytes:
-        ...
+        return None  # type: ignore
 
 
 class NoDecompressor(Decompressor):
@@ -81,7 +84,7 @@ class Parser:
         chunksize: int = 0,
         usecols: Optional[List[str]] = None,
         names: Optional[Union[np.ndarray[Any, Any], List[str]]] = None,
-        header: Union[None, str, int] = "infer",
+        header: HeaderType = "infer",
     ):
         self._input = input_source
         self._pd_kwds = pd_kwds
@@ -96,7 +99,7 @@ class Parser:
         self._chunksize: int = chunksize
         self._usecols: Optional[List[str]] = usecols
         self._names: Optional[Union[np.ndarray[Any, Any], List[str]]] = names
-        self._header: Union[None, str, int] = header
+        self._header: HeaderType = header
 
     @staticmethod
     def create(
@@ -109,7 +112,7 @@ class Parser:
         chunksize: int = 0,
         usecols: Optional[List[str]] = None,
         names: Optional[Union[np.ndarray[Any, Any], List[str]]] = None,
-        header: Union[None, str, int] = "infer",
+        header: HeaderType = "infer",
     ) -> Parser:
         par = Parser(
             input_source,
@@ -542,7 +545,7 @@ def read_csv(
     usecols = None
     if "usecols" in pd_kwds:
         usecols = pd_kwds.pop("usecols")
-    header: Union[str, None, int] = "infer"
+    header: HeaderType = "infer"
     if "header" in pd_kwds:
         header = pd_kwds.pop("header")
         assert header is None or header == 0

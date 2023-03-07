@@ -26,6 +26,8 @@ class TestPaste(ProgressiveTest):
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = bj.output.result
         aio.run(s.start())
+        assert bj.result is not None
+        assert random.result is not None
         res1 = random.result.min()
         res2 = notNone(bj.result.last()).to_dict()
         self.assertAlmostEqual(res1["_1"], res2["_1"])

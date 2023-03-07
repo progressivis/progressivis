@@ -66,6 +66,9 @@ class TestHadamard(ProgressiveTest):
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = module.output.result
         aio.run(s.start())
+        assert module.result is not None
+        assert random1.result is not None
+        assert random2.result is not None
         res1 = np.multiply(random1.result.to_array(), random2.result.to_array())
         res2 = module.result.to_array()
         self.assertTrue(np.allclose(res1, res2, equal_nan=True))

@@ -11,7 +11,7 @@ class TestProgressiveLoadVEC(ProgressiveTest):
         # self.assertTrue(module.table() is None)
         module.run(0)
         _ = module.trace_stats(max_runs=1)
-        df = module.table
+        df = module.result
         self.assertFalse(df is None)
         _ = len(df)
         # self.assertEqual(l, len(df[df[UPDATE_COLUMN]==module.last_update()]))
@@ -21,13 +21,13 @@ class TestProgressiveLoadVEC(ProgressiveTest):
             module.run(cnt)
             cnt += 1
             _ = module.trace_stats(max_runs=1)
-            df = module.table
+            df = module.result
             _ = len(df)
             # print ("Run time: %gs, loaded %d rows" % (s['duration'][len(s)-1], ln))
             # self.assertEqual(ln-l, len(df[df[UPDATE_COLUMN]==module.last_update()]))
             # l = ln
         _ = module.trace_stats(max_runs=1)
-        _ = len(module.table)
+        _ = len(module.result)
         # print("Done. Run time: %gs, loaded %d rows" % (s['duration'][len(s)-1], ln))
         # df2 = module.df().groupby([UPDATE_COLUMN])
         # self.assertEqual(cnt, len(df2))

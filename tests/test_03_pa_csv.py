@@ -8,15 +8,11 @@ from progressivis.table.table import PTable
 from progressivis.datasets import get_dataset  # , RandomBytesIO
 from progressivis.core.utils import RandomBytesIO
 
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from progressivis.core.module import Module
-
 
 class TestProgressiveLoadCSV(ProgressiveTest):
-    def runit(self, module: Module) -> int:
+    def runit(self, module: PACSVLoader) -> int:
         module.run(1)
+        assert module.result is not None
         table = module.result
         self.assertFalse(table is None)
         _ = len(table)
@@ -46,6 +42,7 @@ class TestProgressiveLoadCSV(ProgressiveTest):
         sink = Sink(scheduler=s)
         sink.input.inp = module.output.result
         aio.run(s.start())
+        assert module.result is not None
         # import pdb;pdb.set_trace()
         self.assertEqual(len(module.result), 1000000)
 
@@ -60,6 +57,7 @@ class TestProgressiveLoadCSV(ProgressiveTest):
         sink = Sink(scheduler=s)
         sink.input.inp = module.output.result
         aio.run(s.start())
+        assert module.result is not None
         self.assertEqual(len(module.result), 1000000)
 
     def test_read_multiple_csv(self) -> None:
@@ -77,6 +75,8 @@ class TestProgressiveLoadCSV(ProgressiveTest):
         sink = Sink(scheduler=s)
         sink.input.inp = csv.output.result
         aio.run(csv.start())
+        assert csv.result is not None
+        assert csv.result is not None
         self.assertEqual(len(csv.result), 60000)
 
     def test_read_multiple_fake_csv(self) -> None:
@@ -99,6 +99,7 @@ class TestProgressiveLoadCSV(ProgressiveTest):
         sink = Sink(scheduler=s)
         sink.input.inp = csv.output.result
         aio.run(csv.start())
+        assert csv.result is not None
         self.assertEqual(len(csv.result), 60000)
 
 

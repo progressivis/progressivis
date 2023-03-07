@@ -1,11 +1,11 @@
 import time
-import ipywidgets as ipw  # type: ignore
+import ipywidgets as ipw
 import weakref
 import pandas as pd
 from progressivis.core import asynchronize, aio, Sink
 from progressivis.io import DynVar
 from progressivis.stats.scaling import MinMaxScaler
-from typing import Any, Any as AnyType, Callable
+from typing import Any, Any as AnyType, List, Callable
 from .utils import (
     make_button,
     stage_register,
@@ -93,9 +93,8 @@ def _refresh_info_hist(hout, hmod):
 
 
 class IScalerIn(ipw.GridBox):
-    def __init__(self, main):
+    def __init__(self, main) -> None:
         self._main = weakref.ref(main)
-        self.info_labels = {}
         selm = ipw.SelectMultiple(
             options=[(f"{col}:{t}", col) for (col, t) in self.main.dtypes.items()],
             value=[], rows=5, description="Scaled columns", disabled=False,
@@ -162,7 +161,7 @@ class IScalerIn(ipw.GridBox):
             "reset": rst,
             "apply": btn
         }
-        lst = []
+        lst: List[ipw.Widget] = []
         for wg in [selm, rt, tol_p100, tol, ign, rst]:
             lst.append(ipw.Label(wg.description))
             wg.description = ""

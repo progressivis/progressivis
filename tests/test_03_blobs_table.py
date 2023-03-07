@@ -22,13 +22,13 @@ class TestBlobsPTable(ProgressiveTest):
     def test_blobs_table(self) -> None:
         s = self.scheduler()
         module = BlobsPTable(["a", "b"], centers=centers, rows=10000, scheduler=s)
+        assert module.result is not None
         self.assertEqual(module.result.columns[0], "a")
         self.assertEqual(module.result.columns[1], "b")
         self.assertEqual(len(module.result.columns), 2)
         prlen = Every(proc=self.terse, constant_time=True, scheduler=s)
         prlen.input[0] = module.output.result
         aio.run(s.start())
-        # s.join()
         self.assertEqual(len(module.result), 10000)
 
     def test_blobs_table2(self) -> None:
@@ -49,7 +49,8 @@ class TestBlobsPTable(ProgressiveTest):
         prlen = Every(proc=self.terse, constant_time=True, scheduler=s)
         prlen.input[0] = add.output.result
         aio.run(s.start())
-        # s.join()
+        assert blob1.result is not None
+        assert blob2.result is not None
         self.assertEqual(len(blob1.result), sz)
         self.assertEqual(len(blob2.result), sz)
         arr1 = blob1.result.to_array()
@@ -67,6 +68,7 @@ class TestMVBlobsPTable(ProgressiveTest):
         module = MVBlobsPTable(
             ["a", "b"], means=means, covs=covs, rows=10000, scheduler=s
         )
+        assert module.result is not None
         self.assertEqual(module.result.columns[0], "a")
         self.assertEqual(module.result.columns[1], "b")
         self.assertEqual(len(module.result.columns), 2)
@@ -89,7 +91,8 @@ class TestMVBlobsPTable(ProgressiveTest):
         prlen = Every(proc=self.terse, constant_time=True, scheduler=s)
         prlen.input[0] = add.output.result
         aio.run(s.start())
-        # s.join()
+        assert blob1.result is not None
+        assert blob2.result is not None
         self.assertEqual(len(blob1.result), sz)
         self.assertEqual(len(blob2.result), sz)
         arr1 = blob1.result.to_array()

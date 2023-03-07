@@ -20,6 +20,7 @@ class TestFilter(ProgressiveTest):
         idx = (
             filter_.get_input_slot("table").data().eval("_1>0.5", result_object="index")
         )
+        assert filter_.result is not None
         self.assertEqual(filter_.result.index, PIntSet(idx))
 
     def test_filter2(self) -> None:
@@ -38,6 +39,7 @@ class TestFilter(ProgressiveTest):
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = filter_.output.result
         aio.run(s.start())
+        assert filter_.result is not None
         tbl = filter_.get_input_slot("table").data()
         idx = tbl.eval("_1>0.5", result_object="index")
         self.assertEqual(filter_.result.index, PIntSet(idx))
@@ -57,6 +59,7 @@ class TestFilter(ProgressiveTest):
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = filter_.output.result
         aio.run(s.start())
+        assert filter_.result is not None
         tbl = filter_.get_input_slot("table").data()
         idx = tbl.eval("_1>0.5", result_object="index")
         self.assertEqual(filter_.result.index, PIntSet(idx))

@@ -15,14 +15,12 @@ class Testvar(ProgressiveTest):
         pr = Print(proc=self.terse, scheduler=s)
         pr.input.df = var.output.result
         aio.run(s.start())
+        assert random.result is not None
+        assert var.result is not None
         table = random.result
         assert table is not None
-        res1 = np.array([float(e) for e in table.var(ddof=1).values()])
-        res2 = np.array(
-            [float(e) for e in notNone(var.result.last()).to_dict(ordered=True).values()]
-        )
-        print("res1:", res1)
-        print("res2:", res2)
+        res1 = [float(e) for e in table.var(ddof=1).values()]
+        res2 = [float(e) for e in notNone(var.result.last()).to_dict(ordered=True).values()]
         self.assertTrue(np.allclose(res1, res2))
 
     def test_var(self) -> None:
@@ -33,10 +31,10 @@ class Testvar(ProgressiveTest):
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = var.output.result
         aio.run(s.start())
-        res1 = np.array([float(e) for e in random.result.var(ddof=1).values()])
-        res2 = np.array([float(e) for e in var.result.values()])
-        print("res1:", res1)
-        print("res2:", res2)
+        assert random.result is not None
+        assert var.result is not None
+        res1 = [float(e) for e in random.result.var(ddof=1).values()]
+        res2 = [float(e) for e in var.result.values()]
         self.assertTrue(np.allclose(res1, res2))
 
 

@@ -61,6 +61,7 @@ class TestProgressiveLoadCSV(ProgressiveTest):
         sink = Sink(scheduler=s)
         sink.input.inp = module.output.result
         aio.run(s.start())
+        assert module.result is not None
         self.assertEqual(len(module.result), n_rows)
 
     def _func_read_int_csv_with_intruder(
@@ -99,6 +100,7 @@ class TestProgressiveLoadCSV(ProgressiveTest):
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = module.output.anomalies
         aio.run(s.start())
+        assert module.result is not None
         self.assertEqual(len(module.result), len(df))
         if imputer:
             self.assertTrue(
@@ -193,6 +195,7 @@ class TestProgressiveLoadCSV(ProgressiveTest):
         pr2 = Print(proc=self.terse, scheduler=s)
         pr2.input[0] = module.output.missing
         aio.run(s.start())
+        assert module.result is not None
         self.assertEqual(len(module.result), len(df))
         if imputer:
             print(module.result.to_array()[i_row, 1], df.values.astype(dtype)[i_row, 1])

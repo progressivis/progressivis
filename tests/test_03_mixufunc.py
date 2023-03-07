@@ -93,6 +93,9 @@ class TestMixUfunc(ProgressiveTest):
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = module.output.result
         aio.run(s.start())
+        assert module.result is not None
+        assert random1.result is not None
+        assert random2.result is not None
         first = random1.result.to_array()
         first_2 = first[:, 1]
         _ = first[:, 2]
@@ -119,6 +122,9 @@ class TestMixUfunc(ProgressiveTest):
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = module.output.result
         aio.run(s.start())
+        assert module.result is not None
+        assert random1.result is not None
+        assert random2.result is not None
         first = list(random1.result.values())
         first_2 = first[1]
         _ = first[2]

@@ -18,7 +18,8 @@ class TestMinMax(ProgressiveTest):
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = min_.output.result
         aio.run(s.start())
-        # s.join()
+        assert random.result is not None
+        assert min_.result is not None
         res1 = random.result.min()
         res2 = min_.result
         self.compare(res1, res2)
@@ -26,8 +27,6 @@ class TestMinMax(ProgressiveTest):
     def compare(self, res1: Dict[str, Any], res2: Dict[str, Any]) -> None:
         v1 = np.array(list(res1.values()))
         v2 = np.array(list(res2.values()))
-        # print('v1 = ', v1)
-        # print('v2 = ', v2)
         self.assertTrue(np.allclose(v1, v2))
 
     def test_max(self) -> None:
@@ -38,7 +37,8 @@ class TestMinMax(ProgressiveTest):
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = max_.output.result
         aio.run(s.start())
-        # s.join()
+        assert random.result is not None
+        assert max_.result is not None
         res1 = random.result.max()
         res2 = max_.result
         self.compare(res1, res2)

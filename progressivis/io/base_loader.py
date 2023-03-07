@@ -6,7 +6,8 @@ from ..utils import PDict
 from ..core.utils import nn
 from typing import Optional, Any, TYPE_CHECKING
 import pyarrow as pa
-import pyarrow.compute
+# pyarrow.compute defined a a class in our stub so:
+import pyarrow.compute  # type: ignore
 from ..core.utils import (
     filepath_to_buffer,
     _infer_compression,
@@ -23,7 +24,7 @@ if TYPE_CHECKING:
 class BaseLoader(Module):
     """ """
 
-    def __init__(self, *args, **kw):
+    def __init__(self, *args, **kw) -> None:
         self._rows_read: int = 0
         self.anomalies: Optional[PDict]
         super().__init__(*args, **kw)
@@ -36,7 +37,6 @@ class BaseLoader(Module):
         self._input_size = 0  # length of the file or input stream when available
         self._last_opened: Any = None
         self._compression: Any = "infer"
-        self._encoding: None
         self._currow = 0
         self._fs: Any = kw.get("fs")
 

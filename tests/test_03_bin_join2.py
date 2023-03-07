@@ -78,19 +78,14 @@ class TestJoin2(ProgressiveTest):
             [cst1.output.result, cst2.output.result],
             scheduler=s,
         )
-        # reduce_ = Reduce(BinJoin, "first", "second", "table", scheduler=s)
-        # reduce_.input[0] = cst1.output.result
-        # reduce_.input[0] = cst2.output.result
-        # join = reduce_.expand()
-        # join = BinJoin(scheduler=s)
-        # join.input.first = cst1.output.result
-        # join.input.second = cst2.output.result
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = join.output.result
         aio.run(s.start())
         res = join.trace_stats(max_runs=1)
         print(res)
+        assert isinstance(join, BinJoin)
         df = join.result
+        assert df is not None
         last = df.loc[df.index[-1]]
         assert last is not None
         self.assertTrue(

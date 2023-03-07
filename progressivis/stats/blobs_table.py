@@ -18,11 +18,9 @@ from ..core.module import def_output
 from sklearn.datasets import make_blobs  # type: ignore
 from sklearn.utils import shuffle as multi_shuffle  # type: ignore
 
-from typing import Optional, Tuple, Any, List, Dict, Union, Callable, TYPE_CHECKING
-
-if TYPE_CHECKING:
-    import numpy.typing as npt
-
+from typing import Optional, Tuple, Any, List, Dict, Union, Callable, TypeVar
+import numpy.typing as npt
+T = TypeVar("T", bound=npt.NBitBase)
 
 logger = logging.getLogger(__name__)
 
@@ -75,7 +73,7 @@ class BlobsPTableABC(Module):
         self,
         columns: Union[int, List[str], np.ndarray[Any, Any]],
         rows: int = -1,
-        dtype: npt.DTypeLike = np.float64,
+        dtype: str = "float64",
         seed: int = 0,
         throttle: Union[int, bool, float] = False,
         **kwds: Any,
@@ -143,6 +141,7 @@ class BlobsPTableABC(Module):
     def run_step(
         self, run_number: int, step_size: int, howlong: float
     ) -> ReturnRunStep:
+        assert self.result is not None
         if step_size == 0:
             logger.error("Received a step_size of 0")
             return self._return_run_step(self.state_ready, steps_run=0)

@@ -35,6 +35,7 @@ class TestProgressiveLoadCSV(ProgressiveTest):
         sink = Sink(name="sink", scheduler=s)
         sink.input.inp = module.output.result
         aio.run(s.start())
+        assert module.result is not None
         self.assertEqual(len(module.result), 1000000)
 
     def test_read_fake_csv(self) -> None:
@@ -49,6 +50,7 @@ class TestProgressiveLoadCSV(ProgressiveTest):
         sink = Sink(name="sink", scheduler=s)
         sink.input.inp = module.output.result
         aio.run(s.start())
+        assert module.result is not None
         self.assertEqual(len(module.result), 1000000)
 
     def test_read_multiple_csv(self) -> None:
@@ -64,6 +66,7 @@ class TestProgressiveLoadCSV(ProgressiveTest):
         sink = Sink(name="sink", scheduler=s)
         sink.input.inp = csv.output.result
         aio.run(csv.start())
+        assert csv.result is not None
         self.assertEqual(len(csv.result), 60000)
 
     def test_read_multiple_fake_csv(self) -> None:
@@ -84,6 +87,7 @@ class TestProgressiveLoadCSV(ProgressiveTest):
         sink = Sink(name="sink", scheduler=s)
         sink.input.inp = csv.output.result
         aio.run(csv.start())
+        assert csv.result is not None
         self.assertEqual(len(csv.result), 60000)
 
     def test_as_array(self) -> None:
@@ -99,6 +103,7 @@ class TestProgressiveLoadCSV(ProgressiveTest):
         sink.input.inp = module.output.result
         self.assertTrue(module.result is None)
         aio.run(s.start())
+        assert module.result is not None
         table = module.result
         self.assertEqual(len(table), 1000000)
         self.assertEqual(table.columns, ["array"])
@@ -120,6 +125,7 @@ class TestProgressiveLoadCSV(ProgressiveTest):
         sink.input.inp = module.output.result
         self.assertTrue(module.result is None)
         aio.run(s.start())
+        assert module.result is not None
         table = module.result
         self.assertEqual(len(table), 1000000)
         self.assertEqual(table.columns, ["firsthalf", "secondhalf"])
@@ -139,6 +145,7 @@ class TestProgressiveLoadCSV(ProgressiveTest):
             sink.input.inp = module.output.result
             self.assertTrue(module.result is None)
             aio.run(s.start())
+            assert module.result is not None
             table = module.result
             self.assertEqual(len(table), 70000)
             self.assertEqual(table.columns, ["array", "class"])

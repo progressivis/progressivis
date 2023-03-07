@@ -88,6 +88,7 @@ class Percentiles(Module):
         self, run_number: int, step_size: int, howlong: float
     ) -> ReturnRunStep:
         assert self.context
+        assert self.result is not None
         with self.context as ctx:
             dfslot = ctx.table
             indices = dfslot.created.next(length=step_size)

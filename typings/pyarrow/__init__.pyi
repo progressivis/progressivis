@@ -50,3 +50,6 @@ class compute:
 
 def array(v: Any, type: Any) -> Any:
     ...
+
+class TimestampArray:
+    ...

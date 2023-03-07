@@ -34,7 +34,7 @@ class StorageObject(metaclass=ABCMeta):
     def attrs(self) -> Attribute:
         pass
 
-    @abstractproperty
+    @abstractmethod
     def __len__(self) -> int:
         pass
 

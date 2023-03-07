@@ -4,10 +4,10 @@ from .utils import (
     dongle_widget,
     VBoxSchema
 )
-import ipywidgets as ipw  # type: ignore
-from progressivis.table.group_by import (GroupBy, UTIME, DT_MAX,  # type: ignore
+import ipywidgets as ipw
+from progressivis.table.group_by import (GroupBy, UTIME, DT_MAX,
                                          SubPColumn as SC, UTIME_SHORT_D)
-from progressivis.core import Sink  # type: ignore
+from progressivis.core import Sink
 
 from typing import (
     Any as AnyType,

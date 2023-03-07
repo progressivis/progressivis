@@ -64,6 +64,7 @@ class Heatmap(Module):
     def run_step(
         self, run_number: int, step_size: int, howlong: float
     ) -> ReturnRunStep:
+        assert self.result is not None
         dfslot = self.get_input_slot("array")
         input_df = dfslot.data()
         dfslot.deleted.next()

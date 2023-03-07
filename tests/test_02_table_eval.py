@@ -9,7 +9,7 @@ from progressivis import Scheduler
 from progressivis.table.table import PTable
 
 
-from typing import Any, cast
+from typing import Any, List, Sequence, cast
 
 
 class TestPTableEval(ProgressiveTest):
@@ -35,7 +35,7 @@ class TestPTableEval(ProgressiveTest):
         def small_fun_ne(expr: str) -> None:
             r = "raw_numexpr"
             te = t.eval(expr, result_object=r)
-            dfe: pd.PandasObject = df.eval(expr)
+            dfe: pd.DataFrame = df.eval(expr)
             self.assertTrue(np.array_equal(te, dfe.values))
 
         small_fun_ne("(a>10) & (a <80)")
@@ -59,7 +59,7 @@ class TestPTableEval(ProgressiveTest):
         df = pd.DataFrame(t.to_dict())
         to_del = np.random.randint(len(t) - 1, size=sz_del)
         del t.loc[to_del]
-        df = df.drop(to_del)
+        df = df.drop(cast(List[int], to_del))
         self.assertListEqual(list(t.index), list(df.index))
 
         def small_fun_index(expr: str) -> None:
@@ -83,8 +83,8 @@ class TestPTableEval(ProgressiveTest):
         self.assertTrue(np.allclose(t2["b"], df2["b"]))
         t.eval("b = a+2*b", inplace=True)
         df.eval("b = a+2*b", inplace=True)
-        self.assertTrue(np.allclose(t["a"].values, df["a"].values))
-        self.assertTrue(np.allclose(t["b"].values, df["b"].values))
+        self.assertTrue(np.allclose(t["a"].values, cast(Sequence[float], df["a"].values)))
+        self.assertTrue(np.allclose(t["b"].values, cast(Sequence[float], df["b"].values)))
 
     @skip("Not Ready")
     def test_user_dict(self) -> None:
