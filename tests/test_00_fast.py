@@ -26,31 +26,31 @@ class TestFast(ProgressiveTest):
         pass
 
     def test_check_contiguity(self) -> None:
-        a = np.arange(10, dtype=np.uint32)
+        a = np.arange(10, dtype=np.int32)
         with self.assertRaises(ValueError):
-            check_contiguity(a)
-        a = np.arange(100, dtype=np.uint32).reshape(10, 10)
+            check_contiguity(a)  # type: ignore
+        a2 = np.arange(100, dtype=np.uint32).reshape(10, 10)
         with self.assertRaises(ValueError):
-            check_contiguity(a)
-        a = np.arange(100, dtype=np.uint32)
-        c = check_contiguity(a)
+            check_contiguity(a2)
+        a3 = np.arange(100, dtype=np.uint32)
+        c = check_contiguity(a3)
         self.assertEqual(c, PROP_IDENTITY)
-        a[50:] += np.uint32(1)
-        c = check_contiguity(a)
+        a3[50:] += np.uint32(1)
+        c = check_contiguity(a3)
         self.assertEqual(c, PROP_START_AT_0 | PROP_MONOTONIC_INC)
-        a[:50] += np.uint32(1)
-        c = check_contiguity(a)
+        a3[:50] += np.uint32(1)
+        c = check_contiguity(a3)
         self.assertEqual(c, PROP_MONOTONIC_INC | PROP_CONTIGUOUS)
 
         np.random.seed(42)
-        np.random.shuffle(a)
-        a = a[:50]
-        a.sort()
-        c = check_contiguity(a)
+        np.random.shuffle(a3)
+        a3 = a3[:50]
+        a3.sort()
+        c = check_contiguity(a3.astype("uint32"))
         self.assertEqual(c, PROP_MONOTONIC_INC)
 
         np.random.shuffle(a)
-        c = check_contiguity(a)
+        c = check_contiguity(a.astype("uint32"))
         self.assertEqual(c, 0)
 
     def test_indices_to_slice(self) -> None:
