@@ -18,7 +18,7 @@ from progressivis.stats.counter import Counter
 from progressivis.storage import IS_PERSISTENT
 from progressivis.storage import cleanup_temp_dir, init_temp_dir_if
 from progressivis.core import aio, Sink, Scheduler
-from typing import cast, Optional, List
+from typing import cast, Optional, List, TYPE_CHECKING
 
 BZ2 = "csv.bz2"
 GZ = "csv.gz"
@@ -158,7 +158,8 @@ class TestProgressiveLoadCSVCrash1(ProgressiveLoadCSVCrashRoot):
         sink = Sink(name="sink", scheduler=s)
         sink.input.inp = module.output.result
         aio.run(s.start())
-        assert module.result is not None
+        if TYPE_CHECKING:
+            assert module.result is not None
         self.assertEqual(len(module.result), 1000_000)
         col = module.result.loc[:, 0]
         assert col is not None
@@ -196,8 +197,9 @@ class TestProgressiveLoadCSVCrash1(ProgressiveLoadCSVCrashRoot):
         sink = Sink(name="sink", scheduler=s)
         sink.input.inp = counter.output.result
         aio.run(s.start())
-        assert csv.result is not None
-        assert counter.result is not None
+        if TYPE_CHECKING:
+            assert csv.result is not None
+            assert counter.result is not None
         self.assertEqual(len(csv.result), 1000_000)
         self.assertEqual(counter.result["counter"].loc[0], 1000_000)
 
@@ -229,7 +231,8 @@ class TestProgressiveLoadCSVCrash1(ProgressiveLoadCSVCrashRoot):
         sink = Sink(name="sink", scheduler=s)
         sink.input.inp = module.output.result
         aio.run(s.start())
-        assert module.result is not None
+        if TYPE_CHECKING:
+            assert module.result is not None
         self.assertEqual(len(module.result), 1000_000)
 
     @skipIf(not IS_PERSISTENT, "transient storage, test skipped")
@@ -246,7 +249,8 @@ class TestProgressiveLoadCSVCrash1(ProgressiveLoadCSVCrashRoot):
         sink = Sink(name="sink", scheduler=s)
         sink.input.inp = module.output.result
         aio.run(s.start())
-        assert module.result is not None
+        if TYPE_CHECKING:
+            assert module.result is not None
         self.assertEqual(len(module.result), 60_000)
 
     @skipIf(not IS_PERSISTENT, "transient storage, test skipped")
@@ -263,7 +267,8 @@ class TestProgressiveLoadCSVCrash1(ProgressiveLoadCSVCrashRoot):
         sink = Sink(name="sink", scheduler=s)
         sink.input.inp = module.output.result
         aio.run(s.start())
-        assert module.result is not None
+        if TYPE_CHECKING:
+            assert module.result is not None
         self.assertEqual(len(module.result), 60_000)
 
 
@@ -296,7 +301,8 @@ class TestProgressiveLoadCSVCrash2(ProgressiveLoadCSVCrashRoot):
         sink = Sink(name="sink", scheduler=s)
         sink.input.inp = module.output.result
         aio.run(s.start())
-        assert module.result is not None
+        if TYPE_CHECKING:
+            assert module.result is not None
         self.assertEqual(len(module.result), 2000_000)
 
     @skipIf(not IS_PERSISTENT, "transient storage, test skipped")
@@ -327,7 +333,8 @@ class TestProgressiveLoadCSVCrash2(ProgressiveLoadCSVCrashRoot):
         sink = Sink(name="sink", scheduler=s)
         sink.input.inp = module.output.result
         aio.run(s.start())
-        assert module.result is not None
+        if TYPE_CHECKING:
+            assert module.result is not None
         self.assertEqual(len(module.result), 2000_000)
 
     @skipIf(not IS_PERSISTENT, "transient storage, test skipped")
@@ -343,7 +350,8 @@ class TestProgressiveLoadCSVCrash2(ProgressiveLoadCSVCrashRoot):
         sink = Sink(name="sink", scheduler=s)
         sink.input.inp = module.output.result
         aio.run(s.start())
-        assert module.result is not None
+        if TYPE_CHECKING:
+            assert module.result is not None
         self.assertEqual(len(module.result), 60_000)
 
 
@@ -357,7 +365,8 @@ class TestProgressiveLoadCSVCrash3(ProgressiveLoadCSVCrashRoot):
         sink = Sink(name="sink", scheduler=s)
         sink.input.inp = module.output.result
         aio.run(s.start())
-        assert module.result is not None
+        if TYPE_CHECKING:
+            assert module.result is not None
         self.assertEqual(len(module.result), 60_000)
 
     @skipIf(not IS_PERSISTENT, "transient storage, test skipped")
@@ -402,7 +411,8 @@ class TestProgressiveLoadCSVCrash3(ProgressiveLoadCSVCrashRoot):
         sink = Sink(name="sink", scheduler=s)
         sink.input.inp = module.output.result
         aio.run(s.start())
-        assert module.result is not None
+        if TYPE_CHECKING:
+            assert module.result is not None
         self.assertEqual(len(module.result), 2000_000)
 
     def _tst_10_read_multi_csv_file_compress_with_crash(
@@ -431,7 +441,8 @@ class TestProgressiveLoadCSVCrash3(ProgressiveLoadCSVCrashRoot):
         sink = Sink(name="sink", scheduler=s)
         sink.input.inp = module.output.result
         aio.run(s.start())
-        assert module.result is not None
+        if TYPE_CHECKING:
+            assert module.result is not None
         self.assertEqual(len(module.result), 2000_000)
 
     @skipIf(not IS_PERSISTENT, "transient storage, test skipped")

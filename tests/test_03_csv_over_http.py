@@ -14,7 +14,7 @@ from progressivis.table.constant import Constant
 from progressivis.table.table import PTable
 from progressivis.datasets import get_dataset, get_dataset_bz2, DATA_DIR
 
-from typing import Any, Optional
+from typing import Any, Optional, TYPE_CHECKING
 
 
 BZ2 = "csv.bz2"
@@ -109,7 +109,8 @@ class TestProgressiveLoadCSVOverHTTP(ProgressiveTest):
         sink.input.inp = module.output.result
         aio.run(s.start())
         _close(module)
-        assert module.result is not None
+        if TYPE_CHECKING:
+            assert module.result is not None
         self.assertEqual(len(module.result), 1000000)
 
     @skipIf(os.getenv("CI"), "not reliable enough, to be improved")
@@ -127,7 +128,8 @@ class TestProgressiveLoadCSVOverHTTP(ProgressiveTest):
         sink.input.inp = module.output.result
         aio.run(s.start())
         _close(module)
-        assert module.result is not None
+        if TYPE_CHECKING:
+            assert module.result is not None
         self.assertEqual(len(module.result), 1000000)
 
     @skipIf(os.getenv("CI"), "not reliable enough, to be improved")
@@ -149,7 +151,8 @@ class TestProgressiveLoadCSVOverHTTP(ProgressiveTest):
         sink.input.inp = csv.output.result
         aio.run(csv.start())
         _close(csv)
-        assert csv.result is not None
+        if TYPE_CHECKING:
+            assert csv.result is not None
         self.assertEqual(len(csv.result), 60000)
 
     def test_04_read_http_csv_bz2_no_crash(self) -> None:
@@ -166,7 +169,8 @@ class TestProgressiveLoadCSVOverHTTP(ProgressiveTest):
         sink.input.inp = module.output.result
         aio.run(s.start())
         _close(module)
-        assert module.result is not None
+        if TYPE_CHECKING:
+            assert module.result is not None
         self.assertEqual(len(module.result), 1000000)
 
     def test_05_read_http_csv_bz2_crash_recovery(self) -> None:
@@ -187,7 +191,8 @@ class TestProgressiveLoadCSVOverHTTP(ProgressiveTest):
         sink.input.inp = module.output.result
         aio.run(s.start())
         _close(module)
-        assert module.result is not None
+        if TYPE_CHECKING:
+            assert module.result is not None
         self.assertEqual(len(module.result), 1000000)
 
     def test_06_read_multiple_csv_bz2_crash_recovery(self) -> None:
@@ -213,7 +218,8 @@ class TestProgressiveLoadCSVOverHTTP(ProgressiveTest):
         sink.input.inp = csv.output.result
         aio.run(csv.start())
         _close(csv)
-        assert csv.result is not None
+        if TYPE_CHECKING:
+            assert csv.result is not None
         self.assertEqual(len(csv.result), 60000)
 
 
