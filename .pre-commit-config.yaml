@@ -5,3 +5,22 @@ repos:
       - id: trailing-whitespace
       - id: flake8
 
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.1.1
+    hooks:
+      - id: mypy
+        exclude: ^stool/
+        args: [--tb]
+        additional_dependencies:
+          - 'numpy'
+          - 'sqlalchemy-stubs'
+          - 'pandas-stubs'
+          - 'traits-stubs'
+          - 'traittypes'
+          - 'types-pillow'
+          - 'types-pytz'
+          - 'types-pyyaml'
+          - 'types-requests'
+          - 'types-urllib3'
+          - 'typing-extensions'
+          - 'typing_extensions'
