@@ -10,9 +10,11 @@ def get_full_name(name):
         name = name.split(".")[:-1]
     fullnames = dict(
         PTable="progressivis.table.table.PTable",
+        BasePTable="progressivis.table.table_base.BasePTable",
         PTableSelectedView="progressivis.table.table_base.PTableSelectedView",
         PColumn="progressivis.table.table.PColumn",
-        PDict="progressivis.utils.psdict.PDict"
+        PDict="progressivis.utils.psdict.PDict",
+        PIntSet="progressivis.core.pintset.PIntSet"
     )
     return fullnames.get(name)
 
@@ -45,11 +47,8 @@ def decl_deco_hook(ctx: ClassDefContext) -> None:
     if "type" in reason.arg_names:
         i = reason.arg_names.index("type")
         typ = get_content(reason.args[i])
-    else:
-        if not len(reason.args):
-            return  # fail
-        if reason.arg_kinds[1].name == 'ARG_POS':
-            typ = get_content(reason.args[1])
+    elif len(reason.args) > 1 and reason.arg_kinds[1].name == 'ARG_POS':
+        typ = get_content(reason.args[1])
     if typ is not None:
         fullname = get_full_name(typ)
         if fullname is None:
