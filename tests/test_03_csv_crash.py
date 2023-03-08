@@ -24,7 +24,7 @@ BZ2 = "csv.bz2"
 GZ = "csv.gz"
 XZ = "csv.xz"
 
-PORT = 8123
+PORT = 9090
 HOST = "localhost"
 SLEEP = 10
 

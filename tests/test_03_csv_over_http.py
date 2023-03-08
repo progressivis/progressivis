@@ -19,7 +19,7 @@ from typing import Any, Optional
 
 BZ2 = "csv.bz2"
 SLEEP = 1
-PORT: int = 8123
+PORT: int = 9090
 HOST: str = "localhost"
 
 
