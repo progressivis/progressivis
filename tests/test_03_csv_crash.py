@@ -129,6 +129,7 @@ class ProgressiveLoadCSVCrashRoot(ProgressiveTest):
 
 
 # IS_PERSISTENT = False
+@skipIf(os.getenv("CI"), "cannot run an HTTP local server anymore on CI ...")
 class TestProgressiveLoadCSVCrash1(ProgressiveLoadCSVCrashRoot):
     @skipIf(not IS_PERSISTENT, "transient storage, test skipped")
     def test_01_read_http_csv_with_crash(self) -> None:
@@ -267,6 +268,7 @@ class TestProgressiveLoadCSVCrash1(ProgressiveLoadCSVCrashRoot):
         self.assertEqual(len(module.result), 60_000)
 
 
+@skipIf(os.getenv("CI"), "cannot run an HTTP local server anymore on CI ...")
 class TestProgressiveLoadCSVCrash2(ProgressiveLoadCSVCrashRoot):
     @skipIf(not IS_PERSISTENT, "transient storage, test skipped")
     def test_05_read_http_multi_csv_with_crash(self) -> None:
@@ -347,6 +349,7 @@ class TestProgressiveLoadCSVCrash2(ProgressiveLoadCSVCrashRoot):
         self.assertEqual(len(module.result), 60_000)
 
 
+@skipIf(os.getenv("CI"), "cannot run an HTTP local server anymore on CI ...")
 class TestProgressiveLoadCSVCrash3(ProgressiveLoadCSVCrashRoot):
     def _tst_08_read_multi_csv_file_compress_no_crash(self, files: List[str]) -> None:
         s = self.scheduler()

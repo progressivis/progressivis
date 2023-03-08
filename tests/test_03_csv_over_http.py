@@ -80,6 +80,7 @@ def run_simple_server() -> None:
     RangeHTTPServer.__main__
 
 
+@skipIf(os.getenv("CI"), "cannot run an HTTP local server anymore on CI ...")
 class TestProgressiveLoadCSVOverHTTP(ProgressiveTest):
     def setUp(self) -> None:
         super(TestProgressiveLoadCSVOverHTTP, self).setUp()
@@ -110,7 +111,6 @@ class TestProgressiveLoadCSVOverHTTP(ProgressiveTest):
         assert module.result is not None
         self.assertEqual(len(module.result), 1000000)
 
-    @skipIf(os.getenv("CI"), "not reliable enough, to be improved")
     def test_02_read_http_csv_crash_recovery(self) -> None:
         p = Process(target=run_throttled_server, args=(PORT, 10**7))
         p.start()
@@ -128,7 +128,6 @@ class TestProgressiveLoadCSVOverHTTP(ProgressiveTest):
         assert module.result is not None
         self.assertEqual(len(module.result), 1000000)
 
-    @skipIf(os.getenv("CI"), "not reliable enough, to be improved")
     def test_03_read_multiple_csv_crash_recovery(self) -> None:
         p = Process(target=run_throttled_server, args=(PORT, 10**6))
         p.start()
