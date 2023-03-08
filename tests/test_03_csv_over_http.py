@@ -14,11 +14,13 @@ from progressivis.table.constant import Constant
 from progressivis.table.table import PTable
 from progressivis.datasets import get_dataset, get_dataset_bz2, DATA_DIR
 
-from typing import Any, Optional, TYPE_CHECKING
+from typing import Any, Optional
 
 
 BZ2 = "csv.bz2"
 SLEEP = 1
+PORT: int = 8123
+HOST: str = "localhost"
 
 
 class ThrottledReqHandler(RangeRequestHandler):  # type: ignore
@@ -51,7 +53,7 @@ def _close(module: CSVLoader) -> None:
         pass
 
 
-def run_throttled_server(port: int = 8000, threshold: int = 10**6) -> None:
+def run_throttled_server(port: int = PORT, threshold: int = 10**6) -> None:
     _ = get_dataset("smallfile")
     _ = get_dataset("bigfile")
     _ = get_dataset_bz2("smallfile")
@@ -59,10 +61,6 @@ def run_throttled_server(port: int = 8000, threshold: int = 10**6) -> None:
     os.chdir(DATA_DIR)
     ThrottledReqHandler.threshold = threshold
     http_srv.test(HandlerClass=ThrottledReqHandler, port=port)  # type: ignore
-
-
-PORT: int = 8000
-HOST: str = "localhost"
 
 
 def make_url(name: str, ext: str = "csv") -> str:
@@ -109,13 +107,12 @@ class TestProgressiveLoadCSVOverHTTP(ProgressiveTest):
         sink.input.inp = module.output.result
         aio.run(s.start())
         _close(module)
-        if TYPE_CHECKING:
-            assert module.result is not None
+        assert module.result is not None
         self.assertEqual(len(module.result), 1000000)
 
     @skipIf(os.getenv("CI"), "not reliable enough, to be improved")
     def test_02_read_http_csv_crash_recovery(self) -> None:
-        p = Process(target=run_throttled_server, args=(8000, 10**7))
+        p = Process(target=run_throttled_server, args=(PORT, 10**7))
         p.start()
         self._http_proc = p
         time.sleep(SLEEP)
@@ -128,13 +125,12 @@ class TestProgressiveLoadCSVOverHTTP(ProgressiveTest):
         sink.input.inp = module.output.result
         aio.run(s.start())
         _close(module)
-        if TYPE_CHECKING:
-            assert module.result is not None
+        assert module.result is not None
         self.assertEqual(len(module.result), 1000000)
 
     @skipIf(os.getenv("CI"), "not reliable enough, to be improved")
     def test_03_read_multiple_csv_crash_recovery(self) -> None:
-        p = Process(target=run_throttled_server, args=(8000, 10**6))
+        p = Process(target=run_throttled_server, args=(PORT, 10**6))
         p.start()
         self._http_proc = p
         time.sleep(SLEEP)
@@ -151,8 +147,7 @@ class TestProgressiveLoadCSVOverHTTP(ProgressiveTest):
         sink.input.inp = csv.output.result
         aio.run(csv.start())
         _close(csv)
-        if TYPE_CHECKING:
-            assert csv.result is not None
+        assert csv.result is not None
         self.assertEqual(len(csv.result), 60000)
 
     def test_04_read_http_csv_bz2_no_crash(self) -> None:
@@ -169,12 +164,11 @@ class TestProgressiveLoadCSVOverHTTP(ProgressiveTest):
         sink.input.inp = module.output.result
         aio.run(s.start())
         _close(module)
-        if TYPE_CHECKING:
-            assert module.result is not None
+        assert module.result is not None
         self.assertEqual(len(module.result), 1000000)
 
     def test_05_read_http_csv_bz2_crash_recovery(self) -> None:
-        p = Process(target=run_throttled_server, args=(8000, 10**7))
+        p = Process(target=run_throttled_server, args=(PORT, 10**7))
         p.start()
         self._http_proc = p
         time.sleep(SLEEP)
@@ -191,12 +185,11 @@ class TestProgressiveLoadCSVOverHTTP(ProgressiveTest):
         sink.input.inp = module.output.result
         aio.run(s.start())
         _close(module)
-        if TYPE_CHECKING:
-            assert module.result is not None
+        assert module.result is not None
         self.assertEqual(len(module.result), 1000000)
 
     def test_06_read_multiple_csv_bz2_crash_recovery(self) -> None:
-        p = Process(target=run_throttled_server, args=(8000, 10**6))
+        p = Process(target=run_throttled_server, args=(PORT, 10**6))
         p.start()
         self._http_proc = p
         time.sleep(SLEEP)
@@ -218,8 +211,7 @@ class TestProgressiveLoadCSVOverHTTP(ProgressiveTest):
         sink.input.inp = csv.output.result
         aio.run(csv.start())
         _close(csv)
-        if TYPE_CHECKING:
-            assert csv.result is not None
+        assert csv.result is not None
         self.assertEqual(len(csv.result), 60000)
 
 
