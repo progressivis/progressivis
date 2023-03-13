@@ -53,5 +53,5 @@ class Loc:
             assert isinstance(locs, Iterable)
             return locs
         elif loc == Loc.NDBOOLARRAY:
-            return np.where(locs)[0]  # type: ignore
+            return np.where(locs)[0]
         raise ValueError("Cannot convert %s into an iterable", locs)

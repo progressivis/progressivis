@@ -9,7 +9,7 @@ from ..core.module import Module, ReturnRunStep, def_input, def_output
 from .group_by import GroupBy, SubPColumn as SC
 from .unique_index import UniqueIndex
 from . import PTable, PTableSelectedView
-from typing import Union, Literal, List, Any, Optional, Dict
+from typing import Union, Literal, List, Any, Optional, Dict, Callable
 
 
 HOW = Union[Literal["inner"], Literal["outer"]]
@@ -25,11 +25,20 @@ def _dt_to_mask(mask: str) -> Any:
     )
 
 
-def make_ufunc(rel_on, ucol, uindex, utable, dtype, fillna, inv_mask, cache):
+def make_ufunc(
+    rel_on: Union[str, List[str]],
+    ucol: str,
+    uindex: Dict[Any, int],
+    utable: PTable,
+    dtype: np.dtype[Any],
+    fillna: Any,
+    inv_mask: Any,
+    cache: Dict[Any, Any],
+) -> Callable[..., Any]:
     inv_mask = _dt_to_mask(inv_mask)
     if isinstance(rel_on, (list, tuple)):
 
-        def _ufunc(ix, local_dict):
+        def _ufunc(ix: Any, local_dict: Dict[Any, Any]) -> Any:
             for values in local_dict.values():
                 shape_0 = values.shape[0]
                 break
@@ -50,23 +59,23 @@ def make_ufunc(rel_on, ucol, uindex, utable, dtype, fillna, inv_mask, cache):
 
     else:
 
-        def _ufunc(ix, local_dict):
+        def _ufunc(ix: Any, local_dict: Dict[Any, Any]) -> Any:
             for values in local_dict.values():
                 shape_ = values.shape
                 break
             if len(shape_) == 1:
 
-                def _cast_inp(x):
+                def _cast_inp(x: Any) -> Any:
                     return x
 
             elif inv_mask is None:
 
-                def _cast_inp(x):
+                def _cast_inp(x: Any) -> Any:
                     return tuple(x)
 
             else:
 
-                def _cast_inp(x):
+                def _cast_inp(x: Any) -> Any:
                     return tuple(x * inv_mask)
 
             res = np.empty(shape_[0], dtype=dtype)
@@ -92,7 +101,7 @@ def make_ufunc(rel_on, ucol, uindex, utable, dtype, fillna, inv_mask, cache):
 logger = logging.getLogger(__name__)
 
 
-def _aslist(x) -> List[Any]:
+def _aslist(x: Any) -> List[Any]:
     if isinstance(x, list):
         return x
     return [x]
@@ -242,7 +251,7 @@ class Join(Module):
             if set(related_cols) & set(ucols):
                 assert self._suffix
 
-            def _sx(x):
+            def _sx(x: str) -> str:
                 return f"{x}{self._suffix}" if x in related_cols else x
 
             ucols_dict = {ucol: _sx(ucol) for ucol in ucols}

@@ -251,7 +251,7 @@ class Parser:
                 BytesIO(csv_bytes),
                 header=header,
                 names=names,  # type: ignore
-                usecols=self._usecols,  # type: ignore
+                usecols=self._usecols,
                 **kwds
             )
             if self._names is None:

@@ -5,7 +5,7 @@ import pandas as pd
 from progressivis.core import asynchronize, aio, Sink
 from progressivis.io import DynVar
 from progressivis.stats.scaling import MinMaxScaler
-from typing import Any, Any as AnyType, List, Callable
+from typing import Any, Dict, List, Callable, cast
 from .utils import (
     make_button,
     stage_register,
@@ -73,7 +73,7 @@ def _refresh_info(wg: Any) -> Callable[..., Any]:
     return _coro
 
 
-def refresh_info_hist(hout, hmod):
+def refresh_info_hist(hout: Any, hmod: Any) -> None:
     if not hmod.result:
         return
     # spec_with_data = spec_no_data.copy()
@@ -84,8 +84,8 @@ def refresh_info_hist(hout, hmod):
     hout.update("data", remove="true", insert=source)
 
 
-def _refresh_info_hist(hout, hmod):
-    async def _coro(_1, _2):
+def _refresh_info_hist(hout: Any, hmod: Any) -> Callable[..., Any]:
+    async def _coro(_1: Any, _2: Any) -> None:
         _ = _1, _2
         await asynchronize(refresh_info_hist, hout, hmod)
 
@@ -93,7 +93,7 @@ def _refresh_info_hist(hout, hmod):
 
 
 class IScalerIn(ipw.GridBox):
-    def __init__(self, main) -> None:
+    def __init__(self, main: "ScalerW") -> None:
         self._main = weakref.ref(main)
         selm = ipw.SelectMultiple(
             options=[(f"{col}:{t}", col) for (col, t) in self.main.dtypes.items()],
@@ -147,7 +147,7 @@ class IScalerIn(ipw.GridBox):
             tooltip="Apply",
             icon="check",  # (FontAwesome names without the `fa-` prefix)
         )
-        btn.on_click(self.get_apply_cb())
+        btn.on_click(self._apply_cb)
         self._apply = btn
         rst = ipw.Checkbox(
             value=False, description="Reset:", disabled=False, indent=False
@@ -161,7 +161,7 @@ class IScalerIn(ipw.GridBox):
             "reset": rst,
             "apply": btn
         }
-        lst: List[ipw.Widget] = []
+        lst: List[ipw.DOMWidget] = []
         for wg in [selm, rt, tol_p100, tol, ign, rst]:
             lst.append(ipw.Label(wg.description))
             wg.description = ""
@@ -170,7 +170,7 @@ class IScalerIn(ipw.GridBox):
             lst + [btn], layout=ipw.Layout(grid_template_columns="repeat(2, 120px)")
         )
 
-    def _tol_p100_cb(self, change: AnyType) -> None:
+    def _tol_p100_cb(self, change: Any) -> None:
         val = change["new"]
         desc = "Tolerance (%):" if val else "Tolerance (abs):"
         for wg in self.children:
@@ -179,38 +179,37 @@ class IScalerIn(ipw.GridBox):
                 break
 
     @property
-    def delta(self):
-        abs_delta = self._dict["delta"].value
+    def delta(self) -> int:
+        abs_delta = cast(int, self._dict["delta"].value)
         percent = self._dict["delta_p100"].value
         return -abs_delta if percent else abs_delta
 
     @property
-    def ignore_max(self):
-        return self._dict["ignore_max"].value
+    def ignore_max(self) -> int:
+        return cast(int, self._dict["ignore_max"].value)
 
     @property
-    def selm(self):
-        return self._dict["selm"].value
+    def selm(self) -> List[str]:
+        return cast(List[str], self._dict["selm"].value)
 
     @property
-    def values(self):
+    def values(self) -> Dict[str, Any]:
         return {k: wg.value for (k, wg) in self._dict.items() if hasattr(wg, "value")}
 
-    def get_apply_cb(self):
-        def _cbk(_btn):
-            _ = _btn
-            m = self.main.output_module
-            values = dict(self.values)  # shallow copy
-            values["time"] = time.time()  # always make a change
-            # wg._dict['reset'].value = False
-            loop = aio.get_running_loop()
-            loop.create_task(m.control.from_input(values))
-
-        return _cbk
+    def _apply_cb(self, _btn: Any) -> None:
+        _ = _btn
+        m = self.main.output_module
+        values = dict(self.values)  # shallow copy
+        values["time"] = time.time()  # always make a change
+        # wg._dict['reset'].value = False
+        loop = aio.get_running_loop()
+        loop.create_task(m.control.from_input(values))
 
     @property
-    def main(self):
-        return self._main()
+    def main(self) -> "ScalerW":
+        ret = self._main()
+        assert ret is not None
+        return ret
 
 
 class IScalerOut(ipw.HBox):
@@ -222,9 +221,9 @@ class IScalerOut(ipw.HBox):
         "last_reset": "Last reset:",
     }
 
-    def __init__(self, main):
+    def __init__(self, main: "ScalerW") -> None:
         self._main = weakref.ref(main)
-        self.info_labels = {}
+        self.info_labels: Dict[str, ipw.Label] = {}
         lst = []
         for k, lab in self.info_keys.items():
             lst.append(ipw.Label(lab))
@@ -250,14 +249,13 @@ class IScalerOut(ipw.HBox):
                 htab.set_title(i, t)
             super().__init__(children=[gb, htab])
         """
-
-    def _info_label(self, k):
+    def _info_label(self, k: str) -> ipw.Label:
         v = ""
         lab = ipw.Label(v)
         self.info_labels[k] = lab
         return lab
 
-    def refresh_info(self):
+    def refresh_info(self) -> None:
         if not self.main.output_module._info:
             return
         for k, v in self.main.output_module._info.items():
@@ -268,12 +266,14 @@ class IScalerOut(ipw.HBox):
         self._rows_label.value = str(len(self.main.output_module.result))
 
     @property
-    def main(self):
-        return self._main()
+    def main(self) -> "ScalerW":
+        ret = self._main()
+        assert ret is not None
+        return ret
 
 
 class ScalerW(VBoxSchema):
-    def init(self):
+    def init(self) -> None:
         inp = IScalerIn(self)
         inp.disabled = True
         out = IScalerOut(self)
@@ -282,7 +282,7 @@ class ScalerW(VBoxSchema):
         )
         self.schema = dict(inp=inp, out=out, start_btn=start_btn)
 
-    def _start_btn_cb(self, btn):
+    def _start_btn_cb(self, btn: Any) -> None:
         self.output_module = self.init_scaler()
         self.output_slot = "result"
         self.output_module.on_after_run(_refresh_info(self["out"]))
@@ -291,21 +291,21 @@ class ScalerW(VBoxSchema):
         self["inp"]._dict["selm"].disabled = True
         self["inp"]._dict["apply"].disabled = False
 
-    def _selm_cb(self, change: AnyType) -> None:
+    def _selm_cb(self, change: Any) -> None:
         val = change["new"]
         if val:
             self["start_btn"].disabled = False
         else:
             self["start_btn"].disabled = True
 
-    def init_scaler(self):
+    def init_scaler(self) -> MinMaxScaler:
         s = self.input_module.scheduler()
         with s:
             dvar = DynVar({'delta': self["inp"].delta,
                            'ignore_max': self["inp"].ignore_max}, scheduler=s)
             sc = MinMaxScaler(reset_threshold=10_000, usecols=self["inp"].selm)
             sc.create_dependent_modules(self.input_module, hist=True)
-            sc.control = dvar
+            sc.dep.control = dvar
             sc.input.control = dvar.output.result
             sink = Sink(scheduler=s)
             sink.input.inp = sc.output.info

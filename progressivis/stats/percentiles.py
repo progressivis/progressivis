@@ -54,7 +54,7 @@ class Percentiles(Module):
         else:
             # get them all to be in [0, 1]
             percentiles = np.asarray(percentiles)
-            if (percentiles > 1).any():  # type: ignore
+            if (percentiles > 1).any():
                 percentiles = percentiles / 100.0
                 msg = (
                     "percentiles should all be in the interval [0, 1]. "

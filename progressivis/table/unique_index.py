@@ -7,7 +7,7 @@ from ..core.pintset import PIntSet
 from progressivis.core.utils import indices_len, fix_loc
 from functools import singledispatchmethod as dispatch
 from collections import abc
-from typing import Optional, List, Union, Any, Dict, Tuple
+from typing import Optional, Sequence, List, Union, Any, Dict, Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +24,7 @@ class UniqueIndex(Module):
         self._input_table = None
 
     @dispatch
-    def process_created(self, on, indices) -> None:
+    def process_created(self, on: Any, indices: Any) -> None:
         raise NotImplementedError(f"Wrong type for {on}")
 
     @process_created.register
@@ -50,7 +50,7 @@ class UniqueIndex(Module):
                 del self._deleted[i]
 
     @process_created.register
-    def _(self, on: list, indices: PIntSet) -> None:
+    def _(self, on: list, indices: PIntSet) -> None:  # type: ignore
         assert self._input_table is not None
         for i in indices:
             gen = self._input_table.loc[i, on]
@@ -68,18 +68,18 @@ class UniqueIndex(Module):
             del self._index[key]
             self._deleted[i] = key
 
-    def items(self) -> abc.ItemsView:
+    def items(self) -> abc.ItemsView[Any, Any]:
         return self._index.items()
 
     @property
-    def index(self):
+    def index(self) -> Dict[Any, int]:
         return self._index
 
     @property
-    def deleted(self):
+    def deleted(self) -> Dict[int, Any]:
         return self._deleted
 
-    def get_deleted_entries(self, ids) -> Any:
+    def get_deleted_entries(self, ids: Union[Sequence[int], PIntSet]) -> List[Any]:
         return [entry for (i, entry) in self._deleted.items() if i in ids]
 
     def run_step(

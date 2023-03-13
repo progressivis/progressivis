@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import ipywidgets as widgets
-from traitlets import Unicode  # type: ignore
+from traitlets import Unicode
 
 # from typing import Any as AnyType
 
@@ -11,8 +11,8 @@ from traitlets import Unicode  # type: ignore
 # See js/src/previmages.js for the frontend counterpart to this file.
 
 
-@widgets.register  # type: ignore
-class PrevImages(widgets.DOMWidget):  # type: ignore
+@widgets.register
+class PrevImages(widgets.DOMWidget):
     """Progressivis PrevImages widget."""
 
     # Name of the widget view class in front-end

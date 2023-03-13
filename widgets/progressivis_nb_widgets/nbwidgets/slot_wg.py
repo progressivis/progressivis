@@ -5,7 +5,7 @@ from progressivis.table.paging_helper import PagingHelper
 from .utils import update_widget
 from .data_table import DataPTable
 
-from typing import Any, Optional, TYPE_CHECKING
+from typing import Any, Dict, Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from progressivis import Module
@@ -54,8 +54,9 @@ class SlotWg(DataPTable):
         else:
             _len = len(tbl)
             size = 10
-            info = dict(start=0, end=size, draw=1)
+            info: Dict[str, Any] = dict(start=0, end=size, draw=1)
             if self.page:
+                assert isinstance(self.page, dict)
                 info.update(self.page)
             start = info["start"]
             end = info["end"]

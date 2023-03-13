@@ -8,7 +8,7 @@ from ..core.pintset import PIntSet
 from ..core.decorators import process_slot, run_if_any
 from .group_by import GroupBy
 from ..utils.psdict import PDict
-from typing import cast, Any, List
+from typing import Any, List
 
 
 @def_input("table", PTable)
@@ -30,7 +30,7 @@ class CategoricalQuery(Module):
         self,
         input_module: Module,
         input_slot: str = "result",
-    ):
+    ) -> None:
         s = self.scheduler()
         grby = GroupBy(by=self._column, scheduler=s)
         grby.input.table = input_module.output[input_slot]
@@ -64,7 +64,7 @@ class CategoricalQuery(Module):
             if self.result is None:
                 self.result = PTableSelectedView(input_table, PIntSet([]))
             assert isinstance(dfslot.output_module, GroupBy)
-            groupby_mod = cast(GroupBy, dfslot.output_module)
+            groupby_mod = dfslot.output_module
             assert self._column == groupby_mod.by
             for grp, ids in groupby_mod.items():
                 if grp not in self._only:

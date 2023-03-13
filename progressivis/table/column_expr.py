@@ -9,9 +9,9 @@ from .column_base import BasePColumn
 from .dshape import dshape_create, DataShape
 from .table_base import IndexPTable, BasePTable
 
-from typing import Any, Optional, Tuple, List
+from typing import Any, Optional, Tuple, List, Sequence, Union
 
-from ..core.types import Index, Sequence, Union
+from ..core.types import Index
 
 Shape = Tuple[int, ...]
 
@@ -22,13 +22,13 @@ __all__ = ["PColumnExpr"]
 
 
 class FakeCol:
-    def __init__(self, index, shape):
+    def __init__(self, index: IndexPTable, shape: Shape) -> None:
         self.index = index
         self.dshape = shape
         self.dtype = shape
 
     @property
-    def shape(self):
+    def shape(self) -> Tuple[int]:
         return (len(self.index),)
 
 
@@ -40,7 +40,7 @@ class PColumnExpr(BasePColumn):
         index: IndexPTable,
         expr: str,
         cols: List[str],
-        dtype: Union[np.dtype, str],
+        dtype: Union[np.dtype[Any], str],
         xshape: Shape = (),
         dshape: Optional[str] = None,
     ) -> None:
@@ -49,7 +49,7 @@ class PColumnExpr(BasePColumn):
         self.table = table
         self.expr = expr
         self.cols = cols
-        self._dtype: np.dtype = np.dtype(dtype)
+        self._dtype: np.dtype[Any] = np.dtype(dtype)
         self._xshape = xshape
         self._dshape = dshape
 

@@ -43,14 +43,14 @@ class MMapObject(object):
             self._new_file = True
         self.mmap = mm.mmap(self._file.fileno(), 0)
         self.sizes: Sizes
-        self.sizes = np.frombuffer(self.mmap, np.uint32)  # type: ignore
+        self.sizes = np.frombuffer(self.mmap, np.uint32)
         if self._new_file:
             self.sizes[0] = 1
         self._freelist = [PIntSet() for _ in range(FREELIST_SIZE)]
 
     def _allocate(self, size: int) -> None:
         self.mmap.resize(size * PAGESIZE)
-        self.sizes = np.frombuffer(self.mmap, np.uint32)  # type: ignore
+        self.sizes = np.frombuffer(self.mmap, np.uint32)
 
     def resize(self, size: int) -> None:
         mod = size % WB

@@ -10,7 +10,7 @@ class DataType:
     def __init__(self, *args: Any, **kw: Any) -> None:
         ...
 
-    def to_pandas_dtype(self) -> List[np.dtype]:
+    def to_pandas_dtype(self) -> List[np.dtype[Any]]:
         ...
 
 
@@ -46,7 +46,7 @@ class ParquetFile:
     def __init__(self, *args: Any, **kw: Any) -> None:
         ...
 
-    def iter_batches(self, **kw: Any) -> Generator:
+    def iter_batches(self, **kw: Any) -> Generator[Any, Any, Any]:
         ...
 
     @property

@@ -49,8 +49,8 @@ __all__ = [
     "SlotDescriptor",
     "Module",
     "def_input",
-    "def_output"
-    "def_parameter"
+    "def_output",
+    "def_parameter",
     "StorageManager",
     "ReturnRunStep",
     "Every",

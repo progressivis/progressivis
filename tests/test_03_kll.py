@@ -6,6 +6,7 @@ from progressivis.stats.kll import KLLSketch
 from progressivis.stats import RandomPTable
 import numpy as np
 from datasketches import kll_floats_sketch
+from typing import Any, Sequence, Union, cast
 
 K = 300
 BINS = 128
@@ -13,10 +14,12 @@ QUANTILES = [0.3, 0.5, 0.7]
 SPLITS_SEQ = [0.3, 0.5, 0.7]
 SPLITS_DICT = dict(lower=0.1, upper=0.9, n_splits=10)
 
+ArrayLike = Union[np.ndarray[Any, Any], Sequence[Any]]
+
 
 @skipIf(os.getenv("CI"), "randomly fails on CI")
 class TestKll(ProgressiveTest):
-    def test_kll(self):
+    def test_kll(self) -> None:
         np.random.seed(42)
         s = self.scheduler()
         random = RandomPTable(3, rows=10_000, scheduler=s)
@@ -25,6 +28,8 @@ class TestKll(ProgressiveTest):
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = kll.output.result
         aio.run(s.start())
+        assert random.result is not None
+        assert kll.result is not None
         val = random.result["_1"].value
         sk = kll_floats_sketch(K)
         sk.update(val)
@@ -34,7 +39,7 @@ class TestKll(ProgressiveTest):
         self.assertEqual(kll.result["splits"], [])
         self.assertEqual(kll.result["pmf"], [])
 
-    def test_kll2(self):
+    def test_kll2(self) -> None:
         np.random.seed(42)
         s = self.scheduler()
         random = RandomPTable(3, rows=10_000, scheduler=s)
@@ -44,12 +49,14 @@ class TestKll(ProgressiveTest):
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = kll.output.result
         aio.run(s.start())
+        assert random.result is not None
+        assert kll.result is not None
         val = random.result["_1"].value
         sk = kll_floats_sketch(K)
         sk.update(val)
         self.compare(kll.result["quantiles"], sk.get_quantiles(QUANTILES))
 
-    def test_kll3(self):
+    def test_kll3(self) -> None:
         np.random.seed(42)
         s = self.scheduler()
         random = RandomPTable(3, rows=10_000, scheduler=s)
@@ -59,6 +66,8 @@ class TestKll(ProgressiveTest):
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = kll.output.result
         aio.run(s.start())
+        assert random.result is not None
+        assert kll.result is not None
         val = random.result["_1"].value
         sk = kll_floats_sketch(K)
         sk.update(val)
@@ -69,7 +78,7 @@ class TestKll(ProgressiveTest):
         pmf = sk.get_pmf(splits[:-1])
         self.compare(kll.result["pmf"], pmf)
 
-    def test_kll4(self):
+    def test_kll4(self) -> None:
         np.random.seed(42)
         s = self.scheduler()
         random = RandomPTable(3, rows=10_000, scheduler=s)
@@ -79,13 +88,15 @@ class TestKll(ProgressiveTest):
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = kll.output.result
         aio.run(s.start())
+        assert random.result is not None
+        assert kll.result is not None
         val = random.result["_1"].value
         sk = kll_floats_sketch(K)
         sk.update(val)
         pmf = sk.get_pmf(SPLITS_SEQ)
         self.compare(kll.result["pmf"], pmf)
 
-    def test_kll5(self):
+    def test_kll5(self) -> None:
         np.random.seed(42)
         s = self.scheduler()
         random = RandomPTable(3, rows=10_000, scheduler=s)
@@ -95,17 +106,19 @@ class TestKll(ProgressiveTest):
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = kll.output.result
         aio.run(s.start())
+        assert random.result is not None
+        assert kll.result is not None
         val = random.result["_1"].value
         sk = kll_floats_sketch(K)
         sk.update(val)
         lower_ = SPLITS_DICT["lower"]
         upper_ = SPLITS_DICT["upper"]
-        num_splits = SPLITS_DICT["n_splits"]
+        num_splits = cast(int, SPLITS_DICT["n_splits"])
         splits = np.linspace(lower_, upper_, num_splits)
         pmf = sk.get_pmf(splits[:-1])
         self.compare(kll.result["pmf"], pmf)
 
-    def compare(self, res1, res2, atol=1e-02):
+    def compare(self, res1: ArrayLike, res2: ArrayLike, atol: float = 1e-02) -> None:
         v1 = np.array(res1)
         v2 = np.array(res2)
         self.assertEqual(v1.shape, v2.shape)

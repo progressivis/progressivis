@@ -10,13 +10,17 @@ from progressivis.core import aio, Sink
 from progressivis.io import SimpleCSVLoader
 from progressivis.stats.utils import SimpleImputer
 
-from typing import Optional, Any, Tuple, Callable
+from typing import Optional, Any, Tuple, Callable, Literal, Union
+
+NumType = Union[
+    Literal["int32"], Literal["int64"], Literal["float32"], Literal["float64"]
+]
 
 
 def make_num_csv(
     n_rows: int,
     n_cols: int,
-    rand_func: Callable,
+    rand_func: Callable[..., Any],
     intruder: Optional[Tuple[int, int, Any]] = None,
 ) -> StringIO:
     """
@@ -65,7 +69,12 @@ class TestProgressiveLoadCSV(ProgressiveTest):
         self.assertEqual(len(module.result), n_rows)
 
     def _func_read_int_csv_with_intruder(
-        self, dtype, intruder, imputer=None, atol=0, fixed_step_size=0
+        self,
+        dtype: NumType,
+        intruder: str,
+        imputer: Optional[SimpleImputer] = None,
+        atol: float = 0,
+        fixed_step_size: int = 0,
     ) -> None:
         s = self.scheduler()
         n_rows = 100_000
@@ -74,7 +83,7 @@ class TestProgressiveLoadCSV(ProgressiveTest):
         df = pd.read_csv(sio)
         sio.seek(0)
 
-        def _subst():
+        def _subst() -> Any:
             if not imputer:
                 return np.iinfo(dtype).max
             strategy = imputer.get_strategy("B")
@@ -116,7 +125,8 @@ class TestProgressiveLoadCSV(ProgressiveTest):
             )
         anomalies = module.anomalies
         assert anomalies
-        self.assertTrue(i_row in anomalies)
+        # actualy there are int keys in anomalies ...
+        self.assertTrue(i_row in anomalies)  # type:ignore
         self.assertTrue(anomalies[i_row]["B"] == intruder)  # type:ignore
 
     def test_read_int_csv_with_intruder_64(self) -> None:
@@ -155,7 +165,12 @@ class TestProgressiveLoadCSV(ProgressiveTest):
         )
 
     def _func_read_float_csv_with_intruder(
-        self, na_filter, dtype, intruder, imputer=None, atol=0
+        self,
+        na_filter: bool,
+        dtype: NumType,
+        intruder: str,
+        imputer: Optional[SimpleImputer] = None,
+        atol: float = 0,
     ) -> None:
         s = self.scheduler()
         n_rows = 100_000
@@ -164,7 +179,7 @@ class TestProgressiveLoadCSV(ProgressiveTest):
         df = pd.read_csv(sio)
         sio.seek(0)
 
-        def _subst():
+        def _subst() -> Any:
             if not imputer:
                 return np.nan
             strategy = imputer.get_strategy("B")
@@ -215,11 +230,11 @@ class TestProgressiveLoadCSV(ProgressiveTest):
 
         anomalies = module.anomalies
         assert anomalies
-        self.assertTrue(i_row in anomalies)
+        self.assertTrue(i_row in anomalies)  # type: ignore
         self.assertTrue(anomalies[i_row]["B"] == intruder)  # type: ignore
         missing = module.missing
         assert missing
-        self.assertTrue(i_row in missing["B"])  # type:ignore
+        self.assertTrue(i_row in missing["B"])
 
     def test_read_float_csv_with_intruder_not_na_64(self) -> None:
         self._func_read_float_csv_with_intruder(

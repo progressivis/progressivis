@@ -68,7 +68,7 @@ def historized_widget(widget_class, update_method):
 
 def data_union_to_json_compress(value: Any, widget: Any) -> Dict[str, Any]:
     """Serializer for union of NDArray and NDArrayWidget"""
-    if isinstance(value, widgets.Widget):
+    if isinstance(value, widgets.DOMWidget):
         return widgets.widget_serialization["to_json"](value, widget)  # type: ignore
     return array_to_compressed_json(value, widget)  # type: ignore
 

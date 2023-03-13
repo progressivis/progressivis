@@ -5,6 +5,8 @@ from . import ProgressiveTest, skipIf
 from progressivis.core import aio, Sink
 from progressivis.io import ParquetLoader
 from progressivis.table.group_by import GroupBy, SubPColumn as SC
+from progressivis.table import PTable
+from typing import Any, Tuple
 
 PASSENGERS = {0, 1, 2, 3, 4, 5, 6, 9}
 
@@ -80,8 +82,9 @@ class TestProgressiveGroupBy(ProgressiveTest):
             scheduler=s,
         )
 
-        def _day_func(tbl, i):
+        def _day_func(tbl: PTable, i: int) -> Tuple[Any, ...]:
             dt = tbl.loc[i, "tpep_pickup_datetime"]
+            assert dt
             return tuple(dt[:3])
 
         self.assertTrue(parquet.result is None)

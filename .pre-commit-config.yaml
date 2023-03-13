@@ -13,6 +13,8 @@ repos:
         args: [--tb]
         additional_dependencies:
           - 'numpy'
+          - 'ipython'
+          - 'jinja2'
           - 'sqlalchemy-stubs'
           - 'pandas-stubs'
           - 'traits-stubs'

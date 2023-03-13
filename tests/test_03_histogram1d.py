@@ -52,10 +52,10 @@ class TestHistogram1D(ProgressiveTest):
         h1 = last["array"]
         bounds = (last["min"], last["max"])
         df = pd.read_csv(
-            get_dataset("bigfile"), header=None, usecols=[2]  # type: ignore
+            get_dataset("bigfile"), header=None, usecols=[2]
         )
         v = df.to_numpy().reshape(-1)
-        h2, _ = np.histogram(  # type: ignore
+        h2, _ = np.histogram(
             v, bins=histogram1d.params.bins, density=False, range=bounds
         )
         self.assertListEqual(h1.tolist(), h2.tolist())
@@ -89,7 +89,7 @@ class TestHistogram1D(ProgressiveTest):
         tab = stirrer.result.loc[:, ["_2"]]
         assert tab is not None
         v = tab.to_array().reshape(-1)
-        h2, _ = np.histogram(  # type: ignore
+        h2, _ = np.histogram(
             v, bins=histogram1d.params.bins, density=False, range=bounds
         )
         self.assertEqual(np.sum(h1), np.sum(h2))

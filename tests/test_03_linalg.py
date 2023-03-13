@@ -37,17 +37,17 @@ from typing import Any, Type
 
 
 class SubUnary(Unary):  # hack for mypy
-    def __init__(*args, **kw) -> None:
+    def __init__(*args: Any, **kw: Any) -> None:
         pass
 
 
 class SubBinary(Binary):  # hack for mypy
-    def __init__(*args, **kw) -> None:
+    def __init__(*args: Any, **kw: Any) -> None:
         pass
 
 
 class SubReduce(Reduce):  # hack for mypy
-    def __init__(*args, **kw) -> None:
+    def __init__(*args: Any, **kw: Any) -> None:
         pass
 
 

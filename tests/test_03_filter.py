@@ -1,4 +1,4 @@
-from . import ProgressiveTest, main
+from . import ProgressiveTest
 from progressivis.core import aio
 from progressivis import Print, Scheduler
 from progressivis.stats import RandomPTable
@@ -69,4 +69,4 @@ class TestFilter(ProgressiveTest):
 
 
 if __name__ == "__main__":
-    main()
+    ProgressiveTest.main()

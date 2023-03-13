@@ -675,7 +675,7 @@ class Scheduler:
     def _ipython_key_completions_(self) -> List[str]:
         return list(self._modules.keys())
 
-    async def wake_up(self):
+    async def wake_up(self) -> None:
         async with self._hibernate_cond:
             self._keep_running = KEEP_RUNNING
             self._hibernate_cond.notify()

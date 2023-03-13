@@ -64,12 +64,12 @@ class TestHistogram2D(ProgressiveTest):
         h1 = last["array"]
         bounds = [[last["ymin"], last["ymax"]], [last["xmin"], last["xmax"]]]
         df = pd.read_csv(
-            get_dataset("bigfile"), header=None, usecols=[1, 2]  # type: ignore
+            get_dataset("bigfile"), header=None, usecols=[1, 2]
         )
         v = df.to_numpy()  # .reshape(-1, 2)
         bins = [histogram2d.params.ybins, histogram2d.params.xbins]
         h2 = fh.histogram2d(v[:, 1], v[:, 0], bins=bins, range=bounds)
-        h2 = np.flip(h2, axis=0)  # type: ignore
+        h2 = np.flip(h2, axis=0)
         self.assertTrue(np.allclose(h1, h2))
 
     def t_histogram2d_impl(self, **kw: Any) -> None:
@@ -102,7 +102,7 @@ class TestHistogram2D(ProgressiveTest):
         v = t.to_array()
         bins = [histogram2d.params.ybins, histogram2d.params.xbins]
         h2 = fh.histogram2d(v[:, 1], v[:, 0], bins=bins, range=bounds)
-        h2 = np.flip(h2, axis=0)  # type: ignore
+        h2 = np.flip(h2, axis=0)
         self.assertEqual(np.sum(h1), np.sum(h2))
         self.assertListEqual(h1.reshape(-1).tolist(), h2.reshape(-1).tolist())
 
@@ -138,7 +138,7 @@ class TestHistogram2D(ProgressiveTest):
         v = tmp.to_array()
         bins = [histogram2d.params.ybins, histogram2d.params.xbins]
         h2 = fh.histogram2d(v[:, 1], v[:, 0], bins=bins, range=bounds)
-        h2 = np.flip(h2, axis=0)  # type: ignore
+        h2 = np.flip(h2, axis=0)
         self.assertEqual(np.sum(h1), np.sum(h2))
         self.assertListEqual(h1.reshape(-1).tolist(), h2.reshape(-1).tolist())
 

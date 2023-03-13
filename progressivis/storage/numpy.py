@@ -54,20 +54,20 @@ class NumpyDataset(Dataset):
                 self._fillvalue = np.nan
         if kwds:
             logger.warning("Ignored keywords in NumpyDataset: %s", kwds)
-        self.view: np.ndarray[Any, Any] = self.base
+        self.view: np.ndarray[Any, np.dtype[Any]] = self.base
         self._attrs = AttributeImpl()
 
     @property
     def shape(self) -> Shape:
-        return self.view.shape  # type: ignore
+        return self.view.shape
 
     @property
     def dtype(self) -> np.dtype[Any]:
-        return self.view.dtype  # type: ignore
+        return self.view.dtype
 
     @property
     def maxshape(self) -> Shape:
-        return self.view.shape  # type: ignore
+        return self.view.shape
 
     @property
     def fillvalue(self) -> Any:
@@ -75,11 +75,11 @@ class NumpyDataset(Dataset):
 
     @property
     def chunks(self) -> Shape:
-        return self.view.shape  # type: ignore
+        return self.view.shape
 
     @property
     def size(self) -> int:
-        return self.view.shape[0]  # type: ignore
+        return self.view.shape[0]
 
     def resize(self, size: Union[int, ArrayLike], axis: Optional[int] = None) -> None:
         if isinstance(size, integer_types):
@@ -88,7 +88,7 @@ class NumpyDataset(Dataset):
             size = np.array(size)
         baseshape = np.array(self.base.shape)
         viewshape = self.view.shape
-        if (size > baseshape).any():  # type: ignore
+        if (size > baseshape).any():
             # self.view = None
             newsize = []
             for s, shape in zip(size, baseshape):
@@ -117,7 +117,7 @@ class NumpyDataset(Dataset):
         self.view[args] = val
 
     def __len__(self) -> int:
-        return self.view.shape[0]  # type: ignore
+        return self.view.shape[0]
 
     @property
     def attrs(self) -> Attribute:

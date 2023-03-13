@@ -25,35 +25,37 @@ class SubPColumnABC(metaclass=ABCMeta):
         self.column = column
 
     @abstractproperty
-    def tag(self):
+    def tag(self) -> Optional[str]:
         ...
 
     @abstractproperty
-    def selection(self):
+    def selection(self) -> Union[str, slice, Sequence[Any]]:
         ...
 
 
 class SimpleSC(SubPColumnABC):
-    def __init__(self, column, selection, tag=None):
+    def __init__(self, column: str,
+                 selection: Union[str, slice, Sequence[Any]],
+                 tag: Optional[str] = None):
         super().__init__(column)
         self._selection = selection
         self._tag = tag
 
     @property
-    def tag(self):
+    def tag(self) -> Optional[str]:
         return self._tag
 
     @property
-    def selection(self):
+    def selection(self) -> Union[str, slice, Sequence[Any]]:
         return self._selection
 
 
 class DTChain(SubPColumnABC):
-    def __init__(self, column):
+    def __init__(self, column: str) -> None:
         super().__init__(column)
-        self.bag = []
+        self.bag: List[Any] = []
 
-    def __getattr__(self, name):
+    def __getattr__(self, name: str) -> DTChain:
         if len(self.bag) >= DT_MAX:
             raise ValueError(f"Cannot chain more than {DT_MAX} items")
         if name not in UTIME_D:
@@ -64,19 +66,18 @@ class DTChain(SubPColumnABC):
         self.bag.append(UTIME_D[name])
         return self
 
-    def __getitem__(self, item):
-        if isinstance(item, str):
-            if not (set(list(item)) < set(UTIME_SHORT_D.keys())):
-                raise ValueError(f"unknown format: {item}")
-            selection = [i for (k, i) in UTIME_SHORT_D.items() if k in item]
-            return SimpleSC(self.column, selection, tag=item)
+    def __getitem__(self, item: str) -> SimpleSC:
+        if not (set(list(item)) < set(UTIME_SHORT_D.keys())):
+            raise ValueError(f"unknown format: {item}")
+        selection = [i for (k, i) in UTIME_SHORT_D.items() if k in item]
+        return SimpleSC(self.column, selection, tag=item)
 
     @property
-    def selection(self):
+    def selection(self) -> List[Any]:
         return self.bag
 
     @property
-    def tag(self):
+    def tag(self) -> str:
         return "".join([k for (k, v) in UTIME_SHORT_D.items() if v in self.bag])
 
 
@@ -84,7 +85,7 @@ class SCIndex:
     def __init__(self, column: str) -> None:
         self._column = column
 
-    def __getitem__(self, item):
+    def __getitem__(self, item: Union[str, slice, Sequence[Any]]) -> SimpleSC:
         if isinstance(item, str):
             if not (set(list(item)) < set(UTIME_SHORT_D.keys())):
                 raise ValueError(f"unknown format: {item}")
@@ -98,23 +99,23 @@ class SCIndex:
 class SubPColumn:
     def __init__(self, column: str) -> None:
         self._column = column
-        self._dt = None
-        self._idx = None
+        self._dt: Optional[DTChain] = None
+        self._idx: Optional[SCIndex] = None
 
     @property
-    def dt(self):
+    def dt(self) -> DTChain:
         if self._dt is None:
             self._dt = DTChain(self._column)
         return self._dt
 
     @property
-    def ix(self):
+    def ix(self) -> SCIndex:
         if self._idx is None:
             self._idx = SCIndex(self._column)
         return self._idx
 
 
-ByType = Union[str, List[str], Callable, SubPColumnABC, SubPColumn]
+ByType = Union[str, List[str], Callable[..., Any], SubPColumnABC, SubPColumn]
 
 
 @def_input("table", PTable, required=False)
@@ -134,7 +135,7 @@ class GroupBy(Module):
         self._input_table = None
 
     @dispatch
-    def process_created(self, by, indices) -> None:
+    def process_created(self, by: Any, indices: PIntSet) -> None:
         raise NotImplementedError(f"Wrong type for {by}")
 
     @process_created.register
@@ -145,14 +146,14 @@ class GroupBy(Module):
             self._index[key].add(i)
 
     @process_created.register
-    def _(self, by: list, indices: PIntSet) -> None:
+    def _(self, by: list, indices: PIntSet) -> None:  # type: ignore
         assert self._input_table is not None
         for i in indices:
             gen = self._input_table.loc[i, by]
             self._index[tuple(gen)].add(i)
 
     @process_created.register
-    def _(self, by: tuple, indices: PIntSet) -> None:
+    def _(self, by: tuple, indices: PIntSet) -> None:  # type: ignore
         assert self._input_table is not None
         for i in indices:
             gen = self._input_table.loc[i, by]
@@ -183,11 +184,11 @@ class GroupBy(Module):
         for k in self._index.keys():
             self._index[k] -= indices
 
-    def items(self) -> abc.ItemsView:
+    def items(self) -> abc.ItemsView[Any, Any]:
         return self._index.items()
 
     @property
-    def index(self):
+    def index(self) -> Dict[Any, PIntSet]:
         return self._index
 
     def run_step(

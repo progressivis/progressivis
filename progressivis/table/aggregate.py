@@ -9,7 +9,8 @@ from ..core.decorators import process_slot, run_if_any
 from .dshape import dshape_from_dict
 from .group_by import GroupBy, SubPColumnABC
 from ..stats.utils import OnlineFunctor
-from typing import cast, List, Union, Any, Dict, Tuple, Type
+from ..core.pintset import PIntSet
+from typing import List, Union, Any, Dict, Tuple, Type
 
 # See also : https://arrow.apache.org/docs/python/compute.html#py-grouped-aggrs
 
@@ -37,7 +38,7 @@ class Aggregate(Module):
         self._local_index = {}
         self._table_index = {}
 
-    def update_row(self, grp, grp_ids, input_df):
+    def update_row(self, grp: str, grp_ids: PIntSet, input_df: PTable) -> None:
         if grp not in self._local_index:
             row_dict = {
                 nm: construct[1]() for (nm, construct) in self._aggr_cols.items()
@@ -86,7 +87,8 @@ class Aggregate(Module):
             input_df = dfslot.data()
             if input_df is None:
                 return self._return_run_step(self.state_blocked, steps_run=0)
-            groupby_mod = cast(GroupBy, dfslot.output_module)
+            groupby_mod = dfslot.output_module
+            assert isinstance(groupby_mod, GroupBy)
             if self._by_cols is None:
                 by = groupby_mod.by
                 if isinstance(by, str):
@@ -99,7 +101,7 @@ class Aggregate(Module):
                     self._by_cols = ["by_col"]
                 else:
                     raise ValueError(f"Not implemented {by} type")
-            for grp, ids in groupby_mod.items():
+            for grp, ids in groupby_mod.index.items():
                 grp_ids = ids & indices
                 self.update_row(grp, grp_ids, input_df)
                 steps += len(grp_ids)

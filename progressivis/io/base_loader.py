@@ -24,7 +24,7 @@ if TYPE_CHECKING:
 class BaseLoader(Module):
     """ """
 
-    def __init__(self, *args, **kw) -> None:
+    def __init__(self, *args: Any, **kw: Any) -> None:
         self._rows_read: int = 0
         self.anomalies: Optional[PDict]
         super().__init__(*args, **kw)
@@ -67,7 +67,7 @@ class BaseLoader(Module):
         elif not yes:
             self.anomalies = None
 
-    def process_na_values(self, bat) -> pa.RecordBatch:
+    def process_na_values(self, bat: pa.RecordBatch) -> pa.RecordBatch:
         null_mask = None
         has_null = False
         for col in bat:

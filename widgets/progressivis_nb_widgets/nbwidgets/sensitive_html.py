@@ -1,11 +1,11 @@
 import ipywidgets as widgets
-from traitlets import Unicode, Any  # type: ignore
+from traitlets import Unicode, Any
 
 # See js/lib/widgets.js for the frontend counterpart to this file.
 
 
 @widgets.register
-class SensitiveHTML(widgets.DOMWidget):  # type: ignore
+class SensitiveHTML(widgets.DOMWidget):
     """Progressivis SensitiveHTML widget."""
 
     # Name of the widget view class in front-end

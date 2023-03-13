@@ -8,7 +8,7 @@ from progressivis.stats import RandomPTable
 from progressivis.table.hist_index import HistogramIndex
 from progressivis.table.percentiles import Percentiles
 import numpy as np
-from . import ProgressiveTest, main
+from . import ProgressiveTest
 from progressivis.table.range_query import RangeQuery
 from progressivis.utils.psdict import PDict
 from progressivis.table.stirrer import Stirrer
@@ -48,9 +48,9 @@ class TestPercentiles(ProgressiveTest):
         assert last is not None
         pdict = last.to_dict()
         v = random.result["_1"].values
-        p25 = np.percentile(v, 25.0)  # type: ignore
-        p50 = np.percentile(v, 50.0)  # type: ignore
-        p75 = np.percentile(v, 75.0)  # type: ignore
+        p25 = np.percentile(v, 25.0)
+        p50 = np.percentile(v, 50.0)
+        p75 = np.percentile(v, 75.0)
         print(
             "PTable=> accuracy: ",
             accuracy,
@@ -93,9 +93,9 @@ class TestPercentiles(ProgressiveTest):
         assert stirrer.result is not None
         pdict = notNone(percentiles.result.last()).to_dict()
         v = stirrer.result.to_array(columns=["_1"]).reshape(-1)
-        p25 = np.percentile(v, 25.0)  # type: ignore
-        p50 = np.percentile(v, 50.0)  # type: ignore
-        p75 = np.percentile(v, 75.0)  # type: ignore
+        p25 = np.percentile(v, 25.0)
+        p50 = np.percentile(v, 50.0)
+        p75 = np.percentile(v, 75.0)
         print(
             "PTable=> accuracy: ",
             accuracy,
@@ -166,9 +166,9 @@ class TestPercentiles(ProgressiveTest):
         assert range_qry.result is not None
         pdict = notNone(percentiles.result.last()).to_dict()
         v = range_qry.result["_1"].values
-        p25 = np.percentile(v, 25.0)  # type: ignore
-        p50 = np.percentile(v, 50.0)  # type: ignore
-        p75 = np.percentile(v, 75.0)  # type: ignore
+        p25 = np.percentile(v, 25.0)
+        p50 = np.percentile(v, 50.0)
+        p75 = np.percentile(v, 75.0)
         print(
             "TSV=> accuracy: ",
             accuracy,
@@ -220,9 +220,9 @@ class TestPercentiles(ProgressiveTest):
         assert range_qry.result is not None
         pdict = notNone(percentiles.result.last()).to_dict()
         v = range_qry.result["_1"].values
-        p25 = np.percentile(v, 25.0)  # type: ignore
-        p50 = np.percentile(v, 50.0)  # type: ignore
-        p75 = np.percentile(v, 75.0)  # type: ignore
+        p25 = np.percentile(v, 25.0)
+        p50 = np.percentile(v, 50.0)
+        p75 = np.percentile(v, 75.0)
         print(
             "TSV=> accuracy: ",
             accuracy,
@@ -266,4 +266,4 @@ class TestPercentiles(ProgressiveTest):
 
 
 if __name__ == "__main__":
-    main()
+    ProgressiveTest.main()

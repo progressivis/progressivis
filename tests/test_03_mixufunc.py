@@ -39,7 +39,7 @@ def custom_unary(x: float) -> float:
     return (x + np.sin(x)) / (x + np.cos(x))  # type: ignore
 
 
-custom_unary_ufunc: Any = np.frompyfunc(custom_unary, 1, 1)  # type: ignore
+custom_unary_ufunc: Any = np.frompyfunc(custom_unary, 1, 1)
 
 
 @def_input("first", type=PTable)
@@ -58,7 +58,7 @@ def custom_binary(x: float, y: float) -> float:
     return (x + np.sin(y)) / (x + np.cos(y))  # type: ignore
 
 
-custom_binary_ufunc: Any = np.frompyfunc(custom_binary, 2, 1)  # type: ignore
+custom_binary_ufunc: Any = np.frompyfunc(custom_binary, 2, 1)
 
 
 @def_input("first", type=PTable)

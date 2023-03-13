@@ -40,8 +40,8 @@ def make_mv_blobs(
         arr = np.empty(size, dtype="int64")
         arr[:] = i
         labels.append(arr)
-    blobs = np.concatenate(blobs)  # type: ignore
-    labels = np.concatenate(labels)  # type: ignore
+    blobs = np.concatenate(blobs)
+    labels = np.concatenate(labels)
     return multi_shuffle(blobs, labels)  # type: ignore
 
 
@@ -147,7 +147,7 @@ class BlobsPTableABC(Module):
             return self._return_run_step(self.state_ready, steps_run=0)
         logger.info("generating %d lines", step_size)
         if self.throttle:
-            step_size = np.min([self.throttle, step_size])  # type: ignore
+            step_size = np.min([self.throttle, step_size])
         if self.rows >= 0 and (len(self.result) + step_size) > self.rows:
             step_size = self.rows - len(self.result)
             logger.info("truncating to %d lines", step_size)

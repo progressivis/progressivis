@@ -77,7 +77,7 @@ def run_simple_server() -> None:
     assert RangeHTTPServer.__main__
 
 
-BIGFILE_DF = pd.read_csv(filepath_or_buffer=get_dataset("bigfile"), header=None, usecols=[0])  # type: ignore
+BIGFILE_DF = pd.read_csv(filepath_or_buffer=get_dataset("bigfile"), header=None, usecols=[0])
 
 
 class _HttpSrv:

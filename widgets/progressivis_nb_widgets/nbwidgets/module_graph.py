@@ -1,11 +1,11 @@
 import ipywidgets as widgets
-from traitlets import Unicode  # type: ignore
+from traitlets import Unicode
 
 # See js/lib/widgets.js for the frontend counterpart to this file.
 
 
 @widgets.register
-class ModuleGraph(widgets.DOMWidget):  # type: ignore
+class ModuleGraph(widgets.DOMWidget):
     """Progressivis ModuleGraph widget."""
 
     # Name of the widget view class in front-end

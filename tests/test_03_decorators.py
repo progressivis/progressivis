@@ -31,7 +31,7 @@ class FooABC(Module):
     def run_step_impl(
         self, ctx: _CtxImpl, run_number: int, step_size: int
     ) -> ReturnRunStep:
-        if self.result is None:  # type: ignore
+        if self.result is None:
             self.result = PTable(
                 self.generate_table_name("Foo"), dshape="{a: int, b: int}", create=True
             )
@@ -121,7 +121,7 @@ class InvalidProcessAfterRun(FooABC):
     @run_if_any("a", "c")  # type: ignore
     @process_slot("a", "b", "c", "d", reset_if=False)
     @and_any("b", "d")  # type: ignore
-    def run_step(self, run_number: int, step_size: int, howlong: float) -> ReturnRunStep:  # type: ignore
+    def run_step(self, run_number: int, step_size: int, howlong: float) -> ReturnRunStep:
         assert self.context is not None
         with self.context as ctx:
             return self.run_step_impl(ctx, run_number, step_size)

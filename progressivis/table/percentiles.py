@@ -63,7 +63,7 @@ class Percentiles(Module):
                 break  # just avoids unnecessary computes
         acc_list = acc_list[: i + 1]
         for k in k_points:
-            i = (acc_list >= k).nonzero()[0][0]  # type: ignore
+            i = (acc_list >= k).nonzero()[0][0]
             reminder = int(acc_list[i] - k)
             assert sz_list[i] > reminder >= 0
             if sz_list[i] < k_accuracy:

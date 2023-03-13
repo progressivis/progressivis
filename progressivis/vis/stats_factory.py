@@ -130,7 +130,7 @@ class DataShape(Module):
         super().__init__(**kwds)
         pass
 
-    def reset(self):
+    def reset(self) -> None:
         pass
 
     @process_slot("table", reset_cb="reset")
@@ -286,7 +286,7 @@ class StatsFactory(Module):
         self.types: Optional[Dict[str, str]] = None
         self._multi_col_funcs = set(["corr"])
         self._multi_col_modules: Dict[str, Optional[Module]] = {}
-        self.func_dict: Dict[str, Callable] = dict(
+        self.func_dict: Dict[str, Callable[[Any, Any], Any]] = dict(
             hide=_hide_func,
             max=_add_max_col,
             min=_add_min_col,
@@ -297,7 +297,7 @@ class StatsFactory(Module):
         )
         self._sink = None
 
-    def reset(self):
+    def reset(self) -> None:
         pass
 
     @process_slot("table", "selection", reset_cb="reset")
@@ -401,7 +401,7 @@ class StatsFactory(Module):
                     # pass
             return self._return_run_step(self.state_blocked, steps_run=steps)
 
-    def create_dependent_modules(self, var_name=None):
+    def create_dependent_modules(self, var_name: Optional[str] = None) -> None:
         s = self.scheduler()
         self.variable = DynVar(name=var_name, scheduler=s)
         self.input.selection = self.variable.output.result

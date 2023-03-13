@@ -59,7 +59,7 @@ class ParquetLoader(BaseLoader):
             self.throttle = throttle
         else:
             self.throttle = False
-        self.parser: Optional[Generator] = None
+        self.parser: Optional[Generator[Any, Any, Any]] = None
 
         if nn(filter_) and not callable(filter_):
             raise ProgressiveError("filter parameter should be callable or None")
@@ -120,7 +120,7 @@ class ParquetLoader(BaseLoader):
             logger.error("Received a step_size of 0")
             return self._return_run_step(self.state_ready, steps_run=0)
         if self.throttle:
-            step_size = np.min([self.throttle, step_size])  # type: ignore
+            step_size = np.min([self.throttle, step_size])
         status = self.validate_parser(run_number)
         if status == self.state_terminated:
             raise ProgressiveStopIteration("no more filenames")

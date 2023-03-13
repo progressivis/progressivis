@@ -4,18 +4,21 @@ import os
 from . import ProgressiveTest, skipIf
 from progressivis.core import aio, Sink
 from progressivis.io import ParquetLoader
-from progressivis.table.group_by import GroupBy, SubPColumn as SC
+from progressivis.table.group_by import GroupBy, ByType, SubPColumn as SC
 from progressivis.table.aggregate import Aggregate
 from progressivis.table.stirrer import Stirrer
+from progressivis.table.table import PTable
+
 import pyarrow.parquet as pq
 import numpy as np
+from typing import Any, Tuple
 
 PARQUET_FILE = "nyc-taxi/short_500k_yellow_tripdata_2015-01.parquet"
 
 # NB: if PARQUET_FILE does not exist yet, consider running:
 # python scripts/create_nyc_parquet.py -p short -t yellow -f -m1 -n 300000
 if not os.getenv("CI"):
-    TABLE = pq.read_table(PARQUET_FILE)  # type: ignore
+    TABLE = pq.read_table(PARQUET_FILE)
     TABLE_AGGR = TABLE.group_by("passenger_count").aggregate(  # type: ignore
         [("trip_distance", "mean"), ("trip_distance", "sum")]
     )
@@ -30,7 +33,7 @@ if not os.getenv("CI"):
     )
 
     DF = TABLE.to_pandas()  # type: ignore
-    DF_AGGR = DF.groupby(DF.tpep_pickup_datetime.dt.day).trip_distance.mean()  # type: ignore
+    DF_AGGR = DF.groupby(DF.tpep_pickup_datetime.dt.day).trip_distance.mean()
 
 
 @skipIf(os.getenv("CI"), "skipped because local nyc taxi files are required")
@@ -291,8 +294,9 @@ class TestProgressiveAggregate(ProgressiveTest):
         )
         self.assertTrue(parquet.result is None)
 
-        def _day_func(tbl, i):
+        def _day_func(tbl: PTable, i: int) -> Tuple[Any, ...]:
             dt = tbl.loc[i, "tpep_pickup_datetime"]
+            assert dt
             return tuple(dt[:3])
 
         grby = GroupBy(by=_day_func, scheduler=s)
@@ -309,7 +313,7 @@ class TestProgressiveAggregate(ProgressiveTest):
             )
         )
 
-    def _aggregate_by_subcolumn(self, subcol: SC) -> None:
+    def _aggregate_by_subcolumn(self, subcol: ByType) -> None:
         s = self.scheduler()
         parquet = ParquetLoader(
             PARQUET_FILE,

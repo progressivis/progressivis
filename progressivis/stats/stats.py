@@ -78,11 +78,11 @@ class Stats(Module):
         steps = indices_len(indices)
         if steps > 0:
             x = input_df.to_array(locs=fix_loc(indices), columns=[self._column])
-            new_min = np.nanmin(x)  # type: ignore
-            new_max = np.nanmax(x)  # type: ignore
+            new_min = np.nanmin(x)
+            new_max = np.nanmax(x)
             row = {
-                self._min_column: np.nanmin([prev_min, new_min]),  # type: ignore
-                self._max_column: np.nanmax([prev_max, new_max]),  # type: ignore
+                self._min_column: np.nanmin([prev_min, new_min]),
+                self._max_column: np.nanmax([prev_max, new_max]),
             }
             if run_number in df.index:
                 df.loc[run_number] = row

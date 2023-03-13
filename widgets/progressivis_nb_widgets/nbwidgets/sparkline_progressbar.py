@@ -1,11 +1,11 @@
 import ipywidgets as widgets
-from traitlets import Unicode, Any  # type: ignore
+from traitlets import Unicode, Any
 
 # See js/src/widgets.js for the frontend counterpart to this file.
 
 
 @widgets.register
-class SparkLineProgressBar(widgets.DOMWidget):  # type: ignore
+class SparkLineProgressBar(widgets.DOMWidget):
     """Progressivis SparkLineProgressBar widget."""
 
     # Name of the widget view class in front-end

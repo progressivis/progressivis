@@ -165,7 +165,7 @@ class MMapDataset(Dataset):
             # print('fillvalue for %s defaulted to %s'%(self.base.dtype, self._fillvalue))
         if kwds:
             logger.warning("Ignored keywords in MMapDataset: %s", kwds)
-        self.base = np.frombuffer(self._buffer, dtype=dtype, count=nb_item)  # type: ignore
+        self.base = np.frombuffer(self._buffer, dtype=dtype, count=nb_item)
         if self.base.shape != shape:
             self.base = self.base.reshape(shape)
         self.view = self.base
@@ -236,7 +236,7 @@ class MMapDataset(Dataset):
 
     @property
     def shape(self) -> Shape:
-        return self.view.shape  # type: ignore
+        return self.view.shape
 
     @property
     def dtype(self) -> np.dtype[Any]:
@@ -244,7 +244,7 @@ class MMapDataset(Dataset):
 
     @property
     def maxshape(self) -> Shape:
-        return self.view.shape  # type: ignore
+        return self.view.shape
 
     @property
     def fillvalue(self) -> Any:
@@ -252,11 +252,11 @@ class MMapDataset(Dataset):
 
     @property
     def chunks(self) -> Shape:
-        return self.view.shape  # type: ignore
+        return self.view.shape
 
     @property
     def size(self) -> int:
-        return self.view.shape[0]  # type: ignore
+        return self.view.shape[0]
 
     def resize(self, size: Union[int, ArrayLike], axis: Optional[int] = None) -> None:
         assert self._buffer is not None
@@ -279,7 +279,7 @@ class MMapDataset(Dataset):
         length = (last // PAGESIZE + 1) * PAGESIZE * 10
         if length != len(self._buffer):
             self._buffer.resize(length)
-        self.base = np.frombuffer(  # type: ignore
+        self.base = np.frombuffer(
             self._buffer, dtype=dtype_, count=nb_item
         )  # returns an 1D array
         if self.base.shape != shape:
@@ -287,7 +287,7 @@ class MMapDataset(Dataset):
         baseshape = np.array(self.base.shape)
         viewshape = self.view.shape
         size = np.asarray(shape)
-        if (size > baseshape).any():  # type: ignore
+        if (size > baseshape).any():
             # self.view = None
             newsize = []
             for shap, shape in zip(size, baseshape):
@@ -345,7 +345,7 @@ class MMapDataset(Dataset):
             self.view[k] = self._strings.set_at(self.view[k], val[i])
 
     def __len__(self) -> int:
-        return self.view.shape[0]  # type: ignore
+        return self.view.shape[0]
 
     @property
     def attrs(self) -> Attribute:

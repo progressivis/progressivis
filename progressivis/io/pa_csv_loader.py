@@ -65,7 +65,7 @@ class PACSVLoader(BaseLoader):
         else:
             self.throttle = False
         self._parser: Optional[pa.csv.CSVStreamingReader] = None
-        self._parser_func: Optional[Callable] = None
+        self._parser_func: Optional[Callable[..., Any]] = None
         if nn(filter_) and not callable(filter_):
             raise ProgressiveError("filter parameter should be callable or None")
         self._filter: Optional[Callable[[pa.RecordBatch], pa.RecordBatch]] = filter_
@@ -154,7 +154,7 @@ class PACSVLoader(BaseLoader):
         """
         currow: int = self._currow
 
-        def _reopen_last():
+        def _reopen_last() -> Any:
             if self._last_opened is None:
                 raise ValueError("Recovery failed")
             if is_str(self._last_opened):
@@ -218,7 +218,7 @@ class PACSVLoader(BaseLoader):
             except pa.ArrowInvalid:
                 pass
             col = chunk[cn]
-            arr = np.empty(len(col), dtype=object)
+            arr: np.ndarray[Any, Any] = np.empty(len(col), dtype=object)
             for i, elt in enumerate(col):
                 try:
                     arr[i] = elt.cast(ctype).as_py()
@@ -258,7 +258,7 @@ class PACSVLoader(BaseLoader):
             logger.error("Received a step_size of 0")
             return self._return_run_step(self.state_ready, steps_run=0)
         if self.throttle:
-            step_size = np.min([self.throttle, step_size])  # type: ignore
+            step_size = np.min([self.throttle, step_size])
         status = self.validate_parser(run_number)
         if status == self.state_terminated:
             raise ProgressiveStopIteration("no more filenames")

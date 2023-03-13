@@ -14,7 +14,7 @@ from typing import Optional, Any, Tuple, Callable, List
 def make_num_csv(
     n_rows: int,
     n_cols: int,
-    rand_func: Callable,
+    rand_func: Callable[..., Any],
     intruders: Optional[List[Tuple[int, int, Any]]] = None,
     artifact: str = "",
 ) -> BytesIO:
@@ -73,15 +73,15 @@ class TestProgressiveLoadCSV(ProgressiveTest):
     def test_read_csv(self) -> None:
         self._read_csv()
 
-    def test_read_csv_artifact_fail(self, artifact="?") -> None:
+    def test_read_csv_artifact_fail(self, artifact: str = "?") -> None:
         with self.assertRaises(RuntimeError):
             self._read_csv(artifact=artifact, force_valid_ids=False)
 
-    def test_read_csv_artifact(self, artifact="?") -> None:
+    def test_read_csv_artifact(self, artifact: str = "?") -> None:
         self._read_csv(artifact=artifact)
 
     def _func_read_int_csv_with_intruder(
-        self, dtype, intruder, fixed_step_size=0
+        self, dtype: str, intruder: str, fixed_step_size: int = 0
     ) -> None:
         s = self.scheduler()
         n_rows = 100_000
@@ -134,10 +134,10 @@ class TestProgressiveLoadCSV(ProgressiveTest):
 
     def _func_read_float_csv_with_intruder(
         self,
-        na_filter,
-        dtype,
-        intruder,
-        imputer=None,
+        na_filter: bool,
+        dtype: str,
+        intruder: str,
+        # imputer=None,
     ) -> None:
         s = self.scheduler()
         n_rows = 100_000

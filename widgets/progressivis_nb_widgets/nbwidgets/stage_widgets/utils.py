@@ -610,10 +610,10 @@ class GuestWidget:
     def get_widget_by_key(self, key):
         return widget_by_key[key].children[0]
 
-    def dag_running(self):
+    def dag_running(self) -> None:
         self.carrier.dag_running()
 
-    def make_chaining_box(self):
+    def make_chaining_box(self) -> None:
         self.carrier.make_chaining_box()
 
     def _make_guess_types(self, fun, args, kw):

@@ -9,7 +9,7 @@ import pandas as pd
 import numpy as np
 from itertools import product
 from io import StringIO
-from typing import Sequence, Tuple, List, cast
+from typing import Any, Sequence, Tuple, List, cast
 
 PARQUET_FILE = "nyc-taxi/newstyle_500k_yellow_tripdata_2015-01.parquet"
 # CSV_URL = "https://s3.amazonaws.com/nyc-tlc/misc/taxi+_zone_lookup.csv"
@@ -41,10 +41,10 @@ if not os.getenv("CI"):
         "payment_type",
         "fare_amount",
     ]
-    TAXIS = pd.read_parquet(PARQUET_FILE, columns=TAXI_COLS)  # type: ignore
+    TAXIS = pd.read_parquet(PARQUET_FILE, columns=TAXI_COLS)
     TAXIS["control_id"] = range(len(TAXIS))
     LOOKUP_SKIP_ROWS = [3, 4, 263, 264, 265]
-    LOOKUP = pd.read_csv(CSV_URL, skiprows=LOOKUP_SKIP_ROWS,)  # type: ignore
+    LOOKUP = pd.read_csv(CSV_URL, skiprows=LOOKUP_SKIP_ROWS,)
     LOOKUP["lookup_id"] = range(len(LOOKUP))
     INNER = TAXIS.join(
         LOOKUP.set_index("LocationID"), on="DOLocationID", how="inner"
@@ -103,7 +103,7 @@ def generate_random_csv_left(
     return df, sio.getvalue()
 
 
-def generate_random_csv_right(seq1=("A", "B", "C", "D"), seq2=range(FK2_N)) -> Tuple[pd.DataFrame, str]:
+def generate_random_csv_right(seq1: Tuple[Any, ...] = ("A", "B", "C", "D"), seq2: Sequence[Any] = range(FK2_N)) -> Tuple[pd.DataFrame, str]:
     pk1, pk2 = list(zip(*product(seq1, seq2)))
     info = [f"{tpl[0]}{tpl[1]}" for tpl in product(seq1, seq2)]
     df = pd.DataFrame(

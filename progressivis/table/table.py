@@ -43,9 +43,8 @@ from .column import PColumn
 from progressivis.core.pintset import PIntSet
 
 from typing import Any, Dict, Optional, Union, cast, Tuple, Callable, List
+from ..core.types import Index, Data
 
-
-Index = Any  # simplify for now
 Chunks = Union[None, int, Dict[str, Union[int, Tuple[int, ...]]]]
 
 logger = logging.getLogger(__name__)
@@ -53,11 +52,11 @@ logger = logging.getLogger(__name__)
 __all__ = ["PTable"]
 
 
-def _get_slice_df(df, sl):
+def _get_slice_df(df: Data, sl: Index) -> Data:
     return df.iloc[sl]
 
 
-def _get_slice_arr(arr, sl) :
+def _get_slice_arr(arr: Data, sl: Index) -> Data:
     return arr[sl]
 
 
@@ -338,6 +337,7 @@ class PTable(IndexPTable):
         consistent with e.g. `series[i]` lookups. To retain the old behavior,
         use `series.iloc[i:j]`. To get the future behavior, use `series.loc[i:j]`
         """
+        _get_slice: Callable[[Data, Index], Data]
         if isinstance(data, pd.DataFrame):
             _get_slice = _get_slice_df
         else:

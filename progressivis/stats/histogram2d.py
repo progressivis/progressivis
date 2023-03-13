@@ -294,7 +294,7 @@ class Histogram2D(Module):
             )
             data = row["array"]
             json_["binnedPixels"] = data
-            json_["range"] = [np.min(data), np.max(data)]  # type: ignore
+            json_["range"] = [np.min(data), np.max(data)]
             json_["count"] = np.sum(data)
             json_["value"] = "heatmap"
             self._heatmap_cache = (json_, bounds)

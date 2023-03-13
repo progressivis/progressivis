@@ -498,7 +498,7 @@ class PColumnInfo:
     ]
     object_types = ["object", "str", "category", "datetime"]
 
-    def __init__(self, sniffer: CSVSniffer, series: pd.Series):
+    def __init__(self, sniffer: CSVSniffer, series: pd.Series[Any]):
         self.sniffer = sniffer
         self.series = series
         self.default_type = series.dtype.name

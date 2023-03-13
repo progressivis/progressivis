@@ -8,7 +8,7 @@ from progressivis.core.pintset import PIntSet
 from progressivis.table.range_query import RangeQuery
 from progressivis.utils.psdict import PDict
 from progressivis.core import aio
-from . import ProgressiveTest, main
+from . import ProgressiveTest
 
 from typing import cast
 
@@ -19,7 +19,7 @@ class TestRangeQuery(ProgressiveTest):
     def tearDown(self) -> None:
         TestRangeQuery.cleanup()
 
-    def _range_query_impl(self, lo, up) -> None:
+    def _range_query_impl(self, lo: float, up: float) -> None:
         "Run tests of the RangeQuery module"
         s = self.scheduler()
         with s:
@@ -157,4 +157,4 @@ class TestRangeQuery(ProgressiveTest):
 
 
 if __name__ == "__main__":
-    main()
+    ProgressiveTest.main()

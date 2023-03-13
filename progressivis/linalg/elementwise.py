@@ -14,7 +14,7 @@ from ..table.dshape import dshape_projection
 from ..core.slot_join import SlotJoin
 from collections import OrderedDict
 
-from typing import List, cast, Any, Optional, Dict, Union, Callable
+from typing import List, Any, Optional, Dict, Union, Callable
 
 ModuleMeta = type
 
@@ -44,7 +44,9 @@ binary_except = not_tested_binaries + other_tested_binaries
 
 
 unary_dict_all = {
-    v.__name__: v for (k, v) in np.__dict__.items() if isinstance(v, np.ufunc) and v.nin == 1
+    v.__name__: v
+    for (k, v) in np.__dict__.items()
+    if isinstance(v, np.ufunc) and v.nin == 1
 }
 
 binary_dict_all = {
@@ -423,7 +425,7 @@ class Reduce(Module):
 
     def reset(self) -> None:
         if self.result is not None:
-            cast(PDict, self.result).clear()  # is a PDict
+            self.result.clear()
 
     @process_slot("table", reset_cb="reset")
     @run_if_any
@@ -465,7 +467,7 @@ def make_unary(func: UFunc, name: Optional[str] = None) -> ModuleMeta:
     if not isinstance(func, np.ufunc):
         if name is None:
             name = func2class_name(func.__name__)
-        func = np.frompyfunc(func, 1, 1)  # type: ignore
+        func = np.frompyfunc(func, 1, 1)
     else:
         assert name is not None
     return make_subclass(Unary, name, func)
@@ -479,7 +481,7 @@ def unary_module(func: UFunc) -> ModuleMeta:
             "be decorated. Use make_unary() instead"
         )
     else:
-        func = np.frompyfunc(func, 1, 1)  # type: ignore
+        func = np.frompyfunc(func, 1, 1)
     return make_subclass(Unary, name, func)
 
 
@@ -487,7 +489,7 @@ def make_binary(func: UFunc, name: Optional[str] = None) -> ModuleMeta:
     if not isinstance(func, np.ufunc):
         if name is None:
             name = func2class_name(func.__name__)
-        func = np.frompyfunc(func, 2, 1)  # type: ignore
+        func = np.frompyfunc(func, 2, 1)
     else:
         assert name is not None
     return make_subclass(Binary, name, func)
@@ -501,7 +503,7 @@ def binary_module(func: UFunc) -> ModuleMeta:
             "be decorated. Use make_binary() instead"
         )
     else:
-        func = np.frompyfunc(func, 2, 1)  # type: ignore
+        func = np.frompyfunc(func, 2, 1)
     return make_subclass(Binary, name, func)
 
 
@@ -509,7 +511,7 @@ def make_reduce(func: UFunc, name: Optional[str] = None) -> ModuleMeta:
     if not isinstance(func, np.ufunc):
         if name is None:
             name = f"{func2class_name(func.__name__)}Reduce"
-        func = np.frompyfunc(func, 2, 1)  # type: ignore
+        func = np.frompyfunc(func, 2, 1)
     else:
         assert name is not None
     return make_subclass(Reduce, name, func)
@@ -523,7 +525,7 @@ def reduce_module(func: UFunc) -> ModuleMeta:
             "be decorated. Use make_reduce() instead"
         )
     else:
-        func = np.frompyfunc(func, 2, 1)  # type: ignore
+        func = np.frompyfunc(func, 2, 1)
     return make_subclass(Reduce, name, func)
 
 

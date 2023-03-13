@@ -151,7 +151,7 @@ class _HistogramIndexImpl(object):
             samples = ids
         s_vals = self.column.loc[samples]
 
-        v = np.median(s_vals)  # type: ignore
+        v = np.median(s_vals)
         if v == self.bins[i - 1] or (
             i < len(self.bins) and v == self.bins[i]
         ):  # there are a lot of identical
@@ -170,7 +170,7 @@ class _HistogramIndexImpl(object):
         #    logger.info(
         #        f"DIFF: {lower_len} {upper_len} {float(abs(lower_len - upper_len)) / len(ids)}"
         #    )
-        self.bins = np.insert(self.bins, i, v)  # type: ignore
+        self.bins = np.insert(self.bins, i, v)
         assert self.bins is not None
         if i + 1 >= len(self.bins):
             assert self.bins[i - 1] < self.bins[i]

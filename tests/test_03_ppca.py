@@ -114,7 +114,7 @@ class TestPPCA(ProgressiveTest):
             print("Init KNN")
             KNN = KNeighborsClassifier(NNEIGHBOURS)
             arr = _array(data.result)
-            df: pd.DataFrame = pd.read_csv(dataset, usecols=["class"])  # type: ignore
+            df: pd.DataFrame = pd.read_csv(dataset, usecols=["class"])
             LABELS = df.values.reshape((-1,))
             indices_t = sample_without_replacement(
                 n_population=len(data.result),

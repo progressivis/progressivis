@@ -36,7 +36,7 @@ def generate_random_csv(
 def generate_random_parquet(filename: str, csv_file: str, n_cols: int) -> str:
     if os.path.exists(filename):
         return filename
-    df = pd.read_csv(csv_file, names=[f"_{i}" for i in range(n_cols)])  # type:ignore
+    df = pd.read_csv(csv_file, names=[f"_{i}" for i in range(n_cols)])
     df.to_parquet(filename)
     return filename
 
@@ -63,7 +63,7 @@ def generate_random_multivariate_normal_csv(
         return np.random.multivariate_normal(mean, cov, size=(n)).astype(np.float32)
 
     N = rows // 3
-    X = np.concatenate(  # type: ignore
+    X = np.concatenate(
         (
             mv(N, [0.1, 0.3], [[0.01, 0], [0, 0.09]]),
             mv(N, [0.7, 0.5], [[0.04, 0], [0, 0.01]]),
@@ -73,7 +73,7 @@ def generate_random_multivariate_normal_csv(
     )
     np.random.shuffle(X)
     kw = {} if header is None else dict(header=header, comments="")
-    np.savetxt(filename, X, delimiter=",", **kw)  # type: ignore
+    np.savetxt(filename, X, delimiter=",", **kw)
     return filename
 
 

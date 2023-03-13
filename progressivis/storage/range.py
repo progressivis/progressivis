@@ -103,7 +103,7 @@ class RangeDataset(Dataset):
                 raise IndexError("Index %d out of bounds for size %d", args, self.size)
         elif isinstance(args, np.ndarray):
             if args.dtype == np.int_:
-                if (args >= self.size).any():  # type: ignore
+                if (args >= self.size).any():
                     raise IndexError(
                         "Some index in %s out of bounds for size %d", args, self.size
                     )
@@ -115,7 +115,7 @@ class RangeDataset(Dataset):
                 count = len(args)
             else:
                 count = -1
-            return self[np.fromiter(args, dtype=np.int64, count=count)]  # type: ignore
+            return self[np.fromiter(args, dtype=np.int64, count=count)]
         elif isinstance(args, slice):
             return np.arange(*args.indices(self.size), dtype=np.int64)
         elif isinstance(args, PIntSet):

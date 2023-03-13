@@ -8,9 +8,9 @@ from .column_base import BasePColumn
 from .dshape import dshape_create, DataShape
 from .table_base import IndexPTable, BasePTable
 
-from typing import Any, Optional, Tuple, List, Callable
+from typing import Any, Optional, Sequence, Union, Tuple, List, Callable
 
-from ..core.types import Index, Sequence, Union
+from ..core.types import Index
 
 Shape = Tuple[int, ...]
 
@@ -26,9 +26,9 @@ class PColumnVFunc(BasePColumn):
         name: str,
         table: BasePTable,
         index: IndexPTable,
-        func: Callable,
+        func: Callable[..., Any],
         cols: Union[str, List[str]],
-        dtype: Union[np.dtype, str],
+        dtype: Union[np.dtype[Any], str],
         xshape: Shape = (),
         dshape: Optional[str] = None,
     ) -> None:
@@ -37,7 +37,7 @@ class PColumnVFunc(BasePColumn):
         self.table = table
         self.func = func
         self.cols = cols
-        self._dtype: np.dtype = np.dtype(dtype)
+        self._dtype: np.dtype[Any] = np.dtype(dtype)
         assert isinstance(xshape, tuple)
         self._xshape = xshape
         self._dshape = dshape

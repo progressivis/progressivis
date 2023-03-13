@@ -885,7 +885,7 @@ def patch_this(
             run_step(self, run_number, step_size, howlong)
             """
             patch.before_run_step(module, *args, **kwargs)
-            ret = to_decorate(*args, **kwargs)  # type: ignore
+            ret = to_decorate(*args, **kwargs)
             patch.after_run_step(module, *args, **kwargs)
             return ret
 
@@ -971,7 +971,9 @@ def is_notebook() -> bool:
     try:
         from IPython import get_ipython  # type: ignore
 
-        return bool(get_ipython().__class__.__name__ == "ZMQInteractiveShell")
+        return bool(
+            get_ipython().__class__.__name__ == "ZMQInteractiveShell"  # type: ignore
+        )
     except ImportError:
         pass
     print("not in notebook")

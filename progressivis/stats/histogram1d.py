@@ -124,7 +124,7 @@ class Histogram1D(Module):
             bins = self._edges if self._edges is not None else self.params.bins
             histo = None
             if len(column) > 0:
-                histo, self._edges = np.histogram(  # type: ignore
+                histo, self._edges = np.histogram(
                     column, bins=bins, range=(curr_min, curr_max), density=False
                 )
                 self._h_cnt += len(column)

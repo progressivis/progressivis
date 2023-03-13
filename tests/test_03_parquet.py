@@ -6,6 +6,7 @@ from progressivis.io import ParquetLoader
 from progressivis.table.constant import Constant
 from progressivis.table.table import PTable
 from progressivis.datasets import get_dataset
+from pyarrow import RecordBatch
 
 
 class TestProgressiveLoadParquet(ProgressiveTest):
@@ -47,7 +48,7 @@ class TestProgressiveLoadParquet(ProgressiveTest):
         num_rows_list = []
         fixed_batch_size = 1234
 
-        def _ff(bat):
+        def _ff(bat: RecordBatch) -> RecordBatch:
             num_rows_list.append(bat.num_rows)
             return bat
 

@@ -8,7 +8,7 @@ from progressivis.linalg.nexpr import NumExprABC
 import numpy as np
 from progressivis.stats import RandomPTable
 from progressivis.table.table import PTable
-import numexpr as ne  # type: ignore
+import numexpr as ne
 from progressivis.core.module import def_input, def_output
 
 from typing import Type, Tuple, Any

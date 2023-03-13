@@ -6,6 +6,7 @@ from progressivis.table.table_base import BasePTable
 from progressivis.core.pintset import PIntSet
 from progressivis.table.compute import week_day
 import numpy as np
+from typing import Any, Dict
 
 
 class TestPTableSelected(ProgressiveTest):
@@ -75,7 +76,7 @@ class TestPTableSelected(ProgressiveTest):
         fvalues = np.array(np.random.rand(20), np.float32)
         t["b"] = fvalues[:10]
         self.assertEqual(t.shape, (10, 7))
-        t.append({"a":  dt_values[10:], "b": fvalues[10:]})
+        t.append({"a": dt_values[10:], "b": fvalues[10:]})
         self.assertEqual(t.shape, (20, 7))
         t.add_ufunc_column("weekday", "a", week_day, dtype=object)  # type: ignore
         self.assertEqual(t.shape, (20, 7))
@@ -95,7 +96,9 @@ class TestPTableSelected(ProgressiveTest):
         self.assertTrue(
             np.array_equal(
                 np.array([week_day(v) for v in ta["a"].loc[:]]),
-                tdw.to_array().reshape(-1)))
+                tdw.to_array().reshape(-1),
+            )
+        )
 
     def test_loc_table_computed_numexpr(self) -> None:
         t = PTable(
@@ -158,7 +161,7 @@ class TestPTableSelected(ProgressiveTest):
         t.append({"a": ivalues[10:], "b": fvalues[10:]})
         self.assertEqual(t.shape, (20, 2))
 
-        def _axb(i, local_dict):
+        def _axb(index: Any, local_dict: Dict[str, Any]) -> Any:
             return local_dict["a"] * local_dict["b"]
 
         t.add_vect_func_column("a_x_b", vfunc=_axb, cols=["a", "b"], dtype="float32")

@@ -82,7 +82,7 @@ class LinearTimePredictor(TimePredictor):
         if self.a == 0:
             return default
         # TODO account for the confidence interval and take min of the 95% CI
-        steps = int(np.max([0, np.ceil(duration * self.a)]))  # type: ignore
+        steps = int(np.max([0, np.ceil(duration * self.a)]))
         logger.debug(
             "LinearPredictor %s: Predicts %d steps for duration %f",
             self.name,

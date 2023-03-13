@@ -4,9 +4,11 @@ import ipywidgets as ipw
 # import altair as alt
 import pandas as pd
 from progressivis.core import asynchronize, aio
-from vega.widget import VegaWidget  # type: ignore
+from progressivis.core.module import Module
+from progressivis.core.scheduler import Scheduler
+from vega.widget import VegaWidget
 
-from typing import Any, Callable
+from typing import Any, Optional, List, Dict, Callable
 
 spec_no_data = {
     "data": {"name": "data"},
@@ -69,7 +71,7 @@ def _refresh_info(wg: Any) -> Callable[..., Any]:
     return _coro
 
 
-def refresh_info_hist(hout, hmod):
+def refresh_info_hist(hout: Any, hmod: Any) -> None:
     if not hmod.result:
         return
     # spec_with_data = spec_no_data.copy()
@@ -80,8 +82,8 @@ def refresh_info_hist(hout, hmod):
     hout.update("data", remove="true", insert=source)
 
 
-def _refresh_info_hist(hout, hmod):
-    async def _coro(_1, _2):
+def _refresh_info_hist(hout: Any, hmod: Any) -> Callable[..., Any]:
+    async def _coro(_1: Any, _2: Any) -> None:
         _ = _1, _2
         await asynchronize(refresh_info_hist, hout, hmod)
 
@@ -89,9 +91,9 @@ def _refresh_info_hist(hout, hmod):
 
 
 class IScalerIn(ipw.GridBox):
-    def __init__(self, module, scheduler=None):
+    def __init__(self, module: Module, scheduler: Optional[Scheduler] = None) -> None:
         self._module = module
-        self.info_labels = {}
+        self.info_labels: Dict[str, Any] = {}
         rt = ipw.IntSlider(
             value=1000,
             min=0,
@@ -135,7 +137,7 @@ class IScalerIn(ipw.GridBox):
             tooltip="Apply",
             icon="check",  # (FontAwesome names without the `fa-` prefix)
         )
-        btn.on_click(self.get_apply_cb())
+        btn.on_click(self._apply_cb)
         self._apply = btn
         rst = ipw.Checkbox(
             value=False, description="Reset:", disabled=False, indent=False
@@ -146,7 +148,7 @@ class IScalerIn(ipw.GridBox):
             "ignore_max": ign,
             "reset": rst,
         }
-        lst = []
+        lst: List[ipw.DOMWidget] = []
         for wg in [rt, tol, ign, rst]:
             lst.append(ipw.Label(wg.description))
             wg.description = ""
@@ -156,20 +158,17 @@ class IScalerIn(ipw.GridBox):
         )
 
     @property
-    def values(self):
+    def values(self) -> Dict[str, Any]:
         return {k: wg.value for (k, wg) in self._dict.items()}
 
-    def get_apply_cb(self):
-        def _cbk(_btn):
-            _ = _btn
-            m = self._module
-            values = dict(self.values)  # shallow copy
-            values["time"] = time.time()  # always make a change
-            # wg._dict['reset'].value = False
-            loop = aio.get_running_loop()
-            loop.create_task(m.control.from_input(values))
-
-        return _cbk
+    def _apply_cb(self, _btn: Any) -> None:
+        _ = _btn
+        m = self._module
+        values = dict(self.values)  # shallow copy
+        values["time"] = time.time()  # always make a change
+        # wg._dict['reset'].value = False
+        loop = aio.get_running_loop()
+        loop.create_task(m.control.from_input(values))  # type: ignore
 
 
 class IScalerOut(ipw.HBox):
@@ -181,9 +180,9 @@ class IScalerOut(ipw.HBox):
         "last_reset": "Last reset:",
     }
 
-    def __init__(self, module, scheduler=None):
+    def __init__(self, module: Module, scheduler: Optional[Scheduler] = None) -> None:
         self._module = module
-        self.info_labels = {}
+        self.info_labels: Dict[str, ipw.Label] = {}
         lst = []
         for k, lab in self.info_keys.items():
             lst.append(ipw.Label(lab))
@@ -195,33 +194,33 @@ class IScalerOut(ipw.HBox):
         gb = ipw.GridBox(
             lst, layout=ipw.Layout(grid_template_columns="repeat(2, 120px)")
         )
-        if not module.hist:
+        if not module.dep.hist:
             super().__init__(children=[gb])
         else:
             hlist = []
-            for hmod in module.hist.values():
+            for hmod in module.dep.hist.values():
                 hout = VegaWidget(spec=spec_no_data)
                 hlist.append(hout)
                 hmod.on_after_run(_refresh_info_hist(hout, hmod))
             htab = ipw.Tab(hlist)
-            for i, t in enumerate(module.hist.keys()):
+            for i, t in enumerate(module.dep.hist.keys()):
                 htab.set_title(i, t)
             super().__init__(children=[gb, htab])
 
-    def _info_label(self, k):
+    def _info_label(self, k: str) -> ipw.Label:
         v = ""
-        if self._module._info:
-            v = str(self._module._info.get(k, ""))
+        if self._module._info:  # type:ignore
+            v = str(self._module._info.get(k, ""))  # type:ignore
         lab = ipw.Label(v)
         self.info_labels[k] = lab
         return lab
 
-    def refresh_info(self):
-        if not self._module._info:
+    def refresh_info(self) -> None:
+        if not self._module._info:  # type:ignore
             return
-        for k, v in self._module._info.items():
+        for k, v in self._module._info.items():  # type:ignore
             lab = self.info_labels[k]
             lab.value = str(v)
-        if self._module.result is None:
+        if self._module.result is None:  # type:ignore
             return
-        self._rows_label.value = str(len(self._module.result))
+        self._rows_label.value = str(len(self._module.result))  # type:ignore

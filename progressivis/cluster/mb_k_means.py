@@ -213,7 +213,7 @@ class MBKMeans(Module):
                 center_mask = nearest_center == ci
                 if np.count_nonzero(center_mask) > 0:
                     diff = centers[ci].ravel() - prev_centers[ci].ravel()
-                    squared_diff += np.dot(diff, diff)  # type: ignore
+                    squared_diff += np.dot(diff, diff)
             if self.mbk._mini_batch_convergence(
                 iter_, step_size, n_samples, squared_diff, batch_inertia
             ):
@@ -226,7 +226,7 @@ class MBKMeans(Module):
                 self.generate_table_name("centers"), dshape=dshape, create=True
             )
             self.result.resize(self.mbk.cluster_centers_.shape[0])
-        self.result[cols] = self.mbk.cluster_centers_  # type: ignore
+        self.result[cols] = self.mbk.cluster_centers_
         if is_conv:
             return self._return_run_step(self.state_blocked, iter_)
         return self._return_run_step(self.state_ready, iter_)

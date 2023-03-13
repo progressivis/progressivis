@@ -17,7 +17,7 @@ async def fake_input(sched: Scheduler, name: str, t: float, inp: Dict[str, Any])
     await module.from_input(inp)
 
 
-def my_stop(s, _):
+def my_stop(s: Scheduler, _: Any) -> None:
     s.task_stop()
 
 
@@ -31,7 +31,7 @@ matrix_hist.loc["B", "hist"] = True
 
 
 class TestStatsFactory(ProgressiveTest):
-    def test_datashape(self):
+    def test_datashape(self) -> None:
         np.random.seed(42)
         s = self.scheduler()
         random = RandomPTable(3, rows=10_000, scheduler=s)
@@ -42,7 +42,7 @@ class TestStatsFactory(ProgressiveTest):
         aio.run(s.start())
         print(s.modules())
 
-    def test_sf(self):
+    def test_sf(self) -> None:
         np.random.seed(42)
         s = self.scheduler()
         random = RandomPTable(3, rows=10_000, scheduler=s)
@@ -63,7 +63,7 @@ class TestStatsFactory(ProgressiveTest):
         aio.run(s.start())
         print(s.modules())
 
-    def test_pattern(self):
+    def test_pattern(self) -> None:
         s = self.scheduler()
         n_samples = 1_000
         centers = [(0.1, 0.3, 0.5), (0.7, 0.5, 3.3), (-0.4, -0.3, -11.1)]

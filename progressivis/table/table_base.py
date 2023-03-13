@@ -70,7 +70,7 @@ logger = logging.getLogger(__name__)
 FAST = 1
 
 
-def _to_datetime(arr):
+def _to_datetime(arr: np.ndarray[Any, Any]) -> List[dt.datetime]:
     return [dt.datetime(*elt) for elt in arr[:]]
 
 
@@ -159,9 +159,7 @@ class _Loc(_BaseLoc):
             btab._columns = columns
             btab._columndict = columndict
             btab._dshape = dshape_create(
-                "{"
-                + ",".join([f"{c.name}:{c.dshape}" for c in btab._columns])
-                + "}"
+                "{" + ",".join([f"{c.name}:{c.dshape}" for c in btab._columns]) + "}"
             )
             btab._masked = self._table
             return btab
@@ -389,6 +387,7 @@ class BasePTable(metaclass=ABCMeta):
         from .column_selected import PColumnComputedView
         from .column_expr import PColumnExpr
         from .column_vfunc import PColumnVFunc
+
         computed_col: BasePColumn
         if meta["category"] == "ufunc":
             base_col = meta["column"]
@@ -448,7 +447,7 @@ class BasePTable(metaclass=ABCMeta):
         columndict: Dict[str, int] = dict(zip(dict_.keys(), range(len(dict_))))
         if not self.computed:
             return columns, columndict
-        cols_as_set: Set = set()
+        cols_as_set: Set[str] = set()
         if is_none_alike(cols):
             cols_as_set = set(self.computed.keys())
         elif isinstance(cols, str):
@@ -465,7 +464,9 @@ class BasePTable(metaclass=ABCMeta):
         columns += comp_cols
         cc_dict: Dict[str, int] = {
             k: i
-            for (i, k) in enumerate([e for e in self.computed.keys() if e in cols_as_set], len(dict_))
+            for (i, k) in enumerate(
+                [e for e in self.computed.keys() if e in cols_as_set], len(dict_)
+            )
         }
         columndict.update(cc_dict)
         return columns, columndict
@@ -612,11 +613,12 @@ class BasePTable(metaclass=ABCMeta):
                 f.write(sep.join(row).encode("utf-8"))
                 f.write(b"\n")
 
-    def to_df(self, to_datetime=()) -> pd.DataFrame:
-        def _proc(col):
+    def to_df(self, to_datetime: Sequence[str] = ()) -> pd.DataFrame:
+        def _proc(col: str) -> Any:
             if col in to_datetime:
                 return _to_datetime(self[col].loc[:])
             return self[col].loc[:]
+
         return pd.DataFrame({col: _proc(col) for col in self.columns})
 
     def column_offsets(
@@ -1332,18 +1334,27 @@ class BasePTable(metaclass=ABCMeta):
     def _flush_cache(self) -> None:
         pass
 
-    def add_ufunc_column(self, name: str,
-                         col: str,
-                         ufunc: Callable,
-                         dtype: Optional[np.dtype[Any]] = None,
-                         xshape: Shape = ()) -> None:
-        self.computed[name] = dict(category="ufunc",
-                                   ufunc=ufunc,
-                                   column=col,
-                                   dtype=dtype,
-                                   xshape=xshape)
+    def add_ufunc_column(
+        self,
+        name: str,
+        col: str,
+        ufunc: Callable[..., Any],
+        dtype: Optional[np.dtype[Any]] = None,
+        xshape: Shape = (),
+    ) -> None:
+        self.computed[name] = dict(
+            category="ufunc", ufunc=ufunc, column=col, dtype=dtype, xshape=xshape
+        )
 
-    def add_vect_func_column(self, name: str, cols: List[str], vfunc: Callable, dtype: str, xshape=(), dshape=None) -> None:
+    def add_vect_func_column(
+        self,
+        name: str,
+        cols: List[str],
+        vfunc: Callable[..., Any],
+        dtype: str,
+        xshape: Tuple[Any, ...] = (),
+        dshape: Optional[str] = None,
+    ) -> None:
         self.computed[name] = dict(
             category="vfunc",
             vfunc=vfunc,
@@ -1354,7 +1365,13 @@ class BasePTable(metaclass=ABCMeta):
         )
 
     def add_expr_column(
-        self, name: str, cols: List[str], expr: str, dtype: str, xshape=(), dshape=None
+        self,
+        name: str,
+        cols: List[str],
+        expr: str,
+        dtype: str,
+        xshape: Tuple[Any, ...] = (),
+        dshape: Optional[str] = None,
     ) -> None:
         self.computed[name] = dict(
             category="expr",
@@ -1511,7 +1528,7 @@ class PTableSelectedView(BasePTable):
         base: BasePTable,
         selection: Union[PIntSet, slice] = slice(0, None),
         columns: Optional[List[str]] = None,
-        computed: Optional[Dict[str, Any]] = None
+        computed: Optional[Dict[str, Any]] = None,
     ) -> None:
         super().__init__(base, columns=None, selection=selection)
         assert self._base
@@ -1527,9 +1544,7 @@ class PTableSelectedView(BasePTable):
         self._columns = cols
         self._columndict = coldict
         self._dshape = dshape_create(
-            "{"
-            + ",".join([f"{c.name}:{c.dshape}" for c in self._columns])
-            + "}"
+            "{" + ",".join([f"{c.name}:{c.dshape}" for c in self._columns]) + "}"
         )
 
     @property

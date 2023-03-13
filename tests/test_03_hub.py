@@ -5,12 +5,12 @@ from progressivis.table.stirrer import Stirrer
 from progressivis.table.switch import Switch
 from progressivis.table.hub import Hub
 from progressivis.core import aio
-
+from typing import Any, Dict
 import numpy as np
 
 
 class TestHub(ProgressiveTest):
-    def test_hub_if_then(self):
+    def test_hub_if_then(self) -> None:
         s = Scheduler()
         random = RandomPTable(2, rows=100000, scheduler=s)
         stirrer = Stirrer(
@@ -33,11 +33,13 @@ class TestHub(ProgressiveTest):
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = hub.output.result
         aio.run(s.start())
+        assert stirrer.result is not None
+        assert hub.result is not None
         res1 = stirrer.result.max()
         res2 = hub.result
         self.compare(res1, res2)
 
-    def test_hub_if_else(self):
+    def test_hub_if_else(self) -> None:
         s = Scheduler()
         random = RandomPTable(2, rows=100000, scheduler=s)
         stirrer = Stirrer(
@@ -60,11 +62,13 @@ class TestHub(ProgressiveTest):
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = hub.output.result
         aio.run(s.start())
+        assert stirrer.result is not None
+        assert hub.result is not None
         res1 = stirrer.result.min()
         res2 = hub.result
         self.compare(res1, res2)
 
-    def compare(self, res1, res2):
+    def compare(self, res1: Dict[Any, Any], res2: Dict[Any, Any]) -> None:
         v1 = np.array(list(res1.values()))
         v2 = np.array(list(res2.values()))
         self.assertEqual(v1.shape, v2.shape)

@@ -10,7 +10,7 @@ from progressivis.datasets import get_dataset
 
 
 class TestHistogram1DCategorical(ProgressiveTest):
-    def test_h1d_cat(self):
+    def test_h1d_cat(self) -> None:
         s = self.scheduler()
         random = SimpleCSVLoader(
             get_dataset("bigfile_multiscale"), nrows=10_000, scheduler=s
@@ -20,6 +20,7 @@ class TestHistogram1DCategorical(ProgressiveTest):
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = h1d_cat.output.result
         aio.run(s.start())
+        assert random.result is not None
         column = random.result["S"]
         valcounts = pd.Series(column.values).value_counts().to_dict()
         print(valcounts)

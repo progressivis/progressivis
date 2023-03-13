@@ -133,6 +133,7 @@ class Dependency:
 
 class Module(metaclass=ABCMeta):
     """The Module class is the base class for all the progressive modules."""
+
     parameters: Parameters = [
         ("quantum", np.dtype(float), 0.5),
         ("debug", np.dtype(bool), False),
@@ -148,6 +149,7 @@ class Module(metaclass=ABCMeta):
     outputs = [SlotDescriptor(TRACE_SLOT, type=BasePTable, required=False)]
     output_attrs: Dict[str, str] = {}
     output_types: Dict[str, Any] = {}
+    _doc_building: Optional[bool] = None
     state_created: ClassVar[ModuleState] = ModuleState.state_created
     state_ready: ClassVar[ModuleState] = ModuleState.state_ready
     state_running: ClassVar[ModuleState] = ModuleState.state_running
@@ -291,53 +293,69 @@ class Module(metaclass=ABCMeta):
         return ModuleTag(*tags)
 
     @staticmethod
-    def doc_building():
-        import sys
-        if "/progressivis/sphinx_marker/" in sys.path:
-            print("doc building")
-            return True
-        print("no doc")
+    def doc_building() -> bool:
+        if Module._doc_building is None:
+            import sys
+
+            if "/progressivis/sphinx_marker/" in sys.path:
+                print("doc building")
+                Module._doc_building = True
+            else:
+                Module._doc_building = False
+                print("no doc")
+        return Module._doc_building
         return False
 
     @classmethod
-    def finalize_doc(cls):
-        if not cls.doc_building:
+    def finalize_doc(cls: Type[Module]) -> None:
+        if not cls.doc_building():
             print("finalize: nothing to do on", cls)
             return
+        if cls.__doc__ is None:
+            cls.__doc__ = ""
         doclist = [cls.__doc__, "\n"]
-        sd_keys = list(SlotDescriptor.__init__.__annotations__.keys())[1:]  # exclude "name"
-        sd_defs = dict(zip(sd_keys, SlotDescriptor.__init__.__defaults__))
+        sd_keys = list(SlotDescriptor.__init__.__annotations__.keys())[
+            1:
+        ]  # exclude "name"
+        defaults = SlotDescriptor.__init__.__defaults__
+        assert defaults is not None
+        sd_defs = dict(zip(sd_keys, defaults))
         print("sd_defs", sd_defs)
 
-        def _section(n, s):
+        def _section(n: int, s: str) -> None:
             sp = n * " "
             doclist.append(sp)
             doclist.append(s)
             doclist.append("\n")
             doclist.append(sp)
-            doclist.append("_"*len(s))
+            doclist.append("_" * len(s))
             doclist.append("\n")
 
-        def _param(n, name, typ, val):
+        def _param(n: int, name: str, typ: str, val: str) -> None:
             sp = n * " "
             sp2 = (n + 4) * " "
-            typ = (f"np.{t.name}"
-                   if type(t).__module__ == "numpy"
-                   else str(t))
+            typ = f"np.{t.name}" if type(t).__module__ == "numpy" else str(t)
             doclist.append(sp)
             doclist.append(f"{name}: {typ}\n")
             doclist.append(sp2)
-            dv = "\"\"" if val == "" else val
+            dv = '""' if val == "" else val
             doclist.append(f"default: {dv}\n")
             if name in params_doc:
                 doclist.append(sp2)
                 doclist.append(f", {params_doc[name]}\n")
 
-        def _slot(n, sd, cls, mode="in"):
+        def _slot(
+            n: int, sd: SlotDescriptor, cls: Type[Module], mode: str = "in"
+        ) -> None:
             sp = n * " "
             sp2 = (n + 4) * " "
             doclist.append(sp)
-            doclist.append(f"{sd.name}: {sd.type.__name__}\n")
+            sd_type_name = (
+                sd.type.__name__
+                if sd.type is not None and hasattr(sd.type, "__name__")
+                else "None"
+            )
+            doclist.append(f"{sd.name}: {sd_type_name}\n")
             no_defaults = []
             for k, v in sd_defs.items():
                 if k == "type":
@@ -363,7 +381,7 @@ class Module(metaclass=ABCMeta):
         if cls.parameters:
             _section(4, "Module parameters")
             for (n, t, v) in cls.parameters:
-                _param(8, n, t, v)
+                _param(8, n, str(t), v)
         if cls.inputs:
             _section(4, "Input slots")
             for sd in cls.inputs:
@@ -1157,6 +1175,7 @@ class Module(metaclass=ABCMeta):
     @property
     def all_outputs(self) -> List[SlotDescriptor]:
         return self.outputs
+
     # Methods coming from TableModule
 
     def get_first_input_slot(self) -> Optional[str]:
@@ -1358,22 +1377,19 @@ def _print_len(x: Sized) -> None:
         print(len(x))
 
 
-DOC_ = None
 params_doc = {}
 inputs_doc = {}
 outputs_doc = {}
 
 
-def def_parameter(name, type, value, *, doc=""):
+def def_parameter(
+    name: str, type: Any, value: Any, *, doc: str = ""
+) -> Callable[[Type[Module]], Type[Module]]:
     """
     class decorator
     """
-    global DOC_
-    if DOC_ is None:
-        DOC_ = Module.doc_building()
 
-    def module_decorator(module):
-        module.doc_building = DOC_
+    def module_decorator(module: Type[Module]) -> Type[Module]:
         par = (name, type, value)
         asdict = {p[0]: p for p in module.parameters}
         if name in asdict:
@@ -1381,55 +1397,65 @@ def def_parameter(name, type, value, *, doc=""):
             module.parameters = list(asdict.values())
         else:
             module.parameters = [par] + module.parameters  # do not use += here
-        if DOC_ and doc:
+        if Module.doc_building() and doc:
             params_doc[name] = doc
         return module
+
     return module_decorator
 
 
-def def_input(name, type=None, *, doc="", **kw):
+def def_input(
+    name: str, type: Any = None, *, doc: str = "", **kw: Any
+) -> Callable[[Type[Module]], Type[Module]]:
     """
     class decorator
     """
-    global DOC_
-    if DOC_ is None:
-        DOC_ = Module.doc_building()
 
-    def module_decorator(module):
-        module.doc_building = DOC_
-        sd = SlotDescriptor(name=name,
-                            type=type, **kw)
+    def module_decorator(module: Type[Module]) -> Type[Module]:
+        sd = SlotDescriptor(name=name, type=type, **kw)
         asdict = {s.name: s for s in module.inputs}
         if name in asdict:
             asdict[name] = sd
             module.inputs = list(asdict.values())
         else:
             module.inputs = [sd] + module.inputs  # do not use += here
-        if DOC_ and doc:
+        if Module.doc_building() and doc:
             inputs_doc[name] = doc
         return module
-        return module
+
     return module_decorator
 
 
-def _make_get(private_name):
-    def result_get(self):
-        return getattr(self, private_name)
+def _make_get(private_name: str) -> Callable[[Module], Any]:
+    def result_get(obj: Module) -> Any:
+        return getattr(obj, private_name)
+
     return result_get
 
 
-def _make_set(private_name, stype, module):
-    def result_set(self, value):
+def _make_set(
+    private_name: str, stype: Type[type], module: Type[Module]
+) -> Callable[[Module, Any], None]:
+    def result_set(obj: Module, value: Any) -> None:
         if value is not None:
             if not isinstance(value, stype):
-                raise ValueError(f"{private_name}: {value} have to be an {stype} on {module.__name__}")
-        if getattr(self, private_name) is not None:
+                raise ValueError(
+                    f"{private_name}: {value} have to be an {stype} on {module.__name__}"
+                )
+        if getattr(obj, private_name) is not None:
             raise KeyError("result cannot be assigned more than once")
-        setattr(self, private_name, value)
+        setattr(obj, private_name, value)
+
     return result_set
 
 
-def add_output_to_module(module, name, attr_name, custom_attr, stype):
+def add_output_to_module(
+    module: Type[Module],
+    name: str,
+    attr_name: str,
+    custom_attr: bool,
+    stype: Type[type],
+) -> None:
     output_attrs = module.output_attrs
     if "output_attrs" not in module.__dict__:
         module.output_attrs = output_attrs.copy()
@@ -1448,35 +1474,39 @@ def add_output_to_module(module, name, attr_name, custom_attr, stype):
     module.output_types[attr_name] = stype
 
 
-def def_output(name, type=None, *, attr_name=None, custom_attr=False, doc="", **kw):
+def def_output(
+    name: str,
+    type: Any = None,
+    *,
+    attr_name: Optional[str] = None,
+    custom_attr: bool = False,
+    doc: str = "",
+    **kw: Any,
+) -> Callable[[Type[Module]], Type[Module]]:
     """
     class decorator
     """
-    global DOC_
-    if DOC_ is None:
-        DOC_ = Module.doc_building()
-
     if attr_name is None:
         attr_name = name
 
-    def module_decorator(module):
-        module.doc_building = DOC_
-        sd = SlotDescriptor(name=name,
-                            type=type, **kw)
+    def module_decorator(module: Type[Module]) -> Type[Module]:
+        sd = SlotDescriptor(name=name, type=type, **kw)
         asdict = {s.name: s for s in module.outputs}
         if name in asdict:
             asdict[name] = sd
             module.outputs = list(asdict.values())
         else:
             module.outputs = [sd] + module.outputs  # do not use += here
+        assert attr_name is not None
         add_output_to_module(module, name, attr_name, custom_attr, type)
-        if DOC_ and doc:
+        if Module.doc_building() and doc:
             outputs_doc[name] = doc
         return module
+
     return module_decorator
 
 
-def document(module):
+def document(module: Type[Module]) -> Type[Module]:
     module.finalize_doc()
     print("params doc", module, params_doc)
     params_doc.clear()
@@ -1488,6 +1518,7 @@ def document(module):
 @def_input("df")
 class Every(Module):
     "Module running a function at each iteration"
+
     def __init__(
         self,
         proc: Callable[[Any], None] = _print_len,

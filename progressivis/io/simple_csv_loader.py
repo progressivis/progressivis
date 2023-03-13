@@ -23,7 +23,8 @@ from ..core.utils import (
 from ..utils import PDict
 from ..core.pintset import PIntSet
 
-from typing import Dict, Any, Type, Callable, Optional, Tuple, Union, TYPE_CHECKING, cast
+from typing import (Dict, Any, Type, Callable, Optional,
+                    Tuple, Union, Sequence, TYPE_CHECKING, cast)
 
 from pandas._typing import ReadCsvBuffer
 if TYPE_CHECKING:
@@ -184,7 +185,7 @@ class SimpleCSVLoader(Module):
             if nn(self.filepath_or_buffer):
                 try:
                     self.parser = pd.read_csv(
-                        cast(ReadCsvBuffer, self.open(self.filepath_or_buffer)),
+                        cast(ReadCsvBuffer[str], self.open(self.filepath_or_buffer)),
                         **self.csv_kwds
                     )
                 except IOError as e:
@@ -212,7 +213,7 @@ class SimpleCSVLoader(Module):
                     assert "chunksize" in self.csv_kwds
                     assert isinstance(self.csv_kwds["chunksize"], int)
                     try:
-                        self.parser = pd.read_csv(cast(ReadCsvBuffer,
+                        self.parser = pd.read_csv(cast(ReadCsvBuffer[str],
                                                        self.open(filename)),
                                                   **self.csv_kwds)
                     except IOError as e:
@@ -222,7 +223,7 @@ class SimpleCSVLoader(Module):
         return self.state_ready
 
     def recovering(self, step_size: int) -> pd.DataFrame:
-        def _reopen_last():
+        def _reopen_last() -> Any:
             if self._last_opened is None:
                 raise ValueError("Recovery failed")
             if is_str(self._last_opened):
@@ -236,19 +237,19 @@ class SimpleCSVLoader(Module):
 
         assert self.csv_kwds.get("skiprows", 0) <= self.parser._currow  # type: ignore
         kw = self.csv_kwds.copy()
-        skip = set(range(1, self.parser._currow + 1))  # type: ignore
+        skip = PIntSet(range(1, self.parser._currow + 1))  # type: ignore
         kw["skiprows"] = skip
         usecols = self.parser.orig_options.get("usecols")  # type: ignore
         istream = _reopen_last()
-        na_filter = kw.get("na_filter")
+        na_filter = bool(kw.get("na_filter", True))
         # reading the same slice with no type constraint
         df = pd.read_csv(
-            istream,
+            cast(ReadCsvBuffer[Any], istream),
             usecols=usecols,
-            skiprows=skip,
+            skiprows=cast(Sequence[int], skip),
             na_filter=na_filter,
             nrows=step_size,
-        )  # type: ignore
+        )
         anomalies = defaultdict(dict)  # type: ignore
         missing: Dict[str, PIntSet] = defaultdict(PIntSet)
         assert self.result is not None
@@ -309,7 +310,7 @@ class SimpleCSVLoader(Module):
             logger.error("Received a step_size of 0")
             return self._return_run_step(self.state_ready, steps_run=0)
         if self.throttle:
-            step_size = np.min([self.throttle, step_size])  # type: ignore
+            step_size = np.min([self.throttle, step_size])
         status = self.validate_parser(run_number)
         if status == self.state_terminated:
             raise ProgressiveStopIteration("no more filenames")

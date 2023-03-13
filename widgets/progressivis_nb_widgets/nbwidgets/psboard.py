@@ -54,14 +54,18 @@ INDEX_TEMPLATE = """
 """
 
 
-def module_choice_hof(psboard: PsBoard) -> Callable:
-    def _module_choice(val):
+def module_choice_hof(psboard: PsBoard) -> Callable[[Any], Any]:
+    def _module_choice(val: Any) -> None:
         if len(psboard.tab.children) < 3:
+            assert isinstance(psboard.tab.children, tuple)
             psboard.tab.children += (psboard.current_module,)
+        assert isinstance(psboard.htable.value, dict)
+        assert isinstance(psboard.htable.sensitive_css_class, str)
         psboard.current_module.module_name = psboard.htable.value[
             len(psboard.htable.sensitive_css_class) + 1 :
         ]
         psboard.current_module.selection_changed = True
+        assert psboard.current_module.module_name is not None
         psboard.tab.set_title(2, psboard.current_module.module_name)
         psboard.tab.selected_index = 2
 
@@ -69,7 +73,7 @@ def module_choice_hof(psboard: PsBoard) -> Callable:
 
 
 # pylint: disable=too-many-ancestors,too-many-instance-attributes
-class PsBoard(ipw.VBox):  # type: ignore
+class PsBoard(ipw.VBox):
     def __init__(
         self,
         scheduler: Scheduler,

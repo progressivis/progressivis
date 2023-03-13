@@ -9,7 +9,7 @@ from progressivis.core import JSONEncoderNp as JS, asynchronize
 import progressivis.core.aio as aio
 from .utils import data_union_serialization_compress
 
-from typing import Any as AnyType, Sequence, TYPE_CHECKING
+from typing import Any as AnyType, Sequence, TYPE_CHECKING, cast
 
 if TYPE_CHECKING:
     from progressivis import Module
@@ -51,7 +51,7 @@ class Scatterplot(DataWidget, widgets.DOMWidget):  # type: ignore
     value = Any("{}").tag(sync=True)
     move_point = Any("{}").tag(sync=True)
     modal = Bool(False).tag(sync=True)
-    to_hide = Any("[]").tag(sync=True)
+    to_hide = Any([]).tag(sync=True)
 
     def link_module(
         self, module: MCScatterPlot, refresh: bool = True
@@ -106,4 +106,4 @@ class Scatterplot(DataWidget, widgets.DOMWidget):  # type: ignore
 
     def __init__(self, *, disable: Sequence[Any] = tuple()):
         super().__init__()
-        self.to_hide = list(disable)
+        self.to_hide = cast(Any, list(disable))

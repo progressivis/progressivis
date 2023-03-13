@@ -5,7 +5,8 @@ from ..core import Print, Sink
 from ..core.pintset import PIntSet
 from ..core.utils import indices_len
 from ..table.table import PTable
-from ..core.module import Module, def_input, def_output
+from ..core.module import Module, def_input, def_output, ReturnRunStep
+from ..core.scheduler import Scheduler
 from ..table.range_query import RangeQuery
 from ..table.hist_index import HistogramIndex
 from ..io import DynVar
@@ -20,18 +21,34 @@ from ..stats import Histogram1D
 from ..stats.histogram1d_categorical import Histogram1DCategorical
 from ..core.decorators import process_slot, run_if_any
 from ..table import PTableSelectedView
-from ..table.dshape import dshape_fields
-from typing import Optional, Tuple, Any
+from ..table.dshape import dshape_fields, DataShape
+from typing import Optional, List, Tuple, Any, Callable, Union, Dict
 
 logger = logging.getLogger(__name__)
 
 
-def _is_string_col(table_: PTable, col: str):
+def _is_string_col(table_: PTable, col: str) -> bool:
     col_type = dict(dshape_fields(table_.dshape))[col]
     return str(col_type) == "string"
 
 
-def _run_step_common(self_, super_call, run_number, step_size, howlong, is_string):
+IfModule = Union[
+    "KLLSketchIf",
+    "Histogram1DCategoricalIf",
+    "Histogram1DIf",
+    "HistogramIndexIf",
+    "RangeQueryIf",
+]
+
+
+def _run_step_common(
+    self_: IfModule,
+    super_call: Callable[..., Dict[str, int]],
+    run_number: int,
+    step_size: int,
+    howlong: float,
+    is_string: bool,
+) -> Dict[str, int]:
     if self_._enabled:
         return super_call(run_number, step_size, howlong)
     slot = self_.get_input_slot("table")
@@ -39,6 +56,7 @@ def _run_step_common(self_, super_call, run_number, step_size, howlong, is_strin
     if self_._enabled is None:
         if input_df is None:
             return self_._return_run_step(self_.state_blocked, steps_run=0)
+        assert isinstance(self_.column, str)
         self_._enabled = _is_string_col(input_df, self_.column) is is_string
     if self_._enabled:
         return super_call(run_number, step_size, howlong)
@@ -47,64 +65,73 @@ def _run_step_common(self_, super_call, run_number, step_size, howlong, is_strin
 
 
 class KLLSketchIf(KLLSketch):
-    def __init__(self, *args: Any, **kw: Any):
+    def __init__(self, *args: Any, **kw: Any) -> None:
         super().__init__(*args, **kw)
         self._enabled: Optional[bool] = None
 
-    def run_step(self, run_number, step_size, howlong):
+    def run_step(
+        self, run_number: int, step_size: int, howlong: float
+    ) -> ReturnRunStep:
         return _run_step_common(
             self, super().run_step, run_number, step_size, howlong, is_string=False
         )
 
 
 class Histogram1DCategoricalIf(Histogram1DCategorical):
-    def __init__(self, *args, **kw):
+    def __init__(self, *args: Any, **kw: Any) -> None:
         super().__init__(*args, **kw)
         self._enabled = None
 
-    def run_step(self, run_number, step_size, howlong):
+    def run_step(
+        self, run_number: int, step_size: int, howlong: float
+    ) -> ReturnRunStep:
         return _run_step_common(
             self, super().run_step, run_number, step_size, howlong, is_string=True
         )
 
 
 class Histogram1DIf(Histogram1D):
-    def __init__(self, *args, **kw):
+    def __init__(self, *args: Any, **kw: Any) -> None:
         super().__init__(*args, **kw)
         self._enabled = None
 
-    def run_step(self, run_number, step_size, howlong):
+    def run_step(
+        self, run_number: int, step_size: int, howlong: float
+    ) -> ReturnRunStep:
         return _run_step_common(
             self, super().run_step, run_number, step_size, howlong, is_string=False
         )
 
 
 class HistogramIndexIf(HistogramIndex):
-    def __init__(self, *args, **kw):
+    def __init__(self, *args: Any, **kw: Any) -> None:
         super().__init__(*args, **kw)
         self._enabled = None
 
-    def run_step(self, run_number, step_size, howlong):
+    def run_step(
+        self, run_number: int, step_size: int, howlong: float
+    ) -> ReturnRunStep:
         return _run_step_common(
             self, super().run_step, run_number, step_size, howlong, is_string=False
         )
 
 
 class RangeQueryIf(RangeQuery):
-    def __init__(self, column, *args, **kw):
+    def __init__(self, *args: Any, **kw: Any) -> None:
         super().__init__(*args, **kw)
         self._enabled = None
         self._flag = False
-        # self.column = column
 
-    def run_step(self, run_number, step_size, howlong):
+    def run_step(
+        self, run_number: int, step_size: int, howlong: float
+    ) -> ReturnRunStep:
         return _run_step_common(
             self, super().run_step, run_number, step_size, howlong, is_string=False
         )
 
 
 def make_sketch_barplot(
-    input_module: Module, col: int, scheduler: int, input_slot="result"
+    input_module: Module, col: int, scheduler: Scheduler, input_slot: str = "result"
 ) -> Tuple[KLLSketch, Histogram1DCategorical]:
     s = scheduler
     sketch = KLLSketchIf(scheduler=s, column=col)
@@ -137,23 +164,22 @@ class StatsExtender(Module):
     Adds statistics on input data
     """
 
-    def __init__(self, usecols=None, **kwds):
+    def __init__(self, usecols: Optional[List[str]] = None, **kwds: Any) -> None:
         """
         usecols: these columns are transmitted to stats modules by default
         """
         super().__init__(**kwds)
         self._usecols = usecols
-        self.visible_cols = []
-        self.decorations = []
-        self._raw_dshape = None
-        self.dshape = None
+        self.visible_cols: List[str] = []
+        self.decorations: List[str] = []
+        self._raw_dshape: Optional[DataShape] = None
         self._dshape_flag = False
 
-    def reset(self):
+    def reset(self) -> None:
         if self.result is not None:
             self.result.selection = PIntSet()
 
-    def starting(self):
+    def starting(self) -> None:
         super().starting()
         ds_slot = self.get_output_slot("dshape")
         if ds_slot:
@@ -162,7 +188,7 @@ class StatsExtender(Module):
         else:
             self._dshape_flag = False
 
-    def maintain_dshape(self, data):
+    def maintain_dshape(self, data: PTable) -> None:
         if not self._dshape_flag or self._raw_dshape == data.dshape:
             return
         self._raw_dshape = data.dshape
@@ -172,7 +198,10 @@ class StatsExtender(Module):
 
     @process_slot("table", reset_cb="reset")
     @run_if_any
-    def run_step(self, run_number, step_size, howlong):
+    def run_step(
+        self, run_number: int, step_size: int, howlong: float
+    ) -> ReturnRunStep:
+        assert self.context
         with self.context as ctx:
             dfslot = ctx.table
             input_df = dfslot.data()
@@ -197,10 +226,10 @@ class StatsExtender(Module):
             self.result.selection |= indices
             return self._return_run_step(self.next_state(dfslot), steps)
 
-    def _get_usecols(self, x):
-        return x if isinstance(x, Iterable) else self._usecols
+    def _get_usecols(self, x: Any) -> Optional[List[Any]]:
+        return list(x) if isinstance(x, Iterable) else self._usecols
 
-    def _get_usecols_hist(self, x, hist):
+    def _get_usecols_hist(self, x: Any, hist: Any) -> Optional[List[Any]]:
         if not hist:
             return self._get_usecols(x)
         if not x:
@@ -211,38 +240,39 @@ class StatsExtender(Module):
 
     def create_dependent_modules(
         self,
-        input_module,
-        input_slot="result",
-        min_=False,
-        max_=False,
-        hist=False,
-        var=False,
-        distinct=False,
-        corr=False,
-        dshape=True,
-    ):
+        input_module: Module,
+        input_slot: str = "result",
+        min_: bool = False,
+        max_: bool = False,
+        hist: bool = False,
+        var: bool = False,
+        distinct: bool = False,
+        corr: bool = False,
+        dshape: bool = True,
+    ) -> None:
         s = self.scheduler()
         self.input.table = input_module.output[input_slot]
         if min_ or hist:
             self.dep.min = Min(scheduler=s, columns=self._get_usecols_hist(min_, hist))
             self.dep.min.input.table = input_module.output[input_slot]
-            self.input.min = self.min.output.result
+            self.input.min = self.dep.min.output.result
             self.decorations.append("min")
         if max_ or hist:
             self.dep.max = Max(scheduler=s, columns=self._get_usecols_hist(max_, hist))
             self.dep.max.input.table = input_module.output[input_slot]
-            self.input.max = self.max.output.result
+            self.input.max = self.dep.max.output.result
             self.decorations.append("max")
         self.dep.hist = {}
         if hist:
-            for col in self._get_usecols(hist):
+            usecols = self._get_usecols(hist) or []
+            for col in usecols:
                 self.dep.hist[col] = {}
-                h_col = self.dep.hist[col]
+                h_col = self.dep.hist[col]  # shortcut
                 # dyn variables
                 h_col["lower"] = lower = DynVar({col: None}, scheduler=s)
                 h_col["upper"] = upper = DynVar({col: None}, scheduler=s)
-                lower.column = col
-                upper.column = col
+                # lower.column = col
+                # upper.column = col
                 h_col["range_query"] = range_query = RangeQueryIf(
                     scheduler=s, column=col, columns=[col]
                 )
@@ -253,13 +283,13 @@ class StatsExtender(Module):
                 range_query.create_dependent_modules(
                     input_module,
                     input_slot,
-                    min_=self.min,
-                    max_=self.max,
+                    min_=self.dep.min,
+                    max_=self.dep.max,
                     min_value=lower,
                     max_value=upper,
                     hist_index=hist_index,
                 )
-                assert range_query.scheduler() == range_query.min_value.scheduler()
+                assert range_query.scheduler() == range_query.dep.min_value.scheduler()
                 # histogram 1D
                 h_col["hist1d"] = hist1d = Histogram1DIf(scheduler=s, column=col)
                 hist1d.input.table = range_query.output.result

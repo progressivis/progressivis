@@ -31,7 +31,7 @@ class ParseOptions:
         escape_char: Optional[Union[str, bool]] = None,
         newlines_in_values: bool = False,
         ignore_empty_lines: bool = True,
-        invalid_row_handler: Optional[Callable] = None,
+        invalid_row_handler: Optional[Callable[..., Any]] = None,
     ): ...
 
 
@@ -73,4 +73,4 @@ def open_csv(
     parse_options: Optional[ParseOptions] = None,
     convert_options: Optional[ConvertOptions] = None,
     memory_pool: Optional[MemoryPool] = None,
-): ...
+) -> CSVStreamingReader: ...

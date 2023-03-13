@@ -40,7 +40,7 @@ class PDataExpr(Expr):
     def result(self) -> Union[BasePTable, PDict]:
         assert isinstance(self._module, Module)
         assert hasattr(self._module, "result")
-        return self._module.result
+        return cast(Union[BasePTable, PDict], self._module.result)
 
     def select(self, columns: List[str]) -> PDataExpr:
         if isinstance(self.result, PDict):

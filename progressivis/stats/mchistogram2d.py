@@ -286,7 +286,7 @@ class MCHistogram2D(Module):
             # data = sp.special.cbrt(row['array'])
             # json_['data'] = sp.misc.bytescale(data)
             json_["binnedPixels"] = data
-            json_["range"] = [np.min(data), np.max(data)]  # type: ignore
+            json_["range"] = [np.min(data), np.max(data)]
             json_["count"] = np.sum(data)
             json_["value"] = "heatmap"
             # return json_

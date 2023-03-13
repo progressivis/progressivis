@@ -6,7 +6,7 @@ import numpy as np
 
 from .column_proxy import PColumnProxy
 from ..core.utils import integer_types
-from .dshape import dataframe_dshape, DataShape
+from .dshape import dataframe_dshape, dshape_create, DataShape
 from typing import TYPE_CHECKING, Tuple, Any, Sequence, Callable, Optional
 
 if TYPE_CHECKING:
@@ -57,7 +57,15 @@ class PColumnSelectedView(PColumnProxy):
 
 
 class PColumnComputedView(PColumnSelectedView):
-    def __init__(self, base: BasePColumn, index: IndexPTable, aka: str, func: Callable, dtype: Optional[np.dtype] = None, xshape: Shape = ()):
+    def __init__(
+        self,
+        base: BasePColumn,
+        index: IndexPTable,
+        aka: str,
+        func: Callable[..., Any],
+        dtype: Optional[np.dtype[Any]] = None,
+        xshape: Shape = (),
+    ) -> None:
         super().__init__(base, index=index)
         self.aka = aka
         self.func = func
@@ -67,7 +75,7 @@ class PColumnComputedView(PColumnSelectedView):
 
     @property
     def dtype(self) -> np.dtype[Any]:
-        return self._otype if self._otype is not None else super().dtype  # type: ignore
+        return self._otype if self._otype is not None else super().dtype
 
     @property
     def shape(self) -> Shape:
@@ -75,11 +83,13 @@ class PColumnComputedView(PColumnSelectedView):
 
     @property
     def dshape(self) -> DataShape:
-        return (dataframe_dshape(self._otype)
-                if self._otype is not None else super().dshape)  # type: ignore
+        return (
+            dshape_create(dataframe_dshape(self._otype))
+            if self._otype is not None else super().dshape
+        )
 
     @property
-    def name(self):
+    def name(self) -> str:
         return self.aka
 
     @property
@@ -92,9 +102,11 @@ class PColumnComputedView(PColumnSelectedView):
         index = [index] if isinstance(index, integer_types) else index
         values = super().__getitem__(index)
         if self._is_ufunc:
-            ret = self.func(values)  # type: ignore
+            ret = self.func(values)
         else:
-            ret = np.apply_along_axis(self.func, len(values.shape)-1, np.array(values))
+            ret = np.apply_along_axis(
+                self.func, len(values.shape) - 1, np.array(values)
+            )
         if isinstance(raw_index, integer_types):
             return ret[0]
         return ret

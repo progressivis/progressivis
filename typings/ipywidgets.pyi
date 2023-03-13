@@ -4,57 +4,63 @@ from typing import Any, Dict, Tuple, Type, Sequence, Union, List, Callable
 
 def register(*args: Any) -> Any: ...
 
-class Widget:
+class DOMWidget:
     description: str
     value: Any
-    def observe(self, cb: Callable, names: str) -> None: ...
+    def __init__(self, **kw: Any) -> None: ...
+    def observe(self, cb: Callable[..., None], names: str) -> None: ...
+    def send(self, *args: Any, **kw: Any) -> None: ...
 
-class IntSlider(Widget):
-    value: Any
+
+class IntSlider(DOMWidget):
+    value: int
     def __init__(self, **kw: Any) -> None: ...
 
 
-class IntRangeSlider(Widget):
+class IntRangeSlider(DOMWidget):
     value: Any
     def __init__(self, **kw: Any) -> None: ...
-    def observe(self, cb: Callable, attr: str) -> None: ...
+    def observe(self, cb: Callable[..., None], attr: str) -> None: ...
 
-class Button(Widget):
+class Button(DOMWidget):
     disabled: bool
     def __init__(self, **kw: Any) -> None: ...
-    def on_click(self, cb: Callable) -> None: ...
+    def on_click(self, cb: Callable[..., None]) -> None: ...
 
 
-class SelectBase(Widget):
+class SelectBase(DOMWidget):
     disabled: bool
     options: List[str]
-    value: List[str]
+    value: Any
     def __init__(self, **kw: Any) -> None: ...
-    def observe(self, cb: Callable, names: str) -> None: ...
+    def observe(self, cb: Callable[..., None], names: str) -> None: ...
 
 class SelectMultiple(SelectBase):
-    ...
+    value: List[str]
+
 
 class Select(SelectBase):
-    ...
+    value: str
+
 
 class Dropdown(SelectBase):
     ...
 
-class Label(Widget):
+class Label(DOMWidget):
     value: str
     def __init__(self, *args: Any, **kw: Any) -> None: ...
 
-class Checkbox(Widget):
+class Checkbox(DOMWidget):
     disabled: bool
     value: bool
     def __init__(self, **kw: Any) -> None: ...
-    def observe(self, cb: Callable, names: str) -> None: ...
+    def observe(self, cb: Callable[..., None], names: str) -> None: ...
 
-class Layout(Widget):
+class Layout(DOMWidget):
     def __init__(self, *args: Any, **kw: Any) -> None: ...
 
-class Box(Widget):
+class Box(DOMWidget):
+    disabled: bool
     children: Union[Tuple[Any, ...], List[Any]]
     def __init__(self, *args: Any, **kw: Any) -> None: ...
 
@@ -74,23 +80,23 @@ class Tab(Box):
     def get_title(self, index: int) -> str: ...
 
 
-class Output(Widget):
+class Output(DOMWidget):
     def __init__(self, *args: Any, **kw: Any) -> None: ...
 
-class Text(Widget):
-    def __init__(self, *args: Any, **kw: Any) -> None: ...
-
-
-class IntText(Widget):
+class Text(DOMWidget):
     def __init__(self, *args: Any, **kw: Any) -> None: ...
 
 
-class Textarea(Widget):
-    def __init__(self, *args: Any, **kw: Any) -> None: ...
-
-class RadioButtons(Widget):
+class IntText(DOMWidget):
     def __init__(self, *args: Any, **kw: Any) -> None: ...
 
 
-class HTML(Widget):
+class Textarea(DOMWidget):
+    def __init__(self, *args: Any, **kw: Any) -> None: ...
+
+class RadioButtons(DOMWidget):
+    def __init__(self, *args: Any, **kw: Any) -> None: ...
+
+
+class HTML(DOMWidget):
     def __init__(self, *args: Any, **kw: Any) -> None: ...
