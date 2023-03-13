@@ -1,0 +1,16 @@
+mypy>=1.0.1
+numpy
+ipython
+jinja2
+sqlalchemy-stubs
+pandas-stubs
+traits-stubs
+traittypes
+types-pillow
+types-pytz
+types-pyyaml
+types-requests
+types-urllib3
+typing-extensions
+typing_extensions
+types-setuptools

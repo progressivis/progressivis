@@ -26,3 +26,4 @@ repos:
           - 'types-urllib3'
           - 'typing-extensions'
           - 'typing_extensions'
+          - 'types-setuptools'
