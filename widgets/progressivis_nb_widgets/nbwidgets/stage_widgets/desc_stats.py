@@ -1,5 +1,5 @@
 from functools import singledispatch
-from collections import Iterable
+from collections.abc import Iterable
 from itertools import product
 from functools import wraps
 import ipywidgets as ipw

@@ -68,7 +68,7 @@ class RandomPTable(Module):
         logger.info("generating %d lines", step_size)
         table = self.result
         if self.throttle:
-            step_size = np.min([self.throttle, step_size])  # type: ignore
+            step_size = np.min([self.throttle, step_size])
         if self.rows >= 0 and (len(table) + step_size) > self.rows:
             step_size = self.rows - len(table)
             logger.info("truncating to %d lines", step_size)
