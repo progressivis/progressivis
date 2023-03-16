@@ -9,20 +9,22 @@ import numpy as np
 import operator as op
 import weakref
 from progressivis.table.repeater import Repeater, Computed
-from progressivis.core import Sink
+from progressivis.core import Sink, Module
 from progressivis.table.compute import (week_day, UNCHANGED,
                                         make_if_else, ymd_string, is_weekend)
 
 from typing import (
     Any as AnyType,
     Optional,
+    Tuple,
+    cast,
     List, Dict, Callable
 )
 
 WidgetType = AnyType
 
 DTYPES = [np.dtype(e).name for lst in np.sctypes.values() for e in lst] + ["datetime64"]  # type: ignore
-UFUNCS: Dict[str, Callable] = {
+UFUNCS: Dict[str, Callable[..., AnyType]] = {
     k: v for (k, v) in np.__dict__.items() if isinstance(v, np.ufunc) and v.nin == 1
 }
 
@@ -33,7 +35,7 @@ ALL_FUNCS.update({"week_day": week_day,
 
 
 class FuncW(ipw.VBox):
-    def __init__(self, main, colname, fname):
+    def __init__(self, main: "PColumnsW", colname: str, fname: str) -> None:
         self._colname = colname
         self._fname = fname
         self._name = ipw.Text(
@@ -58,7 +60,7 @@ class FuncW(ipw.VBox):
 
 
 class IfElseW(ipw.VBox):
-    def __init__(self, main):
+    def __init__(self, main: "PColumnsW") -> None:
         self._main = weakref.ref(main)
         self._name = ipw.Text(
             value="", placeholder="mandatory", description="Name:",
@@ -114,7 +116,7 @@ class IfElseW(ipw.VBox):
                           self._create_fnc])
 
     @property
-    def main(self):
+    def main(self) -> Optional["PColumnsW"]:
         return self._main()
 
     def _name_cb(self, change: AnyType) -> None:
@@ -144,7 +146,7 @@ class IfElseW(ipw.VBox):
             self._if_false_val.disabled = False
         self._check_all()
 
-    def _check_all(self):
+    def _check_all(self) -> None:
         if not self._name.value:
             self._create_fnc.disabled = True
             return
@@ -165,7 +167,7 @@ class IfElseW(ipw.VBox):
             return
         self._create_fnc.disabled = False
 
-    def _create_fnc_cb(self, btn):
+    def _create_fnc_cb(self, btn: AnyType) -> None:
         name = self._name.value
         assert name
         op_ = self._is.value
@@ -178,13 +180,14 @@ class IfElseW(ipw.VBox):
                     else conv_(self._if_false_val.value))
         func = make_if_else(op_=op_, test_val=than_, if_true=if_true, if_false=if_false)
         ALL_FUNCS.update({name: np.vectorize(func)})
-        self.main["cols_funcs"]["funcs"].options = [""] + list(ALL_FUNCS.keys())
+        assert self.main is not None
+        cast(ipw.Dropdown, cast(IpyHBoxSchema, self.main["cols_funcs"])["funcs"]).options = [""] + list(ALL_FUNCS.keys())
 
 
 class PColumnsW(VBoxSchema):
-    def init(self):
-        self._col_widgets = {}
-        self._computed = []
+    def init(self) -> None:
+        self._col_widgets: Dict[Tuple[str, str], FuncW] = {}
+        self._computed: List[Optional[FuncW]] = []
         self._numpy_ufuncs = ipw.Checkbox(value=True,
                                           description="Activate",
                                           disabled=False)
@@ -206,7 +209,7 @@ class PColumnsW(VBoxSchema):
                            rows=7)
         funcs.observe(self._functions_cb, names="value")
         cols_funcs = IpyHBoxSchema()
-        cols_funcs.schema = dict(cols=cols, funcs=funcs, computed=None)
+        cols_funcs.set_schema(dict(cols=cols, funcs=funcs, computed=None))
         stored_cols = ipw.SelectMultiple(
             options=col_list,
             value=[], rows=5, description="Keep also:", disabled=False,
@@ -219,21 +222,22 @@ class PColumnsW(VBoxSchema):
             "Apply", disabled=False, cb=self._btn_apply_cb
         )
         keep_stored = IpyHBoxSchema()
-        keep_stored.schema = dict(stored_cols=stored_cols, keep_all=keep_all)
-        self.schema = dict(
+        keep_stored.set_schema(dict(stored_cols=stored_cols,
+                                    keep_all=keep_all))
+        self.set_schema(dict(
             custom_funcs=self._custom_funcs,
             cols_funcs=cols_funcs,
             func_table=None,
             keep_stored=keep_stored,
             btn_apply=btn_apply,
-        )
+        ))
 
     def _keep_all_cb(self, change: AnyType) -> None:
         val = change["new"]
         if val:
-            self["keep_stored"]["stored_cols"].value = list(self.dtypes.keys())
+            cast(IpyHBoxSchema, self["keep_stored"])["stored_cols"].value = list(self.dtypes.keys())
         else:
-            self["keep_stored"]["stored_cols"].value = []
+            cast(IpyHBoxSchema, self["keep_stored"])["stored_cols"].value = []
 
     def _numpy_ufuncs_cb(self, change: AnyType) -> None:
         if change["new"]:
@@ -241,38 +245,39 @@ class PColumnsW(VBoxSchema):
         else:
             for k in UFUNCS.keys():
                 del ALL_FUNCS[k]
-        self["cols_funcs"]["funcs"].options = [""] + list(ALL_FUNCS.keys())
+        cast(ipw.Dropdown, cast(IpyHBoxSchema, self["cols_funcs"])["funcs"]).options = [""] + list(ALL_FUNCS.keys())
 
     def _columns_cb(self, change: AnyType) -> None:
         val = change["new"]
-        self["cols_funcs"]["funcs"].disabled = False
+        cast(IpyHBoxSchema, self["cols_funcs"])["funcs"].disabled = False
         if not val:
-            self["cols_funcs"]["funcs"].value = ""
-            self["cols_funcs"]["funcs"].disabled = True
-            self["cols_funcs"]["computed"] = None
-        elif self["cols_funcs"]["funcs"].value:
+            cast(IpyHBoxSchema, self["cols_funcs"])["funcs"].value = ""
+            cast(IpyHBoxSchema, self["cols_funcs"])["funcs"].disabled = True
+            cast(IpyHBoxSchema, self["cols_funcs"])["computed"] = None
+        elif cast(IpyHBoxSchema, self["cols_funcs"])["funcs"].value:
             """key = (self._columns.value, self._functions.value)
             if key not in self._col_widgets:
                 self._col_widgets[key] = FuncW(*key)
             self._computed_col = self._col_widgets[key]"""
             self.set_selection()
         else:
-            self["cols_funcs"]["computed"] = None
+            cast(IpyHBoxSchema, self["cols_funcs"])["computed"] = None
 
     def _functions_cb(self, change: AnyType) -> None:
         val = change["new"]
         if not val:
-            self["cols_funcs"]["computed"] = None
+            cast(IpyHBoxSchema, self["cols_funcs"])["computed"] = None
         else:
             self.set_selection()
 
-    def set_selection(self):
-        key = (self["cols_funcs"]["cols"].value, self["cols_funcs"]["funcs"].value)
+    def set_selection(self) -> None:
+        key = (cast(IpyHBoxSchema, self["cols_funcs"])["cols"].value,
+               cast(IpyHBoxSchema, self["cols_funcs"])["funcs"].value)
         if key not in self._col_widgets:
             self._col_widgets[key] = FuncW(self, *key)
-        self["cols_funcs"]["computed"] = self._col_widgets[key]
+        cast(IpyHBoxSchema, self["cols_funcs"])["computed"] = self._col_widgets[key]
 
-    def _btn_apply_cb(self, btn):
+    def _btn_apply_cb(self, btn: AnyType) -> None:
         """
         add_ufunc_column(self, name: str,
                          col: str,
@@ -288,7 +293,7 @@ class PColumnsW(VBoxSchema):
             comp.add_ufunc_column(wg._name.value, col, func, np.dtype(wg._dtype.value))
         self.output_module = self.init_module(
             comp,
-            columns=list(self["keep_stored"]["stored_cols"].value))
+            columns=list(cast(IpyHBoxSchema, self["keep_stored"])["stored_cols"].value))
         self.make_chaining_box()
         self.dag_running()
 
@@ -302,17 +307,17 @@ class PColumnsW(VBoxSchema):
             sink.input.inp = rep.output.result
             return rep
 
-    def make_func_button(self, key, wg):
+    def make_func_button(self, key: Tuple[str, str], wg: FuncW) -> ipw.Button:
         kcol, kfun = key
 
-        def _cb(btn):
-            self["cols_funcs"]["cols"].value = kcol
-            self["cols_funcs"]["funcs"].value = kfun
+        def _cb(btn: AnyType) -> None:
+            cast(IpyHBoxSchema, self["cols_funcs"])["cols"].value = kcol
+            cast(IpyHBoxSchema, self["cols_funcs"])["funcs"].value = kfun
         btn = make_button(wg._name.value, cb=_cb)
         btn.layout = ipw.Layout(width='auto', height='40px')
         return btn
 
-    def update_func_list(self, wg):
+    def update_func_list(self, wg: FuncW) -> None:
         table_width = 4
         seld = {k: wg for (k, wg) in self._col_widgets.items() if wg._use.value}
         if not seld:
@@ -326,7 +331,7 @@ class PColumnsW(VBoxSchema):
             layout=ipw.Layout(grid_template_columns=f"repeat({table_width}, 200px)"),
         )
 
-    def get_underlying_modules(self):
+    def get_underlying_modules(self) -> List[Module]:
         return [self.output_module]
 
 

@@ -4,20 +4,19 @@ from ._version import version_info, __version__
 from .scatterplot import *
 from .previmages import *
 from .module_graph import *
-from .control_panel import *  # type: ignore
-from .psboard import *  # type: ignore
+# from .control_panel import *
+# from .psboard import *
 from .sensitive_html import *
 from .json_html import *
 from .data_table import *
 from .sparkline_progressbar import *
 from .plotting_progressbar import *
-from .iscaler import *  # type: ignore
-from .data_viewer import *  # type: ignore
-from .stage_widgets.desc_stats import *  # type: ignore
+# from .iscaler import *
+from .stage_widgets.desc_stats import *
 from .stage_widgets.constructor import *
 from .stage_widgets.utils import create_stage_widget, cleanup_cells
 from .stage_widgets.group_by import *
-from .utils import *  # type: ignore
+# from .utils import *
 
 from typing import List, Dict
 

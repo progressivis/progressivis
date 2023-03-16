@@ -10,7 +10,7 @@ repos:
     hooks:
       - id: mypy
         exclude: ^stool/
-        args: [--tb]
+        args: [--explicit-package-bases]
         additional_dependencies:
           - 'numpy'
           - 'ipython'

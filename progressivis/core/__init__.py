@@ -25,7 +25,7 @@ from .storagemanager import StorageManager
 from .module import (ReturnRunStep, Every, Print, def_input, def_output, def_parameter)
 
 
-__version__: str = get_versions()["version"]  # type: ignore
+__version__: str = get_versions()["version"]
 version = __version__
 short_version = __version__
 del get_versions

@@ -3,7 +3,7 @@ from .utils import (
     VBox
 )
 from ..slot_wg import SlotWg
-
+from typing import List, cast
 from progressivis.core.scheduler import Scheduler
 
 
@@ -18,9 +18,9 @@ class DumpPTableW(VBox):
         self.input_module.scheduler().on_tick(self._refresh_proc)
 
     async def _refresh_proc(self, scheduler: Scheduler, run_number: int) -> None:
-        await self.children[0].refresh()
+        await cast(SlotWg, self.children[0]).refresh()
 
-    def get_underlying_modules(self):
+    def get_underlying_modules(self) -> List[str]:
         return []
 
 

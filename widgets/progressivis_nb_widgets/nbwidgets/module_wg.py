@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 debug_console = None  # ipw.Output()
 
 
-class ModuleWg(ipw.Tab):  # type: ignore # pylint: disable=too-many-ancestors
+class ModuleWg(ipw.Tab):  # pylint: disable=too-many-ancestors
     def __init__(self, board: PsBoard, dconsole: Optional[Any] = None) -> None:
         global debug_console  # pylint: disable=global-statement
         debug_console = dconsole
@@ -84,8 +84,12 @@ class ModuleWg(ipw.Tab):  # type: ignore # pylint: disable=too-many-ancestors
             _selected_index = self._output_slots.selected_index
         for i, k in enumerate(module_json["output_slots"].keys()):
             self._output_slots.set_title(i, k)
-            await self._output_slots.children[i].refresh()
+            item = self._output_slots.children[i]
+            assert hasattr(item, "refresh")
+            await item.refresh()
         i += 1
         self._output_slots.set_title(i, "_params")
-        await self._output_slots.children[i].refresh()
+        item = self._output_slots.children[i]
+        assert hasattr(item, "refresh")
+        await item.refresh()
         self._output_slots.selected_index = _selected_index

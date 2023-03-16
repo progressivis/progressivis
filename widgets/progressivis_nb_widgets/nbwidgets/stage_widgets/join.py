@@ -10,16 +10,18 @@ from progressivis.core import Sink
 from typing import (
     Any as AnyType,
     Any,
+    Optional,
     Dict,
     Callable,
-    List
+    List,
+    Union
 )
 
 WidgetType = AnyType
 _l = ipw.Label
 
 
-def _ck(name):
+def _ck(name: str) -> ipw.Checkbox:
     return ipw.Checkbox(value=True,
                         description=name,
                         disabled=False,
@@ -27,7 +29,7 @@ def _ck(name):
 
 
 class MaskWidget(ipw.HBox):
-    def __init__(self):
+    def __init__(self) -> None:
         self.year = _ck("Y")
         self.month = _ck("M")
         self.day = _ck("D")
@@ -38,18 +40,18 @@ class MaskWidget(ipw.HBox):
                               self.hour, self.min_, self.sec])
         super().__init__([])
 
-    def show(self):
+    def show(self) -> None:
         self.children = self._ck_tpl
 
-    def hide(self):
+    def hide(self) -> None:
         for ck in self._ck_tpl:
             ck.value = True
         self.children = tuple([])
 
-    def get_values(self):
+    def get_values(self) -> List[bool]:
         return [ck.value for ck in self._ck_tpl]
 
-    def get_dt(self):
+    def get_dt(self) -> str:
         return "".join([sym*ck.value for (sym, ck) in zip(UTIME_SHORT_D, self._ck_tpl)])
 
 
@@ -63,13 +65,13 @@ class JoinW(VBox):
                     else k, (k, n)) for (k, n) in self.current_widget_keys]
         self._input_1 = _l(self.parent.title)
         self._role_1 = _l("primary")
-        self._input_2 = ipw.Dropdown(  # type: ignore
+        self._input_2 = ipw.Dropdown(
             options=dd_list,
             description="",
             disabled=False,
             style={"description_width": "initial"},
         )
-        self._role_2 = ipw.Dropdown(  # type: ignore
+        self._role_2 = ipw.Dropdown(
             options=["primary", "related"],
             value="related",
             description="",
@@ -79,8 +81,8 @@ class JoinW(VBox):
         self._cols_setup = ipw.Tab()
         self._primary_cols_dict: Dict[str, AnyType] = {}
         self._related_cols_dict: Dict[str, AnyType] = {}
-        self._primary_wg = None
-        self._related_wg = None
+        self._primary_wg: Optional[VBox] = None
+        self._related_wg: Optional[VBox] = None
         self._role_2.observe(self._role_2_cb, "value")
         lst = [_l("Inputs"), _l("Roles"), self._input_1, self._role_1,
                self._input_2, self._role_2]
@@ -88,9 +90,9 @@ class JoinW(VBox):
             lst,
             layout=ipw.Layout(grid_template_columns="50% 50%"),
         )
-        gb.layout.border = "1px solid"  # type: ignore
+        gb.layout.border = "1px solid"
         self._btn_ok = make_button("OK", cb=self._btn_ok_cb)
-        self._how = ipw.Dropdown(  # type: ignore
+        self._how = ipw.Dropdown(
             options=["inner", "outer"],
             value="inner",
             description="How",
@@ -103,15 +105,15 @@ class JoinW(VBox):
                          ipw.HBox([self._how,
                                    self._btn_start]))
 
-    def _btn_start_cb(self, btn):
+    def _btn_start_cb(self, btn: Any) -> None:
         primary_cols = [k for (k, (ck, _, _)) in
                         self._primary_cols_dict.items() if ck.value]
         related_cols = [k for (k, ck) in
                         self._related_cols_dict.items() if ck.value]
-        primary_on = [k for (k, (_, dd, _)) in
-                      self._primary_cols_dict.items() if dd.value]
-        related_on = [dd.value for (_, dd, _) in
-                      self._primary_cols_dict.values() if dd.value]
+        primary_on: Union[str, List[str]] = [k for (k, (_, dd, _)) in
+                                             self._primary_cols_dict.items() if dd.value]
+        related_on: Union[str, List[str]] = [dd.value for (_, dd, _) in
+                                             self._primary_cols_dict.values() if dd.value]
         assert primary_on
         assert related_on
         assert len(primary_on) == len(related_on)
@@ -120,6 +122,10 @@ class JoinW(VBox):
         s = self.input_module.scheduler()
         with s:
             inv_mask = None
+            assert self._primary_wg is not None
+            assert self._related_wg is not None
+            assert self._primary_wg.output_dtypes is not None
+            assert self._related_wg.output_dtypes is not None
             if (isinstance(primary_on,
                            str) and self._primary_wg.output_dtypes[
                                primary_on] == "datetime64"):
@@ -166,6 +172,8 @@ class JoinW(VBox):
                               indent=False)
         lst: List[WidgetType] = [_l(""), _l("Keep"), _l("Join on"), _l("Subcolumns"),
                                  _l("*"), ck_all, _l(""), _l("")]
+        assert primary_wg.output_dtypes is not None
+        assert related_wg.output_dtypes is not None
         for col, ty in primary_wg.output_dtypes.items():
             on_list = [""] + [c for (c, t) in related_wg.output_dtypes.items() if t == ty]
             ck = ipw.Checkbox(value=True,
@@ -225,7 +233,7 @@ class JoinW(VBox):
         role = change["new"]
         self._role_1.value = "primary" if role == "related" else "related"
 
-    def _make_dd_cb(self, col: str) -> Callable:
+    def _make_dd_cb(self, col: str) -> Callable[..., None]:
         def _cbk(change: AnyType) -> None:
             val = change["new"]
             ck, dd, mw = self._primary_cols_dict[col]
@@ -234,6 +242,7 @@ class JoinW(VBox):
                 ck.disabled = True
                 self._btn_start.disabled = False
                 assert self._primary_wg is not None
+                assert self._primary_wg.output_dtypes is not None
                 if self._primary_wg.output_dtypes[col] == "datetime64":
                     mw.show()
                 else:

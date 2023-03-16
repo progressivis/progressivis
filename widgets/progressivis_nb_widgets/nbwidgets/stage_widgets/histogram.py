@@ -6,25 +6,31 @@ from .utils import (
 from ..utils import historized_widget
 from ._multi_series import histogram1d_no_data
 import ipywidgets as ipw
-from vega.widget import VegaWidget  # type: ignore
+from vega.widget import VegaWidget
 import pandas as pd
-from typing import Any as AnyType, Dict, Callable
+from progressivis.core import Scheduler
+
+from typing import Any as AnyType, Type, cast, List, Dict, Callable
+from typing_extensions import TypeAlias
 import copy
 
-WidgetType = AnyType
+
 _l = ipw.Label
 
 N = 4  # 1X + 3Y
 
 
-_VegaWidget = historized_widget(VegaWidget, "update")
+HVegaWidget: TypeAlias = cast(Type[AnyType], historized_widget(VegaWidget, "update"))
 
 
 class HistogramW(VBoxSchema):
-    def init(self):
+    def init(self) -> None:
         self.output_dtypes = None
         self._axis = {}
-        lst = [_l("Axis"), _l("PColumn"),  _l("Symbol"), _l("Aggregate")]
+        lst: List[ipw.DOMWidget] = [_l("Axis"),
+                                    _l("PColumn"),
+                                    _l("Symbol"),
+                                    _l("Aggregate")]
         for row_name in ["X", "Y"]:
             row = self._axis_row(row_name)
             self._axis[row_name] = row
@@ -36,9 +42,9 @@ class HistogramW(VBoxSchema):
         btn_apply = self._btn_ok = make_button(
             "Apply", disabled=True, cb=self._btn_apply_cb
         )
-        self.schema = dict(grid=gb, btn_apply=btn_apply, vega=None)
+        self.set_schema(dict(grid=gb, btn_apply=btn_apply, vega=None))
 
-    def _axis_row(self, axis):
+    def _axis_row(self, axis: str) -> Dict[str, ipw.DOMWidget]:
         axis_w = _l(axis)
         col_list = [""] + list(self.dtypes.keys())
         col = ipw.Dropdown(
@@ -60,8 +66,9 @@ class HistogramW(VBoxSchema):
         aggregate.observe(self._make_aggregate_cb(axis), "value")
         return dict(axis=axis_w, col=col, sym=sym, aggregate=aggregate)
 
-    def _update_vw(self, m, run_number):
-        tbl = self.input_module.table
+    def _update_vw(self, s: Scheduler, run_number: int) -> None:
+        assert hasattr(self.input_module, "result")
+        tbl = self.input_module.result
         if tbl is None:
             print("no tbl")
             return
@@ -69,9 +76,9 @@ class HistogramW(VBoxSchema):
         y_arr = tbl[self._y_col].loc[:]
         df_dict = {self._x_sym: x_arr, self._y_sym: y_arr}
         df = pd.DataFrame(df_dict)
-        self["vega"].update("data", remove="true", insert=df)
+        cast(HVegaWidget, self["vega"]).update("data", remove="true", insert=df)
 
-    def _make_aggregate_cb(self, axis) -> Callable:
+    def _make_aggregate_cb(self, axis: str) -> Callable[..., None]:
         other = "Y" if axis == "X" else "X"
 
         def _aggregate_cb(change: Dict[str, AnyType]) -> None:
@@ -85,8 +92,8 @@ class HistogramW(VBoxSchema):
         self._y_col = self._axis["Y"]["col"].value
         self["btn_apply"].disabled = not (self._x_col and self._y_col)
 
-    def _btn_apply_cb(self, btn):
-        sc_json = copy.deepcopy(histogram1d_no_data)
+    def _btn_apply_cb(self, btn: AnyType) -> None:
+        sc_json: Dict[str, AnyType] = copy.deepcopy(histogram1d_no_data)
         x_sym = self._axis["X"]["sym"].value
         x_aggr = self._axis["X"]["aggregate"].value
         if x_aggr:
@@ -103,7 +110,7 @@ class HistogramW(VBoxSchema):
         self._y_sym = y_sym or self._y_col
         sc_json["encoding"]["x"] = {"field": self._x_sym, **x_kw}
         sc_json["encoding"]["y"] = {"field": self._y_sym, **y_kw}
-        self["vega"] = _VegaWidget(spec=sc_json)
+        self["vega"] = HVegaWidget(spec=sc_json)
         self.input_module.scheduler().on_tick(self._update_vw)
         self.dag_running()
 

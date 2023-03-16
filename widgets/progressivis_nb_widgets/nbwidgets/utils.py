@@ -8,7 +8,7 @@ from ipydatawidgets.ndarray.serializers import (  # type: ignore
 from progressivis.core import asynchronize, aio
 
 
-from typing import Any, Callable, Dict
+from typing import Any, Callable, Dict, Type, cast
 
 
 # cf. https://ipywidgets.readthedocs.io/en/latest/examples/Widget%20Asynchronous.html
@@ -40,24 +40,32 @@ async def update_widget(wg: Any, attr: str, val: Any) -> None:
     await asynchronize(setattr, wg, attr, val)
 
 
-def historized_widget(widget_class, update_method):
+class HistorizedBox(widgets.VBox):
+    def __init__(self, *args: Any, **kw: Any) -> None:
+        super().__init__(*args, **kw)
+
+    def update(self, *args: Any, **kw: Any) -> None:
+        raise ValueError("Not Implemented")
+
+
+def historized_widget(widget_class: Type[Any], update_method: str) -> Type[HistorizedBox]:
     from . import PrevImages
 
-    class _Hz(widgets.VBox):
-        def __init__(self, *args, **kw):
-            self.widget = widget_class(*args, **kw)
+    class _Hz(HistorizedBox):
+        def __init__(self, *args: Any, **kw: Any) -> None:
+            self.widget = cast(widgets.DOMWidget, widget_class(*args, **kw))
             self._update_method = update_method
             self.classname = f"historized_widget-{id(self.widget)}"
             self.widget.add_class(self.classname)
             self.history = PrevImages()
-            self.history.target = self.classname
+            self.history.target = self.classname  # type: ignore
             super().__init__([self.widget, self.history])
 
-        def update(self, *args, **kw):
+        def update(self, *args: Any, **kw: Any) -> None:
             getattr(self.widget, self._update_method)(*args, **kw)
             time.sleep(0.1)
             self.history.update()
-    return _Hz
+    return cast(Type[HistorizedBox], _Hz)
 #
 # The functions below  (data_union_to_json_compress, data_union_from_json_compress)
 # are adapted from ipydatawidgets

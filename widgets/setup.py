@@ -1,3 +1,5 @@
+# type: ignore
+
 from __future__ import print_function
 from setuptools import setup, Command
 from setuptools.command.sdist import sdist
@@ -73,7 +75,7 @@ def update_package_data(distribution):
 class NPM(Command):
     description = "install package.json dependencies using npm"
 
-    user_options = []  # type: ignore
+    user_options = []
 
     node_modules = os.path.join(node_root, "node_modules")
 
@@ -146,7 +148,7 @@ class NPM(Command):
         update_package_data(self.distribution)
 
 
-version_ns = {}  # type: ignore
+version_ns = {}
 with open(
     os.path.join(here, "progressivis_nb_widgets", "nbwidgets", "_version.py")
 ) as f:

@@ -10,13 +10,11 @@ from progressivis.table.group_by import (GroupBy, UTIME, DT_MAX,
 from progressivis.core import Sink
 
 from typing import (
-    Any as AnyType,
+    Any as AnyType, Union, List, cast
 )
 
-WidgetType = AnyType
 
-
-def make_sel_multiple_dt(disabled: bool = True) -> WidgetType:
+def make_sel_multiple_dt(disabled: bool = True) -> ipw.SelectMultiple:
     return ipw.SelectMultiple(
         options=list(zip(UTIME, UTIME_SHORT_D.keys())),
         value=[],
@@ -28,13 +26,13 @@ def make_sel_multiple_dt(disabled: bool = True) -> WidgetType:
 
 class GroupByW(VBoxSchema):
     def init(self) -> None:
-        self.schema = dict(
+        self.set_schema(dict(
             grouping_mode=self.make_gr_mode(),
             by_box=self.make_sel_multiple(),
             start_btn=make_button(
                 "Activate", cb=self._add_group_by_cb, disabled=True
             )
-        )
+        ))
 
     def init_group_by(self, by: AnyType) -> GroupBy:
         s = self.input_module.scheduler()
@@ -45,8 +43,8 @@ class GroupByW(VBoxSchema):
             sink.input.inp = grby.output.result
             return grby
 
-    def get_underlying_modules(self):
-        return [self._output_module]
+    def get_underlying_modules(self) -> List[str]:
+        return [self.output_module.name]
 
     def _add_group_by_cb(self, btn: ipw.Button) -> None:
         self["grouping_mode"].disabled = True
@@ -58,11 +56,12 @@ class GroupByW(VBoxSchema):
                 by = by[0]
             self["by_box"].disabled = True
         else:
-            dd, sel = self["by_box"].children
+            by_box = cast(ipw.HBox, self["by_box"])
+            dd, sel = by_box.children
             col = dd.value
             by = SC(col).dt["".join(sel.value)]
-            self["by_box"].children[0].disabled = True
-            self["by_box"].children[1].disabled = True
+            by_box.children[0].disabled = True
+            by_box.children[1].disabled = True
         self.output_module = self.init_group_by(by)
         self.output_slot = "result"
         btn.disabled = True
@@ -75,7 +74,8 @@ class GroupByW(VBoxSchema):
         else:
             self["by_box"] = self.make_subcolumn_box()
 
-    def make_gr_mode(self) -> WidgetType:
+    def make_gr_mode(self) -> Union[ipw.Label, ipw.RadioButtons]:
+        wg: Union[ipw.Label, ipw.RadioButtons]
         if "datetime64" in self.input_dtypes.values():
             wg = ipw.RadioButtons(
                 options=["columns", "datetime subcolumn", "multi index subcolumn"],
@@ -88,19 +88,19 @@ class GroupByW(VBoxSchema):
             wg = dongle_widget("columns")
         return wg
 
-    def make_sel_multiple(self) -> WidgetType:
+    def make_sel_multiple(self) -> ipw.SelectMultiple:
         selm = ipw.SelectMultiple(
             options=[(f"{col}:{t}", col) for (col, t) in self.dtypes.items()],
             value=[], rows=5, description="By", disabled=False,
         )
 
-        def _f(val):
+        def _f(val: AnyType) -> None:
             self["start_btn"].disabled = not val["new"]
 
         selm.observe(_f, names="value")
         return selm
 
-    def make_subcolumn_box(self) -> WidgetType:
+    def make_subcolumn_box(self) -> ipw.HBox:
         dd = ipw.Dropdown(
             options=[("", "")]
             + [(f"{col}:{t}", col)
@@ -113,14 +113,14 @@ class GroupByW(VBoxSchema):
         )
         dt_sel = make_sel_multiple_dt()
 
-        def _f(val):
+        def _f(val: AnyType) -> None:
             if val["new"]:
                 dt_sel.disabled = False
             else:
                 dt_sel.disabled = True
                 self["start_btn"].disabled = True
 
-        def _f_sel(val):
+        def _f_sel(val: AnyType) -> None:
             self["start_btn"].disabled = not val["new"]
 
         dd.observe(_f, names="value")

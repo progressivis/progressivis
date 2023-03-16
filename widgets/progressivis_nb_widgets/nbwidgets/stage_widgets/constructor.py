@@ -3,7 +3,7 @@ from progressivis import Scheduler
 from progressivis.io import DynVar
 from progressivis.core import Sink, aio
 from .utils import (make_button, get_dag, _Dag,
-                    RootVBox, SchemaBox,
+                    RootVBox, SchemaBox, NodeVBox,
                     get_widget_by_id, get_widget_by_key)
 
 from typing import (
@@ -13,7 +13,7 @@ from typing import (
 )
 
 
-async def _wake_up(sc, sec):
+async def _wake_up(sc: Scheduler, sec: float) -> None:
     while True:
         if sc._stopped:
             return
@@ -35,7 +35,7 @@ def init_dataflow() -> AnyType:
 class Constructor(RootVBox, SchemaBox):
     last_created = None
 
-    def __init__(self, urls: List[str] = [], *, name="root",
+    def __init__(self, urls: List[str] = [], *, name: str = "root",
                  to_sniff: Optional[str] = None) -> None:
         ctx = dict(parent=None,
                    dtypes=None,
@@ -48,13 +48,13 @@ class Constructor(RootVBox, SchemaBox):
         SchemaBox.__init__(self)
         start_btn = make_button("Start scheduler ...",
                                 cb=self._start_scheduler_cb)
-        self.schema = dict(
+        self.set_schema(dict(
             h2=ipw.HTML(f"<h2 id='{self.dom_id}'>{name}</h2>"),
             start_btn=start_btn,
             csv=None,
             parquet=None,
             dag=self.dag
-        )
+        ))
 
     def _start_scheduler_cb(self, btn: ipw.Button) -> None:
         init_module = init_dataflow()
@@ -67,20 +67,20 @@ class Constructor(RootVBox, SchemaBox):
         self.dag.registerWidget(self, "root", "root", self.dom_id, [])
 
     @staticmethod
-    def widget_by_id(key):
+    def widget_by_id(key: int) -> NodeVBox:
         return get_widget_by_id(key)
 
     @staticmethod
-    def widget(key, num=0):
+    def widget(key: str, num: int = 0) -> NodeVBox:
         return get_widget_by_key(key, num)
 
     @property
-    def dom_id(self):
+    def dom_id(self) -> str:
         return f"prog_{id(self)}"
 
     @property
-    def _frame(self):
+    def _frame(self) -> int:
         return 1
 
-    def dag_register(self):
+    def dag_register(self) -> None:
         pass

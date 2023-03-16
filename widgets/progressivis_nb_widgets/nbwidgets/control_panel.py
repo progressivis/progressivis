@@ -2,13 +2,13 @@ from __future__ import annotations
 
 import ipywidgets as widgets
 
-from typing import Any, TYPE_CHECKING, Callable, Optional
+from typing import Any, TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
     from progressivis.core.scheduler import Scheduler
 
 
-class ControlPanel(widgets.HBox):  # type: ignore # pylint: disable=too-many-ancestors
+class ControlPanel(widgets.HBox):  # pylint: disable=too-many-ancestors
     def __init__(self, scheduler: Optional[Scheduler]) -> None:
         self.scheduler = scheduler
         self.bstart = widgets.Button(
@@ -38,51 +38,44 @@ class ControlPanel(widgets.HBox):  # type: ignore # pylint: disable=too-many-anc
         self.run_nb = widgets.HTML(value="0", placeholder="0", description="",)
         self.status = "run"
         super().__init__([self.bstart, self.bstop, self.bstep, self.run_nb])
-        self.bstart.on_click(self.resume())
-        self.bstop.on_click(self.stop())
-        self.bstep.on_click(self.step())
+        self.bstart.on_click(self.resume)
+        self.bstop.on_click(self.stop)
+        self.bstep.on_click(self.step)
 
     @property
-    def data(self) -> None:
+    def data(self) -> Any:
         return self.run_nb.value
 
     @data.setter
     def data(self, val: Any) -> None:
         self.run_nb.value = str(val)
 
-    def stop(self) -> Callable:
-        def _cbk(_btn):
-            _ = _btn
-            self.scheduler.task_stop()
-            self.status = "stop"
-            self.bstop.disabled = True
-            self.bstart.disabled = False
-            self.bstep.disabled = False
+    def stop(self, _btn: Any) -> None:
+        _ = _btn
+        assert self.scheduler is not None
+        self.scheduler.task_stop()
+        self.status = "stop"
+        self.bstop.disabled = True
+        self.bstart.disabled = False
+        self.bstep.disabled = False
 
-        return _cbk
+    def step(self, _btn: Any) -> None:
+        _ = _btn
 
-    def step(self) -> Callable:
-        def _cbk(_btn):
-            _ = _btn
+        async def _step_once(sched: Scheduler, _: Any) -> None:
+            await sched.stop()
+        assert self.scheduler is not None
+        self.scheduler.task_start(tick_proc=_step_once)
+        self.status = "stop"
+        self.bstop.disabled = True
+        self.bstart.disabled = False
+        self.bstep.disabled = False
 
-            async def _step_once(sched: Scheduler, _: Any) -> None:
-                await sched.stop()
-
-            self.scheduler.task_start(tick_proc=_step_once)
-            self.status = "stop"
-            self.bstop.disabled = True
-            self.bstart.disabled = False
-            self.bstep.disabled = False
-
-        return _cbk
-
-    def resume(self) -> Callable:
-        def _cbk(_btn):
-            _ = _btn
-            self.scheduler.task_start()
-            self.status = "run"
-            self.bstop.disabled = False
-            self.bstart.disabled = True
-            self.bstep.disabled = True
-
-        return _cbk
+    def resume(self, _btn: Any) -> None:
+        _ = _btn
+        assert self.scheduler is not None
+        self.scheduler.task_start()
+        self.status = "run"
+        self.bstop.disabled = False
+        self.bstart.disabled = True
+        self.bstep.disabled = True

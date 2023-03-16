@@ -21,7 +21,7 @@ class CsvLoaderW(VBoxSchema):
 
     def init(self,
              urls: List[str] = [],
-             to_sniff: str = "", lines=100) -> None:
+             to_sniff: str = "", lines: int = 100) -> None:
         urls_wg = ipw.Textarea(
             value=os.getenv("PROGRESSIVIS_DEFAULT_CSV"),
             placeholder='',
@@ -43,14 +43,14 @@ class CsvLoaderW(VBoxSchema):
         )
         sniff_btn = make_button("Sniff ...",
                                 cb=self._sniffer_cb)
-        self.schema = dict(
+        self.set_schema(dict(
             urls_wg=urls_wg,
             to_sniff=to_sniff_,
             n_lines=n_lines,
             sniff_btn=sniff_btn,
             sniffer=None,
             start_btn=None,
-        )
+        ))
 
     def _sniffer_cb(self, btn: ipw.Button) -> None:
         urls = self["urls_wg"].value.strip().split("\n")
@@ -73,6 +73,7 @@ class CsvLoaderW(VBoxSchema):
         csv_module = self.init_modules()
         self.output_module = csv_module
         self.output_slot = "result"
+        assert self._sniffer is not None
         self.output_dtypes = get_schema(self._sniffer)
         self.make_chaining_box()
         btn.disabled = True

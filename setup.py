@@ -1,3 +1,4 @@
+# type: ignore
 """
 Setup file for progressivis.
 """

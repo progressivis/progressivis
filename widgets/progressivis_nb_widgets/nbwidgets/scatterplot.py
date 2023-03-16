@@ -82,7 +82,10 @@ class Scatterplot(DataWidget, widgets.DOMWidget):  # type: ignore
         def from_input_value(_val: Any) -> None:
             bounds = self.value
 
-            async def _cbk():
+            async def _cbk() -> None:
+                assert module.min_value is not None
+                assert module.max_value is not None
+                assert isinstance(bounds, dict)
                 await module.min_value.from_input(bounds["min"])
                 await module.max_value.from_input(bounds["max"])
 

@@ -5,7 +5,7 @@ from functools import wraps
 import ipywidgets as ipw
 import numpy as np
 import pandas as pd
-from progressivis.core import asynchronize, aio, Sink
+from progressivis.core import asynchronize, aio, Sink, Scheduler
 from progressivis.utils.psdict import PDict
 from progressivis.core.module import Module
 from progressivis.io import DynVar
@@ -21,13 +21,13 @@ from progressivis.vis import (
     Histogram1dPattern,
     Histogram2dPattern,
 )
-from vega.widget import VegaWidget  # type: ignore
+from vega.widget import VegaWidget
 from .._hist1d_schema import hist1d_spec_no_data, kll_spec_no_data
 from .._hist2d_schema import hist2d_spec_no_data
 from .._corr_schema import corr_spec_no_data
 from .._bar_schema import bar_spec_no_data
 from .utils import TreeTab, make_button, stage_register, VBox
-from ..utils import historized_widget
+from ..utils import historized_widget, HistorizedBox
 
 from typing import (
     Any as AnyType,
@@ -35,10 +35,12 @@ from typing import (
     Optional,
     Dict,
     Set,
+    Type,
     Union,
     List,
     Tuple,
     Callable,
+    Coroutine,
 )
 
 WidgetType = AnyType
@@ -84,12 +86,13 @@ def narrow_label(text: str, w: int = 70) -> ipw.Button:
 
 def make_observer(
     hname: str, sk_mod: KLLSketch, lower_mod: DynVar, upper_mod: DynVar
-) -> Callable:
+) -> Callable[[AnyType], None]:
     def _observe_range(val: AnyType) -> None:
-        async def _coro(v):
+        async def _coro(v: AnyType) -> None:
             lo = v["new"][0]
             up = v["new"][1]
             res = sk_mod.result
+            assert res is not None
             hist = res["pmf"]
             min_ = res["min"]
             max_ = res["max"]
@@ -113,8 +116,9 @@ def corr_as_vega_dataset(
         columns = mod._columns
         assert columns
 
-    def _c(kx, ky):
-        return mod.result[frozenset([kx, ky])]
+    def _c(kx: str, ky: str) -> float:
+        assert mod.result is not None
+        return mod.result[frozenset([kx, ky])]  # type: ignore
 
     return [
         dict(corr=_c(kx, ky), corr_label=f"{_c(kx,ky):.2f}", var=kx, var2=ky)
@@ -122,39 +126,43 @@ def corr_as_vega_dataset(
     ]
 
 
-def categ_as_vega_dataset(categs: PDict):
+def categ_as_vega_dataset(categs: PDict) -> List[Dict[str, AnyType]]:
     return [{"category": k, "count": v} for (k, v) in categs.items()]
 
 
+# TODO: use typing annotation below for python>=3.11 and remove "ignores"
+
 @singledispatch
-def format_label(arg):
+def format_label(arg):  # type: ignore
     return str(arg)
 
 
 @format_label.register(float)
 @format_label.register(np.floating)
-def _np_floating_arg(arg):
+def _np_floating_arg(arg):  # type: ignore
     return f"{arg:.4f}"
 
 
 @format_label.register(str)
-def _str_arg(arg):
+def _str_arg(arg):  # type: ignore
     return arg
 
 
 @format_label.register(Iterable)
-def _len_arg(arg):
+def _len_arg(arg):  # type: ignore
     return str(len(arg))
 
 
-def asynchronized(func: Callable) -> Callable:
+def asynchronized(func: Callable[..., None]) -> Callable[..., AnyType]:
     """
     decorator
     """
 
     @wraps(func)
-    def asynchronizer(*args: AnyType) -> Callable:
-        async def _coro(_1, _2):
+    def asynchronizer(
+        *args: AnyType,
+    ) -> Callable[[AnyType, AnyType], Coroutine[AnyType, AnyType, None]]:
+        async def _coro(_1: AnyType, _2: AnyType) -> None:
             _ = _1, _2
             await asynchronize(func, *args)
 
@@ -163,14 +171,16 @@ def asynchronized(func: Callable) -> Callable:
     return asynchronizer
 
 
-def asynchronized_wg(func: Callable) -> Callable:
+def asynchronized_wg(func: Callable[..., None]) -> Callable[..., AnyType]:
     """
     decorator
     """
 
     @wraps(func)
-    def asynchronizer(wg: AnyType, *args: AnyType) -> Callable:
-        async def _coro(_1, _2):
+    def asynchronizer(
+        wg: AnyType, *args: AnyType
+    ) -> Callable[[AnyType, AnyType], Coroutine[AnyType, AnyType, None]]:
+        async def _coro(_1: AnyType, _2: AnyType) -> None:
             _ = _1, _2
             if not wg._selection_event:
                 return
@@ -181,7 +191,7 @@ def asynchronized_wg(func: Callable) -> Callable:
     return asynchronizer
 
 
-_VegaWidget = historized_widget(VegaWidget, "update")
+_VegaWidget: Type[HistorizedBox] = historized_widget(VegaWidget, "update")
 
 
 @asynchronized
@@ -295,16 +305,16 @@ def get_flag_status(dt: str, op: str) -> bool:
     return op in type_op_mismatches.get(dt, set())
 
 
-def make_tab_observer(tab, sched):
-    def _tab_observer(wg):
+def make_tab_observer(tab: "TreeTab", sched: Scheduler) -> Callable[..., None]:
+    def _tab_observer(wg: AnyType) -> None:
         key = tab.get_selected_title()
         sched._module_selection = tab.mod_dict.get(key)
 
     return _tab_observer
 
 
-def make_tab_observer_2l(tab, sched):
-    def _tab_observer(wg):
+def make_tab_observer_2l(tab: "DynViewer", sched: Scheduler) -> Callable[..., None]:
+    def _tab_observer(wg: AnyType) -> None:
         subtab = tab.get_selected_child()
         if isinstance(subtab, TreeTab):
             key = subtab.get_selected_title()
@@ -372,7 +382,7 @@ class DynViewer(TreeTab):
             make_tab_observer_2l(self, self.get_scheduler()), names="selected_index"
         )
 
-    def init_factory(self, input_module, input_slot):
+    def init_factory(self, input_module: Module, input_slot: str) -> StatsFactory:
         s = input_module.scheduler()
         with s:
             factory = StatsFactory(input_module=input_module, scheduler=s)
@@ -382,7 +392,7 @@ class DynViewer(TreeTab):
             sink.input.inp = factory.output.result
             return factory
 
-    def get_scheduler(self):
+    def get_scheduler(self) -> Scheduler:
         return self._registry_mod.scheduler()
 
     def draw_matrix(self, ext_df: Optional[pd.DataFrame] = None) -> ipw.GridBox:
@@ -533,11 +543,11 @@ class DynViewer(TreeTab):
             selection1 = sk_mod.path_to_origin()
             selection2 = hmod_1d.path_to_origin()
             selection = selection1 | selection2
-            sk_mod.updated_once = False  # type: ignore
+            sk_mod.updated_once = False
             sk_mod.on_after_run(
                 refresh_info_sketch(hout, sk_mod, name, self._hist_tab, self)
             )
-            hmod_1d.updated_once = False  # type: ignore
+            hmod_1d.updated_once = False
             hmod_1d.on_after_run(
                 refresh_info_hist_1d(hout, hmod_1d, name, self._hist_tab)
             )
@@ -555,7 +565,7 @@ class DynViewer(TreeTab):
             return
         hout = _VegaWidget(spec=hist2d_spec_no_data)
         _mod = h2d_mod.dep.histogram2d
-        _mod.updated_once = False  # type: ignore
+        _mod.updated_once = False
         selection = _mod.path_to_origin()
         _mod.on_after_run(refresh_info_h2d(hout, _mod, name, self._h2d_tab))
         self._h2d_dict[name] = (h2d_mod, hout)
@@ -620,7 +630,11 @@ class DynViewer(TreeTab):
                         lab.value = ""
                         continue
                     subm = mod_matrix.loc[col, k]
-                    if not (subm and subm.result):
+                    if subm is None:
+                        lab.value = "..."
+                        continue
+                    assert hasattr(subm, "result")
+                    if subm.result is None:
                         lab.value = "..."
                         continue
                     res = subm.result.get(col_name, "")
@@ -642,7 +656,12 @@ class DynViewer(TreeTab):
                 for attr in hist_sel:
                     hist_mod = mod_matrix.loc[attr, "hist"]
                     assert hist_mod
-                    self.set_histogram_widget(attr, hist_mod)
+                    self.set_histogram_widget(
+                        attr,
+                        cast(
+                            Union[Histogram1dPattern, Histogram1DCategorical], hist_mod
+                        ),
+                    )
                 self._hist_sel = hist_sel
         else:
             self.remove_tab(HIST1D_TAB_TITLE)
@@ -701,7 +720,7 @@ class DynViewer(TreeTab):
             self.remove_tab(CORR_MX_TAB_TITLE)
             self._corr_sel = []
 
-    def _info_label(self, k) -> ipw.Label:
+    def _info_label(self, k: Tuple[str, str]) -> ipw.Label:
         lab = ipw.Label()
         self.info_labels[k] = lab
         return lab
@@ -718,13 +737,13 @@ class DynViewer(TreeTab):
         wgt.observe(self._h2d_cbx_obs_cb, "value")
         return wgt
 
-    def get_underlying_modules(self):
+    def get_underlying_modules(self) -> List[str]:
         s = self._registry_mod.scheduler()
         modules = s.group_modules(self._registry_mod.name)
         print("to delete", modules)
         return modules
 
-    def _make_cbx_obs(self, col: str, func: str) -> Callable:
+    def _make_cbx_obs(self, col: str, func: str) -> Callable[..., None]:
         def _cbk(change: AnyType) -> None:
             self._btn_apply.disabled = False
             if func == "hide":
@@ -816,8 +835,12 @@ class DynViewer(TreeTab):
         finally:
             self.obs_flag = False
 
-    def set_selection_event(self) -> Callable:
-        async def fun(a, b, c):
+    def set_selection_event(
+        self,
+    ) -> Callable[
+        [Scheduler, Set[Module], Set[Module]], Coroutine[AnyType, AnyType, None]
+    ]:
+        async def fun(a: AnyType, b: AnyType, c: AnyType) -> None:
             if not self._selection_event:
                 self._selection_event = True
 
@@ -828,12 +851,12 @@ class DescStatsW(VBox):
     def __init__(self) -> None:
         super().__init__()
 
-    def init(self):
+    def init(self) -> None:
         self._dyn_viewer = DynViewer(self.dtypes, self.input_module, self.input_slot)
         self.dag.requestAttention(self.title, "widget", "PROGRESS_NOTIFICATION", "0")
         self.children = (self._dyn_viewer,)
 
-    def get_underlying_modules(self):
+    def get_underlying_modules(self) -> List[str]:
         return self._dyn_viewer.get_underlying_modules()
 
 

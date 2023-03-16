@@ -203,7 +203,7 @@ class IScalerIn(ipw.GridBox):
         values["time"] = time.time()  # always make a change
         # wg._dict['reset'].value = False
         loop = aio.get_running_loop()
-        loop.create_task(m.control.from_input(values))
+        loop.create_task(m.dep.control.from_input(values))
 
     @property
     def main(self) -> "ScalerW":
@@ -256,9 +256,12 @@ class IScalerOut(ipw.HBox):
         return lab
 
     def refresh_info(self) -> None:
-        if not self.main.output_module._info:
+        assert self.main.output_module is not None
+        assert hasattr(self.main.output_module, "info")
+        assert hasattr(self.main.output_module, "result")
+        if not self.main.output_module.info:
             return
-        for k, v in self.main.output_module._info.items():
+        for k, v in self.main.output_module.info.items():
             lab = self.info_labels[k]
             lab.value = str(v)
         if self.main.output_module.result is None:
@@ -280,7 +283,7 @@ class ScalerW(VBoxSchema):
         start_btn = make_button(
             "Run scaler", cb=self._start_btn_cb, disabled=True
         )
-        self.schema = dict(inp=inp, out=out, start_btn=start_btn)
+        self.set_schema(dict(inp=inp, out=out, start_btn=start_btn))
 
     def _start_btn_cb(self, btn: Any) -> None:
         self.output_module = self.init_scaler()
@@ -288,8 +291,8 @@ class ScalerW(VBoxSchema):
         self.output_module.on_after_run(_refresh_info(self["out"]))
         self.make_chaining_box()
         self.dag_running()
-        self["inp"]._dict["selm"].disabled = True
-        self["inp"]._dict["apply"].disabled = False
+        cast(IScalerIn, self["inp"])._dict["selm"].disabled = True
+        cast(IScalerIn, self["inp"])._dict["apply"].disabled = False
 
     def _selm_cb(self, change: Any) -> None:
         val = change["new"]
@@ -301,9 +304,10 @@ class ScalerW(VBoxSchema):
     def init_scaler(self) -> MinMaxScaler:
         s = self.input_module.scheduler()
         with s:
-            dvar = DynVar({'delta': self["inp"].delta,
-                           'ignore_max': self["inp"].ignore_max}, scheduler=s)
-            sc = MinMaxScaler(reset_threshold=10_000, usecols=self["inp"].selm)
+            inp = cast(IScalerIn, self["inp"])
+            dvar = DynVar({'delta': inp.delta,
+                           'ignore_max': inp.ignore_max}, scheduler=s)
+            sc = MinMaxScaler(reset_threshold=10_000, usecols=inp.selm)
             sc.create_dependent_modules(self.input_module, hist=True)
             sc.dep.control = dvar
             sc.input.control = dvar.output.result

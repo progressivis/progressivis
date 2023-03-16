@@ -6,7 +6,7 @@ from .utils import (
 import ipywidgets as ipw
 import pandas as pd
 from progressivis.table.aggregate import Aggregate
-from progressivis.core import Sink
+from progressivis.core import Sink, Module
 
 from typing import (
     Any as AnyType,
@@ -15,6 +15,7 @@ from typing import (
     Tuple,
     Dict,
     Callable,
+    cast
 )
 
 WidgetType = AnyType
@@ -40,11 +41,11 @@ class AggregateW(VBoxSchema):
         start_btn = make_button(
             "Activate", cb=self._start_btn_cb, disabled=True
         )
-        self.schema = dict(
+        self.set_schema(dict(
             hidden_sel=hidden_sel,
             grid=grid,
             start_btn=start_btn,
-        )
+        ))
 
     def init_aggregate(self, compute: AnyType) -> Aggregate:
         s = self.input_module.scheduler()
@@ -95,23 +96,23 @@ class AggregateW(VBoxSchema):
         for col in cols:
             self.hidden_cols.remove(col)
             self.visible_cols.append(col)
-        self["hidden_sel"].options = sorted(self.hidden_cols)
+        cast(ipw.SelectMultiple, self["hidden_sel"]).options = sorted(self.hidden_cols)
         self["grid"] = self.draw_matrix()
 
-    def _make_cbx_obs(self, col: str, func: str) -> Callable:
+    def _make_cbx_obs(self, col: str, func: str) -> Callable[[AnyType], None]:
         def _cbk(change: AnyType) -> None:
             if func == "hide":
                 self["start_btn"].disabled = True
                 self.hidden_cols.append(col)
                 self.visible_cols.remove(col)
-                self["hidden_sel"].options = sorted(self.hidden_cols)
+                cast(ipw.SelectMultiple, self["hidden_sel"]).options = sorted(self.hidden_cols)
                 self["grid"] = self.draw_matrix()
             else:
                 self["start_btn"].disabled = False
 
         return _cbk
 
-    def get_underlying_modules(self):
+    def get_underlying_modules(self) -> List[Module]:
         return [self.output_module]
 
 

@@ -7,24 +7,26 @@ from .utils import (
 from ..utils import historized_widget
 from ._multi_series import multi_series_no_data
 import ipywidgets as ipw
-from vega.widget import VegaWidget  # type: ignore
+from vega.widget import VegaWidget
 import pandas as pd
-from typing import Any as AnyType, Dict
+from progressivis.core import Module
+from typing import Any as AnyType, Dict, cast, Type, List, Union
+from typing_extensions import TypeAlias
 
-WidgetType = AnyType
+
 _l = ipw.Label
 
 N = 4  # 1X + 3Y
 
 
-_VegaWidget = historized_widget(VegaWidget, "update")
+_VegaWidget: TypeAlias = cast(Type[AnyType], historized_widget(VegaWidget, "update"))
 
 
 class MultiSeriesW(VBoxSchema):
-    def init(self):
+    def init(self) -> None:
         self.output_dtypes = None
         self._axis = []
-        lst = [_l("Axis"), _l("PColumn"), _l("* Factor"), _l("Symbol")]
+        lst: List[ipw.DOMWidget] = [_l("Axis"), _l("PColumn"), _l("* Factor"), _l("Symbol")]
         for i in range(N):
             row = self._axis_row("Y" if i else "X")
             self._axis.append(row)
@@ -36,9 +38,9 @@ class MultiSeriesW(VBoxSchema):
         btn_apply = self._btn_ok = make_button(
             "Apply", disabled=True, cb=self._btn_apply_cb
         )
-        self.schema = dict(grid=gb, btn_apply=btn_apply, vega=None)
+        self.set_schema(dict(grid=gb, btn_apply=btn_apply, vega=None))
 
-    def _axis_row(self, axis):
+    def _axis_row(self, axis: str) -> Dict[str, ipw.DOMWidget]:
         axis_w = _l(axis)
         col_list = [""] + list(self.dtypes.keys())
         col = ipw.Dropdown(
@@ -48,6 +50,8 @@ class MultiSeriesW(VBoxSchema):
             layout={"width": "initial"},
         )
         col.observe(self._col_xy_cb, "value")
+        factor: Union[ipw.FloatText, ipw.Label]
+        sym: Union[ipw.Text, ipw.Label]
         if axis.upper() == "Y":
             factor = ipw.FloatText(value=1.0, description="", disabled=False)
             sym = ipw.Text(
@@ -58,8 +62,9 @@ class MultiSeriesW(VBoxSchema):
             sym = dongle_widget()
         return dict(axis=axis_w, col=col, factor=factor, sym=sym)
 
-    def _update_vw(self, m, run_number):
-        tbl = self.input_module.table
+    def _update_vw(self, m: Module, run_number: int) -> None:
+        assert hasattr(self.input_module, "result")
+        tbl = self.input_module.result
         if tbl is None:
             print("no tbl")
             return
@@ -83,7 +88,9 @@ class MultiSeriesW(VBoxSchema):
                 }
             )
             dataframes.append(df)
-        self["vega"].update("data", remove="true", insert=pd.concat(dataframes))
+        cast(_VegaWidget, self["vega"]).update("data",
+                                               remove="true",
+                                               insert=pd.concat(dataframes))
 
     def _col_xy_cb(self, change: Dict[str, AnyType]) -> None:
         has_x = False
@@ -96,7 +103,7 @@ class MultiSeriesW(VBoxSchema):
                     has_y = True
         self["btn_apply"].disabled = not (has_x and has_y)
 
-    def _btn_apply_cb(self, btn):
+    def _btn_apply_cb(self, btn: AnyType) -> None:
         self["vega"] = _VegaWidget(spec=multi_series_no_data)
         self.input_module.on_after_run(self._update_vw)
         self.dag_running()

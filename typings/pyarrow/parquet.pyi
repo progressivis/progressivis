@@ -1,4 +1,4 @@
-from typing import Any, List, Generator
+from typing import Any, List, Generator, Dict
 from pyarrow import Table
 import numpy as np
 
@@ -42,7 +42,17 @@ class ParquetSchema:
     def column(self, i: int) -> ColumnSchema:
         ...
 
+class FileMetaData:
+    created_by: str
+    format_version: str
+    metadata: Dict[bytes, bytes]
+    num_columns: int
+    num_rows: int
+    schema: ParquetSchema
+    serialized_size: int
+
 class ParquetFile:
+    metadata: FileMetaData
     def __init__(self, *args: Any, **kw: Any) -> None:
         ...
 

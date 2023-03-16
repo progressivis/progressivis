@@ -2,13 +2,14 @@ import ipywidgets as ipw
 import numpy as np
 import pyarrow.parquet as pq
 from progressivis.table.dshape import dataframe_dshape, ExtensionDtype
+from progressivis.core import Module
 from progressivis.io import ParquetLoader
 from .utils import (make_button, VBoxSchema)
 import os
 
 from typing import (
     Any, Any as AnyType,
-    Dict, Union
+    Dict, Union, cast
 )
 
 
@@ -18,7 +19,7 @@ def _ds(t: Union[np.dtype[Any], ExtensionDtype]) -> str:
 
 
 class ColInfo(ipw.VBox):
-    def __init__(self, raw_info, dtype, *args, **kw) -> None:
+    def __init__(self, raw_info: Any, dtype: Union[np.dtype[Any], ExtensionDtype], *args: Any, **kw: Any) -> None:
         super().__init__(*args, **kw)
         self.info = ipw.Textarea("\n".join(str(raw_info).strip().split("\n")[1:]),
                                  rows=12)
@@ -28,7 +29,7 @@ class ColInfo(ipw.VBox):
 
 
 class Sniffer(ipw.HBox):
-    def __init__(self, url, *args, **kw) -> None:
+    def __init__(self, url: str, *args: Any, **kw: Any) -> None:
         super().__init__(*args, **kw)
         self.pqfile = pq.ParquetFile(url)
         self.schema = self.pqfile.schema.to_arrow_schema()
@@ -36,8 +37,8 @@ class Sniffer(ipw.HBox):
         self.names = names
         types = [t.to_pandas_dtype() for t in self.schema.types]
         decorated = [(f"{n}:{np.dtype(t).name}", n) for (n, t) in zip(names, types)]
-        self.info_cols = {n: ColInfo(self.pqfile.schema.column(i), np.dtype(types[i]))
-                          for (i, n) in enumerate(names)}
+        self.info_cols: Dict[str, ColInfo] = {n: ColInfo(self.pqfile.schema.column(i), np.dtype(types[i]))
+                                              for (i, n) in enumerate(names)}
         # PColumn selection
         self.columns = ipw.Select(disabled=False, rows=7, options=decorated)
         self.columns.observe(self._columns_cb, names="value")
@@ -54,7 +55,7 @@ class Sniffer(ipw.HBox):
                 ),
         )
 
-    def get_dtypes(self):
+    def get_dtypes(self) -> Dict[str, str]:
         return {k: _ds(col.dtype)
                 for (k, col) in self.info_cols.items()
                 if col.use.value}
@@ -72,8 +73,8 @@ class Sniffer(ipw.HBox):
 
 
 class ParquetLoaderW(VBoxSchema):
-    def init(self):
-        url = ipw.Text(  # type: ignore
+    def init(self) -> None:
+        url = ipw.Text(
             value=os.getenv("PROGRESSIVIS_DEFAULT_PARQUET"),
             placeholder='',
             description='File:',
@@ -82,7 +83,7 @@ class ParquetLoaderW(VBoxSchema):
         )
         sniff_btn = make_button("Sniff ...",
                                 cb=self._sniffer_cb)
-        self.schema = dict(
+        self.schema = dict(  # type: ignore
             url=url,
             sniff_btn=sniff_btn,
             sniffer=None,
@@ -117,14 +118,15 @@ class ParquetLoaderW(VBoxSchema):
                                 scheduler=s)
             sink.input.inp = pql.output.result
 
-            def _f(m, rnum):
-                if m.table is None:
+            def _f(m: Module, rnum: int) -> None:
+                assert hasattr(m, "result")
+                if m.result is None:
                     return
-                pc = min(100*len(m.table)//self["sniffer"].pqfile.metadata.num_rows+1, 100)
+                pc = min(100*len(m.result)//cast(Sniffer, self["sniffer"]).pqfile.metadata.num_rows+1, 100)
                 self.dag.updateSummary(self.title, {"progress": pc})
                 if pc < 100:
                     self.dag.requestAttention(self.title, "widget",
-                                              "PROGRESS_NOTIFICATION", len(m.table))
+                                              "PROGRESS_NOTIFICATION", len(m.result))
                 else:
                     self.dag.removeRequestAttention(self.title,
                                                     "widget", "PROGRESS_NOTIFICATION")
