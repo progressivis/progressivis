@@ -14,11 +14,8 @@ from typing import (
     List,
     Union,
     cast,
-    TYPE_CHECKING,
 )
-
-if TYPE_CHECKING:
-    from progressivis.table.table_base import BasePTable
+from progressivis.table.table_base import BasePTable
 
 
 class PDataExpr(Expr):
