@@ -745,6 +745,7 @@ class TestReduce(ProgressiveTest):
         res1 = getattr(ufunc, "reduce")(random.result.to_array(), dtype=dtype)
         res2 = np.array(list(module.result.values()))
         self.assertTrue(module.name.startswith(mod_name))
+        assert np.allclose(res1, res2, equal_nan=True)
         self.assertTrue(np.allclose(res1, res2, equal_nan=True))
 
 
