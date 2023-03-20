@@ -9,7 +9,7 @@ dependencies:
   - nodejs
   - pkgconfig
   - pip
-  - numpy==1.22.0
+  - numpy>=1.22.0
   - scipy>=0.18.1
   - numexpr>=2.6.1
   - pandas>=1.2.5
@@ -21,8 +21,8 @@ dependencies:
   - cython
   - pybind11
   - xtensor-python
-  - croaring=0.2.63
-  - pyroaring==0.2.11
+  - croaring
+  - pyroaring
   - datashape
   - fast-histogram
   - python-engineio=3.13.2

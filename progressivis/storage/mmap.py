@@ -224,10 +224,19 @@ class MMapDataset(Dataset):
     def flush(self) -> None:
         _write_attributes(self._attrs.attrs, self._metafile)
 
+    def base_release(self) -> None:
+        if self.base is None:
+            return
+        if isinstance(self.base.base, memoryview):
+            self.base.base.release()
+        elif self.base.base is not None and isinstance(self.base.base.base, memoryview):
+            self.base.base.base.release()
+
     def close_all(self, recurse: bool = True) -> None:
         if self._buffer.closed:
             return
         self.flush()
+        self.base_release()
         self._buffer.close()
         self._file.close()
         if recurse and self._strings is not None:
@@ -278,6 +287,7 @@ class MMapDataset(Dataset):
         last = max(0, length - 1)
         length = (last // PAGESIZE + 1) * PAGESIZE * 10
         if length != len(self._buffer):
+            self.base_release()
             self._buffer.resize(length)
         self.base = np.frombuffer(
             self._buffer, dtype=dtype_, count=nb_item

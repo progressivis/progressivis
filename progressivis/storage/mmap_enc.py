@@ -49,6 +49,8 @@ class MMapObject(object):
         self._freelist = [PIntSet() for _ in range(FREELIST_SIZE)]
 
     def _allocate(self, size: int) -> None:
+        if self.sizes is not None and self.sizes.base is not None and hasattr(self.sizes.base, "release"):
+            self.sizes.base.release()
         self.mmap.resize(size * PAGESIZE)
         self.sizes = np.frombuffer(self.mmap, np.uint32)
 
@@ -152,6 +154,8 @@ class MMapObject(object):
 
     def close(self) -> None:
         if not self.mmap.closed:
+            if self.sizes is not None and self.sizes.base is not None and hasattr(self.sizes.base, "release"):
+                self.sizes.base.release()
             self.mmap.close()
             # self.mmap = None
         if not self._file.closed:
