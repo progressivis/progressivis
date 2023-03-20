@@ -743,7 +743,7 @@ class TestReduce(ProgressiveTest):
         assert module.result is not None
         assert random.result is not None
         res1 = getattr(ufunc, "reduce")(random.result.to_array(), dtype=dtype)
-        res2 = np.array(list(module.result.values()))
+        res2 = np.array(module.result.values(), dtype=dtype)  # type: ignore
         self.assertTrue(module.name.startswith(mod_name))
         assert np.allclose(res1, res2, equal_nan=True)
         self.assertTrue(np.allclose(res1, res2, equal_nan=True))
