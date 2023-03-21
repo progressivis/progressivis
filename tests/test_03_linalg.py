@@ -725,8 +725,8 @@ class TestReduce(ProgressiveTest):
         self.assertTrue(np.allclose(res1, res2, equal_nan=True))
 
     def _t_impl(self, cls: Type[SubReduce], ufunc: np.ufunc, mod_name: str) -> None:
-        if mod_name == "arctan2_reduce_":
-            return
+        # if mod_name == "arctan2_reduce_":
+        #     return
         print("Testing", mod_name)
         dtype = (
             "float64"
