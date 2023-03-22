@@ -15,7 +15,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python_version: ["3.8", "3.9", "3.10", "3.11"]
+        python: ["3.8", "3.9", "3.10", "3.11"]
 
     defaults:
       run:
@@ -23,13 +23,17 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
+    - name: Set up Python ${{ matrix.python }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python }}
     - name: Download a file
       run: |
         wget --no-verbose https://datahub.io/machine-learning/mnist_784/r/mnist_784.csv -O mnist_784.csv
         mkdir data
         mv mnist_784.csv data/
 
-    - name: Run tests
+    - name: Run tests with
       run: |
         python -m pip install -r requirements_ci.txt
         git submodule init
@@ -43,8 +47,8 @@ jobs:
     - name: Pip freeze
       if: failure()
       run: |
-        mkdir downloads
-        python -m pip freeze > downloads/pip_freeze.txt
+        mkdir -p downloads/${{ matrix.python }}/
+        python -m pip freeze > downloads/${{ matrix.python }}/pip_freeze.txt
     - name: Upload frozen env
       if: failure()
       uses: actions/upload-artifact@v3

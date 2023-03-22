@@ -296,8 +296,7 @@ class Module(metaclass=ABCMeta):
     def doc_building() -> bool:
         if Module._doc_building is None:
             import sys
-
-            if "/progressivis/sphinx_marker/" in sys.path:
+            if "sphinx.config" in sys.modules:
                 print("doc building")
                 Module._doc_building = True
             else:

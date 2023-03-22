@@ -1,8 +1,11 @@
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v2.3.0
+    rev: v4.4.0
     hooks:
       - id: trailing-whitespace
+  - repo: https://github.com/pycqa/flake8
+    rev: ''
+    hooks:
       - id: flake8
 
   - repo: https://github.com/pre-commit/mirrors-mypy

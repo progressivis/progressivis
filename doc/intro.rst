@@ -1,7 +1,0 @@
-------------
-Introduction
-------------
-
-ProgressiVis at glance
-======================
-

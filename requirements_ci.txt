@@ -1,7 +1,7 @@
 Pillow>=4.2.0
 cython
 pybind11>=2.0.1
-numpy>=1.22.0
+numpy==1.22.0
 scipy>=0.18.1
 numexpr>=2.6.1
 tables>=3.3.0
