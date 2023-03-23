@@ -39,7 +39,7 @@ jobs:
         git submodule init
         git submodule update
         python -m pip install --no-deps -e .
-        coverage run -m pytest tests/test_my_linalg.py -vv
+        coverage run -m pytest tests -vv
 
     - name: Coverage
       run: |

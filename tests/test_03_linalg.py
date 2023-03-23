@@ -725,8 +725,6 @@ class TestReduce(ProgressiveTest):
         self.assertTrue(np.allclose(res1, res2, equal_nan=True))
 
     def _t_impl(self, cls: Type[SubReduce], ufunc: np.ufunc, mod_name: str) -> None:
-        # if mod_name == "arctan2_reduce_":
-        #     return
         print("Testing", mod_name)
         dtype = (
             "float64"
@@ -752,6 +750,8 @@ class TestReduce(ProgressiveTest):
 
 
 def add_reduce_tst(c: Type[TestReduce], k: str, ufunc: np.ufunc) -> None:
+    if k == "arctan2":
+        return  # arctan2 is not commutative, nor associative
     cls = f"{func2class_name(k)}Reduce"
     if cls not in arr.__dict__:
         print(f"Class {cls} not implemented")
