@@ -33,7 +33,7 @@ jobs:
         mkdir data
         mv mnist_784.csv data/
 
-    - name: Run tests with
+    - name: Run tests
       run: |
         python -m pip install -r requirements_ci.txt
         git submodule init
