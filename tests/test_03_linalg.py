@@ -750,8 +750,6 @@ class TestReduce(ProgressiveTest):
 
 
 def add_reduce_tst(c: Type[TestReduce], k: str, ufunc: np.ufunc) -> None:
-    if k == "arctan2":
-        return  # arctan2 is not commutative, nor associative
     cls = f"{func2class_name(k)}Reduce"
     if cls not in arr.__dict__:
         print(f"Class {cls} not implemented")
@@ -765,6 +763,8 @@ def add_reduce_tst(c: Type[TestReduce], k: str, ufunc: np.ufunc) -> None:
 
 
 for k, ufunc in binary_dict_gen_tst.items():
+    if k == "arctan2":
+        continue  # arctan2 is not commutative, nor associative
     add_reduce_tst(TestReduce, k, ufunc)
 
 
