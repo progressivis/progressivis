@@ -35,8 +35,8 @@ jobs:
     - name: Make html
       run: |
         pushd doc
-	make html
-	popd
+        make html
+        popd
     - name: Upload doc
       if: always()
       uses: actions/upload-artifact@v3
