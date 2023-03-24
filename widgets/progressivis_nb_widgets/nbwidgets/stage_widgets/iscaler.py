@@ -6,11 +6,7 @@ from progressivis.core import asynchronize, aio, Sink
 from progressivis.io import DynVar
 from progressivis.stats.scaling import MinMaxScaler
 from typing import Any, Dict, List, Callable, cast
-from .utils import (
-    make_button,
-    stage_register,
-    VBoxSchema
-)
+from .utils import make_button, stage_register, VBoxSchema, SchemaBase
 
 spec_no_data = {
     "data": {"name": "data"},
@@ -97,7 +93,10 @@ class IScalerIn(ipw.GridBox):
         self._main = weakref.ref(main)
         selm = ipw.SelectMultiple(
             options=[(f"{col}:{t}", col) for (col, t) in self.main.dtypes.items()],
-            value=[], rows=5, description="Scaled columns", disabled=False,
+            value=[],
+            rows=5,
+            description="Scaled columns",
+            disabled=False,
         )
         selm.observe(self.main._selm_cb, names="value")
         rt = ipw.IntSlider(
@@ -124,9 +123,9 @@ class IScalerIn(ipw.GridBox):
             readout=True,
             readout_format="d",
         )
-        tol_p100 = ipw.Checkbox(value=True,
-                                description="Tolerance as %",
-                                disabled=False, indent=False)
+        tol_p100 = ipw.Checkbox(
+            value=True, description="Tolerance as %", disabled=False, indent=False
+        )
         tol_p100.observe(self._tol_p100_cb, names="value")
         ign = ipw.IntSlider(
             value=10,
@@ -159,7 +158,7 @@ class IScalerIn(ipw.GridBox):
             "delta_p100": tol_p100,
             "ignore_max": ign,
             "reset": rst,
-            "apply": btn
+            "apply": btn,
         }
         lst: List[ipw.DOMWidget] = []
         for wg in [selm, rt, tol_p100, tol, ign, rst]:
@@ -249,6 +248,7 @@ class IScalerOut(ipw.HBox):
                 htab.set_title(i, t)
             super().__init__(children=[gb, htab])
         """
+
     def _info_label(self, k: str) -> ipw.Label:
         v = ""
         lab = ipw.Label(v)
@@ -276,37 +276,44 @@ class IScalerOut(ipw.HBox):
 
 
 class ScalerW(VBoxSchema):
+    class Schema(SchemaBase):
+        inp: IScalerIn
+        out: IScalerOut
+        start_btn: ipw.Button
+
+    child: Schema
+
     def init(self) -> None:
-        inp = IScalerIn(self)
-        inp.disabled = True
-        out = IScalerOut(self)
-        start_btn = make_button(
+        self.child.inp = IScalerIn(self)
+        self.child.inp.disabled = True
+        self.child.out = IScalerOut(self)
+        self.child.start_btn = make_button(
             "Run scaler", cb=self._start_btn_cb, disabled=True
         )
-        self.set_schema(dict(inp=inp, out=out, start_btn=start_btn))
 
     def _start_btn_cb(self, btn: Any) -> None:
         self.output_module = self.init_scaler()
         self.output_slot = "result"
-        self.output_module.on_after_run(_refresh_info(self["out"]))
+        self.output_module.on_after_run(_refresh_info(self.child.out))
         self.make_chaining_box()
         self.dag_running()
-        cast(IScalerIn, self["inp"])._dict["selm"].disabled = True
-        cast(IScalerIn, self["inp"])._dict["apply"].disabled = False
+        self.child.inp._dict["selm"].disabled = True
+        self.child.inp._dict["apply"].disabled = False
 
     def _selm_cb(self, change: Any) -> None:
         val = change["new"]
         if val:
-            self["start_btn"].disabled = False
+            self.child.start_btn.disabled = False
         else:
-            self["start_btn"].disabled = True
+            self.child.start_btn.disabled = True
 
     def init_scaler(self) -> MinMaxScaler:
         s = self.input_module.scheduler()
         with s:
-            inp = cast(IScalerIn, self["inp"])
-            dvar = DynVar({'delta': inp.delta,
-                           'ignore_max': inp.ignore_max}, scheduler=s)
+            inp = self.child.inp
+            dvar = DynVar(
+                {"delta": inp.delta, "ignore_max": inp.ignore_max}, scheduler=s
+            )
             sc = MinMaxScaler(reset_threshold=10_000, usecols=inp.selm)
             sc.create_dependent_modules(self.input_module, hist=True)
             sc.dep.control = dvar

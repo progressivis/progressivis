@@ -1,22 +1,10 @@
-from .utils import (
-    make_button,
-    stage_register,
-    VBoxSchema
-)
+from .utils import make_button, stage_register, VBoxSchema, SchemaBase
 import ipywidgets as ipw
 import pandas as pd
 from progressivis.table.aggregate import Aggregate
 from progressivis.core import Sink, Module
 
-from typing import (
-    Any as AnyType,
-    Optional,
-    List,
-    Tuple,
-    Dict,
-    Callable,
-    cast
-)
+from typing import Any as AnyType, Optional, List, Tuple, Dict, Callable
 
 WidgetType = AnyType
 
@@ -26,26 +14,32 @@ def get_flag_status(dt: str, op: str) -> bool:
 
 
 class AggregateW(VBoxSchema):
+    class Schema(SchemaBase):
+        hidden_sel: ipw.SelectMultiple
+        grid: ipw.GridBox
+        start_btn: ipw.Button
+
+    child: Schema
+
     def init(self) -> None:
         self.hidden_cols: List[str] = []
         fncs = ["hide"] + list(Aggregate.registry.keys())
         self.all_functions = dict(zip(fncs, fncs))
-        hidden_sel = ipw.SelectMultiple(
-            options=self.hidden_cols, value=[], rows=5, description="❎", disabled=False,
+        self.child.hidden_sel = ipw.SelectMultiple(
+            options=self.hidden_cols,
+            value=[],
+            rows=5,
+            description="❎",
+            disabled=False,
         )
-        hidden_sel.observe(self._selm_obs_cb, "value")
+        self.child.hidden_sel.observe(self._selm_obs_cb, "value")
         self.visible_cols: List[str] = list(self.dtypes.keys())
         self.obs_flag = False
         self.info_cbx: Dict[Tuple[str, str], ipw.Checkbox] = {}
-        grid = self.draw_matrix()
-        start_btn = make_button(
+        self.child.grid = self.draw_matrix()
+        self.child.start_btn = make_button(
             "Activate", cb=self._start_btn_cb, disabled=True
         )
-        self.set_schema(dict(
-            hidden_sel=hidden_sel,
-            grid=grid,
-            start_btn=start_btn,
-        ))
 
     def init_aggregate(self, compute: AnyType) -> Aggregate:
         s = self.input_module.scheduler()
@@ -96,19 +90,19 @@ class AggregateW(VBoxSchema):
         for col in cols:
             self.hidden_cols.remove(col)
             self.visible_cols.append(col)
-        cast(ipw.SelectMultiple, self["hidden_sel"]).options = sorted(self.hidden_cols)
-        self["grid"] = self.draw_matrix()
+        self.child.hidden_sel.options = sorted(self.hidden_cols)
+        self.child.grid = self.draw_matrix()
 
     def _make_cbx_obs(self, col: str, func: str) -> Callable[[AnyType], None]:
         def _cbk(change: AnyType) -> None:
             if func == "hide":
-                self["start_btn"].disabled = True
+                self.child.start_btn.disabled = True
                 self.hidden_cols.append(col)
                 self.visible_cols.remove(col)
-                cast(ipw.SelectMultiple, self["hidden_sel"]).options = sorted(self.hidden_cols)
-                self["grid"] = self.draw_matrix()
+                self.child.hidden_sel.options = sorted(self.hidden_cols)
+                self.child.grid = self.draw_matrix()
             else:
-                self["start_btn"].disabled = False
+                self.child.start_btn.disabled = False
 
         return _cbk
 

@@ -4,70 +4,65 @@ from progressivis.io.csv_sniffer import CSVSniffer
 from progressivis.io import SimpleCSVLoader
 from progressivis.table import PTable
 from progressivis.table.constant import Constant
-from .utils import (make_button,
-                    get_schema, VBoxSchema)
+from .utils import make_button, get_schema, VBoxSchema, SchemaBase
 import os
 
-from typing import (
-    List, Optional
-)
+from typing import List, Optional
 
 
 class CsvLoaderW(VBoxSchema):
+    class Schema(SchemaBase):
+        urls_wg: ipw.Textarea
+        to_sniff: ipw.Text
+        n_lines: ipw.IntText
+        sniff_btn: ipw.Button
+        sniffer: Optional[CSVSniffer]
+        start_btn: Optional[ipw.Button]
+
+    child: Schema
+
     def __init__(self) -> None:
         super().__init__()
         self._sniffer: Optional[CSVSniffer] = None
         self._urls: List[str] = []
 
-    def init(self,
-             urls: List[str] = [],
-             to_sniff: str = "", lines: int = 100) -> None:
-        urls_wg = ipw.Textarea(
+    def init(self, urls: List[str] = [], to_sniff: str = "", lines: int = 100) -> None:
+        self.child.urls_wg = ipw.Textarea(
             value=os.getenv("PROGRESSIVIS_DEFAULT_CSV"),
-            placeholder='',
-            description='URLS:',
+            placeholder="",
+            description="URLS:",
             disabled=False,
-            layout=ipw.Layout(width="100%")
+            layout=ipw.Layout(width="100%"),
         )
-        to_sniff_ = ipw.Text(
+        self.child.to_sniff = ipw.Text(
             value=to_sniff,
-            placeholder='',
-            description='URL to sniff(optional):',
+            placeholder="",
+            description="URL to sniff(optional):",
             disabled=False,
-            layout=ipw.Layout(width="100%")
+            layout=ipw.Layout(width="100%"),
         )
-        n_lines = ipw.IntText(
-            value=lines,
-            description='Rows:',
-            disabled=False
+        self.child.n_lines = ipw.IntText(
+            value=lines, description="Rows:", disabled=False
         )
-        sniff_btn = make_button("Sniff ...",
-                                cb=self._sniffer_cb)
-        self.set_schema(dict(
-            urls_wg=urls_wg,
-            to_sniff=to_sniff_,
-            n_lines=n_lines,
-            sniff_btn=sniff_btn,
-            sniffer=None,
-            start_btn=None,
-        ))
+        self.child.sniff_btn = make_button("Sniff ...", cb=self._sniffer_cb)
 
     def _sniffer_cb(self, btn: ipw.Button) -> None:
-        urls = self["urls_wg"].value.strip().split("\n")
+        urls = self.child.urls_wg.value.strip().split("\n")
         assert urls
         self._urls = urls
-        to_sniff = self["to_sniff"].value.strip()
+        to_sniff = self.child.to_sniff.value.strip()
         if not to_sniff:
             to_sniff = urls[0]
-        n_lines = self["n_lines"].value
+        n_lines = self.child.n_lines.value
         self._sniffer = CSVSniffer(path=to_sniff, lines=n_lines)
-        self["sniffer"] = self._sniffer.box
-        self["start_btn"] = make_button("Start loading csv ...",
-                                        cb=self._start_loader_cb)
+        self.child.sniffer = self._sniffer.box
+        self.child.start_btn = make_button(
+            "Start loading csv ...", cb=self._start_loader_cb
+        )
         btn.disabled = True
-        self["urls_wg"].disabled = True
-        self["to_sniff"].disabled = True
-        self["n_lines"].disabled = True
+        self.child.urls_wg.disabled = True
+        self.child.to_sniff.disabled = True
+        self.child.n_lines.disabled = True
 
     def _start_loader_cb(self, btn: ipw.Button) -> None:
         csv_module = self.init_modules()
@@ -86,8 +81,8 @@ class CsvLoaderW(VBoxSchema):
         sink = self.input_module
         s = sink.scheduler()
         with s:
-            filenames = pd.DataFrame({'filename': urls})
-            cst = Constant(PTable('filenames', data=filenames), scheduler=s)
+            filenames = pd.DataFrame({"filename": urls})
+            cst = Constant(PTable("filenames", data=filenames), scheduler=s)
             csv = SimpleCSVLoader(scheduler=s, **params)
             csv.input.filenames = cst.output[0]
             sink.input.inp = csv.output.result

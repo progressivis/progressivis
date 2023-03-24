@@ -4,13 +4,10 @@ import pyarrow.parquet as pq
 from progressivis.table.dshape import dataframe_dshape, ExtensionDtype
 from progressivis.core import Module
 from progressivis.io import ParquetLoader
-from .utils import (make_button, VBoxSchema)
+from .utils import make_button, VBoxSchema, SchemaBase
 import os
 
-from typing import (
-    Any, Any as AnyType,
-    Dict, Union, cast
-)
+from typing import Any, Any as AnyType, Optional, Dict, Union
 
 
 def _ds(t: Union[np.dtype[Any], ExtensionDtype]) -> str:
@@ -19,10 +16,17 @@ def _ds(t: Union[np.dtype[Any], ExtensionDtype]) -> str:
 
 
 class ColInfo(ipw.VBox):
-    def __init__(self, raw_info: Any, dtype: Union[np.dtype[Any], ExtensionDtype], *args: Any, **kw: Any) -> None:
+    def __init__(
+        self,
+        raw_info: Any,
+        dtype: Union[np.dtype[Any], ExtensionDtype],
+        *args: Any,
+        **kw: Any,
+    ) -> None:
         super().__init__(*args, **kw)
-        self.info = ipw.Textarea("\n".join(str(raw_info).strip().split("\n")[1:]),
-                                 rows=12)
+        self.info = ipw.Textarea(
+            "\n".join(str(raw_info).strip().split("\n")[1:]), rows=12
+        )
         self.use = ipw.Checkbox(description="Use", value=True)
         self.dtype = dtype
         self.children = [self.info, self.use]
@@ -37,8 +41,10 @@ class Sniffer(ipw.HBox):
         self.names = names
         types = [t.to_pandas_dtype() for t in self.schema.types]
         decorated = [(f"{n}:{np.dtype(t).name}", n) for (n, t) in zip(names, types)]
-        self.info_cols: Dict[str, ColInfo] = {n: ColInfo(self.pqfile.schema.column(i), np.dtype(types[i]))
-                                              for (i, n) in enumerate(names)}
+        self.info_cols: Dict[str, ColInfo] = {
+            n: ColInfo(self.pqfile.schema.column(i), np.dtype(types[i]))
+            for (i, n) in enumerate(names)
+        }
         # PColumn selection
         self.columns = ipw.Select(disabled=False, rows=7, options=decorated)
         self.columns.observe(self._columns_cb, names="value")
@@ -49,16 +55,14 @@ class Sniffer(ipw.HBox):
         layout = ipw.Layout(border="solid")
         # Toplevel Box
         self.children = (
-                ipw.VBox([ipw.Label("PColumns"), self.columns], layout=layout),
-                ipw.VBox(
-                    [ipw.Label("Selected PColumn"), self.details], layout=layout
-                ),
+            ipw.VBox([ipw.Label("PColumns"), self.columns], layout=layout),
+            ipw.VBox([ipw.Label("Selected PColumn"), self.details], layout=layout),
         )
 
     def get_dtypes(self) -> Dict[str, str]:
-        return {k: _ds(col.dtype)
-                for (k, col) in self.info_cols.items()
-                if col.use.value}
+        return {
+            k: _ds(col.dtype) for (k, col) in self.info_cols.items() if col.use.value
+        }
 
     def _columns_cb(self, change: Dict[str, AnyType]) -> None:
         column = change["new"]
@@ -73,36 +77,37 @@ class Sniffer(ipw.HBox):
 
 
 class ParquetLoaderW(VBoxSchema):
+    class Schema(SchemaBase):
+        url: ipw.Text
+        sniff_btn: ipw.Button
+        sniffer: Sniffer
+        start_btn: Optional[ipw.Button]
+
+    child: Schema
+
     def init(self) -> None:
-        url = ipw.Text(
+        self.child.url = ipw.Text(
             value=os.getenv("PROGRESSIVIS_DEFAULT_PARQUET"),
-            placeholder='',
-            description='File:',
+            placeholder="",
+            description="File:",
             disabled=False,
-            layout=ipw.Layout(width="100%")
+            layout=ipw.Layout(width="100%"),
         )
-        sniff_btn = make_button("Sniff ...",
-                                cb=self._sniffer_cb)
-        self.schema = dict(  # type: ignore
-            url=url,
-            sniff_btn=sniff_btn,
-            sniffer=None,
-            start_btn=None
-        )
+        self.child.sniff_btn = make_button("Sniff ...", cb=self._sniffer_cb)
 
     def _sniffer_cb(self, btn: ipw.Button) -> None:
-        url = self["url"].value.strip()
-        self["sniffer"] = Sniffer(url)
-        self["start_btn"] = make_button("Start loading ...",
-                                        cb=self._start_loader_cb)
+        url = self.child.url.value.strip()
+        self.child.sniffer = Sniffer(url)
+        self.child.start_btn = make_button(
+            "Start loading ...", cb=self._start_loader_cb
+        )
         btn.disabled = True
 
     def _start_loader_cb(self, btn: ipw.Button) -> None:
         pq_module = self.init_modules()
         self.output_module = pq_module
         self.output_slot = "result"
-        assert isinstance(self["sniffer"], Sniffer)
-        self.output_dtypes = self["sniffer"].get_dtypes()
+        self.output_dtypes = self.child.sniffer.get_dtypes()
         self.make_chaining_box()
         btn.disabled = True
         self.dag.requestAttention(self.title, "widget", "PROGRESS_NOTIFICATION", "")
@@ -111,25 +116,28 @@ class ParquetLoaderW(VBoxSchema):
         sink = self.input_module
         s = sink.scheduler()
         with s:
-            assert isinstance(self["sniffer"], Sniffer)
-            cols = list(self["sniffer"].get_dtypes().keys())
-            pql = ParquetLoader(self["url"].value,
-                                columns=cols,
-                                scheduler=s)
+            cols = list(self.child.sniffer.get_dtypes().keys())
+            pql = ParquetLoader(self.child.url.value, columns=cols, scheduler=s)
             sink.input.inp = pql.output.result
 
             def _f(m: Module, rnum: int) -> None:
                 assert hasattr(m, "result")
                 if m.result is None:
                     return
-                pc = min(100*len(m.result)//cast(Sniffer, self["sniffer"]).pqfile.metadata.num_rows+1, 100)
+                pc = min(
+                    100 * len(m.result) // self.child.sniffer.pqfile.metadata.num_rows
+                    + 1,
+                    100,
+                )
                 self.dag.updateSummary(self.title, {"progress": pc})
                 if pc < 100:
-                    self.dag.requestAttention(self.title, "widget",
-                                              "PROGRESS_NOTIFICATION", len(m.result))
+                    self.dag.requestAttention(
+                        self.title, "widget", "PROGRESS_NOTIFICATION", len(m.result)
+                    )
                 else:
-                    self.dag.removeRequestAttention(self.title,
-                                                    "widget", "PROGRESS_NOTIFICATION")
+                    self.dag.removeRequestAttention(
+                        self.title, "widget", "PROGRESS_NOTIFICATION"
+                    )
                     self.dag.requestAttention(self.title, "widget", "STABILITY_REACHED")
 
             pql.on_after_run(_f)

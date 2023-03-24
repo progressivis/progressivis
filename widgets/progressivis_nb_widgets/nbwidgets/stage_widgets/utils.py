@@ -22,9 +22,8 @@ from typing import (
     Callable,
     Iterable,
     Sequence,
-    cast
+    cast,
 )
-
 from typing_extensions import TypeAlias  # python 3.9
 
 Sniffer = CSVSniffer
@@ -101,8 +100,8 @@ class HandyTab(ipw.Tab):
             return
         pos = all_titles.index(title)
         children_ = list(self.children)
-        children_ = children_[:pos] + children_[pos + 1:]
-        titles_ = all_titles[:pos] + all_titles[pos + 1:]
+        children_ = children_[:pos] + children_[pos + 1 :]
+        titles_ = all_titles[:pos] + all_titles[pos + 1 :]
         self.children = tuple(children_)
         for i, t in enumerate(titles_):
             self.set_title(i, t)
@@ -144,6 +143,7 @@ def get_schema(sniffer: Sniffer) -> AnyType:
         if col in parse_dates:
             return "datetime64"
         return dataframe_dshape(np.dtype(dt))
+
     assert sniffer._df is not None
     norm_cols = dict(zip(sniffer._df.columns, normalize_columns(sniffer._df.columns)))
     dtypes = {col: _ds(col, dt) for (col, dt) in sniffer._df.dtypes.to_dict().items()}
@@ -169,14 +169,17 @@ def make_button(
     return btn
 
 
-def make_guess_types_toc2(obj: AnyType, sel: ipw.Select, fun: Callable[..., AnyType]) -> Callable[..., AnyType]:
+def make_guess_types_toc2(
+    obj: AnyType, sel: ipw.Select, fun: Callable[..., AnyType]
+) -> Callable[..., AnyType]:
     def _guess(m: Module, run_number: int) -> None:
         global parent_dtypes
         assert hasattr(m, "result")
         if m.result is None:
             return
-        parent_dtypes = {k: "datetime64" if str(v)[0] == "6"
-                         else v for (k, v) in m.result.items()}
+        parent_dtypes = {
+            k: "datetime64" if str(v)[0] == "6" else v for (k, v) in m.result.items()
+        }
         obj.output_dtypes = parent_dtypes
         fun(obj, sel.value)
         with m.scheduler() as dataflow:
@@ -196,7 +199,9 @@ widget_numbers: Dict[str, int] = defaultdict(int)
 
 
 class _Dag:
-    def __init__(self, label: str, number: int, dag: DAGWidget, alias: str = "") -> None:
+    def __init__(
+        self, label: str, number: int, dag: DAGWidget, alias: str = ""
+    ) -> None:
         self._label = label
         if alias:
             self._number = 0
@@ -235,6 +240,7 @@ def create_loader_widget(key: str, ftype: str, alias: str) -> "NodeCarrier":
     ctx = dict(parent=obj, dtypes=dtypes, input_module=obj._output_module, dag=dag)
     from .csv_loader import CsvLoaderW
     from .parquet_loader import ParquetLoaderW
+
     loader: Union[CsvLoaderW, ParquetLoaderW]
     if ftype == "csv":
         loader = CsvLoaderW()
@@ -261,7 +267,9 @@ def get_widget_by_key(key: str, num: int) -> "NodeVBox":
     return widget_by_key[(key, num)]
 
 
-def _make_btn_start_toc2(obj: AnyType, sel: AnyType, fun: Callable[[Any, Any], None]) -> Callable[..., None]:
+def _make_btn_start_toc2(
+    obj: AnyType, sel: AnyType, fun: Callable[[Any, Any], None]
+) -> Callable[..., None]:
     def _cbk(btn: ipw.Button) -> None:
         global parent_widget
         parent_widget = obj
@@ -280,13 +288,16 @@ def _make_btn_start_toc2(obj: AnyType, sel: AnyType, fun: Callable[[Any, Any], N
     return _cbk
 
 
-def _make_btn_start_loader(obj: "NodeVBox", ftype: str, alias: WidgetType) -> Callable[..., None]:
+def _make_btn_start_loader(
+    obj: "NodeVBox", ftype: str, alias: WidgetType
+) -> Callable[..., None]:
     def _cbk(btn: ipw.Button) -> None:
         global parent_widget
         parent_widget = obj
         assert parent_widget
         add_new_loader(obj, ftype, alias.value)
         alias.value = ""
+
     return _cbk
 
 
@@ -360,10 +371,12 @@ class ChainingMixin:
 class LoaderMixin:
     def make_loader_box(self, ftype: str = "csv") -> ipw.HBox:
         fnc = _make_btn_start_loader
-        alias_inp = ipw.Text(value='',
-                             placeholder='optional alias',
-                             description=f"{ftype.upper()} loader:",
-                             disabled=False)
+        alias_inp = ipw.Text(
+            value="",
+            placeholder="optional alias",
+            description=f"{ftype.upper()} loader:",
+            disabled=False,
+        )
         btn = make_button(
             "Create", disabled=False, cb=fnc(self, ftype, alias_inp)  # type:ignore
         )
@@ -524,10 +537,9 @@ class ChainingWidget:
 
     def dag_register(self) -> None:
         assert self.parent is not None
-        self.dag.registerWidget(self, self.title,
-                                self.title,
-                                self.dom_id,
-                                [self.parent.title])
+        self.dag.registerWidget(
+            self, self.title, self.title, self.dom_id, [self.parent.title]
+        )
 
     def dag_running(self, progress: int = 0) -> None:
         self.dag.updateSummary(self.title, {"progress": progress, "status": "RUNNING"})
@@ -639,13 +651,17 @@ class GuestWidget:
     def make_chaining_box(self) -> None:
         self.carrier.make_chaining_box()
 
-    def _make_guess_types(self, fun: Callable[..., None], args: Iterable[Any], kw: Dict[str, Any]) -> Callable[[Module, int], None]:
+    def _make_guess_types(
+        self, fun: Callable[..., None], args: Iterable[Any], kw: Dict[str, Any]
+    ) -> Callable[[Module, int], None]:
         def _guess(m: Module, run_number: int) -> None:
             assert hasattr(m, "result")
             if m.result is None:
                 return
-            self.output_dtypes = {k: "datetime64" if str(v)[0] == "6"
-                                  else v for (k, v) in m.result.items()}
+            self.output_dtypes = {
+                k: "datetime64" if str(v)[0] == "6" else v
+                for (k, v) in m.result.items()
+            }
             fun(*args, **kw)
             with m.scheduler() as dataflow:
                 deps = dataflow.collateral_damage(m.name)
@@ -653,7 +669,12 @@ class GuestWidget:
 
         return _guess
 
-    def compute_dtypes_then_call(self, func: Callable[..., None], args: Iterable[Any] = (), kw: Dict[str, Any] = {}) -> None:
+    def compute_dtypes_then_call(
+        self,
+        func: Callable[..., None],
+        args: Iterable[Any] = (),
+        kw: Dict[str, Any] = {},
+    ) -> None:
         s = self.output_module.scheduler()
         with s:
             ds = DataShape(scheduler=s)
@@ -670,20 +691,26 @@ class VBox(ipw.VBox, GuestWidget):
 
 
 class LeafVBox(ipw.VBox, ChainingWidget):
-    def __init__(self, ctx: Dict[str, Any], children: Sequence[GuestWidget] = ()) -> None:
+    def __init__(
+        self, ctx: Dict[str, Any], children: Sequence[GuestWidget] = ()
+    ) -> None:
         ipw.VBox.__init__(self, children)
         ChainingWidget.__init__(self, ctx)
         self.dag_register()
 
 
 class NodeVBox(LeafVBox, ChainingMixin):
-    def __init__(self, ctx: Dict[str, Any], children: Sequence[GuestWidget] = ()) -> None:
+    def __init__(
+        self, ctx: Dict[str, Any], children: Sequence[GuestWidget] = ()
+    ) -> None:
         super().__init__(ctx, children)
         self.dag_register()
 
 
 class RootVBox(LeafVBox, LoaderMixin):
-    def __init__(self, ctx: Dict[str, Any], children: Sequence[GuestWidget] = ()) -> None:
+    def __init__(
+        self, ctx: Dict[str, Any], children: Sequence[GuestWidget] = ()
+    ) -> None:
         super().__init__(ctx, children)
         self.dag_register()
 
@@ -705,52 +732,36 @@ def _none_wg(wg: Optional[ipw.DOMWidget]) -> ipw.DOMWidget:
     return dongle_widget() if wg is None else wg
 
 
-class SchemaBox:
+class SchemaBase:
     def __init__(self) -> None:
-        self.__schema: Optional[Tuple[str, ...]] = None
-        self.children: Sequence[ipw.DOMWidget]
+        self._main: Optional["SchemaBox"] = None
 
-    @property
-    def schema(self) -> Optional[Tuple[str, ...]]:
-        return self.__schema
+    def __setattr__(self, name: str, value: ipw.DOMWidget) -> None:
+        super().__setattr__(name, value)
+        if name != "_main" and self._main is not None:
+            if not self._main.children:
+                self._main.children = [
+                    dongle_widget() for x in self.__annotations__.keys()
+                ]
+            if value is None:
+                value = dongle_widget()
+            self._main.set_child(name, value)
 
-    @schema.setter
-    def schema(self, value: Union[Tuple[str, ...], Dict[str, Optional[ipw.DOMWidget]]]) -> None:
-        self.set_schema(value)
 
-    def set_schema(self, value: Union[Tuple[str, ...], Dict[str, Optional[ipw.DOMWidget]]]) -> None:
-        if self.__schema is not None:
-            raise ValueError("Schema cannot be set more than once")
-        assert isinstance(value, tuple) or isinstance(value, dict)
-        if isinstance(value, tuple):
-            for k in value:
-                assert isinstance(k, str)
-            if self.children:
-                assert len(self.children) == len(value)
-            else:
-                self.children = tuple([dongle_widget() for k in value])
-            self.__schema = value
-        else:  # i.e. value is dict
-            if self.schema:
-                raise ValueError("The box must be empty before setting a dict schema")
-            for k, v in value.items():
-                assert isinstance(k, str)
-                assert isinstance(v, ipw.DOMWidget) or v is None
-            self.__schema = tuple(value.keys())
-            self.children = tuple([_none_wg(v) for v in value.values()])
+class SchemaBox:
+    Schema = SchemaBase
 
-    def set_child(self, i: int, child: ipw.DOMWidget) -> None:
+    def __init__(self) -> None:
+        self.child = self.Schema()
+        self.child._main = self  # TODO: weakref
+        self.children: Sequence[ipw.DOMWidget] = ()
+
+    def set_child(self, name: str, child: ipw.DOMWidget) -> None:
+        schema = list(self.child.__annotations__)  # TODO: cache it
+        i = schema.index(name)
         children = list(self.children)
         children[i] = child
         self.children = tuple(children)
-
-    def __getitem__(self, key: str) -> ipw.DOMWidget:
-        assert self.__schema and key in self.__schema
-        return self.children[self.__schema.index(key)]
-
-    def __setitem__(self, key: str, value: Optional[ipw.DOMWidget]) -> None:
-        assert self.__schema and key in self.__schema
-        self.set_child(self.__schema.index(key), _none_wg(value))
 
 
 class VBoxSchema(VBox, SchemaBox):

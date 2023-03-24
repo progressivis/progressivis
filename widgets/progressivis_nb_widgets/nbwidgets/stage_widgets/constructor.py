@@ -2,9 +2,18 @@ import ipywidgets as ipw
 from progressivis import Scheduler
 from progressivis.io import DynVar
 from progressivis.core import Sink, aio
-from .utils import (make_button, get_dag, _Dag,
-                    RootVBox, SchemaBox, NodeVBox,
-                    get_widget_by_id, get_widget_by_key)
+from .utils import (
+    make_button,
+    get_dag,
+    _Dag,
+    DAGWidget,
+    RootVBox,
+    SchemaBox,
+    NodeVBox,
+    SchemaBase,
+    get_widget_by_id,
+    get_widget_by_key,
+)
 
 from typing import (
     Any as AnyType,
@@ -33,36 +42,46 @@ def init_dataflow() -> AnyType:
 
 
 class Constructor(RootVBox, SchemaBox):
+    class Schema(SchemaBase):
+        h2: ipw.HTML
+        start_btn: ipw.Button
+        csv: Optional[ipw.HBox]
+        parquet: Optional[ipw.HBox]
+        dag: DAGWidget
+
+    child: Schema
+
     last_created = None
 
-    def __init__(self, urls: List[str] = [], *, name: str = "root",
-                 to_sniff: Optional[str] = None) -> None:
-        ctx = dict(parent=None,
-                   dtypes=None,
-                   input_module=None,
-                   input_slot=None,
-                   dag=_Dag(label=name,
-                            number=0,
-                            dag=get_dag()))
+    def __init__(
+        self,
+        urls: List[str] = [],
+        *,
+        name: str = "root",
+        to_sniff: Optional[str] = None,
+    ) -> None:
+        ctx = dict(
+            parent=None,
+            dtypes=None,
+            input_module=None,
+            input_slot=None,
+            dag=_Dag(label=name, number=0, dag=get_dag()),
+        )
         RootVBox.__init__(self, ctx)
         SchemaBox.__init__(self)
-        start_btn = make_button("Start scheduler ...",
-                                cb=self._start_scheduler_cb)
-        self.set_schema(dict(
-            h2=ipw.HTML(f"<h2 id='{self.dom_id}'>{name}</h2>"),
-            start_btn=start_btn,
-            csv=None,
-            parquet=None,
-            dag=self.dag
-        ))
+        self.child.start_btn = make_button(
+            "Start scheduler ...", cb=self._start_scheduler_cb
+        )
+        self.child.h2 = ipw.HTML(f"<h2 id='{self.dom_id}'>{name}</h2>")
+        self.child.dag = self.dag
 
     def _start_scheduler_cb(self, btn: ipw.Button) -> None:
         init_module = init_dataflow()
         self._output_module = init_module
         self._output_slot = "result"
         self._output_dtypes = {}
-        self["csv"] = self.make_loader_box(ftype="csv")
-        self["parquet"] = self.make_loader_box(ftype="parquet")
+        self.child.csv = self.make_loader_box(ftype="csv")
+        self.child.parquet = self.make_loader_box(ftype="parquet")
         btn.disabled = True
         self.dag.registerWidget(self, "root", "root", self.dom_id, [])
 

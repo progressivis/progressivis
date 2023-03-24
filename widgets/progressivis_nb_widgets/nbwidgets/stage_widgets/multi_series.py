@@ -1,9 +1,4 @@
-from .utils import (
-    make_button,
-    stage_register,
-    dongle_widget,
-    VBoxSchema,
-)
+from .utils import make_button, stage_register, dongle_widget, VBoxSchema, SchemaBase
 from ..utils import historized_widget
 from ._multi_series import multi_series_no_data
 import ipywidgets as ipw
@@ -19,26 +14,38 @@ _l = ipw.Label
 N = 4  # 1X + 3Y
 
 
-_VegaWidget: TypeAlias = cast(Type[AnyType], historized_widget(VegaWidget, "update"))
+HVegaWidget: TypeAlias = cast(Type[AnyType],
+                              historized_widget(VegaWidget, "update"))  # noqa: F821
 
 
 class MultiSeriesW(VBoxSchema):
+    class Schema(SchemaBase):
+        grid: ipw.GridBox
+        btn_apply: ipw.Button
+        vega: HVegaWidget
+
+    child: Schema
+
     def init(self) -> None:
         self.output_dtypes = None
         self._axis = []
-        lst: List[ipw.DOMWidget] = [_l("Axis"), _l("PColumn"), _l("* Factor"), _l("Symbol")]
+        lst: List[ipw.DOMWidget] = [
+            _l("Axis"),
+            _l("PColumn"),
+            _l("* Factor"),
+            _l("Symbol"),
+        ]
         for i in range(N):
             row = self._axis_row("Y" if i else "X")
             self._axis.append(row)
             lst.extend(row.values())
-        gb = ipw.GridBox(
+        self.child.grid = ipw.GridBox(
             lst,
             layout=ipw.Layout(grid_template_columns="5% 40% 20% 20%"),
         )
-        btn_apply = self._btn_ok = make_button(
+        self.child.btn_apply = self._btn_ok = make_button(
             "Apply", disabled=True, cb=self._btn_apply_cb
         )
-        self.set_schema(dict(grid=gb, btn_apply=btn_apply, vega=None))
 
     def _axis_row(self, axis: str) -> Dict[str, ipw.DOMWidget]:
         axis_w = _l(axis)
@@ -88,9 +95,7 @@ class MultiSeriesW(VBoxSchema):
                 }
             )
             dataframes.append(df)
-        cast(_VegaWidget, self["vega"]).update("data",
-                                               remove="true",
-                                               insert=pd.concat(dataframes))
+        self.child.vega.update("data", remove="true", insert=pd.concat(dataframes))
 
     def _col_xy_cb(self, change: Dict[str, AnyType]) -> None:
         has_x = False
@@ -101,10 +106,10 @@ class MultiSeriesW(VBoxSchema):
                     has_x = True
                 else:
                     has_y = True
-        self["btn_apply"].disabled = not (has_x and has_y)
+        self.child.btn_apply.disabled = not (has_x and has_y)
 
     def _btn_apply_cb(self, btn: AnyType) -> None:
-        self["vega"] = _VegaWidget(spec=multi_series_no_data)
+        self.child.vega = HVegaWidget(spec=multi_series_no_data)
         self.input_module.on_after_run(self._update_vw)
         self.dag_running()
 
