@@ -734,18 +734,27 @@ def _none_wg(wg: Optional[ipw.DOMWidget]) -> ipw.DOMWidget:
 
 class SchemaBase:
     def __init__(self) -> None:
-        self._main: Optional["SchemaBox"] = None
+        self._main: Optional[ReferenceType["SchemaBox"]] = None
+
+    @property
+    def main(self) -> "SchemaBox":
+        assert self._main is not None
+        return cast("SchemaBox", self._main())
 
     def __setattr__(self, name: str, value: ipw.DOMWidget) -> None:
         super().__setattr__(name, value)
-        if name != "_main" and self._main is not None:
-            if not self._main.children:
-                self._main.children = [
-                    dongle_widget() for x in self.__annotations__.keys()
+        if (
+            self.__annotations__
+            and name in self.__annotations__
+            and self._main is not None
+        ):
+            if not self.main.children:
+                self.main.children = [
+                    dongle_widget() for _ in self.__annotations__.keys()
                 ]
             if value is None:
                 value = dongle_widget()
-            self._main.set_child(name, value)
+            self.main.set_child(name, value)
 
 
 class SchemaBox:
@@ -753,7 +762,7 @@ class SchemaBox:
 
     def __init__(self) -> None:
         self.child = self.Schema()
-        self.child._main = self  # TODO: weakref
+        self.child._main = ref(self)
         self.children: Sequence[ipw.DOMWidget] = ()
 
     def set_child(self, name: str, child: ipw.DOMWidget) -> None:
