@@ -4,7 +4,7 @@ from progressivis import Print, Every
 from progressivis.stats import Stats
 from progressivis.io import CSVLoader
 from progressivis.datasets import get_dataset
-from progressivis.table.join_by_id import Join
+from progressivis.table.join_by_id import JoinById
 from progressivis.table.constant import Constant
 from progressivis.table.table import PTable
 from progressivis.core import aio
@@ -30,7 +30,7 @@ class TestJoin(ProgressiveTest):
         stat1.input[0] = csv.output.result
         stat2 = Stats(2, reset_index=True, scheduler=s)
         stat2.input[0] = csv.output.result
-        join = Join(scheduler=s)
+        join = JoinById(scheduler=s)
         join.input[0] = stat1.output.result
         join.input[0] = stat2.output.result
         pr = Print(proc=self.terse, scheduler=s)
@@ -59,7 +59,7 @@ class TestJoin(ProgressiveTest):
             ),
             scheduler=s,
         )
-        join = Join(scheduler=s)
+        join = JoinById(scheduler=s)
         join.input[0] = cst1.output.result
         join.input[0] = cst2.output.result
         pr = Print(proc=self.terse, scheduler=s)

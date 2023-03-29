@@ -13,9 +13,33 @@
     The version of the progressivis package.
 
 
-## Prrogressive containers
+## Dataflow Management
 
-### The PTable class
+### Scheduler
+
+### Module
+
+### Connections (Slots)
+
+
+### Change Management
+
+
+
+### Interaction
+
+## Progressive Data Structures
+
+ProgressiVis relies mainly on four specially designed data types:
+
+* tables/views
+* columns
+* dictionaries
+* bitmaps.
+
+These data types are instrumented to keep track of the changes happening between two consecutive module runs.
+
+### Tables and views
 
 
 Progressive tables:
@@ -52,47 +76,10 @@ Progressive tables:
    :members:
 ```
 
-## Progressive Modules
+## Decorators
 
-### Data Loading Modules
-
-#### Simple CSV Loader
-
-#### Reliable CSV Loader
-
-#### CSV Loader via PyArrow
-
-#### Parquet Loader
-
-### Data Management Modules
-
-#### The RangeQuery module
+### Method Decorators
 
 
-```{eval-rst}
-.. currentmodule:: progressivis.table.range_query
+### Class Decorators
 
-.. autoclass:: RangeQuery
-   :members:
-```
-
-#### The RangeQuery2d module
-
-
-```{eval-rst}
-.. currentmodule:: progressivis.table.range_query_2d
-
-.. autoclass:: RangeQuery2d
-   :members:
-```
-
-### Statistical Modules
-
-### Sample
-
-```{eval-rst}
-.. currentmodule:: progressivis.stats.sample
-
-.. autoclass:: Sample
-   :members:
-```

@@ -226,14 +226,14 @@ def join_cont(
 
 @def_input("table", PTable, multiple=True)
 @def_output("result", BasePTable)
-class Join(Module):
+class JoinById(Module):
     "Module executing join."
 
     def __init__(self, **kwds: Any) -> None:
         """Join(on=None, how='left', lsuffix='', rsuffix='',
         sort=False,name=None)
         """
-        super(Join, self).__init__(**kwds)
+        super().__init__(**kwds)
         self.join_kwds = filter_kwds(kwds, join)
 
     def run_step(

@@ -548,8 +548,8 @@ class HistogramIndex(Module):
     def range_query_aslist(
         self, lower: float, upper: float, approximate: bool = APPROX
     ) -> List[PIntSet]:
-        """
-        Return the list of rows with values in range [`lower`, `upper`[
+        r"""
+        Return the list of rows with values in range \[`lower`, `upper`\[
         """
         if self._impl:
             return self._impl.range_query_aslist(lower, upper, approximate)
@@ -558,8 +558,8 @@ class HistogramIndex(Module):
     def range_query(
         self, lower: float, upper: float, approximate: bool = APPROX
     ) -> PIntSet:
-        """
-        Return the list of rows with values in range [`lower`, `upper`[
+        r"""
+        Return the list of rows with values in range \[`lower`, `upper`\[
         """
         if self._impl:
             return self._impl.range_query(lower, upper, self.selection, approximate)
@@ -574,8 +574,8 @@ class HistogramIndex(Module):
     def restricted_range_query(
         self, lower: float, upper: float, only_locs: Any, approximate: bool = APPROX
     ) -> PIntSet:
-        """
-        Return the list of rows with values in range [`lower`, `upper`[
+        r"""
+        Return the list of rows with values in range \[`lower`, `upper`\[
         among only_locs
         """
         if self._impl:
@@ -586,9 +586,8 @@ class HistogramIndex(Module):
         # so we query the input table directly
         return (
             self._eval_to_ids(operator.__lt__, upper, only_locs)
-            &
             # optimize later
-            self._eval_to_ids(operator.__ge__, lower, only_locs)
+            & self._eval_to_ids(operator.__ge__, lower, only_locs)
         )
 
     def create_dependent_modules(

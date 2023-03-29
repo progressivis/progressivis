@@ -17,6 +17,10 @@
    install
    userguide
    reference
+   module_library
+   unit_tests
+   custom_modules
+   chaining_widgets
 ```
 
 # Indices and tables

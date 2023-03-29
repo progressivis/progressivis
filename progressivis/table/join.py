@@ -107,8 +107,9 @@ def _aslist(x: Any) -> List[Any]:
     return [x]
 
 
-@def_input("primary", PTable)
-@def_input("related", PTable)
+@def_input("primary", PTable, doc="UniqueIndex output => table contains a primary key")
+@def_input("related", PTable, doc=("GroupBy output => table providing the"
+                                   " output index and containing the foreign key"))
 @def_output("result", PTableSelectedView)
 @def_output(
     "primary_outer", PTableSelectedView, required=False, attr_name="_primary_outer"
@@ -117,10 +118,6 @@ class Join(Module):
     """
     {many|one}-to-one join module
 
-    Slots:
-        primary: UniqueIndex output => table contains a primary key
-        related: GroupBy output => table providing the output index and containing
-                 the foreign key
     Args:
         primary_on: column or list of columns giving the primary key on the primary table
         related_on:  column or list of columns giving the foreign key on the related table
