@@ -19,8 +19,6 @@ class AggregateW(VBoxSchema):
         grid: ipw.GridBox
         start_btn: ipw.Button
 
-    child: Schema
-
     def init(self) -> None:
         self.hidden_cols: List[str] = []
         fncs = ["hide"] + list(Aggregate.registry.keys())

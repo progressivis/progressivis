@@ -83,8 +83,6 @@ class ParquetLoaderW(VBoxSchema):
         sniffer: Sniffer
         start_btn: Optional[ipw.Button]
 
-    child: Schema
-
     def init(self) -> None:
         self.child.url = ipw.Text(
             value=os.getenv("PROGRESSIVIS_DEFAULT_PARQUET"),

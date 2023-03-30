@@ -193,7 +193,7 @@ class IfElseW(ipw.VBox):
         func = make_if_else(op_=op_, test_val=than_, if_true=if_true, if_false=if_false)
         ALL_FUNCS.update({name: np.vectorize(func)})
         assert self.main is not None
-        self.main.child.cols_funcs.child.funcs.options = [""] + list(ALL_FUNCS.keys())
+        self.main.c_.cols_funcs.c_.funcs.options = [""] + list(ALL_FUNCS.keys())
 
 
 class ColsFuncs(IpyHBoxSchema):
@@ -202,15 +202,11 @@ class ColsFuncs(IpyHBoxSchema):
         funcs: ipw.Select
         computed: Optional[FuncW]
 
-    child: Schema
-
 
 class KeepStored(IpyHBoxSchema):
     class Schema(SchemaBase):
         stored_cols: ipw.SelectMultiple
         keep_all: ipw.Checkbox
-
-    child: Schema
 
 
 class PColumnsW(VBoxSchema):
@@ -221,8 +217,6 @@ class PColumnsW(VBoxSchema):
         keep_stored: KeepStored
         btn_apply: ipw.Button
 
-    child: Schema
-
     def init(self) -> None:
         self._col_widgets: Dict[Tuple[str, str], FuncW] = {}
         self._computed: List[Optional[FuncW]] = []
@@ -231,43 +225,43 @@ class PColumnsW(VBoxSchema):
         )
         self._numpy_ufuncs.observe(self._numpy_ufuncs_cb, names="value")
         self._if_else = IfElseW(self)
-        self.child.custom_funcs = ipw.Accordion(
+        self.c_.custom_funcs = ipw.Accordion(
             children=[self._numpy_ufuncs, self._if_else], selected_index=None
         )
-        self.child.custom_funcs.set_title(0, "Numpy universal functions")
-        self.child.custom_funcs.set_title(1, "Add If-Else expressions")
+        self.c_.custom_funcs.set_title(0, "Numpy universal functions")
+        self.c_.custom_funcs.set_title(1, "Add If-Else expressions")
         cols_t = [f"{c}:{t}" for (c, t) in self.dtypes.items()]
         col_list = list(zip(cols_t, self.dtypes.keys()))
         cols_funcs = ColsFuncs()
-        cols_funcs.child.cols = ipw.Select(
+        cols_funcs.c_.cols = ipw.Select(
             disabled=False, options=[("", "")] + col_list, rows=7
         )
-        cols_funcs.child.cols.observe(self._columns_cb, names="value")
-        cols_funcs.child.funcs = ipw.Select(
+        cols_funcs.c_.cols.observe(self._columns_cb, names="value")
+        cols_funcs.c_.funcs = ipw.Select(
             disabled=True, options=[""] + list(ALL_FUNCS.keys()), rows=7
         )
-        cols_funcs.child.funcs.observe(self._functions_cb, names="value")
-        self.child.cols_funcs = cols_funcs
+        cols_funcs.c_.funcs.observe(self._functions_cb, names="value")
+        self.c_.cols_funcs = cols_funcs
         keep_stored = KeepStored()
-        keep_stored.child.stored_cols = ipw.SelectMultiple(
+        keep_stored.c_.stored_cols = ipw.SelectMultiple(
             options=col_list,
             value=[],
             rows=5,
             description="Keep also:",
             disabled=False,
         )
-        keep_stored.child.keep_all = ipw.Checkbox(
+        keep_stored.c_.keep_all = ipw.Checkbox(
             value=False, description="Select all", disabled=False
         )
-        keep_stored.child.keep_all.observe(self._keep_all_cb, names="value")
-        self.child.keep_stored = keep_stored
-        self.child.btn_apply = make_button(
+        keep_stored.c_.keep_all.observe(self._keep_all_cb, names="value")
+        self.c_.keep_stored = keep_stored
+        self.c_.btn_apply = make_button(
             "Apply", disabled=False, cb=self._btn_apply_cb
         )
 
     def _keep_all_cb(self, change: AnyType) -> None:
         val = change["new"]
-        self.child.keep_stored.child.stored_cols.value = (
+        self.c_.keep_stored.c_.stored_cols.value = (
             list(self.dtypes.keys()) if val else []
         )
 
@@ -277,39 +271,39 @@ class PColumnsW(VBoxSchema):
         else:
             for k in UFUNCS.keys():
                 del ALL_FUNCS[k]
-        self.child.cols_funcs.child.funcs.options = [""] + list(ALL_FUNCS.keys())
+        self.c_.cols_funcs.c_.funcs.options = [""] + list(ALL_FUNCS.keys())
 
     def _columns_cb(self, change: AnyType) -> None:
         val = change["new"]
-        self.child.cols_funcs.child.funcs.disabled = False
+        self.c_.cols_funcs.c_.funcs.disabled = False
         if not val:
-            self.child.cols_funcs.child.funcs.value = ""
-            self.child.cols_funcs.child.funcs.disabled = True
-            self.child.cols_funcs.child.computed = None
-        elif self.child.cols_funcs.child.funcs.value:
+            self.c_.cols_funcs.c_.funcs.value = ""
+            self.c_.cols_funcs.c_.funcs.disabled = True
+            self.c_.cols_funcs.c_.computed = None
+        elif self.c_.cols_funcs.c_.funcs.value:
             """key = (self._columns.value, self._functions.value)
             if key not in self._col_widgets:
                 self._col_widgets[key] = FuncW(*key)
             self._computed_col = self._col_widgets[key]"""
             self.set_selection()
         else:
-            self.child.cols_funcs.child.computed = None
+            self.c_.cols_funcs.c_.computed = None
 
     def _functions_cb(self, change: AnyType) -> None:
         val = change["new"]
         if not val:
-            self.child.cols_funcs.child.computed = None
+            self.c_.cols_funcs.c_.computed = None
         else:
             self.set_selection()
 
     def set_selection(self) -> None:
         key = (
-            self.child.cols_funcs.child.cols.value,
-            self.child.cols_funcs.child.funcs.value,
+            self.c_.cols_funcs.c_.cols.value,
+            self.c_.cols_funcs.c_.funcs.value,
         )
         if key not in self._col_widgets:
             self._col_widgets[key] = FuncW(self, *key)
-        self.child.cols_funcs.child.computed = self._col_widgets[key]
+        self.c_.cols_funcs.c_.computed = self._col_widgets[key]
 
     def _btn_apply_cb(self, btn: AnyType) -> None:
         """
@@ -326,7 +320,7 @@ class PColumnsW(VBoxSchema):
             func = ALL_FUNCS[fname]
             comp.add_ufunc_column(wg._name.value, col, func, np.dtype(wg._dtype.value))
         self.output_module = self.init_module(
-            comp, columns=list(self.child.keep_stored.child.stored_cols.value)
+            comp, columns=list(self.c_.keep_stored.c_.stored_cols.value)
         )
         self.make_chaining_box()
         self.dag_running()
@@ -346,8 +340,8 @@ class PColumnsW(VBoxSchema):
         kcol, kfun = key
 
         def _cb(btn: AnyType) -> None:
-            self.child.cols_funcs.child.cols.value = kcol
-            self.child.cols_funcs.child.funcs.value = kfun
+            self.c_.cols_funcs.c_.cols.value = kcol
+            self.c_.cols_funcs.c_.funcs.value = kfun
 
         btn = make_button(wg._name.value, cb=_cb)
         btn.layout = ipw.Layout(width="auto", height="40px")
@@ -357,12 +351,12 @@ class PColumnsW(VBoxSchema):
         table_width = 4
         seld = {k: wg for (k, wg) in self._col_widgets.items() if wg._use.value}
         if not seld:
-            self.child.func_table = None
+            self.c_.func_table = None
             return
         lst = [self.make_func_button(key, wg) for (key, wg) in seld.items()]
         resume = table_width - len(lst) % table_width
         lst2 = [dongle_widget()] * resume
-        self.child.func_table = ipw.GridBox(
+        self.c_.func_table = ipw.GridBox(
             lst + lst2,
             layout=ipw.Layout(grid_template_columns=f"repeat({table_width}, 200px)"),
         )

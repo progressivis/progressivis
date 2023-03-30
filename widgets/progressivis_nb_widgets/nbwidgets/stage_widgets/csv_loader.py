@@ -19,50 +19,48 @@ class CsvLoaderW(VBoxSchema):
         sniffer: Optional[CSVSniffer]
         start_btn: Optional[ipw.Button]
 
-    child: Schema
-
     def __init__(self) -> None:
         super().__init__()
         self._sniffer: Optional[CSVSniffer] = None
         self._urls: List[str] = []
 
     def init(self, urls: List[str] = [], to_sniff: str = "", lines: int = 100) -> None:
-        self.child.urls_wg = ipw.Textarea(
+        self.c_.urls_wg = ipw.Textarea(
             value=os.getenv("PROGRESSIVIS_DEFAULT_CSV"),
             placeholder="",
             description="URLS:",
             disabled=False,
             layout=ipw.Layout(width="100%"),
         )
-        self.child.to_sniff = ipw.Text(
+        self.c_.to_sniff = ipw.Text(
             value=to_sniff,
             placeholder="",
             description="URL to sniff(optional):",
             disabled=False,
             layout=ipw.Layout(width="100%"),
         )
-        self.child.n_lines = ipw.IntText(
+        self.c_.n_lines = ipw.IntText(
             value=lines, description="Rows:", disabled=False
         )
-        self.child.sniff_btn = make_button("Sniff ...", cb=self._sniffer_cb)
+        self.c_.sniff_btn = make_button("Sniff ...", cb=self._sniffer_cb)
 
     def _sniffer_cb(self, btn: ipw.Button) -> None:
-        urls = self.child.urls_wg.value.strip().split("\n")
+        urls = self.c_.urls_wg.value.strip().split("\n")
         assert urls
         self._urls = urls
-        to_sniff = self.child.to_sniff.value.strip()
+        to_sniff = self.c_.to_sniff.value.strip()
         if not to_sniff:
             to_sniff = urls[0]
-        n_lines = self.child.n_lines.value
+        n_lines = self.c_.n_lines.value
         self._sniffer = CSVSniffer(path=to_sniff, lines=n_lines)
-        self.child.sniffer = self._sniffer.box
-        self.child.start_btn = make_button(
+        self.c_.sniffer = self._sniffer.box
+        self.c_.start_btn = make_button(
             "Start loading csv ...", cb=self._start_loader_cb
         )
         btn.disabled = True
-        self.child.urls_wg.disabled = True
-        self.child.to_sniff.disabled = True
-        self.child.n_lines.disabled = True
+        self.c_.urls_wg.disabled = True
+        self.c_.to_sniff.disabled = True
+        self.c_.n_lines.disabled = True
 
     def _start_loader_cb(self, btn: ipw.Button) -> None:
         csv_module = self.init_modules()

@@ -49,8 +49,6 @@ class Constructor(RootVBox, SchemaBox):
         parquet: Optional[ipw.HBox]
         dag: DAGWidget
 
-    child: Schema
-
     last_created = None
 
     def __init__(

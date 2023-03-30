@@ -24,8 +24,6 @@ class MultiSeriesW(VBoxSchema):
         btn_apply: ipw.Button
         vega: HVegaWidget
 
-    child: Schema
-
     def init(self) -> None:
         self.output_dtypes = None
         self._axis = []

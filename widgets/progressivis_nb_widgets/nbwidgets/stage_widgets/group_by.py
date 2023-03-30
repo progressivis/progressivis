@@ -28,8 +28,6 @@ class GroupByW(VBoxSchema):
         by_box: Union[ipw.SelectMultiple, ipw.HBox]
         start_btn: ipw.Button
 
-    child: Schema
-
     def init(self) -> None:
         self.child.grouping_mode = self.make_gr_mode()
         self.child.by_box = self.make_sel_multiple()

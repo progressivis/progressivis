@@ -772,6 +772,14 @@ class SchemaBox:
         children[i] = child
         self.children = tuple(children)
 
+    @property
+    def c_(self) -> SchemaBase:  # shortcut for self.child
+        return self.child
+
+    @c_.setter
+    def c_(self, value: SchemaBase) -> None:
+        self.child = value
+
 
 class VBoxSchema(VBox, SchemaBox):
     def __init__(self, *args: Any, **kw: Any) -> None:

@@ -281,8 +281,6 @@ class ScalerW(VBoxSchema):
         out: IScalerOut
         start_btn: ipw.Button
 
-    child: Schema
-
     def init(self) -> None:
         self.child.inp = IScalerIn(self)
         self.child.inp.disabled = True
