@@ -31,8 +31,9 @@ class Percentiles(Module):
         input_table: BasePTable,
         hist_index: HistogramIndex,
     ) -> Dict[str, float]:
-        column = input_table[hist_index.column]
-        hii = hist_index._impl
+        assert hist_index._columns is not None
+        column = input_table[hist_index._columns[0]]
+        hii = hist_index._impl[hist_index._columns[0]]
         assert hii is not None
 
         def _filter_tsv(bm: PIntSet) -> PIntSet:

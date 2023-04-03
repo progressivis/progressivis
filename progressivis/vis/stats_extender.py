@@ -56,8 +56,9 @@ def _run_step_common(
     if self_._enabled is None:
         if input_df is None:
             return self_._return_run_step(self_.state_blocked, steps_run=0)
-        assert isinstance(self_.column, str)
-        self_._enabled = _is_string_col(input_df, self_.column) is is_string
+        assert self_._columns is not None
+        assert isinstance(self_._columns[0], str)
+        self_._enabled = _is_string_col(input_df, self_._columns[0]) is is_string
     if self_._enabled:
         return super_call(run_number, step_size, howlong)
     slot.clear_buffers()
@@ -279,7 +280,7 @@ class StatsExtender(Module):
                 range_query.params.column = col
                 # print(range_query.scheduler(), self.scheduler(), lower.scheduler())
                 # assert range_query.scheduler() == lower.scheduler()
-                hist_index = HistogramIndexIf(scheduler=s, column=col)
+                hist_index = HistogramIndexIf(scheduler=s, columns=[col])
                 range_query.create_dependent_modules(
                     input_module,
                     input_slot,

@@ -31,7 +31,7 @@ class TestPercentiles(ProgressiveTest):
         s = self.scheduler()
         with s:
             random = RandomPTable(2, rows=10000, scheduler=s)
-            hist_index = HistogramIndex(column="_1", scheduler=s)
+            hist_index = HistogramIndex(columns=["_1"], scheduler=s)
             hist_index.input[0] = random.output.result
             t_percentiles = PDict({"_25": 25.0, "_50": 50.0, "_75": 75.0})
             which_percentiles = ConstDict(pdict=t_percentiles, scheduler=s)
@@ -78,7 +78,7 @@ class TestPercentiles(ProgressiveTest):
                 update_column="_2", fixed_step_size=1000, scheduler=s, **kw
             )
             stirrer.input[0] = random.output.result
-            hist_index = HistogramIndex(column="_1", scheduler=s)
+            hist_index = HistogramIndex(columns=["_1"], scheduler=s)
             hist_index.input[0] = stirrer.output.result
             t_percentiles = PDict({"_25": 25.0, "_50": 50.0, "_75": 75.0})
             which_percentiles = ConstDict(pdict=t_percentiles, scheduler=s)

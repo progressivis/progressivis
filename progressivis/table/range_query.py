@@ -44,7 +44,7 @@ class _Selection:
 
 
 class RangeQueryImpl:  # (ModuleImpl):
-    def __init__(self, column: list[str], approximate: bool):
+    def __init__(self, column: str, approximate: bool):
         super(RangeQueryImpl, self).__init__()
         self._table: Optional[BasePTable] = None
         self._column = column
@@ -65,19 +65,27 @@ class RangeQueryImpl:  # (ModuleImpl):
         assert self.result
         if limit_changed:
             new_sel = hist_index.range_query(
-                lower, upper, approximate=self._approximate
+                self._column, lower, upper, approximate=self._approximate
             )
             self.result.assign(new_sel)
             return
         if updated:
             self.result.remove(updated)
             res = hist_index.restricted_range_query(
-                lower, upper, only_locs=updated, approximate=self._approximate
+                self._column,
+                lower,
+                upper,
+                only_locs=updated,
+                approximate=self._approximate,
             )
             self.result.add(res)
         if created:
             res = hist_index.restricted_range_query(
-                lower, upper, only_locs=created, approximate=self._approximate
+                self._column,
+                lower,
+                upper,
+                only_locs=created,
+                approximate=self._approximate,
             )
             self.result.update(res)
         if deleted:
@@ -237,7 +245,7 @@ class RangeQuery(Module):
         with scheduler:
             if hist_index is None:
                 hist_index = HistogramIndex(
-                    column=params.column, group=self.name, scheduler=scheduler
+                    columns=[params.column], group=self.name, scheduler=scheduler
                 )
             hist_index.input.table = input_module.output[input_slot]
             if min_value is None:

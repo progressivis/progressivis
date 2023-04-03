@@ -25,7 +25,7 @@ from ..core.utils import indices_len
 from . import PTableSelectedView
 
 
-from typing import List, Optional, Any, Callable, Tuple
+from typing import List, Dict, Optional, Any, Callable, Tuple
 
 APPROX = False
 logger = logging.getLogger(__name__)
@@ -66,23 +66,6 @@ class _HistogramIndexImpl(object):
         if size < self._divide_threshold:
             return False
         return size > self._divide_coef * mean
-
-    # def __reshape__still_inconclusive_variant(self, i):
-    #     "Change the bounds of the index if needed"
-    #     prev_ = sum([len(bm) for bm in self.pintsets[:i]])
-    #     p_ = (prev_ + len(self.pintsets[i])/2.0)/len(self.column) * 100
-    #     v = self._tdigest.percentile(p_)
-    #     try:
-    #         assert self.bins[i-1] < v < self.bins[i]
-    #     except:
-    #         import pdb;pdb.set_trace()
-    #     ids = np.array(self.pintsets[i], np.int64)
-    #     values = self.column.loc[ids]
-    #     lower_bin = PIntSet(ids[values < v])
-    #     upper_bin = self.pintsets[i] - lower_bin
-    #     np.insert(self.bins, i, v)
-    #     self.pintsets.insert(i, lower_bin)
-    #     self.pintsets[i] = upper_bin
 
     def show_histogram(self) -> None:
         "Print the histogram on the display"
@@ -164,13 +147,6 @@ class _HistogramIndexImpl(object):
         values = self.column.loc[ids]
         lower_bin = PIntSet(ids[values < v])
         upper_bin = self.pintsets[i] - lower_bin
-        # lower_len = len(lower_bin)
-        # upper_len = len(upper_bin)
-        # t = len(ids) * self._perm_deviation
-        # if abs(lower_len - upper_len) > t:
-        #    logger.info(
-        #        f"DIFF: {lower_len} {upper_len} {float(abs(lower_len - upper_len)) / len(ids)}"
-        #    )
         self.bins = np.insert(self.bins, i, v)
         assert self.bins is not None
         if i + 1 >= len(self.bins):
@@ -385,33 +361,35 @@ class HistogramIndex(Module):
     Compute and maintain an histogram index
     """
 
-    def __init__(self, column: str, **kwds: Any) -> None:
+    def __init__(self, **kwds: Any) -> None:
         super(HistogramIndex, self).__init__(
             # output_required=False,
             **kwds
         )
-        self.column = column
+        if not self._columns:
+            raise ValueError("HistogramIndex needs at least one column")
+        self._n_cols = len(self._columns)
         # will be created when the init_threshold is reached
-        self._impl: Optional[_HistogramIndexImpl] = None
+        self._impl: Dict[str, _HistogramIndexImpl] = {}
         self.selection = PIntSet()  # will be filled when the table is read
         # so realistic initial values for min and max were available
         self.input_module: Optional[Module] = None
         self.input_slot: Optional[str] = None
         self._input_table: Optional[PTable] = None
 
-    def compute_bounds(self, input_table: PTable) -> Tuple[float, float]:
-        values = input_table[self.column]
+    def compute_bounds(self, column: str, input_table: PTable) -> Tuple[float, float]:
+        values = input_table[column]
         return values.min(), values.max()
 
-    def get_min_bin(self) -> Optional[PIntSet]:
+    def get_min_bin(self, column: str) -> Optional[PIntSet]:
         if self._impl is None:
             return None
-        return self._impl.get_min_bin()
+        return self._impl[column].get_min_bin()
 
-    def get_max_bin(self) -> Optional[PIntSet]:
+    def get_max_bin(self, column: str) -> Optional[PIntSet]:
         if self._impl is None:
             return None
-        return self._impl.get_max_bin()
+        return self._impl[column].get_max_bin()
 
     def starting(self) -> None:
         super().starting()
@@ -432,21 +410,24 @@ class HistogramIndex(Module):
         if input_table is None or len(input_table) < self.params.init_threshold:
             # there are not enough rows. it's not worth building an index yet
             return self._return_run_step(self.state_blocked, steps_run=0)
-        if self._impl is None:
+        if not self._impl:
             input_slot.reset()
             input_slot.update(run_number)
             input_slot.clear_buffers()
-            bound_min, bound_max = self.compute_bounds(input_table)
-            self._impl = _HistogramIndexImpl(
-                self.column, input_table, bound_min, bound_max, self.params.bins
-            )
+            assert self._columns is not None
+            for column in self._columns:
+                bound_min, bound_max = self.compute_bounds(column, input_table)
+                self._impl[column] = _HistogramIndexImpl(
+                    column, input_table, bound_min, bound_max, self.params.bins
+                )
+                steps += self.process_min_max(column, input_table)
             self.selection = PIntSet(input_table.index)
             self.result = PTableSelectedView(input_table, self.selection)
-            steps += self.process_min_max(input_table)
             return self._return_run_step(self.state_blocked, len(self.selection))
         else:
             # Many not always, or should the implementation decide?
-            self._impl.reshape()
+            for impl in self._impl.values():
+                impl.reshape()
         deleted: Optional[PIntSet] = None
         if input_slot.deleted.any():
             deleted = input_slot.deleted.next(as_slice=False)
@@ -457,41 +438,43 @@ class HistogramIndex(Module):
         if input_slot.created.any():
             created = input_slot.created.next(length=step_size, as_slice=False)
             created = fix_loc(created)
-            steps += indices_len(created)
+            steps += indices_len(created) * self._n_cols
             self.selection |= created
         updated: Optional[PIntSet] = None
         if input_slot.updated.any():
             updated = input_slot.updated.next(length=step_size, as_slice=False)
             updated = fix_loc(updated)
-            steps += indices_len(updated)
+            steps += indices_len(updated) * self._n_cols
         if steps == 0:
             return self._return_run_step(self.state_blocked, steps_run=0)
         input_table = input_slot.data()
-        self._impl.update_histogram(created, updated, deleted)
-        steps += self.process_min_max(input_table)
+        for col, impl in self._impl.items():
+            impl.update_histogram(created, updated, deleted)
+            steps += self.process_min_max(col, input_table)
         return self._return_run_step(self.next_state(input_slot), steps_run=steps)
 
-    def process_min_max(self, input_table: PTable) -> int:
+    def process_min_max(self, column: str, input_table: PTable) -> int:
         steps = 0
         if self.min_out is not None:
-            min_bin = self.get_min_bin()
+            min_bin = self.get_min_bin(column)
             if min_bin:
-                min_ = input_table[self.column].loc[min_bin].min()
-                self.min_out.update({self.column: min_})
+                min_ = input_table[column].loc[min_bin].min()
+                self.min_out.update({column: min_})
                 steps += len(min_bin)  # TODO: find a better heuristic
         if self.max_out is not None:
-            max_bin = self.get_max_bin()
+            max_bin = self.get_max_bin(column)
             if max_bin:
-                max_ = input_table[self.column].loc[max_bin].max()
-                self.max_out.update({self.column: max_})
+                max_ = input_table[column].loc[max_bin].max()
+                self.max_out.update({column: max_})
                 steps += len(max_bin)  # TODO: find a better heuristic
         return steps
 
     def _eval_to_ids(
         self,
-        operator_: Callable[[Any, Any], Any],
-        limit: Any,
-        input_ids: Optional[slice] = None,
+            column: str,
+            operator_: Callable[[Any, Any], Any],
+            limit: Any,
+            input_ids: Optional[slice] = None,
     ) -> PIntSet:
         input_slot = self.get_input_slot("table")
         table_ = input_slot.data()
@@ -499,90 +482,96 @@ class HistogramIndex(Module):
             input_ids = table_.index
         else:
             input_ids = fix_loc(input_ids)
-        x = table_[self.column].loc[input_ids]
+        x = table_[column].loc[input_ids]
         mask_ = operator_(x, limit)
         assert isinstance(input_ids, slice)
         arr = slice_to_arange(input_ids)
         return PIntSet(arr[np.nonzero(mask_)[0]])
 
     def query(
-        self,
-        operator_: Callable[[Any, Any], Any],
-        limit: Any,
-        approximate: bool = APPROX,
+            self,
+            column: str,
+            operator_: Callable[[Any, Any], Any],
+            limit: Any,
+            approximate: bool = APPROX,
     ) -> PIntSet:
         """
         Return the list of rows matching the query.
         For example, returning all values less than 10 (< 10) would be
         `query(operator.__lt__, 10)`
         """
-        if self._impl:
-            return self._impl.query(operator_, limit, approximate)
+        if column in self._impl:
+            return self._impl[column].query(operator_, limit, approximate)
         # there are no histogram because init_threshold wasn't be reached yet
         # so we query the input table directly
-        return self._eval_to_ids(operator_, limit)
+        return self._eval_to_ids(column, operator_, limit)
 
     def restricted_query(
-        self,
-        operator_: Callable[[Any, Any], Any],
-        limit: Any,
-        only_locs: Any,
-        approximate: bool = APPROX,
+            self,
+            column: str,
+            operator_: Callable[[Any, Any], Any],
+            limit: Any,
+            only_locs: Any,
+            approximate: bool = APPROX,
     ) -> PIntSet:
         """
         Return the list of rows matching the query.
         For example, returning all values less than 10 (< 10) would be
         `query(operator.__lt__, 10)`
         """
-        if self._impl:
-            return self._impl.restricted_query(operator_, limit, only_locs, approximate)
+        if column in self._impl:
+            return self._impl[column].restricted_query(operator_, limit, only_locs, approximate)
         # there are no histogram because init_threshold wasn't be reached yet
         # so we query the input table directly
-        return self._eval_to_ids(operator_, limit, only_locs)
+        return self._eval_to_ids(column, operator_, limit, only_locs)
 
     def range_query_aslist(
-        self, lower: float, upper: float, approximate: bool = APPROX
+            self, column: str, lower: float, upper: float, approximate: bool = APPROX
     ) -> List[PIntSet]:
         r"""
         Return the list of rows with values in range \[`lower`, `upper`\[
         """
-        if self._impl:
-            return self._impl.range_query_aslist(lower, upper, approximate)
+        if column in self._impl:
+            return self._impl[column].range_query_aslist(lower, upper, approximate)
         return []
 
     def range_query(
-        self, lower: float, upper: float, approximate: bool = APPROX
+            self, column: str, lower: float, upper: float, approximate: bool = APPROX
     ) -> PIntSet:
         r"""
         Return the list of rows with values in range \[`lower`, `upper`\[
         """
-        if self._impl:
-            return self._impl.range_query(lower, upper, self.selection, approximate)
+        if column in self._impl:
+            return self._impl[column].range_query(lower, upper, self.selection, approximate)
         # there are no histogram because init_threshold wasn't be reached yet
         # so we query the input table directly
         return self._eval_to_ids(
+            column,
             operator.__lt__, upper
         ) & self._eval_to_ids(  # optimize later
+            column,
             operator.__ge__, lower
         )
 
     def restricted_range_query(
-        self, lower: float, upper: float, only_locs: Any, approximate: bool = APPROX
+            self,
+            column: str, lower: float,
+            upper: float, only_locs: Any, approximate: bool = APPROX
     ) -> PIntSet:
         r"""
         Return the list of rows with values in range \[`lower`, `upper`\[
         among only_locs
         """
-        if self._impl:
-            return self._impl.restricted_range_query(
+        if column in self._impl:
+            return self._impl[column].restricted_range_query(
                 lower, upper, only_locs, approximate
             )
         # there are no histogram because init_threshold wasn't be reached yet
         # so we query the input table directly
         return (
-            self._eval_to_ids(operator.__lt__, upper, only_locs)
+            self._eval_to_ids(column, operator.__lt__, upper, only_locs)
             # optimize later
-            & self._eval_to_ids(operator.__ge__, lower, only_locs)
+            & self._eval_to_ids(column, operator.__ge__, lower, only_locs)
         )
 
     def create_dependent_modules(

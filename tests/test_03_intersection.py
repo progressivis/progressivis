@@ -22,7 +22,7 @@ class TestIntersection(ProgressiveTest):
         min_value = Constant(table=t_min, scheduler=s)
         t_max = PTable(name=None, dshape="{_1: float64}", data={"_1": [0.8]})
         max_value = Constant(table=t_max, scheduler=s)
-        hist_index = HistogramIndex(column="_1", scheduler=s)
+        hist_index = HistogramIndex(columns=["_1"], scheduler=s)
         hist_index.create_dependent_modules(random, "result")
         bisect_min = Bisect(column="_1", op=">", hist_index=hist_index, scheduler=s)
         bisect_min.input[0] = hist_index.output.result
@@ -54,7 +54,7 @@ class TestIntersection(ProgressiveTest):
         min_value = Constant(table=t_min, scheduler=s)
         t_max = PTable(name=None, dshape="{_1: float64}", data={"_1": [0.8]})
         max_value = Constant(table=t_max, scheduler=s)
-        hist_index = HistogramIndex(column="_1", scheduler=s)
+        hist_index = HistogramIndex(columns=["_1"], scheduler=s)
         hist_index.create_dependent_modules(stirrer, "result")
         bisect_min = Bisect(column="_1", op=">", hist_index=hist_index, scheduler=s)
         bisect_min.input[0] = hist_index.output.result

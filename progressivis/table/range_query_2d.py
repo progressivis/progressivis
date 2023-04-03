@@ -18,7 +18,6 @@ from ..io import DynVar
 from .table_base import PTableSelectedView, BasePTable
 from .table import PTable
 from .hist_index import HistogramIndex
-from .merge_dict import MergeDict
 
 from typing import Optional, Any, cast, Union, Iterable
 
@@ -42,25 +41,19 @@ class RangeQuery2dImpl:  # (ModuleImpl):
         self,
         column_x: str,
         column_y: str,
-        # hist_index_x: HistogramIndex,
-        # hist_index_y: HistogramIndex,
         approximate: bool,
     ) -> None:
         super(RangeQuery2dImpl, self).__init__()
         self._table: Optional[BasePTable] = None
         self._column_x = column_x
         self._column_y = column_y
-        # self.bins = None
-        # self._hist_index_x = hist_index_x
-        # self._hist_index_y = hist_index_y
         self._approximate = approximate
         self.result: Optional[_Selection] = None
         self.is_started = False
 
     def resume(
         self,
-        hist_index_x: HistogramIndex,
-        hist_index_y: HistogramIndex,
+        hist_index: HistogramIndex,
         lower_x: float,
         upper_x: float,
         lower_y: float,
@@ -72,18 +65,18 @@ class RangeQuery2dImpl:  # (ModuleImpl):
     ) -> None:
         assert self.result
         if limit_changed:
-            new_sel_x = hist_index_x.range_query_aslist(
-                lower_x, upper_x, approximate=self._approximate
+            new_sel_x = hist_index.range_query_aslist(
+                self._column_x, lower_x, upper_x, approximate=self._approximate
             )
-            new_sel_y = hist_index_y.range_query_aslist(
-                lower_y, upper_y, approximate=self._approximate
+            new_sel_y = hist_index.range_query_aslist(
+                self._column_y, lower_y, upper_y, approximate=self._approximate
             )
             if new_sel_x is None or new_sel_y is None:
-                new_sel_x = hist_index_x.range_query(
-                    lower_x, upper_x, approximate=self._approximate
+                new_sel_x = hist_index.range_query(
+                    self._column_x, lower_x, upper_x, approximate=self._approximate
                 )
-                new_sel_y = hist_index_y.range_query(
-                    lower_y, upper_y, approximate=self._approximate
+                new_sel_y = hist_index.range_query(
+                    self._column_y, lower_y, upper_y, approximate=self._approximate
                 )
                 new_sel = new_sel_x & new_sel_y
             else:
@@ -94,19 +87,35 @@ class RangeQuery2dImpl:  # (ModuleImpl):
             return
         if updated:
             self.result.remove(updated)
-            res_x = hist_index_x.restricted_range_query(
-                lower_x, upper_x, only_locs=updated, approximate=self._approximate
+            res_x = hist_index.restricted_range_query(
+                self._column_x,
+                lower_x,
+                upper_x,
+                only_locs=updated,
+                approximate=self._approximate,
             )
-            res_y = hist_index_y.restricted_range_query(
-                lower_y, upper_y, only_locs=updated, approximate=self._approximate
+            res_y = hist_index.restricted_range_query(
+                self._column_y,
+                lower_y,
+                upper_y,
+                only_locs=updated,
+                approximate=self._approximate,
             )
             self.result.update(res_x & res_y)
         if created:
-            res_x = hist_index_x.restricted_range_query(
-                lower_x, upper_x, only_locs=created, approximate=self._approximate
+            res_x = hist_index.restricted_range_query(
+                self._column_x,
+                lower_x,
+                upper_x,
+                only_locs=created,
+                approximate=self._approximate,
             )
-            res_y = hist_index_y.restricted_range_query(
-                lower_y, upper_y, only_locs=created, approximate=self._approximate
+            res_y = hist_index.restricted_range_query(
+                self._column_y,
+                lower_y,
+                upper_y,
+                only_locs=created,
+                approximate=self._approximate,
             )
             self.result.update(res_x & res_y)
         if deleted:
@@ -115,8 +124,7 @@ class RangeQuery2dImpl:  # (ModuleImpl):
     def start(
         self,
         table: BasePTable,
-        hist_index_x: HistogramIndex,
-        hist_index_y: HistogramIndex,
+        hist_index: HistogramIndex,
         lower_x: float,
         upper_x: float,
         lower_y: float,
@@ -130,8 +138,7 @@ class RangeQuery2dImpl:  # (ModuleImpl):
         self._table = table
         self.is_started = True
         return self.resume(
-            hist_index_x,
-            hist_index_y,
+            hist_index,
             lower_x,
             upper_x,
             lower_y,
@@ -241,8 +248,7 @@ class RangeQuery2dImpl:  # (ModuleImpl):
         "by the `create_dependent_modules()` method."
     ),
 )
-@def_input("hist_x", PTable)
-@def_input("hist_y", PTable)
+@def_input("hist", PTable)
 @def_output("result", PTableSelectedView)
 @def_output("min", PDict, attr_name="_min_table", required=False, doc="min doc")
 @def_output("max", PDict, attr_name="_max_table", required=False)
@@ -311,48 +317,40 @@ class RangeQuery2d(Module):
             self.input_module = input_module
             self.input_slot = input_slot
             with scheduler:
-                hist_index_x = HistogramIndex(
-                    column=params.column_x, group=self.name, scheduler=scheduler
+                hist_index = HistogramIndex(
+                    columns=[params.column_x, params.column_y],
+                    group=self.name,
+                    scheduler=scheduler,
                 )
-                self.dep.hist_index_x = hist_index_x
-                hist_index_x.input.table = input_module.output[input_slot]
-                hist_index_y = HistogramIndex(
-                    column=params.column_y, group=self.name, scheduler=scheduler
-                )
-                self.dep.hist_index_y = hist_index_y
-                hist_index_y.input.table = input_module.output[input_slot]
-                if min_ is None:
-                    min_ = MergeDict(group=self.name, scheduler=scheduler)
-                    min_.input.first = hist_index_x.output.min_out
-                    min_.input.second = hist_index_y.output.min_out
-                if max_ is None:
-                    max_ = MergeDict(group=self.name, scheduler=scheduler)
-                    max_.input.first = hist_index_x.output.max_out
-                    max_.input.second = hist_index_y.output.max_out
+                self.dep.hist_index = hist_index
+                hist_index.input.table = input_module.output[input_slot]
                 if min_value is None:
-                    assert hasattr(min_, "result")
                     min_value = DynVar(
-                        min_.result, group=self.name, scheduler=scheduler
+                        hist_index.min_out, group=self.name, scheduler=scheduler
                     )
                 if max_value is None:
-                    assert hasattr(max_, "result")
                     max_value = DynVar(
-                        max_.result, group=self.name, scheduler=scheduler
+                        hist_index.max_out, group=self.name, scheduler=scheduler
                     )
                 range_query = self
-                range_query.input.hist_x = hist_index_x.output.result
-                range_query.input.hist_y = hist_index_y.output.result
-                range_query.input.table = input_module.output[
-                    input_slot
-                ]  # hist_index_x.output.result
+                range_query.input.hist = hist_index.output.result
+                range_query.input.table = input_module.output[input_slot]
                 if min_value:
                     assert isinstance(min_value, Module)
                     range_query.input.lower = min_value.output.result
                 if max_value:
                     assert isinstance(max_value, Module)
                     range_query.input.upper = max_value.output.result
-                range_query.input.min = min_.output.result
-                range_query.input.max = max_.output.result
+                range_query.input.min = (
+                    min_.output.result
+                    if min_ is not None
+                    else hist_index.output.min_out
+                )
+                range_query.input.max = (
+                    max_.output.result
+                    if max_ is not None
+                    else hist_index.output.max_out
+                )
             self.dep.min = min_
             self.dep.max = max_
             self.dep.min_value = min_value
@@ -381,10 +379,8 @@ class RangeQuery2d(Module):
     def run_step(
         self, run_number: int, step_size: int, howlong: float
     ) -> ReturnRunStep:
-        hist_x_slot = self.get_input_slot("hist_x")
-        hist_x_slot.clear_buffers()
-        hist_y_slot = self.get_input_slot("hist_y")
-        hist_y_slot.clear_buffers()
+        hist_slot = self.get_input_slot("hist")
+        hist_slot.clear_buffers()
         input_slot = self.get_input_slot("table")
         # input_slot.update(run_number)
         steps = 0
@@ -495,8 +491,7 @@ class RangeQuery2d(Module):
         if not self._impl.is_started:
             self._impl.start(
                 input_table,
-                cast(HistogramIndex, hist_x_slot.output_module),
-                cast(HistogramIndex, hist_y_slot.output_module),
+                cast(HistogramIndex, hist_slot.output_module),
                 lower_value_x,
                 upper_value_x,
                 lower_value_y,
@@ -510,8 +505,7 @@ class RangeQuery2d(Module):
             self.result.selection = self._impl.result._values
         else:
             self._impl.resume(
-                cast(HistogramIndex, hist_x_slot.output_module),
-                cast(HistogramIndex, hist_y_slot.output_module),
+                cast(HistogramIndex, hist_slot.output_module),
                 lower_value_x,
                 upper_value_x,
                 lower_value_y,

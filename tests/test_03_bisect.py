@@ -16,7 +16,7 @@ class TestBisect(ProgressiveTest):
         random = RandomPTable(2, rows=1000_000, scheduler=s)
         t = PTable(name=None, dshape="{value: string}", data={"value": [0.5]})
         min_value = Constant(table=t, scheduler=s)
-        hist_index = HistogramIndex(column="_1", scheduler=s)
+        hist_index = HistogramIndex(columns=["_1"], scheduler=s)
         hist_index.create_dependent_modules(random, "result")
         bisect_ = Bisect(column="_1", op=">", hist_index=hist_index, scheduler=s)
         bisect_.input[0] = hist_index.output.result
@@ -43,7 +43,7 @@ class TestBisect(ProgressiveTest):
         stirrer.input[0] = random.output.result
         t = PTable(name=None, dshape="{value: string}", data={"value": [0.5]})
         min_value = Constant(table=t, scheduler=s)
-        hist_index = HistogramIndex(column="_1", scheduler=s)
+        hist_index = HistogramIndex(columns=["_1"], scheduler=s)
         hist_index.create_dependent_modules(stirrer, "result")
         bisect_ = Bisect(column="_1", op=">", hist_index=hist_index, scheduler=s)
         bisect_.input[0] = hist_index.output.result
@@ -66,7 +66,7 @@ class TestBisect(ProgressiveTest):
         stirrer.input[0] = random.output.result
         t = PTable(name=None, dshape="{value: string}", data={"value": [0.5]})
         min_value = Constant(table=t, scheduler=s)
-        hist_index = HistogramIndex(column="_1", scheduler=s)
+        hist_index = HistogramIndex(columns=["_1"], scheduler=s)
         hist_index.create_dependent_modules(stirrer, "result")
         bisect_ = Bisect(column="_1", op=">", hist_index=hist_index, scheduler=s)
         bisect_.input[0] = hist_index.output.result

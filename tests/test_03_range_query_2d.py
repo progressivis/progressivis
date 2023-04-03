@@ -71,36 +71,28 @@ class TestRangeQuery(ProgressiveTest):
             )
             prt = Print(proc=self.terse, scheduler=s)
             prt.input[0] = range_qry.output.result
-            hist_index_x = range_qry.dep.hist_index_x
-            assert hist_index_x is not None
+            hist_index = range_qry.dep.hist_index
+            assert hist_index is not None
             prt2_x = Print(proc=self.terse, scheduler=s)
-            prt2_x.input[0] = hist_index_x.output.min_out
+            prt2_x.input[0] = hist_index.output.min_out
             pr3_x = Print(proc=self.terse, scheduler=s)
-            pr3_x.input[0] = hist_index_x.output.max_out
-            hist_index_y = range_qry.dep.hist_index_y
-            assert hist_index_y is not None
-            prt2_y = Print(proc=self.terse, scheduler=s)
-            prt2_y.input[0] = hist_index_y.output.min_out
-            pr3_y = Print(proc=self.terse, scheduler=s)
-            pr3_y.input[0] = hist_index_y.output.max_out
+            pr3_x.input[0] = hist_index.output.max_out
         aio.run(s.start())
         assert random.result is not None
         res1 = cast(float, random.result.min()["_1"])
-        assert hist_index_x.min_out is not None
-        res2 = cast(float, hist_index_x.min_out["_1"])
+        assert hist_index.min_out is not None
+        res2 = cast(float, hist_index.min_out["_1"])
         self.assertAlmostEqual(res1, res2)
         res1 = cast(float, random.result.max()["_1"])
-        assert hist_index_x.max_out is not None
-        res2 = cast(float, hist_index_x.max_out["_1"])
+        assert hist_index.max_out is not None
+        res2 = cast(float, hist_index.max_out["_1"])
         self.assertAlmostEqual(res1, res2)
         assert random.result is not None
         res1 = cast(float, random.result.min()["_2"])
-        assert hist_index_y.min_out is not None
-        res2 = cast(float, hist_index_y.min_out["_2"])
+        res2 = cast(float, hist_index.min_out["_2"])
         self.assertAlmostEqual(res1, res2)
         res1 = cast(float, random.result.max()["_2"])
-        assert hist_index_y.max_out is not None
-        res2 = cast(float, hist_index_y.max_out["_2"])
+        res2 = cast(float, hist_index.max_out["_2"])
         self.assertAlmostEqual(res1, res2)
 
     def _query_min_max_impl(
