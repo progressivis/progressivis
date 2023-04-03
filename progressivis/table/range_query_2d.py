@@ -14,8 +14,7 @@ from ..core.module import (
 from ..core.pintset import PIntSet
 from ..core.utils import indices_len
 from ..utils.psdict import PDict
-from ..io import Variable
-from ..stats import Min, Max
+from ..io import DynVar
 from .table_base import PTableSelectedView, BasePTable
 from .table import PTable
 from .hist_index import HistogramIndex
@@ -145,17 +144,103 @@ class RangeQuery2dImpl:  # (ModuleImpl):
 
 
 @document
-@def_parameter("column_x", np.dtype(object), "unknown", doc="titi")
-@def_parameter("column_y", np.dtype(object), "unknown")
-@def_parameter("watched_key_lower_x", np.dtype(object), "", doc="**tutu**")
-@def_parameter("watched_key_upper_x", np.dtype(object), "")
-@def_parameter("watched_key_lower_y", np.dtype(object), "")
-@def_parameter("watched_key_upper_y", np.dtype(object), "")
-@def_input("table", PTable)
-@def_input("lower", PDict, required=False, doc="lower doc")
-@def_input("upper", PDict, required=False)
-@def_input("min", PDict, required=False)
-@def_input("max", PDict, required=False)
+@def_parameter(
+    "column_x",
+    np.dtype(object),
+    "unknown",
+    doc=(
+        "The **x axis** column in the **table**"
+        " input slot concerned by the query. "
+        "This parameter is mandatory"
+    ),
+)
+@def_parameter(
+    "column_y",
+    np.dtype(object),
+    "unknown",
+    doc=(
+        "The **y axis** column in the **table** "
+        "input slot concerned by the query. "
+        "This parameter is mandatory"
+    ),
+)
+@def_parameter(
+    "watched_key_lower_x",
+    np.dtype(object),
+    "",
+    doc=(
+        "The **x axis** key in the **lower** input slot (which is a **PDict**)"
+        " giving the lower bound of the query. "
+        'When unset (i.e. ==""), the **column** parameter is used instead.'
+    ),
+)
+@def_parameter(
+    "watched_key_upper_x",
+    np.dtype(object),
+    "",
+    doc=(
+        "The **x axis** key in the **upper** input slot (which is a **PDict**)"
+        " giving the upper bound of the query. "
+        'When unset (i.e. ==""), the **column** parameter is used instead.'
+    ),
+)
+@def_parameter(
+    "watched_key_lower_y",
+    np.dtype(object),
+    "",
+    doc=(
+        "The **y axis** key in the **lower** input slot (which is a **PDict**)"
+        " giving the lower bound of the query. "
+        'When unset (i.e. ==""), the **column** parameter is used instead.'
+    ),
+)
+@def_parameter(
+    "watched_key_upper_y",
+    np.dtype(object),
+    "",
+    doc=(
+        "The **y axis** key in the **upper** input slot (which is a **PDict**)"
+        " giving the upper bound of the query. "
+        'When unset (i.e. ==""), the **column** parameter is used instead.'
+    ),
+)
+@def_input("table", PTable, doc="Provides data to be queried.")
+@def_input(
+    "lower",
+    PDict,
+    required=False,
+    doc=(
+        "Provides a **PDict** object containing the 2D lower bound of the query. "
+        "The x, y axis keys giving the bound are set by the **watched_key_lower_{x|}**"
+        " parameters when they are different from the **column_{x|y}** parameters."
+    ),
+)
+@def_input(
+    "upper",
+    PDict,
+    required=False,
+    doc=(
+        "Provides a **PDict** object containing the 2D upper bound of the query. "
+        "The x, y axis keys giving the bound are set by the **watched_key_upper_{x|}**"
+        " parameters when they are different from the **column_{x|y}** parameters."
+    ),
+)
+@def_input(
+    "min",
+    PDict,
+    doc=(
+        "The minimum value in the input data. This mandatory parameter could be provided "
+        "by the `create_dependent_modules()` method."
+    ),
+)
+@def_input(
+    "max",
+    PDict,
+    doc=(
+        "The maximum value in the input data. This mandatory parameter could be provided"
+        "by the `create_dependent_modules()` method."
+    ),
+)
 @def_input("hist_x", PTable)
 @def_input("hist_y", PTable)
 @def_output("result", PTableSelectedView)
@@ -169,7 +254,6 @@ class RangeQuery2d(Module):
 
     def __init__(
         self,
-        # hist_index: Optional[HistogramIndex] = None,
         approximate: bool = False,
         **kwds: Any,
     ) -> None:
@@ -182,8 +266,6 @@ class RangeQuery2d(Module):
             keywords
         """
         super(RangeQuery2d, self).__init__(**kwds)
-        # self._hist_index_x: Optional[HistogramIndex] = None
-        # self._hist_index_y: Optional[HistogramIndex] = None
         self._approximate = approximate
         self._column_x: str = self.params.column_x
         self._column_y: str = self.params.column_y
@@ -216,6 +298,7 @@ class RangeQuery2d(Module):
         **kwds: Any,
     ) -> RangeQuery2d:
         """
+        Creates a default configuration containing the necessary underlying modules.
         Beware, {min,max}_value=None is not the same as {min,max}_value=False.
         With None, a min module is created and connected.
         With False, it is not created and not connected.
@@ -239,46 +322,26 @@ class RangeQuery2d(Module):
                 self.dep.hist_index_y = hist_index_y
                 hist_index_y.input.table = input_module.output[input_slot]
                 if min_ is None:
-                    min_x = Min(
-                        group=self.name, scheduler=scheduler, columns=[self._column_x]
-                    )
-                    min_x.input.table = hist_index_x.output.min_out
-                    min_y = Min(
-                        group=self.name, scheduler=scheduler, columns=[self._column_y]
-                    )
-                    min_y.input.table = hist_index_y.output.min_out
                     min_ = MergeDict(group=self.name, scheduler=scheduler)
-                    min_.input.first = min_x.output.result
-                    min_.input.second = min_y.output.result
+                    min_.input.first = hist_index_x.output.min_out
+                    min_.input.second = hist_index_y.output.min_out
                 if max_ is None:
-                    max_x = Max(
-                        group=self.name, scheduler=scheduler, columns=[self._column_x]
-                    )
-                    max_x.input.table = hist_index_x.output.max_out
-                    max_y = Max(
-                        group=self.name, scheduler=scheduler, columns=[self._column_y]
-                    )
-                    max_y.input.table = hist_index_y.output.max_out
                     max_ = MergeDict(group=self.name, scheduler=scheduler)
-                    max_.input.first = max_x.output.result
-                    max_.input.second = max_y.output.result
+                    max_.input.first = hist_index_x.output.max_out
+                    max_.input.second = hist_index_y.output.max_out
                 if min_value is None:
-                    min_value = Variable(group=self.name, scheduler=scheduler)
-                    min_value.input.like = min_.output.result
+                    assert hasattr(min_, "result")
+                    min_value = DynVar(
+                        min_.result, group=self.name, scheduler=scheduler
+                    )
                 if max_value is None:
-                    max_value = Variable(group=self.name, scheduler=scheduler)
-                    max_value.input.like = max_.output.result
-
+                    assert hasattr(max_, "result")
+                    max_value = DynVar(
+                        max_.result, group=self.name, scheduler=scheduler
+                    )
                 range_query = self
                 range_query.input.hist_x = hist_index_x.output.result
                 range_query.input.hist_y = hist_index_y.output.result
-                # self._impl = RangeQuery2dImpl(
-                #     self._column_x,
-                #     self._column_y,
-                #     hist_index_x,
-                #     hist_index_y,
-                #     approximate=self._approximate,
-                # )
                 range_query.input.table = input_module.output[
                     input_slot
                 ]  # hist_index_x.output.result
@@ -299,16 +362,13 @@ class RangeQuery2d(Module):
     def _create_min_max(self) -> None:
         if self._min_table is None:
             self._min_table = PDict({self._column_x: np.inf, self._column_y: np.inf})
-            # PTable(name=None, dshape=self.min_max_dshape)
         if self._max_table is None:
             self._max_table = PDict({self._column_x: -np.inf, self._column_y: -np.inf})
-            # PTable(name=None, dshape=self.min_max_dshape)
 
     def _set_minmax_out(self, attr_: str, val_x: float, val_y: float) -> None:
         d = {self._column_x: val_x, self._column_y: val_y}
         if getattr(self, attr_) is None:
             setattr(self, attr_, PDict(d))
-            # PTable(name=None, dshape=self.min_max_dshape)
         else:
             getattr(self, attr_).update(d)
 

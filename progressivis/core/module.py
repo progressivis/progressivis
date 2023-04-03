@@ -375,7 +375,7 @@ class Module(metaclass=ABCMeta):
             slot_doc = inputs_doc if mode == "in" else outputs_doc
             if sd.name in slot_doc:
                 doclist.append(sp2)
-                doclist.append(f", {slot_doc[sd.name]}\n")
+                doclist.append(f" {slot_doc[sd.name]}\n")
 
         if cls.parameters:
             _section(4, "Module parameters")

@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from progressivis.table.constant import ConstDict
 from progressivis import Print, Scheduler
-from progressivis.stats import RandomPTable, Min, Max
+from progressivis.stats import RandomPTable
 from progressivis.core.pintset import PIntSet
 from progressivis.table.range_query import RangeQuery
 from progressivis.utils.psdict import PDict
@@ -73,23 +73,19 @@ class TestRangeQuery(ProgressiveTest):
             prt.input[0] = range_qry.output.result
             hist_index = range_qry.dep.hist_index
             assert hist_index is not None
-            min_ = Min(name="min_" + str(hash(hist_index)), scheduler=s)
-            min_.input[0] = hist_index.output.min_out
             prt2 = Print(proc=self.terse, scheduler=s)
-            prt2.input[0] = min_.output.result
-            max_ = Max(name="max_" + str(hash(hist_index)), scheduler=s)
-            max_.input[0] = hist_index.output.max_out
+            prt2.input[0] = hist_index.output.min_out
             pr3 = Print(proc=self.terse, scheduler=s)
-            pr3.input[0] = max_.output.result
+            pr3.input[0] = hist_index.output.min_out
         aio.run(s.start())
         assert random.result is not None
         res1 = cast(float, random.result.min()["_1"])
-        assert min_.result is not None
-        res2 = cast(float, min_.result["_1"])
+        assert hist_index.min_out is not None
+        res2 = cast(float, hist_index.min_out["_1"])
         self.assertAlmostEqual(res1, res2)
         res1 = cast(float, random.result.max()["_1"])
-        assert max_.result is not None
-        res2 = cast(float, max_.result["_1"])
+        assert hist_index.max_out is not None
+        res2 = cast(float, hist_index.max_out["_1"])
         self.assertAlmostEqual(res1, res2)
 
     def _query_min_max_impl(

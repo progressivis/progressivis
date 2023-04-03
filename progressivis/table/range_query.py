@@ -12,8 +12,7 @@ from progressivis.core.module import (
 )
 from progressivis.core.pintset import PIntSet
 from progressivis.core.utils import indices_len
-from ..io import Variable
-from ..stats import Min, Max
+from ..io import DynVar
 from ..utils.psdict import PDict
 from . import BasePTable, PTable, PTableSelectedView
 from .hist_index import HistogramIndex
@@ -49,8 +48,6 @@ class RangeQueryImpl:  # (ModuleImpl):
         super(RangeQueryImpl, self).__init__()
         self._table: Optional[BasePTable] = None
         self._column = column
-        # self.bins = None
-        # self._hist_index = hist_index
         self._approximate = approximate
         self.result: Optional[_Selection] = None
         self.is_started = False
@@ -74,7 +71,6 @@ class RangeQueryImpl:  # (ModuleImpl):
             return
         if updated:
             self.result.remove(updated)
-            # res = self._eval_to_ids(limit, updated)
             res = hist_index.restricted_range_query(
                 lower, upper, only_locs=updated, approximate=self._approximate
             )
@@ -112,74 +108,79 @@ class RangeQueryImpl:  # (ModuleImpl):
     doc=(
         "The column in the **table** input slot concerned by the query. "
         "This parameter is mandatory"
-        )
+    ),
 )
 @def_parameter(
     "watched_key_lower",
-    np.dtype(object), "",
+    np.dtype(object),
+    "",
     doc=(
         "The key in the **lower** input slot (which is a **PDict**) "
         "giving the lower bound of the query. "
-        "When unset (i.e. ==\"\"), the **column** parameter is used instead."
-    )
+        'When unset (i.e. ==""), the **column** parameter is used instead.'
+    ),
 )
 @def_parameter(
     "watched_key_upper",
-    np.dtype(object), "",
+    np.dtype(object),
+    "",
     doc=(
         "The key in the **upper** input slot (which is a **PDict**) "
         "giving the upper bound of the query. "
-        "When unset (i.e. ==\"\"), the **column** parameter is used instead."
-    )
+        'When unset (i.e. ==""), the **column** parameter is used instead.'
+    ),
 )
 @def_input("table", PTable, doc="Provides data to be queried.")
 @def_input(
-    "lower", PDict,
+    "lower",
+    PDict,
     doc=(
         "Provides a **PDict** object containing the lower bound of the query. "
         "The key giving the bound is set by the **watched_key_lower** parameter "
         "when it is different from the **column** parameter."
-        )
+    ),
 )
 @def_input(
-    "upper", PDict,
+    "upper",
+    PDict,
     doc=(
         "Provides a **PDict** object containing the upper bound of the query. "
         "The key giving the bound is set by the **watched_key_upper** parameter "
         "when it is different from the **column** parameter."
-        )
+    ),
 )
 @def_input(
-    "min", PDict,
+    "min",
+    PDict,
     doc=(
         "The minimum value in the input data. This mandatory parameter could be provided "
         "by the `create_dependent_modules()` method."
-        )
+    ),
 )
 @def_input(
-    "max", PDict,
+    "max",
+    PDict,
     doc=(
         "The maximum value in the input data. This mandatory parameter could be provided"
         "by the `create_dependent_modules()` method."
-    )
-)
-@def_input("hist", PTable)
-@def_output(
-    "result", PTableSelectedView, doc="short description of the **result** output slot"
-)
-@def_output(
-    "min",
-    PDict,
-    attr_name="_min_table",
-    required=False,
-    doc=(
-        "a longer description of the **min** output slot: "
-        "Lorem ipsum dolor sit amet, consectetur "
-        "adipiscing elit, sed do eiusmod tempor "
-        "incididunt ut labore et dolore magna aliqua."
     ),
 )
-@def_output("max", PDict, attr_name="_max_table", required=False)
+@def_input(
+    "hist",
+    PTable,
+    doc=(
+        "**HistogramIndex** module output connected to the same input/column."
+        "This mandatory parameter could be provided "
+        "by the `create_dependent_modules()` method."
+    ),
+)
+@def_output("result", PTableSelectedView, doc="Query main result")
+@def_output(
+    "min", PDict, attr_name="_min_table", required=False, doc="min value of output data"
+)
+@def_output(
+    "max", PDict, attr_name="_max_table", required=False, doc="max value of output data"
+)
 class RangeQuery(Module):
     """ """
 
@@ -197,14 +198,6 @@ class RangeQuery(Module):
         self.input_module: Optional[Module] = None
         self.hist_index: Optional[HistogramIndex] = None
 
-    # @property
-    # def hist_index(self) -> Optional[HistogramIndex]:
-    #     return self._hist_index
-
-    # @hist_index.setter
-    # def hist_index(self, hi: HistogramIndex) -> None:
-    #     self._hist_index = hi
-    #     self._impl = RangeQueryImpl(self._column, hi, approximate=self._approximate)
     @property
     def column(self) -> str:
         return str(self.params.column)
@@ -228,6 +221,13 @@ class RangeQuery(Module):
         hist_index: Optional[HistogramIndex] = None,
         **kwds: Any,
     ) -> RangeQuery:
+        """
+        Creates a default configuration containing the necessary underlying modules.
+        Beware, {min,max}_value=None is not the same as {min,max}_value=False.
+        With None, a min module is created and connected.
+        With False, it is not created and not connected.
+
+        """
         if self.input_module is not None:  # test if already called
             return self
         scheduler = self.scheduler()
@@ -240,20 +240,14 @@ class RangeQuery(Module):
                     column=params.column, group=self.name, scheduler=scheduler
                 )
             hist_index.input.table = input_module.output[input_slot]
-            if min_ is None:
-                min_ = Min(group=self.name, columns=[self.column], scheduler=scheduler)
-                min_.input.table = hist_index.output.min_out
-            if max_ is None:
-                max_ = Max(group=self.name, columns=[self.column], scheduler=scheduler)
-                max_.input.table = hist_index.output.max_out
             if min_value is None:
-                min_value = Variable(group=self.name, scheduler=scheduler)
-                min_value.input.like = min_.output.result
-
+                assert hasattr(min_, "result")
+                init_min = min_.result if min_ is not None else hist_index.min_out
+                min_value = DynVar(init_min, group=self.name, scheduler=scheduler)
             if max_value is None:
-                max_value = Variable(group=self.name, scheduler=scheduler)
-                max_value.input.like = max_.output.result
-
+                assert hasattr(max_, "result")
+                init_max = max_.result if max_ is not None else hist_index.max_out
+                max_value = DynVar(init_max, group=self.name, scheduler=scheduler)
             range_query = self
             range_query.dep.hist_index = hist_index
             range_query.input.hist = hist_index.output.result
@@ -262,8 +256,14 @@ class RangeQuery(Module):
                 range_query.input.lower = min_value.output.result
             if max_value:
                 range_query.input.upper = max_value.output.result
-            range_query.input.min = min_.output.result
-            range_query.input.max = max_.output.result
+            if min_:
+                range_query.input.min = min_.output.result
+            else:
+                range_query.input.min = hist_index.output.min_out
+            if max_:
+                range_query.input.max = max_.output.result
+            else:
+                range_query.input.max = hist_index.output.max_out
 
         self.dep.min = min_
         self.dep.max = max_
@@ -353,7 +353,6 @@ class RangeQuery(Module):
             limit_changed = True
         self._set_min_out(lower_value)
         self._set_max_out(upper_value)
-        # input_slot.update(run_number)
         if not input_slot.has_buffered() and not limit_changed:
             return self._return_run_step(self.state_blocked, steps_run=0)
         # ...

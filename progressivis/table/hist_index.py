@@ -10,9 +10,10 @@ import operator
 import logging
 
 import numpy as np
-from progressivis.core.pintset import PIntSet
-from progressivis.core.utils import slice_to_arange, fix_loc
-from progressivis.core.module import (
+from ..core.pintset import PIntSet
+from ..core.utils import slice_to_arange, fix_loc
+from ..utils.psdict import PDict
+from ..core.module import (
     Module,
     ReturnRunStep,
     def_input,
@@ -377,8 +378,8 @@ class _HistogramIndexImpl(object):
 @def_parameter("init_threshold", np.dtype(int), 1)
 @def_input("table", PTable)
 @def_output("result", PTableSelectedView)
-@def_output("min_out", PTable, required=False)
-@def_output("max_out", PTable, required=False)
+@def_output("min_out", PDict, required=False)
+@def_output("max_out", PDict, required=False)
 class HistogramIndex(Module):
     """
     Compute and maintain an histogram index
@@ -397,39 +398,10 @@ class HistogramIndex(Module):
         self.input_module: Optional[Module] = None
         self.input_slot: Optional[str] = None
         self._input_table: Optional[PTable] = None
-        self._min_table: Optional[PTableSelectedView] = None
-        self._max_table: Optional[PTableSelectedView] = None
 
     def compute_bounds(self, input_table: PTable) -> Tuple[float, float]:
         values = input_table[self.column]
         return values.min(), values.max()
-
-    def get_data(self, name: str) -> Any:
-        if name in ("min_out", "max_out"):
-            if self._impl is None:
-                return None
-            if self._input_table is None:
-                return None
-        if name == "min_out":
-            min_bin = self.get_min_bin()
-            if min_bin is None:
-                return None
-            if self._min_table is None:
-                assert self._input_table is not None
-                self._min_table = PTableSelectedView(self._input_table, PIntSet([]))
-            assert self._min_table is not None
-            self._min_table.selection = min_bin
-            return self._min_table
-        if name == "max_out":
-            max_bin = self.get_max_bin()
-            if max_bin is None:
-                return None
-            if self._max_table is None:
-                assert self._input_table is not None
-                self._max_table = PTableSelectedView(self._input_table, PIntSet([]))
-            self._max_table.selection = max_bin
-            return self._max_table
-        return super(HistogramIndex, self).get_data(name)
 
     def get_min_bin(self) -> Optional[PIntSet]:
         if self._impl is None:
@@ -440,6 +412,13 @@ class HistogramIndex(Module):
         if self._impl is None:
             return None
         return self._impl.get_max_bin()
+
+    def starting(self) -> None:
+        super().starting()
+        if self.get_output_slot("min_out"):
+            self.min_out = PDict()
+        if self.get_output_slot("max_out"):
+            self.max_out = PDict()
 
     def run_step(
         self, run_number: int, step_size: int, howlong: float
@@ -463,6 +442,7 @@ class HistogramIndex(Module):
             )
             self.selection = PIntSet(input_table.index)
             self.result = PTableSelectedView(input_table, self.selection)
+            steps += self.process_min_max(input_table)
             return self._return_run_step(self.state_blocked, len(self.selection))
         else:
             # Many not always, or should the implementation decide?
@@ -470,7 +450,6 @@ class HistogramIndex(Module):
         deleted: Optional[PIntSet] = None
         if input_slot.deleted.any():
             deleted = input_slot.deleted.next(as_slice=False)
-            # steps += indices_len(deleted) # deleted are constant time
             steps = 1
             deleted = fix_loc(deleted)
             self.selection -= deleted
@@ -488,9 +467,25 @@ class HistogramIndex(Module):
         if steps == 0:
             return self._return_run_step(self.state_blocked, steps_run=0)
         input_table = input_slot.data()
-        # self._table = input_table
         self._impl.update_histogram(created, updated, deleted)
+        steps += self.process_min_max(input_table)
         return self._return_run_step(self.next_state(input_slot), steps_run=steps)
+
+    def process_min_max(self, input_table: PTable) -> int:
+        steps = 0
+        if self.min_out is not None:
+            min_bin = self.get_min_bin()
+            if min_bin:
+                min_ = input_table[self.column].loc[min_bin].min()
+                self.min_out.update({self.column: min_})
+                steps += len(min_bin)  # TODO: find a better heuristic
+        if self.max_out is not None:
+            max_bin = self.get_max_bin()
+            if max_bin:
+                max_ = input_table[self.column].loc[max_bin].max()
+                self.max_out.update({self.column: max_})
+                steps += len(max_bin)  # TODO: find a better heuristic
+        return steps
 
     def _eval_to_ids(
         self,

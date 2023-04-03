@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from progressivis.table.constant import ConstDict
 from progressivis import Print, Scheduler
-from progressivis.stats import RandomPTable, Min, Max
+from progressivis.stats import RandomPTable
 from progressivis.core.pintset import PIntSet
 from progressivis.table.range_query_2d import RangeQuery2d
 from progressivis.utils.psdict import PDict
@@ -73,42 +73,34 @@ class TestRangeQuery(ProgressiveTest):
             prt.input[0] = range_qry.output.result
             hist_index_x = range_qry.dep.hist_index_x
             assert hist_index_x is not None
-            min_x = Min(name="min_x" + str(hash(hist_index_x)), scheduler=s)
-            min_x.input[0] = hist_index_x.output.min_out
             prt2_x = Print(proc=self.terse, scheduler=s)
-            prt2_x.input[0] = min_x.output.result
-            max_x = Max(name="max_x" + str(hash(hist_index_x)), scheduler=s)
-            max_x.input[0] = hist_index_x.output.max_out
+            prt2_x.input[0] = hist_index_x.output.min_out
             pr3_x = Print(proc=self.terse, scheduler=s)
-            pr3_x.input[0] = max_x.output.result
+            pr3_x.input[0] = hist_index_x.output.max_out
             hist_index_y = range_qry.dep.hist_index_y
             assert hist_index_y is not None
-            min_y = Min(name="min_y" + str(hash(hist_index_y)), scheduler=s)
-            min_y.input[0] = hist_index_y.output.min_out
             prt2_y = Print(proc=self.terse, scheduler=s)
-            prt2_y.input[0] = min_y.output.result
-            max_y = Max(name="max_y" + str(hash(hist_index_y)), scheduler=s)
-            max_y.input[0] = hist_index_y.output.max_out
+            prt2_y.input[0] = hist_index_y.output.min_out
             pr3_y = Print(proc=self.terse, scheduler=s)
-            pr3_y.input[0] = max_y.output.result
+            pr3_y.input[0] = hist_index_y.output.max_out
         aio.run(s.start())
         assert random.result is not None
         res1 = cast(float, random.result.min()["_1"])
-        assert min_x.result is not None
-        res2 = cast(float, min_x.result["_1"])
+        assert hist_index_x.min_out is not None
+        res2 = cast(float, hist_index_x.min_out["_1"])
         self.assertAlmostEqual(res1, res2)
         res1 = cast(float, random.result.max()["_1"])
-        assert max_x.result is not None
-        res2 = cast(float, max_x.result["_1"])
+        assert hist_index_x.max_out is not None
+        res2 = cast(float, hist_index_x.max_out["_1"])
         self.assertAlmostEqual(res1, res2)
         assert random.result is not None
         res1 = cast(float, random.result.min()["_2"])
-        assert min_y.result is not None
-        res2 = cast(float, min_y.result["_2"])
+        assert hist_index_y.min_out is not None
+        res2 = cast(float, hist_index_y.min_out["_2"])
         self.assertAlmostEqual(res1, res2)
         res1 = cast(float, random.result.max()["_2"])
-        assert max_y.result is not None
-        res2 = cast(float, max_y.result["_2"])
+        assert hist_index_y.max_out is not None
+        res2 = cast(float, hist_index_y.max_out["_2"])
         self.assertAlmostEqual(res1, res2)
 
     def _query_min_max_impl(
