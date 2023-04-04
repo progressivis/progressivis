@@ -110,8 +110,8 @@ class _DataClass:
             self.histogram2d = histogram2d
             # self.sample = sample
             # self.select = select
-            self.min = range_query_2d.dep.min.output.result
-            self.max = range_query_2d.dep.max.output.result
+            self.min = range_query_2d.dep.min.output.result if range_query_2d.dep.min else range_query_2d.dep.hist_index.min_out
+            self.max = range_query_2d.dep.max.output.result if range_query_2d.dep.max else range_query_2d.dep.hist_index.max_out
             self.range_query_2d = range_query_2d
             scatterplot = self
             return scatterplot
