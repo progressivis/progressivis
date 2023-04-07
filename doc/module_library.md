@@ -99,6 +99,7 @@
 
 .. autoclass:: Bisect
    :members:
+   :exclude-members: run_step
 ```
 
 ### CMP Query Module (via NumExpr)
@@ -109,6 +110,7 @@
 
 .. autoclass:: CmpQueryLast
    :members:
+   :exclude-members: run_step
 ```
 
 ### Numerical Expression Filtering Module (via NumExpr)
@@ -119,6 +121,7 @@
 
 .. autoclass:: FilterMod
    :members:
+   :exclude-members: run_step
 ```
 
 ### The Range Query Module
@@ -129,6 +132,37 @@
 
 .. autoclass:: RangeQuery
    :members:
+   :exclude-members: run_step
+```
+
+The modules topology produced by `create_dependent_modules()` is shown below:
+
+```{eval-rst}
+.. graphviz::
+
+   digraph range_query_dg {
+      subgraph tier1 {
+        node [color="lightgreen",style="filled",group="tier1"]
+        RangeQuery
+      }
+
+
+      "Input" -> "HistogramIndex";
+      "HistogramIndex" -> "Min" [label=min_out];
+      "HistogramIndex" -> "Max"[label=max_out];
+      "Variable[lo]" -> "RangeQuery"  [label=lower];
+      "Min" -> "Variable[lo]" [label=like];
+      "HistogramIndex" -> "RangeQuery" [label=hist];
+      "Max" -> "Variable[up]" [label=like];
+      "Variable[up]" -> "RangeQuery"  [label=upper];
+      "Min" -> "RangeQuery" [label=min];
+      "Max" -> "RangeQuery" [label=max];
+      "RangeQuery" -> "Output" [label=min];
+      "RangeQuery" -> "Output" [label=result];
+      "RangeQuery" -> "Output" [label=max];
+
+   }
+
 ```
 
 ### The Range Query 2D Module
@@ -139,6 +173,54 @@
 
 .. autoclass:: RangeQuery2d
    :members:
+   :exclude-members: run_step
+```
+The modules topology produced by `create_dependent_modules()` is shown below:
+
+```{mermaid}
+flowchart TD
+    hi(HistogramIndex/lo)
+    rq(RangeQuery)
+    in((Input))
+    o((Output))
+    in --> hi
+    hi -->|min_out: min|rq
+    hi -->|max_out: max|rq
+    hi -->|result: table|rq
+    rq -->|result|o
+
+```
+
+
+
+```{eval-rst}
+.. graphviz::
+
+   digraph range_query_dg {
+      subgraph tier1 {
+        node [color="lightgreen",style="filled",group="tier1"]
+        RangeQuery
+      }
+
+
+      "Input" -> "HistogramIndex";
+      "HistogramIndex" -> "Min" [label=min_out];
+      "HistogramIndex" -> "Max"[label=max_out];
+      "Variable[lo]" -> "RangeQuery"  [label=lower];
+      "Min" -> "Variable[lo]" [label=like];
+      "HistogramIndex" -> "RangeQuery" [label=hist];
+      "Max" -> "Variable[up]" [label=like];
+      "Variable[up]" -> "RangeQuery"  [label=upper];
+      "Min" -> "RangeQuery" [label=min];
+      "Max" -> "RangeQuery" [label=max];
+      "RangeQuery" -> "Output" [label=min];
+      "RangeQuery" -> "Output" [label=result];
+      "RangeQuery" -> "Output" [label=max];
+
+   }
+
+
+
 ```
 
 ### Categorical Query Module
@@ -149,6 +231,7 @@
 
 .. autoclass:: CategoricalQuery
    :members:
+   :exclude-members: run_step
 ```
 
 ## Indexing Modules
@@ -160,6 +243,7 @@
 
 .. autoclass:: HistogramIndex
    :members:
+   :exclude-members: run_step
 ```
 
 ### Unique Index Module
@@ -169,6 +253,7 @@
 
 .. autoclass:: UniqueIndex
    :members:
+   :exclude-members: run_step
 ```
 
 ## Data Grouping/Joining/Aggregation Modules
@@ -180,6 +265,7 @@
 
 .. autoclass:: JoinById
    :members:
+   :exclude-members: run_step
 ```
 
 ### Join Module
@@ -189,6 +275,7 @@
 
 .. autoclass:: Join
    :members:
+   :exclude-members: run_step
 ```
 
 ### Group-By Module
@@ -198,6 +285,7 @@
 
 .. autoclass:: GroupBy
    :members:
+   :exclude-members: run_step
 ```
 
 ### Aggregate Module
@@ -207,17 +295,19 @@
 
 .. autoclass:: Aggregate
    :members:
+   :exclude-members: run_step
 ```
 
 ## Statistical Modules
 
-## Sample
+### Sample
 
 ```{eval-rst}
 .. currentmodule:: progressivis.stats.sample
 
 .. autoclass:: Sample
    :members:
+   :exclude-members: run_step
 ```
 
 ## Linear Algebra Modules
