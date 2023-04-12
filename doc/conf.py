@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# type: ignore
 # -*- coding: utf-8 -*-
 #
 # progressivis documentation build configuration file, created by
@@ -19,8 +20,6 @@
 #
 
 import sys
-# NB: do not remove the next statement!
-sys.path.append("/progressivis/sphinx_marker/")
 
 # -- General configuration ------------------------------------------------
 
@@ -32,12 +31,15 @@ sys.path.append("/progressivis/sphinx_marker/")
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
+    "sphinxcontrib.mermaid",
     "myst_parser",
     "sphinx.ext.autodoc",
     "sphinx.ext.napoleon",
     "sphinx_autodoc_typehints",
     "sphinx.ext.autosummary",
-    "sphinx.ext.doctest", "sphinx.ext.intersphinx",
+    "sphinx.ext.doctest",
+    "sphinx.ext.intersphinx",
+    "sphinx.ext.graphviz",
     # "sphinx_gallery.gen_gallery",
 ]
 """
@@ -51,12 +53,12 @@ autodoc_class_signature = "separated"
 napoleon_preprocess_types = True
 numpy_scalars_url = "https://numpy.org/doc/stable/reference/arrays.scalars.html"
 napoleon_type_aliases = {
-    'BasePTable': "`BasePTable <#progressivis.table.BasePTable>`_",
-    'PTable': "`PTable <#progressivis.table.PTable>`_",
-    'PTableSelectedView': "`PTableSelectedView <#progressivis.table.PTableSelectedView>`_",
-    'Optional[progressivis.table.table.PTable]': "`PTable <#progressivis.table.PTable>`_",
-    'PDict': "`PDict <#progressivis.utils.psdict.PDict>`_",
-    'PIntSet': "`PIntSet <#progressivis.core.pintset.PIntSet>`_",
+    'BasePTable': "`BasePTable <reference.html#progressivis.table.BasePTable>`_",
+    'PTable': "`PTable <reference.html#progressivis.table.PTable>`_",
+    'PTableSelectedView': "`PTableSelectedView <reference.html#progressivis.table.PTableSelectedView>`_",
+    'Optional[progressivis.table.table.PTable]': "`PTable <reference.html#progressivis.table.PTable>`_",
+    'PDict': "`PDict <reference.html#progressivis.utils.psdict.PDict>`_",
+    'PIntSet': "`PIntSet <reference.html#progressivis.core.pintset.PIntSet>`_",
     'array_like': ':term:`array_like`',
     'np.int64': f"`np.int64 <{numpy_scalars_url}#numpy.int64>`_",
     'np.float64': f"`np.float64 <{numpy_scalars_url}#numpy.float64>`_",

@@ -137,6 +137,8 @@
 
 The modules topology produced by `create_dependent_modules()` is shown below:
 
+A **Graphviz** variant:
+
 ```{eval-rst}
 .. graphviz::
 
@@ -164,6 +166,91 @@ The modules topology produced by `create_dependent_modules()` is shown below:
    }
 
 ```
+
+A simple **Mermaid** variant:
+
+```{mermaid}
+flowchart TD
+    classDef green fill:#9f6,stroke:#333,stroke-width:2px;
+    classDef orange fill:#f96,stroke:#333,stroke-width:4px;
+    hi(HistogramIndex)
+    rq(RangeQuery)
+    in((Input))
+    o((Output))
+    in --> hi
+    hi--min_out: min-->rq
+    hi -->|max_out: max|rq
+    hi -->|result: table|rq
+    rq -->|result|o
+    class rq green
+```
+
+Improved **Mermaid** variant:
+
+```{mermaid}
+  flowchart TD
+    classDef outslot fill:#f96,stroke:#333,stroke-width:1px;
+    result_hi(result)
+    table_rq(table)
+    table_hi(table)
+    table_dyn_lo(table)
+    table_dyn_up(table)
+    res_dyn_lo(result)
+    res_dyn_up(result)
+    min_rq(min)
+    max_rq(max)
+    Input-->table_hi
+    Input-->table_rq
+    res_rq(result)-->Output
+    min_out(min_out)-->table_dyn_lo
+    max_out(max_out)-->table_dyn_up
+    result_hi-->hist
+    res_dyn_lo-->lower
+    res_dyn_up-->upper
+    min_out-->min_rq
+    max_out-->max_rq
+    evt_low>From input lo]-->DynVar/lo
+    evt_up>From input up]-->DynVar/up
+    subgraph DynVar/lo
+     table_dyn_lo
+     res_dyn_lo
+    end
+    subgraph DynVar/up
+     table_dyn_up
+     res_dyn_up
+    end
+   subgraph HistogramIndex
+    direction TB
+    subgraph Inputs
+     table_hi
+    end
+    subgraph Outputs
+     min_out
+     max_out
+     result_hi
+    end
+    Inputs-.-Outputs
+   end
+   subgraph RangeQuery
+    direction TB
+    subgraph inputs2 [Inputs]
+     direction LR
+     hist
+     lower
+     upper
+     min_rq
+     max_rq
+     table_rq
+    end
+    subgraph outputs2 [Outputs]
+     direction LR
+     res_rq
+    end
+    inputs2 -.- outputs2
+   end
+  class result_hi,min_out,max_out,res_dyn_lo,res_dyn_up,res_rq outslot
+```
+
 
 ### The Range Query 2D Module
 
@@ -174,53 +261,6 @@ The modules topology produced by `create_dependent_modules()` is shown below:
 .. autoclass:: RangeQuery2d
    :members:
    :exclude-members: run_step
-```
-The modules topology produced by `create_dependent_modules()` is shown below:
-
-```{mermaid}
-flowchart TD
-    hi(HistogramIndex/lo)
-    rq(RangeQuery)
-    in((Input))
-    o((Output))
-    in --> hi
-    hi -->|min_out: min|rq
-    hi -->|max_out: max|rq
-    hi -->|result: table|rq
-    rq -->|result|o
-
-```
-
-
-
-```{eval-rst}
-.. graphviz::
-
-   digraph range_query_dg {
-      subgraph tier1 {
-        node [color="lightgreen",style="filled",group="tier1"]
-        RangeQuery
-      }
-
-
-      "Input" -> "HistogramIndex";
-      "HistogramIndex" -> "Min" [label=min_out];
-      "HistogramIndex" -> "Max"[label=max_out];
-      "Variable[lo]" -> "RangeQuery"  [label=lower];
-      "Min" -> "Variable[lo]" [label=like];
-      "HistogramIndex" -> "RangeQuery" [label=hist];
-      "Max" -> "Variable[up]" [label=like];
-      "Variable[up]" -> "RangeQuery"  [label=upper];
-      "Min" -> "RangeQuery" [label=min];
-      "Max" -> "RangeQuery" [label=max];
-      "RangeQuery" -> "Output" [label=min];
-      "RangeQuery" -> "Output" [label=result];
-      "RangeQuery" -> "Output" [label=max];
-
-   }
-
-
-
 ```
 
 ### Categorical Query Module
