@@ -154,6 +154,7 @@ setup(
         "requests",
         "fast-histogram",
         "rangehttpserver",
+        "datasketches",
         # "aiohttp",
         # "aiohttp_jinja2",
         # "python_socketio",
