@@ -27,4 +27,6 @@ sphinx:
 python:
    install:
    - requirements: requirements_ci.txt
+   - method: pip
+     path: .
    - requirements: doc/requirements_doc.txt
