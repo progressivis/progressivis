@@ -135,7 +135,7 @@ setup(
         "Pillow>=4.2.0",
         "cython",
         "pybind11>=2.0.1",
-        "numpy>=1.22.0",
+        "numpy>=1.22.4",
         "scipy>=0.18.1",
         "numexpr>=2.6.1",
         "tables>=3.3.0",
@@ -146,7 +146,7 @@ setup(
         "tdigest>=0.4.1.0",
         "numcodecs>=0.5.5",
         "datashape>=0.5.2",
-        "pyroaring==0.2.9",
+        "pyroaring",
         "msgpack-python>=0.4.8",
         "python-dateutil>=2.6.1",  # botocore wants < 2.7.0,>=2.1
         "boto",

@@ -29,7 +29,6 @@ sphinx:
 # Optionally declare the Python requirements required to build your docs
 python:
    install:
-   - requirements: requirements_ci.txt
    - method: pip
      path: .
    - requirements: doc/requirements_doc.txt
