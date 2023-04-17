@@ -250,7 +250,7 @@ class Parser:
             read_df: pd.DataFrame = pd.read_csv(
                 BytesIO(csv_bytes),
                 header=header,
-                names=names,  # type: ignore
+                names=names,
                 usecols=self._usecols,
                 **kwds
             )
