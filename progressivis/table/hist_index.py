@@ -19,6 +19,7 @@ from ..core.module import (
     def_input,
     def_output,
     def_parameter,
+    document
 )
 from . import PTable
 from ..core.utils import indices_len
@@ -350,6 +351,7 @@ class _HistogramIndexImpl(object):
         return None
 
 
+@document
 @def_parameter("bins", np.dtype(int), 126)  # actually 128 with "-inf" and "inf"
 @def_parameter("init_threshold", np.dtype(int), 1)
 @def_input("table", PTable)
@@ -358,7 +360,12 @@ class _HistogramIndexImpl(object):
 @def_output("max_out", PDict, required=False)
 class HistogramIndex(Module):
     """
-    Compute and maintain an histogram index
+    Compute and maintain an histogram index by dividing the entire range of
+    values of a column into a series of intervals (binning).
+    Each bin contains the set of indices of rows in the underlying interval
+    in order to  provide fast access to these rows.
+    Actually `HistogramIndex` is able to build multiple indices, one for each
+    column provided in the **columns** argument.
     """
 
     def __init__(self, **kwds: Any) -> None:

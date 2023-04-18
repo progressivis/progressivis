@@ -180,7 +180,7 @@ Just like `RangeQuery`, the module `RangeQuery2d` is not self-sufficient. In ord
    :exclude-members: run_step
 ```
 
-Like previous query modules it is not self-sufficient. Use the `create_dependent_modules()` to initialize its environement:
+Like previous query modules `CategoricalQuery` is not self-sufficient. Use the `create_dependent_modules()` to initialize its environement:
 
 ```{eval-rst}
 .. literalinclude:: ./example_categorical_range.py
