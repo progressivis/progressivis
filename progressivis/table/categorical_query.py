@@ -15,8 +15,11 @@ from typing import Any, List
 @def_input("choice", PDict)
 @def_output("result", PTableSelectedView)
 class CategoricalQuery(Module):
-    """ """
+    """
+    Selects rows that contain values in a given column which are part of a provided subset
+    It is convenient for categorical data.
 
+    """
     def __init__(self, column: str, **kwds: Any) -> None:
         super().__init__(**kwds)
         self._column = column

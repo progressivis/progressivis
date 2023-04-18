@@ -254,8 +254,7 @@ class RangeQuery2dImpl:  # (ModuleImpl):
 @def_output("max", PDict, attr_name="_max_table", required=False)
 class RangeQuery2d(Module):
     """
-    Range Query module
-    A RangeQuery2d makes a selection on 2 axes
+    Selects rows that contain values within a provided 2D interval (two columns)
     """
 
     def __init__(

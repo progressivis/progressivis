@@ -134,11 +134,12 @@
    :members:
    :exclude-members: run_step
 ```
+Module `RangeQuery` is not self-sufficient. It needs other modules to work. A simple way to provide it with an environment that allows it to work properly is to use the `create_dependent_modules()` method.
 
 This convenience method creates a set of modules connected to `RangeQuery` that produce the inputs required for its operation in most cases.
 
 
-In the example it is called with the default values:
+In the example below it is called with the default values:
 
 ```{eval-rst}
 .. literalinclude:: ./example_range_query.py
@@ -148,8 +149,6 @@ And in this case it produces the following topology:
 
 ```{eval-rst}
 .. progressivis_mmd:: ./example_range_query.py
-
-
 ```
 
 
@@ -164,6 +163,12 @@ And in this case it produces the following topology:
    :exclude-members: run_step
 ```
 
+Just like `RangeQuery`, the module `RangeQuery2d` is not self-sufficient. In order to provide it with an environment, the `create_dependent_modules()` method can be used in the same way:
+
+```{eval-rst}
+.. literalinclude:: ./example_range_query_2d.py
+```
+
 ### Categorical Query Module
 
 
@@ -174,6 +179,17 @@ And in this case it produces the following topology:
    :members:
    :exclude-members: run_step
 ```
+
+Like previous query modules it is not self-sufficient. Use the `create_dependent_modules()` to initialize its environement:
+
+```{eval-rst}
+.. literalinclude:: ./example_categorical_range.py
+```
+
+```{eval-rst}
+.. progressivis_mmd:: ./example_categorical_range.py
+```
+
 
 ## Indexing Modules
 
@@ -218,6 +234,16 @@ And in this case it produces the following topology:
    :members:
    :exclude-members: run_step
 ```
+
+```{eval-rst}
+.. literalinclude:: ./example_join.py
+```
+
+```{eval-rst}
+.. progressivis_mmd:: ./example_join.py
+```
+
+
 
 ### Group-By Module
 

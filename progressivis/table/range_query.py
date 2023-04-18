@@ -190,7 +190,9 @@ class RangeQueryImpl:  # (ModuleImpl):
     "max", PDict, attr_name="_max_table", required=False, doc="max value of output data"
 )
 class RangeQuery(Module):
-    """ """
+    """
+    Selects rows that contain values within a provided range along a given axis (column)
+    """
 
     def __init__(
         self,
