@@ -20,6 +20,7 @@
 #
 
 import sys
+import os
 
 # -- General configuration ------------------------------------------------
 
@@ -30,8 +31,10 @@ import sys
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
+sys.path.append(os.path.abspath("./_ext"))
 extensions = [
     "sphinxcontrib.mermaid",
+    "progressivis_mmd",
     "myst_parser",
     "sphinx.ext.autodoc",
     "sphinx.ext.napoleon",

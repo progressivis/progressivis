@@ -7,7 +7,7 @@ import logging
 import functools
 from timeit import default_timer
 import traceback
-
+from io import StringIO, SEEK_END
 from .dataflow import Dataflow
 from . import aio
 from ..utils.errors import ProgressiveError
@@ -756,6 +756,69 @@ class Scheduler:
         if "order" in y:
             return -1
         return 0
+
+    def to_mermaid(self) -> str:
+        self._enter_cnt = 0
+        self._update_modules()
+        lines = []
+        slot_links = []
+        def_input_slots = {}
+        def_output_slots = {}
+        for name, m in self.modules().items():
+            lines.append(f"subgraph {name} [{m.__class__.__name__}]\n")
+            inp_lines = []
+            for sn, sl in m._input_slots.items():
+                if sl is None:
+                    continue
+                sl_name = sl.name()
+                if "." in sn:
+                    sn = sn.split(".")[0]  # multiple input slot
+                    sl_name = sl_name.split(".")[0]
+                inp_lines.append((sn, sl_name))
+                def_input_slots[sl_name] = sn
+            if inp_lines:
+                lines.append(f"subgraph {name}_inputs [Inputs]\n"
+                             "direction TB\n")
+                for _, sl_name in inp_lines:
+                    lines.append(f"{sl_name}\n")
+                lines.append("end\n")  # end Inputs
+            out_lines = []
+            for sn, slist in m._output_slots.items():
+                if sn == "_trace":
+                    continue
+                out_sname = f"{name}_out_{sn}"
+                out_lines.append((sn, f"{out_sname}\n"))
+                def_output_slots[out_sname] = sn
+                if not slist:
+                    continue
+                for sl in slist:
+                    target = sl.name()
+                    if "." in target:
+                        target = target.split(".")[0]  # multiple input slot
+                    slot_links.append((out_sname, target))
+            if out_lines:
+                lines.append(f"subgraph {name}_outputs [Outputs]\n"
+                             "direction TB\n")
+                for _, sl_name in out_lines:
+                    lines.append(sl_name)
+                lines.append("end\n")  # end Outputs
+            if inp_lines and out_lines:
+                lines.append(f"{name}_inputs -.- {name}_outputs\n")
+            lines.append("end\n")  # end module subgraph
+        sio = StringIO("flowchart TD\n"
+                       "classDef outslot fill:#f96,stroke:#333,stroke-width:1px;\n")
+        sio.seek(0, SEEK_END)
+        for id_name, name in def_input_slots.items():
+            sio.write(f"{id_name}({name})\n")
+        for id_name, name in def_output_slots.items():
+            sio.write(f"{id_name}({name})\n")
+        for ln1, ln2 in slot_links:
+            sio.write(f"{ln1}-->{ln2}\n")
+        for line in lines:
+            sio.write(line)
+        outslots = ",".join(def_output_slots.keys())
+        sio.write(f"class {outslots} outslot\n")
+        return sio.getvalue()
 
 
 Scheduler.default = Scheduler()

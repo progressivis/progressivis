@@ -249,11 +249,11 @@ class RangeQuery(Module):
                 )
             hist_index.input.table = input_module.output[input_slot]
             if min_value is None:
-                assert hasattr(min_, "result")
+                assert hasattr(min_, "result") or min_ is None
                 init_min = min_.result if min_ is not None else hist_index.min_out
                 min_value = DynVar(init_min, group=self.name, scheduler=scheduler)
             if max_value is None:
-                assert hasattr(max_, "result")
+                assert hasattr(max_, "result") or max_ is None
                 init_max = max_.result if max_ is not None else hist_index.max_out
                 max_value = DynVar(init_max, group=self.name, scheduler=scheduler)
             range_query = self
