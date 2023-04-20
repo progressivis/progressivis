@@ -54,19 +54,17 @@ sphinx_gallery_conf = {
 """
 autodoc_class_signature = "separated"
 napoleon_preprocess_types = True
-numpy_scalars_url = "https://numpy.org/doc/stable/reference/arrays.scalars.html"
 napoleon_type_aliases = {
-    'BasePTable': "`BasePTable <reference.html#progressivis.table.BasePTable>`_",
-    'PTable': "`PTable <reference.html#progressivis.table.PTable>`_",
+    'BasePTable': ":class:`BasePTable <progressivis.table.BasePTable>`",
+    'PTable': ":class:`PTable <progressivis.table.PTable>`",
     'PTableSelectedView': "`PTableSelectedView <reference.html#progressivis.table.PTableSelectedView>`_",
-    'Optional[progressivis.table.table.PTable]': "`PTable <reference.html#progressivis.table.PTable>`_",
-    'PDict': "`PDict <reference.html#progressivis.utils.psdict.PDict>`_",
+    'PDict': ":class:`PDict <progressivis.utils.psdict.PDict>`",
     'PIntSet': "`PIntSet <reference.html#progressivis.core.pintset.PIntSet>`_",
     'array_like': ':term:`array_like`',
-    'np.int64': f"`np.int64 <{numpy_scalars_url}#numpy.int64>`_",
-    'np.float64': f"`np.float64 <{numpy_scalars_url}#numpy.float64>`_",
-    'np.bool': f"`np.bool <{numpy_scalars_url}#numpy.bool_>`_",
-    'np.object': f"`np.object <{numpy_scalars_url}#numpy.object_>`_",
+    'np.float64': ":attr:`np.float64 <numpy.float64>`",
+    'np.int64': ":attr:`np.int64 <numpy.int64>`",
+    'np.bool': ":class:`np.bool <numpy.bool_>`",
+    'np.object': ":class:`np.object <numpy.object_>`",
     # https://docs.python.org/3/library/functions.html#float
     # https://docs.python.org/3/library/functions.html#int
     # https://docs.python.org/3/library/functions.html#bool
@@ -220,7 +218,9 @@ texinfo_documents = [
 intersphinx_mapping = {
     'python': ('https://docs.python.org/{.major}'.format(
         sys.version_info), None),
-    'numpy': ('https://docs.scipy.org/doc/numpy/', None),
-    'scipy': ('https://docs.scipy.org/doc/scipy/reference', None),
-    'matplotlib': ('https://matplotlib.org/', None),
+    'numpy': ('https://numpy.org/doc/stable/', None),
+    'scipy': ('https://docs.scipy.org/doc/scipy/', None),
+    # 'matplotlib': ('https://matplotlib.org/', None),
+    'pandas': ('https://pandas.pydata.org/docs/', None),
+    'pyarrow': ('https://arrow.apache.org/docs', None),
 }

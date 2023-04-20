@@ -8,7 +8,7 @@ from .. import ProgressiveError
 from ..utils.errors import ProgressiveStopIteration
 from ..utils.inspect import filter_kwds, extract_params_docstring
 from ..core.module import Module
-from ..core.module import ReturnRunStep, def_input, def_output
+from ..core.module import ReturnRunStep, def_input, def_output, document
 from ..table.table import PTable
 from ..table.dshape import dshape_from_dataframe
 from ..core.utils import (
@@ -36,13 +36,20 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-@def_input("filenames", PTable, required=False)
-@def_output("result", PTable)
+@document
+@def_input("filenames", PTable, required=False, doc=("nfiles to read. The underlying "
+                                                     "table must have a filename column"
+                                                     " containing the file URIs"))
+@def_output("result", PTable, doc="provides read data into :class:`PTable<progressivis.table.PTable>` ")
 @def_output("anomalies", PDict, required=False)
 @def_output("missing", PDict, required=False)
 class SimpleCSVLoader(Module):
-    """ """
-
+    """
+    This module reads comma-separated values (csv) files progressively into a `PTable`.
+    Optionally, it provides information about missing values and anomalies via
+    `anomalies` and `missing` output slots.
+    Internally it uses :func:`pandas.read_csv`.
+    """
     def __init__(
         self,
         filepath_or_buffer: Optional[Any] = None,
