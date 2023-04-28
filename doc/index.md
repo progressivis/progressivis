@@ -26,6 +26,7 @@ ProgressiVis implements a progressive language where all the executions are prog
    userguide
    reference
    module_library
+   unit_tests
    custom_modules
    chaining_widgets
 ```
