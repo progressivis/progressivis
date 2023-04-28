@@ -52,7 +52,13 @@ Currently, the easiest way to install *progressivis* is as follows:
 
 1. Install the latest version of miniconda (if not yet done)
 
-2. Create a conda environment with the following command:
+2. Clone the progressivis repository from [github.com](https://github.com/jdfekete/progressivis/) along with its submodules with the command:
+
+```
+git clone --recurse-submodules https://github.com/jdfekete/progressivis.git
+```
+
+3. Create a conda environment with the following command:
 
 NB: by default it will create an environment called *progressivis*. If you want, you can change this name in the file *environment.yml* before runninng the command. Remember to reflect this change in the following commands.
 

@@ -19,6 +19,7 @@ logger = logging.getLogger(__name__)
 
 @def_parameter("bins", np.dtype(int), 128)
 @def_parameter("delta", np.dtype(float), -5)
+@def_input("table", BasePTable)
 @def_input("min", BasePTable)
 @def_input("max", BasePTable)
 @def_output("min", BasePTable, required=False)

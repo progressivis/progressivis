@@ -27,7 +27,8 @@ from typing import (
 from typing_extensions import TypeAlias  # python 3.9
 
 Sniffer = CSVSniffer
-DAGWidget: TypeAlias = dagWidget.HelloWorld
+# DAGWidget: TypeAlias = dagWidget.HelloWorld
+DAGWidget: TypeAlias = dagWidget.DagWidgetController
 dag_widget: Optional[DAGWidget] = None
 
 

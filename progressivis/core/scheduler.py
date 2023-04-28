@@ -757,6 +757,68 @@ class Scheduler:
             return -1
         return 0
 
+    @staticmethod
+    def module_to_gv(name: str, m: Module, sio: StringIO) -> List[Any]:
+        slot_links = []
+        sio.write(name)
+        sio.write('[shape=Mrecord,label="{{')
+        first = True
+        for sn, sl in m._input_slots.items():
+            if sl is None:
+                continue
+            sl_name = sl.input_name
+            assert sl_name
+            if "." in sn:
+                sn = sn.split(".")[0]  # multiple input slot
+                sl_name = sl_name.split(".")[0]
+            if not first:
+                sio.write('|')
+            else:
+                first = False
+            sio.write(f'<i_{sl_name}> {sl_name}')
+        sio.write('}|')
+        sio.write(f'{name}:{m.__class__.__name__}')
+        sio.write('|{')
+        first = True
+        for sn, slist in m._output_slots.items():
+            if sn == "_trace":
+                continue
+            if not first:
+                sio.write('|')
+            else:
+                first = False
+            out_sname = f'{name}:o_{sn}'
+            sio.write(f'<o_{sn}> {sn}')
+            for sl in slist or []:
+                target = sl.input_name
+                assert target is not None
+                assert sl.input_module is not None
+                tname = sl.input_module.name
+                if "." in target:
+                    target = target.split(".")[0]  # multiple input slot
+                slot_links.append((out_sname, f'{tname}:i_{target}'))
+        sio.write('}}"];\n')
+        return slot_links
+
+    def to_graphviz(self) -> str:
+        self._enter_cnt = 0
+        self._update_modules()
+
+        sio = StringIO('digraph progressivis {\n'
+                       'node [shape=Mrecord'
+                       ',style="filled"'
+                       ',fillcolor="#ffffde"'
+                       ',color="#aaaa33"'
+                       '];\n')
+        sio.seek(0, SEEK_END)
+        slot_links = []
+        for name, m in self.modules().items():
+            slot_links += self.module_to_gv(name, m, sio)
+        for ln1, ln2 in slot_links:
+            sio.write(f"{ln1}:s->{ln2}:n;\n")
+        sio.write("}\n")
+        return sio.getvalue()
+
     def to_mermaid(self) -> str:
         self._enter_cnt = 0
         self._update_modules()
@@ -777,8 +839,7 @@ class Scheduler:
                 inp_lines.append((sn, sl_name))
                 def_input_slots[sl_name] = sn
             if inp_lines:
-                lines.append(f"subgraph {name}_inputs [Inputs]\n"
-                             "direction TB\n")
+                lines.append(f"subgraph {name}_inputs [Inputs]\n")
                 for _, sl_name in inp_lines:
                     lines.append(f"{sl_name}\n")
                 lines.append("end\n")  # end Inputs
@@ -797,8 +858,7 @@ class Scheduler:
                         target = target.split(".")[0]  # multiple input slot
                     slot_links.append((out_sname, target))
             if out_lines:
-                lines.append(f"subgraph {name}_outputs [Outputs]\n"
-                             "direction TB\n")
+                lines.append(f"subgraph {name}_outputs [Outputs]\n")
                 for _, sl_name in out_lines:
                     lines.append(sl_name)
                 lines.append("end\n")  # end Outputs
