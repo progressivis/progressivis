@@ -761,7 +761,7 @@ class Scheduler:
     def module_to_gv(name: str, m: Module, sio: StringIO) -> List[Any]:
         slot_links = []
         sio.write(name)
-        sio.write('[shape=Mrecord,label="{{')
+        sio.write('[shape=Mrecord,label="{{in:|')
         first = True
         for sn, sl in m._input_slots.items():
             if sl is None:
@@ -777,8 +777,8 @@ class Scheduler:
                 first = False
             sio.write(f'<i_{sl_name}> {sl_name}')
         sio.write('}|')
-        sio.write(f'{name}:{m.__class__.__name__}')
-        sio.write('|{')
+        sio.write(f'{name}[{m.__class__.__name__}]')
+        sio.write('|{out:|')
         first = True
         for sn, slist in m._output_slots.items():
             if sn == "_trace":
@@ -809,6 +809,8 @@ class Scheduler:
                        ',style="filled"'
                        ',fillcolor="#ffffde"'
                        ',color="#aaaa33"'
+                       ',fontname=Helvetica'
+                       ',fontsize=10'
                        '];\n')
         sio.seek(0, SEEK_END)
         slot_links = []

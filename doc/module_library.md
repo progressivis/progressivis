@@ -153,6 +153,11 @@ And in this case it produces the following topology:
 .. progressivis_mmd:: ./example_range_query.py
 ```
 
+Or using DOT:
+
+```{eval-rst}
+.. progressivis_dot:: ./example_range_query.py
+```
 
 ### The Range Query 2D Module
 
