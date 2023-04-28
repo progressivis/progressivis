@@ -763,6 +763,7 @@ class Scheduler:
         sio.write(name)
         sio.write('[shape=Mrecord,label="{{in:|')
         first = True
+        inps = set()
         for sn, sl in m._input_slots.items():
             if sl is None:
                 continue
@@ -771,6 +772,9 @@ class Scheduler:
             if "." in sn:
                 sn = sn.split(".")[0]  # multiple input slot
                 sl_name = sl_name.split(".")[0]
+                if sn in inps:
+                    continue
+            inps.add(sn)
             if not first:
                 sio.write('|')
             else:
