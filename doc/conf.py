@@ -224,3 +224,5 @@ intersphinx_mapping = {
     'pandas': ('https://pandas.pydata.org/docs/', None),
     'pyarrow': ('https://arrow.apache.org/docs', None),
 }
+
+graphviz_output_format = 'svg'

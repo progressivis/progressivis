@@ -761,7 +761,7 @@ class Scheduler:
     def module_to_gv(name: str, m: Module, sio: StringIO) -> List[Any]:
         slot_links = []
         sio.write(name)
-        sio.write('[shape=Mrecord,label="{{in:|')
+        sio.write('[shape=Mrecord,label="{{')
         first = True
         inps = set()
         for sn, sl in m._input_slots.items():
@@ -782,7 +782,7 @@ class Scheduler:
             sio.write(f'<i_{sl_name}> {sl_name}')
         sio.write('}|')
         sio.write(f'{name}[{m.__class__.__name__}]')
-        sio.write('|{out:|')
+        sio.write('|{')
         first = True
         for sn, slist in m._output_slots.items():
             if sn == "_trace":
@@ -809,7 +809,8 @@ class Scheduler:
         self._update_modules()
 
         sio = StringIO('digraph progressivis {\n'
-                       'node [shape=Mrecord'
+                       'ranksep=1;'
+                       'node [shape=none'
                        ',style="filled"'
                        ',fillcolor="#ffffde"'
                        ',color="#aaaa33"'

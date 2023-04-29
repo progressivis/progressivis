@@ -150,12 +150,6 @@ In the example below it is called with the default values:
 And in this case it produces the following topology:
 
 ```{eval-rst}
-.. progressivis_mmd:: ./example_range_query.py
-```
-
-Or using DOT:
-
-```{eval-rst}
 .. progressivis_dot:: ./example_range_query.py
 ```
 
@@ -194,7 +188,7 @@ Like previous query modules `CategoricalQuery` is not self-sufficient. Use the `
 ```
 
 ```{eval-rst}
-.. progressivis_mmd:: ./example_categorical_range.py
+.. progressivis_dot:: ./example_categorical_range.py
 ```
 
 
@@ -247,7 +241,7 @@ Like previous query modules `CategoricalQuery` is not self-sufficient. Use the `
 ```
 
 ```{eval-rst}
-.. progressivis_mmd:: ./example_join.py
+.. progressivis_dot:: ./example_join.py
 ```
 
 
