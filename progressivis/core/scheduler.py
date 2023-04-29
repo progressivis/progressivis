@@ -134,7 +134,9 @@ class Scheduler:
     def __enter__(self) -> Dataflow:
         if self.dataflow is None:
             self.dataflow = Dataflow(self)
-            self.dataflow.multiple_slots_name_generator = self._multiple_slots_name_generator
+            self.dataflow.multiple_slots_name_generator = (
+                self._multiple_slots_name_generator
+            )
             self._enter_cnt = 1
         else:
             self._enter_cnt += 1
@@ -180,7 +182,7 @@ class Scheduler:
         "Return a dictionary describing the scheduler"
         msg: Dict[str, Any] = {}
         mods = {}
-        for (name, module) in self.modules().items():
+        for name, module in self.modules().items():
             mods[name] = module.to_json(short=short)
         modules = sorted(mods.values(), key=functools.cmp_to_key(self._module_order))
         msg["modules"] = modules
@@ -522,7 +524,9 @@ class Scheduler:
         dataflow._compute_reachability(_new_inputs)
         _new_reachability = dataflow.reachability
         dataflow.committed()
-        self._multiple_slots_name_generator = self.dataflow.multiple_slots_name_generator
+        self._multiple_slots_name_generator = (
+            self.dataflow.multiple_slots_name_generator
+        )
         self.dataflow = None
         logger.info("Updating modules")
         prev_keys = set(self._modules.keys())
@@ -776,23 +780,23 @@ class Scheduler:
                     continue
             inps.add(sn)
             if not first:
-                sio.write('|')
+                sio.write("|")
             else:
                 first = False
-            sio.write(f'<i_{sl_name}> {sl_name}')
-        sio.write('}|')
-        sio.write(f'{name}[{m.__class__.__name__}]')
-        sio.write('|{')
+            sio.write(f"<i_{sl_name}> {sl_name}")
+        sio.write("}|")
+        sio.write(f"{name}[{m.__class__.__name__}]")
+        sio.write("|{")
         first = True
         for sn, slist in m._output_slots.items():
             if sn == "_trace":
                 continue
             if not first:
-                sio.write('|')
+                sio.write("|")
             else:
                 first = False
-            out_sname = f'{name}:o_{sn}'
-            sio.write(f'<o_{sn}> {sn}')
+            out_sname = f"{name}:o_{sn}"
+            sio.write(f"<o_{sn}> {sn}")
             for sl in slist or []:
                 target = sl.input_name
                 assert target is not None
@@ -800,7 +804,7 @@ class Scheduler:
                 tname = sl.input_module.name
                 if "." in target:
                     target = target.split(".")[0]  # multiple input slot
-                slot_links.append((out_sname, f'{tname}:i_{target}'))
+                slot_links.append((out_sname, f"{tname}:i_{target}"))
         sio.write('}}"];\n')
         return slot_links
 
@@ -808,15 +812,17 @@ class Scheduler:
         self._enter_cnt = 0
         self._update_modules()
 
-        sio = StringIO('digraph progressivis {\n'
-                       'ranksep=1;'
-                       'node [shape=none'
-                       ',style="filled"'
-                       ',fillcolor="#ffffde"'
-                       ',color="#aaaa33"'
-                       ',fontname=Helvetica'
-                       ',fontsize=10'
-                       '];\n')
+        sio = StringIO(
+            "digraph progressivis {\n"
+            "ranksep=1;"
+            "node [shape=none"
+            ',style="filled"'
+            ',fillcolor="#ffffde"'
+            ',color="#aaaa33"'
+            ",fontname=Helvetica"
+            ",fontsize=10"
+            "];\n"
+        )
         sio.seek(0, SEEK_END)
         slot_links = []
         for name, m in self.modules().items():
@@ -872,8 +878,10 @@ class Scheduler:
             if inp_lines and out_lines:
                 lines.append(f"{name}_inputs -.- {name}_outputs\n")
             lines.append("end\n")  # end module subgraph
-        sio = StringIO("flowchart TD\n"
-                       "classDef outslot fill:#f96,stroke:#333,stroke-width:1px;\n")
+        sio = StringIO(
+            "flowchart TD\n"
+            "classDef outslot fill:#f96,stroke:#333,stroke-width:1px;\n"
+        )
         sio.seek(0, SEEK_END)
         for id_name, name in def_input_slots.items():
             sio.write(f"{id_name}({name})\n")

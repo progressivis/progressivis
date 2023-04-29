@@ -296,6 +296,7 @@ class Module(metaclass=ABCMeta):
     def doc_building() -> bool:
         if Module._doc_building is None:
             import sys
+
             if "sphinx.config" in sys.modules:
                 print("doc building")
                 Module._doc_building = True
@@ -379,7 +380,7 @@ class Module(metaclass=ABCMeta):
 
         if cls.parameters:
             _section(4, "Module parameters")
-            for (n, t, v) in cls.parameters:
+            for n, t, v in cls.parameters:
                 _param(8, n, str(t), v)
         if cls.inputs:
             _section(4, "Input slots")
@@ -484,7 +485,7 @@ class Module(metaclass=ABCMeta):
             self.generate_table_name("params"), self.all_parameters
         )
         self.params = Row(self._params)
-        for (name, _, _) in self.all_parameters:
+        for name, _, _ in self.all_parameters:
             if name in kwds:
                 self.params[name] = kwds.pop(name)
 
@@ -1571,7 +1572,7 @@ def _oslot_to_json(slots: Optional[List[Slot]]) -> Optional[List[Optional[JSon]]
 def _create_table(tname: str, columns: Parameters) -> PTable:
     dshape = ""
     data = {}
-    for (name, dtype, val) in columns:
+    for name, dtype, val in columns:
         if dshape:
             dshape += ","
         dshape += "%s: %s" % (name, dshape_from_dtype(dtype))

@@ -359,7 +359,7 @@ class Dataflow:
         row = []
         col = []
         data = []
-        for (vertex1, vertices) in dependencies.items():
+        for vertex1, vertices in dependencies.items():
             for vertex2 in vertices.values():
                 col.append(index[vertex1])
                 row.append(index[vertex2.output_module.name])

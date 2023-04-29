@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 from progressivis.utils.errors import ProgressiveError
-from progressivis.core.module import (Module,
-                                      ReturnRunStep,
-                                      def_input,
-                                      def_output,
-                                      def_parameter)
+from progressivis.core.module import (
+    Module,
+    ReturnRunStep,
+    def_input,
+    def_output,
+    def_parameter,
+)
 import numpy as np
 from typing import Any
 

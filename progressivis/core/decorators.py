@@ -72,6 +72,7 @@ def process_slot(
         """
         run_step() decorator
         """
+
         @wraps(run_step_)
         def run_step_wrapper(
             self: Module, run_number: int, step_size: int, howlong: float

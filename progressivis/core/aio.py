@@ -21,7 +21,7 @@ from asyncio import (
     set_event_loop,
     # get_event_loop as get_event_loop,
     new_event_loop,
-    get_running_loop
+    get_running_loop,
 )
 
 from typing import Coroutine, Any, Optional
@@ -41,7 +41,6 @@ if sys.version_info < (3, 8):
         coroutine: Coroutine[Any, Any, Any], name: Optional[str] = None
     ) -> Task[Any]:
         return _create_task(coroutine)
-
 
 else:
 

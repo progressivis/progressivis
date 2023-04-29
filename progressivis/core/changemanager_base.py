@@ -191,7 +191,9 @@ class ChangeBuffer:
         ...
 
     @overload
-    def next(self, length: Optional[int] = None, *, as_slice: Literal[False]) -> PIntSet:
+    def next(
+        self, length: Optional[int] = None, *, as_slice: Literal[False]
+    ) -> PIntSet:
         ...
 
     @overload

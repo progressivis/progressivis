@@ -19,10 +19,12 @@ from .types import notNone, JSon, Index
 # pylint: disable=unused-import
 from .changemanager_pintset import PIntSetChangeManager
 from .changemanager_dict import DictChangeManager
+
 # pylint: disable=unused-import
 from .storagemanager import StorageManager
+
 # pylint: disable=unused-import
-from .module import (ReturnRunStep, Every, Print, def_input, def_output, def_parameter)
+from .module import ReturnRunStep, Every, Print, def_input, def_output, def_parameter
 
 
 __version__: str = get_versions()["version"]
