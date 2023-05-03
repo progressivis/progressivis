@@ -394,8 +394,12 @@ class Module(metaclass=ABCMeta):
                 if sd.name == "_trace":
                     continue
                 _slot(8, sd, cls, "out")
-
-        cls.__doc__ = "".join(doclist)
+        raw_doc = "".join(doclist)
+        from jinja2 import Template
+        tmpl = Template(raw_doc)
+        from progressivis_doc_params import napoleon_type_aliases  # type: ignore
+        assert isinstance(napoleon_type_aliases, dict)
+        cls.__doc__ = tmpl.render(**napoleon_type_aliases)
 
     def grouped(self) -> GroupContext:
         """Create a context manager to add group to a set of modules

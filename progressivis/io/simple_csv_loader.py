@@ -37,15 +37,15 @@ logger = logging.getLogger(__name__)
 
 
 @document
-@def_input("filenames", PTable, required=False, doc=("nfiles to read. The underlying "
-                                                     "table must have a filename column"
+@def_input("filenames", PTable, required=False, doc=("files to read. The underlying "
+                                                     "{{PTable}} must have a `filename` column"
                                                      " containing the file URIs"))
-@def_output("result", PTable, doc="provides read data into :class:`PTable<progressivis.table.PTable>` ")
+@def_output("result", PTable, doc="provides read data into a {{PTable}} object")
 @def_output("anomalies", PDict, required=False)
 @def_output("missing", PDict, required=False)
 class SimpleCSVLoader(Module):
     """
-    This module reads comma-separated values (csv) files progressively into a `PTable`.
+    This module reads comma-separated values (csv) files progressively into a {{PTable}}.
     Optionally, it provides information about missing values and anomalies via
     `anomalies` and `missing` output slots.
     Internally it uses :func:`pandas.read_csv`.
