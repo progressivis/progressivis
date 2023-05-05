@@ -49,6 +49,11 @@ Progressive tables:
 
 .. autoclass:: BasePTable
    :members:
+   :exclude-members: __init__
+
+.. autoclass:: IndexPTable
+   :members:
+   :exclude-members: __init__
 
 .. autoclass:: PTable
    :members:
@@ -56,6 +61,14 @@ Progressive tables:
 .. autoclass:: PTableSelectedView
    :members:
 ```
+
+Currently there are 3 kind of computed columns:
+
+* numpy universal functions [ufunc](https://numpy.org/doc/stable/reference/ufuncs.html)
+* numpy custom [vectorized fuctions](https://numpy.org/doc/stable/reference/generated/numpy.vectorize.html)
+* numexpr expressions
+
+
 
 ### The PDict class
 

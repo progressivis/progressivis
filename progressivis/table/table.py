@@ -66,36 +66,6 @@ class PTable(IndexPTable):
     A PTable is similar to Python Pandas or R DataFrame, but
     column-based and supporting fast addition of items.
 
-    Args:
-        name: string
-            The name of the table
-        data: optional container
-            Data that will be appended to the table. It can be of multiple
-            types.
-            PTable) another table is used to fill-up this table
-            DataFrame) a Pandas DataFrame is copied to this table
-            ndarray) a numpy array is copied. The dshape should be provided
-        dshape: data shape such as `{'a': int32, 'b': float64, 'c': string}`
-            The column names and types as specified by the ``datashape`` library.
-        fillvalues: the default values of the columns specified as a dictionary
-            Each column is created with a default ``fillvalue``. This parameter can
-            specify the fillvalue of each column with 3 formats:
-            a single value) which will be used by all the column creations
-            a dictionary) associating a column name to a value
-            the '*' entry in a dictionary) for defaulting the fillvalue when not specified
-        storagegroup: a factory used to create the columns
-            When not specified or `None` the default ``storage`` is used.
-            Otherwise, a ``storagegroup`` is specified in Group.
-        chunks: the specification of the chunking of columns when the storagegroup
-            supports it.
-            Like the ``fillvalue`` argument, it can be one value or a dict.
-        create: forces the creation of the column
-            The the storagegroup allows persistence, a table with the same name may exist
-            in the storagegroup. With ``create=False``, the previous value is loaded,
-            whereas with ``create=True`` it is replaced.
-        indices: the indices of the rows appended when data is specified, in case the
-            table contents has to be joined with another table.
-
     Example:
         >>> from progressivis.table import PTable
         >>> t = PTable('my-table', dshape='{a: int32, b: float32, c: bool}', create=True)
@@ -116,6 +86,38 @@ class PTable(IndexPTable):
         create: Optional[bool] = None,
         indices: Optional[Index] = None,
     ):
+        """
+        Args:
+            name: the name of the table
+            data: optional container: contained sata that will be appended to the table. \
+                It can be of multiple types:
+
+                * :class:`PTable <progressivis.table.PTable>`: another table is used to fill-up this table
+                * :class:`pandas.DataFrame`: a Pandas DataFrame is copied to this table
+                * :class:`numpy.ndarray`: a numpy array is copied. The dshape should be provided
+
+            dshape: data shape such as ``{'a': int32, 'b': float64, 'c': string}``
+                The column names and types as specified by the `datashape` library.
+            fillvalues: the default values of the columns specified as a dictionary
+                Each column is created with a default ``fillvalue``. This parameter can
+                specify the fillvalue of each column with 3 formats:
+                a single value) which will be used by all the column creations
+                a dictionary) associating a column name to a value
+                the '*' entry in a dictionary) for defaulting the fillvalue when not specified
+            storagegroup: a factory used to create the columns
+                When not specified or `None` the default ``storage`` is used.
+                Otherwise, a ``storagegroup`` is specified in ``Group``.
+            chunks: the specification of the chunking of columns when the storagegroup
+                supports it.
+                Like the ``fillvalue`` argument, it can be one value or a dict.
+            create: forces the creation of the table.
+                Because the the storagegroup allows persistence, a table with the same name \
+                may exist in the storagegroup. With ``create=False``, the previous value \
+                is loaded, whereas with ``create=True`` it is replaced.
+            indices: the indices of the rows appended when data is specified, in case the
+                table contents has to be joined with another table.
+
+        """
         # pylint: disable=too-many-arguments, too-many-branches
         super(PTable, self).__init__()
         if not (fillvalues is None or isinstance(fillvalues, Mapping)):
@@ -239,10 +241,10 @@ class PTable(IndexPTable):
     def __contains__(self, colname: str) -> bool:
         return colname in self._columndict
 
-    def drop(
+    def _drop(
         self, index: Any, raw_index: Optional[Any] = None, truncate: bool = False
     ) -> None:
-        super().drop(index, raw_index, truncate)
+        super()._drop(index, raw_index, truncate)
         self._storagegroup.attrs[metadata.ATTR_INDEX] = self._index.serialize()
         self._storagegroup.attrs[metadata.ATTR_LAST_ID] = self.last_id
 
@@ -320,9 +322,15 @@ class PTable(IndexPTable):
 
     def append(self, data: Any, indices: Optional[Any] = None) -> None:
         """
-        Append PTable-like data to the PTable.
+        Append rows of the tabular ``data`` (i.e. :class:`PTable <progressivis.table.PTable>`,
+        :class:`pandas.DataFrame`, :class:`pyarrow.RecordBatch` or :py:class:`dict` of \
+        arrays) to the  end of ``self``.
         The data has to be compatible. It can be from multiple sources
         [more details needed].
+
+        Args:
+            data: data to be appended
+            indices: allows to force indices for the appended rows
         """
         if data is None:
             return
@@ -330,7 +338,7 @@ class PTable(IndexPTable):
             data = data.to_dict(orient="list")
         data = self.parse_data(data, indices)
         """
-        The following _get_slice() definition is motivate by the following warning and
+        The following _get_slice() definition is motivated by the warning below and
         because data is not always a DataFrame:
         FutureWarning: The behavior of `series[i:j]` with an integer-dtype index is deprecated.
         In a future version, this will be treated as *label-based* indexing,
@@ -360,7 +368,6 @@ class PTable(IndexPTable):
             elif length != _len(fromcol):
                 raise ValueError("Cannot append ragged values")
             all_arrays |= isinstance(fromcol, np.ndarray)
-            # print(type(fromcol))
         if length == 0:
             return
         if isinstance(indices, slice):
@@ -424,7 +431,13 @@ class PTable(IndexPTable):
                     tocol[indices[i]] = fromcol[i]
 
     def add(self, row: Any, index: Optional[Any] = None) -> int:
-        "Add one row to the PTable"
+        """
+        Add one row to the end of ``self``.
+
+        Args:
+            row: the row to be added (typically a :py:class:`dict` or a sequence)
+            index: allows to force a the index value of the added row
+        """
         assert len(row) == self.ncol
 
         if isinstance(row, Mapping):

@@ -110,7 +110,7 @@ class _Loc(_BaseLoc):
         index, col_key, raw_index = self.parse_key_to_pintset(key)
         if not is_none_alike(col_key):
             raise ValueError('Cannot delete key "%s"' % key)
-        self._table.drop(index, raw_index)
+        self._table._drop(index, raw_index)
 
     @overload
     def __getitem__(self, key: int) -> Optional[Row]:
@@ -204,7 +204,13 @@ class _At(_BaseLoc):
 
 class BasePTable(metaclass=ABCMeta):
     # pylint: disable=too-many-public-methods, too-many-instance-attributes
-    """Base class for PTables."""
+    """
+    Base class for ``progressivis`` tables and table-views (:class:`PTable <progressivis.table.PTable>`, :class:`PTableSelectedView <progressivis.table.PTableSelectedView>` etc.)
+
+    .. warning::
+        Do not instanciate this class directly!
+
+    """
 
     def __init__(
         self,
@@ -214,6 +220,8 @@ class BasePTable(metaclass=ABCMeta):
         columndict: Optional[Dict[str, int]] = None,
         computed: Optional[Dict[str, Dict[str, Any]]] = None,
     ) -> None:
+        """
+        """
         self._base: Optional[BasePTable] = (
             base if (base is None or base._base is None) else base._base
         )
@@ -226,10 +234,28 @@ class BasePTable(metaclass=ABCMeta):
         self._dshape: DataShape = EMPTY_DSHAPE
         self.computed = {} if computed is None else computed
 
-    def drop(
+    def _drop(
         self, index: Any, raw_index: Optional[Any] = None, truncate: bool = False
     ) -> None:
         pass
+
+    def drop(
+        self, index: Union[slice, Sequence[int]], truncate: bool = False
+    ) -> None:
+        """
+        Remove rows by specifying their indices.
+
+        Args:
+           index: indices of rows to be dropped
+           truncate: manage dropped indices:
+
+               * if ``True`` then the dropped indices > greater (non dropped) index can be reused to index the rows added later
+               * If ``False`` no dropped index will be reused
+
+               .. warning::
+                   in any case, dropped indices < greater (non dropped) index will not be reused
+        """
+        self._drop(index, truncate=truncate)
 
     @property
     def loc(self) -> _Loc:
@@ -1384,6 +1410,15 @@ class BasePTable(metaclass=ABCMeta):
 
 
 class IndexPTable(BasePTable):
+    """
+    Base class for physical tables (currently :class:`PTable <progressivis.table.PTable>`)
+
+    It implements index management.
+
+    .. warning::
+        Do not instanciate this class directly!
+
+    """
     def __init__(self, index: Optional[PIntSet] = None) -> None:
         super().__init__()
         self._index: PIntSet = PIntSet() if index is None else index
@@ -1479,10 +1514,18 @@ class IndexPTable(BasePTable):
         self._index -= bm
         self.add_deleted(bm)
 
-    def drop(
+    def _drop(
         self, index: Any, raw_index: Optional[Any] = None, truncate: bool = False
     ) -> None:
-        "index is useless by now"
+        """
+        Args:
+           index: is a normalized index. It is always a sequence or a slice
+           raw_index: is the index as it is defined by the caller. It could be an integer
+           truncate: if ``True`` then the dropped indices > last_id can be reused to index
+            the rows added later.
+           if ``False`` no dropped index will be reused
+           **NB:** in any case, dropped indices < last_id will not be reused
+        """
         if raw_index is None:
             raw_index = index
         if isinstance(raw_index, (int, np.integer)):
@@ -1523,6 +1566,9 @@ class IndexPTable(BasePTable):
 
 
 class PTableSelectedView(BasePTable):
+    """
+    Virtual table built on top of a :class:`PTable <progressivis.table.PTable>` or a :class:`PTableSelectedView <progressivis.table.PTableSelectedView>`
+    """
     def __init__(
         self,
         base: BasePTable,
@@ -1530,6 +1576,13 @@ class PTableSelectedView(BasePTable):
         columns: Optional[List[str]] = None,
         computed: Optional[Dict[str, Any]] = None,
     ) -> None:
+        """
+        Args:
+            base: the table (stored or virtual) on which the current view is built
+            selection: indices to be part of the view
+            columns: selection of columns to be included in the view
+            computed: computed columns (as :py:class:`dict` keys) and their associated expressions (as  :py:class:`dict` values)
+        """
         super().__init__(base, columns=None, selection=selection)
         assert self._base
         if computed is not None:

@@ -132,7 +132,7 @@ class CSVLoader(Module):
         except Exception:
             pass
         if len_ and rt is not None:
-            rt.drop(slice(None, None, None), truncate=True)
+            rt.truncate()
         len_ = 0
         try:
             rt = PTable(name=self._recovery_table_inv_name, create=False)
@@ -140,7 +140,7 @@ class CSVLoader(Module):
         except Exception:
             pass
         if len_ and rt is not None:
-            rt.drop(slice(None, None, None), truncate=True)
+            rt.truncate()
 
     def rows_read(self) -> int:
         "Return the number of rows read so far."
