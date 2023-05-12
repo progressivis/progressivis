@@ -53,6 +53,7 @@ sphinx_gallery_conf = {
     "gallery_dirs": "auto_examples",  # path to where to save gallery generated output
 }
 """
+autodoc_typehints = "none"
 autodoc_class_signature = "separated"
 napoleon_preprocess_types = True
 from progressivis_doc_params import napoleon_type_aliases  # noqa

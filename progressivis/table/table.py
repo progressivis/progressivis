@@ -311,9 +311,7 @@ class PTable(IndexPTable):
         if data is None:
             return None
         if isinstance(data, Mapping):
-            if are_instances(data.values(), np.ndarray) or are_instances(
-                data.values(), list
-            ):
+            if are_instances(data.values(), (np.ndarray, list)):
                 return data  # PTable can parse this
         if isinstance(data, (np.ndarray, Mapping)):
             # delegate creation of structured data to pandas for now

@@ -62,11 +62,12 @@ Progressive tables:
    :members:
 ```
 
-Currently there are 3 kind of computed columns:
+Currently there are many kind of computed columns:
 
 * numpy universal functions [ufunc](https://numpy.org/doc/stable/reference/ufuncs.html)
 * numpy custom [vectorized fuctions](https://numpy.org/doc/stable/reference/generated/numpy.vectorize.html)
 * numexpr expressions
+
 
 
 

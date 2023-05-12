@@ -83,7 +83,7 @@ class _BaseLoc:
     def parse_key(self, key: Indexer) -> Tuple[Any, Any, Any]:
         if isinstance(key, tuple):
             if len(key) != 2:
-                raise ValueError('getitem not implemented for key "%s"' % key)
+                raise ValueError(f"getitem not implemented for {key=}")
             index, col_key = key
         else:
             index, col_key = key, slice(None)
@@ -96,7 +96,7 @@ class _BaseLoc:
     def parse_key_to_pintset(self, key: Indexer) -> Tuple[Any, Any, Any]:
         if isinstance(key, tuple):
             if len(key) != 2:
-                raise ValueError('getitem not implemented for key "%s"' % key)
+                raise ValueError(f"getitem not implemented for {key=}")
             raw_index, col_key = key
         else:
             raw_index, col_key = key, slice(None)
@@ -109,7 +109,7 @@ class _Loc(_BaseLoc):
     def __delitem__(self, key: Indexer) -> None:
         index, col_key, raw_index = self.parse_key_to_pintset(key)
         if not is_none_alike(col_key):
-            raise ValueError('Cannot delete key "%s"' % key)
+            raise ValueError(f"Cannot delete {key=}")
         self._table._drop(index, raw_index)
 
     @overload
@@ -258,14 +258,233 @@ class BasePTable(metaclass=ABCMeta):
         self._drop(index, truncate=truncate)
 
     @property
-    def loc(self) -> _Loc:
-        "Return a `locator` object for indexing using ids"
+    def loc(self):   # do not specify here the return type _At (sphinx need)
+        """
+        Return a `locator` object for accessing a group of rows and columns by indices
+        and column names.
+        The following two syntax are allowed:
+
+        - ``.loc[row-selection]``
+        - ``.loc[row-selection, column-selection]``
+
+        Allowed inputs for row selection are:
+
+        - A single index
+        - A list or array of indices, e.g. ``[1, 3, 5]``.
+        - A slice object with indices, e.g. ``1:5``.
+
+        Allowed inputs column row selection are:
+
+        - A single column name or index
+        - A list or array of column names or indices, e.g. ``['b', 'd', 'f']`` or ``[1, 3, 5]``.
+        - A slice object with column name or indices, e.g. ``'b':'f'`` or ``1:5``.
+
+        .. warning:: Just like **pandas** dataframes slices but contrary to usual python slices, **both** the start and the stop are included
+
+        Examples
+        --------
+        **Getting values**
+
+        >>> from progressivis.table.table import PTable
+        >>> data = dict(i=[29, 45, 12, 20, 70],
+        ...             j=[-95, -47, -11, -83, -68],
+        ...             s=["t", "a", "b", "l", "e"],
+        ...             f=[0.741, 0.0812, 0.284, 0.775, 0.884],
+        ...             g=[-0.320, -0.031, -0.717, -0.863, -0.8087]
+        ... )
+        >>> pt = PTable("pt", data=data)
+        >>> pt
+        PTable("pt", dshape="{i: int32, j: int32, s: string, f: float64, g: float64}")[5]
+           Index    |     i      |     j      |     s      |     f      |     g      |
+                   0|          29|         -95|           t|       0.741|       -0.32|
+                   1|          45|         -47|           a|      0.0812|      -0.031|
+                   2|          12|         -11|           b|       0.284|      -0.717|
+                   3|          20|         -83|           l|       0.775|      -0.863|
+                   4|          70|         -68|           e|       0.884|     -0.8087|
+        >>>
+
+        **Single row**
+
+        >>> pt.loc[2]
+        <progressivis.table.row.Row object at 0x7f8907fe2c10>
+        >>> pt.loc[2].to_dict()
+        {'i': 12, 'j': -11, 's': 'b', 'f': 0.284, 'g': -0.717}
+        >>>
+
+        **Single row/single column**
+
+        >>> pt.loc[2, "f"]
+        0.284
+        >>>
+
+        **Slicing rows, keeping all columns**
+
+        >>> pt.loc[1:3]
+        BasePTable("anonymous", dshape="{i: int32, j: int32, s: string, f: float64, g: float64}")[3]
+           Index    |     i      |     j      |     s      |     f      |     g      |
+                   1|          45|         -47|           a|      0.0812|      -0.031|
+                   2|          12|         -11|           b|       0.284|      -0.717|
+                   3|          20|         -83|           l|       0.775|      -0.863|
+        >>>
+
+        **Fancy indexing on rows, keeping all columns**
+
+        >>> pt.loc[[1, 3]]
+        BasePTable("anonymous", dshape="{i: int32, j: int32, s: string, f: float64, g: float64}")[2]
+           Index    |     i      |     j      |     s      |     f      |     g      |
+                   1|          45|         -47|           a|      0.0812|      -0.031|
+                   3|          20|         -83|           l|       0.775|      -0.863|
+        >>>
+
+        **All rows, single column**
+
+        >>> pt.loc[:, "f"]
+        BasePTable("anonymous", dshape="{f: float64}")[5]
+           Index    |     f      |
+                   0|       0.741|
+                   1|      0.0812|
+                   2|       0.284|
+                   3|       0.775|
+                   4|       0.884|
+        >>>
+
+        **All rows, list of names for columns**
+
+        >>> pt.loc[:, ["j", "f"]]
+        BasePTable("anonymous", dshape="{j: int32, f: float64}")[5]
+           Index    |     j      |     f      |
+                   0|         -95|       0.741|
+                   1|         -47|      0.0812|
+                   2|         -11|       0.284|
+                   3|         -83|       0.775|
+                   4|         -68|       0.884|
+        >>>
+
+        **All rows, list of indices for columns**
+
+        >>> pt.loc[:, [1, 3]]
+        BasePTable("anonymous", dshape="{j: int32, f: float64}")[5]
+           Index    |     j      |     f      |
+                   0|         -95|       0.741|
+                   1|         -47|      0.0812|
+                   2|         -11|       0.284|
+                   3|         -83|       0.775|
+                   4|         -68|       0.884|
+        >>>
+
+        **All rows, range of names (slicing) for columns**
+
+        >>> pt.loc[:, "j":"f"]
+        BasePTable("anonymous", dshape="{j: int32, s: string, f: float64}")[5]
+           Index    |     j      |     s      |     f      |
+                   0|         -95|           t|       0.741|
+                   1|         -47|           a|      0.0812|
+                   2|         -11|           b|       0.284|
+                   3|         -83|           l|       0.775|
+                   4|         -68|           e|       0.884|
+        >>>
+
+        **All rows, range of indices (slicing) for columns**
+
+        >>> pt.loc[:, 1:3]
+        BasePTable("anonymous", dshape="{j: int32, s: string, f: float64}")[5]
+           Index    |     j      |     s      |     f      |
+                   0|         -95|           t|       0.741|
+                   1|         -47|           a|      0.0812|
+                   2|         -11|           b|       0.284|
+                   3|         -83|           l|       0.775|
+                   4|         -68|           e|       0.884|
+        >>>
+
+
+        **Setting values**
+
+        **Setting unique value**
+
+        >>> pt.loc[3, "f"] = 0.0
+        >>> pt
+        PTable("pt", dshape="{i: int32, j: int32, s: string, f: float64, g: float64}")[5]
+           Index    |     i      |     j      |     s      |     f      |     g      |
+                   0|          29|         -95|           t|       0.741|       -0.32|
+                   1|          45|         -47|           a|      0.0812|      -0.031|
+                   2|          12|         -11|           b|       0.284|      -0.717|
+                   3|          20|         -83|           l|         0.0|      -0.863|
+                   4|          70|         -68|           e|       0.884|     -0.8087|
+        >>>
+
+        **Broadcasting a value over a column**
+
+
+        >>> pt.loc[:, "f"] = 0.
+        >>> pt
+        PTable("pt", dshape="{i: int32, j: int32, s: string, f: float64, g: float64}")[5]
+           Index    |     i      |     j      |     s      |     f      |     g      |
+                   0|          29|         -95|           t|         0.0|       -0.32|
+                   1|          45|         -47|           a|         0.0|      -0.031|
+                   2|          12|         -11|           b|         0.0|      -0.717|
+                   3|          20|         -83|           l|         0.0|      -0.863|
+                   4|          70|         -68|           e|         0.0|     -0.8087|
+
+        **Broadcasting a value over a list of columns**
+
+        >>> pt.loc[:, ["i", "j"]] = 42
+        >>> pt
+        PTable("pt", dshape="{i: int32, j: int32, s: string, f: float64, g: float64}")[5]
+           Index    |     i      |     j      |     s      |     f      |     g      |
+                   0|          42|          42|           t|         0.0|       -0.32|
+                   1|          42|          42|           a|         0.0|      -0.031|
+                   2|          42|          42|           b|         0.0|      -0.717|
+                   3|          42|          42|           l|         0.0|      -0.863|
+                   4|          42|          42|           e|         0.0|     -0.8087|
+
+        **Setting a row**
+
+        >>> pt.loc[2, :] = [42, -42, "B", 4.2, -4.2]
+        >>> pt
+        PTable("pt", dshape="{i: int32, j: int32, s: string, f: float64, g: float64}")[5]
+           Index    |     i      |     j      |     s      |     f      |     g      |
+                   0|          42|          42|           t|         0.0|       -0.32|
+                   1|          42|          42|           a|         0.0|      -0.031|
+                   2|          42|         -42|           B|         4.2|        -4.2|
+                   3|          42|          42|           l|         0.0|      -0.863|
+                   4|          42|          42|           e|         0.0|     -0.8087|
+        >>>
+
+        **Setting some columns in a row**
+
+        >>> pt.loc[3, ["i", "s"]] = [0, "L"]
+        >>> pt
+        PTable("pt", dshape="{i: int32, j: int32, s: string, f: float64, g: float64}")[5]
+           Index    |     i      |     j      |     s      |     f      |     g      |
+                   0|          42|          42|           t|         0.0|       -0.32|
+                   1|          42|          42|           a|         0.0|      -0.031|
+                   2|          42|         -42|           B|         4.2|        -4.2|
+                   3|           0|          42|           L|         0.0|      -0.863|
+                   4|          42|          42|           e|         0.0|     -0.8087|
+        >>>
+
+        **Setting many values in a column**
+
+        >>> pt.loc[1:3, "i"] = [43, 44, 45]
+        >>> pt
+        PTable("pt", dshape="{i: int32, j: int32, s: string, f: float64, g: float64}")[5]
+           Index    |     i      |     j      |     s      |     f      |     g      |
+                   0|          42|          42|           t|         0.0|       -0.32|
+                   1|          43|          42|           a|         0.0|      -0.031|
+                   2|          44|         -42|           B|         4.2|        -4.2|
+                   3|          45|          42|           L|         0.0|      -0.863|
+                   4|          42|          42|           e|         0.0|     -0.8087|
+        >>>
+
+        """
         return self._loc
 
     @property
-    def at(self) -> _At:
+    def at(self):  # do not specify here the return type _At (prevent sphinx to show _At)
         # pylint: disable=invalid-name
-        "Return an object for indexing values using ids"
+        """
+        Return an object for indexing values using ids
+        """
         return self._at
 
     def __repr__(self) -> str:
@@ -309,6 +528,38 @@ class BasePTable(metaclass=ABCMeta):
 
     def info_contents(self) -> str:
         "Return a description of the contents of this table"
+        length = len(self)
+        rep = ""
+        max_rows = min(length, get_option("display.max_rows"))
+        if max_rows == 0:
+            return ""
+        if max_rows < length:
+            head = max_rows // 2
+            tail = head
+        else:
+            head = length
+            tail = None
+        width = get_option("display.column_space")
+
+        rep += "\n{0:^{width}}|".format("Index", width=width)
+        for name in self.columns:
+            if len(name) > width:
+                name = name[0:width]
+            rep += "{0:^{width}}|".format(name, width=width)
+
+        for row in self.index[:head]:
+            rep += "\n"
+            rep += self.info_row(row, width)
+
+        if tail:
+            rep += "\n...(%d)..." % length
+            for row in self.index[-tail:]:
+                rep += "\n"
+                rep += self.info_row(row, width)
+        return rep
+
+    def info_raw_contents(self) -> str:
+        "Return a description of the contents of this table including unselected rows"
         length = self.last_id + 1  # len(self)
         rep = ""
         max_rows = min(length, get_option("display.max_rows"))
@@ -506,8 +757,20 @@ class BasePTable(metaclass=ABCMeta):
         if is_none_alike(cols):
             return self._columndict
         if isinstance(cols, slice):
-            assert is_int(cols.start)  # for the moment ...
-            nsl = norm_slice(cols, stop=len(self._columndict))
+            if is_int(cols.start):
+                assert is_int(cols.stop) or cols.stop is None
+            else:
+                assert cols.start is None or (is_str(cols.start) and cols.start in self._columndict)
+                assert cols.stop is None or (is_str(cols.stop) and cols.stop in self._columndict)
+                cols = slice(self._columndict[cols.start] if is_str(cols.start) else None,
+                             self._columndict[cols.stop] if is_str(cols.stop) else None)
+            stop_ = cols.stop
+            if stop_ is None:
+                stop_ = len(self._columndict)
+            else:
+                stop_ += 1  # pandas alike slicing
+                assert stop_ <= len(self._columndict)
+            nsl = norm_slice(cols, stop=stop_)
             return dict(
                 {
                     k: v
