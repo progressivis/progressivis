@@ -258,7 +258,8 @@ class BasePTable(metaclass=ABCMeta):
         self._drop(index, truncate=truncate)
 
     @property
-    def loc(self):   # do not specify here the return type _At (sphinx need)
+    def loc(self):  # type: ignore
+        # NB: do not specify here the return type _At (prevent sphinx to show _At)
         """
         Return a `locator` object for accessing a group of rows and columns by indices
         and column names.
@@ -480,7 +481,8 @@ class BasePTable(metaclass=ABCMeta):
         return self._loc
 
     @property
-    def at(self):  # do not specify here the return type _At (prevent sphinx to show _At)
+    def at(self):  # type: ignore
+        # NB: do not specify here the return type _At (prevent sphinx to show _At)
         # pylint: disable=invalid-name
         """
         Return an object for indexing values using ids

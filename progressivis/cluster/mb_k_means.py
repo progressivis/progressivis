@@ -27,7 +27,7 @@ from ..core.decorators import process_slot, run_if_any
 from ..table.filtermod import FilterMod
 from ..stats import Var
 
-from typing import Optional, Union, List, Dict, Any
+from typing import Optional, Union, List, Dict, Any, cast
 
 logger = logging.getLogger(__name__)
 
@@ -261,7 +261,7 @@ class MBKMeans(Module):
         centers = centroids.loc[c, columns]
         assert isinstance(centers, BasePTable)
         self.mbk.cluster_centers_[c] = list(centers)
-        return self.mbk.cluster_centers_.tolist()
+        return cast(List[float], self.mbk.cluster_centers_.tolist())
 
     def create_dependent_modules(
         self, input_module: Module, input_slot: str = "result"

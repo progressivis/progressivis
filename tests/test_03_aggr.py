@@ -97,7 +97,7 @@ class TestProgressiveAggregate(ProgressiveTest):
         self.assertTrue(
             np.allclose(
                 sum(TABLE_AGGR["trip_distance_sum"].to_numpy())
-                - sum(aggr.result.loc[:, "trip_distance_sum"].to_array()),  # type: ignore
+                - sum(aggr.result.loc[:, "trip_distance_sum"].to_array()),
                 TABLE["trip_distance"][removed].as_py(),  # type: ignore
             )
         )
@@ -135,7 +135,7 @@ class TestProgressiveAggregate(ProgressiveTest):
             np.allclose(
                 abs(
                     sum(TABLE_AGGR["trip_distance_sum"].to_numpy())
-                    - sum(aggr.result.loc[:, "trip_distance_sum"].to_array())  # type: ignore
+                    - sum(aggr.result.loc[:, "trip_distance_sum"].to_array())
                 ),
                 abs(new_val - TABLE["trip_distance"][upd_id].as_py()),  # type: ignore
             )
