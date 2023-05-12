@@ -1,14 +1,16 @@
 # Introduction
 
 
-Data exploration requires a controlled latency; when it exceeds 10s, humans cannot maintain their attention and their effectiveness drops dramatically.
-Instead of running algorithms to completion one after the other, as
-done in all existing scientific analysis systems, ProgressiVis modules
-run in short batches, each batch being only allowed to run for a
-specific quantum of time - typically 1 second - producing a usable
-result in the end, and yielding control to the next module.  To
-perform the whole computation, ProgressiVis loops over the modules as many
-times as necessary to converge to a result that the analyst considers
+Interactive data exploration requires a controlled latency; when it
+exceeds 10s, humans cannot maintain their attention and their
+effectiveness drops dramatically.  Instead of running algorithms to
+completion one after the other, as done in all existing scientific
+analysis systems, ProgressiVis modules run in short batches, each
+batch being only allowed to run for a specific quantum of time -
+typically 1 second - producing a usable result in the end, and
+yielding control to the next module.  To perform the whole
+computation, ProgressiVis loops over the modules as many times as
+necessary to converge to a result that the analyst considers
 satisfactory.
 
 When visualizing the results of computations, the visualizations are
@@ -18,12 +20,13 @@ computation if it does not converge to the desired result.
 
 ## ProgressiVis at a Glance
 
-ProgressiVis is a system or language implementing *progressive data analysis and visualization*.
+ProgressiVis is a system and language implementing *progressive data
+analysis and visualization*.
 
-ProgressiVis implements a progressive language where all the
-executions are progressive by design. It also implements extensions in
-the notebook to create interactive visualizations and their user
-interface for controlling the progressive exploration.
+In the ProgressiVis language, all the executions are progressive by
+design. It also implements extensions in the notebook to create
+interactive visualizations and their user interfaces for controlling
+the progressive exploration.
 
 ProgressiVis relies on well known Python libraries, such as
 [numpy](http://www.numpy.org/),[scipy](http://www.scipy.org/),
