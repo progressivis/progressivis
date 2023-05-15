@@ -138,7 +138,6 @@ setup(
         "numpy>=1.22.4",
         "scipy>=0.18.1",
         "numexpr>=2.6.1",
-        "tables>=3.3.0",
         "pandas>=1.2.5",
         "pyarrow>=8.0.0",
         "scikit-learn>=1.0.0",
