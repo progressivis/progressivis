@@ -133,8 +133,6 @@ setup(
     # install_requires=required,
     install_requires=[
         "Pillow>=4.2.0",
-        "cython",
-        "pybind11>=2.0.1",
         "numpy>=1.22.4",
         "scipy>=0.18.1",
         "numexpr>=2.6.1",
