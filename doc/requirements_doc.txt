@@ -5,4 +5,5 @@ sphinxcontrib-napoleon >= 0.7
 myst-parser >= 0.18.1
 pydata-sphinx-theme >= 0.12.0
 sphinxcontrib-mermaid
+graphviz
 jinja2
