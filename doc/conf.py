@@ -53,7 +53,7 @@ sphinx_gallery_conf = {
     "gallery_dirs": "auto_examples",  # path to where to save gallery generated output
 }
 """
-autodoc_typehints = "none"
+# autodoc_typehints = "none"
 autodoc_class_signature = "separated"
 napoleon_preprocess_types = True
 from progressivis_doc_params import napoleon_type_aliases  # noqa
@@ -211,6 +211,7 @@ intersphinx_mapping = {
     # 'matplotlib': ('https://matplotlib.org/', None),
     'pandas': ('https://pandas.pydata.org/docs/', None),
     'pyarrow': ('https://arrow.apache.org/docs', None),
+    'datashape': ('https://datashape.readthedocs.io/en/latest/', None),
 }
 
 graphviz_output_format = 'svg'

@@ -31,6 +31,7 @@ while the computation is being done.
    unit_tests
    custom_modules
    chaining_widgets
+   dependencies
 ```
 
 # Indices and tables

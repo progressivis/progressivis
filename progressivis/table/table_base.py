@@ -259,7 +259,7 @@ class BasePTable(metaclass=ABCMeta):
 
     @property
     def loc(self):  # type: ignore
-        # NB: do not specify here the return type _At (prevent sphinx to show _At)
+        # NB: do not specify here the return type _Loc (prevent sphinx to show _Loc which is private)
         """
         Return a `locator` object for accessing a group of rows and columns by indices
         and column names.
@@ -1049,7 +1049,9 @@ class BasePTable(metaclass=ABCMeta):
 
     @property
     def dshape(self) -> DataShape:
-        "Return the datashape of this table"
+        """
+        Return the datashape of this table
+        """
         return self._dshape
 
     @property

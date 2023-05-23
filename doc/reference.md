@@ -44,12 +44,13 @@ These data types are instrumented to keep track of the changes happening between
 
 Progressive tables:
 
+
 ```{eval-rst}
 .. currentmodule:: progressivis.table
 
 .. autoclass:: BasePTable
    :members:
-   :exclude-members: __init__
+   :exclude-members: __init__, index_to_id, id_to_index, info_contents, info_raw_contents, info_row
 
 .. autoclass:: IndexPTable
    :members:
