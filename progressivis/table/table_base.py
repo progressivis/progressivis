@@ -280,7 +280,7 @@ class BasePTable(metaclass=ABCMeta):
         - A list or array of column names or indices, e.g. ``['b', 'd', 'f']`` or ``[1, 3, 5]``.
         - A slice object with column name or indices, e.g. ``'b':'f'`` or ``1:5``.
 
-        .. warning:: Just like **pandas** dataframes slices but contrary to usual python slices, **both** the start and the stop are included
+        .. warning:: Just like **pandas** dataframes slices (but contrary to usual python slices), **both** the `start` and the `stop` bounds are included in the interval
 
         Examples
         --------

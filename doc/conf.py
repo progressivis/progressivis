@@ -54,6 +54,7 @@ sphinx_gallery_conf = {
 }
 """
 # autodoc_typehints = "none"
+autodoc_member_order = 'bysource'
 autodoc_class_signature = "separated"
 napoleon_preprocess_types = True
 from progressivis_doc_params import napoleon_type_aliases  # noqa
