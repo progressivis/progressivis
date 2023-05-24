@@ -184,7 +184,7 @@ setup_args = {
     },
     "author": "Jean-Daniel Fekete",
     "author_email": "Jean-Daniel.Fekete@inria.fr",
-    "url": "https://github.com/jdfekete/progressivis/tree/master/progressivis_nb_widgets",
+    "url": "https://github.com/progressivis/progressivis/tree/master/progressivis_nb_widgets",
     "keywords": [
         "ipython",
         "jupyter",

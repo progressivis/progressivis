@@ -1,6 +1,6 @@
 # Progressivis
 
-[![Python Tests](https://github.com/jdfekete/progressivis/actions/workflows/python.yml/badge.svg?branch=master&event=push)](https://github.com/jdfekete/progressivis/actions/workflows/python.yml)
+[![Python Tests](https://github.com/progressivis/progressivis/actions/workflows/python.yml/badge.svg?branch=master&event=push)](https://github.com/progressivis/progressivis/actions/workflows/python.yml)
 
 ProgressiVis is a Python toolkit and scientific workflow system that
 implements a new [programming
@@ -38,7 +38,7 @@ structures that can grow and adapt to progressive computation.
 
 Many interactive demos are available online. They will run remotely on [mybinder.org](https://mybinder.org/) so you can experiment with Progressivis with no need to install it locally.
 
-[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/jdfekete/progressivis.git/stable?filepath=demos)
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/progressivis/progressivis.git/stable?filepath=demos)
 
 Click the "launch binder" image above to run the the live demos on [mybinder.org](https://mybinder.org/).
 
@@ -52,10 +52,10 @@ Currently, the easiest way to install *progressivis* is as follows:
 
 1. Install the latest version of miniconda (if not yet done)
 
-2. Clone the progressivis repository from [github.com](https://github.com/jdfekete/progressivis/) along with its submodules with the command:
+2. Clone the progressivis repository from [github.com](https://github.com/progressivis/progressivis/) along with its submodules with the command:
 
 ```
-git clone --recurse-submodules https://github.com/jdfekete/progressivis.git
+git clone --recurse-submodules https://github.com/progressivis/progressivis.git
 ```
 
 3. Create a conda environment with the following command:
@@ -114,7 +114,7 @@ then run the notebooks of your choice
 
 ## Support
 
-If you are having issues, please let us know at [issue](https://github.com/jdfekete/progressivis/issues).
+If you are having issues, please let us know at [issue](https://github.com/progressivis/progressivis/issues).
 
 
 ## License

@@ -6,7 +6,7 @@
   "main": "lib/index.js",
   "repository": {
     "type": "git",
-    "url": "https://github.com/jdfekete/progressivis/progressivis_nb_widgets"
+    "url": "https://github.com/progressivis/progressivis/progressivis_nb_widgets"
   },
   "keywords": [
     "jupyter",

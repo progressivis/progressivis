@@ -27,10 +27,10 @@ pip install progressivis
 
 ## Installation for developers
 
-1. Clone the progressivis repository from [github.com](https://github.com/jdfekete/progressivis/) along with its submodules, with the command:
+1. Clone the progressivis repository from [github.com](https://github.com/progressivis/progressivis/) along with its submodules, with the command:
 
 ```
-git clone --recurse-submodules https://github.com/jdfekete/progressivis.git
+git clone --recurse-submodules https://github.com/progressivis/progressivis.git
 ```
 
 2. Create a conda environment with the following command:

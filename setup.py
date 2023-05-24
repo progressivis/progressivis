@@ -115,7 +115,7 @@ setup(
     version=versioneer.get_version(),
     author="Jean-Daniel Fekete",
     author_email="Jean-Daniel.Fekete@inria.fr",
-    url="https://github.com/jdfekete/progressivis",
+    url="https://github.com/progressivis/progressivis",
     description="A Progressive Steerable Analytics Toolkit",
     license="BSD",
     keywords="Progressive analytics visualization",
