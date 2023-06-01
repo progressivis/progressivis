@@ -1180,6 +1180,12 @@ class Module(metaclass=ABCMeta):
     def all_outputs(self) -> List[SlotDescriptor]:
         return self.outputs
 
+    @property
+    def columns(self) -> Optional[List[str]]:
+        return (list(self._columns)
+                if isinstance(self._columns, list)
+                else self._columns)
+
     # Methods coming from TableModule
 
     def get_first_input_slot(self) -> Optional[str]:

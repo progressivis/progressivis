@@ -316,7 +316,9 @@ class BasePColumn(metaclass=ABCMeta):
     def __rand__(self, other: BasePColumn) -> np.ndarray[Any, Any]:
         return other.binary(operator.and_, self)
 
-    def __eq__(self, other: BasePColumn):  # type: ignore
+    def __eq__(self, other: Any):  # type: ignore
+        if not isinstance(other, BasePColumn):
+            return False
         return self.binary(operator.eq, other)
 
     def __gt__(self, other: BasePColumn) -> np.ndarray[Any, Any]:
