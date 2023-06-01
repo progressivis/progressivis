@@ -162,5 +162,6 @@ setup(
     package_data={
         # If any package contains *.md, *.txt or *.rst files, include them:
         "doc": ["*.md", "*.rst"],
+        "progressivis": ["py.typed"]
     },
 )
