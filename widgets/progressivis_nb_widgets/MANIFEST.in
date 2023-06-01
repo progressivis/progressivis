@@ -1,2 +1,0 @@
-recursive-include nbwidgets/static *.*
-include progressivis-nb-widgets.json
