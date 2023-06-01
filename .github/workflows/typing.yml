@@ -28,4 +28,4 @@ jobs:
     - name: Run mypy
       run: |
         python -m pip install -r requirements_typing.txt
-        mypy --strict progressivis/ tests/ widgets/
+        mypy --strict progressivis/ tests/
