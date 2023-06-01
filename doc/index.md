@@ -7,7 +7,7 @@
 
 # Welcome to ProgressiVis
 
-![Image of the progressive construction of the Eiffel Tower](construction_tour_eiffel.jpg "Progressive construction of the Eiffel Tower")
+![Image of the progressive construction of the Eiffel Tower](images/construction_tour_eiffel.jpg "Progressive construction of the Eiffel Tower")
 
 ProgressiVis is a Python toolkit and scientific workflow system that
 implements a new [programming paradigm](https://en.wikipedia.org/wiki/Programming_paradigm) that we
