@@ -36,7 +36,7 @@ class TestPercentiles(ProgressiveTest):
             t_percentiles = PDict({"_25": 25.0, "_50": 50.0, "_75": 75.0})
             which_percentiles = ConstDict(pdict=t_percentiles, scheduler=s)
             percentiles = Percentiles(accuracy=accuracy, scheduler=s)
-            percentiles.input[0] = random.output.result
+            percentiles.input[0] = hist_index.output.result
             percentiles.input.percentiles = which_percentiles.output.result
             percentiles.input.hist = hist_index.output.result
             prt = Print(proc=self.terse, scheduler=s)
@@ -83,7 +83,7 @@ class TestPercentiles(ProgressiveTest):
             t_percentiles = PDict({"_25": 25.0, "_50": 50.0, "_75": 75.0})
             which_percentiles = ConstDict(pdict=t_percentiles, scheduler=s)
             percentiles = Percentiles(accuracy=accuracy, scheduler=s)
-            percentiles.input[0] = stirrer.output.result
+            percentiles.input[0] = hist_index.output.result
             percentiles.input.percentiles = which_percentiles.output.result
             percentiles.input.hist = hist_index.output.result
             prt = Print(proc=self.terse, scheduler=s)
@@ -151,12 +151,12 @@ class TestPercentiles(ProgressiveTest):
                 random, "result", min_value=min_value, max_value=max_value
             )
 
-            hist_index = range_qry.dep.hist_index
-            assert hist_index
+            hist_index = HistogramIndex(columns=["_1"], scheduler=s)
+            hist_index.input[0] = range_qry.output.result
             t_percentiles = PDict({"_25": 25.0, "_50": 50.0, "_75": 75.0})
             which_percentiles = ConstDict(pdict=t_percentiles, scheduler=s)
             percentiles = Percentiles(accuracy=accuracy, scheduler=s)
-            percentiles.input[0] = range_qry.output.result
+            percentiles.input[0] = hist_index.output.result
             percentiles.input.percentiles = which_percentiles.output.result
             percentiles.input.hist = hist_index.output.result
             prt = Print(proc=self.terse, scheduler=s)
@@ -205,12 +205,13 @@ class TestPercentiles(ProgressiveTest):
                 stirrer, "result", min_value=min_value, max_value=max_value
             )
 
-            hist_index = range_qry.dep.hist_index
-            assert hist_index
+            hist_index = HistogramIndex(columns=["_1"], scheduler=s)
+            hist_index.input[0] = range_qry.output.result
+
             t_percentiles = PDict({"_25": 25.0, "_50": 50.0, "_75": 75.0})
             which_percentiles = ConstDict(pdict=t_percentiles, scheduler=s)
             percentiles = Percentiles(accuracy=accuracy, scheduler=s)
-            percentiles.input[0] = range_qry.output.result
+            percentiles.input[0] = hist_index.output.result
             percentiles.input.percentiles = which_percentiles.output.result
             percentiles.input.hist = hist_index.output.result
             prt = Print(proc=self.terse, scheduler=s)
