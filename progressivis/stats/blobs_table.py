@@ -89,15 +89,15 @@ class BlobsPTableABC(Module):
         # self._kwds['n_samples'] = rows
         # self._kwds['n_features']
         self.default_step_size = 1000
-        self.columns: Union[List[str], np.ndarray[Any, Any]]
         if isinstance(columns, integer_types):
-            self.columns = [f"_{i}" for i in range(1, columns + 1)]
+            self._columns = [f"_{i}" for i in range(1, columns + 1)]
             # self._kwds['n_features'] = columns
         elif isinstance(columns, (list, np.ndarray)):
-            self.columns = columns
+            self._columns = list(columns)
             # self._kwds['n_features'] = len(columns)
         else:
             raise ProgressiveError("Invalid type for columns")
+        assert self._columns is not None
         self.rows = rows
         self.seed = seed
         self._reservoir: Optional[
@@ -108,11 +108,11 @@ class BlobsPTableABC(Module):
             self.throttle: Union[int, bool, float] = throttle
         else:
             self.throttle = False
-        dshape = ", ".join([f"{col}: {dtype}" for col in self.columns])
+        dshape = ", ".join([f"{col}: {dtype}" for col in self._columns])
         dshape = "{" + dshape + "}"
         table = PTable(self.generate_table_name("table"), dshape=dshape, create=True)
         self.result = table
-        self.columns = table.columns
+        self._columns = table.columns
 
     def starting(self) -> None:
         super().starting()
@@ -153,6 +153,7 @@ class BlobsPTableABC(Module):
             logger.info("truncating to %d lines", step_size)
             if step_size <= 0:
                 raise ProgressiveStopIteration
+        assert self._columns is not None
         if self._reservoir is None:
             self.fill_reservoir()
         steps = int(step_size)
@@ -162,14 +163,14 @@ class BlobsPTableABC(Module):
             assert level >= 0
             if steps >= level:
                 blobs_dict, y_ = xy_to_dict(
-                    *self._reservoir, self._reservoir_idx, None, self.columns
+                    *self._reservoir, self._reservoir_idx, None, self._columns
                 )
                 steps -= level
                 # reservoir was emptied so:
                 self.fill_reservoir()
             else:  # steps < level
                 blobs_dict, y_ = xy_to_dict(
-                    *self._reservoir, self._reservoir_idx, steps, self.columns
+                    *self._reservoir, self._reservoir_idx, steps, self._columns
                 )
                 self._reservoir_idx += steps
                 steps = 0

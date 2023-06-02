@@ -39,11 +39,10 @@ class RandomPTable(Module):
         super(RandomPTable, self).__init__(**kwds)
         self.tags.add(self.TAG_SOURCE)
         self.default_step_size = 1000
-        self.columns: Union[List[str], np.ndarray[Any, Any]]
         if isinstance(columns, integer_types):
-            self.columns = ["_%d" % i for i in range(1, columns + 1)]
+            self._columns = ["_%d" % i for i in range(1, columns + 1)]
         elif isinstance(columns, (list, np.ndarray)):
-            self.columns = columns
+            self._columns = list(columns)
         else:
             raise ProgressiveError("Invalid type for columns")
         self.rows = rows
@@ -52,11 +51,11 @@ class RandomPTable(Module):
             self.throttle = throttle
         else:
             self.throttle = False
-        dshape = ", ".join([f"{col}: {dtype}" for col in self.columns])
+        dshape = ", ".join([f"{col}: {dtype}" for col in self._columns])
         dshape = "{" + dshape + "}"
         table = PTable(self.generate_table_name("table"), dshape=dshape, create=True)
         self.result = table
-        self.columns = table.columns
+        self._columns = table.columns
 
     def run_step(
         self, run_number: int, step_size: int, howlong: float
@@ -76,7 +75,8 @@ class RandomPTable(Module):
                 raise ProgressiveStopIteration
 
         values: Dict[str, np.ndarray[Any, Any]] = OrderedDict()
-        for column in self.columns:
+        assert self._columns is not None
+        for column in self._columns:
             s = self.random(step_size)
             values[column] = s
         table.append(values)
