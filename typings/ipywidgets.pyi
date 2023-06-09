@@ -43,6 +43,9 @@ class Select(SelectBase):
     value: str
 
 
+class Combobox(SelectBase):
+    ...
+
 class Dropdown(SelectBase):
     ...
 
