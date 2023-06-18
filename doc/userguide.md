@@ -35,3 +35,9 @@ Now, you would see this:
 
 This dataset used in this example is a sample of the real one; it is only 1000 lines long.  The real dataset contains 2 million lines (about 12Mb) for January only and 12 times more for the whole year 2015 (1.5 billion lines, 22Gb). It would take several minutes to download the data, and a few more seconds to visualize it.
 
+
+
+
+## Synchronization of Modules
+
+When multiple modules are computing values over the same table, they may become desynchronized, some may be lagging behind due different processing speed.
