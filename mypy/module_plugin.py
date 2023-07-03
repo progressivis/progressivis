@@ -27,30 +27,6 @@ def get_content(obj: Expr) -> str:
     return obj.value
 
 
-def decl_schema_hook(ctx: ClassDefContext) -> None:
-    fullname = ctx.cls.fullname
-    chunks = fullname.split(".")
-    assert chunks[-1] == "Schema"
-    for sup in ctx.cls.info.mro:
-        if sup.fullname.endswith(".utils.SchemaBase"):
-            break
-    else:
-        print(f"{fullname} is not a Schema Box")
-        return
-    upper_fullname = ".".join(chunks[:-1])
-
-    sym = ctx.api.lookup_fully_qualified_or_none(upper_fullname)
-    if sym is None:
-        print(f"{upper_fullname} not found")
-        return
-    if not isinstance(ctx.cls.info, TypeInfo):
-        print(f"{ctx.cls.info} is not a TypeInfo")
-        return
-    typ = Instance(ctx.cls.info, [])
-    add_var_to_class("child", typ, sym.node)
-    add_var_to_class("c_", typ, sym.node)
-
-
 def decl_deco_hook(ctx: ClassDefContext) -> None:
     reason: CallExpr = cast(CallExpr, ctx.reason)
     args: List[Expr] = cast(List[Expr], reason.args)
@@ -97,10 +73,6 @@ class ModulePlugin(Plugin):
     def get_class_decorator_hook(self, fullname: str) -> CB[ClassDefContext]:
         if fullname == "progressivis.core.module.def_output":
             return decl_deco_hook
-
-    def get_customize_class_mro_hook(self, fullname: str) -> CB[ClassDefContext]:
-        if fullname.endswith(".Schema"):
-            return decl_schema_hook
 
 
 def plugin(version: str) -> Any:
