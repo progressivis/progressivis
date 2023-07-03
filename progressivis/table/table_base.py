@@ -1321,7 +1321,7 @@ class BasePTable(metaclass=ABCMeta):
         if columns is None:
             columns = self.columns
         dtypes = [self[c].dtype for c in columns]
-        return np.find_common_type(dtypes, [])
+        return np.result_type(*dtypes)
 
     def to_array(
         self,
