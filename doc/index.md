@@ -11,9 +11,9 @@
 
 ProgressiVis is a Python toolkit and scientific workflow system that
 implements a new [programming paradigm](https://en.wikipedia.org/wiki/Programming_paradigm) that we
-call *Progressive Analytics* for *progressive data analysis and
-visualization* aimed at performing analytics in a progressive way.  It
-allows analysts to see the progress of their analysis and to steer it
+call *Progressive Analytics* or *Progressive Data Analysis and
+Visualization* aimed at performing analytics in a progressive way.  It
+allows analysts to see the progress of their analysis and to steer it interactively
 while the computation is being done.
 
 
