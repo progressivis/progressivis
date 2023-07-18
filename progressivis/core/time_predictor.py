@@ -51,9 +51,12 @@ class LinearTimePredictor(TimePredictor):
             return
 
         # TODO optimize to search backward to avoid scanning the whole table
-        (step_traces,) = np.where(
-            (trace_df["type"] == "step") & (trace_df["duration"] != 0)
-        )
+        expr_ = (trace_df["type"] == "step") & (trace_df["duration"] != 0)
+        if expr_ is False:
+            # Avoiding "DeprecationWarning: Calling nonzero on 0d arrays is deprecated,"
+            step_traces = np.array([], dtype="int64")
+        else:
+            (step_traces,) = np.where(expr_)
         n = len(step_traces)
         if n < 1:
             return
