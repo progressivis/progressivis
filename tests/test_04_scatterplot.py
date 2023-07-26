@@ -6,25 +6,7 @@ from progressivis.vis import MCScatterPlot
 from progressivis.datasets import get_dataset
 from progressivis.stats import RandomPTable
 from progressivis.core import aio
-from . import ProgressiveTest, skipIf
-import os
-
-from typing import Any, Dict
-
-
-def print_len(x: Any) -> None:
-    if x is not None:
-        print(len(x))
-
-
-def print_repr(x: Any) -> None:
-    if x is not None:
-        print(repr(x))
-
-
-# async def idle_proc(s, _):
-#    await s.stop()
-
+from . import ProgressiveTest
 
 LOWER_X = 0.2
 LOWER_Y = 0.3
@@ -32,21 +14,6 @@ UPPER_X = 0.8
 UPPER_Y = 0.7
 
 
-async def fake_input(sched: Scheduler, name: str, t: float, inp: Dict[str, Any]) -> Any:
-    await aio.sleep(t)
-    module = sched.modules()[name]
-    await module.from_input(inp)
-
-
-async def sleep_then_stop(s: Scheduler, t: float) -> None:
-    await aio.sleep(t)
-    await s.stop()
-    print(s._run_list)
-
-
-@skipIf(
-    os.getenv("TRAVIS"), "skipped because is killed (sometimes) by the system on CI"
-)
 class TestScatterPlot(ProgressiveTest):
     def tearDown(self) -> None:
         TestScatterPlot.cleanup()
@@ -69,8 +36,7 @@ class TestScatterPlot(ProgressiveTest):
             cnt.input[0] = csv.output.result
             prt = Print(proc=self.terse, scheduler=s)
             prt.input[0] = sp.output.result
-            # sts = sleep_then_stop(s, 5)
-        s.on_loop(self._stop, 5)
+        s.on_loop(self._stop, 50)
         aio.run(csv.scheduler().start())
         assert csv.result is not None
         self.assertEqual(len(csv.result), 30_000)
@@ -97,15 +63,9 @@ class TestScatterPlot(ProgressiveTest):
             module = scheduler["dyn_var_2"]
             print("from input dyn_var_2")
             await module.from_input({"x": UPPER_X, "y": UPPER_Y})
-
-        # finp1 = fake_input(s, "dyn_var_1", 6, {"x": LOWER_X, "y": LOWER_Y})
-        # finp2 = fake_input(s, "dyn_var_2", 6, {"x": UPPER_X, "y": UPPER_Y})
-        # sts = sleep_then_stop(s, 10)
         s.on_loop(self._stop, 10)
-        # s.on_loop(prt)
         s.on_loop(fake_input_1, 3)
         s.on_loop(fake_input_2, 3)
-        # aio.run_gather(sp.scheduler().start(), sts)
         aio.run(s.start())
         js = sp.to_json()
         x, y, _ = zip(*js["sample"]["data"])
