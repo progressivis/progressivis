@@ -33,7 +33,7 @@ class TestProgressiveGroupBy(ProgressiveTest):
         aio.run(s.start())
         assert parquet.result is not None
         self.assertEqual(len(parquet.result), 300_000)
-        self.assertEqual(set(grby._index.keys()), PASSENGERS)
+        self.assertEqual(set(grby.index.keys()), PASSENGERS)
 
     def test_group_by_2_cols(self) -> None:
         s = self.scheduler()
@@ -50,7 +50,7 @@ class TestProgressiveGroupBy(ProgressiveTest):
         aio.run(s.start())
         assert parquet.result is not None
         self.assertEqual(len(parquet.result), 300_000)
-        self.assertEqual(len(grby._index.keys()), 36)
+        self.assertEqual(len(grby.index.keys()), 36)
 
     def test_group_by_function(self) -> None:
         s = self.scheduler()
@@ -67,7 +67,7 @@ class TestProgressiveGroupBy(ProgressiveTest):
         aio.run(s.start())
         assert parquet.result is not None
         self.assertEqual(len(parquet.result), 300_000)
-        self.assertEqual(len(grby._index.keys()), 10)
+        self.assertEqual(len(grby.index.keys()), 10)
 
     def test_group_by_days(self) -> None:
         s = self.scheduler()
@@ -84,7 +84,6 @@ class TestProgressiveGroupBy(ProgressiveTest):
 
         def _day_func(tbl: PTable, i: int) -> Tuple[Any, ...]:
             dt = tbl.loc[i, "tpep_pickup_datetime"]
-            assert dt
             return tuple(dt[:3])
 
         self.assertTrue(parquet.result is None)
@@ -96,7 +95,7 @@ class TestProgressiveGroupBy(ProgressiveTest):
         assert parquet.result is not None
         self.assertEqual(len(parquet.result), 300_000)
         self.assertEqual(
-            len(grby._index.keys()), 31
+            len(grby.index.keys()), 31
         )
 
     def test_group_by_dt_ymd(self) -> None:
@@ -120,7 +119,7 @@ class TestProgressiveGroupBy(ProgressiveTest):
         assert parquet.result is not None
         self.assertEqual(len(parquet.result), 300_000)
         self.assertEqual(
-            len(grby._index.keys()), 31
+            len(grby.index.keys()), 31
         )
 
 

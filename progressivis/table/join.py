@@ -108,7 +108,7 @@ def _aslist(x: Any) -> List[Any]:
 
 
 @def_input("primary", PTable, doc="UniqueIndex output => table contains a primary key")
-@def_input("related", PTable, doc=("GroupBy output => table providing the"
+@def_input("related", PTable, doc=("GroupBy 'result' output => table providing the"
                                    " output index and containing the foreign key"))
 @def_output("result", PTableSelectedView)
 @def_output(
@@ -284,6 +284,7 @@ class Join(Module):
                 primary_table, PIntSet(primary_table.index)
             )
         steps = 0
+        # deletions/updates
         if primary_slot.deleted.any() or primary_slot.updated.any():
             if self.cache_dict:
                 for d in self.cache_dict.values():
@@ -293,15 +294,9 @@ class Join(Module):
         if related_slot.deleted.any():
             deleted = related_slot.deleted.next(as_slice=False)
             steps = 1
-            if deleted:
-                self.result.selection -= deleted
-            deleted = related_slot.deleted.next(as_slice=False)
-            if self.how == "inner":
-                steps = 1
-                for key in uindex_mod.get_deleted_entries(deleted):
-                    deltd = groupby_mod.index.get(key, PIntSet())
-                    if deltd:
-                        self.result.selection -= deltd
+            assert deleted
+            self.result.selection -= deleted
+        # creations
         if primary_slot.created.any():
             cr = primary_slot.created.next(as_slice=False)
             if self._primary_outer is not None:
@@ -315,7 +310,7 @@ class Join(Module):
                         continue
                     common = ids & created
                     if common:
-                        steps += len(common)
+                        steps += 1  # we suppose step != func(len(common))
                         self.result.selection |= common
                         if self._primary_outer is not None:
                             i = uindex_mod.index[k]
@@ -326,8 +321,9 @@ class Join(Module):
                         related_slot.created.remove_from_all(common)  # type: ignore
                     if steps >= step_size:
                         break
-                if uindex_terminated and created:
-                    related_slot.created.remove_from_all(created)  # type: ignore
+                else:  # for-else
+                    if uindex_terminated and created:
+                        related_slot.created.remove_from_all(created)  # type: ignore
             else:  # outer mode or primary table still in process
                 created = related_slot.created.next(length=step_size, as_slice=False)
                 self.result.selection |= created
