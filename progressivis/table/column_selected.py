@@ -7,7 +7,7 @@ import numpy as np
 from .column_proxy import PColumnProxy
 from ..core.utils import integer_types
 from .dshape import dataframe_dshape, dshape_create, DataShape
-from typing import TYPE_CHECKING, Tuple, Any, Sequence, Callable, Optional
+from typing import TYPE_CHECKING, Tuple, Any, Sequence, Callable
 
 if TYPE_CHECKING:
     from .column_base import BasePColumn
@@ -63,7 +63,7 @@ class PColumnComputedView(PColumnSelectedView):
         index: IndexPTable,
         aka: str,
         func: Callable[..., Any],
-        dtype: Optional[np.dtype[Any]] = None,
+        dtype: np.dtype[Any] | None = None,
         xshape: Shape = (),
     ) -> None:
         super().__init__(base, index=index)

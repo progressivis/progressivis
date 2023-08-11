@@ -114,7 +114,7 @@ class TestPTableSelected(ProgressiveTest):
         self.assertEqual(t.shape, (10, 2))
         t.append({"a": ivalues[10:], "b": fvalues[10:]})
         self.assertEqual(t.shape, (20, 2))
-        t.add_expr_column("a_x_b", cols=["a", "b"], expr="a*b", dtype="float32")
+        t.add_expr_column("a_x_b", cols=["a", "b"], expr="a*b", dtype=np.dtype("float32"))
         self.assertEqual(t.shape, (20, 2))
         ta = t.loc[:, "a"]
         tb = t.loc[:, "b"]
@@ -164,7 +164,7 @@ class TestPTableSelected(ProgressiveTest):
         def _axb(index: Any, local_dict: Dict[str, Any]) -> Any:
             return local_dict["a"] * local_dict["b"]
 
-        t.add_vect_func_column("a_x_b", vfunc=_axb, cols=["a", "b"], dtype="float32")
+        t.add_vect_func_column("a_x_b", func=_axb, cols=["a", "b"], dtype=np.dtype("float32"))
         self.assertEqual(t.shape, (20, 2))
         ta = t.loc[:, "a"]
         tb = t.loc[:, "b"]

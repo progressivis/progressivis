@@ -9,7 +9,7 @@ from .column_base import BasePColumn
 from .dshape import dshape_create, DataShape
 from .table_base import IndexPTable, BasePTable
 
-from typing import Any, Optional, Tuple, List, Sequence, Union
+from typing import Any, Tuple, List, Sequence
 
 from ..core.types import Index
 
@@ -40,9 +40,9 @@ class PColumnExpr(BasePColumn):
         index: IndexPTable,
         expr: str,
         cols: List[str],
-        dtype: Union[np.dtype[Any], str],
+        dtype: np.dtype[Any],
         xshape: Shape = (),
-        dshape: Optional[str] = None,
+        dshape: DataShape | None = None,
     ) -> None:
         """Create a new expression column."""
         super().__init__(name, index, base=None)
@@ -77,7 +77,7 @@ class PColumnExpr(BasePColumn):
 
     @property
     def dshape(self) -> DataShape:
-        return self._dshape or dshape_create(str(self._dtype))  # type: ignore
+        return self._dshape or dshape_create(str(self._dtype))
 
     @property
     def size(self) -> int:

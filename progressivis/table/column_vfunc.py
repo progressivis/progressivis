@@ -28,9 +28,9 @@ class PColumnVFunc(BasePColumn):
         index: IndexPTable,
         func: Callable[..., Any],
         cols: Union[str, List[str]],
-        dtype: Union[np.dtype[Any], str],
+        dtype: np.dtype[Any] | None = None,
         xshape: Shape = (),
-        dshape: Optional[str] = None,
+        dshape: Optional[DataShape] = None,
     ) -> None:
         """Create a column controlled by a self-sufficient, vectorized function."""
         super().__init__(name, index, base=None)
@@ -66,7 +66,7 @@ class PColumnVFunc(BasePColumn):
 
     @property
     def dshape(self) -> DataShape:
-        return self._dshape or dshape_create(str(self._dtype))  # type: ignore
+        return self._dshape or dshape_create(str(self._dtype))
 
     @property
     def size(self) -> int:

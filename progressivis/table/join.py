@@ -9,6 +9,7 @@ from ..core.module import Module, ReturnRunStep, def_input, def_output
 from .group_by import GroupBy, SubPColumn as SC
 from .unique_index import UniqueIndex
 from . import PTable, PTableSelectedView
+from .compute import MultiColFunc
 from typing import Union, Literal, List, Any, Optional, Dict, Callable
 
 
@@ -256,9 +257,9 @@ class Join(Module):
             join_cols = list(related_cols) + list(ucols_dict.values())
             assert uindex_mod.result is not None
             computed = {
-                sxcol: dict(
-                    vfunc=make_ufunc(
-                        self.on,
+                sxcol: MultiColFunc(
+                    func=make_ufunc(
+                        self.on ,
                         ucol,
                         uindex_mod.index,
                         primary_table,
@@ -267,8 +268,7 @@ class Join(Module):
                         self._inv_mask,
                         self.cache_dict[sxcol],
                     ),
-                    category="vfunc",
-                    cols=self.on,
+                    base=self.on if isinstance(self.on, list) else [self.on],
                     xshape=uindex_mod.result._column(ucol).shape[1:],
                     dshape=uindex_mod.result._column(ucol).dshape,
                     dtype=uindex_mod.result._column(ucol).dtype,
@@ -278,7 +278,6 @@ class Join(Module):
             self.result = PTableSelectedView(
                 related_table, PIntSet([]), columns=join_cols, computed=computed
             )
-
         if self._maintain_primary_outer and self._primary_outer is None:
             self._primary_outer = PTableSelectedView(
                 primary_table, PIntSet(primary_table.index)

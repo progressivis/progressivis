@@ -211,6 +211,7 @@ class BasePTable(metaclass=ABCMeta):
         Do not instanciate this class directly!
 
     """
+    from .compute import Computed
 
     def __init__(
         self,
@@ -218,7 +219,7 @@ class BasePTable(metaclass=ABCMeta):
         selection: Union[PIntSet, slice] = slice(0, None),
         columns: Optional[List[BasePColumn]] = None,
         columndict: Optional[Dict[str, int]] = None,
-        computed: Optional[Dict[str, Dict[str, Any]]] = None,
+        computed: Optional[Dict[str, Computed]] = None,
     ) -> None:
         """
         """
@@ -662,56 +663,6 @@ class BasePTable(metaclass=ABCMeta):
             self.to_dict(**kwds)
         return self.to_dict(**kwds)  # type: ignore
 
-    def make_computed(self, index: Any, meta: Dict[str, Any], name: str) -> BasePColumn:
-        from .column_selected import PColumnComputedView
-        from .column_expr import PColumnExpr
-        from .column_vfunc import PColumnVFunc
-
-        computed_col: BasePColumn
-        if meta["category"] == "ufunc":
-            base_col = meta["column"]
-            if base_col in self.computed:
-                base = self.computed[base_col]["computed_col"]
-            else:
-                base = self._columns[self._columndict[base_col]]
-            computed_col = PColumnComputedView(
-                base=base,
-                index=index,
-                aka=name,
-                func=meta["ufunc"],
-                dtype=meta["dtype"],
-                xshape=meta["xshape"],
-            )
-            meta["computed_col"] = computed_col
-            return computed_col
-        if meta["category"] == "vfunc":
-            computed_col = PColumnVFunc(
-                name=name,
-                table=self,
-                index=index,
-                func=meta["vfunc"],
-                cols=meta["cols"],
-                dtype=meta["dtype"],
-                xshape=meta["xshape"],
-                dshape=meta["dshape"],
-            )
-            meta["computed_col"] = computed_col
-            return computed_col
-
-        assert meta["category"] == "expr"
-        computed_col = PColumnExpr(
-            name=name,
-            table=self,
-            index=index,
-            expr=meta["expr"],
-            cols=meta["cols"],
-            dtype=meta["dtype"],
-            xshape=meta["xshape"],
-            dshape=meta["dshape"],
-        )
-        meta["computed_col"] = computed_col
-        return computed_col
-
     def make_projection(
         self, cols: Optional[List[str]], index: Any
     ) -> Tuple[List[BasePColumn], Dict[str, int]]:
@@ -736,7 +687,7 @@ class BasePTable(metaclass=ABCMeta):
         else:
             logger.warning(f"computed columns will be ignored with selection {cols}")
         comp_cols: List[BasePColumn] = [
-            self.make_computed(index, meta, aka)
+            meta._make_computed(index, aka, self)
             for (aka, meta) in self.computed.items()
             if aka in cols_as_set and aka not in self._columndict.keys()
         ]
@@ -1631,49 +1582,45 @@ class BasePTable(metaclass=ABCMeta):
         self,
         name: str,
         col: str,
-        ufunc: Callable[..., Any],
+        ufunc: Callable[[Any], Any],
         dtype: Optional[np.dtype[Any]] = None,
         xshape: Shape = (),
     ) -> None:
-        self.computed[name] = dict(
-            category="ufunc", ufunc=ufunc, column=col, dtype=dtype, xshape=xshape
-        )
+        from .compute import SingleColFunc
+        self.computed[name] = SingleColFunc(func=ufunc, base=col, dtype=dtype, xshape=xshape)
 
     def add_vect_func_column(
         self,
         name: str,
         cols: List[str],
-        vfunc: Callable[..., Any],
-        dtype: str,
+        func: Callable[[Any, Any], Dict[str, Any]],
+        dtype: np.dtype[Any] | None = None,
         xshape: Tuple[Any, ...] = (),
-        dshape: Optional[str] = None,
+        dshape: DataShape | None = None,
     ) -> None:
-        self.computed[name] = dict(
-            category="vfunc",
-            vfunc=vfunc,
-            cols=cols,
-            dtype=dtype,
-            xshape=xshape,
-            dshape=dshape,
-        )
+        from .compute import MultiColFunc
+        self.computed[name] = MultiColFunc(func=func,
+                                           base=cols,
+                                           dtype=dtype,
+                                           xshape=xshape,
+                                           dshape=dshape,
+                                           )
 
     def add_expr_column(
         self,
         name: str,
         cols: List[str],
         expr: str,
-        dtype: str,
+        dtype: np.dtype[Any] | None = None,
         xshape: Tuple[Any, ...] = (),
-        dshape: Optional[str] = None,
+        dshape: DataShape | None = None
     ) -> None:
-        self.computed[name] = dict(
-            category="expr",
-            expr=expr,
-            cols=cols,
-            dtype=dtype,
-            xshape=xshape,
-            dshape=dshape,
-        )
+        from .compute import MultiColExpr
+        self.computed[name] = MultiColExpr(expr=expr,
+                                           base=cols,
+                                           dtype=dtype,
+                                           xshape=xshape,
+                                           dshape=dshape,)
 
 
 class IndexPTable(BasePTable):

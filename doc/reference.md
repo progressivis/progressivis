@@ -63,6 +63,19 @@ Progressive tables:
    :members:
 ```
 
+```{eval-rst}
+.. currentmodule:: progressivis.table.compute
+
+.. autoclass:: SingleColFunc
+   :members:
+
+.. autoclass:: MultiColFunc
+   :members:
+
+.. autoclass:: MultiColExpr
+   :members:
+```
+
 Currently there are many kind of computed columns:
 
 * numpy universal functions [ufunc](https://numpy.org/doc/stable/reference/ufuncs.html)
