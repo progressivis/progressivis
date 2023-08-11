@@ -56,7 +56,7 @@ from typing import (
 if TYPE_CHECKING:
     from .column_base import BasePColumn
     from .row import Row
-
+    from .compute import Computed
     BinaryRet = Union[Dict[str, np.ndarray[Any, Any]], "BasePTable"]
     ColIndexer = Union[int, np.integer[Any], str]
 
@@ -211,7 +211,6 @@ class BasePTable(metaclass=ABCMeta):
         Do not instanciate this class directly!
 
     """
-    from .compute import Computed
 
     def __init__(
         self,
