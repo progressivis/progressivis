@@ -135,7 +135,7 @@ setup(
         "Pillow>=4.2.0",
         "numpy>=1.22.4",
         "scipy>=0.18.1",
-        "numexpr>=2.6.1",
+        "numexpr>=2.6.1,<2.8.5",
         "pandas>=1.2.5",
         "pyarrow>=8.0.0",
         "scikit-learn>=1.0.0",
