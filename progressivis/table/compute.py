@@ -1,6 +1,5 @@
 import datetime
 import calendar
-import sys
 
 from datashape import DataShape
 from dataclasses import dataclass, field
@@ -10,11 +9,6 @@ from .column_expr import PColumnExpr
 from .column_vfunc import PColumnVFunc
 
 from typing import Any, Union, List, Dict, Tuple, Callable, Optional
-
-if sys.version_info[:2] == (3, 9):
-    DATACLASS_KW = dict(init=False)
-else:
-    DATACLASS_KW = dict(kw_only=True)
 
 
 def week_day_int(vec: Tuple[int, ...]) -> int:
@@ -67,7 +61,7 @@ def make_if_else(
 ComputedColumn = Union[PColumnComputedView, PColumnExpr, PColumnVFunc]
 
 
-@dataclass(**DATACLASS_KW)
+@dataclass(kw_only=True)
 class ColFunc:
     _computed_col: Optional[ComputedColumn] = field(default=None, init=False)
     base: Union[str, List[str]]  #: column(s) to be provided as input(s)
@@ -76,13 +70,9 @@ class ColFunc:
     #: Useful only when column elements are multidimensional
     xshape: Tuple[int, ...] = ()
     dshape: Optional[DataShape] = None  #: column datashape as specified by the `datashape` library
-    if sys.version_info[:2] == (3, 9):
-        def __init__(self, **kw):
-            for k, v in kw.items():
-                setattr(self, k, v)
 
 
-@dataclass(**DATACLASS_KW)
+@dataclass(kw_only=True)
 class SingleColFunc(ColFunc):
     """
     This class instances supply the information for constructing a computed table
@@ -94,7 +84,7 @@ class SingleColFunc(ColFunc):
     #: input column (existing column that will be passed as an argument to the function)
     base: str  #: column(s) to be provided as input(s)
     #: function to be applied to the elements of the input column.
-    func: Callable[  # type: ignore
+    func: Callable[
         [Any], Any
     ]
 
@@ -118,7 +108,7 @@ class SingleColFunc(ColFunc):
         return self._computed_col
 
 
-@dataclass(**DATACLASS_KW)
+@dataclass(kw_only=True)
 class MultiColFunc(ColFunc):
     """
     This class instances supply the information for constructing a computed table
@@ -134,7 +124,7 @@ class MultiColFunc(ColFunc):
     #:
     #: * ``index`` is the index of the column
     #: * ``local_dict`` contains the input columns (the keys are the column names)
-    func: Callable[[Any, Any], Dict[str, Any]]  # type: ignore
+    func: Callable[[Any, Any], Dict[str, Any]]
 
     def _make_computed(self, index: Any, name: str, table_: BasePTable) -> PColumnVFunc:
         self._computed_col = PColumnVFunc(
@@ -150,7 +140,7 @@ class MultiColFunc(ColFunc):
         return self._computed_col
 
 
-@dataclass(**DATACLASS_KW)
+@dataclass(kw_only=True)
 class MultiColExpr(ColFunc):
     """
     This class instances supply the information for constructing a computed table
@@ -160,7 +150,7 @@ class MultiColExpr(ColFunc):
     from .table_base import BasePTable
     base: list[str]  #: columns to be provided as inputs
     #: numexpr expression
-    expr: str  # type: ignore
+    expr: str
 
     def _make_computed(self, index: Any, name: str, table_: BasePTable) -> PColumnExpr:
         assert self.dtype is not None
