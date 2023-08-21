@@ -63,26 +63,24 @@ Progressive tables:
    :members:
 ```
 
+#### Computed columns
+
+In addition to stored columns, tables can contain virtual columns computed from the contents of other columns.
+To create a computed column, you need to instantiate an object of class [](SingleColFunc), [](MultiColFunc) or [](MultiColExpr) and add it to the `computed` dictionary of the table. Subsequently, a view constructed on this table will be able to utilize the new column.
+
+
 ```{eval-rst}
 .. currentmodule:: progressivis.table.compute
 
 .. autoclass:: SingleColFunc
-   :members:
+   :inherited-members:
 
 .. autoclass:: MultiColFunc
-   :members:
+   :inherited-members:
 
 .. autoclass:: MultiColExpr
-   :members:
+   :inherited-members:
 ```
-
-Currently there are many kind of computed columns:
-
-* numpy universal functions [ufunc](https://numpy.org/doc/stable/reference/ufuncs.html)
-* numpy custom [vectorized fuctions](https://numpy.org/doc/stable/reference/generated/numpy.vectorize.html)
-* numexpr expressions
-
-
 
 
 ### The PDict class
