@@ -1577,50 +1577,6 @@ class BasePTable(metaclass=ABCMeta):
     def _flush_cache(self) -> None:
         pass
 
-    def add_ufunc_column(
-        self,
-        name: str,
-        col: str,
-        ufunc: Callable[[Any], Any],
-        dtype: Optional[np.dtype[Any]] = None,
-        xshape: Shape = (),
-    ) -> None:
-        from .compute import SingleColFunc
-        self.computed[name] = SingleColFunc(func=ufunc, base=col, dtype=dtype, xshape=xshape)
-
-    def add_vect_func_column(
-        self,
-        name: str,
-        cols: List[str],
-        func: Callable[[Any, Any], Dict[str, Any]],
-        dtype: np.dtype[Any] | None = None,
-        xshape: Tuple[Any, ...] = (),
-        dshape: DataShape | None = None,
-    ) -> None:
-        from .compute import MultiColFunc
-        self.computed[name] = MultiColFunc(func=func,
-                                           base=cols,
-                                           dtype=dtype,
-                                           xshape=xshape,
-                                           dshape=dshape,
-                                           )
-
-    def add_expr_column(
-        self,
-        name: str,
-        cols: List[str],
-        expr: str,
-        dtype: np.dtype[Any] | None = None,
-        xshape: Tuple[Any, ...] = (),
-        dshape: DataShape | None = None
-    ) -> None:
-        from .compute import MultiColExpr
-        self.computed[name] = MultiColExpr(expr=expr,
-                                           base=cols,
-                                           dtype=dtype,
-                                           xshape=xshape,
-                                           dshape=dshape,)
-
 
 class IndexPTable(BasePTable):
     """

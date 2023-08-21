@@ -4,7 +4,7 @@ from progressivis import Scheduler
 from progressivis.table.table import PTable
 from progressivis.table.table_base import BasePTable
 from progressivis.core.pintset import PIntSet
-from progressivis.table.compute import week_day
+from progressivis.table.compute import week_day, SingleColFunc, MultiColFunc, MultiColExpr
 import numpy as np
 from typing import Any, Dict
 
@@ -28,7 +28,8 @@ class TestPTableSelected(ProgressiveTest):
         self.assertEqual(t.shape, (10, 2))
         t.append({"a": ivalues[10:], "b": fvalues[10:]})
         self.assertEqual(t.shape, (20, 2))
-        t.add_ufunc_column("arcsin_b", "b", np.arcsin)
+        colfunc = SingleColFunc(func=np.arcsin, base="b")
+        t.computed["arcsin_b"] = colfunc
         self.assertEqual(t.shape, (20, 2))
         tb = t.loc[:, "b"]
         assert tb
@@ -78,7 +79,8 @@ class TestPTableSelected(ProgressiveTest):
         self.assertEqual(t.shape, (10, 7))
         t.append({"a": dt_values[10:], "b": fvalues[10:]})
         self.assertEqual(t.shape, (20, 7))
-        t.add_ufunc_column("weekday", "a", week_day, dtype=object)  # type: ignore
+        colfunc = SingleColFunc(func=week_day, base="a", dtype=np.dtype("O"))
+        t.computed["weekday"] = colfunc
         self.assertEqual(t.shape, (20, 7))
         ta = t.loc[:, "a"]
         assert ta
@@ -114,7 +116,8 @@ class TestPTableSelected(ProgressiveTest):
         self.assertEqual(t.shape, (10, 2))
         t.append({"a": ivalues[10:], "b": fvalues[10:]})
         self.assertEqual(t.shape, (20, 2))
-        t.add_expr_column("a_x_b", cols=["a", "b"], expr="a*b", dtype=np.dtype("float32"))
+        colexpr = MultiColExpr(expr="a*b", base=["a", "b"], dtype=np.dtype("float32"))
+        t.computed["a_x_b"] = colexpr
         self.assertEqual(t.shape, (20, 2))
         ta = t.loc[:, "a"]
         tb = t.loc[:, "b"]
@@ -164,7 +167,8 @@ class TestPTableSelected(ProgressiveTest):
         def _axb(index: Any, local_dict: Dict[str, Any]) -> Any:
             return local_dict["a"] * local_dict["b"]
 
-        t.add_vect_func_column("a_x_b", func=_axb, cols=["a", "b"], dtype=np.dtype("float32"))
+        colfunc = MultiColFunc(func=_axb, base=["a", "b"], dtype=np.dtype("float32"))
+        t.computed["a_x_b"] = colfunc
         self.assertEqual(t.shape, (20, 2))
         ta = t.loc[:, "a"]
         tb = t.loc[:, "b"]
