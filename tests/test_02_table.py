@@ -344,7 +344,7 @@ class TestPTable(ProgressiveTest):
         # self.scheduler._run_number = 2
         t.append(df)
         self.assertEqual(len(t), 2 * len(df))
-        for colname in df:
+        for colname in df.columns:
             coldf = df[colname]
             colt = t[colname]
             self.assertEqual(2 * len(coldf), len(colt))
@@ -353,7 +353,7 @@ class TestPTable(ProgressiveTest):
         # self.scheduler._run_number = 3
         t.append(t)  # fun test
         self.assertEqual(len(t), 4 * len(df))
-        for colname in df:
+        for colname in df.columns:
             coldf = df[colname]
             colt = t[colname]
             self.assertEqual(4 * len(coldf), len(colt))
@@ -378,7 +378,7 @@ class TestPTable(ProgressiveTest):
         # self.scheduler._run_number = 2
         t.append(d)
         self.assertEqual(len(t), 2 * len(df))
-        for colname in df:
+        for colname in df.columns:
             coldf = df[colname]
             colt = t[colname]
             self.assertEqual(2 * len(coldf), len(colt))
@@ -387,7 +387,7 @@ class TestPTable(ProgressiveTest):
         # self.scheduler._run_number = 3
         t.append(t)  # fun test
         self.assertEqual(len(t), 4 * len(df))
-        for colname in df:
+        for colname in df.columns:
             coldf = df[colname]
             colt = t[colname]
             self.assertEqual(4 * len(coldf), len(colt))

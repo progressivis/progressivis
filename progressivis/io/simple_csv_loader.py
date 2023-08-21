@@ -289,6 +289,8 @@ class SimpleCSVLoader(Module):
                     arr[i] = na_
                     if na_ == np.nan and na_filter and elt == "":  # in this case
                         continue  # do not report empty strings as anomalies
+                    if TYPE_CHECKING:
+                        assert isinstance(i, int)
                     id_ = last_id + i + 1
                     if nn(self.anomalies):
                         anomalies[id_][col] = elt

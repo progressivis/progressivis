@@ -84,6 +84,10 @@ if not os.getenv("CI"):
 FK2_N = 10
 
 
+def np_array_equal(arr1: Any, arr2: Any) -> bool:
+    return np.array_equal(arr1, arr2)
+
+
 def generate_random_csv_left(
     rows: int = 300_000, seed: int = 42, choice: Sequence[str] = ("A", "B", "C", "D"),
 ) -> Tuple[pd.DataFrame, str]:
@@ -160,7 +164,7 @@ class TestProgressiveJoin(ProgressiveTest):
             set(df.columns) | {"control_id", "lookup_id"}, set(INNER.columns)
         )
         for col in df.columns:
-            self.assertTrue(np.array_equal(df[col].values, INNER[col].values))
+            self.assertTrue(np_array_equal(df[col].values, INNER[col].values))
 
     def test_outer(self) -> None:
         s = self.scheduler()
@@ -189,7 +193,7 @@ class TestProgressiveJoin(ProgressiveTest):
             set(df.columns) | {"control_id", "lookup_id"}, set(LEFT_OUTER.columns)
         )
         for col in df.columns:
-            self.assertTrue(np.array_equal(df[col].values, LEFT_OUTER[col].values))
+            self.assertTrue(np_array_equal(df[col].values, LEFT_OUTER[col].values))
         assert join._primary_outer is not None
         df2 = join._primary_outer.to_df().rename(columns={"LocationID": "DOLocationID"})
         df_concat = (
@@ -198,7 +202,7 @@ class TestProgressiveJoin(ProgressiveTest):
             .sort_values("DOLocationID")
         )
         for col in df_concat.columns:
-            self.assertTrue(np.array_equal(df_concat[col].values, OUTER[col].values))
+            self.assertTrue(np_array_equal(df_concat[col].values, OUTER[col].values))
 
     def test_inner_pu(self) -> None:
         s = self.scheduler()
@@ -235,7 +239,7 @@ class TestProgressiveJoin(ProgressiveTest):
             set(INNER_PU.columns),
         )
         for col in df.columns:
-            self.assertTrue(np.array_equal(df[col].values, INNER_PU[col].values))
+            self.assertTrue(np_array_equal(df[col].values, INNER_PU[col].values))
 
     def test_outer_pu(self) -> None:
         s = self.scheduler()
@@ -276,7 +280,7 @@ class TestProgressiveJoin(ProgressiveTest):
             set(LEFT_OUTER_PU.columns),
         )
         for col in df.columns:
-            self.assertTrue(np.array_equal(df[col].values, LEFT_OUTER_PU[col].values))
+            self.assertTrue(np_array_equal(df[col].values, LEFT_OUTER_PU[col].values))
         assert join._primary_outer is not None
         df2 = join._primary_outer.to_df().rename(columns={"LocationID": "PULocationID"})
         assert join_pu._primary_outer is not None
@@ -300,7 +304,7 @@ class TestProgressiveJoin(ProgressiveTest):
         )
         view_pu = [f"{c}_pu" for c in view]
         outer_pu__ = outer_pu_.sort_values(ord)[view_pu].fillna(0).set_index(df3.index)
-        outer_pu__.columns = cast(pd.Index, view)
+        outer_pu__.columns = cast(pd.Index[Any], view)
         self.assertTrue(outer_pu__.equals(df3[view]))
 
 
@@ -331,7 +335,7 @@ class TestProgressiveJoin2(ProgressiveTest):
         self.assertEqual(set(df.columns), set(df_inner.columns))
         sorted_inner = df_inner.sort_values("card_left")
         for col in df.columns:
-            self.assertTrue(np.array_equal(df[col].values, sorted_inner[col].values))
+            self.assertTrue(np_array_equal(df[col].values, sorted_inner[col].values))
 
     def test_outer(self) -> None:
         s = self.scheduler()
@@ -362,7 +366,7 @@ class TestProgressiveJoin2(ProgressiveTest):
         sorted_left_outer = df_left_outer.sort_values("card_left").fillna(0)
         for col in df.columns:
             self.assertTrue(
-                np.array_equal(df[col].values, sorted_left_outer[col].values)
+                np_array_equal(df[col].values, sorted_left_outer[col].values)
             )
         assert join._primary_outer is not None
         df2 = join._primary_outer.to_df().rename(
@@ -376,5 +380,5 @@ class TestProgressiveJoin2(ProgressiveTest):
         sorted_outer = df_outer.sort_values(["FK_1", "FK_2"]).fillna(0)
         for col in df_concat.columns:
             self.assertTrue(
-                np.array_equal(df_concat[col].values, sorted_outer[col].values)
+                np_array_equal(df_concat[col].values, sorted_outer[col].values)
             )
