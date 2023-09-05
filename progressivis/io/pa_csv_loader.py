@@ -6,11 +6,11 @@ from functools import partial
 import numpy as np
 import pyarrow as pa
 import pyarrow.csv
-from .base_loader import BaseLoader
+from .base_loader import BaseLoader, FILENAMES_DOC, RESULT_DOC
 from .. import ProgressiveError
 from ..utils.errors import ProgressiveStopIteration
 from ..utils.inspect import extract_params_docstring
-from ..core.module import ReturnRunStep, def_input, def_output
+from ..core.module import ReturnRunStep, def_input, def_output, document
 from ..table.table import PTable
 from ..table.dshape import dshape_from_pa_batch
 from ..core.utils import (
@@ -31,9 +31,15 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-@def_input("filenames", PTable, required=False)
-@def_output("anomalies", PDict, required=False)
-@def_output("result", PTable)
+@document
+@def_input("filenames", PTable, required=False, doc=FILENAMES_DOC)
+@def_output("anomalies", PDict, required=False, doc=("provides: ``anomalies"
+                                                     "['skipped_cnt'] ="
+                                                     " <skipped-rows-cnt>``"
+                                                     "  and ``anomalies['invalid_values']"
+                                                     " = {column: <set-of_invalid-values>"
+                                                     " for column in <columns-subset>}``"))
+@def_output("result", PTable, doc=RESULT_DOC)
 class PACSVLoader(BaseLoader):
     def __init__(
         self,
@@ -225,7 +231,8 @@ class PACSVLoader(BaseLoader):
                 except pa.ArrowInvalid:
                     arr[i] = None
                     if nn(self.anomalies):
-                        self.anomalies["invalid_values"].add(elt.as_py())  # type: ignore
+                        self.anomalies["invalid_values"][col].add(elt.as_py())  # type: ignore
+                        self.anomalies["invalid_cnt"] += 1   # type: ignore
             new_cols.append(pa.array(arr, type=ctype))
         chunk = pa.RecordBatch.from_arrays(new_cols, names=list(_col_types.keys()))
         if self._read_options is None:

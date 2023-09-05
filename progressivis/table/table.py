@@ -85,7 +85,7 @@ class PTable(IndexPTable):
         chunks: Optional[Chunks] = None,
         create: Optional[bool] = None,
         indices: Optional[Index] = None,
-    ):
+    ) -> None:
         """
         Args:
             name: the name of the table

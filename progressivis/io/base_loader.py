@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from collections import defaultdict
 from ..core.module import Module
 from ..utils import PDict
 from ..core.utils import nn
@@ -63,7 +64,7 @@ class BaseLoader(Module):
 
     def maintain_anomalies(self, yes: bool = True) -> None:
         if yes and self.anomalies is None:
-            self.anomalies = PDict(dict(skipped_cnt=0, invalid_values=set()))
+            self.anomalies = PDict(dict(skipped_cnt=0, invalid_values=defaultdict(set), invalid_cnt=0))
         elif not yes:
             self.anomalies = None
 
@@ -120,3 +121,10 @@ class BaseLoader(Module):
         self._input_encoding = None
         self._input_compression = None
         self._input_size = 0
+
+
+FILENAMES_DOC = ("\n\n        files to read. The underlying "
+                 "{{PTable}} must have a `filename` column"
+                 " containing the file URIs")
+
+RESULT_DOC = "provides read data into a {{PTable}} object"

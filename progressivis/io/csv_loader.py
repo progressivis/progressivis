@@ -4,12 +4,13 @@ import logging
 
 import pandas as pd
 
-from progressivis.utils.errors import ProgressiveError, ProgressiveStopIteration
-from progressivis.utils.inspect import filter_kwds, extract_params_docstring
-from progressivis.core.module import Module
-from progressivis.table.table import PTable
-from ..core.module import def_input, def_output
-from progressivis.table.dshape import (
+from .base_loader import FILENAMES_DOC, RESULT_DOC
+from ..utils.errors import ProgressiveError, ProgressiveStopIteration
+from ..utils.inspect import filter_kwds, extract_params_docstring
+from ..core.module import Module
+from ..table.table import PTable
+from ..core.module import def_input, def_output, document
+from ..table.dshape import (
     dshape_from_dataframe,
     array_dshape,
     dshape_from_dict,
@@ -37,8 +38,9 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-@def_input("filenames", PTable, required=False)
-@def_output("result", PTable)
+@document
+@def_input("filenames", PTable, required=False, doc=FILENAMES_DOC)
+@def_output("result", PTable, doc=RESULT_DOC)
 class CSVLoader(Module):
     """
     Warning : this module do not wait for "filenames"
@@ -59,6 +61,24 @@ class CSVLoader(Module):
         save_step_size: int = 100000,
         **kwds: Any,
     ) -> None:
+        r"""
+        Args:
+            filepath_or_buffer: str, path object or file-like object accepted by :func:`pandas.read_csv`
+            filter\_: filtering function to be applied on input data at loading time
+
+                Example:
+                    >>> def filter_(df):
+                    ...     lon = df['dropoff_longitude']
+                    ...     lat = df['dropoff_latitude']
+                    ...     return df[(lon>-74.10)&(lon<-73.7)&(lat>40.60)&(lat<41)]
+            force_valid_ids: force renaming of columns to make their names valid identifiers according to the `language definition  <https://docs.python.org/3/reference/lexical_analysis.html#identifiers>`_
+            fillvalues: the default values of the columns specified as a dictionary (see :class:`PTable <progressivis.table.PTable>`)
+            as_array: comment
+            timeout: comment
+            save_context: comment
+            recovery_tag: comment
+            kwds: extra keyword args to be passed to :func:`pandas.read_csv`
+        """
         super(CSVLoader, self).__init__(**kwds)
         self.tags.add(self.TAG_SOURCE)
         self.default_step_size = kwds.get("chunksize", 1000)  # initial guess
@@ -467,7 +487,8 @@ CSV_DOCSTRING = (
 )
 
 try:
-    CSVLoader.__init__.__func__.__doc__ = CSV_DOCSTRING  # type: ignore
+    if not CSVLoader.doc_building():
+        CSVLoader.__init__.__func__.__doc__ = CSV_DOCSTRING  # type: ignore
 except AttributeError:
     try:
         CSVLoader.__init__.__doc__ = CSV_DOCSTRING

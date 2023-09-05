@@ -5,6 +5,7 @@ import pandas as pd
 import numpy as np
 from collections import defaultdict
 from .. import ProgressiveError
+from .base_loader import FILENAMES_DOC, RESULT_DOC
 from ..utils.errors import ProgressiveStopIteration
 from ..utils.inspect import filter_kwds, extract_params_docstring
 from ..core.module import Module
@@ -37,12 +38,13 @@ logger = logging.getLogger(__name__)
 
 
 @document
-@def_input("filenames", PTable, required=False, doc=("files to read. The underlying "
-                                                     "{{PTable}} must have a `filename` column"
-                                                     " containing the file URIs"))
-@def_output("result", PTable, doc="provides read data into a {{PTable}} object")
-@def_output("anomalies", PDict, required=False)
-@def_output("missing", PDict, required=False)
+@def_input("filenames", PTable, required=False, doc=FILENAMES_DOC)
+@def_output("result", PTable, doc=RESULT_DOC)
+@def_output("anomalies", PDict, required=False, doc=("provides invalid values"
+                                                     " as: ``anomalies[id][column]"
+                                                     " = <invalid-value>``"))
+@def_output("missing", PDict, required=False, doc=("provides missing values as:"
+                                                   " ``missing[column] = <set-of-ids>``"))
 class SimpleCSVLoader(Module):
     """
     This module reads comma-separated values (csv) files progressively into a {{PTable}}.
@@ -60,6 +62,22 @@ class SimpleCSVLoader(Module):
         imputer: Optional[SimpleImputer] = None,
         **kwds: Any,
     ) -> None:
+        r"""
+        Args:
+            filepath_or_buffer: str, path object or file-like object accepted by :func:`pandas.read_csv`
+            filter\_: filtering function to be applied on input data at loading time
+
+                Example:
+                    >>> def filter_(df):
+                    ...     lon = df['dropoff_longitude']
+                    ...     lat = df['dropoff_latitude']
+                    ...     return df[(lon>-74.10)&(lon<-73.7)&(lat>40.60)&(lat<41)]
+            force_valid_ids: force renaming of columns to make their names valid identifiers according to the `language definition  <https://docs.python.org/3/reference/lexical_analysis.html#identifiers>`_
+            fillvalues: the default values of the columns specified as a dictionary (see :class:`PTable <progressivis.table.PTable>`)
+            throttle: limit the number of rows to be loaded in a step
+            imputer: a ``SimpleImputer`` provides basic strategies for imputing missing values
+            kwds: extra keyword args to be passed to :func:`pandas.read_csv`
+        """
         super().__init__(**kwds)
         self.default_step_size = 1000
         chunksize_ = kwds.get("chunksize")
@@ -391,7 +409,8 @@ csv_docstring = (
     + ",storage=None,input_descriptors=[],output_descriptors=[])"
 )
 try:
-    SimpleCSVLoader.__init__.__func__.__doc__ = csv_docstring  # type: ignore
+    if not SimpleCSVLoader.doc_building():
+        SimpleCSVLoader.__init__.__func__.__doc__ = csv_docstring  # type: ignore
 except Exception:
     try:
         SimpleCSVLoader.__init__.__doc__ = csv_docstring
