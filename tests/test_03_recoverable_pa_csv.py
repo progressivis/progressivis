@@ -118,7 +118,7 @@ class TestProgressiveLoadCSV(ProgressiveTest):
         anomalies = module.anomalies
         assert anomalies
         self.assertEqual(anomalies["skipped_cnt"], len(rows))
-        self.assertEqual(len(anomalies["invalid_values"]), len(rows) if intruder else 0)
+        self.assertEqual(len(anomalies["invalid_values"]["B"]), len(rows) if intruder else 0)
 
     def test_read_int_csv_with_na_64(self) -> None:
         self._func_read_int_csv_with_intruder(dtype="int64", intruder="")
@@ -174,7 +174,7 @@ class TestProgressiveLoadCSV(ProgressiveTest):
         anomalies = module.anomalies
         assert anomalies
         self.assertEqual(anomalies["skipped_cnt"], len(rows))
-        self.assertEqual(len(anomalies["invalid_values"]), len(rows) if intruder else 0)
+        self.assertEqual(len(anomalies["invalid_values"]["B"]), len(rows) if intruder else 0)
 
     def test_read_float_csv_with_intruder_not_na_64(self) -> None:
         self._func_read_float_csv_with_intruder(

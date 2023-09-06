@@ -6,10 +6,6 @@
 
 ```{eval-rst}
 
-
-
-
-
 .. currentmodule:: progressivis.io.simple_csv_loader
 
 .. autoclass:: SimpleCSVLoader

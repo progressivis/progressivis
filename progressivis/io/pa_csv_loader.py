@@ -231,7 +231,7 @@ class PACSVLoader(BaseLoader):
                 except pa.ArrowInvalid:
                     arr[i] = None
                     if nn(self.anomalies):
-                        self.anomalies["invalid_values"][col].add(elt.as_py())  # type: ignore
+                        self.anomalies["invalid_values"][cn].add(elt.as_py())  # type: ignore
                         self.anomalies["invalid_cnt"] += 1   # type: ignore
             new_cols.append(pa.array(arr, type=ctype))
         chunk = pa.RecordBatch.from_arrays(new_cols, names=list(_col_types.keys()))
