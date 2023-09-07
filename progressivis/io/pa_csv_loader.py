@@ -6,7 +6,8 @@ from functools import partial
 import numpy as np
 import pyarrow as pa
 import pyarrow.csv
-from .base_loader import BaseLoader, FILENAMES_DOC, RESULT_DOC
+from .base_loader import BaseLoader
+from ..core.docstrings import FILENAMES_DOC, RESULT_DOC
 from .. import ProgressiveError
 from ..utils.errors import ProgressiveStopIteration
 from ..utils.inspect import extract_params_docstring

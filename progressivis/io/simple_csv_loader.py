@@ -5,7 +5,7 @@ import pandas as pd
 import numpy as np
 from collections import defaultdict
 from .. import ProgressiveError
-from .base_loader import FILENAMES_DOC, RESULT_DOC
+from ..core.docstrings import FILENAMES_DOC, RESULT_DOC
 from ..utils.errors import ProgressiveStopIteration
 from ..utils.inspect import filter_kwds, extract_params_docstring
 from ..core.module import Module
@@ -207,6 +207,9 @@ class SimpleCSVLoader(Module):
 
     def validate_parser(self, run_number: int) -> ModuleState:
         if self.parser is None:
+            if nn(self.filepath_or_buffer) and self.has_input_slot("filenames"):
+                raise ProgressiveError("'filepath_or_buffer' parameter and"
+                                       " 'filenames' slot cannot both be defined ")
             if nn(self.filepath_or_buffer):
                 try:
                     self.parser = pd.read_csv(

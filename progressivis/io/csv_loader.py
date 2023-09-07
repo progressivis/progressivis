@@ -3,8 +3,9 @@ from __future__ import annotations
 import logging
 
 import pandas as pd
+import numpy as np
 
-from .base_loader import FILENAMES_DOC, RESULT_DOC
+from ..core.docstrings import FILENAMES_DOC, RESULT_DOC
 from ..utils.errors import ProgressiveError, ProgressiveStopIteration
 from ..utils.inspect import filter_kwds, extract_params_docstring
 from ..core.module import Module
@@ -52,10 +53,10 @@ class CSVLoader(Module):
         filter_: Optional[Callable[[pd.DataFrame], pd.DataFrame]] = None,
         force_valid_ids: bool = True,
         fillvalues: Optional[Dict[str, Any]] = None,
-        as_array: Optional[Any] = None,
+        as_array: Optional[str | Dict[str, List[str]] | Callable[[List[str]], Dict[str, List[str]]]] = None,
         timeout: Optional[float] = None,
-        save_context: Optional[Any] = None,  # FIXME seems more like a bool
-        recovery: int = 0,  # FIXME seems more like a bool
+        save_context: bool = True,
+        recovery: bool = False,
         recovery_tag: Union[str, int] = "",
         recovery_table_size: int = 3,
         save_step_size: int = 100000,
@@ -64,6 +65,8 @@ class CSVLoader(Module):
         r"""
         Args:
             filepath_or_buffer: str, path object or file-like object accepted by :func:`pandas.read_csv`
+
+                NB: ``filenames`` slot and filepath_or_buffer init parameter  cannot both be defined
             filter\_: filtering function to be applied on input data at loading time
 
                 Example:
@@ -73,10 +76,44 @@ class CSVLoader(Module):
                     ...     return df[(lon>-74.10)&(lon<-73.7)&(lat>40.60)&(lat<41)]
             force_valid_ids: force renaming of columns to make their names valid identifiers according to the `language definition  <https://docs.python.org/3/reference/lexical_analysis.html#identifiers>`_
             fillvalues: the default values of the columns specified as a dictionary (see :class:`PTable <progressivis.table.PTable>`)
-            as_array: comment
-            timeout: comment
-            save_context: comment
-            recovery_tag: comment
+            as_array: allows lists of *n* input columns to be grouped into output *n-D* columns (grouped column types must be identical):
+
+                * when `as_array` is a ``Dict[str, List[str]]`` every entry represents a grouping rule
+
+                    Example:
+                        >>> CSVLoader(
+                        ...             get_dataset("bigfile"),
+                        ...             index_col=False,
+                        ...             as_array={
+                        ...                 "first_group": ["_1", "_2", "_3"],
+                        ...                 "second_group": ["_11", "_12", "_13"],
+                        ...             },
+                        ...             header=None,
+                        ...             scheduler=s,
+                        ...         )
+
+                * when `as_array` is a ``str`` it gives the name of an unique *n-D* output column which groups all input columns
+                * when `as_array` is a ``Callable`` it must be able to process the list of all input columns and return a ``Dict[str, List[str]]``
+
+                    Example:
+                        >>> CSVLoader(
+                        ...                 get_dataset("mnist_784"),
+                        ...                 index_col=False,
+                        ...                 as_array=lambda cols: {"array": [
+                        ...                     c for c in cols if c != "class"]},
+                        ...                 scheduler=s,
+                        ...             )
+
+            timeout: stop waiting for a response and raise an exception after a given number of seconds
+            save_context: saving  information allowing recovery after a failure if ``True`` and if ``filepath_or_buffer``
+                 designates a recoverable support (i.e. a filepath)
+
+                NB: currently backup only works when data input is provided via ``filepath_or_buffer``
+            recovery: when ``False`` (default) the data entry is read from the beginning
+                 otherwise the previous reading is resumed using the save information
+            recovery_tag: customize save tags (useful mainly for debugging)
+            recovery_table_size: defines the size of the recovery table (useful mainly for debugging),
+            save_step_size: defines de number of rows to read between two context snapshots,
             kwds: extra keyword args to be passed to :func:`pandas.read_csv`
         """
         super(CSVLoader, self).__init__(**kwds)
@@ -109,7 +146,7 @@ class CSVLoader(Module):
         self._as_array = as_array
         self._save_context = (
             True
-            if save_context is None and is_recoverable(filepath_or_buffer)
+            if save_context and is_recoverable(filepath_or_buffer)
             else False
         )
         self._recovery = recovery
@@ -210,6 +247,9 @@ class CSVLoader(Module):
 
     def validate_parser(self, run_number: int) -> ModuleState:
         if self.parser is None:
+            if self.filepath_or_buffer is not None and self.has_input_slot("filenames"):
+                raise ProgressiveError("'filepath_or_buffer' parameter and"
+                                       " 'filenames' slot cannot both be defined")
             if self.filepath_or_buffer is not None:
                 if not self._recovery:
                     try:
@@ -333,7 +373,7 @@ class CSVLoader(Module):
                 f"Unexpected parameter specified to as_array: {self._as_array}"
             )
         columns = set(df.columns)
-        ret = {}
+        ret: Dict[str, pd.api.extensions.ExtensionArray | np.ndarray[Any, Any]] = {}
         for colname, cols in self._as_array.items():
             if colname in ret:
                 raise KeyError(f"Duplicate column {colname} in as_array")

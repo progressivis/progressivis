@@ -121,10 +121,3 @@ class BaseLoader(Module):
         self._input_encoding = None
         self._input_compression = None
         self._input_size = 0
-
-
-FILENAMES_DOC = ("\n\n        files to read. The underlying "
-                 "{{PTable}} must have a `filename` column"
-                 " containing the file URIs")
-
-RESULT_DOC = "provides read data into a {{PTable}} object"

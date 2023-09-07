@@ -10,7 +10,7 @@
 
 .. autoclass:: SimpleCSVLoader
    :members:
-   :exclude-members: run_step
+   :exclude-members: run_step, is_data_input, get_progress
 ```
 
 ### Reliable CSV Loader
@@ -20,19 +20,10 @@
 
 .. autoclass:: CSVLoader
    :members:
-   :exclude-members: run_step
+   :exclude-members: run_step, is_data_input, get_progress, rows_read
 ```
 
 
-### PyArrow BaseLoader
-
-```{eval-rst}
-.. currentmodule:: progressivis.io.base_loader
-
-.. autoclass:: BaseLoader
-   :members:
-   :exclude-members: run_step
-```
 ### CSV Loader via PyArrow
 
 ```{eval-rst}
