@@ -10,7 +10,7 @@ from progressivis.stats import MCHistogram2D, Sample
 from progressivis.table.range_query_2d import RangeQuery2d
 from progressivis.utils.errors import ProgressiveError
 from progressivis.core.utils import is_notebook, get_physical_base
-from progressivis.io import DynVar
+from progressivis.io import Variable
 from ..table.table_base import BasePTable
 from ..table import PTable
 from progressivis.core import notNone
@@ -58,8 +58,8 @@ class _DataClass:
         self.max: Any = None
         self.histogram2d: Optional[MCHistogram2D] = None
         self.heatmap = None
-        self.min_value: Optional[DynVar] = that.dep.min_value
-        self.max_value: Optional[DynVar] = that.dep.max_value
+        self.min_value: Optional[Variable] = that.dep.min_value
+        self.max_value: Optional[Variable] = that.dep.max_value
         self.sample: Union[None, Literal["default"], Module] = None
         self.range_query_2d: Optional[Module] = None
 
@@ -148,8 +148,8 @@ class MCScatterPlot(Module):
         self.input_module: Optional[Module] = None
         self.input_slot: Optional[str] = None
         self._data_class_dict: Dict[str, _DataClass] = {}
-        self.min_value: Optional[DynVar] = None
-        self.max_value: Optional[DynVar] = None
+        self.min_value: Optional[Variable] = None
+        self.max_value: Optional[Variable] = None
         self._ipydata: bool = is_notebook()
         self.hist_tensor: Optional[np.ndarray[Any, Any]] = None
         self.sample_tensor: Optional[np.ndarray[Any, Any]] = None
@@ -389,12 +389,12 @@ class MCScatterPlot(Module):
         self.input_slot = input_slot
         with self.grouped():
             scheduler = self.scheduler()
-            self.dep.min_value = DynVar(
+            self.dep.min_value = Variable(
                 {k: None for k in self._translated_keys},
                 translation=self._translation,
                 scheduler=scheduler,
             )
-            self.dep.max_value = DynVar(
+            self.dep.max_value = Variable(
                 {k: None for k in self._translated_keys},
                 translation=self._translation,
                 scheduler=scheduler,

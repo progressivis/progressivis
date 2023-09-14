@@ -7,7 +7,6 @@ from .vec_loader import VECLoader
 
 # from .input import Input
 from .variable import Variable
-from .dynvar import DynVar
 
 # from .add_to_row import AddToRow
 
@@ -19,5 +18,4 @@ __all__ = [
     "SimpleCSVLoader",
     "VECLoader",
     "Variable",
-    "DynVar",
 ]

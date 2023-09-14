@@ -21,7 +21,7 @@ from ..core.decorators import process_slot, run_if_any
 from ..table.dshape import dshape_fields
 from ..table.range_query import RangeQuery
 from ..utils.psdict import PDict
-from ..io import DynVar
+from ..io import Variable
 from typing import Any, Dict, Callable, Optional, TYPE_CHECKING, cast, List
 import numpy as np
 import pandas as pd
@@ -59,8 +59,8 @@ class Histogram1dPattern(Pattern):
             self.dep.max.input.table = input_module.output[input_slot]
             self.dep.min = Min(scheduler=scheduler, columns=[col])
             self.dep.min.input.table = input_module.output[input_slot]
-            self.dep.lower = DynVar({col: "*"}, scheduler=scheduler)
-            self.dep.upper = DynVar({col: "*"}, scheduler=scheduler)
+            self.dep.lower = Variable({col: "*"}, scheduler=scheduler)
+            self.dep.upper = Variable({col: "*"}, scheduler=scheduler)
             self.dep.range_query = RangeQuery(
                 scheduler=scheduler, column=col, columns=[col], approximate=True
             )
@@ -403,5 +403,5 @@ class StatsFactory(Module):
 
     def create_dependent_modules(self, var_name: Optional[str] = None) -> None:
         s = self.scheduler()
-        self.variable = DynVar(name=var_name, scheduler=s)
+        self.variable = Variable(name=var_name, scheduler=s)
         self.input.selection = self.variable.output.result

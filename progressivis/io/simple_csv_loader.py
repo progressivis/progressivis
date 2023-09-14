@@ -76,7 +76,7 @@ class SimpleCSVLoader(Module):
             fillvalues: the default values of the columns specified as a dictionary (see :class:`PTable <progressivis.table.PTable>`)
             throttle: limit the number of rows to be loaded in a step
             imputer: a ``SimpleImputer`` provides basic strategies for imputing missing values
-            kwds: extra keyword args to be passed to :func:`pandas.read_csv`
+            kwds: extra keyword args to be passed to :func:`pandas.read_csv` and :class:`Module <progressivis.core.Module>` superclass
         """
         super().__init__(**kwds)
         self.default_step_size = 1000

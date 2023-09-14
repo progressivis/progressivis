@@ -12,11 +12,14 @@ from typing import Optional, Any
 @document
 @def_output("result", PTable)
 class Constant(Module):
+    """
+    Module providing a constant output {{PTable}} slot
+    """
     def __init__(self, table: Optional[PTable], **kwds: Any) -> None:
         """
         Args:
             table:
-                table to be used by the **result** output slot
+                object to be used by the **result** output slot
         """
         super().__init__(**kwds)
         assert table is None or isinstance(table, PTable)
@@ -31,9 +34,17 @@ class Constant(Module):
         raise ProgressiveStopIteration()
 
 
+@document
 @def_output("result", PDict)
 class ConstDict(Module):
+    """
+    Module providing a constant output {{PDict}} slot
+    """
     def __init__(self, pdict: Optional[PDict], **kwds: Any) -> None:
+        """
+        Args:
+            pdict: object to be used by the **result** output slot
+        """
         super().__init__(**kwds)
         assert pdict is None or isinstance(pdict, PDict)
         self.result = pdict

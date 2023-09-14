@@ -23,6 +23,21 @@ class TestFilter(ProgressiveTest):
         assert filter_.result is not None
         self.assertEqual(filter_.result.index, PIntSet(idx))
 
+    def test_filter_1(self) -> None:
+        s = Scheduler()
+        random = RandomPTable(2, rows=100000, scheduler=s)
+        filter_ = FilterMod(scheduler=s)
+        filter_.params.expr = "_1 > 0.5"
+        filter_.input[0] = random.output.result
+        pr = Print(proc=self.terse, scheduler=s)
+        pr.input[0] = filter_.output.result
+        aio.run(s.start())
+        idx = (
+            filter_.get_input_slot("table").data().eval("_1>0.5", result_object="index")
+        )
+        assert filter_.result is not None
+        self.assertEqual(filter_.result.index, PIntSet(idx))
+
     def test_filter2(self) -> None:
         s = Scheduler()
         random = RandomPTable(2, rows=100000, scheduler=s)

@@ -6,7 +6,7 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 from .. import ProgressiveError
 from .base_loader import BaseLoader
-# from ..core.docstrings import FILENAMES_DOC, RESULT_DOC
+from ..core.docstrings import FILENAMES_DOC, RESULT_DOC
 from ..utils.errors import ProgressiveStopIteration
 from ..utils.inspect import filter_kwds, extract_params_docstring
 from ..core.module import ReturnRunStep, def_input, def_output, document
@@ -24,18 +24,18 @@ from typing import List, Dict, Any, Callable, Optional, Union, Generator, TYPE_C
 
 if TYPE_CHECKING:
     from ..core.module import ModuleState
-    from ..stats.utils import SimpleImputer
+    # from ..stats.utils import SimpleImputer
     import io
 
 logger = logging.getLogger(__name__)
 
 
 @document
-@def_input("filenames", PTable, required=False)
+@def_input("filenames", PTable, required=False, doc=FILENAMES_DOC)
 @def_output("anomalies", PDict, required=False, doc=("provides: ``anomalies"
                                                      "['skipped_cnt'] ="
                                                      " <skipped-rows-cnt>``"))
-@def_output("result", PTable)
+@def_output("result", PTable, doc=RESULT_DOC)
 class ParquetLoader(BaseLoader):
     def __init__(
         self,
@@ -44,10 +44,22 @@ class ParquetLoader(BaseLoader):
         force_valid_ids: bool = True,
         fillvalues: Optional[Dict[str, Any]] = None,
         throttle: Union[bool, int, float] = False,
-        imputer: Optional[SimpleImputer] = None,
-        drop_na: Optional[bool] = True,
+        # imputer: Optional[SimpleImputer] = None,
+        # drop_na: Optional[bool] = True,
         **kwds: Any,
     ) -> None:
+        r"""
+         Args:
+            filepath_or_buffer: string, path object or file-like object accepted by :func:`pyarrow.csv.open_csv`
+            filter\_: filtering function to be applied on input data at loading time
+            force_valid_ids: force renaming of columns to make their names valid identifiers according to the `language definition  <https://docs.python.org/3/reference/lexical_analysis.html#identifiers>`_
+            fillvalues: the default values of the columns specified as a dictionary (see :class:`PTable <progressivis.table.PTable>`)
+            throttle: limit the number of rows to be loaded in a step
+            read_options: Options for the CSV reader (see :class:`pyarrow.csv.ReadOptions`)
+            parse_options : Options for the CSV parser (see :class:`pyarrow.csv.ParseOptions`)
+            convert_options : Options for converting CSV data (see :class:`pyarrow.csv.ConvertOptions`)
+            kwds: extra keyword args to be passed to  :class:`pyarrow.parquet.ParquetFile`, :func:`pyarrow.parquet.iter_batches` and :class:`Module <progressivis.core.Module>` superclass
+        """
         super().__init__(**kwds)
         self.default_step_size = kwds.get("batch_size", 1000)  # initial guess
         kwds.setdefault("batch_size", self.default_step_size)
@@ -74,8 +86,8 @@ class ParquetLoader(BaseLoader):
 
         self._file_mode = False
         self._table_params: Dict[str, Any] = dict(name=self.name, fillvalues=fillvalues)
-        self._imputer = imputer
-        self._drop_na = drop_na
+        # self._imputer = imputer
+        # self._drop_na = drop_na
         self._columns: Optional[List[str]] = None
 
     def validate_parser(self, run_number: int) -> ModuleState:
@@ -194,13 +206,14 @@ class ParquetLoader(BaseLoader):
 
 
 parquet_docstring = (
-    "ParquetLoader("
+    "Parquet_Loader("
     + extract_params_docstring(ParquetLoader.__init__, only_defaults=True)
     + ",force_valid_ids=False,id=None,scheduler=None,tracer=None,predictor=None"
     + ",storage=None,input_descriptors=[],output_descriptors=[])"
 )
 try:
-    ParquetLoader.__init__.__func__.__doc__ = parquet_docstring  # type: ignore
+    if not ParquetLoader.doc_building():
+        ParquetLoader.__init__.__func__.__doc__ = parquet_docstring  # type: ignore
 except Exception:
     try:
         ParquetLoader.__init__.__doc__ = parquet_docstring

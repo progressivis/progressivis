@@ -114,7 +114,7 @@ class CSVLoader(Module):
             recovery_tag: customize save tags (useful mainly for debugging)
             recovery_table_size: defines the size of the recovery table (useful mainly for debugging),
             save_step_size: defines de number of rows to read between two context snapshots,
-            kwds: extra keyword args to be passed to :func:`pandas.read_csv`
+            kwds: extra keyword args to be passed to :func:`pandas.read_csv` and :class:`Module <progressivis.core.Module>` superclass
         """
         super(CSVLoader, self).__init__(**kwds)
         self.tags.add(self.TAG_SOURCE)

@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 
 from . import PTable, PTableSelectedView
-from ..core.module import Module, ReturnRunStep, def_input, def_output, def_parameter
+from ..core.module import Module, ReturnRunStep, def_input, def_output, def_parameter, document
 from ..core.utils import indices_len, fix_loc
 from ..core.pintset import PIntSet
 import numpy as np
@@ -13,8 +13,9 @@ from typing import Any
 logger = logging.getLogger(__name__)
 
 
-@def_parameter("expr", np.dtype(object), "unknown")
-@def_parameter("user_dict", np.dtype(object), None)
+@document
+@def_parameter("expr", np.dtype(object), "unknown", doc="a `numexpr <https://numexpr.readthedocs.io/en/latest/user_guide.html#supported-operators>`_ alike filtering expression")
+# @def_parameter("user_dict", np.dtype(object), None)
 @def_input("table", PTable)
 @def_output("result", PTableSelectedView)
 class FilterMod(Module):

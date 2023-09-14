@@ -12,7 +12,7 @@ from progressivis.core.module import (
 )
 from progressivis.core.pintset import PIntSet
 from progressivis.core.utils import indices_len
-from ..io import DynVar
+from ..io import Variable
 from ..utils.psdict import PDict
 from . import BasePTable, PTable, PTableSelectedView
 from .hist_index import HistogramIndex
@@ -253,11 +253,11 @@ class RangeQuery(Module):
             if min_value is None:
                 assert hasattr(min_, "result") or min_ is None
                 init_min = min_.result if min_ is not None else hist_index.min_out
-                min_value = DynVar(init_min, group=self.name, scheduler=scheduler)
+                min_value = Variable(init_min, group=self.name, scheduler=scheduler)
             if max_value is None:
                 assert hasattr(max_, "result") or max_ is None
                 init_max = max_.result if max_ is not None else hist_index.max_out
-                max_value = DynVar(init_max, group=self.name, scheduler=scheduler)
+                max_value = Variable(init_max, group=self.name, scheduler=scheduler)
             range_query = self
             range_query.dep.hist_index = hist_index
             range_query.input.hist = hist_index.output.result

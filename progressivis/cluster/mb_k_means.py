@@ -21,7 +21,7 @@ from ..core.module import Module
 from ..table.table_base import BasePTable
 from ..table import PTable, PTableSelectedView
 from ..table.dshape import dshape_from_dtype, dshape_from_columns
-from ..io import DynVar
+from ..io import Variable
 from ..utils.psdict import PDict
 from ..core.decorators import process_slot, run_if_any
 from ..table.filtermod import FilterMod
@@ -271,7 +271,7 @@ class MBKMeans(Module):
             self.input_module = input_module
             self.input.table = input_module.output[input_slot]
             self.input_slot = input_slot
-            c = DynVar(group=self.name, scheduler=s)
+            c = Variable(group=self.name, scheduler=s)
             self.dep.moved_center = c
             self.input.moved_center = c.output.result
             v = Var(group=self.name, scheduler=s)

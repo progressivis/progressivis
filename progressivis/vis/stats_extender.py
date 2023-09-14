@@ -9,7 +9,7 @@ from ..core.module import Module, def_input, def_output, ReturnRunStep
 from ..core.scheduler import Scheduler
 from ..table.range_query import RangeQuery
 from ..table.hist_index import HistogramIndex
-from ..io import DynVar
+from ..io import Variable
 from ..utils.psdict import PDict
 
 # from .var import OnlineVariance
@@ -270,8 +270,8 @@ class StatsExtender(Module):
                 self.dep.hist[col] = {}
                 h_col = self.dep.hist[col]  # shortcut
                 # dyn variables
-                h_col["lower"] = lower = DynVar({col: None}, scheduler=s)
-                h_col["upper"] = upper = DynVar({col: None}, scheduler=s)
+                h_col["lower"] = lower = Variable({col: None}, scheduler=s)
+                h_col["upper"] = upper = Variable({col: None}, scheduler=s)
                 # lower.column = col
                 # upper.column = col
                 h_col["range_query"] = range_query = RangeQueryIf(

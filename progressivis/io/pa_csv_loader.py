@@ -27,7 +27,7 @@ from typing import List, Dict, Any, Callable, Optional, Tuple, Union, TYPE_CHECK
 
 if TYPE_CHECKING:
     from ..core.module import ModuleState
-    from ..stats.utils import SimpleImputer
+    # from ..stats.utils import SimpleImputer
 
 logger = logging.getLogger(__name__)
 
@@ -49,14 +49,26 @@ class PACSVLoader(BaseLoader):
         force_valid_ids: bool = True,
         fillvalues: Optional[Dict[str, Any]] = None,
         throttle: Union[bool, int, float] = False,
-        imputer: Optional[SimpleImputer] = None,
+        # imputer: Optional[SimpleImputer] = None,
         read_options: Optional[pa.csv.ReadOptions] = None,
         parse_options: Optional[pa.csv.ParseOptions] = None,
         convert_options: Optional[pa.csv.ConvertOptions] = None,
         drop_na: Optional[bool] = True,
-        max_invalid_per_block: int = 100,
         **kwds: Any,
     ) -> None:
+        r"""
+         Args:
+            filepath_or_buffer: string, path object or file-like object accepted by :func:`pyarrow.csv.open_csv`
+            filter\_: filtering function to be applied on input data at loading time
+            force_valid_ids: force renaming of columns to make their names valid identifiers according to the `language definition  <https://docs.python.org/3/reference/lexical_analysis.html#identifiers>`_
+            fillvalues: the default values of the columns specified as a dictionary (see :class:`PTable <progressivis.table.PTable>`)
+            throttle: limit the number of rows to be loaded in a step
+            read_options: Options for the CSV reader (see :class:`pyarrow.csv.ReadOptions`)
+            parse_options : Options for the CSV parser (see :class:`pyarrow.csv.ParseOptions`)
+            convert_options : Options for converting CSV data (see :class:`pyarrow.csv.ConvertOptions`)
+            drop_na: drop rows containing non affected and/or invalid values                                  **NB:** invalid values are replaced by NA values and reported as invalid in ``anomalies`` output slot
+            kwds: extra keyword args to be passed to  :class:`Module <progressivis.core.Module>` superclass
+        """
         super().__init__(**kwds)
         self.default_step_size = kwds.get("chunksize", 1000)  # initial guess
         kwds.setdefault("chunksize", self.default_step_size)
@@ -78,9 +90,8 @@ class PACSVLoader(BaseLoader):
         self._filter: Optional[Callable[[pa.RecordBatch], pa.RecordBatch]] = filter_
         self._file_mode = False
         self._table_params: Dict[str, Any] = dict(name=self.name, fillvalues=fillvalues)
-        self._imputer = imputer
+        # self._imputer = imputer
         self._drop_na = drop_na
-        self._max_invalid_per_block = max_invalid_per_block
         self._columns: Optional[List[str]] = None
         self._last_signature: Optional[Union[pa.Schema, Dict[Any, Any]]] = None
 
@@ -106,6 +117,9 @@ class PACSVLoader(BaseLoader):
 
     def validate_parser(self, run_number: int) -> ModuleState:
         if self._parser_func is None:
+            if nn(self.filepath_or_buffer) and self.has_input_slot("filenames"):
+                raise ProgressiveError("'filepath_or_buffer' parameter and"
+                                       " 'filenames' slot cannot both be defined ")
             if nn(self.filepath_or_buffer):
                 try:
                     self._parser_func = partial(
@@ -356,7 +370,8 @@ csv_docstring = (
     + ",storage=None,input_descriptors=[],output_descriptors=[])"
 )
 try:
-    PACSVLoader.__init__.__func__.__doc__ = csv_docstring  # type: ignore
+    if not PACSVLoader.doc_building():
+        PACSVLoader.__init__.__func__.__doc__ = csv_docstring  # type: ignore
 except Exception:
     try:
         PACSVLoader.__init__.__doc__ = csv_docstring

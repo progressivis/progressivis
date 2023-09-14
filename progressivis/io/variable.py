@@ -1,61 +1,62 @@
 from __future__ import annotations
 
-import logging
-import copy
-
 from progressivis import ProgressiveError
-from progressivis.table.table import PTable
-from progressivis.table.constant import ConstDict
-from progressivis.utils.psdict import PDict
-from progressivis.core.module import def_input
-from typing import TYPE_CHECKING, Optional, Any
+from ..core.module import Module
+from progressivis.core.module import ReturnRunStep, JSon, def_output
+from ..utils.psdict import PDict
 
-if TYPE_CHECKING:
-    from progressivis.core.module import ReturnRunStep, JSon
-
-logger = logging.getLogger(__name__)
+from typing import Dict, Any, Optional
 
 
-@def_input("like", type=(PTable, PDict), required=False)
-class Variable(ConstDict):
-    def __init__(self, table: Optional[PDict] = None, **kwds: Any) -> None:
-        super(Variable, self).__init__(table, **kwds)
+@def_output("result", PDict)
+class Variable(Module):
+    def __init__(
+        self,
+        init_val: Optional[Dict[str, Any]] = None,
+        translation: Optional[Dict[str, Any]] = None,
+        **kwds: Any,
+    ) -> None:
+        super().__init__(**kwds)
         self.tags.add(self.TAG_INPUT)
+        self._has_input = False
+        if not (translation is None or isinstance(translation, dict)):
+            raise ProgressiveError("translation must be a dictionary")
+        self._translation = translation
+        if not (init_val is None or isinstance(init_val, dict)):
+            raise ProgressiveError("init_val must be a dictionary")
+        self.result = PDict({} if init_val is None else init_val)
 
-    async def from_input(self, input_: JSon) -> str:
-        if not isinstance(input_, dict):
-            raise ProgressiveError("Expecting a dictionary")
-        if self.result is None and self.get_input_slot("like") is None:
-            error = f"Variable {self.name} with no initial value and no input slot"
-            logger.error(error)
-            return error
-        if self.result is None:
-            error = f"Variable {self.name} has to run once before receiving input"
-            logger.error(error)
-            return error
-        last: PDict = copy.copy(self.result)
-        error = ""
-        for (k, v) in input_.items():
-            if k in last:
-                last[k] = v
-            else:
-                error += f"Invalid key {k} ignored. "
-        await self.scheduler().for_input(self)
-        self.result.update(last)
-        return error
+    def is_input(self) -> bool:
+        return True
+
+    def has_input(self) -> bool:
+        return self._has_input
 
     def run_step(
         self, run_number: int, step_size: int, howlong: float
     ) -> ReturnRunStep:
-        if self.result is None:
-            slot = self.get_input_slot("like")
-            if slot is not None:
-                like = slot.data()
-                if like is not None:
-                    if isinstance(like, PTable):
-                        last = like.last()
-                        assert last is not None
-                        like = last.to_dict(ordered=True)
-                    self.result = PDict(like)
-                    self._ignore_inputs = True
         return self._return_run_step(self.state_blocked, steps_run=1)
+
+    def predict_step_size(self, duration: float) -> int:
+        return 1
+
+    async def from_input(self, input_: JSon) -> str:
+        if not isinstance(input_, dict):
+            raise ProgressiveError("Expecting a dictionary")
+        last = PDict(self.result)  # shallow copy
+        values = input_
+        if self._translation is not None:
+            res = {}
+            for k, v in values.items():
+                for syn in self._translation[k]:
+                    res[syn] = v
+            values = res
+        for (k, v) in input_.items():
+            last[k] = v
+        await self.scheduler().for_input(self)
+        if self.result is None:
+            self.result = PDict(values)
+        else:
+            self.result.update(values)
+        self._has_input = True
+        return ""

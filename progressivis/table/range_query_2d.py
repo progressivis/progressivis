@@ -14,7 +14,7 @@ from ..core.module import (
 from ..core.pintset import PIntSet
 from ..core.utils import indices_len
 from ..utils.psdict import PDict
-from ..io import DynVar
+from ..io import Variable
 from .table_base import PTableSelectedView, BasePTable
 from .table import PTable
 from .hist_index import HistogramIndex
@@ -324,11 +324,11 @@ class RangeQuery2d(Module):
                 self.dep.hist_index = hist_index
                 hist_index.input.table = input_module.output[input_slot]
                 if min_value is None:
-                    min_value = DynVar(
+                    min_value = Variable(
                         hist_index.min_out, group=self.name, scheduler=scheduler
                     )
                 if max_value is None:
-                    max_value = DynVar(
+                    max_value = Variable(
                         hist_index.max_out, group=self.name, scheduler=scheduler
                     )
                 range_query = self

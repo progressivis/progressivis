@@ -77,16 +77,6 @@
 ```
 
 
-### Dynamic Variable Module
-
-```{eval-rst}
-.. currentmodule:: progressivis.io.dynvar
-
-.. autoclass:: DynVar
-   :members:
-   :exclude-members: run_step
-```
-
 ## Data Filtering Modules
 
 ### Bisect Query Module (via NumExpr)
@@ -121,6 +111,19 @@
    :members:
    :exclude-members: run_step
 ```
+Example:
+
+```{eval-rst}
+.. literalinclude:: ./example_filtermod.py
+```
+
+The underlying graph:
+
+```{eval-rst}
+.. progressivis_dot:: ./example_filtermod.py
+```
+
+
 
 ### The Range Query Module
 
