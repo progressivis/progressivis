@@ -55,13 +55,13 @@ class TestScatterPlot(ProgressiveTest):
             prt.input[0] = sp.output.result
 
         async def fake_input_1(scheduler: Scheduler, rn: int) -> None:
-            module = scheduler["dyn_var_1"]
-            print("from input dyn_var_1")
+            module = scheduler["variable_1"]
+            print("from input variable_1")
             await module.from_input({"x": LOWER_X, "y": LOWER_Y})
 
         async def fake_input_2(scheduler: Scheduler, rn: int) -> None:
-            module = scheduler["dyn_var_2"]
-            print("from input dyn_var_2")
+            module = scheduler["variable_2"]
+            print("from input variable_2")
             await module.from_input({"x": UPPER_X, "y": UPPER_Y})
         s.on_loop(self._stop, 10)
         s.on_loop(fake_input_1, 3)
