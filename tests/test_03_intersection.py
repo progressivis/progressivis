@@ -1,10 +1,9 @@
-from progressivis.table.table import PTable
-from progressivis.table.constant import Constant
+from progressivis.table.constant import ConstDict
 from progressivis import Print
 from progressivis.stats import RandomPTable
-from progressivis.table.bisectmod import Bisect
+from progressivis.table.simple_filter import SimpleFilter
 from progressivis.core.pintset import PIntSet
-from progressivis.table.hist_index import HistogramIndex
+from progressivis.utils.psdict import PDict
 from progressivis.table.intersection import Intersection
 from progressivis.table.stirrer import Stirrer
 from progressivis.core import aio
@@ -18,28 +17,24 @@ class TestIntersection(ProgressiveTest):
     def test_intersection(self) -> None:
         s = self.scheduler()
         random = RandomPTable(2, rows=100000, scheduler=s)
-        t_min = PTable(name=None, dshape="{_1: float64}", data={"_1": [0.3]})
-        min_value = Constant(table=t_min, scheduler=s)
-        t_max = PTable(name=None, dshape="{_1: float64}", data={"_1": [0.8]})
-        max_value = Constant(table=t_max, scheduler=s)
-        hist_index = HistogramIndex(columns=["_1"], scheduler=s)
-        hist_index.create_dependent_modules(random, "result")
-        bisect_min = Bisect(column="_1", op=">", hist_index=hist_index, scheduler=s)
-        bisect_min.input[0] = hist_index.output.result
-        bisect_min.input.limit = min_value.output.result
-        bisect_max = Bisect(column="_1", op="<", hist_index=hist_index, scheduler=s)
-        bisect_max.input[0] = hist_index.output.result
-        bisect_max.input.limit = max_value.output.result
+        min_value = ConstDict(pdict=PDict({"_1": 0.3}), scheduler=s)
+        max_value = ConstDict(pdict=PDict({"_1": 0.8}), scheduler=s)
+        filter_min = SimpleFilter(column="_1", op=">", scheduler=s)
+        filter_min.create_dependent_modules(random, "result")
+        filter_min.input.value = min_value.output.result
+        hist_index = filter_min.dep.hist_index  # sharing index between min and max
+        filter_max = SimpleFilter(column="_1", op="<", scheduler=s)
+        filter_max.create_dependent_modules(random, "result", hist_index=hist_index)
+        filter_max.input.value = max_value.output.result
         inter = Intersection(scheduler=s)
-        inter.input[0] = bisect_min.output.result
-        inter.input[0] = bisect_max.output.result
+        inter.input[0] = filter_min.output.result
+        inter.input[0] = filter_max.output.result
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = inter.output.result
         aio.run(s.start())
-        assert hist_index.input_module is not None
         assert inter.result is not None
         idx = (
-            hist_index.input_module.output["result"]
+            random.output["result"]
             .data()
             .eval("(_1>0.3)&(_1<0.8)", result_object="index")
         )
@@ -50,28 +45,24 @@ class TestIntersection(ProgressiveTest):
         random = RandomPTable(2, rows=100000, scheduler=s)
         stirrer = Stirrer(update_column="_2", fixed_step_size=1000, scheduler=s, **kw)
         stirrer.input[0] = random.output.result
-        t_min = PTable(name=None, dshape="{_1: float64}", data={"_1": [0.3]})
-        min_value = Constant(table=t_min, scheduler=s)
-        t_max = PTable(name=None, dshape="{_1: float64}", data={"_1": [0.8]})
-        max_value = Constant(table=t_max, scheduler=s)
-        hist_index = HistogramIndex(columns=["_1"], scheduler=s)
-        hist_index.create_dependent_modules(stirrer, "result")
-        bisect_min = Bisect(column="_1", op=">", hist_index=hist_index, scheduler=s)
-        bisect_min.input[0] = hist_index.output.result
-        bisect_min.input.limit = min_value.output.result
-        bisect_max = Bisect(column="_1", op="<", hist_index=hist_index, scheduler=s)
-        bisect_max.input[0] = hist_index.output.result
-        bisect_max.input.limit = max_value.output.result
+        min_value = ConstDict(pdict=PDict({"_1": 0.3}), scheduler=s)
+        max_value = ConstDict(pdict=PDict({"_1": 0.8}), scheduler=s)
+        filter_min = SimpleFilter(column="_1", op=">", scheduler=s)
+        filter_min.create_dependent_modules(stirrer, "result")
+        filter_min.input.value = min_value.output.result
+        hist_index = filter_min.dep.hist_index
+        filter_max = SimpleFilter(column="_1", op="<", scheduler=s)
+        filter_max.create_dependent_modules(stirrer, "result", hist_index=hist_index)
+        filter_max.input.value = max_value.output.result
         inter = Intersection(scheduler=s)
-        inter.input[0] = bisect_min.output.result
-        inter.input[0] = bisect_max.output.result
+        inter.input[0] = filter_min.output.result
+        inter.input[0] = filter_max.output.result
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = inter.output.result
         aio.run(s.start())
-        assert hist_index.input_module is not None
         assert inter.result is not None
         idx = (
-            hist_index.input_module.output["result"]
+            stirrer.output["result"]
             .data()
             .eval("(_1>0.3)&(_1<0.8)", result_object="index")
         )

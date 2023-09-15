@@ -2,20 +2,36 @@ from __future__ import annotations
 
 from progressivis import ProgressiveError
 from ..core.module import Module
-from progressivis.core.module import ReturnRunStep, JSon, def_output
+from progressivis.core.module import ReturnRunStep, JSon, def_output, document
 from ..utils.psdict import PDict
 
 from typing import Dict, Any, Optional
 
 
+@document
 @def_output("result", PDict)
 class Variable(Module):
+    """
+    this module allows external events (comming from widgets,
+    commands, etc.) to be taken into account
+    """
     def __init__(
         self,
         init_val: Optional[Dict[str, Any]] = None,
         translation: Optional[Dict[str, Any]] = None,
         **kwds: Any,
     ) -> None:
+        """
+        Args:
+            init_val: initial value for the ``result``
+            translation: sometimes dictionaries provided via ``from_input()`` could
+                contain multiple aliases for the same canonical key (e.g.
+                ``pickup_latitude`` and ``dropoff_latitude`` as aliases for ``latitude``)
+                . In order to fix that, ``translation`` should provide an alias-canonical
+                key mapping dictionary (e.g.
+                ``{'pickup_latitude': 'latitude', 'dropoff_latitude': 'latitude'}``)
+            kwds: extra keyword args to be passed to :class:`Module <progressivis.core.Module>` superclass
+        """
         super().__init__(**kwds)
         self.tags.add(self.TAG_INPUT)
         self._has_input = False
