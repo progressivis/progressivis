@@ -73,19 +73,19 @@
 
 .. autoclass:: Variable
    :members:
-   :exclude-members: run_step
+   :exclude-members: run_step, is_input, has_input
 ```
 
 
 ## Data Filtering Modules
 
-### Bisect Query Module (via NumExpr)
+### Simple Filtering Module (via NumExpr)
 
 
 ```{eval-rst}
-.. currentmodule:: progressivis.table.bisectmod
+.. currentmodule:: progressivis.table.simple_filter
 
-.. autoclass:: Bisect
+.. autoclass:: SimpleFilter
    :members:
    :exclude-members: run_step
 ```
