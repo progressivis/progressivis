@@ -15,7 +15,45 @@
 
 ## Dataflow Management
 
+Under the hood, a ProgressiVis program is a dataflow graph, stored in a Dataflow object.
+When creating or updating a program, a dataflow graph is updated and validated before it is run by the scheduler. There is a two-phase-commit cycle to make sure the currently running dataflow is not broken by an invalid modification.
+
+Once the dataflow is valid, it is run by the scheduler in a round-robin fashion.
+
 ### Scheduler
+
+
+```{eval-rst}
+.. currentmodule:: progressivis.core
+
+.. autoclass:: Scheduler
+   :members:
+   :exclude-members: __init__, new_run_number, start_impl, run, or_default, for_input, fix_quantum, time_left
+```
+
+### Dataflow
+
+To create or update a program, you need to get a `Dataflow` object. A scheduler is a context manager returning a `Dataflow`. Use it like this:
+```Python
+scheduler = Scheduler.default
+with scheduler as dataflow:
+    m = Max(name="max", scheduler=scheduler)
+    prt = Print(name="print_max", proc=proc, scheduler=scheduler)
+    m.input.table = table.output.result
+    prt.input.df = m.output.result
+    dataflow.delete_modules("min", "print_min")
+```
+This example creates and add two new modules (`max` and `print_max`) to the current `Dataflow` and removes two other modules (`min` and `print_min`).
+
+The context manager can succeed, updating the scheduler with the new dataflow, or fail, producing an error and not updating the scheduler.  In that case, the exception contains a structured error message explaining in human terms the problems.  Alternatively, the `Dataflow.validate()` method returns a list of errors (possibly empty) in the current `Dataflow` that can be fixed before the context manager fails.
+
+```{eval-rst}
+.. currentmodule:: progressivis.core.dataflow
+
+.. autoclass:: Dataflow
+   :members:
+   :exclude-members: __init__, generate_name, validate_module_inputs, validate_module_outputs, validate_module
+```
 
 ### Module
 
