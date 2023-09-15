@@ -74,9 +74,12 @@ class CallbackList(Dict[TickProc, int]):
 
 
 class Scheduler:
-    "Base Scheduler class, runs progressive modules"
+    "A Scheduler runs progressive modules"
     # pylint: disable=too-many-public-methods,too-many-instance-attributes
     default: "Scheduler"
+    """Default scheduler, used implicitly when not specified in
+    ProgressiVis methods"""
+
     _last_id: int = 0
 
     @classmethod

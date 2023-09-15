@@ -33,14 +33,15 @@ class Dataflow:
     constructed by the user to be run by a Scheduler.
 
     The contents of a Dataflow can be changed at any time without
-    interfering with the Scheduler. To update the Scheduler, it should
-    be validated and committed first.
+    interfering with the Scheduler. To update the Scheduler, the Dataflow
+    should be validated first then commited.
     """
 
     multiple_slots_name_generator = 1
 
     def __init__(self, scheduler: Scheduler):
-        self.scheduler = scheduler
+        self.scheduler: Scheduler = scheduler
+        """Scheduler associated with this Dataflow"""
         self._modules: Dict[str, Module] = {}
         self.inputs: Dict[str, Dict[str, Slot]] = {}
         self.outputs: Dict[str, Dict[str, List[Slot]]] = {}
