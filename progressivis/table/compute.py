@@ -261,7 +261,7 @@ class MultiColExpr(ColFunc):
     >>>
 
     """
-    base: list[str]  #: columns to be provided as inputs
+    base: list[str] = []  #: columns to be provided as inputs
     #: numexpr expression
     expr: str = ""
 
