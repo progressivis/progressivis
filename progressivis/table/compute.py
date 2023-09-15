@@ -35,10 +35,6 @@ class _Unchanged:
     pass
 
 
-def _null_op(a: Any, b: Any) -> Any:
-    pass
-
-
 UNCHANGED = _Unchanged()
 UBool = Union[_Unchanged, bool]
 Op = Callable[[Any, Any], Any]
@@ -128,7 +124,7 @@ class SingleColFunc(ColFunc):
     #: input column (existing column that will be passed as an argument to the function)
     base: str = ""  #: column(s) to be provided as input(s)
     #: function to be applied to the elements of the input column.
-    func: Op = _null_op
+    func: Callable[[Any], Any] = lambda a : a
 
     def _make_computed(self, index: Any, name: str, table_: "BasePTable") -> PColumnComputedView:
         from .column_base import BasePColumn
@@ -203,7 +199,7 @@ class MultiColFunc(ColFunc):
     #:
     #: * ``index`` is the index of the column
     #: * ``local_dict`` contains the input columns (the keys are the column names)
-    func: Callable[[Any, Any], Dict[str, Any]] = _null_op
+    func: Callable[[Any, Any], Dict[str, Any]] = lambda a, b: {}
 
     def _make_computed(self, index: Any, name: str, table_: "BasePTable") -> PColumnVFunc:
         self._computed_col = PColumnVFunc(
