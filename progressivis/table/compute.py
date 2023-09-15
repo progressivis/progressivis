@@ -64,8 +64,7 @@ def make_if_else(
 ComputedColumn = Union[PColumnComputedView, PColumnExpr, PColumnVFunc]
 
 
-# @dataclass(kw_only=True)
-@dataclass
+@dataclass(kw_only=True)
 class ColFunc:
     _computed_col: Optional[ComputedColumn] = field(default=None, init=False)
     base: Union[str, List[str]]  #: column(s) to be provided as input(s)
@@ -76,8 +75,7 @@ class ColFunc:
     dshape: Optional[DataShape] = None  #: column datashape as specified by the `datashape` library
 
 
-# @dataclass(kw_only=True)
-@dataclass
+@dataclass(kw_only=True)
 class SingleColFunc(ColFunc):
     """
     This class instances supply the information for constructing a computed table
@@ -146,8 +144,7 @@ class SingleColFunc(ColFunc):
         return self._computed_col
 
 
-# @dataclass(kw_only=True)
-@dataclass
+@dataclass(kw_only=True)
 class MultiColFunc(ColFunc):
     """
     This class instances supply the information for constructing a computed table
@@ -215,8 +212,7 @@ class MultiColFunc(ColFunc):
         return self._computed_col
 
 
-# @dataclass(kw_only=True)
-@dataclass
+@dataclass(kw_only=True)
 class MultiColExpr(ColFunc):
     """
     This class instances supply the information for constructing a computed table
