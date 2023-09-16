@@ -46,6 +46,9 @@ extensions = [
     "sphinx.ext.graphviz",
     # "sphinx_gallery.gen_gallery",
 ]
+
+myst_heading_anchors = 3  # Generate anchors in headers for hyperlinks
+
 """
 sphinx_gallery_conf = {
     "doc_module": "progressivis",

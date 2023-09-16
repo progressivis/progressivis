@@ -74,7 +74,9 @@ class CallbackList(Dict[TickProc, int]):
 
 
 class Scheduler:
-    "A Scheduler runs progressive modules"
+    """
+    A Scheduler runs progressive modules
+    """
     # pylint: disable=too-many-public-methods,too-many-instance-attributes
     default: "Scheduler"
     """Default scheduler, used implicitly when not specified in
@@ -676,7 +678,12 @@ class Scheduler:
         return [mod.name for mod in self.modules().values() if mod.group in nameset]
 
     def run_number(self) -> int:
-        "Return the last run number."
+        """
+        Return the last run number.
+
+        Each time a module is run by the scheduler, the `run_number` is incremented.
+
+        """
         return self._run_number
 
     def _ipython_key_completions_(self) -> List[str]:

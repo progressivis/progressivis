@@ -132,7 +132,13 @@ class Dependency:
 
 
 class Module(metaclass=ABCMeta):
-    """The Module class is the base class for all the progressive modules."""
+    """
+    Base Class for ``progressivis`` modules.
+
+    .. warning::
+        Do not instanciate this class directly!
+
+    """
 
     parameters: Parameters = [
         ("quantum", np.dtype(float), 0.5),

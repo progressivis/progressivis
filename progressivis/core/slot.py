@@ -190,7 +190,7 @@ class Slot:
         return 1
 
     def last_update(self) -> int:
-        "Return the time of the last update for thie slot"
+        "Return the run_number of the last update for this slot"
         assert self.input_module is not None
         if self.changes:
             return self.changes.last_update()

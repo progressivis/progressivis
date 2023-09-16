@@ -40,7 +40,7 @@ To create or update a program, you need to get a `Dataflow` object. A scheduler 
 scheduler = Scheduler.default
 with scheduler as dataflow:
     m = Max(name="max", scheduler=scheduler)
-    prt = Print(name="print_max", proc=proc, scheduler=scheduler)
+    prt = Print(name="print_max", scheduler=scheduler)
     m.input.table = table.output.result
     prt.input.df = m.output.result
     dataflow.delete_modules("min", "print_min")
@@ -59,7 +59,13 @@ The context manager can succeed, updating the scheduler with the new dataflow, o
 
 ### Module
 
-A Module is the equivalent of a function in a regular language. It provides a set of functionalities: connection, validation, execution, control, naming, tagging, and interaction.
+A `Module` is used as a function in a regular language. It provides a set of functionalities:
+- connection,
+- validation,
+- execution,
+- control,
+- naming, tagging, and
+- interaction.
 
 The `Module` class is an abstract base class and cannot be instantiated. All the concrete modules inherits from this class.
 
@@ -71,11 +77,32 @@ The `Module` class is an abstract base class and cannot be instantiated. All the
    :exclude-members: __new__, __init__, create_slot, connect_output, prepare_run, cleanup_run, ending, pretty_typename
 ```
 
+#### Connection and Validation
+
+After modules are created, they should be connected. As shown in the previous example,
+the syntax is:
+```{code-block}
+:linenos:
+m = Max(name="max", scheduler=scheduler)
+prt = Print(name="print_max", scheduler=scheduler)
+m.input.table = table.output.result
+prt.input.df = m.output.result
+```
+
+Here, on line 3, the input slot called `table` from the module `m` (the `max` module) is
+connected to the output slot called `result` from the module `table` (its creation is not shown in the example). On line 4, the input slot `df` of `prt` (the `print_max` module) is connected to the output slot `result` of the `m` module.
+
+Slot names are checked at creation time: you cannot refer to the name
+a slot that is not declared in the module.  Slots are typed, and the
+types are checked at validation time. Also some slots are required and
+others are optional. Their existence is also checked at validation
+time.
+
 #### Name, Groups and Tags
 
 Each module has a unique name, belongs to one group, and can have multiple tags associated with it. A name, group name, and tag name are simply strings.
 
-At creation, a module is given a name, either explicitly if provided in the constructor, or automatically if not provided. This name is guaranteed to remain unique in a scheduler. If a name provided at creation time is already used, the creation throws an exception and the module is not created.
+At creation, a module is given a name, either explicitly if provided in the constructor (as in the example above, with names `max` and `print_max`), or automatically if not provided. This name is guaranteed to remain unique in a scheduler. If a name provided at creation time is already used, the creation throws an exception and the module is not created.
 
 A group is also a string, associated with a module at creation time. It is used when several modules are created to work together and should terminate together. A group name can be specified at creation time either in the constructor or using the `Module.grouped` context manager to associate the group name of a specified module to a set of newly created modules:
 ```Python
@@ -91,12 +118,25 @@ Tags are used to add a simple attribute to a module. Any string can be used as t
 
 ### Connections (Slots)
 
+Internally, the connection between and input slot and an output slot is materialized with a `Slot` object. Each slot is typed to make sure an input slot is compatible with the output slots it connects to. At run time, slots carry data with the specified type.  There are four main types of progressive data that can be used in slots, as described in [](#progressive-data-structures).
+
+Slots are also used by modules to know what changed in the data structures since the last time they were run, using the three `ChangeBuffer` attributes `created`, `updated`, and `deleted`.  Change management is described in detail in the next sections.
+
+```{eval-rst}
+.. currentmodule:: progressivis.core.slot
+
+.. autoclass:: Slot
+   :members:
+   :exclude-members: __init__, __str__, __repr__, __eq__, __neq__, connect
+```
+
 
 ### Change Management
 
+Modules are run multiple times for a limited amount of time to perform their computation.  In between two runs, their input data can be changed by other modules upwards in the dataflow.
+Under the hood, `ProgressiVis` tracks what changes from one run to the next in the progressive data structures carried by slots.  To simplify this change management, each data structure is considered as an indexed collection, with indices ranging from 0 to the length of the data structure. It means that these data structures are indexed with a main axis.  The information regarding the changes are limited to new `created` entries at specified indices, `deleted` entries at specified indices, and `updated` entries at specified indices. For the updated entries, the old values are not kept (so far).
 
-
-### Interaction
+Therefore, when a module runs, it can access its input data through the input slots, and can see what has changed since the last run. It can then decide to act according to the changes.  For details, see the [Custom Modules](./custom_modules.md#custom-modules) section.
 
 ## Progressive Data Structures
 
@@ -109,11 +149,18 @@ ProgressiVis relies mainly on four specially designed data types:
 
 These data types are instrumented to keep track of the changes happening between two consecutive module runs.
 
+### Interaction
+
 ### Tables and views
 
 
-Progressive tables:
+One of the most important progressive data structure in `ProgressiVis` is the `Table`. It is similar to Pandas `DataFrame`, with several differences though, sometimes due to the progressive nature of the table, sometimes by design, and sometimes by lack of time to provide an interface as extensive as pandas.
 
+Contrary to a pandas DataFrame, a `PTable` can grow and shrink efficiently. For progressive operations such as progressively loading a table from a file and computing derived values from a table progressively loaded.
+
+Tables come into two main concrete classes: `PTable` and `PTableSelectedView`.
+
+`ProgressiVis` has been designed with user interaction in mind. It supports efficient dynamic filtering of large data tables to restrict the visualization or analyses to subsets of the loaded data. A `PTableSelectedView` is simply a `PTable` filtered by a `PIntSet`.  It is used in many places, either for user filtering or for synchronizing multiple data structures to the same set of valid indices.
 
 ```{eval-rst}
 .. currentmodule:: progressivis.table
@@ -132,6 +179,22 @@ Progressive tables:
 .. autoclass:: PTableSelectedView
    :members:
 ```
+#### Columns
+
+A table is a collection of named and typed columns.  In a table, all the columns have the same length and all the elements in a column have the same type.
+
+```{eval-rst}
+.. currentmodule:: progressivis.table
+
+.. autoclass:: BasePColumn
+   :inherited-members:
+   :exclude-members: __init__
+
+.. autoclass:: PColumn
+   :members:
+
+```
+
 
 #### Computed columns
 

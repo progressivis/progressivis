@@ -1,6 +1,7 @@
 # Progressivis
 
 [![Python Tests](https://github.com/progressivis/progressivis/actions/workflows/python.yml/badge.svg?branch=master&event=push)](https://github.com/progressivis/progressivis/actions/workflows/python.yml)
+[![Documentation Status](https://readthedocs.org/projects/progressivis/badge/?version=latest)](https://progressivis.readthedocs.io/en/latest/?badge=latest)
 
 ProgressiVis is a Python toolkit and scientific workflow system that
 implements a new [programming
