@@ -22,9 +22,11 @@ Once the dataflow is valid, it is run by the scheduler in a round-robin fashion.
 
 ### Scheduler
 
+The `Scheduler` is in charge of running a ProgressiVis program, made of a sorted list of modules.
+
 
 ```{eval-rst}
-.. currentmodule:: progressivis.core
+.. currentmodule:: progressivis.core.scheduler
 
 .. autoclass:: Scheduler
    :members:
@@ -56,6 +58,36 @@ The context manager can succeed, updating the scheduler with the new dataflow, o
 ```
 
 ### Module
+
+A Module is the equivalent of a function in a regular language. It provides a set of functionalities: connection, validation, execution, control, naming, tagging, and interaction.
+
+The `Module` class is an abstract base class and cannot be instantiated. All the concrete modules inherits from this class.
+
+```{eval-rst}
+.. currentmodule:: progressivis.core.module
+
+.. autoclass:: Module
+   :members:
+   :exclude-members: __new__, __init__, create_slot, connect_output, prepare_run, cleanup_run, ending, pretty_typename
+```
+
+#### Name, Groups and Tags
+
+Each module has a unique name, belongs to one group, and can have multiple tags associated with it. A name, group name, and tag name are simply strings.
+
+At creation, a module is given a name, either explicitly if provided in the constructor, or automatically if not provided. This name is guaranteed to remain unique in a scheduler. If a name provided at creation time is already used, the creation throws an exception and the module is not created.
+
+A group is also a string, associated with a module at creation time. It is used when several modules are created to work together and should terminate together. A group name can be specified at creation time either in the constructor or using the `Module.grouped` context manager to associate the group name of a specified module to a set of newly created modules:
+```Python
+scheduler = Scheduler.default
+mymainmodule = ...
+with mymainmodule.grouped():
+    m = Max(name="max", scheduler=scheduler)
+    prt = Print(name="print_max", proc=proc, scheduler=scheduler)
+    ...
+```
+
+Tags are used to add a simple attribute to a module. Any string can be used as tag, but a few are reserved to specify particular aspects of a module: `VISUALIZATION`, `INPUT`, `SOURCE`, `GREEDY`, `DEPENDENT`.
 
 ### Connections (Slots)
 

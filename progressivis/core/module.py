@@ -138,13 +138,19 @@ class Module(metaclass=ABCMeta):
         ("quantum", np.dtype(float), 0.5),
         ("debug", np.dtype(bool), False),
     ]
+    """ list of parameters managed by modules of this class """
     TRACE_SLOT = "_trace"
     PARAMETERS_SLOT = "_params"
     TAG_VISUALIZATION = "visualization"
+    """ Tag attached to modules managing a visualization """
     TAG_INPUT = "input"
+    """ Tag attached to input modules """
     TAG_SOURCE = "source"
+    """ Tag attached to source modules """
     TAG_GREEDY = "greedy"
+    """ Tag attached to greedy modules """
     TAG_DEPENDENT = "dependent"
+    """ Tag attached to dependent modules """
     inputs = [SlotDescriptor(PARAMETERS_SLOT, type=BasePTable, required=False)]
     outputs = [SlotDescriptor(TRACE_SLOT, type=BasePTable, required=False)]
     output_attrs: Dict[str, str] = {}
@@ -208,9 +214,11 @@ class Module(metaclass=ABCMeta):
                 "module already exists in scheduler," " delete it first"
             )
         self.name = name  # need to set the name so exception can remove it
+        """ The module's name """
         predictor = TimePredictor.default()
         predictor.name = name
         self.predictor = predictor
+        """ The Time Predictor used by this module """
         storage = StorageManager.default
         self.storage = storage
         if storagegroup is None:
@@ -219,9 +227,12 @@ class Module(metaclass=ABCMeta):
         self.storagegroup: Group = storagegroup
         tracer = Tracer.default(name, storagegroup)
 
-        self.tags = set(ModuleTag.tags)
+        self.tags : Set[str] = set(ModuleTag.tags)
+        """ The set oftags attached to this module """
         self.order: int = -1
+        """ The order of this module in the scheduler, or -1 if not valid """
         self.group: Optional[str] = group or GroupContext.group
+        """ The group this module belongs to """
         self.tracer = tracer
         self._start_time: float = 0
         self._end_time: float = 0
@@ -250,8 +261,11 @@ class Module(metaclass=ABCMeta):
             d.name: d for d in output_descriptors
         }
         self.default_step_size: int = 100
+        """ step size used by default when running this module for the first time """
         self.input = InputSlots(self)
+        """ input slots are created and accessed through this write-only attribute """
         self.output = OutputSlots(self)
+        """ output slots are created and accessed through this read-only attribute """
         self.steps_acc: int = 0
         # self.wait_expr = aio.FIRST_COMPLETED
         self.context: Optional[_Context] = None
@@ -445,7 +459,7 @@ class Module(metaclass=ABCMeta):
 
     def get_quality(self) -> float:
         # pylint: disable=no-self-use
-        """Quality value, should increase."""
+        """Quality value, should increase when the quality increases."""
         return 0.0
 
     # @staticmethod
