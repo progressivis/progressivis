@@ -218,6 +218,8 @@ To create a computed column, you need to instantiate an object of class [](Singl
 
 ### The PDict class
 
+Progressive dictionaries are used as dictionaries with their changes tracked.
+
 ```{eval-rst}
 .. currentmodule:: progressivis.utils.psdict
 
@@ -227,6 +229,7 @@ To create a computed column, you need to instantiate an object of class [](Singl
 
 ### The PIntSet class
 
+A PIntSet is a set of integer values implemented efficiently. They are used in many places in `ProgressiVis`, e.g., for indexing tables and for representing masks inside a `PTableSelectedView`.
 
 ```{eval-rst}
 .. currentmodule:: progressivis.core.pintset
