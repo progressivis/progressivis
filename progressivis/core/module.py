@@ -1014,30 +1014,36 @@ class Module(metaclass=ABCMeta):
         assert self.state != self.state_running
 
     def on_start_run(self, proc: ModuleProc) -> None:
+        "Register a callback to call when the module starts to run"
         assert callable(proc)
         self._start_run.append(proc)
 
     def remove_start_run(self, proc: ModuleProc) -> None:
+        "Remove the specified start_run callback"
         self._start_run.remove(proc)
 
     async def start_run(self, run_number: int) -> bool:
         return await self._start_run.fire(self, run_number)
 
     def on_after_run(self, proc: ModuleProc) -> None:
+        "Register a callback to call when the module finishes to run"
         assert callable(proc)
         self._after_run.append(proc)
 
     def remove_after_run(self, proc: ModuleProc) -> None:
+        "Remove the specified after_run callback"
         self._after_run.remove(proc)
 
     async def after_run(self, run_number: int) -> bool:
         return await self._after_run.fire(self, run_number)
 
     def on_ending(self, proc: ModuleCb) -> None:
+        "Register a callback to call when the module ends"
         assert callable(proc) and not aio.iscoroutinefunction(proc)
         self._ending.append(proc)
 
     def remove_ending(self, proc: ModuleCb) -> None:
+        "Remove the specified ending callback"
         self._ending.remove(proc)
 
     def do_ending(self, run_number: int) -> None:
@@ -1079,11 +1085,13 @@ class Module(metaclass=ABCMeta):
         raise NotImplementedError("Updating parameters not implemented yet")
 
     def current_params(self) -> Row:
+        "Return the current parameters"
         last = self._params.last()
         assert last is not None
         return last
 
     def set_current_params(self, v: Dict[str, Any]) -> Dict[str, Any]:
+        "Change the current parameters"
         current = self.current_params()
         combined = dict(current)
         combined.update(v)

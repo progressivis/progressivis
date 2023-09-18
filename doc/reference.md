@@ -74,7 +74,7 @@ The `Module` class is an abstract base class and cannot be instantiated. All the
 
 .. autoclass:: Module
    :members:
-   :exclude-members: __new__, __init__, create_slot, connect_output, prepare_run, cleanup_run, ending, pretty_typename
+   :exclude-members: __new__, __init__, create_slot, connect_output, prepare_run, cleanup_run, ending, pretty_typename, start, terminate
 ```
 
 #### Connection and Validation
@@ -115,6 +115,24 @@ with mymainmodule.grouped():
 ```
 
 Tags are used to add a simple attribute to a module. Any string can be used as tag, but a few are reserved to specify particular aspects of a module: `VISUALIZATION`, `INPUT`, `SOURCE`, `GREEDY`, `DEPENDENT`.
+
+### Execution
+
+TODO
+
+#### Control
+
+Callbacks:
+```Python
+ModuleProc = Callable[["Module", int], None]
+```
+
+`on_start_run`, `on_after_run`, `on_ending`
+
+
+TODO
+
+
 
 ### Connections (Slots)
 
