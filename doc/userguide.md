@@ -2,8 +2,8 @@
 
 
 **ProgressiVis** is a language and system implementing **progressive data analysis and visualization**.
-If you are familiar with asynchronous programming or real time programming, you will be familiar with the need to follow strict disciplines to make sure a system is not blocked. ProgressiVis is also designed so that it never runs functions that take an unbounded amount of time, such as loading a large file from the network until completion.
-In a traditional computation system, you don't worry much about the time taken when calling a function; loading a large file over the network is the price to pay for having it loaded and starting computations over its contents. In a progressive system, meant to be used interactively, when a function takes too long to complete, the user waits, get bored, and her attention drops.  ProgressiVis is designed to avoid this attention drop.
+If you are familiar with asynchronous programming or real time programming, you will be familiar with the need to follow strict disciplines to make sure a system is not blocked. `ProgressiVis` is also designed so that it never runs functions that take an unbounded amount of time, such as loading a large file from the network until completion.
+In a traditional computation system, you don't worry much about the time taken when calling a function; loading a large file over the network is the price to pay for having it loaded and starting computations over its contents. In a progressive system, meant to be used interactively, when a function takes too long to complete, the user waits, get bored, and her attention drops.  `ProgressiVis` is designed to avoid this attention drop.
 
 ## Key concepts
 
@@ -38,7 +38,7 @@ This dataset used in this example is a sample of the real one; it is only 1000 l
 
 ## Progressive Visualization
 
-With ProgressiVis, you could also load the data and fix it, but you don't need to wait for the file to be loaded to visualize it, you can do it on the go:
+With `ProgressiVis`, you could also load the data and fix it, but you don't need to wait for the file to be loaded to visualize it, you can do it on the go:
 
 ```python
 import progressivis as pv
@@ -54,7 +54,7 @@ csv.start()
 
 ## Main Components
 
-In ProgressiVis, a program is run by a `Scheduler`. Only one instance of `Scheduler` exists (except tests). A progressive program is internally represented as a dataflow of progressive modules (simply called **modules** in this documentation). The dataflow is a directed network with no cycle (a directed acyclic graph or DAG).
+In `ProgressiVis`, a program is run by a `Scheduler`. Only one instance of `Scheduler` exists (except tests). A progressive program is internally represented as a dataflow of progressive modules (simply called **modules** in this documentation). The dataflow is a directed network with no cycle (a directed acyclic graph or DAG).
 
 A `Module` represents the equivalent of a function in a progressive
 program.  It is made of input and output slots; one output slot of a
@@ -68,7 +68,7 @@ Most progressive program is composed of existing modules, created with specific 
 
 ## Running a Progressive Program
 
-The easiest environment to run progressive programs is the JupyterLab notebook. ProgressiVis comes with specified widgets, visualizations, and mechanisms to navigate a notebook in a non-linear way to follow the progression of modules.
+The easiest environment to run progressive programs is the JupyterLab notebook. `ProgressiVis` comes with specified widgets, visualizations, and mechanisms to navigate a notebook in a non-linear way to follow the progression of modules.
 
 Alternatively, progressive programs can be run in a _headless_ environment. We also provide an experimental setup to run them behind a web server to create progressive applications without a notebook. This setup is experimental and should be extended in the future.
 
