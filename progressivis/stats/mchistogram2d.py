@@ -209,47 +209,52 @@ class MCHistogram2D(Module):
         elif dfslot.selection.deleted.any() and self._histo is not None:
             input_df = dfslot.data().base  # the original table
             # we assume that deletions are only local to the view
-            raw_indices = dfslot.deleted.next(length=step_size)
+            raw_indices = dfslot.deleted.next(length=step_size, as_slice=False)
             # and the related records still exist in the original table ...
             # TODO : test this hypothesis and reset if false
             indices = fix_loc(raw_indices)
-            steps += indices_len(indices)
             x = input_df.to_array(locs=indices, columns=[self.x_column]).reshape(-1)
             y = input_df.to_array(locs=indices, columns=[self.y_column]).reshape(-1)
+            assert len(x) == len(y)
             bins = [p.ybins, p.xbins]
             if len(x) > 0:
                 histo = histogram2d(y, x, bins=bins, range=[[ymin, ymax], [xmin, xmax]])
+                assert self._histo is not None
                 self._histo -= histo
+                steps += indices_len(indices)
         # if there are new creations, build a partial histogram with them then
         # add it to the main histogram
         if not dfslot.created.any():
-            return self._return_run_step(self.state_blocked, steps_run=0)
-        input_df = dfslot.data()
-        raw_indices = dfslot.created.next(length=step_size)
-        indices = fix_loc(raw_indices)
-        steps += indices_len(indices)
-        logger.info("Read %d rows", steps)
-        self.total_read += steps
-        x = input_df.to_array(locs=indices, columns=[self.x_column]).reshape(-1)
-        y = input_df.to_array(locs=indices, columns=[self.y_column]).reshape(-1)
-
-        bins = [p.ybins, p.xbins]
-        if len(x) > 0:
-            # using fast_histogram
-            histo = histogram2d(y, x, bins=bins, range=[[ymin, ymax], [xmin, xmax]])
+            if not steps:  # i.e. no deletions
+                return self._return_run_step(self.state_blocked, steps_run=0)
         else:
-            # histo = None
-            # cmax = 0
-            return self._return_run_step(self.state_blocked, steps_run=0)
-        if self._histo is None:
-            self._histo = histo
-        elif histo is not None:
-            self._histo += histo
-
+            input_df = dfslot.data()
+            raw_indices = dfslot.created.next(length=step_size, as_slice=False)
+            indices = fix_loc(raw_indices)
+            steps += indices_len(indices)
+            logger.info("Read %d rows", steps)
+            self.total_read += steps
+            x = input_df.to_array(locs=indices, columns=[self.x_column]).reshape(-1)
+            y = input_df.to_array(locs=indices, columns=[self.y_column]).reshape(-1)
+            assert len(x) == len(y)
+            bins = [p.ybins, p.xbins]
+            if len(x) > 0:
+                # using fast_histogram
+                histo = histogram2d(y, x, bins=bins, range=[[ymin, ymax], [xmin, xmax]])
+            elif not steps:
+                # histo = None
+                # cmax = 0
+                return self._return_run_step(self.state_blocked, steps_run=0)
+            if self._histo is None:
+                self._histo = histo
+            elif histo is not None:
+                self._histo += histo
         if self._histo is not None:
             cmax = self._histo.max()
+        else:
+            return self._return_run_step(self.state_blocked, steps_run=0)
         values = {
-            "array": np.flip(self._histo, axis=0),  # type: ignore
+            "array": np.flip(self._histo, axis=0),
             "cmin": 0,
             "cmax": cmax,
             "xmin": xmin,
