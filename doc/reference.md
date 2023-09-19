@@ -75,11 +75,35 @@ The `Module` class is an abstract base class and cannot be instantiated. All the
 .. autoclass:: Module
    :members:
    :exclude-members: __new__, __init__, create_slot, connect_output, prepare_run, cleanup_run, ending, pretty_typename, start, terminate
+
 ```
 
 #### Connection and Validation
 
-After modules are created, they should be connected. As shown in the previous example,
+When declaring a new module, its input slots, output slots, and parameters can be declared using three decorators: `@def_input`, `@def_output`, and `@def_parameter`.
+
+```{eval-rst}
+.. currentmodule:: progressivis.core.module
+
+.. autodecorator:: def_input
+
+.. autodecorator:: def_output
+
+.. autodecorator:: def_parameter
+```
+
+
+For example, a new module can be declared like this:
+```{code-block}
+@def_parameter("history", np.dtype(int), 3)
+@def_input("filenames", PTable, required=False, doc=FILENAMES_DOC)
+@def_output("result", PTable, doc=RESULT_DOC)
+class CSVLoader(Module):
+  ...
+```
+
+
+Once a module is created, it should be connected to other modules. As shown in a previous example,
 the syntax is:
 ```{code-block}
 :linenos:

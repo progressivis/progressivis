@@ -1013,6 +1013,7 @@ class Module(metaclass=ABCMeta):
         self._start_time = 0
         assert self.state != self.state_running
 
+    # TODO: rename to on_before_run
     def on_start_run(self, proc: ModuleProc) -> None:
         "Register a callback to call when the module starts to run"
         assert callable(proc)
@@ -1424,7 +1425,7 @@ def def_parameter(
     name: str, type: Any, value: Any, *, doc: str = ""
 ) -> Callable[[Type[Module]], Type[Module]]:
     """
-    class decorator
+    class decorator to declare a parameter
     """
 
     def module_decorator(module: Type[Module]) -> Type[Module]:
@@ -1446,7 +1447,7 @@ def def_input(
     name: str, type: Any = None, *, doc: str = "", **kw: Any
 ) -> Callable[[Type[Module]], Type[Module]]:
     """
-    class decorator
+    class decorator to declare an input slot
     """
 
     def module_decorator(module: Type[Module]) -> Type[Module]:
@@ -1522,7 +1523,7 @@ def def_output(
     **kw: Any,
 ) -> Callable[[Type[Module]], Type[Module]]:
     """
-    class decorator
+    class decorator to declare an output slot
     """
     if attr_name is None:
         attr_name = name
