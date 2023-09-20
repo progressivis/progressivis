@@ -1426,6 +1426,17 @@ def def_parameter(
 ) -> Callable[[Type[Module]], Type[Module]]:
     """
     class decorator to declare a parameter
+
+    Parameters
+    ----------
+    name:
+        the parameter name
+    type:
+        the parameter type
+    value:
+        a default value for the parameter
+    doc:
+        an optional docstring
     """
 
     def module_decorator(module: Type[Module]) -> Type[Module]:
@@ -1448,6 +1459,15 @@ def def_input(
 ) -> Callable[[Type[Module]], Type[Module]]:
     """
     class decorator to declare an input slot
+
+    Parameters
+    ----------
+    name:
+        the slot name
+    type:
+        the slot type
+    doc:
+        a docstring
     """
 
     def module_decorator(module: Type[Module]) -> Type[Module]:
@@ -1524,6 +1544,19 @@ def def_output(
 ) -> Callable[[Type[Module]], Type[Module]]:
     """
     class decorator to declare an output slot
+
+    Parameters
+    ----------
+    name:
+        the slot name
+    type:
+        the slot type
+    attr_name:
+        optional name to access the value of the data of this slot from the module
+    custom_attr:
+        TODO
+    doc:
+        a docstring
     """
     if attr_name is None:
         attr_name = name
