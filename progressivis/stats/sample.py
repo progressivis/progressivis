@@ -17,7 +17,7 @@ from progressivis.core.module import (
     def_input,
     def_output,
     def_parameter,
-    document
+    document,
 )
 from ..core.pintset import PIntSet
 from ..table import PTable
@@ -42,9 +42,15 @@ def has_len(d: object) -> bool:
     "select", type=PIntSet, attr_name="pintset", custom_attr=True, required=False
 )
 class Sample(Module):
-    """ """
+    """
+    Reservoir Sampling module
+    """
 
     def __init__(self, required: str = "result", **kwds: Any) -> None:
+        """
+        Args:
+            required: ``{"result"|"select"}`` when required == ``select`` the ``select`` output is mandatory
+        """
         assert required in ("result", "select")
         super(Sample, self).__init__(output_required=(required == "result"), **kwds)
         if required == "select":

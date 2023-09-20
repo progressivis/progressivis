@@ -8,26 +8,46 @@ import logging
 
 import numpy as np
 
-from ..core.module import Module, ReturnRunStep, def_input, def_output, def_parameter
+from ..core.module import (
+    Module,
+    ReturnRunStep,
+    def_input,
+    def_output,
+    def_parameter,
+    PColumns,
+    document,
+)
 from ..core.utils import indices_len, fix_loc
 from ..table.table import PTable
 from ..core.decorators import process_slot, run_if_any
 
-from typing import Any
+from typing import Optional, Any
 
 
 logger = logging.getLogger(__name__)
 
 
-@def_parameter("history", np.dtype(int), 3)
-@def_input("table", type=PTable)
-@def_output("min", PTable, attr_name="_min", required=False)
-@def_output("result", PTable)
+@document
+@def_parameter(
+    "history",
+    np.dtype(int),
+    33,
+    doc=("then number of successive results" " to be kept"),
+)
+@def_input("table", type=PTable, doc="the input table")
+@def_output(
+    "min", PTable, attr_name="_min", required=False, doc="minimum values output table"
+)
+@def_output("result", PTable, doc="indices in the input table of the minimum values")
 class IdxMin(Module):
     """ """
 
-    def __init__(self, **kwds: Any) -> None:
-        super(IdxMin, self).__init__(**kwds)
+    def __init__(
+        self,
+        columns: Optional[PColumns] = None,  # not in kwds only for sphinx
+        **kwds: Any,
+    ) -> None:
+        super().__init__(columns=columns, **kwds)
         self.default_step_size = 10000
 
     def is_ready(self) -> bool:

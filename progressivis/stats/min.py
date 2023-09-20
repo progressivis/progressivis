@@ -6,7 +6,7 @@ import numpy as np
 
 from ..core.utils import indices_len, fix_loc
 from ..core.pintset import PIntSet
-from ..core.module import ReturnRunStep, def_input, def_output
+from ..core.module import ReturnRunStep, def_input, def_output, PColumns, document
 from ..core.module import Module
 from ..table.table import PTable
 from ..core.slot import Slot
@@ -25,11 +25,29 @@ def _min_func(x: Any, y: Any) -> Any:
         return min(x, y)
 
 
-@def_input("table", PTable)
-@def_output("result", PDict)
+@document
+@def_input("table", PTable, doc="the input table")
+@def_output(
+    "result",
+    PDict,
+    doc=("minimum values dictionary where every key represents" " a column"),
+)
 class Min(Module):
-    def __init__(self, **kwds: Any) -> None:
-        super().__init__(**kwds)
+    """
+    Computes the minimum of the values for every column
+    """
+
+    def __init__(
+        self,
+        columns: Optional[PColumns] = None,  # not in kwds only for sphinx
+        **kwds: Any,
+    ) -> None:
+        """
+        Args:
+            columns: columns to be processed. When missing all input columns are processed
+            kwds: extra keyword args to be passed to the ``Module`` superclass
+        """
+        super().__init__(columns=columns, **kwds)
         self.default_step_size = 10000
 
     def is_ready(self) -> bool:
@@ -56,7 +74,6 @@ class Min(Module):
             if self.result is None:
                 self.result = PDict(op)
             else:
-
                 for k, v in self.result.items():
                     self.result[k] = _min_func(op[k], v)
             return self._return_run_step(self.next_state(ctx.table), steps)

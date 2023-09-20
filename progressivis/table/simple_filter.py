@@ -5,7 +5,14 @@ from progressivis.core.utils import indices_len
 import numpy as np
 
 from . import BasePTable, PTable, PTableSelectedView
-from ..core.module import Module, ReturnRunStep, def_input, def_output, def_parameter
+from ..core.module import (
+    Module,
+    ReturnRunStep,
+    def_input,
+    def_output,
+    def_parameter,
+    document,
+)
 from ..core.pintset import PIntSet
 from ..utils.psdict import PDict
 from .binop import ops
@@ -68,10 +75,14 @@ class SimpleFilterImpl:
             return
         if updated:
             self.result.remove(updated)
-            res = self._hist_index.restricted_query(self._column, self._op, value, updated)
+            res = self._hist_index.restricted_query(
+                self._column, self._op, value, updated
+            )
             self.result.add(res)  # add not defined???
         if created:
-            res = self._hist_index.restricted_query(self._column, self._op, value, created)
+            res = self._hist_index.restricted_query(
+                self._column, self._op, value, created
+            )
             self.result.update(res)
         if deleted:
             self.result.remove(deleted)
@@ -91,14 +102,29 @@ class SimpleFilterImpl:
         self.resume(value, value_changed, created, updated, deleted)
 
 
-@def_parameter("column", np.dtype(object), "unknown", doc="filtering column (left op.)")
-@def_parameter("op", np.dtype(object), ">", doc="relational operator (i.e. '>', '>=', '<', '<=')")
+@document
+@def_parameter(
+    "column",
+    np.dtype(object),
+    "unknown",
+    doc="filtering column (condition's" " left operand)",
+)
+@def_parameter(
+    "op", np.dtype(object), ">", doc="relational operator (i.e. '>', '>=', '<', '<=')"
+)
 @def_parameter("value_key", np.dtype(object), "", doc="see ``value`` input below")
 @def_input("table", PTable, required=True, doc="input table or view")
-@def_input("value", PDict, required=True, doc=("contains the condition's right operand."
-                                               "if ``value_key`` is provided the right"
-                                               " operand  is ``value['value_key']`` else"
-                                               " the first value in the dict is used"))
+@def_input(
+    "value",
+    PDict,
+    required=True,
+    doc=(
+        "contains the condition's right operand."
+        "if ``value_key`` is provided the right"
+        " operand  is ``value['value_key']`` else"
+        " the first value in the dict is used"
+    ),
+)
 @def_input(
     "hist",
     PTable,
@@ -115,6 +141,7 @@ class SimpleFilter(Module):
      ``<column> <operator> <value>`` where
      ``<operator := '>' | '>=' | '<' | '<='``
     """
+
     def __init__(self, **kwds: Any) -> None:
         super().__init__(**kwds)
         self._impl: Optional[SimpleFilterImpl] = None
@@ -129,8 +156,13 @@ class SimpleFilter(Module):
         **kwds: Any,
     ) -> SimpleFilter:
         """
-        Creates a default configuration. If ``hist_index`` is ``None`` an
-         ``HistogramIndex`` is created
+        Creates a default configuration.
+
+        Args:
+            input_module: the input module (see the example)
+            input_slot: the input slot name (e.g. ``result``)
+            hist_index: optional histogrem index. if not provided an
+            ``HistogramIndex`` is created
         """
         if self.input_module is not None:  # test if already called
             return self
@@ -154,7 +186,9 @@ class SimpleFilter(Module):
         self, run_number: int, step_size: int, howlong: float
     ) -> ReturnRunStep:
         if self._impl is None:
-            self._impl = SimpleFilterImpl(self.params.column, self.params.op, self.dep.hist_index)
+            self._impl = SimpleFilterImpl(
+                self.params.column, self.params.op, self.dep.hist_index
+            )
         input_slot = self.get_input_slot("table")
         # input_slot.update(run_number)
         steps = 0

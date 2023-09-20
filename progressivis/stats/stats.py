@@ -4,7 +4,13 @@ import logging
 
 import numpy as np
 
-from progressivis.core.module import ReturnRunStep, def_input, def_output, def_parameter
+from progressivis.core.module import (
+    ReturnRunStep,
+    def_input,
+    def_output,
+    def_parameter,
+    document,
+)
 from progressivis.core.utils import indices_len, fix_loc, get_random_name
 from progressivis.core.module import Module
 from progressivis.table.table import PTable
@@ -18,10 +24,19 @@ from typing import Optional, Any, Union
 logger = logging.getLogger(__name__)
 
 
-@def_input("table", PTable)
-@def_parameter("history", np.dtype(int), 3)
-@def_output("result", PTable)
+@document
+@def_input("table", PTable, doc="the input table")
+@def_parameter(
+    "history", np.dtype(int), 3, doc=("then number of successive results" " to be kept")
+)
+@def_output(
+    "result", PTable, doc="result table conaining twi columns for min and ma value"
+)
 class Stats(Module):
+    """
+    Computes the minimum and the maximum of the values for a single column
+    """
+
     def __init__(
         self,
         column: Union[str, int],
@@ -30,6 +45,14 @@ class Stats(Module):
         reset_index: bool = False,
         **kwds: Any,
     ) -> None:
+        """
+        Args:
+            column: the name or the position of the column to be processed
+            min_column: the name of the minimum column in the ``result`` table.
+                When missing, the given name is ``_<column>_min``
+            man_column: the name of the maximum column in the ``result`` table.
+                When missing, the given name is ``_<column>_max``
+        """
         super(Stats, self).__init__(**kwds)
         self._column = column
         self.default_step_size = 10000

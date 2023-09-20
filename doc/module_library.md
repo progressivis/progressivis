@@ -4,6 +4,8 @@
 
 ### Simple CSV Loader
 
+
+
 ```{eval-rst}
 
 .. currentmodule:: progressivis.io.simple_csv_loader
@@ -44,8 +46,9 @@
    :members:
    :exclude-members: run_step
 ```
-
-
+<!---
+progressivis.io.input.Input
+--->
 ### Constant Module
 
 ```{eval-rst}
@@ -79,7 +82,7 @@
 
 ## Data Filtering Modules
 
-### Simple Filtering Module (via NumExpr)
+### Simple Filtering Module
 
 
 ```{eval-rst}
@@ -189,7 +192,10 @@ Like previous query modules `CategoricalQuery` is not self-sufficient. Use the `
 ```{eval-rst}
 .. progressivis_dot:: ./example_categorical_range.py
 ```
-
+<!---
+table.select.Select: Vue sur un PTable avec un select: bitmap
+table.liteselect.LiteSelect: même chose avec une vue en sortie. devrait s'appeler selectview
+--->
 
 ## Indexing Modules
 
@@ -265,7 +271,72 @@ Like previous query modules `CategoricalQuery` is not self-sufficient. Use the `
    :exclude-members: run_step
 ```
 
+## Set and Flow Control Operations
+
+<!---
+table.intersection.Intersection:
+table.hub.Hub: ...
+table.pattern.Pattern:
+table.merge_dict.MergeDict:
+table.paste.Paste:
+table.switch.Switch:
+table.merge.Merge:
+--->
+
+
+
 ## Statistical Modules
+
+
+### Max
+
+```{eval-rst}
+.. currentmodule:: progressivis.stats.max
+
+.. autoclass:: Max
+   :members:
+   :exclude-members: run_step, is_ready, reset
+```
+
+### IdxMax
+
+```{eval-rst}
+.. currentmodule:: progressivis.stats.idxmax
+
+.. autoclass:: IdxMax
+   :members:
+   :exclude-members: run_step, is_ready, reset, parameters
+```
+
+### Min
+
+```{eval-rst}
+.. currentmodule:: progressivis.stats.min
+
+.. autoclass:: Min
+   :members:
+   :exclude-members: run_step, is_ready, reset
+```
+
+### IdxMin
+
+```{eval-rst}
+.. currentmodule:: progressivis.stats.idxmin
+
+.. autoclass:: IdxMin
+   :members:
+   :exclude-members: run_step, is_ready, reset, parameters
+```
+### Stats
+
+```{eval-rst}
+.. currentmodule:: progressivis.stats.stats
+
+.. autoclass:: Stats
+   :members:
+   :exclude-members: run_step, is_ready, reset, parameters
+```
+
 
 ### Sample
 
@@ -274,7 +345,83 @@ Like previous query modules `CategoricalQuery` is not self-sufficient. Use the `
 
 .. autoclass:: Sample
    :members:
-   :exclude-members: run_step
+   :exclude-members: run_step, parameters
 ```
 
+<!---
+stats.mchistogram2d.MCHistogram2D:
+stats.scaling.MinMaxScaler:
+stats.histogram1d.Histogram1D:
+stats.max.ScalarMax:
+stats.var.VarH:
+stats.var.Var:
+stats.cxxmax.Max:
+stats.blobs_table.BlobsPTableABC:
+stats.kernel_density.KernelDensity:
+stats.histogram1d_categorical.Histogram1DCategorical:
+stats.distinct.Distinct:
+stats.correlation.Corr:
+stats.counter.Counter:
+stats.percentiles.Percentiles:
+stats.random_table.RandomPTable:
+stats.kll.KLLSketch:
+stats.min.ScalarMin:
+stats.ppca.PPCA:
+stats.ppca.PPCATransformer:
+stats.histogram2d.Histogram2D:
+table.percentiles.Percentiles:
+--->
+
+## Clustering Modules
+
+<!---
+cluster.mb_k_means.MBKMeans:
+cluster.mb_k_means.MBKMeansFilter:
+
+--->
+
+
 ## Linear Algebra Modules
+
+<---
+linalg.mixufunc.MixUfuncABC:
+linalg.elementwise.Unary:
+linalg.elementwise.ColsBinary:
+linalg.elementwise.Binary:
+linalg.elementwise.Reduce:
+linalg.nexpr.NumExprABC:
+linalg.linear_map.LinearMap:
+--->
+
+## Visualisation
+
+<!---
+vis.heatmap.Heatmap:
+vis.stats_factory.DataShape:
+vis.stats_factory.StatsFactory:
+vis.histograms.Histograms:
+vis.stats_extender.StatsExtender:
+vis.mcscatterplot.MCScatterPlot:
+--->
+
+## Utility
+
+<!---
+core.wait.Wait:
+core.module.Every:
+core.sink.Sink:
+table.wait_for_data.WaitForData:
+table.stirrer.Stirrer:
+table.stirrer.StirrerView:
+
+--->
+
+## Format Adaptors
+
+<!---
+table.repeater.Repeater: Vue sur PTable pour ajouter des cols calculés
+table.reduce.Reduce: ???
+table.dict2table.Dict2PTable:
+table.last_row.LastRow:
+table.combine_first.CombineFirst: paste table ???
+--->
