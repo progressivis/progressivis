@@ -1543,7 +1543,10 @@ def def_output(
     **kw: Any,
 ) -> Callable[[Type[Module]], Type[Module]]:
     """
-    class decorator to declare an output slot
+    Class decorator to declare an output slot.
+    An output is always associated with an underlying attribute on the current module.
+    This attribute contains the value of the data of this slot from the module.
+    By default this attribute is created by the decorator and it's name is the slot name.
 
     Parameters
     ----------
@@ -1552,9 +1555,13 @@ def def_output(
     type:
         the slot type
     attr_name:
-        optional name to access the value of the data of this slot from the module
+        optional name for the slot underlying attribute. When missing, the attribute name
+        is the slot name. This is useful, for example, to avoid a naming conflict.
     custom_attr:
-        TODO
+        when ``True`` the underlying slot attribute is ``not`` created by the decorator.
+        In this case the creation of the attribute is the responsibility of the module
+        constructor. This is useful, for example, when the attribute requires special
+        initialization.
     doc:
         a docstring
     """
