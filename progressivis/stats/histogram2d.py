@@ -7,6 +7,7 @@ from ..core.module import (
     def_input,
     def_output,
     def_parameter,
+    document,
 )
 from ..core.utils import indices_len, fix_loc
 from ..core.slot import Slot
@@ -26,17 +27,49 @@ Bounds2D = Tuple[float, float, float, float]
 logger = logging.getLogger(__name__)
 
 
-@def_parameter("xbins", np.dtype(int), 256)
-@def_parameter("ybins", np.dtype(int), 256)
-@def_parameter("xdelta", np.dtype(float), -5)
-@def_parameter("ydelta", np.dtype(float), -5)
+@document
+@def_parameter(
+    "xbins",
+    np.dtype(int),
+    256,
+    doc="the number of ``bins`` (as defined for {{Histogram1D}}) over the ``x`` axis",
+)
+@def_parameter(
+    "ybins",
+    np.dtype(int),
+    256,
+    doc="the number of ``bins`` (as defined for {{Histogram1D}}) over the ``y`` axis",
+)
+@def_parameter(
+    "xdelta",
+    np.dtype(float),
+    -5,
+    doc="the ``delta`` threshold (as defined for {{Histogram1D}}) over the ``x`` axis",
+)
+@def_parameter(
+    "ydelta",
+    np.dtype(float),
+    -5,
+    doc="the ``delta`` threshold (as defined for {{Histogram1D}}) over the ``y`` axis",
+)
 @def_parameter("history", np.dtype(int), 3)
-@def_input("table", PTable)
-@def_input("min", PDict)
-@def_input("max", PDict)
-@def_output("result", PTable)
+@def_input("table", PTable, doc="the input table")
+@def_input(
+    "min",
+    PDict,
+    doc="The minimum value in the input data. It could be provided by a {{Min}} module",
+)
+@def_input(
+    "max",
+    PDict,
+    doc="The maximum value in the input data. It could be provided by a {{Max}} module",
+)
+@def_output("result", PTable, doc="the output table")
 class Histogram2D(Module):
-    """ """
+    """
+    Compute the 2D histogram of two scalar, numerical columns in the input table.
+    These two columns are referred to as ``x_column`` and ``y_column`` here.
+    """
 
     schema = (
         "{"
@@ -58,7 +91,13 @@ class Histogram2D(Module):
         with_output: bool = True,
         **kwds: Any,
     ) -> None:
-        super(Histogram2D, self).__init__(dataframe_slot="table", **kwds)
+        """
+        Args:
+            x_column: the name or the position of the ``x`` axis column to be processed
+            y_column: the name or the position of the ``y`` axis column to be processed
+            kwds: extra keyword args to be passed to the ``Module`` superclass
+        """
+        super().__init__(dataframe_slot="table", **kwds)
         self.tags.add(self.TAG_VISUALIZATION)
         self.x_column = x_column
         self.y_column = y_column

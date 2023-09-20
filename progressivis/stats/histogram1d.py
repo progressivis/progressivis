@@ -1,6 +1,13 @@
 from __future__ import annotations
 
-from ..core.module import JSon, ReturnRunStep, def_input, def_output, def_parameter
+from ..core.module import (
+    JSon,
+    ReturnRunStep,
+    def_input,
+    def_output,
+    def_parameter,
+    document,
+)
 from ..core.utils import indices_len, fix_loc, integer_types
 from ..core.slot import Slot
 from ..core.module import Module
@@ -17,19 +24,59 @@ from typing import Union, Optional, Tuple, Dict, Any
 logger = logging.getLogger(__name__)
 
 
-@def_parameter("bins", np.dtype(int), 128)
-@def_parameter("delta", np.dtype(float), -5)
-@def_input("table", PTable)
-@def_input("min", PDict)
-@def_input("max", PDict)
-@def_output("result", PTable)
+@document
+@def_parameter(
+    "bins",
+    np.dtype(int),
+    128,
+    doc=(
+        "the number of equal-width bins in the range given by the min/max inputs"
+        "interval"
+    ),
+)
+@def_parameter(
+    "delta",
+    np.dtype(float),
+    -5,
+    doc=(
+        "tolerance threshold for variations in the min/max values at which the bounds "
+        "are changed. Negative values represent %, positive values are absolute"
+    ),
+)
+@def_input("table", PTable, doc="the input table")
+@def_input(
+    "min",
+    PDict,
+    doc="The minimum value in the input data. It could be provided by a {{Min}} module",
+)
+@def_input(
+    "max",
+    PDict,
+    doc="The maximum value in the input data. It could be provided by a {{Max}} module",
+)
+@def_output(
+    "result",
+    PTable,
+    doc=(
+        "the output table. Its datashape is"
+        " ``{ array: var * int32, min: float64, max: float64, time: int64 }``"
+    ),
+)
 class Histogram1D(Module):
-    """ """
+    """
+    Compute the histogram of a scalar, numerical column in the input table
+    """
 
     schema = "{ array: var * int32, min: float64, max: float64, time: int64 }"
 
     def __init__(self, column: Union[int, str], **kwds: Any) -> None:
-        super(Histogram1D, self).__init__(dataframe_slot="table", **kwds)
+        """
+        Args:
+            column: the name or the position of the column to be processed
+            kwds: extra keyword args to be passed to the ``Module`` superclass
+        """
+
+        super().__init__(dataframe_slot="table", **kwds)
         self.tags.add(self.TAG_VISUALIZATION)
         self.column = column
         self.total_read = 0

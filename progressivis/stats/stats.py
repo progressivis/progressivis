@@ -27,10 +27,10 @@ logger = logging.getLogger(__name__)
 @document
 @def_input("table", PTable, doc="the input table")
 @def_parameter(
-    "history", np.dtype(int), 3, doc=("then number of successive results" " to be kept")
+    "history", np.dtype(int), 3, doc=("then number of successive results to be kept")
 )
 @def_output(
-    "result", PTable, doc="result table conaining twi columns for min and ma value"
+    "result", PTable, doc="result table containing two columns (for min and max value)"
 )
 class Stats(Module):
     """
@@ -52,6 +52,7 @@ class Stats(Module):
                 When missing, the given name is ``_<column>_min``
             man_column: the name of the maximum column in the ``result`` table.
                 When missing, the given name is ``_<column>_max``
+            kwds: extra keyword args to be passed to the ``Module`` superclass
         """
         super(Stats, self).__init__(**kwds)
         self._column = column

@@ -30,11 +30,11 @@ def _max_func(x: Any, y: Any) -> Any:
 @def_output(
     "result",
     PDict,
-    doc=("maximum values dictionary where every key represents" " a column"),
+    doc=("maximum values dictionary where every key represents a column"),
 )
 class Max(Module):
     """
-    Computes the maximum of the values for every column
+    Computes the maximum of the values for every column of an input table.
     """
 
     def __init__(

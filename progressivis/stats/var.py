@@ -4,7 +4,15 @@ import logging
 
 import numpy as np
 
-from ..core.module import Module, ReturnRunStep, def_input, def_output, def_parameter
+from ..core.module import (
+    Module,
+    ReturnRunStep,
+    def_input,
+    def_output,
+    def_parameter,
+    PColumns,
+    document,
+)
 from ..core.utils import indices_len, fix_loc
 from ..core.slot import Slot
 from ..core.decorators import process_slot, run_if_any
@@ -13,24 +21,34 @@ from ..table.table import PTable
 from ..table.dshape import dshape_all_dtype
 from ..utils.psdict import PDict
 from .utils import OnlineVariance
-from typing import Dict, TYPE_CHECKING, Any
-
-if TYPE_CHECKING:
-    from progressivis.core.module import PColumns
+from typing import Dict, Any, Optional
 
 logger = logging.getLogger(__name__)
 
 
-@def_input("table", PTable)
-@def_parameter("history", np.dtype(int), 3)
-@def_output("result", PTable)
+@document
+@def_input("table", PTable, doc="the input table")
+@def_parameter(
+    "history", np.dtype(int), 3, doc=("then number of successive results to be kept")
+)
+@def_output("result", PTable, doc="result table")
 class VarH(Module):
     """
     Compute the variance of the columns of an input table.
+    This variant keeps history
     """
 
-    def __init__(self, **kwds: Any) -> None:
-        super().__init__(dataframe_slot="table", **kwds)
+    def __init__(
+        self,
+        columns: Optional[PColumns] = None,  # not in kwds only for sphinx
+        **kwds: Any,
+    ) -> None:
+        """
+        Args:
+            columns: columns to be processed. When missing all input columns are processed
+            kwds: extra keyword args to be passed to the ``Module`` superclass
+        """
+        super().__init__(dataframe_slot="table", columns=columns, **kwds)
         self._data: Dict[str, OnlineVariance] = {}
         self.default_step_size = 1000
 
@@ -81,16 +99,32 @@ class VarH(Module):
             return self._return_run_step(self.next_state(dfslot), steps)
 
 
-@def_input("table", PTable)
-@def_output("result", PDict)
+@document
+@def_input("table", PTable, doc="the input table")
+@def_output(
+    "result",
+    PDict,
+    doc=("variances dictionary where every key represents a column"),
+)
 class Var(Module):
     """
-    Compute the variance of the columns of an input table.
-    This variant didn't keep history
+    Computes the variance for every columns of an input table.
     """
 
-    def __init__(self, ignore_string_cols: bool = False, **kwds: Any) -> None:
-        super().__init__(dataframe_slot="table", **kwds)
+    def __init__(
+        self,
+        ignore_string_cols: bool = False,
+        columns: Optional[PColumns] = None,  # not in kwds only for sphinx
+        **kwds: Any,
+    ) -> None:
+        """
+        Args:
+            ignore_string_cols: silently ignore ``str`` columns if ``True``
+                (else raise an exception)
+            columns: columns to be processed. When missing all input columns are processed
+            kwds: extra keyword args to be passed to the ``Module`` superclass
+        """
+        super().__init__(dataframe_slot="table", columns=columns, **kwds)
         self._data: Dict[str, OnlineVariance] = {}
         self._ignore_string_cols: bool = ignore_string_cols
         self._num_cols: PColumns = None

@@ -2,10 +2,9 @@ from __future__ import annotations
 
 import logging
 
-import numpy as np
 import pandas as pd
 
-from ..core.module import ReturnRunStep, def_input, def_output, def_parameter
+from ..core.module import ReturnRunStep, def_input, def_output, document
 from ..core.utils import indices_len, fix_loc
 from ..core.module import Module
 from ..table.table import PTable
@@ -19,16 +18,24 @@ from typing import Any, Union
 logger = logging.getLogger(__name__)
 
 
-@def_parameter("bins", np.dtype(int), 128)
-@def_parameter("delta", np.dtype(float), -5)
-@def_input("table", PTable)
-@def_output("result", PDict)
+@document
+@def_input("table", PTable, doc="the input table")
+@def_output(
+    "result",
+    PDict,
+    doc="occurence counters dictionary where every key represents a categorical value",
+)
 class Histogram1DCategorical(Module):
-    """ """
-
-    schema = "{ array: var * int32, min: float64, max: float64, time: int64 }"
+    """
+    Compute the histogram (i.e. the bar chart) of a categorical column in the input table
+    """
 
     def __init__(self, column: Union[str, int], **kwds: Any) -> None:
+        """
+        Args:
+            column: the name or the position of the column to be processed
+            kwds: extra keyword args to be passed to the ``Module`` superclass
+        """
         super().__init__(dataframe_slot="table", **kwds)
         self.column = column
         self.total_read = 0

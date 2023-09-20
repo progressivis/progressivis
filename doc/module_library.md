@@ -287,8 +287,30 @@ table.merge.Merge:
 
 ## Statistical Modules
 
+### Histograms
 
-### Max
+```{eval-rst}
+.. currentmodule:: progressivis.stats.histogram1d
+
+.. autoclass:: Histogram1D
+   :members:
+   :exclude-members: run_step, is_ready, reset, parameters
+
+.. currentmodule:: progressivis.stats.histogram2d
+
+.. autoclass:: Histogram2D
+   :members:
+   :exclude-members: run_step, is_ready, reset, parameters
+
+.. currentmodule:: progressivis.stats.histogram1d_categorical
+
+.. autoclass:: Histogram1DCategorical
+   :members:
+   :exclude-members: run_step, is_ready, reset, parameters
+```
+
+
+### Max / IdxMax
 
 ```{eval-rst}
 .. currentmodule:: progressivis.stats.max
@@ -296,11 +318,7 @@ table.merge.Merge:
 .. autoclass:: Max
    :members:
    :exclude-members: run_step, is_ready, reset
-```
 
-### IdxMax
-
-```{eval-rst}
 .. currentmodule:: progressivis.stats.idxmax
 
 .. autoclass:: IdxMax
@@ -308,7 +326,7 @@ table.merge.Merge:
    :exclude-members: run_step, is_ready, reset, parameters
 ```
 
-### Min
+### Min / IdxMin
 
 ```{eval-rst}
 .. currentmodule:: progressivis.stats.min
@@ -316,11 +334,7 @@ table.merge.Merge:
 .. autoclass:: Min
    :members:
    :exclude-members: run_step, is_ready, reset
-```
 
-### IdxMin
-
-```{eval-rst}
 .. currentmodule:: progressivis.stats.idxmin
 
 .. autoclass:: IdxMin
@@ -348,13 +362,28 @@ table.merge.Merge:
    :exclude-members: run_step, parameters
 ```
 
+### Variance
+
+```{eval-rst}
+.. currentmodule:: progressivis.stats.var
+
+.. autoclass:: Var
+   :members:
+   :exclude-members: run_step, parameters
+
+.. autoclass:: VarH
+   :members:
+   :exclude-members: run_step, parameters
+```
+
+
+
 <!---
 stats.mchistogram2d.MCHistogram2D:
 stats.scaling.MinMaxScaler:
 stats.histogram1d.Histogram1D:
 stats.max.ScalarMax:
-stats.var.VarH:
-stats.var.Var:
+
 stats.cxxmax.Max:
 stats.blobs_table.BlobsPTableABC:
 stats.kernel_density.KernelDensity:
@@ -383,7 +412,7 @@ cluster.mb_k_means.MBKMeansFilter:
 
 ## Linear Algebra Modules
 
-<---
+<!---
 linalg.mixufunc.MixUfuncABC:
 linalg.elementwise.Unary:
 linalg.elementwise.ColsBinary:
