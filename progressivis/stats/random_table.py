@@ -8,7 +8,7 @@ import logging
 
 import numpy as np
 
-from ..core.module import ReturnRunStep, def_output
+from ..core.module import ReturnRunStep, def_output, document
 from ..core.utils import integer_types
 from ..utils.errors import ProgressiveError, ProgressiveStopIteration
 from ..core.module import Module
@@ -16,27 +16,41 @@ from ..table.table import PTable
 from ..table.constant import ConstDict
 from ..utils.psdict import PDict
 
-from typing import List, Dict, Union, Any, Callable
+from typing import Dict, Union, Any, Callable, Sequence
 
 logger = logging.getLogger(__name__)
 
 RAND = np.random.rand
 
 
-@def_output("result", PTable)
+@document
+@def_output("result", PTable, doc="result table")
 class RandomPTable(Module):
-    "Random table generator module"
-
+    """
+    Random table generator module
+    """
     def __init__(
         self,
-        columns: Union[int, List[str], np.ndarray[Any, Any]],
+        columns: Union[int, Sequence[str]],
         rows: int = -1,
         random: Callable[..., np.ndarray[Any, Any]] = RAND,
         dtype: str = "float64",
         throttle: Union[int, np.integer[Any], float, bool] = False,
         **kwds: Any,
     ) -> None:
-        super(RandomPTable, self).__init__(**kwds)
+        """
+        Args:
+            columns: columns definition:
+
+                * if it is an ``int`` it provides the number (**n**) of columns named ``_1`` ... ``_n``
+                * else it provides sequence of column names
+            rows: if positive  (= **n**) stops generation after ``n`` rows else unbounded
+            random: ``numpy`` random function, default is :func:`numpy.random.rand`
+            dtype: ``numpy`` alike data type
+            throttle: limit the number of rows to be generated in a step
+            kwds: extra keyword args to be passed to the ``Module`` superclass
+        """
+        super().__init__(**kwds)
         self.tags.add(self.TAG_SOURCE)
         self.default_step_size = 1000
         if isinstance(columns, integer_types):

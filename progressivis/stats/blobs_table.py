@@ -14,12 +14,13 @@ from ..core.module import Module
 from ..table.table import PTable
 from ..table.dshape import dshape_from_dtype
 from ..core.utils import integer_types
-from ..core.module import def_output
+from ..core.module import def_output, document
 from sklearn.datasets import make_blobs  # type: ignore
 from sklearn.utils import shuffle as multi_shuffle  # type: ignore
 
 from typing import Optional, Tuple, Any, List, Dict, Union, Callable, TypeVar
 import numpy.typing as npt
+
 T = TypeVar("T", bound=npt.NBitBase)
 
 logger = logging.getLogger(__name__)
@@ -63,7 +64,8 @@ def xy_to_dict(
 @def_output("result", type=PTable)
 @def_output("labels", type=PTable, required=False)
 class BlobsPTableABC(Module):
-    """Isotropic Gaussian blobs => table
+    """
+    Isotropic Gaussian blobs => table
     The purpose of the "reservoir" approach is to ensure the reproducibility of the results
     """
 
@@ -186,13 +188,41 @@ class BlobsPTableABC(Module):
         return self._return_run_step(next_state, steps_run=step_size)
 
 
+@document
 class BlobsPTable(BlobsPTableABC):
+    """
+    Isotropic Gaussian blobs table generator based on :func:`sklearn.datasets.make_blobs`
+    function
+    """
+
     kw_fun = make_blobs
 
-    def __init__(self, *args: Any, **kwds: Any) -> None:
-        # import pdb;pdb.set_trace()
-        super().__init__(*args, **kwds)
-        self.centers = kwds.pop("centers")
+    def __init__(
+        self,
+        columns: Union[int, List[str], np.ndarray[Any, Any]],
+        rows: int = -1,
+        dtype: str = "float64",
+        seed: int = 0,
+        throttle: Union[int, bool, float] = False,
+        *,
+        centers: Any,
+        **kwds: Any,
+    ) -> None:
+        """
+        Args:
+            columns: columns definition:
+
+                * if it is an ``int`` it provides the number (**n**) of columns named ``_1`` ... ``_n``
+                * else it provides sequence of column names
+            rows: if positive  (= **n**) stops generation after ``n`` rows else unbounded
+            dtype: ``numpy`` alike data type
+            seed: used to initialize the random number generator
+            throttle: limit the number of rows to be generated in a step
+            centers: number of centers to generate, or the fixed center locations
+            kwds: : extra keyword args to be passed to :func:`sklearn.datasets.make_blobs`
+        """
+        super().__init__(columns, rows, dtype, seed, throttle, **kwds)
+        self.centers = centers
         # assert 'centers' in self._kwds
         assert "n_samples" not in self._kwds
         assert "n_features" not in self._kwds
@@ -210,13 +240,46 @@ class BlobsPTable(BlobsPTableABC):
         self._reservoir_idx = 0
 
 
+@document
 class MVBlobsPTable(BlobsPTableABC):
+    """
+    The multivariate normal distribution blobs table generator based on
+    :func:`numpy.random.multivariate_normal` function
+    """
+
     kw_fun = make_mv_blobs
 
-    def __init__(self, *args: Any, **kwds: Any) -> None:
-        super().__init__(*args, **kwds)
-        self.means = kwds["means"]
-        self.covs = kwds["covs"]
+    def __init__(
+        self,
+        columns: Union[int, List[str], np.ndarray[Any, Any]],
+        rows: int = -1,
+        dtype: str = "float64",
+        seed: int = 0,
+        throttle: Union[int, bool, float] = False,
+        *,
+        means: Any,
+        covs: Any,
+        **kwds: Any,
+    ) -> None:
+        """
+        Args:
+            columns: columns definition:
+
+                * if it is an ``int`` it provides the number (**n**) of columns named ``_1`` ... ``_n``
+                * else it provides sequence of column names
+            rows: if positive  (= **n**) stops generation after ``n`` rows else unbounded
+            dtype: ``numpy`` alike data type
+            seed: used to initialize the random number generator
+            throttle: limit the number of rows to be generated in a step
+            means: sequence of 1-D array_like of length N for N-dimensional blobs
+            covs: sequence of 2-D array_like, of shape (N, N) representing covariance
+                matrix of the distribution for N-dimensional blobs
+            kwds: extra keyword args to be passed to
+                :func:`numpy.random.multivariate_normal`
+        """
+        super().__init__(columns, rows, dtype, seed, throttle, **kwds)
+        self.means = means
+        self.covs = covs
 
     def fill_reservoir(self) -> None:
         np.random.seed(self.seed)

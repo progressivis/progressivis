@@ -341,6 +341,29 @@ table.merge.Merge:
    :members:
    :exclude-members: run_step, is_ready, reset, parameters
 ```
+
+### Random sampling
+
+```{eval-rst}
+.. currentmodule:: progressivis.stats.random_table
+
+.. autoclass:: RandomPTable
+   :members:
+   :exclude-members: run_step, is_ready, reset, parameters
+```
+```{eval-rst}
+.. currentmodule:: progressivis.stats.blobs_table
+
+.. autoclass:: BlobsPTable
+   :members:
+   :exclude-members: run_step, is_ready, reset, parameters, kw_fun
+
+.. autoclass:: MVBlobsPTable
+   :members:
+   :exclude-members: run_step, is_ready, reset, parameters, kw_fun
+```
+
+
 ### Stats
 
 ```{eval-rst}
@@ -381,23 +404,18 @@ table.merge.Merge:
 <!---
 stats.mchistogram2d.MCHistogram2D:
 stats.scaling.MinMaxScaler:
-stats.histogram1d.Histogram1D:
 stats.max.ScalarMax:
 
 stats.cxxmax.Max:
-stats.blobs_table.BlobsPTableABC:
 stats.kernel_density.KernelDensity:
-stats.histogram1d_categorical.Histogram1DCategorical:
 stats.distinct.Distinct:
 stats.correlation.Corr:
 stats.counter.Counter:
 stats.percentiles.Percentiles:
-stats.random_table.RandomPTable:
 stats.kll.KLLSketch:
 stats.min.ScalarMin:
 stats.ppca.PPCA:
 stats.ppca.PPCATransformer:
-stats.histogram2d.Histogram2D:
 table.percentiles.Percentiles:
 --->
 
@@ -411,6 +429,36 @@ cluster.mb_k_means.MBKMeansFilter:
 
 
 ## Linear Algebra Modules
+
+### Element-wise processing modules
+
+```{eval-rst}
+These modules apply :term:`numpy universal functions (a.k.a. ufunc) <ufunc>` to all columns or a subset of columns from the input table.
+
+Depending on the applied :term:`ufunc` arity, we distinguish several categories of modules.
+```
+#### Unary modules
+
+They apply an unary :term:`ufunc` this way:
+
+```{eval-rst}
+.. currentmodule:: progressivis.linalg
+
+.. autoclass:: Absolute
+   :members:
+
+.. autoclass:: Arccos
+
+.. autoclass:: Arccosh
+
+
+```
+
+
+
+
+
+
 
 <!---
 linalg.mixufunc.MixUfuncABC:

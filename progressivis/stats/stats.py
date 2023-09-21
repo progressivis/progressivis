@@ -54,7 +54,7 @@ class Stats(Module):
                 When missing, the given name is ``_<column>_max``
             kwds: extra keyword args to be passed to the ``Module`` superclass
         """
-        super(Stats, self).__init__(**kwds)
+        super().__init__(**kwds)
         self._column = column
         self.default_step_size = 10000
 
