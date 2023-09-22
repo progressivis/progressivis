@@ -18,9 +18,30 @@ from .elementwise import (
 from .linear_map import LinearMap
 from .nexpr import NumExprABC
 from .mixufunc import make_local, make_local_dict, get_ufunc_args, MixUfuncABC
+from ..core.module import document, PColumns
+from typing import Any, Optional
+import numpy as np
+
+
+@document
+class Absolute(Unary):
+    """
+    Applies :meth:`numpy.isnan` on all input columns or on a subset
+    """
+    def __init__(self,
+                 columns: Optional[PColumns] = None,  # not in kwds only for sphinx
+                 **kwds: Any):
+        """
+        Args:
+            columns: columns to be processed. When missing all input columns are processed
+            kwds: extra keyword args to be passed to the ``Module`` superclass
+        """
+        super().__init__(np.absolute, columns=columns, **kwds)
+
+
 from ._elementwise import (
     BitwiseNot,
-    Absolute,
+    # Absolute,
     Arccos,
     Arccosh,
     Arcsin,

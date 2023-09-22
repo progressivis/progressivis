@@ -439,26 +439,40 @@ Depending on the applied :term:`ufunc` arity, we distinguish several categories 
 ```
 #### Unary modules
 
-They apply an unary :term:`ufunc` this way:
+These modules apply an unary :term:`ufunc`, for example :
 
 ```{eval-rst}
 .. currentmodule:: progressivis.linalg
 
 .. autoclass:: Absolute
    :members:
+```
+```{eval-rst}
+.. currentmodule:: progressivis.linalg.elementwise
 
-.. autoclass:: Arccos
+.. autoclass:: Binary
+   :members:
+```
+<!---
+python -c 'from progressivis.linalg.elementwise import generate_unary_csv as f;f("doc/linalg_unary.csv")'
+python -c 'from progressivis.linalg.elementwise import generate_binary_csv as f;f("doc/linalg_binary.csv")'
+--->
 
-.. autoclass:: Arccosh
+The other unary modules have the same interface as ``Absolute``. They are:
 
-
+```{eval-rst}
+.. csv-table:: Unary modules
+   :file: linalg_unary.csv
+   :widths: 30, 70
+   :header-rows: 1
 ```
 
-
-
-
-
-
+```{eval-rst}
+.. csv-table:: Binary modules
+   :file: linalg_binary.csv
+   :widths: 50, 50
+   :header-rows: 1
+```
 
 <!---
 linalg.mixufunc.MixUfuncABC:

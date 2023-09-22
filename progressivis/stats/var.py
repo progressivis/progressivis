@@ -10,7 +10,7 @@ from ..core.module import (
     def_input,
     def_output,
     def_parameter,
-    PColumns,
+    PCols,
     document,
 )
 from ..core.utils import indices_len, fix_loc
@@ -40,7 +40,7 @@ class VarH(Module):
 
     def __init__(
         self,
-        columns: Optional[PColumns] = None,  # not in kwds only for sphinx
+        columns: Optional[PCols] = None,  # not in kwds only for sphinx
         **kwds: Any,
     ) -> None:
         """
@@ -114,7 +114,7 @@ class Var(Module):
     def __init__(
         self,
         ignore_string_cols: bool = False,
-        columns: Optional[PColumns] = None,  # not in kwds only for sphinx
+        columns: Optional[PCols] = None,  # not in kwds only for sphinx
         **kwds: Any,
     ) -> None:
         """
@@ -127,7 +127,7 @@ class Var(Module):
         super().__init__(dataframe_slot="table", columns=columns, **kwds)
         self._data: Dict[str, OnlineVariance] = {}
         self._ignore_string_cols: bool = ignore_string_cols
-        self._num_cols: PColumns = None
+        self._num_cols: PCols = None
         self.default_step_size = 1000
 
     def is_ready(self) -> bool:
@@ -135,7 +135,7 @@ class Var(Module):
             return True
         return super().is_ready()
 
-    def get_num_cols(self, input_df: BasePTable) -> PColumns:
+    def get_num_cols(self, input_df: BasePTable) -> PCols:
         if self._num_cols is None:
             if not self._columns:
                 self._num_cols = [

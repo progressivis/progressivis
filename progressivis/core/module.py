@@ -52,7 +52,8 @@ if TYPE_CHECKING:
 
     Parameters = List[Tuple[str, np.dtype[Any], Any]]
 
-PColumns = Union[None, List[str]]  # , Dict[str, List[str]]]
+PColumns = Union[None, List[str], Dict[str, List[str]]]
+PCols = Union[None, List[str]]
 ModuleCb = Callable[["Module", int], None]
 ModuleCoro = Callable[["Module", int], Coroutine[Any, Any, Any]]
 ModuleProc = Union[ModuleCb, ModuleCoro]

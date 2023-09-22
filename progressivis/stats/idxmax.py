@@ -14,7 +14,7 @@ from ..core.module import (
     def_input,
     def_output,
     def_parameter,
-    PColumns,
+    PCols,
     document,
 )
 from ..core.utils import indices_len, fix_loc
@@ -43,7 +43,7 @@ class IdxMax(Module):
 
     def __init__(
         self,
-        columns: Optional[PColumns] = None,  # not in kwds only for sphinx
+        columns: Optional[PCols] = None,  # not in kwds only for sphinx
         **kwds: Any,
     ) -> None:
         """

@@ -6,7 +6,7 @@ import numpy as np
 
 from ..core.utils import indices_len, fix_loc
 from ..core.pintset import PIntSet
-from ..core.module import ReturnRunStep, def_input, def_output, PColumns, document
+from ..core.module import ReturnRunStep, def_input, def_output, PCols, document
 from ..core.module import Module
 from ..table.table import PTable
 from ..core.slot import Slot
@@ -39,7 +39,7 @@ class Max(Module):
 
     def __init__(
         self,
-        columns: Optional[PColumns] = None,  # not in kwds only for sphinx
+        columns: Optional[PCols] = None,  # not in kwds only for sphinx
         **kwds: Any,
     ) -> None:
         """

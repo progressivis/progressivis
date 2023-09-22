@@ -4,7 +4,7 @@ import sys
 
 import numpy as np
 
-from ..core.module import ReturnRunStep, def_input, def_output
+from ..core.module import ReturnRunStep, def_input, def_output, document
 from ..core.utils import indices_len, fix_loc
 from ..core.module import Module
 from ..table import PTable, BasePTable
@@ -15,6 +15,8 @@ from ..core.slot_join import SlotJoin
 from collections import OrderedDict
 
 from typing import List, Any, Optional, Dict, Union, Callable
+
+Cols = Union[List[str], Dict[str, List[str]]]
 
 ModuleMeta = type
 
@@ -297,12 +299,18 @@ for k, v in binary_dict_all.items():
     # binary_modules.append(_g[name])
 
 
+@document
 @def_input("first", type=PTable, required=True)
 @def_input("second", type=PTable, required=True)
 @def_output("result", PTable, required=False, datashape={"first": "#columns"})
 class Binary(Module):
-    def __init__(self, ufunc: UFunc, **kwds: Any):
-        super(Binary, self).__init__(**kwds)
+    def __init__(self, ufunc: UFunc, columns: Optional[Cols] = None, **kwds: Any):
+        """
+        Args:
+            columns: columns to be processed. When missing all input columns are processed
+            kwds: extra keyword args to be passed to the ``Module`` superclass
+        """
+        super(Binary, self).__init__(columns=columns, **kwds)
         self._ufunc = ufunc
         self._kwds = {}
         _assert = self._columns is None or (
@@ -584,3 +592,30 @@ def generate_stubs(out: Any = sys.stdout) -> None:
     for decl in decls:
         print(f"    {decl},", file=out)
     print(")", file=out)
+
+
+def generate_csv(
+    header: str, row: str, dict_: dict[str, Any], out: Any = sys.stdout
+) -> None:
+    import progressivis.linalg._elementwise as _elementwise
+
+    if isinstance(out, str):
+        out = open(out, "w")
+    print(header, file=out)
+    for k, v in sorted(dict_.items()):
+        name = func2class_name(k)
+        if name not in _elementwise.__dict__:
+            continue
+        print(row.format(module=name, func=k), file=out)
+
+
+def generate_unary_csv(out: Any = sys.stdout) -> None:
+    header = "Module name, underlying :term:`Universal Function <ufunc>`"
+    row = "{module}, `{func} <https://numpy.org/doc/stable/reference/generated/numpy.{func}.html>`_"
+    generate_csv(header, row, unary_dict_all, out)
+
+
+def generate_binary_csv(out: Any = sys.stdout) -> None:
+    header = "Module name, underlying :term:`Universal Function <ufunc>`"
+    row = "{module} / Cols{module}, `{func} <https://numpy.org/doc/stable/reference/generated/numpy.{func}.html>`_"
+    generate_csv(header, row, binary_dict_all, out)
