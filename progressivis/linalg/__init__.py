@@ -52,7 +52,7 @@ class Add(Binary):
 
 
 @document
-class ColsAdd(Binary):
+class ColsAdd(ColsBinary):
     def __init__(self,
                  columns: Optional[PColumns] = None,  # not in kwds only for sphinx
                  **kwds: Any):
