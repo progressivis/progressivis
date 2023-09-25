@@ -351,6 +351,7 @@ table.merge.Merge:
    :members:
    :exclude-members: run_step, is_ready, reset, parameters
 ```
+
 ```{eval-rst}
 .. currentmodule:: progressivis.stats.blobs_table
 
@@ -430,35 +431,32 @@ cluster.mb_k_means.MBKMeansFilter:
 
 ## Linear Algebra Modules
 
+<!---
+# To generate csv files containing the lists of unary/binary modules use:
+python -c 'from progressivis.linalg.elementwise import generate_unary_csv as f;f("doc/linalg_unary.csv")'
+python -c 'from progressivis.linalg.elementwise import generate_binary_csv as f;f("doc/linalg_binary.csv")'
+--->
+
+
 ### Element-wise processing modules
 
 ```{eval-rst}
-These modules apply :term:`numpy universal functions (a.k.a. ufunc) <ufunc>` to all columns or a subset of columns from the input table.
+These modules apply :term:`numpy universal functions (a.k.a. ufunc) <ufunc>` to the column of one or two input tables.
 
 Depending on the applied :term:`ufunc` arity, we distinguish several categories of modules.
 ```
 #### Unary modules
 
-These modules apply an unary :term:`ufunc`, for example :
-
 ```{eval-rst}
+These modules apply an unary :term:`ufunc` on all columns or a subset of columns from the input table, for example:
+
 .. currentmodule:: progressivis.linalg
 
 .. autoclass:: Absolute
    :members:
 ```
-```{eval-rst}
-.. currentmodule:: progressivis.linalg.elementwise
 
-.. autoclass:: Binary
-   :members:
-```
-<!---
-python -c 'from progressivis.linalg.elementwise import generate_unary_csv as f;f("doc/linalg_unary.csv")'
-python -c 'from progressivis.linalg.elementwise import generate_binary_csv as f;f("doc/linalg_binary.csv")'
---->
-
-The other unary modules have the same interface as ``Absolute``. They are:
+The other unary modules have the same interface as ``Absolute`` module above. They are:
 
 ```{eval-rst}
 .. csv-table:: Unary modules
@@ -467,19 +465,62 @@ The other unary modules have the same interface as ``Absolute``. They are:
    :header-rows: 1
 ```
 
+#### Binary modules
+
 ```{eval-rst}
-.. csv-table:: Binary modules
+These modules apply a binary :term:`ufunc` on two sets of columns belonging to same input table (for example ``ColsAdd`` below) or to two distinct tables (for example ``Add`` below):
+
+.. currentmodule:: progressivis.linalg
+
+.. autoclass:: Add
+   :members:
+```
+Examples:
+
+```{eval-rst}
+.. literalinclude:: ./example_linalg_add.py
+```
+
+
+```{eval-rst}
+.. currentmodule:: progressivis.linalg
+
+.. autoclass:: ColsAdd
+   :members:
+```
+
+Example:
+
+```{eval-rst}
+.. literalinclude:: ./example_linalg_cols_add.py
+```
+
+
+The other binary modules have the same interface as ``Add`` and ``ColsAdd`` modules above. They are:
+
+```{eval-rst}
+.. csv-table:: Binary and reduce modules
    :file: linalg_binary.csv
    :widths: 50, 50
    :header-rows: 1
 ```
 
+#### Reduce modules
+
+```{eval-rst}
+These modules reduce input table columns dimensions by one, by applying an :term:`ufunc`, for example:
+
+.. currentmodule:: progressivis.linalg
+
+.. autoclass:: AddReduce
+   :members:
+```
+The other reduce modules have the same interface as ``AddReduce`` modules above. They are listed in the previous table.
+
+
+
 <!---
 linalg.mixufunc.MixUfuncABC:
-linalg.elementwise.Unary:
-linalg.elementwise.ColsBinary:
-linalg.elementwise.Binary:
-linalg.elementwise.Reduce:
 linalg.nexpr.NumExprABC:
 linalg.linear_map.LinearMap:
 --->

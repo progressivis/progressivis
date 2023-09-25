@@ -29,6 +29,7 @@ class RandomPTable(Module):
     """
     Random table generator module
     """
+
     def __init__(
         self,
         columns: Union[int, Sequence[str]],
@@ -103,8 +104,32 @@ class RandomPTable(Module):
         return self._return_run_step(next_state, steps_run=step_size)
 
 
+@document
 class RandomDict(ConstDict):
-    def __init__(self, columns: int, **kwds: Any) -> None:
-        keys = [f"_{i}" for i in range(1, columns + 1)]
-        vals = np.random.rand(columns)
+    """
+    Random dictionary generator module. This module is a constant module, i.e.
+    it's values are set once and they not change at each step.
+    """
+
+    def __init__(
+        self,
+        keys: Union[int, Sequence[str]],
+        random: Callable[..., np.ndarray[Any, Any]] = RAND,
+        **kwds: Any,
+    ) -> None:
+        """
+        Args:
+            keys: keys definition:
+
+                * if it is an ``int`` it provides the number (**n**) of keys named ``_1`` ... ``_n``
+                * else it provides sequence of keys names
+            random: ``numpy`` random function, default is :func:`numpy.random.rand`
+            kwds: extra keyword args to be passed to the ``Module`` superclass
+        """
+        if isinstance(keys, int):
+            len_ = keys
+            keys = [f"_{i}" for i in range(1, len_ + 1)]
+        else:
+            len_ = len(keys)
+        vals = random(len_)
         super().__init__(PDict(dict(zip(keys, vals))), **kwds)

@@ -4,7 +4,7 @@ import sys
 
 import numpy as np
 
-from ..core.module import ReturnRunStep, def_input, def_output, document
+from ..core.module import ReturnRunStep, def_input, def_output
 from ..core.utils import indices_len, fix_loc
 from ..core.module import Module
 from ..table import PTable, BasePTable
@@ -299,7 +299,6 @@ for k, v in binary_dict_all.items():
     # binary_modules.append(_g[name])
 
 
-@document
 @def_input("first", type=PTable, required=True)
 @def_input("second", type=PTable, required=True)
 @def_output("result", PTable, required=False, datashape={"first": "#columns"})
@@ -617,5 +616,5 @@ def generate_unary_csv(out: Any = sys.stdout) -> None:
 
 def generate_binary_csv(out: Any = sys.stdout) -> None:
     header = "Module name, underlying :term:`Universal Function <ufunc>`"
-    row = "{module} / Cols{module}, `{func} <https://numpy.org/doc/stable/reference/generated/numpy.{func}.html>`_"
+    row = "{module} / Cols{module} / {module}Reduce, `{func} <https://numpy.org/doc/stable/reference/generated/numpy.{func}.html>`_"
     generate_csv(header, row, binary_dict_all, out)

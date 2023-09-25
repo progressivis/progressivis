@@ -18,7 +18,7 @@ from .elementwise import (
 from .linear_map import LinearMap
 from .nexpr import NumExprABC
 from .mixufunc import make_local, make_local_dict, get_ufunc_args, MixUfuncABC
-from ..core.module import document, PColumns
+from ..core.module import document, PColumns, PCols
 from typing import Any, Optional
 import numpy as np
 
@@ -26,7 +26,7 @@ import numpy as np
 @document
 class Absolute(Unary):
     """
-    Applies :meth:`numpy.isnan` on all input columns or on a subset
+    Applies :meth:`numpy.absolute` over all input columns or over a subset
     """
     def __init__(self,
                  columns: Optional[PColumns] = None,  # not in kwds only for sphinx
@@ -37,6 +37,41 @@ class Absolute(Unary):
             kwds: extra keyword args to be passed to the ``Module`` superclass
         """
         super().__init__(np.absolute, columns=columns, **kwds)
+
+
+@document
+class Add(Binary):
+    """
+    Applies :meth:`numpy.add` over two sets of columns. One of them belongs to the
+    ``first`` input table and the other belongs to the ``second``
+    """
+    def __init__(self,
+                 columns: Optional[PColumns] = None,  # not in kwds only for sphinx
+                 **kwds: Any):
+        super().__init__(np.add, columns=columns, **kwds)
+
+
+@document
+class ColsAdd(Binary):
+    def __init__(self,
+                 columns: Optional[PColumns] = None,  # not in kwds only for sphinx
+                 **kwds: Any):
+        super().__init__(np.add, columns=columns, **kwds)
+
+@document
+class AddReduce(Reduce):
+    """
+    Applies :meth:`numpy.add.reduce` over all input columns or over a subset of them
+    """
+    def __init__(self,
+                 columns: Optional[PCols] = None,  # not in kwds only for sphinx
+                 **kwds: Any):
+        """
+        Args:
+            columns: columns to be processed. When missing all input columns are processed
+            kwds: extra keyword args to be passed to the ``Module`` superclass
+        """
+        super().__init__(np.add, columns=columns, **kwds)
 
 
 from ._elementwise import (
@@ -90,7 +125,7 @@ from ._elementwise import (
     Tanh,
     Trunc,
     Abs,
-    Add,
+    # Add,
     Arctan2,
     BitwiseAnd,
     BitwiseOr,
@@ -130,7 +165,7 @@ from ._elementwise import (
     RightShift,
     Subtract,
     TrueDivide,
-    ColsAdd,
+    # ColsAdd,
     ColsArctan2,
     ColsBitwiseAnd,
     ColsBitwiseOr,
@@ -170,7 +205,7 @@ from ._elementwise import (
     ColsRightShift,
     ColsSubtract,
     ColsTrueDivide,
-    AddReduce,
+    # AddReduce,
     Arctan2Reduce,
     BitwiseAndReduce,
     BitwiseOrReduce,
