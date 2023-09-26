@@ -174,23 +174,6 @@ class Module(metaclass=ABCMeta):
     state_terminated: ClassVar[ModuleState] = ModuleState.state_terminated
     state_invalid: ClassVar[ModuleState] = ModuleState.state_invalid
 
-    # state_created = 0
-    # state_ready = 1
-    # state_running = 2
-    # state_blocked = 3
-    # state_zombie = 4
-    # state_terminated = 5
-    # state_invalid = 6
-    # state_name = [
-    #     "created",
-    #     "ready",
-    #     "running",
-    #     "blocked",
-    #     "zombie",
-    #     "terminated",
-    #     "invalid",
-    # ]
-
     def __new__(cls, *args: Tuple[str, Any], **kwds: Any) -> Module:
         module = object.__new__(cls)
         # pylint: disable=protected-access

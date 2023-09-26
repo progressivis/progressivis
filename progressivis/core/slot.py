@@ -59,13 +59,21 @@ class SlotDescriptor:
         buffer_masked: bool = True,
     ) -> None:
         self.name = name
+        """The slot name """
         self.type = type
+        """The slot type """
         self.required = required
+        """True if the slot is required """
         self.multiple = multiple
+        """True if the input slot can have multiple connections """
         self.datashape = datashape
+        """The DataShape describing this slot's type """
         self.buffer_created = buffer_created
+        """True if the slot should buffer the created entries """
         self.buffer_updated = buffer_updated
+        """True if the slot should buffer the updated entries """
         self.buffer_deleted = buffer_deleted
+        """True if the slot should buffer the deleted entries """
         self.buffer_exposed = buffer_exposed
         self.buffer_masked = buffer_masked
 
@@ -92,10 +100,15 @@ class Slot:
         input_name: Optional[str],
     ):
         self.output_name = output_name
+        """The output slot name """
         self.output_module = output_module
+        """The output module """
         self.input_name = input_name
+        """The input slot name """
         self.input_module = input_module
+        """The input module """
         self.original_name: Optional[str] = None
+        """The original input slot before it has been renamed for slots with multiple inputs """
         self._name: str
         self.changes: Optional[BaseChangeManager] = None
         self.meta: Optional[Any] = None
