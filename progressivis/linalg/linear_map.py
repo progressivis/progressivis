@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from ..core.module import ReturnRunStep, def_input, def_output
+from ..core.module import ReturnRunStep, def_input, def_output, document
 from ..core.utils import indices_len, fix_loc, filter_cols
 from ..core.module import Module
 from ..table.table import PTable
@@ -13,13 +13,25 @@ from ..core.decorators import process_slot, run_if_any
 from typing import List, Optional, Any
 
 
-@def_input("vectors", type=PTable)
-@def_input("transformation", type=PTable)
-@def_output("result", PTable)
+@document
+@def_input("vectors", type=PTable, doc="Table providing the row vectors")
+@def_input(
+    "transformation", type=PTable, doc="table providing the transformation matrix"
+)
+@def_output("result", PTable, doc="result table")
 class LinearMap(Module):
-    """ """
+    """
+    Performs a linear transformation on rows in ``vectors`` table. The ``transformation``
+    table (or a subset of its columns) provides the tranformation matrix once all their
+    rows are read. Its rows number has to be equal to ``vectors`` columns number.
+    """
 
     def __init__(self, transf_columns: Optional[List[str]] = None, **kwds: Any) -> None:
+        """
+        Args:
+            transf_columns: columns to be included in the transformation matrix. When
+                missing all columns are included
+        """
         super().__init__(**kwds)
         self._k_dim = len(self._columns) if self._columns else None
         self._transf_columns = transf_columns

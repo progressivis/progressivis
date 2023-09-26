@@ -54,6 +54,8 @@ if TYPE_CHECKING:
 
 PColumns = Union[None, List[str], Dict[str, List[str]]]
 PCols = Union[None, List[str]]
+PColsList = PCols
+PColsDict = Union[None, Dict[str, List[str]]]
 ModuleCb = Callable[["Module", int], None]
 ModuleCoro = Callable[["Module", int], Coroutine[Any, Any, Any]]
 ModuleProc = Union[ModuleCb, ModuleCoro]

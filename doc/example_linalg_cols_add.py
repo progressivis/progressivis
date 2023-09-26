@@ -10,7 +10,9 @@ scheduler = Scheduler()
 with scheduler:
     random = RandomPTable(3, rows=100_000, scheduler=scheduler)
     module = ColsAdd(
-        columns={"first": ["_3", "_5", "_7"], "second": ["_4", "_6", "_8"]},
+        first=["_3", "_5", "_7"],
+        second=["_4", "_6", "_8"],
+        cols_out=["x", "y", "z"],
         scheduler=scheduler,
     )
     module.input.table = random.output.result

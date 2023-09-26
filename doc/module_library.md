@@ -518,12 +518,52 @@ These modules reduce input table columns dimensions by one, by applying an :term
 The other reduce modules have the same interface as ``AddReduce`` modules above. They are listed in the previous table.
 
 
+#### Decorators
 
-<!---
-linalg.mixufunc.MixUfuncABC:
-linalg.nexpr.NumExprABC:
-linalg.linear_map.LinearMap:
---->
+One can transform a simple function into an element-wise module via three decorators ``@unary_module`` `@binary_module` and `@reduce_module`:
+
+```{eval-rst}
+.. currentmodule:: progressivis.linalg
+
+.. autodecorator:: unary_module
+
+.. autodecorator:: binary_module
+
+.. autodecorator:: reduce_module
+```
+
+Examples:
+
+```{eval-rst}
+.. literalinclude:: ./example_linalg_decorators.py
+```
+
+#### Declarative modules
+
+One can create new modules in a declarative way as subclasses of ``linalg.mixufunc.MixUfuncABC``.
+
+Examples:
+
+```{eval-rst}
+.. literalinclude:: ./example_mix_ufunc.py
+```
+Declarative module based on ``numexpr`` expressions can be created using ``NumExprABC`` this way:
+
+```{eval-rst}
+.. literalinclude:: ./example_mix_nexpr.py
+```
+
+#### Linear mapping
+
+Linear transformation can be performed via this module:
+
+```{eval-rst}
+.. currentmodule:: progressivis.linalg.linear_map
+
+.. autoclass:: LinearMap
+   :members:
+   :exclude-members: run_step, parameters
+```
 
 ## Visualisation
 

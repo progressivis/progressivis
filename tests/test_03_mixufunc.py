@@ -17,7 +17,10 @@ from typing import Any, Type
 @def_input("second", type=PTable)
 @def_output("result", type=PTable, required=False, datashape={"first": ["_1", "_2"]})
 class MixUfuncSample(MixUfuncABC):
-    """ """
+    """
+    Explanation: the result table has two columns "_1" and "_2" which are calculated
+    with the underlying expressions
+    """
 
     expr = {"_1": (np.add, "first._2", "second._3"), "_2": (np.log, "second._3")}
 
@@ -26,7 +29,9 @@ class MixUfuncSample(MixUfuncABC):
 @def_input("second", type=PTable)
 @def_output("result", type=PTable, required=False)
 class MixUfuncSample2(MixUfuncABC):
-    """ """
+    """
+    The output types can be coerced if necessary
+    """
 
     expr = {
         "_1:float64": (np.add, "first._2", "second._3"),
@@ -46,7 +51,9 @@ custom_unary_ufunc: Any = np.frompyfunc(custom_unary, 1, 1)
 @def_input("second", type=PTable)
 @def_output("result", type=PTable, required=False)
 class MixUfuncCustomUnary(MixUfuncABC):
-    """ """
+    """
+    Module using a custom unary function
+    """
 
     expr = {
         "_1:float64": (np.add, "first._2", "second._3"),
@@ -65,7 +72,9 @@ custom_binary_ufunc: Any = np.frompyfunc(custom_binary, 2, 1)
 @def_input("second", type=PTable)
 @def_output("result", type=PTable, required=False)
 class MixUfuncCustomBinary(MixUfuncABC):
-    """ """
+    """
+    Module using a custom unary function
+    """
 
     expr = {
         "_1:float64": (custom_binary_ufunc, "first._2", "second._3"),
