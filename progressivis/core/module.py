@@ -21,7 +21,7 @@ import progressivis.core.aio as aio
 
 
 from .utils import type_fullname, get_random_name
-from .slot import SlotDescriptor, Slot
+from .slot import SlotDescriptor, Slot, SlotHint
 from .tracer_base import Tracer
 from .time_predictor import TimePredictor
 from .storagemanager import StorageManager
@@ -1352,7 +1352,12 @@ class InputSlots:
     def __init__(self, module: Module):
         self.__dict__["module"] = module
 
-    def __setattr__(self, name: Union[int, str], slot: Slot) -> None:
+    def __setattr__(self, name: Union[int, str], slot: Slot | SlotHint) -> None:
+        if isinstance(slot, SlotHint):
+            slot, hint = slot.slot, slot.hint
+            if slot._hint is not None:
+                raise KeyError("'hint' cannot be assigned more than once")
+            slot._hint = hint
         assert isinstance(slot, Slot)
         assert slot.output_module is not None
         assert slot.output_name is not None
@@ -1377,7 +1382,12 @@ class InputSlots:
     def __getitem__(self, name: str) -> Slot:
         raise ProgressiveError("Input slots cannot be read, only assigned to")
 
-    def __setitem__(self, name: Union[int, str, Tuple[str, Any]], slot: Slot) -> None:
+    def __setitem__(self, name: Union[int, str, Tuple[str, Any]], slot: Slot | SlotHint) -> None:
+        if isinstance(slot, SlotHint):
+            slot, hint = slot.slot, slot.hint
+            if slot._hint is not None:
+                raise KeyError("'hint' cannot be assigned more than once")
+            slot._hint = hint
         if isinstance(name, (int, str)):
             return self.__setattr__(name, slot)
         name, meta = name

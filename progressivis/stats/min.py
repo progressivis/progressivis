@@ -6,7 +6,7 @@ import numpy as np
 
 from ..core.utils import indices_len, fix_loc
 from ..core.pintset import PIntSet
-from ..core.module import ReturnRunStep, def_input, def_output, PCols, document
+from ..core.module import ReturnRunStep, def_input, def_output, document
 from ..core.module import Module
 from ..table.table import PTable
 from ..core.slot import Slot
@@ -39,7 +39,6 @@ class Min(Module):
 
     def __init__(
         self,
-        columns: Optional[PCols] = None,  # not in kwds only for sphinx
         **kwds: Any,
     ) -> None:
         """
@@ -47,7 +46,7 @@ class Min(Module):
             columns: columns to be processed. When missing all input columns are processed
             kwds: extra keyword args to be passed to the ``Module`` superclass
         """
-        super().__init__(columns=columns, **kwds)
+        super().__init__(**kwds)
         self.default_step_size = 10000
 
     def is_ready(self) -> bool:
@@ -70,6 +69,8 @@ class Min(Module):
             indices = ctx.table.created.next(length=step_size)  # returns a slice
             steps = indices_len(indices)
             input_df = ctx.table.data()
+            if (hint := ctx.table.hint) is not None:
+                self._columns = hint
             op = self.filter_columns(input_df, fix_loc(indices)).min(keepdims=False)
             if self.result is None:
                 self.result = PDict(op)
