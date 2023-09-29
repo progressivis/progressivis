@@ -251,7 +251,7 @@ class Histogram2D(Module):
                 # we assume that deletions are only local to the view
                 # and the related records still exist in the original table ...
                 # TODO : test this hypothesis and reset if false
-                raw_indices = dfslot.selection.deleted.next(length=step_size)
+                raw_indices = dfslot.selection.deleted.next(length=step_size, as_slice=False)
                 indices = fix_loc(raw_indices)
                 steps += indices_len(indices)
                 x = input_df.to_array(locs=indices, columns=[self.x_column]).reshape(-1)
@@ -267,7 +267,7 @@ class Histogram2D(Module):
             if not dfslot.created.any():
                 return self._return_run_step(self.state_blocked, steps_run=0)
             input_df = dfslot.data()
-            raw_indices = dfslot.created.next(length=step_size)
+            raw_indices = dfslot.created.next(length=step_size, as_slice=False)
             indices = fix_loc(raw_indices)
             steps += indices_len(indices)
             logger.info("Read %d rows", steps)
