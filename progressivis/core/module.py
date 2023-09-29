@@ -30,11 +30,8 @@ from .slot_join import SlotJoin
 from typing import (
     cast,
     Any,
-    Iterable,
-    Sequence,
     Optional,
     Sized,
-    Dict,
     Set,
     List,
     Tuple,
@@ -42,8 +39,13 @@ from typing import (
     Type,
     Union,
     ClassVar,
-    Coroutine,
     TYPE_CHECKING,
+)
+from collections.abc import (
+    Iterable,
+    Sequence,
+    MutableMapping,
+    Coroutine,
 )
 
 if TYPE_CHECKING:
@@ -52,18 +54,19 @@ if TYPE_CHECKING:
 
     Parameters = List[Tuple[str, np.dtype[Any], Any]]
 
-PColumns = Union[None, List[str], Dict[str, List[str]]]
+PColumns = Union[None, List[str], dict[str, List[str]]]
 PCols = Union[None, List[str]]
 PColsList = PCols
-PColsDict = Union[None, Dict[str, List[str]]]
+PColsDict = Union[None, dict[str, List[str]]]
 ModuleCb = Callable[["Module", int], None]
 ModuleCoro = Callable[["Module", int], Coroutine[Any, Any, Any]]
 ModuleProc = Union[ModuleCb, ModuleCoro]
+ModuleFactory = MutableMapping[str, "Module"]
 
 
-JSon = Dict[str, Any]
+JSon = dict[str, Any]
 # ReturnRunStep = Tuple[int, ModuleState]
-ReturnRunStep = Dict[str, int]
+ReturnRunStep = dict[str, int]
 
 
 logger = logging.getLogger(__name__)
@@ -162,8 +165,8 @@ class Module(metaclass=ABCMeta):
     """ Tag attached to dependent modules """
     inputs = [SlotDescriptor(PARAMETERS_SLOT, type=BasePTable, required=False)]
     outputs = [SlotDescriptor(TRACE_SLOT, type=BasePTable, required=False)]
-    output_attrs: Dict[str, str] = {}
-    output_types: Dict[str, Any] = {}
+    output_attrs: dict[str, str] = {}
+    output_types: dict[str, Any] = {}
     _doc_building: Optional[bool] = None
     state_created: ClassVar[ModuleState] = ModuleState.state_created
     state_ready: ClassVar[ModuleState] = ModuleState.state_ready
@@ -192,7 +195,7 @@ class Module(metaclass=ABCMeta):
         **kwds: Any,
     ) -> None:
         self._args: Sequence[Tuple[str, Any]]
-        self._kwds: Dict[str, Any]
+        self._kwds: dict[str, Any]
         if scheduler is None:
             scheduler = Scheduler.default
         self._scheduler: Scheduler = scheduler
@@ -237,19 +240,19 @@ class Module(metaclass=ABCMeta):
         # always present
         input_descriptors = self.all_inputs
         output_descriptors = self.all_outputs
-        self._input_slots: Dict[str, Optional[Slot]] = self._validate_descriptors(
+        self._input_slots: dict[str, Optional[Slot]] = self._validate_descriptors(
             input_descriptors
         )
-        self.input_descriptors: Dict[str, SlotDescriptor] = {
+        self.input_descriptors: dict[str, SlotDescriptor] = {
             d.name: d for d in input_descriptors
         }
-        # self.input_multiple: Dict[str, int] = {
+        # self.input_multiple: Mapping[str, int] = {
         #     d.name: 0 for d in input_descriptors if d.multiple
         # }
-        self._output_slots: Dict[
+        self._output_slots: dict[
             str, Optional[List[Slot]]
         ] = self._validate_descriptors(output_descriptors)
-        self.output_descriptors: Dict[str, SlotDescriptor] = {
+        self.output_descriptors: dict[str, SlotDescriptor] = {
             d.name: d for d in output_descriptors
         }
         self.default_step_size: int = 100
@@ -276,7 +279,7 @@ class Module(metaclass=ABCMeta):
             sd = SlotDescriptor("result", type=PTable, required=False)
             self.output_descriptors["result"] = sd
         self._columns: Optional[List[str]] = None
-        self._columns_dict: Dict[str, List[str]] = {}
+        self._columns_dict: dict[str, List[str]] = {}
         if isinstance(columns, dict):
             assert len(columns)
             for v in columns.values():
@@ -421,6 +424,39 @@ class Module(metaclass=ABCMeta):
         """Return the dataflow associated with the module at creation time."""
         return self._scheduler.dataflow
 
+    @classmethod
+    def make(
+            cls,
+            factory: "ModuleFactory",
+            name: Optional[str] = None,
+            **kw: Any
+    ) -> Module:
+        """Get a module of my class if it is already registered, or
+        create a module of my class, register it, and return it.
+
+        Parameters
+        ----------
+        factory:
+            The ModuleFactory registering the modules by name
+        name (optional):
+            The name used to access this module, which can be different from the
+            class name sometimes.
+        kw:
+            keyword parameters used to create the instance if it does not exist.
+
+        Returns
+        -------
+        A module of this type.
+        """
+        name = name or cls.__name__
+        module = factory.get(name)
+        if module is None:
+            module = cls(**kw)
+            factory[name] = module
+        else:
+            assert isinstance(module, cls)
+        return module
+
     # def create_dependent_modules(self, *params, **kwds) -> None:  # pragma no cover
     #     """Create modules that this module depends on.
     #     """
@@ -455,7 +491,7 @@ class Module(metaclass=ABCMeta):
         return 0.0
 
     # @staticmethod
-    # def _add_slots(kwds: Dict[str, List[Slot]],
+    # def _add_slots(kwds: dict[str, List[Slot]],
     #                kwd: str,
     #                slots: List[Slot]) -> None:
     #     if kwd in kwds:
@@ -464,8 +500,8 @@ class Module(metaclass=ABCMeta):
     #         kwds[kwd] = slots
 
     @staticmethod
-    def _validate_descriptors(descriptor_list: List[SlotDescriptor]) -> Dict[str, Any]:
-        slots: Dict[str, Any] = {}
+    def _validate_descriptors(descriptor_list: List[SlotDescriptor]) -> dict[str, Any]:
+        slots: dict[str, Any] = {}
         for desc in descriptor_list:
             if desc.name in slots:
                 raise ProgressiveError(
@@ -489,7 +525,7 @@ class Module(metaclass=ABCMeta):
         # TODO: should change the run_number of the params
         self.params.debug = bool(value)
 
-    def _parse_parameters(self, kwds: Dict[str, Any]) -> None:
+    def _parse_parameters(self, kwds: dict[str, Any]) -> None:
         # pylint: disable=no-member
         self._params = _create_table(
             self.generate_table_name("params"), self.all_parameters
@@ -681,7 +717,7 @@ class Module(metaclass=ABCMeta):
         return self._input_slots.keys()
 
     def reconnect(
-        self, inputs: Dict[str, Slot], outputs: Dict[str, List[Slot]]
+        self, inputs: dict[str, Slot], outputs: dict[str, List[Slot]]
     ) -> None:
         logger.info(f"Module {self}, reconnect({inputs}, {outputs})")
         all_keys = set(self._input_slots.keys()) | set(inputs.keys())
@@ -1000,38 +1036,62 @@ class Module(metaclass=ABCMeta):
         assert self.state != self.state_running
 
     # TODO: rename to on_before_run
-    def on_start_run(self, proc: ModuleProc) -> None:
-        "Register a callback to call when the module starts to run"
-        assert callable(proc)
-        self._start_run.append(proc)
+    def on_start_run(self, proc: ModuleProc, remove: bool = False) -> None:
+        """Register a callback to execute when the module starts to run.
 
-    def remove_start_run(self, proc: ModuleProc) -> None:
-        "Remove the specified start_run callback"
-        self._start_run.remove(proc)
+        The callback will bee called with two arguments, the module and
+         the run_number
+
+        Parameters
+        ----------
+        remove: bool (optional)
+            Set to true to remove the callback from the list of callbacks.
+        """
+        assert callable(proc)
+        if remove:
+            self._start_run.remove(proc)
+        else:
+            self._start_run.append(proc)
 
     async def start_run(self, run_number: int) -> bool:
         return await self._start_run.fire(self, run_number)
 
-    def on_after_run(self, proc: ModuleProc) -> None:
-        "Register a callback to call when the module finishes to run"
-        assert callable(proc)
-        self._after_run.append(proc)
+    def on_after_run(self, proc: ModuleProc, remove: bool = False) -> None:
+        """Register a callback to execute after the module runs.
 
-    def remove_after_run(self, proc: ModuleProc) -> None:
-        "Remove the specified after_run callback"
-        self._after_run.remove(proc)
+        The callback will bee called with two arguments, the module and
+         the run_number
+
+        Parameters
+        ----------
+        remove: bool (optional)
+            Set to true to remove the callback from the list of callbacks.
+        """
+        assert callable(proc)
+        if remove:
+            self._after_run.remove(proc)
+        else:
+            self._after_run.append(proc)
 
     async def after_run(self, run_number: int) -> bool:
         return await self._after_run.fire(self, run_number)
 
-    def on_ending(self, proc: ModuleCb) -> None:
-        "Register a callback to call when the module ends"
-        assert callable(proc) and not aio.iscoroutinefunction(proc)
-        self._ending.append(proc)
+    def on_ending(self, proc: ModuleCb, remove: bool = False) -> None:
+        """Register a callback to execute when the module ends.
 
-    def remove_ending(self, proc: ModuleCb) -> None:
-        "Remove the specified ending callback"
-        self._ending.remove(proc)
+        The callback will bee called with two arguments, the module and
+         the run_number
+
+        Parameters
+        ----------
+        remove: bool (optional)
+            Set to true to remove the callback from the list of callbacks.
+        """
+        assert callable(proc) and not aio.iscoroutinefunction(proc)
+        if remove:
+            self._ending.remove(proc)
+        else:
+            self._ending.append(proc)
 
     def do_ending(self, run_number: int) -> None:
         for proc in self._ending:
@@ -1077,7 +1137,7 @@ class Module(metaclass=ABCMeta):
         assert last is not None
         return last
 
-    def set_current_params(self, v: Dict[str, Any]) -> Dict[str, Any]:
+    def set_current_params(self, v: dict[str, Any]) -> dict[str, Any]:
         "Change the current parameters"
         current = self.current_params()
         combined = dict(current)
@@ -1209,7 +1269,7 @@ class Module(metaclass=ABCMeta):
         return None
 
     def get_columns(
-        self, table: Union[BasePTable, Dict[str, Any]], slot: Optional[str] = None
+        self, table: Union[BasePTable, dict[str, Any]], slot: Optional[str] = None
     ) -> List[str]:
         """
         Return all the columns of interest from the specified table.
@@ -1257,9 +1317,11 @@ class Module(metaclass=ABCMeta):
             return None
         if indices is None:
             if isinstance(cols, (int, str)):
-                cols = slice(cols, cols)
+                return cast(BasePTable,
+                            df.loc[indices, slice(cols, cols)])
             # return df[cols]
-        return df.loc[indices, cols]  # type: ignore
+        return cast(BasePTable,
+                    df.loc[indices, cols])
 
     def get_slot_columns(self, name: str) -> List[str]:
         cols = self._columns_dict.get(name)
