@@ -72,7 +72,7 @@ class ColsAdd(ColsBinary):
             cols_out: denotes the names of columns in the ``result`` table
             kwds: extra keyword args to be passed to the ``Module`` superclass
         """
-        super().__init__(np.add, first=first, second=second, **kwds)
+        super().__init__(np.add, first=first, second=second, cols_out=cols_out, **kwds)
 
 @document
 class AddReduce(Reduce):

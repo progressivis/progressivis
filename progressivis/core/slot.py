@@ -13,7 +13,8 @@ from typing import (
     List,
     Tuple,
 )
-
+from dataclasses import dataclass
+import copy
 import logging
 from .changemanager_base import EMPTY_BUFFER, BaseChangeManager
 
@@ -89,6 +90,12 @@ class SlotDescriptor:
         return str(self)
 
 
+@dataclass(kw_only=True)
+class SlotHint:
+    slot: "Slot"
+    hint: Any
+
+
 class Slot:
     "A Slot manages one connection between two modules."
 
@@ -112,6 +119,7 @@ class Slot:
         self._name: str
         self.changes: Optional[BaseChangeManager] = None
         self.meta: Optional[Any] = None
+        self._hint: Optional[Any] = None
 
     def name(self) -> str:
         "Return the name of the slot"
@@ -321,6 +329,9 @@ class Slot:
         """
         return self.changes.has_buffered() if self.changes else False
 
+    def __getitem__(self, hint: Any) -> SlotHint:
+        return SlotHint(slot=self, hint=hint)
+
     @property
     def created(self) -> ChangeBuffer:
         "Return the buffer for created rows"
@@ -352,6 +363,10 @@ class Slot:
     def changemanager(self) -> Optional[BaseChangeManager]:
         "Return the ChangeManager"
         return self.changes
+
+    @property
+    def hint(self) -> Any:
+        return copy.copy(self._hint)
 
     changemanager_classes: Dict[Any, Type[BaseChangeManager]] = {}
 
