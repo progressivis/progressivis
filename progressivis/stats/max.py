@@ -13,7 +13,7 @@ from ..core.slot import Slot
 from ..utils.psdict import PDict
 from ..core.decorators import process_slot, run_if_any
 
-from typing import Optional, Dict, Union, Any, Tuple
+from typing import Optional, Dict, Union, Any, Tuple, Sequence
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +26,7 @@ def _max_func(x: Any, y: Any) -> Any:
 
 
 @document
-@def_input("table", PTable, doc="the input table")
+@def_input("table", PTable, hint_type=Sequence[str], doc="the input table")
 @def_output(
     "result",
     PDict,
