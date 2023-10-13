@@ -11,7 +11,7 @@ from enum import IntEnum
 import pdb
 
 import numpy as np
-from typeguard import check_type  # type: ignore
+from typeguard import check_type
 from progressivis.utils.errors import ProgressiveError, ProgressiveStopIteration
 from progressivis.table.table_base import BasePTable
 from progressivis.table.table import PTable

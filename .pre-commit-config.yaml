@@ -31,3 +31,4 @@ repos:
           - 'typing-extensions'
           - 'typing_extensions'
           - 'types-setuptools'
+          - 'typeguard'
