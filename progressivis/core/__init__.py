@@ -12,6 +12,7 @@ from .scheduler import Scheduler
 from .slot import Slot, SlotDescriptor
 from .module import Module
 from .pintset import PIntSet
+from .print import Print, Every
 from .wait import Wait
 from .sink import Sink
 from .types import notNone, JSon, Index
@@ -24,7 +25,7 @@ from .changemanager_dict import DictChangeManager
 from .storagemanager import StorageManager
 
 # pylint: disable=unused-import
-from .module import ReturnRunStep, Every, Print, def_input, def_output, def_parameter
+from .module import ReturnRunStep, def_input, def_output, def_parameter
 
 
 __version__: str = get_versions()["version"]

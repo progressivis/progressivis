@@ -6,12 +6,12 @@ import numpy as np
 
 from ..core.utils import indices_len, fix_loc
 from ..core.pintset import PIntSet
-from ..core.module import ReturnRunStep, def_input, def_output, document
-from ..core.module import Module
+from ..core.module import ReturnRunStep, def_input, def_output, document, Module
 from ..table.table import PTable
 from ..core.slot import Slot
 from ..utils.psdict import PDict
 from ..core.decorators import process_slot, run_if_any
+from .factory import register_stat
 
 from typing import Optional, Dict, Union, Any, Tuple
 
@@ -172,3 +172,6 @@ class ScalarMax(Module):
                     self.result[k] = new_val
                     self._sensitive_ids[k] = new_id
         return self._return_run_step(self.next_state(slot), steps_run=steps)
+
+
+register_stat("Max", Max)

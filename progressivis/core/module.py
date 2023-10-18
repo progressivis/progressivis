@@ -31,7 +31,6 @@ from typing import (
     cast,
     Any,
     Optional,
-    Sized,
     Set,
     List,
     Tuple,
@@ -44,7 +43,6 @@ from typing import (
 from collections.abc import (
     Iterable,
     Sequence,
-    MutableMapping,
     Coroutine,
 )
 
@@ -61,7 +59,6 @@ PColsDict = Union[None, dict[str, List[str]]]
 ModuleCb = Callable[["Module", int], None]
 ModuleCoro = Callable[["Module", int], Coroutine[Any, Any, Any]]
 ModuleProc = Union[ModuleCb, ModuleCoro]
-ModuleFactory = MutableMapping[str, "Module"]
 
 
 JSon = dict[str, Any]
@@ -75,7 +72,7 @@ logger = logging.getLogger(__name__)
 class ModuleTag:
     tags: Set[str] = set()
 
-    def __init__(self, *tag_list: str):
+    def __init__(self, *tag_list: str) -> None:
         self._saved = ModuleTag.tags
         ModuleTag.tags = set(tag_list)
 
@@ -187,6 +184,7 @@ class Module(metaclass=ABCMeta):
     def __init__(
         self,
         name: Optional[str] = None,
+        *,
         group: Optional[str] = None,
         scheduler: Optional[Scheduler] = None,
         storagegroup: Optional[Group] = None,
@@ -429,7 +427,9 @@ class Module(metaclass=ABCMeta):
             cls,
             factory: "ModuleFactory",
             name: Optional[str] = None,
-            **kw: Any
+            *,
+            scheduler: Optional[Scheduler] = None,
+            **kwds: Any
     ) -> Module:
         """Get a module of my class if it is already registered, or
         create a module of my class, register it, and return it.
@@ -449,13 +449,22 @@ class Module(metaclass=ABCMeta):
         A module of this type.
         """
         name = name or cls.__name__
-        module = factory.get(name)
-        if module is None:
-            module = cls(**kw)
-            factory[name] = module
+        if scheduler is None:
+            scheduler = factory.scheduler()
         else:
-            assert isinstance(module, cls)
-        return module
+            if scheduler is not factory.scheduler():
+                raise ProgressiveError("Invalid scheduler")
+        return cls(scheduler=scheduler, **kwds)
+
+    def make_connections(
+            self,
+            factory: "ModuleFactory",
+            name: str
+    ) -> None:
+        """
+        Create the connections after a module has been created by `make`
+        """
+        self.input[self.default_input()] = factory.result()
 
     # def create_dependent_modules(self, *params, **kwds) -> None:  # pragma no cover
     #     """Create modules that this module depends on.
@@ -674,12 +683,17 @@ class Module(metaclass=ABCMeta):
     def has_input_slot(self, name: str) -> bool:
         return self._input_slots.get(name, None) is not None
 
-    def get_input_slot(self, name: str) -> Slot:
+    def get_input_slot(self, name: Union[str, int]) -> Slot:
         "Return the specified input slot"
         # raises error is the slot is not declared
-        slot = self._input_slots[name]
+        _name: str
+        if isinstance(name, int):
+            _name = list(self._input_slots.keys())[name]
+        else:
+            _name = name
+        slot = self._input_slots[_name]
         if slot is None:
-            raise KeyError(f"slot '{name}' not connected")
+            raise KeyError(f"slot '{_name}' not connected")
         return slot
 
     def get_input_slot_multiple(self, name: str) -> List[str]:
@@ -803,6 +817,9 @@ class Module(metaclass=ABCMeta):
     def output_slot_names(self) -> Iterable[str]:
         return self._output_slots.keys()
 
+    def has_output_slot(self, name: str) -> bool:
+        return name in self._output_slots
+
     def validate(self) -> None:
         "called when the module have been validated"
         if self.state == self.state_created:
@@ -825,6 +842,10 @@ class Module(metaclass=ABCMeta):
         slots = [s for s in slots if s.output_name != name]
         self._output_slots[name] = slots
         # maybe del slots if it is empty and not required?
+
+    def default_input(self) -> Union[str, int]:
+        "Return the input slot considered as the default for this module"
+        return 1
 
     def get_data(self, name: str) -> Any:
         if name == Module.TRACE_SLOT:
@@ -1469,11 +1490,6 @@ class OutputSlots:
         return module.output_slot_names()
 
 
-def _print_len(x: Sized) -> None:
-    if x is not None:
-        print(len(x))
-
-
 params_doc = {}
 inputs_doc = {}
 outputs_doc = {}
@@ -1652,48 +1668,6 @@ def document(module: Type[Module]) -> Type[Module]:
     return module
 
 
-@def_input("df")
-class Every(Module):
-    "Module running a function at each iteration"
-
-    def __init__(
-        self,
-        proc: Callable[[Any], None] = _print_len,
-        constant_time: bool = True,
-        **kwds: Any,
-    ) -> None:
-        super(Every, self).__init__(**kwds)
-        self._proc = proc
-        self._constant_time = constant_time
-
-    def predict_step_size(self, duration: float) -> int:
-        if self._constant_time:
-            return 1
-        return super(Every, self).predict_step_size(duration)
-
-    def run_step(
-        self, run_number: int, step_size: float, howlong: float
-    ) -> ReturnRunStep:
-        slot = self.get_input_slot("df")
-        df = slot.data()
-        self._proc(df)
-        slot.clear_buffers()
-        return self._return_run_step(Module.state_blocked, steps_run=1)
-
-
-def _prt(x: Any) -> None:
-    print(x)
-
-
-class Print(Every):
-    "Module to print its input slot"
-
-    def __init__(self, **kwds: Any) -> None:
-        if "proc" not in kwds:
-            kwds["proc"] = _prt
-        super(Print, self).__init__(quantum=0.1, constant_time=True, **kwds)
-
-
 def _islot_to_json(slot: Optional[Slot]) -> Optional[JSon]:
     if slot is None:
         return None
@@ -1719,3 +1693,36 @@ def _create_table(tname: str, columns: Parameters) -> PTable:
     table = PTable(tname, dshape=dshape, storagegroup=Group.default_internal(tname))
     table.add(data)
     return table
+
+
+class ModuleFactory(dict[str, Module]):
+    def __init__(self, data_module: Module, output_slot: str = "result") -> None:
+        self.data_module = data_module
+        self.output_slot = output_slot
+        self.registry: dict[str, Type[Module]] = {}
+        self.modules: dict[str, Module] = {}
+
+    def result(self) -> Slot:
+        return self.data_module.output[self.output_slot]
+
+    def scheduler(self) -> Scheduler:
+        return self.data_module.scheduler()
+
+    def register(cls, name: str, mod_class: Type[Module]) -> None:
+        if name in cls.registry:
+            raise KeyError(f"Class name {name} already registered")
+        cls.registry[name] = mod_class
+
+    def get_class(self, name: str) -> Type[Module]:
+        return self.registry[name]
+
+    def class_exists(self, name: str) -> bool:
+        return name in self.registry
+
+    def get_or_create(self, name: str, **kwds: Any) -> Module:
+        mod = self.modules.get(name)
+        if mod is None:
+            mod_cls = self.registry[name]
+            mod = mod_cls.make(scheduler=self.scheduler(), **kwds)
+            self.modules[name] = mod
+        return mod

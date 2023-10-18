@@ -8,7 +8,11 @@ from typing import List, Any, Optional
 
 @def_input("inp", type=None, required=True, multiple=True)
 class Sink(Module):
-    "Base class for modules supporting a variable number of input slots."
+    """
+    Convenience module that can be connected to required output slots
+    of a module so it becomes valid. Also base class for modules
+    supporting a variable number of input slots.
+    """
 
     def __init__(self, slot_name: str = "inp", **kwds: Any) -> None:
         super(Sink, self).__init__(**kwds)

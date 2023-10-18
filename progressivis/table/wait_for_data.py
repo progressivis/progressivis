@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 from ..core.module import Module, ReturnRunStep, def_input
+from .table_base import BasePTable
 
 from typing import Callable, Any, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from ..core.scheduler import Scheduler
-    from .table_base import BasePTable
 
 
 @def_input("table", type=BasePTable, required=True)
