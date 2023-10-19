@@ -47,6 +47,12 @@ class TableModule(SlotHub):
 
     @staticmethod
     def get_or_create(module: Module, table_slot: str) -> TableModule:
+        """
+        Get or create a TableModule encapsulating a Table API using slots
+        that create modules on demand. Currently, we support the following
+        API:
+        min, max, percentiles, var, histogram, distinct
+        """
         tabmod = TableModule.registered_modules.get((module.name, table_slot))
         if tabmod is None:
             tabmod = TableModule(module, table_slot)
@@ -58,6 +64,9 @@ class TableModule(SlotHub):
 
     @staticmethod
     def forget(module: Module, table_slot: str | None = None) -> None:
+        """
+        Remove a registered module class from the list of registered modules.
+        """
         modname = module.name
         if table_slot is None:
             for k, v in TableModule.registered_modules.items():
@@ -72,6 +81,9 @@ class TableModule(SlotHub):
         table_slot: str,
         registry: dict[str, ModuleRegistry] | None = None,
     ) -> None:
+        """Create a TableModule. Don't use it directly, use the
+        `get_or_create` static method instead.
+        """
         super().__init__()
         self.module = module
         self.table_slot = table_slot
