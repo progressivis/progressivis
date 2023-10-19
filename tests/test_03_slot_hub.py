@@ -5,6 +5,7 @@ from progressivis.core import aio
 from progressivis import Print
 from progressivis.stats import Min, Max, RandomPTable
 from progressivis.core.slot_hub import SlotHub
+from progressivis.table.tablemod import TableModule
 
 import numpy as np
 
@@ -36,6 +37,16 @@ class TestModuleFactory(ProgressiveTest):
         res1 = random.result.max()
         res2 = max_.result
         self.compare(res1, res2)
+
+    def test_table_module(self) -> None:
+        s = self.scheduler()
+        random = RandomPTable(10, rows=10000, scheduler=s)
+        tabmod = TableModule(random, "result")
+        pr_min = Print(scheduler=s)
+        pr_min.input[0] = tabmod.output.min
+        pr_max = Print(scheduler=s)
+        pr_max.input[0] = tabmod.output.max
+        aio.run(s.start())
 
     def compare(self, res1: Dict[str, Any], res2: Dict[str, Any]) -> None:
         v1 = np.array(list(res1.values()))

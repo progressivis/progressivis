@@ -12,7 +12,6 @@ from ..table.table import PTable
 from ..core.slot import Slot
 from ..utils.psdict import PDict
 from ..core.decorators import process_slot, run_if_any
-from .factory import register_stat
 
 from typing import Optional, Dict, Union, Any, Tuple
 
@@ -173,6 +172,3 @@ class ScalarMin(Module):
                     self.result[k] = new_val
                     self._sensitive_ids[k] = new_id
         return self._return_run_step(self.next_state(slot), steps_run=steps)
-
-
-register_stat("min", Min)
