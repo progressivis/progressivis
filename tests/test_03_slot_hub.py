@@ -41,7 +41,7 @@ class TestModuleFactory(ProgressiveTest):
     def test_table_module(self) -> None:
         s = self.scheduler()
         random = RandomPTable(10, rows=10000, scheduler=s)
-        tabmod = TableModule(random, "result")
+        tabmod = TableModule.get_or_create(random, "result")
         pr_min = Print(scheduler=s)
         pr_min.input[0] = tabmod.output.min
         pr_max = Print(scheduler=s)
