@@ -27,7 +27,6 @@ from .storagemanager import StorageManager
 # pylint: disable=unused-import
 from .module import ReturnRunStep, def_input, def_output, def_parameter
 
-
 __version__: str = get_versions()["version"]
 version = __version__
 short_version = __version__

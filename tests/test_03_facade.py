@@ -4,23 +4,23 @@ from . import ProgressiveTest
 from progressivis.core import aio
 from progressivis import Print
 from progressivis.stats import Min, Max, RandomPTable
-from progressivis.core.slot_hub import SlotHub
-from progressivis.table.tablemod import TableModule
+from progressivis.core.module_facade import ModuleFacade
+from progressivis.table.table_facade import TableFacade
 
 import numpy as np
 
 from typing import Any, Dict
 
 
-class TestModuleFactory(ProgressiveTest):
-    def test_slothub(self) -> None:
+class TestModuleFacade(ProgressiveTest):
+    def test_module_facade(self) -> None:
         s = self.scheduler()
         random = RandomPTable(10, rows=10000, scheduler=s)
         min_ = Min(name="min_" + str(hash(random)), scheduler=s)
         min_.input[0] = random.output.result
         max_ = Max(name="max_" + str(hash(random)), scheduler=s)
         max_.input[0] = random.output.result
-        hub = SlotHub()
+        hub = ModuleFacade()
         hub.add_proxy("min", "result", min_)
         hub.add_proxy("max", "result", max_)
         pr_min = Print(scheduler=s)
@@ -41,7 +41,7 @@ class TestModuleFactory(ProgressiveTest):
     def test_table_module(self) -> None:
         s = self.scheduler()
         random = RandomPTable(10, rows=10000, scheduler=s)
-        tabmod = TableModule.get_or_create(random, "result")
+        tabmod = TableFacade.get_or_create(random, "result")
         pr_min = Print(scheduler=s)
         pr_min.input[0] = tabmod.output.min
         pr_max = Print(scheduler=s)

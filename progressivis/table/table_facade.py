@@ -6,7 +6,7 @@ from typing import (
 )
 from dataclasses import dataclass
 
-from progressivis.core.slot_hub import SlotHub, SlotProxy
+from progressivis.core.module_facade import ModuleFacade, SlotProxy
 from progressivis.core.sink import Sink
 from progressivis import Module, ProgressiveError
 from progressivis.core.utils import get_random_name
@@ -42,24 +42,24 @@ def table_register(name: str, output_name: str, module_cls: Type[Module]) -> Non
     TABLE_REGISTRY[name] = ModuleRegistry(output_name, module_cls)
 
 
-class TableModule(SlotHub):
-    registered_modules: dict[Tuple[str, str], TableModule] = {}
+class TableFacade(ModuleFacade):
+    registered_modules: dict[Tuple[str, str], TableFacade] = {}
 
     @staticmethod
-    def get_or_create(module: Module, table_slot: str) -> TableModule:
+    def get_or_create(module: Module, table_slot: str) -> TableFacade:
         """
-        Get or create a TableModule encapsulating a Table API using slots
+        Get or create a TableFacade encapsulating a Table API using slots
         that create modules on demand. Currently, we support the following
         API:
         min, max, percentiles, var, histogram, distinct
         """
-        tabmod = TableModule.registered_modules.get((module.name, table_slot))
+        tabmod = TableFacade.registered_modules.get((module.name, table_slot))
         if tabmod is None:
-            tabmod = TableModule(module, table_slot)
-            TableModule.registered_modules[
+            tabmod = TableFacade(module, table_slot)
+            TableFacade.registered_modules[
                 (module.name, table_slot)
             ] = tabmod
-            module.on_ending(lambda mod, _ : TableModule.forget(mod))
+            module.on_ending(lambda mod, _ : TableFacade.forget(mod))
         return tabmod
 
     @staticmethod
@@ -69,11 +69,11 @@ class TableModule(SlotHub):
         """
         modname = module.name
         if table_slot is None:
-            for k, v in TableModule.registered_modules.items():
+            for k, v in TableFacade.registered_modules.items():
                 if k[0] == modname:
-                    del TableModule.registered_modules[k]
+                    del TableFacade.registered_modules[k]
         else:
-            del TableModule.registered_modules[(modname, table_slot)]
+            del TableFacade.registered_modules[(modname, table_slot)]
 
     def __init__(
         self,
@@ -81,7 +81,7 @@ class TableModule(SlotHub):
         table_slot: str,
         registry: dict[str, ModuleRegistry] | None = None,
     ) -> None:
-        """Create a TableModule. Don't use it directly, use the
+        """Create a TableFacade. Don't use it directly, use the
         `get_or_create` static method instead.
         """
         super().__init__()

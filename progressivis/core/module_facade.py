@@ -1,4 +1,4 @@
-"Hub of Module Slots"
+"Facade of Module Slots"
 
 from __future__ import annotations
 
@@ -14,10 +14,10 @@ from progressivis import Slot, ProgressiveError, Module
 @dataclass
 class SlotProxy:
     output_name: str
-    output_module: Module | SlotHub
+    output_module: Module | ModuleFacade
 
 
-class SlotHub:
+class ModuleFacade:
     """
     Presents a unified facade of output slots for a list of interconnected modules.
     """
@@ -39,7 +39,7 @@ class SlotHub:
         raise ProgressiveError(f"Cannot create module for slot {name}")
 
     def add_proxy(
-        self, name: str, output_name: str, output_module: Module | SlotHub
+        self, name: str, output_name: str, output_module: Module | ModuleFacade
     ) -> None:
         if name in self._output_slots:
             raise ProgressiveError(f"Output slot '{name}' already registered in Hub")
@@ -56,20 +56,20 @@ class OutputProxies:
     as if they were attributes.
     """
 
-    def __init__(self, hub: SlotHub):
-        self.hub: SlotHub
-        self.__dict__["hub"] = hub
+    def __init__(self, facade: ModuleFacade):
+        self.facade: ModuleFacade
+        self.__dict__["facade"] = facade
 
     def __setattr__(self, name: str, slot: Slot) -> None:
         raise ProgressiveError("Output slots cannot be assigned, only read")
 
     def __getattr__(self, name: str) -> Slot:
         while True:
-            proxy = self.hub.get(name)
+            proxy = self.facade.get(name)
             if proxy is None:  # should create the module before passing its slot
-                proxy = self.hub.create_slot_module(name)
-                self.hub.add_proxy(name, proxy.output_name, proxy.output_module)
-            if isinstance(proxy.output_module, Module):  # Follow if SlotHub again
+                proxy = self.facade.create_slot_module(name)
+                self.facade.add_proxy(name, proxy.output_name, proxy.output_module)
+            if isinstance(proxy.output_module, Module):  # Follow if ModuleFacade again
                 break
             name = proxy.output_name
         assert isinstance(proxy.output_module, Module)
@@ -79,4 +79,4 @@ class OutputProxies:
         return self.__getattr__(name)
 
     def __dir__(self) -> Iterable[str]:
-        return self.hub.output_slot_names()
+        return self.facade.output_slot_names()
