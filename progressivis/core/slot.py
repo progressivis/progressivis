@@ -44,6 +44,7 @@ class SlotDescriptor:
         "buffer_deleted",
         "buffer_exposed",
         "buffer_masked",
+        "hint_type",
     )
 
     def __init__(
@@ -58,6 +59,7 @@ class SlotDescriptor:
         buffer_deleted: bool = True,
         buffer_exposed: bool = True,
         buffer_masked: bool = True,
+        hint_type: Any = None,
     ) -> None:
         self.name = name
         """The slot name """
@@ -77,6 +79,7 @@ class SlotDescriptor:
         """True if the slot should buffer the deleted entries """
         self.buffer_exposed = buffer_exposed
         self.buffer_masked = buffer_masked
+        self.hint_type = hint_type
 
     def __str__(self) -> str:
         return (

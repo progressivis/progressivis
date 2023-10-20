@@ -11,6 +11,7 @@ from enum import IntEnum
 import pdb
 
 import numpy as np
+from typeguard import check_type
 from progressivis.utils.errors import ProgressiveError, ProgressiveStopIteration
 from progressivis.table.table_base import BasePTable
 from progressivis.table.table import PTable
@@ -1418,12 +1419,12 @@ class InputSlots:
     def __init__(self, module: Module):
         self.__dict__["module"] = module
 
-    def __setattr__(self, name: Union[int, str], slot: Slot | SlotHint) -> None:
+    def __setattr__(self, name: Union[str, int], slot: Slot | SlotHint) -> None:
+        hint: Any = None
         if isinstance(slot, SlotHint):
             slot, hint = slot.slot, slot.hint
             if slot._hint is not None:
                 raise KeyError("'hint' cannot be assigned more than once")
-            slot._hint = hint
         assert isinstance(slot, Slot)
         assert slot.output_module is not None
         assert slot.output_name is not None
@@ -1440,6 +1441,11 @@ class InputSlots:
             slot.input_name = name_
         else:
             slot.input_name = name
+        if hint is not None:
+            desc_ = slot.input_descriptor()
+            ck = check_type(hint, desc_.hint_type)
+            assert ck == hint
+            slot._hint = hint
         slot.connect()
 
     def __getattr__(self, name: str) -> Slot:
@@ -1449,16 +1455,10 @@ class InputSlots:
         raise ProgressiveError("Input slots cannot be read, only assigned to")
 
     def __setitem__(self, name: Union[int, str, Tuple[str, Any]], slot: Slot | SlotHint) -> None:
-        if isinstance(slot, SlotHint):
-            slot, hint = slot.slot, slot.hint
-            if slot._hint is not None:
-                raise KeyError("'hint' cannot be assigned more than once")
-            slot._hint = hint
-        if isinstance(name, (int, str)):
-            return self.__setattr__(name, slot)
-        name, meta = name
-        slot.meta = meta
-        return self.__setattr__(name, slot)
+        if isinstance(name, tuple) and isinstance(slot, Slot):
+            name, meta = name
+            slot.meta = meta
+        return self.__setattr__(name, slot)  # type: ignore
 
     def __dir__(self) -> Iterable[str]:
         module: Module = self.__dict__["module"]

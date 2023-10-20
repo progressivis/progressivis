@@ -150,6 +150,7 @@ setup(
         "fast-histogram",
         "rangehttpserver",
         "datasketches",
+        "typeguard",
         # "aiohttp",
         # "aiohttp_jinja2",
         # "python_socketio",
