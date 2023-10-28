@@ -70,8 +70,8 @@ class TestUnary(ProgressiveTest):
     def test_unary2(self) -> None:
         s = self.scheduler()
         random = RandomPTable(10, rows=100_000, scheduler=s)
-        module = Unary(np.log, columns=["_3", "_5", "_7"], scheduler=s)
-        module.input[0] = random.output.result
+        module = Unary(np.log, scheduler=s)
+        module.input[0] = random.output.result["_3", "_5", "_7"]
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = module.output.result
         aio.run(s.start())
@@ -87,8 +87,8 @@ class TestUnary(ProgressiveTest):
         random = RandomPTable(10, rows=100_000, scheduler=s)
         stirrer = Stirrer(update_column="_3", fixed_step_size=1000, scheduler=s, **kw)
         stirrer.input[0] = random.output.result
-        module = Unary(np.log, columns=["_3", "_5", "_7"], scheduler=s)
-        module.input[0] = stirrer.output.result
+        module = Unary(np.log, scheduler=s)
+        module.input[0] = stirrer.output.result["_3", "_5", "_7"]
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = module.output.result
         aio.run(s.start())
@@ -214,9 +214,9 @@ class TestColsBinary(ProgressiveTest):
         cols = 10
         random = RandomPTable(cols, rows=100_000, scheduler=s)
         module = ColsBinary(
-            np.add, first=["_3", "_5", "_7"], second=["_4", "_6", "_8"], scheduler=s
+            np.add, scheduler=s
         )
-        module.input[0] = random.output.result
+        module.input[0] = random.output.result[["_3", "_5", "_7"], ["_4", "_6", "_8"]]
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = module.output.result
         aio.run(s.start())
@@ -235,12 +235,10 @@ class TestColsBinary(ProgressiveTest):
         random = RandomPTable(cols, rows=100, scheduler=s)
         module = ColsBinary(
             np.add,
-            first=["_3", "_5", "_7"],
-            second=["_4", "_6", "_8"],
             cols_out=["x", "y", "z"],
             scheduler=s,
         )
-        module.input[0] = random.output.result
+        module.input[0] = random.output.result[["_3", "_5", "_7"], ["_4", "_6", "_8"]]
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = module.output.result
         aio.run(s.start())
@@ -254,9 +252,9 @@ class TestColsBinary(ProgressiveTest):
         stirrer = Stirrer(update_column="_3", fixed_step_size=1000, scheduler=s, **kw)
         stirrer.input[0] = random.output.result
         module = ColsBinary(
-            np.add, first=["_3", "_5", "_7"], second=["_4", "_6", "_8"], scheduler=s
+            np.add, scheduler=s
         )
-        module.input[0] = stirrer.output.result
+        module.input[0] = stirrer.output.result[["_3", "_5", "_7"], ["_4", "_6", "_8"]]
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = module.output.result
         aio.run(s.start())
@@ -280,12 +278,10 @@ class TestColsBinary(ProgressiveTest):
         s = self.scheduler()
         random = RandomPTable(10, rows=10_000, scheduler=s)
         module = cls(
-            first=["_3", "_5", "_7"],
-            second=["_4", "_6", "_8"],
             cols_out=["x", "y", "z"],
             scheduler=s,
         )
-        module.input[0] = random.output.result
+        module.input[0] = random.output.result[["_3", "_5", "_7"], ["_4", "_6", "_8"]]
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = module.output.result
         aio.run(s.start())
@@ -329,12 +325,10 @@ class TestOtherColsBinaries(ProgressiveTest):
             dtype="int64",
         )
         module = cls(
-            first=["_3", "_5", "_7"],
-            second=["_4", "_6", "_8"],
             cols_out=["x", "y", "z"],
             scheduler=s,
         )
-        module.input[0] = random.output.result
+        module.input[0] = random.output.result[["_3", "_5", "_7"], ["_4", "_6", "_8"]]
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = module.output.result
         aio.run(s.start())
@@ -360,12 +354,10 @@ class TestOtherColsBinaries(ProgressiveTest):
             dtype="int64",
         )
         module = cls(
-            first=["_3", "_5", "_7"],
-            second=["_4", "_6", "_8"],
             cols_out=["x", "y", "z"],
             scheduler=s,
         )
-        module.input[0] = random.output.result
+        module.input[0] = random.output.result[["_3", "_5", "_7"], ["_4", "_6", "_8"]]
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = module.output.result
         aio.run(s.start())
@@ -424,25 +416,16 @@ class TestBinary(TestBin):
         self.assertTrue(module.name.startswith("binary_"))
         self.assertTrue(np.allclose(res1, res2, equal_nan=True))
 
-    def test_binary2(self) -> None:
-        s = self.scheduler()
-        cols = 10
-        _ = RandomPTable(cols, rows=100_000, scheduler=s)
-        _ = RandomPTable(cols, rows=100_000, scheduler=s)
-        with self.assertRaises(AssertionError):
-            _ = Binary(np.add, columns=["_3", "_5", "_7"], scheduler=s)
-
     def test_binary3(self) -> None:
         s = self.scheduler()
         random1 = RandomPTable(10, rows=100_000, scheduler=s)
         random2 = RandomPTable(10, rows=100_000, scheduler=s)
         module = Binary(
             np.add,
-            columns={"first": ["_3", "_5", "_7"], "second": ["_4", "_6", "_8"]},
             scheduler=s,
         )
-        module.input.first = random1.output.result
-        module.input.second = random2.output.result
+        module.input.first = random1.output.result["_3", "_5", "_7"]
+        module.input.second = random2.output.result["_4", "_6", "_8"]
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = module.output.result
         aio.run(s.start())
@@ -467,11 +450,10 @@ class TestBinary(TestBin):
         stirrer2.input[0] = random2.output.result
         module = Binary(
             np.add,
-            columns={"first": ["_3", "_5", "_7"], "second": ["_4", "_6", "_8"]},
             scheduler=s,
         )
-        module.input.first = stirrer1.output.result
-        module.input.second = stirrer2.output.result
+        module.input.first = stirrer1.output.result["_3", "_5", "_7"]
+        module.input.second = stirrer2.output.result["_4", "_6", "_8"]
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = module.output.result
         aio.run(s.start())
@@ -556,14 +538,6 @@ class TestBinaryTD(TestBin):
         self.assertTrue(module.name.startswith("binary_"))
         self.assertTrue(np.allclose(res1, res2, equal_nan=True))
 
-    def test_binary2(self) -> None:
-        s = self.scheduler()
-        cols = 10
-        _ = RandomPTable(cols, rows=100_000, scheduler=s)
-        _ = RandomDict(cols, scheduler=s)
-        with self.assertRaises(AssertionError):
-            _ = Binary(np.add, columns=["_3", "_5", "_7"], scheduler=s)
-
     def test_binary3(self) -> None:
         s = self.scheduler()
         cols = 10
@@ -571,11 +545,10 @@ class TestBinaryTD(TestBin):
         random2 = RandomDict(cols, scheduler=s)
         module = Binary(
             np.add,
-            columns={"first": ["_3", "_5", "_7"], "second": ["_4", "_6", "_8"]},
             scheduler=s,
         )
-        module.input.first = random1.output.result
-        module.input.second = random2.output.result
+        module.input.first = random1.output.result["_3", "_5", "_7"]
+        module.input.second = random2.output.result["_4", "_6", "_8"]
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = module.output.result
         aio.run(s.start())
@@ -712,8 +685,8 @@ class TestReduce(ProgressiveTest):
     def test_reduce2(self) -> None:
         s = self.scheduler()
         random = RandomPTable(10, rows=100_000, scheduler=s)
-        module = Reduce(np.add, columns=["_3", "_5", "_7"], scheduler=s)
-        module.input[0] = random.output.result
+        module = Reduce(np.add, scheduler=s)
+        module.input[0] = random.output.result["_3", "_5", "_7"]
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = module.output.result
         aio.run(s.start())

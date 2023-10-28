@@ -11,11 +11,11 @@ from progressivis.table.table import PTable
 import numexpr as ne
 from progressivis.core.module import def_input, def_output
 
-from typing import Type, Tuple, Any
+from typing import Type, Tuple, Any, Sequence
 
 
-@def_input("first", type=PTable)
-@def_input("second", type=PTable)
+@def_input("first", type=PTable, hint_type=Sequence[str])
+@def_input("second", type=PTable, hint_type=Sequence[str])
 @def_output("result", type=PTable, required=False, datashape={"first": ["_1", "_2"]})
 class NumExprSample(NumExprABC):
     """ """
@@ -23,8 +23,8 @@ class NumExprSample(NumExprABC):
     expr = {"_1": "{first._2}+2*{second._3}", "_2": "{first._3}-5*{second._2}"}
 
 
-@def_input("first", type=PTable)
-@def_input("second", type=PTable)
+@def_input("first", type=PTable, hint_type=Sequence[str])
+@def_input("second", type=PTable, hint_type=Sequence[str])
 @def_output("result", type=PTable, required=False)
 class NumExprSample2(NumExprABC):
     """ """
@@ -41,12 +41,11 @@ class TestNumExpr(ProgressiveTest):
         random1 = RandomPTable(10, rows=100000, scheduler=s)
         random2 = RandomPTable(10, rows=100000, scheduler=s)
         module = cls(
-            columns={"first": ["_1", "_2", "_3"], "second": ["_1", "_2", "_3"]},
             scheduler=s,
         )
 
-        module.input.first = random1.output.result
-        module.input.second = random2.output.result
+        module.input.first = random1.output.result["_1", "_2", "_3"]
+        module.input.second = random2.output.result["_1", "_2", "_3"]
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = module.output.result
         aio.run(s.start())

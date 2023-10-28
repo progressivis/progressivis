@@ -205,7 +205,6 @@ class Module(metaclass=ABCMeta):
         group: Optional[str] = None,
         scheduler: Optional[Scheduler] = None,
         storagegroup: Optional[Group] = None,
-        columns: Optional[PColumns] = None,
         output_required: Optional[bool] = True,
         **kwds: Any,
     ) -> None:
@@ -293,21 +292,8 @@ class Module(metaclass=ABCMeta):
             # class variables
             sd = SlotDescriptor("result", type=PTable, required=False)
             self.output_descriptors["result"] = sd
-        self._columns: Optional[List[str]] = None
-        self._columns_dict: Dict[str, List[str]] = {}
-        if isinstance(columns, dict):
-            assert len(columns)
-            for v in columns.values():
-                self._columns = v
-                break
-            self._columns_dict = columns
-        elif isinstance(columns, list):  # backward compatibility
-            self._columns = columns
-            for k in self._input_slots.keys():
-                self._columns_dict[k] = columns
-                break
-        else:
-            assert columns is None
+        if "columns" in kwds:
+            raise ValueError("'columns' is not a valid parameter")
 
     @staticmethod
     def tagged(*tags: str) -> ModuleTag:
@@ -1213,80 +1199,31 @@ class Module(metaclass=ABCMeta):
     def all_outputs(self) -> List[SlotDescriptor]:
         return self.outputs
 
-    @property
-    def columns(self) -> Optional[List[str]]:
-        return (list(self._columns)
-                if isinstance(self._columns, list)
-                else self._columns)
-
-    # Methods coming from TableModule
-
     def get_first_input_slot(self) -> Optional[str]:
         for k in self.input_slot_names():
             return k
         return None
 
-    def get_columns(
-        self, table: Union[BasePTable, Dict[str, Any]], slot: Optional[str] = None
-    ) -> List[str]:
-        """
-        Return all the columns of interest from the specified table.
-
-        If the module has been created without a list of columns, then all
-        the columns of the table are returned.
-        Otherwise, the interesection between the specified list and the
-        existing columns is returned.
-        """
-        if table is None:
-            return None
-        if slot is None:
-            _columns = self._columns
-        else:
-            _columns = self._columns_dict.get(slot)
-        df_columns = table.keys() if isinstance(table, dict) else table.columns
-        if _columns is None:
-            _columns = list(df_columns)
-        else:
-            cols = set(_columns)
-            diff = cols.difference(df_columns)
-            for column in diff:
-                _columns.remove(column)  # maintain the order
-        return _columns
-
-    def filter_columns(
+    def filter_slot_columns(
         self,
-        df: BasePTable,
+        slot: Slot,
         indices: Optional[Any] = None,
-        slot: Optional[str] = None,
         cols: PColumns = None,
     ) -> BasePTable:
         """
         Return the specified table filtered by the specified indices and
         limited to the columns of interest.
         """
-        if self._columns is None or (
-            slot is not None and slot not in self._columns_dict
-        ):
+        df = slot.data()
+        assert df is not None
+        if slot._hint is None:
             if indices is None:
-                return df
+                return cast(BasePTable, df)
             return cast(BasePTable, df.loc[indices])
-        cols = cols or self.get_columns(df, slot)
+        cols = cols or slot.hint or df.columns
         if cols is None:
-            return None
-        if indices is None:
-            if isinstance(cols, (int, str)):
-                cols = slice(cols, cols)
-            # return df[cols]
+            return cast(BasePTable, df)
         return df.loc[indices, cols]  # type: ignore
-
-    def get_slot_columns(self, name: str) -> List[str]:
-        cols = self._columns_dict.get(name)
-        if cols is not None:
-            return cols
-        slot = self.get_input_slot(name)
-        if slot is not None:
-            return list(slot.data().columns)
-        return []
 
     def has_output_datashape(self, name: str = "table") -> bool:
         for osl in self.all_outputs:
@@ -1311,9 +1248,9 @@ class Module(metaclass=ABCMeta):
             assert isl is not None
             table = isl.data()
             if v == "#columns":
-                colsn = self.get_slot_columns(k)
+                colsn = isl.hint or table.columns
             elif v == "#all":
-                colsn = table._columns
+                colsn = table.columns
             else:
                 assert isinstance(v, list)
                 colsn = v

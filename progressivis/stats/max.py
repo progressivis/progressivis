@@ -68,10 +68,7 @@ class Max(Module):
         with self.context as ctx:
             indices = ctx.table.created.next(length=step_size)  # returns a slice
             steps = indices_len(indices)
-            input_df = ctx.table.data()
-            if (hint := ctx.table.hint) is not None:
-                self._columns = hint
-            op = self.filter_columns(input_df, fix_loc(indices)).max(keepdims=False)
+            op = self.filter_slot_columns(ctx.table, fix_loc(indices)).max(keepdims=False)
             if self.result is None:
                 self.result = PDict(op)
             else:
@@ -153,7 +150,7 @@ class ScalarMax(Module):
             indices = slot.created.next(length=step_size)  # returns a slice
         steps = indices_len(indices)
         input_df = slot.data()
-        idxop = self.filter_columns(input_df, fix_loc(indices)).idxmax()
+        idxop = self.filter_slot_columns(slot, fix_loc(indices)).idxmax()
         if not self._sensitive_ids:
             self._sensitive_ids.update(idxop)
         if self.result is None:

@@ -13,8 +13,8 @@ from ..utils.psdict import PDict
 from ..table.dshape import dshape_projection
 from ..core.slot_join import SlotJoin
 from collections import OrderedDict
-
-from typing import List, Any, Optional, Dict, Union, Callable
+from typeguard import check_type
+from typing import List, Any, Optional, Dict, Union, Callable, Sequence, Tuple
 
 Cols = Union[List[str], Dict[str, List[str]]]
 
@@ -80,7 +80,7 @@ def info() -> None:
     print("binary dict", binary_dict_all)
 
 
-@def_input("table", type=PTable, required=True)
+@def_input("table", type=PTable, required=True, hint_type=Sequence[str])
 @def_output("result", type=PTable, required=False, datashape={"table": "#columns"})
 class Unary(Module):
     def __init__(self, ufunc: UFunc, **kwds: Any) -> None:
@@ -107,7 +107,7 @@ class Unary(Module):
                 dshape=dshape_,
                 create=True,
             )
-        cols = self.get_columns(data_in)
+        cols = slot.hint or data_in.columns
         if len(cols) == 0:
             # return self._return_run_step(self.state_blocked, steps_run=0)
             raise ValueError("Empty list of columns")
@@ -122,7 +122,7 @@ class Unary(Module):
                 return self._return_run_step(self.next_state(slot), steps_run=steps)
         if slot.updated.any():
             indices = slot.updated.next(length=steps_todo, as_slice=False)
-            vec = self.filter_columns(data_in, fix_loc(indices)).raw_unary(
+            vec = self.filter_slot_columns(slot, fix_loc(indices)).raw_unary(
                 self._ufunc, **self._kwds
             )
             self.result.loc[indices, cols] = vec
@@ -134,7 +134,7 @@ class Unary(Module):
             return self._return_run_step(self.next_state(slot), steps_run=steps)
         indices = slot.created.next(length=step_size, as_slice=False)
         steps += indices_len(indices)
-        vec = self.filter_columns(data_in, fix_loc(indices)).raw_unary(
+        vec = self.filter_slot_columns(slot, fix_loc(indices)).raw_unary(
             self._ufunc, **self._kwds
         )
         assert isinstance(self.result, PTable)
@@ -185,25 +185,21 @@ def _simple_binary(
     return res
 
 
-@def_input("table", type=PTable, required=True)
+@def_input("table", type=PTable, required=True, hint_type=Tuple[Sequence[str], Sequence[str]])
 @def_output("result", type=PTable, required=False)
 class ColsBinary(Module):
     def __init__(
         self,
         ufunc: UFunc,
-        first: List[str],
-        second: List[str],
         cols_out: Optional[List[str]] = None,
         **kwds: Any,
     ) -> None:
         super(ColsBinary, self).__init__(**kwds)
         self._ufunc = ufunc
-        self._first = first
-        self._second = second
+        self._first: List[str] = []
+        self._second: List[str] = []
         self._cols_out = cols_out
         self._kwds = {}
-        if self._columns is None:
-            self._columns = first + second
 
     def reset(self) -> None:
         if self.result is not None:
@@ -217,6 +213,10 @@ class ColsBinary(Module):
         data_in = slot.data()
         if not data_in:
             return self._return_run_step(self.state_blocked, steps_run=0)
+        if not self._first:
+            hint = slot.hint
+            self._first, self._second = check_type(hint, Tuple[Sequence[str], Sequence[str]])
+            assert self._first and len(self._first) == len(self._second)
         if self._cols_out is None:
             self._cols_out = self._first
         if self.result is None:
@@ -299,23 +299,18 @@ for k, v in binary_dict_all.items():
     # binary_modules.append(_g[name])
 
 
-@def_input("first", type=PTable, required=True)
-@def_input("second", type=PTable, required=True)
+@def_input("first", type=PTable, required=True, hint_type=Sequence[str])
+@def_input("second", type=PTable, required=True, hint_type=Sequence[str])
 @def_output("result", PTable, required=False, datashape={"first": "#columns"})
 class Binary(Module):
-    def __init__(self, ufunc: UFunc, columns: Optional[Cols] = None, **kwds: Any):
+    def __init__(self, ufunc: UFunc, **kwds: Any):
         """
         Args:
-            columns: columns to be processed. When missing all input columns are processed
             kwds: extra keyword args to be passed to the ``Module`` superclass
         """
-        super(Binary, self).__init__(columns=columns, **kwds)
+        super().__init__(**kwds)
         self._ufunc = ufunc
         self._kwds = {}
-        _assert = self._columns is None or (
-            "first" in self._columns_dict and "second" in self._columns_dict
-        )
-        assert _assert
         self._join: Optional[SlotJoin] = None
 
     def reset(self) -> None:
@@ -352,6 +347,7 @@ class Binary(Module):
         if self._join is None:
             slots_ = (first, second) if isinstance(data2, BasePTable) else (first,)
             self._join = self.make_slot_join(*slots_)
+        cols_ii = second.hint or (data2.columns if _t2t else list(data2.keys()))
         with self._join as join:
             if join.has_deleted():
                 indices = join.next_deleted(steps_todo)
@@ -365,15 +361,15 @@ class Binary(Module):
             if join.has_updated():
                 indices = join.next_updated(steps_todo)
                 other = (
-                    self.filter_columns(data2, fix_loc(indices), "second")
+                    self.filter_slot_columns(second, fix_loc(indices))
                     if _t2t
                     else data2
                 )
                 vec = _binary(
-                    self.filter_columns(data, fix_loc(indices), "first"),
+                    self.filter_slot_columns(first, fix_loc(indices)),
                     self._ufunc,
                     other,
-                    self.get_columns(data2, "second"),
+                    cols_ii,
                     **self._kwds,
                 )
                 self.result.loc[indices, :] = vec
@@ -388,15 +384,15 @@ class Binary(Module):
             indices = join.next_created(steps_todo)
             steps += indices_len(indices)
             other = (
-                self.filter_columns(data2, fix_loc(indices), "second")
+                self.filter_slot_columns(second, fix_loc(indices))
                 if _t2t
                 else data2
             )
             vec = _binary(
-                self.filter_columns(data, fix_loc(indices), "first"),
+                self.filter_slot_columns(first, fix_loc(indices)),
                 self._ufunc,
                 other,
-                self.get_columns(data2, "second"),
+                cols_ii,
                 **self._kwds,
             )
             assert isinstance(self.result, PTable)
@@ -418,16 +414,15 @@ def _reduce(tbl: BasePTable, op: UFunc, initial: Any, **kwargs: Any) -> Dict[str
     return res
 
 
-@def_input("table", type=PTable, required=True)
+@def_input("table", type=PTable, required=True, hint_type=Sequence[str])
 @def_output("result", PDict)
 class Reduce(Module):
     def __init__(
-        self, ufunc: np.ufunc, columns: Optional[List[str]] = None, **kwds: Any
+        self, ufunc: np.ufunc, **kwds: Any
     ) -> None:
         assert ufunc.nin == 2
         super(Reduce, self).__init__(**kwds)
         self._ufunc = getattr(ufunc, "reduce")
-        self._columns = columns
         self._kwds = kwds
 
     def reset(self) -> None:
@@ -442,7 +437,7 @@ class Reduce(Module):
         assert self.context
         with self.context as ctx:
             data_in = ctx.table.data()
-            cols = self.get_columns(data_in)
+            cols = ctx.table.hint or data_in.columns
             pdict = self.result
             if pdict is None:
                 pdict = PDict()
@@ -455,7 +450,7 @@ class Reduce(Module):
             indices = ctx.table.created.next(length=step_size)
             steps = indices_len(indices)
             rdict = _reduce(
-                self.filter_columns(data_in, fix_loc(indices)),
+                self.filter_slot_columns(ctx.table, fix_loc(indices)),
                 self._ufunc,
                 pdict,
                 **({"dtype": self._kwds["dtype"]} if "dtype" in self._kwds else {}),

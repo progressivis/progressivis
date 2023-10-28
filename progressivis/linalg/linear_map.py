@@ -10,13 +10,13 @@ from ..table.dshape import dshape_projection
 from ..core.decorators import process_slot, run_if_any
 
 
-from typing import List, Optional, Any
+from typing import Optional, Any, Sequence
 
 
 @document
-@def_input("vectors", type=PTable, doc="Table providing the row vectors")
+@def_input("vectors", type=PTable, hint_type=Sequence[str], doc="Table providing the row vectors")
 @def_input(
-    "transformation", type=PTable, doc="table providing the transformation matrix"
+    "transformation", type=PTable, hint_type=Sequence[str], doc="table providing the transformation matrix"
 )
 @def_output("result", PTable, doc="result table")
 class LinearMap(Module):
@@ -26,15 +26,15 @@ class LinearMap(Module):
     rows are read. Its rows number has to be equal to ``vectors`` columns number.
     """
 
-    def __init__(self, transf_columns: Optional[List[str]] = None, **kwds: Any) -> None:
+    def __init__(self, **kwds: Any) -> None:
         """
         Args:
             transf_columns: columns to be included in the transformation matrix. When
                 missing all columns are included
         """
         super().__init__(**kwds)
-        self._k_dim = len(self._columns) if self._columns else None
-        self._transf_columns = transf_columns
+        self._k_dim = 0
+        self._transf_columns = None
         self._kwds = {}
         self._transf_cache: Optional[np.ndarray[Any, Any]] = None
 
@@ -56,8 +56,10 @@ class LinearMap(Module):
         assert self.context
         with self.context as ctx:
             vectors = ctx.vectors.data()
+            if vectors is None:
+                return self._return_run_step(self.state_blocked, steps_run=0)
             if not self._k_dim:
-                self._k_dim = len(vectors.columns)
+                self._k_dim = len(ctx.vectors.hint) if ctx.vectors.hint is not None else len(vectors.columns)
             trans = ctx.transformation
             transformation = trans.data()
             trans.clear_buffers()
@@ -73,14 +75,16 @@ class LinearMap(Module):
                     "vectors size don't match " " the transformation matrix shape (2)"
                 )
             # here len(transformation) == self._k_dim
+
             if self._transf_cache is None:
+                self._transf_columns = trans.hint or transformation.columns
                 tf = filter_cols(transformation, self._transf_columns)
                 self._transf_cache = tf.to_array()
             indices = ctx.vectors.created.next(length=step_size)  # returns a slice
             steps = indices_len(indices)
             if steps == 0:
                 return self._return_run_step(self.state_blocked, steps_run=0)
-            vs = self.filter_columns(vectors, fix_loc(indices))
+            vs = self.filter_slot_columns(ctx.vectors, fix_loc(indices))
             array: np.ndarray[Any, Any] = vs.to_array()
             res = np.matmul(array, self._transf_cache)
             if self.result is None:

@@ -173,9 +173,9 @@ class SimpleFilter(Module):
         with scheduler:
             if hist_index is None:
                 hist_index = HistogramIndex(
-                    columns=[params.column], group=self.name, scheduler=scheduler
+                    group=self.name, scheduler=scheduler
                 )
-                hist_index.input.table = input_module.output[input_slot]
+                hist_index.input.table = input_module.output[input_slot][params.column,]
             filter_ = self
             filter_.dep.hist_index = hist_index
             filter_.input.hist = hist_index.output.result

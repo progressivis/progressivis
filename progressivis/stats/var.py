@@ -21,13 +21,13 @@ from ..table.table import PTable
 from ..table.dshape import dshape_all_dtype
 from ..utils.psdict import PDict
 from .utils import OnlineVariance
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, Sequence
 
 logger = logging.getLogger(__name__)
 
 
 @document
-@def_input("table", PTable, doc="the input table")
+@def_input("table", PTable, hint_type=Sequence[str], doc="the input table")
 @def_parameter(
     "history", np.dtype(int), 3, doc=("then number of successive results to be kept")
 )
@@ -40,15 +40,13 @@ class VarH(Module):
 
     def __init__(
         self,
-        columns: Optional[PCols] = None,  # not in kwds only for sphinx
         **kwds: Any,
     ) -> None:
         """
         Args:
-            columns: columns to be processed. When missing all input columns are processed
             kwds: extra keyword args to be passed to the ``Module`` superclass
         """
-        super().__init__(dataframe_slot="table", columns=columns, **kwds)
+        super().__init__(dataframe_slot="table", **kwds)
         self._data: Dict[str, OnlineVariance] = {}
         self.default_step_size = 1000
 
@@ -87,7 +85,7 @@ class VarH(Module):
             if steps == 0:
                 return self._return_run_step(self.state_blocked, steps_run=0)
             input_df = dfslot.data()
-            op = self.op(self.filter_columns(input_df, fix_loc(indices)))
+            op = self.op(self.filter_slot_columns(dfslot, fix_loc(indices)))
             if self.result is None:
                 ds = dshape_all_dtype(input_df.columns, np.dtype("float64"))
                 self.result = PTable(
@@ -100,7 +98,7 @@ class VarH(Module):
 
 
 @document
-@def_input("table", PTable, doc="the input table")
+@def_input("table", PTable, hint_type=Sequence[str], doc="the input table")
 @def_output(
     "result",
     PDict,
@@ -114,21 +112,20 @@ class Var(Module):
     def __init__(
         self,
         ignore_string_cols: bool = False,
-        columns: Optional[PCols] = None,  # not in kwds only for sphinx
         **kwds: Any,
     ) -> None:
         """
         Args:
             ignore_string_cols: silently ignore ``str`` columns if ``True``
                 (else raise an exception)
-            columns: columns to be processed. When missing all input columns are processed
             kwds: extra keyword args to be passed to the ``Module`` superclass
         """
-        super().__init__(dataframe_slot="table", columns=columns, **kwds)
+        super().__init__(dataframe_slot="table", **kwds)
         self._data: Dict[str, OnlineVariance] = {}
         self._ignore_string_cols: bool = ignore_string_cols
         self._num_cols: PCols = None
         self.default_step_size = 1000
+        self._columns: Optional[Sequence[str]] = None
 
     def is_ready(self) -> bool:
         if self.get_input_slot("table").created.any():
@@ -183,8 +180,13 @@ class Var(Module):
             input_df = dfslot.data()
             cols = None
             if self._ignore_string_cols:
+                if self._columns is None:
+                    if (hint := dfslot.hint) is not None:
+                        self._columns = hint
+                    else:
+                        self._columns = []
                 cols = self.get_num_cols(input_df)
-            op = self.op(self.filter_columns(input_df, fix_loc(indices), cols=cols))
+            op = self.op(self.filter_slot_columns(dfslot, fix_loc(indices), cols=cols))
             if self.result is None:
                 self.result = PDict(op)
             else:

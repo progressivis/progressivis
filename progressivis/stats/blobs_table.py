@@ -88,15 +88,11 @@ class BlobsPTableABC(Module):
         assert 'n_samples' not in self._kwds
         assert 'n_features' not in self._kwds
         assert 'random_state' not in self._kwds"""
-        # self._kwds['n_samples'] = rows
-        # self._kwds['n_features']
         self.default_step_size = 1000
         if isinstance(columns, integer_types):
             self._columns = [f"_{i}" for i in range(1, columns + 1)]
-            # self._kwds['n_features'] = columns
         elif isinstance(columns, (list, np.ndarray)):
             self._columns = list(columns)
-            # self._kwds['n_features'] = len(columns)
         else:
             raise ProgressiveError("Invalid type for columns")
         assert self._columns is not None
