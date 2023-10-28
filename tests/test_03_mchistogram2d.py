@@ -30,8 +30,8 @@ class TestMCHistogram2D(ProgressiveTest):
             "_1", "_2", xbins=100, ybins=100, scheduler=s
         )  # columns are called 1..30
         histogram2d.input.data = csv.output.result
-        histogram2d.input["table", ("min", "_1", "_2")] = min_.output.result
-        histogram2d.input["table", ("max", "_1", "_2")] = max_.output.result
+        histogram2d.input.table = min_.output.result["min", "_1", "_2"]
+        histogram2d.input.table = max_.output.result["max", "_1", "_2"]
         heatmap = Heatmap(filename="histo_%03d.png", scheduler=s)
         heatmap.input.array = histogram2d.output.result
         pr = Every(proc=self.terse, scheduler=s)
@@ -52,8 +52,8 @@ class TestMCHistogram2D(ProgressiveTest):
             "_1", "_2", xbins=100, ybins=100, scheduler=s
         )  # columns are called 1..30
         histogram2d.input.data = csv.output.result
-        histogram2d.input["table", ("min", "_1", "_2")] = min_.output.result
-        histogram2d.input["table", ("max", "_1", "_2")] = max_.output.result
+        histogram2d.input.table = min_.output.result["min", "_1", "_2"]
+        histogram2d.input.table = max_.output.result["max", "_1", "_2"]
         heatmap = Heatmap(filename="histo_%03d.png", scheduler=s)
         heatmap.input.array = histogram2d.output.result
         pr = Every(proc=self.terse, scheduler=s)
@@ -66,7 +66,7 @@ class TestMCHistogram2D(ProgressiveTest):
         df = pd.read_csv(
             get_dataset("bigfile"), header=None, usecols=[1, 2]
         )
-        v = df.to_numpy()  # .reshape(-1, 2)
+        v = df.to_numpy()
         bins = [histogram2d.params.ybins, histogram2d.params.xbins]
         h2 = fh.histogram2d(v[:, 1], v[:, 0], bins=bins, range=bounds)
         h2 = np.flip(h2, axis=0)
@@ -85,8 +85,8 @@ class TestMCHistogram2D(ProgressiveTest):
             "_1", "_2", xbins=100, ybins=100, scheduler=s
         )  # columns are called 1..30
         histogram2d.input.data = stirrer.output.result
-        histogram2d.input["table", ("min", "_1", "_2")] = min_.output.result
-        histogram2d.input["table", ("max", "_1", "_2")] = max_.output.result
+        histogram2d.input.table = min_.output.result["min", "_1", "_2"]
+        histogram2d.input.table = max_.output.result["max", "_1", "_2"]
         heatmap = Heatmap(filename="histo_%03d.png", scheduler=s)
         heatmap.input.array = histogram2d.output.result
         pr = Every(proc=self.terse, scheduler=s)
@@ -121,8 +121,8 @@ class TestMCHistogram2D(ProgressiveTest):
             "_1", "_2", xbins=100, ybins=100, scheduler=s
         )  # columns are called 1..30
         histogram2d.input.data = stirrer.output.result
-        histogram2d.input["table", ("min", "_1", "_2")] = min_.output.result
-        histogram2d.input["table", ("max", "_1", "_2")] = max_.output.result
+        histogram2d.input.table = min_.output.result["min", "_1", "_2"]
+        histogram2d.input.table = max_.output.result["max", "_1", "_2"]
         heatmap = Heatmap(filename="histo_%03d.png", scheduler=s)
         heatmap.input.array = histogram2d.output.result
         pr = Every(proc=self.terse, scheduler=s)
