@@ -1326,9 +1326,6 @@ class InputSlots:
         raise ProgressiveError("Input slots cannot be read, only assigned to")
 
     def __setitem__(self, name: Union[int, str, Tuple[str, Any]], slot: Slot | SlotHint) -> None:
-        if isinstance(name, tuple) and isinstance(slot, Slot):
-            name, meta = name
-            slot.meta = meta
         return self.__setattr__(name, slot)  # type: ignore
 
     def __dir__(self) -> Iterable[str]:

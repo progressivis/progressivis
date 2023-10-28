@@ -117,7 +117,7 @@ class _DataClass:
             return scatterplot
 
 
-@def_input("table", PTable, multiple=True)
+@def_input("table", PTable, multiple=True, hint_type=Dict[str, Any])
 class MCScatterPlot(Module):
     "Module visualizing a multiclass scatterplot."
 
@@ -185,7 +185,7 @@ class MCScatterPlot(Module):
             if not self.has_input_slot(name):
                 continue
             input_slot = self.get_input_slot(name)
-            meta = input_slot.meta
+            meta = input_slot.hint
             if meta is None:
                 continue
             assert isinstance(meta, dict)
@@ -419,8 +419,8 @@ class MCScatterPlot(Module):
                 x, y = dc2.x_column, dc2.y_column
                 rq2d = dc2.range_query_2d
                 assert rq2d is not None and rq2d.output is not None
-                dc.histogram2d.input["table", ("min", x, y)] = rq2d.output.min
-                dc.histogram2d.input["table", ("max", x, y)] = rq2d.output.max
+                dc.histogram2d.input.table = rq2d.output.min["min", x, y]
+                dc.histogram2d.input.table = rq2d.output.max["max", x, y]
 
     def _add_class(
         self,
@@ -460,8 +460,8 @@ class MCScatterPlot(Module):
         col_translation = {self._x_label: x_column, self._y_label: y_column}
         hist_meta = dict(inp="hist", class_=name, **col_translation)
         if data_class.histogram2d is not None:
-            self.input["table", hist_meta] = data_class.histogram2d.output.result
+            self.input.table = data_class.histogram2d.output.result[hist_meta]
         if isinstance(data_class.sample, Module):
             meta = dict(inp="sample", class_=name, **col_translation)
-            self.input["table", meta] = data_class.sample.output[sample_slot]
+            self.input.table = data_class.sample.output[sample_slot][meta]
         self._data_class_dict[name] = data_class
