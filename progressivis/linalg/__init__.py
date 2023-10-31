@@ -59,7 +59,8 @@ class ColsAdd(ColsBinary):
                  **kwds: Any):
         """
         Args:
-            cols_out: denotes the names of columns in the ``result`` table
+            cols_out: denotes the names of columns in the ``result`` table. If not
+                provided the column selection of the first operand is used
             kwds: extra keyword args to be passed to the ``Module`` superclass
         """
         super().__init__(np.add, cols_out=cols_out, **kwds)

@@ -14,6 +14,7 @@ from ..table.dshape import dshape_projection
 from ..core.slot_join import SlotJoin
 from collections import OrderedDict
 from typeguard import check_type
+from ..core.docstrings import INPUT_SEL
 from typing import List, Any, Optional, Dict, Union, Callable, Sequence, Tuple
 
 Cols = Union[List[str], Dict[str, List[str]]]
@@ -80,8 +81,11 @@ def info() -> None:
     print("binary dict", binary_dict_all)
 
 
-@def_input("table", type=PTable, required=True, hint_type=Sequence[str], doc="aaa aaa aaaa aaaaaaaaa aaaaaaaaaaa aaaaaaaaaa aaa")
-@def_output("result", type=PTable, required=False, datashape={"table": "#columns"})
+@def_input("table", type=PTable, required=True, hint_type=Sequence[str], doc=INPUT_SEL)
+@def_output("result", type=PTable, required=False,
+            datashape={"table": "#columns"},
+            doc="The output table follows the structure of ``table``"
+            )
 class Unary(Module):
     def __init__(self, ufunc: UFunc, **kwds: Any) -> None:
         super(Unary, self).__init__(**kwds)
@@ -185,7 +189,10 @@ def _simple_binary(
     return res
 
 
-@def_input("table", type=PTable, required=True, hint_type=Tuple[Sequence[str], Sequence[str]])
+@def_input("table", type=PTable, required=True,
+           hint_type=Tuple[Sequence[str], Sequence[str]],
+           doc=("The two items of the hint are lists of comumns used"
+                " to select the operands"))
 @def_output("result", type=PTable, required=False)
 class ColsBinary(Module):
     def __init__(
@@ -299,9 +306,9 @@ for k, v in binary_dict_all.items():
     # binary_modules.append(_g[name])
 
 
-@def_input("first", type=PTable, required=True, hint_type=Sequence[str], doc="aaa bbb ccc ddd eeeeeeeeeeee aaa bbb ccc ddd eeeeeeeeeeee aaa bbb ccc ddd eeeeeeeeeeee aaa bbb ccc ddd eeeeeeeeeeee")
-@def_input("second", type=PTable, required=True, hint_type=Sequence[str])
-@def_output("result", PTable, required=False, datashape={"first": "#columns"}, doc="xxx yyy")
+@def_input("first", type=PTable, required=True, hint_type=Sequence[str], doc=INPUT_SEL)
+@def_input("second", type=PTable, required=True, hint_type=Sequence[str], doc="Similar to ``first``")
+@def_output("result", PTable, required=False, datashape={"first": "#columns"}, doc="The output table follows the structure of ``first``")
 class Binary(Module):
     def __init__(self, ufunc: UFunc, **kwds: Any):
         """
@@ -414,8 +421,8 @@ def _reduce(tbl: BasePTable, op: UFunc, initial: Any, **kwargs: Any) -> Dict[str
     return res
 
 
-@def_input("table", type=PTable, required=True, hint_type=Sequence[str])
-@def_output("result", PDict)
+@def_input("table", type=PTable, required=True, hint_type=Sequence[str], doc=INPUT_SEL)
+@def_output("result", PDict, doc="The key's names follow the input table columns")
 class Reduce(Module):
     def __init__(
         self, ufunc: np.ufunc, **kwds: Any
