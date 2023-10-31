@@ -80,7 +80,7 @@ def info() -> None:
     print("binary dict", binary_dict_all)
 
 
-@def_input("table", type=PTable, required=True, hint_type=Sequence[str])
+@def_input("table", type=PTable, required=True, hint_type=Sequence[str], doc="aaa aaa aaaa aaaaaaaaa aaaaaaaaaaa aaaaaaaaaa aaa")
 @def_output("result", type=PTable, required=False, datashape={"table": "#columns"})
 class Unary(Module):
     def __init__(self, ufunc: UFunc, **kwds: Any) -> None:
@@ -299,9 +299,9 @@ for k, v in binary_dict_all.items():
     # binary_modules.append(_g[name])
 
 
-@def_input("first", type=PTable, required=True, hint_type=Sequence[str])
+@def_input("first", type=PTable, required=True, hint_type=Sequence[str], doc="aaa bbb ccc ddd eeeeeeeeeeee aaa bbb ccc ddd eeeeeeeeeeee aaa bbb ccc ddd eeeeeeeeeeee aaa bbb ccc ddd eeeeeeeeeeee")
 @def_input("second", type=PTable, required=True, hint_type=Sequence[str])
-@def_output("result", PTable, required=False, datashape={"first": "#columns"})
+@def_output("result", PTable, required=False, datashape={"first": "#columns"}, doc="xxx yyy")
 class Binary(Module):
     def __init__(self, ufunc: UFunc, **kwds: Any):
         """

@@ -37,6 +37,10 @@ logger = logging.getLogger(__name__)
                                                      " <skipped-rows-cnt>``"))
 @def_output("result", PTable, doc=RESULT_DOC)
 class ParquetLoader(BaseLoader):
+    """
+    This module reads ``parquet`` files progressively into a {{PTable}}
+     using the ``PyArrow`` backend.
+    """
     def __init__(
         self,
         filepath_or_buffer: Optional[Any] = None,

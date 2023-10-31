@@ -5,7 +5,7 @@ import logging
 
 import numpy as np
 
-from ..core.module import Module, ReturnRunStep, def_input, def_output
+from ..core.module import Module, ReturnRunStep, def_input, def_output, document
 from ..core.pintset import PIntSet
 from .table import PTable
 
@@ -26,15 +26,40 @@ ops = {
 }
 
 
-@def_input("table", PTable)
-@def_input("cmp", PTable)
-@def_output("result", PTable, required=False)
-@def_output("select", PIntSet, required=False)
+@document
+@def_input("table", PTable, doc="Data input to be filtered")
+@def_input("cmp", PTable, doc=("The last row of this table provides the values"
+                               " used by the filter"))
+# @def_output("result", PTable, required=False)
+@def_output("select", PIntSet, required=False, doc="Selected indices")
 class CmpQueryLast(Module):
-    """ """
+    """
+    Filtering module applying on rows of ``table`` a constraint based on all values of the last row of ``cmp`` of the form :
 
+    ``(table[:, col1] <op> last[col1]) <combine> (table[:, col2] <op> last[col2]) ...
+    (table[:, colN] <op> last[colN])``
+
+    where:
+
+    ``last`` is the last row of the ``cmp`` table
+
+    and
+
+         ``<op> := '>' | '>=' | '<' | '<=' | '==' | '!='``
+
+    and
+
+         ``<combine> := 'and' | 'or' | 'xor'``
+
+    """
     def __init__(self, op: str = "<", combine: str = "and", **kwds: Any) -> None:
-        super(CmpQueryLast, self).__init__(**kwds)
+        """
+        Args:
+            op: relational operator
+            combine: logical connector
+            kwds: extra keyword args to be passed to the ``Module`` superclass
+        """
+        super().__init__(**kwds)
         self.default_step_size = 1000
         self.op = op
         self._op = ops[op]

@@ -16,12 +16,18 @@ logger = logging.getLogger(__name__)
 @document
 @def_parameter("expr", np.dtype(object), "unknown", doc="a `numexpr <https://numexpr.readthedocs.io/en/latest/user_guide.html#supported-operators>`_ alike filtering expression")
 # @def_parameter("user_dict", np.dtype(object), None)
-@def_input("table", PTable)
-@def_output("result", PTableSelectedView)
+@def_input("table", PTable, doc="Data input")
+@def_output("result", PTableSelectedView, doc="Returns a filterd view")
 class FilterMod(Module):
-    """ """
+    """
+    Filtering module based on ``numexpr`` library.
+    """
 
     def __init__(self, **kwds: Any) -> None:
+        """
+        Args:
+            kwds: extra keyword args to be passed to the ``Module`` superclass
+        """
         super().__init__(**kwds)
 
     def reset(self) -> None:

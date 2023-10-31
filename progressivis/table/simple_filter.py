@@ -138,11 +138,17 @@ class SimpleFilterImpl:
 class SimpleFilter(Module):
     """
     Filtering module based on a simple condition of the form
+
      ``<column> <operator> <value>`` where
-     ``<operator := '>' | '>=' | '<' | '<='``
+
+     ``<operator> := '>' | '>=' | '<' | '<='``
     """
 
     def __init__(self, **kwds: Any) -> None:
+        """
+        Args:
+            kwds: extra keyword args to be passed to the ``Module`` superclass
+        """
         super().__init__(**kwds)
         self._impl: Optional[SimpleFilterImpl] = None
         self.default_step_size = 1000
@@ -161,8 +167,9 @@ class SimpleFilter(Module):
         Args:
             input_module: the input module (see the example)
             input_slot: the input slot name (e.g. ``result``)
-            hist_index: optional histogrem index. if not provided an
-            ``HistogramIndex`` is created
+            hist_index: optional histogram index. if not provided an
+                ``HistogramIndex`` is created
+            kwds: extra keyword args to be passed to the ``Module`` superclass
         """
         if self.input_module is not None:  # test if already called
             return self

@@ -45,6 +45,7 @@ class SlotDescriptor:
         "buffer_exposed",
         "buffer_masked",
         "hint_type",
+        "doc"
     )
 
     def __init__(
@@ -72,6 +73,7 @@ class SlotDescriptor:
         self.buffer_exposed = buffer_exposed
         self.buffer_masked = buffer_masked
         self.hint_type = hint_type
+        self.doc = ""
 
     def __str__(self) -> str:
         return (

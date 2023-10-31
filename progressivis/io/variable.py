@@ -9,10 +9,11 @@ from typing import Dict, Any, Optional
 
 
 @document
-@def_output("result", PDict)
+@def_output("result", PDict, doc=("Returns the dictionary provided by ``from_input()`` "
+                                  "after translation (if applicable)"))
 class Variable(Module):
     """
-    this module allows external events (comming from widgets,
+    This module allows external events (comming from widgets,
     commands, etc.) to be taken into account
     """
     def __init__(

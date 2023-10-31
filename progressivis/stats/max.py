@@ -12,7 +12,7 @@ from ..table.table import PTable
 from ..core.slot import Slot
 from ..utils.psdict import PDict
 from ..core.decorators import process_slot, run_if_any
-
+from ..core.docstrings import INPUT_SEL
 from typing import Optional, Dict, Union, Any, Tuple, Sequence
 
 logger = logging.getLogger(__name__)
@@ -26,7 +26,7 @@ def _max_func(x: Any, y: Any) -> Any:
 
 
 @document
-@def_input("table", PTable, hint_type=Sequence[str], doc="the input table")
+@def_input("table", PTable, hint_type=Sequence[str], doc=INPUT_SEL)
 @def_output(
     "result",
     PDict,
@@ -43,7 +43,6 @@ class Max(Module):
     ) -> None:
         """
         Args:
-            columns: columns to be processed. When missing all input columns are processed
             kwds: extra keyword args to be passed to the ``Module`` superclass
         """
         super().__init__(**kwds)

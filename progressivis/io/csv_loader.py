@@ -44,7 +44,9 @@ logger = logging.getLogger(__name__)
 @def_output("result", PTable, doc=RESULT_DOC)
 class CSVLoader(Module):
     """
-    Warning : this module do not wait for "filenames"
+    This module reads comma-separated values (csv) files progressively into a {{PTable}}.
+    It is able to resume the reading after a network failure or a crash.
+    |:warning:| this module do not wait for ``filenames``!
     """
 
     def __init__(

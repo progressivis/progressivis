@@ -330,7 +330,6 @@ class Module(metaclass=ABCMeta):
         defaults = SlotDescriptor.__init__.__defaults__
         assert defaults is not None
         sd_defs = dict(zip(sd_keys, defaults))
-        print("sd_defs", sd_defs)
 
         def _section(n: int, s: str) -> None:
             sp = n * " "
@@ -372,7 +371,14 @@ class Module(metaclass=ABCMeta):
                     continue
                 crt = getattr(sd, k)
                 if crt != v:
-                    no_defaults.append(f"{k}: {crt}")
+                    if k == "hint_type":
+                        k = "hint type"
+                        htyp = str(crt)
+                        if htyp.startswith("typing."):
+                            htyp = htyp.replace("typing.", "")
+                        no_defaults.append(f"accepts ``{htyp}`` as hint")
+                    else:
+                        no_defaults.append(f"{k}: {crt}")
             if mode == "out":
                 attr_name = cls.output_attrs[sd.name]
                 if attr_name != sd.name:
@@ -382,12 +388,13 @@ class Module(metaclass=ABCMeta):
             if no_defaults:
                 doclist.append(sp2)
                 nd = ", ".join(no_defaults)
-                doclist.append(f"{nd}\n")
-            slot_doc = inputs_doc if mode == "in" else outputs_doc
-            if sd.name in slot_doc:
-                doclist.append(sp2)
-                doclist.append(f" {slot_doc[sd.name]}\n")
-
+                doclist.append(f"{nd}")
+            doclist.append(sp2)
+            if sd.doc:
+                doclist.append(" |:notebook_with_decorative_cover:| ")
+                doclist.append(f"{sd.doc}\n")
+            else:
+                doclist.append("\n")
         if cls.parameters:
             _section(4, "Module parameters")
             for n, t, v in cls.parameters:
@@ -1364,8 +1371,6 @@ def _print_len(x: Sized) -> None:
 
 
 params_doc = {}
-inputs_doc = {}
-outputs_doc = {}
 
 
 def def_parameter(
@@ -1426,7 +1431,7 @@ def def_input(
         else:
             module.inputs = [sd] + module.inputs  # do not use += here
         if Module.doc_building() and doc:
-            inputs_doc[name] = doc
+            sd.doc = doc
         return module
 
     return module_decorator
@@ -1526,7 +1531,7 @@ def def_output(
         assert attr_name is not None
         add_output_to_module(module, name, attr_name, custom_attr, type)
         if Module.doc_building() and doc:
-            outputs_doc[name] = doc
+            sd.doc = doc
         return module
 
     return module_decorator
@@ -1536,8 +1541,6 @@ def document(module: Type[Module]) -> Type[Module]:
     module.finalize_doc()
     print("params doc", module, params_doc)
     params_doc.clear()
-    inputs_doc.clear()
-    outputs_doc.clear()
     return module
 
 
