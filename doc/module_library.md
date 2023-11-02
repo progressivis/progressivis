@@ -273,13 +273,42 @@ table.liteselect.LiteSelect: même chose avec une vue en sortie. devrait s'appel
 
 ## Set and Flow Control Operations
 
+
+### Intersection Module
+
+```{eval-rst}
+.. currentmodule:: progressivis.table.intersection
+
+.. autoclass:: Intersection
+   :members:
+   :exclude-members: run_step, run_step_progress, run_step_seq
+```
+
+### Merging dictionaries Module
+
+```{eval-rst}
+.. currentmodule:: progressivis.table.merge_dict
+
+.. autoclass:: MergeDict
+   :members:
+   :exclude-members: run_step
+```
+
+### Switching Module
+
+```{eval-rst}
+.. currentmodule:: progressivis.table.switch
+
+.. autoclass:: Switch
+   :members:
+   :exclude-members: run_step
+```
+
+
+
 <!---
-table.intersection.Intersection:
-table.hub.Hub: ...
 table.pattern.Pattern:
-table.merge_dict.MergeDict:
 table.paste.Paste:
-table.switch.Switch:
 table.merge.Merge:
 --->
 
@@ -563,6 +592,12 @@ Linear transformation can be performed via this module:
 .. autoclass:: LinearMap
    :members:
    :exclude-members: run_step, parameters
+```
+
+Example:
+
+```{eval-rst}
+.. literalinclude:: ./example_linear_map.py
 ```
 
 ## Visualisation

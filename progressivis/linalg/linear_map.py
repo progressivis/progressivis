@@ -14,11 +14,21 @@ from typing import Optional, Any, Sequence
 
 
 @document
-@def_input("vectors", type=PTable, hint_type=Sequence[str], doc="Table providing the row vectors")
+@def_input("vectors", type=PTable, hint_type=Sequence[str],
+           doc=("Table providing the row vectors."
+                "A selection of columns"
+                "could be provided via a hint"
+                " (see :ref:`example <hint-reference-label>`)."
+                " When no hint is provided all input columns are user"
+                ))
 @def_input(
-    "transformation", type=PTable, hint_type=Sequence[str], doc="table providing the transformation matrix"
+    "transformation", type=PTable, hint_type=Sequence[str],
+    doc=("Table providing the transformation matrix."
+         "A selection of columns"
+         "could be provided via a hint (same behaviour as ``vectors``)"
+         )
 )
-@def_output("result", PTable, doc="result table")
+@def_output("result", PTable, doc="Result table, follows the structure of ``transformation``")
 class LinearMap(Module):
     """
     Performs a linear transformation on rows in ``vectors`` table. The ``transformation``
@@ -29,8 +39,7 @@ class LinearMap(Module):
     def __init__(self, **kwds: Any) -> None:
         """
         Args:
-            transf_columns: columns to be included in the transformation matrix. When
-                missing all columns are included
+            kwds: extra keyword args to be passed to the ``Module`` superclass
         """
         super().__init__(**kwds)
         self._k_dim = 0
