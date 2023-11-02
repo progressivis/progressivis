@@ -26,7 +26,7 @@ ProgressiVis relies on well-known Python libraries, such as
 and
 [Scikit-Learn](http://scikit-learn.org/).
 
-For now, ProgressiVis is mostly a proof of concept. You can find [its documentation here](https://readthedocs.org/projects/progressivis/badge/?version=latest).
+For now, ProgressiVis is mostly a proof of concept. You can find [its documentation here](https://progressivis.readthedocs.io/en/latest/).
 
 ## Live demos
 
