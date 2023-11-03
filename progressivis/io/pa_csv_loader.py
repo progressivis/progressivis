@@ -42,6 +42,10 @@ logger = logging.getLogger(__name__)
                                                      " for column in <columns-subset>}``"))
 @def_output("result", PTable, doc=RESULT_DOC)
 class PACSVLoader(BaseLoader):
+    """
+    This module reads comma-separated values (csv) files progressively into a {{PTable}}
+     using the ``PyArrow`` backend.
+    """
     def __init__(
         self,
         filepath_or_buffer: Optional[Any] = None,

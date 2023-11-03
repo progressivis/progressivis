@@ -66,7 +66,7 @@ class PPCA(Module):
             if steps < self.params.n_components:
                 return self._return_run_step(self.state_blocked, steps_run=0)
 
-            vs = self.filter_columns(table, fix_loc(indices))
+            vs = self.filter_slot_columns(ctx.table, fix_loc(indices))
             if self._as_array is None:
                 if len(vs.columns) == 1:
                     self._as_array = vs.columns[0]
@@ -185,9 +185,10 @@ class PPCATransformer(Module):
         self,
         inc_pca: IncrementalPCA,
         inc_pca_wtn: Optional[IncrementalPCA],
-        input_table: PTable,
+        input_slot: Slot,
         samples: Any,
     ) -> bool:
+        input_table = input_slot.data()
         if self.has_input_slot("resetter"):
             resetter = self.get_input_slot("resetter")
             resetter.clear_buffers()
@@ -196,7 +197,7 @@ class PPCATransformer(Module):
                 return self.trace_if(False, 0.0, -1.0, len(input_table))
         if self._threshold is not None and len(input_table) >= self._threshold:
             return self.trace_if(False, 0.0, 0.0, len(input_table))
-        data = self._proc_as_array(self.filter_columns(input_table, samples))
+        data = self._proc_as_array(self.filter_slot_columns(input_slot, samples))
         assert inc_pca_wtn
         transf_wtn = inc_pca_wtn.transform(data)
         self.maintain_prev_samples(transf_wtn)
@@ -275,7 +276,6 @@ class PPCATransformer(Module):
         """ """
         assert self.context
         with self.context as ctx:
-            input_table = ctx.table.data()
             indices = ctx.table.created.next(length=step_size)
             steps = indices_len(indices)
             if steps == 0:
@@ -285,8 +285,7 @@ class PPCATransformer(Module):
             inc_pca = transformer.get("inc_pca")
             ctx.samples.clear_buffers()
             if self.inc_pca_wtn is not None:
-                samples = ctx.samples.data()
-                if self.needs_reset(inc_pca, self.inc_pca_wtn, input_table, samples):
+                if self.needs_reset(inc_pca, self.inc_pca_wtn, ctx.table, ctx.samples.data()):
                     self.inc_pca_wtn = None
                     ctx.table.reset()
                     ctx.table.update(run_number)
@@ -298,7 +297,7 @@ class PPCATransformer(Module):
             else:
                 self.inc_pca_wtn = copy.deepcopy(inc_pca)
             data = self._proc_as_array(
-                self.filter_columns(input_table, fix_loc(indices))
+                self.filter_slot_columns(ctx.table, fix_loc(indices))
             )
             reduced = inc_pca.transform(data)
             df = self._make_df(reduced)

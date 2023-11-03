@@ -1,16 +1,29 @@
 from __future__ import annotations
 
-from ..core.module import Module, ReturnRunStep, def_input, def_output
+from ..core.module import Module, ReturnRunStep, def_input, def_output, document
 from ..utils.psdict import PDict
 
+from typing import Any
 
-@def_input("table", PDict, multiple=True)
-@def_output("result", PDict)
+
+@document
+@def_input("table", PDict, multiple=True, doc="Multiple inputs providing dictionaries")
+@def_output("result", PDict, doc="Merged dictionary")
 class MergeDict(Module):
     """
-    Groups many (dict) outputs in one. Assume there is no clash
-    Useful with Switch
+    Gathers many (dict) outputs in one. Assume there is no clash.
+    Complementary to ``Switch`` module
     """
+
+    def __init__(
+        self,
+        **kwds: Any,
+    ) -> None:
+        """
+        Args:
+            kwds: extra keyword args to be passed to the ``Module`` superclass
+        """
+        super().__init__(**kwds)
 
     # parameters = []
 

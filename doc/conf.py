@@ -44,6 +44,8 @@ extensions = [
     "sphinx.ext.doctest",
     "sphinx.ext.intersphinx",
     "sphinx.ext.graphviz",
+    "sphinxemoji.sphinxemoji",
+    # https://sphinxemojicodes.readthedocs.io/en/stable/#supported-codes
     # "sphinx_gallery.gen_gallery",
 ]
 

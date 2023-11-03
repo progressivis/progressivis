@@ -1,7 +1,7 @@
 napoleon_type_aliases = {
     'BasePTable': ":class:`BasePTable <progressivis.table.BasePTable>`",
     'PTable': ":class:`PTable <progressivis.table.PTable>`",
-    'PTableSelectedView': "`PTableSelectedView <reference.html#progressivis.table.PTableSelectedView>`",
+    'PTableSelectedView': ":class:`PTableSelectedView <progressivis.table.PTableSelectedView>`",
     'PDict': ":class:`PDict <progressivis.utils.psdict.PDict>`",
     'PIntSet': ":class:`PIntSet <progressivis.core.pintset.PIntSet>`",
     'DataShape': ":class:`DataShape <datashape.DataShape>`",

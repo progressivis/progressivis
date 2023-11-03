@@ -138,11 +138,17 @@ class SimpleFilterImpl:
 class SimpleFilter(Module):
     """
     Filtering module based on a simple condition of the form
+
      ``<column> <operator> <value>`` where
-     ``<operator := '>' | '>=' | '<' | '<='``
+
+     ``<operator> := '>' | '>=' | '<' | '<='``
     """
 
     def __init__(self, **kwds: Any) -> None:
+        """
+        Args:
+            kwds: extra keyword args to be passed to the ``Module`` superclass
+        """
         super().__init__(**kwds)
         self._impl: Optional[SimpleFilterImpl] = None
         self.default_step_size = 1000
@@ -161,8 +167,9 @@ class SimpleFilter(Module):
         Args:
             input_module: the input module (see the example)
             input_slot: the input slot name (e.g. ``result``)
-            hist_index: optional histogrem index. if not provided an
-            ``HistogramIndex`` is created
+            hist_index: optional histogram index. if not provided an
+                ``HistogramIndex`` is created
+            kwds: extra keyword args to be passed to the ``Module`` superclass
         """
         if self.input_module is not None:  # test if already called
             return self
@@ -173,9 +180,9 @@ class SimpleFilter(Module):
         with scheduler:
             if hist_index is None:
                 hist_index = HistogramIndex(
-                    columns=[params.column], group=self.name, scheduler=scheduler
+                    group=self.name, scheduler=scheduler
                 )
-                hist_index.input.table = input_module.output[input_slot]
+                hist_index.input.table = input_module.output[input_slot][params.column,]
             filter_ = self
             filter_.dep.hist_index = hist_index
             filter_.input.hist = hist_index.output.result

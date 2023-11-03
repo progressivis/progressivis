@@ -61,6 +61,21 @@ program.  It is made of input and output slots; one output slot of a
 module can be connected to several input slots of other modules. Some
 input slots are **optional**, and others are **mandatory**. Furthermore, a slot
 is **typed** since it carries data between the modules.  A module with no input slot is a **source module**, and a module with no output slot is a **sink module**.
+```{eval-rst}
+.. _hint-reference-label:
+```
+Input slots can be supplemented by `hints`, provided in square brackets at the time of allocation. The role and type of hints depends on the semantics of the slot. In the next example the sequence of names provided in square brackets designates the columns to be taken into account (and processed) by the module:
+
+```python
+s = Scheduler()
+random = RandomPTable(10, rows=10000, scheduler=s)
+max_ = Max(name="max_" + str(hash(random)), scheduler=s)
+max_.input[0] = random.output.result["_1", "_2", "_3"]  # hint ("_1", "_2", "_3")
+pr = Print(proc=self.terse, scheduler=s)
+pr.input[0] = max_.output.result
+...
+```
+Here, the hint "tells" to the `Max` module to compute the maximum only for columns "_1", "_2", "_3". Otherwise, when no hint is provided, the maximum is computed for all columns.
 
 In addition to input and output slots, a module maintains a set of **parameters** that it uses internally. Finally, some modules are **interactive** and can receive **events**, typically from the user interface or visualization interactions to **control** (stop, resume, step the execution) or **steer** the computation.
 

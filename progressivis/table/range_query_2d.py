@@ -317,12 +317,11 @@ class RangeQuery2d(Module):
             self.input_slot = input_slot
             with scheduler:
                 hist_index = HistogramIndex(
-                    columns=[params.column_x, params.column_y],
                     group=self.name,
                     scheduler=scheduler,
                 )
                 self.dep.hist_index = hist_index
-                hist_index.input.table = input_module.output[input_slot]
+                hist_index.input.table = input_module.output[input_slot][params.column_x, params.column_y]
                 if min_value is None:
                     min_value = Variable(
                         hist_index.min_out, group=self.name, scheduler=scheduler

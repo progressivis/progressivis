@@ -14,14 +14,13 @@ from ..core.module import (
     def_input,
     def_output,
     def_parameter,
-    PCols,
     document,
 )
 from ..core.utils import indices_len, fix_loc
 from ..table.table import PTable
 from ..core.decorators import process_slot, run_if_any
 
-from typing import Optional, Any
+from typing import Any, Sequence
 
 
 logger = logging.getLogger(__name__)
@@ -31,7 +30,7 @@ logger = logging.getLogger(__name__)
 @def_parameter(
     "history", np.dtype(int), 3, doc=("then number of successive results" " to be kept")
 )
-@def_input("table", type=PTable, doc="the input table")
+@def_input("table", type=PTable, hint_type=Sequence[str], doc="the input table")
 @def_output(
     "max", PTable, attr_name="_max", required=False, doc="maximum values output table"
 )
@@ -43,7 +42,6 @@ class IdxMax(Module):
 
     def __init__(
         self,
-        columns: Optional[PCols] = None,  # not in kwds only for sphinx
         **kwds: Any,
     ) -> None:
         """
@@ -51,7 +49,7 @@ class IdxMax(Module):
             columns: columns to be processed. When missing all input columns are processed
             kwds: extra keyword args to be passed to the ``Module`` superclass
         """
-        super().__init__(columns=columns, **kwds)
+        super().__init__(**kwds)
         self.default_step_size = 10000
 
     def is_ready(self) -> bool:
@@ -78,7 +76,7 @@ class IdxMax(Module):
             if steps == 0:
                 return self._return_run_step(self.state_blocked, steps_run=0)
             input_df = dfslot.data()
-            op = self.filter_columns(input_df, fix_loc(indices)).idxmax()
+            op = self.filter_slot_columns(dfslot, fix_loc(indices)).idxmax()
             if self.result is None:
                 self.result = PTable(
                     self.generate_table_name("table"),

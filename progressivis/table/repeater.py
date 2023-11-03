@@ -45,7 +45,7 @@ class Repeater(Module):
             return self._return_run_step(self.state_blocked, steps_run=0)
         if self.result is None:
             cols = (
-                input_table.columns if self._columns is None else self._columns
+                input_slot.hint or input_table.columns
             ) + list(self._computed.keys())
             self.result = PTableSelectedView(
                 input_table, PIntSet([]), columns=cols, computed=self._computed

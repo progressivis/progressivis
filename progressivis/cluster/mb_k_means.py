@@ -170,7 +170,7 @@ class MBKMeans(Module):
         ):
             # Not enough data yet ...
             return self._return_run_step(self.state_blocked, 0)
-        cols = self.get_columns(input_df, "table")
+        cols = dfslot.hint or input_df.columns
         dtype = input_df.columns_common_dtype(cols)
         n_features = len(cols)
         n_samples = len(input_df)
@@ -253,7 +253,7 @@ class MBKMeans(Module):
 
         dfslot = self.get_input_slot("table")
         input_df = dfslot.data()
-        columns = self.get_columns(input_df, "table")
+        columns = dfslot.hint or input_df.columns
         if len(values) != len(columns):
             raise ProgressiveError(f"Expected {len(columns)} values, received {values}")
         centroids.loc[c, columns] = values

@@ -10,11 +10,11 @@ from progressivis.linalg.mixufunc import MixUfuncABC
 from progressivis.stats import RandomPTable, RandomDict
 from progressivis.table.table import PTable
 from progressivis.core.module import def_input, def_output
-from typing import Any, Type
+from typing import Any, Type, Sequence
 
 
-@def_input("first", type=PTable)
-@def_input("second", type=PTable)
+@def_input("first", type=PTable, hint_type=Sequence[str])
+@def_input("second", type=PTable, hint_type=Sequence[str])
 @def_output("result", type=PTable, required=False, datashape={"first": ["_1", "_2"]})
 class MixUfuncSample(MixUfuncABC):
     """
@@ -25,8 +25,8 @@ class MixUfuncSample(MixUfuncABC):
     expr = {"_1": (np.add, "first._2", "second._3"), "_2": (np.log, "second._3")}
 
 
-@def_input("first", type=PTable)
-@def_input("second", type=PTable)
+@def_input("first", type=PTable, hint_type=Sequence[str])
+@def_input("second", type=PTable, hint_type=Sequence[str])
 @def_output("result", type=PTable, required=False)
 class MixUfuncSample2(MixUfuncABC):
     """
@@ -47,8 +47,8 @@ def custom_unary(x: float) -> float:
 custom_unary_ufunc: Any = np.frompyfunc(custom_unary, 1, 1)
 
 
-@def_input("first", type=PTable)
-@def_input("second", type=PTable)
+@def_input("first", type=PTable, hint_type=Sequence[str])
+@def_input("second", type=PTable, hint_type=Sequence[str])
 @def_output("result", type=PTable, required=False)
 class MixUfuncCustomUnary(MixUfuncABC):
     """
@@ -68,8 +68,8 @@ def custom_binary(x: float, y: float) -> float:
 custom_binary_ufunc: Any = np.frompyfunc(custom_binary, 2, 1)
 
 
-@def_input("first", type=PTable)
-@def_input("second", type=PTable)
+@def_input("first", type=PTable, hint_type=Sequence[str])
+@def_input("second", type=PTable, hint_type=Sequence[str])
 @def_output("result", type=PTable, required=False)
 class MixUfuncCustomBinary(MixUfuncABC):
     """
@@ -93,12 +93,11 @@ class TestMixUfunc(ProgressiveTest):
         random1 = RandomPTable(10, rows=100000, scheduler=s)
         random2 = RandomPTable(10, rows=100000, scheduler=s)
         module = cls(
-            columns={"first": ["_1", "_2", "_3"], "second": ["_1", "_2", "_3"]},
             scheduler=s,
         )
 
-        module.input.first = random1.output.result
-        module.input.second = random2.output.result
+        module.input.first = random1.output.result["_1", "_2", "_3"]
+        module.input.second = random2.output.result["_1", "_2", "_3"]
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = module.output.result
         aio.run(s.start())
@@ -122,12 +121,11 @@ class TestMixUfunc(ProgressiveTest):
         random1 = RandomDict(10, scheduler=s)
         random2 = RandomPTable(10, rows=100000, scheduler=s)
         module = cls(
-            columns={"first": ["_1", "_2", "_3"], "second": ["_1", "_2", "_3"]},
             scheduler=s,
         )
 
-        module.input.first = random1.output.result
-        module.input.second = random2.output.result
+        module.input.first = random1.output.result["_1", "_2", "_3"]
+        module.input.second = random2.output.result["_1", "_2", "_3"]
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = module.output.result
         aio.run(s.start())

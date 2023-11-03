@@ -5,7 +5,7 @@ Setup file for progressivis.
 import sys
 import os
 import os.path
-import versioneer
+# import versioneer
 from setuptools import setup, Command
 from setuptools.extension import Extension
 
@@ -112,7 +112,7 @@ def read(fname):
 
 setup(
     name="progressivis",
-    version=versioneer.get_version(),
+    # version=versioneer.get_version(),
     author="Jean-Daniel Fekete",
     author_email="Jean-Daniel.Fekete@inria.fr",
     url="https://github.com/progressivis/progressivis",
@@ -158,7 +158,7 @@ setup(
     ],
     # "pptable",
     setup_requires=["cython", "numpy", "pybind11", "mypy"] if WITH_CXX else [],
-    cmdclass=versioneer.get_cmdclass({"bench": RunBench}),
+    # cmdclass=versioneer.get_cmdclass({"bench": RunBench}),
     ext_modules=_cythonize(EXTENSIONS) + EXT_PYBIND11 if WITH_CXX else [],
     package_data={
         # If any package contains *.md, *.txt or *.rst files, include them:

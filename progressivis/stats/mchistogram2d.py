@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 @def_parameter("xdelta", np.dtype(float), -5)  # means 5%
 @def_parameter("ydelta", np.dtype(float), -5)  # means 5%
 @def_parameter("history", np.dtype(int), 3)
-@def_input("table", type=PTable, required=True, multiple=True)
+@def_input("table", type=PTable, required=True, multiple=True, hint_type=Tuple[str, Any, Any])
 @def_input("data", type=PTable, required=True)
 @def_output("result", type=PTable)
 class MCHistogram2D(Module):
@@ -103,7 +103,7 @@ class MCHistogram2D(Module):
             if not self.has_input_slot(name):
                 continue
             input_slot = self.get_input_slot(name)
-            meta = input_slot.meta
+            meta = input_slot.hint
             if meta is None:
                 continue
             meta, x_column, y_column = meta

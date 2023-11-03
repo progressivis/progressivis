@@ -14,14 +14,13 @@ from ..core.module import (
     def_input,
     def_output,
     def_parameter,
-    PCols,
     document,
 )
 from ..core.utils import indices_len, fix_loc
 from ..table.table import PTable
 from ..core.decorators import process_slot, run_if_any
 
-from typing import Optional, Any
+from typing import Any, Sequence
 
 
 logger = logging.getLogger(__name__)
@@ -34,7 +33,7 @@ logger = logging.getLogger(__name__)
     33,
     doc=("then number of successive results" " to be kept"),
 )
-@def_input("table", type=PTable, doc="the input table")
+@def_input("table", type=PTable, hint_type=Sequence[str], doc="the input table")
 @def_output(
     "min", PTable, attr_name="_min", required=False, doc="minimum values output table"
 )
@@ -44,10 +43,9 @@ class IdxMin(Module):
 
     def __init__(
         self,
-        columns: Optional[PCols] = None,  # not in kwds only for sphinx
         **kwds: Any,
     ) -> None:
-        super().__init__(columns=columns, **kwds)
+        super().__init__(**kwds)
         self.default_step_size = 10000
 
     def is_ready(self) -> bool:
@@ -75,7 +73,7 @@ class IdxMin(Module):
             if steps == 0:
                 return self._return_run_step(self.state_blocked, steps_run=0)
             input_table = dfslot.data()
-            op = self.filter_columns(input_table, fix_loc(indices)).idxmin()
+            op = self.filter_slot_columns(dfslot, fix_loc(indices)).idxmin()
             if self.result is None:
                 self.result = PTable(
                     self.generate_table_name("table"),

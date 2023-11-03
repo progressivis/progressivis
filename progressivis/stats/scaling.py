@@ -13,7 +13,7 @@ from . import Min, Max, Histogram1D
 from ..core.decorators import process_slot, run_if_any
 from ..table.dshape import dshape_all_dtype
 
-from typing import cast, Optional, Union, Dict, Tuple, Any, List, TYPE_CHECKING
+from typing import cast, Optional, Union, Dict, Tuple, Any, List, TYPE_CHECKING, Sequence
 
 
 logger = logging.getLogger(__name__)
@@ -27,7 +27,7 @@ if TYPE_CHECKING:
 
 @def_parameter("delta", np.dtype(float), -5)
 @def_parameter("ignore_max", np.dtype(int), 0)
-@def_input("table", PTable)
+@def_input("table", PTable, hint_type=Sequence[str])
 @def_input("min", PDict)
 @def_input("max", PDict)
 @def_input("control", PDict, required=False)
@@ -200,7 +200,7 @@ class MinMaxScaler(Module):
             cols_to_ignore: ColsTo = {}
             if not (input_df and min_data and max_data):
                 return self._return_run_step(self.state_blocked, steps_run=0)
-            cols = self._columns or input_df.columns
+            cols = dfslot.hint or input_df.columns
             usecols: List[str] = self._usecols or cols
             # self._delta = self.get_delta(usecols, min_data, max_data)
             control_slot = self.get_input_slot("control")
@@ -249,7 +249,7 @@ class MinMaxScaler(Module):
             steps = indices_len(indices)
             if steps == 0:
                 return self._return_run_step(self.state_blocked, steps_run=0)
-            tbl: BasePTable = self.filter_columns(input_df, indices)
+            tbl: BasePTable = self.filter_slot_columns(dfslot, indices)
             ignore_ilocs = self.get_ignore(tbl, cols_to_ignore)
             if ignore_ilocs:
                 len_ii = len(ignore_ilocs)

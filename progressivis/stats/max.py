@@ -11,7 +11,7 @@ from ..table.table import PTable
 from ..core.slot import Slot
 from ..utils.psdict import PDict
 from ..core.decorators import process_slot, run_if_any
-
+from ..core.docstrings import INPUT_SEL
 from typing import Optional, Dict, Union, Any, Tuple, Sequence
 
 logger = logging.getLogger(__name__)
@@ -25,7 +25,7 @@ def _max_func(x: Any, y: Any) -> Any:
 
 
 @document
-@def_input("table", PTable, hint_type=Sequence[str], doc="the input table")
+@def_input("table", PTable, hint_type=Sequence[str], doc=INPUT_SEL)
 @def_output(
     "result",
     PDict,
@@ -42,7 +42,6 @@ class Max(Module):
     ) -> None:
         """
         Args:
-            columns: columns to be processed. When missing all input columns are processed
             kwds: extra keyword args to be passed to the ``Module`` superclass
         """
         super().__init__(**kwds)
@@ -67,10 +66,7 @@ class Max(Module):
         with self.context as ctx:
             indices = ctx.table.created.next(length=step_size)  # returns a slice
             steps = indices_len(indices)
-            input_df = ctx.table.data()
-            if (hint := ctx.table.hint) is not None:
-                self._columns = hint
-            op = self.filter_columns(input_df, fix_loc(indices)).max(keepdims=False)
+            op = self.filter_slot_columns(ctx.table, fix_loc(indices)).max(keepdims=False)
             if self.result is None:
                 self.result = PDict(op)
             else:
@@ -152,7 +148,7 @@ class ScalarMax(Module):
             indices = slot.created.next(length=step_size)  # returns a slice
         steps = indices_len(indices)
         input_df = slot.data()
-        idxop = self.filter_columns(input_df, fix_loc(indices)).idxmax()
+        idxop = self.filter_slot_columns(slot, fix_loc(indices)).idxmax()
         if not self._sensitive_ids:
             self._sensitive_ids.update(idxop)
         if self.result is None:
