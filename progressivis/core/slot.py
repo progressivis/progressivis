@@ -17,6 +17,7 @@ from dataclasses import dataclass
 import copy
 import logging
 from .changemanager_base import EMPTY_BUFFER, BaseChangeManager
+from ..utils.pmux import PMux
 
 # from .changemanager_literal import LiteralChangeManager
 
@@ -122,7 +123,8 @@ class Slot:
         self.original_name: Optional[str] = None
         """The original input slot before it has been renamed for slots with multiple inputs """
         self._name: str
-        self.changes: Optional[BaseChangeManager] = None
+        self._changes: Optional[BaseChangeManager] = None
+        self._mux_changes: Dict[Tuple[str, str], Optional[BaseChangeManager]] = {}
         self.meta: Optional[Any] = None
         self._hint: Optional[Any] = None
 
@@ -133,9 +135,40 @@ class Slot:
             self._name = self.input_module.name + "_" + self.input_name
         return self._name
 
+    @property
+    def is_mux(self) -> bool:
+        data = self.output_module.get_data(self.output_name)
+        assert data is not None
+        return isinstance(data, PMux)
+
+    @property
+    def changes(self) -> Optional[BaseChangeManager]:
+        if not self.is_mux:
+            return self._changes
+        return self._mux_changes.get(self.mux_key)
+
+    @changes.setter
+    def changes(self, value: Optional[BaseChangeManager]) -> None:
+        if self.is_mux:
+            self._mux_changes[self.mux_key] = value
+        else:
+            self._changes = value
+
+    @property
+    def mux_key(self) -> Tuple[str, str]:
+        assert self.input_module is not None
+        assert self.input_name is not None
+        return self.input_module.name, self.input_name
+
     def data(self) -> Any:
         "Return the data associated with this slot"
-        return self.output_module.get_data(self.output_name)
+        data = self.output_module.get_data(self.output_name)
+        if not self.is_mux:
+            return data
+        k = self.mux_key
+        if k not in data._results:
+            return None
+        return data._results[k]
 
     def has_data(self) -> bool:
         return self.data() is not None and len(self.data()) > 0

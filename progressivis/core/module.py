@@ -33,6 +33,7 @@ from typing import (
     Any,
     Optional,
     Set,
+    Dict,
     List,
     Tuple,
     Callable,
@@ -235,6 +236,7 @@ class Module(metaclass=ABCMeta):
         self._had_error = False
         self._parse_parameters(kwds)
         self.dep = Dependency()
+        self.output_data: Dict[str, Any] = {}
         # always present
         input_descriptors = self.all_inputs
         output_descriptors = self.all_outputs
@@ -1274,6 +1276,9 @@ class Module(metaclass=ABCMeta):
         for k in self.input_slot_names():
             return k
         return None
+
+    def get_slots_connected_to(self, out_name: str) -> List[Slot]:
+        return self._output_slots.get(out_name, [])  # type: ignore
 
     def filter_slot_columns(
         self,
