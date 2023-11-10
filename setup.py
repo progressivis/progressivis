@@ -141,7 +141,6 @@ setup(
         "scikit-learn>=1.0.0",
         "pyyaml>=5.4.1",
         "tdigest>=0.4.1.0",
-        "datashape>=0.5.2",
         "pyroaring",
         "python-dateutil>=2.6.1",  # botocore wants < 2.7.0,>=2.1
         "boto",
@@ -151,6 +150,8 @@ setup(
         "rangehttpserver",
         "datasketches",
         "typeguard",
+        "multipledispatch >= 0.4.7",  # datashape
+        "python-dateutil",  # datashape
         # "aiohttp",
         # "aiohttp_jinja2",
         # "python_socketio",

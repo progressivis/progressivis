@@ -12,8 +12,8 @@ repos:
     rev: v1.1.1
     hooks:
       - id: mypy
-        language_version: python3.10
-        exclude: ^stool/
+        language_version: python3.11
+        exclude: ^progressivis/datashape/
         args: [--strict, --explicit-package-bases]
         additional_dependencies:
           - 'numpy'
