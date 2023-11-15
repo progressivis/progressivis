@@ -113,6 +113,7 @@ class _HistogramIndexImpl(object):
                 merged_tuples.append((prev_bm, prev_sep))
                 prev_bm, prev_sep = bm, sep
         assert prev_sep is None
+        merged_pintsets: Sequence[Any]
         merged_pintsets, merged_bins = zip(*merged_tuples)
         merged_pintsets = list(merged_pintsets) + [prev_bm]
         self.bins = np.array(merged_bins)

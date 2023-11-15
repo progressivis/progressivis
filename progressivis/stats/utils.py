@@ -247,7 +247,7 @@ class OnlineCovariance:  # not an OnlineFuctor
         return self.cm / div_ if div_ else np.nan
 
 
-DTypes = Union[pd.Series, Dict[str, Union[str, np.dtype[Any]]]]
+DTypes = Union[pd.Series[Any], Dict[str, Union[str, np.dtype[Any]]]]
 
 
 class SimpleImputer:
