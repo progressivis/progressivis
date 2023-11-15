@@ -312,14 +312,14 @@ class Module(metaclass=ABCMeta):
                 Module._doc_building = True
             else:
                 Module._doc_building = False
-                print("no doc")
+                # print("no doc")
         return Module._doc_building
         return False
 
     @classmethod
     def finalize_doc(cls: Type[Module]) -> None:
         if not cls.doc_building():
-            print("finalize: nothing to do on", cls)
+            # print("finalize: nothing to do on", cls)
             return
         if cls.__doc__ is None:
             cls.__doc__ = ""
@@ -1539,7 +1539,6 @@ def def_output(
 
 def document(module: Type[Module]) -> Type[Module]:
     module.finalize_doc()
-    print("params doc", module, params_doc)
     params_doc.clear()
     return module
 

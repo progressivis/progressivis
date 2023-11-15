@@ -113,6 +113,11 @@ class Corr(Module):
             res.loc[kx, ky] = self.result[frozenset([kx, ky])]  # type: ignore
         return res
 
+    @property
+    def columns(self) -> Sequence[str]:
+        assert self._columns
+        return self._columns
+
     @process_slot("table", reset_cb="reset")
     @run_if_any
     def run_step(
@@ -127,13 +132,13 @@ class Corr(Module):
                 return self._return_run_step(self.state_blocked, steps_run=0)
             input_df = dfslot.data()
             assert input_df is not None
+            if self._columns is None:
+                if (hint := dfslot.hint) is not None:
+                    self._columns = hint
+                else:
+                    self._columns = input_df.columns
             cols = None
             if self._ignore_string_cols:
-                if self._columns is None:
-                    if (hint := dfslot.hint) is not None:
-                        self._columns = hint
-                    else:
-                        self._columns = []
                 cols = self.get_num_cols(input_df)
             cov_ = self.op(self.filter_slot_columns(dfslot, fix_loc(indices), cols=cols))
             if self.result is None:
