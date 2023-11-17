@@ -10,7 +10,8 @@ from typing import (
     Set,
     Type,
     Hashable as Key,
-    cast
+    cast,
+    TYPE_CHECKING
 )
 from collections import defaultdict
 from abc import abstractmethod
@@ -247,7 +248,8 @@ class OnlineCovariance:  # not an OnlineFuctor
         return self.cm / div_ if div_ else np.nan
 
 
-DTypes = Union[pd.Series[Any], Dict[str, Union[str, np.dtype[Any]]]]
+if TYPE_CHECKING:
+    DTypes = Union[pd.Series[Any], Dict[str, Union[str, np.dtype[Any]]]]
 
 
 class SimpleImputer:
@@ -291,7 +293,7 @@ class SimpleImputer:
         self._dtypes: DTypes = {}
         self._k = 200  # for sketching
 
-    def init(self, dtypes: DTypes) -> None:
+    def init(self, dtypes: "DTypes") -> None:
         if self._impute_all:
             self._dtypes = dtypes
         else:
