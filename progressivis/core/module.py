@@ -11,6 +11,7 @@ from enum import IntEnum
 import pdb
 
 import numpy as np
+from typeguard import check_type
 from progressivis.utils.errors import ProgressiveError, ProgressiveStopIteration
 from progressivis.table.table_base import BasePTable
 from progressivis.table.table import PTable
@@ -21,7 +22,7 @@ import progressivis.core.aio as aio
 
 
 from .utils import type_fullname, get_random_name
-from .slot import SlotDescriptor, Slot
+from .slot import SlotDescriptor, Slot, SlotHint
 from .tracer_base import Tracer
 from .time_predictor import TimePredictor
 from .storagemanager import StorageManager
@@ -187,7 +188,6 @@ class Module(metaclass=ABCMeta):
         group: Optional[str] = None,
         scheduler: Optional[Scheduler] = None,
         storagegroup: Optional[Group] = None,
-        columns: Optional[PColumns] = None,
         output_required: Optional[bool] = True,
         **kwds: Any,
     ) -> None:
@@ -275,21 +275,8 @@ class Module(metaclass=ABCMeta):
             # class variables
             sd = SlotDescriptor("result", type=PTable, required=False)
             self.output_descriptors["result"] = sd
-        self._columns: Optional[List[str]] = None
-        self._columns_dict: Dict[str, List[str]] = {}
-        if isinstance(columns, dict):
-            assert len(columns)
-            for v in columns.values():
-                self._columns = v
-                break
-            self._columns_dict = columns
-        elif isinstance(columns, list):  # backward compatibility
-            self._columns = columns
-            for k in self._input_slots.keys():
-                self._columns_dict[k] = columns
-                break
-        else:
-            assert columns is None
+        if "columns" in kwds:
+            raise ValueError("'columns' is not a valid parameter")
 
     @staticmethod
     def tagged(*tags: str) -> ModuleTag:
@@ -308,14 +295,14 @@ class Module(metaclass=ABCMeta):
                 Module._doc_building = True
             else:
                 Module._doc_building = False
-                print("no doc")
+                # print("no doc")
         return Module._doc_building
         return False
 
     @classmethod
     def finalize_doc(cls: Type[Module]) -> None:
         if not cls.doc_building():
-            print("finalize: nothing to do on", cls)
+            # print("finalize: nothing to do on", cls)
             return
         if cls.__doc__ is None:
             cls.__doc__ = ""
@@ -326,7 +313,6 @@ class Module(metaclass=ABCMeta):
         defaults = SlotDescriptor.__init__.__defaults__
         assert defaults is not None
         sd_defs = dict(zip(sd_keys, defaults))
-        print("sd_defs", sd_defs)
 
         def _section(n: int, s: str) -> None:
             sp = n * " "
@@ -368,7 +354,14 @@ class Module(metaclass=ABCMeta):
                     continue
                 crt = getattr(sd, k)
                 if crt != v:
-                    no_defaults.append(f"{k}: {crt}")
+                    if k == "hint_type":
+                        k = "hint type"
+                        htyp = str(crt)
+                        if htyp.startswith("typing."):
+                            htyp = htyp.replace("typing.", "")
+                        no_defaults.append(f"accepts ``{htyp}`` as hint")
+                    else:
+                        no_defaults.append(f"{k}: {crt}")
             if mode == "out":
                 attr_name = cls.output_attrs[sd.name]
                 if attr_name != sd.name:
@@ -378,12 +371,13 @@ class Module(metaclass=ABCMeta):
             if no_defaults:
                 doclist.append(sp2)
                 nd = ", ".join(no_defaults)
-                doclist.append(f"{nd}\n")
-            slot_doc = inputs_doc if mode == "in" else outputs_doc
-            if sd.name in slot_doc:
-                doclist.append(sp2)
-                doclist.append(f" {slot_doc[sd.name]}\n")
-
+                doclist.append(f"{nd}")
+            doclist.append(sp2)
+            if sd.doc:
+                doclist.append(" |:notebook_with_decorative_cover:| ")
+                doclist.append(f"{sd.doc}\n")
+            else:
+                doclist.append("\n")
         if cls.parameters:
             _section(4, "Module parameters")
             for n, t, v in cls.parameters:
@@ -1195,80 +1189,31 @@ class Module(metaclass=ABCMeta):
     def all_outputs(self) -> List[SlotDescriptor]:
         return self.outputs
 
-    @property
-    def columns(self) -> Optional[List[str]]:
-        return (list(self._columns)
-                if isinstance(self._columns, list)
-                else self._columns)
-
-    # Methods coming from TableModule
-
     def get_first_input_slot(self) -> Optional[str]:
         for k in self.input_slot_names():
             return k
         return None
 
-    def get_columns(
-        self, table: Union[BasePTable, Dict[str, Any]], slot: Optional[str] = None
-    ) -> List[str]:
-        """
-        Return all the columns of interest from the specified table.
-
-        If the module has been created without a list of columns, then all
-        the columns of the table are returned.
-        Otherwise, the interesection between the specified list and the
-        existing columns is returned.
-        """
-        if table is None:
-            return None
-        if slot is None:
-            _columns = self._columns
-        else:
-            _columns = self._columns_dict.get(slot)
-        df_columns = table.keys() if isinstance(table, dict) else table.columns
-        if _columns is None:
-            _columns = list(df_columns)
-        else:
-            cols = set(_columns)
-            diff = cols.difference(df_columns)
-            for column in diff:
-                _columns.remove(column)  # maintain the order
-        return _columns
-
-    def filter_columns(
+    def filter_slot_columns(
         self,
-        df: BasePTable,
+        slot: Slot,
         indices: Optional[Any] = None,
-        slot: Optional[str] = None,
         cols: PColumns = None,
     ) -> BasePTable:
         """
         Return the specified table filtered by the specified indices and
         limited to the columns of interest.
         """
-        if self._columns is None or (
-            slot is not None and slot not in self._columns_dict
-        ):
+        df = slot.data()
+        assert df is not None
+        if slot._hint is None:
             if indices is None:
-                return df
+                return cast(BasePTable, df)
             return cast(BasePTable, df.loc[indices])
-        cols = cols or self.get_columns(df, slot)
+        cols = cols or slot.hint or df.columns
         if cols is None:
-            return None
-        if indices is None:
-            if isinstance(cols, (int, str)):
-                cols = slice(cols, cols)
-            # return df[cols]
+            return cast(BasePTable, df)
         return df.loc[indices, cols]  # type: ignore
-
-    def get_slot_columns(self, name: str) -> List[str]:
-        cols = self._columns_dict.get(name)
-        if cols is not None:
-            return cols
-        slot = self.get_input_slot(name)
-        if slot is not None:
-            return list(slot.data().columns)
-        return []
 
     def has_output_datashape(self, name: str = "table") -> bool:
         for osl in self.all_outputs:
@@ -1293,9 +1238,9 @@ class Module(metaclass=ABCMeta):
             assert isl is not None
             table = isl.data()
             if v == "#columns":
-                colsn = self.get_slot_columns(k)
+                colsn = isl.hint or table.columns
             elif v == "#all":
-                colsn = table._columns
+                colsn = table.columns
             else:
                 assert isinstance(v, list)
                 colsn = v
@@ -1335,7 +1280,12 @@ class InputSlots:
     def __init__(self, module: Module):
         self.__dict__["module"] = module
 
-    def __setattr__(self, name: Union[int, str], slot: Slot) -> None:
+    def __setattr__(self, name: Union[str, int], slot: Slot | SlotHint) -> None:
+        hint: Any = None
+        if isinstance(slot, SlotHint):
+            slot, hint = slot.slot, slot.hint
+            if slot._hint is not None:
+                raise KeyError("'hint' cannot be assigned more than once")
         assert isinstance(slot, Slot)
         assert slot.output_module is not None
         assert slot.output_name is not None
@@ -1352,6 +1302,11 @@ class InputSlots:
             slot.input_name = name_
         else:
             slot.input_name = name
+        if hint is not None:
+            desc_ = slot.input_descriptor()
+            ck = check_type(hint, desc_.hint_type)
+            assert ck == hint
+            slot._hint = hint
         slot.connect()
 
     def __getattr__(self, name: str) -> Slot:
@@ -1360,12 +1315,8 @@ class InputSlots:
     def __getitem__(self, name: str) -> Slot:
         raise ProgressiveError("Input slots cannot be read, only assigned to")
 
-    def __setitem__(self, name: Union[int, str, Tuple[str, Any]], slot: Slot) -> None:
-        if isinstance(name, (int, str)):
-            return self.__setattr__(name, slot)
-        name, meta = name
-        slot.meta = meta
-        return self.__setattr__(name, slot)
+    def __setitem__(self, name: Union[int, str, Tuple[str, Any]], slot: Slot | SlotHint) -> None:
+        return self.__setattr__(name, slot)  # type: ignore
 
     def __dir__(self) -> Iterable[str]:
         module: Module = self.__dict__["module"]
@@ -1403,8 +1354,6 @@ def _print_len(x: Sized) -> None:
 
 
 params_doc = {}
-inputs_doc = {}
-outputs_doc = {}
 
 
 def def_parameter(
@@ -1465,7 +1414,7 @@ def def_input(
         else:
             module.inputs = [sd] + module.inputs  # do not use += here
         if Module.doc_building() and doc:
-            inputs_doc[name] = doc
+            sd.doc = doc
         return module
 
     return module_decorator
@@ -1565,7 +1514,7 @@ def def_output(
         assert attr_name is not None
         add_output_to_module(module, name, attr_name, custom_attr, type)
         if Module.doc_building() and doc:
-            outputs_doc[name] = doc
+            sd.doc = doc
         return module
 
     return module_decorator
@@ -1573,10 +1522,7 @@ def def_output(
 
 def document(module: Type[Module]) -> Type[Module]:
     module.finalize_doc()
-    print("params doc", module, params_doc)
     params_doc.clear()
-    inputs_doc.clear()
-    outputs_doc.clear()
     return module
 
 

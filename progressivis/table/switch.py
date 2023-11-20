@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 
 from ..core.pintset import PIntSet
-from ..core.module import Module, ReturnRunStep, def_input, def_output
+from ..core.module import Module, ReturnRunStep, def_input, def_output, document
 from ..core.utils import indices_len
 from ..table.table import PTable
 from ..table import PTableSelectedView
@@ -14,20 +14,24 @@ from typing import Callable, Optional, Any
 logger = logging.getLogger(__name__)
 
 
-@def_input("table", PTable)
-@def_output("result", PTableSelectedView)
-@def_output("result_else", PTableSelectedView)
+@document
+@def_input("table", PTable, doc="Data input")
+@def_output("result", PTableSelectedView, doc="replays the input if the ``condition`` is satisfied")
+@def_output("result_else", PTableSelectedView, doc="replays the input if the condition fails")
 class Switch(Module):
     """
-    Select the output (result or result_else) ar runtime
+    Switch the input to ``result`` or ``result_else`` output at runtime, based on ``condition``
     """
 
     def __init__(self, condition: Callable[..., Optional[bool]], **kwds: Any) -> None:
         """
-        condition: callable which should return
-        * None => undecidable (yet), run_step must return blocked_state
-        * True => run_step output is 'result'
-        * False => run_step output is 'result_else'
+        Args:
+            condition: callable which should return:
+
+                * ``None`` => undecidable (yet), run_step must return blocked_state
+                * ``True`` => run_step output is ``result``
+                * ``False`` => run_step output is ``result_else``
+            kwds: extra keyword args to be passed to the ``Module`` superclass
         """
         assert callable(condition)
         super().__init__(**kwds)

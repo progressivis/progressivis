@@ -7,7 +7,6 @@ from progressivis.core.module import (
     def_output,
     def_parameter,
 )
-from ..utils.errors import ProgressiveError
 from ..core.utils import indices_len, fix_loc
 from ..table.table import PTable
 from ..core.decorators import process_slot, run_if_any
@@ -18,7 +17,7 @@ import numpy as np
 from tdigest import TDigest  # type: ignore
 
 
-from typing import Optional, List, Union, Any
+from typing import Optional, List, Union, Any, Sequence
 
 
 def _pretty_name(x: float) -> str:
@@ -31,21 +30,17 @@ def _pretty_name(x: float) -> str:
 
 @def_parameter("percentiles", np.dtype(np.object_), [0.25, 0.5, 0.75])
 @def_parameter("history", np.dtype(int), 3)
-@def_input("table", PTable)
+@def_input("table", PTable, hint_type=Sequence[str])
 @def_output("result", PTable)
 class Percentiles(Module):
     """ """
 
     def __init__(
         self,
-        column: str,
         percentiles: Optional[Union[List[float], np.ndarray[Any, Any]]] = None,
         **kwds: Any,
     ) -> None:
-        if not column:
-            raise ProgressiveError("Need a column name")
         super(Percentiles, self).__init__(**kwds)
-        self._columns = [column]
         self.default_step_size = 1000
         self.tdigest = TDigest()
 
@@ -91,20 +86,17 @@ class Percentiles(Module):
         assert self.result is not None
         with self.context as ctx:
             dfslot = ctx.table
+            assert dfslot.hint is not None
+            assert len(dfslot.hint) == 1
             indices = dfslot.created.next(length=step_size)
             steps = indices_len(indices)
             if steps == 0:
                 return self._return_run_step(self.state_blocked, steps_run=steps)
-            input_df = dfslot.data()
-            x = self.filter_columns(input_df, fix_loc(indices))
+            x = self.filter_slot_columns(ctx.table, fix_loc(indices))
             self.tdigest.batch_update(x[0])
             df = self.result
             values = {}
             for n, p in zip(self._pername, self._percentiles):
                 values[n] = self.tdigest.percentile(p * 100)
             df.add(values)
-            # with self.lock:
-            #     df.loc[run_number] = values
-            #     if len(df) > self.params.history:
-            #         self._df = df.loc[df.index[-self.params.history:]]
             return self._return_run_step(self.next_state(dfslot), steps_run=steps)

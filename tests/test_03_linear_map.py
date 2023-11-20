@@ -29,8 +29,8 @@ class TestLinearMap(ProgressiveTest):
         s = self.scheduler()
         vectors = RandomPTable(20, rows=100000, scheduler=s)
         transf = RandomPTable(20, rows=3, scheduler=s)
-        module = LinearMap(columns=["_3", "_4", "_5"], scheduler=s)
-        module.input.vectors = vectors.output.result
+        module = LinearMap(scheduler=s)
+        module.input.vectors = vectors.output.result["_3", "_4", "_5"]
         module.input.transformation = transf.output.result
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = module.output.result
@@ -46,13 +46,9 @@ class TestLinearMap(ProgressiveTest):
         s = self.scheduler()
         vectors = RandomPTable(20, rows=100000, scheduler=s)
         transf = RandomPTable(20, rows=3, scheduler=s)
-        module = LinearMap(
-            columns=["_3", "_4", "_5"],
-            transf_columns=["_4", "_5", "_6", "_7"],
-            scheduler=s,
-        )
-        module.input.vectors = vectors.output.result
-        module.input.transformation = transf.output.result
+        module = LinearMap(scheduler=s)
+        module.input.vectors = vectors.output.result["_3", "_4", "_5"]
+        module.input.transformation = transf.output.result["_4", "_5", "_6", "_7"]
         pr = Print(proc=self.terse, scheduler=s)
         pr.input[0] = module.output.result
         aio.run(s.start())

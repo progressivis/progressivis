@@ -1,7 +1,7 @@
 import datetime
 import calendar
 
-from datashape import DataShape
+from ..datashape import DataShape
 from dataclasses import dataclass, field
 import numpy as np
 from .column_selected import PColumnComputedView

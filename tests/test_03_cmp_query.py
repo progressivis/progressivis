@@ -3,7 +3,7 @@ from __future__ import annotations
 import pandas as pd
 
 from . import ProgressiveTest
-from progressivis.core import aio, Sink
+from progressivis.core import aio
 from progressivis import Print
 from progressivis.table import PTable
 from progressivis.table.cmp_query import CmpQueryLast
@@ -20,8 +20,6 @@ class TestCmpQuery(ProgressiveTest):
         s = self.scheduler()
         random = RandomPTable(10, rows=10000, scheduler=s)
         cmp_ = CmpQueryLast(scheduler=s)
-        sink = Sink(name="sink", scheduler=s)
-        sink.input.inp = cmp_.output.result
         cst = PTable("cmp_table", data={"_1": [0.5]})
         value = Constant(cst, scheduler=s)
         cmp_.input.cmp = value.output.result
@@ -41,8 +39,6 @@ class TestCmpQuery(ProgressiveTest):
         stirrer = Stirrer(update_column="_1", fixed_step_size=100, scheduler=s, **kw)
         stirrer.input[0] = random.output.result
         cmp_ = CmpQueryLast(scheduler=s)
-        sink = Sink(name="sink", scheduler=s)
-        sink.input.inp = cmp_.output.result
         cst = PTable("cmp_table", data={"_1": [0.5]})
         value = Constant(cst, scheduler=s)
         cmp_.input.cmp = value.output.result

@@ -88,12 +88,13 @@ class Select(Module):
         #                    buffer_updated=False,
         #                    buffer_deleted=True)
         steps = 0
+        cols = table_slot.hint
         if self.result is None:
-            if self._columns is None:
+            if cols is None:
                 dshape = table.dshape
             else:
                 cols_dshape = [
-                    "%s: %s" % (col, table[col].dshape) for col in self._columns
+                    "%s: %s" % (col, table[col].dshape) for col in cols
                 ]
                 dshape = "{" + ",".join(cols_dshape) + "}"
             self.result = PTable(
@@ -116,7 +117,7 @@ class Select(Module):
             logger.info("creating %s", indices)
             steps += s
             step_size -= s
-            if self._columns is None:
+            if cols is None:
                 # TODO
                 # ind = np.array(indices, dtype=np.int64)
                 # for column in self._columns:
@@ -126,10 +127,10 @@ class Select(Module):
                     row = table.row(i)
                     self.result.add(row, index=i)
             else:
-                row = {c: None for c in self._columns}
+                row = {c: None for c in cols}
                 for i in indices:
                     idx = table.id_to_index(i)
-                    for c in self._columns:
+                    for c in cols:
                         row[c] = table[c][idx]
                     self.result.add(row, index=i)
 
@@ -140,13 +141,13 @@ class Select(Module):
             s = indices_len(indices)
             steps += s
             step_size -= s
-            if self._columns is None:
+            if cols is None:
                 for i in indices:
                     self.result.loc[i] = table.loc[i]
             else:
-                row = {c: None for c in self._columns}
+                row = {c: None for c in cols}
                 for i in indices:
-                    for c in self._columns:
+                    for c in cols:
                         idx = table.id_to_index(i)
                         row[c] = table[c][idx]
                     self.result.loc[i] = row

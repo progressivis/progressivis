@@ -29,14 +29,12 @@ class Absolute(Unary):
     Applies :meth:`numpy.absolute` over all input columns or over a subset
     """
     def __init__(self,
-                 columns: Optional[PColsList] = None,  # not in kwds only for sphinx
                  **kwds: Any):
         """
         Args:
-            columns: columns to be processed. When missing all input columns are processed
             kwds: extra keyword args to be passed to the ``Module`` superclass
         """
-        super().__init__(np.absolute, columns=columns, **kwds)
+        super().__init__(np.absolute, **kwds)
 
 
 @document
@@ -46,33 +44,26 @@ class Add(Binary):
     ``first`` input table and the other belongs to the ``second``
     """
     def __init__(self,
-                 columns: Optional[PColsDict] = None,  # not in kwds only for sphinx
                  **kwds: Any):
         """
         Args:
-            columns: a two keys dictionary. Its two keys (``first``, ``second``) denotes
-            the homonymous slots their underlying values are lists of columns to be
-            processed. When missing all input columns are processed.
             kwds: extra keyword args to be passed to the ``Module`` superclass
         """
-        super().__init__(np.add, columns=columns, **kwds)
+        super().__init__(np.add, **kwds)
 
 
 @document
 class ColsAdd(ColsBinary):
     def __init__(self,
-                 first: List[str],
-                 second: List[str],
                  cols_out: Optional[List[str]] = None,
                  **kwds: Any):
         """
         Args:
-            first: list of columns to be processed as first operand of :meth:`numpy.add`
-            second: list of columns to be processed as second operand of :meth:`numpy.add`
-            cols_out: denotes the names of columns in the ``result`` table
+            cols_out: denotes the names of columns in the ``result`` table. If not
+                provided the column selection of the first operand is used
             kwds: extra keyword args to be passed to the ``Module`` superclass
         """
-        super().__init__(np.add, first=first, second=second, **kwds)
+        super().__init__(np.add, cols_out=cols_out, **kwds)
 
 @document
 class AddReduce(Reduce):
@@ -80,14 +71,12 @@ class AddReduce(Reduce):
     Applies :meth:`numpy.add.reduce` over all input columns or over a subset of them
     """
     def __init__(self,
-                 columns: Optional[PColsList] = None,  # not in kwds only for sphinx
                  **kwds: Any):
         """
         Args:
-            columns: columns to be processed. When missing all input columns are processed
             kwds: extra keyword args to be passed to the ``Module`` superclass
         """
-        super().__init__(np.add, columns=columns, **kwds)
+        super().__init__(np.add, **kwds)
 
 
 from ._elementwise import (

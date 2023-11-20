@@ -88,7 +88,7 @@ class NumExprABC(Module):
             if first_slot is None:
                 first_slot = sl
             indices = sl.created.next(length=step_size)
-            df = self.filter_columns(sl.data(), fix_loc(indices), n)
+            df = self.filter_slot_columns(sl, fix_loc(indices))
             fobj, dict_ = _make_local(df, n)
             local_env.update(dict_)
             vars_dict[n] = fobj

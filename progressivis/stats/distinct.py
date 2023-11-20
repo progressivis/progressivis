@@ -42,11 +42,9 @@ class Distinct(Module):
     ) -> ReturnRunStep:
         assert self.context is not None
         with self.context as ctx:
-            # import pdb;pdb.set_trace()
             indices = ctx.table.created.next(step_size)  # returns a slice
             steps = indices_len(indices)
-            input_df = ctx.table.data()
-            op = self.filter_columns(input_df, fix_loc(indices))
+            op = self.filter_slot_columns(ctx.table, fix_loc(indices))
             if self.result is None:
                 self.result = PDict({k: set() for k in op.columns})
             for k, v in self.result.items():

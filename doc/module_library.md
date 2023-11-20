@@ -90,7 +90,7 @@ progressivis.io.input.Input
 
 .. autoclass:: SimpleFilter
    :members:
-   :exclude-members: run_step
+   :exclude-members: run_step, parameters
 ```
 
 ### CMP Query Module (via NumExpr)
@@ -112,7 +112,7 @@ progressivis.io.input.Input
 
 .. autoclass:: FilterMod
    :members:
-   :exclude-members: run_step
+   :exclude-members: run_step, parameters
 ```
 Example:
 
@@ -136,7 +136,7 @@ The underlying graph:
 
 .. autoclass:: RangeQuery
    :members:
-   :exclude-members: run_step
+   :exclude-members: run_step, parameters
 ```
 Module `RangeQuery` is not self-sufficient. It needs other modules to work. A simple way to provide it with an environment that allows it to work properly is to use the `create_dependent_modules()` method.
 
@@ -163,7 +163,7 @@ And in this case it produces the following topology:
 
 .. autoclass:: RangeQuery2d
    :members:
-   :exclude-members: run_step
+   :exclude-members: run_step, parameters
 ```
 
 Just like `RangeQuery`, the module `RangeQuery2d` is not self-sufficient. In order to provide it with an environment, the `create_dependent_modules()` method can be used in the same way:
@@ -206,7 +206,7 @@ table.liteselect.LiteSelect: même chose avec une vue en sortie. devrait s'appel
 
 .. autoclass:: HistogramIndex
    :members:
-   :exclude-members: run_step
+   :exclude-members: run_step, parameters
 ```
 
 ### Unique Index Module
@@ -273,13 +273,42 @@ table.liteselect.LiteSelect: même chose avec une vue en sortie. devrait s'appel
 
 ## Set and Flow Control Operations
 
+
+### Intersection Module
+
+```{eval-rst}
+.. currentmodule:: progressivis.table.intersection
+
+.. autoclass:: Intersection
+   :members:
+   :exclude-members: run_step, run_step_progress, run_step_seq
+```
+
+### Merging dictionaries Module
+
+```{eval-rst}
+.. currentmodule:: progressivis.table.merge_dict
+
+.. autoclass:: MergeDict
+   :members:
+   :exclude-members: run_step
+```
+
+### Switching Module
+
+```{eval-rst}
+.. currentmodule:: progressivis.table.switch
+
+.. autoclass:: Switch
+   :members:
+   :exclude-members: run_step
+```
+
+
+
 <!---
-table.intersection.Intersection:
-table.hub.Hub: ...
 table.pattern.Pattern:
-table.merge_dict.MergeDict:
 table.paste.Paste:
-table.switch.Switch:
 table.merge.Merge:
 --->
 
@@ -563,6 +592,12 @@ Linear transformation can be performed via this module:
 .. autoclass:: LinearMap
    :members:
    :exclude-members: run_step, parameters
+```
+
+Example:
+
+```{eval-rst}
+.. literalinclude:: ./example_linear_map.py
 ```
 
 ## Visualisation

@@ -106,7 +106,7 @@ class MixUfuncABC(Module):
             indices = sl.created.next(length=step_size)
             data_ = sl.data()
             is_dict = isinstance(data_, dict)
-            df = data_ if is_dict else self.filter_columns(data_, fix_loc(indices), n)
+            df = data_ if is_dict else self.filter_slot_columns(sl, fix_loc(indices))
             if is_dict:
                 sl.clear_buffers()
             dict_ = make_local(df, n)

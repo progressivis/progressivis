@@ -247,9 +247,9 @@ class RangeQuery(Module):
         with scheduler:
             if hist_index is None:
                 hist_index = HistogramIndex(
-                    columns=[params.column], group=self.name, scheduler=scheduler
+                    group=self.name, scheduler=scheduler
                 )
-            hist_index.input.table = input_module.output[input_slot]
+            hist_index.input.table = input_module.output[input_slot][params.column,]
             if min_value is None:
                 assert hasattr(min_, "result") or min_ is None
                 init_min = min_.result if min_ is not None else hist_index.min_out

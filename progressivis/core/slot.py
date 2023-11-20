@@ -13,7 +13,8 @@ from typing import (
     List,
     Tuple,
 )
-
+from dataclasses import dataclass
+import copy
 import logging
 from .changemanager_base import EMPTY_BUFFER, BaseChangeManager
 
@@ -43,6 +44,8 @@ class SlotDescriptor:
         "buffer_deleted",
         "buffer_exposed",
         "buffer_masked",
+        "hint_type",
+        "doc"
     )
 
     def __init__(
@@ -57,6 +60,7 @@ class SlotDescriptor:
         buffer_deleted: bool = True,
         buffer_exposed: bool = True,
         buffer_masked: bool = True,
+        hint_type: Any = None,
     ) -> None:
         self.name = name
         """The slot name """
@@ -76,6 +80,8 @@ class SlotDescriptor:
         """True if the slot should buffer the deleted entries """
         self.buffer_exposed = buffer_exposed
         self.buffer_masked = buffer_masked
+        self.hint_type = hint_type
+        self.doc = ""
 
     def __str__(self) -> str:
         return (
@@ -87,6 +93,12 @@ class SlotDescriptor:
 
     def __repr__(self) -> str:
         return str(self)
+
+
+@dataclass(kw_only=True)
+class SlotHint:
+    slot: "Slot"
+    hint: Any
 
 
 class Slot:
@@ -112,6 +124,7 @@ class Slot:
         self._name: str
         self.changes: Optional[BaseChangeManager] = None
         self.meta: Optional[Any] = None
+        self._hint: Optional[Any] = None
 
     def name(self) -> str:
         "Return the name of the slot"
@@ -321,6 +334,9 @@ class Slot:
         """
         return self.changes.has_buffered() if self.changes else False
 
+    def __getitem__(self, hint: Any) -> SlotHint:
+        return SlotHint(slot=self, hint=hint)
+
     @property
     def created(self) -> ChangeBuffer:
         "Return the buffer for created rows"
@@ -352,6 +368,10 @@ class Slot:
     def changemanager(self) -> Optional[BaseChangeManager]:
         "Return the ChangeManager"
         return self.changes
+
+    @property
+    def hint(self) -> Any:
+        return copy.copy(self._hint)
 
     changemanager_classes: Dict[Any, Type[BaseChangeManager]] = {}
 

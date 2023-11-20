@@ -13,10 +13,10 @@ from ..core.module import Module
 from ..utils.psdict import PDict
 from .utils import OnlineVariance, OnlineCovariance
 
-from typing import Any, Union, Literal, Dict, Optional, List
+from typing import Any, Union, Literal, Dict, Optional, List, Sequence
 
 
-@def_input("table", PTable)
+@def_input("table", PTable, hint_type=Sequence[str])
 @def_output("result", PDict)
 class Corr(Module):
     """
@@ -37,6 +37,7 @@ class Corr(Module):
         self._ignore_string_cols = ignore_string_cols
         self._num_cols: Optional[List[str]] = None
         self.default_step_size = 1000
+        self._columns: Optional[Sequence[str]] = None
 
     def is_ready(self) -> bool:
         if self.get_input_slot("table").created.any():
@@ -112,6 +113,11 @@ class Corr(Module):
             res.loc[kx, ky] = self.result[frozenset([kx, ky])]  # type: ignore
         return res
 
+    @property
+    def columns(self) -> Sequence[str]:
+        assert self._columns
+        return self._columns
+
     @process_slot("table", reset_cb="reset")
     @run_if_any
     def run_step(
@@ -125,10 +131,16 @@ class Corr(Module):
             if steps == 0:
                 return self._return_run_step(self.state_blocked, steps_run=0)
             input_df = dfslot.data()
+            assert input_df is not None
+            if self._columns is None:
+                if (hint := dfslot.hint) is not None:
+                    self._columns = hint
+                else:
+                    self._columns = input_df.columns
             cols = None
             if self._ignore_string_cols:
                 cols = self.get_num_cols(input_df)
-            cov_ = self.op(self.filter_columns(input_df, fix_loc(indices), cols=cols))
+            cov_ = self.op(self.filter_slot_columns(dfslot, fix_loc(indices), cols=cols))
             if self.result is None:
                 self.result = PDict(other=cov_)
             else:

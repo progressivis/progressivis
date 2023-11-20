@@ -55,14 +55,14 @@ class Histogram1dPattern(Pattern):
             assert self.dep.sink
             self.dep.sink.input.inp = self.dep.kll.output.result
             # TODO: reuse min max
-            self.dep.max = Max(scheduler=scheduler, columns=[col])
-            self.dep.max.input.table = input_module.output[input_slot]
-            self.dep.min = Min(scheduler=scheduler, columns=[col])
-            self.dep.min.input.table = input_module.output[input_slot]
+            self.dep.max = Max(scheduler=scheduler)
+            self.dep.max.input.table = input_module.output[input_slot][col,]
+            self.dep.min = Min(scheduler=scheduler)
+            self.dep.min.input.table = input_module.output[input_slot][col,]
             self.dep.lower = Variable({col: "*"}, scheduler=scheduler)
             self.dep.upper = Variable({col: "*"}, scheduler=scheduler)
             self.dep.range_query = RangeQuery(
-                scheduler=scheduler, column=col, columns=[col], approximate=True
+                scheduler=scheduler, column=col, approximate=True
             )
             self.dep.range_query.params.column = col
             self.dep.range_query.create_dependent_modules(
@@ -101,10 +101,10 @@ class Histogram2dPattern(Pattern):
         x_col, y_col = self._x_column, self._y_column
         with scheduler:
             # TODO: reuse min max
-            self.dep.max = Max(scheduler=scheduler, columns=[x_col, y_col])
-            self.dep.max.input.table = input_module.output[input_slot]
-            self.dep.min = Min(scheduler=scheduler, columns=[x_col, y_col])
-            self.dep.min.input.table = input_module.output[input_slot]
+            self.dep.max = Max(scheduler=scheduler)
+            self.dep.max.input.table = input_module.output[input_slot][x_col, y_col]
+            self.dep.min = Min(scheduler=scheduler)
+            self.dep.min.input.table = input_module.output[input_slot][x_col, y_col]
             histogram2d = Histogram2D(
                 x_column=x_col, y_column=y_col, scheduler=scheduler
             )
@@ -154,8 +154,8 @@ def _add_max_col(col: str, factory: StatsFactory) -> Max:
     input_module = factory._input_module
     scheduler = factory.scheduler()
     with scheduler:
-        m = Max(columns=[col], scheduler=scheduler)
-        m.input.table = input_module.output.result
+        m = Max(scheduler=scheduler)
+        m.input.table = input_module.output.result[col,]
         sink = Sink(scheduler=scheduler)
         sink.input.inp = m.output.result
         return m
@@ -165,8 +165,8 @@ def _add_min_col(col: str, factory: StatsFactory) -> Min:
     input_module = factory._input_module
     scheduler = factory.scheduler()
     with scheduler:
-        m = Min(columns=[col], scheduler=scheduler)
-        m.input.table = input_module.output.result
+        m = Min(scheduler=scheduler)
+        m.input.table = input_module.output.result[col,]
         sink = Sink(scheduler=scheduler)
         sink.input.inp = m.output.result
         return m
@@ -176,8 +176,8 @@ def _add_var_col(col: str, factory: StatsFactory) -> Var:
     input_module = factory._input_module
     scheduler = factory.scheduler()
     with scheduler:
-        m = Var(columns=[col], scheduler=scheduler)
-        m.input.table = input_module.output.result
+        m = Var(scheduler=scheduler)
+        m.input.table = input_module.output.result[col,]
         sink = Sink(scheduler=scheduler)
         sink.input.inp = m.output.result
         return m
@@ -187,8 +187,8 @@ def _add_distinct_col(col: str, factory: StatsFactory) -> Distinct:
     input_module = factory._input_module
     scheduler = factory.scheduler()
     with scheduler:
-        m = Distinct(columns=[col], scheduler=scheduler)
-        m.input.table = input_module.output.result
+        m = Distinct(scheduler=scheduler)
+        m.input.table = input_module.output.result[col,]
         sink = Sink(scheduler=scheduler)
         sink.input.inp = m.output.result
         return m
@@ -203,9 +203,6 @@ def _add_correlation(col: str, factory: StatsFactory) -> Optional[Corr]:
         Optional[Corr], factory._multi_col_modules.get("corr")
     )
     if prev_corr is not None:
-        if prev_corr._columns == columns:
-            return prev_corr
-        # list of column changed => remove old module
         factory._to_delete.append(prev_corr.name)
         del factory._multi_col_modules["corr"]
     if len(columns) < 2:
@@ -213,8 +210,8 @@ def _add_correlation(col: str, factory: StatsFactory) -> Optional[Corr]:
     input_module = factory._input_module
     scheduler = factory.scheduler()
     with scheduler:
-        m = Corr(columns=list(columns), scheduler=scheduler)
-        m.input.table = input_module.output.result
+        m = Corr(scheduler=scheduler)
+        m.input.table = input_module.output.result[columns]
         sink = Sink(scheduler=scheduler)
         sink.input.inp = m.output.result
         factory._multi_col_modules["corr"] = m

@@ -4,7 +4,7 @@ Range Query module.
 """
 from __future__ import annotations
 
-from progressivis.core.module import Module, ReturnRunStep, def_input, def_output
+from progressivis.core.module import Module, ReturnRunStep, def_input, def_output, document
 from progressivis.core.utils import indices_len
 from progressivis.core.pintset import PIntSet
 from progressivis.table.table_base import BasePTable, PTableSelectedView
@@ -16,14 +16,25 @@ def _get_physical_table(t: BasePTable) -> BasePTable:
     return t.base or t
 
 
-@def_input("table", type=BasePTable, multiple=True)
-@def_output("result", PTableSelectedView)
+@document
+@def_input("table", type=BasePTable, multiple=True, doc="Many tables or views sharing the same physical table")
+@def_output("result", PTableSelectedView, doc="View on the physical table shared by inputs. It's index is the intersection on inputs indices")
 class Intersection(Module):
-    "Intersection Module"
+    """
+    Intersection Module
+    It computes the intersection of indices for all its inputs and
+    provides a view containing rows shared by all input tables or views.
+    |:warning:| All inputs are based of the same physical table. The columns of the
+    output table are given by the common physical table
+    """
     # parameters = []
 
     def __init__(self, **kwds: Any) -> None:
-        super(Intersection, self).__init__(**kwds)
+        """
+        Args:
+            kwds: extra keyword args to be passed to the ``Module`` superclass
+        """
+        super().__init__(**kwds)
         self.run_step = self.run_step_seq  # type: ignore
 
     def predict_step_size(self, duration: float) -> int:

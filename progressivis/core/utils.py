@@ -58,7 +58,7 @@ if TYPE_CHECKING:
     PatchRunStepCallable = Callable[[int, int, float], ReturnRunStep]
 
 integer_types = (int, np.integer)
-Items = Union[collections_abc.MutableMapping, List[Any], Any]
+Items = Union[collections_abc.MutableMapping[Any, Any], List[Any], Any]
 
 
 # def is_int(n: Any) -> TypeGuard[int]:

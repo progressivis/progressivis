@@ -37,6 +37,10 @@ logger = logging.getLogger(__name__)
                                                      " <skipped-rows-cnt>``"))
 @def_output("result", PTable, doc=RESULT_DOC)
 class ParquetLoader(BaseLoader):
+    """
+    This module reads ``parquet`` files progressively into a {{PTable}}
+     using the ``PyArrow`` backend.
+    """
     def __init__(
         self,
         filepath_or_buffer: Optional[Any] = None,
@@ -46,6 +50,7 @@ class ParquetLoader(BaseLoader):
         throttle: Union[bool, int, float] = False,
         # imputer: Optional[SimpleImputer] = None,
         # drop_na: Optional[bool] = True,
+        columns: Optional[List[str]] = None,
         **kwds: Any,
     ) -> None:
         r"""
@@ -68,6 +73,8 @@ class ParquetLoader(BaseLoader):
         self.iter_batches_kwds: Dict[str, Any] = filter_kwds(
             kwds, pq.ParquetFile.iter_batches
         )
+        if columns is not None:
+            self.iter_batches_kwds['columns'] = columns
         # When called with a specified chunksize, it returns a parser
         self.filepath_or_buffer = filepath_or_buffer
         self.force_valid_ids = force_valid_ids

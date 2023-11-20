@@ -5,7 +5,7 @@ Setup file for progressivis.
 import sys
 import os
 import os.path
-import versioneer
+# import versioneer
 from setuptools import setup, Command
 from setuptools.extension import Extension
 
@@ -112,7 +112,7 @@ def read(fname):
 
 setup(
     name="progressivis",
-    version=versioneer.get_version(),
+    # version=versioneer.get_version(),
     author="Jean-Daniel Fekete",
     author_email="Jean-Daniel.Fekete@inria.fr",
     url="https://github.com/progressivis/progressivis",
@@ -141,7 +141,6 @@ setup(
         "scikit-learn>=1.0.0",
         "pyyaml>=5.4.1",
         "tdigest>=0.4.1.0",
-        "datashape>=0.5.2",
         "pyroaring",
         "python-dateutil>=2.6.1",  # botocore wants < 2.7.0,>=2.1
         "boto",
@@ -150,6 +149,9 @@ setup(
         "fast-histogram",
         "rangehttpserver",
         "datasketches",
+        "typeguard",
+        "multipledispatch >= 0.4.7",  # datashape
+        "python-dateutil",  # datashape
         # "aiohttp",
         # "aiohttp_jinja2",
         # "python_socketio",
@@ -157,7 +159,7 @@ setup(
     ],
     # "pptable",
     setup_requires=["cython", "numpy", "pybind11", "mypy"] if WITH_CXX else [],
-    cmdclass=versioneer.get_cmdclass({"bench": RunBench}),
+    # cmdclass=versioneer.get_cmdclass({"bench": RunBench}),
     ext_modules=_cythonize(EXTENSIONS) + EXT_PYBIND11 if WITH_CXX else [],
     package_data={
         # If any package contains *.md, *.txt or *.rst files, include them:

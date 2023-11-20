@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-import datashape as ds
-from datashape import DataShape as DataShape
+import progressivis.datashape as ds
+from ..datashape import DataShape as DataShape
 import pandas as pd
 import numpy as np
 import pyarrow as pa

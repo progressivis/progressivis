@@ -6,7 +6,7 @@ from .table import PTable
 from ..core.module import Module
 from ..utils.psdict import PDict
 
-from typing import Optional, Any
+from typing import Any
 
 
 @document
@@ -15,14 +15,14 @@ class Constant(Module):
     """
     Module providing a constant output {{PTable}} slot
     """
-    def __init__(self, table: Optional[PTable], **kwds: Any) -> None:
+    def __init__(self, table: PTable, **kwds: Any) -> None:
         """
         Args:
-            table:
-                object to be used by the **result** output slot
+            table: object to be used by the ``result`` output slot
+
         """
         super().__init__(**kwds)
-        assert table is None or isinstance(table, PTable)
+        assert isinstance(table, PTable)
         self.result = table
 
     def predict_step_size(self, duration: float) -> int:
@@ -40,13 +40,14 @@ class ConstDict(Module):
     """
     Module providing a constant output {{PDict}} slot
     """
-    def __init__(self, pdict: Optional[PDict], **kwds: Any) -> None:
+    def __init__(self, pdict: PDict, **kwds: Any) -> None:
         """
         Args:
             pdict: object to be used by the **result** output slot
+            kwds: extra keyword args to be passed to the ``Module`` superclass
         """
         super().__init__(**kwds)
-        assert pdict is None or isinstance(pdict, PDict)
+        assert isinstance(pdict, PDict)
         self.result = pdict
 
     def predict_step_size(self, duration: float) -> int:

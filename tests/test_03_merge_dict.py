@@ -3,7 +3,7 @@ from progressivis import Print, Scheduler
 from progressivis.stats import RandomPTable, Max, Min
 from progressivis.table.stirrer import Stirrer
 from progressivis.table.switch import Switch
-from progressivis.table.hub import Hub
+from progressivis.table.merge_dict import MergeDict
 from progressivis.core import aio
 from typing import Any, Dict
 import numpy as np
@@ -27,7 +27,7 @@ class TestHub(ProgressiveTest):
         max_.input[0] = switch.output.result
         min_ = Min(name="min_" + str(hash(random)), scheduler=s)
         min_.input[0] = switch.output.result_else
-        hub = Hub(scheduler=s)
+        hub = MergeDict(scheduler=s)
         hub.input.table = min_.output.result
         hub.input.table = max_.output.result
         pr = Print(proc=self.terse, scheduler=s)
@@ -56,7 +56,7 @@ class TestHub(ProgressiveTest):
         max_.input[0] = switch.output.result
         min_ = Min(name="min_" + str(hash(random)), scheduler=s)
         min_.input[0] = switch.output.result_else
-        hub = Hub(scheduler=s)
+        hub = MergeDict(scheduler=s)
         hub.input.table = min_.output.result
         hub.input.table = max_.output.result
         pr = Print(proc=self.terse, scheduler=s)

@@ -78,6 +78,7 @@ class GridBox(Box):
 
 class Tab(Box):
     selected_index: int
+    titles: Sequence[str]
     def set_title(self, index: int, name: str) -> None: ...
     def get_title(self, index: int) -> str: ...
 

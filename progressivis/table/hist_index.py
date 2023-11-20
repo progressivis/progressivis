@@ -12,6 +12,7 @@ import logging
 import numpy as np
 from ..core.pintset import PIntSet
 from ..core.utils import slice_to_arange, fix_loc
+from .. import ProgressiveError
 from ..utils.psdict import PDict
 from ..core.module import (
     Module,
@@ -26,7 +27,7 @@ from ..core.utils import indices_len
 from . import PTableSelectedView
 
 
-from typing import List, Dict, Optional, Any, Callable, Tuple
+from typing import List, Dict, Optional, Any, Callable, Tuple, Sequence
 
 APPROX = False
 logger = logging.getLogger(__name__)
@@ -112,6 +113,7 @@ class _HistogramIndexImpl(object):
                 merged_tuples.append((prev_bm, prev_sep))
                 prev_bm, prev_sep = bm, sep
         assert prev_sep is None
+        merged_pintsets: Sequence[Any]
         merged_pintsets, merged_bins = zip(*merged_tuples)
         merged_pintsets = list(merged_pintsets) + [prev_bm]
         self.bins = np.array(merged_bins)
@@ -354,7 +356,7 @@ class _HistogramIndexImpl(object):
 @document
 @def_parameter("bins", np.dtype(int), 126)  # actually 128 with "-inf" and "inf"
 @def_parameter("init_threshold", np.dtype(int), 1)
-@def_input("table", PTable)
+@def_input("table", PTable, hint_type=Sequence[str])
 @def_output("result", PTableSelectedView)
 @def_output("min_out", PDict, required=False)
 @def_output("max_out", PDict, required=False)
@@ -365,17 +367,15 @@ class HistogramIndex(Module):
     Each bin contains the set of indices of rows in the underlying interval
     in order to  provide fast access to these rows.
     Actually `HistogramIndex` is able to build multiple indices, one for each
-    column provided in the **columns** argument.
+    column provided in the **table** slot hint.
     """
 
     def __init__(self, **kwds: Any) -> None:
-        super(HistogramIndex, self).__init__(
-            # output_required=False,
+        super().__init__(
             **kwds
         )
-        if not self._columns:
-            raise ValueError("HistogramIndex needs at least one column")
-        self._n_cols = len(self._columns)
+        self._columns: Sequence[str] = []
+        self._n_cols = 0
         # will be created when the init_threshold is reached
         self._impl: Dict[str, _HistogramIndexImpl] = {}
         self.selection = PIntSet()  # will be filled when the table is read
@@ -413,10 +413,15 @@ class HistogramIndex(Module):
         steps = 0
         input_table = input_slot.data()
         self._input_table = input_table
-
         if input_table is None or len(input_table) < self.params.init_threshold:
             # there are not enough rows. it's not worth building an index yet
             return self._return_run_step(self.state_blocked, steps_run=0)
+        if not self._columns:
+            if (hint := input_slot.hint) is not None:
+                self._columns = hint
+                self._n_cols = len(hint)
+            else:
+                raise ProgressiveError("HistogramIndex needs at least one column")
         if not self._impl:
             input_slot.reset()
             input_slot.update(run_number)
