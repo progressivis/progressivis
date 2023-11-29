@@ -534,7 +534,7 @@ class Module(metaclass=ABCMeta):
                     k: _islot_to_json(s) for (k, s) in self._input_slots.items()
                 },
                 "output_slots": {
-                    l: _oslot_to_json(t) for (l, t) in self._output_slots.items()
+                    k: _oslot_to_json(s) for (k, s) in self._output_slots.items()
                 },
                 "default_step_size": self.default_step_size,
                 "parameters": self.current_params().to_json(),
