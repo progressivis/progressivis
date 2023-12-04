@@ -45,7 +45,7 @@ class Intersection(Module):
     ) -> ReturnRunStep:
         _b = PIntSet.aspintset
         # to_delete: List[PIntSet]
-        to_create: List[PIntSet]
+        to_create: List[PIntSet] = []
         steps = 0
         tables = []
         ph_table = None
