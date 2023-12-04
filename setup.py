@@ -5,6 +5,7 @@ Setup file for progressivis.
 import sys
 import os
 import os.path
+
 # import versioneer
 from setuptools import setup, Command
 from setuptools.extension import Extension
@@ -111,59 +112,13 @@ def read(fname):
 
 
 setup(
-    name="progressivis",
-    # version=versioneer.get_version(),
-    author="Jean-Daniel Fekete",
-    author_email="Jean-Daniel.Fekete@inria.fr",
     url="https://github.com/progressivis/progressivis",
-    description="A Progressive Steerable Analytics Toolkit",
-    license="BSD",
-    keywords="Progressive analytics visualization",
     packages=PACKAGES,
-    long_description=read("README.md"),
-    classifiers=[
-        "Development Status :: 2 - PRe-Alpha",
-        "Topic :: Scientific/Engineering :: Visualization",
-        "Topic :: Scientific/Engineering :: Information Analysis",
-        "License :: OSI Approved :: BSD License",
-    ],
     platforms="any",
-    # Project uses reStructuredText, so ensure that the docutils get
-    # installed or upgraded on the target machine
-    # install_requires=required,
-    install_requires=[
-        "Pillow>=4.2.0",
-        "numpy>=1.22.4",
-        "scipy>=0.18.1",
-        "numexpr>=2.6.1,<2.8.5",
-        "pandas>=1.2.5",
-        "pyarrow>=8.0.0",
-        "scikit-learn>=1.0.0",
-        "pyyaml>=5.4.1",
-        "tdigest>=0.4.1.0",
-        "pyroaring",
-        "python-dateutil>=2.6.1",  # botocore wants < 2.7.0,>=2.1
-        "boto",
-        "s3fs",
-        "requests",
-        "fast-histogram",
-        "rangehttpserver",
-        "datasketches",
-        "typeguard",
-        "multipledispatch >= 0.4.7",  # datashape
-        "python-dateutil",  # datashape
-        # "aiohttp",
-        # "aiohttp_jinja2",
-        # "python_socketio",
-        "click",
-    ],
-    # "pptable",
-    setup_requires=["cython", "numpy", "pybind11", "mypy"] if WITH_CXX else [],
-    # cmdclass=versioneer.get_cmdclass({"bench": RunBench}),
     ext_modules=_cythonize(EXTENSIONS) + EXT_PYBIND11 if WITH_CXX else [],
     package_data={
         # If any package contains *.md, *.txt or *.rst files, include them:
         "doc": ["*.md", "*.rst"],
-        "progressivis": ["py.typed"]
+        "progressivis": ["py.typed"],
     },
 )
