@@ -249,12 +249,15 @@ To create a computed column, you need to instantiate an object of class [](Singl
 
 .. autoclass:: SingleColFunc
    :inherited-members:
+   :exclude-members: __init__
 
 .. autoclass:: MultiColFunc
    :inherited-members:
+   :exclude-members: __init__
 
 .. autoclass:: MultiColExpr
    :inherited-members:
+   :exclude-members: __init__
 ```
 
 
