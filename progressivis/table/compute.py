@@ -142,7 +142,11 @@ class SingleColFunc(ColFunc):
             xshape=self.xshape,
         )
         return self._computed_col
-
+SingleColFunc.__init__.__doc__ = """
+Args:
+    base: input column (existing column that will be passed as an argument to the function)
+    func: function to be applied to the elements of the input column.
+"""
 
 @dataclass(kw_only=True)
 class MultiColFunc(ColFunc):
