@@ -10,71 +10,57 @@ source:
 
 requirements:
   build:
-    - python 3.6
-    - setuptools
-    - cython 0.26.1
-    - numpy 1.13.3
-    - scipy 0.19.1
+    - python 3.11
+    - setuptools >=64
+    - setuptools_scm >=8
+    - cython >=0.26.1
+    - numpy >=1.22.4
+
+  host:
+    - python 3.11
+    - cython >=0.26.1
+    - numpy >=1.22.4
+    - scipy >=0.19.1
     - numexpr >=2.6.1
-    - pytables >=3.3.0
-    - pandas 0.20.3
-    - scikit-learn 0.19.1
-    - toposort 1.5
-    - tdigest
-    - pillow 4.2.1
-    - h5py 2.7.0
-    - zarr 2.1.4
-    - numcodecs 0.5.2
-    - bcolz 1.1.2
-    - datashape 0.5.4
-    - pyroaring 0.0.7
-    - msgpack-python >=0.4.8
-    # server
-    - flask 0.12.2
-    - tornado  >=4.0
+    - pandas >=1.2.5
+    - pyarrow >=8.0.0
+    - scikit-learn >=1.0.0
+    - pyyaml >=5.4.1
+    - pillow >=4.2.0
+    - pyroaring
     - boto
     - s3fs
-    - sqlalchemy
-    - memory_profiler
-    - tabulate
-    - nose
-    - coverage
+    - requests
+    - fast-histogram >=0.11
+    - rangehttpserver
+    - datasketches
+    - typeguard
+    - multipledispatch >=0.4.7
+
 
   run:
-    - python 3.6
-    - setuptools
-    # progressivis
-    - numpy 1.13.3
-    - scipy 0.19.1
+    - python 3.11
+    - numpy >=1.22.4
+    - scipy >=0.19.1
     - numexpr >=2.6.1
-    - pytables >=3.3.0
-    - pandas 0.20.3
-    - scikit-learn 0.19.1
-    - toposort 1.5
-    - tdigest
-    - pillow 4.2.1
-    - h5py 2.7.0
-    - zarr 2.1.4
-    - numcodecs 0.5.2
-    - bcolz 1.1.2
-    - datashape 0.5.4
-    - pyroaring 0.0.7
-    - msgpack-python >=0.4.8
-    # server
-    - flask 0.12.2
-    - tornado >=4.0
+    - pandas >=1.2.5
+    - pyarrow >=8.0.0
+    - scikit-learn >=1.0.0
+    - pyyaml >=5.4.1
+    - pillow >=4.2.0
+    - pyroaring
     - boto
     - s3fs
-    - sqlalchemy
-    - memory_profiler
-    - tabulate
-    - nose
-    - coverage
     - requests
-
+    - fast-histogram >=0.11
+    - rangehttpserver
+    - datasketches
+    - typeguard
+    - multipledispatch >=0.4.7
+    - click
 
 about:
-  home: https://github.com/jdfekete/progressivis
+  home: https://github.com/progressivis/progressivis
   license: New BSD
   license_file: LICENSE
 
