@@ -24,6 +24,7 @@ PACKAGES = [
     "progressivis.stats",
     "progressivis.datasets",
     "progressivis.datashape",
+    "progressivis.datashape.util",
     "progressivis.vis",
     "progressivis.cluster",
     "progressivis.server",
