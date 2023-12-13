@@ -14,7 +14,6 @@ from ..core.decorators import process_slot, run_if_any
 import numpy as np
 
 # Should use a Cython implementation eventually
-from tdigest import TDigest  # type: ignore
 
 
 from typing import Optional, List, Union, Any, Sequence
@@ -42,6 +41,7 @@ class Percentiles(Module):
     ) -> None:
         super(Percentiles, self).__init__(**kwds)
         self.default_step_size = 1000
+        from tdigest import TDigest  # type: ignore
         self.tdigest = TDigest()
 
         if percentiles is None:
@@ -75,6 +75,7 @@ class Percentiles(Module):
         return super(Percentiles, self).is_ready()
 
     def reset(self) -> None:
+        from tdigest import TDigest
         self.tdigest = TDigest()
 
     @process_slot("table", reset_cb="reset")
