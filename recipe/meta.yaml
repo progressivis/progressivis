@@ -18,28 +18,10 @@ requirements:
 
   host:
     - python 3.11
-    - cython >=0.26.1
-    - numpy >=1.22.4
-    - scipy >=0.19.1
-    - numexpr >=2.6.1
-    - pandas >=1.2.5
-    - pyarrow >=8.0.0
-    - scikit-learn >=1.0.0
-    - pyyaml >=5.4.1
-    - pillow >=4.2.0
-    - pyroaring
-    - boto
-    - s3fs
-    - requests
-    - fast-histogram >=0.11
-    - rangehttpserver
-    - datasketches
-    - typeguard
-    - multipledispatch >=0.4.7
-
+    - pip
 
   run:
-    - python 3.11
+    - python >=3.10
     - numpy >=1.22.4
     - scipy >=0.19.1
     - numexpr >=2.6.1
