@@ -13,12 +13,12 @@ requirements:
     - python 3.11
     - setuptools >=64
     - setuptools_scm >=8
-    - cython >=0.26.1
     - numpy >=1.22.4
 
   host:
     - python 3.11
     - numpy >=1.22.4
+    - cython >=0.26.1
     - pip
 
   run:
