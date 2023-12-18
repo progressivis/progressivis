@@ -32,7 +32,7 @@ requirements:
     - pillow >=4.2.0
     - pyroaring
     - boto
-    - s3fs
+    - s3fs >=2023.12.2
     - requests
     - fast-histogram >=0.11
     - rangehttpserver
