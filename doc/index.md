@@ -30,7 +30,7 @@ while the computation is being done.
    module_library
    unit_tests
    custom_modules
-   chaining_widgets
+   visualizations
    dependencies
 ```
 

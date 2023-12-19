@@ -7,7 +7,7 @@ The `Datashape` project is documented [here](https://datashape.readthedocs.io/en
 `Progressivis` uses the following classes:
 
 ```{eval-rst}
-.. currentmodule:: datashape
+.. currentmodule:: progressivis.datashape
 
 .. autoclass:: DataShape
    :members:

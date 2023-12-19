@@ -2,20 +2,38 @@
 
 ## Installation for users
 
-### With miniconda/anaconda (recommended):
+If you only need the *Progressivis* core install the `progressivis` package. If you need *Progressivis* with visualizations or don't know all your needs in advance install  `ipyprogressivis` (which will also install `progressivis` as a dependency)
 
-Currently, the easiest way to install *ProgressiVis* is as follows:
+Currently these installations have been tested only with *Linux*.
 
-1. Install the latest version of
-   [miniconda](https://docs.conda.io/en/latest/miniconda.html)
 
-2. Install the progressivis package
 
-In the future, you should be able to install ProgressiVis with:
+### With miniforge (recommended):
+
+Currently, the easiest way to install *ProgressiVis* (tested only on Linux) is as follows:
+
+1. Install (if not installed yet) the latest version of [miniforge](https://github.com/conda-forge/miniforge). Optionally you can create and activate a dedicated [conda environment](https://conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html) or activate an existing one.
+
+2. Install the progressivis/ipyprogressivis package:
 
 ```
-conda install progressivis
+mamba install [ipy]progressivis -c progressivis
 ```
+
+
+### With miniconda/anaconda:
+
+1. Install  (if not installed yet) the latest version of [miniconda](https://docs.conda.io/en/latest/miniconda.html) or [anaconda](https://www.anaconda.com/download). As explained previously for `miniforge` you can use a conda environment of your choice.
+​
+2. Install the progressivis/ipyprogressivis package:
+
+```
+conda install mamba -c conda-forge  # if not installed yet
+mamba install [ipy]progressivis -c progressivis -c conda-forge
+```
+
+NB: If you prefer, you can omit the mamba installation and use conda instead.
+
 
 ### With pip
 
