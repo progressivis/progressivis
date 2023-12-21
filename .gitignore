@@ -40,6 +40,4 @@ mmap_storage
 /.coverage
 /coverage
 /mmap-storage
-node_modules
-/widgets/progressivis_nb_widgets/js/lib/
-widgets/build/
+progressivis/_version.py

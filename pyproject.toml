@@ -47,3 +47,4 @@ dynamic = ["version"]
 # more missing
 
 [tool.setuptools_scm]
+version_file = "progressivis/_version.py"

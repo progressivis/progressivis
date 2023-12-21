@@ -7,7 +7,6 @@ import logging
 
 from progressivis.core import (
     version,
-    __version__,
     short_version,
     Scheduler,
     Slot,
@@ -21,6 +20,10 @@ from progressivis.utils import ProgressiveError
 from progressivis.table import PTable, PColumn, Row
 
 from typing import Dict
+
+from ._version import __version__
+
+_ = __version__
 
 __all__ = [
     "log_level",

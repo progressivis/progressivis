@@ -4,7 +4,7 @@ import logging
 from ..core.module import Module, ReturnRunStep, def_input, def_output
 from . import PTable, PTableSelectedView
 from ..core.pintset import PIntSet
-from typing import Optional, Any, Callable, Tuple, Dict
+from typing import Optional, Any, Callable, Tuple, Dict, Sequence
 
 logger = logging.getLogger(__name__)
 Shape = Tuple[int, ...]
@@ -27,7 +27,7 @@ class Computed:
         )
 
 
-@def_input("table", PTable)
+@def_input("table", PTable, hint_type=Sequence[str])
 @def_output("result", PTableSelectedView)
 class Repeater(Module):
     def __init__(self, computed: Computed, **kwds: Any) -> None:
