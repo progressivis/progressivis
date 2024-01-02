@@ -1,4 +1,4 @@
-# Progressivis
+# ProgressiVis
 
 [![Python Tests](https://github.com/progressivis/progressivis/actions/workflows/python.yml/badge.svg?branch=master&event=push)](https://github.com/progressivis/progressivis/actions/workflows/python.yml)
 [![Documentation Status](https://readthedocs.org/projects/progressivis/badge/?version=latest)](https://progressivis.readthedocs.io/en/latest/?badge=latest)
@@ -52,15 +52,8 @@ try the examples in the `examples` directory.
 
 ## Running demos (on your computer)
 
-ProgressiVis demos needs visualisations which are availables in the progressivis extension called [ipyprogressivis](https://github.com/progressivis/ipyprogressivis).
+ProgressiVis demos needs visualisations which are availables in the `progressivis` extension called `ipyprogressivis`. Please follow the instructions provided [here](https://github.com/progressivis/ipyprogressivis)
 
-After installing `progressivis` and  `ipyprogressivis` by following the installation instructions [provided here](https://progressivis.readthedocs.io/en/latest/install.html) do:
-
-```
-cd ipyprogressivis/notebooks
-jupyter lab
-```
-then run the notebooks of your choice
 
 ## Contribute
 
