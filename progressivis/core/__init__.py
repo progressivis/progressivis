@@ -1,5 +1,5 @@
 # flake8: noqa
-from .._version import __version__
+#from .._version import __version__
 from .utils import (
     type_fullname,
     fix_loc,
@@ -27,10 +27,6 @@ from .storagemanager import StorageManager
 from .module import ReturnRunStep, Every, Print, def_input, def_output, def_parameter
 
 
-version = __version__
-short_version = __version__
-
-
 __all__ = [
     "type_fullname",
     "fix_loc",
@@ -42,8 +38,6 @@ __all__ = [
     "Scheduler",
     "PIntSetChangeManager",
     "DictChangeManager",
-    "version",
-    "__version__",
     "short_version",
     "Slot",
     "SlotDescriptor",

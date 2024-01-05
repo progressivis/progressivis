@@ -6,8 +6,6 @@ from __future__ import annotations
 import logging
 
 from progressivis.core import (
-    version,
-    short_version,
     Scheduler,
     Slot,
     SlotDescriptor,
@@ -23,7 +21,7 @@ from typing import Dict
 
 from ._version import __version__
 
-_ = __version__
+version = __version__
 
 __all__ = [
     "log_level",
