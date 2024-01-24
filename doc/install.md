@@ -2,77 +2,104 @@
 
 ## Installation for users
 
-### With miniconda/anaconda (recommended):
+If you only need the *Progressivis* core, install the `progressivis` package. If you need *Progressivis* with visualizations or if you don't know all your needs in advance install  `ipyprogressivis` (which will also install `progressivis` as a dependency). Installation procedures are similar between `progressivis` and `ipyprogressivis`, so in the following `[ipy]progressivis` means `progressivis` or `ipyprogressivis`
+
+Currently these installations have been tested only with *Linux*.
+
+
+
+### With miniforge (recommended):
 
 Currently, the easiest way to install *ProgressiVis* is as follows:
 
-1. Install the latest version of
-   [miniconda](https://docs.conda.io/en/latest/miniconda.html)
+1. Install (if not installed yet) the latest version of [miniforge](https://github.com/conda-forge/miniforge). Optionally you can create and activate a dedicated [conda environment](https://conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html) or activate an existing one.
 
-2. Install the progressivis package
-
-In the future, you should be able to install ProgressiVis with:
+2. Install the progressivis/ipyprogressivis package:
 
 ```
-conda install progressivis
+mamba install [ipy]progressivis -c progressivis
 ```
+
+
+### With miniconda/anaconda:
+
+1. Install  (if not installed yet) the latest version of [miniconda](https://docs.conda.io/en/latest/miniconda.html) or [anaconda](https://www.anaconda.com/download). As explained previously for `miniforge` you can use a conda environment of your choice.
+​
+2. Install the progressivis/ipyprogressivis package:
+
+```
+conda install mamba -c conda-forge  # if not installed yet
+mamba install [ipy]progressivis -c progressivis -c conda-forge
+```
+
+NB: If you prefer, you can omit the mamba installation and use conda instead.
+
 
 ### With pip
 
-In the future, you should be able to install ProgressiVis with:
+In the future, you should be able to install [Ipy]ProgressiVis with:
 ```
-pip install progressivis
+pip install [ipy]progressivis
 ```
 
 
 ## Installation for developers
 
+### Installing ProgressiVis
+
 1. Clone the progressivis repository from [github.com](https://github.com/progressivis/progressivis/) along with its submodules, with the command:
 
 ```
 git clone --recurse-submodules https://github.com/progressivis/progressivis.git
+# then
+cd progressivis
 ```
+
+It is not mandatory, but it is preferable to install progressivis in a dedicated python environment, created for example with `conda`. If you don't want to work in a conda environment, skip the following 2 steps.
 
 2. Create a conda environment with the following command:
 
 ```
-conda env create -f environment.yml
+conda create -n myenv python=3.11 -c conda-forge
 ```
-It will create an environment called *progressivis*.
+
 
 3. Activate this environment:
 
 ```
-conda activate progressivis
+conda activate myenv
 ```
-4. Execute the following commands:
+4. Execute the following command:
+
 ```
 pip install -e .
-pip install -e widgets
 ```
 
-5. Then, install the jupyter notebook extensions with the following commands:
+### Installing IpyProgressiVis
+
+1. Clone the progressivis repository from [github.com](https://github.com/progressivis/ipyprogressivis/) with the command:
 
 ```
-jupyter nbextension install --py --symlink --sys-prefix progressivis_nb_widgets.nbwidgets
-jupyter nbextension enable --py --sys-prefix progressivis_nb_widgets.nbwidgets
+git clone https://github.com/progressivis/ipyprogressivis.git
+# then
+cd ipyprogressivis
 ```
 
-Or, if you use jupyterlab:
+2. If you choose to work in a conda environment, follow the steps 2 and 3 described previously for `progressivis` to create and activate an environment.
+
+3. Depending on your development goals, install `progressivis` for users or for developpement
+
+4. Install `yarn v1` vith `nodejs v18` in your environment
 
 ```
-jupyter labextension install @jupyter-widgets/jupyterlab-manager
-jupyter labextension install @jupyter-widgets/jupyterlab-sidecar
-jupyter labextension install jupyterlab-datawidgets
-jupyter labextension install widgets/progressivis_nb_widgets/js
+conda install yarn=1 -c conda-forge
 ```
 
-## With pip
 
-ProgressiVis can be installed with pip with or without virtualenv.
-It requires a few system components. For example, on Ubuntu linux, you need to insall the packages `git` and `build-essential`.
-Then, install ProgressiVis with:
+
+5. Execute the following command:
+
 ```
-pip install -r requirements.txt
-python setup.py install
+pip install -e .
 ```
+

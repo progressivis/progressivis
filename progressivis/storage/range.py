@@ -9,7 +9,7 @@ from progressivis.core.pintset import PIntSet
 from .base import Dataset
 from .hierarchy import AttributeImpl
 
-from typing import Union, Optional, Any, TYPE_CHECKING, Sized, Iterator, Iterable
+from typing import (Union, cast, Optional, Any, TYPE_CHECKING, Sized, Iterator, Iterable, Sequence)
 
 
 if TYPE_CHECKING:
@@ -86,7 +86,7 @@ class RangeDataset(Dataset):
                 raise KeyError(
                     "Invalid size tuple, should have dim=1 instead of %s", size
                 )
-            size = size[0]
+            size = cast(Sequence[Any], size)[0]
         if size == self._shape[0]:
             return
         self._shape = (size,)

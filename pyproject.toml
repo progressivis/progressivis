@@ -4,9 +4,47 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "progressivis"
+description = "A Progressive Steerable Analytics Toolkit"
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.10"
+authors = [
+    { name = "INRIA, Jean-Daniel Fekete, Christian Poli", email = "jean-daniel.fekete@inria.fr" },
+]
+keywords = ["Progressive analytics visualization"]
+classifiers = [
+     "Development Status :: 2 - PRe-Alpha",
+     "Topic :: Scientific/Engineering :: Visualization",
+     "Topic :: Scientific/Engineering :: Information Analysis",
+     "License :: OSI Approved :: BSD License",
+]
+dependencies = [
+    "Pillow>=4.2.0",
+    "numpy>=1.22.4",
+    "scipy>=0.18.1",
+    "numexpr>=2.6.1,<2.8.5",
+    "pandas>=1.2.5",
+    "pyarrow>=8.0.0",
+    "scikit-learn>=1.0.0",
+    "pyyaml>=5.4.1",
+    "tdigest>=0.4.1.0",
+    "pyroaring",
+    "python-dateutil>=2.6.1",  # botocore wants < 2.7.0,>=2.1
+    "boto",
+    "s3fs",
+    "requests",
+    "fast-histogram",
+    "rangehttpserver",
+    "datasketches",
+    "typeguard",
+    "multipledispatch >= 0.4.7",  # datashape
+    "python-dateutil",  # datashape
+    "click",
+]
 # Important: Remove any existing version declaration
 # version = "0.0.1"
 dynamic = ["version"]
 # more missing
 
 [tool.setuptools_scm]
+version_file = "progressivis/_version.py"

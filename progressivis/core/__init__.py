@@ -1,5 +1,5 @@
 # flake8: noqa
-from ._version import get_versions
+#from .._version import __version__
 from .utils import (
     type_fullname,
     fix_loc,
@@ -27,12 +27,6 @@ from .storagemanager import StorageManager
 # pylint: disable=unused-import
 from .module import ReturnRunStep, def_input, def_output, def_parameter
 
-__version__: str = get_versions()["version"]
-version = __version__
-short_version = __version__
-del get_versions
-
-
 __all__ = [
     "type_fullname",
     "fix_loc",
@@ -44,8 +38,6 @@ __all__ = [
     "Scheduler",
     "PIntSetChangeManager",
     "DictChangeManager",
-    "version",
-    "__version__",
     "short_version",
     "Slot",
     "SlotDescriptor",

@@ -1,7 +1,7 @@
 import datetime
 import calendar
 
-from datashape import DataShape
+from ..datashape import DataShape
 from dataclasses import dataclass, field
 import numpy as np
 from .column_selected import PColumnComputedView
@@ -122,7 +122,7 @@ class SingleColFunc(ColFunc):
     #: input column (existing column that will be passed as an argument to the function)
     base: str = ""  #: column(s) to be provided as input(s)
     #: function to be applied to the elements of the input column.
-    func: Callable[[Any], Any] = lambda a : a
+    func: Callable[[Any], Any] = lambda a : a  # noqa: E731
 
     def _make_computed(self, index: Any, name: str, table_: "BasePTable") -> PColumnComputedView:
         from .column_base import BasePColumn
@@ -196,7 +196,7 @@ class MultiColFunc(ColFunc):
     #:
     #: * ``index`` is the index of the column
     #: * ``local_dict`` contains the input columns (the keys are the column names)
-    func: Callable[[Any, Any], Dict[str, Any]] = lambda a, b: {}
+    func: Callable[[Any, Any], Dict[str, Any]] = lambda a, b: {}  # noqa: E731
 
     def _make_computed(self, index: Any, name: str, table_: "BasePTable") -> PColumnVFunc:
         self._computed_col = PColumnVFunc(

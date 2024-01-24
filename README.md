@@ -1,7 +1,10 @@
-# Progressivis
+# ProgressiVis
 
 [![Python Tests](https://github.com/progressivis/progressivis/actions/workflows/python.yml/badge.svg?branch=master&event=push)](https://github.com/progressivis/progressivis/actions/workflows/python.yml)
 [![Documentation Status](https://readthedocs.org/projects/progressivis/badge/?version=latest)](https://progressivis.readthedocs.io/en/latest/?badge=latest)
+[![linting - Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
+[![types - Mypy](https://img.shields.io/badge/types-Mypy-blue.svg)](https://github.com/python/mypy)
+[![License](https://img.shields.io/badge/License-BSD_2--Clause-orange.svg)](https://opensource.org/licenses/BSD-2-Clause)
 
 ProgressiVis is a Python toolkit and scientific workflow system that
 implements a new [programming
@@ -40,55 +43,7 @@ Click the "launch binder" image above to run the live demos on [mybinder.org](ht
 
 ## Installation
 
-### With Miniconda/Anaconda (recommended):
-
-Currently, the easiest way to install *ProgressiVis* is as follows:
-
-1. Install the latest version of Miniconda (if not yet done)
-
-2. Clone the ProgressiVis repository from [github.com](https://github.com/progressivis/progressivis/) along with its submodules with the command:
-
-```
-git clone --recurse-submodules https://github.com/progressivis/progressivis.git
-```
-
-3. Create a conda environment with the following command:
-
-NB: by default, it will create an environment called *progressivis*. If you want, you can change this name in the file *environment.yml* before running the command. Remember to reflect this change in the following commands.
-
-```
-conda env create -f environment.yml
-```
-3. Activate this environment:
-
-```
-conda activate progressivis
-```
-4. Execute the following commands:
-
-```
-jupyter nbextension install --py --symlink --sys-prefix progressivis_nb_widgets.nbwidgets
-jupyter nbextension enable --py --sys-prefix progressivis_nb_widgets.nbwidgets
-```
-
-Or, if you use jupyterlab:
-
-```
-jupyter labextension install @jupyter-widgets/jupyterlab-manager
-jupyter labextension install @jupyter-widgets/jupyterlab-sidecar
-jupyter labextension install jupyterlab-datawidgets
-jupyter labextension install widgets/progressivis_nb_widgets/js
-```
-
-### With pip (without the Jupyter interface)
-
-ProgressiVis can be installed with pip with or without virtualenv.
-From a virtualenv or from the global environment, install it with:
-```
-pip install -e requirements.txt
-python setup.py install
-```
-
+See the installation instructions [provided here](https://progressivis.readthedocs.io/en/latest/install.html).
 
 ## Examples
 
@@ -97,12 +52,8 @@ try the examples in the `examples` directory.
 
 ## Running demos (on your computer)
 
-After installing progressivis **with miniconda/anaconda**, do:
-```
-cd notebooks
-jupyter notebook
-```
-then run the notebooks of your choice
+ProgressiVis demos needs visualisations which are availables in the `progressivis` extension called `ipyprogressivis`. Please follow the instructions provided [here](https://github.com/progressivis/ipyprogressivis)
+
 
 ## Contribute
 
