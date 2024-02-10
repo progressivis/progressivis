@@ -7,6 +7,7 @@ import re
 import logging
 import base64
 import io
+from enum import IntEnum
 
 import numpy as np
 import scipy as sp  # type: ignore
@@ -30,12 +31,18 @@ from typing import cast, Optional, Any
 logger = logging.getLogger(__name__)
 
 
-@def_parameter("cmax", np.dtype(float), np.nan)
-@def_parameter("cmin", np.dtype(float), np.nan)
-@def_parameter("high", np.dtype(int), 65536)
+class HeatmapTransform(IntEnum):
+    NONE = 1
+    SQRT = 2
+    CBRT = 3
+    LOG = 4
+
+
+@def_parameter("high", np.dtype(int), 65535)
 @def_parameter("low", np.dtype(int), 0)
 @def_parameter("filename", np.dtype(object), None)
 @def_parameter("history", np.dtype(int), 3)
+@def_parameter("transform", np.dtype(int), HeatmapTransform.LOG)
 @def_input("array", PTable)
 @def_output("result", PTable)
 class Heatmap(Module):
@@ -79,26 +86,26 @@ class Heatmap(Module):
         if histo is None:
             return self._return_run_step(self.state_blocked, steps_run=1)
         params = self.params
-        cmax: Optional[float] = cast(float, params.cmax)
-        assert cmax
-        if np.isnan(cmax):
-            cmax = None
-        cmin: Optional[float] = cast(float, params.cmin)
-        assert cmin
-        if np.isnan(cmin):
-            cmin = None
         high: int = cast(int, params.high)
         low: int = cast(int, params.low)
         try:
-            if cmin is None:
-                cmin = histo.min()
-            if cmax is None:
-                cmax = histo.max()
+            # Transform
+            if params.transform == HeatmapTransform.SQRT:
+                data = np.sqrt(histo)
+            elif params.transform == HeatmapTransform.CBRT:
+                data = sp.special.cbrt(histo)
+            elif params.transform == HeatmapTransform.LOG:
+                data = np.log1p(histo)
+            else:
+                data = histo
+
+            cmin = data.min()
+            cmax = data.max()
             # cscale = cmax - cmin
-            scale_hl = float(high - low)
-            # scale = float(high - low) / cscale
+            # scale_hl = float(high - low)
+            scale = float(high - low) / (cmax - cmin)
             # data = (sp.special.cbrt(histo) * 1.0 - cmin) * scale + 0.4999
-            data = (sp.special.cbrt(histo) * 1.0 - cmin) * scale_hl + 0.4999
+            data = (data - cmin) * scale + 0.499
             data[data > high] = high
             data[data < 0] = 0
             data = np.cast[np.uint32](data)
@@ -126,7 +133,7 @@ class Heatmap(Module):
                 raise
         else:
             buffered = io.BytesIO()
-            image.save(buffered, format="PNG", bits=16)
+            image.save(buffered, format="PNG", bits=8)
             res = str(base64.b64encode(buffered.getvalue()), "ascii")
             filename = "data:image/png;base64," + res
 
