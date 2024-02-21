@@ -21,6 +21,7 @@ if TYPE_CHECKING:
 
 @def_parameter("binning", np.dtype(object), [])
 @def_parameter("quantiles", np.dtype(object), [])
+@def_parameter("named_quantiles", np.dtype(object), [])
 @def_input("table", type=PTable)
 @def_output("result", PDict)
 class KLLSketch(Module):
@@ -70,8 +71,12 @@ class KLLSketch(Module):
             quantiles: Floats = []
             splits: Floats = []
             pmf: Floats = []
+            kw: dict[str, Any] = {}
             if self.params.quantiles:
                 quantiles = kll.get_quantiles(self.params.quantiles)
+                if self.params.named_quantiles:
+                    assert len(self.params.quantiles) == len(self.params.named_quantiles)
+                    kw = dict(zip(self.params.named_quantiles, quantiles))
             if self.params.binning:
                 par_bin = self.params.binning
                 if isinstance(par_bin, integer_types):
@@ -87,7 +92,7 @@ class KLLSketch(Module):
                     num_splits = par_bin["n_splits"]
                     splits = np.linspace(lower_, upper_, num_splits)
                     pmf = kll.get_pmf(splits[:-1])
-            res = dict(max=max_, min=min_, quantiles=quantiles, splits=splits, pmf=pmf)
+            res = dict(max=max_, min=min_, quantiles=quantiles, splits=splits, pmf=pmf, **kw)
             if self.result is None:
                 self.result = PDict(res)
             else:

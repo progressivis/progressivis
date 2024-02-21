@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import numpy as np
-
 from progressivis.core.module import (
     Module,
     ReturnRunStep,
@@ -196,15 +195,15 @@ class RangeQuery(Module):
 
     def __init__(
         self,
-        # hist_index: Optional[HistogramIndex] = None,
         approximate: bool = False,
+        quantiles: bool = False,
         **kwds: Any,
     ) -> None:
         super(RangeQuery, self).__init__(**kwds)
         self._impl: RangeQueryImpl = RangeQueryImpl(self.params.column, approximate)
-        # self._hist_index: Optional[HistogramIndex] = hist_index
         self._approximate = approximate
         self.default_step_size = 1000
+        self._quantiles = quantiles
         self.input_module: Optional[Module] = None
         self.hist_index: Optional[HistogramIndex] = None
 
@@ -261,7 +260,7 @@ class RangeQuery(Module):
             range_query = self
             range_query.dep.hist_index = hist_index
             range_query.input.hist = hist_index.output.result
-            range_query.input.table = input_module.output[input_slot]
+            range_query.input.table = hist_index.output.result
             if min_value:
                 range_query.input.lower = min_value.output.result
             if max_value:
@@ -313,12 +312,7 @@ class RangeQuery(Module):
         lower_slot = self.get_input_slot("lower")
         upper_slot = self.get_input_slot("upper")
         limit_changed = False
-        if (
-            lower_slot.updated.any()
-            or lower_slot.created.any()
-            or upper_slot.updated.any()
-            or upper_slot.created.any()
-        ):
+        if not self._quantiles and (lower_slot.has_buffered() or upper_slot.has_buffered()):
             limit_changed = True
         lower_slot.clear_buffers()
         upper_slot.clear_buffers()
@@ -339,7 +333,11 @@ class RangeQuery(Module):
         lower_value = lower_slot.data().get(self.watched_key_lower)
         upper_value = upper_slot.data().get(self.watched_key_upper)
         minv = min_slot.data().get(self.watched_key_lower)
+        if minv is None:  # watched key could be defined only for lower/upper bounds
+            minv = min_slot.data().get(self.column)
         maxv = max_slot.data().get(self.watched_key_upper)
+        if maxv is None:
+            maxv = max_slot.data().get(self.column)
         if lower_value == "*":
             lower_value = minv
         elif (

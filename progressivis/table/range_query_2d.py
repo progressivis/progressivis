@@ -332,7 +332,7 @@ class RangeQuery2d(Module):
                     )
                 range_query = self
                 range_query.input.hist = hist_index.output.result
-                range_query.input.table = input_module.output[input_slot]
+                range_query.input.table = hist_index.output.result
                 if min_value:
                     assert isinstance(min_value, Module)
                     range_query.input.lower = min_value.output.result
