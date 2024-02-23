@@ -48,6 +48,63 @@ class TestModuleFacade(ProgressiveTest):
         pr_max.input[0] = tabmod.output.max
         aio.run(s.start())
 
+    def test_table_module_child(self) -> None:
+        s = self.scheduler()
+        random = RandomPTable(10, rows=10000, scheduler=s)
+        tabmod = TableFacade(random, "result")
+        pr_min = Print(scheduler=s)
+        pr_min.input[0] = tabmod.child.min.output.result
+        pr_max = Print(scheduler=s)
+        pr_max.input[0] = tabmod.child.max.output.result
+        aio.run(s.start())
+
+    def test_table_module_cols(self) -> None:
+        s = self.scheduler()
+        random = RandomPTable(10, rows=10000, scheduler=s)
+        tabmod = TableFacade(random, "result")
+        min_ = Min(name="min_" + str(hash(random)), scheduler=s)
+        min_.input.table = tabmod.output.main["_1", "_2", "_3"]
+        pr = Print(proc=self.terse, scheduler=s)
+        pr.input[0] = min_.output.result
+        aio.run(s.start())
+        assert tabmod.output.main is not None
+        assert min_.result is not None
+        assert hasattr(tabmod.module, "result")
+        res1 = tabmod.module.result.loc[:, ["_1", "_2", "_3"]].min()
+        res2 = min_.result
+        self.compare(res1, res2)
+
+    def test_table_module_log(self) -> None:
+        s = self.scheduler()
+        random = RandomPTable(10, rows=10000, scheduler=s)
+        tabmod = TableFacade(random, "result")
+        min_ = Min(name="min_" + str(hash(random)), scheduler=s)
+        min_.input.table = tabmod.output.log["_1", "_2", "_3"]
+        pr = Print(proc=self.terse, scheduler=s)
+        pr.input[0] = min_.output.result
+        aio.run(s.start())
+        assert tabmod.output.log is not None
+        assert min_.result is not None
+        assert hasattr(tabmod.module, "result")
+        res1 = np.log(tabmod.module.result.loc[:, ["_1", "_2", "_3"]].to_array()).min(axis=0)
+        res2 = min_.result
+        self.assertTrue(np.allclose(res1, list(res2.values())))
+
+    def test_table_module_configure(self) -> None:
+        s = self.scheduler()
+        random = RandomPTable(10, rows=10000, scheduler=s)
+        tabmod = TableFacade(random, "result")
+        tabmod.configure(base="min", hints=["_1", "_2", "_3"], alias="min3")
+        pr_min = Print(scheduler=s)
+        pr_min.input[0] = tabmod.output.min3
+        aio.run(s.start())
+        assert hasattr(tabmod.child.main, "result")
+        assert hasattr(tabmod.child.min3, "result")
+        assert len(tabmod.child.min3.result) == 3
+        res1 = tabmod.child.main.result.loc[:, ["_1", "_2", "_3"]].min()
+        res2 = tabmod.child.min3.result
+        self.compare(res1, res2)
+
     def compare(self, res1: Dict[str, Any], res2: Dict[str, Any]) -> None:
         v1 = np.array(list(res1.values()))
         v2 = np.array(list(res2.values()))

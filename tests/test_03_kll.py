@@ -11,6 +11,7 @@ from typing import Any, Sequence, Union, cast
 K = 300
 BINS = 128
 QUANTILES = [0.3, 0.5, 0.7]
+NAMED_QUANTILES = ["first", "second", "third"]
 SPLITS_SEQ = [0.3, 0.5, 0.7]
 SPLITS_DICT = dict(lower=0.1, upper=0.9, n_splits=10)
 
@@ -55,6 +56,27 @@ class TestKll(ProgressiveTest):
         sk = kll_floats_sketch(K)
         sk.update(val)
         self.compare(kll.result["quantiles"], sk.get_quantiles(QUANTILES))
+
+    def test_kll2_named(self) -> None:
+        np.random.seed(42)
+        s = self.scheduler()
+        random = RandomPTable(3, rows=10_000, scheduler=s)
+        kll = KLLSketch(column="_1", scheduler=s)
+        kll.params.quantiles = QUANTILES
+        kll.params.named_quantiles = NAMED_QUANTILES
+        kll.input[0] = random.output.result
+        pr = Print(proc=self.terse, scheduler=s)
+        pr.input[0] = kll.output.result
+        aio.run(s.start())
+        assert random.result is not None
+        assert kll.result is not None
+        val = random.result["_1"].value
+        sk = kll_floats_sketch(K)
+        sk.update(val)
+        first = kll.result["first"]
+        second = kll.result["second"]
+        third = kll.result["third"]
+        self.compare([first, second, third], sk.get_quantiles(QUANTILES))
 
     def test_kll3(self) -> None:
         np.random.seed(42)
