@@ -9,7 +9,7 @@ from typing import (
 from dataclasses import dataclass, field
 
 from progressivis.core.module_facade import ModuleFacade, SlotProxy
-from progressivis.core.sink import Sink
+from progressivis.core import Sink, Scheduler
 from progressivis import Module, ProgressiveError
 from progressivis.core.utils import get_random_name
 from progressivis.stats import (
@@ -49,7 +49,7 @@ def table_register(name: str, output_name: str, module_cls: Type[Module]) -> Non
 
 
 class TableFacade(ModuleFacade):
-    registered_modules: dict[Tuple[str, str], TableFacade] = {}
+    registered_modules: dict[Tuple[int, str], TableFacade] = {}
 
     @staticmethod
     def get_or_create(module: Module, table_slot: str) -> TableFacade:
@@ -59,11 +59,11 @@ class TableFacade(ModuleFacade):
         API:
         min, max, percentiles, var, histogram, distinct
         """
-        tabmod = TableFacade.registered_modules.get((module.name, table_slot))
+        tabmod = TableFacade.registered_modules.get((id(module), table_slot))
         if tabmod is None:
             tabmod = TableFacade(module, table_slot)
             TableFacade.registered_modules[
-                (module.name, table_slot)
+                (id(module), table_slot)
             ] = tabmod
             module.on_ending(lambda mod, _ : TableFacade.forget(mod))
         return tabmod
@@ -73,13 +73,13 @@ class TableFacade(ModuleFacade):
         """
         Remove a registered module class from the list of registered modules.
         """
-        modname = module.name
+        mod_id = id(module)
         if table_slot is None:
             for k, v in TableFacade.registered_modules.items():
-                if k[0] == modname:
+                if k[0] == mod_id:
                     del TableFacade.registered_modules[k]
         else:
-            del TableFacade.registered_modules[(modname, table_slot)]
+            del TableFacade.registered_modules[(mod_id, table_slot)]
 
     def __init__(
         self,
@@ -103,7 +103,7 @@ class TableFacade(ModuleFacade):
         return self._output_slots.get(name)
 
     def create_slot_module(self, name: str) -> SlotProxy:
-        if name == "main":
+        if name in ("main", "result"):  # keeping result for module compatibility
             return SlotProxy(self.table_slot, self.module)
         scheduler = self.module.scheduler()
         reg = self.registry[name]
@@ -114,11 +114,18 @@ class TableFacade(ModuleFacade):
         sink.input.inp = mod.output[reg.output_name]
         return SlotProxy(reg.output_name, mod)  # TODO add the slot name in the registry
 
-    def configure(self, *, base: str, hints: Any, alias: str, **kw: Any) -> None:
-        if alias in self.registry:
-            raise ValueError(f"Alias {alias} already exists!")
+    def configure(self, *, base: str, hints: Any, name: str, **kw: Any) -> None:
+        if name in self.registry:
+            raise ValueError(f"Name {name} already exists!")
         base_reg = self.registry[base]
-        alias_reg = copy.copy(base_reg)
-        alias_reg.module_hints = hints
-        alias_reg.module_kw = kw
-        self.registry[alias] = alias_reg
+        name_reg = copy.copy(base_reg)
+        name_reg.module_hints = hints
+        name_reg.module_kw = kw
+        self.registry[name] = name_reg
+
+    def scheduler(self) -> Scheduler:
+        return self.module.scheduler()
+
+    @property
+    def members(self) -> list[str]:
+        return list(self.registry.keys()) + ["main"]

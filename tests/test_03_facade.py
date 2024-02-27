@@ -51,7 +51,7 @@ class TestModuleFacade(ProgressiveTest):
     def test_table_module_child(self) -> None:
         s = self.scheduler()
         random = RandomPTable(10, rows=10000, scheduler=s)
-        tabmod = TableFacade(random, "result")
+        tabmod = TableFacade.get_or_create(random, "result")
         pr_min = Print(scheduler=s)
         pr_min.input[0] = tabmod.child.min.output.result
         pr_max = Print(scheduler=s)
@@ -61,7 +61,7 @@ class TestModuleFacade(ProgressiveTest):
     def test_table_module_cols(self) -> None:
         s = self.scheduler()
         random = RandomPTable(10, rows=10000, scheduler=s)
-        tabmod = TableFacade(random, "result")
+        tabmod = TableFacade.get_or_create(random, "result")
         min_ = Min(name="min_" + str(hash(random)), scheduler=s)
         min_.input.table = tabmod.output.main["_1", "_2", "_3"]
         pr = Print(proc=self.terse, scheduler=s)
@@ -77,7 +77,7 @@ class TestModuleFacade(ProgressiveTest):
     def test_table_module_log(self) -> None:
         s = self.scheduler()
         random = RandomPTable(10, rows=10000, scheduler=s)
-        tabmod = TableFacade(random, "result")
+        tabmod = TableFacade.get_or_create(random, "result")
         min_ = Min(name="min_" + str(hash(random)), scheduler=s)
         min_.input.table = tabmod.output.log["_1", "_2", "_3"]
         pr = Print(proc=self.terse, scheduler=s)
@@ -93,8 +93,8 @@ class TestModuleFacade(ProgressiveTest):
     def test_table_module_configure(self) -> None:
         s = self.scheduler()
         random = RandomPTable(10, rows=10000, scheduler=s)
-        tabmod = TableFacade(random, "result")
-        tabmod.configure(base="min", hints=["_1", "_2", "_3"], alias="min3")
+        tabmod = TableFacade.get_or_create(random, "result")
+        tabmod.configure(base="min", hints=["_1", "_2", "_3"], name="min3")
         pr_min = Print(scheduler=s)
         pr_min.input[0] = tabmod.output.min3
         aio.run(s.start())
