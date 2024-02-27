@@ -19,6 +19,7 @@ from progressivis.stats import (
     Var,
     Histogram1D,
     Distinct,
+    Sample
 )
 from progressivis.linalg import Log
 
@@ -39,6 +40,7 @@ TABLE_REGISTRY: dict[str, ModuleRegistry] = {
     "histogram": ModuleRegistry("result", Histogram1D),
     "distinct": ModuleRegistry("result", Distinct, {}),
     "log": ModuleRegistry("result", Log, {}),
+    "sample": ModuleRegistry("result", Sample, {}),
 }
 
 

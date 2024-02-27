@@ -58,6 +58,23 @@ class TestModuleFacade(ProgressiveTest):
         pr_max.input[0] = tabmod.child.max.output.result
         aio.run(s.start())
 
+
+    def test_sample(self) -> None:
+        s = self.scheduler()
+        random = RandomPTable(10, rows=10000, scheduler=s)
+        tabmod = TableFacade.get_or_create(random, "result")
+        prt = Print(proc=self.terse, scheduler=s)
+        tabmod.child.sample.params.samples = 10
+        prt.input[0] = tabmod.child.sample.output.result
+        prt2 = Print(proc=self.terse, scheduler=s)
+        prt2.input[0] = tabmod.child.sample.output.select
+        aio.run(s.start())
+        assert hasattr(tabmod.child.sample, "result")
+        self.assertEqual(len(tabmod.child.sample.result), 10)
+        assert hasattr(tabmod.child.sample, "pintset")
+        self.assertEqual(len(tabmod.child.sample.pintset), 10)
+
+
     def test_table_module_cols(self) -> None:
         s = self.scheduler()
         random = RandomPTable(10, rows=10000, scheduler=s)
