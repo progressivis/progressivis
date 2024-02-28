@@ -841,7 +841,7 @@ class Module(metaclass=ABCMeta):
 
     def default_input(self) -> Union[str, int]:
         "Return the input slot considered as the default for this module"
-        return 1
+        return 0
 
     def get_data(self, name: str) -> Any:
         if name == Module.TRACE_SLOT:

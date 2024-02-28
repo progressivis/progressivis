@@ -110,7 +110,7 @@ class TableFacade(ModuleFacade):
         scheduler = self.module.scheduler()
         reg = self.registry[name]
         mod = reg.module_cls(name=get_random_name(name), scheduler=scheduler, **reg.module_kw)
-        mod.input.table = self.module.output[self.table_slot][reg.module_hints]
+        mod.input[mod.default_input()] = self.module.output[self.table_slot][reg.module_hints]
         # Add a sink to keep the module alive in case it is disconnected
         sink = Sink("sink_for_" + mod.name, scheduler=scheduler)
         sink.input.inp = mod.output[reg.output_name]
