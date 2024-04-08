@@ -124,6 +124,7 @@ class ModuleCallbackList(List[ModuleProc]):
                     proc(module, run_number)
                 ret = True
             except Exception as exc:
+                logger.warning(f"Exception in callback {proc.__name__} on {module.name}")
                 logger.warning(exc)
         return ret
 

@@ -276,6 +276,7 @@ class RangeQuery(Module):
 
         self.dep.min = min_
         self.dep.max = max_
+        self.dep.hist_index = hist_index
         self.dep.min_value = min_value
         self.dep.max_value = max_value
         return range_query
