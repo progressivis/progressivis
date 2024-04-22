@@ -14,7 +14,7 @@ from progressivis.core.utils import indices_len
 from ..io import Variable
 from ..utils.psdict import PDict
 from . import BasePTable, PTable, PTableSelectedView
-from .hist_index import HistogramIndex
+from .binning_index import BinningIndex
 
 # from .mod_impl import ModuleImpl
 
@@ -53,7 +53,7 @@ class RangeQueryImpl:  # (ModuleImpl):
 
     def resume(
         self,
-        hist_index: HistogramIndex,
+        hist_index: BinningIndex,
         lower: float,
         upper: float,
         limit_changed: bool,
@@ -93,7 +93,7 @@ class RangeQueryImpl:  # (ModuleImpl):
     def start(
         self,
         table: BasePTable,
-        hist_index: HistogramIndex,
+        hist_index: BinningIndex,
         lower: float,
         upper: float,
         limit_changed: bool,
@@ -176,7 +176,7 @@ class RangeQueryImpl:  # (ModuleImpl):
     "hist",
     PTable,
     doc=(
-        "**HistogramIndex** module output connected to the same input/column."
+        "**BinningIndex** module output connected to the same input/column."
         "This mandatory parameter could be provided "
         "by the `create_dependent_modules()` method."
     ),
@@ -205,7 +205,7 @@ class RangeQuery(Module):
         self.default_step_size = 1000
         self._quantiles = quantiles
         self.input_module: Optional[Module] = None
-        self.hist_index: Optional[HistogramIndex] = None
+        self.hist_index: Optional[BinningIndex] = None
 
     @property
     def column(self) -> str:
@@ -227,7 +227,7 @@ class RangeQuery(Module):
         max_: Optional[Module] = None,
         min_value: Optional[Module] = None,
         max_value: Optional[Module] = None,
-        hist_index: Optional[HistogramIndex] = None,
+        hist_index: Optional[BinningIndex] = None,
         **kwds: Any,
     ) -> RangeQuery:
         """
@@ -245,7 +245,7 @@ class RangeQuery(Module):
         self.input_slot = input_slot
         with scheduler:
             if hist_index is None:
-                hist_index = HistogramIndex(
+                hist_index = BinningIndex(
                     group=self.name, scheduler=scheduler
                 )
             hist_index.input.table = input_module.output[input_slot][params.column,]
@@ -385,7 +385,7 @@ class RangeQuery(Module):
         if not self._impl.is_started:
             self._impl.start(
                 input_table,
-                cast(HistogramIndex, hist_slot.output_module),
+                cast(BinningIndex, hist_slot.output_module),
                 lower_value,
                 upper_value,
                 limit_changed,
@@ -395,7 +395,7 @@ class RangeQuery(Module):
             )
         else:
             self._impl.resume(
-                cast(HistogramIndex, hist_slot.output_module),
+                cast(BinningIndex, hist_slot.output_module),
                 lower_value,
                 upper_value,
                 limit_changed,

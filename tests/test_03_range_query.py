@@ -23,7 +23,7 @@ class TestRangeQuery(ProgressiveTest):
         "Run tests of the RangeQuery module"
         s = self.scheduler()
         with s:
-            random = RandomPTable(2, rows=1000, scheduler=s)
+            random = RandomPTable(2, rows=20_000, scheduler=s)
             t_min = PDict({"_1": lo})
             min_value = ConstDict(pdict=t_min, scheduler=s)
             t_max = PDict({"_1": up})
@@ -48,7 +48,7 @@ class TestRangeQuery(ProgressiveTest):
         "Run tests of the RangeQuery module"
         s = self.scheduler()
         with s:
-            random = RandomPTable(2, rows=1000, scheduler=s)
+            random = RandomPTable(2, rows=20_000, scheduler=s)
             t_min_max = PDict({"lower": lo, "upper": up})
             min_max_value = ConstDict(pdict=t_min_max, scheduler=s)
             range_qry = RangeQuery(column="_1", scheduler=s)
@@ -89,7 +89,7 @@ class TestRangeQuery(ProgressiveTest):
         "Test min_out and max_out on HistogramIndex"
         s = self.scheduler()
         with s:
-            random = RandomPTable(2, rows=100000, scheduler=s)
+            random = RandomPTable(2, rows=100_000, scheduler=s)
             t_min = PDict({"_1": 0.3})
             min_value = ConstDict(pdict=t_min, scheduler=s)
             t_max = PDict({"_1": 0.8})
@@ -138,7 +138,7 @@ class TestRangeQuery(ProgressiveTest):
         "Test min and max on RangeQuery output"
         s = self.scheduler()
         with s:
-            random = RandomPTable(2, rows=100000, scheduler=s)
+            random = RandomPTable(2, rows=100_000, scheduler=s)
             t_min = PDict({"_1": 0.3})
             t_max = PDict({"_1": 0.8})
             range_qry = self._query_min_max_impl(random, t_min, t_max, s)
@@ -152,7 +152,7 @@ class TestRangeQuery(ProgressiveTest):
         "Test min and max on RangeQuery output"
         s = self.scheduler()
         with s:
-            random = RandomPTable(2, rows=100000, scheduler=s)
+            random = RandomPTable(2, rows=100_000, scheduler=s)
             t_min = PDict({"_1": 0.0})
             t_max = PDict({"_1": float("nan")})
             range_qry = self._query_min_max_impl(random, t_min, t_max, s)
@@ -168,7 +168,7 @@ class TestRangeQuery(ProgressiveTest):
         "Test min and max on RangeQuery output"
         s = self.scheduler()
         with s:
-            random = RandomPTable(2, rows=100000, scheduler=s)
+            random = RandomPTable(2, rows=100_000, scheduler=s)
             t_min = PDict({"_1": 0.3})
             t_max = PDict({"_1": 15000.0})
             range_qry = self._query_min_max_impl(random, t_min, t_max, s)

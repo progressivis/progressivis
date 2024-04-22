@@ -12,6 +12,7 @@ from collections import deque
 from ..core.pintset import PIntSet
 from ..core.utils import slice_to_arange, fix_loc
 from .. import ProgressiveError
+from ..utils.errors import ProgressiveStopIteration
 from ..utils.psdict import PDict
 from ..core.module import (
     Module,
@@ -26,7 +27,7 @@ from ..core.utils import indices_len
 from . import PTableSelectedView
 
 
-from typing import Dict, Optional, Any, Callable, Sequence
+from typing import Dict, Optional, Any, Callable, Sequence, cast
 
 APPROX = False
 logger = logging.getLogger(__name__)
@@ -133,7 +134,12 @@ class _BinningIndexImpl:
         assert self.binvect is not None
         binvect, origin, bin_w = self.binvect, self.origin, self.bin_w
         lower_bin = int((lower - origin) // bin_w)
+        pos_lo = lower_bin
         upper_bin = int((upper - origin) // bin_w)
+        pos_up = upper_bin
+        if not approximate:  # i.e. precise
+            lower_bin += 1
+        assert lower_bin <= upper_bin
         if only_bins:
             selected_bins = (
                 binvect[i]
@@ -145,7 +151,23 @@ class _BinningIndexImpl:
                 binvect[i] for i in self.binvect_map if i >= lower_bin and i < upper_bin
             )
 
-        return PIntSet.union(selected_bins)  # type: ignore
+        union = PIntSet.union(*selected_bins)  # type: ignore
+        if not approximate:
+            detail = PIntSet()
+            ids = np.array(self.binvect[pos_lo], np.int64)
+            values = self.column.loc[ids]
+            if pos_lo == pos_up:
+                selected = ids[(lower <= values) & (values < upper)]
+                detail.update(selected)
+            else:
+                selected = ids[lower <= values]
+                detail.update(selected)
+                ids = np.array(self.binvect[pos_up], np.int64)
+                values = self.column.loc[ids]
+                selected = ids[values < upper]
+                detail.update(selected)
+            union.update(detail)
+        return union
 
     def restricted_range_query(
         self,
@@ -163,7 +185,11 @@ class _BinningIndexImpl:
         only_locs = PIntSet.aspintset(only_locs)
         binvect, origin, bin_w = self.binvect, self.origin, self.bin_w
         lower_bin = int((lower - origin) // bin_w)
+        pos_lo = lower_bin
         upper_bin = int((upper - origin) // bin_w)
+        pos_up = upper_bin
+        if not approximate:  # i.e. precise
+            lower_bin += 1
         if only_bins:
             selected_bins = (
                 binvect[i]
@@ -180,7 +206,23 @@ class _BinningIndexImpl:
                 if i >= lower_bin and i < upper_bin and binvect[i] & only_locs
             )
 
-        return PIntSet.union(selected_bins) & only_locs  # type: ignore
+        union = cast(PIntSet, PIntSet.union(*selected_bins) & only_locs)  # type: ignore
+        if not approximate:
+            detail = PIntSet()
+            ids = np.array(self.binvect[pos_lo] & only_locs, np.int64)
+            values = self.column.loc[ids]
+            if pos_lo == pos_up:
+                selected = ids[(lower <= values) & (values < upper)]
+                detail.update(selected)
+            else:
+                selected = ids[lower <= values]
+                detail.update(selected)
+                ids = np.array(self.binvect[pos_up] & only_locs, np.int64)
+                values = self.column.loc[ids]
+                selected = ids[values < upper]
+                detail.update(selected)
+            union.update(detail)
+        return union
 
     def get_min_bin(self) -> Optional[PIntSet]:
         for i in self.binvect_map:
@@ -206,6 +248,7 @@ class _BinningIndexImpl:
     ),
 )
 @def_parameter("init_threshold", np.dtype(int), 10_000)
+@def_parameter("max_trials", np.dtype(int), 5)
 @def_input("table", PTable, hint_type=Sequence[str])
 @def_output("result", PTableSelectedView)
 @def_output("bin_timestamps", PDict, required=False)
@@ -232,6 +275,8 @@ class BinningIndex(Module):
         self.input_module: Optional[Module] = None
         self.input_slot: Optional[str] = None
         self._input_table: Optional[PTable] = None
+        self._prev_len = 0
+        self._trials = 0
         self.bin_timestamps = PDict()
 
     def get_min_bin(self, column: str) -> Optional[PIntSet]:
@@ -261,8 +306,16 @@ class BinningIndex(Module):
         steps = 0
         input_table = input_slot.data()
         self._input_table = input_table
-        if input_table is None or len(input_table) < self.params.init_threshold:
+        len_table = 0 if input_table is None else len(input_table)
+        if len_table < self.params.init_threshold:
             # there are not enough rows. it's not worth building an index yet
+            if self._trials > self.params.max_trials:
+                raise ProgressiveStopIteration(
+                    "init_threshold to high in BinningIndex"
+                )
+            if len_table == self._prev_len:
+                self._trials += 1
+            self._prev_len = len_table
             return self._return_run_step(self.state_blocked, steps_run=0)
         if not self._columns:
             if (hint := input_slot.hint) is not None:
