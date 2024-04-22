@@ -17,7 +17,7 @@ from ..utils.psdict import PDict
 from ..io import Variable
 from .table_base import PTableSelectedView, BasePTable
 from .table import PTable
-from .hist_index import HistogramIndex
+from .binning_index import BinningIndex
 
 from typing import Optional, Any, cast, Union, Iterable
 
@@ -53,7 +53,7 @@ class RangeQuery2dImpl:  # (ModuleImpl):
 
     def resume(
         self,
-        hist_index: HistogramIndex,
+        hist_index: BinningIndex,
         lower_x: float,
         upper_x: float,
         lower_y: float,
@@ -124,7 +124,7 @@ class RangeQuery2dImpl:  # (ModuleImpl):
     def start(
         self,
         table: BasePTable,
-        hist_index: HistogramIndex,
+        hist_index: BinningIndex,
         lower_x: float,
         upper_x: float,
         lower_y: float,
@@ -316,7 +316,7 @@ class RangeQuery2d(Module):
             self.input_module = input_module
             self.input_slot = input_slot
             with scheduler:
-                hist_index = HistogramIndex(
+                hist_index = BinningIndex(
                     group=self.name,
                     scheduler=scheduler,
                 )
@@ -489,7 +489,7 @@ class RangeQuery2d(Module):
         if not self._impl.is_started:
             self._impl.start(
                 input_table,
-                cast(HistogramIndex, hist_slot.output_module),
+                cast(BinningIndex, hist_slot.output_module),
                 lower_value_x,
                 upper_value_x,
                 lower_value_y,
@@ -503,7 +503,7 @@ class RangeQuery2d(Module):
             self.result.selection = self._impl.result._values
         else:
             self._impl.resume(
-                cast(HistogramIndex, hist_slot.output_module),
+                cast(BinningIndex, hist_slot.output_module),
                 lower_value_x,
                 upper_value_x,
                 lower_value_y,

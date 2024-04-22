@@ -27,7 +27,7 @@ from ..core.utils import indices_len
 from . import PTableSelectedView
 
 
-from typing import Dict, Optional, Any, Callable, Sequence, cast
+from typing import Dict, Optional, Any, Callable, Sequence, cast, Generator
 
 APPROX = False
 logger = logging.getLogger(__name__)
@@ -119,13 +119,13 @@ class _BinningIndexImpl:
                 self.binvect_map.add(bin_id)
                 self.binvect_hits.add(bin_id)
 
-    def range_query(
+    def range_query_(
         self,
         lower: float,
         upper: float,
         approximate: bool = APPROX,
         only_bins: PIntSet = PIntSet(),
-    ) -> PIntSet:
+    ) -> tuple[Generator[PIntSet, None, None], PIntSet]:
         """
         Return the PIntSet of all rows with values in range [`lower`, `upper`[
         """
@@ -142,18 +142,20 @@ class _BinningIndexImpl:
         assert lower_bin <= upper_bin
         if only_bins:
             selected_bins = (
-                binvect[i]
+                cast(PIntSet, binvect[i])
                 for i in self.binvect_map
                 if i in only_bins and i >= lower_bin and i < upper_bin
             )
         else:
             selected_bins = (
-                binvect[i] for i in self.binvect_map if i >= lower_bin and i < upper_bin
+                cast(PIntSet, binvect[i])
+                for i in self.binvect_map if i >= lower_bin and i < upper_bin
             )
 
-        union = PIntSet.union(*selected_bins)  # type: ignore
+        #union = PIntSet.union(*selected_bins)  # type: ignore
+        detail = PIntSet()
         if not approximate:
-            detail = PIntSet()
+
             ids = np.array(self.binvect[pos_lo], np.int64)
             values = self.column.loc[ids]
             if pos_lo == pos_up:
@@ -166,8 +168,35 @@ class _BinningIndexImpl:
                 values = self.column.loc[ids]
                 selected = ids[values < upper]
                 detail.update(selected)
-            union.update(detail)
-        return union
+            #union.update(detail)
+        return selected_bins, detail
+
+    def range_query(
+        self,
+        lower: float,
+        upper: float,
+        approximate: bool = APPROX,
+        only_bins: PIntSet = PIntSet(),
+    ) -> PIntSet:
+        selected_bins, detail = self.range_query_(lower, upper, approximate, only_bins)
+        return PIntSet.union(detail, *selected_bins)
+
+    def range_query_aslist(
+        self,
+        lower: float,
+        upper: float,
+        approximate: bool = APPROX,
+        only_bins: PIntSet = PIntSet(),
+    ) -> Generator[PIntSet, None, None]:
+        selected_bins, detail = self.range_query_(lower, upper, approximate, only_bins)
+        #return PIntSet.union(detail, *selected_bins)
+        if not detail:
+            return selected_bins
+        def _gen() -> Generator[PIntSet, None, None]:
+            for elt in selected_bins:
+                yield elt
+            yield detail
+        return _gen()
 
     def restricted_range_query(
         self,
@@ -416,6 +445,18 @@ class BinningIndex(Module):
         ) & self._eval_to_ids(  # optimize later
             column, operator.__ge__, lower
         )
+    def range_query_aslist(
+            self, column: str, lower: float, upper: float, approximate: bool = APPROX
+    ) -> Generator[PIntSet, None, None]:
+        r"""
+        Return the list of rows with values in range \[`lower`, `upper`\[
+        """
+        if column in self._impl:
+            return self._impl[column].range_query_aslist(lower, upper, approximate)
+        def never() -> Generator[PIntSet, None, None]:
+            if False:
+                yield PIntSet()
+        return never()
 
     def restricted_range_query(
         self,

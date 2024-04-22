@@ -86,7 +86,7 @@ class TestRangeQuery(ProgressiveTest):
         self._range_query_impl(0.1, 0.9)
 
     def test_hist_index_min_max(self) -> None:
-        "Test min_out and max_out on HistogramIndex"
+        "Test min_out and max_out on BinningIndex"
         s = self.scheduler()
         with s:
             random = RandomPTable(2, rows=100_000, scheduler=s)
