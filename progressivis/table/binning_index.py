@@ -119,6 +119,81 @@ class _BinningIndexImpl:
                 self.binvect_map.add(bin_id)
                 self.binvect_hits.add(bin_id)
 
+    def query(
+        self,
+        operator_: Callable[[Any, Any], int],
+        limit: Any,
+        approximate: bool = APPROX,
+        only_bins: PIntSet = PIntSet(),
+    ) -> PIntSet:
+        """
+        Return the list of rows matching the query.
+        For example, returning all values less than 10 (< 10) would be
+        `query(operator.__lt__, 10)`
+        """
+        assert self.binvect is not None
+        binvect, origin, bin_w = self.binvect, self.origin, self.bin_w
+        pos = int((limit - origin) // bin_w)
+        if only_bins:
+            selected_bins = (
+                cast(PIntSet, binvect[i])
+                for i in self.binvect_map
+                if i in only_bins and operator_(i, pos)
+            )
+        else:
+            selected_bins = (
+                cast(PIntSet, binvect[i])
+                for i in self.binvect_map if operator_(i, pos)
+            )
+
+        union = PIntSet.union(*selected_bins)
+        detail = PIntSet()
+        if not approximate:
+            ids = np.array(self.binvect[pos], np.int64)
+            values = self.column.loc[ids]
+            selected = ids[operator_(values, limit)]
+            detail.update(selected)
+            union.update(detail)
+        return union
+
+    def restricted_query(
+        self,
+        operator_: Callable[[Any, Any], int],
+        limit: Any,
+        only_locs: Any,
+        approximate: bool = APPROX,
+        only_bins: PIntSet = PIntSet(),
+    ) -> PIntSet:
+        """
+        Return the list of rows matching the query.
+        For example, returning all values less than 10 (< 10) would be
+        `query(operator.__lt__, 10)`
+        """
+        assert self.binvect is not None
+        binvect, origin, bin_w = self.binvect, self.origin, self.bin_w
+        pos = int((limit - origin) // bin_w)
+        if only_bins:
+            selected_bins = (
+                cast(PIntSet, binvect[i])
+                for i in self.binvect_map
+                if i in only_bins and operator_(i, pos) and binvect[i] & only_locs
+            )
+        else:
+            selected_bins = (
+                cast(PIntSet, binvect[i])
+                for i in self.binvect_map if operator_(i, pos) and binvect[i] & only_locs
+            )
+
+        union = PIntSet.union(*selected_bins)
+        detail = PIntSet()
+        if not approximate:
+            ids = np.array(self.binvect[pos], np.int64)
+            values = self.column.loc[ids]
+            selected = ids[operator_(values, limit)]
+            detail.update(selected)
+            union.update(detail)
+        return union
+
     def range_query_(
         self,
         lower: float,
@@ -152,7 +227,7 @@ class _BinningIndexImpl:
                 for i in self.binvect_map if i >= lower_bin and i < upper_bin
             )
 
-        #union = PIntSet.union(*selected_bins)  # type: ignore
+        # union = PIntSet.union(*selected_bins)  # type: ignore
         detail = PIntSet()
         if not approximate:
 
@@ -168,7 +243,7 @@ class _BinningIndexImpl:
                 values = self.column.loc[ids]
                 selected = ids[values < upper]
                 detail.update(selected)
-            #union.update(detail)
+            # union.update(detail)
         return selected_bins, detail
 
     def range_query(
@@ -189,9 +264,9 @@ class _BinningIndexImpl:
         only_bins: PIntSet = PIntSet(),
     ) -> Generator[PIntSet, None, None]:
         selected_bins, detail = self.range_query_(lower, upper, approximate, only_bins)
-        #return PIntSet.union(detail, *selected_bins)
         if not detail:
             return selected_bins
+
         def _gen() -> Generator[PIntSet, None, None]:
             for elt in selected_bins:
                 yield elt
@@ -428,6 +503,43 @@ class BinningIndex(Module):
         arr = slice_to_arange(input_ids)
         return PIntSet(arr[np.nonzero(mask_)[0]])
 
+    def query(
+            self,
+            column: str,
+            operator_: Callable[[Any, Any], Any],
+            limit: Any,
+            approximate: bool = APPROX,
+    ) -> PIntSet:
+        """
+        Return the list of rows matching the query.
+        For example, returning all values less than 10 (< 10) would be
+        `query(operator.__lt__, 10)`
+        """
+        if column in self._impl:
+            return self._impl[column].query(operator_, limit, approximate)
+        # there are no histogram because init_threshold wasn't be reached yet
+        # so we query the input table directly
+        return self._eval_to_ids(column, operator_, limit)
+
+    def restricted_query(
+            self,
+            column: str,
+            operator_: Callable[[Any, Any], Any],
+            limit: Any,
+            only_locs: Any,
+            approximate: bool = APPROX,
+    ) -> PIntSet:
+        """
+        Return the list of rows matching the query.
+        For example, returning all values less than 10 (< 10) would be
+        `query(operator.__lt__, 10)`
+        """
+        if column in self._impl:
+            return self._impl[column].restricted_query(operator_, limit, only_locs, approximate)
+        # there are no histogram because init_threshold wasn't be reached yet
+        # so we query the input table directly
+        return self._eval_to_ids(column, operator_, limit, only_locs)
+
     def range_query(
         self, column: str, lower: float, upper: float, approximate: bool = APPROX
     ) -> PIntSet:
@@ -445,6 +557,7 @@ class BinningIndex(Module):
         ) & self._eval_to_ids(  # optimize later
             column, operator.__ge__, lower
         )
+
     def range_query_aslist(
             self, column: str, lower: float, upper: float, approximate: bool = APPROX
     ) -> Generator[PIntSet, None, None]:
@@ -453,6 +566,7 @@ class BinningIndex(Module):
         """
         if column in self._impl:
             return self._impl[column].range_query_aslist(lower, upper, approximate)
+
         def never() -> Generator[PIntSet, None, None]:
             if False:
                 yield PIntSet()
