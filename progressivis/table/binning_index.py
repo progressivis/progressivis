@@ -35,6 +35,15 @@ logger = logging.getLogger(__name__)
 BinVect = deque
 
 
+def _union(*args: Any) -> PIntSet:
+    try:
+        return PIntSet.union(*args)
+    except TypeError:
+        if not args:
+            return PIntSet()
+        raise
+
+
 class _BinningIndexImpl:
     "Implementation part of Histogram Index"
 
@@ -146,7 +155,7 @@ class _BinningIndexImpl:
                 for i in self.binvect_map if operator_(i, pos)
             )
 
-        union = PIntSet.union(*selected_bins)
+        union = _union(*selected_bins)
         detail = PIntSet()
         if not approximate:
             ids = np.array(self.binvect[pos], np.int64)
@@ -184,7 +193,7 @@ class _BinningIndexImpl:
                 for i in self.binvect_map if operator_(i, pos) and binvect[i] & only_locs
             )
 
-        union = PIntSet.union(*selected_bins)
+        union = _union(*selected_bins)
         detail = PIntSet()
         if not approximate:
             ids = np.array(self.binvect[pos], np.int64)
@@ -254,7 +263,7 @@ class _BinningIndexImpl:
         only_bins: PIntSet = PIntSet(),
     ) -> PIntSet:
         selected_bins, detail = self.range_query_(lower, upper, approximate, only_bins)
-        return PIntSet.union(detail, *selected_bins)
+        return _union(detail, *selected_bins)
 
     def range_query_aslist(
         self,
@@ -310,7 +319,7 @@ class _BinningIndexImpl:
                 if i >= lower_bin and i < upper_bin and binvect[i] & only_locs
             )
 
-        union = cast(PIntSet, PIntSet.union(*selected_bins) & only_locs)  # type: ignore
+        union = cast(PIntSet, _union(*selected_bins) & only_locs)
         if not approximate:
             detail = PIntSet()
             ids = np.array(self.binvect[pos_lo] & only_locs, np.int64)
@@ -339,6 +348,34 @@ class _BinningIndexImpl:
             if bm := self.binvect[i]:
                 return bm
         return None
+
+    def compute_percentiles(self, points: dict[str, float], len_: int, accuracy: float) -> dict[str, float]:
+        k_points = [p * (len_ + 1) * 0.01 for p in points.values()]
+        max_k = max(k_points)
+        ret_values: list[float] = []
+        k_accuracy = accuracy * len_ * 0.01
+        acc_vect = np.empty(len_, dtype=np.int64)
+        size_vect = np.empty(len_, dtype=np.int64)
+        acc = 0
+        for i in self.binvect_map:
+            val = len(cast(PIntSet, self.binvect[i]))
+            size_vect[i] = val
+            acc += val
+            acc_vect[i] = acc
+            if acc > max_k:
+                break  # just avoids unnecessary computes
+        acc_vect = acc_vect[: i + 1]
+        for k in k_points:
+            i = (acc_vect >= k).nonzero()[0][0]
+            reminder = int(acc_vect[i] - k)
+            assert size_vect[i] > reminder >= 0
+            if size_vect[i] < k_accuracy:  # one takes the 1st value as a random one
+                ret_values.append(self.column[cast(PIntSet, self.binvect[i])[0]])
+            else:
+                values = self.column.loc[self.binvect[i]]
+                _ = np.partition(values, reminder)
+                ret_values.append(values[reminder])
+        return dict(zip(points.keys(), ret_values))
 
 
 @document
@@ -409,8 +446,10 @@ class BinningIndex(Module):
         assert input_slot is not None
         steps = 0
         input_table = input_slot.data()
+        if input_table is None:
+            return self._return_run_step(self.state_blocked, steps_run=0)
         self._input_table = input_table
-        len_table = 0 if input_table is None else len(input_table)
+        len_table = len(input_table)
         if len_table < self.params.init_threshold:
             # there are not enough rows. it's not worth building an index yet
             if self._trials > self.params.max_trials:
@@ -595,6 +634,12 @@ class BinningIndex(Module):
             # optimize later
             & self._eval_to_ids(column, operator.__ge__, lower, only_locs)
         )
+
+    def compute_percentiles(self, points: dict[str, float], accuracy: float) -> dict[str, float]:
+        assert self._impl
+        for column in self._impl.keys():
+            return self._impl[column].compute_percentiles(points, len(self.selection), accuracy)
+        return {}
 
     def create_dependent_modules(
         self, input_module: Module, input_slot: str, **kwds: Any
