@@ -27,7 +27,7 @@ from ..core.utils import indices_len
 from . import PTableSelectedView
 
 
-from typing import Dict, Optional, Any, Callable, Sequence, cast, Generator
+from typing import Optional, Any, Callable, Sequence, cast, Generator
 
 APPROX = False
 logger = logging.getLogger(__name__)
@@ -405,12 +405,11 @@ class BinningIndex(Module):
     column provided in the **table** slot hint.
     """
 
-    def __init__(self, **kwds: Any) -> None:
+    def __init__(self, column: str | None = None, **kwds: Any) -> None:
         super().__init__(**kwds)
-        self._columns: Sequence[str] = []
-        self._n_cols = 0
+        self._column = column
         # will be created when the init_threshold is reached
-        self._impl: Dict[str, _BinningIndexImpl] = {}
+        self._impl: _BinningIndexImpl | None = None
         self.selection = PIntSet()  # will be filled when the table is read
         # so realistic initial values for min and max were available
         self.input_module: Optional[Module] = None
@@ -420,15 +419,15 @@ class BinningIndex(Module):
         self._trials = 0
         self.bin_timestamps = PDict()
 
-    def get_min_bin(self, column: str) -> Optional[PIntSet]:
+    def get_min_bin(self) -> Optional[PIntSet]:
         if self._impl is None:
             return None
-        return self._impl[column].get_min_bin()
+        return self._impl.get_min_bin()
 
-    def get_max_bin(self, column: str) -> Optional[PIntSet]:
+    def get_max_bin(self) -> Optional[PIntSet]:
         if self._impl is None:
             return None
-        return self._impl[column].get_max_bin()
+        return self._impl.get_max_bin()
 
     def starting(self) -> None:
         super().starting()
@@ -460,25 +459,25 @@ class BinningIndex(Module):
                 self._trials += 1
             self._prev_len = len_table
             return self._return_run_step(self.state_blocked, steps_run=0)
-        if not self._columns:
+        if not self._column:
             if (hint := input_slot.hint) is not None:
-                self._columns = hint
-                self._n_cols = len(hint)
+                assert len(hint) == 1
+                self._column = hint[0]
             else:
                 raise ProgressiveError("BinningIndex needs at least one column")
         if not self._impl:
             input_slot.reset()
             input_slot.update(run_number)
             input_slot.clear_buffers()
-            assert self._columns is not None
-            for column in self._columns:
-                self._impl[column] = _BinningIndexImpl(
-                    column, input_table, self.params.tol
-                )
-                steps += self.process_min_max(column, input_table)
+            assert self._column is not None
+            self._impl = _BinningIndexImpl(
+                self._column, input_table, self.params.tol
+            )
+            steps += self.process_min_max(input_table)
             self.selection = PIntSet(input_table.index)
             self.result = PTableSelectedView(input_table, self.selection)
             return self._return_run_step(self.state_blocked, len(self.selection))
+        impl = self._impl
         deleted: Optional[PIntSet] = None
         if input_slot.deleted.any():
             deleted = input_slot.deleted.next(as_slice=False)
@@ -489,43 +488,42 @@ class BinningIndex(Module):
         if input_slot.created.any():
             created = input_slot.created.next(length=step_size, as_slice=False)
             created = fix_loc(created)
-            steps += indices_len(created) * self._n_cols
+            steps += indices_len(created)
             self.selection |= created
         updated: Optional[PIntSet] = None
         if input_slot.updated.any():
             updated = input_slot.updated.next(length=step_size, as_slice=False)
             updated = fix_loc(updated)
-            steps += indices_len(updated) * self._n_cols
+            steps += indices_len(updated)
         if steps == 0:
             return self._return_run_step(self.state_blocked, steps_run=0)
         input_table = input_slot.data()
-        for col, impl in self._impl.items():
-            impl.update_histogram(created, updated, deleted)
-            for hit in impl.binvect_hits:  # PDict hasn't a defaultdict subclass so ...
-                self.bin_timestamps[hit] = self.bin_timestamps.get(hit, 0) + 1  # type: ignore
-            self.bin_timestamps[-1] = impl.origin  # type: ignore
-            steps += self.process_min_max(col, input_table)
+        impl.update_histogram(created, updated, deleted)
+        for hit in impl.binvect_hits:  # PDict hasn't a defaultdict subclass so ...
+            self.bin_timestamps[hit] = self.bin_timestamps.get(hit, 0) + 1  # type: ignore
+        self.bin_timestamps[-1] = impl.origin  # type: ignore
+        steps += self.process_min_max(input_table)
         return self._return_run_step(self.next_state(input_slot), steps_run=steps)
 
-    def process_min_max(self, column: str, input_table: PTable) -> int:
+    def process_min_max(self, input_table: PTable) -> int:
         steps = 0
+        assert self._column is not None
         if self.min_out is not None:
-            min_bin = self.get_min_bin(column)
+            min_bin = self.get_min_bin()
             if min_bin:
-                min_ = input_table[column].loc[min_bin].min()
-                self.min_out.update({column: min_})
+                min_ = input_table[self._column].loc[min_bin].min()
+                self.min_out.update({self._column: min_})
                 steps += len(min_bin)  # TODO: find a better heuristic
         if self.max_out is not None:
-            max_bin = self.get_max_bin(column)
+            max_bin = self.get_max_bin()
             if max_bin:
-                max_ = input_table[column].loc[max_bin].max()
-                self.max_out.update({column: max_})
+                max_ = input_table[self._column].loc[max_bin].max()
+                self.max_out.update({self._column: max_})
                 steps += len(max_bin)  # TODO: find a better heuristic
         return steps
 
     def _eval_to_ids(
         self,
-        column: str,
         operator_: Callable[[Any, Any], Any],
         limit: Any,
         input_ids: Optional[slice] = None,
@@ -536,7 +534,7 @@ class BinningIndex(Module):
             input_ids = table_.index
         else:
             input_ids = fix_loc(input_ids)
-        x = table_[column].loc[input_ids]
+        x = table_[self._column].loc[input_ids]
         mask_ = operator_(x, limit)
         assert isinstance(input_ids, slice)
         arr = slice_to_arange(input_ids)
@@ -544,7 +542,6 @@ class BinningIndex(Module):
 
     def query(
             self,
-            column: str,
             operator_: Callable[[Any, Any], Any],
             limit: Any,
             approximate: bool = APPROX,
@@ -554,15 +551,14 @@ class BinningIndex(Module):
         For example, returning all values less than 10 (< 10) would be
         `query(operator.__lt__, 10)`
         """
-        if column in self._impl:
-            return self._impl[column].query(operator_, limit, approximate)
+        if self._impl:
+            return self._impl.query(operator_, limit, approximate)
         # there are no histogram because init_threshold wasn't be reached yet
         # so we query the input table directly
-        return self._eval_to_ids(column, operator_, limit)
+        return self._eval_to_ids(operator_, limit)
 
     def restricted_query(
             self,
-            column: str,
             operator_: Callable[[Any, Any], Any],
             limit: Any,
             only_locs: Any,
@@ -573,38 +569,38 @@ class BinningIndex(Module):
         For example, returning all values less than 10 (< 10) would be
         `query(operator.__lt__, 10)`
         """
-        if column in self._impl:
-            return self._impl[column].restricted_query(operator_, limit, only_locs, approximate)
+        if self._impl:
+            return self._impl.restricted_query(operator_, limit, only_locs, approximate)
         # there are no histogram because init_threshold wasn't be reached yet
         # so we query the input table directly
-        return self._eval_to_ids(column, operator_, limit, only_locs)
+        return self._eval_to_ids(operator_, limit, only_locs)
 
     def range_query(
-        self, column: str, lower: float, upper: float, approximate: bool = APPROX
+        self, lower: float, upper: float, approximate: bool = APPROX
     ) -> PIntSet:
         r"""
         Return the list of rows with values in range \[`lower`, `upper`\[
         """
-        if column in self._impl:
-            return self._impl[column].range_query(
+        if self._impl:
+            return self._impl.range_query(
                 lower, upper, approximate
             )
         # there are no histogram because init_threshold wasn't be reached yet
         # so we query the input table directly
         return self._eval_to_ids(
-            column, operator.__lt__, upper
+            operator.__lt__, upper
         ) & self._eval_to_ids(  # optimize later
-            column, operator.__ge__, lower
+            operator.__ge__, lower
         )
 
     def range_query_aslist(
-            self, column: str, lower: float, upper: float, approximate: bool = APPROX
+            self, lower: float, upper: float, approximate: bool = APPROX
     ) -> Generator[PIntSet, None, None]:
         r"""
         Return the list of rows with values in range \[`lower`, `upper`\[
         """
-        if column in self._impl:
-            return self._impl[column].range_query_aslist(lower, upper, approximate)
+        if self._impl:
+            return self._impl.range_query_aslist(lower, upper, approximate)
 
         def never() -> Generator[PIntSet, None, None]:
             if False:
@@ -613,7 +609,6 @@ class BinningIndex(Module):
 
     def restricted_range_query(
         self,
-        column: str,
         lower: float,
         upper: float,
         only_locs: Any,
@@ -623,22 +618,21 @@ class BinningIndex(Module):
         Return the list of rows with values in range \[`lower`, `upper`\[
         among only_locs
         """
-        if column in self._impl:
-            return self._impl[column].restricted_range_query(
+        if self._impl:
+            return self._impl.restricted_range_query(
                 lower, upper, only_locs, approximate
             )
         # there are no histogram because init_threshold wasn't be reached yet
         # so we query the input table directly
         return (
-            self._eval_to_ids(column, operator.__lt__, upper, only_locs)
+            self._eval_to_ids(operator.__lt__, upper, only_locs)
             # optimize later
-            & self._eval_to_ids(column, operator.__ge__, lower, only_locs)
+            & self._eval_to_ids(operator.__ge__, lower, only_locs)
         )
 
     def compute_percentiles(self, points: dict[str, float], accuracy: float) -> dict[str, float]:
         assert self._impl
-        for column in self._impl.keys():
-            return self._impl[column].compute_percentiles(points, len(self.selection), accuracy)
+        return self._impl.compute_percentiles(points, len(self.selection), accuracy)
         return {}
 
     def create_dependent_modules(

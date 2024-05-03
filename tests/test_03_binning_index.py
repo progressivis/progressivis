@@ -51,14 +51,15 @@ class TestBinningIndex(ProgressiveTest):
         sink = Sink(scheduler=s)
         sink.input.inp = bin_index.output.result
         aio.run(s.start())
-        binvect = bin_index._impl["_1"].binvect
+        assert bin_index._impl is not None
+        binvect = bin_index._impl.binvect
         print(len(binvect))
         print("[")
         for bin in binvect:
             print(bin_char(bin), end="")
         print("]")
         assert random.result
-        self.check_bins(bin_index._impl["_1"], random.result["_1"])
+        self.check_bins(bin_index._impl, random.result["_1"])
 
     def test_outliers_left(self) -> None:
         s = self.scheduler()
@@ -68,14 +69,15 @@ class TestBinningIndex(ProgressiveTest):
         sink = Sink(scheduler=s)
         sink.input.inp = bin_index.output.result
         aio.run(s.start())
-        binvect = bin_index._impl["_1"].binvect
+        assert bin_index._impl is not None
+        binvect = bin_index._impl.binvect
         print(len(binvect))
         print("[")
         for bin in binvect:
             print(bin_char(bin), end="")
         print("]")
         assert random.result
-        self.check_bins(bin_index._impl["_1"], random.result["_1"])
+        self.check_bins(bin_index._impl, random.result["_1"])
 
     def test_outliers_right(self) -> None:
         s = self.scheduler()
@@ -85,11 +87,12 @@ class TestBinningIndex(ProgressiveTest):
         sink = Sink(scheduler=s)
         sink.input.inp = bin_index.output.result
         aio.run(s.start())
-        binvect = bin_index._impl["_1"].binvect
+        assert bin_index._impl is not None
+        binvect = bin_index._impl.binvect
         print(len(binvect))
         print("[")
         for bin in binvect:
             print(bin_char(bin), end="")
         print("]")
         assert random.result
-        self.check_bins(bin_index._impl["_1"], random.result["_1"])
+        self.check_bins(bin_index._impl, random.result["_1"])

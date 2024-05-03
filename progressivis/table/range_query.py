@@ -43,10 +43,9 @@ class _Selection:
 
 
 class RangeQueryImpl:  # (ModuleImpl):
-    def __init__(self, column: str, approximate: bool):
+    def __init__(self, approximate: bool):
         super(RangeQueryImpl, self).__init__()
         self._table: Optional[BasePTable] = None
-        self._column = column
         self._approximate = approximate
         self.result: Optional[_Selection] = None
         self.is_started = False
@@ -64,14 +63,13 @@ class RangeQueryImpl:  # (ModuleImpl):
         assert self.result
         if limit_changed:
             new_sel = hist_index.range_query(
-                self._column, lower, upper, approximate=self._approximate
+                lower, upper, approximate=self._approximate
             )
             self.result.assign(new_sel)
             return
         if updated:
             self.result.remove(updated)
             res = hist_index.restricted_range_query(
-                self._column,
                 lower,
                 upper,
                 only_locs=updated,
@@ -80,7 +78,6 @@ class RangeQueryImpl:  # (ModuleImpl):
             self.result.add(res)
         if created:
             res = hist_index.restricted_range_query(
-                self._column,
                 lower,
                 upper,
                 only_locs=created,
@@ -200,7 +197,7 @@ class RangeQuery(Module):
         **kwds: Any,
     ) -> None:
         super(RangeQuery, self).__init__(**kwds)
-        self._impl: RangeQueryImpl = RangeQueryImpl(self.params.column, approximate)
+        self._impl: RangeQueryImpl = RangeQueryImpl(approximate)
         self._approximate = approximate
         self.default_step_size = 1000
         self._quantiles = quantiles
