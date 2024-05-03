@@ -96,6 +96,11 @@ class _double_buffer(ChangeBuffer):
         self._first.changes -= ids
         self._second.changes -= ids
 
+    def push(self, bm: PIntSet) -> None:
+        "Adds a sset of items in the buffer"
+        if self._first.buffer:
+            self._first.changes |= bm
+
 
 class PTableSelectedChangeManager(BaseChangeManager):
     """

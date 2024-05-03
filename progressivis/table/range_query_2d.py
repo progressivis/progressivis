@@ -382,8 +382,10 @@ class RangeQuery2d(Module):
         self, run_number: int, step_size: int, howlong: float
     ) -> ReturnRunStep:
         index_x_slot = self.get_input_slot("index_x")
-        index_x_slot.clear_buffers()
         index_y_slot = self.get_input_slot("index_y")
+        if index_x_slot.data() is None or index_y_slot.data() is None:
+            return self._return_run_step(self.state_blocked, steps_run=0)
+        index_x_slot.clear_buffers()
         index_y_slot.clear_buffers()
         input_slot = self.get_input_slot("table")
         # input_slot.update(run_number)
@@ -395,10 +397,18 @@ class RangeQuery2d(Module):
         created: Optional[PIntSet] = None
         if input_slot.created.any():
             created = input_slot.created.next(length=step_size, as_slice=False)
+            effective = created & index_y_slot.data().index  # cause input_slot is x
+            see_later = created - effective
+            input_slot.created.push(see_later)
+            created = effective
             steps += indices_len(created)
         updated: Optional[PIntSet] = None
         if input_slot.updated.any():
             updated = input_slot.updated.next(length=step_size, as_slice=False)
+            effective = updated & index_y_slot.data().index  # cause input_slot is x
+            see_later = updated - effective
+            input_slot.updated.push(see_later)
+            updated = effective
             steps += indices_len(updated)
         input_table = input_slot.data()
         if input_table is None:
