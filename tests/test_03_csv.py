@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from . import ProgressiveTest
-
+import os
+from . import ProgressiveTest, skipIf
 from progressivis.core import aio, Sink
 from progressivis.io import CSVLoader
 from progressivis.table.constant import Constant
@@ -132,6 +132,7 @@ class TestProgressiveLoadCSV(ProgressiveTest):
         self.assertEqual(table["firsthalf"].shape, (1000000, 13))
         self.assertEqual(table["secondhalf"].shape, (1000000, 17))
 
+    @skipIf(os.getenv("CI"), "skipped because mnist file is no longer available")
     def test_as_array3(self) -> None:
         s = self.scheduler()
         try:

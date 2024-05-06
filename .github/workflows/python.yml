@@ -29,9 +29,9 @@ jobs:
         python-version: ${{ matrix.python }}
     - name: Download a file
       run: |
-        wget --no-verbose https://datahub.io/machine-learning/mnist_784/r/mnist_784.csv -O mnist_784.csv
+        # wget --no-verbose https://datahub.io/machine-learning/mnist_784/r/mnist_784.csv -O mnist_784.csv
         mkdir data
-        mv mnist_784.csv data/
+        # mv mnist_784.csv data/ # disabled cause mnist_784.csv is not longer available
 
     - name: Run tests
       run: |
