@@ -1,18 +1,17 @@
 "Test for Range Query"
 from __future__ import annotations
 
-from progressivis.core import aio, notNone
 from progressivis.table.constant import ConstDict
 from progressivis import Print
 from progressivis.stats import RandomPTable
-from progressivis.table.hist_index import HistogramIndex
+from progressivis.table.binning_index import BinningIndex
 from progressivis.table.percentiles import Percentiles
 import numpy as np
 from . import ProgressiveTest
 from progressivis.table.range_query import RangeQuery
 from progressivis.utils.psdict import PDict
 from progressivis.table.stirrer import Stirrer
-
+from progressivis.core import aio, Sink
 from typing import Any
 
 
@@ -30,23 +29,20 @@ class TestPercentiles(ProgressiveTest):
         """ """
         s = self.scheduler()
         with s:
-            random = RandomPTable(2, rows=10000, scheduler=s)
-            hist_index = HistogramIndex(scheduler=s)
+            random = RandomPTable(2, rows=20_000, scheduler=s)
+            hist_index = BinningIndex(scheduler=s)
             hist_index.input[0] = random.output.result["_1",]
             t_percentiles = PDict({"_25": 25.0, "_50": 50.0, "_75": 75.0})
             which_percentiles = ConstDict(pdict=t_percentiles, scheduler=s)
             percentiles = Percentiles(accuracy=accuracy, scheduler=s)
-            percentiles.input[0] = hist_index.output.result
             percentiles.input.percentiles = which_percentiles.output.result
-            percentiles.input.hist = hist_index.output.result
-            prt = Print(proc=self.terse, scheduler=s)
-            prt.input[0] = percentiles.output.result
+            percentiles.input.index = hist_index.output.result
+            sink = Sink(scheduler=s)
+            sink.input.inp = percentiles.output.result
         aio.run(s.start())
         assert percentiles.result is not None
         assert random.result is not None
-        last = percentiles.result.last()
-        assert last is not None
-        pdict = last.to_dict()
+        pdict = percentiles.result
         v = random.result["_1"].values
         p25 = np.percentile(v, 25.0)
         p50 = np.percentile(v, 50.0)
@@ -73,25 +69,25 @@ class TestPercentiles(ProgressiveTest):
         """ """
         s = self.scheduler()
         with s:
-            random = RandomPTable(2, rows=10000, scheduler=s)
+            random = RandomPTable(2, rows=20_000, scheduler=s)
             stirrer = Stirrer(
                 update_column="_2", fixed_step_size=1000, scheduler=s, **kw
             )
             stirrer.input[0] = random.output.result
-            hist_index = HistogramIndex(scheduler=s)
+            hist_index = BinningIndex(scheduler=s)
             hist_index.input[0] = stirrer.output.result["_1",]
             t_percentiles = PDict({"_25": 25.0, "_50": 50.0, "_75": 75.0})
             which_percentiles = ConstDict(pdict=t_percentiles, scheduler=s)
             percentiles = Percentiles(accuracy=accuracy, scheduler=s)
-            percentiles.input[0] = hist_index.output.result
             percentiles.input.percentiles = which_percentiles.output.result
-            percentiles.input.hist = hist_index.output.result
-            prt = Print(proc=self.terse, scheduler=s)
-            prt.input[0] = percentiles.output.result
+            percentiles.input.index = hist_index.output.result
+            sink = Sink(scheduler=s)
+            sink.input.inp = percentiles.output.result
+
         aio.run(s.start())
         assert percentiles.result is not None
         assert stirrer.result is not None
-        pdict = notNone(percentiles.result.last()).to_dict()
+        pdict = percentiles.result
         v = stirrer.result.to_array(columns=["_1"]).reshape(-1)
         p25 = np.percentile(v, 25.0)
         p50 = np.percentile(v, 50.0)
@@ -141,7 +137,7 @@ class TestPercentiles(ProgressiveTest):
         """ """
         s = self.scheduler()
         with s:
-            random = RandomPTable(2, rows=10000, scheduler=s)
+            random = RandomPTable(2, rows=50_000, scheduler=s)
             t_min = PDict({"_1": 0.3})
             min_value = ConstDict(pdict=t_min, scheduler=s)
             t_max = PDict({"_1": 0.8})
@@ -151,20 +147,19 @@ class TestPercentiles(ProgressiveTest):
                 random, "result", min_value=min_value, max_value=max_value
             )
 
-            hist_index = HistogramIndex(scheduler=s)
-            hist_index.input[0] = range_qry.output.result["_1",]
+            hist_index = BinningIndex(scheduler=s)
+            hist_index.input.table = range_qry.output.result["_1",]
             t_percentiles = PDict({"_25": 25.0, "_50": 50.0, "_75": 75.0})
             which_percentiles = ConstDict(pdict=t_percentiles, scheduler=s)
             percentiles = Percentiles(accuracy=accuracy, scheduler=s)
-            percentiles.input[0] = hist_index.output.result
             percentiles.input.percentiles = which_percentiles.output.result
-            percentiles.input.hist = hist_index.output.result
-            prt = Print(proc=self.terse, scheduler=s)
-            prt.input[0] = percentiles.output.result
+            percentiles.input.index = hist_index.output.result
+            sink = Sink(scheduler=s)
+            sink.input.inp = percentiles.output.result
         aio.run(s.start())
         assert percentiles.result is not None
         assert range_qry.result is not None
-        pdict = notNone(percentiles.result.last()).to_dict()
+        pdict = percentiles.result
         v = range_qry.result["_1"].values
         p25 = np.percentile(v, 25.0)
         p50 = np.percentile(v, 50.0)
@@ -191,7 +186,7 @@ class TestPercentiles(ProgressiveTest):
         """ """
         s = self.scheduler()
         with s:
-            random = RandomPTable(2, rows=10000, scheduler=s)
+            random = RandomPTable(2, rows=20_000, scheduler=s)
             stirrer = Stirrer(
                 update_column="_2", fixed_step_size=1000, scheduler=s, **kw
             )
@@ -205,21 +200,19 @@ class TestPercentiles(ProgressiveTest):
                 stirrer, "result", min_value=min_value, max_value=max_value
             )
 
-            hist_index = HistogramIndex(scheduler=s)
+            hist_index = BinningIndex(scheduler=s)
             hist_index.input[0] = range_qry.output.result["_1",]
-
             t_percentiles = PDict({"_25": 25.0, "_50": 50.0, "_75": 75.0})
             which_percentiles = ConstDict(pdict=t_percentiles, scheduler=s)
             percentiles = Percentiles(accuracy=accuracy, scheduler=s)
-            percentiles.input[0] = hist_index.output.result
             percentiles.input.percentiles = which_percentiles.output.result
-            percentiles.input.hist = hist_index.output.result
+            percentiles.input.index = hist_index.output.result
             prt = Print(proc=self.terse, scheduler=s)
             prt.input[0] = percentiles.output.result
         aio.run(s.start())
         assert percentiles.result is not None
         assert range_qry.result is not None
-        pdict = notNone(percentiles.result.last()).to_dict()
+        pdict = percentiles.result
         v = range_qry.result["_1"].values
         p25 = np.percentile(v, 25.0)
         p50 = np.percentile(v, 50.0)

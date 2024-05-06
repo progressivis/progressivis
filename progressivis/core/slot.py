@@ -138,7 +138,8 @@ class Slot:
     @property
     def is_mux(self) -> bool:
         data = self.output_module.get_data(self.output_name)
-        assert data is not None
+        if data is None:
+            return False
         return isinstance(data, PMux)
 
     @property

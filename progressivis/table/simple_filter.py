@@ -18,7 +18,7 @@ from ..utils.psdict import PDict
 from .binop import ops
 
 from typing import Optional, Any
-from .hist_index import HistogramIndex
+from .binning_index import BinningIndex
 
 
 def _get_physical_table(t: np.ndarray[Any, Any]) -> np.ndarray[Any, Any]:
@@ -48,7 +48,7 @@ class _Selection(object):
 
 
 class SimpleFilterImpl:
-    def __init__(self, column: str, op: str, hist_index: HistogramIndex):
+    def __init__(self, column: str, op: str, hist_index: BinningIndex):
         super().__init__()
         self.is_started = False
         self._table: Optional[BasePTable] = None
@@ -70,18 +70,18 @@ class SimpleFilterImpl:
         deleted: Optional[PIntSet] = None,
     ) -> None:
         if value_changed:
-            new_sel = self._hist_index.query(self._column, self._op, value)
+            new_sel = self._hist_index.query(self._op, value)
             self.result.assign(new_sel)
             return
         if updated:
             self.result.remove(updated)
             res = self._hist_index.restricted_query(
-                self._column, self._op, value, updated
+                self._op, value, updated
             )
             self.result.add(res)  # add not defined???
         if created:
             res = self._hist_index.restricted_query(
-                self._column, self._op, value, created
+                self._op, value, created
             )
             self.result.update(res)
         if deleted:
@@ -129,7 +129,7 @@ class SimpleFilterImpl:
     "hist",
     PTable,
     doc=(
-        "**HistogramIndex** module output connected to the same input/column."
+        "**BinningIndex** module output connected to the same input/column."
         "This mandatory parameter could be provided "
         "by the `create_dependent_modules()` method."
     ),
@@ -158,7 +158,7 @@ class SimpleFilter(Module):
         self,
         input_module: Module,
         input_slot: str,
-        hist_index: Optional[HistogramIndex] = None,
+        hist_index: Optional[BinningIndex] = None,
         **kwds: Any,
     ) -> SimpleFilter:
         """
@@ -168,7 +168,7 @@ class SimpleFilter(Module):
             input_module: the input module (see the example)
             input_slot: the input slot name (e.g. ``result``)
             hist_index: optional histogram index. if not provided an
-                ``HistogramIndex`` is created
+                ``BinningIndex`` is created
             kwds: extra keyword args to be passed to the ``Module`` superclass
         """
         if self.input_module is not None:  # test if already called
@@ -179,7 +179,7 @@ class SimpleFilter(Module):
         self.input_slot = input_slot
         with scheduler:
             if hist_index is None:
-                hist_index = HistogramIndex(
+                hist_index = BinningIndex(
                     group=self.name, scheduler=scheduler
                 )
                 hist_index.input.table = input_module.output[input_slot][params.column,]
@@ -197,6 +197,9 @@ class SimpleFilter(Module):
                 self.params.column, self.params.op, self.dep.hist_index
             )
         input_slot = self.get_input_slot("table")
+        input_table = input_slot.data()
+        if input_table is None:
+            return self._return_run_step(self.state_blocked, steps_run=0)
         # input_slot.update(run_number)
         steps = 0
         deleted = None
@@ -213,9 +216,6 @@ class SimpleFilter(Module):
         if input_slot.updated.any():
             updated = input_slot.updated.next(length=step_size, as_slice=False)
             steps += indices_len(updated)
-        input_table = input_slot.data()
-        if input_table is None:
-            return self._return_run_step(self.state_blocked, steps_run=0)
         if self.result is None:
             self.result = PTableSelectedView(input_table, PIntSet([]))
         if steps == 0:

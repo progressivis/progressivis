@@ -265,7 +265,10 @@ class _HistogramIndexImpl(object):
             exclusion = self.pintsets[: pos_lo + 1] + self.pintsets[pos_up:]
             union = all_ids - PIntSet.union(*exclusion)
         else:
-            union = PIntSet.union(*self.pintsets[pos_lo + 1 : pos_up])
+            sets = self.pintsets[pos_lo + 1 : pos_up]
+            if not sets:
+                return PIntSet()
+            union = PIntSet.union(*sets)
         if not approximate:
             detail = PIntSet()
             ids = np.array(self.pintsets[pos_lo], np.int64)
@@ -320,9 +323,11 @@ class _HistogramIndexImpl(object):
             lower, upper = upper, lower
         only_locs = PIntSet.aspintset(only_locs)
         pos_lo, pos_up = np.digitize([lower, upper], self.bins)  # type: ignore
-        union = PIntSet.union(
-            *[(bm & only_locs) for bm in self.pintsets[pos_lo + 1 : pos_up]]
-        )
+        sets = [(bm & only_locs) for bm in self.pintsets[pos_lo + 1 : pos_up]]
+        if sets:
+            union = PIntSet.union(*sets)
+        else:
+            union = PIntSet()
         if not approximate:
             detail = PIntSet()
             ids = np.array(self.pintsets[pos_lo] & only_locs, np.int64)

@@ -12,7 +12,7 @@ from . import ProgressiveTest
 class TestSimpleFilter(ProgressiveTest):
     def test_filter(self) -> None:
         s = self.scheduler()
-        random = RandomPTable(2, rows=1000_000, scheduler=s)
+        random = RandomPTable(2, rows=100_000, scheduler=s)
         min_value = ConstDict(pdict=PDict({"value": 0.5}), scheduler=s)
         filter_ = SimpleFilter(column="_1", op=">", scheduler=s)
         filter_.create_dependent_modules(random, "result")

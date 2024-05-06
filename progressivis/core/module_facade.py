@@ -24,6 +24,7 @@ class ModuleFacade:
 
     def __init__(self) -> None:
         self.output = OutputProxies(self)
+        self.child = ChildProxies(self)
         self._output_slots: dict[str, SlotProxy] = {}
 
     def get(self, name: str) -> SlotProxy | None:
@@ -50,7 +51,7 @@ class ModuleFacade:
         self._output_slots[name] = SlotProxy(output_name, output_module)
 
 
-class OutputProxies:
+class ProxiesImpl:
     """
     Convenience class to refer to output slots by name
     as if they were attributes.
@@ -63,7 +64,7 @@ class OutputProxies:
     def __setattr__(self, name: str, slot: Slot) -> None:
         raise ProgressiveError("Output slots cannot be assigned, only read")
 
-    def __getattr__(self, name: str) -> Slot:
+    def _getattr_impl(self, name: str) -> SlotProxy:
         while True:
             proxy = self.facade.get(name)
             if proxy is None:  # should create the module before passing its slot
@@ -72,11 +73,33 @@ class OutputProxies:
             if isinstance(proxy.output_module, Module):  # Follow if ModuleFacade again
                 break
             name = proxy.output_name
+        return proxy
+
+
+    def __dir__(self) -> Iterable[str]:
+        return self.facade.output_slot_names()
+
+
+class OutputProxies(ProxiesImpl):
+    def __init__(self, facade: ModuleFacade):
+        super().__init__(facade)
+
+    def __getattr__(self, name: str) -> Slot:
+        proxy = self._getattr_impl(name)
         assert isinstance(proxy.output_module, Module)
         return proxy.output_module.create_slot(proxy.output_name, None, None)
 
     def __getitem__(self, name: str) -> Slot:
         return self.__getattr__(name)
 
-    def __dir__(self) -> Iterable[str]:
-        return self.facade.output_slot_names()
+class ChildProxies(ProxiesImpl):
+    def __init__(self, facade: ModuleFacade):
+        super().__init__(facade)
+
+    def __getattr__(self, name: str) -> Module:
+        proxy = self._getattr_impl(name)
+        assert isinstance(proxy.output_module, Module)
+        return proxy.output_module
+
+    def __getitem__(self, name: str) -> Module:
+        return self.__getattr__(name)

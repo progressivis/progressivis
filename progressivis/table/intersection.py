@@ -1,5 +1,5 @@
 """
-Range Query module.
+Intersection module.
 
 """
 from __future__ import annotations
@@ -114,6 +114,8 @@ class Intersection(Module):
                 continue
             slot = self.get_input_slot(name)
             t = slot.data()
+            if t is None:
+                return self._return_run_step(self.state_blocked, steps)
             assert isinstance(t, BasePTable)
             if ph_table is None:
                 ph_table = _get_physical_table(t)

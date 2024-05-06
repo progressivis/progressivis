@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Dict, Tuple, Type, Sequence, Union, List, Callable
+from typing import Any, Sequence, List, Callable
 
 def register(*args: Any) -> Any: ...
 
@@ -20,6 +20,11 @@ class IntSlider(DOMWidget):
 
 
 class IntRangeSlider(DOMWidget):
+    value: Any
+    def __init__(self, **kw: Any) -> None: ...
+    def observe(self, cb: Callable[..., None], attr: str) -> None: ...
+
+class BoundedIntText(DOMWidget):
     value: Any
     def __init__(self, **kw: Any) -> None: ...
     def observe(self, cb: Callable[..., None], attr: str) -> None: ...
