@@ -84,7 +84,7 @@ class PDict(Dict[str, Any]):
         return k
 
     def fix_indices(self) -> None:  # TODO find a better name ...
-        if self._index is None:
+        if self._index is None or not self.ids:
             return
         self._inverse = None
         self._inverse_del = None

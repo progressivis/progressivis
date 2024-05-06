@@ -56,7 +56,7 @@ logger = logging.getLogger(__name__)
 )
 @def_output(
     "result",
-    PTable,
+    PDict,
     doc=(
         "the output table. Its datashape is"
         " ``{ array: var * int32, min: float64, max: float64, time: int64 }``"
@@ -85,12 +85,13 @@ class Histogram1D(Module):
         self._edges: Optional[np.ndarray[Any, Any]] = None
         self._bounds: Optional[Tuple[float, float]] = None
         self._h_cnt = 0
-        self.result = PTable(
+        self.result = PDict()
+        """self.result = PTable(
             self.generate_table_name("Histogram1D"),
             dshape=Histogram1D.schema,
             chunks={"array": (16384, 128)},
             create=True,
-        )
+        )"""
 
     def reset(self) -> None:
         self._histo = None
@@ -98,8 +99,9 @@ class Histogram1D(Module):
         self._bounds = None
         self.total_read = 0
         self._h_cnt = 0
+        self.get_input_slot("table").reset()
         if self.result:
-            self.result.resize(0)
+            self.result.clear()
 
     def is_ready(self) -> bool:
         if self._bounds and self.get_input_slot("table").created.any():
@@ -168,7 +170,10 @@ class Histogram1D(Module):
             self.total_read += steps
             column = input_df[self.column]
             column = column.loc[fix_loc(indices)]
-            bins = self._edges if self._edges is not None else self.params.bins
+            bins = self.params.bins
+            if self._edges is not None and len(self._edges) != bins + 1:
+                self.reset()
+                return self._return_run_step(self.state_blocked, steps_run=0)
             histo = None
             if len(column) > 0:
                 histo, self._edges = np.histogram(
@@ -180,13 +185,12 @@ class Histogram1D(Module):
             elif histo is not None:
                 self._histo += histo
             values = {
-                "array": [self._histo],
-                "min": [curr_min],
-                "max": [curr_max],
-                "time": [run_number],
+                "array": self._histo,
+                "min": curr_min,
+                "max": curr_max,
+                "time": run_number,
             }
-            self.result["array"].set_shape((self.params.bins,))
-            self.result.append(values)
+            self.result.update(values)
             return self._return_run_step(self.next_state(dfslot), steps_run=steps)
 
     def get_bounds(
@@ -221,7 +225,7 @@ class Histogram1D(Module):
             edges = edges.tolist()
         return {
             "edges": edges,
-            "values": self._histo.tolist() if self._histo else [],
+            "values": self._histo.tolist() if self._histo is not None else [],
             "min": min_,
             "max": max_,
         }

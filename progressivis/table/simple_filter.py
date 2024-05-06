@@ -70,18 +70,18 @@ class SimpleFilterImpl:
         deleted: Optional[PIntSet] = None,
     ) -> None:
         if value_changed:
-            new_sel = self._hist_index.query(self._column, self._op, value)
+            new_sel = self._hist_index.query(self._op, value)
             self.result.assign(new_sel)
             return
         if updated:
             self.result.remove(updated)
             res = self._hist_index.restricted_query(
-                self._column, self._op, value, updated
+                self._op, value, updated
             )
             self.result.add(res)  # add not defined???
         if created:
             res = self._hist_index.restricted_query(
-                self._column, self._op, value, created
+                self._op, value, created
             )
             self.result.update(res)
         if deleted:
