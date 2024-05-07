@@ -63,9 +63,9 @@ class TestScatterPlot(ProgressiveTest):
             module = scheduler["variable_2"]
             print("from input variable_2")
             await module.from_input({"x": UPPER_X, "y": UPPER_Y})
-        s.on_loop(self._stop, 10)
-        s.on_loop(fake_input_1, 3)
-        s.on_loop(fake_input_2, 3)
+        s.on_loop(self._stop, 100)
+        s.on_loop(fake_input_1, 30)
+        s.on_loop(fake_input_2, 30)
         aio.run(s.start())
         js = sp.to_json()
         x, y, _ = zip(*js["sample"]["data"])
