@@ -207,7 +207,7 @@ class RangeQuery2dImpl:  # (ModuleImpl):
         'When unset (i.e. ==""), the **column** parameter is used instead.'
     ),
 )
-@def_input("table", PTable, doc="Provides data to be queried.")
+# @def_input("table", PTable, doc="Provides data to be queried.")
 @def_input(
     "lower",
     PDict,
@@ -336,7 +336,7 @@ class RangeQuery2d(Module):
                 range_query = self
                 range_query.input.index_x = index_x.output.result
                 range_query.input.index_y = index_y.output.result
-                range_query.input.table = index_x.output.result  # one of them arbitrarily
+                # range_query.input.table = index_x.output.result  # one of them arbitrarily
                 if min_value:
                     assert isinstance(min_value, Module)
                     range_query.input.lower = min_value.output.result
@@ -344,12 +344,12 @@ class RangeQuery2d(Module):
                     assert isinstance(max_value, Module)
                     range_query.input.upper = max_value.output.result
                 if min_ is None:
-                    min_ = MergeDict(scheduler=scheduler)
+                    min_ = MergeDict(group=self.name, scheduler=scheduler)
                     min_.input.table = index_x.output.min_out
                     min_.input.table = index_y.output.min_out
                 range_query.input.min = min_.output.result
                 if max_ is None:
-                    max_ = MergeDict(scheduler=scheduler)
+                    max_ = MergeDict(group=self.name, scheduler=scheduler)
                     max_.input.table = index_x.output.max_out
                     max_.input.table = index_y.output.max_out
                 range_query.input.max = max_.output.result
@@ -385,9 +385,10 @@ class RangeQuery2d(Module):
         index_y_slot = self.get_input_slot("index_y")
         if index_x_slot.data() is None or index_y_slot.data() is None:
             return self._return_run_step(self.state_blocked, steps_run=0)
-        index_x_slot.clear_buffers()
+        # index_x_slot.clear_buffers()
         index_y_slot.clear_buffers()
-        input_slot = self.get_input_slot("table")
+        # input_slot = self.get_input_slot("table")
+        input_slot = index_x_slot
         # input_slot.update(run_number)
         steps = 0
         deleted: Optional[PIntSet] = None
