@@ -15,14 +15,7 @@ from ..io import Variable
 from ..utils.psdict import PDict
 from . import BasePTable, PTable, PTableSelectedView
 from .binning_index import BinningIndex
-
-# from .mod_impl import ModuleImpl
-
 from typing import Optional, Any, cast, Iterable
-
-
-# def _get_physical_table(t):
-#     return t if t.base is None else _get_physical_table(t.base)
 
 
 class _Selection:
@@ -42,7 +35,7 @@ class _Selection:
         self._values |= PIntSet(values)
 
 
-class RangeQueryImpl:  # (ModuleImpl):
+class RangeQueryImpl:
     def __init__(self, approximate: bool):
         super(RangeQueryImpl, self).__init__()
         self._table: Optional[BasePTable] = None
@@ -59,12 +52,13 @@ class RangeQueryImpl:  # (ModuleImpl):
         created: Optional[PIntSet] = None,
         updated: Optional[PIntSet] = None,
         deleted: Optional[PIntSet] = None,
+        only_bins: PIntSet = PIntSet()
     ) -> None:
         assert self.result
         if limit_changed:
             new_sel = hist_index.range_query(
                 lower, upper, approximate=self._approximate
-            )
+            )  # do not pass only_bins here!
             self.result.assign(new_sel)
             return
         if updated:
@@ -74,6 +68,7 @@ class RangeQueryImpl:  # (ModuleImpl):
                 upper,
                 only_locs=updated,
                 approximate=self._approximate,
+                only_bins=only_bins
             )
             self.result.add(res)
         if created:
@@ -82,6 +77,7 @@ class RangeQueryImpl:  # (ModuleImpl):
                 upper,
                 only_locs=created,
                 approximate=self._approximate,
+                only_bins=only_bins
             )
             self.result.update(res)
         if deleted:
@@ -97,11 +93,12 @@ class RangeQueryImpl:  # (ModuleImpl):
         created: Optional[PIntSet] = None,
         updated: Optional[PIntSet] = None,
         deleted: Optional[PIntSet] = None,
+        only_bins: PIntSet = PIntSet()
     ) -> None:
         self._table = table
         self.result = _Selection()
         self.is_started = True
-        self.resume(hist_index, lower, upper, limit_changed, created, updated, deleted)
+        self.resume(hist_index, lower, upper, limit_changed, created, updated, deleted, only_bins)
 
 
 @document
@@ -170,7 +167,14 @@ class RangeQueryImpl:  # (ModuleImpl):
     ),
 )
 @def_input(
-    "hist",
+    "timestamps",
+    PDict,
+    doc=("Gives information about bins changed between 2 run steps"
+    ),
+    # required=False
+)
+@def_input(
+    "index",
     PTable,
     doc=(
         "**BinningIndex** module output connected to the same input/column."
@@ -193,14 +197,12 @@ class RangeQuery(Module):
     def __init__(
         self,
         approximate: bool = False,
-        quantiles: bool = False,
         **kwds: Any,
     ) -> None:
         super(RangeQuery, self).__init__(**kwds)
         self._impl: RangeQueryImpl = RangeQueryImpl(approximate)
         self._approximate = approximate
         self.default_step_size = 1000
-        self._quantiles = quantiles
         self.input_module: Optional[Module] = None
         self.hist_index: Optional[BinningIndex] = None
 
@@ -256,8 +258,9 @@ class RangeQuery(Module):
                 max_value = Variable(init_max, group=self.name, scheduler=scheduler)
             range_query = self
             range_query.dep.hist_index = hist_index
-            range_query.input.hist = hist_index.output.result
+            range_query.input.index = hist_index.output.result
             range_query.input.table = hist_index.output.result
+            range_query.input.timestamps = hist_index.output.bin_timestamps
             if min_value:
                 range_query.input.lower = min_value.output.result
             if max_value:
@@ -302,15 +305,27 @@ class RangeQuery(Module):
     ) -> ReturnRunStep:
         input_slot = self.get_input_slot("table")
         self._create_min_max()
-        hist_slot = self.get_input_slot("hist")
+        hist_slot = self.get_input_slot("index")
         hist_slot.clear_buffers()
+        tstamps = self.get_input_slot("timestamps")
+        ts_data = tstamps.data()
+        ts_changes = tstamps.created.changes | tstamps.updated.changes
+        only_bins = PIntSet()
+        if ts_changes:
+            ts_k_ids = {ts_data.k_(i): i for i in ts_changes}
+            if -1 in ts_k_ids and ts_k_ids[-1] in tstamps.updated.changes:
+                tstamps.reset()
+                print("Tstamp reset")
+            else:
+                ts_k_ids.pop(-1, None)  # removing -1 key if present (at creation)
+                only_bins = PIntSet(ts_k_ids.values())  # relevant bins
         #
         # lower/upper
         #
         lower_slot = self.get_input_slot("lower")
         upper_slot = self.get_input_slot("upper")
         limit_changed = False
-        if not self._quantiles and (lower_slot.has_buffered() or upper_slot.has_buffered()):
+        if lower_slot.has_buffered() or upper_slot.has_buffered():
             limit_changed = True
         lower_slot.clear_buffers()
         upper_slot.clear_buffers()
@@ -389,6 +404,7 @@ class RangeQuery(Module):
                 created=created,
                 updated=updated,
                 deleted=deleted,
+                only_bins=only_bins
             )
         else:
             self._impl.resume(
@@ -399,7 +415,10 @@ class RangeQuery(Module):
                 created=created,
                 updated=updated,
                 deleted=deleted,
+                only_bins=only_bins
             )
+        if not input_slot.has_buffered():
+            tstamps.clear_buffers()
         assert self._impl.result
         self.result.selection = self._impl.result._values
         return self._return_run_step(self.next_state(input_slot), steps)

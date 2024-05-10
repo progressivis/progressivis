@@ -86,12 +86,6 @@ class Histogram1D(Module):
         self._bounds: Optional[Tuple[float, float]] = None
         self._h_cnt = 0
         self.result = PDict()
-        """self.result = PTable(
-            self.generate_table_name("Histogram1D"),
-            dshape=Histogram1D.schema,
-            chunks={"array": (16384, 128)},
-            create=True,
-        )"""
 
     def reset(self) -> None:
         self._histo = None

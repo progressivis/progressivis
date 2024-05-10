@@ -149,6 +149,7 @@ class _BinningIndexImpl:
                 for i in self.binvect_map
                 if i in only_bins and operator_(i, pos)
             )
+
         else:
             selected_bins = (
                 cast(PIntSet, binvect[i])
@@ -301,6 +302,7 @@ class _BinningIndexImpl:
         pos_lo = lower_bin
         upper_bin = int((upper - origin) // bin_w)
         pos_up = upper_bin
+        # print("ratio:", len(only_bins), "/", len(self.binvect_map), len(only_bins)/len(self.binvect_map))
         if not approximate:  # i.e. precise
             lower_bin += 1
         if only_bins:
@@ -310,17 +312,16 @@ class _BinningIndexImpl:
                 if i in only_bins
                 and i >= lower_bin
                 and i < upper_bin
-                and binvect[i] & only_locs
+                and (binvect[i] & only_locs)
             )
         else:
             selected_bins = (
                 binvect[i]
                 for i in self.binvect_map
-                if i >= lower_bin and i < upper_bin and binvect[i] & only_locs
+                if i >= lower_bin and i < upper_bin and (binvect[i] & only_locs)
             )
-
         union = cast(PIntSet, _union(*selected_bins) & only_locs)
-        if not approximate:
+        if not approximate:  # i.e. precise
             detail = PIntSet()
             ids = np.array(self.binvect[pos_lo] & only_locs, np.int64)
             values = self.column.loc[ids]
@@ -417,7 +418,6 @@ class BinningIndex(Module):
         self._input_table: Optional[PTable] = None
         self._prev_len = 0
         self._trials = 0
-        self.bin_timestamps = PDict()
 
     def get_min_bin(self) -> Optional[PIntSet]:
         if self._impl is None:
@@ -438,6 +438,15 @@ class BinningIndex(Module):
         if self.get_output_slot("max_out"):
             self.max_out = PDict()
 
+    def feed_bin_timestamps(self) -> None:
+        if self.bin_timestamps is None:
+            return
+        impl = self._impl
+        assert impl is not None
+        for hit in impl.binvect_hits:  # PDict hasn't a defaultdict subclass so ...
+            self.bin_timestamps[hit] = self.bin_timestamps.get(hit, 0) + 1  # type: ignore
+        self.bin_timestamps[-1] = impl.origin  # type: ignore
+
     def run_step(
         self, run_number: int, step_size: int, howlong: float
     ) -> ReturnRunStep:
@@ -452,8 +461,9 @@ class BinningIndex(Module):
         if len_table < self.params.init_threshold:
             # there are not enough rows. it's not worth building an index yet
             if self._trials > self.params.max_trials:
+                print("init_threshold to high in BinningIndex")
                 raise ProgressiveStopIteration(
-                    "init_threshold to high in BinningIndex"
+                    "init_threshold too high in BinningIndex"
                 )
             if len_table == self._prev_len:
                 self._trials += 1
@@ -476,6 +486,7 @@ class BinningIndex(Module):
             steps += self.process_min_max(input_table)
             self.selection = PIntSet(input_table.index)
             self.result = PTableSelectedView(input_table, self.selection)
+            self.feed_bin_timestamps()
             return self._return_run_step(self.state_blocked, len(self.selection))
         impl = self._impl
         deleted: Optional[PIntSet] = None
@@ -499,9 +510,7 @@ class BinningIndex(Module):
             return self._return_run_step(self.state_blocked, steps_run=0)
         input_table = input_slot.data()
         impl.update_histogram(created, updated, deleted)
-        for hit in impl.binvect_hits:  # PDict hasn't a defaultdict subclass so ...
-            self.bin_timestamps[hit] = self.bin_timestamps.get(hit, 0) + 1  # type: ignore
-        self.bin_timestamps[-1] = impl.origin  # type: ignore
+        self.feed_bin_timestamps()
         steps += self.process_min_max(input_table)
         return self._return_run_step(self.next_state(input_slot), steps_run=steps)
 
@@ -545,6 +554,7 @@ class BinningIndex(Module):
             operator_: Callable[[Any, Any], Any],
             limit: Any,
             approximate: bool = APPROX,
+            only_bins: PIntSet = PIntSet(),
     ) -> PIntSet:
         """
         Return the list of rows matching the query.
@@ -552,7 +562,7 @@ class BinningIndex(Module):
         `query(operator.__lt__, 10)`
         """
         if self._impl:
-            return self._impl.query(operator_, limit, approximate)
+            return self._impl.query(operator_, limit, approximate, only_bins)
         # there are no histogram because init_threshold wasn't be reached yet
         # so we query the input table directly
         return self._eval_to_ids(operator_, limit)
@@ -563,6 +573,7 @@ class BinningIndex(Module):
             limit: Any,
             only_locs: Any,
             approximate: bool = APPROX,
+            only_bins: PIntSet = PIntSet()
     ) -> PIntSet:
         """
         Return the list of rows matching the query.
@@ -570,20 +581,23 @@ class BinningIndex(Module):
         `query(operator.__lt__, 10)`
         """
         if self._impl:
-            return self._impl.restricted_query(operator_, limit, only_locs, approximate)
+            return self._impl.restricted_query(operator_, limit, only_locs, approximate, only_bins)
         # there are no histogram because init_threshold wasn't be reached yet
         # so we query the input table directly
         return self._eval_to_ids(operator_, limit, only_locs)
 
     def range_query(
-        self, lower: float, upper: float, approximate: bool = APPROX
+            self, lower: float,
+            upper: float,
+            approximate: bool = APPROX,
+            only_bins: PIntSet = PIntSet()
     ) -> PIntSet:
         r"""
         Return the list of rows with values in range \[`lower`, `upper`\[
         """
         if self._impl:
             return self._impl.range_query(
-                lower, upper, approximate
+                lower, upper, approximate, only_bins
             )
         # there are no histogram because init_threshold wasn't be reached yet
         # so we query the input table directly
@@ -594,13 +608,16 @@ class BinningIndex(Module):
         )
 
     def range_query_aslist(
-            self, lower: float, upper: float, approximate: bool = APPROX
+            self, lower: float,
+            upper: float,
+            approximate: bool = APPROX,
+            only_bins: PIntSet = PIntSet()
     ) -> Generator[PIntSet, None, None]:
         r"""
         Return the list of rows with values in range \[`lower`, `upper`\[
         """
         if self._impl:
-            return self._impl.range_query_aslist(lower, upper, approximate)
+            return self._impl.range_query_aslist(lower, upper, approximate, only_bins)
 
         def never() -> Generator[PIntSet, None, None]:
             if False:
@@ -613,6 +630,7 @@ class BinningIndex(Module):
         upper: float,
         only_locs: Any,
         approximate: bool = APPROX,
+        only_bins: PIntSet = PIntSet()
     ) -> PIntSet:
         r"""
         Return the list of rows with values in range \[`lower`, `upper`\[
@@ -620,7 +638,7 @@ class BinningIndex(Module):
         """
         if self._impl:
             return self._impl.restricted_range_query(
-                lower, upper, only_locs, approximate
+                lower, upper, only_locs, approximate, only_bins
             )
         # there are no histogram because init_threshold wasn't be reached yet
         # so we query the input table directly
