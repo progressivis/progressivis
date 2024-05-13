@@ -13,6 +13,7 @@ from ..core.module import (
 )
 from ..core.pintset import PIntSet
 from ..core.utils import indices_len
+from ..core.slot import Slot
 from ..utils.psdict import PDict
 from ..io import Variable
 from .table_base import PTableSelectedView, BasePTable
@@ -60,6 +61,8 @@ class RangeQuery2dImpl:  # (ModuleImpl):
         created: Optional[PIntSet] = None,
         updated: Optional[PIntSet] = None,
         deleted: Optional[PIntSet] = None,
+        only_bins_x: PIntSet = PIntSet(),
+        only_bins_y: PIntSet = PIntSet()
     ) -> None:
         assert self.result
         if limit_changed:
@@ -90,12 +93,14 @@ class RangeQuery2dImpl:  # (ModuleImpl):
                 upper_x,
                 only_locs=updated,
                 approximate=self._approximate,
+                only_bins=only_bins_x
             )
             res_y = index_y.restricted_range_query(
                 lower_y,
                 upper_y,
                 only_locs=updated,
                 approximate=self._approximate,
+                only_bins=only_bins_y
             )
             self.result.update(res_x & res_y)
         if created:
@@ -104,12 +109,14 @@ class RangeQuery2dImpl:  # (ModuleImpl):
                 upper_x,
                 only_locs=created,
                 approximate=self._approximate,
+                only_bins=only_bins_x
             )
             res_y = index_y.restricted_range_query(
                 lower_y,
                 upper_y,
                 only_locs=created,
                 approximate=self._approximate,
+                only_bins=only_bins_y
             )
             self.result.update(res_x & res_y)
         if deleted:
@@ -128,6 +135,8 @@ class RangeQuery2dImpl:  # (ModuleImpl):
         created: Optional[PIntSet] = None,
         updated: Optional[PIntSet] = None,
         deleted: Optional[PIntSet] = None,
+        only_bins_x: PIntSet = PIntSet(),
+        only_bins_y: PIntSet = PIntSet()
     ) -> None:
         self.result = _Selection()
         self._table = table
@@ -143,6 +152,8 @@ class RangeQuery2dImpl:  # (ModuleImpl):
             created,
             updated,
             deleted,
+            only_bins_x,
+            only_bins_y,
         )
 
 
@@ -244,8 +255,39 @@ class RangeQuery2dImpl:  # (ModuleImpl):
         "by the `create_dependent_modules()` method."
     ),
 )
-@def_input("index_x", PTable)
-@def_input("index_y", PTable)
+@def_input(
+    "timestamps_x",
+    PDict,
+    doc=("Gives information about bins changed between 2 run steps on the `x` axis"
+         ),
+    required=False
+)
+@def_input(
+    "timestamps_y",
+    PDict,
+    doc=("Gives information about bins changed between 2 run steps on the `y` axis"
+         ),
+    required=False
+)
+@def_input(
+    "index_x",
+    PTable,
+    doc=(
+        "**BinningIndex** module output connected to the `x` filtering input/column."
+        "This mandatory parameter could be provided "
+        "by the `create_dependent_modules()` method."
+    ),
+)
+@def_input(
+    "index_y",
+    PTable,
+    doc=(
+        "**BinningIndex** module output connected to the `y` filtering input/column."
+        "This mandatory parameter could be provided "
+        "by the `create_dependent_modules()` method."
+    ),
+
+)
 @def_output("result", PTableSelectedView)
 @def_output("min", PDict, attr_name="_min_table", required=False, doc="min doc")
 @def_output("max", PDict, attr_name="_max_table", required=False)
@@ -336,6 +378,8 @@ class RangeQuery2d(Module):
                 range_query = self
                 range_query.input.index_x = index_x.output.result
                 range_query.input.index_y = index_y.output.result
+                range_query.input.timestamps_x = index_x.output.bin_timestamps
+                range_query.input.timestamps_y = index_y.output.bin_timestamps
                 # range_query.input.table = index_x.output.result  # one of them arbitrarily
                 if min_value:
                     assert isinstance(min_value, Module)
@@ -390,6 +434,32 @@ class RangeQuery2d(Module):
         # input_slot = self.get_input_slot("table")
         input_slot = index_x_slot
         # input_slot.update(run_number)
+        # X-Y common func
+
+        def _ts_func(tstamps: Slot, ts_data: dict[Any, Any], ts_changes: PIntSet) -> PIntSet:
+            ts_k_ids = {ts_data.k_(i): i for i in ts_changes}  # type: ignore
+            if -1 in ts_k_ids and ts_k_ids[-1] in tstamps.updated.changes:
+                tstamps.reset()
+                print("Tstamp reset")
+                return PIntSet()
+            else:
+                ts_k_ids.pop(-1, None)  # removing -1 key if present (at creation)
+                return PIntSet(ts_k_ids.values())  # relevant bins
+
+        # timestamps on X
+        tstamps_x = self.get_input_slot("timestamps_x")
+        ts_data_x = tstamps_x.data()
+        ts_changes_x = tstamps_x.created.changes | tstamps_x.updated.changes
+        only_bins_x = PIntSet()
+        tstamps_y = self.get_input_slot("timestamps_y")
+        ts_data_y = tstamps_y.data()
+        ts_changes_y = tstamps_y.created.changes | tstamps_y.updated.changes
+        only_bins_y = PIntSet()
+        if ts_changes_x:
+            only_bins_x = _ts_func(tstamps_x, ts_data_x, ts_changes_x)
+        if ts_changes_y:
+            only_bins_y = _ts_func(tstamps_y, ts_data_y, ts_changes_y)
+
         steps = 0
         deleted: Optional[PIntSet] = None
         if input_slot.deleted.any():
@@ -516,9 +586,9 @@ class RangeQuery2d(Module):
                 created=created,
                 updated=updated,
                 deleted=deleted,
+                only_bins_x=only_bins_x,
+                only_bins_y=only_bins_y,
             )
-            assert self._impl.result
-            self.result.selection = self._impl.result._values
         else:
             self._impl.resume(
                 cast(BinningIndex, index_x_slot.output_module),
@@ -531,7 +601,12 @@ class RangeQuery2d(Module):
                 created=created,
                 updated=updated,
                 deleted=deleted,
+                only_bins_x=only_bins_x,
+                only_bins_y=only_bins_y,
             )
-            assert self._impl.result
-            self.result.selection = self._impl.result._values
+        if not input_slot.has_buffered():
+            tstamps_x.clear_buffers()
+        tstamps_y.clear_buffers()  # uncond. because index_y is cleared at each run_step
+        assert self._impl.result
+        self.result.selection = self._impl.result._values
         return self._return_run_step(self.next_state(input_slot), steps)
