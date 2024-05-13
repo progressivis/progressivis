@@ -298,10 +298,24 @@ class _BinningIndexImpl:
             lower, upper = upper, lower
         only_locs = PIntSet.aspintset(only_locs)
         binvect, origin, bin_w = self.binvect, self.origin, self.bin_w
-        lower_bin = int((lower - origin) // bin_w)
-        pos_lo = lower_bin
-        upper_bin = int((upper - origin) // bin_w)
-        pos_up = upper_bin
+        try:
+            lower_bin = int((lower - origin) // bin_w)
+            pos_lo = lower_bin
+        except ValueError:
+            if np.isinf(lower):
+                pos_lo = self.binvect_map[0]
+                lower_bin = pos_lo
+            else:
+                raise
+        try:
+            upper_bin = int((upper - origin) // bin_w)
+            pos_up = upper_bin
+        except ValueError:
+            if np.isinf(upper):
+                pos_up = self.binvect_map[-1]
+                upper_bin = pos_up + 1
+            else:
+                raise
         # print("ratio:", len(only_bins), "/", len(self.binvect_map), len(only_bins)/len(self.binvect_map))
         if not approximate:  # i.e. precise
             lower_bin += 1

@@ -131,7 +131,7 @@ class RangeQueryImpl:
         'When unset (i.e. ==""), the **column** parameter is used instead.'
     ),
 )
-@def_input("table", PTable, doc="Provides data to be queried.")
+# @def_input("table", PTable, doc="Provides data to be queried.")
 @def_input(
     "lower",
     PDict,
@@ -170,8 +170,8 @@ class RangeQueryImpl:
     "timestamps",
     PDict,
     doc=("Gives information about bins changed between 2 run steps"
-    ),
-    # required=False
+         ),
+    required=False
 )
 @def_input(
     "index",
@@ -259,7 +259,7 @@ class RangeQuery(Module):
             range_query = self
             range_query.dep.hist_index = hist_index
             range_query.input.index = hist_index.output.result
-            range_query.input.table = hist_index.output.result
+            # range_query.input.table = hist_index.output.result
             range_query.input.timestamps = hist_index.output.bin_timestamps
             if min_value:
                 range_query.input.lower = min_value.output.result
@@ -303,10 +303,11 @@ class RangeQuery(Module):
     def run_step(
         self, run_number: int, step_size: int, howlong: float
     ) -> ReturnRunStep:
-        input_slot = self.get_input_slot("table")
+        # input_slot = self.get_input_slot("table")
         self._create_min_max()
         hist_slot = self.get_input_slot("index")
-        hist_slot.clear_buffers()
+        # hist_slot.clear_buffers()
+        input_slot = hist_slot
         tstamps = self.get_input_slot("timestamps")
         ts_data = tstamps.data()
         ts_changes = tstamps.created.changes | tstamps.updated.changes
@@ -356,24 +357,24 @@ class RangeQuery(Module):
         elif (
             lower_value is None
             or np.isnan(lower_value)
+            or np.isinf(lower_value)
             or lower_value < minv
             or lower_value >= maxv
         ):
-            lower_value = minv
-            limit_changed = True
+            lower_value = -float("inf")
         if upper_value == "*":
             upper_value = maxv
         elif (
             upper_value is None
             or np.isnan(upper_value)
+            or np.isinf(upper_value)
             or upper_value > maxv
             or upper_value <= minv
             or upper_value <= lower_value
         ):
-            upper_value = maxv
-            limit_changed = True
-        self._set_min_out(lower_value)
-        self._set_max_out(upper_value)
+            upper_value = float("inf")
+        self._set_min_out(minv if np.isinf(lower_value) else lower_value)
+        self._set_max_out(maxv if np.isinf(upper_value) else upper_value)
         if not input_slot.has_buffered() and not limit_changed:
             return self._return_run_step(self.state_blocked, steps_run=0)
         # ...
