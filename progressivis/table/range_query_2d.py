@@ -534,11 +534,11 @@ class RangeQuery2d(Module):
         if (
             lower_value_x is None
             or np.isnan(lower_value_x)
+            or np.isinf(lower_value_x)
             or lower_value_x < minv_x
             or lower_value_x >= maxv_x
         ):
-            lower_value_x = minv_x
-            limit_changed = True
+            lower_value_x = -float("inf")
         if (
             upper_value_x is None
             or np.isnan(upper_value_x)
@@ -546,8 +546,7 @@ class RangeQuery2d(Module):
             or upper_value_x <= minv_x
             or upper_value_x <= lower_value_x
         ):
-            upper_value_x = maxv_x
-            limit_changed = True
+            upper_value_x = float("inf")
         # Y ...
         if (
             lower_value_y is None
@@ -555,8 +554,7 @@ class RangeQuery2d(Module):
             or lower_value_y < minv_y
             or lower_value_y >= maxv_y
         ):
-            lower_value_y = minv_y
-            limit_changed = True
+            lower_value_y = -float("inf")
         if (
             upper_value_y is None
             or np.isnan(upper_value_y)
@@ -564,10 +562,11 @@ class RangeQuery2d(Module):
             or upper_value_y <= minv_y
             or upper_value_y <= lower_value_y
         ):
-            upper_value_y = maxv_y
-            limit_changed = True
-        self._set_min_out(lower_value_x, lower_value_y)
-        self._set_max_out(upper_value_x, upper_value_y)
+            upper_value_y = float("inf")
+        self._set_min_out(minv_x if np.isinf(lower_value_x) else lower_value_x,
+                          minv_y if np.isinf(lower_value_y) else lower_value_y)
+        self._set_max_out(maxv_x if np.isinf(upper_value_x) else upper_value_x,
+                          maxv_y if np.isinf(upper_value_y) else upper_value_y)
         if steps == 0 and not limit_changed:
             return self._return_run_step(self.state_blocked, steps_run=0)
         # ...
