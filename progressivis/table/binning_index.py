@@ -209,7 +209,6 @@ class _BinningIndexImpl:
         lower: float,
         upper: float,
         approximate: bool = APPROX,
-        only_bins: PIntSet = PIntSet(),
     ) -> tuple[Generator[PIntSet, None, None], PIntSet]:
         """
         Return the PIntSet of all rows with values in range [`lower`, `upper`[
@@ -239,17 +238,10 @@ class _BinningIndexImpl:
         if not approximate:  # i.e. precise
             lower_bin += 1
         assert lower_bin <= upper_bin
-        if only_bins:
-            selected_bins = (
-                cast(PIntSet, binvect[i])
-                for i in self.binvect_map
-                if i in only_bins and i >= lower_bin and i < upper_bin
-            )
-        else:
-            selected_bins = (
-                cast(PIntSet, binvect[i])
-                for i in self.binvect_map if i >= lower_bin and i < upper_bin
-            )
+        selected_bins = (
+            cast(PIntSet, binvect[i])
+            for i in self.binvect_map if i >= lower_bin and i < upper_bin
+        )
 
         # union = PIntSet.union(*selected_bins)  # type: ignore
         detail = PIntSet()
@@ -275,9 +267,8 @@ class _BinningIndexImpl:
         lower: float,
         upper: float,
         approximate: bool = APPROX,
-        only_bins: PIntSet = PIntSet(),
     ) -> PIntSet:
-        selected_bins, detail = self.range_query_(lower, upper, approximate, only_bins)
+        selected_bins, detail = self.range_query_(lower, upper, approximate)
         return _union(detail, *selected_bins)
 
     def range_query_aslist(
@@ -285,9 +276,8 @@ class _BinningIndexImpl:
         lower: float,
         upper: float,
         approximate: bool = APPROX,
-        only_bins: PIntSet = PIntSet(),
     ) -> Generator[PIntSet, None, None]:
-        selected_bins, detail = self.range_query_(lower, upper, approximate, only_bins)
+        selected_bins, detail = self.range_query_(lower, upper, approximate)
         if not detail:
             return selected_bins
 
@@ -618,14 +608,13 @@ class BinningIndex(Module):
             self, lower: float,
             upper: float,
             approximate: bool = APPROX,
-            only_bins: PIntSet = PIntSet()
     ) -> PIntSet:
         r"""
         Return the list of rows with values in range \[`lower`, `upper`\[
         """
         if self._impl:
             return self._impl.range_query(
-                lower, upper, approximate, only_bins
+                lower, upper, approximate
             )
         # there are no histogram because init_threshold wasn't be reached yet
         # so we query the input table directly
@@ -639,13 +628,12 @@ class BinningIndex(Module):
             self, lower: float,
             upper: float,
             approximate: bool = APPROX,
-            only_bins: PIntSet = PIntSet()
     ) -> Generator[PIntSet, None, None]:
         r"""
         Return the list of rows with values in range \[`lower`, `upper`\[
         """
         if self._impl:
-            return self._impl.range_query_aslist(lower, upper, approximate, only_bins)
+            return self._impl.range_query_aslist(lower, upper, approximate)
 
         def never() -> Generator[PIntSet, None, None]:
             if False:

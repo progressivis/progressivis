@@ -9,8 +9,9 @@ from progressivis.core.module import (
     def_parameter,
     document,
 )
-from progressivis.core.pintset import PIntSet
-from progressivis.core.utils import indices_len
+from ..core.pintset import PIntSet
+from ..core.utils import indices_len
+from ..core.slot import Slot
 from ..io import Variable
 from ..utils.psdict import PDict
 from . import BasePTable, PTable, PTableSelectedView
@@ -58,7 +59,7 @@ class RangeQueryImpl:
         if limit_changed:
             new_sel = hist_index.range_query(
                 lower, upper, approximate=self._approximate
-            )  # do not pass only_bins here!
+            )
             self.result.assign(new_sel)
             return
         if updated:
@@ -250,11 +251,11 @@ class RangeQuery(Module):
             hist_index.input.table = input_module.output[input_slot][params.column,]
             if min_value is None:
                 assert hasattr(min_, "result") or min_ is None
-                init_min = min_.result if min_ is not None else hist_index.min_out
+                init_min = {self.column: np.nan}
                 min_value = Variable(init_min, group=self.name, scheduler=scheduler)
             if max_value is None:
                 assert hasattr(max_, "result") or max_ is None
-                init_max = max_.result if max_ is not None else hist_index.max_out
+                init_max = {self.column: np.nan}
                 max_value = Variable(init_max, group=self.name, scheduler=scheduler)
             range_query = self
             range_query.dep.hist_index = hist_index
@@ -308,18 +309,20 @@ class RangeQuery(Module):
         hist_slot = self.get_input_slot("index")
         # hist_slot.clear_buffers()
         input_slot = hist_slot
-        tstamps = self.get_input_slot("timestamps")
-        ts_data = tstamps.data()
-        ts_changes = tstamps.created.changes | tstamps.updated.changes
         only_bins = PIntSet()
-        if ts_changes:
-            ts_k_ids = {ts_data.k_(i): i for i in ts_changes}
-            if -1 in ts_k_ids and ts_k_ids[-1] in tstamps.updated.changes:
-                tstamps.reset()
-                print("Tstamp reset")
-            else:
-                ts_k_ids.pop(-1, None)  # removing -1 key if present (at creation)
-                only_bins = PIntSet(ts_k_ids.values())  # relevant bins
+        tstamps: Slot | None = None
+        if self.has_input_slot("timestamps"):
+            tstamps = self.get_input_slot("timestamps")
+            ts_data = tstamps.data()
+            ts_changes = tstamps.created.changes | tstamps.updated.changes
+            if ts_changes:
+                ts_k_ids = {ts_data.k_(i): i for i in ts_changes}
+                if -1 in ts_k_ids and ts_k_ids[-1] in tstamps.updated.changes:
+                    tstamps.reset()
+                    print("Tstamp reset")
+                else:
+                    ts_k_ids.pop(-1, None)  # removing -1 key if present (at creation)
+                    only_bins = PIntSet(ts_k_ids.values())  # relevant bins
         #
         # lower/upper
         #
@@ -378,6 +381,7 @@ class RangeQuery(Module):
         if not input_slot.has_buffered() and not limit_changed:
             return self._return_run_step(self.state_blocked, steps_run=0)
         # ...
+
         steps = 0
         deleted: Optional[PIntSet] = None
         if input_slot.deleted.any():
@@ -419,7 +423,8 @@ class RangeQuery(Module):
                 only_bins=only_bins
             )
         if not input_slot.has_buffered():
-            tstamps.clear_buffers()
+            if tstamps is not None:
+                tstamps.clear_buffers()
         assert self._impl.result
         self.result.selection = self._impl.result._values
         return self._return_run_step(self.next_state(input_slot), steps)

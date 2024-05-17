@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from progressivis import ProgressiveError
+from progressivis.utils.errors import ProgressiveStopIteration
 from ..core.module import Module
 from progressivis.core.module import ReturnRunStep, JSon, def_output, document
 from ..utils.psdict import PDict
@@ -36,6 +37,7 @@ class Variable(Module):
         super().__init__(**kwds)
         self.tags.add(self.TAG_INPUT)
         self._has_input = False
+        self._stop_iter = False
         if not (translation is None or isinstance(translation, dict)):
             raise ProgressiveError("translation must be a dictionary")
         self._translation = translation
@@ -52,12 +54,19 @@ class Variable(Module):
     def run_step(
         self, run_number: int, step_size: int, howlong: float
     ) -> ReturnRunStep:
+        if self._stop_iter:
+            raise ProgressiveStopIteration()
         return self._return_run_step(self.state_blocked, steps_run=1)
 
     def predict_step_size(self, duration: float) -> int:
         return 1
 
-    async def from_input(self, input_: JSon) -> str:
+    async def from_input(self, input_: JSon, stop_iter: bool = False) -> str:
+        """
+        stop_iter deactivates the module after the first event has been processed.
+        After that, the module behaves as a ConstDict.
+        It is particularly useful for writing tests.
+        """
         if not isinstance(input_, dict):
             raise ProgressiveError("Expecting a dictionary")
         last = PDict(self.result)  # shallow copy
@@ -76,4 +85,5 @@ class Variable(Module):
         else:
             self.result.update(values)
         self._has_input = True
+        self._stop_iter = stop_iter
         return ""
