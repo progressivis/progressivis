@@ -33,7 +33,7 @@ class Input(Module):
         self._last = len(self.result)
         return self._return_run_step(self.state_blocked, steps_run=0)
 
-    async def from_input(self, msg: JSon) -> str:
+    async def from_input(self, msg: JSon, stop_iter: bool = False) -> str:
         if not isinstance(msg, dict):
             msg = {"input": msg}
         assert self.result is not None
