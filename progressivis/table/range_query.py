@@ -16,7 +16,7 @@ from ..io import Variable
 from ..utils.psdict import PDict
 from . import BasePTable, PTable, PTableSelectedView
 from .binning_index import BinningIndex
-from typing import Optional, Any, cast, Iterable
+from typing import Optional, Any, cast, Iterable, Generator
 
 
 class _Selection:
@@ -37,8 +37,8 @@ class _Selection:
 
 
 class RangeQueryImpl:
-    def __init__(self, approximate: bool):
-        super(RangeQueryImpl, self).__init__()
+    def __init__(self, approximate: bool) -> None:
+        super().__init__()
         self._table: Optional[BasePTable] = None
         self._approximate = approximate
         self.result: Optional[_Selection] = None
@@ -54,14 +54,13 @@ class RangeQueryImpl:
         updated: Optional[PIntSet] = None,
         deleted: Optional[PIntSet] = None,
         only_bins: PIntSet = PIntSet()
-    ) -> None:
+    ) -> Generator[PIntSet, None, None] | None:
         assert self.result
         if limit_changed:
-            new_sel = hist_index.range_query(
+            new_sel = hist_index.range_query_aslist(
                 lower, upper, approximate=self._approximate
             )
-            self.result.assign(new_sel)
-            return
+            return new_sel
         if updated:
             self.result.remove(updated)
             res = hist_index.restricted_range_query(
@@ -83,6 +82,7 @@ class RangeQueryImpl:
             self.result.update(res)
         if deleted:
             self.result.remove(deleted)
+        return None
 
     def start(
         self,
@@ -95,11 +95,11 @@ class RangeQueryImpl:
         updated: Optional[PIntSet] = None,
         deleted: Optional[PIntSet] = None,
         only_bins: PIntSet = PIntSet()
-    ) -> None:
+    ) -> Generator[PIntSet, None, None] | None:
         self._table = table
         self.result = _Selection()
         self.is_started = True
-        self.resume(hist_index, lower, upper, limit_changed, created, updated, deleted, only_bins)
+        return self.resume(hist_index, lower, upper, limit_changed, created, updated, deleted, only_bins)
 
 
 @document
@@ -206,6 +206,10 @@ class RangeQuery(Module):
         self.default_step_size = 1000
         self.input_module: Optional[Module] = None
         self.hist_index: Optional[BinningIndex] = None
+        self.shuffled_index: np.ndarray[Any, Any] | None = None
+        self.residual_bitmaps: np.ndarray[Any, Any] | None = None
+        self.residual_i: int = 0
+        self.prev_release: PIntSet = PIntSet()
 
     @property
     def column(self) -> str:
@@ -301,18 +305,68 @@ class RangeQuery(Module):
     def _set_max_out(self, val: float) -> None:
         return self._set_minmax_out("_max_table", val)
 
+    def cleanup_residual(self) -> None:
+        self.shuffled_index = None
+        self.residual_bitmaps = None
+        self.residual_i = 0
+        self.prev_release = PIntSet()
+
+    def process_residual_step(self, step_size: int) -> None:
+        first = self.residual_i
+        last = first + step_size
+        do_cleanup = False
+        assert self.shuffled_index is not None
+        if last >= self.shuffled_index.shape[0]:
+            next_n = self.shuffled_index[first:]
+            do_cleanup = True
+        else:
+            next_n = self.shuffled_index[first:last]
+            self.residual_i = last
+        assert self.residual_bitmaps is not None
+        release = PIntSet.union(self.prev_release, *self.residual_bitmaps[next_n])
+        if do_cleanup:
+            self.cleanup_residual()
+            assert self._impl.result is not None
+            self._impl.result.assign(release)
+        else:
+            self.prev_release = release
+        assert self.result is not None
+        self.result.selection = release
+
     def run_step(
         self, run_number: int, step_size: int, howlong: float
     ) -> ReturnRunStep:
         # input_slot = self.get_input_slot("table")
-        self._create_min_max()
         hist_slot = self.get_input_slot("index")
         # hist_slot.clear_buffers()
         input_slot = hist_slot
+        input_table = input_slot.data()
+        if input_table is None:
+            return self._return_run_step(self.state_blocked, steps_run=0)
+        if self.result is None:
+            self.result = PTableSelectedView(input_table, PIntSet([]))
+        # Process residuals
+        if self.shuffled_index is not None:
+            print("residual step", run_number, step_size)
+            self.process_residual_step(step_size)
+            return self._return_run_step(self.next_state(input_slot), step_size)
+        self._create_min_max()
         only_bins = PIntSet()
         tstamps: Slot | None = None
         if self.has_input_slot("timestamps"):
             tstamps = self.get_input_slot("timestamps")
+        #
+        # lower/upper
+        #
+        lower_slot = self.get_input_slot("lower")
+        upper_slot = self.get_input_slot("upper")
+        limit_changed = False
+        if lower_slot.has_buffered() or upper_slot.has_buffered():
+            limit_changed = True
+            if tstamps is not None:
+                tstamps.reset()
+                input_slot.clear_buffers()
+        elif tstamps is not None:
             ts_data = tstamps.data()
             ts_changes = tstamps.created.changes | tstamps.updated.changes
             if ts_changes:
@@ -323,14 +377,7 @@ class RangeQuery(Module):
                 else:
                     ts_k_ids.pop(-1, None)  # removing -1 key if present (at creation)
                     only_bins = PIntSet(ts_k_ids.values())  # relevant bins
-        #
-        # lower/upper
-        #
-        lower_slot = self.get_input_slot("lower")
-        upper_slot = self.get_input_slot("upper")
-        limit_changed = False
-        if lower_slot.has_buffered() or upper_slot.has_buffered():
-            limit_changed = True
+
         lower_slot.clear_buffers()
         upper_slot.clear_buffers()
         #
@@ -385,22 +432,20 @@ class RangeQuery(Module):
         steps = 0
         deleted: Optional[PIntSet] = None
         if input_slot.deleted.any():
-            deleted = input_slot.deleted.next(length=step_size, as_slice=False)
+            deleted = input_slot.deleted.next(as_slice=False)
             steps += indices_len(deleted)
         created: Optional[PIntSet] = None
         if input_slot.created.any():
-            created = input_slot.created.next(length=step_size, as_slice=False)
+            created = input_slot.created.next(as_slice=False)
             steps += indices_len(created)
         updated: Optional[PIntSet] = None
         if input_slot.updated.any():
-            updated = input_slot.updated.next(length=step_size, as_slice=False)
+            updated = input_slot.updated.next(as_slice=False)
             steps += indices_len(updated)
-        input_table = input_slot.data()
-        if self.result is None:
-            self.result = PTableSelectedView(input_table, PIntSet([]))
         assert self._impl
+        res: Generator[PIntSet, None, None] | None = None
         if not self._impl.is_started:
-            self._impl.start(
+            res = self._impl.start(
                 input_table,
                 cast(BinningIndex, hist_slot.output_module),
                 lower_value,
@@ -412,7 +457,7 @@ class RangeQuery(Module):
                 only_bins=only_bins
             )
         else:
-            self._impl.resume(
+            res = self._impl.resume(
                 cast(BinningIndex, hist_slot.output_module),
                 lower_value,
                 upper_value,
@@ -425,6 +470,15 @@ class RangeQuery(Module):
         if not input_slot.has_buffered():
             if tstamps is not None:
                 tstamps.clear_buffers()
-        assert self._impl.result
-        self.result.selection = self._impl.result._values
+        if res is None:
+            assert self._impl.result
+            self.result.selection = self._impl.result._values
+        else:
+            self.residual_bitmaps = np.fromiter(res, dtype=object)
+            self.shuffled_index = np.arange(self.residual_bitmaps.shape[0])
+            np.random.shuffle(self.shuffled_index)
+            self.residual_i = 0
+            self.prev_release = PIntSet()
+            print("residual step", run_number, step_size)
+            self.process_residual_step(step_size)
         return self._return_run_step(self.next_state(input_slot), steps)

@@ -111,6 +111,7 @@ class _BinningIndexImpl:
             argsort_i = np.argsort(i_bins)
             uv, ui = np.unique(i_bins[argsort_i], return_index=True)
             split_ = np.split(ids[argsort_i], ui[1:])
+            assert len(uv) == len(split_)
             for bin_id, ids in zip(uv, split_):
                 if not ids.shape[0]:
                     continue
@@ -184,14 +185,16 @@ class _BinningIndexImpl:
         pos = int((limit - origin) // bin_w)
         if only_bins:
             selected_bins = (
-                cast(PIntSet, binvect[i])
+                cast(PIntSet, x)
                 for i in self.binvect_map
-                if i in only_bins and operator_(i, pos) and binvect[i] & only_locs
+                if i in only_bins and operator_(i, pos)
+                and (x := binvect[i] & only_locs)
             )
         else:
             selected_bins = (
-                cast(PIntSet, binvect[i])
-                for i in self.binvect_map if operator_(i, pos) and binvect[i] & only_locs
+                cast(PIntSet, x)
+                for i in self.binvect_map if operator_(i, pos)
+                and (x := binvect[i] & only_locs)
             )
 
         union = _union(*selected_bins)
@@ -209,7 +212,7 @@ class _BinningIndexImpl:
         lower: float,
         upper: float,
         approximate: bool = APPROX,
-    ) -> tuple[Generator[PIntSet, None, None], PIntSet]:
+    ) -> tuple[PIntSet, Generator[PIntSet, None, None]]:
         """
         Return the PIntSet of all rows with values in range [`lower`, `upper`[
         """
@@ -246,21 +249,33 @@ class _BinningIndexImpl:
         # union = PIntSet.union(*selected_bins)  # type: ignore
         detail = PIntSet()
         if not approximate:
-
-            ids = np.array(self.binvect[pos_lo], np.int64)
-            values = self.column.loc[ids]
-            if pos_lo == pos_up:
-                selected = ids[(lower <= values) & (values < upper)]
-                detail.update(selected)
+            values = None
+            try:
+                ids = np.array(self.binvect[pos_lo], np.int64)
+            except TypeError:
+                if self.binvect[pos_lo] is not None:
+                    raise
             else:
-                selected = ids[lower <= values]
-                detail.update(selected)
-                ids = np.array(self.binvect[pos_up], np.int64)
                 values = self.column.loc[ids]
-                selected = ids[values < upper]
-                detail.update(selected)
+            if pos_lo == pos_up:
+                if values is not None:
+                    selected = ids[(lower <= values) & (values < upper)]
+                    detail.update(selected)
+            else:
+                if values is not None:
+                    selected = ids[lower <= values]
+                    detail.update(selected)
+                try:
+                    ids = np.array(self.binvect[pos_up], np.int64)
+                except TypeError:
+                    if self.binvect[pos_up] is not None:
+                        raise
+                else:
+                    values = self.column.loc[ids]
+                    selected = ids[values < upper]
+                    detail.update(selected)
             # union.update(detail)
-        return selected_bins, detail
+        return detail, selected_bins
 
     def range_query(
         self,
@@ -268,7 +283,7 @@ class _BinningIndexImpl:
         upper: float,
         approximate: bool = APPROX,
     ) -> PIntSet:
-        selected_bins, detail = self.range_query_(lower, upper, approximate)
+        detail, selected_bins = self.range_query_(lower, upper, approximate)
         return _union(detail, *selected_bins)
 
     def range_query_aslist(
@@ -277,15 +292,11 @@ class _BinningIndexImpl:
         upper: float,
         approximate: bool = APPROX,
     ) -> Generator[PIntSet, None, None]:
-        selected_bins, detail = self.range_query_(lower, upper, approximate)
-        if not detail:
-            return selected_bins
-
-        def _gen() -> Generator[PIntSet, None, None]:
-            for elt in selected_bins:
-                yield elt
+        detail, selected_bins = self.range_query_(lower, upper, approximate)
+        if detail:
             yield detail
-        return _gen()
+        for bin in selected_bins:
+            yield bin
 
     def restricted_range_query(
         self,
@@ -325,34 +336,48 @@ class _BinningIndexImpl:
             lower_bin += 1
         if only_bins:
             selected_bins = (
-                binvect[i]
+                x
                 for i in self.binvect_map
                 if i in only_bins
                 and i >= lower_bin
                 and i < upper_bin
-                and (binvect[i] & only_locs)
+                and (x := binvect[i] & only_locs)
             )
         else:
             selected_bins = (
-                binvect[i]
+                x
                 for i in self.binvect_map
-                if i >= lower_bin and i < upper_bin and (binvect[i] & only_locs)
+                if i >= lower_bin and i < upper_bin
+                and (x := binvect[i] & only_locs)
             )
-        union = cast(PIntSet, _union(*selected_bins) & only_locs)
+        union = _union(*selected_bins)
         if not approximate:  # i.e. precise
             detail = PIntSet()
-            ids = np.array(self.binvect[pos_lo] & only_locs, np.int64)
-            values = self.column.loc[ids]
-            if pos_lo == pos_up:
-                selected = ids[(lower <= values) & (values < upper)]
-                detail.update(selected)
+            values = None
+            try:
+                ids = np.array(self.binvect[pos_lo] & only_locs, np.int64)
+            except TypeError:
+                if self.binvect[pos_lo] is not None:
+                    raise
             else:
-                selected = ids[lower <= values]
-                detail.update(selected)
-                ids = np.array(self.binvect[pos_up] & only_locs, np.int64)
                 values = self.column.loc[ids]
-                selected = ids[values < upper]
-                detail.update(selected)
+            if pos_lo == pos_up:
+                if values is not None:
+                    selected = ids[(lower <= values) & (values < upper)]
+                    detail.update(selected)
+            else:
+                if values is not None:
+                    selected = ids[lower <= values]
+                    detail.update(selected)
+                try:
+                    ids = np.array(self.binvect[pos_up] & only_locs, np.int64)
+                except TypeError:
+                    if self.binvect[pos_up] is not None:
+                        raise
+                else:
+                    values = self.column.loc[ids]
+                    selected = ids[values < upper]
+                    detail.update(selected)
             union.update(detail)
         return union
 

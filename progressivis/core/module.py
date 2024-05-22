@@ -590,7 +590,7 @@ class Module(metaclass=ABCMeta):
         )
         return json
 
-    async def from_input(self, msg: JSon) -> str:
+    async def from_input(self, msg: JSon, stop_iter: bool = False) -> str:
         "Catch and process a message from an interaction"
         if "debug" in msg:
             self.debug = bool(msg["debug"])

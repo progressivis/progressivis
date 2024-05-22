@@ -85,6 +85,42 @@ class TestRangeQuery(ProgressiveTest):
         "Run tests of the RangeQuery module"
         self._range_query_impl(0.1, 0.9)
 
+    def _range_query_impl_all_default(self, lo: float, up: float) -> None:
+        "Run tests of the RangeQuery module"
+        s = self.scheduler()
+        with s:
+            random = RandomPTable(2, rows=200_000, throttle=1000, scheduler=s)
+            range_qry = RangeQuery(column="_1", scheduler=s)
+            range_qry.create_dependent_modules(random, "result")
+            prt = Print(proc=self.terse, scheduler=s)
+            prt.input[0] = range_qry.output.result
+
+        async def fake_input_1(scheduler: Scheduler, rn: int) -> None:
+            module = scheduler["variable_1"]
+            print("from input variable_1", rn)
+            await module.from_input({"_1": lo}, stop_iter=True)
+
+        async def fake_input_2(scheduler: Scheduler, rn: int) -> None:
+            module = scheduler["variable_2"]
+            print("from input variable_2", rn)
+            await module.from_input({"_1": up}, stop_iter=True)
+        s.on_loop(fake_input_1, 100)
+        s.on_loop(fake_input_2, 100)
+        aio.run(s.start())
+        assert range_qry.input_module is not None
+        idx = (
+            range_qry.input_module.output["result"]
+            .data()
+            .eval(f"(_1>{lo})&(_1<{up})", result_object="index")
+        )
+        print("all:", len(range_qry.input_module.output["result"].data()))
+        assert range_qry.result is not None
+        self.assertEqual(range_qry.result.index, PIntSet(idx))
+
+    def test_range_query_all_default_04_06(self) -> None:
+        "Run tests of the RangeQuery module"
+        self._range_query_impl_all_default(0.4, 0.6)
+
     def test_hist_index_min_max(self) -> None:
         "Test min_out and max_out on BinningIndex"
         s = self.scheduler()
