@@ -57,10 +57,6 @@ class PDict(Dict[str, Any]):
     def dshape(self) -> DataShape:
         return dshape_from_dict(self.as_row)
 
-    # def last(self, *args, **kwargs):
-    #    print("LAST")
-    #    import pdb;pdb.set_trace()
-
     def key_of(self, id: int) -> Tuple[str, str]:
         """
         returns (key, status)
@@ -98,7 +94,7 @@ class PDict(Dict[str, Any]):
 
     def created_indices(self, prev: PDict) -> PIntSet:
         if self._index is None:
-            return PIntSet(range(len(prev), len(self)))
+            self._index = dict(zip(self.keys(), range(len(self))))
         new_keys = set(self.keys()) - set(prev.keys())
         return PIntSet((i for (k, i) in self._index.items() if k in new_keys))
 
