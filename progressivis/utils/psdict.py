@@ -94,9 +94,11 @@ class PDict(Dict[str, Any]):
 
     def created_indices(self, prev: PDict) -> PIntSet:
         if self._index is None:
-            self._index = dict(zip(self.keys(), range(len(self))))
+            index_ = dict(zip(self.keys(), range(len(self))))
+        else:
+            index_ = self._index
         new_keys = set(self.keys()) - set(prev.keys())
-        return PIntSet((i for (k, i) in self._index.items() if k in new_keys))
+        return PIntSet((i for (k, i) in index_.items() if k in new_keys))
 
     def updated_indices(self, prev: PDict) -> PIntSet:
         if self._index is None:
