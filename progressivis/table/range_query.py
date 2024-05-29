@@ -57,7 +57,7 @@ class RangeQueryImpl:
     ) -> Generator[PIntSet, None, None] | None:
         assert self.result
         if limit_changed:
-            new_sel = hist_index.range_query_aslist(
+            new_sel = hist_index.range_query_asgen(
                 lower, upper, approximate=self._approximate
             )
             return new_sel

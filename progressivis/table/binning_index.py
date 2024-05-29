@@ -45,35 +45,50 @@ def _union(*args: Any) -> PIntSet:
 
 
 class _BinningIndexImpl:
-    "Implementation part of Histogram Index"
+    "Implementation of the Binning Index"
 
     # pylint: disable=too-many-instance-attributes
     def __init__(self, column: str, table: PTable, tol: float):
         self.name = column
         self.column = table[column]
+        #: vector of bins, can contain holes (None)
         self.binvect: BinVect[PIntSet | None] = BinVect([])
+        #: map of positions actually occupied by bins in binvect
         self.binvect_map: PIntSet = PIntSet()
+        #: keeps trace of bins touched in a run_step
         self.binvect_hits: PIntSet = PIntSet()
-        self._sampling_size = 1000
+        #: precision actually.
+        #: when negative it represents percents
+        #: when positive it gives the width of bins
         self.tol = tol
+        #: the value of the first bin (index=0)
         self.origin: float = 0.0
+        #: bins width. All bins have the same width
         self.bin_w: float = 0.0
         self._initialize()
         self.update_histogram(created=table.index)
 
     def _initialize(self) -> None:
+        """
+        bins initialisation
+        this function is called when a sufficient quantity of values is available
+        """
         assert self.tol != 0
         min_ = self.column.min()
         max_ = self.column.max()
         self.origin = min_
         if self.tol > 0:
             self.bin_w = self.tol
-        else:
+        else:  # negative tol => abs(tols) represents percents
+            # to determine the width of the bins
+            # one takes into account only values within [5%, 95%] to avoid outliers
             q5 = np.percentile(self.column, 5)  # type: ignore
             q95 = np.percentile(self.column, 95)  # type: ignore
             self.bin_w = (q95 - q5) * (abs(self.tol) / 100)
         assert self.bin_w > 0
+        #  initial size of binvect
         binvect_size = int((max_ - min_) / self.bin_w) + 1
+        # initialize binvect with None
         self.binvect = BinVect([None] * binvect_size)
 
     def update_histogram(
@@ -86,7 +101,8 @@ class _BinningIndexImpl:
         created = PIntSet.aspintset(created)
         updated = PIntSet.aspintset(updated)
         deleted = PIntSet.aspintset(deleted)
-        self.binvect_hits = PIntSet()
+        self.binvect_hits = PIntSet()  # reset hits trace
+        # updates are interpreted as deletions followed by creations of the same items
         if deleted or updated:
             to_remove = updated | deleted
             for i in self.binvect_map:
@@ -97,21 +113,28 @@ class _BinningIndexImpl:
             to_add = created | updated
             ids = np.array(to_add, np.int64)
             values = self.column.loc[to_add]
+            # the coresponding bins indices for values are fct. of origin and bin width
             i_bins = np.array((values - self.origin) // self.bin_w, dtype=int)
             if np.any(i_bins < 0):
                 print("Origin changed")
+                # it hapens when a new min appears in values
+                # the origin is shifted to the left to avoid
+                # having to deal with negative indices.
                 min_i = i_bins.min()
                 assert min_i < 0
                 offset = -min_i
                 self.binvect.extendleft([None] * offset)
                 self.origin -= self.bin_w * offset
                 i_bins += offset
+                # self.binvect_map and self.binvect_hits are affected too
                 self.binvect_map = PIntSet([elt + offset for elt in self.binvect_map])
                 self.binvect_hits = PIntSet([elt + offset for elt in self.binvect_hits])
+            # indices are grouped by their common bin
             argsort_i = np.argsort(i_bins)
             uv, ui = np.unique(i_bins[argsort_i], return_index=True)
             split_ = np.split(ids[argsort_i], ui[1:])
             assert len(uv) == len(split_)
+            # then each group is addet to its corresponding bin
             for bin_id, ids in zip(uv, split_):
                 if not ids.shape[0]:
                     continue
@@ -126,6 +149,7 @@ class _BinningIndexImpl:
                         raise
                     self.binvect.extend([None] * (bin_id - len(self.binvect) + 1))
                     self.binvect[bin_id] = PIntSet(ids)
+                # map and hits are updated too
                 self.binvect_map.add(bin_id)
                 self.binvect_hits.add(bin_id)
 
@@ -140,6 +164,17 @@ class _BinningIndexImpl:
         Return the list of rows matching the query.
         For example, returning all values less than 10 (< 10) would be
         `query(operator.__lt__, 10)`
+        Parameters
+        ----------
+        operator_:
+            relational operator (<, > etc.) to apply
+        limit:
+            the finite bound of the queried interval
+        approximate:
+            indicates if one wants an approximate (but faster) result
+        only_bins:
+            designates the only bins to be queried. Sometimes they could be
+            knows by the querier via a bin_timestamps slot
         """
         assert self.binvect is not None
         binvect, origin, bin_w = self.binvect, self.origin, self.bin_w
@@ -179,6 +214,19 @@ class _BinningIndexImpl:
         Return the list of rows matching the query.
         For example, returning all values less than 10 (< 10) would be
         `query(operator.__lt__, 10)`
+        Parameters
+        ----------
+        operator_:
+            relational operator (<, > etc.) to apply
+        limit:
+            the finite bound of the queried interval
+        only_locs:
+            filtering ids: the result is a subset of these ids
+        approximate:
+            indicates if one wants an approximate (but faster) result
+        only_bins:
+            designates the only bins to be queried. Sometimes they could be
+            knows by the querier via a bin_timestamps slot
         """
         assert self.binvect is not None
         binvect, origin, bin_w = self.binvect, self.origin, self.bin_w
@@ -215,6 +263,14 @@ class _BinningIndexImpl:
     ) -> tuple[PIntSet, Generator[PIntSet, None, None]]:
         """
         Return the PIntSet of all rows with values in range [`lower`, `upper`[
+        Parameters
+        ----------
+        lower:
+            the lower bound of the queried interval
+        upper:
+            the upper bound of the queried interval
+        approximate:
+            indicates if one wants an approximate (but faster) result
         """
         if lower > upper:
             lower, upper = upper, lower
@@ -283,15 +339,21 @@ class _BinningIndexImpl:
         upper: float,
         approximate: bool = APPROX,
     ) -> PIntSet:
+        """
+        The result is a PIntSet
+        """
         detail, selected_bins = self.range_query_(lower, upper, approximate)
         return _union(detail, *selected_bins)
 
-    def range_query_aslist(
+    def range_query_asgen(
         self,
         lower: float,
         upper: float,
         approximate: bool = APPROX,
     ) -> Generator[PIntSet, None, None]:
+        """
+        The result is a Python generator
+        """
         detail, selected_bins = self.range_query_(lower, upper, approximate)
         if detail:
             yield detail
@@ -308,6 +370,19 @@ class _BinningIndexImpl:
     ) -> PIntSet:
         """
         Return the PIntSet of only_locs rows in range [`lower`, `upper`[
+        Parameters
+        ----------
+        lower:
+            the lower bound of the queried interval
+        upper:
+            the upper bound of the queried interval
+        only_locs:
+            filtering ids: the result is a subset of these ids
+        approximate:
+            indicates if one wants an approximate (but faster) result
+        only_bins:
+            designates the only bins to be queried. Sometimes they could be
+            knows by the querier via a bin_timestamps slot
         """
         if lower > upper:
             lower, upper = upper, lower
@@ -649,7 +724,7 @@ class BinningIndex(Module):
             operator.__ge__, lower
         )
 
-    def range_query_aslist(
+    def range_query_asgen(
             self, lower: float,
             upper: float,
             approximate: bool = APPROX,
@@ -658,7 +733,7 @@ class BinningIndex(Module):
         Return the list of rows with values in range \[`lower`, `upper`\[
         """
         if self._impl:
-            return self._impl.range_query_aslist(lower, upper, approximate)
+            return self._impl.range_query_asgen(lower, upper, approximate)
 
         def never() -> Generator[PIntSet, None, None]:
             if False:

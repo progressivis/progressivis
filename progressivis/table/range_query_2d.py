@@ -66,10 +66,10 @@ class RangeQuery2dImpl:  # (ModuleImpl):
     ) -> None:
         assert self.result
         if limit_changed:
-            new_sel_x = index_x.range_query_aslist(
+            new_sel_x = index_x.range_query_asgen(
                 lower_x, upper_x, approximate=self._approximate
             )
-            new_sel_y = index_y.range_query_aslist(
+            new_sel_y = index_y.range_query_asgen(
                 lower_y, upper_y, approximate=self._approximate
             )
             if new_sel_x is None or new_sel_y is None:
