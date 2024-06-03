@@ -576,7 +576,7 @@ class BinningIndex(Module):
             return self._return_run_step(self.state_blocked, steps_run=0)
         self._input_table = input_table
         len_table = len(input_table)
-        if len_table < self.params.init_threshold:
+        if len_table < self.params.init_threshold and not input_slot.output_module.is_terminated():
             # there are not enough rows. it's not worth building an index yet
             if self._trials > self.params.max_trials:
                 print("init_threshold to high in BinningIndex")

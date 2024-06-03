@@ -316,12 +316,12 @@ class RangeQuery(Module):
         last = first + step_size
         do_cleanup = False
         assert self.shuffled_index is not None
-        if last >= self.shuffled_index.shape[0]:
+        if last >= self.shuffled_index.shape[0]:  # this is the last slice => cleanup
             next_n = self.shuffled_index[first:]
             do_cleanup = True
         else:
             next_n = self.shuffled_index[first:last]
-            self.residual_i = last
+            self.residual_i = last  # not the last => only shift cursor to the next slice
         assert self.residual_bitmaps is not None
         release = PIntSet.union(self.prev_release, *self.residual_bitmaps[next_n])
         if do_cleanup:
@@ -347,7 +347,6 @@ class RangeQuery(Module):
             self.result = PTableSelectedView(input_table, PIntSet([]))
         # Process residuals
         if self.shuffled_index is not None:
-            print("residual step", run_number, step_size)
             self.process_residual_step(step_size)
             return self._return_run_step(self.next_state(input_slot), step_size)
         self._create_min_max()
@@ -364,8 +363,8 @@ class RangeQuery(Module):
         if lower_slot.has_buffered() or upper_slot.has_buffered():
             limit_changed = True
             if tstamps is not None:
-                tstamps.reset()
-                input_slot.clear_buffers()
+                tstamps.clear_buffers()
+            input_slot.clear_buffers()
         elif tstamps is not None:
             ts_data = tstamps.data()
             ts_changes = tstamps.created.changes | tstamps.updated.changes
@@ -475,10 +474,16 @@ class RangeQuery(Module):
             self.result.selection = self._impl.result._values
         else:
             self.residual_bitmaps = np.fromiter(res, dtype=object)
+            if self.residual_bitmaps.shape[0] <= step_size:
+                release = PIntSet.union(*self.residual_bitmaps)
+                self.residual_bitmaps = None
+                assert self._impl.result is not None
+                self._impl.result.assign(release)
+                self.result.selection = self._impl.result._values
+                return self._return_run_step(self.next_state(input_slot), steps)
             self.shuffled_index = np.arange(self.residual_bitmaps.shape[0])
             np.random.shuffle(self.shuffled_index)
             self.residual_i = 0
             self.prev_release = PIntSet()
-            print("residual step", run_number, step_size)
             self.process_residual_step(step_size)
         return self._return_run_step(self.next_state(input_slot), steps)

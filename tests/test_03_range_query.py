@@ -19,11 +19,11 @@ class TestRangeQuery(ProgressiveTest):
     def tearDown(self) -> None:
         TestRangeQuery.cleanup()
 
-    def _range_query_impl(self, lo: float, up: float) -> None:
+    def _range_query_impl(self, lo: float, up: float, n_rows: int) -> None:
         "Run tests of the RangeQuery module"
         s = self.scheduler()
         with s:
-            random = RandomPTable(2, rows=20_000, scheduler=s)
+            random = RandomPTable(2, rows=n_rows, scheduler=s)
             t_min = PDict({"_1": lo})
             min_value = ConstDict(pdict=t_min, scheduler=s)
             t_max = PDict({"_1": up})
@@ -44,11 +44,11 @@ class TestRangeQuery(ProgressiveTest):
         assert range_qry.result is not None
         self.assertEqual(range_qry.result.index, PIntSet(idx))
 
-    def _range_query_impl2(self, lo: float, up: float) -> None:
+    def _range_query_impl2(self, lo: float, up: float, n_rows: int) -> None:
         "Run tests of the RangeQuery module"
         s = self.scheduler()
         with s:
-            random = RandomPTable(2, rows=20_000, scheduler=s)
+            random = RandomPTable(2, rows=n_rows, scheduler=s)
             t_min_max = PDict({"lower": lo, "upper": up})
             min_max_value = ConstDict(pdict=t_min_max, scheduler=s)
             range_qry = RangeQuery(column="_1", scheduler=s)
@@ -69,21 +69,25 @@ class TestRangeQuery(ProgressiveTest):
         assert range_qry.result is not None
         self.assertEqual(range_qry.result.index, PIntSet(idx))
 
+    def test_range_query_04_06_small_size(self) -> None:
+        "Run tests of the RangeQuery module"
+        self._range_query_impl(0.4, 0.6, n_rows=1000)
+
     def test_range_query_04_06(self) -> None:
         "Run tests of the RangeQuery module"
-        self._range_query_impl(0.4, 0.6)
+        self._range_query_impl(0.4, 0.6, n_rows=20_000)
 
     def test_range_query_04_06_bis(self) -> None:
         "Run tests of the RangeQuery module"
-        self._range_query_impl2(0.4, 0.6)
+        self._range_query_impl2(0.4, 0.6, n_rows=20_000)
 
     def test_range_query_03_08(self) -> None:
         "Run tests of the RangeQuery module"
-        self._range_query_impl(0.3, 0.8)
+        self._range_query_impl(0.3, 0.8, n_rows=20_000)
 
     def test_range_query_01_09(self) -> None:
         "Run tests of the RangeQuery module"
-        self._range_query_impl(0.1, 0.9)
+        self._range_query_impl(0.1, 0.9, n_rows=20_000)
 
     def _range_query_impl_all_default(self, lo: float, up: float) -> None:
         "Run tests of the RangeQuery module"
