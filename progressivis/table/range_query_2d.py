@@ -425,6 +425,14 @@ class RangeQuery2d(Module):
     def run_step(
         self, run_number: int, step_size: int, howlong: float
     ) -> ReturnRunStep:
+        """
+        The naive approach would be to process the requests on X and Y separately and
+        to intersect the results. To avoid the cost of a progressive intersection, we
+        prefer to follow the output on X and intersect it with the results on Y as they
+        become available. If, unfortunately, the output Y lags behind X, the processing
+        of lagging indexes will be delayed. To detect lagging indexes, we use the
+        unfiltered output of the BinningIndex on y
+        """
         index_x_slot = self.get_input_slot("index_x")
         index_y_slot = self.get_input_slot("index_y")
         if index_x_slot.data() is None or index_y_slot.data() is None:
@@ -469,7 +477,7 @@ class RangeQuery2d(Module):
         if input_slot.created.any():
             created = input_slot.created.next(length=step_size, as_slice=False)
             effective = created & index_y_slot.data().index  # cause input_slot is x
-            see_later = created - effective
+            see_later = created - effective  # this can happen when Y is late
             input_slot.created.push(see_later)
             created = effective
             steps += indices_len(created)
