@@ -4,14 +4,15 @@ import logging
 from ..core.module import Module, ReturnRunStep, def_input, def_output
 from . import PTable, PTableSelectedView
 from ..core.pintset import PIntSet
-from typing import Optional, Any, Callable, Tuple, Dict, Sequence
+from progressivis.table.compute import SingleColFunc
+from typing import Optional, Any, Callable, Tuple, Sequence
 
 logger = logging.getLogger(__name__)
 Shape = Tuple[int, ...]
 
 
 class Computed:
-    def __init__(self, computed: Optional[Dict[str, Dict[str, Any]]] = None) -> None:
+    def __init__(self, computed: dict[str, SingleColFunc] | None = None) -> None:
         self.computed = {} if computed is None else computed
 
     def add_ufunc_column(
@@ -22,8 +23,8 @@ class Computed:
         dtype: Optional[np.dtype[Any]] = None,
         xshape: Shape = (),
     ) -> None:
-        self.computed[name] = dict(
-            category="ufunc", ufunc=ufunc, column=col, dtype=dtype, xshape=xshape
+        self.computed[name] = SingleColFunc(
+            func=ufunc, base=col, dtype=dtype, xshape=xshape
         )
 
 
@@ -45,10 +46,10 @@ class Repeater(Module):
             return self._return_run_step(self.state_blocked, steps_run=0)
         if self.result is None:
             cols = (
-                input_slot.hint or input_table.columns
-            ) + list(self._computed.keys())
+                input_slot.hint or tuple(input_table.columns)
+            ) + tuple(self._computed.keys())
             self.result = PTableSelectedView(
-                input_table, PIntSet([]), columns=cols, computed=self._computed
+                input_table, PIntSet([]), columns=cols, computed=self._computed  # type: ignore
             )
         deleted: Optional[PIntSet] = None
         if input_slot.deleted.any():
