@@ -152,7 +152,62 @@ The resultant join table is:
 ![](viz_images/join_result.png)
 
 
-#### Virtual columnn creator (columns.py)
+#### View: a computed columnns creator
+
+Possible topology:
+
+![](viz_images/view_topology.png)
+
+
+##### Function:
+
+In addition to stored columns, `ProgressiVis` tables support virtual columns computed from the contents of other columns. Computed columns can be created [programmatically](#computed-columns) or, in some cases, via the **GUI** shown here.
+
+At present, only [](SingleColFunc) columns can be defined through this interface.
+
+This includes:
+
+* numpy universal unary [functions](numpy.ufunc)
+* `ProgressiVis` vectorized functions
+* ad-hoc defined `if-else` expressions
+
+![](viz_images/view_numpy_activate.png)
+
+As numpy functions are numerous, you can deactivate them if you don't need them to lighten the presentation. In this way, only vectorized functions will be displayed:
+
+![](viz_images/view_numpy_unactivate.png)
+
+For example, if you want a new column representing the logarithm of another stored column, you can proceed as follows (note that other stored columns can be selected to appear as they are in the result view):
+
+![](viz_images/view_numpy_log.png)
+
+giving the following result:
+
+![](viz_images/view_numpy_log_result.png)
+
+An example involving a `ProgressiVis` vectorizable function is the creation of a column providing the (human friendly) week day from a stored `datetime` column:
+
+![](viz_images/view_week_day.png)
+
+which produce the following result:
+
+![](viz_images/view_week_day_result.png)
+
+An example using `if-else` expressions is taken from the weather domain. Some datasets providing rainfall information mix floating values with the symbol `T`, which means _trace amount of precipitation_, i.e. [a very small amount of rain that might wet the ground, but is too small to be detected in a rain gauge](https://geo.libretexts.org/Bookshelves/Meteorology_and_Climate_Science/Practical_Meteorology_(Stull)/07%3A_Precipitation_Processes/7.07%3A_Precipitation_Characteristics).
+
+Assuming we want to replace “T” with a float value (say -1.0) to have only float values, we'll create an 'if-else' expression as follows:
+
+![](viz_images/if_else_expr.png)
+
+then use it to create a computed column based on the `PrecipitationIn`stored column:
+
+![](viz_images/if_else_expr_apply.png)
+
+to produce the following result:
+
+![](viz_images/if_else_expr_result.png)
+
+
 #### Facade creator
 
 ### Display (leaf) category

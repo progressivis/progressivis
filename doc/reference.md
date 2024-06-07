@@ -237,7 +237,7 @@ A table is a collection of named and typed columns.  In a table, all the columns
 
 ```
 
-
+(computed-columns)=
 #### Computed columns
 
 In addition to stored columns, tables can contain virtual columns computed from the contents of other columns.
