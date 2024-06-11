@@ -18,7 +18,7 @@ import numpy as np
 
 import logging
 
-from typing import Union, Optional, Tuple, Dict, Any
+from typing import Any, Sequence
 
 
 logger = logging.getLogger(__name__)
@@ -43,7 +43,7 @@ logger = logging.getLogger(__name__)
         "are changed. Negative values represent %, positive values are absolute"
     ),
 )
-@def_input("table", PTable, doc="the input table")
+@def_input("table", PTable, hint_type=Sequence[str], doc="the input table")
 @def_input(
     "min",
     PDict,
@@ -69,7 +69,7 @@ class Histogram1D(Module):
 
     schema = "{ array: var * int32, min: float64, max: float64, time: int64 }"
 
-    def __init__(self, column: Union[int, str], **kwds: Any) -> None:
+    def __init__(self, column: int | str | None = None, **kwds: Any) -> None:
         """
         Args:
             column: the name or the position of the column to be processed
@@ -81,9 +81,9 @@ class Histogram1D(Module):
         self.column = column
         self.total_read = 0
         self.default_step_size = 1000
-        self._histo: Optional[np.ndarray[Any, Any]] = None
-        self._edges: Optional[np.ndarray[Any, Any]] = None
-        self._bounds: Optional[Tuple[float, float]] = None
+        self._histo: np.ndarray[Any, Any] | None = None
+        self._edges: np.ndarray[Any, Any] | None = None
+        self._bounds: tuple[float, float] | None = None
         self._h_cnt = 0
         self.result = PDict()
 
@@ -121,6 +121,10 @@ class Histogram1D(Module):
             ):
                 logger.info("Input buffers empty")
                 return self._return_run_step(self.state_blocked, steps_run=0)
+            if self.column is None:
+                assert dfslot.hint is not None
+                assert len(dfslot.hint) == 1
+                self.column = dfslot.hint[0]
             min_slot.clear_buffers()
             max_slot.clear_buffers()
             bounds = self.get_bounds(min_slot, max_slot)
@@ -189,7 +193,7 @@ class Histogram1D(Module):
 
     def get_bounds(
         self, min_slot: Slot, max_slot: Slot
-    ) -> Optional[Tuple[float, float]]:
+    ) -> tuple[float, float] | None:
         min_df = min_slot.data()
         if len(min_df) == 0 and self._bounds is None:
             return None
@@ -207,7 +211,7 @@ class Histogram1D(Module):
             return extent * delta / -100.0
         return 0
 
-    def get_histogram(self) -> Dict[str, Any]:
+    def get_histogram(self) -> dict[str, Any]:
         min_ = self._bounds[0] if self._bounds else None
         max_ = self._bounds[1] if self._bounds else None
         edges: Any = self._edges

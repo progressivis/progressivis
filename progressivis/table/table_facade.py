@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import copy
 from typing import (
-    Tuple,
     Type,
     Any
 )
@@ -51,15 +50,29 @@ def table_register(name: str, output_name: str, module_cls: Type[Module]) -> Non
 
 
 class TableFacade(ModuleFacade):
-    registered_modules: dict[Tuple[int, str], TableFacade] = {}
+    """
+    Class implementing the ``ProgressiVis`` façades.
+
+    .. warning::
+        Do not instanciate this class directly!
+
+    """
+    registered_modules: dict[tuple[int, str], TableFacade] = {}
 
     @staticmethod
     def get_or_create(module: Module, table_slot: str) -> TableFacade:
         """
-        Get or create a TableFacade encapsulating a Table API using slots
-        that create modules on demand. Currently, we support the following
-        API:
+        Get or create a ``TableFacade`` encapsulating a Table API using slots
+        that create modules on demand.
+        Currently, we support the following API:
         min, max, percentiles, var, histogram, distinct
+
+        Parameters
+        ----------
+        module:
+            the module providing the data around which the facade will be built
+        table_slot:
+            the slot name on `module` (example: `result`)
         """
         tabmod = TableFacade.registered_modules.get((id(module), table_slot))
         if tabmod is None:
@@ -74,6 +87,14 @@ class TableFacade(ModuleFacade):
     def forget(module: Module, table_slot: str | None = None) -> None:
         """
         Remove a registered module class from the list of registered modules.
+
+        Parameters
+        ----------
+        module:
+            the module to be forgotten (if `table_slot_`is `None`) or
+            containing the slot to be forgotten
+        table_slot:
+            the slot to be forgotten
         """
         mod_id = id(module)
         if table_slot is None:
@@ -117,6 +138,21 @@ class TableFacade(ModuleFacade):
         return SlotProxy(reg.output_name, mod)  # TODO add the slot name in the registry
 
     def configure(self, *, base: str, hints: Any, name: str, **kw: Any) -> None:
+        """
+        Allows you to specialize a pre-existing descriptive module by adding elements for
+        its instantiation or connection.
+
+        Parameters
+        ----------
+        base:
+            key associated to a pre-existing descriptive module (example ``max``)
+        hints:
+            information to connect to the main module (example: a sequence of columns)
+        name:
+            key associated to the new descriptive module
+        kw:
+            additional arguments for instanciation
+        """
         if name in self.registry:
             raise ValueError(f"Name {name} already exists!")
         base_reg = self.registry[base]

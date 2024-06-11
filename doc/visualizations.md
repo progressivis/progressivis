@@ -208,7 +208,20 @@ to produce the following result:
 ![](viz_images/if_else_expr_result.png)
 
 
-#### Facade creator
+#### Façade creator
+
+The [facade concept](#facade-concept) is particularly useful in the context of `chaining widgets`, as it enables the chaining of widgets managing complex networks of modules. Currently, chaining widgets support many input modules, but only one output module. In complex cases requiring many output modules, these will be grouped together behind a facade representing the single, module-alike, output.
+
+Possible topology:
+
+![](viz_images/facade_topology.png)
+
+
+##### Function:
+
+Visual tool for building a [](TableFacade) around a main module by adding descriptive and filtering modules of column-level granularity:
+
+![](viz_images/facade_num_cols.png)
 
 ### Display (leaf) category
 #### Dump table
