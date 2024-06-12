@@ -219,7 +219,21 @@ Possible topology:
 
 ##### Function:
 
-Visual tool for building a [](TableFacade) around a main module by adding descriptive and filtering modules of column-level granularity:
+Visual tool for building a [](TableFacade) around a main module by adding descriptive and filtering modules of column-level granularity.
+
+The `Settings` pane includes several tabs that group the columns of the input table according to their type family: numeric, string and categorical, with the exception of the first tab named `All columns`.
+
+![](viz_images/facade_all_cols.png)
+
+This first tab does two things:
+
+* designate columns to be ignored
+* designate columns to be treated as categorical, as this characteristic cannot be deduced from the physical type of the column, because it is linked to the semantics of the data.
+
+The other tabs allow you to associate the desired descriptive statistics and filtering operations with each column. Grouping columns by type family is motivated by the need to associate appropriate operations with each family (for example, variance computing is only justified for numerical types).
+
+Obviously, the widest range of operations is proposed for numerical types:
+
 
 ![](viz_images/facade_num_cols.png)
 
