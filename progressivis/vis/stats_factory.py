@@ -73,8 +73,8 @@ class Histogram1dPattern(Pattern):
                 min_value=self.dep.lower,
                 max_value=self.dep.upper,
             )
-            histogram1d = Histogram1D(scheduler=scheduler, column=col)
-            histogram1d.input.table = self.dep.range_query.output.result
+            histogram1d = Histogram1D(scheduler=scheduler)
+            histogram1d.input.table = self.dep.range_query.output.result[col,]
             histogram1d.input.min = self.dep.range_query.output.min
             histogram1d.input.max = self.dep.range_query.output.max
             self.dep.histogram1d = histogram1d

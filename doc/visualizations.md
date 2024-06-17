@@ -238,8 +238,60 @@ Obviously, the widest range of operations is proposed for numerical types:
 ![](viz_images/facade_num_cols.png)
 
 ### Display (leaf) category
+
 #### Dump table
-#### Descriptive statistics (desc_stat.py)
+
+Possible topology:
+
+![](viz_images/dump_table_topology.png)
+
+
+##### Function:
+
+This is the simplest chaining widget that requires no configuration. It is used to display progressive table outputs and has already been used to illustrate the outputs of the widgets presented above.
+
+![](viz_images/dump_table_view.png)
+
+
+#### Descriptive statistics
+
+Possible topology:
+
+
+![](viz_images/desc_stats_topology.png)
+
+##### Function:
+
+This chaining widget brings together several descriptive statistics processes.
+
+The `Setting / General` editor is designed to define operations on a single variable, with the exception of covariance calculation, which involves several variables:
+
+
+![](viz_images/desc_stats_general.png)
+
+Simple results are displayed together:
+
+![](viz_images/desc_stats_simple_results.png)
+
+while the covariance matrix is shown in a separate panel:
+
+![](viz_images/desc_stats_corr_mx.png)
+
+Histograms (1D) are also displayed in a dedicated panel. This display is divided into two parts:
+
+* at the top, a rough histogram of the entire interval of variable values, completed by two vertical rulers (in red) that can be positioned using the `Range` slider to delimit a sub-interval.
+* at the bottom, a more detailed histogram for the interval defined in the first part:
+
+![](viz_images/desc_stats_histogram1d.png)
+
+Heatmaps are used to visualize 2D histograms. Variable pairs are selected for visualisation in a dedicated editor:
+
+![](viz_images/desc_stats_heatmap.png)
+
+Each heatmap will be displayed in a dedicated panel:
+
+![](viz_images/desc_stats_heatmap_view.png)
+
 #### Heatmap
 #### Multi-series
 #### Scatterplot
