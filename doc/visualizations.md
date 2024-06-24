@@ -293,6 +293,29 @@ Each heatmap will be displayed in a dedicated panel:
 ![](viz_images/desc_stats_heatmap_view.png)
 
 #### Heatmap
+
+Possible topology:
+
+![](viz_images/heatmap_topology.png)
+
+
+##### Function:
+
+This widget provides the same functionality as the namesake tab in "Descriptive statistics" (i.e. visualize 2D histograms), but with greater freedom of configuration.
+
+Given that currently:
+
+* a histogram requires many entries (data, minimum, maximum)
+* a source widget can expose only one connectable output module
+
+the `Heatmap` widget must be connected to the output of a `Façade` widget, configured to produce thre required entries:
+
+![](viz_images/heatmap_facade.png)
+
+Once connected, the widget can be configured as follows
+
+![](viz_images/heatmap_view.png)
+
 #### Multi-series
 #### Scatterplot
 * ...
