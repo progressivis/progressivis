@@ -19,6 +19,7 @@ As their name suggests, chaining widgets (`CW`) are graphical components based o
 
 Each `CW` is designed for a specific stage of an analysis scenario (data loading, filtering, joins, etc.) and is associated with a sub-graph of PV modules in the background, usually grouped behind a front panel.
 
+(persistent-settings)=
 ## Chaining widgets persistent settings
 
 `CW`s require a file tree located in the user's homedir with the following structure:
@@ -72,7 +73,7 @@ Once the configuration is complete, you can save it for later use and start load
 
 ![](viz_images/start_save_csv.png)
 
-If “freeze” is checked, the configuration chosen here will be replayed as is, without any interaction when the current scenario is reused.
+**NB:** The `Freeze` checkbox is useful only when the scenario is being recorded  to be replayed later (see [Recording a scenario](recording-scenario) for more details).
 
 Once loading has begun, the `Next stage` list and the `Chain it` button will be used to attach a new `CW` to the treatment.
 
@@ -152,7 +153,7 @@ The resultant join table is:
 ![](viz_images/join_result.png)
 
 
-#### View: a computed columnns creator
+#### View: a computed columns creator
 
 Possible topology:
 
@@ -237,7 +238,7 @@ Obviously, the widest range of operations is proposed for numerical types:
 
 ![](viz_images/facade_num_cols.png)
 
-### Display (leaf) category
+### Display tools category
 
 #### Dump table
 
@@ -317,5 +318,37 @@ Once connected, the widget can be configured as follows
 ![](viz_images/heatmap_view.png)
 
 #### Multi-series
+
+
+Possible topology:
+
+![](viz_images/multiseries_topology.png)
+
+
+##### Function:
+
+This widget allows you to view several time series together:
+
+![](viz_images/multiseries_view.png)
+
+
 #### Scatterplot
 * ...
+
+(recording-scenario)=
+## Recording a scenario
+
+A `ProgressiBook` lets you save a scenario for later replay. The record is persistent and it is contained in the `ProgressiBook` itself, so it's a good idea to save it at the end of the recording (even if Jupyter does automatic backups periodically).
+
+The scenario is saved only if the corresponding box in the start widget is checked:
+
+![](viz_images/recording_start.png)
+
+After that, the scenario is built as explained above, with an extra detail: the `Freeze` checkbox, present in certain widgets:
+
+![](viz_images/recording_csv_freeze.png)
+
+When the freeze checkbox has been checked in a widget (here CSV Loader) during registration, all settings made in this widget will be integrated into the record.
+Thus, when the record is replayed, these settings will be applied directly, without redisplaying the "frozen" widget.
+
+**NB:** Scenario registration should not be confused with the [persistent settings](#persistent-settings) of certain widgets, which are saved in dedicated files and can also be used in unregistered scenarios.
