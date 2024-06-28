@@ -17,6 +17,7 @@ from progressivis.stats import (
     KLLSketch,
     Var,
     Histogram1D,
+    Histogram2D,
     Distinct,
     Sample
 )
@@ -29,6 +30,7 @@ class ModuleRegistry:
     module_cls: Type[Module]
     module_kw: dict[str, Any] = field(default_factory=dict)
     module_hints: Any = None
+    module_connect: dict[str, str] = field(default_factory=dict)
 
 
 TABLE_REGISTRY: dict[str, ModuleRegistry] = {
@@ -37,6 +39,7 @@ TABLE_REGISTRY: dict[str, ModuleRegistry] = {
     "percentiles": ModuleRegistry("result", KLLSketch),
     "var": ModuleRegistry("result", Var),
     "histogram": ModuleRegistry("result", Histogram1D),
+    "histogram2d": ModuleRegistry("result", Histogram2D),
     "distinct": ModuleRegistry("result", Distinct, {}),
     "log": ModuleRegistry("result", Log, {}),
     "sample": ModuleRegistry("result", Sample, {}),
@@ -132,12 +135,14 @@ class TableFacade(ModuleFacade):
         reg = self.registry[name]
         mod = reg.module_cls(name=get_random_name(name), scheduler=scheduler, **reg.module_kw)
         mod.input[mod.default_input()] = self.module.output[self.table_slot][reg.module_hints]
+        for k, v in reg.module_connect.items():
+            mod.input[k] = self.output[v]
         # Add a sink to keep the module alive in case it is disconnected
         sink = Sink("sink_for_" + mod.name, scheduler=scheduler)
         sink.input.inp = mod.output[reg.output_name]
         return SlotProxy(reg.output_name, mod)  # TODO add the slot name in the registry
 
-    def configure(self, *, base: str, hints: Any, name: str, **kw: Any) -> None:
+    def configure(self, *, base: str, hints: Any, name: str, connect: dict[str, str] = {}, **kw: Any) -> None:
         """
         Allows you to specialize a pre-existing descriptive module by adding elements for
         its instantiation or connection.
@@ -158,6 +163,7 @@ class TableFacade(ModuleFacade):
         base_reg = self.registry[base]
         name_reg = copy.copy(base_reg)
         name_reg.module_hints = hints
+        name_reg.module_connect = connect.copy()
         name_reg.module_kw = kw
         self.registry[name] = name_reg
 

@@ -20,7 +20,7 @@ import numpy as np
 
 import logging
 
-from typing import Optional, Tuple, cast, Any, Union
+from typing import Optional, Tuple, cast, Any
 
 Bounds2D = Tuple[float, float, float, float]
 
@@ -53,7 +53,7 @@ logger = logging.getLogger(__name__)
     doc="the ``delta`` threshold (as defined for {{Histogram1D}}) over the ``y`` axis",
 )
 @def_parameter("history", np.dtype(int), 3)
-@def_input("table", PTable, doc="the input table")
+@def_input("table", PTable, hint_type=dict[str, str], doc="the input table")
 @def_input(
     "min",
     PDict,
@@ -86,8 +86,8 @@ class Histogram2D(Module):
 
     def __init__(
         self,
-        x_column: Union[int, str],
-        y_column: Union[int, str],
+        x_column: int | str = "",
+        y_column: int | str = "",
         with_output: bool = True,
         **kwds: Any,
     ) -> None:
@@ -190,6 +190,12 @@ class Histogram2D(Module):
             ):
                 logger.info("Input buffers empty")
                 return self._return_run_step(self.state_blocked, steps_run=0)
+            if self.x_column == "":
+                assert self.y_column == ""
+                assert dfslot.hint is not None
+                assert len(dfslot.hint) == 2
+                self.x_column = dfslot.hint["x"]
+                self.y_column = dfslot.hint["y"]
             min_slot.clear_buffers()
             max_slot.clear_buffers()
             bounds = self.get_bounds(min_slot, max_slot)

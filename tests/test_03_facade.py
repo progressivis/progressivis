@@ -1,15 +1,15 @@
 "Test for SlotHub"
 from . import ProgressiveTest
 
-from progressivis.core import aio
+from progressivis.core import aio, notNone, Sink
 from progressivis import Print
-from progressivis.stats import Min, Max, RandomPTable
+from progressivis.stats import Min, Max, RandomPTable, Histogram1D, Histogram2D
 from progressivis.core.module_facade import ModuleFacade
 from progressivis.table.table_facade import TableFacade
-
+import fast_histogram as fh  # type: ignore
 import numpy as np
 
-from typing import Any, Dict
+from typing import Any, Dict, cast
 
 
 class TestModuleFacade(ProgressiveTest):
@@ -23,10 +23,10 @@ class TestModuleFacade(ProgressiveTest):
         hub = ModuleFacade()
         hub.add_proxy("min", "result", min_)
         hub.add_proxy("max", "result", max_)
-        pr_min = Print(scheduler=s)
-        pr_min.input[0] = hub.output.min
-        pr_max = Print(scheduler=s)
-        pr_max.input[0] = hub.output.max
+        sink_min = Sink(scheduler=s)
+        sink_min.input[0] = hub.output.min
+        sink_max = Sink(scheduler=s)
+        sink_max.input[0] = hub.output.max
         aio.run(s.start())
         assert random.result is not None
         assert min_.result is not None
@@ -42,22 +42,21 @@ class TestModuleFacade(ProgressiveTest):
         s = self.scheduler()
         random = RandomPTable(10, rows=10000, scheduler=s)
         tabmod = TableFacade.get_or_create(random, "result")
-        pr_min = Print(scheduler=s)
-        pr_min.input[0] = tabmod.output.min
-        pr_max = Print(scheduler=s)
-        pr_max.input[0] = tabmod.output.max
+        sink_min = Sink(scheduler=s)
+        sink_min.input[0] = tabmod.output.min
+        sink_max = Sink(scheduler=s)
+        sink_max.input[0] = tabmod.output.max
         aio.run(s.start())
 
     def test_table_module_child(self) -> None:
         s = self.scheduler()
         random = RandomPTable(10, rows=10000, scheduler=s)
         tabmod = TableFacade.get_or_create(random, "result")
-        pr_min = Print(scheduler=s)
-        pr_min.input[0] = tabmod.child.min.output.result
-        pr_max = Print(scheduler=s)
-        pr_max.input[0] = tabmod.child.max.output.result
+        sink_min = Sink(scheduler=s)
+        sink_min.input[0] = tabmod.child.min.output.result
+        sink_max = Sink(scheduler=s)
+        sink_max.input[0] = tabmod.child.max.output.result
         aio.run(s.start())
-
 
     def test_sample(self) -> None:
         s = self.scheduler()
@@ -73,7 +72,6 @@ class TestModuleFacade(ProgressiveTest):
         self.assertEqual(len(tabmod.child.sample.result), 10)
         assert hasattr(tabmod.child.sample, "pintset")
         self.assertEqual(len(tabmod.child.sample.pintset), 10)
-
 
     def test_table_module_cols(self) -> None:
         s = self.scheduler()
@@ -112,8 +110,8 @@ class TestModuleFacade(ProgressiveTest):
         random = RandomPTable(10, rows=10000, scheduler=s)
         tabmod = TableFacade.get_or_create(random, "result")
         tabmod.configure(base="min", hints=["_1", "_2", "_3"], name="min3")
-        pr_min = Print(scheduler=s)
-        pr_min.input[0] = tabmod.output.min3
+        sink = Sink(scheduler=s)
+        sink.input[0] = tabmod.output.min3
         aio.run(s.start())
         assert hasattr(tabmod.child.main, "result")
         assert hasattr(tabmod.child.min3, "result")
@@ -121,6 +119,53 @@ class TestModuleFacade(ProgressiveTest):
         res1 = tabmod.child.main.result.loc[:, ["_1", "_2", "_3"]].min()
         res2 = tabmod.child.min3.result
         self.compare(res1, res2)
+
+    def test_table_module_configure_hist(self) -> None:
+        s = self.scheduler()
+        random = RandomPTable(10, rows=10000, scheduler=s)
+        tabmod = TableFacade.get_or_create(random, "result")
+        tabmod.configure(base="min", hints=["_1"], name="min_1")
+        tabmod.configure(base="max", hints=["_1"], name="max_1")
+        tabmod.configure(base="histogram", hints=["_1",], name="hist_1",
+                         connect=dict(min="min_1", max="max_1"))
+        sink = Sink(scheduler=s)
+        sink.input[0] = tabmod.output.hist_1
+        aio.run(s.start())
+        histogram1d = cast(Histogram1D, notNone(tabmod.get('hist_1')).output_module)
+        last = notNone(histogram1d.result)
+        h1 = last["array"]
+        bounds = (last["min"], last["max"])
+        tab = notNone(random.result).loc[:, ["_1"]]
+        assert tab is not None
+        v = tab.to_array().reshape(-1)
+        h2, _ = np.histogram(
+            v, bins=histogram1d.params.bins, density=False, range=bounds
+        )
+        self.assertEqual(np.sum(h1), np.sum(h2))
+        self.assertListEqual(h1.tolist(), h2.tolist())
+
+    def test_table_module_configure_hist2d(self) -> None:
+        s = self.scheduler()
+        random = RandomPTable(10, rows=10000, scheduler=s)
+        tabmod = TableFacade.get_or_create(random, "result")
+        tabmod.configure(base="min", hints=["_1", "_2"], name="min_1_2")
+        tabmod.configure(base="max", hints=["_1", "_2"], name="max_1_2")
+        tabmod.configure(base="histogram2d", hints=dict(x="_1", y="_2"), name="hist2d_1_2",
+                         connect=dict(min="min_1_2", max="max_1_2"))
+        sink = Sink(scheduler=s)
+        sink.input[0] = tabmod.output.hist2d_1_2
+        aio.run(s.start())
+        histogram2d = cast(Histogram2D, notNone(tabmod.get('hist2d_1_2')).output_module)
+        last = notNone(notNone(histogram2d.result).last()).to_dict()
+        h1 = last["array"]
+        bounds = [[last["ymin"], last["ymax"]], [last["xmin"], last["xmax"]]]
+        tab = notNone(random.result).loc[:, ["_1", "_2"]]
+        assert tab is not None
+        v = tab.to_array()
+        bins = [histogram2d.params.ybins, histogram2d.params.xbins]
+        h2 = fh.histogram2d(v[:, 1], v[:, 0], bins=bins, range=bounds)
+        h2 = np.flip(h2, axis=0)
+        self.assertTrue(np.allclose(h1, h2))
 
     def compare(self, res1: Dict[str, Any], res2: Dict[str, Any]) -> None:
         v1 = np.array(list(res1.values()))
