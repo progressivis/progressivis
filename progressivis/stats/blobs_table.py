@@ -41,9 +41,9 @@ def make_mv_blobs(
         arr = np.empty(size, dtype="int64")
         arr[:] = i
         labels.append(arr)
-    blobs = np.concatenate(blobs)
-    labels = np.concatenate(labels)
-    return multi_shuffle(blobs, labels)  # type: ignore
+    blobs_ = np.concatenate(blobs)
+    labels_ = np.concatenate(labels)
+    return multi_shuffle(blobs_, labels_)  # type: ignore
 
 
 def xy_to_dict(
