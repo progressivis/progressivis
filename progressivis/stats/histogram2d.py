@@ -31,13 +31,13 @@ logger = logging.getLogger(__name__)
 @def_parameter(
     "xbins",
     np.dtype(int),
-    256,
+    64,
     doc="the number of ``bins`` (as defined for {{Histogram1D}}) over the ``x`` axis",
 )
 @def_parameter(
     "ybins",
     np.dtype(int),
-    256,
+    64,
     doc="the number of ``bins`` (as defined for {{Histogram1D}}) over the ``y`` axis",
 )
 @def_parameter(
@@ -64,7 +64,12 @@ logger = logging.getLogger(__name__)
     PDict,
     doc="The maximum value in the input data. It could be provided by a {{Max}} module",
 )
-@def_output("result", PTable, doc="the output table")
+@def_output(
+    "result",
+    PTable,
+    datashape={"array": np.ndarray, "cmin": float, "cmax": float,"xmin": float,
+               "xmax": float,"ymin": float, "ymax": float, "time": int},
+    doc="the output table")
 class Histogram2D(Module):
     """
     Compute the 2D histogram of two scalar, numerical columns in the input table.

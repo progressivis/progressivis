@@ -57,6 +57,7 @@ logger = logging.getLogger(__name__)
 @def_output(
     "result",
     PDict,
+    datashape={"array": np.ndarray, "min": float, "max": float, "time": int},
     doc=(
         "the output table. Its datashape is"
         " ``{ array: var * int32, min: float64, max: float64, time: int64 }``"
