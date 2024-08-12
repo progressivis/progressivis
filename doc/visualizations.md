@@ -2,9 +2,13 @@
 
 There is a set of visualizations intended for Progressivis and usable with [JupyterLab](https://jupyterlab.readthedocs.io/en/latest/) grouped in a separate package called `ipyprogressivis`.
 
+(create-scenario)=
+
 ## Create a scenario
 
-Notebooks hosting a progressive scenario need to be initialized in a particular way. One call them **ProgressiBooks** and they must be created via the `Progressivis/New ProgressiBook` menu.
+Notebooks hosting a progressive scenario need to be initialized in a particular way. One call them **ProgressiBooks** and they must be created via the `Progressivis/New ProgressiBook` menu:
+
+![](viz_images/create_progressibook.png)
 
 Once created, a `Run ProgressiVis` button will appear in the first `ProgressiBook` cell.
 
@@ -37,6 +41,8 @@ Each `CW` is designed for a specific stage of an analysis scenario (data loading
     ...
     ...
 ```
+
+**NB:** Only the `.progressivis` directory needs to be created by the user. All other directories and files will be created by widgets as required.
 
 ## Chaining widgets list
 
@@ -81,7 +87,83 @@ Once loading has begun, the `Next stage` list and the `Chain it` button will be 
 
 #### PARQUET Loader
 
-... comming soon
+Possible topology:
+
+![](viz_images/csv_loader_topology.png)
+
+##### Function:
+
+It loads one PARQUET file progressively
+
+After starting, the main interface is:
+
+![](viz_images/parquet_before_sniffing.png)
+
+You have to activate the sniffer and select the desired columns before loading:
+
+![](viz_images/parquet_after_sniffing.png)
+
+(custom-loader)=
+
+#### CUSTOM Loader
+
+Possible topology:
+
+![](viz_images/rand_loader_topology.png)
+
+##### Function:
+
+Allows users to code their own loader in _Python_, respecting a few conventions to ensure connectivity.
+
+After starting, a pre-filled magic cell is displayed:
+
+```python
+%%pv_run_cell
+proxy = Constructor.proxy('Rand', 0)
+scheduler = proxy.scheduler
+# Warning: keep the code above unchanged
+# Put your own imports here
+...
+...
+with scheduler:
+    # Put your own code here
+    ...
+    ...
+    # fill in the following proxy attributes:
+    proxy.output_module = ...  # Module | TableFacade
+    proxy.output_slot = 'result'  # str
+    proxy.freeze = True  # bool
+    # Warning: keep the code below unchanged
+    proxy.cell_content = __pv_cell__
+    display(proxy.resume())
+```
+
+To illustrate, a simple example is given below. It simulates data loading via a random float data generator in the form of a 4-column `PTable`:
+
+```python
+%%pv_run_cell
+proxy = Constructor.proxy('Rand', 0)
+scheduler = proxy.scheduler
+# Warning: keep the code above unchanged
+# Put your own imports here
+from progressivis.stats import RandomPTable
+from progressivis.core import Sink
+with scheduler:
+    # Put your own code here
+    random = RandomPTable(4, rows=100_000_000, scheduler=scheduler)
+    sink = Sink(scheduler=scheduler)
+    sink.input.inp = random.output.result
+    # fill in the following proxy attributes:
+    proxy.output_module = random
+    proxy.output_slot = 'result'
+    proxy.freeze = True
+    # Warning: keep the code below unchanged
+    proxy.cell_content = __pv_cell__
+    display(proxy.resume())
+```
+
+The generated code preceding the user code provides access to the `scheduler`, which is essential for loader operation. It is not recommended to modify this code.
+The user code must fill the proxy attributes required for connection: `proxy.output_module` and `proxy.output_slot`. The `proxy.freeze` attribute plays the same role as the checkbox of the same name found in some widgets. It determines behavior in replay mode, see [here](recording-scenario).
 
 ### Table operators category
 
@@ -238,6 +320,102 @@ Obviously, the widest range of operations is proposed for numerical types:
 
 ![](viz_images/facade_num_cols.png)
 
+### Free coding category
+
+#### Python
+
+Possible topology:
+
+![](viz_images/python_topology.png)
+
+
+##### Function:
+
+It's a pseudo-widget that lets you insert custom code into a `CW` topology via various forms of _magic cells_. Custom code can be chained after any widget by selecting "Python" in the widget's `Next stage` list and pushing `Chain it` button.
+
+After starting, a pre-filled magic cell is displayed:
+
+```python
+%%pv_run_cell
+proxy = Constructor.proxy('Python', 0)
+# proxy object provides the following attributes:
+#  input_module: Module | TableFacade
+#  input_slot: str
+#  input_dtypes: dict[str, str] | None
+#  scheduler: Scheduler
+# Warning: keep the code above unchanged
+# Put your own imports here
+...
+...
+with scheduler:
+    # Put your own code here
+    ...
+    ...
+    # fill in the following proxy attributes:
+    proxy.output_module = ...  # Module | TableFacade
+    proxy.output_slot = 'result'  # str
+    proxy.freeze = True  # bool
+    # Warning: keep the code below unchanged
+    proxy.cell_content = __pv_cell__
+    display(proxy.resume())
+```
+
+To illustrate, a simple example is given below. It implements a 'range querying' 2D stage:
+
+```python
+%%pv_run_cell
+proxy = Constructor.proxy('Python', 0)
+# proxy object provides the following attributes:
+#  input_module: Module | TableFacade
+#  input_slot: str
+#  input_dtypes: dict[str, str] | None
+#  scheduler: Scheduler
+# Warning: keep the code above unchanged
+# Put your own imports here
+from progressivis.table.range_query_2d import RangeQuery2d
+from progressivis.table.constant import ConstDict
+from progressivis.utils.psdict import PDict
+from progressivis.core import aio, Sink
+scheduler = proxy.scheduler
+with scheduler:
+    # Put your own code here
+    low = PDict({"_1_arcsin": 0.2, "_2_arccos": 0.2})
+    low = ConstDict(pdict=low, scheduler=scheduler)
+    high = PDict({"_1_arcsin": 1.2, "_2_arccos": 1.2})
+    high = ConstDict(pdict=high, scheduler=scheduler)
+    range_qry = RangeQuery2d(column_x="_1_arcsin", column_y="_2_arccos", scheduler=scheduler)
+    range_qry.create_dependent_modules(
+        proxy.input_module, proxy.input_slot, min_value=low, max_value=high
+    )
+    sink = Sink(scheduler=scheduler)
+    sink.input.inp = range_qry.output.result
+    # fill in the following attributes:
+    proxy.output_module = range_qry
+    proxy.output_slot = 'result'
+    proxy.freeze = True
+    # Warning: keep the code below unchanged
+    proxy.cell_content = __pv_cell__
+    display(proxy.resume())
+```
+
+The pre-filled code preceding the user code provides access to a proxy object giving access via three attributes (`input_module`, `input_slot` and `scheduler`) to connection data with the input widget. It is not recommended to modify this code.
+
+The user code must fill the proxy attributes required by the next stage for connection: `proxy.output_module` and `proxy.output_slot`. The `proxy.freeze` attribute plays the same role as the checkbox of the same name found in some widgets. It determines behavior in replay mode, see [here](recording-scenario).
+
+<!--
+**NB:** In addition to the `%%pv_run_cell` command for entering code online, users can save their scripts (let's say `foo.py`) in the usual `CW` settings location (`$HOME/.progressivis/widget_settings/Python/foo.py) and execute them with the following command:
+
+```python
+%pv_run_file foo.py
+```
+-->
+
+#### CUSTOM Loader
+
+This is a particular case of the previous pseudo-widget, useful when code is not chained from another `CW`. This is the case for custom data loaders explained [here](custom-loader)
+
+
+
 ### Display tools category
 
 #### Dump table
@@ -331,9 +509,30 @@ This widget allows you to view several time series together:
 
 ![](viz_images/multiseries_view.png)
 
+#### Any Vega
 
-#### Scatterplot
-* ...
+Possible topology:
+
+![](viz_images/any_vega_topology.png)
+
+
+##### Function:
+
+
+Allows a user to integrate vega-based visualizations from customized schemas into a scenario. Schemas can be edited, saved and reused in a similar way to `CSV loader` settings.
+
+NB: The entry for an _Any Vega_ widget is always a `Facade`.
+
+![](viz_images/any_vega_heatmap.png)
+
+The "fetch info" button extracts the list of fields present in the schema before pairing them with members of the input facade and associating them (potentially) with element-wise processing operations.
+
+![](viz_images/any_vega_fetch_info.png)
+
+The rendering is similar to previous ones:
+
+![](viz_images/any_vega_rendering.png)
+
 
 (recording-scenario)=
 ## Recording a scenario
@@ -344,7 +543,7 @@ The scenario is saved only if the corresponding box in the start widget is check
 
 ![](viz_images/recording_start.png)
 
-After that, the scenario is built as explained above, with an extra detail: the `Freeze` checkbox, present in certain widgets:
+After that, the scenario is built as explained [above](create-scenario), with an extra detail: the `Freeze` checkbox, present in certain widgets:
 
 ![](viz_images/recording_csv_freeze.png)
 
@@ -352,3 +551,8 @@ When the freeze checkbox has been checked in a widget (here CSV Loader) during r
 Thus, when the record is replayed, these settings will be applied directly, without redisplaying the "frozen" widget.
 
 **NB:** Scenario registration should not be confused with the [persistent settings](#persistent-settings) of certain widgets, which are saved in dedicated files and can also be used in unregistered scenarios.
+
+
+## How to create a chaining widget ?
+
+Comming soon ...
