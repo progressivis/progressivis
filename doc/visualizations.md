@@ -118,8 +118,7 @@ Allows users to code their own loader in _Python_, respecting a few conventions 
 After starting, a pre-filled magic cell is displayed:
 
 ```python
-%%pv_run_cell
-proxy = Constructor.proxy('Rand', 0)
+%%pv_run_cell -p Rand,0
 scheduler = proxy.scheduler
 # Warning: keep the code above unchanged
 # Put your own imports here
@@ -134,15 +133,13 @@ with scheduler:
     proxy.output_slot = 'result'  # str
     proxy.freeze = True  # bool
     # Warning: keep the code below unchanged
-    proxy.cell_content = __pv_cell__
     display(proxy.resume())
 ```
 
 To illustrate, a simple example is given below. It simulates data loading via a random float data generator in the form of a 4-column `PTable`:
 
 ```python
-%%pv_run_cell
-proxy = Constructor.proxy('Rand', 0)
+%%pv_run_cell -p Rand,0
 scheduler = proxy.scheduler
 # Warning: keep the code above unchanged
 # Put your own imports here
@@ -158,7 +155,6 @@ with scheduler:
     proxy.output_slot = 'result'
     proxy.freeze = True
     # Warning: keep the code below unchanged
-    proxy.cell_content = __pv_cell__
     display(proxy.resume())
 ```
 
@@ -336,14 +332,13 @@ It's a pseudo-widget that lets you insert custom code into a `CW` topology via v
 After starting, a pre-filled magic cell is displayed:
 
 ```python
-%%pv_run_cell
-proxy = Constructor.proxy('Python', 0)
-# proxy object provides the following attributes:
-#  input_module: Module | TableFacade
-#  input_slot: str
-#  input_dtypes: dict[str, str] | None
-#  scheduler: Scheduler
-# Warning: keep the code above unchanged
+%%pv_run_cell -p Python,0
+# The 'proxy' name is present in this context and you can reference it.
+# it provides the following attributes:
+#  - proxy.input_module: Module | TableFacade
+#  - proxy.input_slot: str
+#  - proxy.input_dtypes: dict[str, str] | None
+#  - proxy.scheduler: Scheduler
 # Put your own imports here
 ...
 ...
@@ -356,21 +351,18 @@ with scheduler:
     proxy.output_slot = 'result'  # str
     proxy.freeze = True  # bool
     # Warning: keep the code below unchanged
-    proxy.cell_content = __pv_cell__
     display(proxy.resume())
 ```
 
 To illustrate, a simple example is given below. It implements a 'range querying' 2D stage:
 
 ```python
-%%pv_run_cell
-proxy = Constructor.proxy('Python', 0)
+%%pv_run_cell -p Python,0
 # proxy object provides the following attributes:
 #  input_module: Module | TableFacade
 #  input_slot: str
 #  input_dtypes: dict[str, str] | None
 #  scheduler: Scheduler
-# Warning: keep the code above unchanged
 # Put your own imports here
 from progressivis.table.range_query_2d import RangeQuery2d
 from progressivis.table.constant import ConstDict
@@ -394,7 +386,6 @@ with scheduler:
     proxy.output_slot = 'result'
     proxy.freeze = True
     # Warning: keep the code below unchanged
-    proxy.cell_content = __pv_cell__
     display(proxy.resume())
 ```
 
@@ -402,13 +393,12 @@ The pre-filled code preceding the user code provides access to a proxy object gi
 
 The user code must fill the proxy attributes required by the next stage for connection: `proxy.output_module` and `proxy.output_slot`. The `proxy.freeze` attribute plays the same role as the checkbox of the same name found in some widgets. It determines behavior in replay mode, see [here](recording-scenario).
 
-<!--
+
 **NB:** In addition to the `%%pv_run_cell` command for entering code online, users can save their scripts (let's say `foo.py`) in the usual `CW` settings location (`$HOME/.progressivis/widget_settings/Python/foo.py) and execute them with the following command:
 
 ```python
-%pv_run_file foo.py
+%pv_run_cell -f foo.py
 ```
--->
 
 #### CUSTOM Loader
 
