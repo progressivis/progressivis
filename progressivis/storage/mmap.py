@@ -245,7 +245,7 @@ class MMapDataset(Dataset):
 
     @property
     def shape(self) -> Shape:
-        return self.view.shape
+        return cast(Shape, self.view.shape)
 
     @property
     def dtype(self) -> np.dtype[Any]:
@@ -253,7 +253,7 @@ class MMapDataset(Dataset):
 
     @property
     def maxshape(self) -> Shape:
-        return self.view.shape
+        return cast(Shape, self.view.shape)
 
     @property
     def fillvalue(self) -> Any:
@@ -261,7 +261,7 @@ class MMapDataset(Dataset):
 
     @property
     def chunks(self) -> Shape:
-        return self.view.shape
+        return cast(Shape, self.view.shape)
 
     @property
     def size(self) -> int:
