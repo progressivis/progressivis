@@ -1,5 +1,5 @@
 mypy>=1.0.1
-numpy
+numpy<2
 ipython
 jinja2
 sqlalchemy-stubs
