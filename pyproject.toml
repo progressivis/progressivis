@@ -48,3 +48,7 @@ dynamic = ["version"]
 
 [tool.setuptools_scm]
 version_file = "progressivis/_version.py"
+
+[tool.ruff]
+extend-exclude = ["notebooks"]
+
