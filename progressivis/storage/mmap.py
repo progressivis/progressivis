@@ -16,7 +16,7 @@ import mmap as mm
 import logging
 import numpy as np
 from progressivis.core.utils import integer_types, get_random_name, next_pow2
-from .base import StorageEngine, Dataset
+from .base import StorageEngine, Dataset, Shape
 from .hierarchy import GroupImpl, AttributeImpl
 from ..core.settings import VARS
 from .mmap_enc import MMapObject
@@ -25,7 +25,7 @@ import atexit
 from typing import Union, Optional, Any, TYPE_CHECKING, cast, List, Iterable, Dict
 
 if TYPE_CHECKING:
-    from .base import Shape, DTypeLike, ArrayLike, Group, Attribute
+    from .base import DTypeLike, ArrayLike, Group, Attribute
 
 logger = logging.getLogger(__name__)
 
@@ -245,7 +245,7 @@ class MMapDataset(Dataset):
 
     @property
     def shape(self) -> Shape:
-        return self.view.shape
+        return cast(Shape, self.view.shape)
 
     @property
     def dtype(self) -> np.dtype[Any]:
@@ -253,7 +253,7 @@ class MMapDataset(Dataset):
 
     @property
     def maxshape(self) -> Shape:
-        return self.view.shape
+        return cast(Shape, self.view.shape)
 
     @property
     def fillvalue(self) -> Any:
@@ -261,7 +261,7 @@ class MMapDataset(Dataset):
 
     @property
     def chunks(self) -> Shape:
-        return self.view.shape
+        return cast(Shape, self.view.shape)
 
     @property
     def size(self) -> int:

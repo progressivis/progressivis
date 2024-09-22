@@ -15,7 +15,7 @@ from .base import StorageEngine, Dataset, Group
 from .hierarchy import GroupImpl, AttributeImpl
 
 
-from typing import Union, Optional, Any, Tuple, TYPE_CHECKING
+from typing import Union, Optional, Any, Tuple, TYPE_CHECKING, cast
 
 if TYPE_CHECKING:
     from .base import Attribute
@@ -59,7 +59,7 @@ class NumpyDataset(Dataset):
 
     @property
     def shape(self) -> Shape:
-        return self.view.shape
+        return cast(Shape, self.view.shape)
 
     @property
     def dtype(self) -> np.dtype[Any]:
@@ -67,7 +67,7 @@ class NumpyDataset(Dataset):
 
     @property
     def maxshape(self) -> Shape:
-        return self.view.shape
+        return cast(Shape, self.view.shape)
 
     @property
     def fillvalue(self) -> Any:
@@ -75,7 +75,7 @@ class NumpyDataset(Dataset):
 
     @property
     def chunks(self) -> Shape:
-        return self.view.shape
+        return cast(Shape, self.view.shape)
 
     @property
     def size(self) -> int:

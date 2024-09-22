@@ -18,6 +18,13 @@ class IntSlider(DOMWidget):
     value: int
     def __init__(self, **kw: Any) -> None: ...
 
+class IntProgress(DOMWidget):
+    value: int
+    def __init__(self, **kw: Any) -> None: ...
+
+class FloatProgress(DOMWidget):
+    value: float
+    def __init__(self, **kw: Any) -> None: ...
 
 class IntRangeSlider(DOMWidget):
     value: Any
