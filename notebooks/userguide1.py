@@ -35,7 +35,6 @@ bounds = {
 }
 
 # %%
-import progressivis as pv
 from progressivis.io import CSVLoader
 from progressivis.stats import Histogram2D, Min, Max
 from progressivis.vis import Heatmap
@@ -45,7 +44,6 @@ from progressivis.vis import Heatmap
 def filter_(df):
     lon = df['pickup_longitude']
     lat = df['pickup_latitude']
-    #return df[(lon>-74.10)&(lon<-73.7)&(lat>40.60)&(lat<41)]
     return df[
         (lon>bounds["left"]) &
         (lon<bounds["right"]) &
@@ -76,47 +74,18 @@ heatmap = Heatmap()
 # Connect it to the histogram2d
 heatmap.input.array = histogram2d.output.result
 
-# %% [markdown]
-# # Visualize the results
-#
-# We use barebone JupyterLab widgets to visualize the results.
-# We will visualize an image each time the heatmap module is updated.
-
 # %%
-import ipywidgets as ipw
-from IPython.display import display
-
-# Create an ipywidget showing an image. It will be update when
-# the heatmap is updated
-wg = ipw.Image(value=b'\x00', width=RESOLUTION, height=RESOLUTION)
-# Create a textbox to show the run number (akin to an epoch in ml)
-wint = ipw.IntText(value=0, disabled=True)
-# Create a button to stop the progressive program
-bstop = ipw.Button(description="Stop")
-
-# Stopping boils down to calling Scheduler.task_stop on the right scheduler
-def stop(b):
-    csv.scheduler().task_stop()
-bstop.on_click(stop)
-
-display(wg, ipw.HBox([wint, bstop]))
-
-# Callback to update the image
-async def _after_run(m, run_number):
-    global wg, wint
-    img = m.get_image_bin()  # get the image from the heatmap
-    if img is None:
-        return
-    wg.value = img  # Replace the displayed image with this new one
-    wint.value = m.last_update()  # also show the run number
-
-# Install the callback
-heatmap.on_after_run(_after_run)
-
-# The image is shown below, and will be updated in place
+heatmap.display_notebook()
 
 # %%
 # Start the scheduler
 csv.scheduler().task_start()
+
+# %%
+csv.scheduler()
+
+# %%
+csv.scheduler().task_stop()
+
 
 # %%
