@@ -8,49 +8,54 @@ In a traditional computation system, you don't worry much about the time taken w
 ## Key concepts
 
 **ProgressiVis** uses specific constructs to remain reactive and interactive all the time.
-Let's start with a simple non progressive program to introduce the concept.  Assume we want to find out what are the popular places to go in New York City. You can visualize all the NYC Yellow Taxi pickup places as a start. Using the Python Pandas library, you would write something like:
-```python
-import pandas as pd
+Let's start with a simple non progressive program to introduce the concept.  Assume we want to find out what are the popular places to go in New York City.
 
-
-TAXI_FILE = "https://raw.githubusercontent.com/bigdata-vandy/spark-taxi/master/yellow_tripdata_2015-01.csv"
-
-df = pd.read_csv(TAXI_FILE, index_col=False)
-df.plot.scatter(x="pickup_latitude", y="pickup_longitude")
-```
-
-
-In that case, you would only get the trips from January 2015. It would take you a few seconds to download the file and to visualize it. And you would see this:
-![](images/userguide_1_bad.png)
-
-which is probably not what you expected. You see a very common issue with real data: noise and outliers. In that particular case, one taxi driver has forgotten to stop his meter when driving to Florida, leading to a much too large bounding box for the data.
-
-The most common way to deal with this outlier problem is to filter outlier points, typically the points outside the 2% quantiles up and down:
-```python
-
-plq = df.pickup_longitude.quantile([0.02, 0.98])
-
-```
-Now, you would see this:
-![](images/userguide_1_ok.png)
-
-This dataset used in this example is a sample of the real one; it is only 1000 lines long.  The real dataset contains 2 million lines (about 12Mb) for January only and 12 times more for the whole year 2015 (1.5 billion lines, 22Gb). It would take several minutes to download the data, and a few more seconds to visualize it.
-
-## Progressive Visualization
-
-With `ProgressiVis`, you could also load the data and fix it, but you don't need to wait for the file to be loaded to visualize it, you can do it on the go:
+With `ProgressiVis`, you can load the data and don't need to wait for the file to be fully loaded to visualize it, you can do it on the go, as with this bare-bone low-level ProgressiVis program:
 
 ```python
-import progressivis as pv
+from progressivis.io import CSVLoader
+from progressivis.stats import Histogram2D, Min, Max
+from progressivis.vis import Heatmap
 
-TAXI_FILE = "https://raw.githubusercontent.com/bigdata-vandy/spark-taxi/master/yellow_tripdata_2015-01.csv"
+LARGE_TAXI_FILE = "https://www.aviz.fr/nyc-taxi/yellow_tripdata_2015-01.csv.bz2"
+bounds = {"top": 40.92, "bottom": 40.49, "left": -74.27, "right": -73.68}
 
-csv = pv.CSVLoader(TAXI_FILE, index_col=False)
-scatterplot = pv.ScatterPlot(x_column='dropoff_latitude',
-                             y_column='dropoff_longitude')
-scatterplot.create_dependent_modules(csv,'table')
-csv.start()
+# Function to filter out trips outside of NYC.
+# Since there are outliers in the files.
+def filter_(df):
+    lon = df['pickup_longitude']
+    lat = df['pickup_latitude']
+    return df[(lon>bounds["left"])&(lon<bounds["right"])&(lat>bounds["bottom"])&(lat<bounds["top"])]
+
+# Create a csv loader filtering out data outside NYC
+csv = CSVLoader(LARGE_TAXI_FILE, index_col=False, filter_=filter_)
+
+min = Min() # Create a module to compute the min value progressively
+min.input.table = csv.output.result # Connect it to the csv module
+
+max = Max()  # Create a module to compute the max value progressively
+max.input.table = csv.output.result  # Connect it to the csv module
+
+# Create a module to compute the 2D histogram of the two columns specified
+# with the given resolution
+histogram2d = Histogram2D('pickup_longitude', 'pickup_latitude', xbins=512, ybins=512)
+histogram2d.input.table = csv.output.result  # Connect the module to the table
+histogram2d.input.min = min.output.result    # the min value
+histogram2d.input.max = max.output.result    # and the max value
+
+# Create a module to create an heatmap image from the histogram2d
+heatmap = Heatmap()
+heatmap.input.array = histogram2d.output.result  # Connect it to the histogram2d
+
+heatmap.display_notebook()  # visualize the heatmap
+
+csv.scheduler().task_start()  # Start the scheduler, run the program
 ```
+
+The image of all the taxi pickup positions appears immediately  and get more detailed progressively, revealing the shape of Manhattan and the two New York City airports.
+![](images/nyc1.png)
+
+With a standard visualization system, or using Pandas from python, the visualization would take minutes to show due to the time needed to load the file.
 
 ## Main Components
 

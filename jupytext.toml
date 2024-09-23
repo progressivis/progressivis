@@ -1,0 +1,4 @@
+# Pair ipynb notebooks to py:percent text notebooks
+formats = "ipynb,py:percent"
+preferred_jupytext_formats_read = "py:percent"
+

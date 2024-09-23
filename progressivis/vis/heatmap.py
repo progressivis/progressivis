@@ -113,12 +113,12 @@ class Heatmap(Module):
                 data += low
 
             image = Image.fromarray(data, mode="I")
-            image = image.transpose(Image.Transpose.FLIP_TOP_BOTTOM)
+            # image = image.transpose(Image.Transpose.FLIP_TOP_BOTTOM)
             filename = params.filename
         except Exception:
             image = None
             filename = None
-        if filename is not None:
+        if filename is not None and image is not None:
             try:
                 if re.search(r"%(0[\d])?d", filename):
                     filename = filename % (run_number)
@@ -133,7 +133,8 @@ class Heatmap(Module):
                 raise
         else:
             buffered = io.BytesIO()
-            image.save(buffered, format="PNG", bits=8)
+            if image is not None:
+                image.save(buffered, format="PNG", bits=8)
             res = str(base64.b64encode(buffered.getvalue()), "ascii")
             filename = "data:image/png;base64," + res
 
@@ -205,3 +206,19 @@ class Heatmap(Module):
             return base64.b64decode(payload)
         else:
             return None
+
+    def display_notebook(self, width:int = 512, height:int = 512) -> None:
+        import ipywidgets as ipw
+        from IPython.display import display
+
+        wg = ipw.Image(value=b'\x00', width=width, height=height)  # type: ignore
+        display(wg)  # type: ignore
+        async def _after_run(m: Module, run_number: int) -> None:
+            assert isinstance(m, Heatmap)
+            img = m.get_image_bin()  # get the image from the heatmap
+            if img is None:
+                return
+            wg.value = img  # Replace the displayed image with the new one
+
+        # TODO: add a on_ending(remove _after_run)
+        self.on_after_run(_after_run)  # Install the callback
