@@ -108,7 +108,7 @@ class Heatmap(Module):
             data = (data - cmin) * scale + 0.499
             data[data > high] = high
             data[data < 0] = 0
-            data = np.cast[np.uint32](data)
+            data = np.asarray(data, dtype=np.uint32)
             if low != 0:
                 data += low
 

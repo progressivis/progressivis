@@ -265,7 +265,7 @@ class MMapDataset(Dataset):
 
     @property
     def size(self) -> int:
-        return self.view.shape[0]
+        return cast(int, self.view.shape[0])
 
     def resize(self, size: Union[int, ArrayLike], axis: Optional[int] = None) -> None:
         assert self._buffer is not None
@@ -355,7 +355,7 @@ class MMapDataset(Dataset):
             self.view[k] = self._strings.set_at(self.view[k], val[i])
 
     def __len__(self) -> int:
-        return self.view.shape[0]
+        return cast(int, self.view.shape[0])
 
     @property
     def attrs(self) -> Attribute:

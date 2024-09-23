@@ -79,7 +79,7 @@ class NumpyDataset(Dataset):
 
     @property
     def size(self) -> int:
-        return self.view.shape[0]
+        return cast(int, self.view.shape[0])
 
     def resize(self, size: Union[int, ArrayLike], axis: Optional[int] = None) -> None:
         if isinstance(size, integer_types):
@@ -117,7 +117,7 @@ class NumpyDataset(Dataset):
         self.view[args] = val
 
     def __len__(self) -> int:
-        return self.view.shape[0]
+        return cast(int, self.view.shape[0])
 
     @property
     def attrs(self) -> Attribute:

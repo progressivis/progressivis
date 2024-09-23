@@ -143,7 +143,7 @@ class TestPTableSelected(ProgressiveTest):
         self.assertTrue(np.allclose(view[2].value, ivalues[5:8] * fvalues[5:8]))
         self.assertEqual(view.at[6, "a"], ivalues[6])
         self.assertEqual(view.at[7, "b"], fvalues[7])
-        self.assertEqual(view.at[7, "a_x_b"], ivalues[7] * fvalues[7])
+        self.assertEqual(view.at[7, "a_x_b"], np.float32(ivalues[7] * fvalues[7]))
         with self.assertRaises(KeyError):
             self.assertEqual(view.at[4, "a"], ivalues[4])
         with self.assertRaises(KeyError):

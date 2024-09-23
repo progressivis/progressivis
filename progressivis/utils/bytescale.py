@@ -77,4 +77,4 @@ def bytescale(
     bytedata = (data * 1.0 - cmin) * scale + 0.4999
     bytedata[bytedata > high] = high
     bytedata[bytedata < 0] = 0
-    return np.cast[np.uint8](bytedata) + np.cast[np.uint8](low)  # type: ignore
+    return np.asarray(bytedata, dtype=np.uint8) + np.asarray(low, dtype=np.uint8)  # type: ignore
