@@ -17,7 +17,6 @@ from dataclasses import dataclass
 import copy
 import logging
 from .changemanager_base import EMPTY_BUFFER, BaseChangeManager
-from ..utils.pmux import PMux
 
 # from .changemanager_literal import LiteralChangeManager
 
@@ -124,7 +123,6 @@ class Slot:
         """The original input slot before it has been renamed for slots with multiple inputs """
         self._name: str
         self._changes: Optional[BaseChangeManager] = None
-        self._mux_changes: Dict[Tuple[str, str], Optional[BaseChangeManager]] = {}
         self.meta: Optional[Any] = None
         self._hint: Optional[Any] = None
 
@@ -136,43 +134,21 @@ class Slot:
         return self._name
 
     @property
-    def is_mux(self) -> bool:
-        data = self.output_module.get_data(self.output_name)
-        if data is None:
-            return False
-        return isinstance(data, PMux)
-
-    @property
     def changes(self) -> Optional[BaseChangeManager]:
-        if not self.is_mux:
-            return self._changes
-        return self._mux_changes.get(self.mux_key)
+        return self._changes
 
     @changes.setter
     def changes(self, value: Optional[BaseChangeManager]) -> None:
-        if self.is_mux:
-            self._mux_changes[self.mux_key] = value
-        else:
-            self._changes = value
-
-    @property
-    def mux_key(self) -> Tuple[str, str]:
-        assert self.input_module is not None
-        assert self.input_name is not None
-        return self.input_module.name, self.input_name
+        self._changes = value
 
     def data(self) -> Any:
         "Return the data associated with this slot"
-        data = self.output_module.get_data(self.output_name)
-        if not self.is_mux:
-            return data
-        k = self.mux_key
-        if k not in data._results:
-            return None
-        return data._results[k]
+        data = self.output_module.get_data(self.output_name, self._hint)
+        return data
 
     def has_data(self) -> bool:
-        return self.data() is not None and len(self.data()) > 0
+        data = self.data()
+        return data is not None and len(data) > 0
 
     def scheduler(self) -> Scheduler:
         "Return the scheduler associated with this slot"
@@ -348,8 +324,8 @@ class Slot:
                 buffer_masked=desc.buffer_masked,
             )
         if self.changes:
-            df = self.data()
-            self.changes.update(run_number, df, self.name())
+            data = self.data()
+            self.changes.update(run_number, data, self.name())
 
     def reset(self) -> None:
         "Reset the slot"

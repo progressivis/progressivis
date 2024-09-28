@@ -62,10 +62,10 @@ class Expr:
     def output_slot(self) -> Optional[str]:
         return self._output_slot
 
-    def get_data(self, name: str) -> Any:
+    def get_data(self, name: str, hint: Any = None) -> Any:
         if self.module is None:
             return None
-        return self.module.get_data(name)
+        return self.module.get_data(name, hint)
 
     def __getitem__(self, output_slot: str) -> Expr:
         assert self._module is not None

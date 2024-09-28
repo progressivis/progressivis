@@ -210,6 +210,10 @@ class BasePColumn(metaclass=ABCMeta):
         "Return the dtype"
         pass
 
+    def is_numeric(self) -> bool:
+        "Return True if the column type is numeric"
+        return np.issubdtype(self.dtype, np.number)
+
     @abstractproperty
     def dshape(self) -> DataShape:
         "Return the datashape"

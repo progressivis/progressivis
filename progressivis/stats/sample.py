@@ -74,7 +74,7 @@ class Sample(Module):
         if slot is not None:
             slot.reset()
 
-    def get_data(self, name: str) -> Any:
+    def get_data(self, name: str, hint: Any = None) -> Any:
         if name == "select":
             return self.getpintset()
         if self.result is not None:

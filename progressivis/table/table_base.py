@@ -1075,9 +1075,6 @@ class BasePTable(metaclass=ABCMeta):
         elif isinstance(key, Iterable):
             if fast:
                 return (self._column(c) for c in key)
-            # Old code, hoping it does not break anything
-            # if all_bool(key):
-            #     return self.iloc[key]
         elif isinstance(key, slice):
             if fast:
                 indices = self._col_slice_to_indices(key)

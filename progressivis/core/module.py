@@ -463,11 +463,6 @@ class Module(metaclass=ABCMeta):
         """
         self.input[self.default_input()] = factory.result()
 
-    # def create_dependent_modules(self, *params, **kwds) -> None:  # pragma no cover
-    #     """Create modules that this module depends on.
-    #     """
-    #     pass
-
     def get_progress(self) -> Tuple[int, int]:
         """Return a tuple of numbers (current,total) where current is `current`
         progress value and `total` is the total number of values to process;
@@ -844,7 +839,9 @@ class Module(metaclass=ABCMeta):
         "Return the input slot considered as the default for this module"
         return 0
 
-    def get_data(self, name: str) -> Any:
+    def get_data(self, name: str, hint: Any = None) -> Any:
+        """Return the data of the named output slot.
+        """
         if name == Module.TRACE_SLOT:
             return self.tracer.trace_stats()
         if name == Module.PARAMETERS_SLOT:

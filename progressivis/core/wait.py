@@ -45,7 +45,7 @@ class Wait(Module):
             return bool(len(inslot.data()) >= reads)
         return False
 
-    def get_data(self, name: str) -> Any:
+    def get_data(self, name: str, hint: Any = None) -> Any:
         if name == "inp":
             slot = self.get_input_slot("inp")
             if slot is not None:

@@ -38,12 +38,12 @@ class Histograms(Module):
         "Return the table"
         return cast(BasePTable, self.get_input_slot("table").data())
 
-    def get_data(self, name: str) -> Any:
+    def get_data(self, name: str, hint: Any = None) -> Any:
         if name == "min":
             return self.get_input_slot("min").data()
         if name == "max":
             return self.get_input_slot("max").data()
-        return super(Histograms, self).get_data(name)
+        return super(Histograms, self).get_data(name, hint)
 
     def predict_step_size(self, duration: float) -> int:
         return 1

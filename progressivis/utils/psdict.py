@@ -76,6 +76,7 @@ class PDict(Dict[str, Any]):
         raise KeyError(f"Key not found for id: {id}")
 
     def k_(self, id: int) -> str:
+        "Returns the key associated to id"
         k, _ = self.key_of(id)
         return k
 
