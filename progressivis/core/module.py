@@ -1388,8 +1388,11 @@ class InputSlots:
             slot.input_name = name
         if hint is not None:
             desc_ = slot.input_descriptor()
-            ck = check_type(hint, desc_.hint_type)
-            assert ck == hint
+            if desc_.hint_type:
+                ck = check_type(hint, desc_.hint_type)
+                assert ck == hint
+            elif hint is not None:
+                logger.warning(f"Unexpected slot hint {hint} for {slot}")
             slot._hint = hint
         slot.connect()
 

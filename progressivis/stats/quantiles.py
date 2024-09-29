@@ -15,6 +15,7 @@ from datasketches import kll_floats_sketch
 
 logger = logging.getLogger(__name__)
 
+
 @document
 @def_input("table", PTable, doc="the input table")
 @def_output(
@@ -58,14 +59,23 @@ class Quantiles(Module):
         """Return the data of the named output slot.
         """
         if hint is not None and name == "result":
+            # print(f"Getting result with hint {hint}...")
             try:
                 quantile = float(hint)
             except ValueError:
                 quantile = 0
-            result = self._cache.get(quantile, PDict())
-            for i, k in enumerate(result.keys()):
-                v = self._klls[i].get_quantile(quantile)
-                result[k] = v
+            if quantile in self._cache:
+                # print("cached")
+                result = self._cache[quantile]
+            else:
+                # print("not cached")
+                if self.result is None:
+                    return None
+                result = PDict()
+                for i, k in enumerate(self.result.keys()):
+                    v = self._klls[i].get_quantile(quantile)
+                    result[k] = v
+                self._cache[quantile] = result
             return result
         return super().get_data(name, hint)
 
@@ -86,6 +96,7 @@ class Quantiles(Module):
             for i, k in enumerate(self.result.keys()):
                 column = df[k]
                 column = column.loc[fix_loc(indices)]
-                self._klls[i].update(column.values)
+                self._klls[i].update(column)  # type: ignore
                 self.result[k] = self._klls[i].n
+                self._cache = {}
             return self._return_run_step(self.next_state(ctx.table), steps)
