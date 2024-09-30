@@ -1,29 +1,29 @@
-from progressivis import Scheduler, Every
-from progressivis.table.constant import Constant
-from progressivis.stats import Histogram2D, Min, Max
-from progressivis.io import CSVLoader
-from progressivis.vis import Heatmap
-from progressivis.datasets import get_dataset
-from progressivis.table import Table
+from progressivis import (
+    Scheduler,
+    Constant,
+    Histogram2D,
+    Min, Max,
+    CSVLoader,
+    Heatmap,
+    Table
+)
 import pandas as pd
 
-RESOLUTION=1024
+RESOLUTION = 1024
+
 
 def filter_(df):
     lon = df['Dropoff_longitude']
     lat = df['Dropoff_latitude']
     return df[(lon>-74.10)&(lon<-73.7)&(lat>40.60)&(lat<41)]
 
+
 def print_len(x):
     if x is not None:
         print(len(x))
 
-#log_level() #package='progressivis.stats.histogram2d')
 
-try:
-    s = scheduler
-except:
-    s = Scheduler()
+s = Scheduler()
 
 #PREFIX= 'https://storage.googleapis.com/tlc-trip-data/2015/'
 #SUFFIX= ''

@@ -1,6 +1,5 @@
-from progressivis.core import Sink, Scheduler
-from progressivis.stats import RandomPTable
-from progressivis.table.range_query import RangeQuery
+from progressivis import Sink, Scheduler, RandomPTable, RangeQuery
+
 
 scheduler = Scheduler()
 with scheduler:

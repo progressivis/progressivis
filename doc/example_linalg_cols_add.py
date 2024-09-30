@@ -1,5 +1,4 @@
-from progressivis.core import Sink, Scheduler
-from progressivis.stats import RandomPTable
+from progressivis import Sink, Scheduler, RandomPTable
 from progressivis.linalg import ColsAdd
 
 #

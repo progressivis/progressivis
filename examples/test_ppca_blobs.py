@@ -1,7 +1,4 @@
-from progressivis import Scheduler, Every#, log_level
-from progressivis.io import CSVLoader
-from progressivis.datasets import get_dataset
-from progressivis.stats import Sample
+from progressivis import Scheduler, Every
 from progressivis.stats.ppca import PPCA
 from progressivis.core import aio
 from progressivis.stats.blobs_table import BlobsTable
@@ -11,6 +8,7 @@ try:
     s = scheduler
 except NameError:
     s = Scheduler()
+
 
 def _print(x):
     pass
@@ -24,7 +22,7 @@ def _print(x):
 @click.option('--csv_log_file', default=None, help='Save trace as a csv file')
 def main(n_samples, n_components, rtol, trace, csv_log_file):
     centers = [(0.1, 0.3, 0.5), (0.7, 0.5, 0.3), (-0.4, -0.3, -0.1)]
-    data = BlobsTable(columns=['_0', '_1', '_2'],  centers=centers,
+    data = BlobsTable(columns=['_0', '_1', '_2'], centers=centers,
                       cluster_std=0.2, rows=n_samples, scheduler=s)
     ppca = PPCA(scheduler=s)
     ppca.input.table = data.output.table
@@ -35,6 +33,7 @@ def main(n_samples, n_components, rtol, trace, csv_log_file):
     aio.run(s.start())
     if csv_log_file:
         ppca.reduced._trace_df.to_csv(csv_log_file, index=False)
-    
+
+
 if __name__ == '__main__':
     main()

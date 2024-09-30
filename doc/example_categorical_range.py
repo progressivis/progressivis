@@ -1,8 +1,5 @@
-from progressivis.core import Sink, Scheduler
-from progressivis.io import CSVLoader
+from progressivis import Sink, Scheduler, CSVLoader, ConstDict, PDict
 from progressivis.table.categorical_query import CategoricalQuery
-from progressivis.table.constant import ConstDict
-from progressivis.utils.psdict import PDict
 
 scheduler = Scheduler()
 with scheduler:

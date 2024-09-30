@@ -1,21 +1,25 @@
-from progressivis import Scheduler, Every, log_level
-from progressivis.table.constant import Constant
-
-from progressivis.stats import Histogram2D, Min, Max
-from progressivis.io import CSVLoader
-from progressivis.vis import Heatmap
-from progressivis.table import Table
+from progressivis import (
+    Scheduler,
+    Constant,
+    Histogram2D,
+    CSVLoader,
+    Heatmap,
+    Table
+)
 
 import pandas as pd
 
-RESOLUTION=1024
+RESOLUTION = 1024
 
 bounds_min = {'pickup_latitude': 40.60, 'pickup_longitude': -74.10}
 bounds_max = {'pickup_latitude': 41.00, 'pickup_longitude': -73.70}
+
+
 def filter_(df):
     lon = df['pickup_longitude']
     lat = df['pickup_latitude']
     return df[(lon>-74.10)&(lon<-73.7)&(lat>40.60)&(lat<41)]
+
 
 def print_len(x):
     if x is not None:
@@ -23,10 +27,7 @@ def print_len(x):
 
 #log_level() #package='progressivis.stats.histogram2d')
 
-try:
-    s = scheduler
-except:
-    s = Scheduler()
+s = Scheduler()
 
 #PREFIX= 'https://storage.googleapis.com/tlc-trip-data/2015/'
 #SUFFIX= ''

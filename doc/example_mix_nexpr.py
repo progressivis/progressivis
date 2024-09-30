@@ -1,6 +1,5 @@
 from progressivis.linalg.nexpr import NumExprABC
-from progressivis.table.table import PTable
-from progressivis.core.module import def_input, def_output
+from progressivis import PTable, def_input, def_output
 
 
 @def_input("first", type=PTable)

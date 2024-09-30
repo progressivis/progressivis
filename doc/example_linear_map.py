@@ -1,6 +1,5 @@
-from progressivis.core import Sink, Scheduler
+from progressivis import Sink, Scheduler, RandomPTable
 from progressivis.linalg.linear_map import LinearMap
-from progressivis.stats import RandomPTable
 
 scheduler = Scheduler()
 

@@ -1,8 +1,13 @@
-from progressivis import Scheduler, Every, Print
-from progressivis.io import CSVLoader
-from progressivis.stats import Histogram2D, Min, Max
+from progressivis import (
+    Scheduler,
+    Every,
+    Print,
+    CSVLoader,
+    Histogram2D,
+    Min, Max,
+    Heatmap
+)
 from progressivis.datasets import get_dataset
-from progressivis.vis import Heatmap
 
 print("Loading test_histogram2d")
 print("Type of default_scheduler is %s" % type(Scheduler.default))

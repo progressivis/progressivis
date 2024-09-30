@@ -2,12 +2,11 @@
 Clustering datasets may be found at
 http://cs.joensuu.fi/sipu/datasets/
 """
-from progressivis import Scheduler, Every#, log_level
+from progressivis import Scheduler, Every, CSVLoader
 from progressivis.cluster import MBKMeans
-from progressivis.io import CSVLoader
 from progressivis.vis import MCScatterPlot
 from progressivis.datasets import get_dataset
-from progressivis.stats import RandomTable
+from progressivis.core import aio
 
 try:
     s = scheduler

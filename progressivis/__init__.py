@@ -13,6 +13,8 @@ from progressivis.core.api import (
     Module,
     Every,
     Print,
+    PIntSet,
+    Sink,
 )
 
 from progressivis.utils.api import (
@@ -24,10 +26,15 @@ from progressivis.table.api import (
     BasePColumn,
     PColumn,
     BasePTable,
+    IndexPTable,
+    PTableSelectedView,
     PTable,
     Constant,
     ConstDict,
     Row,
+    RangeQuery2d,
+    RangeQuery,
+    Join,
 )
 
 from typing import Dict
@@ -35,6 +42,7 @@ from typing import Dict
 from ._version import __version__
 from progressivis.io import (
     CSVLoader,
+    ParquetLoader,
     Variable,
 )
 
@@ -68,21 +76,29 @@ __all__ = [
     "StorageManager",
     "Every",
     "Print",
+    "PIntSet",
+    "Sink",
     "PColumn",
     "BasePColumn",
     "Constant",
     "ConstDict",
     "BasePTable",
+    "IndexPTable",
+    "PTableSelectedView",
     "PTable",
     "Row",
+    "RangeQuery",
+    "RangeQuery2d",
+    "Join",
     "CSVLoader",
+    "ParquetLoader",
+    "Variable",
     "Histogram1D",
     "Histogram2D",
     "Max",
     "Min",
     "Quantiles",
     "RandomPTable",
-    "Variable",
     "Heatmap",
 ]
 

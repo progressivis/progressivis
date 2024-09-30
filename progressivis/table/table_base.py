@@ -286,7 +286,7 @@ class BasePTable(metaclass=ABCMeta):
         --------
         **Getting values**
 
-        >>> from progressivis.table.table import PTable
+        >>> from progressivis import PTable
         >>> data = dict(i=[29, 45, 12, 20, 70],
         ...             j=[-95, -47, -11, -83, -68],
         ...             s=["t", "a", "b", "l", "e"],

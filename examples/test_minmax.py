@@ -1,17 +1,13 @@
-from progressivis import Scheduler, Every, Print
-from progressivis.io import CSVLoader
-from progressivis.stats import Stats, RandomTable
+from progressivis import Scheduler, Every, Print, RandomTable
+from progressivis.stats.stats import Stats
 
 #log_level()
 
 def filter_(df):
-    l = df['pickup_longitude']
-    return df[(l < -70) & (l > -80) ]
+    long = df['pickup_longitude']
+    return df[(long < -70) & (long > -80)]
 
-try:
-    s = scheduler
-except:
-    s = Scheduler()
+s = Scheduler()
 ##########################################################################################
 #INPUT MODULE -> Random initialization of a tab with two columns
 #csv = CSVLoader('../nyc-taxi/yellow_tripdata_2015-10.csv.bz2', index_col=False,skipinitialspace=True,usecols=['pickup_longitude', 'pickup_latitude'], filter_=filter_, engine='c',scheduler=s)

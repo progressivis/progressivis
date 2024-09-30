@@ -2,13 +2,15 @@
 Clustering datasets may be found at
 https://cs.joensuu.fi/sipu/datasets/
 """
-from progressivis import Scheduler, Every  # , log_level
-from progressivis.cluster import MBKMeans
-from progressivis.io import CSVLoader
+from progressivis import (
+    Scheduler, Every,
+    CSVLoader,
+    PDict
+)
 from progressivis.vis import MCScatterPlot
 from progressivis.datasets import get_dataset
 from progressivis.core import aio
-from progressivis.utils.psdict import PDict
+from progressivis.cluster import MBKMeans
 import numpy as np
 
 try:

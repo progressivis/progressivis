@@ -1,15 +1,9 @@
 """
 Test loading of nyc_taxis with dynamic queries.
 """
-import time
 import pandas as pd
-import copy
-from progressivis.core import Scheduler, Every
-from progressivis.table import Table
+from progressivis import Scheduler, Every, Table, CSVLoader, Constant
 from progressivis.vis import MCScatterPlot
-from progressivis.io import CSVLoader
-#from progressivis.datasets import get_dataset
-from progressivis.table.constant import Constant
 import asyncio as aio
 
 
@@ -20,6 +14,7 @@ def _filter(df):
     dolat = df['dropoff_latitude']
     return df[(pklon > -74.08) & (pklon < -73.5) & (pklat > 40.55) & (pklat < 41.00) &
                   (dolon > -74.08) & (dolon < -73.5) & (dolat > 40.55) & (dolat < 41.00)]
+
 
 def _print_len(x):
     if x is not None:

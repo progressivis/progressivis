@@ -1,6 +1,4 @@
-from progressivis.core import Sink, Scheduler
-from progressivis.stats import RandomPTable
-from progressivis.linalg import Add
+from progressivis import Sink, Scheduler, RandomPTable, Add
 
 #
 # every column in random1 are added to the column in random2 in the same position

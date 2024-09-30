@@ -37,7 +37,7 @@ class Row(MutableMapping[str, Any]):
 
     Examples
     --------
-    >>> from progressivis.table import PTable, Row
+    >>> from progressivis import PTable, Row
     >>> table = PTable('table', data={'a': [ 1, 2, 3], 'b': [10.1, 0.2, 0.3]})
     >>> row = Row(table) # wraps the last row
     >>> len(row)

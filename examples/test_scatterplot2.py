@@ -1,27 +1,22 @@
 """
 Test loading of nyc_taxis with dynamic queries.
 """
-import time
 import pandas as pd
-import progressivis.core
-from progressivis.core import Scheduler, Every
-from progressivis.table import Table
+from progressivis import Scheduler, Every, Table, CSVLoader, Constant
 from progressivis.vis import MCScatterPlot
-from progressivis.io import CSVLoader
-#from progressivis.datasets import get_dataset
-from progressivis.table.constant import Constant
 import asyncio as aio
+
 
 def _filter(df):
     lon = df['pickup_longitude']
     lat = df['pickup_latitude']
     return df[(lon > -74.08) & (lon < -73.5) & (lat > 40.55) & (lat < 41.00)]
 
+
 def _print_len(x):
     if x is not None:
         print(len(x))
 
-#log_level() #package='progressivis.stats.histogram2d')
 
 try:
     s = scheduler

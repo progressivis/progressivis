@@ -67,7 +67,7 @@ class PTable(IndexPTable):
     column-based and supporting fast addition of items.
 
     Example:
-        >>> from progressivis.table import PTable
+        >>> from progressivis import PTable
         >>> t = PTable('my-table', dshape='{a: int32, b: float32, c: bool}', create=True)
         >>> len(t)
         0

@@ -2,9 +2,9 @@
 from __future__ import annotations
 
 from . import ProgressiveTest
+from progressivis import Scheduler
 from progressivis.core import aio
 from progressivis.datasets import get_dataset
-from progressivis.core import Scheduler
 
 import progressivis.expr as pv
 from progressivis.expr.table import PipedInput

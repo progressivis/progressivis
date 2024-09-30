@@ -1,7 +1,6 @@
 import numpy as np
 from progressivis.linalg.mixufunc import MixUfuncABC
-from progressivis.table.table import PTable
-from progressivis.core.module import def_input, def_output
+from progressivis import PTable, def_input, def_output
 from typing import Any
 
 

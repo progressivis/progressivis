@@ -1,7 +1,6 @@
 from . import ProgressiveTest, skipIf
 from progressivis.core import aio
-from progressivis import Print
-from progressivis.stats import RandomPTable
+from progressivis import Print, RandomPTable
 from progressivis.table.stirrer import Stirrer, StirrerView
 from progressivis.stats.cxxmax import Max, CxxMax  # type: ignore
 

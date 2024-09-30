@@ -1,6 +1,4 @@
-from progressivis.core import Sink, Scheduler
-from progressivis.io import ParquetLoader, CSVLoader
-from progressivis.table.join import Join
+from progressivis import Sink, Scheduler, ParquetLoader, CSVLoader, Join
 
 PARQUET_FILE = "path/to/yellow_tripdata_2015-01.parquet"
 CSV_URL = "path/to/taxi+_zone_lookup.csv"

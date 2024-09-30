@@ -228,7 +228,7 @@ Tables come into two main concrete classes: `PTable` and `PTableSelectedView`.
 `ProgressiVis` has been designed with user interaction in mind. It supports efficient dynamic filtering of large data tables to restrict the visualization or analyses to subsets of the loaded data. A `PTableSelectedView` is simply a `PTable` filtered by a `PIntSet`.  It is used in many places, either for user filtering or for synchronizing multiple data structures to the same set of valid indices.
 
 ```{eval-rst}
-.. currentmodule:: progressivis.table
+.. currentmodule:: progressivis
 
 .. autoclass:: BasePTable
    :members:
@@ -249,7 +249,7 @@ Tables come into two main concrete classes: `PTable` and `PTableSelectedView`.
 A table is a collection of named and typed columns.  In a table, all the columns have the same length and all the elements in a column have the same type.
 
 ```{eval-rst}
-.. currentmodule:: progressivis.table
+.. currentmodule:: progressivis
 
 .. autoclass:: BasePColumn
    :inherited-members:

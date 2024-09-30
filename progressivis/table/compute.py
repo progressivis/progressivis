@@ -89,7 +89,7 @@ class SingleColFunc(ColFunc):
 
     **Computed column using an universal function**
 
-    >>> from progressivis.table import PTable
+    >>> from progressivis import PTable
     >>> from progressivis.table.compute import SingleColFunc
     >>> import numpy as np
     >>> t = PTable("t", dshape="{a: int, b: float32}", create=True)
@@ -153,7 +153,7 @@ class MultiColFunc(ColFunc):
     Example
     -------
 
-    >>> from progressivis.table import PTable
+    >>> from progressivis import PTable
     >>> from progressivis.table.compute import MultiColFunc
     >>> import numpy as np
     >>> from typing import Any, Dict
@@ -222,7 +222,7 @@ class MultiColExpr(ColFunc):
     Example
     -------
 
-    >>> from progressivis.table import PTable
+    >>> from progressivis import PTable
     >>> from progressivis.table.compute import MultiColExpr
     >>> import numpy as np
     >>> from typing import Any, Dict

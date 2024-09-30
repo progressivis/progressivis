@@ -1,4 +1,4 @@
-from progressivis.core.pintset import PIntSet
+from progressivis import PIntSet
 from . import ProgressiveTest
 
 

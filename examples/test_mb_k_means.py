@@ -1,13 +1,9 @@
-from progressivis import Scheduler, Print
-from progressivis.cluster import MBKMeans
-from progressivis.stats import RandomTable
+from progressivis import Scheduler, Print, RandomTable
 from progressivis.vis import MCScatterPlot
+from progressivis.cluster import MBKMeans
 import asyncio as aio
 
-try:
-    s = scheduler
-except:
-    s = Scheduler()
+s = Scheduler()
 
 table = RandomTable(columns=['a', 'b'], rows=50000, throttle=500, scheduler=s)
 mbkmeans = MBKMeans(columns=['a', 'b'], n_clusters=8, batch_size=100, is_input=False, scheduler=s)
