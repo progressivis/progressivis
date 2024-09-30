@@ -1199,6 +1199,7 @@ class Module(metaclass=ABCMeta):
                 run_step_ret = self.run_step(run_number, step_size, quantum)
                 next_state = cast(ModuleState, run_step_ret["next_state"])
                 now = self.timer()
+                self._last_update = run_number  # fix?
             except ProgressiveStopIteration:
                 logger.info("In Module.run(): Received a StopIteration")
                 next_state = Module.state_zombie

@@ -9,11 +9,14 @@ from ..table.table import PTable
 from ..utils.psdict import PDict
 from ..core.decorators import process_slot, run_if_any
 
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Set
 
 from datasketches import kll_floats_sketch
 
 logger = logging.getLogger(__name__)
+
+
+DEBUG = False
 
 
 @document
@@ -43,6 +46,7 @@ class Quantiles(Module):
         self._k = k
         self._klls : List[kll_floats_sketch] = []
         self._cache: Dict[float, PDict] = {}
+        self._valid: Set[float] = set()
 
     def is_ready(self) -> bool:
         if self.get_input_slot("table").created.any():
@@ -50,32 +54,43 @@ class Quantiles(Module):
         return super().is_ready()
 
     def reset(self) -> None:
-        if self.result is not None:
-            self.result.clear()
+        self.result = None
         self._klls = []
         self._cache = {}
+        self._valid.clear()
 
     def get_data(self, name: str, hint: Any = None) -> Any:
         """Return the data of the named output slot.
         """
+        if self.result is None:
+            return None
         if hint is not None and name == "result":
             # print(f"Getting result with hint {hint}...")
             try:
                 quantile = float(hint)
             except ValueError:
+                if DEBUG:
+                    logger.warning(f"Hint {hint} is not convertible to a float")
                 quantile = 0
             if quantile in self._cache:
-                # print("cached")
+                if DEBUG:
+                    logger.warning(f"returning cached value for {quantile}")
                 result = self._cache[quantile]
             else:
-                # print("not cached")
-                if self.result is None:
-                    return None
+                if DEBUG:
+                    logger.warning(f"returning non cached value for {quantile}")
                 result = PDict()
+                self._cache[quantile] = result
+            if quantile not in self._valid:
+                self._valid.add(quantile)
+                if DEBUG:
+                    logger.warning(f"Refilling value for {quantile}")
                 for i, k in enumerate(self.result.keys()):
                     v = self._klls[i].get_quantile(quantile)
                     result[k] = v
                 self._cache[quantile] = result
+            if DEBUG:
+                logger.warning(f"Getting result with hint {hint}: {result}")
             return result
         return super().get_data(name, hint)
 
@@ -87,6 +102,7 @@ class Quantiles(Module):
         assert self.context
         with self.context as ctx:
             indices = ctx.table.created.next(length=step_size)  # returns a slice
+            fixed_indices = fix_loc(indices)
             steps = indices_len(indices)
             df = self.filter_slot_columns(ctx.table, fix_loc(indices))
             if self.result is None:
@@ -95,8 +111,8 @@ class Quantiles(Module):
                 self._klls = [kll_floats_sketch(self._k) for col in columns]
             for i, k in enumerate(self.result.keys()):
                 column = df[k]
-                column = column.loc[fix_loc(indices)]
+                column = column.loc[fixed_indices]
                 self._klls[i].update(column)  # type: ignore
                 self.result[k] = self._klls[i].n
-                self._cache = {}
+            self._valid.clear()
             return self._return_run_step(self.next_state(ctx.table), steps)

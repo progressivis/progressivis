@@ -5,7 +5,7 @@ from .kll import KLLSketch
 from .idxmax import IdxMax
 from .idxmin import IdxMin
 from .var import Var, VarH
-from .percentiles import Percentiles
+from .quantiles import Quantiles
 from .histogram1d import Histogram1D
 from .histogram1d_categorical import Histogram1DCategorical
 from .histogram2d import Histogram2D
@@ -26,7 +26,7 @@ __all__ = [
     "IdxMin",
     "VarH",
     "Var",
-    "Percentiles",
+    "Quantiles",
     "Histogram1D",
     "Histogram1DCategorical",
     "Histogram2D",

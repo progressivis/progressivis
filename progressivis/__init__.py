@@ -29,7 +29,7 @@ __all__ = [
     "Scheduler",
     "version",
     "__version__",
-    "short_version",
+    # "short_version",
     "Slot",
     "SlotDescriptor",
     "Module",

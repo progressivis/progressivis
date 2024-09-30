@@ -23,6 +23,9 @@
 # First, we define a few constants, where the file is located, the desired resolution, and the bounds of New York City.
 
 # %%
+# %load_ext autoreload
+# %autoreload 2
+
 LARGE_TAXI_FILE = "https://www.aviz.fr/nyc-taxi/yellow_tripdata_2015-01.csv.bz2"
 RESOLUTION=512
 
@@ -36,7 +39,7 @@ bounds = {
 
 # %%
 from progressivis.io import CSVLoader
-from progressivis.stats import Histogram2D, Min, Max
+from progressivis.stats import Histogram2D, Min, Max, Quantiles
 from progressivis.vis import Heatmap
 
 # Function to filter out trips outside of NYC.
@@ -52,23 +55,26 @@ def filter_(df):
     ]
 
 # Create a csv loader filtering out data outside NYC
-csv = CSVLoader(LARGE_TAXI_FILE, index_col=False, filter_=filter_)
+csv = CSVLoader(LARGE_TAXI_FILE, index_col=False, usecols=['pickup_longitude', 'pickup_latitude'])  # , filter_=filter_)
 
 # Create a module to compute the min value progressively
-min = Min()
+# min = Min()
 # Connect it to the output of the csv module
-min.input.table = csv.output.result
+# min.input.table = csv.output.result
 # Create a module to compute the max value progressively
-max = Max()
+# max = Max()
 # Connect it to the output of the csv module
-max.input.table = csv.output.result
+# max.input.table = csv.output.result
+
+quantiles = Quantiles()
+quantiles.input.table = csv.output.result
 # Create a module to compute the 2D histogram of the two columns specified
 # with the given resolution
 histogram2d = Histogram2D('pickup_longitude', 'pickup_latitude', xbins=RESOLUTION, ybins=RESOLUTION)
 # Connect the module to the csv results and the min,max bounds to rescale
 histogram2d.input.table = csv.output.result
-histogram2d.input.min = min.output.result
-histogram2d.input.max = max.output.result
+histogram2d.input.min = quantiles.output.result[0.03]  # min.output.result
+histogram2d.input.max = quantiles.output.result[0.97]  # max.output.result
 # Create a module to create an heatmap image from the histogram2d
 heatmap = Heatmap()
 # Connect it to the histogram2d
