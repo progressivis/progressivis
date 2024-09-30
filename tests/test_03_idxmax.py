@@ -3,7 +3,9 @@ import numpy as np
 from progressivis import Print
 from progressivis.stats import IdxMax, IdxMin, Max, Min, RandomPTable
 from progressivis.table.stirrer import Stirrer
-from progressivis.core import aio, notNone
+from progressivis.core.api import notNone
+from progressivis.core import aio
+
 
 from typing import Any, Dict
 

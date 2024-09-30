@@ -9,7 +9,9 @@ from progressivis.table.table import PTable
 from progressivis.io.csv_loader import CSVLoader
 from progressivis.datasets import get_dataset
 from progressivis.storage import Group
-from progressivis.core import aio, Sink, notNone
+from progressivis.core.api import Sink, notNone
+from progressivis.core import aio
+
 import numpy as np
 import pandas as pd
 

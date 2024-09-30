@@ -21,7 +21,7 @@ from ..core.utils import (
     is_slice,
     nn,
 )
-from ..utils import PDict
+from ..utils.psdict import PDict
 from ..core.pintset import PIntSet
 
 from typing import (Dict, Any, Type, Callable, Optional,

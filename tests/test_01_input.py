@@ -3,7 +3,8 @@ from . import ProgressiveTest
 from progressivis import Print
 from progressivis.io.input import Input
 import numpy as np
-from progressivis.core import aio, Scheduler
+from progressivis.core.api import Scheduler
+from progressivis.core import aio
 
 
 async def _do_line(inp: Input, s: Scheduler) -> None:

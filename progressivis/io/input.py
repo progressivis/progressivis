@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from progressivis.table import PTable
+from progressivis.table.api import PTable
 from progressivis.core.module import Module
 from progressivis.core.module import ReturnRunStep, JSon, def_output, def_parameter
 

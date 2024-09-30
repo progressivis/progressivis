@@ -7,7 +7,9 @@ from progressivis.stats import RandomPTable
 from progressivis.core.pintset import PIntSet
 from progressivis.table.range_query_2d import RangeQuery2d
 from progressivis.utils.psdict import PDict
-from progressivis.core import aio, Sink
+from progressivis.core.api import Sink
+from progressivis.core import aio
+
 from . import ProgressiveTest
 
 from typing import cast

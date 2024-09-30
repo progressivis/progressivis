@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 
 class SlotJoin:
     def __init__(self, module: Module, *slots: Slot):
-        from ..table import BasePTable
+        from ..table.api import BasePTable
 
         assert len(slots) > 0
         for slot in slots:

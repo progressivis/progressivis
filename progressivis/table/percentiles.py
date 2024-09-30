@@ -5,7 +5,7 @@ import numpy as np
 from ..core.module import Module, ReturnRunStep, def_input, def_output, def_parameter
 from ..utils.psdict import PDict
 from .binning_index import BinningIndex
-from . import PTable
+from .api import PTable
 from typing import Any, cast
 
 

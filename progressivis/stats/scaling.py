@@ -2,11 +2,11 @@ from __future__ import annotations
 import numpy as np
 import numexpr as ne
 import logging
-from ..core import Sink
+from ..core.sink import Sink
 from ..core.pintset import PIntSet
 from ..core.utils import indices_len
 from ..core.slot import Slot
-from ..table import PTable, BasePTable, BasePColumn
+from ..table.api import PTable, BasePTable, BasePColumn
 from ..core.module import Module, def_input, def_output, def_parameter
 from ..utils.psdict import PDict
 from . import Min, Max, Histogram1D

@@ -4,7 +4,7 @@ from . import ProgressiveTest, skip
 
 from progressivis import Print, Every
 from progressivis.io import CSVLoader
-from progressivis.utils import PDict
+from progressivis.utils.psdict import PDict
 from progressivis.table.select import Select
 from progressivis.table.constant import ConstDict
 from progressivis.stats import Sample

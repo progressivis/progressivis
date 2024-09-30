@@ -8,7 +8,7 @@ import copy
 from ..core.module import Module, ReturnRunStep, def_input, def_output, def_parameter
 from ..core.utils import indices_len, fix_loc
 from ..core.pintset import PIntSet
-from ..table import BasePTable, PTable, PTableSelectedView
+from ..table.api import BasePTable, PTable, PTableSelectedView
 from ..core.decorators import process_slot, run_if_any
 from ..utils.psdict import PDict
 from . import Sample

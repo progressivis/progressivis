@@ -10,7 +10,7 @@ from typing import Optional, TYPE_CHECKING
 
 
 if TYPE_CHECKING:
-    from progressivis.table import PTable
+    from progressivis.table.api import PTable
 
 logger = logging.getLogger(__name__)
 

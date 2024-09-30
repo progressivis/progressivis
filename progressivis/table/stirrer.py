@@ -8,7 +8,7 @@ import numpy as np
 from progressivis.core.utils import indices_len, fix_loc
 from progressivis.core.pintset import PIntSet
 from ..core.module import Module, def_parameter, def_input, def_output
-from . import PTable, PTableSelectedView
+from .api import PTable, PTableSelectedView
 
 from typing import Optional, List, Any, Union, TYPE_CHECKING
 

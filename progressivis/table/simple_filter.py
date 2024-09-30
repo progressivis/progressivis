@@ -4,7 +4,7 @@ from progressivis.core.utils import indices_len
 
 import numpy as np
 
-from . import BasePTable, PTable, PTableSelectedView
+from .api import BasePTable, PTable, PTableSelectedView
 from ..core.module import (
     Module,
     ReturnRunStep,

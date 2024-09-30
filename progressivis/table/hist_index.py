@@ -22,9 +22,8 @@ from ..core.module import (
     def_parameter,
     document
 )
-from . import PTable
+from .api import PTable, PTableSelectedView
 from ..core.utils import indices_len
-from . import PTableSelectedView
 
 
 from typing import List, Dict, Optional, Any, Callable, Tuple, Sequence

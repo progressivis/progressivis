@@ -2,7 +2,7 @@ from __future__ import annotations
 import numpy as np
 import logging
 from ..core.module import Module, ReturnRunStep, def_input, def_output
-from . import PTable, PTableSelectedView
+from .api import PTable, PTableSelectedView
 from ..core.pintset import PIntSet
 from collections import defaultdict
 from functools import singledispatchmethod as dispatch

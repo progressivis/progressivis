@@ -2,10 +2,12 @@ from __future__ import annotations
 
 import os
 from . import ProgressiveTest, skipIf
-from progressivis.core import aio, Sink
+from progressivis.core.api import Sink
+from progressivis.core import aio
+
 from progressivis.io import ParquetLoader
 from progressivis.table.group_by import GroupBy, SubPColumn as SC
-from progressivis.table import PTable
+from progressivis.table.api import PTable
 from typing import Any, Tuple
 
 PASSENGERS = {0, 1, 2, 3, 4, 5, 6, 9}

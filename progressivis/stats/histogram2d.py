@@ -11,7 +11,7 @@ from ..core.module import (
 )
 from ..core.utils import indices_len, fix_loc
 from ..core.slot import Slot
-from ..table import PTable
+from ..table.api import PTable
 from ..utils.psdict import PDict
 from fast_histogram import histogram2d  # type: ignore
 from ..core.decorators import process_slot, run_if_any

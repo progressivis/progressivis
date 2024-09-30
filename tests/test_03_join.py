@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import os
 from . import ProgressiveTest, skipIf
-from progressivis.core import aio, Sink
+from progressivis.core.api import Sink
+from progressivis.core import aio
 from progressivis.io import ParquetLoader, SimpleCSVLoader
 from progressivis.table.join import Join
 import pandas as pd

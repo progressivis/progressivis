@@ -8,7 +8,7 @@ from ..core.pintset import PIntSet
 from ..core.module import Module, ReturnRunStep, def_input, def_output
 from .group_by import GroupBy, SubPColumn as SC
 from .unique_index import UniqueIndex
-from . import PTable, PTableSelectedView
+from .api import PTable, PTableSelectedView
 from .compute import MultiColFunc
 from typing import Union, Literal, List, Any, Optional, Dict, Callable
 

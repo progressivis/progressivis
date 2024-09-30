@@ -7,7 +7,7 @@ import numpy as np
 from ..core.module import ReturnRunStep, def_input, def_output
 from ..core.utils import indices_len, fix_loc
 from ..core.module import Module
-from ..table import PTable, BasePTable
+from ..table.api import PTable, BasePTable
 from ..core.decorators import process_slot, run_if_any
 from ..utils.psdict import PDict
 from ..table.dshape import dshape_projection

@@ -3,7 +3,7 @@ from __future__ import annotations
 # import logging
 from ..core.module import Module, ReturnRunStep, def_input, def_output
 from ..core.slot import Slot
-from . import PTable
+from .api import PTable
 from ..stats.utils import aggr_registry
 from ..core.decorators import process_slot, run_if_any
 from .dshape import dshape_from_dict

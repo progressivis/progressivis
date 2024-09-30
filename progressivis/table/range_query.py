@@ -14,7 +14,7 @@ from ..core.utils import indices_len
 from ..core.slot import Slot
 from ..io import Variable
 from ..utils.psdict import PDict
-from . import BasePTable, PTable, PTableSelectedView
+from ..table.api import BasePTable, PTable, PTableSelectedView
 from .binning_index import BinningIndex
 from typing import Optional, Any, cast, Iterable, Generator
 

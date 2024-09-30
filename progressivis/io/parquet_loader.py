@@ -19,7 +19,7 @@ from ..core.utils import (
     is_slice,
     nn,
 )
-from ..utils import PDict
+from ..utils.psdict import PDict
 from typing import List, Dict, Any, Callable, Optional, Union, Generator, TYPE_CHECKING
 
 if TYPE_CHECKING:

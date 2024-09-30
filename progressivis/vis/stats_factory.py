@@ -1,7 +1,7 @@
 from __future__ import annotations
 import logging
 from itertools import product
-from ..core import Sink
+from ..core.sink import Sink
 from ..stats import (
     Min,
     Max,

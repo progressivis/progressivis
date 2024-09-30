@@ -20,10 +20,9 @@ from progressivis.core.module import (
     document,
 )
 from ..core.pintset import PIntSet
-from ..table import PTable
+from ..table.api import PTable, PTableSelectedView
 from ..core.utils import indices_len
 from ..core.decorators import process_slot, run_if_any
-from ..table import PTableSelectedView
 
 from typing import Optional, Any
 

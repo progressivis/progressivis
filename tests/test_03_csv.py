@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import os
 from . import ProgressiveTest, skipIf
-from progressivis.core import aio, Sink
+from progressivis.core.api import Sink
+from progressivis.core import aio
+
 from progressivis.io import CSVLoader
 from progressivis.table.constant import Constant
 from progressivis.table.table import PTable

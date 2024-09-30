@@ -5,8 +5,7 @@ import logging
 from ..core.pintset import PIntSet
 from ..core.module import Module, ReturnRunStep, def_input, def_output, document
 from ..core.utils import indices_len
-from ..table.table import PTable
-from ..table import PTableSelectedView
+from ..table.api import PTable, PTableSelectedView
 
 from typing import Callable, Optional, Any
 

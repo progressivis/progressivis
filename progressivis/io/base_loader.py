@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 from collections import defaultdict
 from ..core.module import Module
-from ..utils import PDict
+from ..utils.psdict import PDict
 from ..core.utils import nn
 from typing import Optional, Any, TYPE_CHECKING
 import pyarrow as pa

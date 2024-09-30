@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 from . import ProgressiveTest
-from progressivis.core import aio, notNone
+from progressivis.core.api import notNone
+from progressivis.core import aio
+
 from progressivis import Every
 from progressivis.io import CSVLoader
 from progressivis.stats import RandomPTable

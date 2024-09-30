@@ -3,7 +3,7 @@ from __future__ import annotations
 from progressivis.utils.errors import ProgressiveStopIteration
 from progressivis.core.module import Module, ReturnRunStep, def_output
 from .table import PTable
-from ..core import Sink
+from ..core.sink import Sink
 from typing import Any, Optional
 
 

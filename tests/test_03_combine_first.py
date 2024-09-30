@@ -3,7 +3,8 @@ from progressivis import Print
 from progressivis.table.constant import Constant
 from progressivis.table.combine_first import CombineFirst
 from progressivis.table.table import PTable
-from progressivis.core import aio, notNone
+from progressivis.core.api import notNone
+from progressivis.core import aio
 
 
 import pandas as pd

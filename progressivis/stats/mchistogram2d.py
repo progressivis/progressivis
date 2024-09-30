@@ -5,7 +5,7 @@ import logging
 import numpy as np
 
 from ..core.utils import indices_len, fix_loc
-from ..core import notNone, JSon
+from ..core.api import notNone, JSon
 from ..table.table import PTable
 from ..core.module import Module, ReturnRunStep, def_input, def_output, def_parameter
 from fast_histogram import histogram2d  # type: ignore

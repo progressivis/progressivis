@@ -8,7 +8,7 @@ from typing import (
 from dataclasses import dataclass, field
 
 from progressivis.core.module_facade import ModuleFacade, SlotProxy
-from progressivis.core import Sink, Scheduler
+from progressivis.core.api import Sink, Scheduler
 from progressivis import Module, ProgressiveError
 from progressivis.core.utils import get_random_name
 from progressivis.stats import (

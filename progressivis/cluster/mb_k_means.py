@@ -19,7 +19,7 @@ from progressivis.core.pintset import PIntSet
 from progressivis.core.utils import indices_len
 from ..core.module import Module
 from ..table.table_base import BasePTable
-from ..table import PTable, PTableSelectedView
+from ..table.api import PTable, PTableSelectedView
 from ..table.dshape import dshape_from_dtype, dshape_from_columns
 from ..io import Variable
 from ..utils.psdict import PDict

@@ -4,9 +4,8 @@ import logging
 
 from ..core.utils import indices_len
 from ..core.module import Module, ReturnRunStep, def_input, def_output
-from .table import PTable
+from .api import PTable, PTableSelectedView
 from ..core.pintset import PIntSet
-from . import PTableSelectedView
 
 from typing import Any
 

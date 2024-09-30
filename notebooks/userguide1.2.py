@@ -1,8 +1,6 @@
 # ---
 # jupyter:
 #   jupytext:
-#     formats: ipynb,py:percent
-#     rst2md: false
 #     text_representation:
 #       extension: .py
 #       format_name: percent
@@ -20,39 +18,41 @@
 # This notebook shows the simplest code to download all the New York Yellow Taxi trips from 2015. They were all geolocated and the trip data is stored in multiple CSV files.
 # We visualize progressively the pickup locations (where people have been picked up by the taxis).
 #
-# First, we define a few constants, where the file is located and the desired resolution.
-
-# %%
-# We make sure the libraries are reloaded when modified
-# %load_ext autoreload
-# %autoreload 2
+# First, we define a few constants, where the file is located, the desired resolution, and the url of the taxi file.
 
 # %%
 LARGE_TAXI_FILE = "https://www.aviz.fr/nyc-taxi/yellow_tripdata_2015-01.csv.bz2"
 RESOLUTION=512
 
-# %%
-from progressivis import (
-    CSVLoader,
-    Histogram2D,
-    Quantiles,
-    Heatmap
-)
 
+# %%
+# Function to filter out trips outside of NYC.
+
+# See https://en.wikipedia.org/wiki/Module:Location_map/data/USA_New_York_City
+bounds = {
+	"top": 40.92,
+	"bottom": 40.49,
+	"left": -74.27,
+	"right": -73.68,
+}
+
+
+# %%
+from progressivis import (CSVLoader, Histogram2D, ConstDict, Heatmap, PDict)
 
 # Create a csv loader filtering out data outside NYC
-csv = CSVLoader(LARGE_TAXI_FILE, index_col=False, usecols=['pickup_longitude', 'pickup_latitude'])  # , filter_=filter_)
+csv = CSVLoader(LARGE_TAXI_FILE, index_col=False, usecols=['pickup_longitude', 'pickup_latitude'])
+# Create a module to compute the min value progressively
+min = ConstDict(PDict({'pickup_longitude': bounds['left'], 'pickup_latitude': bounds['bottom']}))
+max = ConstDict(PDict({'pickup_longitude': bounds['right'], 'pickup_latitude': bounds['top']}))
 
-# Create a Quantile module to get rid of the 3% outliers both sides
-quantiles = Quantiles()
-quantiles.input.table = csv.output.result
 # Create a module to compute the 2D histogram of the two columns specified
 # with the given resolution
 histogram2d = Histogram2D('pickup_longitude', 'pickup_latitude', xbins=RESOLUTION, ybins=RESOLUTION)
 # Connect the module to the csv results and the min,max bounds to rescale
 histogram2d.input.table = csv.output.result
-histogram2d.input.min = quantiles.output.result[0.03]
-histogram2d.input.max = quantiles.output.result[0.97]
+histogram2d.input.min = min.output.result
+histogram2d.input.max = max.output.result
 # Create a module to create an heatmap image from the histogram2d
 heatmap = Heatmap()
 # Connect it to the histogram2d
@@ -60,16 +60,16 @@ heatmap.input.array = histogram2d.output.result
 
 # %%
 heatmap.display_notebook()
-
-# %%
 # Start the scheduler
 csv.scheduler().task_start()
 
 # %%
+# Show what runs
 csv.scheduler()
 
 # %%
+import time
+time.sleep(30)
 csv.scheduler().task_stop()
-
 
 # %%

@@ -3,7 +3,7 @@ from __future__ import annotations
 # import logging
 from ..core.module import Module, ReturnRunStep, def_input, def_output, document
 from ..core.slot import Slot
-from . import PTable, PTableSelectedView
+from .api import PTable, PTableSelectedView
 from ..core.pintset import PIntSet
 from ..core.decorators import process_slot, run_if_any
 from .group_by import GroupBy

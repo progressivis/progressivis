@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 
-from . import PTable, PTableSelectedView
+from .api import PTable, PTableSelectedView
 from ..core.module import Module, ReturnRunStep, def_input, def_output, def_parameter, document
 from ..core.utils import indices_len, fix_loc
 from ..core.pintset import PIntSet

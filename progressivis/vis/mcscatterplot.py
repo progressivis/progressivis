@@ -12,8 +12,8 @@ from progressivis.utils.errors import ProgressiveError
 from progressivis.core.utils import is_notebook, get_physical_base
 from progressivis.io import Variable
 from ..table.table_base import BasePTable
-from ..table import PTable
-from progressivis.core import notNone
+from ..table.api import PTable
+from progressivis.core.api import notNone
 from typing import (
     Optional,
     Tuple,

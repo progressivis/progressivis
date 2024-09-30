@@ -12,21 +12,19 @@ import pdb
 
 import numpy as np
 from typeguard import check_type
+from .scheduler import Scheduler
 from progressivis.utils.errors import ProgressiveError, ProgressiveStopIteration
-from progressivis.table.table_base import BasePTable
-from progressivis.table.table import PTable
-from progressivis.table.dshape import dshape_from_dtype
-from progressivis.table.row import Row
 from progressivis.storage import Group
 import progressivis.core.aio as aio
-
+from progressivis.table.table_base import BasePTable
+from progressivis.table.table import PTable
+from progressivis.table.row import Row
 
 from .utils import type_fullname, get_random_name
 from .slot import SlotDescriptor, Slot, SlotHint
 from .tracer_base import Tracer
 from .time_predictor import TimePredictor
 from .storagemanager import StorageManager
-from .scheduler import Scheduler
 from .slot_join import SlotJoin
 from typing import (
     cast,
@@ -277,7 +275,7 @@ class Module(metaclass=ABCMeta):
             # Change the descriptor so it's not required any more
             # The original SD is kept in the shared outputs/all_outputs
             # class variables
-            sd = SlotDescriptor("result", type=PTable, required=False)
+            sd = SlotDescriptor("result", type=BasePTable, required=False)
             self.output_descriptors["result"] = sd
         if "columns" in kwds:
             raise ValueError("'columns' is not a valid parameter")
@@ -528,6 +526,7 @@ class Module(metaclass=ABCMeta):
 
     def _parse_parameters(self, kwds: dict[str, Any]) -> None:
         # pylint: disable=no-member
+        from progressivis.table.row import Row
         self._params = _create_table(
             self.generate_table_name("params"), self.all_parameters
         )
@@ -1622,6 +1621,8 @@ def _oslot_to_json(slots: Optional[List[Slot]]) -> Optional[List[Optional[JSon]]
 
 
 def _create_table(tname: str, columns: Parameters) -> PTable:
+    from progressivis.table.dshape import dshape_from_dtype
+    from progressivis.table.table import PTable
     dshape = ""
     data = {}
     for name, dtype, val in columns:

@@ -2,7 +2,8 @@ from . import ProgressiveTest
 
 from progressivis import Print
 from progressivis.stats import Var, VarH, RandomPTable
-from progressivis.core import aio, notNone
+from progressivis.core.api import notNone
+from progressivis.core import aio
 import numpy as np
 
 

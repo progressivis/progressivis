@@ -17,7 +17,9 @@ from progressivis.datasets import (
 from progressivis.stats.counter import Counter
 from progressivis.storage import IS_PERSISTENT
 from progressivis.storage import cleanup_temp_dir, init_temp_dir_if
-from progressivis.core import aio, Sink, Scheduler
+from progressivis.core.api import Sink, Scheduler
+from progressivis.core import aio
+
 from typing import cast, Optional, List
 
 BZ2 = "csv.bz2"

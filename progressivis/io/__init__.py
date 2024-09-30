@@ -14,7 +14,7 @@ __all__ = [
     "CSVLoader",
     "PACSVLoader",
     "ParquetLoader",
-    "CSVSniffer",
+    # "CSVSniffer",
     "SimpleCSVLoader",
     "VECLoader",
     "Variable",

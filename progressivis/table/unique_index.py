@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 from ..core.module import Module, ReturnRunStep, def_input, def_output
-from . import PTable, PTableSelectedView
+from .api import PTable, PTableSelectedView
 from ..core.pintset import PIntSet
 from progressivis.core.utils import indices_len, fix_loc
 from functools import singledispatchmethod as dispatch

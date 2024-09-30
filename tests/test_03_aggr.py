@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import os
 from . import ProgressiveTest, skipIf
-from progressivis.core import aio, Sink
+from progressivis.core.api import Sink
+from progressivis.core import aio
 from progressivis.io import ParquetLoader
 from progressivis.table.group_by import GroupBy, ByType, SubPColumn as SC
 from progressivis.table.aggregate import Aggregate

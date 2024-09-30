@@ -1,7 +1,8 @@
 "Test for SlotHub"
 from . import ProgressiveTest
 
-from progressivis.core import aio, notNone, Sink
+from progressivis.core.api import notNone, Sink
+from progressivis.core import aio
 from progressivis import Print
 from progressivis.stats import Min, Max, RandomPTable, Histogram1D, Histogram2D
 from progressivis.core.module_facade import ModuleFacade

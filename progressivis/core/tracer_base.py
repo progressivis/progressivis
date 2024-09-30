@@ -6,7 +6,7 @@ from typing import Callable, Any, Optional, List, TYPE_CHECKING
 
 
 if TYPE_CHECKING:
-    from progressivis.table import PTable
+    from progressivis.table.api import PTable
 
 
 class Tracer(metaclass=ABCMeta):

@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import logging
 
-from progressivis.core import (
+from progressivis.core.api import (
     Scheduler,
     Slot,
     SlotDescriptor,
@@ -14,18 +14,50 @@ from progressivis.core import (
     Every,
     Print,
 )
-from progressivis.utils import ProgressiveError
-from progressivis.table import PTable, PColumn, Row
+
+from progressivis.utils.api import (
+    ProgressiveError,
+    PDict
+)
+
+from progressivis.table.api import (
+    BasePColumn,
+    PColumn,
+    BasePTable,
+    PTable,
+    Constant,
+    ConstDict,
+    Row,
+)
 
 from typing import Dict
 
 from ._version import __version__
+from progressivis.io import (
+    CSVLoader,
+    Variable,
+)
+
+from progressivis.stats import (
+    Histogram1D,
+    Histogram2D,
+    Max,
+    Min,
+    Quantiles,
+    RandomPTable,
+)
+
+from progressivis.vis import (
+    Heatmap,
+)
 
 version = __version__
+
 
 __all__ = [
     "log_level",
     "ProgressiveError",
+    "PDict",
     "Scheduler",
     "version",
     "__version__",
@@ -36,18 +68,31 @@ __all__ = [
     "StorageManager",
     "Every",
     "Print",
-    "PTable",
     "PColumn",
+    "BasePColumn",
+    "Constant",
+    "ConstDict",
+    "BasePTable",
+    "PTable",
     "Row",
+    "CSVLoader",
+    "Histogram1D",
+    "Histogram2D",
+    "Max",
+    "Min",
+    "Quantiles",
+    "RandomPTable",
+    "Variable",
+    "Heatmap",
 ]
 
 
 LOGGERS: Dict[str, logging.Logger] = {}
 
 
-def s() -> Scheduler:
-    "Shortcut to get the default scheduler."
-    return Scheduler.default
+# def s() -> Scheduler:
+#     "Shortcut to get the default scheduler."
+#     return Scheduler.default
 
 
 # Avoids the message 'No handlers could be found for logger X.Y.Z'

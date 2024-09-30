@@ -20,8 +20,8 @@ from progressivis.core.module import (
     def_output,
     def_parameter,
 )
-from progressivis.core import notNone, indices_len
-from progressivis.table import PTable
+from progressivis.core.api import notNone, indices_len
+from progressivis.table.api import PTable
 from progressivis.core.module import Module
 from progressivis.stats.histogram2d import Histogram2D
 

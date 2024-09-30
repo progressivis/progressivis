@@ -5,7 +5,8 @@ from progressivis.stats import Stats
 from progressivis.io import CSVLoader
 from progressivis.core.wait import Wait
 from progressivis.datasets import get_dataset
-from progressivis.core import aio, notNone
+from progressivis.core.api import notNone
+from progressivis.core import aio
 
 import numpy as np
 

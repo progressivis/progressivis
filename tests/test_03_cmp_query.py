@@ -5,7 +5,7 @@ import pandas as pd
 from . import ProgressiveTest
 from progressivis.core import aio
 from progressivis import Print
-from progressivis.table import PTable
+from progressivis.table.api import PTable
 from progressivis.table.cmp_query import CmpQueryLast
 from progressivis.table.constant import Constant
 from progressivis.stats import RandomPTable

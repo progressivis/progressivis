@@ -6,7 +6,8 @@ from progressivis import Print, Scheduler, ProgressiveError
 from progressivis.io import CSVLoader
 from progressivis.stats import Min
 from progressivis.datasets import get_dataset
-from progressivis.core import aio, Sink
+from progressivis.core.api import Sink
+from progressivis.core import aio
 
 
 class TestScheduler(ProgressiveTest):

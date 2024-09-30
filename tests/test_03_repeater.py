@@ -2,7 +2,9 @@ from . import ProgressiveTest
 
 from progressivis.table.repeater import Repeater, Computed
 from progressivis.stats import RandomPTable
-from progressivis.core import aio, Sink
+from progressivis.core.api import Sink
+from progressivis.core import aio
+
 import numpy as np
 
 

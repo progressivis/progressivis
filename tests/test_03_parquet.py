@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 from . import ProgressiveTest
-from progressivis.core import aio, Sink
+from progressivis.core.api import Sink
+from progressivis.core import aio
+
 from progressivis.io import ParquetLoader
 from progressivis.table.constant import Constant
 from progressivis.table.table import PTable

@@ -3,7 +3,7 @@ from __future__ import annotations
 import numpy as np
 
 from ..core.module import Module, ReturnRunStep, JSon, def_input, def_parameter
-from ..table import PTable
+from ..table.api import PTable
 from ..core.utils import indices_len
 
 try:

@@ -11,7 +11,9 @@ from . import ProgressiveTest
 from progressivis.table.range_query import RangeQuery
 from progressivis.utils.psdict import PDict
 from progressivis.table.stirrer import Stirrer
-from progressivis.core import aio, Sink
+from progressivis.core.api import Sink
+from progressivis.core import aio
+
 from typing import Any
 
 

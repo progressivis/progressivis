@@ -4,7 +4,8 @@ from progressivis import Print, ProgressiveError
 from progressivis.io import CSVLoader
 from progressivis.stats import Min, Max, RandomPTable
 from progressivis.datasets import get_dataset
-from progressivis.core import aio, Sink, Scheduler
+from progressivis.core.api import Sink, Scheduler
+from progressivis.core import aio
 from progressivis.core.module import Module, ReturnRunStep, def_input, def_output
 from progressivis.core.dataflow import Dataflow
 from progressivis.vis import MCScatterPlot

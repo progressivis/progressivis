@@ -5,7 +5,9 @@ import numpy as np
 import pandas as pd
 from . import ProgressiveTest
 from progressivis import Print
-from progressivis.core import aio, Sink
+from progressivis.core.api import Sink
+from progressivis.core import aio
+
 from progressivis.io import PACSVLoader
 from pyarrow.csv import ConvertOptions, ReadOptions
 from typing import Optional, Any, Tuple, Callable, List

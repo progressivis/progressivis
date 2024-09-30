@@ -53,7 +53,7 @@ if TYPE_CHECKING:
     from progressivis.core.scheduler import Scheduler
     from progressivis.core.module import Module, ReturnRunStep
     from progressivis.table.table_base import BasePTable
-    from progressivis.utils import PDict
+    from progressivis.utils.psdict import PDict
 
     PatchRunStepCallable = Callable[[int, int, float], ReturnRunStep]
 
