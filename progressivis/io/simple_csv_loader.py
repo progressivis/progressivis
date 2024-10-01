@@ -73,7 +73,7 @@ class SimpleCSVLoader(Module):
                     ...     lat = df['dropoff_latitude']
                     ...     return df[(lon>-74.10)&(lon<-73.7)&(lat>40.60)&(lat<41)]
             force_valid_ids: force renaming of columns to make their names valid identifiers according to the `language definition  <https://docs.python.org/3/reference/lexical_analysis.html#identifiers>`_
-            fillvalues: the default values of the columns specified as a dictionary (see :class:`PTable <progressivis.table.PTable>`)
+            fillvalues: the default values of the columns specified as a dictionary (see :class:`PTable <progressivis.PTable>`)
             throttle: limit the number of rows to be loaded in a step
             imputer: a ``SimpleImputer`` provides basic strategies for imputing missing values
             kwds: extra keyword args to be passed to :func:`pandas.read_csv` and :class:`Module <progressivis.core.Module>` superclass

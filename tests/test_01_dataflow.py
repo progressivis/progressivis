@@ -1,13 +1,22 @@
 from __future__ import annotations
 
-from progressivis import Print, ProgressiveError
-from progressivis.io import CSVLoader
-from progressivis.stats import Min, Max, RandomPTable
+from progressivis import (
+    Print,
+    ProgressiveError,
+    CSVLoader,
+    Min,
+    Max,
+    RandomPTable,
+    Sink,
+    Scheduler,
+    Module,
+    ReturnRunStep,
+    def_input,
+    def_output,
+    Dataflow,
+)
 from progressivis.datasets import get_dataset
-from progressivis.core.api import Sink, Scheduler
 from progressivis.core import aio
-from progressivis.core.module import Module, ReturnRunStep, def_input, def_output
-from progressivis.core.dataflow import Dataflow
 from progressivis.vis import MCScatterPlot
 
 from . import ProgressiveTest

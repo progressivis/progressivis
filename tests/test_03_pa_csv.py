@@ -4,10 +4,7 @@ from . import ProgressiveTest
 from progressivis.core.api import Sink
 from progressivis.core import aio
 
-from progressivis.io import PACSVLoader
-from progressivis.table.constant import Constant
-from progressivis.table.table import PTable
-from progressivis.datasets import get_dataset  # , RandomBytesIO
+from progressivis import PACSVLoader, Constant, PTable, get_dataset
 from progressivis.core.utils import RandomBytesIO
 
 

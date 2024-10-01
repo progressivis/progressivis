@@ -1,10 +1,6 @@
 from __future__ import annotations
 
-from progressivis import Every, Print, Scheduler
-from progressivis.io import CSVLoader
-from progressivis.vis import MCScatterPlot
-from progressivis.datasets import get_dataset
-from progressivis.stats import RandomPTable
+from progressivis import Every, Print, Scheduler, CSVLoader, MCScatterPlot, get_dataset, RandomPTable
 from progressivis.core import aio
 from . import ProgressiveTest
 

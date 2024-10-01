@@ -5,11 +5,8 @@ import numpy as np
 from . import ProgressiveTest
 
 from progressivis.core import aio
-from progressivis import Print
+from progressivis import Print, RandomPTable, RandomDict, PTable, def_input, def_output
 from progressivis.linalg.mixufunc import MixUfuncABC
-from progressivis.stats import RandomPTable, RandomDict
-from progressivis.table.table import PTable
-from progressivis.core.module import def_input, def_output
 from typing import Any, Type, Sequence
 
 

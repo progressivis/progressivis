@@ -1,9 +1,6 @@
 from . import ProgressiveTest
 from progressivis.core import aio
-from progressivis import Every
-from progressivis.io import CSVLoader
-from progressivis.stats import Histogram1D, Min, Max
-from progressivis.datasets import get_dataset
+from progressivis import Every, CSVLoader, Histogram1D, Min, Max, get_dataset
 from progressivis.table.stirrer import Stirrer
 import pandas as pd
 import numpy as np

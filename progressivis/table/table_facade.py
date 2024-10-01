@@ -7,11 +7,11 @@ from typing import (
 )
 from dataclasses import dataclass, field
 
-from progressivis.core.module_facade import ModuleFacade, SlotProxy
-from progressivis.core.api import Sink, Scheduler
-from progressivis import Module, ProgressiveError
-from progressivis.core.utils import get_random_name
-from progressivis.stats import (
+from progressivis import (
+    Module,
+    ProgressiveError,
+    Sink,
+    Scheduler,
     Min,
     Max,
     KLLSketch,
@@ -21,6 +21,8 @@ from progressivis.stats import (
     Distinct,
     Sample
 )
+from progressivis.core.module_facade import ModuleFacade, SlotProxy
+from progressivis.core.utils import get_random_name
 from progressivis.linalg import Log
 
 

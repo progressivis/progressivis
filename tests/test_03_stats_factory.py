@@ -1,14 +1,12 @@
 from . import ProgressiveTest
 
 from progressivis.core import aio
-from progressivis import Print, Scheduler
+from progressivis import Print, Scheduler, RandomPTable, Sink
 from progressivis.vis import StatsFactory, DataShape
-from progressivis.stats import RandomPTable
+from progressivis.stats.blobs_table import BlobsPTable
 import numpy as np
 import pandas as pd
 from typing import Any, Dict
-from progressivis.stats.blobs_table import BlobsPTable
-from progressivis.core.sink import Sink
 
 
 async def fake_input(sched: Scheduler, name: str, t: float, inp: Dict[str, Any]) -> Any:

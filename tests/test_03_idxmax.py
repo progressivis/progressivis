@@ -1,9 +1,7 @@
 from . import ProgressiveTest
 import numpy as np
-from progressivis import Print
-from progressivis.stats import IdxMax, IdxMin, Max, Min, RandomPTable
+from progressivis import Print, IdxMax, IdxMin, Max, Min, RandomPTable, notNone
 from progressivis.table.stirrer import Stirrer
-from progressivis.core.api import notNone
 from progressivis.core import aio
 
 

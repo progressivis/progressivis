@@ -4,11 +4,9 @@ from io import BytesIO
 import numpy as np
 import pandas as pd
 from . import ProgressiveTest
-from progressivis import Print
-from progressivis.core.api import Sink
+from progressivis import Print, Sink, PACSVLoader
 from progressivis.core import aio
 
-from progressivis.io import PACSVLoader
 from pyarrow.csv import ConvertOptions, ReadOptions
 from typing import Optional, Any, Tuple, Callable, List
 

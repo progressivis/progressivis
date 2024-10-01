@@ -4,13 +4,9 @@ import pandas as pd
 
 from . import ProgressiveTest
 from progressivis.core import aio
-from progressivis import Print
-from progressivis.table.api import PTable
+from progressivis import Print, PTable, Constant, RandomPTable, PIntSet
 from progressivis.table.cmp_query import CmpQueryLast
-from progressivis.table.constant import Constant
-from progressivis.stats import RandomPTable
 from progressivis.table.stirrer import Stirrer
-from progressivis.core.pintset import PIntSet
 
 from typing import Any
 

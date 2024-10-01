@@ -2,11 +2,8 @@ from __future__ import annotations
 
 from . import ProgressiveTest
 
-from progressivis import Print, Scheduler, ProgressiveError
-from progressivis.io import CSVLoader
-from progressivis.stats import Min
+from progressivis import Print, Scheduler, ProgressiveError, Min, Sink, CSVLoader
 from progressivis.datasets import get_dataset
-from progressivis.core.api import Sink
 from progressivis.core import aio
 
 

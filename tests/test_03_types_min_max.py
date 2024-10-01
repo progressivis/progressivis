@@ -1,10 +1,7 @@
 from . import ProgressiveTest
 
 from progressivis.core import aio
-from progressivis import Print
-from progressivis.stats import Min, Max
-from progressivis.io import SimpleCSVLoader
-from progressivis.datasets import get_dataset
+from progressivis import Print, Min, Max, SimpleCSVLoader, get_dataset
 from typing import Any, Dict
 import numpy as np
 

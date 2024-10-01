@@ -1,8 +1,6 @@
+from progressivis import Print, RandomPTable, Min, notNone
 from progressivis.table.dict2table import Dict2PTable
 from progressivis.table.paste import Paste
-from progressivis import Print
-from progressivis.stats import RandomPTable, Min
-from progressivis.core.api import notNone
 from progressivis.core import aio
 
 

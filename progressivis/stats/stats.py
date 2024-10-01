@@ -12,8 +12,7 @@ from progressivis.core.module import (
     document,
 )
 from progressivis.core.utils import indices_len, fix_loc, get_random_name
-from progressivis.core.module import Module
-from progressivis.table.table import PTable
+from progressivis import PTable, Module
 
 from typing import Optional, Any, Union
 

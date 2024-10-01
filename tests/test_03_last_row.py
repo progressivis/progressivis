@@ -2,10 +2,7 @@ from __future__ import annotations
 
 from . import ProgressiveTest
 
-from progressivis import Every
-from progressivis.table.last_row import LastRow
-from progressivis.io import CSVLoader
-from progressivis.datasets import get_dataset
+from progressivis import Every, LastRow, CSVLoader, get_dataset
 from progressivis.core.api import notNone
 from progressivis.core import aio
 

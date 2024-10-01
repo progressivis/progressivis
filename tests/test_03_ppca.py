@@ -1,16 +1,9 @@
 from __future__ import annotations
 
 from . import ProgressiveTest, skipIf
-from progressivis import Scheduler, Every
-from progressivis.core.module import ReturnRunStep, def_input, def_output
+from progressivis import Scheduler, Every, ReturnRunStep, def_input, def_output, CSVLoader, get_dataset, Module, PTable, PDict, Slot
 from progressivis.core import aio
-from progressivis.io import CSVLoader
 from progressivis.stats.ppca import PPCA
-from progressivis.datasets import get_dataset
-from progressivis.core.module import Module
-from progressivis.table.table import PTable
-from progressivis.utils.psdict import PDict
-from progressivis.core.slot import Slot
 from sklearn.neighbors import KNeighborsClassifier  # type: ignore
 from sklearn.utils.random import sample_without_replacement  # type: ignore
 

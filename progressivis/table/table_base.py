@@ -205,7 +205,7 @@ class _At(_BaseLoc):
 class BasePTable(metaclass=ABCMeta):
     # pylint: disable=too-many-public-methods, too-many-instance-attributes
     """
-    Base class for ``progressivis`` tables and table-views (:class:`PTable <progressivis.table.PTable>`, :class:`PTableSelectedView <progressivis.table.PTableSelectedView>` etc.)
+    Base class for ``progressivis`` tables and table-views (:class:`PTable <progressivis.PTable>`, :class:`PTableSelectedView <progressivis.table.PTableSelectedView>` etc.)
 
     .. warning::
         Do not instanciate this class directly!
@@ -1577,7 +1577,7 @@ class BasePTable(metaclass=ABCMeta):
 
 class IndexPTable(BasePTable):
     """
-    Base class for physical tables (currently :class:`PTable <progressivis.table.PTable>`)
+    Base class for physical tables (currently :class:`PTable <progressivis.PTable>`)
 
     It implements index management.
 
@@ -1733,7 +1733,7 @@ class IndexPTable(BasePTable):
 
 class PTableSelectedView(BasePTable):
     """
-    Virtual table built on top of a :class:`PTable <progressivis.table.PTable>` or a :class:`PTableSelectedView <progressivis.table.PTableSelectedView>`
+    Virtual table built on top of a :class:`PTable <progressivis.PTable>` or a :class:`PTableSelectedView <progressivis.PTableSelectedView>`
     """
     def __init__(
         self,

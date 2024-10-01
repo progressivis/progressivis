@@ -2,8 +2,7 @@ from __future__ import annotations
 
 from . import ProgressiveTest
 
-from progressivis import Every
-from progressivis.io import VECLoader, CSVLoader
+from progressivis import Every, VECLoader, CSVLoader
 
 # from progressivis.metrics import PairwiseDistances
 from progressivis.datasets import get_dataset

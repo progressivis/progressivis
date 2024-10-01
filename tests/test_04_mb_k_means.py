@@ -1,9 +1,7 @@
 from . import ProgressiveTest, skip
 
-from progressivis import Print, Every
+from progressivis import Print, Every, CSVLoader, get_dataset
 from progressivis.cluster import MBKMeans
-from progressivis.io import CSVLoader
-from progressivis.datasets import get_dataset
 from progressivis.core import aio
 
 

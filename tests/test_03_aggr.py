@@ -2,13 +2,11 @@ from __future__ import annotations
 
 import os
 from . import ProgressiveTest, skipIf
-from progressivis.core.api import Sink
+from progressivis import Sink, ParquetLoader, PTable
 from progressivis.core import aio
-from progressivis.io import ParquetLoader
 from progressivis.table.group_by import GroupBy, ByType, SubPColumn as SC
 from progressivis.table.aggregate import Aggregate
 from progressivis.table.stirrer import Stirrer
-from progressivis.table.table import PTable
 
 import pyarrow.parquet as pq
 import numpy as np

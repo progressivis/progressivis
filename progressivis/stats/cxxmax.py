@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from progressivis.core.module import ReturnRunStep, def_input, def_output, def_parameter
-from progressivis import Module, PTable
+from progressivis.core.api import Module, ReturnRunStep, def_input, def_output, def_parameter
+from progressivis.table.api import PTable
 
 try:
     from .cxx_max import Max as CxxMax  # type: ignore

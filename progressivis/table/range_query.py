@@ -12,7 +12,7 @@ from progressivis.core.module import (
 from ..core.pintset import PIntSet
 from ..core.utils import indices_len
 from ..core.slot import Slot
-from ..io import Variable
+from ..io.api import Variable
 from ..utils.psdict import PDict
 from ..table.api import BasePTable, PTable, PTableSelectedView
 from .binning_index import BinningIndex

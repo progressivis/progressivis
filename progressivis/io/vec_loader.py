@@ -8,10 +8,8 @@ from io import IOBase
 from bz2 import BZ2File
 from gzip import GzipFile
 
-from progressivis.table.table import PTable
-from progressivis.core.module import Module
-from progressivis.core.module import ReturnRunStep
-
+from progressivis.core.api import Module, ReturnRunStep
+from progressivis.table.api import PTable
 from sklearn.feature_extraction import DictVectorizer  # type: ignore
 
 from typing import Any, Dict, Tuple, List, Callable, Type, Pattern, Match

@@ -3,10 +3,7 @@ from . import ProgressiveTest
 import pandas as pd
 
 from progressivis.core import aio
-from progressivis import Print
-from progressivis.stats.histogram1d_categorical import Histogram1DCategorical
-from progressivis.io import SimpleCSVLoader
-from progressivis.datasets import get_dataset
+from progressivis import Print, Histogram1DCategorical, SimpleCSVLoader, get_dataset
 
 
 class TestHistogram1DCategorical(ProgressiveTest):

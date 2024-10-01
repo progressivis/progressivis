@@ -2,15 +2,8 @@ from __future__ import annotations
 
 from . import ProgressiveTest, skip
 
-from progressivis import Print, Every
-from progressivis.io import CSVLoader
-from progressivis.utils.psdict import PDict
-from progressivis.table.select import Select
-from progressivis.table.constant import ConstDict
-from progressivis.stats import Sample
-from progressivis.datasets import get_dataset
+from progressivis import Print, Every, CSVLoader, PDict, Select, ConstDict, Sample, get_dataset, PIntSet
 from progressivis.core import aio
-from progressivis.core.pintset import PIntSet
 
 from typing import Any
 

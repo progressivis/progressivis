@@ -8,12 +8,9 @@ from RangeHTTPServer import RangeRequestHandler  # type: ignore
 
 import http.server as http_srv
 
-from progressivis.core.api import Sink
 from progressivis.core import aio
 
-from progressivis.io import CSVLoader
-from progressivis.table.constant import Constant
-from progressivis.table.table import PTable
+from progressivis import CSVLoader, Sink, Constant, PTable
 from progressivis.datasets import get_dataset, get_dataset_bz2, DATA_DIR
 
 from typing import Any, Optional

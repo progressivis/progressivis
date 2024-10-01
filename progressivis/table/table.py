@@ -92,7 +92,7 @@ class PTable(IndexPTable):
             data: optional container: contained sata that will be appended to the table. \
                 It can be of multiple types:
 
-                * :class:`PTable <progressivis.table.PTable>`: another table is used to fill-up this table
+                * :class:`PTable <progressivis.PTable>`: another table is used to fill-up this table
                 * :class:`pandas.DataFrame`: a Pandas DataFrame is copied to this table
                 * :class:`numpy.ndarray`: a numpy array is copied. The dshape should be provided
 
@@ -320,7 +320,7 @@ class PTable(IndexPTable):
 
     def append(self, data: Any, indices: Optional[Any] = None) -> None:
         """
-        Append rows of the tabular ``data`` (i.e. :class:`PTable <progressivis.table.PTable>`,
+        Append rows of the tabular ``data`` (i.e. :class:`PTable <progressivis.PTable>`,
         :class:`pandas.DataFrame`, :class:`pyarrow.RecordBatch` or :py:class:`dict` of \
         arrays) to the  end of ``self``.
         The data has to be compatible. It can be from multiple sources

@@ -1,13 +1,10 @@
 from __future__ import annotations
 
 from . import ProgressiveTest
-from progressivis.core.api import Sink
+from progressivis import Sink,  RandomPTable
 from progressivis.core import aio
 
-from progressivis.stats import RandomPTable
 from progressivis.table.binning_index import BinningIndex
-# from progressivis.utils.psdict import PDict
-# from progressivis.table.stirrer import Stirrer
 
 import numpy as np
 from typing import Any

@@ -1,10 +1,6 @@
 from . import ProgressiveTest
 
-from progressivis import Print
-from progressivis.stats import Stats
-from progressivis.io import CSVLoader
-from progressivis.core.wait import Wait
-from progressivis.datasets import get_dataset
+from progressivis import Print, Stats, CSVLoader, Wait, get_dataset
 from progressivis.core.api import notNone
 from progressivis.core import aio
 

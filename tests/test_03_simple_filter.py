@@ -1,10 +1,6 @@
-from progressivis.table.constant import ConstDict
-from progressivis import Print
-from progressivis.stats import RandomPTable
-from progressivis.table.simple_filter import SimpleFilter
-from progressivis.core.pintset import PIntSet
-from progressivis.utils.psdict import PDict
 from progressivis.core import aio
+from progressivis import Print, RandomPTable, ConstDict, PIntSet, PDict
+from progressivis.table.simple_filter import SimpleFilter
 from progressivis.table.stirrer import Stirrer
 from . import ProgressiveTest
 

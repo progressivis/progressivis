@@ -1,8 +1,6 @@
 from . import ProgressiveTest
 import pandas as pd
-from progressivis import Print
-from progressivis.stats import RandomPTable
-from progressivis.stats.correlation import Corr
+from progressivis import Print, RandomPTable, Corr
 from progressivis.core import aio
 import numpy as np
 

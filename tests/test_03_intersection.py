@@ -1,9 +1,6 @@
 from progressivis.table.constant import ConstDict
-from progressivis import Print
-from progressivis.stats import RandomPTable
+from progressivis import Print, RandomPTable, PIntSet, PDict
 from progressivis.table.simple_filter import SimpleFilter
-from progressivis.core.pintset import PIntSet
-from progressivis.utils.psdict import PDict
 from progressivis.table.intersection import Intersection
 from progressivis.table.stirrer import Stirrer
 from progressivis.core import aio

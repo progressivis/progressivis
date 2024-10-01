@@ -7,9 +7,12 @@ from .table import PTable
 from .changemanager_table_selected import PTableSelectedChangeManager
 from .changemanager_table import PTableChangeManager
 from .paging_helper import PagingHelper
-from .range_query_2d import RangeQuery2d
-from .range_query import RangeQuery
+# from .range_query_2d import RangeQuery2d
+# from .range_query import RangeQuery
 from .join import Join
+from .merge import Merge
+from .last_row import LastRow
+from .select import Select
 
 # pylint: disable=unused-import
 from .tracer import PTableTracer  # initialize Tracert.default
@@ -28,7 +31,10 @@ __all__ = [
     "PTableChangeManager",
     "PTableTracer",
     "PagingHelper",
-    "RangeQuery",
-    "RangeQuery2d",
+    # "RangeQuery",
+    # "RangeQuery2d",
     "Join",
+    "Merge",
+    "LastRow",
+    "Select",
 ]

@@ -5,14 +5,7 @@ import numpy as np
 from . import ProgressiveTest
 
 from progressivis.core import aio
-from progressivis import Print
-from progressivis.stats import Min, RandomPTable
-from progressivis.core.module import Module
-from progressivis.core.module import def_input, def_output
-from progressivis.table.table import PTable
-from progressivis.core.decorators import process_slot, run_if_any
-from progressivis.core.utils import indices_len, fix_loc
-from progressivis.utils.psdict import PDict
+from progressivis import Print, Min, RandomPTable, Module, def_input, def_output, PTable, process_slot, run_if_any, indices_len, fix_loc, PDict
 
 from typing import Any, Dict, TYPE_CHECKING
 

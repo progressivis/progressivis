@@ -8,9 +8,9 @@ import logging
 import numbers
 import numpy as np
 
-from progressivis.core.module import Module, ReturnRunStep, JSon, def_input, def_output, def_parameter
-from progressivis.stats import Histogram1D
-from progressivis.table.table_base import BasePTable
+from progressivis.core.api import Module, ReturnRunStep, JSon, def_input, def_output, def_parameter
+from progressivis.stats.api import Histogram1D
+from progressivis.table.api import BasePTable
 
 from typing import cast, Any, Dict, List, Optional
 

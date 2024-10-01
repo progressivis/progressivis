@@ -2,7 +2,7 @@ from __future__ import annotations
 import logging
 from itertools import product
 from ..core.sink import Sink
-from ..stats import (
+from ..stats.api import (
     Min,
     Max,
     KLLSketch,
@@ -13,15 +13,13 @@ from ..stats import (
     Distinct,
     Corr,
 )
-from ..core.module import GroupContext, def_input, def_output
-from ..core.module import Module
-from ..table.table import PTable
-from ..table.pattern import Pattern
-from ..core.decorators import process_slot, run_if_any
+from ..core.api import GroupContext, def_input, def_output, Module, process_slot, run_if_any
+from ..table.api import PTable
 from ..table.dshape import dshape_fields
+from ..table.pattern import Pattern
 from ..table.range_query import RangeQuery
-from ..utils.psdict import PDict
-from ..io import Variable
+from ..utils.api import PDict
+from ..io.api import Variable
 from typing import Any, Dict, Callable, Optional, TYPE_CHECKING, cast, List
 import numpy as np
 import pandas as pd

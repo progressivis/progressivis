@@ -1,11 +1,7 @@
 from . import ProgressiveTest, skip
 import pandas as pd
-from progressivis import Print
-from progressivis.stats.scaling import MinMaxScaler
+from progressivis import Print, SimpleCSVLoader, ConstDict, PDict, MinMaxScaler
 from progressivis.core import aio
-from progressivis.io import SimpleCSVLoader
-from progressivis.table.constant import ConstDict
-from progressivis.utils.psdict import PDict
 
 import numpy as np
 import tempfile as tf

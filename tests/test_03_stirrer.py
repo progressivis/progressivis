@@ -1,6 +1,5 @@
 from . import ProgressiveTest
-from progressivis import Print, Scheduler
-from progressivis.stats import RandomPTable, Max
+from progressivis import Print, Scheduler, RandomPTable, Max
 from progressivis.table.stirrer import Stirrer
 from progressivis.core import aio
 import numpy as np

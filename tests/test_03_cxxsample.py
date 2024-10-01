@@ -1,8 +1,6 @@
 from . import ProgressiveTest, skipIf
 
-from progressivis import Print
-from progressivis.io import CSVLoader
-from progressivis.stats import Sample
+from progressivis import Print, CSVLoader, Sample
 from progressivis.datasets import get_dataset
 from progressivis.core import aio
 from progressivis.stats.cxxsample import CxxSample  # type: ignore

@@ -1,8 +1,6 @@
 from . import ProgressiveTest, skip
 import numpy as np
-from progressivis import Print
-from progressivis.io import SimpleCSVLoader
-from progressivis.stats import Distinct
+from progressivis import Print, SimpleCSVLoader, Distinct
 from progressivis.datasets import get_dataset
 from progressivis.core import aio
 from typing import Any

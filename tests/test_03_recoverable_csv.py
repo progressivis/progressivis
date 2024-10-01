@@ -5,11 +5,8 @@ import os
 import numpy as np
 import pandas as pd
 from . import ProgressiveTest, skipIf
-from progressivis import Print
-from progressivis.core.api import Sink
+from progressivis import Print, Sink, SimpleCSVLoader
 from progressivis.core import aio
-
-from progressivis.io import SimpleCSVLoader
 from progressivis.stats.utils import SimpleImputer
 
 from typing import Optional, Any, Tuple, Callable, Literal, Union

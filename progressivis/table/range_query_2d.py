@@ -3,21 +3,24 @@ from __future__ import annotations
 import numpy as np
 
 import itertools as it
-from ..core.module import (
+from progressivis.core.api import (
     Module,
-    ReturnRunStep,
     def_input,
     def_output,
     def_parameter,
     document,
+    PIntSet,
+    indices_len,
+    Slot,
+    ReturnRunStep,
 )
-from ..core.pintset import PIntSet
-from ..core.utils import indices_len
-from ..core.slot import Slot
-from ..utils.psdict import PDict
-from ..io import Variable
-from .table_base import PTableSelectedView, BasePTable
-from .table import PTable
+from progressivis.utils.api import PDict
+from progressivis.table.api import (
+    PTableSelectedView,
+    BasePTable,
+    PTable,
+)
+
 from .merge_dict import MergeDict
 from .binning_index import BinningIndex
 
@@ -347,6 +350,7 @@ class RangeQuery2d(Module):
         With None, a min module is created and connected.
         With False, it is not created and not connected.
         """
+        from progressivis import Variable
         if self.input_module is not None:  # test if already called
             return self
         with self.grouped():

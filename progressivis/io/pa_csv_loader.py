@@ -65,7 +65,7 @@ class PACSVLoader(BaseLoader):
             filepath_or_buffer: string, path object or file-like object accepted by :func:`pyarrow.csv.open_csv`
             filter\_: filtering function to be applied on input data at loading time
             force_valid_ids: force renaming of columns to make their names valid identifiers according to the `language definition  <https://docs.python.org/3/reference/lexical_analysis.html#identifiers>`_
-            fillvalues: the default values of the columns specified as a dictionary (see :class:`PTable <progressivis.table.PTable>`)
+            fillvalues: the default values of the columns specified as a dictionary (see :class:`PTable <progressivis.PTable>`)
             throttle: limit the number of rows to be loaded in a step
             read_options: Options for the CSV reader (see :class:`pyarrow.csv.ReadOptions`)
             parse_options : Options for the CSV parser (see :class:`pyarrow.csv.ParseOptions`)

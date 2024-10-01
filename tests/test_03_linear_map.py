@@ -1,10 +1,9 @@
 from . import ProgressiveTest
 
 from progressivis.core import aio
-from progressivis import Print
+from progressivis import Print, RandomPTable
 from progressivis.linalg.linear_map import LinearMap
 import numpy as np
-from progressivis.stats import RandomPTable
 
 
 class TestLinearMap(ProgressiveTest):

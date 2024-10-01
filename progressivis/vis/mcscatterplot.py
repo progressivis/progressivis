@@ -6,11 +6,11 @@ from collections import defaultdict
 import numpy as np
 
 from progressivis.core.module import Module, ReturnRunStep, JSon, def_input
-from progressivis.stats import MCHistogram2D, Sample
+from progressivis.stats.api import MCHistogram2D, Sample
 from progressivis.table.range_query_2d import RangeQuery2d
 from progressivis.utils.errors import ProgressiveError
 from progressivis.core.utils import is_notebook, get_physical_base
-from progressivis.io import Variable
+from progressivis.io.api import Variable
 from ..table.table_base import BasePTable
 from ..table.api import PTable
 from progressivis.core.api import notNone

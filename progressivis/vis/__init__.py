@@ -2,7 +2,6 @@ __all__ = [
     "Heatmap",
     "MCScatterPlot",
     "Histograms",
-    "StatsExtender",
     "StatsFactory",
     "Histogram1dPattern",
     "Histogram2dPattern",

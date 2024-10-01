@@ -1,5 +1,5 @@
 from .table import PDataExpr, Pipeable
-from progressivis.stats import Min, Max
+from progressivis import Min, Max
 
 # pylint:disable=redefined-builtin
 

@@ -2,10 +2,9 @@ from __future__ import annotations
 
 import os
 from . import ProgressiveTest, skipIf
-from progressivis.core.api import Sink
 from progressivis.core import aio
-from progressivis.io import ParquetLoader, SimpleCSVLoader
-from progressivis.table.join import Join
+from progressivis import Sink, ParquetLoader, SimpleCSVLoader, Join
+
 import pandas as pd
 import numpy as np
 from itertools import product

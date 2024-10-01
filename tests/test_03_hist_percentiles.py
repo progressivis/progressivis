@@ -1,17 +1,13 @@
 "Test for Range Query"
 from __future__ import annotations
 
-from progressivis.table.constant import ConstDict
-from progressivis import Print
-from progressivis.stats import RandomPTable
-from progressivis.table.binning_index import BinningIndex
-from progressivis.table.percentiles import Percentiles
 import numpy as np
 from . import ProgressiveTest
+from progressivis import Print, ConstDict, RandomPTable, PDict, Sink
+from progressivis.table.binning_index import BinningIndex
+from progressivis.table.percentiles import Percentiles
 from progressivis.table.range_query import RangeQuery
-from progressivis.utils.psdict import PDict
 from progressivis.table.stirrer import Stirrer
-from progressivis.core.api import Sink
 from progressivis.core import aio
 
 from typing import Any

@@ -1,12 +1,9 @@
 from __future__ import annotations
 
 from . import ProgressiveTest
-from progressivis.core.api import Sink
+from progressivis import Sink, SimpleCSVLoader, ConstDict, PDict
 from progressivis.core import aio
-from progressivis.io import SimpleCSVLoader
 from progressivis.table.categorical_query import CategoricalQuery
-from progressivis.table.constant import ConstDict
-from progressivis.utils.psdict import PDict
 import pandas as pd
 import numpy as np
 from io import StringIO

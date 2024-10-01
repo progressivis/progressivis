@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 
 from . import ProgressiveTest, skip, skipIf
-from progressivis.io import CSVLoader
+from progressivis import CSVLoader, Sink, Scheduler
 from progressivis.datasets import (
     get_dataset,
     get_dataset_bz2,
@@ -17,7 +17,6 @@ from progressivis.datasets import (
 from progressivis.stats.counter import Counter
 from progressivis.storage import IS_PERSISTENT
 from progressivis.storage import cleanup_temp_dir, init_temp_dir_if
-from progressivis.core.api import Sink, Scheduler
 from progressivis.core import aio
 
 from typing import cast, Optional, List

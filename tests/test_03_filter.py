@@ -1,9 +1,7 @@
 from . import ProgressiveTest
 from progressivis.core import aio
-from progressivis import Print, Scheduler
-from progressivis.stats import RandomPTable
+from progressivis import Print, Scheduler, RandomPTable, PIntSet
 from progressivis.table.filtermod import FilterMod
-from progressivis.core.pintset import PIntSet
 from progressivis.table.stirrer import Stirrer
 import pandas as pd
 

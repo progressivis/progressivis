@@ -11,7 +11,7 @@ from ..core.pintset import PIntSet
 from ..table.api import BasePTable, PTable, PTableSelectedView
 from ..core.decorators import process_slot, run_if_any
 from ..utils.psdict import PDict
-from . import Sample
+from .sample import Sample
 import pandas as pd
 from sklearn.decomposition import IncrementalPCA  # type: ignore
 import numexpr as ne

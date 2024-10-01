@@ -1,12 +1,6 @@
 from . import ProgressiveTest, skip
 
-from progressivis import Every, Print
-from progressivis.stats import Stats
-from progressivis.io import CSVLoader
-from progressivis.table.merge import Merge
-from progressivis.table.constant import Constant
-from progressivis.table.table import PTable
-from progressivis.datasets import get_dataset
+from progressivis import Every, Print, Stats, CSVLoader, Merge, Constant, PTable, get_dataset
 from progressivis.core import aio
 import pandas as pd
 

@@ -1,7 +1,6 @@
 from . import ProgressiveTest, skip
 
-from progressivis.io import VECLoader
-from progressivis.datasets import get_dataset
+from progressivis import VECLoader, get_dataset
 
 
 class TestProgressiveLoadVEC(ProgressiveTest):

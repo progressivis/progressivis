@@ -3,7 +3,7 @@ from __future__ import annotations
 from . import ProgressiveTest
 from progressivis.storage import init_temp_dir_if, cleanup_temp_dir
 from progressivis.core import aio
-from progressivis import Print
+from progressivis import Print, PIntSet, RandomPTable, RandomDict
 from progressivis.table.stirrer import Stirrer
 from progressivis.linalg import (
     Unary,
@@ -29,8 +29,6 @@ from progressivis.linalg._elementwise import (
     Arccosh,
 )
 import progressivis.linalg as arr
-from progressivis.core.pintset import PIntSet
-from progressivis.stats import RandomPTable, RandomDict
 import numpy as np
 
 from typing import Any, Type

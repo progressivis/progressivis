@@ -6,7 +6,7 @@ import numpy as np
 
 from progressivis.core.module import ReturnRunStep
 from progressivis.core.module import Module, def_input, def_output, def_parameter
-from progressivis.table.table import PTable
+from progressivis import PTable
 
 try:
     from .cxx_sample import Sample as CxxSample  # type: ignore

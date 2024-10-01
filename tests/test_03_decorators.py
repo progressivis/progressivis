@@ -1,19 +1,23 @@
 from . import ProgressiveTest
-from progressivis import Scheduler
-from progressivis.io import CSVLoader
-from progressivis.table.constant import Constant
-from progressivis.core.module import Module, ReturnRunStep, def_input, def_output
-from progressivis.datasets import get_dataset
-from progressivis.table.table import PTable
-from progressivis.core.decorators import (
-    process_slot,
+from progressivis import (
+    Scheduler,
+    CSVLoader,
+    Constant,
+    Module,
+    ReturnRunStep,
+    def_input,
+    def_output,
+    PTable
+)
+from progressivis.core.api import (
     run_if_all,
     run_always,
     or_all,
     run_if_any,
     and_any,
-    _CtxImpl,
 )
+from progressivis.datasets import get_dataset
+from progressivis.core.decorators import _CtxImpl, process_slot
 import asyncio as aio
 
 from typing import Any, Callable, Coroutine

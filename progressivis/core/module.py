@@ -1239,7 +1239,10 @@ class Module(metaclass=ABCMeta):
         )
         self._stop(run_number)
         if exception:
+            if self.debug:
+                pdb.set_trace()
             raise RuntimeError("{} {}".format(type(exception), exception))
+
 
     def _path_to_origin_impl(self) -> List[Module]:
         res = [

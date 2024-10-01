@@ -1,13 +1,8 @@
 from __future__ import annotations
 
 from . import ProgressiveTest
-from progressivis import Print, Scheduler
-from progressivis.core.module import Module, def_input, def_output
-from progressivis.table.table import PTable
-from progressivis.stats import RandomPTable, ScalarMax, ScalarMin
-from progressivis.core.pintset import PIntSet
+from progressivis import Print, Scheduler, Module, def_input, def_output, PTable, RandomPTable, ScalarMax, ScalarMin, PIntSet, indices_len, fix_loc
 from progressivis.core import aio
-from progressivis.core.utils import indices_len, fix_loc
 import numpy as np
 
 from typing import Any, Dict, TYPE_CHECKING

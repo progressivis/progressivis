@@ -3,12 +3,7 @@ from __future__ import annotations
 from . import ProgressiveTest
 
 from progressivis.core import aio
-from progressivis import Print
-from progressivis.stats import RandomPTable
-from progressivis.core.module import Module
-from progressivis.core.module import def_input, def_output
-from progressivis.table.table import PTable
-from progressivis.core.utils import fix_loc
+from progressivis import Print, RandomPTable, Module, def_input, def_output, PTable, fix_loc
 import numpy as np
 
 from typing import TYPE_CHECKING

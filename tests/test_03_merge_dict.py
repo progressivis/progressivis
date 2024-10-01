@@ -1,6 +1,5 @@
 from . import ProgressiveTest
-from progressivis import Print, Scheduler
-from progressivis.stats import RandomPTable, Max, Min
+from progressivis import Print, Scheduler, RandomPTable, Max, Min
 from progressivis.table.stirrer import Stirrer
 from progressivis.table.switch import Switch
 from progressivis.table.merge_dict import MergeDict

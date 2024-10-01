@@ -4,12 +4,7 @@ from . import ProgressiveTest
 from progressivis.core.api import notNone
 from progressivis.core import aio
 
-from progressivis import Every
-from progressivis.io import CSVLoader
-from progressivis.stats import RandomPTable
-from progressivis.stats import MCHistogram2D, Min, Max
-from progressivis.vis import Heatmap
-from progressivis.datasets import get_dataset
+from progressivis import Every, CSVLoader, RandomPTable, MCHistogram2D, Min, Max, Heatmap, get_dataset
 from progressivis.table.stirrer import Stirrer, StirrerView
 import pandas as pd
 import numpy as np

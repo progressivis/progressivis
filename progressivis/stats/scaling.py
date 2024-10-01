@@ -9,7 +9,7 @@ from ..core.slot import Slot
 from ..table.api import PTable, BasePTable, BasePColumn
 from ..core.module import Module, def_input, def_output, def_parameter
 from ..utils.psdict import PDict
-from . import Min, Max, Histogram1D
+from .api import Min, Max, Histogram1D
 from ..core.decorators import process_slot, run_if_any
 from ..table.dshape import dshape_all_dtype
 

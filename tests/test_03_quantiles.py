@@ -1,8 +1,6 @@
 from . import ProgressiveTest
 from progressivis.core import aio
-from progressivis import Print
-from progressivis.stats.quantiles import Quantiles
-from progressivis.stats import RandomPTable
+from progressivis import Print, Quantiles, RandomPTable
 
 import numpy as np
 # from datasketches import kll_floats_sketch

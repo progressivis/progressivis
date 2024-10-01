@@ -4,7 +4,7 @@ from __future__ import annotations
 from progressivis.core.module import Module, ReturnRunStep, def_input, def_output
 from progressivis.core.utils import Dialog, indices_len
 from progressivis.utils.inspect import filter_kwds
-from progressivis.table.table import PTable
+from progressivis import PTable
 from progressivis.table.join_by_id import join, join_start, join_cont, join_reset
 
 from typing import Any

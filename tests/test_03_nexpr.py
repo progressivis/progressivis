@@ -3,13 +3,10 @@ from __future__ import annotations
 from . import ProgressiveTest
 
 from progressivis.core import aio
-from progressivis import Print
+from progressivis import Print,RandomPTable, PTable, def_input, def_output
 from progressivis.linalg.nexpr import NumExprABC
 import numpy as np
-from progressivis.stats import RandomPTable
-from progressivis.table.table import PTable
 import numexpr as ne
-from progressivis.core.module import def_input, def_output
 
 from typing import Type, Tuple, Any, Sequence
 

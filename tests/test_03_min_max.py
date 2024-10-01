@@ -1,8 +1,7 @@
 from . import ProgressiveTest
 
 from progressivis.core import aio
-from progressivis import Print
-from progressivis.stats import Min, Max, RandomPTable
+from progressivis import Print, Min, Max, RandomPTable
 
 import numpy as np
 

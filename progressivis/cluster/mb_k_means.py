@@ -21,11 +21,11 @@ from ..core.module import Module
 from ..table.table_base import BasePTable
 from ..table.api import PTable, PTableSelectedView
 from ..table.dshape import dshape_from_dtype, dshape_from_columns
-from ..io import Variable
+from ..io.api import Variable
 from ..utils.psdict import PDict
 from ..core.decorators import process_slot, run_if_any
 from ..table.filtermod import FilterMod
-from ..stats import Var
+from ..stats.api import Var
 
 from typing import Optional, Union, List, Dict, Any, cast
 

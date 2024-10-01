@@ -1,9 +1,7 @@
 from . import ProgressiveTest, skipIf
 import os
 from progressivis.core import aio
-from progressivis import Print
-from progressivis.stats.kll import KLLSketch
-from progressivis.stats import RandomPTable
+from progressivis import Print, KLLSketch, RandomPTable
 import numpy as np
 from datasketches import kll_floats_sketch
 from typing import Any, Sequence, Union, cast
