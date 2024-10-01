@@ -1,8 +1,16 @@
 "Test for Range Query"
 from __future__ import annotations
 
-from progressivis import Print, Scheduler, RandomPTable, ConstDict, PIntSet, PDict, Sink
-from progressivis.table.range_query_2d import RangeQuery2d
+from progressivis import (
+    Print,
+    Scheduler,
+    RandomPTable,
+    ConstDict,
+    PIntSet,
+    PDict,
+    Sink,
+    RangeQuery2d,
+)
 from progressivis.core import aio
 
 from . import ProgressiveTest

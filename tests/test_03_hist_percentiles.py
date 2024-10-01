@@ -3,10 +3,9 @@ from __future__ import annotations
 
 import numpy as np
 from . import ProgressiveTest
-from progressivis import Print, ConstDict, RandomPTable, PDict, Sink
+from progressivis import Print, ConstDict, RandomPTable, PDict, Sink, RangeQuery
 from progressivis.table.binning_index import BinningIndex
 from progressivis.table.percentiles import Percentiles
-from progressivis.table.range_query import RangeQuery
 from progressivis.table.stirrer import Stirrer
 from progressivis.core import aio
 

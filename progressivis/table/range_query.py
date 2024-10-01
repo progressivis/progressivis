@@ -1,20 +1,24 @@
 from __future__ import annotations
 
 import numpy as np
-from progressivis.core.module import (
+from progressivis.core.api import (
     Module,
     ReturnRunStep,
     def_input,
     def_output,
     def_parameter,
     document,
+    PIntSet,
+    indices_len,
+    Slot,
 )
-from ..core.pintset import PIntSet
-from ..core.utils import indices_len
-from ..core.slot import Slot
-from ..io.api import Variable
-from ..utils.psdict import PDict
-from ..table.api import BasePTable, PTable, PTableSelectedView
+from progressivis.io.api import Variable
+from progressivis.utils.api import PDict
+from progressivis.table.api import (
+    BasePTable,
+    PTable,
+    PTableSelectedView,
+)
 from .binning_index import BinningIndex
 from typing import Optional, Any, cast, Iterable, Generator
 
