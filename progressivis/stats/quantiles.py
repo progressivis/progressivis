@@ -85,9 +85,10 @@ class Quantiles(Module):
                 self._valid.add(quantile)
                 if DEBUG:
                     logger.warning(f"Refilling value for {quantile}")
-                for i, k in enumerate(self.result.keys()):
-                    v = self._klls[i].get_quantile(quantile)
-                    result[k] = v
+                for i, (k, v) in enumerate(self.result.items()):
+                    new_v = self._klls[i].get_quantile(quantile)
+                    if v != new_v:
+                        result[k] = new_v
                 self._cache[quantile] = result
             if DEBUG:
                 logger.warning(f"Getting result with hint {hint}: {result}")

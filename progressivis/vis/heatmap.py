@@ -211,14 +211,43 @@ class Heatmap(Module):
         import ipywidgets as ipw
         from IPython.display import display
 
-        wg = ipw.Image(value=b'\x00', width=width, height=height)  # type: ignore
-        display(wg)  # type: ignore
+        img = ipw.Image(value=b'\x00', width=width, height=height)  # type: ignore
+        progress = ipw.IntProgress(value=0, min=0, max=1000,
+                                   description='0/0',
+                                   orientation='horizontal')
+        save = ipw.Button(description="Save",
+                          disabled=False,
+                          button_style='',
+                          icon='save')
+        box = ipw.VBox([ipw.HBox([progress, save]), img])
+
+        display(box)  # type: ignore
         async def _after_run(m: Module, run_number: int) -> None:
             assert isinstance(m, Heatmap)
-            img = m.get_image_bin()  # get the image from the heatmap
-            if img is None:
-                return
-            wg.value = img  # Replace the displayed image with the new one
+            image = m.get_image_bin()  # get the image from the heatmap
+            if image is not None:
+                img.value = image  # Replace the displayed image with the new one
+            prog = m.get_progress()
+            if prog is not None:
+                value = prog[0]
+                max = prog[1]
+                progress.value = value
+                progress.max = max  # type: ignore
+                if max != 0:
+                    percent = value * 100 / max
+                progress.description = f"{int(percent)}%"
 
         # TODO: add a on_ending(remove _after_run)
         self.on_after_run(_after_run)  # Install the callback
+
+        def _save(button: ipw.Button) -> None:
+            from datetime import datetime
+            bytes = self.get_image_bin()
+            if bytes is None:
+                return
+            now = datetime.now()
+            fname = f"image-{str(now.replace(microsecond=0))}.png"
+            with open(fname, "wb") as fout:
+                fout.write(bytes)
+
+        save.on_click(_save)
