@@ -242,10 +242,22 @@ class CSVLoader(Module):
         self._input_size = 0
 
     def get_progress(self) -> Tuple[int, int]:
+        """Return a pair (len, estimated_size).
+        `len` is the current length of the Table, and
+        `estimated_size`  is the estimated length of the stream,
+        the unit is the number or rows.
+        """
+        if self.parser is None:
+            return (0, 0)
+        self._input_size = self.parser._input._input_size
         if self._input_size == 0:
             return (0, 0)
-        pos = 0  # self._input_stream.tell()
-        return (pos, self._input_size)
+        pos = self.parser._input._stream.tell()
+        assert self.result is not None
+        length = len(self.result)
+        estimated_row_size = pos / length
+        estimated_size = int(self._input_size / estimated_row_size)
+        return (length, estimated_size)
 
     def validate_parser(self, run_number: int) -> ModuleState:
         if self.parser is None:
