@@ -68,8 +68,6 @@ csv.scheduler().task_start()
 csv.scheduler()
 
 # %%
-import time
-time.sleep(30)
 csv.scheduler().task_stop()
 
 # %%

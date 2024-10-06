@@ -48,12 +48,11 @@ def filter_(df):
     ]
 
 
-
 # %%
 from progressivis import CSVLoader, Histogram2D, Min, Max, Heatmap
 
 # Create a csv loader filtering out data outside NYC
-csv = CSVLoader(LARGE_TAXI_FILE, index_col=False, usecols=['pickup_longitude', 'pickup_latitude'], filter_=filter_)
+csv = CSVLoader(LARGE_TAXI_FILE, index_col=False, usecols=['pickup_longitude', 'pickup_latitude']) #, filter_=filter_)
 # Create a module to compute the min value progressively
 min = Min()
 # Connect it to the output of the csv module
@@ -85,8 +84,6 @@ csv.scheduler().task_start()
 csv.scheduler()
 
 # %%
-import time
-time.sleep(30)
 csv.scheduler().task_stop()
 
 # %%

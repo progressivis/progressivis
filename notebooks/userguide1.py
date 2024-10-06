@@ -39,7 +39,6 @@ from progressivis import (
     Heatmap
 )
 
-
 # Create a csv loader filtering out data outside NYC
 csv = CSVLoader(LARGE_TAXI_FILE, index_col=False, usecols=['pickup_longitude', 'pickup_latitude'])  # , filter_=filter_)
 
