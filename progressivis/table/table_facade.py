@@ -6,12 +6,13 @@ from typing import (
     Any
 )
 from dataclasses import dataclass, field
-
-from progressivis import (
+from progressivis.core.api import (
     Module,
-    ProgressiveError,
     Sink,
     Scheduler,
+)
+from progressivis.utils.api import ProgressiveError
+from progressivis.stats.api import (
     Min,
     Max,
     KLLSketch,

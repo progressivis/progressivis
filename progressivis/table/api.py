@@ -13,7 +13,8 @@ from .join import Join
 from .merge import Merge
 from .last_row import LastRow
 from .select import Select
-
+from .table_facade import TableFacade
+from .aggregate import Aggregate
 # pylint: disable=unused-import
 from .tracer import PTableTracer  # initialize Tracert.default
 
@@ -37,4 +38,6 @@ __all__ = [
     "Merge",
     "LastRow",
     "Select",
+    "TableFacade",
+    "Aggregate"
 ]
