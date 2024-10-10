@@ -62,11 +62,7 @@ It is not mandatory, but it is preferable to install progressivis in a dedicated
 2. Create a conda environment with the following command:
 
 ```
-<<<<<<< Updated upstream
-conda create -n myenv python=3.12 -c conda-forge
-=======
 conda create -n pv312 python=3.11 -c conda-forge
->>>>>>> Stashed changes
 ```
 
 
