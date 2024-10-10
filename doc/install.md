@@ -45,6 +45,8 @@ pip install [ipy]progressivis
 
 ## Installation for developers
 
+NB: To fully utilize all the capabilities of ProgressiVis, including visualizations, you must install both rogressivis and ipyprogressivis repositories in that order, as outlined below. It’s recommended to clone both repositories into a shared directory.
+
 ### Installing ProgressiVis
 
 1. Clone the progressivis repository from [github.com](https://github.com/progressivis/progressivis/) along with its submodules, with the command:
@@ -60,7 +62,7 @@ It is not mandatory, but it is preferable to install progressivis in a dedicated
 2. Create a conda environment with the following command:
 
 ```
-conda create -n myenv python=3.11 -c conda-forge
+conda create -n myenv python=3.12 -c conda-forge
 ```
 
 
@@ -89,7 +91,7 @@ cd ipyprogressivis
 
 3. Depending on your development goals, install `progressivis` for users or for developpement
 
-4. Install `yarn v1` vith `nodejs v18` in your environment
+4. Install `yarn v1` in your environment
 
 ```
 conda install yarn=1 -c conda-forge
