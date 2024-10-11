@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any, Dict
 
-
+import sys
 import os
 
 # from contextlib import contextmanager
@@ -83,7 +83,7 @@ register_option = _register_option
 
 storage_ = os.getenv("PROGRESSIVIS_STORAGE")
 if storage_ is None:
-    storage_ = "mmap"
+    storage_ = "mmap" if sys.platform == "linux" else "numpy"
 
 if len(options) == 0:
     register_option("display.precision", 6)

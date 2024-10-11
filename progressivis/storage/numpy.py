@@ -199,6 +199,6 @@ class NumpyStorageEngine(StorageEngine, NumpyGroup):
         return NumpyGroup.__contains__(self, name)
 
     @staticmethod
-    def create_group(name: str, create: bool = True) -> Group:
+    def create_group(name: str  = "numpy", create: bool = True) -> Group:
         _ = create  # for pylint
         return NumpyGroup(name)
