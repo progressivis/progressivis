@@ -12,7 +12,7 @@ from setuptools.extension import Extension
 
 CONDA_PREFIX = os.getenv("CONDA_PREFIX", "")
 MYBINDER = os.getenv("USER") == "jovyan"
-WITH_CXX = not MYBINDER
+WITH_CXX = (not MYBINDER) and sys.platform == "linux"
 
 
 PACKAGES = [
