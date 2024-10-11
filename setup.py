@@ -10,9 +10,12 @@ import os.path
 from setuptools import setup, Command
 from setuptools.extension import Extension
 
+def _is_linux():
+    return sys.platform == "linux"
+
 CONDA_PREFIX = os.getenv("CONDA_PREFIX", "")
 MYBINDER = os.getenv("USER") == "jovyan"
-WITH_CXX = (not MYBINDER) and sys.platform == "linux"
+WITH_CXX = (not MYBINDER) and _is_linux()
 
 
 PACKAGES = [
@@ -81,7 +84,7 @@ EXTENSIONS = [
         "progressivis.utils.fast",
         ["progressivis/utils/fast.pyx"],
         include_dirs=[_np_get_include()],
-        extra_compile_args=["-Wfatal-errors"],
+        extra_compile_args=["-Wfatal-errors"] if _is_linux() else [],
     )
 ]
 
@@ -101,7 +104,7 @@ EXT_PYBIND11 = [
             os.path.join(CONDA_PREFIX, "include"),
             os.path.join(sys.prefix, "Library", "include"),
         ],
-        extra_compile_args=["-std=c++17", "-Wall", "-O0", "-g"],
+        extra_compile_args=["-std=c++17", "-Wall", "-O0", "-g"] if _is_linux() else ["-std=c++17",],
         language="c++",
     ),
 ]
