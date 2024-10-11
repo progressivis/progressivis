@@ -6,7 +6,6 @@ from __future__ import annotations
 import mmap as mm
 import os
 import os.path
-from resource import getpagesize
 import marshal
 import numpy as np
 from functools import lru_cache
@@ -17,7 +16,7 @@ from typing import Any, TYPE_CHECKING
 if TYPE_CHECKING:
     Sizes = np.ndarray[Any, Any]
 
-PAGESIZE = getpagesize()
+PAGESIZE = mm.PAGESIZE
 WB = 4
 MAX_SHORT = 32
 MAX_SHORT_BIT_LENGTH = MAX_SHORT.bit_length()

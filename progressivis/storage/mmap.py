@@ -6,7 +6,6 @@ from __future__ import annotations
 
 import os
 import os.path
-from resource import getpagesize
 import marshal
 import shutil
 from tempfile import mkdtemp
@@ -35,7 +34,7 @@ TEMP_DIR_PREFIX = "progressivis_tmp_dir_"
 ROOT_NAME = "mmap_storage"
 METADATA_FILE = ".metadata"
 
-PAGESIZE = getpagesize()
+PAGESIZE = mm.PAGESIZE
 FACTOR = 1
 
 
