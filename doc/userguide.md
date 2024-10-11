@@ -116,10 +116,9 @@ heatmap.input.array = histogram2d.output.result
 ...
 ```
 
-The result is then perfect, but you need extra information, i.e., the boundaries of the image.
+The result is then perfect, but you need to provide extra information, i.e., the boundaries of the image.
 
 ![](images/userguide_1_ok.png)
-
 
 ## Main Components
 
@@ -166,3 +165,27 @@ Alternatively, progressive programs can be run in a _headless_ environment.
 We also provide an experimental setup to run them behind a web server to create progressive applications without a notebook.
 This setup is experimental and should be extended in the future.
 
+## Communication between ProgressiVis and the Notebook
+
+ProgressiVis runs using asynchronous functions. The communication between ProgressiVis and the notebook is done through callbacks and function calls.
+Module callbacks are handy to update the environment outside of ProgressiVis.
+For example, visualizing the heatmap shown in the first example works like this:
+```python
+import ipywidgets as ipw
+from IPython.display import display
+
+# Create an empty Image widget and display it in the notebook
+img = ipw.Image(value=b'\x00', width=width, height=height)
+display(img)
+
+# Define a callback (not that it is `async`) run after the heatmap module is updated
+async def _after_run(m: Module, run_number: int) -> None:
+    assert isinstance(m, Heatmap)
+    image = m.get_image_bin()  # get the image from the heatmap
+    if image is not None:
+        img.value = image  # Replace the displayed image with the new one
+
+heatmap.on_after_run(_after_run)  # Install the callback
+```
+
+On the other direction, an external function can trigger changes in a ProgressiVis program in a few ways. There is a low-level mechanisms based on the method `Module.from_input(msg)` that allows communicating with modules. The module `Variable` is the simplest module designed to handle external events through `from_input`. It implementation of `from_input` expects a dictionary that is then propagated as data in its output slot in the progressive program. Most of the interactions proposed in ProgressiVis are done though `Variable` modules.
