@@ -246,6 +246,7 @@ class Join(Module):
             related_cols = (
                 self._related_cols if nn(self._related_cols) else related_table.columns
             )
+            assert related_cols is not None
             if set(related_cols) & set(ucols):
                 assert self._suffix
 

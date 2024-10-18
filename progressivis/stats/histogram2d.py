@@ -143,8 +143,8 @@ class Histogram2D(Module):
         if min_df is None or len(min_df) == 0:
             return None
         k_ = (lambda x: x) if isinstance(self.x_column, str) else min_df.k_
-        xmin: float = cast(float, min_df[k_(self.x_column)])
-        ymin: float = cast(float, min_df[k_(self.y_column)])
+        xmin: float = cast(float, min_df[k_(self.x_column)])  # type: ignore
+        ymin: float = cast(float, min_df[k_(self.y_column)])  # type: ignore
         max_slot.created.next()
         max_df = max_slot.data()
         assert isinstance(max_df, PDict)

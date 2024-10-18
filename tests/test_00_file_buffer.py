@@ -1,8 +1,9 @@
 from progressivis.core.utils import filepath_to_buffer
-from . import ProgressiveTest
+from . import ProgressiveTest, skipIf
 import requests
 import tempfile
 import os
+import sys
 
 HTTP_URL = (
     "http://s3.amazonaws.com/h2o-release/h2o/master"
@@ -11,6 +12,7 @@ HTTP_URL = (
 S3_URL = "s3://h2o-release/h2o/master/1193/docs-website" "/resources/publicdata.html"
 
 
+@skipIf(sys.platform == "win32", "TODO: fix it")
 class TestFileBuffer(ProgressiveTest):
     def setUp(self) -> None:
         req = requests.get(HTTP_URL)

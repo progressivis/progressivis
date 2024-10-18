@@ -108,10 +108,8 @@ class _DataClass:
             if isinstance(self.sample, Sample):
                 self.sample.input.table = range_query_2d.output.result
             self.histogram2d = histogram2d
-            # self.sample = sample
-            # self.select = select
-            self.min = range_query_2d.dep.min.output.result if range_query_2d.dep.min else range_query_2d.dep.hist_index.min_out
-            self.max = range_query_2d.dep.max.output.result if range_query_2d.dep.max else range_query_2d.dep.hist_index.max_out
+            self.min = range_query_2d.dep.min.output.result if range_query_2d.dep.min else range_query_2d.dep.index.min_out
+            self.max = range_query_2d.dep.max.output.result if range_query_2d.dep.max else range_query_2d.dep.index.max_out
             self.range_query_2d = range_query_2d
             scatterplot = self
             return scatterplot
@@ -284,7 +282,7 @@ class MCScatterPlot(Module):
                     smpl = ([], [])
             else:
                 smpl = (
-                    select.to_json(orient="split", columns=[x_column, y_column])
+                    select.to_json(orient="split", columns=[x_column, y_column])  # type: ignore
                     if select is not None
                     else []
                 )

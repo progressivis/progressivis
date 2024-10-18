@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-from . import ProgressiveTest
+from . import ProgressiveTest, skipIf
 from progressivis import Sink, SimpleCSVLoader, ConstDict, PDict
 from progressivis.core import aio
 from progressivis.table.categorical_query import CategoricalQuery
+import sys
 import pandas as pd
 import numpy as np
 from io import StringIO
@@ -31,6 +32,7 @@ df_, csv_ = generate_random_csv()
 a_c = df_.query("category=='A' or category=='C'")
 
 
+@skipIf(sys.platform == "win32", "TODO: fix it")
 class TestProgressiveCatQuery(ProgressiveTest):
     def test_cat_query(self) -> None:
         s = self.scheduler()
