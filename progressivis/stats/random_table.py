@@ -72,6 +72,11 @@ class RandomPTable(Module):
         self.result = table
         self._columns = table.columns
 
+    def get_progress(self) -> tuple[int, int]:
+        if self.result is None:
+            return 0, 0
+        return len(self.result), self.rows
+
     def run_step(
         self, run_number: int, step_size: int, howlong: float
     ) -> ReturnRunStep:

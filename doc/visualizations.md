@@ -143,8 +143,8 @@ To illustrate, a simple example is given below. It simulates data loading via a 
 scheduler = proxy.scheduler
 # Warning: keep the code above unchanged
 # Put your own imports here
-from progressivis.stats import RandomPTable
-from progressivis.core import Sink
+from progressivis.stats.api import RandomPTable
+from progressivis.core.api import Sink
 with scheduler:
     # Put your own code here
     random = RandomPTable(4, rows=100_000_000, scheduler=scheduler)
@@ -367,7 +367,8 @@ To illustrate, a simple example is given below. It implements a 'range querying'
 from progressivis.table.range_query_2d import RangeQuery2d
 from progressivis.table.constant import ConstDict
 from progressivis.utils.psdict import PDict
-from progressivis.core import aio, Sink
+from progressivis.core.api import Sink
+import progressivis.core.aio as aio
 scheduler = proxy.scheduler
 with scheduler:
     # Put your own code here
