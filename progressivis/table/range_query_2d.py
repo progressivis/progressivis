@@ -21,8 +21,7 @@ from progressivis.table.api import (
     PTable,
 )
 
-from .merge_dict import MergeDict
-from .binning_index import BinningIndex
+from .binning_index_nd import BinningIndexND
 
 from typing import Optional, Any, cast, Union, Iterable
 
@@ -42,20 +41,18 @@ class _Selection(object):
 
 
 class RangeQuery2dImpl:  # (ModuleImpl):
-    def __init__(
-        self,
-        approximate: bool,
-    ) -> None:
-        super(RangeQuery2dImpl, self).__init__()
+    def __init__(self, approximate: bool, column_x: str, column_y: str) -> None:
+        super().__init__()
         self._table: Optional[BasePTable] = None
         self._approximate = approximate
+        self._column_x: str = column_x
+        self._column_y: str = column_y
         self.result: Optional[_Selection] = None
         self.is_started = False
 
     def resume(
         self,
-        index_x: BinningIndex,
-        index_y: BinningIndex,
+        index_2d: BinningIndexND,
         lower_x: float,
         upper_x: float,
         lower_y: float,
@@ -65,22 +62,24 @@ class RangeQuery2dImpl:  # (ModuleImpl):
         updated: Optional[PIntSet] = None,
         deleted: Optional[PIntSet] = None,
         only_bins_x: PIntSet = PIntSet(),
-        only_bins_y: PIntSet = PIntSet()
+        only_bins_y: PIntSet = PIntSet(),
     ) -> None:
         assert self.result
+        col_x = self._column_x
+        col_y = self._column_y
         if limit_changed:
-            new_sel_x = index_x.range_query_asgen(
-                lower_x, upper_x, approximate=self._approximate
+            new_sel_x = index_2d.range_query_asgen(
+                col_x, lower_x, upper_x, approximate=self._approximate
             )
-            new_sel_y = index_y.range_query_asgen(
-                lower_y, upper_y, approximate=self._approximate
+            new_sel_y = index_2d.range_query_asgen(
+                col_y, lower_y, upper_y, approximate=self._approximate
             )
             if new_sel_x is None or new_sel_y is None:
-                new_sel_x = index_x.range_query(
-                    lower_x, upper_x, approximate=self._approximate
+                new_sel_x = index_2d.range_query(
+                    col_x, lower_x, upper_x, approximate=self._approximate
                 )
-                new_sel_y = index_y.range_query(
-                    lower_y, upper_y, approximate=self._approximate
+                new_sel_y = index_2d.range_query(
+                    col_y, lower_y, upper_y, approximate=self._approximate
                 )
                 new_sel = new_sel_x & new_sel_y
             else:
@@ -91,35 +90,39 @@ class RangeQuery2dImpl:  # (ModuleImpl):
             return
         if updated:
             self.result.remove(updated)
-            res_x = index_x.restricted_range_query(
+            res_x = index_2d.restricted_range_query(
+                col_x,
                 lower_x,
                 upper_x,
                 only_locs=updated,
                 approximate=self._approximate,
-                only_bins=only_bins_x
+                only_bins=only_bins_x,
             )
-            res_y = index_y.restricted_range_query(
+            res_y = index_2d.restricted_range_query(
+                col_y,
                 lower_y,
                 upper_y,
                 only_locs=updated,
                 approximate=self._approximate,
-                only_bins=only_bins_y
+                only_bins=only_bins_y,
             )
             self.result.update(res_x & res_y)
         if created:
-            res_x = index_x.restricted_range_query(
+            res_x = index_2d.restricted_range_query(
+                col_x,
                 lower_x,
                 upper_x,
                 only_locs=created,
                 approximate=self._approximate,
-                only_bins=only_bins_x
+                only_bins=only_bins_x,
             )
-            res_y = index_y.restricted_range_query(
+            res_y = index_2d.restricted_range_query(
+                col_y,
                 lower_y,
                 upper_y,
                 only_locs=created,
                 approximate=self._approximate,
-                only_bins=only_bins_y
+                only_bins=only_bins_y,
             )
             self.result.update(res_x & res_y)
         if deleted:
@@ -128,8 +131,7 @@ class RangeQuery2dImpl:  # (ModuleImpl):
     def start(
         self,
         table: BasePTable,
-        index_x: BinningIndex,
-        index_y: BinningIndex,
+        index_2d: BinningIndexND,
         lower_x: float,
         upper_x: float,
         lower_y: float,
@@ -139,14 +141,13 @@ class RangeQuery2dImpl:  # (ModuleImpl):
         updated: Optional[PIntSet] = None,
         deleted: Optional[PIntSet] = None,
         only_bins_x: PIntSet = PIntSet(),
-        only_bins_y: PIntSet = PIntSet()
+        only_bins_y: PIntSet = PIntSet(),
     ) -> None:
         self.result = _Selection()
         self._table = table
         self.is_started = True
         return self.resume(
-            index_x,
-            index_y,
+            index_2d,
             lower_x,
             upper_x,
             lower_y,
@@ -261,35 +262,23 @@ class RangeQuery2dImpl:  # (ModuleImpl):
 @def_input(
     "timestamps_x",
     PDict,
-    doc=("Gives information about bins changed between 2 run steps on the `x` axis"
-         ),
-    required=False
+    doc=("Gives information about bins changed between 2 run steps on the `x` axis"),
+    required=False,
 )
 @def_input(
     "timestamps_y",
     PDict,
-    doc=("Gives information about bins changed between 2 run steps on the `y` axis"
-         ),
-    required=False
+    doc=("Gives information about bins changed between 2 run steps on the `y` axis"),
+    required=False,
 )
 @def_input(
-    "index_x",
+    "index",
     PTable,
     doc=(
-        "**BinningIndex** module output connected to the `x` filtering input/column."
+        "**BinningIndexND** module output connected to the `x` filtering input/column."
         "This mandatory parameter could be provided "
         "by the `create_dependent_modules()` method."
     ),
-)
-@def_input(
-    "index_y",
-    PTable,
-    doc=(
-        "**BinningIndex** module output connected to the `y` filtering input/column."
-        "This mandatory parameter could be provided "
-        "by the `create_dependent_modules()` method."
-    ),
-
 )
 @def_output("result", PTableSelectedView)
 @def_output("min", PDict, attr_name="_min_table", required=False, doc="min doc")
@@ -312,11 +301,13 @@ class RangeQuery2d(Module):
         kwds:
             keywords
         """
-        super(RangeQuery2d, self).__init__(**kwds)
+        super().__init__(**kwds)
         self._approximate = approximate
         self._column_x: str = self.params.column_x
         self._column_y: str = self.params.column_y
-        self._impl = RangeQuery2dImpl(approximate)
+        self._impl = RangeQuery2dImpl(
+            approximate, self.params.column_x, self.params.column_y
+        )
         # X ...
         self._watched_key_lower_x = self.params.watched_key_lower_x
         if not self._watched_key_lower_x:
@@ -351,6 +342,7 @@ class RangeQuery2d(Module):
         With False, it is not created and not connected.
         """
         from progressivis import Variable
+
         if self.input_module is not None:  # test if already called
             return self
         with self.grouped():
@@ -359,48 +351,35 @@ class RangeQuery2d(Module):
             self.input_module = input_module
             self.input_slot = input_slot
             with scheduler:
-                index_x = BinningIndex(
+                index_2d = BinningIndexND(
                     group=self.name,
                     scheduler=scheduler,
                 )
-                self.dep.index_x = index_x
-                index_x.input.table = input_module.output[input_slot][params.column_x,]
-                index_y = BinningIndex(
-                    group=self.name,
-                    scheduler=scheduler,
-                )
-                self.dep.index_y = index_y
-                index_y.input.table = input_module.output[input_slot][params.column_y,]
+                self.dep.index = index_2d
+                index_2d.input.table = input_module.output[input_slot][
+                    params.column_x,
+                    params.column_y,
+                ]
                 if min_value is None:
-                    min_value = Variable(
-                        group=self.name, scheduler=scheduler
-                    )
+                    min_value = Variable(group=self.name, scheduler=scheduler)
                 if max_value is None:
-                    max_value = Variable(
-                        group=self.name, scheduler=scheduler
-                    )
+                    max_value = Variable(group=self.name, scheduler=scheduler)
                 range_query = self
-                range_query.input.index_x = index_x.output.result
-                range_query.input.index_y = index_y.output.result
-                range_query.input.timestamps_x = index_x.output.bin_timestamps
-                range_query.input.timestamps_y = index_y.output.bin_timestamps
-                # range_query.input.table = index_x.output.result  # one of them arbitrarily
+                range_query.input.index = index_2d.output.result
+                range_query.input.timestamps_x = index_2d.output.bin_timestamps_0
+                range_query.input.timestamps_y = index_2d.output.bin_timestamps_1
                 if min_value:
                     assert isinstance(min_value, Module)
                     range_query.input.lower = min_value.output.result
                 if max_value:
                     assert isinstance(max_value, Module)
                     range_query.input.upper = max_value.output.result
-                if min_ is None:
-                    min_ = MergeDict(group=self.name, scheduler=scheduler)
-                    min_.input.table = index_x.output.min_out
-                    min_.input.table = index_y.output.min_out
-                range_query.input.min = min_.output.result
-                if max_ is None:
-                    max_ = MergeDict(group=self.name, scheduler=scheduler)
-                    max_.input.table = index_x.output.max_out
-                    max_.input.table = index_y.output.max_out
-                range_query.input.max = max_.output.result
+                range_query.input.min = (
+                    index_2d.output.min_out if min_ is None else min_.output.result
+                )
+                range_query.input.max = (
+                    index_2d.output.max_out if max_ is None else max_.output.result
+                )
             self.dep.min = min_
             self.dep.max = max_
             self.dep.min_value = min_value
@@ -429,26 +408,17 @@ class RangeQuery2d(Module):
     def run_step(
         self, run_number: int, step_size: int, howlong: float
     ) -> ReturnRunStep:
-        """
-        The naive approach would be to process the requests on X and Y separately and
-        to intersect the results. To avoid the cost of a progressive intersection, we
-        prefer to follow the output on X and intersect it with the results on Y as they
-        become available. If, unfortunately, the output Y lags behind X, the processing
-        of lagging indexes will be delayed. To detect lagging indexes, we use the
-        unfiltered output of the BinningIndex on y
-        """
-        index_x_slot = self.get_input_slot("index_x")
-        index_y_slot = self.get_input_slot("index_y")
-        if index_x_slot.data() is None or index_y_slot.data() is None:
+        """ """
+        index_2d_slot = self.get_input_slot("index")
+        if index_2d_slot.data() is None:
             return self._return_run_step(self.state_blocked, steps_run=0)
-        # index_x_slot.clear_buffers()
-        index_y_slot.clear_buffers()
-        # input_slot = self.get_input_slot("table")
-        input_slot = index_x_slot
+        input_slot = index_2d_slot
         # input_slot.update(run_number)
         # X-Y common func
 
-        def _ts_func(tstamps: Slot, ts_data: dict[Any, Any], ts_changes: PIntSet) -> PIntSet:
+        def _ts_func(
+            tstamps: Slot, ts_data: dict[Any, Any], ts_changes: PIntSet
+        ) -> PIntSet:
             ts_k_ids = {ts_data.k_(i): i for i in ts_changes}  # type: ignore
             if -1 in ts_k_ids and ts_k_ids[-1] in tstamps.updated.changes:
                 tstamps.reset()
@@ -480,18 +450,10 @@ class RangeQuery2d(Module):
         created: Optional[PIntSet] = None
         if input_slot.created.any():
             created = input_slot.created.next(length=step_size, as_slice=False)
-            effective = created & index_y_slot.data().index  # cause input_slot is x
-            see_later = created - effective  # this can happen when Y is late
-            input_slot.created.push(see_later)
-            created = effective
             steps += indices_len(created)
         updated: Optional[PIntSet] = None
         if input_slot.updated.any():
             updated = input_slot.updated.next(length=step_size, as_slice=False)
-            effective = updated & index_y_slot.data().index  # cause input_slot is x
-            see_later = updated - effective
-            input_slot.updated.push(see_later)
-            updated = effective
             steps += indices_len(updated)
         input_table = input_slot.data()
         if input_table is None:
@@ -575,10 +537,14 @@ class RangeQuery2d(Module):
             or upper_value_y <= lower_value_y
         ):
             upper_value_y = float("inf")
-        self._set_min_out(minv_x if np.isinf(lower_value_x) else lower_value_x,
-                          minv_y if np.isinf(lower_value_y) else lower_value_y)
-        self._set_max_out(maxv_x if np.isinf(upper_value_x) else upper_value_x,
-                          maxv_y if np.isinf(upper_value_y) else upper_value_y)
+        self._set_min_out(
+            minv_x if np.isinf(lower_value_x) else lower_value_x,
+            minv_y if np.isinf(lower_value_y) else lower_value_y,
+        )
+        self._set_max_out(
+            maxv_x if np.isinf(upper_value_x) else upper_value_x,
+            maxv_y if np.isinf(upper_value_y) else upper_value_y,
+        )
         if steps == 0 and not limit_changed:
             return self._return_run_step(self.state_blocked, steps_run=0)
         # ...
@@ -587,8 +553,7 @@ class RangeQuery2d(Module):
         if not self._impl.is_started:
             self._impl.start(
                 input_table,
-                cast(BinningIndex, index_x_slot.output_module),
-                cast(BinningIndex, index_y_slot.output_module),
+                cast(BinningIndexND, index_2d_slot.output_module),
                 lower_value_x,
                 upper_value_x,
                 lower_value_y,
@@ -602,8 +567,7 @@ class RangeQuery2d(Module):
             )
         else:
             self._impl.resume(
-                cast(BinningIndex, index_x_slot.output_module),
-                cast(BinningIndex, index_y_slot.output_module),
+                cast(BinningIndexND, index_2d_slot.output_module),
                 lower_value_x,
                 upper_value_x,
                 lower_value_y,
@@ -617,7 +581,7 @@ class RangeQuery2d(Module):
             )
         if not input_slot.has_buffered():
             tstamps_x.clear_buffers()
-        tstamps_y.clear_buffers()  # uncond. because index_y is cleared at each run_step
+            tstamps_y.clear_buffers()
         assert self._impl.result
         self.result.selection = self._impl.result._values
         return self._return_run_step(self.next_state(input_slot), steps)
