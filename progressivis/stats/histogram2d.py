@@ -155,10 +155,10 @@ class Histogram2D(Module):
         ymax: float = cast(float, max_df[k_(self.y_column)])  # type: ignore
         if xmax < xmin:
             xmax, xmin = xmin, xmax
-            logger.warning("xmax < xmin, swapped")
+            # logger.warning("xmax < xmin, swapped")
         if ymax < ymin:
             ymax, ymin = ymin, ymax
-            logger.warning("ymax < ymin, swapped")
+            # logger.warning("ymax < ymin, swapped")
         return (xmin, xmax, ymin, ymax)
 
     def get_delta(

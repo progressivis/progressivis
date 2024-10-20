@@ -235,7 +235,7 @@ class Heatmap(Module):
                 progress.max = max  # type: ignore
                 if max != 0:
                     percent = value * 100 / max
-                progress.description = f"{int(percent)}%"
+                    progress.description = f"{int(percent)}%"
 
         # TODO: add a on_ending(remove _after_run)
         self.on_after_run(_after_run)  # Install the callback

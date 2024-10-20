@@ -429,19 +429,19 @@ class RangeQuery2d(Module):
                 return PIntSet(ts_k_ids.values())  # relevant bins
 
         # timestamps on X
-        tstamps_x = self.get_input_slot("timestamps_x")
-        ts_data_x = tstamps_x.data()
-        ts_changes_x = tstamps_x.created.changes | tstamps_x.updated.changes
         only_bins_x = PIntSet()
-        tstamps_y = self.get_input_slot("timestamps_y")
-        ts_data_y = tstamps_y.data()
-        ts_changes_y = tstamps_y.created.changes | tstamps_y.updated.changes
-        only_bins_y = PIntSet()
-        if ts_changes_x:
+        tstamps_x = tstamps_y = None
+        if self.has_input_slot("timestamps_x"):
+            tstamps_x = self.get_input_slot("timestamps_x")
+            ts_data_x = tstamps_x.data()
+            ts_changes_x = tstamps_x.created.changes | tstamps_x.updated.changes
             only_bins_x = _ts_func(tstamps_x, ts_data_x, ts_changes_x)
-        if ts_changes_y:
+        only_bins_y = PIntSet()
+        if self.has_input_slot("timestamps_y"):
+            tstamps_y = self.get_input_slot("timestamps_y")
+            ts_data_y = tstamps_y.data()
+            ts_changes_y = tstamps_y.created.changes | tstamps_y.updated.changes
             only_bins_y = _ts_func(tstamps_y, ts_data_y, ts_changes_y)
-
         steps = 0
         deleted: Optional[PIntSet] = None
         if input_slot.deleted.any():
@@ -499,11 +499,11 @@ class RangeQuery2d(Module):
         lower_value_y = lower_slot.data().get(self._watched_key_lower_y)
         upper_value_y = upper_slot.data().get(self._watched_key_upper_y)
         # X ...
-        minv_x = min_slot.data().get(self._watched_key_lower_x)
-        maxv_x = max_slot.data().get(self._watched_key_upper_x)
+        minv_x = min_slot.data().get(self._column_x)
+        maxv_x = max_slot.data().get(self._column_x)
         # Y ...
-        minv_y = min_slot.data().get(self._watched_key_lower_y)
-        maxv_y = max_slot.data().get(self._watched_key_upper_y)
+        minv_y = min_slot.data().get(self._column_y)
+        maxv_y = max_slot.data().get(self._column_y)
         # X ...
         if (
             lower_value_x is None
@@ -580,8 +580,10 @@ class RangeQuery2d(Module):
                 only_bins_y=only_bins_y,
             )
         if not input_slot.has_buffered():
-            tstamps_x.clear_buffers()
-            tstamps_y.clear_buffers()
+            if tstamps_x is not None:
+                tstamps_x.clear_buffers()
+            if tstamps_y is not None:
+                tstamps_y.clear_buffers()
         assert self._impl.result
         self.result.selection = self._impl.result._values
         return self._return_run_step(self.next_state(input_slot), steps)

@@ -115,7 +115,7 @@ class _BinningIndexImpl:
             # the coresponding bins indices for values are fct. of origin and bin width
             i_bins = np.array((values - self.origin) // self.bin_w, dtype=int)
             if np.any(i_bins < 0):
-                print("Origin changed")
+                # print("Origin changed")
                 # it hapens when a new min appears in values
                 # the origin is shifted to the left to avoid
                 # having to deal with negative indices.
