@@ -1,6 +1,7 @@
 """Binning Index computes an index for numerical values by
-maintaining multiple pintsets for value ranges, each PIntSet corresponds
-to a value bin. It differs from HistogramIndex because bins have all the same width
+maintaining multiple PIntSets for value ranges, each PIntSet corresponds
+to a value bin. It differs from HistogramIndex because bins have all the same width,
+which simplifies its management.
 """
 from __future__ import annotations
 

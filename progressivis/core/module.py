@@ -1041,6 +1041,7 @@ class Module(metaclass=ABCMeta):
         return self.predictor.predict(duration, self.default_step_size)
 
     def starting(self) -> None:
+        "Called when the module is added and made active by the scheduler."
         pass
 
     def _stop(self, run_number: int) -> None:
