@@ -245,48 +245,17 @@ which produces the following dataflow graph:
 ```
 
 Controlling this progressive graph with jupyter widgets can be done like this:
-```python
-import ipywidgets as widgets
-
-# Yield control to the scheduler to start
-await aio.sleep(1)
-# Assign an initial value to the min and max variables
-await var_min.from_input(bnds_min)
-await var_max.from_input(bnds_max);
-
-long_slider = widgets.FloatRangeSlider(
-    value=[bnds_min[col_x], bnds_max[col_x]],
-    min=bnds_min[col_x],
-    max=bnds_max[col_x],
-    step=(bnds_max[col_x]-bnds_min[col_x])/10,
-    description='Longitude:',
-    disabled=False,
-    continuous_update=False,
-    orientation='horizontal',
-    readout=True,
-    readout_format='.1f',
-)
-lat_slider = widgets.FloatRangeSlider(
-    value=[bnds_min[col_y], bnds_max[col_y]],
-    min=bnds_min[col_y],
-    max=bnds_max[col_y],
-    step=(bnds_max[col_y]-bnds_min[col_y])/10,
-    description='Latitude:',
-    disabled=False,
-    continuous_update=False,
-    orientation='horizontal',
-    readout=True,
-    readout_format='.1f',
-)
-def observer(_):
-    async def _coro():
-        long_min, long_max = long_slider.value
-        lat_min, lat_max = lat_slider.value
-        await var_min.from_input({col_x: long_min, col_y: lat_min})
-        await var_up.from_input({col_x: long_max, col_y: lat_max})
-    aio.create_task(_coro())
-long_slider.observe(observer, "value")
-lat_slider.observe(observer, "value")
-widgets.VBox([long_slider, lat_slider])
+```{eval-rst}
+.. literalinclude:: ./userguide1.3-cont.py
+   :linenos:
 ```
+
+Line 6 and 7 use the `Module.from_input` method to initialize the
+ value of `var_min` and `var_max` to `bnds_min` and `bnds_max` respectively.
+ Then, two range sliders are created line 9 and line 21 to filter a range of values
+ between the specified bounds of the visualization.
+ The `observer()` function is attached as callback of these two sliders to collect the
+ slider values and send them to `var_min` and `var_max` on line 37-39.
+ Setting them in the callback will force the histogram to recompute with the new bounds and, in turn, trugger an update of the heatmap every time the sliders are moved.
+
 
