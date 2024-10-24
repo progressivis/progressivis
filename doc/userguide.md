@@ -12,6 +12,8 @@ If you are familiar with asynchronous programming or real time programming, you 
 Let's start with a simple progressive program to introduce the concept.  Assume we want to find out what are the popular places to go in New York City.
 We can download the New York Taxi dataset that contain all the taxi trips in 2015 and 2016, including the pickup and drop-off positions, looking for hot-spots.
 
+All the programs shown here are available in the the `notebook` directory of **ProgressiVis** as `userguide1.ipynb`, `userguide1.2.ipynb` and `userguide1.3.ipynb` so you don't have to copy/paste them from this documentation.
+
 With **ProgressiVis**, we don't need to wait for the file to be fully loaded to visualize it, we can do it on the go, as with this simple low-level ProgressiVis program:
 
 ```python
