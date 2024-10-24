@@ -55,6 +55,7 @@ from progressivis import CSVLoader, Histogram2D, Min, Max, Heatmap
 LARGE_TAXI_FILE = "https://www.aviz.fr/nyc-taxi/yellow_tripdata_2015-01.csv.bz2"
 RESOLUTION=512
 
+
 csv = CSVLoader(LARGE_TAXI_FILE,
                 index_col=False,
                 usecols=['pickup_longitude', 'pickup_latitude'])
@@ -87,25 +88,32 @@ The `Quantiles` module allows getting rid of outliers that always exist in real 
 Alternatively, you may know the boundaries of NYC and specify them:
 ```python
 from progressivis import CSVLoader, Histogram2D, ConstDict, Heatmap, PDict
+from dataclasses import dataclass
+
 
 LARGE_TAXI_FILE = "https://www.aviz.fr/nyc-taxi/yellow_tripdata_2015-01.csv.bz2"
 RESOLUTION=512
 
-bounds = {
-	"top": 40.92,
-	"bottom": 40.49,
-	"left": -74.27,
-	"right": -73.68,
-}
+@dataclass
+class Bounds:
+    top: float = 40.92
+    bottom: float = 40.49
+    left: float = -74.27
+    right: float = -73.68
+
+bounds = Bounds()
+col_x = "pickup_longitude"
+col_y = "pickup_latitude"
+
 
 csv = CSVLoader(LARGE_TAXI_FILE,
                 index_col=False,
-                usecols=['pickup_longitude', 'pickup_latitude'])
+                usecols=[col_x, col_y])
 
-min = ConstDict(PDict({'pickup_longitude': bounds['left'], 'pickup_latitude': bounds['bottom']}))
-max = ConstDict(PDict({'pickup_longitude': bounds['right'], 'pickup_latitude': bounds['top']}))
+min = ConstDict(PDict({col_x: bounds.left, col_y: bounds.bottom}))
+max = ConstDict(PDict({col_x: bounds.right, col_y: bounds.top}))
 
-histogram2d = Histogram2D('pickup_longitude', 'pickup_latitude',
+histogram2d = Histogram2D(col_x, col_y,
                           xbins=RESOLUTION, ybins=RESOLUTION)
 histogram2d.input.table = csv.output.result
 histogram2d.input.min = min.output.result
@@ -188,4 +196,97 @@ async def _after_run(m: Module, run_number: int) -> None:
 heatmap.on_after_run(_after_run)  # Install the callback
 ```
 
-On the other direction, an external function can trigger changes in a ProgressiVis program in a few ways. There is a low-level mechanisms based on the method `Module.from_input(msg)` that allows communicating with modules. The module `Variable` is the simplest module designed to handle external events through `from_input`. It implementation of `from_input` expects a dictionary that is then propagated as data in its output slot in the progressive program. Most of the interactions proposed in ProgressiVis are done though `Variable` modules.
+On the other direction, an external function can trigger changes in a ProgressiVis program in a few ways. There is a low-level mechanisms based on the method `Module.from_input(msg)` that allows communicating with modules. The module `Variable` is the simplest module designed to handle external events through `from_input`. It implementation of `from_input` expects a dictionary that is then propagated as data in its output slot in the progressive program. Most of the interactions proposed in ProgressiVis are done though `Variable` modules. Reusing the same declarations as in the examples above, we can add dynamic filtering to the data being progressively loaded with the following code:
+
+```python
+from progressivis import (
+    CSVLoader, Histogram2D, ConstDict, Heatmap, PDict,
+    BinningIndexND, RangeQuery2d, Variable
+)
+import progressivis.core.aio as aio
+
+bnds_min = PDict({col_x: bounds.left, col_y: bounds.bottom})
+bnds_max = PDict({col_x: bounds.right, col_y: bounds.top})
+# Create a csv loader for the taxi data file
+csv = CSVLoader(LARGE_TAXI_FILE, index_col=False, usecols=[col_x, col_y])
+# Create an indexing module on the csv loader output columns
+index = BinningIndexND()
+# Creates one index per numeric column
+index.input.table = csv.output.result[col_x, col_y]
+# Create a querying module
+query = RangeQuery2d(column_x=col_x, column_y=col_y)
+# Variable modules allow to dynamically modify their values; here, the query ranges
+var_min = Variable(name="var_min")
+var_max = Variable(name="var_max")
+query.input.lower = var_min.output.result
+query.input.upper = var_max.output.result
+query.input.index = index.output.result
+query.input.min = index.output.min_out
+query.input.max = index.output.max_out
+# Create a module to compute the 2D histogram of the two columns specified
+# with the given resolution
+histogram2d = Histogram2D(col_x, col_y, xbins=RESOLUTION, ybins=RESOLUTION)
+# Connect the module to the csv results and the min,max bounds to rescale
+histogram2d.input.table = query.output.result
+histogram2d.input.min = query.output.min
+histogram2d.input.max = query.output.max
+# Create a module to create an heatmap image from the histogram2d
+heatmap = Heatmap()
+# Connect it to the histogram2d
+heatmap.input.array = histogram2d.output.result
+heatmap.display_notebook()
+csv.scheduler().task_start();
+```
+
+which produces the following dataflow graph:
+
+```{eval-rst}
+.. progressivis_dot:: ./userguide1.3.py
+```
+
+Controlling this progressive graph with jupyter widgets can be done like this:
+```python
+import ipywidgets as widgets
+
+# Yield control to the scheduler to start
+await aio.sleep(1)
+# Assign an initial value to the min and max variables
+await var_min.from_input(bnds_min)
+await var_max.from_input(bnds_max);
+
+long_slider = widgets.FloatRangeSlider(
+    value=[bnds_min[col_x], bnds_max[col_x]],
+    min=bnds_min[col_x],
+    max=bnds_max[col_x],
+    step=(bnds_max[col_x]-bnds_min[col_x])/10,
+    description='Longitude:',
+    disabled=False,
+    continuous_update=False,
+    orientation='horizontal',
+    readout=True,
+    readout_format='.1f',
+)
+lat_slider = widgets.FloatRangeSlider(
+    value=[bnds_min[col_y], bnds_max[col_y]],
+    min=bnds_min[col_y],
+    max=bnds_max[col_y],
+    step=(bnds_max[col_y]-bnds_min[col_y])/10,
+    description='Latitude:',
+    disabled=False,
+    continuous_update=False,
+    orientation='horizontal',
+    readout=True,
+    readout_format='.1f',
+)
+def observer(_):
+    async def _coro():
+        long_min, long_max = long_slider.value
+        lat_min, lat_max = lat_slider.value
+        await var_min.from_input({col_x: long_min, col_y: lat_min})
+        await var_up.from_input({col_x: long_max, col_y: lat_max})
+    aio.create_task(_coro())
+long_slider.observe(observer, "value")
+lat_slider.observe(observer, "value")
+widgets.VBox([long_slider, lat_slider])
+```
+

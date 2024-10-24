@@ -21,20 +21,23 @@
 # First, we define a few constants, where the file is located, the desired resolution, and the url of the taxi file.
 
 # %%
+import warnings
+warnings.filterwarnings("ignore")
 LARGE_TAXI_FILE = "https://www.aviz.fr/nyc-taxi/yellow_tripdata_2015-01.csv.bz2"
 RESOLUTION=512
 
 
 # %%
-# Function to filter out trips outside of NYC.
-
 # See https://en.wikipedia.org/wiki/Module:Location_map/data/USA_New_York_City
-bounds = {
-	"top": 40.92,
-	"bottom": 40.49,
-	"left": -74.27,
-	"right": -73.68,
-}
+from dataclasses import dataclass
+@dataclass
+class Bounds:
+    top: float = 40.92
+    bottom: float = 40.49
+    left: float = -74.27
+    right: float = -73.68
+
+bounds = Bounds()
 
 
 # %%
@@ -43,8 +46,8 @@ from progressivis import (CSVLoader, Histogram2D, ConstDict, Heatmap, PDict)
 # Create a csv loader filtering out data outside NYC
 csv = CSVLoader(LARGE_TAXI_FILE, index_col=False, usecols=['pickup_longitude', 'pickup_latitude'])
 # Create a module to compute the min value progressively
-min = ConstDict(PDict({'pickup_longitude': bounds['left'], 'pickup_latitude': bounds['bottom']}))
-max = ConstDict(PDict({'pickup_longitude': bounds['right'], 'pickup_latitude': bounds['top']}))
+min = ConstDict(PDict({'pickup_longitude': bounds.left, 'pickup_latitude': bounds.bottom}))
+max = ConstDict(PDict({'pickup_longitude': bounds.right, 'pickup_latitude': bounds.top}))
 
 # Create a module to compute the 2D histogram of the two columns specified
 # with the given resolution

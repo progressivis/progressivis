@@ -28,6 +28,8 @@
 # %autoreload 2
 
 # %%
+import warnings
+warnings.filterwarnings("ignore")
 LARGE_TAXI_FILE = "https://www.aviz.fr/nyc-taxi/yellow_tripdata_2015-01.csv.bz2"
 RESOLUTION=512
 

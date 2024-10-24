@@ -795,7 +795,7 @@ class Scheduler:
                 first = False
             sio.write(f"<i_{sl_name}> {sl_name}")
         sio.write("}|")
-        sio.write(f"{name}[{m.__class__.__name__}]")
+        sio.write(f"{name}: {m.__class__.__name__}")
         sio.write("|{")
         first = True
         for sn, slist in m._output_slots.items():
