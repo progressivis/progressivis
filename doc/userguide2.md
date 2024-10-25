@@ -37,7 +37,7 @@ It works as well, but the resulting image is unexpected:
 
 ![](images/userguide_1_bad.png)
 
-This is due to taxis driving to Florida (bottom right) or other far away places and forgetting to stop their meters.
+This is due to taxis driving to Florida (bottom right, sometimes invisible on high-resolution displays) or other far away places and forgetting to stop their meters.
 The `Quantiles` module allows getting rid of outliers that always exist in real data, that is always noisy.
 
 Alternatively, you may know the boundaries of NYC and specify them:
