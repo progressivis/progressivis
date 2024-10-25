@@ -2,6 +2,11 @@ import ipywidgets as widgets
 
 # Yield control to the scheduler to start
 await aio.sleep(1)
+
+# Define the bounds for the range-slider widgets
+bnds_min = PDict({col_x: bounds.left, col_y: bounds.bottom})
+bnds_max = PDict({col_x: bounds.right, col_y: bounds.top})
+
 # Assign an initial value to the min and max variables
 await var_min.from_input(bnds_min)
 await var_max.from_input(bnds_max);

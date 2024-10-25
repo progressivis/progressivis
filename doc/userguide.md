@@ -2,21 +2,28 @@
 
 
 **ProgressiVis** is a language and system implementing **progressive data analysis and visualization**.
-**ProgressiVis** is designed so that it never blocks in functions during unbounded amount of time, such as loading a large file from the network until completion.
-In a traditional computation system, you don't worry much about the time taken when calling a function; loading a large file over the network is the price to pay for having it loaded and starting computations over its contents. In a progressive system, meant to be used interactively, when a function takes too long to complete, the user waits, get bored, and her attention drops.  **ProgressiVis** is designed to avoid this attention drop.
-If you are familiar with asynchronous programming or real time programming, you will be familiar with the need to follow strict disciplines to make sure a system is not blocking.  This discipline is implemented everywhere in **progressiVis** with a specific "progressive" semantics.
+**ProgressiVis** is designed so that it never blocks while executing functions, even if their execution time lasts for an unbounded amount of time. For example, when loading a large file from the network until completion.
+
+In a traditional computation system, you cannot do much about the time taken when calling a function. Waiting while loading a large file over the network is the price to pay for having it loaded and starting computations over its contents. In a non-progressive system meant to be used interactively, when a function takes too long to complete, the user waits, get bored, and her attention drops.  **ProgressiVis** is designed to avoid this attention drop.
+
+If you are familiar with asynchronous programming or real time programming, you will be familiar with the need to follow strict disciplines to make sure a system is not blocking.
+This discipline is implemented everywhere in **progressiVis** with a specific "progressive" semantics.
 
 ## Key concepts
 
 **ProgressiVis** uses specific constructs to remain reactive and interactive all the time.
-Let's start with a simple progressive program to introduce the concept.  Assume we want to find out what are the popular places to go in New York City.
+Let's start with a simple progressive program to introduce the concepts.  Assume we want to find out what are the busy places in New York City.
 We can download the New York Taxi dataset that contain all the taxi trips in 2015 and 2016, including the pickup and drop-off positions, looking for hot-spots.
+
+For January 2015, the file `yellow_tripdata_2015-01.csv.bz2` is 327Mb long in compressed form and contains about 12M lines (12,748,987). Downloading the file and uncompressing it before the data is loaded in memory can take minutes. Meanwhile, the user is waiting idly with no information about the file content.
+
+With **ProgressiVis**, we don't need to wait for the file to be fully loaded to visualize it, we can do it on the go, as with this simple low-level ProgressiVis program.
 
 All the programs shown here are available in the the `notebook` directory of **ProgressiVis** as `userguide1.ipynb`, `userguide1.2.ipynb` and `userguide1.3.ipynb` so you don't have to copy/paste them from this documentation.
 
-With **ProgressiVis**, we don't need to wait for the file to be fully loaded to visualize it, we can do it on the go, as with this simple low-level ProgressiVis program:
 
-```python
+```{code-block}
+:linenos:
 from progressivis import CSVLoader, Histogram2D, Quantiles, Heatmap
 
 LARGE_TAXI_FILE = "https://www.aviz.fr/nyc-taxi/yellow_tripdata_2015-01.csv.bz2"
@@ -42,93 +49,30 @@ heatmap.display_notebook()
 csv.scheduler().task_start()
 ```
 
-The image of all the taxi pickup positions appears immediately  and get more detailed progressively, revealing the shape of Manhattan and the two New York City airports.
-![](images/nyc1.png)
+The image of all the taxi pickup positions appears immediately. All taxi pickup positions are overlaid at each pixel to produce a density map that becomes more detailed progressively, revealing the shape of Manhattan and the two New York City airports, La Guardia in the center top and JFK at the bottom right.  Yellow taxis in NYC are only authorized to pick up clients in Manhattan and in the airports, or when returning from their drop-off location; this is visible in the visualized patterns.
 
-With a standard visualization system, or using Pandas from python, you would have to wait a few minutes to see the visualization due to the load time of the file.
-**ProgressiVis** show the results in a few seconds, improving over time, irrespective to the file size and network speed.
+![](images/nyc1.png) ![](images/NYC_map_osm.png)
 
-### Noisy Data
+With a standard visualization system, or using Pandas from python, you would have to wait several minutes to see the visualization due to the load time of the file.
+**ProgressiVis** shows the results in a few seconds, improving over time, irrespective to the file size and network speed.
 
-ProgressiVis is designed for scalability and managing big data. Big data is never clean; the taxi dataset is no exception. The simplest program for visualizing it is the following:
-```python
-from progressivis import CSVLoader, Histogram2D, Min, Max, Heatmap
+Let's explain the program. Line 6 creates a `CSV` loader module, providing the url of the taxi datasets and limiting the table to two columns: `pickup_longitude` and `pickup_latitude` that will be used in the example.
+When created, the module does not start right away but after line 23 in that case when the whole program is started.
 
-LARGE_TAXI_FILE = "https://www.aviz.fr/nyc-taxi/yellow_tripdata_2015-01.csv.bz2"
-RESOLUTION=512
+Then, on line 10, a `Quantiles` module is created and connected to the `CSV` loader in line 11.  Modules can have input and output slots to connect them and let data flow between them. The slots are usually typed so the `CSV` output slot produces a data table and the `Quantiles` module expects a data table in its input.
 
+The `Quantiles` module will maintain an internal data structure to quickly (but approximately) compute quantiles over all the loaded numerical columns (it is called a data sketch). This is because the minimum and maximum of the dataset are noisy.
+ProgressiVis is designed for scalability and managing big data. Big data is never clean; the taxi dataset is no exception. Using the absolute minimum and maximum values of the data column would produce weird results. Instead, we are using the 3% and 97% quantiles, maintained progressively, to avoid outliers.
 
-csv = CSVLoader(LARGE_TAXI_FILE,
-                index_col=False,
-                usecols=['pickup_longitude', 'pickup_latitude'])
+On line 13, a `Histogram2D` module is created to count all the pick up locations on a grid of 512x512. It is connected to the table produced by the `CSV` module on line 15, and to the 3% and 97% quantiles computed by the Quantiles module in lines 16-17 for its minimum and maximum values. Note that, when connecting slots, ProgressiVis allows specifying arguments, providing details about the connection; they are called "slot hints". For the output slot "result" of the `Quantiles` module on line 16-17, the argument is simply the desired quantile between 0 and 1.
 
-min = Min()
-min.input.table = csv.output.result
+Finaly, a `Heatmap` module is created in line 19 and connected to the output of the `Histogram2D` module. It will convert the 2D histogram into an image ready to be displayed in the notebook, line 22.
 
-max = Max()
-max.input.table = csv.output.result
+The progressive program is started line 23 and the image will appear almost immediately, improving over time. The bounds may move a bit when more points are loaded. In that case, the image will be redisplayed progressively with the new bounds at the same page, about one image every 2-3 seconds.
 
-histogram2d = Histogram2D('pickup_longitude', 'pickup_latitude',
-                          xbins=RESOLUTION, ybins=RESOLUTION)
-histogram2d.input.table = csv.output.result
-histogram2d.input.min = min.output.result
-histogram2d.input.max = max.output.result
+At this stage, ProgressiVis is used in a streaming mode, loading the data and visualizing the results as it goes. We will introduce interaction later, after introducing the concepts first.
 
-heatmap = Heatmap()
-heatmap.input.array = histogram2d.output.result
-...
-```
-
-Instead of using the `Quantiles` module, it simply uses `Min` and `Max` to obtain the bounds of the pickup positions before computing the heatmap image.
-It works as well, but the resulting image is unexpected:
-
-![](images/userguide_1_bad.png)
-
-This is due to taxis driving to Florida (bottom right) or other far away places and forgetting to stop their meters.
-The `Quantiles` module allows getting rid of outliers that always exist in real data, that is always noisy.
-
-Alternatively, you may know the boundaries of NYC and specify them:
-```python
-from progressivis import CSVLoader, Histogram2D, ConstDict, Heatmap, PDict
-from dataclasses import dataclass
-
-
-LARGE_TAXI_FILE = "https://www.aviz.fr/nyc-taxi/yellow_tripdata_2015-01.csv.bz2"
-RESOLUTION=512
-
-@dataclass
-class Bounds:
-    top: float = 40.92
-    bottom: float = 40.49
-    left: float = -74.27
-    right: float = -73.68
-
-bounds = Bounds()
-col_x = "pickup_longitude"
-col_y = "pickup_latitude"
-
-
-csv = CSVLoader(LARGE_TAXI_FILE,
-                index_col=False,
-                usecols=[col_x, col_y])
-
-min = ConstDict(PDict({col_x: bounds.left, col_y: bounds.bottom}))
-max = ConstDict(PDict({col_x: bounds.right, col_y: bounds.top}))
-
-histogram2d = Histogram2D(col_x, col_y,
-                          xbins=RESOLUTION, ybins=RESOLUTION)
-histogram2d.input.table = csv.output.result
-histogram2d.input.min = min.output.result
-histogram2d.input.max = max.output.result
-
-heatmap = Heatmap()
-heatmap.input.array = histogram2d.output.result
-...
-```
-
-The result is then perfect, but you need to provide extra information, i.e., the boundaries of the image.
-
-![](images/userguide_1_ok.png)
+Variations of this program are [discussed in a followup document](userguide2) if you are interested in more details about loading a large CSV file.
 
 ## Main Components
 
@@ -207,8 +151,9 @@ from progressivis import (
 )
 import progressivis.core.aio as aio
 
-bnds_min = PDict({col_x: bounds.left, col_y: bounds.bottom})
-bnds_max = PDict({col_x: bounds.right, col_y: bounds.top})
+col_x = "pickup_longitude"
+col_y = "pickup_latitude"
+
 # Create a csv loader for the taxi data file
 csv = CSVLoader(LARGE_TAXI_FILE, index_col=False, usecols=[col_x, col_y])
 # Create an indexing module on the csv loader output columns
@@ -258,7 +203,7 @@ Line 6 and 7 use the `Module.from_input` method to initialize the
  between the specified bounds of the visualization.
  The `observer()` function is attached as callback of these two sliders to collect the
  slider values and send them to `var_min` and `var_max` on line 37-39.
- Setting them in the callback will force the histogram to recompute with the new bounds and, in turn, trugger an update of the heatmap every time the sliders are moved.
+ Setting them in the callback will force the histogram to recompute with the new bounds and, in turn, trigger an update of the heatmap every time the sliders are moved.
 
 Building a progressive visualization and making it interactive is conceptually easy with ProgressiVis, but can need long boilerplate code. To simplify the construction of complex loading, analysis, and visualization progressive pipelines, we provide a higher-level of abstraction in jupyter lab notebooks.  They are documented in the [visualization section](visualizations).
 

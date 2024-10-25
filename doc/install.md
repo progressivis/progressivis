@@ -4,9 +4,9 @@
 
 If you only need the *Progressivis* core, install the `progressivis` package. If you need *Progressivis* with visualizations or if you don't know all your needs in advance install  `ipyprogressivis` (which will also install `progressivis` as a dependency). Installation procedures are similar between `progressivis` and `ipyprogressivis`, so in the following `[ipy]progressivis` means `progressivis` or `ipyprogressivis`
 
-Currently these installations have been tested only with *Linux*.
+Currently these installations are continually tested with *Linux*. They should also work on MacOS and Windows.
 
-
+For now (November 2024), We are conducting tests to make sure the installation works well so we recommend using the installation for developers.
 
 ### With miniforge (recommended):
 
@@ -105,3 +105,8 @@ conda install yarn=1 -c conda-forge
 pip install -e .
 ```
 
+At this stage, the user guide examples should work in the jupyter lab environment.
+**ProgressiVis** notebook relies on jupyter lab rather than the
+traditional notebook because progressive programs are not linear by
+nature and need special navigation tools in the notebook, easier to
+design and deploy on jupyter lab.
