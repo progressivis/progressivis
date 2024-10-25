@@ -26,6 +26,7 @@ while the computation is being done.
    intro
    install
    userguide
+   userguide2
    reference
    module_library
    unit_tests

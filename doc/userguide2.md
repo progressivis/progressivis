@@ -1,6 +1,6 @@
-# Dealing with Noisy Data
+## Dealing with Noisy Data
 
-Big data is almost noisy. The techniques that work on small data
+Big data is almost always noisy. The techniques that work on small data
 should be adapted to overcome this noise. As an illustration, the
 simplest program we can think of to visualize the New York Taxi
 dataset is the follwing:
