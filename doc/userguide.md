@@ -76,7 +76,7 @@ Variations of this program are [discussed in a followup document](userguide2) if
 
 ## Main Components
 
-In **ProgressiVis**, a program is run by a `Scheduler`. Only one instance of `Scheduler` exists (except in tests).
+In **ProgressiVis**, a program is run by a `Scheduler`. Only one instance of `Scheduler` exists (except in tests), and in our example, it is passed implicitly everywhere.
 A progressive program is internally represented as a dataflow of progressive modules (simply called **modules** in this documentation).
 The dataflow is a directed network with no cycle (a directed acyclic graph or DAG).
 
@@ -88,10 +88,11 @@ A module with no input slot is a **source module**, and a module with no output 
 ```{eval-rst}
 .. _hint-reference-label:
 ```
-Input slots can be supplemented by `hints`, provided in square brackets when specifying a connection.
-The role and type of hints depends on the semantics of the slot. In the next example the sequence of names provided in square brackets designates the columns to be taken into account (and processed) by the module:
+When specifying a connection, input slots can be supplemented by `hints`, provided in square brackets . The role and type of hints depends on the semantics of the slot. In the next example the sequence of names provided in square brackets designates the columns to be taken into account (and processed) by the module:
 
 ```python
+from progressivis import RandomTable, Max, Print
+
 random = RandomPTable(10, rows=10000)  # produces 10 columns named _1, _2, ...
 max_ = Max(name="max_" + str(hash(random)))
 max_.input[0] = random.output.result["_1", "_2", "_3"]  # hint ("_1", "_2", "_3")
@@ -99,7 +100,7 @@ pr = Print(proc=self.terse)
 pr.input[0] = max_.output.result
 random.scheduler().task_start()
 ```
-Here, the hint "tells" to the `Max` module to compute the maximum only for columns "_1", "_2", "_3".
+Here, the hint tells the `Max` module to compute the maximum only for columns "_1", "_2", "_3".
 Otherwise, when no hint is provided, the maximum is computed for all the columns.
 
 In addition to input and output slots, a module maintains a set of **parameters** that it uses internally.
@@ -111,17 +112,16 @@ Programming a module is explained in the advanced section of this documentation.
 
 ## Running a Progressive Program
 
-The easiest environment to run progressive programs is the JupyterLab notebook.
-**ProgressiVis** comes with specified widgets, visualizations, and mechanisms to navigate a notebook in a non-linear way to follow the progression of modules.
-Therefore, ProgressiVis offers two levels of programming, a low-level, as shown in the first example above, and a high-level designed for JupyterLab, more convenient, hiding boilerplate code and providing convenient widgets and navigation mechanisms inside JupyterLab to manage the non-sequential style of ProgressiVis programs.
+The easiest environment to run progressive programs is jupyter lab notebooks.
+**ProgressiVis** comes with widgets, visualizations, and mechanisms to navigate a notebooks in a non-linear way to follow the progression of modules.
+ProgressiVis offers two levels of programming, a low-level, as shown in the first example above, and a high-level designed for jupyter lab notebooks, more convenient, hiding boilerplate code and providing convenient widgets and navigation mechanisms to manage the non-sequential style of ProgressiVis programs.
 
 Alternatively, progressive programs can be run in a _headless_ environment.
-We also provide an experimental setup to run them behind a web server to create progressive applications without a notebook.
-This setup is experimental and should be extended in the future.
+
 
 ## Communication between ProgressiVis and the Notebook
 
-ProgressiVis runs using asynchronous functions. The communication between ProgressiVis and the notebook is done through callbacks and function calls.
+ProgressiVis is built on top of python asynchronous functions. The communication between ProgressiVis and the notebook is done through callbacks and function calls.
 Module callbacks are handy to update the environment outside of ProgressiVis.
 For example, visualizing the heatmap shown in the first example works like this:
 ```python
@@ -144,7 +144,8 @@ heatmap.on_after_run(_after_run)  # Install the callback
 
 On the other direction, an external function can trigger changes in a ProgressiVis program in a few ways. There is a low-level mechanisms based on the method `Module.from_input(msg)` that allows communicating with modules. The module `Variable` is the simplest module designed to handle external events through `from_input`. It implementation of `from_input` expects a dictionary that is then propagated as data in its output slot in the progressive program. Most of the interactions proposed in ProgressiVis are done though `Variable` modules. Reusing the same declarations as in the examples above, we can add dynamic filtering to the data being progressively loaded with the following code:
 
-```python
+```{code-block}
+:linenos:
 from progressivis import (
     CSVLoader, Histogram2D, ConstDict, Heatmap, PDict,
     BinningIndexND, RangeQuery2d, Variable
@@ -185,25 +186,28 @@ heatmap.display_notebook()
 csv.scheduler().task_start();
 ```
 
-which produces the following dataflow graph:
+Visualizing the dataflow graph shows a cleaner view of the structure of the program.
 
 ```{eval-rst}
 .. progressivis_dot:: ./userguide1.3.py
 ```
 
-Controlling this progressive graph with jupyter widgets can be done like this:
+Compared to the initial non interactive program, we have added lines 12-26.  Line 13 creates a `BinningIndexND` that progessively maintains an index to all the numerical columns, allowing to quickly perform range queries over a large dataset. It is connected to the `CSV` module on line 15, with a slot hint restricting it to maintaining the index on two columns.
+
+Line 17 creates a `RangeQuery2d` module that creates a table filtered by a 2D range query. The outputs of this module are connected to the `Histogram2D` module on lines 30-32 instead of the min/max quantiles and the table produced by the `CSV` table in the first example. The `RangeQuery2d` module ouputs the current min/max ranges and the table filtered according to these ranges to the `Histogram2D` module that gets visualized like in the first example. The `RangeQuery2d` module takes two variables `var_min` and `var_max`, declared line 19-20m to specify the desired min-max range that the user wants to see. The variables can be controlled by a jupyter notebook range-query widget to pass the information from the notebook to the progressive program, as shown in the next listing.
+
 ```{eval-rst}
 .. literalinclude:: ./userguide1.3-cont.py
    :linenos:
 ```
 
-Line 6 and 7 use the `Module.from_input` method to initialize the
+Line 11 and 12 use the `Module.from_input` method to initialize the
  value of `var_min` and `var_max` to `bnds_min` and `bnds_max` respectively.
- Then, two range sliders are created line 9 and line 21 to filter a range of values
+ Then, two range sliders are created line 14 and line 26 to filter a range of values
  between the specified bounds of the visualization.
  The `observer()` function is attached as callback of these two sliders to collect the
- slider values and send them to `var_min` and `var_max` on line 37-39.
+ slider values and send them to `var_min` and `var_max` on line 42-43.
  Setting them in the callback will force the histogram to recompute with the new bounds and, in turn, trigger an update of the heatmap every time the sliders are moved.
 
-Building a progressive visualization and making it interactive is conceptually easy with ProgressiVis, but can need long boilerplate code. To simplify the construction of complex loading, analysis, and visualization progressive pipelines, we provide a higher-level of abstraction in jupyter lab notebooks.  They are documented in the [visualization section](visualizations).
+Building a progressive visualization and making it interactive is conceptually easy with ProgressiVis, but can need long boilerplate code. To simplify the construction of complex loading, analysis, and visualization progressive pipelines, we provide higher-level abstractions in jupyter lab notebooks.  They are documented in the [visualization section](visualizations).
 
