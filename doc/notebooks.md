@@ -1,13 +1,13 @@
 # Progressive Notebooks
 
 The best environment to use **ProgressiVis** is the [Jupyter lab notebook](https://jupyterlab.readthedocs.io/en/latest/) with extensions supported in the package called `ipyprogressivis`.
-This package provides **ProgressiVis** specific support for the user interface, visualizations; we also provide convenient components to explore CSV and Apache Arrow datasets.
+This package provides **ProgressiVis** specific support for the user interface and visualizations, as well as components to explore CSV and Apache Arrow datasets.
 
 (create-scenario)=
 
 ## Creating a progressive analysis
 
-Notebooks hosting a progressive scenario need to be initialized in a particular way. One call them **ProgressiBooks** and they must be created via the `Progressivis/New ProgressiBook` menu, made available with `ipyprogressivis`:
+Notebooks hosting a progressive scenario need to be initialized in a particular way. We call them **ProgressiBooks** and they must be created via the `Progressivis/New ProgressiBook` menu, made available with `ipyprogressivis`:
 
 ![](viz_images/create_progressibook.png)
 
@@ -20,9 +20,11 @@ By clicking this button, the `ProgressiVis` scheduler will be launched and the s
 
 ## Chaining widgets
 
-As their name suggests, chaining widgets (`CW`) are graphical components based on Jupyter widgets that can be composed to implement progressive data analysis scenarios. Their interconnection capabilities enable the creation of directed acyclic graphs (DAGs)
+As their name suggests, chaining widgets (`CW`) are graphical components based on Jupyter widgets that can be composed to implement progressive data analysis scenarios. Their interconnection capabilities enable the creation of directed acyclic graphs (DAGs).
 
 Each `CW` is designed for a specific stage of an analysis scenario (data loading, filtering, joins, etc.) and is associated with a sub-graph of ProgressiVis modules in the background, usually grouped behind a front panel.
+
+Chaining widgets encapsulate and connect a subgraph of ProgressiVis modules that would take several line of code to create for no benefit.
 
 ## Navigation with the DAG Widget
 
@@ -64,7 +66,7 @@ After starting, the main interface looks like this:
 
 Where:
 
-* The `Bookmarks` field displays the contents (previously filled in by hand) of the `bookmarks` file in `$HOME/.progressivis`. Lines selected here represent urls ans docal files to be loaded. You can select one or more lines in this field. You can also ignore it and use the following field:
+* The `Bookmarks` field displays the contents (previously filled in by hand) of the `bookmarks` file in `$HOME/.progressivis`. Lines selected here represent urls ans local files to be loaded. You can select one or more lines in this field. You can also ignore it and use the following field:
 * `New URLs`: if the urls or local files present in bookmarks are not suitable, you can enter new paths here
 * `URL to sniff`: Unique  url or local file to be used by the sniffer to discover data. If empty, the sniffer uses the first line among those selected for loading
 * `Rows`: number of rows to be taken into account  by the sniffer to discover data
@@ -73,15 +75,17 @@ Where:
 
 ![](viz_images/sniffer.png)
 
-The sniffer, among other things, allows you to customize parsing options, select the desired subset of columns and type them.
+##### The Sniffer
 
-Once the configuration is complete, you can save it for later use and start loading.
+The **sniffer**, among other things, allows you to customize parsing options, select the desired subset of columns and type them.
+
+Once the configuration is complete, you can save it for later use, so you don't have to refill all the options manually, and start loading.
 
 ![](viz_images/start_save_csv.png)
 
 **NB:** The `Freeze` checkbox is useful only when the scenario is being recorded  to be replayed later (see [Recording a scenario](recording-scenario) for more details).
 
-Once loading has begun, the `Next stage` list and the `Chain it` button will be used to attach a new `CW` to the treatment.
+Once loading has begun, the `Next stage` list and the `Chain it` button will be used to attach a new `CW` to the treatments.
 
 ![](viz_images/next_stage.png)
 
