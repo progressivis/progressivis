@@ -1,64 +1,64 @@
-# Visualizations
+# Progressive Notebooks
 
-There is a set of visualizations intended for Progressivis and usable with [JupyterLab](https://jupyterlab.readthedocs.io/en/latest/) grouped in a separate package called `ipyprogressivis`.
+The best environment to use **ProgressiVis** is the [Jupyter lab notebook](https://jupyterlab.readthedocs.io/en/latest/) with extensions supported in the package called `ipyprogressivis`.
+This package provides **ProgressiVis** specific support for the user interface, visualizations; we also provide convenient components to explore CSV and Apache Arrow datasets.
 
 (create-scenario)=
 
-## Create a scenario
+## Creating a progressive analysis
 
-Notebooks hosting a progressive scenario need to be initialized in a particular way. One call them **ProgressiBooks** and they must be created via the `Progressivis/New ProgressiBook` menu:
+Notebooks hosting a progressive scenario need to be initialized in a particular way. One call them **ProgressiBooks** and they must be created via the `Progressivis/New ProgressiBook` menu, made available with `ipyprogressivis`:
 
 ![](viz_images/create_progressibook.png)
 
 Once created, a `Run ProgressiVis` button will appear in the first `ProgressiBook` cell.
 
-By clicking this button, the `ProgressiVis` scheduler will be launched and the start box will appear. Currently, it proposes two data loading actions (CSV files and PARQUET files), and offers the option (by checking the `record this scenario` box) of saving the session for later use. These actions, like all other actions in the scenario, are implemented via a set of `chaining widgets`.
+By clicking this button, the `ProgressiVis` scheduler will be launched and the start box will appear. Currently, it proposes two data loading actions (CSV files and PARQUET files), and offers the option of saving the session for later use by checking the `record this scenario` box. These actions, like all other actions in the scenario, are implemented via a set of `chaining widgets`.
 
 ![](viz_images/constructor_cw.png)
 
 
 ## Chaining widgets
 
-As their name suggests, chaining widgets (`CW`) are graphical components based on Jupyter widgets that can be composed to implement data analysis scenarios. Their interconnection capabilities enable the creation of directed acyclic graphs (DAGs)
+As their name suggests, chaining widgets (`CW`) are graphical components based on Jupyter widgets that can be composed to implement progressive data analysis scenarios. Their interconnection capabilities enable the creation of directed acyclic graphs (DAGs)
 
-Each `CW` is designed for a specific stage of an analysis scenario (data loading, filtering, joins, etc.) and is associated with a sub-graph of PV modules in the background, usually grouped behind a front panel.
+Each `CW` is designed for a specific stage of an analysis scenario (data loading, filtering, joins, etc.) and is associated with a sub-graph of ProgressiVis modules in the background, usually grouped behind a front panel.
 
-(persistent-settings)=
-## Chaining widgets persistent settings
+## Navigation with the DAG Widget
 
-`CW`s require a file tree located in the user's homedir with the following structure:
+The DAG widget, shown in the top right of a progressive notebook, as shown above, represents all the cell as a dependency graph. It show a navigation structure complementary to the sequential list of cells in the notebook. It stays on the right side of your notebook and you can navigate to any cell by clicking on a node.
 
-```
-.progressivis/
-├── bookmarks
-└── widget_settings
-    └── CsvLoaderW
-        ├── taxis
-        └── weather
-    └── ParquetLoaderW
-        ├── iris
-        └── penguins
-    ...
-    ...
-```
 
-**NB:** Only the `.progressivis` directory needs to be created by the user. All other directories and files will be created by widgets as required.
+Progressive programs need to support non-linear navigation. In a traditional notebook, when you run a cell, it is completed and you can move to the next. With a progressive program, the initial cell can continue to live for a long time, and visualize new data over time. Therefore, when moving to a new step of an analysis, it is often useful to navigate back to a previous one to monitor the progression or fork a new progressive analysis. In the end, several cells will remain active until you decide which ones to stop because they already gave you the answer you wanted, or because you realized they would not give you what you expected.
+
+
+The chaining widgets automatically give a meaningful name to each cell/node to populate the graph and
+keep it readable.
+In addition, the graph also shows you when a widget needs attention or is finished so you can keep an overview of the progression of the analysis.
+
+All the sections of this documentation use the DAG Widget to provide a high-level overview of progressive pipelines. The detailed graph visualization used in the [user guide](userguide) could be used as well, but it would give too much details on the topology of the progressive dataflow for a high-level overview.
 
 ## Chaining widgets list
 
+We give a summary of the chaining widgets available here.
+
 ### Data loaders category
+
+There are three main loaders: the CSV loader, the PARQUET/Arrow loader, and custom loaders.
+For CSV and Arrow files, we provide additional functionalities to investigate the structure of the files and specify what columns to load, the concrete types to use, and more details.
 
 #### CSV loader
 
-Possible topology:
+Usually, the first cell of a progressive analysis is a data loader, below the root, creating this
+possible topology:
 
 ![](viz_images/csv_loader_topology.png)
 
 ##### Function:
 
-It loads one or many CSV files progressively
+The CSV loader, as it name implies, loads one or many CSV files progressively.
 
-After starting, the main interface is:
+After starting, the main interface looks like this:
 
 ![](viz_images/csv_loader_cw.png)
 
@@ -542,6 +542,28 @@ When the freeze checkbox has been checked in a widget (here CSV Loader) during r
 Thus, when the record is replayed, these settings will be applied directly, without redisplaying the "frozen" widget.
 
 **NB:** Scenario registration should not be confused with the [persistent settings](#persistent-settings) of certain widgets, which are saved in dedicated files and can also be used in unregistered scenarios.
+
+
+(persistent-settings)=
+## Chaining widgets persistent settings
+
+`CW`s keeps track of its states and history with a file tree located in the user's homedir with the following structure:
+
+```
+.progressivis/
+├── bookmarks
+└── widget_settings
+    └── CsvLoaderW
+        ├── taxis
+        └── weather
+    └── ParquetLoaderW
+        ├── iris
+        └── penguins
+    ...
+    ...
+```
+
+**NB:** Only the `.progressivis` directory needs to be created per user. All other directories and files will be created by widgets as required.
 
 
 ## How to create a chaining widget ?

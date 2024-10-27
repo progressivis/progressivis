@@ -213,5 +213,5 @@ Line 11 and 12 use the `Module.from_input` method to initialize the
  slider values and send them to `var_min` and `var_max` on line 42-43.
  Setting them in the callback will force the histogram to recompute with the new bounds and, in turn, trigger an update of the heatmap every time the sliders are moved.
 
-Building a progressive visualization and making it interactive is conceptually easy with ProgressiVis, but can need long boilerplate code. To simplify the construction of complex loading, analysis, and visualization progressive pipelines, we provide higher-level abstractions in jupyter lab notebooks.  They are documented in the [visualization section](visualizations).
+Building a progressive visualization and making it interactive is conceptually easy with ProgressiVis, but can need long boilerplate code. To simplify the construction of complex loading, analysis, and visualization progressive pipelines, we provide higher-level abstractions in jupyter lab notebooks.  They are documented in the [notebooks section](notebooks).
 

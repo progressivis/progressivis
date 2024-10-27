@@ -27,11 +27,11 @@ while the computation is being done.
    install
    userguide
    userguide2
+   notebooks
    reference
    module_library
    unit_tests
    custom_modules
-   visualizations
    dependencies
 ```
 
