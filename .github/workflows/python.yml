@@ -49,7 +49,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: coverage-report-${{ matrix.python }}
-        path: htmlcov/index.html
+        path: htmlcov
 
     - name: Pip freeze
       if: failure()
