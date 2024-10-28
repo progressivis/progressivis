@@ -43,7 +43,7 @@ jobs:
 
     - name: Coverage
       run: |
-        coverage report html
+        coverage html
 
     - name: Upload coverage
       uses: actions/upload-artifact@v4
