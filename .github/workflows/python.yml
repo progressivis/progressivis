@@ -45,7 +45,7 @@ jobs:
       run: |
         coverage report html
 
-    - Upload coverage
+    - name: Upload coverage
         uses: actions/upload-artifact@v4
         with:
           name: coverage-report-${{ matrix.python }}
