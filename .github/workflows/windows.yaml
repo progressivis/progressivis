@@ -43,7 +43,14 @@ jobs:
 
     - name: Coverage
       run: |
-        coverage report -m
+        coverage report html
+
+    - name: Upload coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report-${{ matrix.python }}
+          path: htmlcov/index.html
+
     - name: Pip freeze
       if: failure()
       run: |
@@ -51,7 +58,7 @@ jobs:
         python -m pip freeze > downloads/${{ matrix.python }}/pip_freeze.txt
     - name: Upload frozen env
       if: failure()
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: pip-freeze
         path: downloads
