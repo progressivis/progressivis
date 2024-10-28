@@ -46,10 +46,10 @@ jobs:
         coverage report html
 
     - name: Upload coverage
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-report-${{ matrix.python }}
-          path: htmlcov/index.html
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage-report-${{ matrix.python }}
+        path: htmlcov/index.html
 
     - name: Pip freeze
       if: failure()
